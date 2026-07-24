@@ -98,7 +98,20 @@ attachment filename still derives from the platform seam even on a tenant send (
 - **How we know BrightPath still works:** every BrightPath email (reviewer, student, award, decline) renders identically to today — snapshot the templates before/after.
 - **Complexity:** Medium.
 
-### Sprint 6 — Per-org branding (frontend)
+### Sprint 6 — Per-org branding (frontend) — ✅ **SHIPPED 2026-07-24** (commits `d900cbc7`..`7038c37b`, 5 commits; retro `docs/retrospective-2026-07-24-sprint6-branding-frontend.md`)
+Delivered as scoped: `src/lib/branding.ts` (`PLATFORM` defaults verbatim + `resolveBranding` +
+`interpolateMessage` + `brandRamp` + `AUTO_TOKENS`) + `BrandingProvider` (dark fetch — platform mode
+never fetches, `NEXT_PUBLIC_ORG_CODE` unset in prod); `t()` auto-injects 5 branding tokens; CSS
+theme moved to RGB-channel `--brand-N` variables (opacity-modifier constraint); `<BrandLogo>`
+replacing 14 hardcoded sites; 18 message keys ×3 locales + the ta-only `authGate.applyReason`
+interpolated; legal pages (terms/privacy) brand-token JSX swaps, gated on a byte-identity consent
+snapshot (D5); backend gained 3 `PLATFORM` visual accessors + public
+`GET /api/v1/branding/<slug:code>/`. Guarded by `brand-guard.test.ts` + `placeholder-parity.test.ts`.
+BrightPath output byte-identical (leaf-map diff: en 18 / ms 18 / ta 19 values changed, 0
+added/removed). jest 662 → 688, pytest 4346 → 4363, zero migrations. **Carry:** TD-169 (Vircle guide
+filename) and TD-170 (two ms/ta admin strings tokenise only the brand word — copy-tidy candidate)
+remain open; Sprint 7 (per-org timing/reminders/consent version) is next, gated to ≈21 Aug 2026 by
+the Phase-2 rule-stability clock.
 - **Goal:** De-hard-code the programme name, theme, and logo in the web app (audit §2d / frontend audit).
 - **Scope:** `halatuju-web/src/messages/{en,ms,ta}.json` (introduce a `{programmeName}` interpolation variable replacing the ~7 literals: `en.json:414,720,258,290,401,1748,2992` and consent `:1562-1563`), the legal-page JSX literals (`terms/page.tsx:52,55`, `privacy/page.tsx:21,29,42`), theme (`tailwind.config.ts:12-27` → CSS-variable brand colour), logo slot (`AppHeader.tsx:78`), and a programme-config fetch from the backend.
 - **Migrations expected:** 0.
@@ -247,7 +260,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 
 | Work | Gate / trigger | State (2026-07-22) |
 |---|---|---|
-| Phase 2 S5–S6 (branding extraction) | Rule-stability clock OR owner pulls the split-gate option | S5 (backend) ✅ **SHIPPED 2026-07-24**; S6 (frontend) — split option open, not yet gated-in |
+| Phase 2 S5–S6 (branding extraction) | Rule-stability clock OR owner pulls the split-gate option | S5 (backend) ✅ **SHIPPED 2026-07-24**; S6 (frontend) ✅ **SHIPPED 2026-07-24** |
 | Phase 2 S8–S9 (rules extraction) | Strict rule stability | Gated |
 | Phase 3 S10–S11 (platform console) | Credible second-tenant prospect | Gated (Add-tenant slice + S12 already live) |
 | Phase 4 13a/13b (metering, rehearsal) | Second-tenant prospect | Gated |
@@ -321,7 +334,7 @@ A formal versioned contract over the already-org-fenced endpoints; per-tenant se
 | 1 | 3b | Fence-proof test + CI static guard | 0 | Med |
 | 1 | 4 | Document org-prefix, new uploads only (legacy = org #1) | 0 | Med |
 | 2 | 5 | ✅ Per-org branding + email identity (backend) — shipped 2026-07-24 | 0 | Med |
-| 2 | 6 | Per-org branding (frontend) | 0 | Med |
+| 2 | 6 | ✅ Per-org branding (frontend) — shipped 2026-07-24 | 0 | Med |
 | 2 | 7 | Per-org timing/reminders/consent version | 1 | Low–Med |
 | 2 | 8a | Per-org document/route selection | 1 | **High** |
 | 2 | 8b | Per-org verification-fact selection + engine-safety test | 0 | Med |

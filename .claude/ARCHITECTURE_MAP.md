@@ -251,6 +251,30 @@ AST brand-guard (`tests/test_branding_guard.py`) scans `emails.py`/`help_engine.
 platform brand literals, allowing only `branding.py` to hold them. Decisions D3/D4/D6:
 `docs/decisions.md` ("Per-org branding seam", 2026-07-24); retrospective:
 `docs/retrospective-2026-07-23-sprint5-branding-email.md`. Backend only — no migration, `halatuju-web/` untouched.
+**Sprint 6 (2026-07-24) extended the seam with 3 visual accessors** (`brand_colour`/`logo_url`/
+`org_short_name`, each with a platform default) and a public read endpoint
+`GET /api/v1/branding/<slug:code>/` (`views_branding.py`, AllowAny + throttle, exact key-set
+snapshot-pinned, unknown codes → the platform payload) — the one way the frontend learns a
+non-platform org's identity.
+
+**Per-org branding seam, frontend half (Sprint 6, 2026-07-24):** `halatuju-web/src/lib/branding.ts` is the
+FE's mirror of the backend seam — a `PLATFORM` block (today's literals verbatim, the FE's one sanctioned
+literal home, guard-allowlisted), `resolveBranding(config|null)`, `interpolateMessage()` (extracted from
+`i18n.tsx`, function-replacer closes a `$`-in-replacement hazard), `brandRamp(hex)` (computed 50–900 ramp
+for a tenant colour), and `AUTO_TOKENS` (the 5 tokens auto-injected into every `t()` call, beneath any
+explicit params). `branding-context.tsx`'s `BrandingProvider` (mounted in `providers.tsx`, outside
+`I18nProvider`) fetches the Sprint-6-backend endpoint only when `NEXT_PUBLIC_ORG_CODE` names a non-platform
+org — BrightPath/platform mode never fetches. Theme colours are ten `--brand-N` CSS variables in
+**RGB-channel form** (not hex), because Tailwind's opacity modifiers (`bg-brand-500/10`) require it;
+`<BrandLogo>` (new) replaces the 14 hardcoded `/logo-icon.png` sites. 18 message keys ×3 locales (en/ms/ta)
++ the ta-only `authGate.applyReason` interpolate to `{programmeName}`/`{orgShortName}`/`{personaName}`/
+`{supportEmail}`/`{displayDomain}`; the legal pages (`terms/page.tsx`, `privacy/page.tsx`) swap only the
+brand-mention JSX token. Guarded by `brand-guard.test.ts` (forbidden brand literals scanned across message
+values + comment-stripped `src/**`, with documented allowlists and self-checking floors) and
+`placeholder-parity.test.ts` (every locale's placeholders ⊆ en's ∪ `AUTO_TOKENS`). Byte-identity for
+BrightPath is pinned by a pre-edit consent-snapshot test + a leaf-map diff (en 18 / ms 18 / ta 19 values
+changed, 0 keys added/removed). Decisions: `docs/decisions.md` ("Per-org branding — frontend seam",
+2026-07-24); retrospective: `docs/retrospective-2026-07-24-sprint6-branding-frontend.md`.
 
 **Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
 (`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +

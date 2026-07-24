@@ -524,6 +524,48 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-24)
 
+**✅ SHIPPED + LIVE 2026-07-24 (api+web, commits `d900cbc7`..`7038c37b`, 5 commits) — Platform
+Sprint 6: per-org branding (frontend).** Brief
+`docs/plans/2026-07-24-sprint6-branding-frontend-brief.md`; retro
+`docs/retrospective-2026-07-24-sprint6-branding-frontend.md`; decisions ×8; TD-170/TD-171 logged.
+Both Cloud Builds SUCCESS for SHORT_SHA `7038c37`; smoke-tested (web 200, gated 401,
+`GET /api/v1/branding/brightpath/` returns the pinned platform payload, unknown codes → platform
+default).
+- **FE branding seam `src/lib/branding.ts`** — `PLATFORM` defaults verbatim + `resolveBranding` +
+  `interpolateMessage` + `brandRamp` + `AUTO_TOKENS`; `BrandingProvider` (dark fetch —
+  BrightPath/platform mode NEVER fetches, `NEXT_PUBLIC_ORG_CODE` unset in prod).
+- **`t()` auto-injects 5 branding tokens** beneath explicit call-site params, plus a `'{'`-absent
+  fast path and a function-replacer fix for the `$`-hazard.
+- **CSS-variable theme** (RGB-channel form, ten `--brand-N` triplets so Tailwind's opacity
+  modifiers keep working, verified in the compiled CSS) + `<BrandLogo>` replacing 14 hardcoded
+  logo sites.
+- **18 message keys × 3 locales** interpolated + the ta-only `authGate.applyReason`; legal pages
+  (terms/privacy) brand-token JSX swaps; 4 JSX email-literal swaps.
+- **Backend:** 3 `PLATFORM` entries + 3 visual accessors in `branding.py`
+  (`brand_colour`/`logo_url`/`org_short_name`) + public `GET /api/v1/branding/<slug:code>/`
+  (AllowAny + throttle, exact key-set snapshot-pinned).
+- **FE guards:** `brand-guard.test.ts` (message values + comment-stripped sources, documented
+  allowlists, self-check floors, bite-proven) + `placeholder-parity.test.ts`.
+- **Byte-identity throughout:** consent snapshots frozen pre-edit pass unmodified; Sprint 5's 113
+  email goldens + AST guard untouched and green; Phase-4 leaf-map diff en 18 / ms 18 / ta 19
+  values changed, 0 added/removed, leaf counts (3725) unchanged ×3.
+- **jest 662 → 688** (687 pass + 1 pre-existing env-only failure, `scholarship.test.ts` under
+  Node 26's experimental global `localStorage` — fails identically on untouched origin, green on
+  CI Node); **pytest 4346 → 4363**, 0 fail 0 skip; `next build` + lint clean;
+  `makemigrations --check` clean — **zero migrations this sprint** (migration 0110 in the tree
+  belongs to a concurrent, unrelated session's work, not this sprint).
+- **Deviations (owner-approved):** (1) `org_short_name` has no column — tenant derives from
+  `org.name`, platform constant `'BrightPath'`. (2) ms/ta `admin.payments.subtitle` + ta
+  `recordVerdict.reasonPlaceholder` carry pre-existing DRIFTED copy so they tokenise only the
+  brand word for byte-identity (TD-170, copy-tidy candidate). (3) the `info@` mailto is built as
+  `info@${frontendDomain}` (no seam field). (4) `test_branding.py` was created, not extended.
+- **▶ NEXT — Sprint 7 (per-org timing/reminders/consent version) is GATED to ≈21 Aug 2026** by
+  the Phase-2 rule-stability clock (no `MODEL_VERSION` bump and no new document family for ~a
+  month) — do NOT start it before the gate opens. **▶ OWNER CARRY:** none new beyond the standing
+  ms/ta first-draft reviews.
+
+## Superseded — previous Next Sprint (as of 2026-07-24)
+
 **✅ SHIPPED — NOT PUSHED (owner gates the deploy) 2026-07-24 — Platform Sprint 5: per-org
 branding & email sender identity (BACKEND ONLY, NO migration, `halatuju-web/` zero diffs).**
 Brief `docs/plans/2026-07-23-sprint5-branding-email-brief.md`; retro

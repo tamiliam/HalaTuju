@@ -26,6 +26,62 @@ draft with us. This recovers them.
   (english-only where appropriate), from info@ with reply-to support. Reused by both paths.
 - Tunables: `NUDGE_AUTO_DELAY_MINUTES` (30), `NUDGE_COOLDOWN_HOURS` (24). +19 pytest, +4 jest.
 
+## Per-org branding — frontend seam, tenant-aware messages, brand-token CSS (Sprint 6) — 2026-07-24
+
+Sprint 5 (2026-07-23/24) moved every rendered brand string on the BACKEND behind one seam. Sprint 6
+does the same for the web app — the programme name, colours, logo and message copy the student and
+officer actually see — while BrightPath/platform mode renders byte-identically and never fetches a
+tenant config over the network.
+
+- **Added — `src/lib/branding.ts`**, the single FE seam: `PLATFORM` defaults captured verbatim
+  (byte-identical to today), `resolveBranding()`, `interpolateMessage()`, `brandRamp()`, and the
+  `AUTO_TOKENS` set (the 5 branding tokens auto-injected into every message).
+- **Added — `BrandingProvider`** (dark fetch): BrightPath/platform mode NEVER calls the branding
+  endpoint — `NEXT_PUBLIC_ORG_CODE` is unset in production, so the provider short-circuits to the
+  platform defaults with zero network cost.
+- **Changed — `t()` auto-injects 5 branding tokens** beneath any explicit params passed by the
+  caller, plus a `'{'`-absent fast path (skip interpolation entirely on a message with no
+  placeholder) and a function-replacer fix for the `$`-hazard (a literal `$` in a brand value could
+  otherwise be read by `String.replace` as a special replacement pattern).
+- **Added — CSS-variable theme**: ten `--brand-N` RGB-channel triplets (not hex), so Tailwind's
+  opacity modifiers (`bg-brand-500/10`, `/40`, `/20`) keep working; verified in the compiled CSS
+  output.
+- **Added — `<BrandLogo>`**, replacing 14 hardcoded `/logo-icon.png` sites across the app.
+- **Changed — 18 message keys × 3 locales (en/ms/ta)** interpolated to brand tokens
+  (`{programmeName}`/`{orgShortName}`/`{personaName}`/`{supportEmail}`/`{displayDomain}`), plus the
+  Tamil-only `authGate.applyReason` string.
+- **Changed — legal pages** (terms/privacy): brand-token JSX swaps on the brand mention only —
+  vendor names, dates and every other line untouched.
+- **Changed — 4 JSX email-literal swaps** (`scholarship/page.tsx` ×2, `ScholarshipNextSteps.tsx`,
+  `SponsorLanding.tsx`) brought onto the token scheme.
+- **Added (backend) — 3 `PLATFORM` entries + 3 visual accessors** in `branding.py`
+  (`brand_colour`/`logo_url`/`org_short_name`), and a new public
+  **`GET /api/v1/branding/<slug:code>/`** endpoint (AllowAny + throttle, exact key-set
+  snapshot-pinned, unknown codes → the platform payload) that the FE provider calls for a
+  non-platform org.
+- **Added — FE guard tests**: `brand-guard.test.ts` (forbidden `BrightPath`/`Cikgu Gopal`/
+  `halatuju.xyz` scanned across message VALUES + comment-stripped source, with documented
+  allowlists and self-checking floors) and `placeholder-parity.test.ts` (every locale's
+  placeholders stay a subset of en's, plus `AUTO_TOKENS`).
+- **Byte-identity preserved throughout**: `branding-consent.fixture.json` (frozen pre-edit) passes
+  unmodified; Sprint 5's 113 email goldens + AST brand-guard stay green and untouched; the Phase-4
+  leaf-map diff shows exactly en 18 / ms 18 / ta 19 values changed, 0 keys added or removed, and
+  identical leaf counts (3725) across all three locale files.
+- Tests: jest 662 → 688 (687 passing + 1 pre-existing environment-only failure —
+  `scholarship.test.ts` under Node 26's experimental global `localStorage`, fails identically on
+  untouched `origin/main` and is green on CI Node; not a Sprint-6 regression); pytest 4346 → 4363
+  (0 failures, 0 skips); `next build` + lint clean; `makemigrations --check` clean — **zero
+  migrations this sprint**.
+- Deviations from the brief (owner-approved, recorded in `docs/decisions.md`): (1) `org_short_name`
+  has no dedicated database column — the tenant derives it from `org.name`, the platform constant
+  is the literal `'BrightPath'`; (2) two admin strings
+  (`admin.payments.subtitle` ms/ta, `recordVerdict.reasonPlaceholder` ta) already carried DRIFTED
+  copy ("Biasiswa BrightPath" / "BrightPath உதவித்தொகை") so they tokenise only the brand word,
+  flagged as a copy-tidy-up candidate (TD-170); (3) the `info@` mailto is built as
+  `info@${frontendDomain}` — there is no dedicated seam field for it.
+- Brief: `docs/plans/2026-07-24-sprint6-branding-frontend-brief.md`. Retrospective:
+  `docs/retrospective-2026-07-24-sprint6-branding-frontend.md`.
+
 ## Payments — the Finance role: a dormant payment-run checker + funding summary — 2026-07-23
 
 Sprint 14 (brief `docs/plans/2026-07-22-sprint14-finance-role-brief.md`, owner-approved).
