@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Requests rate-card copy rewrite (owner wording) — 2026-07-24 (small change)
+
+Owner-supplied copy for the live Requests page: subtitle plus a restructured four-bullet
+"How Requests Work" panel (Bug reports / Bug definition / Feature definition / Quotations),
+rendered as bold label + body pairs. Replaces the three-key rateCard block with eight
+label/body keys across en/ms/ta (ms/ta first-drafts); drops the "AI reviewer" and "margin"
+mentions from customer-facing copy per the owner's text. Guards (parity, resolution, brand,
+placeholder, no-ICU) green; web-only deploy.
+
 ## Income route: symmetric gate + silent reconcile at consent — 2026-07-24
 
 Fixes the class of case where a student declares one income route (e.g. STR) but documents the

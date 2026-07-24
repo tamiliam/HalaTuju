@@ -99,9 +99,12 @@ export default function AdminRequestsPage() {
       <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-5 mb-6">
         <h2 className="font-semibold text-gray-900 mb-2">{t('admin.requests.rateCard.title')}</h2>
         <ul className="space-y-1.5 text-sm text-gray-700">
-          <li>• {t('admin.requests.rateCard.bugsFree')}</li>
-          <li>• {t('admin.requests.rateCard.rule')}</li>
-          <li>• {t('admin.requests.rateCard.features')}</li>
+          {(['bugReports', 'bugDefinition', 'featureDefinition', 'quotations'] as const).map((item) => (
+            <li key={item}>
+              • <strong>{t(`admin.requests.rateCard.${item}Label`)}</strong>{' '}
+              {t(`admin.requests.rateCard.${item}`)}
+            </li>
+          ))}
         </ul>
       </div>
 

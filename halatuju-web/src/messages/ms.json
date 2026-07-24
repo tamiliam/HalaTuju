@@ -4323,12 +4323,17 @@
     "requests": {
       "nav": "Permintaan",
       "title": "Permintaan",
-      "subtitle": "Laporkan pepijat atau minta ciri baharu. Kami menyemak setiap satu dan memberi sebut harga ciri dalam jam.",
+      "subtitle": "Laporkan pepijat atau kemukakan permintaan ciri. Semua permintaan akan disemak, dan penambahbaikan ciri disebut harga dalam jam pembangunan.",
       "rateCard": {
-        "title": "Cara permintaan berfungsi",
-        "bugsFree": "Laporan pepijat adalah percuma.",
-        "rule": "Pepijat ialah tingkah laku yang bercanggah dengan manual atau matriks peranan. Ciri pula ialah sesuatu yang berfungsi seperti didokumenkan tetapi anda mahu ia berfungsi secara berbeza.",
-        "features": "Ciri dianggarkan dalam jam oleh penyemak AI dan disebut harga dengan kelulusan pemilik. Sebut harga menyatakan bilangan jam, termasuk margin."
+        "title": "Cara Permintaan Berfungsi",
+        "bugReportsLabel": "Laporan pepijat:",
+        "bugReports": "Diproses tanpa sebarang kos.",
+        "bugDefinitionLabel": "Definisi pepijat:",
+        "bugDefinition": "Sebarang tingkah laku sistem yang bercanggah dengan manual rasmi atau matriks peranan.",
+        "featureDefinitionLabel": "Definisi ciri:",
+        "featureDefinition": "Sebarang permintaan pengubahsuaian atau penambahbaikan terhadap fungsi yang kini beroperasi seperti yang didokumenkan.",
+        "quotationsLabel": "Sebut harga:",
+        "quotations": "Permintaan ciri dinilai dan diberikan anggaran jam pembangunan. Sebut harga yang diluluskan memperincikan jumlah unjuran jam yang diperlukan untuk pelaksanaan."
       },
       "form": {
         "title": "Permintaan baharu",

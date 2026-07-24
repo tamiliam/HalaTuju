@@ -4323,12 +4323,17 @@
     "requests": {
       "nav": "Requests",
       "title": "Requests",
-      "subtitle": "Report a bug or request a feature. We review each one and quote features in hours.",
+      "subtitle": "Report a bug or submit a feature request. All submissions are reviewed, and feature enhancements are quoted in development hours.",
       "rateCard": {
-        "title": "How requests work",
-        "bugsFree": "Bug reports are free.",
-        "rule": "A bug is behaviour that contradicts the manual or role matrix. A feature is something that works as documented but you would like it to work differently.",
-        "features": "Features are estimated in hours by an AI reviewer and quoted with the owner's approval. A quote states the hours, including a margin."
+        "title": "How Requests Work",
+        "bugReportsLabel": "Bug reports:",
+        "bugReports": "Processed at no cost.",
+        "bugDefinitionLabel": "Bug definition:",
+        "bugDefinition": "Any system behaviour that contradicts the official manual or role matrix.",
+        "featureDefinitionLabel": "Feature definition:",
+        "featureDefinition": "Any requested modification or enhancement to functionality that currently operates as documented.",
+        "quotationsLabel": "Quotations:",
+        "quotations": "Feature requests are evaluated and assigned an hour-based development estimate. Approved quotes detail the total projected hours required for implementation."
       },
       "form": {
         "title": "New request",
