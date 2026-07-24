@@ -122,7 +122,7 @@ export default function ContractsListPage() {
         <form onSubmit={submitNew} className="mt-4 mb-6 bg-white rounded-xl border shadow-sm p-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <input className={inputCls} placeholder={t('admin.contracts.versionPlaceholder')}
-              value={version} onChange={(e) => setVersion(e.target.value)} required maxLength={40} />
+              value={version} onChange={(e) => setVersion(e.target.value)} required maxLength={50} />
             <select className={inputCls} value={source}
               onChange={(e) => { setSource(e.target.value); if (e.target.value !== 'upload') setFile(null) }}>
               <option value="">{t('admin.contracts.startBlank')}</option>

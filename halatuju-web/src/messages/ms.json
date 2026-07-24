@@ -4654,7 +4654,7 @@
       "loading": "Memuatkan…",
       "actionFailed": "Sesuatu tidak kena. Sila cuba lagi.",
       "error": {
-        "versionTooLong": "Nama versi itu terlalu panjang (maksimum 40 aksara). Sila pendekkan.",
+        "versionTooLong": "Nama versi itu terlalu panjang (maksimum 50 aksara). Sila pendekkan.",
         "versionExists": "Versi dengan nama itu sudah wujud. Pilih nama lain.",
         "versionRequired": "Sila masukkan nama versi."
       },

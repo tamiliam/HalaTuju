@@ -4654,7 +4654,7 @@
       "loading": "Loading…",
       "actionFailed": "Something went wrong. Please try again.",
       "error": {
-        "versionTooLong": "That version name is too long (40 characters max). Please shorten it.",
+        "versionTooLong": "That version name is too long (50 characters max). Please shorten it.",
         "versionExists": "A version with that name already exists. Choose a different name.",
         "versionRequired": "Please enter a version name."
       },

@@ -2460,7 +2460,7 @@ class ContractTemplate(models.Model):
         'courses.PartnerOrganisation', on_delete=models.PROTECT,
         related_name='contract_templates',
     )
-    version = models.CharField(max_length=40)
+    version = models.CharField(max_length=50)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
 
     # Localised document chrome (en required; ms/ta blank until translated).
