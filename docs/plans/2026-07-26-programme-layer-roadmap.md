@@ -182,12 +182,17 @@ it is how *every* sponsor's money enters the platform until BrightPath's CLBG is
   - `programme` (from P2) — a credit always lands in exactly one programme's wallet.
   - `mock` must be **unusable in production** — the dev-only self-service path can never mint a row
     that reads as real money.
-- **Maker-checker (adopt).** Mirror the payments chain (`draft → admin_signed → [finance_checked] →
-  completed`) rather than inventing a second control model: a credit is *recorded* by one admin and
-  *confirmed* by another before it becomes spendable balance. In the interim arrangement the person
-  receiving the cash and the person recording it are the same, so this is the only control over the
-  step. Reuse the payments module's **stand-in rule** for the second signer (platform super) —
-  do not invent a new one. Pending the owner's confirmation of the second-signer question.
+- **✅ Sign-off: REUSE the payments chain (owner, 2026-07-26) — do not build a second control model.**
+  Adopt `draft → admin_signed → [finance_checked] → completed` and call the EXISTING
+  `payments.finance_check_required(organisation)` — do not reimplement or store the requirement.
+  A credit is **recorded+signed by a maker**, optionally **checked by finance** when the org has ≥1
+  active finance admin, then **countersigned by an approver** before it becomes spendable.
+  BrightPath runs the two-step degraded chain today (maker → approver; *"the checker is dark. It
+  only has maker and approver"*) and the check **arms itself retroactively** the moment a finance
+  admin is invited — including for credits already mid-chain. Inherits the **three-distinct-signers
+  pairwise** rule and the **stand-in rule** (super may fill one slot, never both), which is what
+  answers the second-signer question. **⚠ Currency rule: a change to the payment-run chain must
+  update this one in the same commit — they are deliberately one design.**
 - **Balance semantics:** only a **confirmed** credit counts toward spendable balance. A recorded-but-
   unconfirmed credit is visible to admins and invisible to the sponsor — so an unconfirmed credit can
   never be allocated to a student.
@@ -214,10 +219,9 @@ record with different provenance** (one `source` field + external reference) —
 money systems. See the decision record "Money is OFF-platform until the CLBG exists".
 
 **Owner decisions on P4:**
-1. **OPEN, but now leaning strongly YES — maker-checker.** In the interim arrangement the same
-   person receives the cash personally and records the credit, so a second signature is the only
-   control over that step. Sub-question: who signs second when Suresh is the only finance-capable
-   org admin? (The platform super as stand-in, mirroring the payment-run chain's stand-in rule.)
+1. **✅ ANSWERED 2026-07-26 — reuse the payments sign-off chain**, finance checker dormant until the
+   role is filled. See the scope bullet above and the decision record "The wallet credit reuses the
+   payments sign-off chain". No bespoke control model, no new second-signer rule.
 2. **✅ ANSWERED 2026-07-26 — the benefactor SELF-SERVES allocation.** They browse the anonymised, programme-scoped pool and fund students **on need**, never learning any identity (decision record: "Benefactor anonymity is absolute"). The org admin does **not** allocate on their behalf — no additional admin scope. The admin's only money action is crediting the wallet.
 3. **OPEN — One credit per bank transfer, or a running top-up ledger?** Affects reconciliation against the Foundation's bank account.
 
