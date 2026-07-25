@@ -160,8 +160,19 @@ Added 2026-07-26 after the owner described the actual Sabah funding flow: *benef
 - **Risk + mitigation:** *Risk:* this is the first path that puts real money into the system on an admin's say-so. *Mitigation:* two-person control, a mandatory external reference, and no reuse of the mock donation path.
 - **Complexity:** Medium–High (money-touching). ~12 files.
 
+**⚠ P4 IS THE PRIMARY FUNDING PATH, NOT AN EDGE CASE (owner, 2026-07-26).** BrightPath has no
+registered legal entity yet — a CLBG is with a company secretary, some months away. Until it exists,
+**every** sponsor pays into Suresh's personal account and he credits their wallet by hand: *"Real
+money is off the platform, but the consequences aren't."* Build it as a first-class audited flow.
+**Architectural instruction:** an admin-recorded credit and a future gateway donation are **the same
+record with different provenance** (one `source` field + external reference) — never two parallel
+money systems. See the decision record "Money is OFF-platform until the CLBG exists".
+
 **Owner decisions on P4:**
-1. **OPEN — Maker-checker, or single-admin with an audit log?** (Recommended: maker-checker.)
+1. **OPEN, but now leaning strongly YES — maker-checker.** In the interim arrangement the same
+   person receives the cash personally and records the credit, so a second signature is the only
+   control over that step. Sub-question: who signs second when Suresh is the only finance-capable
+   org admin? (The platform super as stand-in, mirroring the payment-run chain's stand-in rule.)
 2. **✅ ANSWERED 2026-07-26 — the benefactor SELF-SERVES allocation.** They browse the anonymised, programme-scoped pool and fund students **on need**, never learning any identity (decision record: "Benefactor anonymity is absolute"). The org admin does **not** allocate on their behalf — no additional admin scope. The admin's only money action is crediting the wallet.
 3. **OPEN — One credit per bank transfer, or a running top-up ledger?** Affects reconciliation against the Foundation's bank account.
 
