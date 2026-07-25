@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform programme layer P1a — the durable gift level (structural) — 2026-07-26
+
+First sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **Structural only —
+behaviour-neutral by construction, nothing reads the new column yet.** Migrations written but
+**NOT yet applied to prod** (migrate-first: apply, verify, then deploy).
+
+- **Added — `Programme`, the durable gift level** (`scholarship_programmes`). The hierarchy is now
+  Organisation → **Programme** → Year (intake) → the student's individual award. A Programme *is*
+  the gift ("the BrightPath Bursary", "the Sabah Bursary"), **one gift per programme** — it never
+  lapses, and each annual intake is a `ScholarshipCohort` beneath it. Carries organisation (PROTECT),
+  a unique slug, a trilingual name and `is_active`.
+- **Added — `ScholarshipCohort.programme` and `ScholarshipApplication.programme`**, both additive and
+  nullable. The application's copy is **denormalised from the cohort in `save()`**, mirroring
+  `owning_organisation` exactly, and both copies are now derived in a **single** query on the
+  uncached path (no extra query on hot paths). **Set-once**: moving a cohort to another gift never
+  silently re-homes an existing application, whose money and sponsor relationships hang off the
+  original programme.
+- **Added — migrations `0118` (schema) + `0119` (seed + backfill).** `0119` creates Programme #1
+  from the organisation's own seeded branding (so no wording changes) and points the existing cohort
+  and its 143 applications at it. The backfill is driven off the **cohort**, not the application's
+  own org copy, so a drifted row cannot pull its programme out of alignment. Both are reversible.
+  `0118` carries the **hand-written Postgres DDL** in its docstring — `sqlmigrate` is unusable here
+  (local SQLite emits a destructive-looking table rebuild for an AddField; prod Postgres is a plain
+  `ALTER TABLE ADD COLUMN`), per `docs/lessons.md`.
+- **Added — `test_programme_layer.py` (16 tests)**: model + organisation link, one org running
+  several gifts (the Sabah case), derivation via direct create *and* the real
+  `services.create_application` path, the uncached-relation branch, set-once, the safe-NULL bucket
+  for bare fixtures, backfill mechanism + idempotency, PROTECT both ways, and the **drift invariant**
+  — an application's programme must be run by the organisation it is fenced to.
+- **Unchanged by design — the organisation fence.** `_AdminBase._org_scoped` / `_org_allows` are
+  untouched; the fence-proof suite and the `FENCED_OR_EXEMPT` completeness map pass **unmodified**.
+  Programme is a narrowing *inside* the organisation wall, never a second wall. Document storage keys
+  by org **id**, so there is **no document re-keying**.
+- **Deferred deliberately** — rule defaults moving from cohort up to programme (behaviour-sensitive:
+  those columns feed the verification engine), cohort routing by programme (PF-1), and reviewer
+  programme scoping. See the roadmap.
+
 ## Institution must-fill Sprint 3 — sponsor surface parity — 2026-07-26
 
 Final sprint of `docs/plans/2026-07-25-institution-must-fill-roadmap.md`. Backend + a one-line

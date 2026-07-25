@@ -71,15 +71,38 @@ This is the cheapest this change will ever be.
 
 ## Sprint P1 — The Programme layer
 
-- **Goal:** Introduce `Programme` as the durable fund/project between Organisation and Year, re-home the flagship onto it, and make application routing programme-aware.
+**SPLIT 2026-07-26 into P1a (structural) and P1b (behaviour-sensitive).** The original single
+sprint mixed two very different risk profiles: creating the level and hanging existing data off it
+is provably behaviour-neutral, whereas moving the rule tunables up to the programme changes the
+inputs to the verification engine, and routing changes where a live applicant lands. Splitting
+keeps the foundation shippable without putting either of those in the same review.
+
+### P1a — Structural foundation — ✅ **CODE COMPLETE 2026-07-26, migrations NOT yet applied to prod**
+
+Delivered: `Programme` model (`scholarship_programmes`); `ScholarshipCohort.programme`;
+`ScholarshipApplication.programme` denormalised in `save()` (set-once, both copies derived in a
+single query on the uncached path); migrations `0118` (schema, with hand-written Postgres DDL in
+its docstring) + `0119` (seed Programme #1 from the org's own branding, backfill cohort + 143
+applications, both reversible); `tests/test_programme_layer.py` (16 tests). **Full suite green:
+4593 passed, 0 failed.** Fence-proof suite and `FENCED_OR_EXEMPT` map pass **unmodified**.
+Serializers use explicit field lists → **no API surface change**. No admin surface needed
+(cohorts were never in Django admin). CHANGELOG written.
+
+**▶ OWNER-GATED NEXT STEP:** apply `0118` + `0119` to prod **migrate-first** (before any deploy),
+using the DDL in `0118`'s docstring, then insert the two `django_migrations` rows. Verify:
+`scholarship_programmes` has 1 row; cohort `b40-2026` points at it; all 143 applications carry it.
+**Not applied by the agent — this is a prod DDL change.**
+
+### P1b — Rule defaults + routing + reviewer scoping (NOT started)
+
+- **Goal:** Move the rule tunables up to become programme-level defaults with per-intake overrides, make routing programme-aware, and add reviewer programme scoping.
 - **Scope:**
-  - New `Programme` model (org FK `PROTECT`, `code` unique, trilingual name, `is_active`; rule-default columns mirroring the cohort tunables, nullable).
-  - `ScholarshipCohort.programme` FK (nullable additive → backfill → tighten). Cohort tunables become **overrides**: nullable, resolved programme → cohort-override.
-  - `ScholarshipApplication` denormalises `programme` alongside the existing `owning_organisation`, set in `save()` from the cohort — extend the existing drift-guard test to cover both.
+  - Rule-default columns on `Programme` mirroring the cohort tunables; cohort tunables become **overrides** (nullable, resolved programme → cohort-override). **Behaviour-sensitive — these feed the verification engine.**
   - **PF-1 routing:** `resolve_open_cohort()` takes a programme (or an org+programme pair); the public open-check becomes programme-aware. No implicit "most recent open cohort anywhere".
-  - Seed: Programme #1 = "BrightPath Bursary" (flagship) under org #11; cohort `b40-2026` and all 143 applications backfilled to it.
   - Reviewer scoping: nullable `programme` on `PartnerAdmin`, **NULL = organisation-wide** (see decision record). Assignment lists filter by the application's programme when the reviewer is bound. `org_admin` / `finance` unaffected.
-- **Migrations:** 2–3 (new model + FKs, additive) + 1 data (seed/backfill). **Migrate-first**, per the project runbook.
+  - Also worth picking up: `management/commands/bursary_e2e.py:142` sets `cohort.owning_organisation` but not `programme` — harmless today (nullable, dev-only command) but it should set both once routing reads the column.
+- **Migrations:** 1–2 additive (tunable columns on `Programme`, `programme` on `PartnerAdmin`). **Migrate-first**, per the project runbook.
+- **Note:** Sabah does **not** need the rule-defaults half — a new programme's first intake can author its thresholds directly on its own cohort, which already carries every tunable. P1b's defaults earn themselves at Sabah's *second* intake.
 - **Test plan:** programme→cohort→application chain resolves; the drift guard catches a mismatched denormalised programme; routing sends an applicant to the named programme and **never** to another organisation's open cohort; a programme-bound reviewer sees only that programme's assignable cases while a NULL reviewer is unchanged; all 143 existing applications resolve to Programme #1; the org fence suite stays green untouched.
 - **Risk + mitigation:** *Risk:* the org fence is the proven wall and this adds a second dimension beside it. *Mitigation:* programme is a **narrowing inside** the org filter, never a replacement — `_org_scoped` / `_org_allows` keep their current semantics and gain no programme logic; programme filtering is applied on top, and the existing fence-proof suite must pass unmodified.
 - **How we know BrightPath still works:** one programme, one cohort, 143 applications — every query returns exactly what it does today; `is_open` stays false throughout.

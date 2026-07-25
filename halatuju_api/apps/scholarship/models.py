@@ -11,11 +11,72 @@ from django.utils import timezone
 from .family import PROFESSION_CHOICES
 
 
+class Programme(models.Model):
+    """A gift programme — THE DURABLE LEVEL of the platform hierarchy (2026-07-26).
+
+    Hierarchy: HalaTuju (platform) -> Organisation -> **Programme** -> Year (intake)
+    -> the student's individual award.
+
+    A Programme **IS** the gift ("the BrightPath Bursary", "the Sabah Bursary") — not a
+    container for one. **One gift per programme** (owner ruling; see decisions.md
+    "One gift per Programme", 2026-07-26). It is the level that NEVER LAPSES: students
+    join annually into the same programme, and each annual intake is a
+    ``ScholarshipCohort`` hanging beneath it.
+
+    What lives where:
+      * **Organisation** — branding, sender identity, staff, and THE SECURITY FENCE.
+      * **Programme**    — the gift itself: its rules and (from a later sprint) its fund.
+                           Rule DEFAULTS land here; today the tunables still live on the
+                           cohort, which is why this model carries none yet.
+      * **Year (cohort)** — the annual intake: open/closed, deadlines, per-intake overrides.
+
+    This is NOT a second security boundary. The organisation fence
+    (``_AdminBase._org_scoped`` / ``_org_allows``) is unchanged — programme is a
+    narrowing INSIDE that wall, never a replacement for it.
+
+    What the award is CALLED ("bursary" / "scholarship" / "assistance") is
+    per-ORGANISATION wording resolved through ``branding.py`` — never a property of this
+    model and never a behavioural switch. Every award is a GIFT, never a loan
+    (platform invariant, decisions.md 2026-07-26).
+    """
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        related_name='programmes',
+        help_text='The tenant organisation that runs this gift programme.',
+    )
+    code = models.CharField(
+        max_length=50, unique=True,
+        help_text="URL-safe slug, e.g. 'brightpath-flagship', 'brightpath-sabah'",
+    )
+    # Trilingual display name, mirroring the organisation's branding columns. A blank
+    # ms/ta falls back to _en at render time (the branding.py fallback convention).
+    name_en = models.CharField(max_length=200)
+    name_ms = models.CharField(max_length=200, blank=True, default='')
+    name_ta = models.CharField(max_length=200, blank=True, default='')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'scholarship_programmes'
+        ordering = ['organisation_id', 'code']
+
+    def __str__(self):
+        return f'{self.name_en} ({self.code})'
+
+
 class ScholarshipCohort(models.Model):
     """
-    A single application round. Holds the configurable shortlisting thresholds
-    and funding parameters so they can be tuned without code changes (the
+    A single application round — the YEAR (intake) level of the hierarchy: one annual
+    round of students entering a ``Programme``. Holds the configurable shortlisting
+    thresholds and funding parameters so they can be tuned without code changes (the
     shortlisting rules engine in Sprint 3 reads these).
+
+    NOTE (2026-07-26): this model historically did TWO jobs — the programme (rules,
+    funding envelope, eligibility) AND the intake year (``b40-2026``, ``year=2026``).
+    ``Programme`` above now owns the durable half. Moving the tunables up to become
+    programme-level DEFAULTS with per-intake overrides is deliberately a LATER sprint —
+    those columns feed the verification engine, so that change is behaviour-sensitive
+    and is kept out of the structural one.
     """
     # ── Tenant ownership (platform Sprint 1) ──────────────────────────────────
     # SOURCE OF TRUTH for "which organisation owns this programme". The
@@ -34,6 +95,17 @@ class ScholarshipCohort(models.Model):
                   '"move a cohort between organisations" flow MUST cascade the new value to '
                   'every one of that cohort.applications.owning_organisation (there is no DB '
                   'trigger — the drift guard test asserts they agree).',
+    )
+    # Platform programme layer (2026-07-26): the durable gift this intake belongs to.
+    # ``organisation`` above stays the SOURCE OF TRUTH for tenancy/security; this is the
+    # funding + rules level beneath it. Nullable for additive-migration safety and for
+    # bare test fixtures; prod is backfilled. programme.organisation must agree with
+    # owning_organisation — the drift guard test asserts it.
+    programme = models.ForeignKey(
+        'Programme', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='cohorts',
+        help_text='The gift programme this annual intake belongs to (platform '
+                  'programme layer). The programme never lapses; intakes cycle.',
     )
 
     code = models.CharField(
@@ -173,6 +245,17 @@ class ScholarshipApplication(models.Model):
         null=True, blank=True, related_name='owned_applications',
         help_text="Tenant organisation that owns this application (denormalised "
                   "from cohort.owning_organisation; set in save()).",
+    )
+    # Platform programme layer (2026-07-26): the gift programme this application is
+    # for — a DENORMALISED copy of cohort.programme, derived in save() exactly like
+    # owning_organisation above. The cohort remains the source of truth. Set-once, so a
+    # later cohort move never silently re-homes an existing application's money.
+    # NULL only for bare test fixtures whose cohort has no programme; prod is backfilled.
+    programme = models.ForeignKey(
+        'Programme', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='applications',
+        help_text="Gift programme this application belongs to (denormalised from "
+                  "cohort.programme; set in save()).",
     )
 
     # Per-application fields only. Person-level data (grades, household_income,
@@ -866,17 +949,30 @@ class ScholarshipApplication(models.Model):
         # on hot paths; else a single lightweight indexed lookup by cohort_id.
         # Stays None for a bare-cohort test fixture (cohort with no org) — a safe
         # degenerate bucket the fence still partitions correctly (=None → IS NULL).
-        if self.owning_organisation_id is None and self.cohort_id:
+        # Same derivation for the programme layer (2026-07-26): the gift this
+        # application belongs to. Both copies are read from the cohort in ONE query
+        # when the relation isn't already cached, so this adds no query on hot paths.
+        needs_org = self.owning_organisation_id is None
+        needs_programme = self.programme_id is None
+        if (needs_org or needs_programme) and self.cohort_id:
             cached_cohort = self._state.fields_cache.get('cohort')
             if cached_cohort is not None:
-                self.owning_organisation_id = cached_cohort.owning_organisation_id
+                if needs_org:
+                    self.owning_organisation_id = cached_cohort.owning_organisation_id
+                if needs_programme:
+                    self.programme_id = cached_cohort.programme_id
             else:
-                self.owning_organisation_id = (
+                derived = (
                     ScholarshipCohort.objects
                     .filter(pk=self.cohort_id)
-                    .values_list('owning_organisation_id', flat=True)
+                    .values_list('owning_organisation_id', 'programme_id')
                     .first()
                 )
+                if derived is not None:
+                    if needs_org:
+                        self.owning_organisation_id = derived[0]
+                    if needs_programme:
+                        self.programme_id = derived[1]
         super().save(*args, **kwargs)
 
     def stamp_first(self, field):
