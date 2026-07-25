@@ -125,7 +125,7 @@ draft run (PR-2026-08-01) and the Sprint-14 maker-checker chain runs through it 
 payment-run eligibility does not belong in the same sprint as a wallet rewrite. The wallet is the
 piece Sabah actually needs; payment-run scoping is reporting hygiene and can follow safely.
 
-### P2a — The sponsor wallet becomes per-programme — ✅ **CODE COMPLETE 2026-07-26** (migrations not yet applied)
+### P2a — The sponsor wallet becomes per-programme — ✅ **SHIPPED 2026-07-26 (migrations APPLIED + verified on prod)**
 
 Delivered: `Donation.programme`; `sponsor_balance(sponsor, programme)` with **programme required —
 no default**, so forgetting it is a `TypeError` rather than a silent cross-programme read;
@@ -137,7 +137,14 @@ Postgres DDL) + `0121` (backfill, with a no-money-moved invariant). New
 `tests/test_programme_funds.py` (11 tests) plus a **source guard** asserting no spend path consults
 the cross-programme total — the same class of mechanical check as the org-fence static guard.
 
-**▶ OWNER-GATED:** apply `0120` + `0121` migrate-first, then verify donation totals are unchanged.
+**✅ PROD MIGRATE-FIRST DONE 2026-07-26.** Pre-check captured the baseline (6 donations,
+**RM172,000.00**; last migration `0119`, no gap). Post-check confirmed the **no-money-moved
+invariant held exactly**: 6 donations / **RM172,000.00** after, **0 unattributed**, all under
+`brightpath-flagship`, **0** attributed to the wrong organisation, both `django_migrations` rows
+present. Retro: `docs/retrospective-2026-07-26-platform-p2a-funds-per-programme.md`.
+
+**▶ DEPLOY: still not required.** Schema is ahead of code on both P1a and P2a — the safe direction.
+The next functional push carries them together. Owner-gated, as every HalaTuju deploy is.
 
 ### P2b — Payment runs carry their programme (NOT started)
 
