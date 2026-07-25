@@ -191,6 +191,74 @@ def _name_aligns(a: set, b: set) -> bool:
     return a <= b or b <= a
 
 
+def sole_catalogue_institution(course_id: str) -> str:
+    """The catalogue's institution for a course offered at exactly ONE place — or '' when the
+    course has 0 or 2+ campuses / no course_id.
+
+    The counterpart to ``catalogue_institution`` below, for the case that function deliberately
+    can't serve: filling a BLANK. That one requires a hint because its job is ironing out OCR
+    variants of an already-recorded institution, and a hint-less match on a many-campus course
+    would silently pick a wrong campus (lessons #378 — an STPM bidang has ~250 schools). Neither
+    risk exists when the catalogue lists a single campus: there is no recorded value to conflict
+    with and no alternative to pick wrongly, so the catalogue simply *is* the answer. A student who
+    picked "Diploma Teknologi Animasi" (UB4213001) can only be going to Universiti Tun Hussein Onn
+    Malaysia — the apply-form picker just never recorded it (#48, owner 2026-07-25).
+
+    Strictly ``count == 1``: 2+ campuses must come from the offer letter via
+    ``catalogue_institution``, and 0 rows is a catalogue gap to fix in the catalogue (#132/#136),
+    never a guess here.
+    """
+    if not (course_id or '').strip():
+        return ''
+    from apps.courses.models import CourseInstitution
+    names = [n for n in CourseInstitution.objects
+             .filter(course_id=course_id)
+             .values_list('institution__institution_name', flat=True) if (n or '').strip()]
+    unique = {n.strip() for n in names}
+    return next(iter(unique)) if len(unique) == 1 else ''
+
+
+def offer_contradicts_course_institution(course_id: str, offer_institution: str) -> bool:
+    """True only when the offer letter names a place that is demonstrably NOT any campus of
+    ``course_id`` — i.e. the letter and the declared course disagree about WHERE.
+
+    Deliberately NOT "``catalogue_institution`` returned nothing". That function answers "can I
+    verify these are the same place?", and its '' covers two very different situations: *unverifiable*
+    (an acronym, an OCR variant, a campus suffix) and *contradictory* (a different institution
+    entirely). Treating unverifiable as contradictory would have blocked the very case this exists
+    for — #48's letter says "UTHM - KAMPUS (CAWANGAN PAGOH)" against the catalogue's "Universiti Tun
+    Hussein Onn Malaysia", which shares no distinctive token.
+
+    So this checks the institution's OWN identity three ways — distinctive-token alignment, the
+    parenthetical-stripped name, and the catalogue **acronym** — and reports a contradiction only
+    when the hint matches none of them for any campus. That is what separates #48 (acronym → same
+    place, fill it) from #11's Politeknik Ungku Omar against a UPNM asasi (nothing matches → a human
+    decides).
+
+    No campuses on file → False: a catalogue gap is not evidence of disagreement.
+    """
+    from .pathway_engine import distinctive_tokens
+    if not (course_id or '').strip() or not (offer_institution or '').strip():
+        return False
+    from apps.courses.models import CourseInstitution
+    rows = list(CourseInstitution.objects
+                .filter(course_id=course_id)
+                .values_list('institution__institution_name', 'institution__acronym'))
+    if not rows:
+        return False
+    hint_tokens = distinctive_tokens(offer_institution)
+    hint_norm = _norm_inst_name(offer_institution)
+    for name, acronym in rows:
+        if _name_aligns(hint_tokens, distinctive_tokens(name)):
+            return False
+        if hint_norm and _norm_inst_name(name or '') == hint_norm:
+            return False
+        acr = (acronym or '').strip().lower()
+        if acr and acr in hint_tokens:
+            return False
+    return True
+
+
 def catalogue_institution(course_id: str, hint: str = '') -> str:
     """The recommender catalogue's canonical institution name for a course_id — used ONLY to
     iron out OCR variants of the SAME institution ("…(POLITEKNIK PREMIER)", address tails,

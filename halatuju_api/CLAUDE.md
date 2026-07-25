@@ -524,6 +524,52 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-25)
 
+**✅ SHIPPED + PUSHED 2026-07-25 — Institution must-fill, Sprint 1:
+the institution gets its OWN writer.** Roadmap `docs/plans/2026-07-25-institution-must-fill-roadmap.md`
+(3 sprints, owner-approved); retro `docs/retrospective-2026-07-25-institution-must-fill-s1.md`;
+decisions ×2; lessons ×3. Backend only, **NO migration**, no verdict/band/award/payment behaviour
+touched — `chosen_programme.institution` is a stored DISPLAY fact.
+- **Why:** owner live review of #48 — a ticked Reporting Date beside `Institution —`. Root cause was
+  the **same bug the 2026-07-23 reporting-date sprint fixed, one fact lower in the same function**:
+  the institution was written at the BOTTOM of `autofill_pathway_from_offer`, below four pathway
+  guards, so #48's doubled-letter name OCR ("LAKSMITHAA") returned early and lost it. The apply-form
+  picker never records an institution (`{course_id, course_name, field_key}` only), so all 39 live
+  blanks are student picks with nothing to fall back on.
+- **`services.sync_institution_from_catalogue()`** — hoisted ABOVE every guard, mirroring
+  `sync_reporting_date_from_offer`. Sole-campus course → the catalogue (needs NO offer, so it serves
+  a student who has uploaded nothing); multi-campus → the letter's campus validated against the
+  course's campus list; matric → the catalogue college for the declared state. Never overwrites;
+  touches only the `institution` sub-key. **STPM is deliberately NOT resolved** (~250 near-identical
+  schools; laundering the declared school would attribute it to the letter — the #117(d) guard).
+- **`offer_pathway.sole_catalogue_institution()`** (hint-less, strictly `count == 1`) +
+  **`offer_contradicts_course_institution()`** — a REAL disagreement test (tokens / stripped name /
+  catalogue **acronym**), not "couldn't verify". The first cut spelled it as the negation of
+  `catalogue_institution` and rejected #48's own "UTHM - KAMPUS (CAWANGAN PAGOH)" — see lessons.
+- **The old tail block did TWO jobs**; now split — NORMALISING a drifted value stays in the tail,
+  FILLING a blank moved up. Caught by a pre-existing test when the first cut deleted the normaliser.
+- **NEW command `backfill_institution`** (report-only; `--apply`), grouping every blank by CAUSE
+  (`stpm`/`clash`/`catalogue_gap`/`multi_campus`/`unresolvable`). Its own command because
+  `backfill_offer_pathways` scans only offer-holders. Reads STORED `vision_fields` — never re-OCRs.
+- **Folded in:** the officer **Blockers card no longer shows at "Awaiting review"**
+  (`BLOCKER_BOX_STATUSES` → `['shortlisted']`; a submitted student is past the gate so it could only
+  read "Nothing outstanding" — owner). And `test_email_branding.py` read its golden in the PLATFORM
+  encoding → `UnicodeDecodeError` on any Windows dev box; pinned to UTF-8 (pre-existing, was holding
+  the suite red locally).
+- **4559 pytest** (was 4523; +29 new in `test_institution_fill.py`, every one of the five autofill
+  exits asserted separately) **+ 746 jest**; `makemigrations --check` clean.
+- **Deploy:** api + web rebuild (the blockers change is web). Code-only, NO migrate-first, no new
+  env vars, nothing student-facing changed.
+- **▶ OWNER-GATED DATA PASS (not run):** `python manage.py backfill_institution --apply` fills **11
+  rows** — live #16 #42 #48 #49 #74 #97 #122 #145, rejected #7 #40 #139. Held because it writes a
+  SPONSOR-FACING field on live records. Left for a human by design: 5 clashes (#11 #64 #86 #93 #113 —
+  a private/other institution on the letter vs a declared public course), 2 STPM (#94 #144), 2
+  catalogue gaps (#132 #136), 7 with no course pick at all.
+- **▶ NEXT — Sprint 2** (QC-accept gate on a filled institution, **ABSOLUTE** per owner D1, +
+  `AdminInstitutionView` entry box mirroring `AdminReportingDateView`, + retire the cockpit's
+  `pre_u_institution` display fallback). **Hard dependency: run the Sprint-1 data pass FIRST** or the
+  gate deadlocks live cases. **Sprint 3** (sponsor programme hyperlink + one ` · ` format everywhere
+  per owner D2 + catalogue rows for #132/#136) is independent.
+
 **✅ SHIPPED 2026-07-25 (web + one api-logic change, NO migration; commits `311bc956`, `fc3529df`,
 `35034192`, `f37db48d`) — Documents-tab kinder progressive disclosure + income shown "any one way".**
 Live-review UX arc (retro `docs/retrospective-2026-07-25-documents-tab-kinder.md`; decisions ×3). The

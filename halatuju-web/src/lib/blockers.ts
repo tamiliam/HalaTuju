@@ -10,9 +10,13 @@
  * Pure functions only (no React), so they unit-test in a plain node env.
  */
 
-// Statuses whose cockpit shows the Blockers card. `profile_complete` is included by owner
-// decision (2026-07-22) and may be dropped later — delete the one entry, nothing else changes.
-export const BLOCKER_BOX_STATUSES = ['shortlisted', 'profile_complete'] as const
+// Statuses whose cockpit shows the Blockers card. SHORTLISTED only: the card answers "what does
+// this student still owe before they can submit?", and a student at `profile_complete` (Awaiting
+// review) has already submitted — the gate is behind them, so the box could only ever read
+// "Nothing outstanding", which is deadweight on the screen (owner 2026-07-25, retiring the
+// `profile_complete` entry the 2026-07-22 note left droppable). The nudge button the card hosts is
+// pre-submission by definition too (`nudge.is_applicable`), so nothing is lost with it.
+export const BLOCKER_BOX_STATUSES = ['shortlisted'] as const
 
 export function showsBlockerBox(status: string | null | undefined): boolean {
   return (BLOCKER_BOX_STATUSES as readonly string[]).includes(status || '')

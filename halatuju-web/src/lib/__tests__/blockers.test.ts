@@ -8,18 +8,20 @@ import {
 } from '@/lib/blockers'
 
 describe('showsBlockerBox', () => {
-  test('shows for shortlisted and profile_complete only', () => {
+  test('shows for shortlisted only', () => {
     expect(showsBlockerBox('shortlisted')).toBe(true)
-    expect(showsBlockerBox('profile_complete')).toBe(true)
-    for (const s of ['interviewing', 'interviewed', 'recommended', 'awarded', 'active', 'declined', '']) {
+    // profile_complete = "Awaiting review": the student has SUBMITTED, so the submission gate is
+    // behind them and the card could only read "Nothing outstanding" (owner 2026-07-25).
+    for (const s of ['profile_complete', 'interviewing', 'interviewed', 'recommended', 'awarded',
+      'active', 'declined', '']) {
       expect(showsBlockerBox(s)).toBe(false)
     }
     expect(showsBlockerBox(null)).toBe(false)
     expect(showsBlockerBox(undefined)).toBe(false)
   })
 
-  test('the gate is driven by one editable list (profile_complete is droppable)', () => {
-    expect([...BLOCKER_BOX_STATUSES]).toEqual(['shortlisted', 'profile_complete'])
+  test('the gate is driven by one editable list', () => {
+    expect([...BLOCKER_BOX_STATUSES]).toEqual(['shortlisted'])
   })
 })
 

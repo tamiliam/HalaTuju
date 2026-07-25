@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## Institution is a must-fill fact — Sprint 1: it gets its own writer — 2026-07-25
+
+Sprint 1 of `docs/plans/2026-07-25-institution-must-fill-roadmap.md`, off owner live review of #48
+("Institution is a must fill, as this is required in the sponsor's portal as well"). Backend only,
+**no migration**, no verdict/band/award/payment behaviour touched — this is a stored display fact.
+
+- **Added — `services.sync_institution_from_catalogue()`, the institution's own writer.** WHERE a
+  student studies used to be written at the BOTTOM of `autofill_pathway_from_offer`, below four
+  guards about the PATHWAY, so any letter with a name/IC wobble, junk in a slot, or a genuine
+  programme clash lost the institution as collateral damage. It is now hoisted ABOVE every guard —
+  the same fix `sync_reporting_date_from_offer` got on 2026-07-23, and the reason #48 displayed a
+  ticked reporting date beside an empty Institution: one letter, one function, one fact hoisted and
+  the other left behind. Resolution order: a course offered at exactly ONE campus → the catalogue
+  (needs no offer at all, so it also serves a student who has uploaded nothing); multi-campus → the
+  letter's institution validated against the course's campus list; MATRIC with no course_id → the
+  catalogue college for the declared state. Never overwrites a value on file; touches only the
+  `institution` sub-key, so nothing is re-attributed to a letter.
+- **Added — `offer_pathway.sole_catalogue_institution()`**: the hint-less answer, strictly at
+  `count == 1`. `catalogue_institution` requires a hint by design (it irons out OCR variants of an
+  already-recorded name, and a hint-less match over a many-campus course would pick a wrong campus).
+  Neither risk exists when the catalogue lists a single campus — there is nothing to conflict with
+  and nothing to pick wrongly.
+- **Added — `offer_pathway.offer_contradicts_course_institution()`**: a real disagreement test, not
+  "couldn't verify". It checks the institution's identity three ways — distinctive tokens, the
+  parenthetical-stripped name, and the catalogue **acronym** — so #48's "UTHM - KAMPUS (CAWANGAN
+  PAGOH)" reads as the same place as "Universiti Tun Hussein Onn Malaysia" (shares no distinctive
+  token; matches on the acronym) while #11's Politeknik Ungku Omar against a UPNM asasi does not.
+  When the student's own letter names a place that is no campus of their declared course, the writer
+  **abstains**: the catalogue's answer would be consistent with the declaration and wrong about the
+  student, on a sponsor-facing field. 5 live rows are in that class (#11 #64 #86 #93 #113) and stay a
+  human decision, which the pathway verdict already flags.
+- **Changed — the two jobs bundled in that old block are now split**: NORMALISING an institution
+  already on file (display tidying, still in `autofill_pathway_from_offer`'s tail, where a
+  freshly-written course_id can be resolved) vs FILLING a blank one (the must-fill, hoisted). Mixing
+  them is how the must-fill ended up under the guards.
+- **Added — `backfill_institution` management command** (report-only by default, `--apply` to
+  persist). Its own command because `backfill_offer_pathways` walks only applications that HAVE an
+  offer letter — the sole-campus fill does not need one, so that scan would miss exactly the students
+  it serves. Groups every remaining blank by CAUSE (`stpm` / `clash` / `catalogue_gap` /
+  `multi_campus` / `unresolvable`) so what a human must act on is named, not just counted. Reads
+  ALREADY-STORED `vision_fields` only — never re-OCRs.
+- **Fixed — `test_email_branding.py` read its golden fixture in the platform encoding**, so the
+  Malay/Tamil bytes were unreadable on a Windows dev box (`UnicodeDecodeError`, cp1252) while passing
+  on CI. Pinned to UTF-8 both ways. Pre-existing, unrelated to this sprint, but it was holding the
+  suite red locally.
+- **Also folded in — the officer Blockers card no longer shows at "Awaiting review"**
+  (`BLOCKER_BOX_STATUSES` → `['shortlisted']`, retiring the entry the 2026-07-22 note left
+  droppable). A student at `profile_complete` has already submitted, so the submission gate is behind
+  them and the card could only ever read "Nothing outstanding" (owner: "more deadweight"). The nudge
+  button it hosts is pre-submission by definition, so nothing is lost with it.
+- **29 new pytest** (`test_institution_fill.py`) — every one of the five `autofill_pathway_from_offer`
+  exits asserted separately, plus the acronym/contradiction/junk/wrong-person cases and the command's
+  by-cause grouping. The five guard tests were **verified to fail** against the un-hoisted placement.
+  **4559 pytest (full backend) + 746 jest.**
+- **▶ NOT DONE in this sprint:** the data pass over the 11 fillable existing rows (owner-gated — it
+  writes a sponsor-facing field on live records), the QC gate + reviewer entry box (Sprint 2), and
+  the sponsor hyperlink + punctuation + catalogue rows for #132/#136 (Sprint 3).
+
 ## Cockpit records: a decline names both deciders; the witness card settles — 2026-07-25
 
 Two small-lane fixes off an owner live review of the officer cockpit. FE only, no migration, no

@@ -1324,6 +1324,99 @@ def sync_reporting_date_from_offer(application, offer=None):
     return True
 
 
+def sync_institution_from_catalogue(application, offer=None, offer_check=None):
+    """Fill a BLANK ``chosen_programme.institution`` — WHERE the student will study.
+
+    THE single owner of that copy, and its own function for the same reason
+    ``sync_reporting_date_from_offer`` is: the institution is an independent fact that has nothing
+    to do with settling which PATHWAY a student is on, yet it used to be written at the bottom of
+    ``autofill_pathway_from_offer``, below four guards that abandon on a name/IC/junk/pathway
+    disagreement (lessons #11 — "a fact riding as a passenger in a function whose real job is
+    something else inherits every one of that function's exits"). #48 is the proof: one letter, one
+    function, the date hoisted in 2026-07-23 and the institution left behind, so the cockpit showed
+    a ticked reporting date beside an empty Institution.
+
+    It matters because the field is sponsor-facing and its blank is INVISIBLE, not ugly:
+    ``card_display.resolve_institution`` returns '' and the sponsor FE renders the line only when
+    truthy, so an unfilled institution doesn't read as "—" to a sponsor — the line vanishes from the
+    card. Owner 2026-07-25: it is a must-fill.
+
+    Resolution order, most authoritative first — each already-sanctioned machinery, nothing new:
+      1. the course is offered at exactly ONE campus → the catalogue IS the answer
+         (``sole_catalogue_institution``; needs no offer at all, so it fixes a student who has
+         uploaded nothing yet);
+      2. multi-campus → the OFFER letter's institution, validated against the catalogue's campus
+         list (``catalogue_institution``) — used ONLY when the letter is the applicant's own
+         (name/IC not mismatched), so a wrong-person letter can never name a campus;
+      3. MATRIC with no course_id → the catalogue college for the declared state, via the
+         ``matric-<track>`` virtual course (12 state-unique colleges → a safe unique match).
+
+    Deliberately NOT resolved: **STPM**. Its ~250 near-identical school names make a catalogue match
+    unsafe (lessons #378), and laundering the student's own declared school into ``chosen_programme``
+    would attribute their answer to the offer letter — the #117(d) guard. A blank STPM institution is
+    a human's to fill, not this function's to guess.
+
+    Never overwrites a non-blank value (a stored institution is the caller's to protect; junk is
+    fixed at source, per ``card_display``). Only the ``institution`` sub-key is touched —
+    ``course_id``/``course_name``/``source`` are preserved, so nothing is re-attributed to the offer.
+    Idempotent. Returns True when it wrote.
+    """
+    from .models import ApplicantDocument
+    from .pathway_engine import student_offer_check
+    from . import offer_pathway as op
+
+    cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
+    if (cp.get('institution') or '').strip():
+        return False                      # already recorded — never overwrite
+
+    cid = (cp.get('course_id') or '').strip()
+
+    # Read the letter once (the caller usually already has). Needed even for the sole-campus case,
+    # because a letter that CONTRADICTS the declared course is a stop — see below.
+    if offer_check is None:
+        if offer is None:
+            offer = (ApplicantDocument.objects.filter(
+                        application=application, doc_type='offer_letter',
+                        superseded_at__isnull=True)
+                     .order_by('-uploaded_at').first())
+        offer_check = student_offer_check(offer) if offer is not None else {}
+    wrong_person = (offer_check.get('name') == 'mismatch'
+                    or offer_check.get('ic') == 'mismatch')
+    offer_inst = '' if wrong_person else (offer_check.get('institution') or '').strip()
+    # Junk in the institution slot (a leaked clause number "2.5." / a 'Tarikh' line — #47/#125) is
+    # not an institution and must not be read as disagreeing with anything.
+    from . import card_display
+    if offer_inst and (card_display.looks_like_clause_number(offer_inst)
+                       or card_display.looks_like_date(offer_inst)):
+        offer_inst = ''
+
+    resolved = op.sole_catalogue_institution(cid) if cid else ''
+    if resolved and op.offer_contradicts_course_institution(cid, offer_inst):
+        # The student's own letter names an institution that is NOT a campus of the course they
+        # declared (#11 Politeknik Ungku Omar vs a UPNM asasi, #64 i-CATS vs UPM, #86 Cyberjaya vs
+        # UMK, #113 UTAR vs UMK, #93 UniMAIWP vs UMK — every one a private/other place against a
+        # declared public course). The catalogue's answer would be *consistent with the declaration*
+        # and *wrong about the student*, on a SPONSOR-FACING field. Abstain: the pathway verdict
+        # already raises this as a clash for a human to settle, and `backfill_institution` lists it.
+        resolved = ''
+    elif not resolved:
+        if cid and offer_inst:
+            # Multi-campus: the letter names the campus, the catalogue validates it is a campus OF
+            # THIS course (unique match) and supplies the canonical casing.
+            resolved = op.catalogue_institution(cid, offer_inst)
+        elif not cid and (application.chosen_pathway or '').strip().lower() == 'matric':
+            track = (application.pre_u_track or '').strip().lower()
+            vc = op.preu_course_id('matric', track)
+            hint = offer_inst or (application.pre_u_institution or '').strip()
+            resolved = op.catalogue_institution(vc, hint) if (vc and hint) else ''
+
+    if not resolved:
+        return False
+    application.chosen_programme = {**cp, 'institution': resolved}
+    application.save(update_fields=['chosen_programme'])
+    return True
+
+
 def set_reporting_date_by_officer(application, admin, value):
     """Record a reporting date an officer established by hand — the fallback for a letter that
     carries no readable date (owner 2026-07-23).
@@ -1384,9 +1477,17 @@ def autofill_pathway_from_offer(application):
     # silently turn a real update into a reported no-op.
     date_written = sync_reporting_date_from_offer(application, offer=offer)
     chk = student_offer_check(offer)
+    # SECOND, also unconditionally: WHERE the student studies is likewise independent of settling
+    # the pathway, and used to be written below these same guards — which is how #48 ended up with
+    # a ticked reporting date and an empty Institution. sync_institution_from_catalogue owns the
+    # copy now (it does its own wrong-person check before using the letter as a campus hint), so it
+    # runs above every `return` below. Folded into this function's return value for the same
+    # reason the date is: the value means "did I write anything".
+    inst_written = sync_institution_from_catalogue(application, offer=offer, offer_check=chk)
+    wrote_early = date_written or inst_written
     # Wrong-person letter (name OR IC clash) → never adopt.
     if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
-        return date_written
+        return wrote_early
     prog = (chk['programme'] or '').strip()
     inst = (chk['institution'] or '').strip()
     # A bare numbered-clause header ("2.4."/"2.5.") leaked from an offer's section numbering (#47)
@@ -1398,11 +1499,11 @@ def autofill_pathway_from_offer(application):
     if inst and card_display.looks_like_clause_number(inst):
         inst = ''
     if not prog and not inst:
-        return date_written  # nothing readable to SETTLE — but the date may still have landed
+        return wrote_early  # nothing readable to SETTLE — but date/institution may have landed
     # A genuine clash with a SPECIFIC declared programme is the confirm query's job, not a
     # silent overwrite.
     if chk['pathway'] == 'mismatch':
-        return date_written
+        return wrote_early
 
     cp = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     locked = bool(cp.get('course_id')) and application.pathway_certainty == 'sure'
@@ -1498,29 +1599,37 @@ def autofill_pathway_from_offer(application):
             application.pathway_certainty = 'sure'
             fields.append('pathway_certainty')
 
-    # Single-source-of-truth: a catalogue-linked programme's institution name comes from the
-    # recommender CATALOGUE (course_id → Institution), not the offer letter — so OCR variants
-    # are ironed out and the bursary can't disagree with the recommender. Runs regardless of
-    # lock state; only the institution sub-key is touched (course_id / course_name preserved).
+    # Single-source-of-truth for a catalogue-linked programme's institution NAME: the recommender
+    # CATALOGUE (course_id → Institution), not the offer letter — so OCR variants ("POLITEKNIK
+    # SEBERANG PERAI (POLITEKNIK PREMIER)") are ironed out and the bursary can't disagree with the
+    # recommender. Runs regardless of lock state; only the institution sub-key is touched.
+    #
+    # Two DIFFERENT jobs, deliberately split (they used to be one block, which is how the must-fill
+    # ended up below the guards):
+    #   • NORMALISING an institution already on file — display tidying, stays here;
+    #   • FILLING a blank one — the must-fill, owned by sync_institution_from_catalogue() and called
+    #     at the TOP of this function, above every guard.
+    # The fill is attempted once more here because the `not locked` branch above may just have
+    # written a fresh course_id, and a course's institution can only be resolved once it exists.
     cp_now = application.chosen_programme if isinstance(application.chosen_programme, dict) else {}
     cid_now = (cp_now.get('course_id') or '').strip()
-    if cid_now:
-        # Disambiguate a multi-campus course against the OFFER's institution when the stored
-        # one is blank (the very case we want to fill) — the offer is the authoritative source.
-        hint = (cp_now.get('institution') or '').strip() or (chk.get('institution') or '').strip()
-        canon_inst = op.catalogue_institution(cid_now, hint)
-        if canon_inst and canon_inst != (cp_now.get('institution') or ''):
-            cp2 = dict(cp_now)
-            cp2['institution'] = canon_inst
-            application.chosen_programme = cp2
+    inst_now = (cp_now.get('institution') or '').strip()
+    if cid_now and inst_now:
+        canon_inst = op.catalogue_institution(cid_now, inst_now)
+        if canon_inst and canon_inst != inst_now:
+            application.chosen_programme = {**cp_now, 'institution': canon_inst}
             if 'chosen_programme' not in fields:
                 fields.append('chosen_programme')
+    elif cid_now:
+        if sync_institution_from_catalogue(application, offer=offer, offer_check=chk):
+            wrote_early = True    # it saved itself; don't re-add chosen_programme to `fields`
 
-    # The reporting date is NOT synced here any more — sync_reporting_date_from_offer() runs at
-    # the top of this function, before the guards below could skip it. See its docstring.
+    # Neither the reporting date nor the must-fill institution is synced at the BOTTOM of this
+    # function any more — sync_reporting_date_from_offer() and sync_institution_from_catalogue()
+    # both run at the top, above the guards that used to skip them. See their docstrings.
 
     if not fields:
-        return date_written
+        return wrote_early
     application.save(update_fields=fields)
     return True
 

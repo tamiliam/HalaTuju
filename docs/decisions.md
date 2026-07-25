@@ -1,5 +1,56 @@
 # Architectural Decisions — HalaTuju
 
+## The institution is SNAPSHOT into `chosen_programme`, not resolved at read time — 2026-07-25
+**Decision:** `chosen_programme.institution` is filled by a WRITER
+(`services.sync_institution_from_catalogue`) and stored. The read-time campus fallback stays
+POLY-only (`offer_pathway.poly_institution_from_live_offer`, the sanctioned 2026-07-17 exception) and
+is deliberately NOT generalised.
+
+**Alternatives considered:** (1) Widen the poly read-time fallback to every multi-campus tertiary
+course, so display never waits for a re-run. (2) Resolve the institution live from `course_id` on
+every read. (3) Snapshot it at capture (chosen).
+
+**Rationale:** The 2026-06-12 decision "B40 applications snapshot the chosen course" makes an
+application a *historical record*: no B40 view re-reads the live catalogue by the stored `course_id`.
+Its Revisit clause names this exact case — "if apply-time course facts (duration/**institution**/
+level) must be preserved verbatim, then snapshot those 2–3 fields into `chosen_programme` at capture,
+rather than relying on the live link." Widening live reads would have deepened a drift the earlier
+decision explicitly warned against, and would leave a sponsor-facing value changing under a catalogue
+refresh. Writing it once also means the value can be audited, reported on by cause, and gated at QC
+(Sprint 2) — none of which a read-time derivation supports.
+
+**Trade-offs:** An existing blank needs a backfill pass (`backfill_institution`), where a read-time
+fallback would have been retroactive for free. A catalogue correction after the snapshot does not
+propagate — the same trade-off the snapshot decision already accepted for the course name.
+
+**Revisit if:** a case appears where the stored institution must track a catalogue correction (then
+add a clearly-labelled "current — for reference" read, never convert the snapshot).
+
+## A blank institution is filled from a sole-campus course; a contradicting letter ABSTAINS — 2026-07-25
+**Decision:** Filling a blank `chosen_programme.institution` is allowed with **no offer letter at
+all** when the declared course has exactly ONE campus in the catalogue. But when the student's own
+letter names a place that is demonstrably not a campus of that course, the writer abstains and the
+case is reported for a human (`backfill_institution` → `clash`).
+
+**Alternatives considered:** (1) Require a hint always (status quo — leaves every apply-form pick
+blank forever, since the picker records no institution). (2) Fill from the sole campus
+unconditionally. (3) Fill from the sole campus unless the letter contradicts it (chosen).
+
+**Rationale:** For a single-campus course there is nothing to conflict with and no wrong campus to
+pick, so the catalogue simply *is* the answer — that is what makes a hint-less fill safe, in contrast
+to the ~250-school STPM case the hint requirement exists for. But the field is sponsor-facing, and 5
+live records (#11 #64 #86 #93 #113) declare a public course while holding an offer from a private or
+other institution; there the catalogue's answer would be consistent with the DECLARATION and wrong
+about the STUDENT. Filling it would publish a confident falsehood; abstaining leaves the existing
+pathway-clash flag to do its job.
+
+**Trade-offs:** Those 5 stay blank until a human acts, and a sponsor would see no institution line
+for them (the FE omits it) — accepted, because a missing fact beats a wrong one. STPM pre-U is
+likewise left to a human (see `sync_institution_from_catalogue`).
+
+**Revisit if:** the clash class grows beyond a handful, or the offer parser becomes reliable enough
+that the letter can be treated as authoritative over the declaration.
+
 ## eWallet activation is ADVISORY on payment runs, not a gate — 2026-07-24
 **Decision:** A payable student's eWallet activation status is surfaced (a "not yet activated" chip
 on the payment run) but never blocks the run. Activation lives only in the owner's manual relay-sheet

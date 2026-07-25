@@ -213,12 +213,17 @@ def test_email_branding_golden():
 
     if os.environ.get('UPDATE_EMAIL_GOLDEN'):
         GOLDEN.parent.mkdir(parents=True, exist_ok=True)
+        # encoding pinned: the fixture holds Malay + Tamil copy, and Path.write_text/read_text
+        # default to the PLATFORM encoding — cp1252 on a Windows dev box, which cannot even read
+        # this file back (UnicodeDecodeError at the first non-Latin byte). The bytes must not depend
+        # on which machine runs the suite.
         GOLDEN.write_text(
-            json.dumps(captured, ensure_ascii=False, indent=2, sort_keys=True) + '\n')
+            json.dumps(captured, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+            encoding='utf-8')
         pytest.skip('regenerated the golden fixture')
 
     assert GOLDEN.exists(), 'golden fixture missing — run once with UPDATE_EMAIL_GOLDEN=1'
-    golden = json.loads(GOLDEN.read_text())
+    golden = json.loads(GOLDEN.read_text(encoding='utf-8'))
 
     # Coverage stays complete: a new/removed spec must be a deliberate golden update.
     assert set(captured) == set(golden), (
