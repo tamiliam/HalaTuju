@@ -171,6 +171,27 @@ The next functional push carries them together. Owner-gated, as every HalaTuju d
 
 ## Sprint P4 — Org-admin wallet credit (off-platform gift)
 
+**SPLIT 2026-07-26 into P4a (record + chain) and P4b (endpoint + statement).**
+
+### P4a — the credit record and its sign-off chain — ✅ **CODE COMPLETE 2026-07-26** (migrations not applied)
+
+`Donation` gains `source` / `external_reference` and the chain (`draft → admin_signed →
+[finance_checked] → confirmed`), driven by `sponsorship.record_admin_credit` /
+`sign_admin_credit` / `finance_check_admin_credit` / `confirm_admin_credit`. Calls the EXISTING
+`payments.finance_check_required()` — so retroactive arming and graceful degradation are
+inherited, not reimplemented, and both are pinned by tests. Only a `confirmed` credit raises
+spendable balance. Defaults (`legacy` / `confirmed`) leave every existing balance unchanged, so
+**no data migration**. Migration `0124`. 19 tests + two source guards. Full suite 4635 green.
+
+### P4b — endpoint + programme-grouped statement (NOT started)
+
+The admin HTTP surface to drive the chain, and `sponsor_statement` grouped by programme (it
+already renders both ledgers). **This is what actually unblocks recording the RM100,000** — P4a
+built the machinery, P4b is the way to drive it. Returns (lapsed/cancelled allocations) must show
+as their own entries, not a silently shrinking total.
+
+### Original P4 scope (kept for reference)
+
 **Re-scoped 2026-07-26** — see the ⚠ box below. This is **not** an accommodation for one benefactor;
 it is how *every* sponsor's money enters the platform until BrightPath's CLBG is registered.
 

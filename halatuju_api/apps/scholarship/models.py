@@ -1603,6 +1603,59 @@ class Donation(models.Model):
     reference = models.CharField(max_length=100, blank=True, default='mock')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # ── Provenance + sign-off (P4, 2026-07-26) ────────────────────────────────────
+    # ONE record, different provenance — an admin-recorded credit today and a gateway
+    # donation post-CLBG are the same row with a different `source`, never two parallel
+    # money systems (decisions.md, "Money is OFF-platform until the CLBG exists").
+    SOURCE_LEGACY = 'legacy'                # pre-P4 rows; provenance not recorded
+    SOURCE_ADMIN = 'admin_recorded'         # off-platform gift, keyed in by an org admin
+    SOURCE_GATEWAY = 'gateway'              # paid through the platform (post-CLBG)
+    SOURCE_MOCK = 'mock'                    # dev/self-service stub — never real money
+    SOURCES = [
+        (SOURCE_LEGACY, 'Legacy'), (SOURCE_ADMIN, 'Admin-recorded'),
+        (SOURCE_GATEWAY, 'Gateway'), (SOURCE_MOCK, 'Mock'),
+    ]
+    source = models.CharField(max_length=20, choices=SOURCES, default=SOURCE_LEGACY)
+    # The bank-transfer reference. MANDATORY for an admin-recorded credit — it is the only
+    # thread back to real money while the cash sits in an account the platform cannot see,
+    # and what lets each credit reconcile 1:1 with a line on the bank statement (owner:
+    # "one row per bank transfer").
+    external_reference = models.CharField(max_length=120, blank=True, default='')
+
+    # Sign-off chain — DELIBERATELY the same shape as PaymentRun's
+    # (`draft → admin_signed → [finance_checked] → confirmed`), and the finance step is
+    # likewise CONDITIONAL and never stored: payments.finance_check_required(organisation)
+    # is evaluated live, so appointing a finance admin arms the check even for a credit
+    # already mid-chain. ⚠ A change to the payment-run chain must update this one in the
+    # same commit — they are one design (decisions.md).
+    STATUS_DRAFT = 'draft'
+    STATUS_ADMIN_SIGNED = 'admin_signed'
+    STATUS_FINANCE_CHECKED = 'finance_checked'
+    STATUS_CONFIRMED = 'confirmed'
+    STATUS_CANCELLED = 'cancelled'
+    STATUSES = [
+        (STATUS_DRAFT, 'Draft'), (STATUS_ADMIN_SIGNED, 'Admin signed'),
+        (STATUS_FINANCE_CHECKED, 'Finance checked'), (STATUS_CONFIRMED, 'Confirmed'),
+        (STATUS_CANCELLED, 'Cancelled'),
+    ]
+    # Default 'confirmed': money that arrived by gateway/legacy IS confirmed by arrival.
+    # ONLY the admin-recorded path opens at 'draft' — see sponsorship.record_admin_credit,
+    # which is the sole creator of a SOURCE_ADMIN row (asserted by a source guard test).
+    status = models.CharField(max_length=20, choices=STATUSES, default=STATUS_CONFIRMED)
+    recorded_by = models.CharField(max_length=200, blank=True, default='')
+    recorded_at = models.DateTimeField(null=True, blank=True)
+    finance_checked_by = models.CharField(max_length=200, blank=True, default='')
+    finance_checked_at = models.DateTimeField(null=True, blank=True)
+    confirmed_by = models.CharField(max_length=200, blank=True, default='')
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def is_spendable(self):
+        """Only a CONFIRMED credit raises spendable balance. A recorded-but-unconfirmed
+        credit is visible to admins and invisible to the sponsor, so it can never be
+        allocated to a student before the second signature."""
+        return self.status == self.STATUS_CONFIRMED
+
     class Meta:
         db_table = 'sponsor_donations'
         ordering = ['-created_at']

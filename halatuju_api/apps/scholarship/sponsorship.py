@@ -20,7 +20,7 @@ from . import pool
 logger = logging.getLogger(__name__)
 from .emails import (send_award_confirmed_email, send_award_offer_email,
                      send_award_offer_sign_email)
-from .models import Programme, Sponsorship, SponsorProfile
+from .models import Donation, Programme, Sponsorship, SponsorProfile
 from .services import is_minor, record_consent
 from .vircle import raise_setup_task
 
@@ -50,12 +50,124 @@ def sponsor_balance(sponsor, programme):
     cross-programme DISPLAY figure use ``sponsor_available_total`` — never for a spend
     decision.
     """
-    donated = (sponsor.donations.filter(programme=programme)
+    donated = (sponsor.donations
+               .filter(programme=programme, status=Donation.STATUS_CONFIRMED)
                .aggregate(s=Sum('amount'))['s'] or Decimal('0'))
     held = (sponsor.sponsorships
             .filter(status__in=Sponsorship.HOLDING, application__programme=programme)
             .aggregate(s=Sum('amount'))['s'] or Decimal('0'))
     return donated - held
+
+
+class CreditError(Exception):
+    """Raised by the wallet-credit chain with a machine code for the view."""
+    def __init__(self, code, message=''):
+        self.code = code
+        super().__init__(message or code)
+
+
+@transaction.atomic
+def record_admin_credit(*, sponsor, programme, amount, external_reference, recorded_by):
+    """Record an OFF-PLATFORM gift into a sponsor's programme wallet (P4).
+
+    **This is the sole creator of a ``source='admin_recorded'`` Donation** — a source guard
+    test asserts nothing else creates one, so an unconfirmed credit can never appear by a
+    side door. The row opens at ``draft`` and is NOT spendable until the chain completes.
+
+    Context: until BrightPath's CLBG is registered every sponsor pays into a personal
+    account and an org admin keys the credit in here — *"real money is off the platform,
+    but the consequences aren't"*. ``external_reference`` (the bank-transfer ref) is
+    therefore mandatory: it is the only thread back to the money, and it is what makes each
+    credit reconcile 1:1 with a bank-statement line (owner: one row per bank transfer).
+    """
+    if amount is None or amount <= 0:
+        raise CreditError('invalid_amount')
+    if not (external_reference or '').strip():
+        raise CreditError('external_reference_required')
+    if programme is None:
+        raise CreditError('programme_required')
+    if not _is_accepted_into(sponsor, programme):
+        # A credit into a gift the sponsor was never accepted into would be money they
+        # could not spend — and a sign the wrong sponsor or programme was picked.
+        raise CreditError('sponsor_not_in_programme')
+    return Donation.objects.create(
+        sponsor=sponsor, programme=programme, amount=amount,
+        source=Donation.SOURCE_ADMIN, external_reference=external_reference.strip(),
+        reference=external_reference.strip(),
+        status=Donation.STATUS_DRAFT,
+        recorded_by=recorded_by, recorded_at=timezone.now(),
+    )
+
+
+def _is_accepted_into(sponsor, programme):
+    from .models import SponsorProgrammeMembership
+    return SponsorProgrammeMembership.objects.filter(
+        sponsor=sponsor, programme=programme, status='approved').exists()
+
+
+def _distinct_signer(credit, signer, *fields):
+    """Three-distinct-signers, pairwise — the payments chain's rule, reused verbatim."""
+    for f in fields:
+        if (getattr(credit, f) or '').strip().lower() == (signer or '').strip().lower():
+            raise CreditError('signer_not_distinct')
+
+
+@transaction.atomic
+def sign_admin_credit(*, credit, signer):
+    """The MAKER's signature: ``draft → admin_signed``."""
+    if credit.status != Donation.STATUS_DRAFT:
+        raise CreditError('bad_state')
+    credit.status = Donation.STATUS_ADMIN_SIGNED
+    credit.recorded_by = signer
+    credit.recorded_at = credit.recorded_at or timezone.now()
+    credit.save(update_fields=['status', 'recorded_by', 'recorded_at'])
+    return credit
+
+
+@transaction.atomic
+def finance_check_admin_credit(*, credit, signer):
+    """The CHECKER's signature: ``admin_signed → finance_checked``. Only reachable while the
+    organisation has an active finance admin — the same live evaluation the payment chain
+    uses, so appointing finance arms this even for a credit already mid-chain."""
+    from . import payments
+    if credit.status != Donation.STATUS_ADMIN_SIGNED:
+        raise CreditError('bad_state')
+    if not payments.finance_check_required(_credit_org(credit)):
+        raise CreditError('finance_check_not_required')
+    _distinct_signer(credit, signer, 'recorded_by')
+    credit.status = Donation.STATUS_FINANCE_CHECKED
+    credit.finance_checked_by = signer
+    credit.finance_checked_at = timezone.now()
+    credit.save(update_fields=['status', 'finance_checked_by', 'finance_checked_at'])
+    return credit
+
+
+@transaction.atomic
+def confirm_admin_credit(*, credit, signer):
+    """The APPROVER's countersignature — the step that makes the money SPENDABLE.
+
+    Blocked at ``admin_signed`` while the organisation has an active finance admin, exactly
+    as the payment chain blocks its approver: ``finance_check_required`` is evaluated LIVE,
+    never stored, so BrightPath's currently-dark checker degrades this to a clean two-step
+    chain and appointing a finance admin arms it retroactively.
+    """
+    from . import payments
+    if credit.status not in (Donation.STATUS_ADMIN_SIGNED, Donation.STATUS_FINANCE_CHECKED):
+        raise CreditError('bad_state')
+    if (credit.status == Donation.STATUS_ADMIN_SIGNED
+            and payments.finance_check_required(_credit_org(credit))):
+        raise CreditError('finance_check_required')
+    _distinct_signer(credit, signer, 'recorded_by', 'finance_checked_by')
+    credit.status = Donation.STATUS_CONFIRMED
+    credit.confirmed_by = signer
+    credit.confirmed_at = timezone.now()
+    credit.save(update_fields=['status', 'confirmed_by', 'confirmed_at'])
+    return credit
+
+
+def _credit_org(credit):
+    """The organisation whose finance role governs this credit — the one running the gift."""
+    return credit.programme.organisation if credit.programme_id else None
 
 
 def sponsor_programme_balances(sponsor):

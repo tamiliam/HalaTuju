@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform programme layer P4a — org-admin wallet credit (record + sign-off) — 2026-07-26
+
+Fourth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **The primary funding path
+until BrightPath's CLBG is registered** — every sponsor pays into a personal account and an org
+admin records the credit here. Migrations written but **NOT yet applied to prod**.
+
+- **Added — provenance on `Donation`.** `source` (`legacy` / `admin_recorded` / `gateway` /
+  `mock`) plus `external_reference` (the bank-transfer ref, **mandatory** for an admin-recorded
+  credit — the only thread back to money the platform cannot see). **One row per bank transfer**,
+  so each credit reconciles 1:1 with a bank-statement line. A future gateway donation is the
+  **same row with a different source**, never a second money system.
+- **Added — the sign-off chain, REUSED from payments** (`draft → admin_signed →
+  [finance_checked] → confirmed`). It calls the existing `payments.finance_check_required()`
+  rather than reimplementing it, and inherits two properties as a result: appointing a finance
+  admin **arms the check retroactively** for a credit already mid-chain, and revoking the last
+  one **degrades gracefully** back to two steps mid-credit. BrightPath's checker is dark today, so
+  the chain runs maker → approver; Sam joining upgrades it with no migration. Signers must be
+  pairwise distinct (case-insensitive).
+- **Added — unconfirmed money is unspendable.** Only a `confirmed` credit raises balance, so a
+  recorded-but-unconfirmed credit can never fund a student. `sponsor_balance` filters on it.
+- **Unchanged by design — every existing balance.** Defaults are chosen so current rows keep their
+  meaning: `source='legacy'` (provenance was never recorded — the code does not claim otherwise)
+  and `status='confirmed'` (money that already arrived is confirmed by arrival). **No data
+  migration needed.**
+- **Added — `test_wallet_credit.py` (19 tests)** covering one-row-per-transfer, the mandatory
+  reference, refusal for a sponsor not accepted into the programme, unspendability at each
+  pre-confirmation state, both chain shapes, retroactive arming, graceful degradation, and
+  distinct signers — plus **two source guards**: `record_admin_credit` is the only code path that
+  may mint an admin-recorded row, and it always opens at `draft`.
+- **P4b (not started)** — the HTTP endpoint and the programme-grouped statement. `sponsor_statement`
+  already renders both ledgers (money in with references, money out as anonymous refs); it needs
+  grouping by programme now that wallets are per-programme, and returns (lapsed/cancelled
+  allocations) shown as their own entries rather than a silently shrinking total.
+
 ## Platform programme layer P3 — sponsor acceptance is per programme — 2026-07-26
 
 Third sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **A sponsor sees a
