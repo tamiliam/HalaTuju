@@ -218,6 +218,74 @@ def sole_catalogue_institution(course_id: str) -> str:
     return next(iter(unique)) if len(unique) == 1 else ''
 
 
+def _campus_rows(course_id: str):
+    """[(institution_name, acronym)] for a course_id — the catalogue's campus list."""
+    from apps.courses.models import CourseInstitution
+    return list(CourseInstitution.objects
+                .filter(course_id=course_id)
+                .values_list('institution__institution_name', 'institution__acronym'))
+
+
+def _refers_to_campus(name: str, acronym: str, hint: str) -> bool:
+    """Does ``hint`` name this campus? Checked three ways — distinctive-token alignment, the
+    parenthetical-stripped name, and the catalogue ACRONYM. The acronym is what makes
+    "UTHM - KAMPUS (CAWANGAN PAGOH)" and "Universiti Tun Hussein Onn Malaysia" the same place;
+    they share no distinctive token at all ({uthm, kampus, pagoh} vs {tun, hussein, onn})."""
+    from .pathway_engine import distinctive_tokens
+    hint_tokens = distinctive_tokens(hint)
+    if _name_aligns(hint_tokens, distinctive_tokens(name)):
+        return True
+    hn = _norm_inst_name(hint)
+    if hn and _norm_inst_name(name or '') == hn:
+        return True
+    acr = (acronym or '').strip().lower()
+    return bool(acr and acr in hint_tokens)
+
+
+def institution_agreement(course_id: str, recorded: str, offer_institution: str) -> str:
+    """Do the RECORDED institution and the OFFER LETTER's refer to the same place?
+    ``'match'`` / ``'clash'`` / ``'unknown'`` — judged through the CATALOGUE, not by string overlap.
+
+    Replaces a bare ``_field_status`` token comparison for any catalogue-linked programme, because
+    that comparison produced a **false clash the moment the two sides used different naming
+    conventions for one institution** — the regression on #48 (owner 2026-07-25): the recorded value
+    was the catalogue's "Universiti Tun Hussein Onn Malaysia", the letter said "UTHM - KAMPUS
+    (CAWANGAN PAGOH)", no distinctive token in common, so a correct pathway read `mismatch`, painted
+    the Pathway chip red, cost the Institution tick, docked the verdict band by one red chip, and
+    asked the student to confirm a pathway that was already right.
+
+    The rules, in order:
+
+    1. **One campus → ``'match'``, without comparing anything** (the owner's rule, and the reason
+       this is a fix rather than a better heuristic): if the catalogue offers that course at exactly
+       one institution, there is nowhere else the student could be going, so an institution clash is
+       not *unlikely* — it is impossible. Any difference in the two strings is a naming variant by
+       definition. A string heuristic would have to keep growing to cover "UTHM Pagoh", "Kampus
+       Pagoh, UTHM", English/Malay forms, campus codes; this needs none of them.
+    2. **No campuses on file → ``'unknown'``.** A catalogue gap (#132/#136) is not evidence of
+       disagreement.
+    3. **Multi-campus → resolve BOTH sides to a catalogue campus** and agree iff they land on the
+       same one. Either side unresolvable → ``'unknown'``, never a clash: for a genuinely
+       multi-campus course the campus is a real question, but an unreadable answer is not a wrong one.
+    """
+    if not (course_id or '').strip() or not (offer_institution or '').strip():
+        return 'unknown'
+    rows = _campus_rows(course_id)
+    if not rows:
+        return 'unknown'                     # catalogue gap — can't judge
+    if len(rows) == 1:
+        return 'match'                       # nowhere else to go
+    if not (recorded or '').strip():
+        return 'unknown'                     # nothing recorded to compare the letter against
+    def _which(hint):
+        hits = {n for n, a in rows if _refers_to_campus(n, a, hint)}
+        return next(iter(hits)) if len(hits) == 1 else ''
+    a, b = _which(recorded), _which(offer_institution)
+    if not a or not b:
+        return 'unknown'
+    return 'match' if a == b else 'clash'
+
+
 def offer_contradicts_course_institution(course_id: str, offer_institution: str) -> bool:
     """True only when the offer letter names a place that is demonstrably NOT any campus of
     ``course_id`` — i.e. the letter and the declared course disagree about WHERE.
@@ -237,26 +305,15 @@ def offer_contradicts_course_institution(course_id: str, offer_institution: str)
 
     No campuses on file → False: a catalogue gap is not evidence of disagreement.
     """
-    from .pathway_engine import distinctive_tokens
     if not (course_id or '').strip() or not (offer_institution or '').strip():
         return False
-    from apps.courses.models import CourseInstitution
-    rows = list(CourseInstitution.objects
-                .filter(course_id=course_id)
-                .values_list('institution__institution_name', 'institution__acronym'))
+    rows = _campus_rows(course_id)
     if not rows:
         return False
-    hint_tokens = distinctive_tokens(offer_institution)
-    hint_norm = _norm_inst_name(offer_institution)
-    for name, acronym in rows:
-        if _name_aligns(hint_tokens, distinctive_tokens(name)):
-            return False
-        if hint_norm and _norm_inst_name(name or '') == hint_norm:
-            return False
-        acr = (acronym or '').strip().lower()
-        if acr and acr in hint_tokens:
-            return False
-    return True
+    # Shares its identity test with institution_agreement — one definition of "this string names
+    # this campus", so the writer's guard and the display comparison can never disagree again (the
+    # #48 regression was exactly those two drifting apart).
+    return not any(_refers_to_campus(n, a, offer_institution) for n, a in rows)
 
 
 def catalogue_institution(course_id: str, hint: str = '') -> str:

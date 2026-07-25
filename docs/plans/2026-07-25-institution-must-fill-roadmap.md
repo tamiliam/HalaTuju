@@ -1,6 +1,6 @@
 # Institution is a must-fill fact — implementation roadmap
 
-**Date:** 2026-07-25 · **Status:** approved 2026-07-25 · Sprint 1 shipped · Sprints 2–3 open
+**Date:** 2026-07-25 · **Status:** Sprint 1 shipped (+ a regression fixed 2026-07-26) · Sprint 2 STRUCK · Sprint 3 open
 **Origin:** owner live review of #48 — "Institution is a must fill, as this is required in the
 sponsor's portal as well."
 
@@ -73,7 +73,7 @@ Two decisions, both **settled by the owner 2026-07-25**:
 
 ---
 
-## 4. Sprint roadmap (3 sprints)
+## 4. Sprint roadmap (Sprint 1 shipped · Sprint 2 struck · Sprint 3 open)
 
 ### ~~Sprint 1 — the institution becomes a filled fact~~ ✅ SHIPPED 2026-07-25
 Retro `docs/retrospective-2026-07-25-institution-must-fill-s1.md`; decisions ×2; lessons ×3.
@@ -83,34 +83,13 @@ migration. **The data pass is owner-gated and NOT run** — 11 fillable rows (li
 #97 #122 #145; rejected #7 #40 #139). **Sprint 2 must not ship before it runs**, or the QC gate
 deadlocks live cases.
 
-### Sprint 2 — it cannot leave review empty (the gate)
-**Goal.** A case cannot reach `recommended` without an institution, and the reviewer has a one-box
-remedy.
-
-**Scope.**
-- QC-accept precondition `institution_required` in `AdminQcDecisionView` (mirrors
-  `reporting_date_required`; D1 decides absolute vs overridable).
-- `AdminInstitutionView` (`POST .../<pk>/institution/`) + `services.set_institution_by_officer`
-  with an AUDIT log line — mirrors `AdminReportingDateView` exactly, `_require_app_write` gated.
-- Cockpit entry box in the reviewer window (`interviewing` / on a reopen), mirroring
-  `showsReportingDateBox`; hidden when a value is already stored.
-- Retire the cockpit's `pre_u_institution` display fallback (page.tsx:1268) once Sprint 1's data
-  pass lands, so the cockpit and the sponsor card can no longer disagree.
-- i18n en/ms/ta (ms/ta first-drafts).
-
-**Files (~11).** `views_admin.py`, `services.py`, `urls.py`, `tests/test_qc_gate.py`,
-`tests/test_org_fence.py` (classify the new endpoint), `page.tsx`, `officerCockpit.ts` + its test,
-`en/ms/ta.json`.
-
-**Acceptance.** QC accept refused with a blank institution · the entry box clears it and the accept
-proceeds · endpoint org-fenced + classified · `interviewing`+ still 100% filled after the change
-(i.e. the gate blocks nobody who is already through) · full suite green.
-
-**Gating.** Do NOT ship before Sprint 1's data pass, or the gate deadlocks live cases.
-
-**Complexity.** Medium. **This is the risky sprint** — it can block real QC accepts.
-
----
+### ~~Sprint 2 — it cannot leave review empty (the gate)~~ ❌ STRUCK 2026-07-26
+Cancelled by the owner after the premise was tested: the review flow already reaches 100% filled by
+`interviewing` (53/53), and the institution is **display-only** where `reporting_date` — the stop this
+was modelled on — is load-bearing (bursary size, payment eligibility, semester-result request). A gate
+would only ever fire on the cases the machine deliberately declines to resolve, forcing a QC to hand-type
+a human judgement in a process that is not failing. `backfill_institution` (report mode) is the check
+instead. Reasoning recorded in `docs/decisions.md`.
 
 ### Sprint 3 — sponsor surface parity (independent of 1 and 2)
 **Goal.** A sponsor sees the programme as a link, formatted the same way the cockpit formats it.
@@ -136,8 +115,7 @@ new field · exact-key snapshot updated deliberately · #132/#136 resolve an ins
 
 ## 5. Sequencing, risk, and what is explicitly out of scope
 
-- **Order:** 1 → 2 (hard dependency: gating before the data can be filled would deadlock QC).
-  Sprint 3 is independent and can go before, between, or after.
+- **Order:** Sprint 3 is independent and is all that remains. (The old 1 → 2 dependency died with Sprint 2.)
 - **Riskiest early?** No — inverted deliberately. Sprint 2 carries the live risk (blocking QC), and
   it is only safe once Sprint 1 has proven the data can be filled.
 - **Out of scope:** the 5 genuine clashes stay a human decision; no change to award sizing, payment

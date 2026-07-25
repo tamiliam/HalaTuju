@@ -1,5 +1,60 @@
 # Architectural Decisions — HalaTuju
 
+## Institution agreement is answered by the CATALOGUE, not by string comparison — 2026-07-26
+**Decision:** Whether the recorded institution and the offer letter's refer to the same place is
+decided by `offer_pathway.institution_agreement(course_id, recorded, offer)`, which asks the
+catalogue: **one campus → `match` without comparing anything**; no campuses → `unknown`;
+multi-campus → resolve both sides to a campus (tokens / stripped name / **acronym**) and agree only
+if they land on the same one, with `unknown` for anything unresolvable. The Pathway chip, the
+Institution tick and the writer's own contradiction guard all read that one answer. The old
+distinctive-token comparison survives ONLY for a free-text declaration with no `course_id`.
+
+**Alternatives considered:** (1) Keep token comparison and add acronym awareness to it. (2) Store the
+offer letter's own institution string instead of the catalogue's, so both sides always match. (3) Ask
+the catalogue (chosen).
+
+**Rationale:** Token comparison cannot equate two spellings of one institution — "UTHM - KAMPUS
+(CAWANGAN PAGOH)" and "Universiti Tun Hussein Onn Malaysia" share no distinctive token — which turned
+a correct pathway into a `mismatch` on #48 the moment the institution was filled (owner 2026-07-25;
+red chip, lost tick, a red chip off the verdict band, a false `pathway_confirm` to the student).
+(1) is a string heuristic that must keep growing to cover "UTHM Pagoh", "Kampus Pagoh, UTHM",
+English/Malay forms and campus codes. (2) throws away the canonical name the sponsor card and the
+recommender share. (3) rests on the owner's observation — *"The course selector only has one option,
+UTHM. So there is a match"*: for a single-campus course a clash is not unlikely, it is **impossible**,
+so no string rule is needed at all. Multi-campus is the only case where comparison is meaningful, and
+there the catalogue supplies both the candidate set and the acronyms.
+
+**Trade-offs:** One DB read per offer check (the campus list) where there was none. A catalogue gap
+now yields `unknown` rather than a comparison — correct, but it means #132/#136 show no tick until
+their `course_institutions` rows exist. A genuinely wrong multi-campus letter whose campus we cannot
+resolve reads `unknown` instead of `clash`; deliberate, since an unreadable answer is not a wrong one.
+
+**Revisit if:** a real wrong-institution case is observed reading `unknown` and slipping past the
+officer — then tighten the multi-campus branch, never the single-campus rule.
+
+## Sprint 2 of the institution roadmap (a QC gate on a filled institution) is STRUCK — 2026-07-26
+**Decision:** The planned absolute QC-accept gate on a filled `chosen_programme.institution` is
+cancelled. `backfill_institution` (report mode) is the check instead — read-only, run when wanted.
+
+**Alternatives considered:** (1) Ship it absolute, as designed and owner-approved on 2026-07-25.
+(2) Ship it overridable with a recorded reason. (3) Strike it (chosen).
+
+**Rationale:** The gate was justified by analogy to the reporting-date stop, and the analogy does not
+hold. `reporting_date` is **load-bearing** — it sizes the bursary, gates payment eligibility and
+triggers the semester-result request, all silently defaulting wrong when absent — which is what earns
+an absolute stop. The institution is **display-only**: nothing computes from it. And the review flow
+already reaches 100% filled by `interviewing` (53/53 verified), because `confirm_pathway` writes it
+when the officer settles the pathway. A gate would therefore add a hard stop that can only fire on the
+handful of cases the machine deliberately declines to resolve (5 letter-vs-declaration clashes, 2 STPM
+schools, 2 catalogue gaps), forcing a QC to type by hand what is already a human judgement, in a
+process that is not failing. Owner: *"why fix something that doesn't appear broken?"*
+
+**Trade-offs:** A blank institution can in principle still reach `recommended`, where the sponsor card
+omits the line. Accepted: it has never happened, and the by-cause report names any such row.
+
+**Revisit if:** a blank institution is ever observed at `recommended` — then gate, and make it
+overridable, since by then the unresolvable cases are the only ones left.
+
 ## The institution is SNAPSHOT into `chosen_programme`, not resolved at read time — 2026-07-25
 **Decision:** `chosen_programme.institution` is filled by a WRITER
 (`services.sync_institution_from_catalogue`) and stored. The read-time campus fallback stays
@@ -5309,3 +5364,41 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Rationale:** progressive disclosure to reduce the "wall of uploads" that discourages B40 applicants, without ever masking something the student still must do.
 **Trade-offs:** a student must expand an optional stage to add a bonus document — accepted (it reads as a bonus, not a task).
 **Revisit if:** applicants miss optional stages they would have benefited from adding.
+
+## Platform hierarchy — Organisation → Programme → Year → award — 2026-07-26
+**Decision:** The platform's containment model is **HalaTuju (platform) → Organisation → Programme → Year (intake) → the individual award**. `PartnerOrganisation` remains the Organisation and the security fence; a NEW `Programme` model becomes the durable fund/project (e.g. BrightPath flagship, BrightPath Sabah); `ScholarshipCohort` stops doing double duty and becomes purely the annual intake beneath a Programme; `ScholarshipApplication` → award stays the leaf. Rule **defaults live on the Programme, overrides on the Year**. Three things sit OUTSIDE the hierarchy and are never filed under an Organisation: the student account (platform-level, may apply into any Programme), the course selector (platform base, beside Organisations not under them), and the sponsor account (platform-level login).
+**Alternatives considered:** (a) Treat a second programme as a second ORGANISATION (recommended by the agent on 2026-07-25, before the owner supplied this model) — rejected: it duplicates branding and staff, forces an org switch to run two programmes of the same body, and reaches for a tenant boundary to solve what is really a funding boundary. The one argument for it was that `PaymentRun` is org-scoped; that dissolves into a small additive change (see the funds decision below). (b) Treat a second programme as a second COHORT under one organisation — rejected: a cohort is an intake YEAR, so restricted funds and sponsor acceptances would need re-homing to a new row every year (see the funds decision). (c) Add an award-TYPE level beneath Year (scholarship vs bursary as structure) — rejected, see the vocabulary decision below.
+**Rationale:** the conflation in the current schema is that `ScholarshipCohort` is simultaneously the programme (rules, funding envelope, eligibility) and the intake (`b40-2026`, `year=2026`). One programme hides it; two do not. A donor gives to "Sabah", not to "Sabah 2026", and a sponsor is accepted into a programme, not into an intake — so the durable things must hang off a level that outlives the year.
+**Trade-offs:** a new model plus a migration and read-seam changes across routing, payments and sponsors. Priced deliberately against the alternative of retrofitting it after two programmes are live and money is attached.
+**Timing note:** taken while production holds exactly ONE cohort (`b40-2026`, org #11, 143 applications) with `is_open = false` — nothing is accepting applications, so the layer can land before anything reopens. This is the cheapest this change will ever be.
+**Revisit if:** an organisation needs programmes that are themselves nested (a programme of programmes), or a programme must span two organisations (a jointly-run fund) — neither is in view.
+
+## Restricted funds and sponsor acceptance attach to the Programme, not the Year — 2026-07-26
+**Decision:** A donation carries the **Programme** it was given to, and a sponsor's spendable balance becomes **per-Programme**: funds given to one programme are never visible or spendable in another. Sponsor vetting/acceptance likewise attaches to the Programme — a sponsor accepted into BrightPath Sabah is not thereby accepted into the flagship, and acceptance survives the year rollover. The sponsor ACCOUNT stays platform-level (one login). `PaymentRun`, today scoped to the organisation, additionally carries its Programme so a run can never pay out of another programme's money.
+**Alternatives considered:** (a) Keep the current model — `Donation` carries only sponsor + amount, and the balance is `donations − active allocations` as ONE platform-wide pool per sponsor — rejected: it cannot express a restricted gift at all, so a benefactor giving RM100,000 "for Sabah students" would have that restriction recorded nowhere and enforceable by nothing. (b) Attach funds to the Year (cohort) — rejected: restricted money and sponsor relationships would need migrating annually, which is how financial records quietly corrupt.
+**Rationale:** a restricted gift is a promise to a donor; the system must be able to state and enforce it, not rely on an administrator remembering. Attaching it to the durable Programme (not the intake) means the promise survives as long as the fund does.
+**Trade-offs:** an additive column plus a backfill on live financial data, and a change to the live payments module (whose maker-checker signature chain shipped in Sprint 14) — hence additive-then-read, migrate-first, never a rewrite.
+**Timing note:** production currently holds 9 sponsors, 6 donations, RM172,000 recorded. Small enough to backfill cleanly to the flagship programme today; it will not stay that way.
+**Revisit if:** a donor wants to give unrestricted funds to an organisation across all its programmes — would need an explicit "unrestricted" pool alongside the per-programme balances, not a relaxing of the fence.
+
+## Award vocabulary (scholarship / bursary / assistance) is per-organisation wording, never structure — 2026-07-26
+**Decision:** What the award is CALLED is chosen by the Organisation and rendered as a per-org branding value alongside `programme_name` / `persona_name` / `team_signoff`, resolved through the single seam in `apps/scholarship/branding.py`. It is NOT a level in the hierarchy and NOT a behavioural switch — the platform is agnostic between "scholarship", "bursary" and "assistance". **Internal code names never change**: `ScholarshipApplication`, `bursary.py`, the `/scholarship/` URLs and the `bursary_*` fields stay exactly as they are; only RENDERED text is configurable.
+**Alternatives considered:** (a) Make award-type a structural level beneath Year — rejected: the owner is agnostic about the label, so it carries no behaviour; making it structure would add a level that changes nothing. (b) Rename the code to match a now-variable label — rejected: a large, risky refactor of stable identifiers with zero user-visible benefit. (c) A single `{award_noun}` interpolation token across all copy — rejected on linguistic grounds, see below.
+**Rationale:** internal names are stable identifiers; user-facing nouns are branding. Keeping them separate is what allows the noun to vary per organisation without touching a line of engine code.
+**Trade-offs — the Tamil constraint (the real cost):** a single placeholder cannot work. In `ta.json` the Tamil noun உதவித்தொகை appears in at least EIGHT inflected forms (base ×32, plural உதவித்தொகைகள், accusative உதவித்தொகையைப்/உதவித்தொகையைச், dative உதவித்தொகைக்கு, sandhi-doubled உதவித்தொகைத்/உதவித்தொகைப், genitive உதவித்தொகையின்) — a naive token substitution produces ungrammatical Tamil in roughly a third of its uses. Malay is more forgiving; English needs casing variants ("bursary"/"Bursary"/"BURSARY" all appear in `emails.py`). The agreed approach, in order: (1) SHRINK the surface — rewrite sentences to be noun-agnostic where the noun carries no weight ("your award", "this programme", "the offer"); (2) for the residue, the organisation supplies the INFLECTED SET per language, not one word — the owner authors the Tamil forms, no suffix-generating helper. Footprint ≈ 90–110 render sites across en/ms/ta plus `emails.py`; folded into the Phase 2 branding extraction (the same pile as the 22 BrightPath literals Sprint 5 flagged), not a separate sprint.
+**Legal text is exempt:** the bursary agreement is a versioned, legally-reviewed contract template. A new organisation gets its OWN authored template — never BrightPath's wording with a noun interpolated into it.
+**Revisit if:** an organisation needs the noun to vary per Programme rather than per Organisation (the branding fallback chain already permits programme → organisation → platform, so this is a small extension, not a redesign).
+
+## A HalaTuju award is a gift, never a loan — platform invariant — 2026-07-26
+**Decision:** Every award the platform disburses is a **gift**. No organisation may make it repayable. The platform will therefore never build repayment schedules, interest, arrears, debt recovery or credit reporting.
+**Alternatives considered:** Stay silent and treat it as an unstated assumption — rejected: unstated assumptions get built against. A future tenant WILL ask for a "study loan" variant, and the answer needs to already exist.
+**Rationale:** it is a positioning statement with engineering teeth — it permanently removes a whole family of features from scope, and it is a clean thing to say to a prospective tenant. Organisations choose what to CALL the award (see the vocabulary decision); none of them can change what it IS.
+**Trade-offs:** closes the door on loan-based tenants. Accepted deliberately.
+**Revisit if:** the owner decides to serve loan-based programmes — that is a different product, not a configuration of this one.
+
+## Reviewers are scoped at Programme level; NULL = organisation-wide — 2026-07-26
+**Decision:** A reviewer may be bound to a Programme. The binding is **nullable, and NULL means organisation-wide** (today's behaviour). `org_admin` and `finance` stay organisation-wide and are not programme-scoped. The Organisation remains the security fence; the programme binding is a NARROWING INSIDE that wall, never a replacement for it.
+**Alternatives considered:** (a) Keep all staff organisation-scoped and defer programme scoping (the agent's initial recommendation, 2026-07-25) — overridden by the owner: BrightPath Sabah will have its own volunteers, and leaving the hook unused now means retrofitting it against live staff later. (b) Make the programme binding MANDATORY for every reviewer — rejected: it would require backfilling all 21 existing staff and would break the "works across both programmes" case that BrightPath's own team needs.
+**Rationale:** NULL-means-org-wide is the whole trick — every existing staff member keeps working with no backfill and no behaviour change, while Sabah's new reviewers get a programme set from the day they are invited. Cheap, reversible, and it leaves the proven org fence untouched.
+**Trade-offs:** two scoping dimensions to reason about instead of one. Mitigated by the fact that reviewers already have `_b40_scope = 'assigned'` — they only ever see cases assigned to them — so programme scoping mainly governs WHO CAN BE ASSIGNED WHAT and the invite flow, rather than opening a new leak surface.
+**Revisit if:** `qc` or plain `admin` also need programme scoping in practice (same nullable pattern would extend to them), or a reviewer needs to serve two named programmes but not all of them (would need a membership table rather than a single field).

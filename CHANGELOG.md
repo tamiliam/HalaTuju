@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fixed: filling the institution made a correct pathway read "mismatch" — 2026-07-26
+
+A live regression introduced by the previous day's institution must-fill sprint, found by the owner
+re-running #48's offer letter. Backend only, **no migration**, nothing re-extracted.
+
+- **Fixed — the institution comparison now asks the CATALOGUE, not string overlap.** New
+  `offer_pathway.institution_agreement(course_id, recorded, offer)` → `match`/`clash`/`unknown`:
+  **one campus → `match` without comparing anything** (a course offered at a single institution
+  cannot clash — there is nowhere else to go); no campuses → `unknown` (a catalogue gap is not
+  disagreement); multi-campus → resolve both sides to a campus via tokens / stripped name /
+  **acronym** and agree only if they land on the same one, `unknown` for anything unresolvable.
+  `offer_pathway_match` and the tertiary Institution tick both read that one answer, so chip and tick
+  cannot disagree; the old token comparison survives only for a free-text pick with no `course_id`.
+- **What went wrong.** Sprint 1 filled `chosen_programme.institution` with the catalogue's
+  "Universiti Tun Hussein Onn Malaysia"; #48's letter says "UTHM - KAMPUS (CAWANGAN PAGOH)". Those
+  share no distinctive token, so `_field_status` returned `clash` where a blank had returned
+  `unknown` → the pathway read `mismatch` → red Pathway chip, no Institution tick, a red chip docked
+  off the verdict band, and Check 2 raised a `pathway_confirm` asking the student to confirm a pathway
+  that was already correct. **Filling a field turned a benign silence into a false accusation.**
+  Blast radius one row — #48 was the only offer re-extracted since the deploy, and holding the
+  backfill is the only reason it wasn't eleven.
+- **The drift that caused it:** the same sprint taught `offer_contradicts_course_institution` that a
+  catalogue acronym identifies an institution, and left the comparison that paints the officer's
+  screen acronym-blind. Both now share one `_refers_to_campus` predicate.
+- **Fixed — the school-leaving certificate and semester-result name chips use the tolerant
+  same-person matcher** (`relationship_name_match`), as the offer and income branches already did.
+  #118's cert OCR'd "THAC**A**YAHNI" for "THACHAYAHNI" — one dropped letter, NRIC read exactly right
+  — and showed a red Name chip at `recommended` while her offer letter, results slip and semester
+  result all read the name correctly and showed green. Derived at read time, so every existing
+  document picks it up with no re-extraction. The strict matcher stays on the IC identity anchor.
+- **Corrected the record** on the 2026-07-25 entry and retrospective: the wrong-person guard was
+  **not** what left #48 blank (its name tolerance shipped 2026-07-08 and `_name_status` recomputes
+  live, so the guard passes). The blank came from `catalogue_institution` refusing a hint-less answer;
+  `sole_catalogue_institution` is the fix and the hoist is defensive. I had asserted the guard as the
+  cause from a stored `student_verdict` without checking that the value is derived.
+- **Struck Sprint 2** of the roadmap (an absolute QC gate on a filled institution): modelled on the
+  reporting-date stop, but that field is load-bearing and this one is display-only, and the review
+  flow already reaches 100% filled by `interviewing`. Reasoning in `docs/decisions.md`.
+- **+10 pytest** (**4569** total), including the guard this needed: *the pathway verdict is the same
+  whether the institution is blank or filled* — an invariant across the transition, verified to fail
+  against the old comparator. Lessons ×2, decisions ×2.
+- Data: #48's institution blanked to stop the false clash; **re-fill after this deploys.**
+
 ## Institution is a must-fill fact — Sprint 1: it gets its own writer — 2026-07-25
 
 Sprint 1 of `docs/plans/2026-07-25-institution-must-fill-roadmap.md`, off owner live review of #48
@@ -12,9 +55,12 @@ Sprint 1 of `docs/plans/2026-07-25-institution-must-fill-roadmap.md`, off owner 
   student studies used to be written at the BOTTOM of `autofill_pathway_from_offer`, below four
   guards about the PATHWAY, so any letter with a name/IC wobble, junk in a slot, or a genuine
   programme clash lost the institution as collateral damage. It is now hoisted ABOVE every guard —
-  the same fix `sync_reporting_date_from_offer` got on 2026-07-23, and the reason #48 displayed a
-  ticked reporting date beside an empty Institution: one letter, one function, one fact hoisted and
-  the other left behind. Resolution order: a course offered at exactly ONE campus → the catalogue
+  the same fix `sync_reporting_date_from_offer` got on 2026-07-23. **Correction to the original
+  entry:** the guards were NOT what kept #48 blank — the doubled-letter tolerance shipped 2026-07-08
+  and `_name_status` recomputes live, so its name guard reads `match` today. What kept #48 blank is
+  cause (2) below: no hint aligns "UTHM - KAMPUS (CAWANGAN PAGOH)" with the catalogue's full name, so
+  the old code could not resolve it even with every guard passing. The hoist is defensive; the
+  sole-campus resolver is the fix. Resolution order: a course offered at exactly ONE campus → the catalogue
   (needs no offer at all, so it also serves a student who has uploaded nothing); multi-campus → the
   letter's institution validated against the course's campus list; MATRIC with no course_id → the
   catalogue college for the declared state. Never overwrites a value on file; touches only the

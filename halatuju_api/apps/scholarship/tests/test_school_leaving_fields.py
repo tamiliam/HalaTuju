@@ -132,6 +132,30 @@ class TestSchoolLeavingCheck(TestCase):
             application=self.app, doc_type='school_leaving_cert', storage_path='x',
             vision_fields={'student_verdict': 'ok', 'fields': fields}, uploaded_at=timezone.now())
 
+    def test_ocr_noise_on_a_tamil_name_is_not_a_wrong_person(self):
+        """#118 (owner 2026-07-25): the cert OCR dropped one letter — "THACAYAHNI" for
+        "THACHAYAHNI" — and read the NRIC exactly right, while the same student's offer letter,
+        results slip and semester result all spelled the name correctly and showed green. A red Name
+        chip beside a green IC on one document is OCR noise, not a different person. The check uses
+        the TOLERANT same-person matcher (as the offer and income branches already did); the strict
+        form stays on the IC identity anchor."""
+        self.profile.name = 'THACHAYAHNI A/P KRISHNAN'
+        self.profile.save(update_fields=['name'])
+        c = student_school_leaving_check(self._doc({
+            'name': 'THACAYAHNI A/P KRISHNAN', 'nric': '080114-10-1495',
+            'school': 'SMK SEKSYEN 10 KOTA DAMANSARA', 'kelakuan': 'TERPUJI'}))
+        self.assertEqual(c['name_status'], 'match')
+        self.assertEqual(c['nric_status'], 'match')
+
+    def test_a_genuinely_different_name_still_flags(self):
+        # The tolerance must not swallow a real wrong-person cert (#30's cert read
+        # "POOVENTHIMANAR MARIMUTU" against "POVIENTHIRAN A/L R MARIMUTU" — too far to rescue,
+        # correctly a human's call).
+        c = student_school_leaving_check(self._doc({
+            'name': 'SITI NURHALIZA BINTI TARUDIN', 'nric': '080114-10-1495',
+            'school': 'SMK SEKSYEN 10 KOTA DAMANSARA', 'kelakuan': 'TERPUJI'}))
+        self.assertEqual(c['name_status'], 'mismatch')
+
     def test_match_and_values(self):
         c = student_school_leaving_check(self._doc({
             'name': 'AARON A/L BALA', 'nric': '080114-10-1495',

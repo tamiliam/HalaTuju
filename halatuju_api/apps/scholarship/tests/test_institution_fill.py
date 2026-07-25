@@ -382,3 +382,106 @@ class TestBackfillInstitutionCommand(_Base):
         self._app(chosen_programme={'course_id': 'TST-ANIM', 'institution': 'UTHM'})
         out = self._run()
         self.assertIn('1 already on file', out)
+
+
+class TestFillingTheInstitutionCannotChangeThePathway(_Base):
+    """THE regression guard for the #48 incident (owner 2026-07-25).
+
+    Sprint 1 shipped green on 4559 tests and still broke a live record: filling
+    ``chosen_programme.institution`` turned the institution comparison from "nothing to compare"
+    (blank → 'unknown') into "these disagree" ('clash'), because the recorded value was the
+    catalogue's "Universiti Tun Hussein Onn Malaysia" and the letter said "UTHM - KAMPUS (CAWANGAN
+    PAGOH)" — no distinctive token in common. A correct pathway read `mismatch`: red Pathway chip,
+    lost Institution tick, one red chip docked off the verdict band, and a `pathway_confirm` query
+    asking the student to confirm a pathway that was already right.
+
+    The tests covered the new writer and nothing that CONSUMES its output. These cover the
+    transition itself: for the same student and the same letter, filling the institution must not
+    move the pathway verdict.
+    """
+
+    def setUp(self):
+        self._course('TST-ANIM', 'Diploma Teknologi Animasi',
+                     ('Universiti Tun Hussein Onn Malaysia', 'uthm', 'UTHM'))
+
+    def _app_with_offer(self, institution_on_record):
+        cp = {'course_id': 'TST-ANIM', 'course_name': 'Diploma Teknologi Animasi'}
+        if institution_on_record:
+            cp['institution'] = institution_on_record
+        app = self._app(chosen_pathway='university', chosen_programme=cp)
+        self._offer(app, 'DIPLOMA TEKNOLOGI ANIMASI (DAG)', 'UTHM - KAMPUS (CAWANGAN PAGOH)')
+        return app
+
+    def test_pathway_is_match_whether_or_not_the_institution_is_filled(self):
+        from apps.scholarship.pathway_engine import student_offer_check
+        from apps.scholarship.models import ApplicantDocument
+        for recorded in ('', 'Universiti Tun Hussein Onn Malaysia'):
+            app = self._app_with_offer(recorded)
+            doc = ApplicantDocument.objects.filter(application=app).first()
+            chk = student_offer_check(doc)
+            self.assertEqual(chk['pathway'], 'match',
+                             f'pathway moved when institution was {recorded!r}')
+
+    def test_the_institution_tick_appears_once_the_value_is_recorded(self):
+        # The flip side: with the value on record the tick must be EARNED, not merely not-clashing.
+        from apps.scholarship.pathway_engine import student_offer_check
+        from apps.scholarship.models import ApplicantDocument
+        app = self._app_with_offer('Universiti Tun Hussein Onn Malaysia')
+        chk = student_offer_check(ApplicantDocument.objects.filter(application=app).first())
+        self.assertEqual(chk['chosen_institution_status'], 'match')
+
+    def test_a_letter_for_a_different_institution_still_clashes(self):
+        # The tolerance must not swallow a real disagreement: a two-campus course whose letter
+        # names a campus other than the recorded one.
+        from apps.scholarship.pathway_engine import student_offer_check
+        from apps.scholarship.models import ApplicantDocument
+        self._course('TST-POLY', 'Diploma Kejuruteraan Awam',
+                     ('Politeknik Kota Bharu', 'pkb', 'PKB'),
+                     ('Politeknik Mersing', 'pm', 'PM'), inst_type='Politeknik')
+        app = self._app(chosen_pathway='poly', chosen_programme={
+            'course_id': 'TST-POLY', 'course_name': 'Diploma Kejuruteraan Awam',
+            'institution': 'Politeknik Kota Bharu'})
+        self._offer(app, 'DIPLOMA KEJURUTERAAN AWAM', 'POLITEKNIK MERSING')
+        chk = student_offer_check(ApplicantDocument.objects.filter(application=app).first())
+        self.assertEqual(chk['chosen_institution_status'], 'clash')
+        self.assertEqual(chk['pathway'], 'mismatch')
+
+
+class TestInstitutionAgreement(_Base):
+    """``offer_pathway.institution_agreement`` — the catalogue answers, not string overlap."""
+
+    def test_one_campus_cannot_clash_however_the_letter_spells_it(self):
+        # The owner's rule: "The course selector only has one option, UTHM. So there is a match."
+        self._course('TST-ANIM', 'Diploma Teknologi Animasi',
+                     ('Universiti Tun Hussein Onn Malaysia', 'uthm', 'UTHM'))
+        for spelling in ('UTHM - KAMPUS (CAWANGAN PAGOH)', 'Kampus Pagoh, UTHM',
+                         'UNIVERSITI TUN HUSSEIN ONN MALAYSIA', 'uthm pagoh'):
+            self.assertEqual(
+                op.institution_agreement('TST-ANIM', 'Universiti Tun Hussein Onn Malaysia', spelling),
+                'match', f'spelling {spelling!r} should not be able to clash')
+
+    def test_multi_campus_agrees_when_both_sides_land_on_the_same_campus(self):
+        self._course('TST-POLY', 'Diploma Kejuruteraan Awam',
+                     ('Politeknik Kota Bharu', 'pkb', 'PKB'),
+                     ('Politeknik Mersing', 'pm', 'PM'), inst_type='Politeknik')
+        self.assertEqual(op.institution_agreement(
+            'TST-POLY', 'Politeknik Mersing', 'POLITEKNIK MERSING'), 'match')
+        self.assertEqual(op.institution_agreement(
+            'TST-POLY', 'Politeknik Mersing', 'POLITEKNIK KOTA BHARU'), 'clash')
+
+    def test_unreadable_side_is_unknown_never_a_clash(self):
+        self._course('TST-POLY', 'Diploma Kejuruteraan Awam',
+                     ('Politeknik Kota Bharu', 'pkb', 'PKB'),
+                     ('Politeknik Mersing', 'pm', 'PM'), inst_type='Politeknik')
+        # A campus we can't resolve is not a wrong answer.
+        self.assertEqual(op.institution_agreement(
+            'TST-POLY', 'Politeknik Mersing', 'SOME UNLISTED PLACE'), 'unknown')
+
+    def test_a_catalogue_gap_is_not_evidence_of_disagreement(self):
+        self._course('TST-LAW', 'Sarjana Muda Undang-Undang', level='Ijazah Sarjana Muda')
+        self.assertEqual(op.institution_agreement(
+            'TST-LAW', 'Universiti Utara Malaysia', 'UNIVERSITI UTARA MALAYSIA'), 'unknown')
+
+    def test_no_course_id_or_no_offer_is_unknown(self):
+        self.assertEqual(op.institution_agreement('', 'X', 'Y'), 'unknown')
+        self.assertEqual(op.institution_agreement('TST-ANIM', 'X', ''), 'unknown')

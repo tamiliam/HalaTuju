@@ -82,7 +82,8 @@ def _field_status(declared: str, offer: str) -> str:
 
 def offer_pathway_match(declared_programme: str, declared_institution: str,
                         offer_programme: str, offer_institution: str,
-                        declared_track: str = '', offer_stream: str = '') -> str:
+                        declared_track: str = '', offer_stream: str = '',
+                        institution_agreement: str = '') -> str:
     """'match' / 'mismatch' / 'unknown' for an offer vs the declared pathway.
 
     A clash on the institution, the programme, OR the STREAM/TRACK makes it a mismatch (the
@@ -96,9 +97,19 @@ def offer_pathway_match(declared_programme: str, declared_institution: str,
     Both sides are canonicalised through ``parse_stpm_stream`` (``SAINS`` → ``sains`` vs
     ``SAINS SOSIAL`` → ``sains_sosial`` — distinct codes, so the shared 'sains' substring can't
     produce a false match), and the clash is counted ONLY when BOTH read a stream: a letter that
-    prints no stream (``''``) never clashes."""
+    prints no stream (``''``) never clashes.
+
+    ``institution_agreement`` — when the caller has resolved the institution dimension through the
+    CATALOGUE (``offer_pathway.institution_agreement``), pass its verdict here and it REPLACES the
+    token comparison. Load-bearing: two spellings of ONE institution share no distinctive token
+    ("UTHM - KAMPUS (CAWANGAN PAGOH)" vs "Universiti Tun Hussein Onn Malaysia"), so the token test
+    called a correct pathway a mismatch the moment the recorded institution was filled from the
+    catalogue — #48, owner 2026-07-25: red Pathway chip, lost Institution tick, a red chip docked off
+    the verdict band, and a student asked to confirm a pathway that was already right. The token path
+    remains for a FREE-TEXT declaration with no course_id, where there is no catalogue to ask.
+    """
     from .offer_pathway import parse_stpm_stream
-    inst = _field_status(declared_institution, offer_institution)
+    inst = institution_agreement or _field_status(declared_institution, offer_institution)
     prog = _field_status(declared_programme, offer_programme)
     dtrack, otrack = parse_stpm_stream(declared_track), parse_stpm_stream(offer_stream)
     track_clash = bool(dtrack and otrack and dtrack != otrack)
@@ -370,8 +381,17 @@ def student_offer_check(doc) -> dict:
     # itself autofilled from the offer for a stream-less declaration, the two agree → a match, never a
     # false clash — the same benign direction as _declared_pathway's circularity break.)
     decl_track = (getattr(application, 'pre_u_track', '') or '').strip() if application is not None else ''
+    # The institution dimension is resolved through the CATALOGUE whenever the student's pick is a
+    # catalogue course, because two spellings of one institution share no distinctive token (#48).
+    # '' → the caller falls back to the token comparison (a free-text declaration, no course_id).
+    from .offer_pathway import institution_agreement as op_institution_agreement
+    _cp = getattr(application, 'chosen_programme', None) if application is not None else None
+    _cid = (_cp.get('course_id') or '').strip() if isinstance(_cp, dict) else ''
+    _stored_inst = (_cp.get('institution') or '').strip() if isinstance(_cp, dict) else ''
+    inst_agreement = op_institution_agreement(_cid, _stored_inst, institution) if _cid else ''
     pathway = offer_pathway_match(decl_prog, decl_inst, programme, institution,
-                                  declared_track=decl_track, offer_stream=stream)
+                                  declared_track=decl_track, offer_stream=stream,
+                                  institution_agreement=inst_agreement)
 
     intake = (f.get('intake') or '').strip()
     reporting_date = (f.get('reporting_date') or '').strip()   # report/registration = course start
@@ -416,10 +436,10 @@ def student_offer_check(doc) -> dict:
         # institution merge, or the poly read-time fill) — so it's what the Academic box actually
         # shows for a tertiary student, whereas `institution_status` above compares the pre-U field.
         # Drives the tertiary Institution tick (a pre-U student keeps using `institution_status`).
-        'chosen_institution_status': _field_status(
-            ((getattr(application, 'chosen_programme', None) or {}).get('institution') or '').strip()
-            if isinstance(getattr(application, 'chosen_programme', None), dict) else '',
-            institution),                         # 'match' | 'clash' | 'unknown'
+        # Resolved through the catalogue when there is a course_id (see inst_agreement above), so the
+        # tick and the Pathway chip read the SAME answer and cannot disagree; token comparison only
+        # for a free-text pick.
+        'chosen_institution_status': inst_agreement or _field_status(_stored_inst, institution),
         'declared_programme': decl_prog,
         'declared_institution': decl_inst,
     }

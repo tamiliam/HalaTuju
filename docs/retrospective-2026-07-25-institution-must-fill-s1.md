@@ -22,18 +22,31 @@ one campus: Universiti Tun Hussein Onn Malaysia. Neither was read.
    course has no single campus to pick) but it means the field starts life blank for every
    student-made pick — and all 39 live blanks carry no `source` key, i.e. every one is a student pick.
 2. **The one writer that fills it sat below four guards.** `autofill_pathway_from_offer` returns early
-   on a name/IC mismatch, on junk in both slots, and on a genuine pathway clash. #48's offer OCR read
-   the name as "LAKSMITHAA" for "LAKSMITHA" (a doubled letter) on 2026-07-07, so the function returned
-   at the first guard. The doubled-letter tolerance shipped the NEXT day; the function has never
-   re-run.
+   on a name/IC mismatch, on junk in both slots, and on a genuine pathway clash. On 2026-07-07 #48's
+   offer OCR read the name as "LAKSMITHAA" for "LAKSMITHA" (a doubled letter) and the function returned
+   at the first guard. **CORRECTION (added 2026-07-25, after the owner challenged the diagnosis):
+   that guard no longer fires.** The doubled-letter tolerance shipped 2026-07-08 and `_name_status`
+   recomputes live, so `chk['name']` reads `match` today (the IC guard reads `unreadable`, not
+   `mismatch`, so it doesn't fire either). I had read the STORED `student_verdict: 'name_mismatch'`
+   from 7 July and concluded the guard was blocking, without checking that the value is derived, not
+   trusted. The hoist is therefore DEFENSIVE — it protects the fill when a guard genuinely fires (a
+   real wrong-person letter, junk slots, a true pathway clash) — and was not what unblocked #48.
 3. **`catalogue_institution` refuses to answer without a hint** — correctly, since its job is ironing
    out OCR variants and a hint-less match over an STPM bidang's ~250 schools would pick a wrong one.
-   But that left the one unambiguous case (a course with a single campus) unserved.
+   But that left the one unambiguous case (a course with a single campus) unserved. **This is the
+   load-bearing cause.** Even with every guard passing, the old code could not fill #48: the hint
+   available is the letter's "UTHM - KAMPUS (CAWANGAN PAGOH)", whose distinctive tokens
+   ({uthm, kampus, pagoh}) share nothing with the catalogue's "Universiti Tun Hussein Onn Malaysia"
+   ({tun, hussein, onn}), and the normalised names aren't equal either — so it returns ''.
+   `sole_catalogue_institution` is what actually fills #48 and the other 10 rows; nothing else in the
+   system produces that value.
 
 ## The uncomfortable finding
 
-This is the **same bug the 2026-07-23 reporting-date sprint fixed**, one fact lower in the same
-function. That sprint hoisted `sync_reporting_date_from_offer` above the guards, wrote the shape up as
+The institution sat in the **same position** the reporting date had occupied before 2026-07-23 — one
+fact lower in the same function, below the same guards. (The guards were not what cost #48 its
+institution; see the correction above. The structural point stands: an independent fact was riding as
+a passenger in a function whose job is something else, and inherited its exits.) That sprint hoisted `sync_reporting_date_from_offer` above the guards, wrote the shape up as
 a general lesson ("a fact riding as a passenger in a function whose real job is something else
 inherits every one of that function's exits"), and left the institution sitting in the identical
 position. The result is visible on #48's own screen: a ticked date beside an empty institution — the
@@ -100,3 +113,73 @@ The officer Blockers card no longer renders at "Awaiting review" — a submitted
 submission gate, so it could only read "Nothing outstanding" (owner). And `test_email_branding.py`
 read its golden fixture in the platform encoding, which made the suite red on any Windows dev box;
 pinned to UTF-8. Both unrelated to the sprint's deliverable, both cheap, both were in the way.
+
+
+---
+
+# Addendum — the regression this sprint caused (2026-07-26)
+
+Within hours of the deploy the owner re-ran #48's offer letter and the record broke. This section is
+part of the same retrospective because the incident is not separable from the sprint: it is what the
+sprint's own change did on contact with a real document.
+
+## What happened
+
+The re-extraction itself went well — genuineness re-scored from a stale 1.4.0 to 1.6.0, still
+`genuine`/`ua_offer` at p=1.00, `student_verdict` moved `name_mismatch` → `ok`, the reporting date
+held. My writer fired and filled the institution with the catalogue's "Universiti Tun Hussein Onn
+Malaysia": the intended outcome.
+
+Then `offer_pathway_match` compared that recorded value against the letter's "UTHM - KAMPUS (CAWANGAN
+PAGOH)" by distinctive-token overlap — `{tun, hussein, onn}` against `{uthm, kampus, pagoh}` — and
+returned `clash`. A correct pathway read `mismatch`. Red Pathway chip, no Institution tick, one red
+chip docked off the verdict band, and Check 2 raised a `pathway_confirm` asking the student to confirm
+a pathway that was already right.
+
+While the field was blank that comparison returned `unknown` — nothing to compare, benignly silent.
+**Filling a field converted a silence into a false accusation.**
+
+## Why (root cause, three layers)
+
+1. **The tests covered the writer and nothing that consumes it.** 29 tests on
+   `sync_institution_from_catalogue` — every guard, every resolution branch, idempotency, the
+   contradiction abstain — and not one on what a reader does with a value it has never received. The
+   transition blank→populated was expressed nowhere, so 4559 green tests said nothing about it.
+2. **I created a divergence in the same sprint and only tested one half.** I taught
+   `offer_contradicts_course_institution` that a catalogue ACRONYM identifies an institution —
+   precisely because "UTHM" shares no token with the full name — then left `_field_status`, which
+   paints the officer's chip and drives the verdict, comparing the same two strings by token overlap.
+   Acronym-aware guard, acronym-blind display, hours apart, same pair of strings.
+3. **I named the wrong cause for the original bug** and the fix inherited that error. I read #48's
+   STORED `student_verdict: 'name_mismatch'` from 7 July and concluded the wrong-person guard was
+   blocking the fill; in fact the name tolerance shipped 8 July and `_name_status` recomputes live, so
+   the guard passes. Had I checked the live computation I would have found the real cause
+   (`catalogue_institution` refusing a hint-less answer) first, and would have been looking at the
+   acronym problem from the start — which is exactly what bit.
+
+## What prevents recurrence
+
+- **The invariant test**, which is the shape that would have caught it: *the pathway verdict is the
+  same whether the institution is blank or filled*, for the same student and the same letter. Asserted
+  across the transition, not about the new value. Verified to fail against the old comparator.
+- **One shared predicate.** `_refers_to_campus` is now the single definition of "this string names
+  this campus", used by the writer's guard, the Pathway chip and the Institution tick.
+- **Two lessons** in `docs/lessons.md`: populating a previously-empty field is a change to every
+  reader that has only ever seen it empty; and two functions answering the same question must share
+  the predicate or the one you are not looking at stays wrong.
+
+## What went right
+
+The blast radius was one row. #48 was the only offer re-extracted after the deploy, because I had
+held the 11-row backfill for owner approval rather than running it with the code. That single
+judgement is the difference between one student's screen and eleven. It also argues for the habit:
+ship the code, let it run on one real record, then backfill.
+
+## Owner's contribution to the fix
+
+The final design is the owner's, not mine. I was going to make the comparison acronym-aware — a
+string heuristic that would have needed extending for "UTHM Pagoh", "Kampus Pagoh, UTHM", English and
+Malay forms, campus codes. The owner's observation replaced it: *"The course selector only has one
+option, UTHM. So there is a match."* For a single-campus course a clash is not unlikely, it is
+impossible, so no string rule is required at all. Comparison is meaningful only for a multi-campus
+course, where the catalogue supplies both the candidate set and the acronyms.

@@ -706,7 +706,15 @@ def semester_check(doc) -> dict:
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
     sname = (getattr(profile, 'name', '') or '').strip()
     snric = (getattr(profile, 'nric', '') or '').strip()
-    name_status = vision.name_match(name, sname) if (name and sname) else 'no_ref'
+    # SAME person across two documents → the TOLERANT matcher, not the strict identity one
+    # (owner 2026-07-25, #118). This student's cert OCR'd "THACAYAHNI" for "THACHAYAHNI" — one
+    # dropped letter — and read her NRIC exactly right, while her offer letter, results slip and
+    # semester result all spelled the name correctly and showed green. A red Name chip beside a
+    # green IC on the same document is not a wrong-person signal, it is OCR noise on a Tamil name.
+    # `relationship_name_match` is STRICTLY more lenient than `name_match`; the IC identity anchor
+    # (verdict_engine._verdict_identity, services.consent gate) keeps the strict form deliberately.
+    # Derived at READ time, so every existing document picks this up with no re-extraction.
+    name_status = vision.relationship_name_match(name, sname) if (name and sname) else 'no_ref'
     if not nric or not snric:
         nric_status = 'no_ref'
     else:
@@ -791,7 +799,15 @@ def student_school_leaving_check(doc) -> dict:
     sname = (getattr(profile, 'name', '') or '').strip()
     snric = (getattr(profile, 'nric', '') or '').strip()
     sschool = (getattr(profile, 'school', '') or '').strip()
-    name_status = vision.name_match(name, sname) if (name and sname) else 'no_ref'
+    # SAME person across two documents → the TOLERANT matcher, not the strict identity one
+    # (owner 2026-07-25, #118). This student's cert OCR'd "THACAYAHNI" for "THACHAYAHNI" — one
+    # dropped letter — and read her NRIC exactly right, while her offer letter, results slip and
+    # semester result all spelled the name correctly and showed green. A red Name chip beside a
+    # green IC on the same document is not a wrong-person signal, it is OCR noise on a Tamil name.
+    # `relationship_name_match` is STRICTLY more lenient than `name_match`; the IC identity anchor
+    # (verdict_engine._verdict_identity, services.consent gate) keeps the strict form deliberately.
+    # Derived at READ time, so every existing document picks this up with no re-extraction.
+    name_status = vision.relationship_name_match(name, sname) if (name and sname) else 'no_ref'
     # School matched abbreviation-aware (SMK ↔ Sekolah Menengah Kebangsaan): green on a match, amber
     # on a partial, red on a clear mismatch, grey when either side is blank.
     school_status = _school_match(school, sschool)

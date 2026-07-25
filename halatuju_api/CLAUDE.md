@@ -522,7 +522,46 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-25)
+## Next Sprint (as of 2026-07-26)
+
+**✅ SHIPPED 2026-07-26 — REGRESSION FIX: filling the institution made a correct pathway read
+"mismatch".** Backend only, NO migration, nothing re-extracted. Retro section in
+`docs/retrospective-2026-07-25-institution-must-fill-s1.md`; decisions ×2; lessons ×2.
+- **The incident.** Sprint 1 (2026-07-25) filled `chosen_programme.institution` from the catalogue.
+  The owner re-ran #48's offer, my writer fired, and the record broke: `offer_pathway_match` compares
+  the recorded institution to the letter's by distinctive-token overlap, and "Universiti Tun Hussein
+  Onn Malaysia" shares NO token with the letter's "UTHM - KAMPUS (CAWANGAN PAGOH)". A blank had
+  returned `unknown` (benign); a filled value returned `clash` → pathway `mismatch` → red Pathway
+  chip, no Institution tick, a red chip docked off the verdict band, and a `pathway_confirm` asking
+  the student to confirm a pathway that was already right. **Blast radius 1 row** (#48 was the only
+  offer re-extracted post-deploy; holding the backfill is why it wasn't 11).
+- **The fix — the CATALOGUE answers, not strings.** `offer_pathway.institution_agreement(course_id,
+  recorded, offer)` → `match`/`clash`/`unknown`: **one campus → `match` without comparing anything**
+  (owner's rule — a single-campus course cannot clash); 0 campuses → `unknown`; multi-campus →
+  resolve BOTH sides to a campus (tokens / stripped name / **acronym**), agree iff same, `unknown`
+  when unresolvable. `offer_pathway_match` + the tertiary Institution tick read that ONE answer.
+  Token comparison survives only for a free-text pick with no `course_id`.
+- **The drift that caused it:** the same sprint taught `offer_contradicts_course_institution` about
+  acronyms and left the display comparison acronym-blind. Both now share `_refers_to_campus`.
+- **Also fixed:** `school_leaving_check` + `semester_check` name chips use the TOLERANT
+  `relationship_name_match` (as offer + income already did) — #118's cert read "THACAYAHNI" for
+  "THACHAYAHNI" (NRIC exact) and showed red at `recommended`. Read-time, no re-extraction. The strict
+  matcher stays on the IC identity anchor.
+- **Record corrected:** the wrong-person guard was NOT what left #48 blank (name tolerance shipped
+  2026-07-08, `_name_status` recomputes live → the guard passes); `sole_catalogue_institution` is the
+  fix, the hoist is defensive. Diagnosed from a STORED verdict without checking it is derived.
+- **Sprint 2 STRUCK** (absolute QC gate on a filled institution) — modelled on the reporting-date
+  stop, but that field is load-bearing and this one is display-only, and the flow already reaches
+  100% filled by `interviewing` (53/53). `backfill_institution` report mode is the check.
+- **4569 pytest** (+10, incl. the invariant *pathway is unchanged whether the institution is blank or
+  filled*, proven to fail pre-fix) + 746 jest. `makemigrations --check` clean.
+- **▶ AT DEPLOY:** push (api rebuild; the web tree is unchanged by this fix). Code-only.
+- **▶ THEN, owner-gated:** `python manage.py backfill_institution --status profile_complete --apply`
+  re-fills **#48** (blanked 2026-07-25 to stop the false clash). Verify his cockpit first.
+- **▶ NEXT — Sprint 3** (sponsor programme hyperlink + one ` · ` specialisation format everywhere per
+  owner D2 + catalogue `course_institutions` rows for #132/#136). Independent; nothing gates it.
+
+## Superseded — previous Next Sprint (as of 2026-07-25)
 
 **✅ SHIPPED + PUSHED 2026-07-25 — Institution must-fill, Sprint 1:
 the institution gets its OWN writer.** Roadmap `docs/plans/2026-07-25-institution-must-fill-roadmap.md`
