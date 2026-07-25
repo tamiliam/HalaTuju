@@ -816,10 +816,19 @@ describe('apply stash / return marker (My Results onboarding round-trip)', () =>
   })
 
   it('no-ops safely when no storage is available (SSR/node without injection)', () => {
-    expect(() => stashApplyForm(baseForm())).not.toThrow()
-    expect(popApplyStash()).toBeNull()
-    expect(hasApplyReturn()).toBe(false)
-    expect(() => clearApplyReturn()).not.toThrow()
+    // Node ≥22 ships a global sessionStorage (in-memory), so "plain node" no longer
+    // means "no storage" — hide it to simulate a genuinely storage-less runtime.
+    const desc = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage')
+    Object.defineProperty(globalThis, 'sessionStorage', { value: undefined, configurable: true })
+    try {
+      expect(() => stashApplyForm(baseForm())).not.toThrow()
+      expect(popApplyStash()).toBeNull()
+      expect(hasApplyReturn()).toBe(false)
+      expect(() => clearApplyReturn()).not.toThrow()
+    } finally {
+      if (desc) Object.defineProperty(globalThis, 'sessionStorage', desc)
+      else delete (globalThis as { sessionStorage?: unknown }).sessionStorage
+    }
   })
 })
 

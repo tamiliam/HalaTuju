@@ -30,6 +30,13 @@ never demand proof a genuine family can't produce. Retro
   removed). i18n en/ms/ta (Tamil first-draft). No migration.
 - Data op: test app **#16 reset awarded → shortlisted** (holding sponsorship #36 cancelled to restore
   the sponsor balance; award fields cleared). **4523 pytest + 738 jest.**
+- **Fixed — contracts Quiz tab numbering** (`56f5aa7d`, post-close): quiz candidates now show the
+  outline number (4., 4.1, I.) via `clauseNumbers` — the same scheme as the Clauses tab and the PDF —
+  instead of the flat `ContractClause.order` row index (14., 19., 31.). Display-only; quiz assignment
+  unchanged. Dark feature, FE only.
+- **Fixed — test env rot**: Node ≥22 ships a global in-memory `sessionStorage`, so the "no-ops when no
+  storage is available" SSR-guard test started failing on Node 26 (the stash silently succeeded). The
+  test now hides the global to simulate a genuinely storage-less runtime. **739 jest.**
 
 ## Billing & usage v1 — the per-tenant usage meter + super/org_admin usage screen (Sprint 13a) — 2026-07-25
 
