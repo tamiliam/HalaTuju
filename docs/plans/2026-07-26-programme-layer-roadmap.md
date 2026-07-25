@@ -151,10 +151,12 @@ Added 2026-07-26 after the owner described the actual Sabah funding flow: *benef
 - **Risk + mitigation:** *Risk:* this is the first path that puts real money into the system on an admin's say-so. *Mitigation:* two-person control, a mandatory external reference, and no reuse of the mock donation path.
 - **Complexity:** Medium–High (money-touching). ~12 files.
 
-**Owner decisions outstanding on P4:**
-1. **Maker-checker, or single-admin with an audit log?** (Recommended: maker-checker.)
-2. **Does the benefactor self-serve allocations** — browse the anonymised Sabah pool and fund students, the existing sponsor flow scoped to the programme — **or does the org admin allocate on their behalf?** The latter is additional admin scope not yet planned.
-3. **One credit per bank transfer, or a running top-up ledger?** Affects reconciliation against the Foundation's bank account.
+**Owner decisions on P4:**
+1. **OPEN — Maker-checker, or single-admin with an audit log?** (Recommended: maker-checker.)
+2. **✅ ANSWERED 2026-07-26 — the benefactor SELF-SERVES allocation.** They browse the anonymised, programme-scoped pool and fund students **on need**, never learning any identity (decision record: "Benefactor anonymity is absolute"). The org admin does **not** allocate on their behalf — no additional admin scope. The admin's only money action is crediting the wallet.
+3. **OPEN — One credit per bank transfer, or a running top-up ledger?** Affects reconciliation against the Foundation's bank account.
+
+**Anonymity constraint binding P2/P3/P4:** programme scoping filters WHICH cards a funder sees; it must never touch the allowlist governing WHAT a card shows (`pool.py` + the allowlist serializers — students appear only as a salted-hash alias). The existing anonymity assertions must pass **unmodified** through all three sprints.
 
 ---
 
