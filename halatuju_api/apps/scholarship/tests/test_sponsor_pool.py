@@ -319,7 +319,9 @@ class TestAllowlistNoLeak(TestCase):
         app.save(update_fields=['chosen_programme', 'pre_u_institution', 'chosen_pathway', 'pre_u_track'])
         data = SponsorPoolCardSerializer(app).data
         self.assertEqual(data['institution'], 'Sekolah Menengah Kebangsaan Maxwell')  # shown, from cp.institution
-        self.assertEqual(data['course'], 'Tingkatan Enam (Sains)')                    # track appended
+        # ONE format across both surfaces (owner D2, 2026-07-25): the specialisation follows a
+        # MIDDOT, as the cockpit has always rendered it. Was 'Tingkatan Enam (Sains)'.
+        self.assertEqual(data['course'], 'Tingkatan Enam · Sains')
         self.assertNotIn('SMK MAXWELL', json.dumps(data))         # the pre_u duplicate is never used
 
     def test_mis_slotted_offer_never_shows_junk(self):

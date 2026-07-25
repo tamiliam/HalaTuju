@@ -111,6 +111,7 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     enrolment_verified = serializers.SerializerMethodField()  # R5: bare boolean badge
     field_image_slug = serializers.SerializerMethodField()  # redesign: catalogue artwork
     reporting_date = serializers.SerializerMethodField()     # redesign: course-start countdown
+    course_href = serializers.SerializerMethodField()        # link to the public course page
 
     def get_ref(self, app):
         return pool.pool_ref(app.id)
@@ -118,6 +119,13 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     def get_field_image_slug(self, app):
         # Catalogue field artwork (shared by hundreds of courses) — non-identifying.
         return _resolve_field_image_slug(app, self.context)
+
+    def get_course_href(self, app):
+        # The programme's public HalaTuju page, so the course name is a link and not dead text
+        # (owner 2026-07-25). Non-identifying by construction: a course page is shared by every
+        # student on that programme — the same class as field_image_slug above. '' → plain text.
+        from . import card_display
+        return card_display.course_href(app)
 
     def get_reporting_date(self, app):
         # DATE ONLY (never a time) — already sponsor-visible via the narrative/pathway

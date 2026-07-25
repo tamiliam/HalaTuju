@@ -210,20 +210,37 @@ def sole_catalogue_institution(course_id: str) -> str:
     """
     if not (course_id or '').strip():
         return ''
-    from apps.courses.models import CourseInstitution
-    names = [n for n in CourseInstitution.objects
-             .filter(course_id=course_id)
-             .values_list('institution__institution_name', flat=True) if (n or '').strip()]
-    unique = {n.strip() for n in names}
+    # Through _campus_rows, so this and institution_agreement see the SAME campus list — including
+    # the post-STPM catalogue. Its own inline CourseInstitution query (the first cut, 2026-07-25) is
+    # exactly how the SPM table became the only one either function could see.
+    unique = {n.strip() for n, _a in _campus_rows(course_id) if (n or '').strip()}
     return next(iter(unique)) if len(unique) == 1 else ''
 
 
 def _campus_rows(course_id: str):
-    """[(institution_name, acronym)] for a course_id — the catalogue's campus list."""
-    from apps.courses.models import CourseInstitution
-    return list(CourseInstitution.objects
+    """[(institution_name, acronym)] for a course_id — the catalogue's campus list.
+
+    TWO catalogues, because a B40 student's ``chosen_programme.course_id`` can come from either
+    picker: the post-SPM ``Course`` table (many courses, each at one or many campuses) and the
+    post-STPM ``StpmCourse`` table (one programme at ONE university, by construction). Looking only
+    at ``CourseInstitution`` — which is all this did until 2026-07-26 — meant every STPM-degree
+    student read as a catalogue gap: #132 (UUM law) and #136 (UPSI education) had a blank institution
+    and no tick, not because the data was missing but because we were asking the wrong table. An
+    STPM row yields exactly one campus, so the single-campus rule then applies natively.
+    """
+    from apps.courses.models import CourseInstitution, Institution, StpmCourse
+    rows = list(CourseInstitution.objects
                 .filter(course_id=course_id)
                 .values_list('institution__institution_name', 'institution__acronym'))
+    if rows:
+        return rows
+    stpm = (StpmCourse.objects.filter(course_id=course_id)
+            .values_list('university', 'institution_id').first())
+    if not stpm or not (stpm[0] or '').strip():
+        return []
+    acronym = (Institution.objects.filter(institution_id=stpm[1])
+               .values_list('acronym', flat=True).first() or '') if stpm[1] else ''
+    return [(stpm[0].strip(), acronym)]
 
 
 def _refers_to_campus(name: str, acronym: str, hint: str) -> bool:

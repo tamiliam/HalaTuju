@@ -87,10 +87,10 @@ class TestResolution(TestCase):
     def test_course_appends_track_for_stpm_and_matric_only(self):
         stpm = self._app(chosen_programme={'course_name': 'Tingkatan Enam'},
                          chosen_pathway='stpm', pre_u_track='sains_sosial')
-        self.assertEqual(cd.resolve_course(stpm), 'Tingkatan Enam (Sains Sosial)')
+        self.assertEqual(cd.resolve_course(stpm), 'Tingkatan Enam · Sains Sosial')   # D2: one format
         matric = self._app(chosen_programme={'course_name': 'Program Matrikulasi'},
                            chosen_pathway='matric', pre_u_track='perakaunan')
-        self.assertEqual(cd.resolve_course(matric), 'Program Matrikulasi (Perakaunan)')
+        self.assertEqual(cd.resolve_course(matric), 'Program Matrikulasi · Perakaunan')
         # A poly course carries no track even if a stray pre_u_track is set.
         poly = self._app(chosen_programme={'course_name': 'Diploma Kejuruteraan Mekanikal'},
                          chosen_pathway='poly', pre_u_track='sains')
@@ -136,7 +136,7 @@ class TestResolution(TestCase):
                           'stream': 'Bahasa Tamil Pendidikan Rendah (SJKT)'})
         # The single-line sponsor form joins the two with a dash.
         self.assertEqual(cd.resolve_course(a),
-                         'Ijazah Sarjana Muda Perguruan — Bahasa Tamil Pendidikan Rendah (SJKT)')
+                         'Ijazah Sarjana Muda Perguruan · Bahasa Tamil Pendidikan Rendah (SJKT)')   # D2: one format
 
     def test_pismp_unpinned_shows_degree_alone(self):
         # An UNPINNED PISMP (no course_id — awaiting the Aliran/Bidang pick) must NOT echo the
@@ -238,3 +238,85 @@ class TestTrackLabelParity(SimpleTestCase):
             'Pre-U track labels have DRIFTED between the backend (card_display._TRACK_LABEL) and the '
             'FE (messages/ms.json scholarship.apply.plan.stream/.track). Update BOTH so the sponsor '
             'card and the officer cockpit render the same words.')
+
+
+class TestStpmCatalogueAndCourseHref(TestCase):
+    """The post-STPM catalogue is a SEPARATE table, and the resolvers only knew the SPM one
+    (#132 UUM law / #136 UPSI education, owner 2026-07-26) — so an STPM-degree student read as a
+    catalogue gap: blank institution, no tick, and a programme name falling through to the stored
+    free text with e-Panduan's trailing '#'. Plus ``course_href``, the sponsor-facing course link.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.courses.models import Institution, StpmCourse
+        cls.cohort = ScholarshipCohort.objects.create(code='c3', name='B40', year=2026)
+        cls.tax = FieldTaxonomy.objects.create(key='zz_law', name_en='Law', name_ms='Undang-Undang',
+                                               name_ta='சட்டம்', image_slug='law')
+        cls.spm_course = Course.objects.create(course_id='ZZSPM1', course='Diploma Perakaunan',
+                                              level='Diploma', department='X', field='Acc',
+                                              field_key=cls.tax)
+        Institution.objects.get_or_create(
+            institution_id='ZZ-UUM', defaults={'institution_name': 'Universiti Utara Malaysia',
+                                               'type': 'Universiti', 'state': 'Kedah',
+                                               'acronym': 'UUM'})
+        # A StpmCourse is ONE programme at ONE university, by construction.
+        StpmCourse.objects.create(course_id='ZZSTPM1',
+                                  course_name='Sarjana Muda Undang-Undang dengan Kepujian',
+                                  university='Universiti Utara Malaysia',
+                                  institution_id='ZZ-UUM', field_key=cls.tax)
+
+    def _app(self, **over):
+        p = StudentProfile.objects.create(supabase_user_id=f'c3-{ScholarshipApplication.objects.count()}')
+        return ScholarshipApplication.objects.create(cohort=self.cohort, profile=p, **over)
+
+    # ── the STPM catalogue is now visible to the resolvers ───────────────────────
+    def test_institution_resolves_from_the_stpm_catalogue(self):
+        from apps.scholarship import offer_pathway as op
+        self.assertEqual(op.sole_catalogue_institution('ZZSTPM1'), 'Universiti Utara Malaysia')
+
+    def test_an_stpm_course_cannot_clash_on_institution(self):
+        # One university by construction → the single-campus rule applies natively, so the acronym
+        # form on a letter can never read as a disagreement.
+        from apps.scholarship import offer_pathway as op
+        self.assertEqual(
+            op.institution_agreement('ZZSTPM1', 'Universiti Utara Malaysia', 'UUM SINTOK'), 'match')
+
+    def test_programme_name_comes_from_the_stpm_catalogue_not_the_free_text(self):
+        # The stored free text carries e-Panduan's '#'; the catalogue name does not.
+        a = self._app(chosen_programme={'course_id': 'ZZSTPM1',
+                                        'course_name': 'Sarjana Muda Undang-Undang dengan Kepujian #'})
+        self.assertEqual(cd.resolve_course(a), 'Sarjana Muda Undang-Undang dengan Kepujian')
+        self.assertNotIn('#', cd.resolve_course(a))
+
+    def test_the_two_single_campus_resolvers_are_one_definition(self):
+        # They were separate implementations of the same question, which is how one learned about
+        # the STPM catalogue and the other didn't.
+        from apps.scholarship import offer_pathway as op
+        for cid in ('ZZSTPM1', 'ZZSPM1', 'nonexistent', ''):
+            self.assertEqual(cd.catalogue_single_institution(cid),
+                             op.sole_catalogue_institution(cid), cid)
+
+    # ── course_href ──────────────────────────────────────────────────────────────
+    def test_href_for_an_spm_catalogue_course(self):
+        a = self._app(chosen_programme={'course_id': 'ZZSPM1'})
+        self.assertEqual(cd.course_href(a), '/course/ZZSPM1')
+
+    def test_href_for_an_stpm_catalogue_course(self):
+        a = self._app(chosen_programme={'course_id': 'ZZSTPM1'})
+        self.assertEqual(cd.course_href(a), '/stpm/ZZSTPM1')
+
+    def test_href_for_a_pre_u_pick_with_no_course_id(self):
+        stpm = self._app(chosen_programme={'course_name': 'Tingkatan Enam'},
+                         chosen_pathway='stpm', pre_u_track='sains_sosial')
+        self.assertEqual(cd.course_href(stpm), '/pathway/stpm?stream=sains_sosial')
+        matric = self._app(chosen_programme={}, chosen_pathway='matric', pre_u_track='perakaunan')
+        self.assertEqual(cd.course_href(matric), '/pathway/matric?track=perakaunan')
+        bare = self._app(chosen_programme={}, chosen_pathway='stpm')
+        self.assertEqual(cd.course_href(bare), '/pathway/stpm')
+
+    def test_no_href_rather_than_a_dead_link(self):
+        # A stale course_id in NEITHER catalogue, and a pathway with no public page.
+        self.assertEqual(cd.course_href(self._app(chosen_programme={'course_id': 'GONE-1'})), '')
+        self.assertEqual(cd.course_href(self._app(chosen_programme={}, chosen_pathway='poly')), '')
+        self.assertEqual(cd.course_href(self._app(chosen_programme={})), '')

@@ -74,3 +74,35 @@ it('shows the sidebar facts table + balance (owner spec)', async () => {
       node?.tagName === 'P' && (node.textContent || '').includes('sponsorPortal.students.balanceLabel'),
     )).toBeTruthy())
 })
+
+it('links the programme to its public course page, in a new tab', async () => {
+  // owner 2026-07-25: the sponsor surface should hyperlink the programme, as the cockpit does.
+  // `course_href` is server-computed (card_display.course_href) so the FE never re-derives it.
+  mockDetail.mockResolvedValue({
+    ref: 'Student A9', state: 'Selangor', field: 'Engineering', academic: '5A 3B',
+    course: 'Diploma Teknologi Animasi', course_href: '/course/UB4213001',
+    institution: 'Universiti Tun Hussein Onn Malaysia', school: 'SMK Test',
+    reporting_date: '2026-09-01', funding_categories: ['Fees'], programme_months: 24,
+    enrolment_verified: true, anon_profile: '', award_amount: '3000',
+  })
+  render(<StudentDetailPage />)
+  const link = await screen.findByText('Diploma Teknologi Animasi')
+  expect(link.tagName).toBe('A')
+  // Plain DOM assertions — this project's jest setup does not load @testing-library/jest-dom.
+  expect(link.getAttribute('href')).toBe('/course/UB4213001')
+  expect(link.getAttribute('target')).toBe('_blank')
+})
+
+it('renders the programme as plain text when it has no course page', async () => {
+  // A stale course_id in neither catalogue, or a pathway with no public page → '' from the
+  // server. Never a dead link.
+  mockDetail.mockResolvedValue({
+    ref: 'Student A9', state: 'Selangor', field: 'Engineering', academic: '5A 3B',
+    course: 'Diploma Teknologi Animasi', course_href: '',
+    institution: 'Politeknik Ungku Omar', school: 'SMK Test', reporting_date: '2026-09-01',
+    funding_categories: ['Fees'], programme_months: 24, enrolment_verified: true,
+    anon_profile: '', award_amount: '3000',
+  })
+  render(<StudentDetailPage />)
+  expect((await screen.findByText('Diploma Teknologi Animasi')).tagName).not.toBe('A')
+})

@@ -710,6 +710,11 @@ export interface SponsorPoolCard {
   school: string      // the SECONDARY school attended (owner 2026-07-18) — '' when unknown
   field: string
   course: string      // confirmed programme name (e.g. "Diploma Kejuruteraan Mekanikal")
+  // Path to that programme's public HalaTuju page ('/course/<id>' | '/stpm/<id>' | '/pathway/…'),
+  // or '' when it has none — then the name renders as plain text. Server-computed
+  // (card_display.course_href) so the FE never re-derives the rule. Non-identifying: a course page
+  // is shared by every student on that programme.
+  course_href: string
   academic: string
   institution: string // TARGET university — '' when unknown (card shows course only)
   blurb: string       // ≤20-word card-strict one-liner — '' when none

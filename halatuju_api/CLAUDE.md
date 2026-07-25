@@ -524,6 +524,34 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-26)
 
+**✅ SHIPPED 2026-07-26 — Institution must-fill Sprint 3 (sponsor surface parity). THE ROADMAP IS
+NOW CLOSED** (`docs/plans/2026-07-25-institution-must-fill-roadmap.md`: S1 shipped + a regression
+fixed, S2 struck, S3 shipped). Retro `docs/retrospective-2026-07-26-institution-sprint3.md`;
+lessons ×2. Backend + one FE link, NO migration, **no data write**.
+- **The planned "#132/#136 catalogue rows" data fix DISSOLVED on investigation** — those course ids
+  (`UU6380001`, `UA6145019`) are not in the `courses` table at all; they are **`stpm_courses`** rows,
+  each already carrying its university. `_campus_rows` + `catalogue_course_name` only queried the SPM
+  catalogue, so EVERY STPM-degree student read as a catalogue gap. Both now fall back to
+  `StpmCourse` → no prod write, and the class is fixed rather than two rows. A `StpmCourse` is one
+  programme at one university, so the single-campus rule applies natively.
+- Their programme name also stopped leaking e-Panduan's trailing `#` to the sponsor card.
+- **ONE specialisation format everywhere (owner D2):** ` · ` on both surfaces. The sponsor string had
+  used parens (STPM/Matric) and an em dash (PISMP). **Sponsor-visible copy change.**
+- **`card_display.course_href(app)`** + `course_href` on the pool card/detail allowlist; the
+  programme is a link on the sponsor DETAIL page. **NOT on the browse card** — that card is already a
+  `<Link>`, so a nested anchor would be invalid HTML and steal its click. Server-computed; `''` → plain
+  text, never a dead link.
+- **Removed 2 duplicate definitions** (`catalogue_single_institution` vs
+  `sole_catalogue_institution`; the latter's own inline query vs `_campus_rows`) — both mine from
+  2026-07-25, and either would have let the STPM fix land in one function and not the others.
+- **4577 pytest + 748 jest**; `makemigrations --check` clean; `next build` clean.
+- **▶ AT DEPLOY:** push (api + web rebuild). Code-only, no migrate-first, no env vars.
+- **▶ NOTHING QUEUED after this.** Standing owner items unchanged: FLIP `BILLING_USAGE_ENABLED=1`
+  on 1 Aug 2026; second-tenant meeting w/c 28 Jul fires Phases 3–4; Sprint 7 gated to ≈21 Aug;
+  Gemini 2.5 → 3.x migration before 16 Oct.
+
+## Superseded — previous Next Sprint (as of 2026-07-26, the regression fix)
+
 **✅ SHIPPED 2026-07-26 — REGRESSION FIX: filling the institution made a correct pathway read
 "mismatch".** Backend only, NO migration, nothing re-extracted. Retro section in
 `docs/retrospective-2026-07-25-institution-must-fill-s1.md`; decisions ×2; lessons ×2.

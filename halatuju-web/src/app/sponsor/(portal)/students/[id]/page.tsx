@@ -107,7 +107,17 @@ export default function StudentDetailPage() {
                 {detail.academic && (
                   <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">{detail.academic}</span>
                 )}
-                <h1 className="mt-2 text-xl font-bold text-gray-900 leading-snug">{detail.course || detail.field || detail.ref}</h1>
+                {/* The programme links to its public HalaTuju course page when it has one
+                    (`course_href`, server-computed) — a new tab, so the sponsor doesn't lose the
+                    student. Deliberately NOT on the browse card: that whole card is already a
+                    <Link> to this page, and a nested anchor would be invalid HTML and would steal
+                    the card's click. Falls back to plain text when there is no page. */}
+                <h1 className="mt-2 text-xl font-bold text-gray-900 leading-snug">
+                  {detail.course && detail.course_href ? (
+                    <a href={detail.course_href} target="_blank" rel="noreferrer"
+                       className="hover:text-primary-600 hover:underline">{detail.course}</a>
+                  ) : (detail.course || detail.field || detail.ref)}
+                </h1>
                 {detail.institution && <p className="text-sm text-gray-500 mt-0.5">{detail.institution}</p>}
               </div>
             </div>

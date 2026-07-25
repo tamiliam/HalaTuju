@@ -80,21 +80,28 @@ def catalogue_course_name(course_id):
     cid = (course_id or '').strip()
     if not cid:
         return ''
-    from apps.courses.models import Course
-    return (Course.objects.filter(course_id=cid).values_list('course', flat=True).first() or '').strip()
+    from apps.courses.models import Course, StpmCourse
+    name = (Course.objects.filter(course_id=cid).values_list('course', flat=True).first() or '').strip()
+    if name:
+        return name
+    # The post-STPM catalogue is a SEPARATE table (#132 UUM law / #136 UPSI education). Without this
+    # their sponsor card fell through to the stored free-text name, which carries e-Panduan's
+    # trailing '#' ("Sarjana Muda Undang-Undang dengan Kepujian #") — junk on a sponsor surface.
+    return (StpmCourse.objects.filter(course_id=cid)
+            .values_list('course_name', flat=True).first() or '').strip()
 
 
 def catalogue_single_institution(course_id):
     """The catalogue institution ONLY when the course is offered at exactly one — else ''
     (a course offered at many, e.g. Asasi TVET at 10 polytechnics, can't be disambiguated
-    from the course_id alone; the real one lives on the offer)."""
-    cid = (course_id or '').strip()
-    if not cid:
-        return ''
-    from apps.courses.models import CourseInstitution
-    names = list(CourseInstitution.objects.filter(course_id=cid)
-                 .values_list('institution__institution_name', flat=True)[:2])
-    return names[0].strip() if len(names) == 1 and names[0] else ''
+    from the course_id alone; the real one lives on the offer).
+
+    Thin alias for ``offer_pathway.sole_catalogue_institution`` — kept for its one caller
+    (``repair_chosen_programme``). The two were separate implementations of the same question until
+    2026-07-26, which is how one of them learned about the STPM catalogue and the other didn't.
+    One definition, both callers."""
+    from .offer_pathway import sole_catalogue_institution
+    return sole_catalogue_institution(course_id)
 
 
 def _taxonomy_name(field_key, lang='en'):
@@ -175,19 +182,51 @@ def programme_split(app, lang='en'):
 
 
 def resolve_course(app, lang='en'):
-    """The single-line programme title a sponsor sees. Built on ``programme_split``: a
-    degree+specialisation pathway (PISMP) joins with a dash ("Ijazah Sarjana Muda Perguruan —
-    Bahasa Tamil Pendidikan Rendah (SJKT)"); STPM/Matric append the track in parens ("Tingkatan
-    Enam (Sains Sosial)"); everything else is the bare course name. Never junk, never a school."""
+    """The single-line programme title a sponsor sees. Built on ``programme_split``: the
+    specialisation — the bidang for a degree+specialisation pathway (PISMP), the track for
+    STPM/Matric — is appended after a MIDDOT ("Tingkatan Enam · Sains Sosial", "Ijazah Sarjana Muda
+    Perguruan · Bahasa Tamil Pendidikan Rendah (SJKT)"). Everything else is the bare course name.
+    Never junk, never a school.
+
+    ONE format across both surfaces (owner D2, 2026-07-25). The sponsor string used to differ from
+    the cockpit's for no reason a reader could see — parens for STPM/Matric, an em dash for PISMP,
+    against the cockpit's ` · ` for all three. Standardising the other way was rejected on sight:
+    parens nest badly on PISMP, whose bidang already carries its own ("… (Bahasa Tamil Pendidikan
+    Rendah (SJKT))"). Same rule as ``preu_label`` above, which already used the middot."""
     sp = programme_split(app, lang)
     title, stream = sp['title'], sp['stream']
     if not title or not stream:
         return title
-    pw = (getattr(app, 'chosen_pathway', '') or '').strip().lower()
-    if pw in _DEGREE_TITLE:
-        return f'{title} — {stream}'
-    return title if f'({stream})' in title else f'{title} ({stream})'
+    return title if f'({stream})' in title or f'· {stream}' in title else f'{title} · {stream}'
 
+
+def course_href(app):
+    """The path to this programme's public HalaTuju page, or '' when it has none.
+
+    Exposed to sponsors (``course_href`` on the pool card + detail) so the programme name is a link
+    rather than dead text — owner 2026-07-25. Non-identifying by construction: a course page is
+    shared by every student on that programme, the same class as ``field_image_slug``.
+
+    Mirrors the officer cockpit's own rule: a catalogue ``course_id`` → ``/course/<id>``, or
+    ``/stpm/<id>`` when the id belongs to the post-STPM catalogue; a pre-U pick with no course_id →
+    its ``/pathway`` page keyed by track. '' when neither exists (the caller renders plain text).
+    """
+    from apps.courses.models import Course, StpmCourse
+    cp = app.chosen_programme if isinstance(getattr(app, 'chosen_programme', None), dict) else {}
+    cid = (cp.get('course_id') or '').strip()
+    if cid:
+        if Course.objects.filter(course_id=cid).exists():
+            return f'/course/{cid}'
+        if StpmCourse.objects.filter(course_id=cid).exists():
+            return f'/stpm/{cid}'
+        return ''                      # a stale id in neither catalogue → no dead link
+    pw = (getattr(app, 'chosen_pathway', '') or '').strip().lower()
+    track = (getattr(app, 'pre_u_track', '') or '').strip()
+    if pw == 'stpm':
+        return f'/pathway/stpm?stream={track}' if track else '/pathway/stpm'
+    if pw == 'matric':
+        return f'/pathway/matric?track={track}' if track else '/pathway/matric'
+    return ''
 
 def resolve_institution(app):
     """The institution a sponsor sees — the SINGLE stored ``chosen_programme.institution`` field

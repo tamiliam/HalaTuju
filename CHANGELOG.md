@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## Institution must-fill Sprint 3 — sponsor surface parity — 2026-07-26
+
+Final sprint of `docs/plans/2026-07-25-institution-must-fill-roadmap.md`. Backend + a one-line
+frontend link, **no migration**, and — the headline — **no data insert after all**.
+
+- **Fixed — the catalogue resolvers were blind to the post-STPM catalogue.** The roadmap's third item
+  was "add `course_institutions` rows for #132/#136". Investigating first showed those course ids are
+  not in the `courses` table at all: they live in **`stpm_courses`**, each already carrying its
+  university (#132 → Universiti Utara Malaysia, #136 → Universiti Pendidikan Sultan Idris). So the
+  gap was never missing data — `_campus_rows` and `catalogue_course_name` only ever queried the SPM
+  side. Both now fall back to `StpmCourse`. **No prod write, and it fixes every STPM-degree student
+  rather than two rows.** A `StpmCourse` is one programme at one university by construction, so the
+  single-campus rule then applies natively and their institution + tick resolve on the next read.
+- **Fixed — an STPM-degree student's programme name leaked e-Panduan's trailing `#`** to the sponsor
+  card ("Sarjana Muda Undang-Undang dengan Kepujian #"), because the name resolver fell through to
+  the stored free text. It now reads `StpmCourse.course_name`.
+- **Changed — ONE specialisation format across both surfaces (owner D2).** `resolve_course` appends
+  the specialisation after a **middot**, as the cockpit always has: "Tingkatan Enam · Sains Sosial",
+  "Ijazah Sarjana Muda Perguruan · Bahasa Tamil Pendidikan Rendah (SJKT)". The sponsor string used to
+  use parens for STPM/Matric and an em dash for PISMP, differing from the officer's view for no
+  reason a reader could see. Standardising the other way was rejected on sight — parens nest badly on
+  PISMP, whose bidang already carries its own. **Sponsor-visible copy change.**
+- **Added — the programme is a link on the sponsor detail page.** New `card_display.course_href(app)`
+  → `/course/<id>`, `/stpm/<id>` for a post-STPM programme, or the `/pathway` page for a pre-U pick;
+  `''` when there is no page, so never a dead link. Exposed as `course_href` on the pool card +
+  detail allowlist (non-identifying by construction — a course page is shared by every student on
+  that programme, the same class as `field_image_slug`; the leak scan covers it automatically).
+  Server-computed so the FE never re-derives the rule. **Deliberately NOT on the browse card:** that
+  whole card is already a `<Link>` to the detail page, and a nested anchor would be invalid HTML and
+  would steal the card's click.
+- **Removed two duplicate definitions found while working.** `card_display.catalogue_single_institution`
+  and `offer_pathway.sole_catalogue_institution` were separate implementations of "the single campus
+  for this course" — which is precisely how one learned about the STPM catalogue and the other
+  wouldn't have; and `sole_catalogue_institution` had its own `CourseInstitution` query rather than
+  using `_campus_rows`. All three now route through one definition. (Both duplicates were mine, from
+  2026-07-25 — the lesson written that day, applied to its own author.)
+- **+14 pytest / +2 jest.** `makemigrations --check` clean, `next build` clean.
+- **▶ CARRY:** none new. The sponsor `course` string changed format — worth an eye on the next
+  sponsor notification email, which reads the same serializer.
+
 ## Fixed: filling the institution made a correct pathway read "mismatch" — 2026-07-26
 
 A live regression introduced by the previous day's institution must-fill sprint, found by the owner

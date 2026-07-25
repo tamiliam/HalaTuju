@@ -1,6 +1,6 @@
 # Institution is a must-fill fact — implementation roadmap
 
-**Date:** 2026-07-25 · **Status:** Sprint 1 shipped (+ a regression fixed 2026-07-26) · Sprint 2 STRUCK · Sprint 3 open
+**Date:** 2026-07-25 · **Status:** ✅ CLOSED 2026-07-26 — Sprint 1 shipped (+ regression fixed), Sprint 2 struck, Sprint 3 shipped
 **Origin:** owner live review of #48 — "Institution is a must fill, as this is required in the
 sponsor's portal as well."
 
@@ -73,7 +73,7 @@ Two decisions, both **settled by the owner 2026-07-25**:
 
 ---
 
-## 4. Sprint roadmap (Sprint 1 shipped · Sprint 2 struck · Sprint 3 open)
+## 4. Sprint roadmap (all closed)
 
 ### ~~Sprint 1 — the institution becomes a filled fact~~ ✅ SHIPPED 2026-07-25
 Retro `docs/retrospective-2026-07-25-institution-must-fill-s1.md`; decisions ×2; lessons ×3.
@@ -91,31 +91,21 @@ would only ever fire on the cases the machine deliberately declines to resolve, 
 a human judgement in a process that is not failing. `backfill_institution` (report mode) is the check
 instead. Reasoning recorded in `docs/decisions.md`.
 
-### Sprint 3 — sponsor surface parity (independent of 1 and 2)
-**Goal.** A sponsor sees the programme as a link, formatted the same way the cockpit formats it.
+### ~~Sprint 3 — sponsor surface parity~~ ✅ SHIPPED 2026-07-26
+Retro `docs/retrospective-2026-07-26-institution-sprint3.md`; lessons ×2. `course_href` on the
+sponsor card/detail allowlist + the programme linked on the detail page (NOT the browse card — that
+card is already a `<Link>`); one ` · ` specialisation format everywhere (D2). **The "#132/#136
+catalogue rows" item dissolved on investigation** — those ids are `stpm_courses` rows, not missing
+`course_institutions` links, so the fix was teaching `_campus_rows` + `catalogue_course_name` about
+the post-STPM catalogue: no data write, and it fixes every STPM-degree student. Also removed two
+duplicate single-campus resolvers. +14 pytest / +2 jest.
 
-**Scope.**
-- A course-page href on the sponsor pool card + detail. **Allowlist care:** the sponsor
-  serializers are plain allowlists with an exact-key snapshot test; a course link is
-  non-identifying (hundreds of students share a course — the same class as `field_image_slug`) but
-  must be added to the leak scan and the key snapshot deliberately.
-- Specialisation punctuation per D2.
-- Catalogue `course_institutions` rows for #132 (UUM law) and #136 (UPSI education) — a courses-app
-  data fix, migrate-first if it needs one.
-
-**Files (~8).** `serializers.py`, `card_display.py`, sponsor pool card + detail pages,
-`tests/test_pool_anonymity.py`, `poolCard.ts` + test, i18n.
-
-**Acceptance.** Link resolves for catalogue courses and pre-U picks · anonymity suite green with the
-new field · exact-key snapshot updated deliberately · #132/#136 resolve an institution afterwards.
-
-**Complexity.** Low–medium.
-
----
+**▶ THE ROADMAP IS CLOSED.** Sprint 1 shipped (+ a regression fixed 2026-07-26), Sprint 2 struck,
+Sprint 3 shipped.
 
 ## 5. Sequencing, risk, and what is explicitly out of scope
 
-- **Order:** Sprint 3 is independent and is all that remains. (The old 1 → 2 dependency died with Sprint 2.)
+- **Order:** as executed — Sprint 1, Sprint 2 struck, Sprint 3. Nothing outstanding.
 - **Riskiest early?** No — inverted deliberately. Sprint 2 carries the live risk (blocking QC), and
   it is only safe once Sprint 1 has proven the data can be filled.
 - **Out of scope:** the 5 genuine clashes stay a human decision; no change to award sizing, payment
