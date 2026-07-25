@@ -17,7 +17,7 @@ from apps.scholarship import sponsorship as svc
 from apps.scholarship import standing_gift
 from apps.scholarship.models import (
     Consent, Donation, Programme, ScholarshipApplication, ScholarshipCohort, Sponsor,
-    SponsorProfile, Sponsorship,
+    SponsorProfile, SponsorProgrammeMembership, Sponsorship,
 )
 
 
@@ -123,7 +123,14 @@ class TestSpendIsProgrammeScoped(TestCase):
         self.assertEqual(svc.sponsor_balance(self.sponsor, self.sabah), Decimal('7000'))
 
     def test_standing_gift_will_not_auto_allocate_across_programmes(self):
-        """A standing gift funded in one programme must not reach into another."""
+        """A standing gift funded in one programme must not reach into another.
+
+        Accepted into BOTH programmes (P3), so the only thing stopping the flagship
+        allocation is the WALLET fence — this isolates P2a's guarantee from P3's."""
+        SponsorProgrammeMembership.objects.create(
+            sponsor=self.sponsor, programme=self.sabah, status='approved')
+        SponsorProgrammeMembership.objects.create(
+            sponsor=self.sponsor, programme=self.flagship, status='approved')
         Donation.objects.create(sponsor=self.sponsor, amount=Decimal('10000'), programme=self.sabah)
         standing_gift.StandingGift.objects.create(sponsor=self.sponsor, active=True)
         flagship_app = _app(self.flagship, self.org, award=Decimal('3000'))

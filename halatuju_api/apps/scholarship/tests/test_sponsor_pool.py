@@ -53,9 +53,48 @@ def _token(uid, email='', anon=False):
         TEST_JWT_SECRET, algorithm='HS256')
 
 
+def fixture_programme():
+    """The shared fixture Programme (+ its organisation), get-or-created.
+
+    Platform programme layer (P3, 2026-07-26): pool visibility is now fenced by
+    ``SponsorProgrammeMembership``, so a pool fixture needs BOTH a programme on the
+    application and an approved membership for the sponsor. These two helpers are the
+    single place that pairing is expressed — mirror them rather than hand-rolling.
+
+    NB: never the code 'brightpath-flagship' — migration 0119 seeds that into the test DB.
+    """
+    from apps.courses.models import PartnerOrganisation
+    from apps.scholarship.models import Programme
+    org, _ = PartnerOrganisation.objects.get_or_create(
+        code='fixture-org', defaults={'name': 'Fixture Org'})
+    programme, _ = Programme.objects.get_or_create(
+        code='fixture-programme',
+        defaults={'organisation': org, 'name_en': 'Fixture Bursary'})
+    return programme
+
+
+def grant_pool_access(sponsor, programme=None):
+    """Accept ``sponsor`` into ``programme`` (default: the shared fixture programme).
+    Without this a sponsor sees an EMPTY pool — acceptance is per programme and is not
+    implied by an approved account (see decisions.md / test_sponsor_programme_membership)."""
+    from apps.scholarship.models import SponsorProgrammeMembership
+    SponsorProgrammeMembership.objects.get_or_create(
+        sponsor=sponsor, programme=programme or fixture_programme(),
+        defaults={'status': 'approved'})
+    return sponsor
+
+
 def _make_eligible_app(cohort, *, suffix='1', anon_published=True, consent=True):
     """A fully pool-eligible application on synthetic data, with every identifying
-    field populated (so leak tests have something to catch)."""
+    field populated (so leak tests have something to catch).
+
+    Also attaches the shared fixture Programme to ``cohort`` when it has none, so the
+    application carries a programme (the P3 pool fence filters on it). Pair with
+    ``grant_pool_access(sponsor)`` — an app in a programme nobody is accepted into is
+    correctly invisible."""
+    if cohort.programme_id is None:
+        cohort.programme = fixture_programme()
+        cohort.save(update_fields=['programme'])
     profile = StudentProfile.objects.create(
         supabase_user_id=f'pool-{suffix}',
         grades={'bm': 'A', 'eng': 'A', 'math': 'A+', 'sci': 'B'},
@@ -570,8 +609,9 @@ class TestSponsorBrowse(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         cls.app = _make_eligible_app(cls.cohort)
-        Sponsor.objects.create(supabase_user_id='spon-ok', name='S', email='s@x.com',
-                               phone='0123', source='friend', consent_at=timezone.now(), status='approved')
+        grant_pool_access(Sponsor.objects.create(
+            supabase_user_id='spon-ok', name='S', email='s@x.com',
+            phone='0123', source='friend', consent_at=timezone.now(), status='approved'))
         Sponsor.objects.create(supabase_user_id='spon-pending', name='P', email='p@x.com', status='pending')
 
     def setUp(self):

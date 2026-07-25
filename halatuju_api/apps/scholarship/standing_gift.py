@@ -45,6 +45,10 @@ def matching_gifts(application):
             continue
         if g.max_amount is not None and award > g.max_amount:
             continue
+        # Programme fence: a standing gift only auto-allocates within gifts its sponsor
+        # was accepted into — never reaching into a programme they cannot even browse.
+        if application.programme_id not in set(pool.approved_programme_ids(g.sponsor)):
+            continue
         # Affordability is checked against the wallet for THIS student's programme —
         # a standing gift funded for one programme never auto-allocates in another.
         if sponsorship_service.sponsor_balance(g.sponsor, application.programme) < award:

@@ -15,14 +15,20 @@ from apps.scholarship import sponsor_notifications as notif
 from apps.scholarship.models import (
     ScholarshipCohort, Sponsor, SponsorProfile,
 )
-from .test_sponsor_pool import IDENTIFIERS, TEST_JWT_SECRET, _make_eligible_app, _token
+from .test_sponsor_pool import (
+    IDENTIFIERS, TEST_JWT_SECRET, _make_eligible_app, _token, grant_pool_access,
+)
 
 
-def _sponsor(uid, freq, *, status='approved', last_digest_sent_at=None):
-    return Sponsor.objects.create(
+def _sponsor(uid, freq, *, status='approved', last_digest_sent_at=None, pool_access=True):
+    s = Sponsor.objects.create(
         supabase_user_id=uid, name=f'S {uid}', email=f'{uid}@spon.example',
         phone='0123', source='friend', consent_at=timezone.now(), status=status,
         notify_frequency=freq, last_digest_sent_at=last_digest_sent_at)
+    # P3: notifications are programme-fenced too — an unaccepted sponsor is mailed nothing.
+    if pool_access:
+        grant_pool_access(s)
+    return s
 
 
 def _publish_now(app):

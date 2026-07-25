@@ -227,7 +227,7 @@ class SponsorPoolListView(_PoolBase):
     """GET /api/v1/sponsor/pool/ — the anonymised student pool for an approved
     sponsor. Each card is an allowlist of non-identifying fields only."""
     def get(self, request):
-        _, err = self._gate(request)
+        sponsor, err = self._gate(request)
         if err:
             return err
         # The DISPLAY pool includes just-funded students (grace window) shown as read-only
@@ -238,7 +238,11 @@ class SponsorPoolListView(_PoolBase):
         # grace-window cards — one list, no separator. Within each group, newest-relevant-event
         # first (a funded card by when it was sponsored = awarded_at; an open one by when it entered
         # the pool = recommended_at). Sorting is server-side, so no timestamp leaks to the card.
-        qs = pool.display_pool_queryset(ScholarshipApplication).annotate(
+        # Programme fence: only the gifts this sponsor is accepted into (platform
+        # programme layer). No approved membership → an empty pool, never the platform's.
+        qs = pool.for_sponsor(
+            pool.display_pool_queryset(ScholarshipApplication), sponsor,
+        ).annotate(
             funded_total=Sum('sponsorships__amount',
                              filter=Q(sponsorships__status__in=Sponsorship.HOLDING)),
             _unfunded_first=Case(When(status='recommended', then=Value(0)),
@@ -252,12 +256,16 @@ class SponsorPoolDetailView(_PoolBase):
     """GET /api/v1/sponsor/pool/<pk>/ — one anonymised student (card + the
     generated anonymous blurb). 404 unless the student is currently pool-eligible."""
     def get(self, request, pk):
-        _, err = self._gate(request)
+        sponsor, err = self._gate(request)
         if err:
             return err
         # Display pool (incl. just-funded grace-window cards) — a funded student's detail stays
         # viewable (read-only) for the window; the fund action itself remains gated by is_fundable.
-        app = pool.display_pool_queryset(ScholarshipApplication).filter(id=pk).first()
+        # Programme-fenced: a student in a gift this sponsor isn't accepted into reads as
+        # not_found, never as forbidden — an existence leak would defeat the fence.
+        app = pool.for_sponsor(
+            pool.display_pool_queryset(ScholarshipApplication), sponsor,
+        ).filter(id=pk).first()
         if not app:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(SponsorPoolDetailSerializer(app).data)

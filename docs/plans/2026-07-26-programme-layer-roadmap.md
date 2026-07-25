@@ -230,7 +230,15 @@ money systems. See the decision record "Money is OFF-platform until the CLBG exi
    role is filled. See the scope bullet above and the decision record "The wallet credit reuses the
    payments sign-off chain". No bespoke control model, no new second-signer rule.
 2. **✅ ANSWERED 2026-07-26 — the benefactor SELF-SERVES allocation.** They browse the anonymised, programme-scoped pool and fund students **on need**, never learning any identity (decision record: "Benefactor anonymity is absolute"). The org admin does **not** allocate on their behalf — no additional admin scope. The admin's only money action is crediting the wallet.
-3. **OPEN — One credit per bank transfer, or a running top-up ledger?** Affects reconciliation against the Foundation's bank account.
+3. **✅ ANSWERED 2026-07-26 — ONE ROW PER BANK TRANSFER.** The wallet is a two-sided ledger: credits
+   in (one per transfer, each carrying its bank reference) and allocations out (one per student,
+   anonymous ref only); the balance is the running sum, never stored. **This shrinks P4** — the
+   "how has my money been spent" view already exists as `sponsorship.sponsor_statement()` (R4),
+   which renders both ledgers. P4 therefore adds credits-with-real-references and makes the
+   statement **programme-grouped** (wallets became per-programme in P2a); it does not build a
+   ledger. Returns (lapsed/cancelled allocations) must appear as their own entries — money coming
+   back should be visible, not a silently shrinking total. See the decision record "One credit row
+   per bank transfer".
 
 **Anonymity constraint binding P2/P3/P4:** programme scoping filters WHICH cards a funder sees; it must never touch the allowlist governing WHAT a card shows (`pool.py` + the allowlist serializers — students appear only as a salted-hash alias). The existing anonymity assertions must pass **unmodified** through all three sprints.
 

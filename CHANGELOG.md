@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform programme layer P3 — sponsor acceptance is per programme — 2026-07-26
+
+Third sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **A sponsor sees a
+programme's students only if they were accepted into that programme.** Migrations written but
+**NOT yet applied to prod**.
+
+- **Added — `SponsorProgrammeMembership`** (sponsor, programme, status, vetted_by/at). The
+  sponsor ACCOUNT stays platform-level — one login, one identity, one "is this a legitimate
+  person" vetting — while **acceptance is per programme**, and it attaches to the durable
+  Programme so it survives the year rollover. **Two independent gates** now stand between a
+  sponsor and a student: `Sponsor.status == 'approved'` (the account) **and** an approved
+  membership (this gift). Unique per (sponsor, programme) — acceptance is a state, not a log.
+- **Added — `pool.for_sponsor(qs, sponsor)`, the single narrowing seam.** Every sponsor-facing
+  pool read goes through it: list, detail, digests, real-time alerts, standing gifts. **No
+  membership → an empty pool**, never the platform's — the safe direction, since a Sabah funder
+  must not discover that a flagship student exists.
+- **Fixed — the notification paths routed around the pool fence.** Scoping the pool alone was not
+  enough: the weekly digest and the real-time alert would still have told a Sabah-only funder that
+  flagship students exist. Both are now fenced. The pool detail view returns **`not_found`** (never
+  `forbidden`) for a student in an unaccepted programme, so the fence leaks no existence.
+- **Added — migrations `0122` (schema, hand-written Postgres DDL incl. the sibling RLS
+  convention) + `0123` (backfill)**, both reversible. `0123` mirrors each sponsor's account status
+  into a flagship membership verbatim, carrying a **no-visibility-change invariant**: what every
+  existing sponsor can see is exactly what they could see before.
+- **Added — `test_sponsor_programme_membership.py` (12 tests)** plus a **source guard** asserting
+  every sponsor-facing pool read and both notification paths narrow by membership — the mechanical
+  equivalent of the org-fence completeness map, so the next view added cannot silently serve the
+  whole platform. Anonymity is deliberately **not** re-tested here: membership governs *which*
+  cards are visible, never *what* a card shows, and the allowlist suites stay untouched.
+- **Changed — pool test fixtures gained a shared factory pairing** (`fixture_programme()` +
+  `grant_pool_access()` in `test_sponsor_pool.py`). Eleven pre-existing tests failed on the new
+  fence because their sponsors had no membership — correct behaviour, and their fixtures had
+  become incomplete descriptions of reality. Fixed at the shared factory, not test by test.
+
 ## Platform programme layer P2a — the sponsor wallet is per-programme — 2026-07-26
 
 Second sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **Money given to one gift

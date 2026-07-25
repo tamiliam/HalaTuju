@@ -59,7 +59,13 @@ def send_sponsor_realtime():
 
     sent = 0
     for s in sponsors:
-        if send_sponsor_new_student_email(s.email, _serialise_cards(new_apps, s), name=s.name):
+        # Programme fence: alert each sponsor ONLY about students in gifts they are
+        # accepted into. Without this a Sabah-only funder would learn that flagship
+        # students exist — the pool fence is worthless if the emails route around it.
+        theirs = [a for a in new_apps if a.programme_id in set(pool.approved_programme_ids(s))]
+        if not theirs:
+            continue
+        if send_sponsor_new_student_email(s.email, _serialise_cards(theirs, s), name=s.name):
             sent += 1
 
     # Stamp the whole batch as real-time-notified (whether or not any sponsor is
@@ -87,7 +93,9 @@ def send_sponsor_digests():
     now = timezone.now()
     sent = 0
     for s in sponsors:
-        qs = base
+        # Programme fence — see send_sponsor_realtime: a digest must never surface a
+        # student from a gift this sponsor was not accepted into.
+        qs = pool.for_sponsor(base, s)
         if s.last_digest_sent_at:
             qs = qs.filter(sponsor_profile__anon_published_at__gt=s.last_digest_sent_at)
         apps = list(qs)

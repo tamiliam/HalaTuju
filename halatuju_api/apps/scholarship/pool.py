@@ -288,6 +288,36 @@ def scan_profile_pii(text, profile):
     return found
 
 
+def approved_programme_ids(sponsor):
+    """The programme ids this sponsor is ACCEPTED into. Empty when they hold no approved
+    membership — which correctly yields an empty pool rather than the whole platform's."""
+    if sponsor is None:
+        return []
+    from .models import SponsorProgrammeMembership
+    return list(
+        SponsorProgrammeMembership.objects
+        .filter(sponsor=sponsor, status='approved')
+        .values_list('programme_id', flat=True)
+    )
+
+
+def for_sponsor(qs, sponsor):
+    """Narrow a pool queryset to the programmes this sponsor is accepted into — **the ONE
+    seam** for per-programme pool visibility (platform programme layer, 2026-07-26).
+
+    The owner's rule: a sponsor sees a programme's students only if they onboarded into it
+    AND were accepted, *"and that is not a given"*. No membership → sees nothing, which is
+    the safe direction: a sponsor accepted into Sabah must not discover that a flagship
+    student exists, and vice versa.
+
+    This governs WHICH cards are visible. It deliberately does NOT touch the allowlist that
+    governs WHAT a card shows — anonymity is absolute and enforced separately (see the module
+    docstring + decisions.md, "Benefactor anonymity is absolute"). Every sponsor-facing read
+    of the pool — list, detail, notifications, standing gifts — goes through here.
+    """
+    return qs.filter(programme_id__in=approved_programme_ids(sponsor))
+
+
 def eligible_pool_queryset(model):
     """The FUNDABLE pool — applications a sponsor may still fund (anon-published + active share
     consent + at the QC-cleared ``recommended`` stage). ``model`` is ``ScholarshipApplication``

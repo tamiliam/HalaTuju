@@ -1525,6 +1525,59 @@ class Sponsor(models.Model):
         return f'Sponsor {self.email} ({self.status})'
 
 
+class SponsorProgrammeMembership(models.Model):
+    """A sponsor's acceptance into ONE gift programme (platform programme layer, 2026-07-26).
+
+    The owner's rule: a sponsor sees a programme's students only if they *"specifically
+    onboarded into both and accepted into both — and that is not a given"*. So the sponsor
+    ACCOUNT stays platform-level (one login, one identity, one vetting of "is this a real,
+    legitimate person") while **acceptance is per programme**, and it survives the year
+    rollover because it attaches to the durable Programme, not to an intake.
+
+    Two gates, both of which must pass before a sponsor sees a student:
+      1. ``Sponsor.status == 'approved'`` — the ACCOUNT is vetted at all (unchanged);
+      2. an ``approved`` membership row here — accepted into THIS programme.
+
+    This narrows WHICH cards a funder sees. It must never touch the allowlist governing
+    WHAT a card shows — anonymity is absolute and is enforced elsewhere (``pool.py`` +
+    the allowlist serializers). See decisions.md, "Benefactor anonymity is absolute".
+    """
+    STATUS = [
+        ('pending', 'Pending review'),   # onboarded into the programme, awaiting vetting
+        ('approved', 'Approved'),         # accepted — may browse THIS programme's pool
+        ('rejected', 'Rejected'),         # not accepted into this programme
+        ('suspended', 'Suspended'),       # access to this programme revoked after approval
+    ]
+    sponsor = models.ForeignKey(
+        Sponsor, on_delete=models.CASCADE, related_name='programme_memberships',
+    )
+    programme = models.ForeignKey(
+        'Programme', on_delete=models.PROTECT, related_name='sponsor_memberships',
+    )
+    status = models.CharField(max_length=20, choices=STATUS, default='pending')
+    # Who vetted this membership + when (the org admin acting for that programme).
+    vetted_by = models.CharField(max_length=200, blank=True, default='')
+    vetted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sponsor_programme_memberships'
+        # One membership per (sponsor, programme) — acceptance is a state, not a log.
+        constraints = [
+            models.UniqueConstraint(fields=['sponsor', 'programme'],
+                                    name='uniq_sponsor_programme_membership'),
+        ]
+        ordering = ['sponsor_id', 'programme_id']
+
+    def __str__(self):
+        return f'sponsor={self.sponsor_id} programme={self.programme_id} {self.status}'
+
+    @property
+    def is_approved(self):
+        return self.status == 'approved'
+
+
 class Donation(models.Model):
     """Phase E3: money a sponsor donates into myNADI (via toyyibPay; mocked until
     the gateway is wired). A donation is FINAL — it is myNADI's money. It credits

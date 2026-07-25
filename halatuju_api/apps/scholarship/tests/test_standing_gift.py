@@ -19,6 +19,8 @@ from apps.scholarship.models import (
     SponsorProfile, Sponsorship, StandingGift,
 )
 
+from .test_sponsor_pool import fixture_programme, grant_pool_access
+
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 ADULT_NRIC = '000101-10-1233'
 
@@ -31,6 +33,11 @@ def _token(uid, email='x@x.com'):
 
 
 def _fundable_app(cohort, *, suffix='1', award=Decimal('3000'), state='Kedah', field='Engineering'):
+    # P3/P2a: the app needs a programme — it fences pool visibility AND scopes the wallet
+    # the standing gift spends from. Pair with _sponsor(), which accepts into the same one.
+    if cohort.programme_id is None:
+        cohort.programme = fixture_programme()
+        cohort.save(update_fields=['programme'])
     profile = StudentProfile.objects.create(
         supabase_user_id=f'stu-{suffix}', name='Zxq Student', nric=ADULT_NRIC,
         preferred_state=state, exam_type='spm', grades={'bm': 'A'},
@@ -48,7 +55,10 @@ def _sponsor(uid='spon-1', status='approved', donate=Decimal('10000')):
         supabase_user_id=uid, name='Jane Sponsor', email='jane@sponsor.example',
         phone='0123', source='friend', consent_at=timezone.now(), status=status)
     if donate:
-        Donation.objects.create(sponsor=s, amount=donate)
+        # P2a: the wallet is per (sponsor, programme) — money must land in the SAME
+        # programme the fixture apps live in, or the affordability check reads zero.
+        Donation.objects.create(sponsor=s, amount=donate, programme=fixture_programme())
+    grant_pool_access(s)   # P3: acceptance into that programme
     return s
 
 
