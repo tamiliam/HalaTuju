@@ -190,6 +190,22 @@ already renders both ledgers). **This is what actually unblocks recording the RM
 built the machinery, P4b is the way to drive it. Returns (lapsed/cancelled allocations) must show
 as their own entries, not a silently shrinking total.
 
+**Role gates — mirror `payments.sign` exactly** (owner 2026-07-26; verified against live roles):
+
+| Step | Gate | BrightPath today |
+|---|---|---|
+| Record + sign | `role == 'admin'` or super | **Poongulali Veeran** (`admin`) |
+| Finance check | `role == 'finance'` or super | *dark — none appointed* |
+| Confirm | `role == 'org_admin'` or super | **Suresh Thirugnanam** (`org_admin`) |
+
+⚠ **Do NOT gate the maker on `org_admin`** — Poongulali is a plain `admin`, so that would lock
+the actual operator out. Same pairing as the student payment chain, deliberately.
+
+**⚠ P4b MUST close a gap carried from P4a:** the service functions take `signer` as a free string
+— distinctness is enforced, identity and role are not. Add the payments chain's **typed-name
+match** against `PartnerAdmin.name` (`name_mismatch`) **and** the role gate at the endpoint.
+Until both land, the service alone is not a complete control.
+
 ### Original P4 scope (kept for reference)
 
 **Re-scoped 2026-07-26** — see the ⚠ box below. This is **not** an accommodation for one benefactor;

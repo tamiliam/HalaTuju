@@ -5416,6 +5416,20 @@ the income FACT, "P3" — stays deferred and re-banding-gated; no live case curr
 **Trade-offs:** in the interim the person receiving the cash personally can also be the maker, so the control rests entirely on a *distinct* approver. That is thinner than a three-signature chain, and it is the reason the finance appointment matters — noted, not blocking.
 **Revisit if:** the payments chain's own shape changes — P4 must follow it rather than diverge. **⚠ Currency rule:** a change to the payment-run sign-off chain must update the wallet-credit chain in the same commit; they are deliberately one design.
 
+**Concrete role mapping (owner, 2026-07-26) — the SAME pairing as the student payment chain.** *"Since they do not have a finance role yet, kulali (as instructed by Suresh) would credit and Suresh would approve… Similar to the payment to students, as it is now."* Verified against live prod roles: **Poongulali Veeran is `admin`**, **Suresh Thirugnanam is `org_admin`**, and BrightPath has **no `finance` admin** (checker dark). So P4b's gates mirror `payments.sign` exactly:
+
+| Step | Role gate (payments.py:514/534/554) | BrightPath today |
+|---|---|---|
+| Record + sign (maker) | `role == 'admin'` or super | **Poongulali** |
+| Finance check (conditional) | `role == 'finance'` or super | *dark — nobody appointed* |
+| Confirm (approver) | `role == 'org_admin'` or super | **Suresh** |
+
+Note this is deliberately **not** `org_admin` for the maker — Poongulali is a plain `admin`, so gating the maker on `org_admin` would lock the actual operator out. Same trap in both chains, avoided the same way.
+
+**Separation-of-duties note:** Suresh has custody of the cash and is the approver; Poongulali records. So the person handling the money does not enter it — stronger than the alternative where he did both. The control is real **only if Poongulali can see the bank record** (a statement line or transfer screenshot) rather than being told an amount verbally: `external_reference` is a verification when she can check it against something, and merely a transcription when she cannot. Give her sight of the transfer.
+
+**⚠ Gap carried from P4a into P4b:** `sponsorship.sign_admin_credit` / `confirm_admin_credit` take `signer` as a free string — they enforce distinctness but not identity or role. The payments chain additionally requires the signer to **type their own name**, matched against `PartnerAdmin.name` (`name_mismatch`), plus the role gate. P4b MUST add both at the endpoint layer; until it does, the service alone is not a complete control.
+
 ## One credit row per bank transfer — the wallet is a two-sided ledger, not a running total — 2026-07-26
 **Decision (owner):** a wallet credit is **one row per bank transfer**, not a periodically-reconciled aggregate. *"He donates RM1,000 into the foundation account, that's an entry. RM1k is credited into wallet. When he [allocates] RM1k, that amount is debited from the wallet for the anonymised student. If he were to query how his money has been spent, this is what he would see."* The balance is therefore the **running sum of the rows** — credits in, allocations out — never a stored figure.
 **This closes the last P4 open question.** One-per-transfer is what makes `external_reference` meaningful: each credit maps 1:1 to a line on the receiving bank statement, which is the only thread back to real money while the cash sits off-platform (see "Money is OFF-platform until the CLBG exists"). An aggregated or periodically-trued-up credit would break that correspondence and make reconciliation guesswork.
