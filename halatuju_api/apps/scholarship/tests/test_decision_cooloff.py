@@ -216,7 +216,7 @@ class TestAwardCooloff(TestCase):
         self.assertEqual(app.status, 'awarded')                 # still 'awarded' — not finalised to 'active' yet
         self.assertIsNotNone(app.award_due_at)
         self.assertEqual(len(mail.outbox), n)                   # no confirmed email yet
-        self.assertEqual(svc.sponsor_balance(s), Decimal('0'))  # held
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))  # held
 
     def test_hold_reverts_acceptance_and_frees_money(self):
         app, s = self._offered_app()
@@ -225,7 +225,7 @@ class TestAwardCooloff(TestCase):
         app.refresh_from_db()
         self.assertIsNone(app.award_due_at)
         self.assertEqual(app.status, 'recommended')
-        self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))   # returned to sponsor
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))   # returned to sponsor
         self.assertFalse(app.sponsorships.filter(status='active').exists())
 
     def test_release_after_due_confirms_and_emails(self):

@@ -1534,6 +1534,17 @@ class Donation(models.Model):
     sponsor = models.ForeignKey(
         Sponsor, on_delete=models.CASCADE, related_name='donations',
     )
+    # Platform programme layer (2026-07-26): the gift programme this money was given TO.
+    # Funds given to one programme are never visible or spendable in another — a donor
+    # gives to "Sabah", not to the platform at large (decisions.md, "Restricted funds and
+    # sponsor acceptance attach to the Programme"). The wallet is therefore per
+    # (sponsor, programme), never one pool. NULL only for bare test fixtures; prod is
+    # backfilled to the flagship. Balance reads go through sponsorship.sponsor_balance().
+    programme = models.ForeignKey(
+        'Programme', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='donations',
+        help_text='The gift programme this donation is restricted to.',
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     # toyyibPay billCode/ref once real; 'mock' for dev/dummy donations.
     reference = models.CharField(max_length=100, blank=True, default='mock')

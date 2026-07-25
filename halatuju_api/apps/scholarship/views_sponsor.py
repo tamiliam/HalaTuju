@@ -298,7 +298,16 @@ class SponsorWalletView(_PoolBase):
         holding = sponsor.sponsorships.filter(status__in=Sponsorship.HOLDING).select_related(
             'application', 'application__profile', 'application__sponsor_profile')
         return Response({
-            'balance': str(sponsorship_service.sponsor_balance(sponsor)),
+            # DISPLAY total across every wallet this sponsor holds. Each ringgit is
+            # restricted to the programme it was given to, so this figure is never a
+            # spend authority — funding checks call sponsor_balance(sponsor, programme).
+            'balance': str(sponsorship_service.sponsor_available_total(sponsor)),
+            'balances': [
+                {'programme': p.code if p else None,
+                 'programme_name': p.name_en if p else '',
+                 'available': str(bal)}
+                for p, bal in sponsorship_service.sponsor_programme_balances(sponsor)
+            ],
             'donations': donations,
             'sponsorships': SponsorSponsorshipSerializer(holding, many=True).data,
         })
@@ -420,7 +429,7 @@ class SponsorDonateView(_PoolBase):
         if amount <= 0:
             return Response({'error': 'invalid_amount'}, status=status.HTTP_400_BAD_REQUEST)
         Donation.objects.create(sponsor=sponsor, amount=amount, reference='mock')
-        return Response({'balance': str(sponsorship_service.sponsor_balance(sponsor))},
+        return Response({'balance': str(sponsorship_service.sponsor_available_total(sponsor))},
                         status=status.HTTP_201_CREATED)
 
 

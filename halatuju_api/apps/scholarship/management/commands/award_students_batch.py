@@ -54,7 +54,7 @@ class Command(BaseCommand):
                 # not_fundable / insufficient_balance etc. — report, don't abort the batch.
                 skipped.append((aid, e.code))
 
-        bal = svc.sponsor_balance(sponsor)
+        bal = svc.sponsor_available_total(sponsor)   # report line only — never a spend check
         self.stdout.write(
             f'Batch award (sponsor {sponsor_id}). awarded={awarded} skipped={skipped} '
             f'failed={failed} balance_left={bal}')

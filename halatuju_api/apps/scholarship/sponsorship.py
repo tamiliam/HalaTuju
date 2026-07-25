@@ -20,7 +20,7 @@ from . import pool
 logger = logging.getLogger(__name__)
 from .emails import (send_award_confirmed_email, send_award_offer_email,
                      send_award_offer_sign_email)
-from .models import Sponsorship, SponsorProfile
+from .models import Programme, Sponsorship, SponsorProfile
 from .services import is_minor, record_consent
 from .vircle import raise_setup_task
 
@@ -34,13 +34,54 @@ class SponsorshipError(Exception):
         super().__init__(message or code)
 
 
-def sponsor_balance(sponsor):
-    """A sponsor's spendable directed-giving balance = total donated − allocations
-    that still hold (offered/active). Lapsed/cancelled allocations free up again."""
-    donated = sponsor.donations.aggregate(s=Sum('amount'))['s'] or Decimal('0')
-    held = (sponsor.sponsorships.filter(status__in=Sponsorship.HOLDING)
+def sponsor_balance(sponsor, programme):
+    """A sponsor's spendable balance **within one gift programme** = donated to that
+    programme − allocations in that programme that still hold (offered/active).
+    Lapsed/cancelled allocations free up again.
+
+    ``programme`` is REQUIRED and is the whole point: money given to one programme is
+    never spendable in another (decisions.md, "Restricted funds and sponsor acceptance
+    attach to the Programme"). Passing ``None`` scopes to the NULL bucket — the same
+    safe degenerate partition the org fence uses — so bare test fixtures self-partition
+    rather than silently pooling with real money.
+
+    **This is the only spend authority.** Anything choosing whether a sponsor can fund a
+    student must call this with that student's application programme. For a
+    cross-programme DISPLAY figure use ``sponsor_available_total`` — never for a spend
+    decision.
+    """
+    donated = (sponsor.donations.filter(programme=programme)
+               .aggregate(s=Sum('amount'))['s'] or Decimal('0'))
+    held = (sponsor.sponsorships
+            .filter(status__in=Sponsorship.HOLDING, application__programme=programme)
             .aggregate(s=Sum('amount'))['s'] or Decimal('0'))
     return donated - held
+
+
+def sponsor_programme_balances(sponsor):
+    """Every wallet this sponsor holds: ``[(programme, balance), ...]``, over the
+    distinct programmes they have donated into or allocated within. Ordered by
+    programme id so the output is stable. Display + reconciliation; per-wallet figures
+    here are each a real spend authority, the *sum* of them is not."""
+    programme_ids = set(
+        sponsor.donations.values_list('programme_id', flat=True)
+    ) | set(
+        sponsor.sponsorships.filter(status__in=Sponsorship.HOLDING)
+        .values_list('application__programme_id', flat=True)
+    )
+    by_id = {p.id: p for p in Programme.objects.filter(id__in=[i for i in programme_ids if i])}
+    out = []
+    for pid in sorted(programme_ids, key=lambda i: (i is None, i)):
+        out.append((by_id.get(pid), sponsor_balance(sponsor, by_id.get(pid))))
+    return out
+
+
+def sponsor_available_total(sponsor):
+    """DISPLAY ONLY — the sum of every wallet this sponsor holds. **Never a spend
+    authority**: a total across programmes is not spendable anywhere, because each
+    ringgit is restricted to the programme it was given to. Use ``sponsor_balance``
+    with an explicit programme for any funding decision."""
+    return sum((bal for _p, bal in sponsor_programme_balances(sponsor)), Decimal('0'))
 
 
 def sponsor_impact(sponsor):
@@ -73,7 +114,7 @@ def sponsor_impact(sponsor):
         'balance': {
             'committed': str(committed),
             'completed': str(completed),
-            'available': str(sponsor_balance(sponsor)),
+            'available': str(sponsor_available_total(sponsor)),
         },
     }
 
@@ -138,7 +179,9 @@ def fund_student(sponsor, application):
     if not is_fundable(application):
         raise SponsorshipError('not_fundable')
     amount = application.award_amount
-    if sponsor_balance(sponsor) < amount:
+    # Spend authority is the wallet for THIS student's programme — never a cross-programme
+    # total. A sponsor with money in the flagship cannot fund a Sabah student with it.
+    if sponsor_balance(sponsor, application.programme) < amount:
         raise SponsorshipError('insufficient_balance')
     sp = Sponsorship.objects.create(
         sponsor=sponsor, application=application, amount=amount, status='offered',
@@ -478,7 +521,8 @@ def reinstate_lapsed_sponsorship(application, *, since):
           .order_by('-decided_at').select_related('sponsor').first())
     if sp is None:
         return None
-    if sponsor_balance(sp.sponsor) < sp.amount:
+    # Reinstatement spends from the wallet of the programme this student belongs to.
+    if sponsor_balance(sp.sponsor, application.programme) < sp.amount:
         return None
     sp.status = 'active'
     sp.decided_at = timezone.now()

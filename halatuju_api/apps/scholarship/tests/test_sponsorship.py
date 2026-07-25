@@ -65,10 +65,10 @@ class TestSponsorshipService(TestCase):
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('1000'))
         Donation.objects.create(sponsor=s, amount=Decimal('2000'))
-        self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))
         app = _fundable_app(self.cohort)
         svc.fund_student(s, app)                       # allocates 3000
-        self.assertEqual(svc.sponsor_balance(s), Decimal('0'))
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))
 
     def test_fund_insufficient_balance(self):
         s = _sponsor()
@@ -119,16 +119,16 @@ class TestSponsorshipService(TestCase):
         Donation.objects.create(sponsor=s, amount=Decimal('3000'))
         app = _fundable_app(self.cohort)
         svc.fund_student(s, app)
-        self.assertEqual(svc.sponsor_balance(s), Decimal('0'))
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))
         svc.respond_to_award(app, action='decline')
-        self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))  # returned to balance
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))  # returned to balance
 
     def test_cancel_offer_in_cooloff_reverts_to_pool(self):
         s = _sponsor()
         Donation.objects.create(sponsor=s, amount=Decimal('3000'))
         app = _fundable_app(self.cohort)
         sp = svc.fund_student(s, app)                   # → 'awarded', balance held
-        self.assertEqual(svc.sponsor_balance(s), Decimal('0'))
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))
         svc.cancel_offer(s, sp.id)                      # withdrawn before the email went out
         sp.refresh_from_db()
         app.refresh_from_db()
@@ -137,7 +137,7 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(app.status, 'recommended')     # back in the pool…
         self.assertTrue(pool.is_pool_eligible(app))
         self.assertTrue(svc.is_fundable(app))           # …and another sponsor may fund them
-        self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))   # amount freed
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))   # amount freed
 
     def test_cancel_offer_refused_once_student_emailed(self):
         s = _sponsor()
@@ -173,7 +173,7 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(svc.lapse_expired_offers(), {'lapsed': 1, 'flagged': []})
         sp.refresh_from_db()
         self.assertEqual(sp.status, 'lapsed')
-        self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))
 
     def test_fund_student_does_not_arm_deadline(self):
         # Offer-lapse rework: a fresh offer has a NULL accept_deadline (no clock until the
@@ -544,7 +544,7 @@ class TestAwardStudentsBatch(TestCase):
         self.assertEqual(a1.status, 'awarded')
         self.assertEqual(a2.status, 'awarded')
         self.assertEqual(Sponsorship.objects.filter(sponsor=s, status='offered').count(), 2)
-        self.assertEqual(svc.sponsor_balance(s), Decimal('95000'))   # 100000 - 2000 - 3000
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('95000'))   # 100000 - 2000 - 3000
         self.assertEqual(len(mail.outbox), 0)                        # decoupled — no emails
 
     def test_batch_noop_without_env(self):

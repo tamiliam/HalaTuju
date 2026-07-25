@@ -119,18 +119,36 @@ carries it. **Owner-gated, as every HalaTuju deploy is.**
 
 ## Sprint P2 — Funds per Programme
 
-- **Goal:** A donation carries the programme it was given to; a sponsor's balance becomes per-programme; a payment run can never pay out of another programme's money.
-- **Scope:**
-  - `Donation.programme` FK (additive) + backfill the 6 existing donations to Programme #1.
-  - Balance computation moves from one pool per sponsor to **per (sponsor, programme)** — `donations − active allocations`, scoped. Every read of the balance goes through one helper (the `branding.py` precedent: one seam, not scattered reads).
-  - `Sponsorship` already reaches a programme via `application`; assert consistency (an allocation may only draw on the balance of the programme its application belongs to) with a test, not a comment.
-  - `PaymentRun.programme` FK (additive, nullable → backfill → read). The Sprint-14 maker-checker chain is untouched; only the run's funding source narrows.
-  - Funding summary + any sponsor-facing balance display become programme-aware.
-- **Migrations:** 2 additive + 1 data. Migrate-first; **financial data — verify the backfill on a sample before the full run.**
-- **Test plan:** a donation to Sabah is invisible in the flagship balance and vice versa; an allocation against the wrong programme's balance is refused; the 6 backfilled donations reconcile to the same total (RM172,000) after the change; a payment run cannot include an application from another programme.
-- **Risk + mitigation:** *Risk:* live financial records; a wrong backfill is expensive to unpick. *Mitigation:* additive-then-read (nothing reads the column until the reading code ships), sample verification, and a reconciliation assertion that total donations are unchanged before/after.
-- **Owner gate:** do **not** record the RM100,000 as a platform donation before this sprint — with no programme column it would land in a platform-wide balance with no expressible restriction. Hold it in a documented manual ring-fence until P2 lands.
-- **Complexity:** Medium–High. ~15 files.
+**SPLIT 2026-07-26 into P2a (sponsor wallet) and P2b (payment runs).** The original scope bundled
+the sponsor wallet with `PaymentRun.programme`. Payments is a **live** module — prod holds an open
+draft run (PR-2026-08-01) and the Sprint-14 maker-checker chain runs through it — so changing
+payment-run eligibility does not belong in the same sprint as a wallet rewrite. The wallet is the
+piece Sabah actually needs; payment-run scoping is reporting hygiene and can follow safely.
+
+### P2a — The sponsor wallet becomes per-programme — ✅ **CODE COMPLETE 2026-07-26** (migrations not yet applied)
+
+Delivered: `Donation.programme`; `sponsor_balance(sponsor, programme)` with **programme required —
+no default**, so forgetting it is a `TypeError` rather than a silent cross-programme read;
+`sponsor_programme_balances()` and `sponsor_available_total()` (display only, documented as never a
+spend authority); all seven call sites updated — the four spend paths (`fund_student`,
+reinstatement, `standing_gift.matching_gifts`, batch award) authorise against **the programme of the
+student being funded**, the display paths use the total. Migrations `0120` (schema, with hand-written
+Postgres DDL) + `0121` (backfill, with a no-money-moved invariant). New
+`tests/test_programme_funds.py` (11 tests) plus a **source guard** asserting no spend path consults
+the cross-programme total — the same class of mechanical check as the org-fence static guard.
+
+**▶ OWNER-GATED:** apply `0120` + `0121` migrate-first, then verify donation totals are unchanged.
+
+### P2b — Payment runs carry their programme (NOT started)
+
+- **Goal:** A payment run carries its programme, so a run can never pay students from more than one gift and a benefactor can be reported to per programme.
+- **Scope:** `PaymentRun.programme` FK (additive, nullable → backfill → read); `payments.eligible_rows` narrows by programme alongside its existing org filter; the funding summary becomes programme-aware. **The Sprint-14 maker-checker chain is untouched** — only the run's candidate set narrows.
+- **Migrations:** 1 additive + 1 data.
+- **Test plan:** a run cannot include an application from another programme; the existing 139 payments + fence tests pass unmodified; the open draft run is unaffected by the backfill.
+- **Risk + mitigation:** *Risk:* prod holds an OPEN DRAFT run (PR-2026-08-01) and this is the live payout path. *Mitigation:* additive-then-read, backfill the existing run to the flagship explicitly, and verify the draft's item set is identical before and after.
+- **Complexity:** Medium. ~10 files.
+
+**Owner gate (carried):** do **not** record the RM100,000 as a platform donation until **P2a's** migrations are applied — before that there is no programme column, so it would land in a balance with no expressible restriction. Hold it in a documented manual ring-fence until then.
 
 ## Sprint P3 — Sponsor Programme membership
 
@@ -146,19 +164,46 @@ carries it. **Owner-gated, as every HalaTuju deploy is.**
 
 ## Sprint P4 — Org-admin wallet credit (off-platform gift)
 
-Added 2026-07-26 after the owner described the actual Sabah funding flow: *benefactor donates to BrightPath Foundation off-platform → benefactor is onboarded into the Sabah programme → **org admin allocates RM100k into the benefactor's wallet under Sabah*** → the benefactor funds students from that wallet.
+**Re-scoped 2026-07-26** — see the ⚠ box below. This is **not** an accommodation for one benefactor;
+it is how *every* sponsor's money enters the platform until BrightPath's CLBG is registered.
 
-- **Goal:** Let an org admin record an off-platform gift into a sponsor's wallet, scoped to one programme, with an audit trail that reconciles to the money actually received.
-- **Why it is new:** the ONLY donation path today is `SponsorDonateView` (`views_sponsor.py:409`) — a sponsor **self-service MOCK** writing `reference='mock'`. No gateway is wired and no admin path exists. The owner's flow cannot be executed with what is in the codebase.
-- **Scope:**
-  - Admin-recorded credit against **(sponsor, programme)** — depends on P2 (per-programme balances) and P3 (the sponsor must be a member of the programme first).
-  - A real **external reference** (bank-transfer ref) and a **source type** distinguishing an admin-recorded gift from a gateway donation, so `reference='mock'` can never be confused with real money.
-  - Audit trail: who recorded it, when, against which programme.
-  - **Recommend maker-checker** — reuse the pattern already proven in the payments module (`draft → admin_signed → [finance_checked] → completed`). Crediting RM100,000 is the same class of action as approving a payment run, and the org already has the `finance` role built for exactly this weight of decision. **Owner decision outstanding** (see below).
-- **Migrations:** 1–2 additive (source type + reference on `Donation`, or a dedicated credit model if maker-checker is adopted).
-- **Test plan:** a credit lands only in the named programme's wallet and is invisible in another; a credit against a sponsor with no membership in that programme is refused; the external reference is required for an admin-recorded credit; a mock/self-service donation can never be created by the admin path; if maker-checker is adopted, one person cannot both record and approve.
-- **Risk + mitigation:** *Risk:* this is the first path that puts real money into the system on an admin's say-so. *Mitigation:* two-person control, a mandatory external reference, and no reuse of the mock donation path.
-- **Complexity:** Medium–High (money-touching). ~12 files.
+- **Goal:** Record an off-platform gift into a sponsor's programme-scoped wallet, under two-person
+  control, with provenance strong enough to (a) reconcile against the receiving bank account today
+  and (b) migrate cleanly into the CLBG's books once it exists.
+- **Why it is new:** the ONLY donation path today is `SponsorDonateView` (`views_sponsor.py:409`) — a
+  sponsor **self-service MOCK** writing `reference='mock'`. No gateway is wired and no admin path
+  exists. The owner's actual funding flow cannot be executed with what is in the codebase.
+- **The record shape (the load-bearing decision).** One `Donation`-shaped row, gaining:
+  - `source` — `admin_recorded` (today) / `gateway` (post-CLBG) / `mock` (dev only). A gateway
+    donation later is **the same row with a different source**, never a second money system.
+  - `external_reference` — the bank-transfer reference. **Mandatory** when `source='admin_recorded'`;
+    this is the only thread back to real money, and what makes the balance auditable.
+  - `recorded_by` / `recorded_at`, plus `checked_by` / `checked_at` for the second signature.
+  - `programme` (from P2) — a credit always lands in exactly one programme's wallet.
+  - `mock` must be **unusable in production** — the dev-only self-service path can never mint a row
+    that reads as real money.
+- **Maker-checker (adopt).** Mirror the payments chain (`draft → admin_signed → [finance_checked] →
+  completed`) rather than inventing a second control model: a credit is *recorded* by one admin and
+  *confirmed* by another before it becomes spendable balance. In the interim arrangement the person
+  receiving the cash and the person recording it are the same, so this is the only control over the
+  step. Reuse the payments module's **stand-in rule** for the second signer (platform super) —
+  do not invent a new one. Pending the owner's confirmation of the second-signer question.
+- **Balance semantics:** only a **confirmed** credit counts toward spendable balance. A recorded-but-
+  unconfirmed credit is visible to admins and invisible to the sponsor — so an unconfirmed credit can
+  never be allocated to a student.
+- **Depends on:** P2 (per-programme balances) and P3 (the sponsor must be a member of the programme).
+- **Migrations:** 2 additive (source/reference/audit columns on `Donation`; the confirmation pair).
+- **Test plan:** a credit lands only in the named programme's wallet and is invisible in another; a
+  credit against a sponsor with no membership in that programme is refused; `external_reference` is
+  required when `source='admin_recorded'`; an unconfirmed credit does not raise spendable balance and
+  cannot fund a student; one person cannot both record and confirm; the mock path cannot run in prod;
+  and a **reconciliation assertion** — the sum of confirmed credits per programme equals the wallet
+  total the sponsor sees.
+- **Risk + mitigation:** *Risk:* the first path that puts real money into the system on an admin's
+  say-so, while the actual cash sits in a personal account. *Mitigation:* two-person control, a
+  mandatory external reference, unconfirmed-is-unspendable, and provenance fields designed for the
+  CLBG hand-over rather than retrofitted to it.
+- **Complexity:** Medium–High (money-touching). ~14 files.
 
 **⚠ P4 IS THE PRIMARY FUNDING PATH, NOT AN EDGE CASE (owner, 2026-07-26).** BrightPath has no
 registered legal entity yet — a CLBG is with a company secretary, some months away. Until it exists,

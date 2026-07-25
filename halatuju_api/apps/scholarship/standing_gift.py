@@ -45,7 +45,9 @@ def matching_gifts(application):
             continue
         if g.max_amount is not None and award > g.max_amount:
             continue
-        if sponsorship_service.sponsor_balance(g.sponsor) < award:
+        # Affordability is checked against the wallet for THIS student's programme —
+        # a standing gift funded for one programme never auto-allocates in another.
+        if sponsorship_service.sponsor_balance(g.sponsor, application.programme) < award:
             continue  # skip silently — retried next run once topped up
         yield g
 

@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform programme layer P2a — the sponsor wallet is per-programme — 2026-07-26
+
+Second sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **Money given to one gift
+programme is now never visible or spendable in another.** Migrations written but **NOT yet applied
+to prod**.
+
+- **Added — `Donation.programme`.** A donation records the gift it was restricted to. A donor gives
+  to "Sabah", not to the platform at large, and the system can now say so.
+- **Changed — `sponsor_balance(sponsor, programme)`: the programme argument is REQUIRED, with no
+  default.** This is the crux. A sponsor's wallet is per (sponsor, programme) — donations to that
+  programme minus allocations in that programme that still hold. Forgetting the programme is now a
+  `TypeError`, never a silent cross-programme read; the 13 pre-existing call sites in tests were
+  updated to pass `None` (the NULL bucket their fixtures already lived in), so their assertions are
+  unchanged.
+- **Changed — the four spend paths authorise against the programme of the student being funded**:
+  `fund_student`, contractual-decline reinstatement, `standing_gift.matching_gifts`, and the batch
+  award command. RM10,000 earmarked for Sabah can no longer fund a flagship student even when the
+  sponsor's cross-programme total would cover it. This is exactly what `ScholarshipApplication.programme`
+  (P1a) was for.
+- **Added — `sponsor_programme_balances()` and `sponsor_available_total()`.** The former lists every
+  wallet a sponsor holds; the latter sums them **for display only** and is documented as never a
+  spend authority — a total across programmes is not spendable anywhere, because each ringgit is
+  restricted to the gift it was given to. The sponsor endpoint now returns a per-programme
+  `balances` array alongside the existing `balance` field (kept, so the frontend is unaffected).
+- **Added — migrations `0120` (schema, hand-written Postgres DDL in its docstring) + `0121`
+  (backfill)**, both reversible. `0121` carries an explicit **no-money-moved invariant**: donation
+  totals before and after must be identical — only attribution changes.
+- **Added — `test_programme_funds.py` (11 tests)**: cross-programme invisibility, holdings only
+  reducing their own wallet, the NULL bucket staying its own partition, spend refusal across
+  programmes, standing gifts not auto-allocating across programmes, the reconciliation invariant —
+  plus a **source guard** asserting no spend path consults the cross-programme total and that
+  `sponsor_balance` takes no default programme. Same class of mechanical check as the org-fence
+  static guard: a future edit cannot silently reintroduce a pooled balance.
+- **Deferred to P2b** — `PaymentRun.programme`. Payments is live, prod holds an open draft run, and
+  the Sprint-14 maker-checker chain runs through it; narrowing payment-run eligibility does not
+  belong in the same sprint as a wallet rewrite.
+
 ## Platform programme layer P1a — the durable gift level (structural) — 2026-07-26
 
 First sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **Structural only —

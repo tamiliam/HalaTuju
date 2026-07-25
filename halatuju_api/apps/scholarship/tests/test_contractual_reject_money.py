@@ -57,12 +57,12 @@ class TestContractualRejectLapsesSponsorship(TestCase):
 
     def test_contractual_reject_lapses_and_returns_balance(self):
         app, s = self._funded_app()
-        self.assertEqual(svc.sponsor_balance(s), Decimal('0'))    # money held
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))    # money held
         services.admin_reject(app, self.admin, 'contractual')
         app.refresh_from_db()
         self.assertEqual(app.status, 'rejected')
         self.assertFalse(app.sponsorships.filter(status__in=Sponsorship.HOLDING).exists())
-        self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))  # returned to the sponsor
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('3000'))  # returned to the sponsor
 
     def test_cancel_reinstates_sponsorship_and_funded_status(self):
         app, s = self._funded_app()
@@ -71,7 +71,7 @@ class TestContractualRejectLapsesSponsorship(TestCase):
         app.refresh_from_db()
         self.assertEqual(app.status, 'active')                     # snapshot restore (S1)
         self.assertTrue(app.sponsorships.filter(status='active').exists())
-        self.assertEqual(svc.sponsor_balance(s), Decimal('0'))     # held again
+        self.assertEqual(svc.sponsor_balance(s, None), Decimal('0'))     # held again
 
     def test_cancel_without_covering_balance_leaves_lapsed(self):
         app, s = self._funded_app()
