@@ -77,7 +77,7 @@ is provably behaviour-neutral, whereas moving the rule tunables up to the progra
 inputs to the verification engine, and routing changes where a live applicant lands. Splitting
 keeps the foundation shippable without putting either of those in the same review.
 
-### P1a — Structural foundation — ✅ **CODE COMPLETE 2026-07-26, migrations NOT yet applied to prod**
+### P1a — Structural foundation — ✅ **SHIPPED 2026-07-26 (migrations APPLIED + verified on prod)**
 
 Delivered: `Programme` model (`scholarship_programmes`); `ScholarshipCohort.programme`;
 `ScholarshipApplication.programme` denormalised in `save()` (set-once, both copies derived in a
@@ -88,10 +88,19 @@ applications, both reversible); `tests/test_programme_layer.py` (16 tests). **Fu
 Serializers use explicit field lists → **no API surface change**. No admin surface needed
 (cohorts were never in Django admin). CHANGELOG written.
 
-**▶ OWNER-GATED NEXT STEP:** apply `0118` + `0119` to prod **migrate-first** (before any deploy),
-using the DDL in `0118`'s docstring, then insert the two `django_migrations` rows. Verify:
-`scholarship_programmes` has 1 row; cohort `b40-2026` points at it; all 143 applications carry it.
-**Not applied by the agent — this is a prod DDL change.**
+**✅ PROD MIGRATE-FIRST DONE 2026-07-26** (Supabase MCP, per the `2026-07-15-sprint1-migrate-first.md`
+runbook pattern). Pre-checks clean (no prior migration rows, no table, last scholarship migration
+`0117` → no sequence gap). Post-checks verified: **1 programme** (`brightpath-flagship | BrightPath
+Bursary | Bursari BrightPath | org=11`), **0 cohorts unassigned**, **143/143 applications carrying
+it**, **0 drifted** (`programme.organisation` agrees with `owning_organisation` on every row), RLS
+enabled with the sibling-matching single `Backend service role only` policy, both
+`django_migrations` rows present. Supabase security advisor: the new table appears in **neither**
+the `rls_enabled_no_policy` nor the anonymous-access list. Retro:
+`docs/retrospective-2026-07-26-platform-p1a-programme-layer.md`.
+
+**▶ DEPLOY: not required by this sprint** — nothing reads the new column, and the schema is ahead of
+the code (the safe direction: additive columns the live code ignores). The next functional push
+carries it. **Owner-gated, as every HalaTuju deploy is.**
 
 ### P1b — Rule defaults + routing + reviewer scoping (NOT started)
 
