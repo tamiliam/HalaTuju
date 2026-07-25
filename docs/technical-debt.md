@@ -1326,3 +1326,27 @@ exists as convention, and a bespoke AST-scanning guard is disproportionate machi
 from a note to an actual guard (either a pytest fixture that fails loudly on an un-frozen literal date
 within N days of "now" near known date-sensitive call sites, or a lint rule). (Logged 2026-07-25,
 Sprint 13a — Billing & usage v1.)
+
+### [TD-176] Wallet-credit signers are free strings — no identity or role check in the service (medium)
+`sponsorship.sign_admin_credit` / `finance_check_admin_credit` / `confirm_admin_credit` take
+`signer` as a plain string. They enforce **pairwise distinctness** (`signer_not_distinct`) but not
+**who the signer is**. The payments chain additionally requires the signer to **type their own
+name**, matched against `PartnerAdmin.name` (`name_mismatch`), plus a role gate
+(`payments.py:514/534/554` — maker `admin`, checker `finance`, approver `org_admin`).
+
+P4a deliberately left identity and role to the endpoint layer, which is P4b — so until P4b ships,
+the credit chain is a control **on paper but not on identity**: anything calling the service can
+pass two different arbitrary names and satisfy the chain. Not currently exploitable (there is no
+endpoint yet, and the service is only reachable from a shell), which is why it is medium and not
+high.
+
+**Fix (P4b, mandatory):** typed-name match + role gate at the endpoint, mirroring `payments.sign`.
+**Do not gate the maker on `org_admin`** — Poongulali Veeran, who performs that step, is a plain
+`admin`. (Logged 2026-07-26, platform P4a.)
+
+### [TD-177] `bursary_e2e.py` sets a cohort's organisation but not its programme (low)
+`management/commands/bursary_e2e.py:142` sets `cohort.owning_organisation` and leaves
+`cohort.programme` NULL, so applications it creates land in the safe-NULL programme bucket.
+Harmless today — the column is nullable, the command is dev/e2e-only, and prod is fully backfilled
+— but it is a half-updated write path of exactly the kind that bites once routing reads the column.
+**Fix:** set both, alongside the routing work (PF-1). (Logged 2026-07-26, platform P1a.)

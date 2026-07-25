@@ -524,6 +524,42 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-26)
 
+**✅ SHIPPED 2026-07-26 — PLATFORM PROGRAMME LAYER (P1a, P2a, P3, P4a).** Roadmap
+`docs/plans/2026-07-26-programme-layer-roadmap.md`; retros ×3; decision records ×8; lessons ×5.
+**The hierarchy is now Organisation → Programme → Year (intake) → the student's award.** A
+Programme IS the gift ("the BrightPath Bursary"), one gift per programme; it never lapses, and
+each annual intake is a cohort beneath it. Driven by two prospects — Inspire Society (a second
+ORGANISATION) and BrightPath Sabah (a second PROGRAMME under BrightPath).
+- **P1a** `Programme` model; `cohort.programme`; `application.programme` denormalised in `save()`,
+  **set-once** so a cohort move never re-homes an existing application's money.
+- **P2a** the sponsor wallet is per **(sponsor, programme)**. `sponsor_balance(sponsor, programme)`
+  — **programme REQUIRED, no default**, so forgetting it is a `TypeError`, never a silent pooled
+  read. Spend paths authorise against the programme of the student being funded.
+  `sponsor_available_total()` is DISPLAY ONLY and guarded as such.
+- **P3** `SponsorProgrammeMembership` — the account stays platform-level, **acceptance is per
+  programme**. `pool.for_sponsor()` is the ONE narrowing seam; list, detail, digests, real-time
+  alerts and standing gifts all go through it. No membership → empty pool, never the platform's.
+- **P4a** wallet credit: `Donation.source` + a mandatory `external_reference` (one row per bank
+  transfer), and the sign-off chain **REUSED from payments** (`draft → admin_signed →
+  [finance_checked] → confirmed`) via the existing `payments.finance_check_required()`. Only a
+  **confirmed** credit is spendable. Appointing a finance admin arms the check retroactively.
+- **Migrations `0118`–`0124` APPLIED migrate-first + verified**: 143/143 applications carry a
+  programme (0 drifted); RM172,000 attributed, total unchanged; 9 sponsors → 9 memberships
+  (approved=8, rejected=1, **0 status mismatches** — nobody gained or lost visibility).
+- **4635 pytest**; two new tables carry the sibling RLS convention (enabled + one `service_role`
+  policy); no FE files changed.
+- **▶ NEXT = P4b** — the admin endpoint + programme-grouped statement. **It MUST add the payments
+  chain's typed-name match and role gate**: P4a's service takes `signer` as a free string, so it
+  enforces distinctness but NOT identity. Gates: maker `role=='admin'` (Poongulali), checker
+  `finance` (dark), approver `org_admin` (Suresh) — do NOT gate the maker on `org_admin`.
+  **P4b is what unblocks recording the RM100,000**; until then it stays in a manual ring-fence.
+- Then **P2b** (`PaymentRun.programme` — payments is live with an open draft run), routing PF-1
+  (**date-parked ~May/June 2027**), reviewer programme scoping, Phase 2 S7–S9, Sprint E.
+
+---
+
+## Superseded — previous Next Sprint (2026-07-26, institution must-fill S3)
+
 **✅ SHIPPED 2026-07-26 — Institution must-fill Sprint 3 (sponsor surface parity). THE ROADMAP IS
 NOW CLOSED** (`docs/plans/2026-07-25-institution-must-fill-roadmap.md`: S1 shipped + a regression
 fixed, S2 struck, S3 shipped). Retro `docs/retrospective-2026-07-26-institution-sprint3.md`;
