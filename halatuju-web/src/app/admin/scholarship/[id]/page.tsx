@@ -83,6 +83,7 @@ import {
   showsReviewerAssignedCard,
   showsWitnessCard,
   showsPostSubmissionCards,
+  rejectionTrail,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
@@ -299,6 +300,10 @@ export default function AdminScholarshipDetailPage() {
   const [witnessSel, setWitnessSel] = useState<string>('')
   const [witnessBusy, setWitnessBusy] = useState(false)
   const [witnessMsg, setWitnessMsg] = useState('')
+  // Once a witness org is on file the card SETTLES (names the org, no dropdown) — the assign
+  // copy would otherwise keep asking for something already done (owner 2026-07-25). Reassigning
+  // is still one click away: "Change" flips this back to the picker.
+  const [witnessEditing, setWitnessEditing] = useState(false)
   const sourceless = !!app && !app.referred_by_org
   // Only fetch the organisation list when the witness card can actually render — same three
   // gates as the card itself, so a pre-QC or off-ramp case makes no needless request (most
@@ -317,6 +322,7 @@ export default function AdminScholarshipDetailPage() {
       const res = await assignWitness(id, witnessSel || null, { token })
       setApp({ ...app, witness_org: res.witness_org ? { id: 0, code: res.witness_org, name: res.witness_org_name || res.witness_org } : null })
       setWitnessMsg(t('admin.sources.witness.assigned'))
+      setWitnessEditing(false)   // settle back to the named-org state
     } catch {
       setWitnessMsg(t('admin.actionFailed'))
     } finally { setWitnessBusy(false) }
@@ -2551,43 +2557,46 @@ export default function AdminScholarshipDetailPage() {
                 </span>
               </p>
             ) : app.status === 'rejected' ? (
-              /* Decision-history trail. A straight reviewer decline is one line; a case that a
-                 QC reopened before it was declined shows the full thread so the record no longer
-                 hides the reviewer's recommendation behind a lone "Declined by …" line. */
-              (() => {
-                const ro = app.last_decision_reopen
-                const declined = (
-                  <p key="declined" className="flex items-start gap-1.5 text-sm text-red-700">
-                    <span aria-hidden>✗</span>
-                    <span>
-                      {t('admin.scholarship.recordVerdict.declinedBy')} {app.rejected_by_name || app.rejected_by || '—'}
-                      {app.rejected_at ? ` · ${formatDate(app.rejected_at)}` : ''}
-                    </span>
-                  </p>
-                )
-                if (!ro) return declined
-                return (
-                  <div className="space-y-1.5">
-                    {ro.reviewer_name && (
-                      <p className="flex items-start gap-1.5 text-sm text-gray-600">
-                        <span aria-hidden>✓</span>
-                        <span>{t('admin.scholarship.interviewedRecommendedBy')} {ro.reviewer_name}</span>
-                      </p>
-                    )}
-                    <div className="flex items-start gap-1.5 text-sm text-amber-800">
-                      <span aria-hidden>↩</span>
-                      <span>
-                        {t('admin.scholarship.recordVerdict.reopenedBy')} {ro.reopened_by_name || ro.reopened_by || '—'}
-                        {ro.created_at ? ` · ${formatDate(ro.created_at)}` : ''}
-                        {(ro.reason || '').trim() && (
-                          <span className="block whitespace-pre-line text-amber-700">“{ro.reason.trim()}”</span>
-                        )}
-                      </span>
-                    </div>
-                    {declined}
-                  </div>
-                )
-              })()
+              /* Decision-history trail (rejectionTrail). A decline is a TWO-person decision just
+                 like a recommend — the reviewer records it, a QC upholds it — so the record names
+                 both, mirroring the accepted card above. Earlier steps are muted; the step that
+                 ENDED the case is red. */
+              <div className="space-y-1.5">
+                {rejectionTrail(app).map((step, i) => {
+                  const stamp = step.date ? ` · ${formatDate(step.date)}` : ''
+                  if (step.kind === 'reopened') {
+                    return (
+                      <div key={i} className="flex items-start gap-1.5 text-sm text-amber-800">
+                        <span aria-hidden>↩</span>
+                        <span>
+                          {t('admin.scholarship.recordVerdict.reopenedBy')} {step.name}{stamp}
+                          {step.reason && (
+                            <span className="block whitespace-pre-line text-amber-700">“{step.reason}”</span>
+                          )}
+                        </span>
+                      </div>
+                    )
+                  }
+                  const ended = step.kind === 'declined' || step.kind === 'qcAcceptedDecline'
+                  const label = step.kind === 'reviewerDeclined'
+                    ? t('admin.scholarship.interviewedDeclinedBy')
+                    : step.kind === 'reviewerRecommended'
+                      ? t('admin.scholarship.interviewedRecommendedBy')
+                      : step.kind === 'qcAcceptedRecommendation'
+                        ? t('admin.scholarship.recordVerdict.recommendationAcceptedBy')
+                        : step.kind === 'qcAcceptedDecline'
+                          ? t('admin.scholarship.recordVerdict.declineAcceptedBy')
+                          : t('admin.scholarship.recordVerdict.declinedBy')
+                  const tick = step.kind === 'reviewerRecommended' || step.kind === 'qcAcceptedRecommendation'
+                    ? '✓' : '✗'
+                  return (
+                    <p key={i} className={`flex items-start gap-1.5 text-sm ${ended ? 'text-red-700' : 'text-gray-600'}`}>
+                      <span aria-hidden>{tick}</span>
+                      <span>{label} {step.name}{stamp}</span>
+                    </p>
+                  )
+                })}
+              </div>
             ) : (
               <p className="text-sm text-gray-600">
                 {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
@@ -3039,20 +3048,51 @@ export default function AdminScholarshipDetailPage() {
           <h2 className="text-base font-semibold tracking-tight text-gray-900">
             {t('admin.sources.witness.title')}
           </h2>
-          <p className="text-xs text-gray-500">{t('admin.sources.witness.help')}</p>
-          <select
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            value={witnessSel} onChange={(e) => setWitnessSel(e.target.value)}>
-            <option value="">{t('admin.sources.witness.none')}</option>
-            {activeSources.map((s) => <option key={s.id} value={s.code}>{s.name}</option>)}
-          </select>
-          <button type="button" onClick={doAssignWitness}
-            disabled={witnessBusy || witnessSel === (app.witness_org?.code || '')}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-            {witnessBusy ? t('admin.sources.witness.assigning') : t('admin.sources.witness.assign')}
-          </button>
-          {app.witness_org && (
-            <p className="text-xs text-gray-500">{t('admin.sources.witness.current', { org: app.witness_org.name })}</p>
+          {/* Two states. SETTLED (a witness is on file): name the organisation and say what
+              happens next — no picker, no "Assign" button asking for a done thing. PICKING
+              (nothing on file yet, or the officer pressed Change): the dropdown + Assign.
+              Setting it back to None returns the card to the unassigned invitation. */}
+          {app.witness_org && !witnessEditing ? (
+            <>
+              <p className="text-sm text-gray-700">
+                {t('admin.sources.witness.assignedNote', { org: app.witness_org.name })}
+              </p>
+              <p className="text-xs text-gray-500">{t('admin.sources.witness.assignedNext')}</p>
+              <button type="button"
+                onClick={() => { setWitnessEditing(true); setWitnessMsg('') }}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">
+                {t('admin.sources.witness.change')}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-gray-500">
+                {app.witness_org
+                  ? t('admin.sources.witness.changeHelp')
+                  : t('admin.sources.witness.help')}
+              </p>
+              <select
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                value={witnessSel} onChange={(e) => setWitnessSel(e.target.value)}>
+                <option value="">{t('admin.sources.witness.none')}</option>
+                {activeSources.map((s) => <option key={s.id} value={s.code}>{s.name}</option>)}
+              </select>
+              <button type="button" onClick={doAssignWitness}
+                disabled={witnessBusy || witnessSel === (app.witness_org?.code || '')}
+                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                {witnessBusy
+                  ? t('admin.sources.witness.assigning')
+                  : app.witness_org ? t('admin.sources.witness.update') : t('admin.sources.witness.assign')}
+              </button>
+              {app.witness_org && (
+                <button type="button"
+                  onClick={() => { setWitnessEditing(false); setWitnessSel(app.witness_org?.code || ''); setWitnessMsg('') }}
+                  disabled={witnessBusy}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                  {t('common.cancel')}
+                </button>
+              )}
+            </>
           )}
           {witnessMsg && (
             <p className={`text-sm ${witnessMsg === t('admin.sources.witness.assigned') ? 'text-green-700' : 'text-red-600'}`}>{witnessMsg}</p>

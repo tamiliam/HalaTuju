@@ -20,7 +20,9 @@ import {
   headerTimeline,
   isPreSubmissionStage,
   showsPostSubmissionCards,
+  rejectionTrail,
   type TimelineSource,
+  type DecisionTrailInput,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminVerdictItem, AdminApplicantDocument } from '@/lib/admin-api'
 
@@ -1183,5 +1185,112 @@ describe('pre-submission stage gate (shortlisted card hiding)', () => {
     const allPass = { identity: 'pass', academic: 'pass', pathway: 'pass', need: 'pass' } as never
     expect(isDecisionReady(undefined, allPass, 'a reason')).toBe(false)
     expect(showsPostSubmissionCards('shortlisted')).toBe(false)
+  })
+})
+
+describe('rejectionTrail — a decline names the reviewer AND the QC', () => {
+  function rejected(over: Partial<DecisionTrailInput> = {}): DecisionTrailInput {
+    return {
+      officer_verdict: {},
+      verdict_decided_by: '',
+      verdict_decided_by_name: '',
+      verdict_decided_at: null,
+      recommended_by: '',
+      recommended_by_name: '',
+      recommended_at: null,
+      rejected_by: 'suresh@example.com',
+      rejected_by_name: 'Suresh Thirugnanam',
+      rejected_at: '2026-07-23T00:00:00Z',
+      last_decision_reopen: null,
+      ...over,
+    }
+  }
+
+  // The #56 case: Vanitha interviewed and recorded the decline, Suresh QC-accepted it. Before
+  // this, the card read a lone "Declined by Suresh" — the reviewer had vanished from the record.
+  it('shows reviewer-declined then QC-accepted-the-decline (the #56 case)', () => {
+    const steps = rejectionTrail(rejected({
+      officer_verdict: { overall: 'decline' },
+      verdict_decided_by: 'vanitha@example.com',
+      verdict_decided_by_name: 'Vanitha',
+      verdict_decided_at: '2026-07-22T00:00:00Z',
+    }))
+    expect(steps).toEqual([
+      { kind: 'reviewerDeclined', name: 'Vanitha', date: '2026-07-22T00:00:00Z' },
+      { kind: 'qcAcceptedDecline', name: 'Suresh Thirugnanam', date: '2026-07-23T00:00:00Z' },
+    ])
+  })
+
+  it('collapses to one step when the same person recorded and confirmed (a super)', () => {
+    const steps = rejectionTrail(rejected({
+      officer_verdict: { overall: 'decline' },
+      verdict_decided_by: 'Suresh@Example.com',   // case-insensitive match
+      verdict_decided_by_name: 'Suresh Thirugnanam',
+      verdict_decided_at: '2026-07-22T00:00:00Z',
+    }))
+    expect(steps.map((s) => s.kind)).toEqual(['reviewerDeclined', 'declined'])
+  })
+
+  it('keeps the one-line record for a rejection with no recorded verdict', () => {
+    // Engine buckets (merit/need/ineligible) and the org-admin reject at shortlisted.
+    expect(rejectionTrail(rejected())).toEqual([
+      { kind: 'declined', name: 'Suresh Thirugnanam', date: '2026-07-23T00:00:00Z' },
+    ])
+  })
+
+  it('threads a QC reopen of a RECOMMEND: recommended → reopened (with reason) → declined', () => {
+    const steps = rejectionTrail(rejected({
+      officer_verdict: { overall: 'accept' },
+      verdict_decided_by: 'kanes@example.com',
+      verdict_decided_by_name: 'Kaneswaran',
+      verdict_decided_at: '2026-07-22T00:00:00Z',
+      last_decision_reopen: {
+        reopened_by: 'suresh@example.com',
+        reopened_by_name: 'Suresh Thirugnanam',
+        reviewer_name: 'Kaneswaran',
+        reason: 'Merit is 5A-, not selected.',
+        created_at: '2026-07-23T00:00:00Z',
+      },
+    }))
+    expect(steps.map((s) => s.kind)).toEqual(['reviewerRecommended', 'reopened', 'declined'])
+    // A reopened case's reviewer line carries NO date — verdict_decided_at is the latest
+    // re-record, not the recommendation the reopen refers to.
+    expect(steps[0].date).toBeNull()
+    expect(steps[1]).toMatchObject({ reason: 'Merit is 5A-, not selected.' })
+  })
+
+  it('threads a reopened DECLINE: declined → reopened → QC accepted the decline', () => {
+    const steps = rejectionTrail(rejected({
+      officer_verdict: { overall: 'decline' },
+      verdict_decided_by: 'vanitha@example.com',
+      verdict_decided_by_name: 'Vanitha',
+      verdict_decided_at: '2026-07-22T00:00:00Z',
+      last_decision_reopen: {
+        reopened_by: 'suresh@example.com', reopened_by_name: 'Suresh Thirugnanam',
+        reviewer_name: 'Vanitha', reason: 'Confirm with the student first.',
+        created_at: '2026-07-22T06:00:00Z',
+      },
+    }))
+    expect(steps.map((s) => s.kind)).toEqual(['reviewerDeclined', 'reopened', 'qcAcceptedDecline'])
+  })
+
+  it('keeps the recommend trail on a post-award contractual decline', () => {
+    const steps = rejectionTrail(rejected({
+      officer_verdict: { overall: 'accept' },
+      verdict_decided_by: 'divya@example.com',
+      verdict_decided_by_name: 'Divya Adinarayanan',
+      verdict_decided_at: '2026-07-22T00:00:00Z',
+      recommended_by: 'suresh@example.com',
+      recommended_by_name: 'Suresh Thirugnanam',
+      recommended_at: '2026-07-23T00:00:00Z',
+    }))
+    expect(steps.map((s) => s.kind)).toEqual([
+      'reviewerRecommended', 'qcAcceptedRecommendation', 'declined',
+    ])
+  })
+
+  it('falls back to the email, then an em dash, when no name is resolved', () => {
+    expect(rejectionTrail(rejected({ rejected_by_name: '' }))[0].name).toBe('suresh@example.com')
+    expect(rejectionTrail(rejected({ rejected_by_name: '', rejected_by: '' }))[0].name).toBe('—')
   })
 })

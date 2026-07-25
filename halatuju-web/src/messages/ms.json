@@ -3036,12 +3036,16 @@
       "superRequired": "Hanya peranan Admin, Pentadbir organisasi, atau Pentadbir utama boleh menguruskan sumber.",
       "witness": {
         "title": "Organisasi saksi",
-        "help": "Pelajar ini tiada organisasi rujukan. Tetapkan organisasi saksi untuk mengesahkan perjanjian mereka, atau biarkan sebagai Tiada — Yayasan kemudiannya menandatangani terus.",
+        "help": "Pelajar ini tiada organisasi rujukan, jadi tiada sesiapa mengesahkan perjanjian mereka secara lalai. Pilih satu organisasi untuk menjadi saksi, atau biarkan sebagai Tiada — Yayasan kemudiannya menandatangani terus.",
+        "assignedNote": "{org} akan menjadi saksi perjanjian pelajar ini.",
+        "assignedNext": "Mereka mengesahkannya selepas pelajar dan penjamin menandatangani; Yayasan menandatangani terakhir.",
+        "change": "Tukar organisasi saksi",
+        "changeHelp": "Pilih organisasi lain untuk menjadi saksi perjanjian, atau pilih Tiada — Yayasan kemudiannya menandatangani terus.",
         "none": "Tiada (terus ke Yayasan)",
         "assign": "Tetapkan",
-        "assigning": "Menetapkan…",
+        "update": "Kemas kini",
+        "assigning": "Menyimpan…",
         "assigned": "Organisasi saksi dikemas kini.",
-        "current": "Semasa: {org}",
         "label": "Saksi"
       }
     },
@@ -3317,6 +3321,7 @@
       "profileFinalHint": "Ini ialah profil akhir, dijana daripada penemuan temu duga dan keputusan anda. Buka semula keputusan untuk menyemaknya.",
       "model": "Model",
       "interviewedRecommendedBy": "Ditemu duga dan disyorkan oleh",
+      "interviewedDeclinedBy": "Ditemu duga dan ditolak oleh",
       "qcAcceptedBy": "diterima oleh",
       "acceptError": "Tidak dapat menerima. Sila cuba lagi.",
       "notShortlisted": "Hanya permohonan yang disenarai pendek boleh disahkan & diterima.",
@@ -3815,6 +3820,8 @@
         "cancelReopen": "Batal buka semula (pulihkan)",
         "reopenError": "Tidak dapat membuka semula keputusan.",
         "declinedBy": "Ditolak oleh",
+        "declineAcceptedBy": "Penolakan diterima oleh",
+        "recommendationAcceptedBy": "Syor diterima oleh",
         "reopenedBy": "Dibuka semula oleh",
         "aiSuggested": "Keputusan AI:",
         "suggest": {

@@ -3036,12 +3036,16 @@
       "superRequired": "Only the Admin, Organisation admin, or Super admin roles can manage sources.",
       "witness": {
         "title": "Witness organisation",
-        "help": "This student has no referring organisation. Assign a witness organisation to attest their agreement, or leave as None — the Foundation then countersigns directly.",
+        "help": "This student has no referring organisation, so nobody attests their agreement by default. Choose an organisation to witness it, or leave it as None — the Foundation then countersigns directly.",
+        "assignedNote": "{org} will witness this student's agreement.",
+        "assignedNext": "They attest it after the student and guarantor have signed; the Foundation countersigns last.",
+        "change": "Change witness organisation",
+        "changeHelp": "Choose a different organisation to witness the agreement, or select None — the Foundation then countersigns directly.",
         "none": "None (Foundation-direct)",
         "assign": "Assign",
-        "assigning": "Assigning…",
+        "update": "Update",
+        "assigning": "Saving…",
         "assigned": "Witness organisation updated.",
-        "current": "Current: {org}",
         "label": "Witness"
       }
     },
@@ -3317,6 +3321,7 @@
       "profileFinalHint": "This is the final profile, generated from the interview findings and your verdict. Reopen the decision to revise it.",
       "model": "Model",
       "interviewedRecommendedBy": "Interviewed and recommended by",
+      "interviewedDeclinedBy": "Interviewed and declined by",
       "qcAcceptedBy": "accepted by",
       "acceptError": "Couldn't accept. Please try again.",
       "notShortlisted": "Only a shortlisted application can be verified & accepted.",
@@ -3815,6 +3820,8 @@
         "cancelReopen": "Cancel reopen (restore)",
         "reopenError": "Could not reopen the decision.",
         "declinedBy": "Declined by",
+        "declineAcceptedBy": "Rejection accepted by",
+        "recommendationAcceptedBy": "Recommendation accepted by",
         "reopenedBy": "Reopened by",
         "aiSuggested": "AI verdict:",
         "suggest": {

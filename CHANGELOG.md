@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## Cockpit records: a decline names both deciders; the witness card settles — 2026-07-25
+
+Two small-lane fixes off an owner live review of the officer cockpit. FE only, no migration, no
+backend change (both facts were already on the admin payload and simply weren't rendered).
+
+- **Fixed — a rejected record now shows the whole decision trail** (#56): a decline is a TWO-person
+  decision exactly like a recommend — the reviewer records the decline verdict, then a QC upholds it
+  (`AdminQcDecisionView` accept → `admin_reject`, so `rejected_by` is the **QC**, not the reviewer).
+  The card rendered a lone "✗ Declined by {rejected_by}", crediting the whole decision to the QC and
+  erasing the reviewer who interviewed the student — while an ACCEPTED case (#123) named both. New
+  pure `officerCockpit.rejectionTrail(app)` returns the ordered steps and the card renders them:
+  **"✗ Interviewed and declined by Vanitha Mohan · 23/07/2026" → "✗ Rejection accepted by Suresh
+  Thirugnanam · 23/07/2026"**, mirroring the accept card. It also covers the paths the old
+  single-branch code got wrong: a reopened DECLINE previously read "Interviewed and **recommended**
+  by …", and a post-award contractual decline dropped the recommend + QC-accept history entirely.
+  One step only when the same person recorded and confirmed (a super) — naming one person twice
+  would invent a second pair of eyes. i18n `interviewedDeclinedBy` + `recordVerdict.declineAcceptedBy`
+  / `recommendationAcceptedBy` (en/ms/ta, ms/ta first-drafts). **+8 jest (746).**
+- **Changed — Witness organisation card settles once assigned** (#27): the card kept showing "This
+  student has no referring organisation. **Assign** a witness organisation…" plus a live dropdown and
+  an Assign button *after* an organisation had been assigned, with the answer relegated to a muted
+  "Current: …" line. It now has two states — **settled** (names the org: "Sri Murugan Centre will
+  witness this student's agreement", plus who signs when, plus a **Change witness organisation**
+  link) and **picking** (the dropdown + Assign / Update + Cancel, reached when nothing is on file or
+  the officer presses Change). Choosing None returns the card to the unassigned invitation.
+  Reassignment was already supported by the endpoint — it just had no affordance. Reworded `help`,
+  new `assignedNote`/`assignedNext`/`change`/`changeHelp`/`update`, dropped the now-redundant
+  `current` (en/ms/ta).
+
 ## Documents tab — calmer, kinder progressive disclosure + income shown "any one way" — 2026-07-25
 
 A live-review UX arc on the student **Documents** tab, plus one QC copy fix. Through-line: a wall of

@@ -6,6 +6,8 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 ## Pending
 _(cleared at the 2026-07-23 review — counter reset; the 13 reviewed entries are listed in that review)_
 
+- 2026-07-25 fix: cockpit rejected record shows the reviewer + QC decline trail; witness-org card settles once assigned (officer cockpit — `page.tsx`, `officerCockpit.ts` + test, en/ms/ta)
+
 _(Not logged here as a small change: the **Check-2 case summary** LLM feature — `verdict_narrative.py` + `AdminVerdictSummaryView` + FE lead paragraph, DARK behind `VERDICT_CASE_SUMMARY_ENABLED`. It's a feature, tracked as STR-proof S4 (dark) in CHANGELOG + halatuju.md + CLAUDE.md Next-Sprint; retro to follow after the owner live-validates the voice and flips the flag.)_
 
 ## Reviews

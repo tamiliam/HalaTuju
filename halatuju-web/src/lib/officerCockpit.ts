@@ -1148,3 +1148,111 @@ export function showsReportingDateBox(opts: {
   if (opts.letterHasDate) return false
   return (opts.status || '') === 'interviewing' || !!opts.decisionReopened
 }
+
+// ── Rejection decision trail (owner 2026-07-25) ─────────────────────────────
+
+/**
+ * One step of the recorded decision history on a REJECTED case.
+ *
+ * `reviewerDeclined`/`reviewerRecommended` is the reviewer's own recorded verdict;
+ * `qcAcceptedDecline`/`qcAcceptedRecommendation` is the second pair of eyes upholding it;
+ * `reopened` is a QC (or super) bouncing the case back; `declined` is a rejection with no
+ * separable QC step (the engine's own buckets, an org-admin reject, a post-award contractual
+ * decline, or a super who both recorded and confirmed).
+ */
+export type DecisionTrailStep =
+  | { kind: 'reviewerRecommended'; name: string; date: string | null }
+  | { kind: 'reviewerDeclined'; name: string; date: string | null }
+  | { kind: 'qcAcceptedRecommendation'; name: string; date: string | null }
+  | { kind: 'qcAcceptedDecline'; name: string; date: string | null }
+  | { kind: 'reopened'; name: string; date: string | null; reason: string }
+  | { kind: 'declined'; name: string; date: string | null }
+
+/** Shape of the pieces of the admin payload the trail reads. */
+export type DecisionTrailInput = {
+  officer_verdict?: { overall?: string } | null
+  verdict_decided_by?: string | null
+  verdict_decided_by_name?: string | null
+  verdict_decided_at?: string | null
+  recommended_by?: string | null
+  recommended_by_name?: string | null
+  recommended_at?: string | null
+  rejected_by?: string | null
+  rejected_by_name?: string | null
+  rejected_at?: string | null
+  last_decision_reopen?: {
+    reopened_by?: string | null
+    reopened_by_name?: string | null
+    reviewer_name?: string | null
+    reason?: string | null
+    created_at?: string | null
+  } | null
+}
+
+const NO_NAME = '—'
+
+function whoDid(name: string | null | undefined, email: string | null | undefined): string {
+  return (name || '').trim() || (email || '').trim() || NO_NAME
+}
+
+/**
+ * The decision history to show on a REJECTED application, oldest step first.
+ *
+ * Why this exists: a decline is a TWO-PERSON decision exactly like a recommend — the reviewer
+ * records the decline verdict, then a QC upholds it (`AdminQcDecisionView` accept on a decline
+ * verdict → `admin_reject`, so `rejected_by` is the QC, not the reviewer). Rendering only
+ * "Declined by {rejected_by}" credited the whole decision to the QC and erased the reviewer who
+ * actually interviewed the student (#56, owner 2026-07-25) — while an ACCEPTED case named both.
+ * This makes the two records symmetric.
+ *
+ * The QC step is emitted only when a second person is genuinely on record: for a decline, when
+ * `rejected_by` differs from the verdict recorder (a `super` may legitimately do both, and
+ * naming one person twice would invent a second pair of eyes); for a recommend, when
+ * `recommended_by` was captured at QC-accept.
+ *
+ * A reopened case's reviewer line deliberately carries NO date: `verdict_decided_at` is the
+ * LATEST re-recorded decision, not the earlier recommendation the reopen refers to.
+ */
+export function rejectionTrail(app: DecisionTrailInput): DecisionTrailStep[] {
+  const steps: DecisionTrailStep[] = []
+  const ro = app.last_decision_reopen || null
+  const roReviewer = (ro?.reviewer_name || '').trim()
+  const declined = (app.officer_verdict?.overall || '') === 'decline' && !!app.verdict_decided_at
+
+  if (roReviewer || app.verdict_decided_at) {
+    steps.push({
+      kind: declined ? 'reviewerDeclined' : 'reviewerRecommended',
+      name: roReviewer || whoDid(app.verdict_decided_by_name, app.verdict_decided_by),
+      date: ro ? null : (app.verdict_decided_at || null),
+    })
+  }
+
+  // A recommend that a QC upheld before the case was later declined (a post-award contractual
+  // decline is the live case) — the QC identity lives on recommended_by, not rejected_by.
+  if (!declined && (app.recommended_by || '').trim()) {
+    steps.push({
+      kind: 'qcAcceptedRecommendation',
+      name: whoDid(app.recommended_by_name, app.recommended_by),
+      date: app.recommended_at || null,
+    })
+  }
+
+  if (ro) {
+    steps.push({
+      kind: 'reopened',
+      name: whoDid(ro.reopened_by_name, ro.reopened_by),
+      date: ro.created_at || null,
+      reason: (ro.reason || '').trim(),
+    })
+  }
+
+  const qcEmail = (app.rejected_by || '').trim().toLowerCase()
+  const recorder = (app.verdict_decided_by || '').trim().toLowerCase()
+  const qcUpheldDecline = declined && !!qcEmail && qcEmail !== recorder
+  steps.push({
+    kind: qcUpheldDecline ? 'qcAcceptedDecline' : 'declined',
+    name: whoDid(app.rejected_by_name, app.rejected_by),
+    date: app.rejected_at || null,
+  })
+  return steps
+}
