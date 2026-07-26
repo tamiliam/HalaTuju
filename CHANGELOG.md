@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor-sharing consent `2026-draft-7` — what a sponsor sees DURING sponsorship — 2026-07-26
+
+**LIVE** (api `…00873-74c` + web `…00724-k7c`, commit `5753e935`). No migration. Text + one constant.
+Proposal, decisions and the full re-consent arithmetic: `docs/scholarship/consent-draft-7-proposal.md`.
+
+- **Why.** draft-6 described a one-off disclosure *for selection* and enumerated five things a sponsor
+  sees. Two things fall outside that list: **academic progress**, which a sponsor of a funded student
+  ALREADY sees (a band derived from the student's CGPA), and **bursary spending**, which the
+  2026-07-18 spend-reporting brief cannot ship without permission.
+- **Changed — six strings** (`consent.text` + `.textMinor` × en/ms/ta). Owner-drafted shape: an
+  enumerated never-list, then `Information Shared with Sponsors:` with two phase bullets —
+  *Prior to selection* (state, school, course, plans, financial need) and *During sponsorship*
+  (academic progress, and how the bursary was spent). `CONSENT_VERSION` → `2026-draft-7`.
+- **Spending is stated BROADLY** by owner decision — no category limit — because the sharing
+  mechanism is still being designed, and a later narrowing needs no re-consent where a broadening
+  would. The "never individual purchases or shops" reassurance belongs in UI help text.
+- **ONE displayed version** (owner). Per-version archived bodies were built — 18 strings, with
+  draft-3/draft-5 wording recovered from git history — and then REMOVED as complexity buying a panel
+  nuance rather than a protection. So an earlier consenter now sees today's slightly broader text,
+  knowingly. **TD-166 marked ACCEPTED, not resolved**; `consentText.test.ts` fails if an `archive`
+  block reappears, so reversing that is a decision rather than a quiet edit.
+- **Changed — no scrollbar on either consent box** (`max-h-48 overflow-y-auto` removed from the form
+  AND the read-only panel): a scrollbar made the text look long and invited scrolling past it. The
+  box is now ~40% taller. Comment at the call site so it isn't reinstated as a tidy-up.
+- **The frozen branding byte-identity fixture was RE-CAPTURED, once, deliberately** — a real consent
+  revision cannot preserve pre-edit bytes. Its header now scopes the "never fix the fixture" rule to
+  everything except an owner-approved `CONSENT_VERSION` bump.
+- **+6 jest** (754) / 3418 pytest on the merged tree. `next build` clean.
+- **▶ OUTSTANDING, and the consent is live without them:** (1) the **contract clause** — the
+  `2026 BPB Student Agreement Final 240726` draft obliges the student to evidence use of funds to the
+  **Foundation** only (`Donor` = `counterparty_name`, currently Suresh Thirugnanam) and its
+  Confidentiality clause bars onward disclosure absent written agreement, so the two documents
+  disagree until it lands; (2) **lawyer review** of the deployed wording; (3) **re-consent** — 83
+  active consents (draft-3: 19, draft-5: 61, draft-6: 3), **49 already sponsor-visible**, **32 given
+  by a guardian**; (4) **ms/ta are first drafts**, live now.
+- **⚠ The version bump is a RECORD, not a safeguard.** `pool.has_active_share_consent` checks type +
+  `is_active` only — never the version — so when the spend panel ships it will show for all 83, not
+  only draft-7 consenters. Holding a new disclosure back is an owner decision per feature.
+
 ## Platform programme layer P4b — the credit endpoints, and identity on the chain — 2026-07-26
 
 Fifth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **P4a built the wallet-credit
