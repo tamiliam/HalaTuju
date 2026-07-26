@@ -2565,15 +2565,27 @@ _MONTH_RE = re.compile(r'^\d{4}-\d{2}$')
 
 
 class AdminBillingUsageView(_AdminBase):
-    """Super + org_admin usage readout (flag-gated, 404-first)."""
+    """Super + org_admin usage readout. The flag darkens the ORG-FACING screen only.
+
+    `BILLING_USAGE_ENABLED` gates what the TENANT sees, not what the platform operator sees
+    (owner, 2026-07-26). A super is the person who runs the meter: they need to read the numbers
+    before an organisation is shown them, which is precisely the check a dark-until-a-date rollout
+    is supposed to allow. So super passes whatever the flag says; org_admin keeps 404-ing until
+    the 1 Aug flip, and their experience is byte-identical to before.
+
+    Ordering matters: the flag check sits BEFORE the role check so every non-super role keeps
+    getting the same **404** it got while dark (no new existence signal), and only becomes a 403
+    once the feature is live for everyone. Unauthenticated callers never reach here — DRF's auth
+    layer 401s first.
+    """
 
     def get(self, request):
-        if not getattr(settings, 'BILLING_USAGE_ENABLED', False):
-            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
         is_super = self.has_role(admin, 'super')
+        if not is_super and not getattr(settings, 'BILLING_USAGE_ENABLED', False):
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         if not (is_super or admin.role == 'org_admin'):
             return self._deny_role()
 

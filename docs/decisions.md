@@ -5573,3 +5573,15 @@ Note this is deliberately **not** `org_admin` for the maker — Poongulali is a 
 **Rationale:** References identify; they do not have to describe. The gift is now a field, shown beside the reference.
 
 **Revisit if:** operators report confusing two same-dated runs in practice despite the programme being displayed.
+
+## The billing dark-ship darkens the TENANT, not the platform operator — 2026-07-26
+
+**Decision:** `BILLING_USAGE_ENABLED` gates the usage screen for `org_admin` only. A `super` reaches it regardless of the flag. This REVISES the Sprint-13a position (2026-07-25) that the screen is dark for everyone until 1 August; that entry's "screen dark til 1 Aug" now means **org-facing** dark.
+
+**Alternatives considered:** (a) Keep it dark for everyone until the flip — rejected by the owner: the point of a dark-until-a-date rollout is that the operator can check the thing before the audience sees it, and a flag that also blinds the operator removes the only window in which a wrong number can be caught quietly. (b) Flip the flag on early for everyone — rejected: that shows BrightPath's org_admins a screen the owner has not yet reviewed, which is the failure the Sprint-15 retro already recorded ("present the UI artifact BEFORE the first flag-on ask").
+
+**Rationale:** Two different questions were being answered by one flag — "is this ready for a tenant?" and "may the platform see its own meter?". Only the first needs a date.
+
+**Trade-offs:** The flag's name no longer describes its whole behaviour (it reads as global). Mitigated by the view docstring, this record, and three tests that pin each role's status code. A non-super role also now gets a 403 instead of a 404 **once the feature is live** — correct, and the while-dark 404 is preserved by ordering the flag check before the role check.
+
+**Revisit if:** a second super ever exists who should not see cross-tenant cost data — today there is exactly one (the owner), which is what makes this safe.

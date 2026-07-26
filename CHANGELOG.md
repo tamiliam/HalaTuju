@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing & usage: the dark ship is ORG-FACING only — super sees it now — 2026-07-26
+
+`BILLING_USAGE_ENABLED` gated the usage screen for **everyone**, including the platform operator.
+Owner decision: the flag darkens what a **tenant** sees; a super runs the meter and needs to read
+the numbers before an organisation is shown them — which is what a dark-until-a-date rollout is
+for. Super now passes whatever the flag says; **org_admin keeps 404-ing until the 1 Aug flip**, and
+their experience is byte-identical to before.
+
+No frontend change: `/admin/billing` and the Administration hub card **probe the endpoint** and
+render "Coming soon" on a 404, so a 200 for super lights the real screen on its own.
+
+Ordering matters and is tested: the flag check sits BEFORE the role check, so every non-super role
+keeps the same **404** it had while dark rather than a 403 that would disclose the route a week
+early. +3 tests; **4699 pytest**. One super account exists on prod, so the blast radius is one
+person — the owner.
+
 ## Fixed — the income documents were the only cards still missing the tidy file row — 2026-07-26
 
 Small lane. Frontend only, no migration. Reported from the student Documents tab: on the mother's

@@ -7,6 +7,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 _(cleared at the 2026-07-23 review — counter reset; the 13 reviewed entries are listed in that review)_
 
 - 2026-07-25 fix: cockpit rejected record shows the reviewer + QC decline trail; witness-org card settles once assigned (officer cockpit — `page.tsx`, `officerCockpit.ts` + test, en/ms/ta)
+- 2026-07-26 fix: billing dark-ship narrowed to org_admin — super sees the usage screen before the 1 Aug flip (owner decision; reverses the Sprint-13a 'dark for everyone' position — `views_admin.AdminBillingUsageView`, `test_billing_usage.py` +3, decisions.md; no FE change, the screen probes the endpoint)
 - 2026-07-26 fix: income document cards get the same tidy file row as every other doc — stale `MULTI_INSTANCE_UPLOADS` mirrored a backend rule retired 2026-06-05 (student Documents tab — `ScholarshipDocuments.tsx`, `scholarship.ts` + new `docFileLayout.test.ts`, en/ms/ta)
 
 _(Not logged here as a small change: the **Check-2 case summary** LLM feature — `verdict_narrative.py` + `AdminVerdictSummaryView` + FE lead paragraph, DARK behind `VERDICT_CASE_SUMMARY_ENABLED`. It's a feature, tracked as STR-proof S4 (dark) in CHANGELOG + halatuju.md + CLAUDE.md Next-Sprint; retro to follow after the owner live-validates the voice and flips the flag.)_

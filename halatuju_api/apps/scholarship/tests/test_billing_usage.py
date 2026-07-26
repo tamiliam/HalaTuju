@@ -64,11 +64,33 @@ class TestBillingUsageEndpoint(TestCase):
         c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
         return c.get(URL, params)
 
-    # ── flag-first dark ship ────────────────────────────────────────────────
+    # ── dark ship: ORG-FACING only (owner, 2026-07-26) ──────────────────────
+    # This block previously asserted `flag off → 404 even for super`. The owner reversed that:
+    # the flag darkens what the TENANT sees, not what the platform operator sees. A super runs
+    # the meter and needs to read the numbers BEFORE an organisation is shown them — which is
+    # what a dark-until-a-date rollout is for. The org-facing dark ship is unchanged, and that
+    # is the invariant these tests now protect.
     @override_settings(BILLING_USAGE_ENABLED=False)
-    def test_flag_off_is_404_even_for_super(self):
-        self.assertEqual(self._get('super-uid').status_code, 404)
+    def test_flag_off_still_darkens_the_org_facing_screen(self):
+        """The 1 Aug flip is what opens this to org_admin — not this change."""
         self.assertEqual(self._get('oa-a').status_code, 404)
+
+    @override_settings(BILLING_USAGE_ENABLED=False)
+    def test_flag_off_does_not_darken_super(self):
+        resp = self._get('super-uid')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()['can_see_platform'])
+
+    @override_settings(BILLING_USAGE_ENABLED=False)
+    def test_flag_off_keeps_a_404_not_a_403_for_other_roles(self):
+        """Ordering guard: the flag check sits BEFORE the role check, so a reviewer sees the
+        same 404 they saw while dark. Moving the role check first would turn that into a 403 and
+        disclose that the route exists a week before the feature does."""
+        self.assertEqual(self._get('rev-a').status_code, 404)
+
+    def test_flag_on_refuses_other_roles_with_403(self):
+        """Once live, a wrong role is an honest 403 — the route is no longer a secret."""
+        self.assertEqual(self._get('rev-a').status_code, 403)
 
     # ── super view ──────────────────────────────────────────────────────────
     def test_super_sees_all_orgs_plus_platform(self):
