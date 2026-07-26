@@ -79,12 +79,24 @@ def month_totals(period_month):
     total = attributable = platform = tax = Decimal('0.00')
     by_source = {}
     entered_sources = set()
+    # Rows whose ringgit cost is not yet known — a held invoice awaiting its FX rate. They are
+    # COUNTED and reported, never dropped: a total that quietly omits a RM100 line is worse
+    # than one that says "incomplete", because only the second prompts anyone to go and look.
+    unconverted = []
 
     for r in rows:
-        total += r.amount_myr
-        by_source[r.source] = by_source.get(r.source, Decimal('0.00')) + r.amount_myr
         if r.provenance == 'entered':
             entered_sources.add(r.source)
+        if r.amount_myr is None:
+            unconverted.append({
+                'source': r.source,
+                'invoice_ref': r.invoice_ref,
+                'currency': r.currency,
+                'amount_original': r.amount_original,
+            })
+            continue
+        total += r.amount_myr
+        by_source[r.source] = by_source.get(r.source, Decimal('0.00')) + r.amount_myr
         if is_tax(r.service, r.sku):
             tax += r.amount_myr
         elif r.attributable:
@@ -103,6 +115,12 @@ def month_totals(period_month):
         # Which sources in this month rest on a human reading a PDF. Surfaced, never hidden:
         # a total that mixes measured and entered figures without saying so is not an audit.
         'entered_sources': sorted(entered_sources),
+        # Truthfulness flags. `is_complete` False means the total below is a FLOOR, not a total.
+        'unconverted': unconverted,
+        'is_complete': not unconverted,
+        # Providers whose billing period does not line up with the calendar month, so a
+        # cross-provider comparison in this month is comparing unlike windows.
+        'period_caveats': sorted({r.period_note for r in rows if r.period_note}),
     }
 
 

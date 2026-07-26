@@ -120,6 +120,73 @@ class TestLedger(TestCase):
         self.assertEqual(platform_cost.month_totals('2026-07')['total_myr'], Decimal('1.00'))
 
 
+class TestForeignCurrencyInvoice(TestCase):
+    """Supabase invoices in USD ($25.00, refs TPTHYS-0000N). The ledger must hold that
+    honestly rather than convert it at a rate somebody half-remembered."""
+
+    def _supabase(self, **kw):
+        return PlatformCost.objects.create(
+            period_month=kw.pop('month', '2026-06'), source='supabase',
+            service='Pro plan', sku='', currency=kw.pop('currency', 'USD'),
+            amount_original=kw.pop('amount_original', Decimal('25.00')),
+            fx_rate=kw.pop('fx_rate', None), amount_myr=kw.pop('amount_myr', None),
+            attributable=False, provenance='entered',
+            invoice_ref=kw.pop('invoice_ref', 'TPTHYS-00007'),
+            period_note=kw.pop('period_note', ''), note=kw.pop('note', ''))
+
+    def test_an_invoice_with_no_rate_is_HELD_not_guessed(self):
+        """The core of the design. No rate → no ringgit figure → the month says so."""
+        self._supabase()
+        t = platform_cost.month_totals('2026-06')
+        self.assertFalse(t['is_complete'])
+        self.assertEqual(len(t['unconverted']), 1)
+        self.assertEqual(t['unconverted'][0]['invoice_ref'], 'TPTHYS-00007')
+        self.assertEqual(t['unconverted'][0]['currency'], 'USD')
+        self.assertEqual(t['unconverted'][0]['amount_original'], Decimal('25.00'))
+
+    def test_a_held_invoice_never_silently_vanishes_from_a_total(self):
+        """It is excluded from the arithmetic (we cannot add USD to MYR) but COUNTED in
+        `lines` and named in `unconverted`. A quietly-omitted RM100 line is the failure mode
+        this guards: the total must announce that it is a floor."""
+        PlatformCost.objects.create(
+            period_month='2026-06', source='gcp', service='Cloud Run', sku='Jobs CPU',
+            amount_myr=Decimal('29.81'), attributable=False, provenance='measured')
+        self._supabase()
+        t = platform_cost.month_totals('2026-06')
+        self.assertEqual(t['lines'], 2)                    # both rows are visible
+        self.assertEqual(t['total_myr'], Decimal('29.81'))  # only the convertible one sums
+        self.assertFalse(t['is_complete'])                  # and the total admits it
+
+    def test_a_converted_invoice_completes_the_month_and_keeps_the_audit_trail(self):
+        self._supabase(fx_rate=Decimal('4.7200'), amount_myr=Decimal('118.00'))
+        t = platform_cost.month_totals('2026-06')
+        self.assertTrue(t['is_complete'])
+        self.assertEqual(t['total_myr'], Decimal('118.00'))
+        row = PlatformCost.objects.get(source='supabase')
+        # All three survive, so the conversion can be re-checked rather than trusted.
+        self.assertEqual(row.amount_original, Decimal('25.00'))
+        self.assertEqual(row.fx_rate, Decimal('4.7200'))
+        self.assertEqual(row.currency, 'USD')
+
+    def test_a_mismatched_billing_period_is_surfaced_as_a_caveat(self):
+        """Supabase invoices on the 8th; the GCP lines are calendar-month. A reconciliation
+        that mixes those windows without saying so is a wrong number wearing a right one's
+        clothes."""
+        self._supabase(period_note='Supabase cycle 08 Jun - 08 Jul 2026')
+        t = platform_cost.month_totals('2026-06')
+        self.assertEqual(t['period_caveats'], ['Supabase cycle 08 Jun - 08 Jul 2026'])
+
+    def test_a_month_with_only_measured_myr_rows_is_complete_and_uncaveated(self):
+        """The guard must not cry wolf on the ordinary case."""
+        PlatformCost.objects.create(
+            period_month='2026-06', source='gcp', service='Cloud Run', sku='Jobs CPU',
+            amount_myr=Decimal('29.81'), attributable=False, provenance='measured')
+        t = platform_cost.month_totals('2026-06')
+        self.assertTrue(t['is_complete'])
+        self.assertEqual(t['unconverted'], [])
+        self.assertEqual(t['period_caveats'], [])
+
+
 class TestReconciliation(TestCase):
     @classmethod
     def setUpTestData(cls):

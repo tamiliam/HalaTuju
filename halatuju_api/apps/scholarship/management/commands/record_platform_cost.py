@@ -35,7 +35,18 @@ class Command(BaseCommand):
         parser.add_argument('--source', choices=[c[0] for c in PlatformCost.SOURCE_CHOICES])
         parser.add_argument('--service', default='')
         parser.add_argument('--sku', default='')
-        parser.add_argument('--amount', help='MYR, e.g. 118.00')
+        parser.add_argument('--amount', help='The figure ON the invoice, e.g. 25.00')
+        parser.add_argument('--currency', default='MYR',
+                            help="ISO code the invoice is denominated in. Supabase = USD.")
+        parser.add_argument('--fx-rate', dest='fx_rate',
+                            help='Rate to convert --amount into MYR. Prefer the rate your CARD '
+                                 'was actually charged at — that is the real cost. Omit it and '
+                                 'the row is held with no ringgit figure rather than a guess.')
+        parser.add_argument('--invoice-ref', dest='invoice_ref', default='',
+                            help="Provider invoice number, e.g. TPTHYS-00007.")
+        parser.add_argument('--period-note', dest='period_note', default='',
+                            help='Set when the billing period is not the calendar month, e.g. '
+                                 '"Supabase cycle 08 Jun - 08 Jul 2026".')
         parser.add_argument('--attributable', action='store_true',
                             help='Mark this line as moving with TENANT activity. Default is '
                                  'platform — the safe direction: an unbilled tenant is a '
@@ -59,21 +70,51 @@ class Command(BaseCommand):
         except (InvalidOperation, TypeError) as exc:
             raise CommandError(f'--amount is not a number: {opts["amount"]!r}') from exc
 
+        currency = (opts['currency'] or 'MYR').upper()
+        rate = None
+        if opts['fx_rate']:
+            try:
+                rate = Decimal(str(opts['fx_rate']))
+            except InvalidOperation as exc:
+                raise CommandError(f'--fx-rate is not a number: {opts["fx_rate"]!r}') from exc
+
+        # Three cases, and the middle one is the point of this design:
+        #   MYR invoice          -> amount IS the ringgit figure.
+        #   foreign + rate       -> convert, and keep BOTH figures plus the rate.
+        #   foreign, no rate     -> hold the invoice with NO ringgit figure. Honest, and the
+        #                           month reports itself incomplete until somebody supplies it.
+        if currency == 'MYR':
+            amount_myr, amount_original = amount, None
+        elif rate is not None:
+            amount_myr, amount_original = (amount * rate).quantize(Decimal('0.01')), amount
+        else:
+            amount_myr, amount_original = None, amount
+
         obj, created = PlatformCost.objects.update_or_create(
             period_month=month, source=opts['source'],
             service=opts['service'], sku=opts['sku'],
             defaults={
-                'amount_myr': amount,
+                'currency': currency,
+                'amount_original': amount_original,
+                'fx_rate': rate,
+                'amount_myr': amount_myr,
                 'attributable': opts['attributable'],
                 'provenance': 'entered',
+                'invoice_ref': opts['invoice_ref'],
+                'period_note': opts['period_note'],
                 'note': opts['note'],
             })
         verb = 'Recorded' if created else 'Updated'
         self.stdout.write(self.style.SUCCESS(f'{verb}: {obj}'))
-        if not opts['note']:
+        if amount_myr is None:
             self.stdout.write(self.style.WARNING(
-                'No --note given. A hand-entered figure with no invoice reference is hard to '
-                'trust in three months. Consider re-running with --note.'))
+                f'  HELD WITHOUT A RINGGIT FIGURE: {currency} {amount} with no --fx-rate. '
+                'This is deliberate, not a failure — the month will report itself incomplete '
+                'until you re-run with the rate your card was charged at.'))
+        if not opts['invoice_ref']:
+            self.stdout.write(self.style.WARNING(
+                '  No --invoice-ref. A hand-entered figure that cannot be traced back to a '
+                'document is hard to trust in three months.'))
         self.stdout.write('')
         self._report(month)
 
@@ -84,9 +125,20 @@ class Command(BaseCommand):
             return
 
         w = self.stdout.write
-        w(f'── Platform cost, {month} ' + '─' * 34)
+        w(f'-- Platform cost, {month} ' + '-' * 34)
         w(f'  lines                {data["lines"]}')
-        w(f'  TOTAL                RM{data["total_myr"]:>10,.2f}')
+        if not data['is_complete']:
+            # Say it BEFORE the number, so the number is never read on its own.
+            w(self.style.ERROR(
+                f'  INCOMPLETE - {len(data["unconverted"])} invoice(s) held with no ringgit '
+                'figure. The total below is a FLOOR, not a total:'))
+            for u in data['unconverted']:
+                ref = u['invoice_ref'] or '(no ref)'
+                w(self.style.ERROR(
+                    f'    {u["source"]:10} {ref:16} {u["currency"]} {u["amount_original"]} '
+                    '- needs --fx-rate'))
+        w(f'  TOTAL                RM{data["total_myr"]:>10,.2f}'
+          + ('   <- FLOOR ONLY' if not data['is_complete'] else ''))
         w(f'    tenant-driven      RM{data["attributable_myr"]:>10,.2f}')
         w(f'    platform-driven    RM{data["platform_myr"]:>10,.2f}')
         w(f'    tax                RM{data["tax_myr"]:>10,.2f}')
@@ -96,9 +148,13 @@ class Command(BaseCommand):
         if data['entered_sources']:
             w(self.style.WARNING(
                 '  hand-entered (not re-derivable): ' + ', '.join(data['entered_sources'])))
+        for caveat in data['period_caveats']:
+            # A cross-provider total that silently mixes billing windows is a wrong number
+            # wearing a right number's clothes.
+            w(self.style.WARNING(f'  period caveat: {caveat}'))
 
         w('')
-        w('── Reconciliation vs the meter ' + '─' * 29)
+        w('-- Reconciliation vs the meter ' + '-' * 29)
         w(f'  metered events       {data["metered_events"]}')
         for svc, n in sorted(data['metered_by_service'].items(), key=lambda kv: -kv[1]):
             w(f'    {svc:18} {n}')

@@ -2972,19 +2972,51 @@ class PlatformCost(models.Model):
         max_length=200, blank=True, default='',
         help_text="Provider SKU — the grain that actually explains a bill. Reading June by "
                   "SKU is what revealed Cloud Run JOBS (RM33) outranked Artifact Registry.")
+    # ── The money, in three parts ────────────────────────────────────────────
+    # A first cut carried only `amount_myr`, which quietly assumed every provider invoices in
+    # ringgit. GCP does; **Supabase invoices in USD** ($25.00/month). Converting needs a rate,
+    # and a rate typed from memory is exactly the "estimate dressed as a fact" this ledger
+    # exists to prevent — so the invoice is recorded in ITS OWN currency, and the conversion is
+    # a separate, visible, auditable step.
+    currency = models.CharField(
+        max_length=3, default='MYR',
+        help_text='ISO code the invoice is denominated in. GCP = MYR, Supabase = USD.')
+    amount_original = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text='The figure printed on the invoice, in `currency`. Null for MYR invoices '
+                  'where amount_myr IS the invoiced figure.')
+    fx_rate = models.DecimalField(
+        max_digits=10, decimal_places=4, null=True, blank=True,
+        help_text='Rate used to derive amount_myr from amount_original. Prefer the rate your '
+                  'card was actually charged at — that is the real cost — over a spot rate.')
     amount_myr = models.DecimalField(
-        max_digits=12, decimal_places=2,
-        help_text='Cost in MYR, as invoiced. Decimal, never float — this is money.')
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text='Cost in MYR — the common denominator every total is summed in. Decimal, '
+                  'never float: this is money. **Nullable on purpose.** "We hold the invoice '
+                  'but do not yet know what it cost us in ringgit" is a real and honest state; '
+                  'a placeholder number in a money column gets quoted as if it were true. '
+                  'Rows left null are counted and reported as incomplete, never silently '
+                  'dropped from a total.')
+    period_note = models.CharField(
+        max_length=120, blank=True, default='',
+        help_text='Set when the provider\'s billing period does not match the calendar month '
+                  "— e.g. Supabase invoices on the 8th, so a period straddles two months. "
+                  'Without this, a cross-provider reconciliation compares unlike periods.')
     attributable = models.BooleanField(
         default=False,
         help_text='True when this line moves with TENANT activity (per-document OCR, AI, '
                   'egress). False for platform-driven cost (cron compute, CI storage) — that '
                   'belongs in a platform fee, not a metered charge.')
     provenance = models.CharField(max_length=10, choices=PROVENANCE_CHOICES)
+    invoice_ref = models.CharField(
+        max_length=60, blank=True, default='',
+        help_text="The provider's own invoice number (e.g. 'TPTHYS-00007'). Its own column, "
+                  'not buried in a note: it is how a figure is traced back to the document it '
+                  'came from, which is the whole point of an auditable ledger.')
     note = models.TextField(
         blank=True, default='',
-        help_text='Anything a future reader needs in order to trust the figure — invoice '
-                  'number, what was excluded, an attribution caveat.')
+        help_text='Anything a future reader needs in order to trust the figure — what was '
+                  'excluded, an attribution caveat, why a rate was chosen.')
     recorded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
