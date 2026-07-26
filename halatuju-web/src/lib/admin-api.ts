@@ -369,6 +369,57 @@ export async function updateSource(
   return adminMutate<SourceItem>(`/api/v1/admin/scholarship/sources/${id}/`, 'PATCH', data, options)
 }
 
+// ── Partner emails (2026-07-26) ───────────────────────────────────────────
+// Five programme-wide emails to the referral organisations that run this bursary alongside us.
+// One switch per email — on means every QUALIFYING partner receives it; there is no
+// per-organisation choice (owner ruling).
+
+export interface PartnerEmailTemplate {
+  kind: string
+  enabled: boolean
+  subject: string
+  body: string
+  placeholders: string[]
+  updated_by_email: string
+  updated_at: string | null
+  last_sent_at: string | null
+  last_sent_orgs: number
+}
+
+export interface PartnerEmailOrg {
+  id: number
+  code: string
+  name: string
+  students: number
+  has_email: boolean
+  is_house_org: boolean
+  qualifies: boolean
+}
+
+export interface PartnerEmailsPayload {
+  templates: PartnerEmailTemplate[]
+  organisations: PartnerEmailOrg[]
+  /** How many organisations an email would actually reach today. */
+  qualifying_count: number
+  /** Referral partners in total — the house organisation is not one of them. */
+  partner_count: number
+  /** The platform flag. Settings still save while it is off; nothing sends. */
+  comms_enabled: boolean
+}
+
+export async function getPartnerEmails(options?: ApiOptions) {
+  return adminFetch<PartnerEmailsPayload>('/api/v1/admin/scholarship/partner-emails/', options)
+}
+
+export async function updatePartnerEmail(
+  kind: string,
+  data: Partial<{ enabled: boolean; subject: string; body: string }>,
+  options?: ApiOptions,
+) {
+  return adminMutate<PartnerEmailTemplate>(
+    `/api/v1/admin/scholarship/partner-emails/${kind}/`, 'PATCH', data, options)
+}
+
 /** Assign (code/id) or clear (null) the witness-organisation override for an application. */
 export async function assignWitness(
   applicationId: number, witnessOrg: string | number | null, options?: ApiOptions,

@@ -2,6 +2,90 @@
 
 All notable changes to this project will be documented in this file.
 
+## Partner comms S1 — an org_admin decides what partner organisations hear — 2026-07-26
+
+Sprint 1 of `docs/plans/2026-07-26-partner-comms-roadmap.md`. **Ships DARK** — two independent
+gates (`PARTNER_COMMS_ENABLED`, default off, AND each template's own `enabled`), and nothing sends
+in this sprint at all: there is no sender yet. Migration `0128` (two tables + two stamps, additive).
+
+**Why.** A referral organisation hears from us exactly once today — `send_witness_pending_email`,
+when a student they referred needs their witness signature. Everything before that is invisible to
+them. Owner: *"I don't want them to hear about it only when they are required to witness a
+contract."*
+
+### Added
+- **`partner_comms.py` — the one seam.** `KINDS` + per-kind placeholder allowlists,
+  `qualifying_partners()`, `partner_applications(org)`, `chip_tally()`, `stage_counts(org)`,
+  `fingerprint()`, `last_fingerprint()`, `chase_rows(org)`, `recipient_for(org)`,
+  `milestone_queryset(kind)`, `is_enabled(kind)`. Sending lives in later sprints; this module never
+  touches SMTP.
+- **`partner_email_templates`** (five rows, seeded by `seed_partner_email_templates`) and
+  **`partner_email_log`**. Migration `0128` also adds `partner_awaiting_notified_at` /
+  `partner_awarded_notified_at` to `scholarship_applications` (the
+  `SponsorProfile.realtime_notified_at` idempotency pattern). Both tables carry the sibling RLS
+  convention — enabled + exactly one `Backend service role only` policy.
+- **Two endpoints on the existing `_SourcesBase` gate** (so super/admin/org_admin only, and
+  qc/reviewer/partner are refused — tested): `GET …/admin/scholarship/partner-emails/` and
+  `PATCH …/admin/scholarship/partner-emails/<kind>/`.
+- **The Partner-emails card** on `/admin/sources`, above the Organisations table: five rows, one
+  switch each, and the wording editor **expands inside its own row** — the same idiom as the
+  Organisations table's own Edit panel, so the page has one way of editing things instead of two.
+  Fail-soft: a partner-emails error never takes the registry table down.
+
+### Changed
+- **Enablement is a property of the TEMPLATE, not an (org, kind) pair** (owner: *"if the email
+  template is active, it goes out to all qualifying partners. It is either, or."*). That removed a
+  whole table from the first design and every per-organisation setting from the screen.
+- **`_source_application_counts` now derives from `partner_comms.chip_tally()`** — the same
+  definition `partner_applications(org)` filters on, with a test asserting they agree for every
+  organisation. The digest and the Sources screen cannot report different numbers.
+- The Sources page's `Toggle` moved to `components/sources/shared.tsx` and is reused rather than
+  cloned.
+
+### The two owner rulings that are enforced in code, not remembered
+- **The bursary is theirs too.** A partner organisation co-owns this programme and may market it as
+  its own, so the students are the **organisation's** — never "the students you send us" (conduit),
+  never "your students" (which hands them to whoever reads the email; the reader is a
+  representative). `partner_comms.banned_phrases` **refuses a save** that breaks either rule, the
+  seeds are asserted to pass it, and the award email says out loud: *"this is {org_name}'s
+  achievement as much as ours — please do share the news as your own."*
+- **HTML by default**, through the existing `_html_email_shell`, with a plain-text alternative.
+
+### Fixed by design (things that would have failed quietly)
+- **Recipients are the organisation's own `contact_email` and NOTHING else.** The only two
+  `partner`-role logins on prod are both at CUMIG, created **2026-03-17**, `owning_organisation`
+  NULL — no B40 scope at all. They belong to the **HalaTuju course-selector** relationship, so
+  emailing them bursary progress would have put applicant data in front of an audience attached for
+  a different product. A test asserts no `PartnerAdmin` row is ever consulted. *(This reverses an
+  earlier "contact_email + partner logins" decision that had been put to the owner on my own wrong
+  premise.)*
+- **The house organisation is excluded by rule, not by circumstance.** BrightPath is us — the
+  residual bucket in the Sources count — so it never receives a partner email even after somebody
+  fills in its address field. Its current `contact_email` is our own staff member.
+- **The counts reconcile.** The five figures the owner asked for do not sum to the total, so three
+  more lines exist (`not_shortlisted`, `under_review`, `closed`). A test walks every value in
+  `STATUS_CHOICES` and fails, naming it, if one is unclassified or claimed twice.
+- **`recommended` is never its own line** — it is masked from the student, so it must not reach a
+  partner as a near-certainty either. It sits inside "Under review", asserted.
+- **"Last activity" is a document upload, never `application.updated_at`.** `updated_at` is
+  `auto_now`, so verdict scoring, re-extraction, the institution sync — even a partner-notification
+  stamp — bump it; a student untouched for a month would have read as active this morning and the
+  partner would have stopped chasing exactly the person who needs it. Pinned by a test that saves
+  the application system-side and asserts the date does not move. A superseded upload doesn't count.
+- **A failed send never reads as a success.** `last_fingerprint` and the screen's "last sent" both
+  filter `ok=True`, so a no-recipient skip cannot suppress the next real send as "unchanged".
+
+### Not done here, deliberately
+No sender, no cron, no email body rendering — S2 (the two weekly emails) and S3 (milestones +
+assignment + flag-on). Nothing in this sprint can send.
+
+- **3484 pytest** (+45) / **776 jest** (+14). `makemigrations --check` clean; `next build` clean.
+- **▶ AT DEPLOY (owner-gated): apply `0128` MIGRATE-FIRST, then push.** Post-check: both new tables
+  report `relrowsecurity = true` with exactly one policy; both new columns NULL on every row (no
+  backfill — a stamp means "we have told the partner", and we have told nobody).
+- **▶ OWNER TASK that gates all real value:** collect the nine partner contact addresses. Until then
+  the screen honestly reads **0 of 9 organisations can receive an email today**.
+
 ## Billing & usage: the dark ship is ORG-FACING only — super sees it now — 2026-07-26
 
 `BILLING_USAGE_ENABLED` gated the usage screen for **everyone**, including the platform operator.

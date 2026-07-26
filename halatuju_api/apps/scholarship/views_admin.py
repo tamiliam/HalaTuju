@@ -10,6 +10,7 @@ import re
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Count, Max
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -1154,18 +1155,13 @@ def _source_application_counts():
     residual split if applications ever span multiple house tenants.
     """
     from apps.courses.models import PartnerOrganisation
-    from django.db.models import Count
-    # chip -> number of applications carrying it (NULL/'' collapse to '')
-    # org-fence: intentionally GLOBAL — the sources registry lists every organisation and
-    # the house-org residual = (total apps − apps claimed by partners), so this tally must
-    # span all tenants, not one. Single tenant today; revisit the split if that changes.
-    tally = {
-        (row['profile__referral_source'] or ''): row['n']
-        # org-fence: GLOBAL by design (residual house-org tally spans all tenants; see above)
-        for row in (ScholarshipApplication.objects
-                    .values('profile__referral_source')
-                    .annotate(n=Count('pk')))
-    }
+    from . import partner_comms
+    # chip -> number of applications carrying it (NULL/'' collapse to ''). The tally comes from
+    # `partner_comms.chip_tally()`, the SAME definition `partner_comms.partner_applications(org)`
+    # filters on, so this screen and the partner weekly digest cannot report different numbers
+    # (docs/lessons.md: give the rule ONE named predicate both sides call).
+    # org-fence: intentionally GLOBAL — see `chip_tally`'s own note.
+    tally = partner_comms.chip_tally()
     total = sum(tally.values())
     orgs = list(PartnerOrganisation.objects.values('id', 'code'))
     partner_codes = {o['code'] for o in orgs if o['code'] != HOUSE_ORG_CODE}
@@ -1262,6 +1258,131 @@ class AdminSourceDetailView(_SourcesBase):
         if fields:
             org.save(update_fields=fields)
         return Response(_source_dict(org, _source_application_counts().get(org.id, 0)))
+
+
+def _partner_email_dict(tpl, last=None):
+    """One partner-email template as the admin screen sees it: the wording, its switch, the
+    placeholders it may use, and when it last went out."""
+    from . import partner_comms
+    return {
+        'kind': tpl.kind,
+        'enabled': bool(tpl.enabled),
+        'subject': tpl.subject,
+        'body': tpl.body,
+        'placeholders': sorted(partner_comms.PLACEHOLDERS.get(tpl.kind, set())),
+        'updated_by_email': tpl.updated_by_email or '',
+        'updated_at': tpl.updated_at.isoformat() if tpl.updated_at else None,
+        'last_sent_at': last['sent_at'].isoformat() if last and last.get('sent_at') else None,
+        'last_sent_orgs': (last or {}).get('orgs', 0),
+    }
+
+
+class AdminPartnerEmailsView(_SourcesBase):
+    """GET .../admin/scholarship/partner-emails/ — the five partner-email templates plus who can
+    currently receive one.
+
+    `qualifying` is the honest answer to "if I switch this on, who hears about it?" — the screen
+    states it rather than looking as though it works. Today, on prod, it is EMPTY: nine referral
+    partners, none with a contact email on file.
+    """
+    def get(self, request):
+        admin, err = self._sources_admin(request)
+        if err:
+            return err
+        from django.conf import settings as _settings
+        from apps.courses.models import PartnerOrganisation
+        from . import partner_comms
+        from .models import PartnerEmailLog, PartnerEmailTemplate
+
+        by_kind = {t.kind: t for t in PartnerEmailTemplate.objects.all()}
+        last = {}
+        for row in (PartnerEmailLog.objects.filter(ok=True)
+                    .values('kind').annotate(sent_at=Max('sent_at'), orgs=Count('organisation',
+                                                                                distinct=True))):
+            last[row['kind']] = row
+        templates = [
+            _partner_email_dict(by_kind[k], last.get(k))
+            for k in partner_comms.KINDS if k in by_kind
+        ]
+        qualifying = {o.id for o in partner_comms.qualifying_partners()}
+        counts = _source_application_counts()
+        # Every organisation, each with WHY it does or doesn't qualify — the house org is excluded
+        # by rule (it is us), the rest simply need an address.
+        # org-fence: GLOBAL by design — this mirrors the Sources registry, which lists every org.
+        orgs = [
+            {
+                'id': o.id, 'code': o.code, 'name': o.name,
+                'students': counts.get(o.id, 0),
+                'has_email': bool((o.contact_email or '').strip()),
+                'is_house_org': o.code == partner_comms.HOUSE_ORG_CODE,
+                'qualifies': o.id in qualifying,
+            }
+            for o in PartnerOrganisation.objects.order_by('name')
+        ]
+        return Response({
+            'templates': templates,
+            'organisations': orgs,
+            'qualifying_count': len(qualifying),
+            'partner_count': sum(1 for o in orgs if not o['is_house_org']),
+            'comms_enabled': bool(getattr(_settings, 'PARTNER_COMMS_ENABLED', False)),
+        })
+
+
+class AdminPartnerEmailDetailView(_SourcesBase):
+    """PATCH .../admin/scholarship/partner-emails/<kind>/ {enabled?, subject?, body?} — switch one
+    partner email on/off, or edit its wording.
+
+    Two refusals, both deliberate: an unknown `{placeholder}` would render literally into a
+    partner's inbox, and the co-owned voice the owner specified (2026-07-26) is enforced rather
+    than left to a reviewer's memory — a partner organisation runs this bursary alongside us, so
+    conduit phrasing and "your students" are refused.
+    """
+    def patch(self, request, kind):
+        admin, err = self._sources_admin(request)
+        if err:
+            return err
+        from . import partner_comms
+        from .models import PartnerEmailTemplate
+
+        tpl = PartnerEmailTemplate.objects.filter(kind=kind).first()
+        if tpl is None:
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        subject = tpl.subject if 'subject' not in request.data else (
+            (request.data.get('subject') or '').strip()[:255])
+        body = tpl.body if 'body' not in request.data else (request.data.get('body') or '').strip()
+        if 'subject' in request.data or 'body' in request.data:
+            if not subject or not body:
+                return Response({'error': 'subject_and_body_required',
+                                 'code': 'subject_and_body_required'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            unknown = partner_comms.unknown_placeholders(kind, subject, body)
+            if unknown:
+                return Response({'error': 'unknown_placeholder', 'code': 'unknown_placeholder',
+                                 'placeholders': list(unknown)},
+                                status=status.HTTP_400_BAD_REQUEST)
+            banned = partner_comms.banned_phrases(subject, body)
+            if banned:
+                return Response({'error': 'conduit_phrasing', 'code': 'conduit_phrasing',
+                                 'phrases': list(banned)},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        fields = []
+        if 'enabled' in request.data:
+            tpl.enabled = bool(request.data.get('enabled'))
+            fields.append('enabled')
+        if subject != tpl.subject:
+            tpl.subject = subject
+            fields.append('subject')
+        if body != tpl.body:
+            tpl.body = body
+            fields.append('body')
+        if fields:
+            tpl.updated_by_email = (getattr(admin, 'email', '') or '')[:254]
+            fields += ['updated_by_email', 'updated_at']
+            tpl.save(update_fields=fields)
+        return Response(_partner_email_dict(tpl))
 
 
 class AdminApplicationWitnessView(_SourcesBase):

@@ -151,6 +151,8 @@ from .views_admin import (
     AdminContractImportDocxView,
     AdminSourcesView,
     AdminSourceDetailView,
+    AdminPartnerEmailsView,
+    AdminPartnerEmailDetailView,
     AdminApplicationWitnessView,
 )
 
@@ -300,6 +302,9 @@ urlpatterns = [
     # Sources (referral organisations) + per-application witness assignment (go-live transition)
     path('admin/scholarship/sources/', AdminSourcesView.as_view()),
     path('admin/scholarship/sources/<int:pk>/', AdminSourceDetailView.as_view()),
+    # Partner comms: the five programme-wide partner emails (switch + wording). Same gate as Sources.
+    path('admin/scholarship/partner-emails/', AdminPartnerEmailsView.as_view()),
+    path('admin/scholarship/partner-emails/<str:kind>/', AdminPartnerEmailDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/witness/', AdminApplicationWitnessView.as_view()),
     path('admin/scholarship/applications/<int:pk>/award-amount/', AdminSetAwardAmountView.as_view()),
     # Post-award S4: disbursement/tranche ledger (schedule + release/withhold/return)

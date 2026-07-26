@@ -548,6 +548,14 @@ class ScholarshipApplication(models.Model):
     # Check 2 STEP 2: when the student was first notified that clarify queries were raised
     # (sent once at submission, so they come back and answer). Idempotent.
     query_raised_notified_at = models.DateTimeField(null=True, blank=True)
+    # Partner comms (2026-07-26): when the referring organisation was told this student had
+    # completed / had been awarded. Stamped by the hourly `send_partner_milestones` sweep, so
+    # each milestone reaches a partner exactly once. NULL = not yet told. Same shape as
+    # SponsorProfile.realtime_notified_at. The sweep re-checks the status before sending, which
+    # is what stops a reverted transition (revert_if_profile_incomplete / awarded → recommended)
+    # from ever producing an email.
+    partner_awaiting_notified_at = models.DateTimeField(null=True, blank=True)
+    partner_awarded_notified_at = models.DateTimeField(null=True, blank=True)
 
     # Admin verify-&-accept (S11a): a PartnerAdmin confirms NRIC/name/results against
     # the uploaded MyKad, which sets profile.nric_verified (locks the NRIC) and
@@ -2911,3 +2919,87 @@ class UsageEvent(models.Model):
     def __str__(self):
         who = self.organisation_id or 'platform'
         return f'{self.service}:{self.source or "-"} org={who} @ {self.created_at:%Y-%m-%d}'
+
+
+# ── Partner-organisation comms (2026-07-26) ───────────────────────────────────
+# Weekly + milestone emails to the referral organisations that run this bursary
+# alongside us. See docs/plans/2026-07-26-partner-comms-roadmap.md.
+
+class PartnerEmailTemplate(models.Model):
+    """One of the five partner emails: its wording AND its on/off switch.
+
+    Enablement is a property of the TEMPLATE, not of an (organisation, kind) pair —
+    owner ruling 2026-07-26: *"if the email template is active, it goes out to all
+    qualifying partners. It is either, or."* So there is exactly one row per kind and
+    no per-organisation selection anywhere in this feature.
+
+    `body` is plain text with `{placeholder}` tokens (the allowlist per kind lives in
+    `partner_comms.KINDS`); blank lines are paragraph breaks. Rendering wraps it in the
+    shared HTML email shell — HTML is the primary part, with a plain-text alternative
+    carrying the same information.
+    """
+    KIND_CHOICES = [
+        ('weekly_summary', 'Weekly summary'),
+        ('shortlisted_followup', 'Chase list'),
+        ('awaiting_review', 'Awaiting review'),
+        ('awarded', 'Awarded'),
+        ('assigned', 'A student joins their list'),
+    ]
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES, unique=True)
+    enabled = models.BooleanField(default=False)
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    updated_by_email = models.CharField(max_length=254, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'partner_email_templates'
+        ordering = ['kind']
+
+    def __str__(self):
+        return f'{self.kind} ({"on" if self.enabled else "off"})'
+
+
+class PartnerEmailLog(models.Model):
+    """Every partner email we attempted — the audit trail, the "last sent" the admin
+    screen shows, AND the fingerprint the weekly skip compares against.
+
+    Deliberately the only home for send state: the most recent row for an
+    (organisation, kind) pair answers both "when did we last write to them?" and "did
+    anything change since?", so there is no second copy of that state to drift.
+
+    A row is written even when the send FAILS (`ok=False`) and when it is skipped for
+    having no recipient — silence must be visible, not indistinguishable from success.
+    """
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.CASCADE,
+        related_name='partner_email_log',
+    )
+    kind = models.CharField(max_length=32, choices=PartnerEmailTemplate.KIND_CHOICES)
+    # The addresses actually written to, as stored (already lower-cased + de-duplicated).
+    recipients = models.JSONField(default=list, blank=True)
+    subject = models.CharField(max_length=255, blank=True, default='')
+    # Set for the per-student kinds; NULL for the two weekly digests.
+    application = models.ForeignKey(
+        'ScholarshipApplication', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='partner_emails',
+    )
+    # Short hash of the payload (the stage counts) — the weekly-summary skip test.
+    fingerprint = models.CharField(max_length=64, blank=True, default='')
+    students = models.IntegerField(default=0, help_text='How many students the email covered.')
+    ok = models.BooleanField(default=False)
+    note = models.CharField(max_length=200, blank=True, default='',
+                            help_text="Why nothing was sent, e.g. 'no_recipient', 'unchanged'.")
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'partner_email_log'
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['organisation', 'kind', '-sent_at'],
+                         name='partner_email_org_kind_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.kind} → org={self.organisation_id} @ {self.sent_at:%Y-%m-%d %H:%M}'

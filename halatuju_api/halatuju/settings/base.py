@@ -308,6 +308,15 @@ STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENAB
 # submission-ack email at that step; when OFF the basic ack still sends. EN+BM.
 PROFILE_COMPLETE_EMAIL_ENABLED = os.environ.get('PROFILE_COMPLETE_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Partner-organisation comms (2026-07-26): the weekly + milestone emails to the referral
+# organisations that run this bursary alongside us. TWO independent gates exist — this platform
+# flag AND each template's own `enabled` switch — so the whole feature can be dark while an
+# org_admin prepares the wording. Default OFF.
+PARTNER_COMMS_ENABLED = os.environ.get('PARTNER_COMMS_ENABLED', '').lower() in ('1', 'true', 'yes')
+# Soft per-run cap on partner emails, mirroring SPONSOR_NOTIFY_MAX_PER_RUN — a run must never
+# blow the Brevo daily quota; the overflow is logged and picked up next run.
+PARTNER_NOTIFY_MAX_PER_RUN = int(os.environ.get('PARTNER_NOTIFY_MAX_PER_RUN', '100') or 100)
+
 # Cool-off windows before a decision's comm goes out, giving time to reconsider/reverse.
 # DECLINE: a post-shortlist admin decline is held silently this many days before it reveals
 # (status → rejected) + the decline email sends. AWARD: a student-accepted award is held this

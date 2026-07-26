@@ -252,6 +252,13 @@ class TestFenceCoverageCompleteness(TestCase):
         # The witness endpoint reaches an application via _get_application (not a raw query).
         '_SourcesBase': 'base — super/org_admin gate for sources + witness assignment',
         'AdminSourcesView': 'shared-registry-single-tenant', 'AdminSourceDetailView': 'shared-registry-single-tenant',
+        # Partner comms (2026-07-26) — same _SourcesBase role gate. Deliberately NOT org-fenced,
+        # for the same reason as the Sources registry above: a partner-email TEMPLATE is
+        # programme-wide (one wording for every partner, owner ruling — there is no per-org row to
+        # fence), and the "who qualifies" list mirrors the shared source registry. Revisit together
+        # with the Sources rows when a second tenant runs its own referral partners.
+        'AdminPartnerEmailsView': 'shared-registry-single-tenant',
+        'AdminPartnerEmailDetailView': 'shared-registry-single-tenant',
         'AdminApplicationWitnessView': 'super/org_admin — witness assignment (single-tenant)',
         # Billing & usage (Sprint 13a) — dual-audience, flag-gated 404-first. org_admin is
         # org-fenced BY CONSTRUCTION (usage.monthly_usage(restrict_org_id=own org) can build no

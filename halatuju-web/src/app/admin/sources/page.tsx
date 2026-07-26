@@ -7,6 +7,8 @@ import {
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
 import { formatPhone, isValidPhone } from '@/lib/scholarship'
+import PartnerEmailsCard from '@/components/sources/PartnerEmailsCard'
+import { Toggle } from '@/components/sources/shared'
 
 // Sources (referral organisations) registry — a card in Administration → ORGANISATION
 // (super/org_admin only). List + inline edit + add. Reuses PartnerOrganisation.phone /
@@ -21,20 +23,6 @@ const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '')
 // Phone is optional; when present it must be a valid Malaysian number. Display + input both
 // run through the platform's shared formatPhone/isValidPhone (same helpers the apply form uses).
 const phoneInvalid = (v: string) => v.trim() !== '' && !isValidPhone(v)
-
-function Toggle({ on, onClick, disabled, label }: {
-  on: boolean; onClick: () => void; disabled?: boolean; label: string
-}) {
-  return (
-    <button type="button" role="switch" aria-checked={on} aria-label={label}
-      onClick={disabled ? undefined : onClick} disabled={disabled}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-        on ? 'bg-blue-600' : 'bg-gray-300'}`}>
-      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-        on ? 'translate-x-6' : 'translate-x-1'}`} />
-    </button>
-  )
-}
 
 type EditForm = { name: string; contact_person: string; contact_email: string; phone: string }
 
@@ -169,6 +157,10 @@ export default function SourcesPage() {
           </div>
         </form>
       )}
+
+      {/* Partner emails sit ABOVE the registry: you decide what partners hear, then edit who they
+          are. Self-contained + fail-soft, so a partner-emails hiccup never takes the table down. */}
+      <PartnerEmailsCard token={token} t={t} />
 
       <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
         <table className="w-full text-sm min-w-[820px]">

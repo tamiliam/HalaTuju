@@ -1,5 +1,93 @@
 # Architectural Decisions — HalaTuju
 
+## Partner emails are switched per EMAIL, never per organisation — 2026-07-26
+**Decision:** A partner email is on for every qualifying organisation or off for all of them.
+`enabled` lives on `partner_email_templates` (one row per kind), not on an (organisation, kind)
+pair. Owner ruling: *"If the email template is active, it goes out to all qualifying partners. It is
+either, or."*
+
+**Alternatives considered:** (a) the matrix of organisations × email types the first mock showed —
+rejected by the owner; (b) a per-organisation opt-out on top of a global switch — the same
+complexity with a subtler failure mode (an org silently excluded).
+
+**Rationale:** it removed an entire table (`partner_notification_settings`) and every
+per-organisation control from the screen. With ten organisations and one programme there is no case
+where a partner should hear less than its peers; if one ever appears, the honest answer is to stop
+sending that email rather than to hide it from one recipient.
+
+**Trade-offs:** turning an email off for one struggling partner now means turning it off for all.
+Accepted — the alternative is a 50-cell grid nobody audits.
+
+**Revisit if:** a second organisation runs its own referral partners (then enablement gains a
+programme dimension, not an organisation one), or a partner asks to be excluded from one kind.
+
+## A partner organisation CO-OWNS the bursary — the voice is enforced, not remembered — 2026-07-26
+**Decision:** Partner-email copy must read as though the bursary is the organisation's own. Conduit
+phrasing ("the students you send us", "your referrals", "referred by you") and reader-owned phrasing
+("your students") are **refused on save** by `partner_comms.banned_phrases`; the seeds are asserted
+to pass the same check. Every possessive names the organisation; the only second person left is
+where the reader's own team is asked to act.
+
+**Alternatives considered:** (a) a style note in the roadmap — which is where copy rules go to die
+six months later; (b) reviewing the wording at each edit — depends on whoever is reviewing knowing
+the ruling.
+
+**Rationale:** the owner's framing is that partners *"may market it as if it is theirs… they are not
+merely conduits or middlemen"*, and separately that the reader is a **representative** of the
+organisation, so the students are the organisation's and not the individual's. Both are properties
+of the relationship, not preferences — and an org_admin can edit these templates freely, so the rule
+has to live where an edit passes through.
+
+**Trade-offs:** a substring blocklist is blunt; a legitimate sentence containing "your students"
+would be refused. Accepted: the refusal names the phrase, and the reword is always available.
+
+**Revisit if:** the blocklist starts refusing genuinely good copy, or the rule needs to differ per
+organisation.
+
+## Partner recipients are `contact_email` only — a `partner`-role login is NOT a bursary contact — 2026-07-26
+**Decision:** `partner_comms.recipient_for(org)` reads `PartnerOrganisation.contact_email` and
+nothing else. `PartnerAdmin` rows are never consulted, and a test asserts it.
+
+**Alternatives considered:** contact_email **plus** the organisation's active `partner`-role logins —
+which is what I proposed and the owner initially approved, on my own incorrect premise.
+
+**Rationale:** the owner corrected it: *"There is no partner console built as of now. You are
+confusing the Halatuju partners with BrightPath partners. They are different."* Verified — the only
+two `partner`-role accounts are both Sivamani Rajagopal at CUMIG, created **2026-03-17**, with
+`owning_organisation = NULL`, and `_b40_scope` returns `'none'` for that role. They belong to the
+HalaTuju **course-selector** relationship and see `StudentProfile` rows, not bursary applications.
+Emailing them bursary progress would have disclosed applicant data to an audience attached for a
+different product. Two knock-on rules follow: **no email may link to a partner console** (none
+exists for the bursary, so the chase list carries every name rather than a link), and **the house
+organisation is excluded by rule** — BrightPath is us, its `contact_email` is our own staff, and we
+have the officer cockpit.
+
+**Trade-offs:** exactly zero of nine referral partners can be reached today. The screen states that
+plainly rather than appearing to work.
+
+**Revisit if:** a bursary-facing partner console is ever built, or a multi-recipient field is added.
+
+## "Last activity" is the newest document upload — never `application.updated_at` — 2026-07-26
+**Decision:** The chase table's Last-activity column is the newest live `ApplicantDocument.uploaded_at`
+for that application, falling back to `submitted_at`. `ScholarshipApplication.updated_at` is
+explicitly not used, and a test saves the application system-side to prove the date does not move.
+
+**Alternatives considered:** `updated_at` (the obvious field), or a new `last_student_action_at`
+column maintained on every student write path.
+
+**Rationale:** `updated_at` is `auto_now`, so OUR work bumps it — verdict scoring, re-extraction, the
+institution sync, even a partner-notification stamp. A student untouched for a month would read as
+active this morning, and the partner would stop chasing precisely the person who needs chasing. A
+document upload is the one student action we already timestamp; the email footnote says exactly that,
+so the figure cannot be over-read. A new column would be truer but needs every write path to
+remember it — the failure mode is a silent stale date, which is what we are avoiding.
+
+**Trade-offs:** a student who edits their story but uploads nothing reads as inactive. Accepted: for
+a chase list, under-reporting activity is the safe direction.
+
+**Revisit if:** student-side writes gain their own timestamp, or partners report chasing someone who
+had in fact been busy.
+
 ## Institution agreement is answered by the CATALOGUE, not by string comparison — 2026-07-26
 **Decision:** Whether the recorded institution and the offer letter's refer to the same place is
 decided by `offer_pathway.institution_agreement(course_id, recorded, offer)`, which asks the

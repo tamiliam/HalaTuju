@@ -1822,6 +1822,7 @@ class CronRunView(APIView):
         'reprocess-ic-vision': 'reprocess_unread_ic',  # frequent (~15 min): self-heal IC/parent_ic stuck unprocessed (silent upload OCR failures → false 'service unavailable' consent block)
         'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
         'backfill-reporting-dates': 'backfill_reporting_dates',  # one-off: normalise offer reporting dates into the column (S3)
+        'seed-partner-emails': 'seed_partner_email_templates',  # one-off/idempotent: create the five partner-email templates (all OFF)
     }
 
     def post(self, request, job):

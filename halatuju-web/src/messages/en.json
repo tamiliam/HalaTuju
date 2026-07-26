@@ -3033,6 +3033,64 @@
       "codeAndNameRequired": "Code and name are required.",
       "codeTaken": "That code is already in use.",
       "superRequired": "Only the Admin, Organisation admin, or Super admin roles can manage sources.",
+      "emails": {
+        "title": "Partner emails",
+        "subtitle": "Switch an email on and every qualifying partner organisation receives it.",
+        "loadError": "Could not load the partner emails.",
+        "wording": "Wording",
+        "editLabel": "Edit",
+        "previewLabel": "What the organisation receives",
+        "subject": "Subject",
+        "body": "Body",
+        "placeholderHint": "Click to drop a detail into the text:",
+        "sharedNote": "Used for every qualifying organisation.",
+        "flagOffTitle": "Partner emails are switched off for the whole programme.",
+        "flagOffBody": "Your choices below are saved, but nothing is sent until the programme switch is thrown.",
+        "nobodyTitle": "No partner organisation has an email address yet, so nothing can be sent.",
+        "nobodyBody": "Add a contact person and email to an organisation below and it starts qualifying.",
+        "whoQualifies": "Who qualifies",
+        "reach": "— {reachable} of {partners} partner organisations can receive an email today",
+        "hasEmail": "Has an address",
+        "noEmail": "None on file",
+        "houseOrg": "Us — never emailed",
+        "recipientNote": "Only an organisation's own contact email is used. Existing partner logins belong to the HalaTuju course selector, not to this bursary, so they are never written to.",
+        "needAddress": "{count} organisation(s) need a contact email before they can hear anything.",
+        "lastSent": "Last sent {date} to {count} organisation(s)",
+        "neverSent": "Never sent",
+        "kind": {
+          "weekly_summary": "Weekly summary",
+          "shortlisted_followup": "Chase list",
+          "awaiting_review": "Awaiting review",
+          "awarded": "Awarded",
+          "assigned": "A student joins their list"
+        },
+        "when": {
+          "weekly_summary": "Mondays, 8am",
+          "shortlisted_followup": "Mondays, 8am",
+          "awaiting_review": "within the hour",
+          "awarded": "within the hour",
+          "assigned": "immediately"
+        },
+        "desc": {
+          "weekly_summary": "How the organisation's bursary students are getting on, counted by stage.",
+          "shortlisted_followup": "The organisation's students who were shortlisted but have not finished applying, with when they applied and when they were last active.",
+          "awaiting_review": "One of the organisation's students has completed everything, and the case is now with the review panel.",
+          "awarded": "A funder has committed to one of the organisation's students — news the organisation can share as its own.",
+          "assigned": "A student who named no organisation has been placed with this one, and now counts among its bursary students."
+        },
+        "note": {
+          "weekly_summary": "Counts only — no student is named.",
+          "shortlisted_followup": "Last activity is the date of the student's most recent document upload. The whole list travels in the email.",
+          "awaiting_review": "Swept hourly — students completing close together share one email.",
+          "awarded": "Held until the award has settled, so a reversed award never reaches an organisation.",
+          "assigned": "Sent immediately, the moment an administrator makes the assignment."
+        },
+        "error": {
+          "unknownPlaceholder": "This email cannot fill in: {list}. Remove it, or use one of the details listed below the box.",
+          "conduitPhrasing": "Please reword: {list}. A partner organisation runs this bursary alongside us, so the students are the organisation's — not the reader's, and not ones they merely referred.",
+          "required": "A subject and a body are both needed."
+        }
+      },
       "witness": {
         "title": "Witness organisation",
         "help": "This student has no referring organisation, so nobody attests their agreement by default. Choose an organisation to witness it, or leave it as None — the Foundation then countersigns directly.",

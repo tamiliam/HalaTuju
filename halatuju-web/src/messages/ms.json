@@ -3033,6 +3033,64 @@
       "codeAndNameRequired": "Kod dan nama diperlukan.",
       "codeTaken": "Kod itu telah digunakan.",
       "superRequired": "Hanya peranan Admin, Pentadbir organisasi, atau Pentadbir utama boleh menguruskan sumber.",
+      "emails": {
+        "title": "E-mel rakan kongsi",
+        "subtitle": "Hidupkan satu e-mel dan setiap organisasi rakan yang memenuhi syarat akan menerimanya.",
+        "loadError": "Tidak dapat memuatkan e-mel rakan kongsi.",
+        "wording": "Kata-kata",
+        "editLabel": "Sunting",
+        "previewLabel": "Apa yang organisasi terima",
+        "subject": "Subjek",
+        "body": "Isi",
+        "placeholderHint": "Klik untuk memasukkan butiran ke dalam teks:",
+        "sharedNote": "Digunakan untuk setiap organisasi yang memenuhi syarat.",
+        "flagOffTitle": "E-mel rakan kongsi dimatikan untuk seluruh program.",
+        "flagOffBody": "Pilihan anda di bawah disimpan, tetapi tiada apa yang dihantar sebelum suis program dihidupkan.",
+        "nobodyTitle": "Belum ada organisasi rakan yang mempunyai alamat e-mel, jadi tiada apa yang boleh dihantar.",
+        "nobodyBody": "Tambah orang untuk dihubungi dan e-mel kepada sebuah organisasi di bawah dan ia mula memenuhi syarat.",
+        "whoQualifies": "Siapa yang memenuhi syarat",
+        "reach": "— {reachable} daripada {partners} organisasi rakan boleh menerima e-mel hari ini",
+        "hasEmail": "Ada alamat",
+        "noEmail": "Tiada dalam rekod",
+        "houseOrg": "Kami — tidak pernah dihantar e-mel",
+        "recipientNote": "Hanya e-mel perhubungan organisasi itu sendiri digunakan. Akaun rakan yang ada tergolong dalam pemilih kursus HalaTuju, bukan bursari ini, jadi ia tidak pernah dihubungi.",
+        "needAddress": "{count} organisasi memerlukan e-mel perhubungan sebelum boleh menerima apa-apa.",
+        "lastSent": "Terakhir dihantar {date} kepada {count} organisasi",
+        "neverSent": "Belum pernah dihantar",
+        "kind": {
+          "weekly_summary": "Ringkasan mingguan",
+          "shortlisted_followup": "Senarai susulan",
+          "awaiting_review": "Menunggu semakan",
+          "awarded": "Dianugerahkan",
+          "assigned": "Pelajar menyertai senarai mereka"
+        },
+        "when": {
+          "weekly_summary": "Setiap Isnin, 8 pagi",
+          "shortlisted_followup": "Setiap Isnin, 8 pagi",
+          "awaiting_review": "dalam sejam",
+          "awarded": "dalam sejam",
+          "assigned": "serta-merta"
+        },
+        "desc": {
+          "weekly_summary": "Bagaimana pelajar bursari organisasi itu berkembang, dikira mengikut peringkat.",
+          "shortlisted_followup": "Pelajar organisasi itu yang disenarai pendek tetapi belum menyelesaikan permohonan, dengan tarikh mereka memohon dan tarikh aktiviti terakhir.",
+          "awaiting_review": "Seorang pelajar organisasi itu telah melengkapkan semuanya, dan kesnya kini bersama panel semakan.",
+          "awarded": "Seorang penaja telah komited kepada pelajar organisasi itu — berita yang boleh dikongsi organisasi itu sebagai miliknya.",
+          "assigned": "Seorang pelajar yang tidak menamakan organisasi telah diletakkan dengan organisasi ini, dan kini dikira sebagai pelajar bursarinya."
+        },
+        "note": {
+          "weekly_summary": "Kiraan sahaja — tiada pelajar dinamakan.",
+          "shortlisted_followup": "Aktiviti terakhir ialah tarikh muat naik dokumen terbaharu pelajar itu. Seluruh senarai dihantar dalam e-mel.",
+          "awaiting_review": "Disemak setiap jam — pelajar yang selesai berdekatan berkongsi satu e-mel.",
+          "awarded": "Ditahan sehingga anugerah itu tetap, supaya anugerah yang ditarik balik tidak pernah sampai kepada organisasi.",
+          "assigned": "Dihantar serta-merta, sebaik sahaja pentadbir membuat penempatan."
+        },
+        "error": {
+          "unknownPlaceholder": "E-mel ini tidak boleh mengisi: {list}. Buangkannya, atau gunakan salah satu butiran yang disenaraikan di bawah kotak.",
+          "conduitPhrasing": "Sila ubah kata-kata: {list}. Organisasi rakan menjalankan bursari ini bersama kami, jadi pelajar itu milik organisasi — bukan milik pembaca, dan bukan sekadar orang yang mereka rujuk.",
+          "required": "Subjek dan isi kedua-duanya diperlukan."
+        }
+      },
       "witness": {
         "title": "Organisasi saksi",
         "help": "Pelajar ini tiada organisasi rujukan, jadi tiada sesiapa mengesahkan perjanjian mereka secara lalai. Pilih satu organisasi untuk menjadi saksi, atau biarkan sebagai Tiada — Yayasan kemudiannya menandatangani terus.",
