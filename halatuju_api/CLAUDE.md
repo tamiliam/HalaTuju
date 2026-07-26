@@ -555,10 +555,37 @@ Migration **`0128` APPLIED migrate-first + verified** (both tables RLS-enabled w
   five templates exist — all arrive OFF, and `PARTNER_COMMS_ENABLED` is unset, so nothing sends.
 - **▶ OWNER TASK gating all real value: collect the nine partner contact addresses.** Until then the
   card honestly reads *"0 of 9 partner organisations can receive an email today"*.
-- **▶ NEXT — S2** (`send_partner_digests` + cron `partner-digests` + the renderer + the fingerprint
-  skip), then **S3** (milestones + the inline assignment email + flag-on). Both specified in the
-  roadmap. The `shortlisted_followup` skip rule is a flagged interpretation: the summary skips an
-  unchanged week, the chase list skips only an EMPTY one.
+**✅ SHIPPED + LIVE (STILL DARK) 2026-07-26 — PARTNER COMMS S2+S3 in one pass: the five emails can
+now actually be SENT.** Owner merged the split after challenging it (*"Have we not built all 5 emails
+including the weekly ones?"* — S1 had the wording and switches; nothing could render or send). Retro
+`docs/retrospective-2026-07-26-partner-comms.md` (covers S1 too); lesson ×1. **NO migration.**
+- **`partner_comms.render`** — a stored template → `(subject, text, html)`. Blank lines split blocks;
+  a block that is exactly `{counts_table}` / `{student_table}` / `{student_list}` becomes that table
+  or list. Values HTML-escaped. A structural token in a SUBJECT is flattened, never left raw.
+- **`emails.send_partner_email`** = envelope only (existing `_html_email_shell` → inside the branding
+  guard; programme sender identity; working reply-to). **HTML primary + plain-text alternative**
+  carrying the same information, chase table included as aligned text.
+- **`partner_notify.py`** = the orchestration (mirrors `sponsor_notifications.py`). Commands
+  `send_partner_digests` (cron `partner-digests`, weekly Mon 08:00 MYT) + `send_partner_milestones`
+  (cron `partner-milestones`, hourly), both with `--dry-run`. The `assigned` email fires INLINE in
+  `AdminApplicationWitnessView.patch`, wrapped so it can never fail the assignment.
+- **⚠ MILESTONES ARE A SWEEP, NOT AN INLINE CALL — on purpose.** Both transitions can be reverted
+  (`revert_if_profile_incomplete`; `awarded → recommended`), and the sweep's queryset filters on the
+  CURRENT status, so a reverted case never produces an email. Free extras: batching, and a failed
+  send leaves the stamp unset so the next sweep retries.
+- **Four rules in the sender, each a quiet-failure guard:** every attempt logged INCLUDING skips; a
+  repeated identical skip logged ONCE (an hourly sweep would otherwise write 24 rows/day/org); a
+  milestone stamped ONLY on a successful send (so an unreachable partner is told once an address
+  exists); both switches checked and nothing raises into a caller.
+- **`last_fingerprint` reads only `ok=True`** — one failed send cannot silence an org forever as
+  "unchanged". Chase table caps at 50 rows and SAYS what it dropped; milestone batch caps at 20.
+- **3536 pytest** (+52). No FE change.
+- **▶ OWNER-GATED, IN ORDER: (1) collect the nine partner addresses; (2) `send_partner_digests
+  --dry-run` and read it; (3) `PARTNER_COMMS_ENABLED=1` via `--update-env-vars`; (4) switch on the
+  templates wanted, in the Sources card; (5) create the two Cloud Scheduler jobs** (`partner-digests`
+  Mon 08:00 Asia/KL, `partner-milestones` hourly) with `--account tamiliam@gmail.com --project
+  gen-lang-client-0871147736`. **Nothing sends until all five are done.**
+- **▶ NOTHING QUEUED after this** on the partner-comms track. Standing owner items unchanged.
 
 **✅ SHIPPED 2026-07-26 — PLATFORM PROGRAMME LAYER (P1a, P2a, P3, P4a).** Roadmap
 `docs/plans/2026-07-26-programme-layer-roadmap.md`; retros ×3; decision records ×8; lessons ×5.
