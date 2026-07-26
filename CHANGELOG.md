@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## Partner comms switched ON, and the Sources page split into two badges — 2026-07-26
+
+Small change (`Settings/_workflows/small-change-lane.md`), plus the live activation the owner asked
+for: *"I want this feature activated, even though there are no emails at present."*
+
+### Live changes (no code)
+- **`PARTNER_COMMS_ENABLED=1`** on `halatuju-api` (`--update-env-vars`, revision
+  `halatuju-api-00882-xwm`). The platform gate is open; **the per-email switches are now the only
+  thing holding a send**, which is the point — the org admin decides when each email starts, and
+  rewords it first if they want to.
+- **Two Cloud Scheduler jobs created**: `halatuju-partner-digests` (Mon 08:00 MYT) and
+  `halatuju-partner-milestones` (hourly), both Asia/Kuala_Lumpur, 600s deadline. Without these,
+  switching a template on would have done nothing for four of the five emails — a switch that looks
+  like it works while reaching nobody is the exact failure the card was built to avoid.
+- **Verified, not assumed**: `halatuju-partner-digests` was triggered once by hand with the flag
+  live. `partner_email_log` still holds **0 rows** — the template switches held. Prod today: 5
+  templates, 0 on, 0 of 9 partners with a contact email.
+
+### Changed
+- **The Sources page is now two panels, one badge each** (owner ruling): **Organisations** is the
+  default and the registry is what you land on; **Partner emails** is a deliberate second click.
+  They were stacked, which put a five-row switchboard between the admin and the table they came for.
+- The emails card is **mounted only while its badge is up**, so every reveal re-reads the send log
+  and a "last sent" line can never be stale. The registry is **hidden rather than unmounted** (plain
+  `hidden` attribute — out of the layout *and* the accessibility tree), so a half-typed inline edit
+  survives a trip to the other badge and back. A test pins both.
+- **Add source** is hidden on the emails panel, where it would have done nothing visible.
+- Two banner lines reworded in all three locales: the programme-switch line no longer implies this
+  screen can throw that switch, and "add an email to an organisation **below**" now points at the
+  Organisations badge instead of a table that is no longer underneath it.
+
+### Notes
+- ms/ta for the three new keys are first drafts — **TD-180** already tracks the review of this
+  screen's copy; these ride along on it.
+- **Not done, and the owner's call**: 56 applications already sit in a milestone state with no stamp
+  (46 `awarded`, 10 `profile_complete`). The moment a partner gets a contact email *and* that
+  milestone is switched on, the first run emails the history, up to 20 students per email. Either
+  backfill the two stamps so only future transitions count, or let it go out once as a catch-up.
+
 ## Partner comms S2+S3 — the five emails can now actually be sent — 2026-07-26
 
 Sprints 2 and 3 of `docs/plans/2026-07-26-partner-comms-roadmap.md`, done in one pass at the owner's

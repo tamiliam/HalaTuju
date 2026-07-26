@@ -16,6 +16,11 @@ import { Toggle } from '@/components/sources/shared'
 // toggle governs the future apply-form source list; referral attribution is unaffected.
 // The "Students" count = bursary APPLICATIONS attributed to the org by referral chip
 // (backend _source_application_counts); the house org "BrightPath" gets the residual.
+//
+// TWO PANELS, one badge each (owner ruling, 2026-07-26): Organisations is the default and the
+// registry is the thing you land on; Partner emails is a deliberate second click. They were
+// stacked until then, which put a five-row switchboard between the admin and the table they
+// came for. Only one panel is mounted at a time — the emails card fetches on first reveal.
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 const inputBad = 'w-full px-3 py-2 border border-red-400 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500'
@@ -25,6 +30,14 @@ const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '')
 const phoneInvalid = (v: string) => v.trim() !== '' && !isValidPhone(v)
 
 type EditForm = { name: string; contact_person: string; contact_email: string; phone: string }
+
+/** The two panels. `orgs` is the default — the registry is what the page is for. */
+const PANELS = ['orgs', 'emails'] as const
+type Panel = (typeof PANELS)[number]
+const panelLabel: Record<Panel, string> = {
+  orgs: 'admin.sources.tabOrganisations',
+  emails: 'admin.sources.tabEmails',
+}
 
 export default function SourcesPage() {
   const { token, role } = useAdminAuth()
@@ -40,6 +53,7 @@ export default function SourcesPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({ name: '', contact_person: '', contact_email: '', phone: '' })
   const [adding, setAdding] = useState(false)
+  const [panel, setPanel] = useState<Panel>('orgs')
   const [addForm, setAddForm] = useState({ code: '', name: '', contact_person: '', contact_email: '', phone: '', show_in_apply: false })
 
   const load = () => { if (token) getSources({ token }).then((d) => setSources(d.sources)).catch(() => setMessage({ type: 'error', text: t('admin.sources.loadError') })) }
@@ -103,10 +117,28 @@ export default function SourcesPage() {
           <h1 className="text-2xl font-bold text-gray-900">{t('admin.sources.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">{t('admin.sources.subtitle')}</p>
         </div>
-        <button type="button" onClick={() => setAdding((v) => !v)}
-          className="shrink-0 px-4 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700">
-          + {t('admin.sources.add')}
-        </button>
+        {/* Adding belongs to the registry — on the emails panel the button would do nothing visible. */}
+        {panel === 'orgs' && (
+          <button type="button" onClick={() => setAdding((v) => !v)}
+            className="shrink-0 px-4 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700">
+            + {t('admin.sources.add')}
+          </button>
+        )}
+      </div>
+
+      <div role="tablist" aria-label={t('admin.sources.tabsAria')} className="flex items-center gap-2 mb-6">
+        {PANELS.map((key) => {
+          const on = panel === key
+          return (
+            <button key={key} type="button" role="tab" aria-selected={on}
+              onClick={() => setPanel(key)}
+              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                on ? 'border-blue-600 bg-blue-600 text-white'
+                   : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
+              {t(panelLabel[key])}
+            </button>
+          )
+        })}
       </div>
 
       {message && (
@@ -115,7 +147,7 @@ export default function SourcesPage() {
           : 'bg-red-50 border border-red-200 text-red-600'}`}>{message.text}</div>
       )}
 
-      {adding && (
+      {panel === 'orgs' && adding && (
         <form onSubmit={submitAdd} className="bg-white rounded-xl border shadow-sm p-6 space-y-4 mb-6">
           <h2 className="font-semibold text-gray-900">{t('admin.sources.addTitle')}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -158,11 +190,15 @@ export default function SourcesPage() {
         </form>
       )}
 
-      {/* Partner emails sit ABOVE the registry: you decide what partners hear, then edit who they
-          are. Self-contained + fail-soft, so a partner-emails hiccup never takes the table down. */}
-      <PartnerEmailsCard token={token} t={t} />
+      {/* The emails card is mounted only while its badge is selected, so each reveal re-reads the
+          send log (last-sent lines must never be stale). It stays self-contained + fail-soft, so a
+          partner-emails hiccup can never take the registry down with it. */}
+      {panel === 'emails' && <PartnerEmailsCard token={token} t={t} />}
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+      {/* The registry is HIDDEN rather than unmounted: a half-finished inline edit survives a trip
+          to the emails badge and back. The plain `hidden` attribute (not a Tailwind class) is
+          deliberate — it takes the table out of the accessibility tree as well as the layout. */}
+      <div hidden={panel !== 'orgs'} className="bg-white rounded-xl shadow-sm border overflow-x-auto">
         <table className="w-full text-sm min-w-[820px]">
           <thead className="bg-gray-50 border-b">
             <tr>
