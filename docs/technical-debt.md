@@ -1363,7 +1363,34 @@ Harmless today — the column is nullable, the command is dev/e2e-only, and prod
 — but it is a half-updated write path of exactly the kind that bites once routing reads the column.
 **Fix:** set both, alongside the routing work (PF-1). (Logged 2026-07-26, platform P1a.)
 
-### [TD-178] Artifact Registry: 30-day retention costs RM27/mo — retention is 4× longer than any rollback needs (medium)
+### [TD-178] Artifact Registry: 30-day retention costs RM27/mo — retention is 4× longer than any rollback needs (ACTIONED 2026-07-26, reclaim pending verification)
+
+> **ACTIONED 2026-07-26.** Both fixes applied:
+> - **Fix B done** — the six orphan packages were deleted (`halatuju-api`, `halatuju-web` old-path;
+>   `lentera-api`, `lentera-web`; `sjktconnect-api`, `sjktconnect-web`). Three packages remain, all
+>   live: `halatuju/halatuju-api`, `halatuju/halatuju-web`, `tamilnadai`.
+> - **Fix A done** — age policy `delete-images-older-than-30d` replaced by
+>   `delete-images-older-than-7d` (`olderThan: 604800s`, `tagState: TAG_STATE_UNSPECIFIED`).
+>   `keep-most-recent-10` left **unscoped and unchanged** — see the tamilnadai finding below.
+>
+> **⚠️ The near-miss that changed the plan.** The "systemic" fix I was about to apply was scoping
+> `keep-most-recent-10` with `packageNamePrefixes` so orphan packages would age out by themselves.
+> A pre-flight check killed it: **`tamilnadai`'s LIVE image is `sha256:22bed76d…` dated 2026-02-12**
+> — five and a half months old. It survives *only* because the unscoped KEEP pins it; every age
+> policy this repo has ever had would otherwise have deleted a running production image. Scoping or
+> weakening that KEEP rule is **not safe** while any low-deploy-frequency service lives here. The
+> unscoped rule is a safety floor, and the ~RM1/month of orphan pinning is the price of it —
+> orphan packages get deleted by hand instead (that is now the standing procedure, not a workaround).
+>
+> **Verified after the change:** 3 packages remain · tamilnadai's live digest still present ·
+> both HalaTuju live tags still present · all three Cloud Run services `Ready: True`.
+>
+> **NOT yet verified — the reclaim itself.** `Repository Size` still read 77,576 MB immediately
+> after (it was 77,576.066 before, 77,576.003 after). Artifact Registry runs cleanup policies
+> roughly daily and the size metric lags, so the projected ~RM20/month is a **projection, not a
+> measurement**. **To close this item:** re-read `repositories describe … --format=json` after
+> 2026-07-28 and confirm the size has fallen to roughly 20–25 GB. If it has not, the policy did not
+> execute and cause (a) is back on the table for the active packages.
 `cloud-run-source-deploy` (asia-southeast1) is **77,576 MB across 1,732 images** and bills
 **RM27.46/month — 31% of the June-2026 GCP total (RM89.07)**.
 

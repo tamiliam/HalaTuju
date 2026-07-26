@@ -152,13 +152,26 @@ is ~RM207/month** (GCP RM89 + Supabase ~RM118), not the ~RM150 previously estima
 This does NOT invalidate §4's three-line model — it re-weights it. Line 1 (the fixed platform fee)
 is the commercial decision; line 2 (metered usage) is ~8% of cost and precision there buys little.
 
-### ⚠ Waste finding — Artifact Registry (see technical-debt.md)
-RM27.46/month — **31% of the GCP bill** — stores **1,734 container images totalling 77.6 GB** of
-old deploy artefacts. **Images from 14 Mar 2026 are still present** four and a half months on,
-despite a `delete-images-older-than-30d` policy that reports as ENFORCING (not dry-run). Either the
-policy is not running, or the sibling `keep-most-recent-10` rule — which carries **no package
-filter** — is shadowing the delete. Diagnose before setting any platform fee: this is money that
-currently buys nothing, and it grows with every deploy.
+### ⚠ Waste finding — Artifact Registry — INVESTIGATED AND ACTIONED 2026-07-26 (see TD-178)
+RM27.46/month — **31% of the GCP bill** — stored **1,732 images totalling 77.6 GB**.
+
+**The first diagnosis above was half wrong.** Investigated 2026-07-26:
+- The `delete-images-older-than-30d` policy **was** executing correctly — the oldest image in every
+  actively-deployed package was exactly 30 days old, to the second.
+- The 14 Mar images were real, but sat in **dead** packages, pinned forever by the unfiltered
+  `keep-most-recent-10` (KEEP beats DELETE). That half of the hypothesis was right.
+- Most of the cost was **not waste at all**: ~11 builds/day (reconciling with 438 commits touching
+  `halatuju_api/` in 30 days) × ~258 MB, held 30 days. Real artefacts, kept 4× longer than useful.
+- The ~650 "untagged" images were **not** waste either — they are in-toto provenance attestations
+  at ~12 KB each. Counting images overstated the problem; only bytes matter.
+
+**Actioned:** retention cut 30d → 7d (~62 GB billed, projected ~RM20/month) and six orphan packages
+deleted. **`keep-most-recent-10` was deliberately left unscoped** — `tamilnadai`'s live image dates
+from 2026-02-12 and that rule is the only thing protecting it. Reclaim is asynchronous; re-measure
+after 2026-07-28 before treating the saving as banked.
+
+**Effect on the floor below:** if the reclaim lands, GCP falls to roughly **RM69/month** and the
+combined fixed floor to about **RM187/month**. Do not re-price on that until it is measured.
 
 **Tooling gotcha:** `gcloud artifacts repositories list` reported the size as **"72.2 MB"**;
 `describe` reports **77,576 MB**. A thousandfold discrepancy — always size a repository with
