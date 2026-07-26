@@ -6,11 +6,11 @@
 
 | Service | Used for | Cost behaviour | Reality today |
 |---|---|---|---|
-| GCP Cloud Run ×2 (api, web) + Cloud Build + Artifact Registry + Scheduler + release-decisions job | App runtime, CI/CD, crons | Fixed platform overhead | RM≈3–4/mo (Mar-2026 snapshot) |
+| GCP Cloud Run ×2 (api, web) + Cloud Build + Artifact Registry + Scheduler + release-decisions job | App runtime, CI/CD, crons | Fixed platform overhead | **RM89.07 incl. tax (Jun-2026 ACTUAL)** — the "RM≈3–4/mo" Mar-2026 snapshot is SUPERSEDED; see the 2026-07-26 cost addendum |
 | **Gemini API** (AI Studio key, bills to project `gen-lang-client-0871147736`) | Doc extraction ×5 paths, genuineness scorers, IC fallback, doc-help coach, answer relevance, sponsor profiles (draft/refine/blurb), verdict summaries, contract quiz/segmentation, requests triage | **Per-student-document + per-application — the dominant cost** | RM61.71 of RM65.08 in Mar-2026 (incl. a one-off RM35 bulk job); "normal usage well under RM5/mo" |
 | Google Cloud Vision | Raw OCR per document upload | Per-student-document | Small; throttled 40 uploads/hr |
 | OpenAI (gpt-4o-mini) | Course-selector report fallback ONLY (after 3 Gemini failures) | Platform-base (course selector is not tenant work) | Negligible |
-| Supabase (project pbrrlyoyyiftckqvzvvo) | Postgres, Auth (own Brevo SMTP in dashboard), private Storage bucket `b40-documents` (docs, agreement PDFs, request attachments) | Plan-based; grows with data/docs | Free plan today; **Pro ($25/mo) trigger = DB >500 MB or egress >5 GB/mo** — egress (doc viewing) likely trips first as tenants grow |
+| Supabase (project pbrrlyoyyiftckqvzvvo) | Postgres, Auth (own Brevo SMTP in dashboard), private Storage bucket `b40-documents` (docs, agreement PDFs, request attachments) | Plan-based; grows with data/docs | **ALREADY ON PRO — $25/mo, being paid since ~Dec 2025 (invoice #8 dated 8 Jul 2026).** The original "free plan today / Pro is a future trigger" reading was WRONG; verified live 2026-07-26 (`get_organization` returns `plan: pro`). Egress still the metric to watch as tenants grow |
 | Brevo SMTP | 53 send_* functions (student/sponsor/ops mail) | Per-send; free 300/day (~9k/mo) | Free tier; Starter ≈$9/mo for 5k/mo when volume forces it |
 | Twilio | WhatsApp reminders (ON), phone-verify OTP (PAUSED — ~$0.34/SMS) | Per-student message | Low |
 | Google Workspace SA | Meet/Calendar interviews; Vircle relay Sheet/Drive/CSV; guide PDF | Free-tier API usage | Nil |
@@ -107,3 +107,59 @@ effort; §4 line 1 (the fixed fee) is the number that decides whether this is pr
 
 §4's standing rules are unchanged and still bind: never bill raw provider actuals, and **price
 against Gemini 3.x rates, not 2.5** — the October migration puts 3.x Flash ≈5× today's rate.
+
+---
+
+## Addendum 2 — MEASURED cost actuals + the waste finding (2026-07-26)
+
+Owner produced the real Supabase invoice and the GCP billing console. Both were read directly.
+**Two claims in §1 above were wrong and have been corrected in place.**
+
+### Supabase — ALREADY ON PRO (correcting §1)
+Invoice **TPTHYS-00008** (the eighth), billed to **Rajula Consultancy**, period 8 Jun – 7 Jul 2026:
+**$25.00, all of it the Pro plan fee.** Every usage line sat inside the included allowance —
+compute 720 h ($9.68 gross, covered by the $10 credit), egress 5.03 GB, cached egress 2.93 GB,
+storage 428 GB-hrs, MAU 155, function invocations 6. Verified live: `get_organization` →
+`plan: "pro"`. So Pro is a **current cost, not a tenant-#2 trigger.**
+
+Live usage via SQL (2026-07-26): **DB 46 MB** (8 GB included), **storage 1,213 MB** across 1,335
+objects (`b40-documents` 1,086 MB · `field-images` 90 MB · `field-images-concept` 37 MB), **829
+auth users**. Comfortable headroom — Inspire would not move this bill.
+
+⚠ **The $25 is per ORGANISATION, not per project.** HalaTuju, Lentera and tamilnadai all sit under
+`Rajula Consultancy`; the other two are PAUSED, which is why compute reads exactly 720 h (one
+project, one month). **Un-pausing Lentera adds compute hours to this same invoice.** Clean
+per-tenant cost attribution would need separate orgs.
+
+### GCP — June 2026 actual: RM89.07 incl. tax (correcting §1)
+| Service | Cost | Metered by `usage_events`? |
+|---|---|---|
+| Cloud Run | RM45.84 | ✗ |
+| **Artifact Registry** | **RM27.46** | ✗ |
+| Cloud Vision API | RM5.97 | ✓ |
+| Cloud Scheduler | RM3.37 | ✗ |
+| **Gemini API** | **RM1.22** | ✓ |
+| Cloud Storage + Build | RM0.16 | ✗ |
+
+By project: HalaTuju RM83.73 usage − RM20.71 savings = RM63.02; cci-gms RM0.28. Subtotal RM84.01
++ RM5.06 tax.
+
+### The conclusion that should shape the billing build
+**The meter captures RM7 of RM89 — about 8%.** Everything `usage_events` tracks (Gemini, Vision)
+is a rounding error; **infrastructure is the cost.** Combined with Supabase, the **true fixed floor
+is ~RM207/month** (GCP RM89 + Supabase ~RM118), not the ~RM150 previously estimated.
+
+This does NOT invalidate §4's three-line model — it re-weights it. Line 1 (the fixed platform fee)
+is the commercial decision; line 2 (metered usage) is ~8% of cost and precision there buys little.
+
+### ⚠ Waste finding — Artifact Registry (see technical-debt.md)
+RM27.46/month — **31% of the GCP bill** — stores **1,734 container images totalling 77.6 GB** of
+old deploy artefacts. **Images from 14 Mar 2026 are still present** four and a half months on,
+despite a `delete-images-older-than-30d` policy that reports as ENFORCING (not dry-run). Either the
+policy is not running, or the sibling `keep-most-recent-10` rule — which carries **no package
+filter** — is shadowing the delete. Diagnose before setting any platform fee: this is money that
+currently buys nothing, and it grows with every deploy.
+
+**Tooling gotcha:** `gcloud artifacts repositories list` reported the size as **"72.2 MB"**;
+`describe` reports **77,576 MB**. A thousandfold discrepancy — always size a repository with
+`describe`, never the list column.

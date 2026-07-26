@@ -1362,3 +1362,26 @@ calling the payments primitives and uses the same guard vocabulary. See
 Harmless today — the column is nullable, the command is dev/e2e-only, and prod is fully backfilled
 — but it is a half-updated write path of exactly the kind that bites once routing reads the column.
 **Fix:** set both, alongside the routing work (PF-1). (Logged 2026-07-26, platform P1a.)
+
+### [TD-178] Artifact Registry holds 1,734 stale images (77.6 GB, RM27/mo) — the cleanup policy is not reclaiming (medium)
+`cloud-run-source-deploy` (asia-southeast1) is **77,576 MB across 1,734 container images** and bills
+**RM27.46/month — 31% of the June-2026 GCP total (RM89.07)**. These are superseded deploy artefacts;
+nothing reads them once a revision is live.
+
+A cleanup policy EXISTS and reports as enforcing (`cleanupPolicyDryRun` absent):
+- `delete-images-older-than-30d` — `olderThan: 2592000s`, `tagState: TAG_STATE_UNSPECIFIED`
+- `keep-most-recent-10` — `mostRecentVersions.keepCount: 10`, **no package filter**
+
+**It is not biting: images created 2026-03-14 were still present on 2026-07-26**, four and a half
+months later. Two candidate causes, untested: (a) the policy is not actually executing; (b) KEEP
+rules take precedence over DELETE in Artifact Registry, and `keep-most-recent-10` without a package
+filter may be protecting far more than intended across all three packages
+(`halatuju-api`, `halatuju-web`, `halatuju/halatuju-api`).
+
+**Why it matters beyond the money:** the platform fee (billing §4 line 1) has to cover this floor,
+so a fee set today prices in RM27/month of pure waste. Fix BEFORE fixing the fee.
+
+**To resolve:** confirm which cause applies (a dry-run diff, or scoping `keep-most-recent-10` per
+package); then verify the reclaim actually lands by re-reading `describe … --format=json` size.
+**Do NOT size the repo from `repositories list`** — it reported "72.2 MB" against `describe`'s
+77,576 MB, a 1000× error that would have hidden this entirely. (Logged 2026-07-26, billing cost review.)
