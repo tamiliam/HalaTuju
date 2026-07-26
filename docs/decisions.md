@@ -5747,3 +5747,47 @@ over-charge a tenant), but it is a real assumption with an expiry date.
 
 **Revisit if:** tamilnadai or Lentera is reactivated on Supabase, or a sibling GCP project's
 share rises above ~2% — at which point the ledger needs a per-project split, not a ruling.
+
+---
+
+## 2026-07-26 — Billing basis: calendar month, spot FX, cost + 15%
+
+**Owner decisions**, in response to the first real Supabase invoices:
+
+1. **Bill monthly, 1st to end of month.** Our billing period is the calendar month.
+2. **Spot FX + 15%.** USD costs convert at spot; the tenant price is cost + **15%**.
+3. **Supabase invoices before TPTHYS-00004 were USD 0.00** — the paid Pro history begins
+   **April 2026**, not eight months back as the invoice count suggested.
+
+**Note the asymmetry this creates, deliberately.** Our CHARGE period is the calendar month;
+Supabase's own INVOICE period runs 8th-to-8th and cannot be changed. So a calendar month's cost
+will always contain a Supabase line whose window straddles it. That is recorded per row in
+`period_note` and surfaced by `month_totals` as `period_caveats`, rather than reconciled away —
+the mismatch is real and the ledger should say so instead of hiding it.
+
+**The margin is now FIXED at 15%**, superseding the earlier "cost + 15–30%" range that had been
+carried as undecided since the Sprint 14 note.
+
+**First conversion applied at 4.0909 USD/MYR** (open.er-api.com, 26 Jul 2026), giving RM102.27
+per USD 25.00 invoice. **One caveat recorded on every row:** a single spot rate was applied
+across four historical invoices rather than each invoice date's own rate. Immaterial for setting
+a fee (~±3% on RM102); **not audit-grade**. If an audit ever needs it, replace with the rate the
+card was actually charged.
+
+**What this makes computable for the first time — June 2026, both providers:**
+
+| | RM | share |
+|---|---|---|
+| tenant-driven (metered) | 19.91 | **10.4%** |
+| platform-driven | 165.76 | 86.9% |
+| tax | 5.04 | 2.6% |
+| **total** | **190.71** | |
+
+**Roughly 90% of what the platform costs does not move with tenant activity at all.** The
+earlier 23% figure was GCP-only; adding Supabase — a flat subscription, entirely platform —
+halves it again. This is the single most important input to the fee: a usage-metered price can
+never recover most of this cost, because most of this cost is not usage.
+
+**Revisit if:** a second tenant arrives (the platform-driven share is spread, not doubled), or
+the two 2026-07-26 waste fixes land and pull GCP from RM88 to ~RM36 — which would move the
+monthly floor to roughly RM138 and, at +15%, a fee near **RM159/month** with one paying org.
