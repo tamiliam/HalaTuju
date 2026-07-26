@@ -524,6 +524,42 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-26)
 
+**✅ SHIPPED + LIVE (DARK) 2026-07-26 — PARTNER COMMS S1: an org_admin decides what partner
+organisations hear.** Roadmap `docs/plans/2026-07-26-partner-comms-roadmap.md` (3 sprints,
+owner-approved); design of record = the Tailwind mock
+<https://claude.ai/code/artifact/40bb4e5f-7335-4d88-97c4-d7a9f0399a04>; decisions ×4; lessons ×3.
+Migration **`0128` APPLIED migrate-first + verified** (both tables RLS-enabled with exactly one
+`service_role` policy; 0/143 applications stamped; advisor shows no new finding).
+- **Why:** a referral organisation hears from us exactly ONCE today — the witness-signature nudge.
+  Owner: *"I don't want them to hear about it only when they are required to witness a contract."*
+- **`partner_comms.py` is the one seam** — `qualifying_partners` / `partner_applications` /
+  `chip_tally` / `stage_counts` / `fingerprint` / `chase_rows` / `recipient_for` /
+  `milestone_queryset` / `is_enabled`. It never touches SMTP; **nothing can send in S1**.
+- **ONE switch per EMAIL, never per organisation** (owner: *"it is either, or"*). `enabled` lives on
+  `partner_email_templates`, which deleted a whole table from the first design.
+- **⚠ RECIPIENTS ARE `contact_email` ONLY — never a `PartnerAdmin` row.** The only two
+  `partner`-role logins (both CUMIG, created 2026-03-17, `owning_organisation` NULL, `_b40_scope` →
+  `'none'`) belong to the **HalaTuju course selector**, a different product relationship. Emailing
+  them bursary progress would disclose applicant data to the wrong audience. Test-asserted. The
+  **house org is excluded by RULE** (BrightPath is us; its `contact_email` is our own staff).
+- **The copy voice is ENFORCED, not remembered** — `banned_phrases` refuses a save containing
+  conduit phrasing ("the students you send us") or reader-owned phrasing ("your students"). A partner
+  co-owns this bursary and may market it as its own; the students are the ORGANISATION's.
+- **Counts reconcile** (a test walks every `STATUS_CHOICES` value); **`recommended` is never its own
+  line** (masked from the student → not surfaced to a partner either).
+- **"Last activity" is the newest document upload, NEVER `application.updated_at`** — `auto_now`
+  means our own sweeps bump it, so a dormant student would read as active. Pinned by a test that
+  saves system-side and asserts the date does not move.
+- **3484 pytest** (+45) / **776 jest** (+14); `makemigrations --check` clean; `next build` clean.
+- **▶ AT DEPLOY (done): pushed `518ceae9`. THEN run the `seed-partner-emails` cron job ONCE** so the
+  five templates exist — all arrive OFF, and `PARTNER_COMMS_ENABLED` is unset, so nothing sends.
+- **▶ OWNER TASK gating all real value: collect the nine partner contact addresses.** Until then the
+  card honestly reads *"0 of 9 partner organisations can receive an email today"*.
+- **▶ NEXT — S2** (`send_partner_digests` + cron `partner-digests` + the renderer + the fingerprint
+  skip), then **S3** (milestones + the inline assignment email + flag-on). Both specified in the
+  roadmap. The `shortlisted_followup` skip rule is a flagged interpretation: the summary skips an
+  unchanged week, the chase list skips only an EMPTY one.
+
 **✅ SHIPPED 2026-07-26 — PLATFORM PROGRAMME LAYER (P1a, P2a, P3, P4a).** Roadmap
 `docs/plans/2026-07-26-programme-layer-roadmap.md`; retros ×3; decision records ×8; lessons ×5.
 **The hierarchy is now Organisation → Programme → Year (intake) → the student's award.** A
