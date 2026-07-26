@@ -112,6 +112,9 @@ from .views_admin import (
     AdminPaymentRunDetailView,
     AdminPaymentRunItemView,
     AdminPaymentRunSignView,
+    AdminWalletCreditListCreateView,
+    AdminWalletCreditSignView,
+    AdminWalletCreditCancelView,
     AdminPaymentRunCancelView,
     AdminPaymentRunCsvView,
     AdminPaymentFundingSummaryView,
@@ -235,6 +238,12 @@ urlpatterns = [
     path('admin/scholarship/payment-runs/<int:pk>/', AdminPaymentRunDetailView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/items/<int:item_id>/', AdminPaymentRunItemView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/sign/', AdminPaymentRunSignView.as_view()),
+    # Wallet credits (P4b): record an off-platform gift into a sponsor's programme wallet
+    # and drive it through the SAME maker→[finance]→approver chain the payment runs use.
+    # Org-fenced on the programme's organisation (a Sponsor is platform-level, a credit is not).
+    path('admin/scholarship/credits/', AdminWalletCreditListCreateView.as_view()),
+    path('admin/scholarship/credits/<int:pk>/sign/', AdminWalletCreditSignView.as_view()),
+    path('admin/scholarship/credits/<int:pk>/cancel/', AdminWalletCreditCancelView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/cancel/', AdminPaymentRunCancelView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/csv/', AdminPaymentRunCsvView.as_view()),
 

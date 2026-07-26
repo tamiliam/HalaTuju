@@ -301,7 +301,7 @@ class SponsorWalletView(_PoolBase):
             return err
         donations = [
             {'amount': str(d.amount), 'reference': d.reference, 'created_at': d.created_at}
-            for d in sponsor.donations.all()
+            for d in sponsorship_service.visible_donations(sponsor)
         ]
         holding = sponsor.sponsorships.filter(status__in=Sponsorship.HOLDING).select_related(
             'application', 'application__profile', 'application__sponsor_profile')

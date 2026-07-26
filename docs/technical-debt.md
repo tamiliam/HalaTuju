@@ -1344,6 +1344,18 @@ high.
 **Do not gate the maker on `org_admin`** — Poongulali Veeran, who performs that step, is a plain
 `admin`. (Logged 2026-07-26, platform P4a.)
 
+**✅ RESOLVED (2026-07-26, platform P4b).** The three step-functions collapsed into ONE
+`sponsorship.sign_admin_credit(credit, admin, typed_name)` mirroring `payments.sign`: it takes the
+`PartnerAdmin` itself (not a string), requires the caller to type their own name (reusing
+`payments._name_matches`), and gates each step on role — maker `admin`, checker `finance`, approver
+`org_admin`, with the maker deliberately NOT gated on `org_admin` as flagged. The gate was placed in
+the **service**, not the endpoint as this entry proposed: an endpoint-layer gate would leave the
+service reachable from a shell with the same weakness this entry describes. Distinctness moved off
+the name onto the **email** (migration `0125`) — prod carries two active admins both named "Ve.
+Elanjelian", so a name key was wrong in both directions. Source guards pin that the chain keeps
+calling the payments primitives and uses the same guard vocabulary. See
+`docs/retrospective-2026-07-26-platform-p4b-credit-endpoints.md`.
+
 ### [TD-177] `bursary_e2e.py` sets a cohort's organisation but not its programme (low)
 `management/commands/bursary_e2e.py:142` sets `cohort.owning_organisation` and leaves
 `cohort.programme` NULL, so applications it creates land in the safe-NULL programme bucket.

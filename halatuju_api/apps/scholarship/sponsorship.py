@@ -59,6 +59,26 @@ def sponsor_balance(sponsor, programme):
     return donated - held
 
 
+def visible_donations(sponsor):
+    """**The ONE narrowing seam for every sponsor-facing read of the money-in ledger.**
+
+    A sponsor sees a credit only once it is CONFIRMED. Before P4a every donation row was
+    confirmed-by-existence, so `sponsor.donations.all()` was a safe spelling; the credit
+    chain ended that — a `draft` / `admin_signed` / `cancelled` row is money that has NOT
+    been signed off, and showing it to the sponsor would state, on their own statement,
+    that we hold money we have not agreed we hold.
+
+    Same shape and same reason as `pool.for_sponsor()`: one seam, so the next surface that
+    lists donations narrows by construction instead of by remembering. A source guard
+    (tests/test_wallet_credit.py) asserts every sponsor-facing donation read goes through
+    here.
+
+    NOT the spend authority — that is `sponsor_balance(sponsor, programme)`, which applies
+    the same status filter *and* the programme restriction.
+    """
+    return sponsor.donations.filter(status=Donation.STATUS_CONFIRMED)
+
+
 class CreditError(Exception):
     """Raised by the wallet-credit chain with a machine code for the view."""
     def __init__(self, code, message=''):
@@ -67,7 +87,7 @@ class CreditError(Exception):
 
 
 @transaction.atomic
-def record_admin_credit(*, sponsor, programme, amount, external_reference, recorded_by):
+def record_admin_credit(*, sponsor, programme, amount, external_reference, admin):
     """Record an OFF-PLATFORM gift into a sponsor's programme wallet (P4).
 
     **This is the sole creator of a ``source='admin_recorded'`` Donation** — a source guard
@@ -79,7 +99,18 @@ def record_admin_credit(*, sponsor, programme, amount, external_reference, recor
     but the consequences aren't"*. ``external_reference`` (the bank-transfer ref) is
     therefore mandatory: it is the only thread back to the money, and it is what makes each
     credit reconcile 1:1 with a bank-statement line (owner: one row per bank transfer).
+
+    Creates the row at ``draft`` and stamps NO signature — recording and signing are
+    separate acts, exactly as ``payments.create_run`` is separate from ``payments.sign``.
+    The maker's signature is collected by ``sign_admin_credit`` with a typed name.
+
+    Role gate: the MAKER's role (``admin``) or a super — the same gate that opens the
+    chain. ``org_admin`` is deliberately NOT admitted here: on prod the person who does
+    this work is Poongulali Veeran, a plain ``admin`` (verified against live roles,
+    2026-07-26), and the approver must stay free to countersign.
     """
+    if not (getattr(admin, 'is_super', False) or getattr(admin, 'role', '') == 'admin'):
+        raise CreditError('wrong_role')
     if amount is None or amount <= 0:
         raise CreditError('invalid_amount')
     if not (external_reference or '').strip():
@@ -95,7 +126,6 @@ def record_admin_credit(*, sponsor, programme, amount, external_reference, recor
         source=Donation.SOURCE_ADMIN, external_reference=external_reference.strip(),
         reference=external_reference.strip(),
         status=Donation.STATUS_DRAFT,
-        recorded_by=recorded_by, recorded_at=timezone.now(),
     )
 
 
@@ -105,63 +135,116 @@ def _is_accepted_into(sponsor, programme):
         sponsor=sponsor, programme=programme, status='approved').exists()
 
 
-def _distinct_signer(credit, signer, *fields):
-    """Three-distinct-signers, pairwise — the payments chain's rule, reused verbatim."""
-    for f in fields:
-        if (getattr(credit, f) or '').strip().lower() == (signer or '').strip().lower():
-            raise CreditError('signer_not_distinct')
+def _collected_signer_emails(credit):
+    """Every email that has already signed this credit, casefolded — the basis of the
+    three-distinct-signers rule. Keyed on EMAIL, never on the displayed name: prod has two
+    active admins sharing the name "Ve. Elanjelian", so a name key would be wrong in both
+    directions (see the 0125 migration docstring). Mirrors
+    ``payments._collected_signer_emails``."""
+    return {
+        (e or '').strip().casefold()
+        for e in (credit.recorded_by_email, credit.finance_checked_by_email,
+                  credit.confirmed_by_email)
+        if (e or '').strip()
+    }
 
 
 @transaction.atomic
-def sign_admin_credit(*, credit, signer):
-    """The MAKER's signature: ``draft → admin_signed``."""
-    if credit.status != Donation.STATUS_DRAFT:
-        raise CreditError('bad_state')
-    credit.status = Donation.STATUS_ADMIN_SIGNED
-    credit.recorded_by = signer
-    credit.recorded_at = credit.recorded_at or timezone.now()
-    credit.save(update_fields=['status', 'recorded_by', 'recorded_at'])
-    return credit
+def sign_admin_credit(credit, admin, typed_name):
+    """The maker→[finance]→approver sign-off for a wallet credit.
 
+    **Deliberately ONE function with the same shape and the same guard names as
+    ``payments.sign``** — the two chains are one design (decisions.md), and a single
+    mirrored function is what stops them drifting into two subtly different controls.
 
-@transaction.atomic
-def finance_check_admin_credit(*, credit, signer):
-    """The CHECKER's signature: ``admin_signed → finance_checked``. Only reachable while the
-    organisation has an active finance admin — the same live evaluation the payment chain
-    uses, so appointing finance arms this even for a credit already mid-chain."""
-    from . import payments
-    if credit.status != Donation.STATUS_ADMIN_SIGNED:
-        raise CreditError('bad_state')
-    if not payments.finance_check_required(_credit_org(credit)):
-        raise CreditError('finance_check_not_required')
-    _distinct_signer(credit, signer, 'recorded_by')
-    credit.status = Donation.STATUS_FINANCE_CHECKED
-    credit.finance_checked_by = signer
-    credit.finance_checked_at = timezone.now()
-    credit.save(update_fields=['status', 'finance_checked_by', 'finance_checked_at'])
-    return credit
+      * DRAFT → the MAKER (role ``admin``, or super) signs → ``admin_signed``.
+      * ADMIN_SIGNED, finance ACTIVE → only the CHECKER (role ``finance``, or super) may
+        sign → ``finance_checked``. An org_admin trying to countersign here gets
+        ``finance_check_required`` (told WHY, not a bare wrong_role — from their seat
+        nothing looks amiss).
+      * ADMIN_SIGNED, finance DORMANT → the APPROVER (``org_admin``, or super)
+        countersigns → ``confirmed``. This is BrightPath's live path today.
+      * FINANCE_CHECKED → the APPROVER countersigns → ``confirmed``.
 
+    ``confirmed`` is the step that makes the money spendable (``Donation.is_spendable``).
 
-@transaction.atomic
-def confirm_admin_credit(*, credit, signer):
-    """The APPROVER's countersignature — the step that makes the money SPENDABLE.
+    Guards: ``bad_state``; ``name_mismatch`` (typed name vs ``PartnerAdmin.name`` — this is
+    what closed TD-176: before P4b the signer was a free string, so the chain enforced
+    distinctness but NOT identity); ``wrong_role``; and ``same_signer`` — pairwise
+    distinctness across every signature already collected, which is what confines a
+    ``super`` to one slot per credit without a special case for supers.
 
-    Blocked at ``admin_signed`` while the organisation has an active finance admin, exactly
-    as the payment chain blocks its approver: ``finance_check_required`` is evaluated LIVE,
-    never stored, so BrightPath's currently-dark checker degrades this to a clean two-step
-    chain and appointing a finance admin arms it retroactively.
+    ``finance_check_required`` is evaluated LIVE at every attempt and never stored, so
+    appointing a finance admin ARMS the check for a credit already mid-chain, and revoking
+    the last one degrades it back to two steps. Both are inherited from the payments chain
+    rather than reimplemented. Returns the credit.
     """
     from . import payments
-    if credit.status not in (Donation.STATUS_ADMIN_SIGNED, Donation.STATUS_FINANCE_CHECKED):
+    if credit.status not in (Donation.STATUS_DRAFT, Donation.STATUS_ADMIN_SIGNED,
+                             Donation.STATUS_FINANCE_CHECKED):
         raise CreditError('bad_state')
-    if (credit.status == Donation.STATUS_ADMIN_SIGNED
-            and payments.finance_check_required(_credit_org(credit))):
-        raise CreditError('finance_check_required')
-    _distinct_signer(credit, signer, 'recorded_by', 'finance_checked_by')
+    if not payments._name_matches(admin, typed_name):
+        raise CreditError('name_mismatch')
+    is_super = bool(getattr(admin, 'is_super', False))
+    email = (admin.email or '').strip().casefold()
+    now = timezone.now()
+    needs_finance = payments.finance_check_required(_credit_org(credit))
+
+    if credit.status == Donation.STATUS_DRAFT:
+        if not (is_super or admin.role == 'admin'):
+            raise CreditError('wrong_role')
+        credit.recorded_by = (admin.name or '').strip()[:200]
+        credit.recorded_by_email = (admin.email or '')[:254]
+        credit.recorded_at = now
+        credit.status = Donation.STATUS_ADMIN_SIGNED
+        credit.save(update_fields=[
+            'recorded_by', 'recorded_by_email', 'recorded_at', 'status'])
+        return credit
+
+    if credit.status == Donation.STATUS_ADMIN_SIGNED and needs_finance:
+        if not (is_super or admin.role == 'finance'):
+            if admin.role == 'org_admin':
+                raise CreditError('finance_check_required')
+            raise CreditError('wrong_role')
+        if email in _collected_signer_emails(credit):
+            raise CreditError('same_signer')
+        credit.finance_checked_by = (admin.name or '').strip()[:200]
+        credit.finance_checked_by_email = (admin.email or '')[:254]
+        credit.finance_checked_at = now
+        credit.status = Donation.STATUS_FINANCE_CHECKED
+        credit.save(update_fields=[
+            'finance_checked_by', 'finance_checked_by_email', 'finance_checked_at', 'status'])
+        return credit
+
+    # admin_signed (finance dormant) or finance_checked → the approver countersigns.
+    if not (is_super or admin.role == 'org_admin'):
+        raise CreditError('wrong_role')
+    if email in _collected_signer_emails(credit):
+        raise CreditError('same_signer')
+    credit.confirmed_by = (admin.name or '').strip()[:200]
+    credit.confirmed_by_email = (admin.email or '')[:254]
+    credit.confirmed_at = now
     credit.status = Donation.STATUS_CONFIRMED
-    credit.confirmed_by = signer
-    credit.confirmed_at = timezone.now()
-    credit.save(update_fields=['status', 'confirmed_by', 'confirmed_at'])
+    credit.save(update_fields=[
+        'confirmed_by', 'confirmed_by_email', 'confirmed_at', 'status'])
+    return credit
+
+
+@transaction.atomic
+def cancel_admin_credit(credit, admin):
+    """Void a credit that has not yet been confirmed — a mis-keyed amount or bank reference
+    would otherwise be permanent (the row is never deleted; the audit trail is the point).
+
+    Maker's role or super, and only before ``confirmed``: once money is spendable it is
+    reversed by a compensating entry, never by editing history."""
+    if not (getattr(admin, 'is_super', False) or getattr(admin, 'role', '') in
+            ('admin', 'org_admin')):
+        raise CreditError('wrong_role')
+    if credit.status not in (Donation.STATUS_DRAFT, Donation.STATUS_ADMIN_SIGNED,
+                             Donation.STATUS_FINANCE_CHECKED):
+        raise CreditError('bad_state')
+    credit.status = Donation.STATUS_CANCELLED
+    credit.save(update_fields=['status'])
     return credit
 
 
@@ -176,7 +259,7 @@ def sponsor_programme_balances(sponsor):
     programme id so the output is stable. Display + reconciliation; per-wallet figures
     here are each a real spend authority, the *sum* of them is not."""
     programme_ids = set(
-        sponsor.donations.values_list('programme_id', flat=True)
+        visible_donations(sponsor).values_list('programme_id', flat=True)
     ) | set(
         sponsor.sponsorships.filter(status__in=Sponsorship.HOLDING)
         .values_list('application__programme_id', flat=True)
@@ -238,7 +321,7 @@ def sponsor_statement(sponsor):
     student's identity). Allowlist-safe; counts + money + refs only."""
     donations = [
         {'amount': str(d.amount), 'reference': d.reference, 'at': d.created_at}
-        for d in sponsor.donations.order_by('-created_at')
+        for d in visible_donations(sponsor).order_by('-created_at')
     ]
     gifts = []
     out_total = Decimal('0')

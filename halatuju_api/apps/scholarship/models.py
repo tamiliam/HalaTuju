@@ -1642,11 +1642,20 @@ class Donation(models.Model):
     # ONLY the admin-recorded path opens at 'draft' — see sponsorship.record_admin_credit,
     # which is the sole creator of a SOURCE_ADMIN row (asserted by a source guard test).
     status = models.CharField(max_length=20, choices=STATUSES, default=STATUS_CONFIRMED)
+    # Each signature is a (name, email) PAIR, exactly as PaymentRun stores it. The EMAIL is
+    # the identity key — pairwise distinctness is computed on it, never on the name. This is
+    # not theoretical tidiness: prod carries TWO active admins both named "Ve. Elanjelian"
+    # (a super and an org_admin, different accounts), so a name-keyed rule would BOTH let one
+    # person fill two slots under two names AND wrongly refuse two genuinely different people
+    # who share one. The name is stored for display and for the typed-name match only.
     recorded_by = models.CharField(max_length=200, blank=True, default='')
+    recorded_by_email = models.CharField(max_length=254, blank=True, default='')
     recorded_at = models.DateTimeField(null=True, blank=True)
     finance_checked_by = models.CharField(max_length=200, blank=True, default='')
+    finance_checked_by_email = models.CharField(max_length=254, blank=True, default='')
     finance_checked_at = models.DateTimeField(null=True, blank=True)
     confirmed_by = models.CharField(max_length=200, blank=True, default='')
+    confirmed_by_email = models.CharField(max_length=254, blank=True, default='')
     confirmed_at = models.DateTimeField(null=True, blank=True)
 
     @property

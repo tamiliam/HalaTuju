@@ -5481,3 +5481,49 @@ Note this is deliberately **not** `org_admin` for the maker — Poongulali is a 
 **Revisit if:** the agreement is signed and funds land — at which point the gate is satisfied and the normal P4b flow applies. Note this gate is about **anticipatory recording**, not about building capability: continuing to build the generic programme/credit machinery is unaffected and does not require the gate to lift.
 
 **Correction note:** several documents (`halatuju_api/CLAUDE.md`, this roadmap, `memory/halatuju_platform_direction.md`, Mission Control) previously framed P4b as *"what unblocks recording the RM100,000"*. That was wrong twice over — it implied the money was pending on engineering, and it attached a false urgency to P4b. P4b's actual justification is that **every wallet credit to date, including the RM172,000 already recorded, was written by a developer touching the database**; P4b removes the developer from the money path. All four documents were corrected on 2026-07-26.
+
+## One mirrored `sign_admin_credit`, not three step-functions — Platform P4b, 2026-07-26
+
+**Decision:** Replace P4a's three credit services (`sign_admin_credit` / `finance_check_admin_credit` / `confirm_admin_credit`) with ONE `sign_admin_credit(credit, admin, typed_name)` that dispatches on the credit's current state — the same shape, the same guard names and the same guard vocabulary as `payments.sign`. A source guard asserts it keeps CALLING `payments._name_matches` and `payments.finance_check_required` rather than growing a private copy.
+
+**Alternatives considered:** (a) Keep the three functions and add the gates to each — rejected: three call sites is three chances for the next person to update two of them, and the whole reason the credit chain reuses the payments chain is that it is ONE design (recorded in P4a). Divergence would not announce itself; it would show up as an operator being refused on one screen and admitted on the other. (b) Extract a shared generic chain both modules call — rejected as premature: two users is not a pattern, and the abstraction would have to swallow the differences (a run has items and a CSV; a credit has a bank reference) for no current gain. Revisit at the third user.
+
+**Rationale:** A maker-checker control is only as good as its uniformity. One mirrored function against one function is the cheapest arrangement that keeps them uniform, and the currency rule then has something mechanical behind it instead of a promise in a doc.
+
+**Trade-offs:** A single function with three branches is longer than any one of the three it replaced, and its state dispatch has to be read carefully. Accepted because it is a verbatim mirror — anyone who has read `payments.sign` has already read this.
+
+**Revisit if:** a third chain appears (then extract the shared primitive), or the credit chain gains a step the payment chain does not have (then the mirror is no longer true and the currency rule needs restating).
+
+## The signature's identity key is the EMAIL, never the displayed name — Platform P4b, 2026-07-26
+
+**Decision:** Store each credit signature as a (name, email) pair (migration `0125`) and compute pairwise distinctness on the casefolded EMAIL. The name is kept for display and for the typed-name match only.
+
+**Alternatives considered:** (a) Keep P4a's single name column and compare names — rejected on live data, not on principle: prod carries TWO active admins both named "Ve. Elanjelian" (a super on `tamiliam@gmail.com`, an org_admin on `elanjelian@me.com`, genuinely different accounts). A name key is wrong in BOTH directions there — it lets one human sign twice under two spellings, and it refuses two different people who share a name. (b) Use the `PartnerAdmin` id — rejected: an id is stable but opaque in an audit record, and the payments chain already settled on email, so an id would be a third convention.
+
+**Rationale:** Distinctness is an identity question and a name is not an identity. The payments chain answered this correctly already; bringing the credit chain into line beats inventing a second, weaker answer.
+
+**Trade-offs:** Three additive columns and a migration on a sprint scoped as schema-free. Additive, no data migration, no balance moves.
+
+**Revisit if:** admin accounts ever gain a stable public identifier better suited to an audit trail than an email address (an email can be reassigned).
+
+## An unconfirmed credit is CANCELLED, never deleted — Platform P4b, 2026-07-26
+
+**Decision:** `cancel_admin_credit` moves a credit to `cancelled` and the row stays. A CONFIRMED credit cannot be cancelled at all — it is reversed by a compensating entry.
+
+**Alternatives considered:** (a) Delete a mis-keyed draft — rejected: the audit trail is the entire point of recording money the platform cannot see, and a deleted row cannot be reconciled against the bank statement that prompted it. (b) Allow editing the amount or reference in place — rejected for the same reason; an edited record makes the mistake invisible, which is exactly what a maker-checker chain exists to prevent.
+
+**Rationale:** A mis-keyed bank reference would otherwise be permanent (the alternative to cancel is a dead draft row nobody can clear). Cancelling records both what was keyed and that it was withdrawn.
+
+**Trade-offs:** The ledger accumulates cancelled rows. Correct: they are the record of a correction.
+
+**Revisit if:** the ledger grows enough that the admin list needs a default filter hiding cancelled rows (a display change, not a model change).
+
+## The programme-grouped statement is deferred out of P4b — Platform P4b, 2026-07-26
+
+**Decision:** Ship P4b as the backend credit surface only. `sponsor_statement` keeps its flat shape; grouping it by programme waits.
+
+**Alternatives considered:** Ship both as the roadmap scoped — rejected on two independent grounds. It is consumed by the sponsor account page, making it a **sponsor-facing layout change** that owes a Stitch prototype and owner approval before template code (the standing workspace rule). And it is a **visual no-op today**: every live sponsor holds exactly one membership against one programme, so the grouped page would render one group containing what it renders now.
+
+**Rationale:** Zero user-visible value today, a real FE deploy and a design gate. The backend half has value today — it removes the developer from the money path.
+
+**Revisit if:** a second programme becomes real (Sabah or Inspire), at which point the grouping stops being cosmetic and should be designed properly.

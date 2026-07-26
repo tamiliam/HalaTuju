@@ -564,6 +564,34 @@ ORGANISATION) and BrightPath Sabah (a second PROGRAMME under BrightPath).
 - Then **P2b** (`PaymentRun.programme` — payments is live with an open draft run), routing PF-1
   (**date-parked ~May/June 2027**), reviewer programme scoping, Phase 2 S7–S9, Sprint E.
 
+**✅ CODE COMPLETE 2026-07-26 — P4b: the credit endpoints + identity on the chain. NOT DEPLOYED.**
+Branch `feat/p4b-credit-endpoint` (worktree; another agent was working the same repo). Retro
+`docs/retrospective-2026-07-26-platform-p4b-credit-endpoints.md`; decisions ×4; lessons ×3.
+- **Three org-fenced endpoints** — `admin/scholarship/credits/` (ledger + record),
+  `.../<pk>/sign/` (whichever step is next), `.../<pk>/cancel/` (void an unconfirmed credit; the
+  row is never deleted). Fenced on **`programme__organisation_id`** — a Sponsor is a platform-level
+  account and deliberately unfenced, but the money inside a gift belongs to the org running it.
+- **TD-176 RESOLVED.** P4a's three step-functions collapsed into ONE
+  `sign_admin_credit(credit, admin, typed_name)` mirroring `payments.sign` — typed-name match plus
+  role gates (maker `admin`, checker `finance`, approver `org_admin`). The gate lives in the
+  **service**, not the endpoint, so a shell caller cannot bypass it. Maker is NOT gated on
+  `org_admin` (Poongulali is a plain `admin` — verified live).
+- **Distinctness now keys on EMAIL** (migration `0125`, additive). Prod has two ACTIVE admins both
+  named "Ve. Elanjelian"; a name key would let one person sign twice and refuse two who share a name.
+- **Fixed a P4a defect found by the channel sweep, not by a test:** `draft`/`cancelled` credits were
+  VISIBLE to the sponsor — on their own giving statement as money we hold, and able to conjure a
+  wallet for a programme they were given nothing in. P4a proved unconfirmed money was *unspendable*
+  and never asserted it was *invisible*. All sponsor-facing reads now narrow through
+  `sponsorship.visible_donations`; a source guard fails CI if a fourth surface reads donations direct.
+- **4678 pytest**, 0 failed. `makemigrations --check` clean. **No FE change** — the programme-grouped
+  statement is deferred (P4b-ii): it is a sponsor-facing layout change owing a Stitch pass, and a
+  visual no-op until a second programme exists.
+- **▶ AT DEPLOY (owner-gated): apply migration `0125` MIGRATE-FIRST, then merge + push.** Post-check:
+  all three email columns empty on every row; confirmed-donation total per programme unchanged. The
+  branch must NOT merge before the migration lands.
+- **▶ THE SABAH RM100,000 IS STILL A POSSIBILITY, NOT A COMMITMENT.** P4b does not change the owner
+  gate above: record nothing until the programme is inked AND the money has changed hands.
+
 ---
 
 ## Superseded — previous Next Sprint (2026-07-26, institution must-fill S3)
