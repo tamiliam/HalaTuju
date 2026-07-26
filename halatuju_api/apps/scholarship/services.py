@@ -2400,7 +2400,18 @@ def save_application_details(application, data):
 # allowlist (no name/NRIC/photo/address/contact, for the student or the parents). The new text says
 # so plainly. NARROWER than draft-5, so consents already given under the old wording permitted MORE
 # than we do and need no re-consent; the version on each record still shows which wording was agreed.
-CONSENT_VERSION = '2026-draft-6'  # draft-5 was bumped for the F9a promotional_use consent (18+ only)
+CONSENT_VERSION = '2026-draft-7'  # draft-5 was bumped for the F9a promotional_use consent (18+ only)
+# draft-7 (2026-07-26) is the first WIDENING: it adds what a sponsor sees DURING sponsorship
+# (academic progress — already live — and how the bursary was spent). Every earlier version
+# narrowed or held steady, so no version until now needed re-consent. This one does: an existing
+# consenter has not agreed to the added disclosure. See docs/scholarship/consent-draft-7-proposal.md.
+# ONE version is DISPLAYED (owner decision 2026-07-26): both the consent form and the read-only
+# "What you agreed to" panel render the current wording, so an earlier consenter sees today's text —
+# for draft-7 that is slightly broader than the one they gave. Per-version archived bodies were built
+# and then removed as complexity buying a panel nuance rather than a real protection; questions are
+# handled by hand. Sponsor visibility is likewise NOT gated on version (`pool.has_active_share_consent`
+# checks type + is_active only), so a new disclosure reaches every consenter once it ships — that is
+# the owner's call to make per feature, not something this constant enforces. See TD-166.
 
 
 # S17/S19 — structured guardian relationship codes. Father/mother only need

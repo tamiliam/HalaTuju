@@ -118,6 +118,13 @@ export default function ScholarshipConsent({
       : gender === 'female'
         ? t('scholarship.consent.pronoun.her')
         : t('scholarship.consent.pronoun.them')
+    // ONE consent version is displayed, by owner decision 2026-07-26 (see TD-166): both the form
+    // and the read-only "What you agreed to" panel render the CURRENT wording. A student who
+    // consented under an earlier version therefore sees today's text, which for `2026-draft-7` is
+    // slightly BROADER than the one they gave — accepted deliberately: the alternative was
+    // per-version archived bodies and per-student behaviour, which the owner ruled out as
+    // complexity that buys a panel nuance rather than a real protection. Questions are handled
+    // by hand. The RECORD is unaffected — `Consent.version` still stores what each person agreed to.
     return t(isMinor ? 'scholarship.consent.textMinor' : 'scholarship.consent.text', {
       student_name: studentName,
       student_nric: studentNric,
@@ -172,7 +179,7 @@ export default function ScholarshipConsent({
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
           {t('scholarship.consent.givenHeading')}
         </p>
-        <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 max-h-48 overflow-y-auto whitespace-pre-line">
+        <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 whitespace-pre-line">
           {renderRich(consentBody)}
         </div>
 
@@ -213,8 +220,13 @@ export default function ScholarshipConsent({
 
       {/* Consent text body — voice + content differ for minors. Bold markers
           (`**…**`) in the i18n string render as <strong> — used for the
-          student's name, NRIC, and the programme name. */}
-      <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 max-h-48 overflow-y-auto whitespace-pre-line">
+          student's name, NRIC, and the programme name.
+
+          NO max-height / overflow here, deliberately (owner 2026-07-26): a scrollbar on a consent
+          box makes the text look longer than it is and invites scrolling past it. The text is short
+          enough to render whole — if a future version grows long enough to need a scroll, shorten
+          the text rather than hiding it behind one. */}
+      <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 whitespace-pre-line">
         {renderRich(consentBody)}
       </div>
 

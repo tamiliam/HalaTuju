@@ -13,6 +13,15 @@
  *
  * IF THIS FAILS after a message edit: your change broke byte-identity. Fix the CHANGE, never the
  * fixture — the fixture is the pre-edit ground truth.
+ *
+ * 2026-07-26 — RE-CAPTURED ONCE, deliberately. `CONSENT_VERSION` moved to `2026-draft-7`, a real
+ * revision of the consent wording approved by the owner, so the pre-edit bytes could not survive by
+ * definition. The fixture was regenerated from the draft-7 strings and the guard resumes its job
+ * from there: it will catch the NEXT accidental drift (a refactor, a branding change, a stray edit).
+ *
+ * The rule stands for everything except an owner-approved `CONSENT_VERSION` bump: if this fails and
+ * you did not deliberately revise the consent text, fix the CHANGE, never the fixture. Re-capturing
+ * to make a red test green is how a legal text drifts unnoticed.
  */
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
