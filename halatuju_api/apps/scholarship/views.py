@@ -1336,8 +1336,12 @@ class ResolutionItemResolveView(APIView):
             from django.conf import settings as _settings
             if getattr(_settings, 'CHECK2_ANSWER_RELEVANCE_ENABLED', False):
                 from .help_engine import judge_answer_relevance
+                from . import usage as _usage
                 question = (request.data.get('question') or item.prompt or '').strip()
-                verdict = judge_answer_relevance(question, text)
+                # Bill the relevance judge to the tenant. The judge stays firewalled to Q+A
+                # text only — attribution rides the ambient context, not its signature.
+                with _usage.usage_context(application=item.application):
+                    verdict = judge_answer_relevance(question, text)
                 if not verdict['on_topic']:
                     return Response({'resolved': False, 'nudge': verdict['nudge']})
         resolve_item(item, text=text, by='student')
@@ -1535,11 +1539,17 @@ class DocumentHelpView(APIView):
         from .profile_engine import _resolve_language
         language = _resolve_language(doc.application, request.query_params.get('lang'))
         from . import branding as _branding
-        result = help_engine.generate_document_help(
-            doc.doc_type, verdict,
-            first_name=help_engine.first_name_of(doc), target_language=language,
-            branding=_branding.for_application(doc.application),
-        )
+        from . import usage as _usage
+        # Bill the coach's Gemini call to the tenant. The engine's OWN signature stays sealed
+        # (see test_engine_signature_is_structurally_firewalled) — attribution rides the ambient
+        # usage_context, which the engine's inner `usage_context(source='doc_help')` inherits.
+        # An organisation id is a billing key, never student data, and never enters the prompt.
+        with _usage.usage_context(application=doc.application):
+            result = help_engine.generate_document_help(
+                doc.doc_type, verdict,
+                first_name=help_engine.first_name_of(doc), target_language=language,
+                branding=_branding.for_application(doc.application),
+            )
         result['verdict'] = verdict
         result['grade_diffs'] = grade_diffs
         _log_coach_serve('doc', doc.application_id, result.get('source', 'none'), verdict)
@@ -1623,10 +1633,13 @@ class IncomeClusterHelpView(APIView):
                                       and verdict == 'income_proof_person_mismatch'),
         }
         from . import branding as _branding
-        result = help_engine.generate_document_help(
-            'income_cluster', verdict, first_name=first_name, target_language=language,
-            context=context, branding=_branding.for_application(app),
-        )
+        from . import usage as _usage
+        # Same billing seam as the per-document coach — ambient only, signature untouched.
+        with _usage.usage_context(application=app):
+            result = help_engine.generate_document_help(
+                'income_cluster', verdict, first_name=first_name, target_language=language,
+                context=context, branding=_branding.for_application(app),
+            )
         result['verdict'] = verdict
         _log_coach_serve('income_cluster', app.id, result.get('source', 'none'), verdict)
         return Response(result)

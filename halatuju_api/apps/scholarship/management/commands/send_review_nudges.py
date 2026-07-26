@@ -25,7 +25,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.courses.models import PartnerAdmin
-from apps.scholarship import emails
+from apps.scholarship import emails, usage
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.pool import pool_ref
 
@@ -73,48 +73,54 @@ class Command(BaseCommand):
 
         soon, overdue, escalated = [], [], []
         for app in qs:
-            due = app.assigned_at + timedelta(days=sla_days)
-            ref = pool_ref(app.id)
-            applicant_name = getattr(app.profile, 'name', '') if app.profile else ''
-            due_by = (app.assigned_at + timedelta(days=sla_days)).date().strftime('%d %b %Y')
-            reviewer = app.assigned_to
-            reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
-            reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''
-            updates = []
+            # Bill every email this iteration sends to the application's OWNING ORGANISATION.
+            # A cron has no request context, so without this the meter records org-NULL and the
+            # tenant is under-charged. usage_context never raises and is display-free.
+            with usage.usage_context(application=app):
+                due = app.assigned_at + timedelta(days=sla_days)
+                ref = pool_ref(app.id)
+                applicant_name = getattr(app.profile, 'name', '') if app.profile else ''
+                due_by = (app.assigned_at + timedelta(days=sla_days)).date().strftime('%d %b %Y')
+                reviewer = app.assigned_to
+                reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
+                reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''
+                updates = []
 
-            # Approaching — only before the due date.
-            if (app.review_nudged_soon_at is None
-                    and (due - timedelta(days=soon_days)) <= now < due):
-                if reviewer_email:
-                    emails.send_reviewer_verdict_due_email(
-                        reviewer_email, reviewer_name=reviewer_name, applicant_name=applicant_name,
-                        ref=ref, due_by=due_by, overdue=False)
-                app.review_nudged_soon_at = now
-                updates.append('review_nudged_soon_at')
-                soon.append(app.id)
+                # Approaching — only before the due date.
+                if (app.review_nudged_soon_at is None
+                        and (due - timedelta(days=soon_days)) <= now < due):
+                    if reviewer_email:
+                        emails.send_reviewer_verdict_due_email(
+                            reviewer_email, reviewer_name=reviewer_name,
+                            applicant_name=applicant_name,
+                            ref=ref, due_by=due_by, overdue=False)
+                    app.review_nudged_soon_at = now
+                    updates.append('review_nudged_soon_at')
+                    soon.append(app.id)
 
-            # Overdue — at/after the due date.
-            if app.review_nudged_overdue_at is None and now >= due:
-                if reviewer_email:
-                    emails.send_reviewer_verdict_due_email(
-                        reviewer_email, reviewer_name=reviewer_name, applicant_name=applicant_name,
-                        ref=ref, due_by=due_by, overdue=True)
-                app.review_nudged_overdue_at = now
-                updates.append('review_nudged_overdue_at')
-                overdue.append(app.id)
+                # Overdue — at/after the due date.
+                if app.review_nudged_overdue_at is None and now >= due:
+                    if reviewer_email:
+                        emails.send_reviewer_verdict_due_email(
+                            reviewer_email, reviewer_name=reviewer_name,
+                            applicant_name=applicant_name,
+                            ref=ref, due_by=due_by, overdue=True)
+                    app.review_nudged_overdue_at = now
+                    updates.append('review_nudged_overdue_at')
+                    overdue.append(app.id)
 
-            # Escalation — grace days after the due date, to the org's own admin(s) + the reviewer.
-            if app.review_escalated_at is None and now >= due + timedelta(days=grace_days):
-                for to_email in escalation_recipients(app, reviewer_email):
-                    emails.send_verdict_escalation_email(
-                        to_email, applicant_name=applicant_name, ref=ref,
-                        reviewer_name=reviewer_name, due_by=due_by)
-                app.review_escalated_at = now
-                updates.append('review_escalated_at')
-                escalated.append(app.id)
+                # Escalation — grace days after the due date, to the org's own admin(s) + reviewer.
+                if app.review_escalated_at is None and now >= due + timedelta(days=grace_days):
+                    for to_email in escalation_recipients(app, reviewer_email):
+                        emails.send_verdict_escalation_email(
+                            to_email, applicant_name=applicant_name, ref=ref,
+                            reviewer_name=reviewer_name, due_by=due_by)
+                    app.review_escalated_at = now
+                    updates.append('review_escalated_at')
+                    escalated.append(app.id)
 
-            if updates:
-                app.save(update_fields=updates)
+                if updates:
+                    app.save(update_fields=updates)
 
         self.stdout.write(
             f'Review nudges sent. soon={soon} overdue={overdue} escalated={escalated} '

@@ -303,12 +303,16 @@ def release_decision(application):
     name = getattr(application.profile, 'name', '') if application.profile else ''
     common = dict(to_email=application.notify_email, applicant_name=name,
                   programme_name=application.cohort.name, lang=application.locale)
-    if application.verdict == 'shortlisted':
-        sent = send_pass_email(**common)
-    else:
-        # Pre-shortlist decline: pick the bucket-specific email (merit/need) or the
-        # generic one (ineligible). The engine set rejection_category at score time.
-        sent = send_decline_email(category=application.rejection_category, **common)
+    # Bill the decision email to the application's owning organisation — this runs from the
+    # release cron, which carries no ambient context, so the meter would otherwise record NULL.
+    from . import usage as _usage
+    with _usage.usage_context(application=application):
+        if application.verdict == 'shortlisted':
+            sent = send_pass_email(**common)
+        else:
+            # Pre-shortlist decline: pick the bucket-specific email (merit/need) or the
+            # generic one (ineligible). The engine set rejection_category at score time.
+            sent = send_decline_email(category=application.rejection_category, **common)
     if sent:
         application.decision_email_sent_at = now
         application.save(update_fields=['decision_email_sent_at'])
@@ -924,11 +928,16 @@ def _send_decline_for(application):
     Reads the recorded ``rejection_category`` so the right (HTML) bucket email is chosen."""
     now = timezone.now()
     name = getattr(application.profile, 'name', '') if application.profile else ''
-    if send_decline_email(
-        to_email=application.notify_email or getattr(application.profile, 'contact_email', '') or '',
-        applicant_name=name, programme_name=application.cohort.name,
-        category=application.rejection_category, lang=application.locale,
-    ):
+    # Embargoed declines are released by a cron — attribute the send to the owning org.
+    from . import usage as _usage
+    with _usage.usage_context(application=application):
+        sent_decline = send_decline_email(
+            to_email=(application.notify_email
+                      or getattr(application.profile, 'contact_email', '') or ''),
+            applicant_name=name, programme_name=application.cohort.name,
+            category=application.rejection_category, lang=application.locale,
+        )
+    if sent_decline:
         # Both stamps: decline_email_sent_at is the authoritative "the student was told of
         # the DECLINE" marker (cancel_pending_decline keys off it); decision_email_sent_at
         # keeps its broader "a decision email went out" meaning for back-compat.
@@ -1131,14 +1140,17 @@ def confirm_profile(application):
     # The richer "your application is in — here's what happens next" email supersedes the
     # basic submission-ack when PROFILE_COMPLETE_EMAIL_ENABLED is on (avoids a double-email).
     from django.conf import settings as _settings
-    if getattr(_settings, 'PROFILE_COMPLETE_EMAIL_ENABLED', False):
-        from .emails import english_only_email, send_profile_complete_student_email
-        send_profile_complete_student_email(
-            application.notify_email, student_name=name,
-            english_only=english_only_email(application))
-    else:
-        send_submission_received_email(to_email=application.notify_email, applicant_name=name,
-                                       programme_name=application.cohort.name, lang=application.locale)
+    from . import usage as _usage
+    with _usage.usage_context(application=application):
+        if getattr(_settings, 'PROFILE_COMPLETE_EMAIL_ENABLED', False):
+            from .emails import english_only_email, send_profile_complete_student_email
+            send_profile_complete_student_email(
+                application.notify_email, student_name=name,
+                english_only=english_only_email(application))
+        else:
+            send_submission_received_email(
+                to_email=application.notify_email, applicant_name=name,
+                programme_name=application.cohort.name, lang=application.locale)
     try:
         from .check2_queries import sync_check2_queries
         from .resolution import sync_resolution_items

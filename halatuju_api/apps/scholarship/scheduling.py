@@ -12,6 +12,7 @@ is dark behind ``settings.INTERVIEW_SCHEDULING_ENABLED`` (enforced at the views)
 """
 from __future__ import annotations
 
+import functools
 import logging
 from datetime import timedelta
 from zoneinfo import ZoneInfo
@@ -19,10 +20,28 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.utils import timezone
 
-from . import emails, meeting, pool, services, whatsapp
+from . import emails, meeting, pool, services, usage, whatsapp
 from .models import InterviewSlot
 
 logger = logging.getLogger(__name__)
+
+
+def _bills_to_application(fn):
+    """Attribute every metered call inside ``fn`` to the application's owning organisation.
+
+    Each public entry point below takes the application FIRST, so one decorator covers the
+    email + WhatsApp the call fans out — including the ones sent to the REVIEWER, which are
+    still work done on that tenant's behalf and belong on that tenant's bill.
+
+    Without this the meter falls back to whatever ambient context happens to be set (a cron
+    or a shell has none) and silently records org-NULL, which under-charges the tenant.
+    ``usage_context`` never raises, so this cannot break a booking.
+    """
+    @functools.wraps(fn)
+    def wrapper(application, *args, **kwargs):
+        with usage.usage_context(application=application):
+            return fn(application, *args, **kwargs)
+    return wrapper
 
 # Interview slot rule (mirrored in halatuju-web/src/lib/interviewSlots.ts — keep in
 # lock-step): a proposed time must be MYT, on a 30-minute boundary, between 08:00 and
@@ -162,6 +181,7 @@ def _send_wa_proposed(application, student_name, reviewer=None):
     whatsapp.send_whatsapp(phone, body, application=application, kind='interview_proposed')
 
 
+@_bills_to_application
 def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
                   release_booking=False):
     """The assigned reviewer (or a super) proposes interview times.
@@ -304,6 +324,7 @@ def withdraw_slot(slot, *, now=None):
 
 # ── Student side: book / reschedule / cancel ──────────────────────────────────
 
+@_bills_to_application
 def book_slot(application, *, slot_id, now=None):
     """Student books (or reschedules to) a proposed slot.
 
@@ -401,6 +422,7 @@ def book_slot(application, *, slot_id, now=None):
     return application
 
 
+@_bills_to_application
 def cancel(application, *, by='student', reason='', now=None):
     """Cancel the booked interview. A student cancel is subject to the cutoff. ``reason`` is the
     student's optional 'why I'm cancelling' — stored + passed to the reviewer's notice."""
@@ -446,6 +468,7 @@ def cancel(application, *, by='student', reason='', now=None):
     return application
 
 
+@_bills_to_application
 def release_for_unassign(application, *, now=None):
     """Tear down interview artefacts when the assigned reviewer is REMOVED
     (services.assign_reviewer with reviewer=None). Mirrors cancel()'s teardown but is
@@ -504,6 +527,7 @@ def release_for_unassign(application, *, now=None):
     return application
 
 
+@_bills_to_application
 def request_alternatives(application, *, note='', now=None):
     """The student says none of the proposed times work and asks for different ones. Records
     the request + an optional note and notifies the ASSIGNED reviewer directly (the proposed
@@ -533,6 +557,7 @@ MESSAGE_MAX_LEN = 1000
 MESSAGE_RATE_LIMIT_PER_HOUR = 5
 
 
+@_bills_to_application
 def send_student_message(application, *, text, now=None):
     """The student sends a short free-text note to their assigned reviewer.
 
