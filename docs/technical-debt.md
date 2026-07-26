@@ -1457,3 +1457,26 @@ so a fee set today prices in ~RM20/month of avoidable retention. Fix BEFORE fixi
 **Lesson retained: do NOT size the repo from `repositories list`** — it reported "72.2 MB" against
 `describe`'s 77,576 MB, a 1000× error that would have hidden this entirely.
 (Logged 2026-07-26, billing cost review; diagnosis corrected same day.)
+
+- TD-179 (medium): **two attribution signals for "this partner's students" disagree, and now BOTH have
+  a live consumer.** The Sources student count + the partner weekly digest attribute an application by
+  the raw referral CHIP (`profile.referral_source == org.code`, via `partner_comms.partner_applications`
+  / `chip_tally`) — deliberately, because the stored `referred_by_org` FK drifts (a self-referral chip
+  left pointing at an old partner is what inflated CUMIG to 256 before 2026-07-23). But
+  `courses.views_admin.get_partner_students` — the course-selector partner Students list — attributes by
+  that same **FK**, over `StudentProfile` rather than `ScholarshipApplication`: a different population
+  AND a different signal. So a `partner`-role rep's list and the bursary digest can legitimately report
+  different students for the same organisation.
+  **Not fixed on purpose (2026-07-26):** they serve two different products (course selector vs bursary),
+  the chip side is now pinned by a test asserting the digest and the Sources screen agree, and quietly
+  re-pointing the course-selector list would change what an existing partner login sees with no owner
+  decision behind it. **To resolve:** decide whether the course-selector list should move to the chip
+  (one predicate everywhere) or whether the two products keep separate attribution by design — then
+  record it and make the losing side stop looking authoritative. Until then, do not "fix" one side in
+  isolation. (Logged 2026-07-26, partner comms S1; referenced by
+  `docs/plans/2026-07-26-partner-comms-roadmap.md`.)
+
+- TD-180 (low): **partner-email screen copy is ms/ta first-draft.** `admin.sources.emails.*` (~45 leaves
+  ×3) was written in one pass; the Malay and Tamil are unreviewed. The EMAILS themselves are English-only
+  by design (as every staff/partner email is), so this is the admin screen only. Owner pass wanted.
+  (Logged 2026-07-26, partner comms S1.)

@@ -813,6 +813,35 @@ Student clicks pathway (Matric/STPM)
 
 ---
 
+## Partner-organisation comms (2026-07-26)
+
+Weekly + milestone emails to the REFERRAL organisations that run the bursary alongside us — distinct
+from sponsor comms (`sponsor_notifications.py`) and from the officer surfaces.
+
+| Module | Role |
+|---|---|
+| `apps/scholarship/partner_comms.py` | **The one seam.** Who qualifies, whose students are whose, the stage counts + fingerprint, the chase rows, the recipient, the switches, the placeholder + copy-voice guards, and `render()` (template → subject/text/html). Talks to no email code. |
+| `apps/scholarship/partner_notify.py` | The send orchestration (mirrors `sponsor_notifications.py`): `send_partner_digests` / `send_partner_milestones` / `notify_partner_assigned`. Writes `PartnerEmailLog`. |
+| `emails.send_partner_email` | Envelope only — the shared `_html_email_shell`, programme sender identity, reply-to. |
+| `partner_email_templates` | Five rows, one per kind. **`enabled` lives HERE** — a partner email is on for every qualifying organisation or off for all of them; there is no per-organisation setting. |
+| `partner_email_log` | Every attempt incl. skips; also the source of the "last sent" line AND the fingerprint the weekly skip compares against (send state has one home). |
+
+Three non-obvious rules a future reader would otherwise reverse-engineer:
+
+* **Attribution is the referral CHIP, never `referred_by_org`** — see TD-179 for why both signals exist.
+* **Recipients are `PartnerOrganisation.contact_email` only.** A `PartnerAdmin` row is never consulted:
+  the `partner`-role logins belong to the HalaTuju course selector, a different product relationship.
+* **Milestones are an hourly SWEEP, not an inline call at the transition** — the sweep re-checks current
+  status, so a reverted transition produces no email.
+
+Two independent gates: `PARTNER_COMMS_ENABLED` and each template's own `enabled`.
+
+> ⚠ The rest of this file's headline numbers (test counts, "52 debt items", "Frontend: 0 tests") date
+> from the March 2026 audit and are stale. Trust `halatuju_api/CLAUDE.md` + `docs/technical-debt.md`
+> for current state. Not rewritten here — that is its own pass, not a partner-comms change.
+
+---
+
 ## Technical Debt
 
 Tracked in `docs/technical-debt.md` — a living document with 52 items catalogued.

@@ -1,7 +1,11 @@
 # Partner-organisation comms — Roadmap (weekly + milestone emails to referral partners)
 
-**Status:** owner-approved, 2026-07-26, **revised the same day** after two owner corrections (below).
-Sprint briefs are ready for `sprint-start.md`.
+**Status: ✅ CLOSED 2026-07-26 — all three sprints shipped and live (DARK).** S1 (controls + wording),
+then S2+S3 together after the owner merged the split. Retro:
+`docs/retrospective-2026-07-26-partner-comms.md` — read that first; this file is kept for the design
+record (the owner corrections, the voice rules, the counts reconciliation) rather than as a plan.
+**Nothing sends** until the owner completes the five steps in `halatuju_api/CLAUDE.md`.
+Owner-approved 2026-07-26, revised the same day after two owner corrections (below).
 **Design of record:** <https://claude.ai/code/artifact/40bb4e5f-7335-4d88-97c4-d7a9f0399a04> (revision 2).
 Stitch was skipped deliberately; see "Why no Stitch screen".
 
