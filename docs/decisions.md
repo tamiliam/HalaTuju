@@ -5714,3 +5714,36 @@ service log shows `POST … /decision-emails/ → 200` in 66 ms.
 
 **Revisit if:** the decision-email backlog ever grows enough that a single pass approaches the attempt
 deadline — then move it to a queue, not back to a cold job.
+
+---
+
+## 2026-07-26 — Cost attribution: HalaTuju carries 100% of Supabase and ~99.7% of GCP
+
+**Owner ruling.** Both providers host more than HalaTuju, so the cost ledger needed a stated
+attribution rule before it could record a single figure.
+
+**Supabase — 100% to HalaTuju.** The Pro subscription is billed at ORGANISATION level
+("Rajula Consultancy") and covers three projects: HalaTuju, Lentera and tamilnadai. The latter
+two are **INACTIVE** (verified via the Management API: `status: INACTIVE` on both), so the
+subscription buys HalaTuju. No proportional split.
+
+**GCP — effectively all of it.** Owner stated ">99%"; **verified against the June bill** rather
+than taken on trust: HalaTuju `gen-lang-client-0871147736` = **RM88.44 of RM88.74 = 99.7%**. The
+only other project with any cost is `cci-gms` (Lentera) at RM0.30. Four further projects appear
+in the export at RM0.00.
+
+**But the sync still FILTERS by project id.** Not because the split matters today — it doesn't —
+but because *the filter is what keeps the ruling true*. Recording the whole billing account would
+mean HalaTuju's "cost" silently grows the day Lentera does, and a platform fee derived from it
+would be wrong with no visible cause. A one-line filter buys a guarantee.
+
+**Correction to the record:** `memory/gcp_cost_monitoring.md` listed MySkills, Thulivellam and
+SJKT Connect as projects "under this billing account". They do not appear in the export at all —
+they bill under their own Google identities. That table was wrong and has been fixed.
+
+**Trade-offs:** if either dormant Supabase project is ever revived, the 100% ruling silently
+over-states HalaTuju's cost. That is the safe direction (over-stating our own cost cannot
+over-charge a tenant), but it is a real assumption with an expiry date.
+
+**Revisit if:** tamilnadai or Lentera is reactivated on Supabase, or a sibling GCP project's
+share rises above ~2% — at which point the ledger needs a per-project split, not a ruling.

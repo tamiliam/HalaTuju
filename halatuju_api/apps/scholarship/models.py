@@ -2921,6 +2921,91 @@ class UsageEvent(models.Model):
         return f'{self.service}:{self.source or "-"} org={who} @ {self.created_at:%Y-%m-%d}'
 
 
+class PlatformCost(models.Model):
+    """What the PLATFORM actually cost, per month, per SKU — the cost side of billing.
+
+    Deliberately a SEPARATE ledger from ``UsageEvent``, because the two answer different
+    questions and are true at different grains:
+
+      * ``UsageEvent``  — "what did this ORGANISATION consume?"  per event, per tenant.
+      * ``PlatformCost`` — "what did the PLATFORM cost?"          per month, per SKU.
+
+    Measured 2026-07-26 against the June invoice: the meter accounts for ~RM20 of an RM88
+    bill. The rest is infrastructure whose driver is our own cron schedule and deploy pace,
+    not tenant activity. Metering it per-org would invent precision that does not exist, so
+    this ledger records the INVOICE and marks each line attributable or not, rather than
+    smearing untraceable cost across tenants.
+
+    **Every row is an invoice fact, never an estimate.** ``provenance`` is what enforces that:
+    a hand-typed Supabase figure must never be indistinguishable from a measured GCP one.
+    (Lesson: "before importing a spreadsheet as payment history, confirm the money moved".)
+
+    **Scope is the HalaTuju GCP project only.** The billing export covers the whole billing
+    account; other products live under it (Lentera cost RM0.30 in June). The owner's ruling
+    (2026-07-26) is that HalaTuju carries ~99.7% of GCP and 100% of Supabase — verified against
+    the June bill — but the sync still FILTERS by project, because the filter is what keeps
+    that ruling true if a sibling product ever grows.
+    """
+    SOURCE_CHOICES = [
+        ('gcp', 'Google Cloud Platform'),
+        ('supabase', 'Supabase'),
+        ('brevo', 'Brevo'),
+        ('twilio', 'Twilio'),
+        ('other', 'Other'),
+    ]
+    # How this row came to exist. The distinction is load-bearing: only MEASURED rows can be
+    # re-derived and re-checked; an ENTERED row is somebody's reading of a PDF and carries
+    # human error. A reconciliation that mixes them without saying so is not an audit.
+    PROVENANCE_CHOICES = [
+        ('measured', 'Measured — pulled from the provider\'s own billing data'),
+        ('entered', 'Entered by hand from an invoice'),
+    ]
+
+    period_month = models.CharField(
+        max_length=7,
+        help_text="Billing month as 'YYYY-MM'. The grain of an invoice, not of an event.")
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES)
+    service = models.CharField(
+        max_length=120, blank=True, default='',
+        help_text="Provider service, e.g. 'Cloud Run', 'Artifact Registry'.")
+    sku = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text="Provider SKU — the grain that actually explains a bill. Reading June by "
+                  "SKU is what revealed Cloud Run JOBS (RM33) outranked Artifact Registry.")
+    amount_myr = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        help_text='Cost in MYR, as invoiced. Decimal, never float — this is money.')
+    attributable = models.BooleanField(
+        default=False,
+        help_text='True when this line moves with TENANT activity (per-document OCR, AI, '
+                  'egress). False for platform-driven cost (cron compute, CI storage) — that '
+                  'belongs in a platform fee, not a metered charge.')
+    provenance = models.CharField(max_length=10, choices=PROVENANCE_CHOICES)
+    note = models.TextField(
+        blank=True, default='',
+        help_text='Anything a future reader needs in order to trust the figure — invoice '
+                  'number, what was excluded, an attribution caveat.')
+    recorded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'platform_costs'
+        ordering = ['-period_month', 'source', '-amount_myr']
+        constraints = [
+            # One row per (month, source, service, sku) — makes the sync an idempotent UPSERT
+            # rather than an append, so re-running a month corrects it instead of doubling it.
+            models.UniqueConstraint(
+                fields=['period_month', 'source', 'service', 'sku'],
+                name='platform_cost_unique_line'),
+        ]
+        indexes = [
+            models.Index(fields=['period_month', 'source'], name='platform_cost_month_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.period_month} {self.source}/{self.sku or self.service}: RM{self.amount_myr}'
+
+
 # ── Partner-organisation comms (2026-07-26) ───────────────────────────────────
 # Weekly + milestone emails to the referral organisations that run this bursary
 # alongside us. See docs/plans/2026-07-26-partner-comms-roadmap.md.
