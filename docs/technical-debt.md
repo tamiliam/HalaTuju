@@ -1367,13 +1367,22 @@ Harmless today — the column is nullable, the command is dev/e2e-only, and prod
 `cloud-run-source-deploy` (asia-southeast1) is **77,576 MB across 1,732 images** and bills
 **RM27.46/month — 31% of the June-2026 GCP total (RM89.07)**.
 
-**CORRECTION (2026-07-26, on investigation): the cleanup policy IS working.** The first entry
-claimed it "is not biting", citing images from 2026-03-14. That was a misread — 2026-03-15 is the
-**package** `createTime`, not any surviving image's. Measured, the oldest live image in every active
-package is **2026-06-26 — exactly 30 days old**. The policy is enforcing to the second, and
-`cleanupPolicyDryRun` is genuinely absent (verified against `--log-http`, not just `describe`).
+**CORRECTION (2026-07-26, on investigation): there are TWO separate things here, and the first
+entry ran them together.**
 
-Nothing is broken. The cost is **real work product retained longer than it is useful**:
+- **Active packages — the policy IS working.** The oldest live image in every package a service
+  actually deploys from is **2026-06-26, exactly 30 days old**. It enforces to the second, and
+  `cleanupPolicyDryRun` is genuinely absent (verified via `--log-http`, not just `describe`).
+  Candidate cause (a), "the policy is not executing", is **disproved**.
+- **Dead packages — cause (b) was RIGHT.** The 2026-03-14 images cited in the first entry are real
+  and do survive: `keep-most-recent-10` has no package filter, so it pins 10 images of *every*
+  package forever, including packages nothing deploys from. KEEP beats DELETE, so no age policy
+  will ever reclaim them. See Fix B.
+
+So the money splits in two: **~RM20/month is retention depth on live packages** (not a defect), and
+**~RM1/month is genuinely stuck** behind an unfiltered KEEP rule (a defect).
+
+The retention side is **real work product retained longer than it is useful**:
 
 | package | images | real (>1 MB) | GB nominal |
 |---|---|---|---|
@@ -1394,13 +1403,26 @@ config; the *deletion* it triggers is not. Safety note: at 11 builds/day, `keep-
 protects **under one day**, so the age policy — not the keep count — is what provides rollback depth.
 7 days still comfortably covers any Cloud Run revision rollback.
 
-**Fix B — delete four dead packages.** `keep-most-recent-10` has no package filter, so it pins 10
-images of every package *forever*, including ones nothing deploys from. Live services resolve to
-`halatuju/halatuju-api`, `halatuju/halatuju-web` and `tamilnadai` (verified via
-`run services describe`). Dead and pinned: old-path `halatuju-api` (10 imgs, 2.0 GB), old-path
-`halatuju-web` (10, 0.6 GB), `lentera-api`/`lentera-web` (3, 0.4 GB), `sjktconnect-api`/
-`sjktconnect-web` (3, 0.4 GB). The last two sets are **other projects' artefacts sitting in
-HalaTuju's billing project** — worth removing for attribution, not just the ~RM1/month.
+**Fix B — delete four dead packages.** These are the March survivors, pinned indefinitely by the
+unfiltered KEEP rule. Live services resolve to `halatuju/halatuju-api`, `halatuju/halatuju-web` and
+`tamilnadai` (verified via `run services describe`). Dead and pinned: old-path `halatuju-api`
+(10 imgs, 2.0 GB, newest 2026-03-18), old-path `halatuju-web` (10, 0.6 GB),
+`lentera-api`/`lentera-web` (3, 0.4 GB), `sjktconnect-api`/`sjktconnect-web` (3, 0.4 GB).
+
+**Safety — verified, not assumed** (the owner asked whether deleting these could break Lentera or
+SJKT Connect, which run under different projects *and* different Google accounts):
+1. `lentera-api`/`lentera-web` on Cloud Run pull from
+   `asia-southeast1-docker.pkg.dev/**cci-gms**/cloud-run-source-deploy/…` — their own project's
+   registry, not this one.
+2. This repo's IAM policy is **empty** (`{"etag": "ACAB"}`, zero bindings) and the project IAM
+   policy grants `artifactregistry.reader` to **no** `cci-gms` or `sjktconnect` service agent.
+   Nothing outside this project *can* pull these images; a cross-project pull would fail on
+   permissions. (SJKT Connect could not be checked directly — `admin@tamilfoundation.org` needs
+   `gcloud auth login` — so the IAM argument is what carries it.)
+
+The deploying **account** is irrelevant to where an artefact lives; these are leftovers from March,
+before each project got its own registry. Worth removing for cost attribution — a project about to
+bill tenants per-org should not hold another product's artefacts — as much as for the ~RM1/month.
 
 **Why it matters beyond the money:** the platform fee (billing §4 line 1) has to cover this floor,
 so a fee set today prices in ~RM20/month of avoidable retention. Fix BEFORE fixing the fee.
