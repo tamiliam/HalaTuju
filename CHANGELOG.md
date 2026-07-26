@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fixed — the income documents were the only cards still missing the tidy file row — 2026-07-26
+
+Small lane. Frontend only, no migration. Reported from the student Documents tab: on the mother's
+**STR document** and **salary slip**, "Replace" sat up in the card header while the filename sat
+below as bare text — where every other document showed one bordered row with the file icon, the
+link, and Replace + Remove grouped inside it.
+
+- **Root cause: a stale constant, not a styling slip.** `ScholarshipDocuments.MULTI_INSTANCE_UPLOADS`
+  = `{str, salary_slip, epf}` excluded those three from the `FileChip` treatment added on 2026-07-24.
+  That set mirrored `DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES` — **retired on 2026-06-05**,
+  when every doc type became single-instance (`_is_single_instance` returns `True` for everything; an
+  upload replaces its `(doc_type, household_member)` slot). The frontend kept believing in a backend
+  rule that had been gone seven weeks, so the tidy-rows change tidied everything *except* the two
+  cards the student was looking at. Its own commit message said those types "keep their list +
+  Add more" — and the header label actually rendered **"Replace"**, so the copy contradicted the
+  intent too.
+- **Fixed.** Deleted the set; the layout now comes from one shared rule, `docFileLayout(fileCount)`
+  in `lib/scholarship.ts` — `none` / `chip` (one file: Replace beside the file, header trigger
+  hidden) / `list`. Nothing consults the doc type, so there is nowhere for an exemption to live.
+- **Also folded `UploadedFileRow` into `FileChip`** (`onUpload` now optional → Replace-less row):
+  the multi-row case rendered a *second*, unbordered format. Both branches now share one
+  presentation, so a card holding two files looks like the rest of the tab. `list` stays reachable
+  and legitimately: during the TD-115 slot backfill an STR earner's card also shows the legacy
+  untagged copy beside the member-tagged one.
+- **Removed the unused `docs.addMore` copy** ("Add more") from en/ms/ta — the multi-file affordance
+  it labelled cannot exist under single-instance uploads, and it was already wired to nothing.
+- **+8 jest** (762) — `docFileLayout.test.ts` pins the rule *and* source-scans the component for a
+  revived `MULTI_INSTANCE` constant, so the stale-mirror class of bug fails CI rather than reaching
+  a student's screen. `next build` clean; `tsc` error count unchanged (25, all pre-existing).
+- **Left alone, deliberately:** `IncomeProofCard` still carries a third inline row format. It is the
+  `app == null` fallback, and the only caller (`ScholarshipNextSteps`) holds a non-nullable
+  `useState<ScholarshipApplication>` — so it is unreachable today. Noted for the next Documents-tab
+  pass rather than restyled blind.
+
 ## Platform programme layer P2b — a payment run pays ONE gift — 2026-07-26
 
 Sixth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. `PaymentRun` was fenced to an

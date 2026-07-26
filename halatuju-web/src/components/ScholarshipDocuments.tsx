@@ -15,6 +15,7 @@ import {
 } from '@/lib/api'
 import {
   INCOME_PROOF_TYPES,
+  docFileLayout,
   formatFileSize,
   formatNric,
 } from '@/lib/scholarship'
@@ -44,44 +45,6 @@ function docKey(docType: string, member = ''): string {
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────
-
-function UploadedFileRow({
-  doc,
-  onDelete,
-  t,
-}: {
-  doc: ApplicantDocument
-  onDelete: (id: number) => void
-  t: (key: string) => string
-}) {
-  return (
-    <li className="flex items-center justify-between text-sm text-gray-600">
-      <span className="truncate">
-        {doc.download_url ? (
-          <a
-            href={doc.download_url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary-600 hover:underline"
-          >
-            {doc.original_filename || doc.doc_type}
-          </a>
-        ) : (
-          doc.original_filename || doc.doc_type
-        )}
-        {doc.size ? (
-          <span className="text-gray-400"> · {formatFileSize(doc.size)}</span>
-        ) : null}
-      </span>
-      <button
-        onClick={() => onDelete(doc.id)}
-        className="text-red-500 hover:underline ml-2 shrink-0"
-      >
-        {t('scholarship.docs.remove')}
-      </button>
-    </li>
-  )
-}
 
 // Accept images + PDF only (mirrors the API allowlist; the file picker's `accept`
 // is just a hint, so re-check here). Rejects video/other junk (TD-080).
@@ -127,13 +90,10 @@ function UploadTrigger({
   )
 }
 
-// Doc types that keep MULTIPLE files (a household may have several); everything else is a
-// single replaceable file. A single-file card shows the tidy one-row FileChip below.
-const MULTI_INSTANCE_UPLOADS = new Set(['str', 'salary_slip', 'epf'])
-
-// A single uploaded file as one tidy bordered row: name + size on the left, Replace and
-// Remove grouped on the right — so the two actions line up instead of stacking on separate
-// lines. Used for single-instance docs; multi-file lists keep the plain rows.
+// An uploaded file as one tidy bordered row: icon + name + size on the left, the actions
+// grouped on the right so they line up instead of stacking on separate lines. THE one file
+// presentation for every document card — `onUpload` omitted (a card holding more than one
+// file) simply drops Replace, so the rows still look the same.
 function FileChip({
   doc,
   docType,
@@ -145,12 +105,12 @@ function FileChip({
   doc: ApplicantDocument
   docType: string
   busy: boolean
-  onUpload: (docType: string, file: File) => void
+  onUpload?: (docType: string, file: File) => void
   onDelete: (id: number) => void
   t: (key: string) => string
 }) {
   return (
-    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-2.5">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-2.5">
       <span className="flex min-w-0 items-center gap-2 text-sm text-gray-600">
         <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-primary-500" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
@@ -168,8 +128,10 @@ function FileChip({
         </span>
       </span>
       <span className="flex shrink-0 items-center gap-4">
-        <UploadTrigger docType={docType} busy={busy} onUpload={onUpload}
-          label={busy ? t('scholarship.docs.uploading') : t('scholarship.docs.replace')} />
+        {onUpload && (
+          <UploadTrigger docType={docType} busy={busy} onUpload={onUpload}
+            label={busy ? t('scholarship.docs.uploading') : t('scholarship.docs.replace')} />
+        )}
         <button onClick={() => onDelete(doc.id)} className="text-sm text-red-500 hover:underline">
           {t('scholarship.docs.remove')}
         </button>
@@ -937,9 +899,10 @@ function SingleDocCard({
   // full card so the "Uploading…" state is visible), and never for income-cluster docs.
   const doneDoc = docType === 'ic' ? (visionDoc ?? existing[0]) : existing[0]
   const done = !suppressCoach && existing.length > 0 && !busy && docDone(docType, doneDoc)
-  // One replaceable file → the tidy FileChip (Replace + Remove grouped on the right); a
-  // multi-file type (str / salary / EPF) keeps the plain list with an "Add more" trigger.
-  const singleFile = existing.length === 1 && !MULTI_INSTANCE_UPLOADS.has(docType)
+  // One file → the tidy chip with Replace + Remove inside it; more than one (an STR earner's
+  // legacy untagged copy beside the tagged one) → the list, Replace back in the header. No doc
+  // type is exempt — see `docFileLayout`.
+  const layout = docFileLayout(existing.length)
 
   const title = (
     <>
@@ -948,13 +911,17 @@ function SingleDocCard({
     </>
   )
 
-  // The uploaded file(s): one tidy row for a single-instance doc, else the plain list.
-  const fileBlock = singleFile ? (
-    <FileChip doc={existing[0]} docType={docType} busy={busy} onUpload={onPick} onDelete={onDelete} t={t} />
-  ) : existing.length > 0 ? (
+  // The uploaded file(s) — the same bordered row either way; only Replace's home differs.
+  const fileBlock = layout === 'chip' ? (
+    <div className="mt-2">
+      <FileChip doc={existing[0]} docType={docType} busy={busy} onUpload={onPick} onDelete={onDelete} t={t} />
+    </div>
+  ) : layout === 'list' ? (
     <ul className="mt-2 space-y-1">
       {existing.map((d) => (
-        <UploadedFileRow key={d.id} doc={d} onDelete={onDelete} t={t} />
+        <li key={d.id}>
+          <FileChip doc={d} docType={docType} busy={busy} onDelete={onDelete} t={t} />
+        </li>
       ))}
     </ul>
   ) : null
@@ -1045,10 +1012,10 @@ function SingleDocCard({
             {helpOverride ?? t(`scholarship.docs.help.${docType}`)}
           </p>
         </div>
-        {/* When there's a single file, Replace lives in the FileChip below (grouped with
-            Remove); the header trigger shows only to CHOOSE a first file or ADD to a
-            multi-file list. */}
-        {!singleFile && (
+        {/* With one file, Replace lives in the chip below (beside the file it replaces); the
+            header trigger shows only to CHOOSE a first file, or to replace when the card
+            happens to hold more than one and no single row owns the action. */}
+        {layout !== 'chip' && (
           <UploadTrigger
             docType={docType}
             busy={busy}

@@ -1030,6 +1030,31 @@ export const COMPULSORY_DOC_TYPES = ['ic', 'results_slip'] as const
 export const INCOME_PROOF_TYPES = ['str', 'salary_slip', 'epf'] as const
 
 /**
+ * How a document card presents the file(s) it holds:
+ * - `none` — nothing uploaded yet; the card's header carries the "Choose file" trigger.
+ * - `chip` — ONE file: the tidy bordered row with Replace + Remove grouped inside it, and
+ *   NO trigger in the header (it would put Replace far from the file it replaces).
+ * - `list` — two or more: the plain list, Replace stays in the header.
+ *
+ * **No doc type is exempt.** Every type is single-instance: since 2026-06-05 an upload
+ * REPLACES whatever sits in the `(doc_type, household_member)` slot — the backend's
+ * `DocumentListCreateView._is_single_instance` returns True for everything. A per-type
+ * exemption list for `str` / `salary_slip` / `epf` survived here until 2026-07-26, mirroring
+ * a backend rule that had already been retired seven weeks earlier; the result was that the
+ * mother's STR and salary-slip cards alone kept a header "Replace" sitting away from a bare
+ * unbordered filename, while every other document had the tidy chip. Do not reintroduce one.
+ *
+ * `list` is still reachable, and legitimately: during the TD-115 slot backfill an STR earner's
+ * card also shows the legacy untagged copy beside the member-tagged one.
+ */
+export type DocFileLayout = 'none' | 'chip' | 'list'
+
+export function docFileLayout(fileCount: number): DocFileLayout {
+  if (fileCount <= 0) return 'none'
+  return fileCount === 1 ? 'chip' : 'list'
+}
+
+/**
  * S17 — additional documents only relevant when the applicant is a minor:
  * - `parent_ic` is COMPULSORY for any minor (the parent/guardian's IC).
  * - `guardianship_letter` is COMPULSORY when the consenting adult is NOT the
