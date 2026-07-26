@@ -1415,6 +1415,13 @@ class AdminApplicationWitnessView(_SourcesBase):
                                 status=status.HTTP_400_BAD_REQUEST)
             app.witness_org = org
         app.save(update_fields=['witness_org'])
+        # Partner comms (2026-07-26): tell the organisation a student has joined its bursary
+        # students. Inline — an explicit admin action with nothing to revert — and fully
+        # best-effort, so an email problem can never fail the assignment. A CLEARED witness
+        # (None) emails nobody; a reassignment emails the NEW organisation only.
+        if app.witness_org is not None:
+            from . import partner_notify
+            partner_notify.notify_partner_assigned(app, app.witness_org)
         return Response({
             'id': app.id,
             'witness_org': app.witness_org.code if app.witness_org else None,

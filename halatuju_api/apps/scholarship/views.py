@@ -1836,6 +1836,8 @@ class CronRunView(APIView):
         'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
         'backfill-reporting-dates': 'backfill_reporting_dates',  # one-off: normalise offer reporting dates into the column (S3)
         'seed-partner-emails': 'seed_partner_email_templates',  # one-off/idempotent: create the five partner-email templates (all OFF)
+        'partner-digests': 'send_partner_digests',  # weekly (Mon 08:00 MYT): partner stage summary + chase list
+        'partner-milestones': 'send_partner_milestones',  # hourly: awaiting-review + awarded, batched per organisation
     }
 
     def post(self, request, job):

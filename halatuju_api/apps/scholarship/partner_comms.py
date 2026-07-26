@@ -38,8 +38,10 @@ Import direction: models + branding only. No view, no command, no email module i
 """
 import hashlib
 import re
+from html import escape as html_escape
 
 from django.conf import settings
+from django.utils import timezone
 from django.db.models import Count, Max, Q
 
 from .models import ApplicantDocument, PartnerEmailTemplate, ScholarshipApplication
@@ -300,3 +302,194 @@ def milestone_queryset(kind):
             partner_awarded_notified_at__isnull=True,
         )
     raise ValueError(f'not a milestone kind: {kind}')
+
+
+# ── rendering: a stored template becomes a subject + text + HTML ──────────────
+
+# The count lines, in email order, with their English labels. v1 is English-only (as every existing
+# staff/partner email is), so these live here rather than in the i18n catalogues; a per-org language
+# column is the obvious later extension.
+STAGE_LABELS = (
+    ('not_shortlisted', 'Not yet shortlisted'),
+    ('shortlisted', 'Shortlisted — application incomplete'),
+    ('awaiting_review', 'Awaiting review'),
+    ('under_review', 'Under review'),
+    ('awarded', 'Awarded'),
+    ('rejected', 'Rejected'),
+    ('closed', 'Closed or lapsed'),
+)
+
+TOTAL_LABEL = 'Bursary students in total'
+
+# What the chase table's second date actually measures, stated IN the email so the figure cannot be
+# over-read. Deliberately not a template token: it explains the table and must not be editable away
+# from it.
+CHASE_FOOTNOTE = (
+    'Last activity is the date of the student’s most recent document upload — the one '
+    'action of theirs we timestamp. Dates more than a fortnight old are marked.'
+)
+
+# Greeting fallback when an organisation has given us no contact person. "Dear ," would be worse.
+NO_CONTACT_GREETING = 'colleagues'
+
+_MONTHS = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+
+
+def fmt_date(value):
+    """`12 Jun 2026`. British, hand-formatted (never locale-dependent); '' for None."""
+    if not value:
+        return ''
+    return f'{value.day} {_MONTHS[value.month - 1]} {value.year}'
+
+
+def _esc(value):
+    """HTML-escape an interpolated value. Names and organisation names come from the database, so
+    escaping means a stray `<` in a name can never break a partner's email."""
+    return html_escape('' if value is None else str(value), quote=True)
+
+
+def _counts_blocks(counts):
+    """The stage table as `(html, text)` — lines in `STAGE_LABELS` order, then the total."""
+    cell = 'padding:5px 0;border-top:1px solid #f3f4f6;'
+    rows = ''.join(
+        '<tr><td style="' + cell + '">' + _esc(label) + '</td>'
+        '<td style="' + cell + 'text-align:right;font-weight:600;">'
+        + _esc(counts.get(key, 0)) + '</td></tr>'
+        for key, label in STAGE_LABELS
+    )
+    tcell = 'padding:5px 0;border-top:1px solid #e5e7eb;font-weight:600;'
+    total = ('<tr><td style="' + tcell + '">' + _esc(TOTAL_LABEL) + '</td>'
+             '<td style="' + tcell + 'text-align:right;">'
+             + _esc(counts.get('total', 0)) + '</td></tr>')
+    html = ('<table role="presentation" style="width:100%;border-collapse:collapse;'
+            'font-size:13px;margin:0 0 12px;">' + rows + total + '</table>')
+    labels = [label for _, label in STAGE_LABELS] + [TOTAL_LABEL]
+    width = max(len(label) for label in labels)
+    lines = [f'{label.ljust(width)}  {counts.get(key, 0)}' for key, label in STAGE_LABELS]
+    lines.append(f'{TOTAL_LABEL.ljust(width)}  {counts.get("total", 0)}')
+    return html, '\n'.join(lines)
+
+
+def _chase_blocks(rows, today=None):
+    """The chase table as `(html, text)`: Student · Applied · Last activity, both plain dates.
+
+    Capped at `MAX_CHASE_ROWS` with an explicit note — a silent truncation would read as "that is
+    everyone". A last-activity date older than `STALE_DAYS` is marked, so the reader can see whom to
+    ring first without reading every row.
+    """
+    today = today or timezone.localdate()
+    shown, dropped = list(rows[:MAX_CHASE_ROWS]), max(0, len(rows) - MAX_CHASE_ROWS)
+    th = ('font-size:11px;font-weight:600;color:#6b7280;padding:6px 8px 6px 0;'
+          'border-bottom:1px solid #e5e7eb;')
+    body, text_rows = [], []
+    for name, applied, activity in shown:
+        stale = bool(activity and (today - activity).days > STALE_DAYS)
+        cell = 'padding:5px 8px 5px 0;border-bottom:1px solid #f3f4f6;'
+        date_cell = cell + 'text-align:right;white-space:nowrap;'
+        last_cell = date_cell + ('color:#b45309;font-weight:600;' if stale else 'color:#6b7280;')
+        body.append(
+            '<tr><td style="' + cell + '">' + _esc(name) + '</td>'
+            '<td style="' + date_cell + 'color:#6b7280;">' + _esc(fmt_date(applied)) + '</td>'
+            '<td style="' + last_cell + '">' + _esc(fmt_date(activity)) + '</td></tr>'
+        )
+        text_rows.append(
+            f'{name}  —  applied {fmt_date(applied)}, '
+            f'last activity {fmt_date(activity)}{" *" if stale else ""}'
+        )
+    html = ('<table role="presentation" style="width:100%;border-collapse:collapse;'
+            'font-size:12.5px;margin:0 0 10px;">'
+            '<tr><th style="' + th + 'text-align:left;">Student</th>'
+            '<th style="' + th + 'text-align:right;">Applied</th>'
+            '<th style="' + th + 'text-align:right;">Last activity</th></tr>'
+            + ''.join(body) + '</table>')
+    text = '\n'.join(text_rows)
+    if dropped:
+        more = f'… and {dropped} more, not listed here.'
+        html += ('<p style="margin:0 0 10px;font-size:12.5px;color:#6b7280;">'
+                 + _esc(more) + '</p>')
+        text += '\n' + more
+    html += ('<p style="margin:0 0 12px;font-size:11.5px;color:#9ca3af;">'
+             + _esc(CHASE_FOOTNOTE) + '</p>')
+    text += '\n\n' + CHASE_FOOTNOTE
+    return html, text
+
+
+def _list_blocks(names):
+    """A plain student list as `(html, text)`."""
+    items = ''.join('<li style="margin-bottom:3px;">' + _esc(n) + '</li>' for n in names)
+    return ('<ul style="margin:0 0 12px;padding-left:22px;">' + items + '</ul>',
+            '\n'.join('- ' + str(n) for n in names))
+
+
+def _blocks_for(context):
+    """`{token: (html, text)}` for the structural tokens this context supplies."""
+    out = {}
+    if 'counts' in context:
+        out['counts_table'] = _counts_blocks(context['counts'])
+    if 'rows' in context:
+        out['student_table'] = _chase_blocks(context['rows'], context.get('today'))
+    if 'names' in context:
+        out['student_list'] = _list_blocks(context['names'])
+    return out
+
+
+def _scalars(context):
+    """`{token: value}` for the plain tokens, with branding + the greeting fallback filled in."""
+    from . import branding
+    platform = branding.platform()
+    contact = (context.get('contact_person') or '').strip() or NO_CONTACT_GREETING
+    return {
+        'org_name': context.get('org_name', ''),
+        'contact_person': contact,
+        'programme_name': context.get('programme_name') or platform.programme_name('en'),
+        'team_signoff': context.get('team_signoff') or platform.team_signoff('en'),
+        'count': context.get('count', ''),
+        'student_name': context.get('student_name', ''),
+    }
+
+
+def _fill(text, scalars, escape):
+    """Substitute the scalar tokens. The template text is escaped by the caller BEFORE this runs
+    (a `{token}` survives escaping), so `escape` here applies to the VALUES."""
+    out = text
+    for token, value in scalars.items():
+        out = out.replace('{' + token + '}', _esc(value) if escape else str(value))
+    return out
+
+
+def render(kind, template, context):
+    """A stored template + one organisation's data → `(subject, text_body, html_body)`.
+
+    `html_body` is the INNER html; the caller wraps it in the shared email shell, which is why this
+    module still imports no email code.
+
+    The body splits on blank lines. A block that is exactly a structural token
+    (`{counts_table}` / `{student_table}` / `{student_list}`) becomes that table or list; every
+    other block becomes a paragraph, with single newlines inside it kept as line breaks.
+
+    A structural token in the SUBJECT is flattened to a one-line summary rather than rendered or
+    left raw — a partner must never receive a subject reading `{counts_table}`.
+    """
+    scalars = _scalars(context)
+    blocks = _blocks_for(context)
+
+    subject = _fill(template.subject, scalars, escape=False)
+    for token, (_, text_form) in blocks.items():
+        subject = subject.replace('{' + token + '}', ' '.join(text_form.split())[:120])
+
+    html_parts, text_parts = [], []
+    for raw in re.split(r'\n\s*\n', template.body or ''):
+        block = raw.strip()
+        if not block:
+            continue
+        token = block[1:-1] if block.startswith('{') and block.endswith('}') else ''
+        if token in blocks:
+            html_form, text_form = blocks[token]
+            html_parts.append(html_form)
+            text_parts.append(text_form)
+            continue
+        text_parts.append(_fill(block, scalars, escape=False))
+        safe = _fill(html_escape(block, quote=False), scalars, escape=True)
+        html_parts.append('<p style="margin:0 0 14px;">' + safe.replace('\n', '<br>') + '</p>')
+
+    return subject, '\n\n'.join(text_parts), ''.join(html_parts)

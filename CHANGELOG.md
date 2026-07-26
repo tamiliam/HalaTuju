@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file.
 
+## Partner comms S2+S3 — the five emails can now actually be sent — 2026-07-26
+
+Sprints 2 and 3 of `docs/plans/2026-07-26-partner-comms-roadmap.md`, done in one pass at the owner's
+direction after they challenged the split: *"Have we not built all 5 emails including the weekly
+ones?"* — a fair catch. S1 shipped the wording and the switches; **nothing could render or send.**
+Now it can. **Still dark**: `PARTNER_COMMS_ENABLED` is unset, all five templates are off, and no
+Cloud Scheduler job exists yet. NO migration (S1's `0128` already covers it).
+
+### Added
+- **`partner_comms.render(kind, template, context)`** — a stored template becomes
+  `(subject, text, html)`. The body splits on blank lines; a block that is exactly a structural
+  token becomes that table or list, everything else becomes a paragraph. `{counts_table}` renders
+  the reconciled stage table, `{student_table}` the chase table (Student · Applied · Last activity,
+  both plain dates, a date over a fortnight old marked), `{student_list}` a plain list. Values are
+  HTML-escaped, so a `<` in a student's name cannot break a partner's email.
+- **`emails.send_partner_email`** — the envelope only: the existing `_html_email_shell` (so a
+  partner email looks like every other HalaTuju email and stays inside the branding guard), the
+  programme's own sender identity, and a working reply-to. **HTML primary with a plain-text
+  alternative carrying the same information**, including the chase table as aligned text.
+- **`partner_notify.py`** — the send orchestration, mirroring `sponsor_notifications.py`:
+  `send_partner_digests()`, `send_partner_milestones()`, `notify_partner_assigned()`.
+- **Two commands + two cron slugs**: `send_partner_digests` (`partner-digests`, weekly Mon 08:00
+  MYT) and `send_partner_milestones` (`partner-milestones`, hourly). Both take `--dry-run`, which
+  prints recipient, subject and the full plain-text body and sends nothing.
+- **The assignment email fires inline** in `AdminApplicationWitnessView.patch` — an explicit admin
+  action with nothing to revert. Wrapped so an email problem can never fail the assignment.
+
+### The four rules that hold everywhere in the sender
+Each is a way this would otherwise fail *quietly*:
+- **Every attempt is logged, including a skip** — `no_recipient` / `unchanged` / `nobody_waiting` /
+  `no_students` / `send_failed` all leave a row, so silence is visible rather than
+  indistinguishable from success.
+- **A repeated identical skip is logged once.** An hourly sweep would otherwise write the same
+  `no_recipient` row 24 times a day per organisation and drown the useful signal.
+- **A milestone is stamped only on a SUCCESSFUL send.** An unreachable organisation keeps its
+  students unstamped, so they are told once an address exists — asserted by a test that adds the
+  address and watches the backlog arrive. A failed send also leaves them unstamped, to be retried.
+- **Both switches are checked**, and nothing raises into a caller.
+
+### The quiet-week rule, split deliberately
+- `weekly_summary` **skips** when the counts are identical to the last successful send — an
+  unchanged scoreboard is not news, and identical emails train a reader to ignore them.
+- `shortlisted_followup` skips **only when nobody is waiting**. An unchanged list of stragglers is
+  exactly who needs chasing, so it goes out again. Pinned by a test asserting the summary goes
+  quiet and the chase list does not, on the same unchanged week.
+
+### Also
+- `last_fingerprint` reads only `ok=True` rows, so **one failed send cannot silence an organisation
+  permanently** as "unchanged" — tested.
+- A milestone backlog is capped at 20 students per email and the rest follow next sweep; the chase
+  table caps at 50 rows and **says what it dropped** (silent truncation reads as "that is everyone").
+- A structural token accidentally placed in a SUBJECT is flattened to a one-line summary — a partner
+  never receives a subject reading `{counts_table}`.
+- House-org and self-referred students are never the subject of a partner email, and never stamped.
+- **+52 pytest (3536)**; `makemigrations --check` clean. No FE change — the card's "last sent" line
+  already reads the log.
+- **▶ AT DEPLOY:** push. **▶ THEN, owner-gated:** collect partner addresses, read a `--dry-run`,
+  flip `PARTNER_COMMS_ENABLED=1`, switch on the templates you want, and create the two Cloud
+  Scheduler jobs. Nothing sends until all of that is done.
+
 ## Partner comms S1 — an org_admin decides what partner organisations hear — 2026-07-26
 
 Sprint 1 of `docs/plans/2026-07-26-partner-comms-roadmap.md`. **Ships DARK** — two independent

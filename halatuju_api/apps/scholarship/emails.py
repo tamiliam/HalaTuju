@@ -1229,6 +1229,26 @@ def send_witness_pending_email(to_email, *, contact_person='', applicant_name=''
     )
 
 
+def send_partner_email(to_email, *, subject, text_body, html_body):
+    """Send ONE already-rendered partner-organisation email (2026-07-26).
+
+    The subject/text/html come from `partner_comms.render`, which owns the wording; this function
+    owns only the envelope — the shared HTML shell (so a partner email looks like every other
+    HalaTuju email and stays inside the branding guard), the programme's own sender identity, and
+    a reply-to that works, since there is no bursary partner console to send anyone to.
+
+    HTML is the primary part with a plain-text alternative carrying the same information (owner:
+    HTML by default, 2026-07-26). Best-effort → bool, like every other sender here.
+    """
+    if not to_email:
+        return False
+    return _send_html(
+        to_email, subject, text_body, _html_email_shell(html_body),
+        from_email=_P.email_from,
+        reply_to=[_P.email_support],
+    )
+
+
 def send_countersign_pending_email(to_email, *, applicant_name='', link=''):
     """Internal (English) nudge to the Foundation officer / super admins: a bursary agreement
     is awaiting the Foundation's COUNTERSIGNATURE (the binding, final signature that activates

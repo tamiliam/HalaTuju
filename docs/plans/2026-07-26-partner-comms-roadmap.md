@@ -271,7 +271,19 @@ en/ms/ta; `tests/test_partner_comms.py`; `lib/__tests__/partnerComms.test.ts`.
 
 **Complexity:** medium (~22 files). **Blockers:** none.
 
-### S2 — The two weekly emails
+### ✅ S2 + S3 — SHIPPED TOGETHER 2026-07-26 (owner merged the split)
+
+The owner challenged the boundary — *"What is this sprint 2? Have we not built all 5 emails
+including the weekly ones?"* — and they were right that S1's status read as more than it was: the
+five templates existed, and nothing could render or send. S2 and S3 were done in one pass (~20
+files). The split had earned its keep (the counts reconciliation and the `updated_at` trap were both
+caught with nothing live), but it had no further value once the model was settled.
+
+Delivered: `partner_comms.render`, `emails.send_partner_email`, `partner_notify.py`, both commands +
+cron slugs, the inline assignment email, +52 tests. Still dark. Retro
+`docs/retrospective-2026-07-26-partner-comms.md`.
+
+### S2 — The two weekly emails (as scoped)
 
 **Goal:** Monday emails a partner would welcome, provably not duplicated.
 
