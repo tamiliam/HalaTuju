@@ -306,15 +306,25 @@ def eligibility(application, payment_date, period_month=None):
     }
 
 
-def eligible_rows(organisation, payment_date, period_month=None):
-    """The single choke-point (D5) for a run's candidate students, org-fenced (D4-1).
+def eligible_rows(organisation, payment_date, period_month=None, programme=None):
+    """The single choke-point (D5) for a run's candidate students, org-fenced (D4-1) and — since
+    P2b — narrowed to ONE programme.
+
     Returns a list of ``{application, eligible, reasons, remaining, vircle_ready}`` for every
     org application that is payable-status (D4-2) AND has started (D4-3). Rows failing 4–6 (or
     already paid for ``period_month``) come back with ``eligible=False`` + reasons (shown
-    greyed-out); status/not-started are excluded entirely."""
+    greyed-out); status/not-started are excluded entirely.
+
+    ``programme`` narrows ALONGSIDE the org filter, never instead of it: the organisation stays
+    the security fence and the programme is a restriction inside it. It is optional here (the
+    funding-summary style caller wants the whole org) but REQUIRED by ``create_run`` — a run that
+    silently spanned two gifts would pay one benefactor's students from another's money.
+    """
     qs = (ScholarshipApplication.objects
           .filter(owning_organisation=organisation, status__in=PAYABLE_STATUSES)
           .select_related('cohort', 'profile').order_by('id'))
+    if programme is not None:
+        qs = qs.filter(programme=programme)
     rows = []
     for app in qs:
         elig = eligibility(app, payment_date, period_month=period_month)
@@ -367,11 +377,25 @@ def _next_reference(payment_date):
 
 
 @transaction.atomic
-def create_run(organisation, payment_date, period_month, by_email=''):
-    """Create a DRAFT run for ``organisation`` on ``payment_date`` paying for ``period_month``
-    (any day of the covered month; stored normalised to the 1st) — D4/D6. Rejects a past date
-    (``past_date``). Snapshots one PaymentRunItem per ELIGIBLE student. Greyed-out students (incl.
-    those already paid for ``period_month``) are NOT items — they surface on the detail view."""
+def create_run(organisation, programme, payment_date, period_month, by_email=''):
+    """Create a DRAFT run for ``organisation``'s ``programme`` on ``payment_date`` paying for
+    ``period_month`` (any day of the covered month; stored normalised to the 1st) — D4/D6.
+    Rejects a past date (``past_date``). Snapshots one PaymentRunItem per ELIGIBLE student.
+    Greyed-out students (incl. those already paid for ``period_month``) are NOT items — they
+    surface on the detail view.
+
+    **``programme`` is REQUIRED and positional — no default** (P2b). The same discipline P2a
+    applied to `sponsor_balance`: a defaulted-or-derived programme is exactly the shape of the
+    PF-1 routing bug, where a lookup that assumed one tenant silently picked the wrong one. Here
+    the operator states which gift they are paying from, and forgetting it is a `TypeError` at
+    the call site rather than a run that quietly spans two funds.
+
+    It must belong to ``organisation`` (`programme_not_in_org`) — the org stays the fence.
+    """
+    if programme is None:
+        raise PaymentsError('programme_required')
+    if programme.organisation_id != organisation.id:
+        raise PaymentsError('programme_not_in_org')
     if payment_date < timezone.localdate():
         raise PaymentsError('past_date')
     pm = period_month.replace(day=1)
@@ -381,11 +405,12 @@ def create_run(organisation, payment_date, period_month, by_email=''):
     if payment_date < earliest_payment_date(pm):
         raise PaymentsError('too_early')
     run = PaymentRun.objects.create(
-        organisation=organisation, payment_date=payment_date, period_month=pm,
+        organisation=organisation, programme=programme,
+        payment_date=payment_date, period_month=pm,
         reference=_next_reference(payment_date),
         created_by=(by_email or '')[:254],
     )
-    for erow in eligible_rows(organisation, payment_date, period_month=pm):
+    for erow in eligible_rows(organisation, payment_date, period_month=pm, programme=programme):
         if not erow['eligible']:
             continue
         app = erow['application']

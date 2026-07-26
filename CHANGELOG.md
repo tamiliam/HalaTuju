@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform programme layer P2b — a payment run pays ONE gift — 2026-07-26
+
+Sixth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. `PaymentRun` was fenced to an
+**organisation** only. The moment BrightPath runs a second programme, one run would have drawn from
+both — paying one benefactor's students out of another's money, and making per-programme
+reconciliation impossible. Payments is the **live payout path** (prod holds an open draft run of 30
+items), so this was built additive-then-read with the "nothing moves" invariant tested, not assumed.
+
+### Added
+- **`PaymentRun.programme`** (migration `0126`, additive + nullable) and a backfill (`0127`) that
+  derives each existing run's gift **from the students already in it** — asserting nothing new.
+- **`programme` on the funding summary** (owner decision) — finance reconciles per gift. A column,
+  not a grouping: grouping is a layout change to a live finance screen and owes a design pass.
+- **`test_payment_programme.py`** (18 tests) — the narrowing, the org fence holding above it, the
+  skipped-list channel, and the backfill invariant expressed as behaviour.
+
+### Changed
+- **`create_run(organisation, programme, …)` — programme REQUIRED and positional, no default.**
+  The P2a discipline applied to runs: a default would compile, pass every pre-P2b test, and
+  silently pay across gifts. Forgetting it is a `TypeError` at the call site.
+- **`eligible_rows(…, programme=None)`** narrows ALONGSIDE the org filter, never instead of it —
+  the organisation stays the security fence, the programme is a restriction inside it.
+- **The create endpoint takes `programme_id`**, re-fenced on the caller's own organisation
+  (another tenant's programme is **404**, not 403). Omitted + the org runs one programme → that
+  one; omitted + more than one → `programme_required`, never a silent pick.
+- **The run detail's "skipped this run" list narrows too** — found by enumerating channels rather
+  than by a test. Narrowing the ITEMS is not narrowing the RUN: without this, a student of another
+  gift (never a candidate) would have read as "skipped by this run". A legacy run with no
+  programme keeps the pre-P2b whole-org view.
+
+### Notes
+- **4696 pytest** (from 4678), 0 failed. `makemigrations --check` clean. No frontend change.
+- Investigation resolved two questions the plan raised: run **references already disambiguate**
+  (`_next_reference` appends `-02`), so the scheme is untouched; and **per-programme payment rates
+  are already expressible** through the contract template's `monthly_amount`.
+- **⚠ Migrations `0126`+`0127` are migrate-first.** Post-check: every run with items has a
+  programme, no run disagrees with its own students, and `PR-2026-08-01` still has 30 items.
+
 ## Sponsor-sharing consent `2026-draft-7` — what a sponsor sees DURING sponsorship — 2026-07-26
 
 **LIVE** (api `…00873-74c` + web `…00724-k7c`, commit `5753e935`). No migration. Text + one constant.

@@ -32,7 +32,28 @@ def _make_org(code='pay-bp', name='BrightPath'):
 
 
 def _make_cohort(org, code='pay-c', year=2026):
-    return ScholarshipCohort.objects.create(code=code, name='B40', year=year, owning_organisation=org)
+    """A cohort UNDER A PROGRAMME (P2b). The programme is created here rather than in each test
+    class because `application.programme` derives from the cohort in `save()` (P1a) — so giving
+    the cohort a gift is what gives every student in it one, and `create_run` now requires it."""
+    from apps.scholarship.models import Programme
+    programme, _ = Programme.objects.get_or_create(
+        organisation=org, code=f'{org.code}-prog',
+        defaults={'name_en': f'{org.name} Bursary'})
+    return ScholarshipCohort.objects.create(
+        code=code, name='B40', year=year, owning_organisation=org, programme=programme)
+
+
+def _programme_of(org):
+    from apps.scholarship.models import Programme
+    return Programme.objects.filter(organisation=org).first()
+
+
+def _run(org, *args, **kwargs):
+    """`payments.create_run` with the org's own programme filled in. P2b made `programme`
+    required and positional (no default) — see the docstring there for why deriving it in
+    PRODUCTION would be wrong. Deriving it in a TEST fixture is fine: the fixture is the
+    operator, and every test org here runs exactly one gift."""
+    return payments.create_run(org, _programme_of(org), *args, **kwargs)
 
 
 _SEQ = {'n': 0}
@@ -237,14 +258,14 @@ class TestPeriodDedup(TestCase):
         fresh = _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
         self._completed_run(paid, date(2026, 7, 1))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 10)):
-            run = payments.create_run(self.org, date(2026, 7, 17), date(2026, 7, 1), by_email='m@x.com')
+            run = _run(self.org, date(2026, 7, 17), date(2026, 7, 1), by_email='m@x.com')
         ids = set(run.items.values_list('application_id', flat=True))
         self.assertIn(fresh.id, ids)
         self.assertNotIn(paid.id, ids)
 
     def test_reference_carries_the_pay_date(self):
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 10)):
-            run = payments.create_run(self.org, date(2026, 7, 17), date(2026, 7, 20), by_email='m@x.com')
+            run = _run(self.org, date(2026, 7, 17), date(2026, 7, 20), by_email='m@x.com')
         self.assertEqual(run.reference, 'PR-2026-07-17')
         self.assertEqual(run.period_month, date(2026, 7, 1))   # normalised to the 1st
 
@@ -297,12 +318,12 @@ class TestRunLifecycle(TestCase):
 
     def _create(self, pay_date=date(2026, 8, 1)):
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            return payments.create_run(self.org, pay_date, pay_date.replace(day=1), by_email='maker@x.com')
+            return _run(self.org, pay_date, pay_date.replace(day=1), by_email='maker@x.com')
 
     def test_past_date_rejected(self):
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 8, 5)):
             with self.assertRaises(payments.PaymentsError) as cm:
-                payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1))
+                _run(self.org, date(2026, 8, 1), date(2026, 8, 1))
         self.assertEqual(cm.exception.code, 'past_date')
 
     def test_create_run_items_only_for_eligible(self):
@@ -378,7 +399,7 @@ class TestSignOff(TestCase):
     def _run(self):
         _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            return payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
+            return _run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
 
     def test_maker_sign_notifies_org_admin(self):
         from django.core import mail
@@ -494,7 +515,7 @@ class TestComplete(TestCase):
 
     def _complete_run(self):
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            run = payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
+            run = _run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
         payments.sign(run, self.maker, 'Maker One')
         payments.sign(run, self.approver, 'Approver One')
         run.refresh_from_db()
@@ -528,7 +549,7 @@ class TestComplete(TestCase):
     def test_excluded_item_produces_no_disbursement(self):
         app = _make_app(self.cohort, self.org, award='2000', reporting=date(2026, 6, 1))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            run = payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
+            run = _run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
         payments.set_item(run.items.get(application=app), included=False, exclude_reason='break')
         payments.sign(run, self.maker, 'Maker One')
         payments.sign(run, self.approver, 'Approver One')
@@ -648,7 +669,7 @@ class TestBackfillImport(TestCase):
         EXCLUDES PISMP (September floor, owner 2026-07-16)."""
         self._run_cmd()
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            run = payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
+            run = _run(self.org, date(2026, 8, 1), date(2026, 8, 1), by_email='maker@x.com')
         by_app = {it.application_id: it.amount for it in run.items.all()}
         payable = [s for s in self.specs if s['pathway'] != 'pismp']   # PISMP not paid until September
         self.assertEqual(len(by_app), len(payable))   # 27 (the 3 PISMP excluded)
@@ -706,7 +727,7 @@ class TestBackAndAdvancePay(TestCase):
         # past_date guard fires first once the real date passes the literals (broke 2026-07-25).
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
             with self.assertRaises(payments.PaymentsError) as ctx:
-                payments.create_run(self.org, date(2026, 7, 24), self.AUG)
+                _run(self.org, date(2026, 7, 24), self.AUG)
         self.assertEqual(ctx.exception.code, 'too_early')
         self.assertFalse(PaymentRun.objects.exists())     # nothing half-created
 
@@ -714,10 +735,10 @@ class TestBackAndAdvancePay(TestCase):
         self.assertEqual(payments.earliest_payment_date(self.AUG), date(2026, 7, 25))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
             with self.assertRaises(payments.PaymentsError):
-                payments.create_run(self.org, date(2026, 7, 24), self.AUG)
+                _run(self.org, date(2026, 7, 24), self.AUG)
             for day in (25, 26):
                 with self.subTest(day=day):
-                    run = payments.create_run(self.org, date(2026, 7, day), self.AUG)
+                    run = _run(self.org, date(2026, 7, day), self.AUG)
                     self.assertEqual(run.period_month, self.AUG)
 
     def test_case2_earliest_pay_date_handles_the_year_rollover(self):
@@ -727,7 +748,7 @@ class TestBackAndAdvancePay(TestCase):
         """"25th of the previous month" is per-period: July cannot pay September's money."""
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
             with self.assertRaises(payments.PaymentsError) as ctx:
-                payments.create_run(self.org, date(2026, 7, 26), self.SEP)
+                _run(self.org, date(2026, 7, 26), self.SEP)
         self.assertEqual(ctx.exception.code, 'too_early')
 
     def test_rule1_backpay_is_never_blocked_by_the_advance_guard(self):
@@ -735,7 +756,7 @@ class TestBackAndAdvancePay(TestCase):
         special case — 15 Sep paying for July is fine."""
         self.assertLess(payments.earliest_payment_date(self.JUL), date(2026, 9, 15))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            run = payments.create_run(self.org, date(2026, 9, 15), self.JUL)
+            run = _run(self.org, date(2026, 9, 15), self.JUL)
         self.assertEqual(run.period_month, self.JUL)
 
     # ── owner case 3 — prepare on the 15th, pay on the 25th, for the following month ──
@@ -747,7 +768,7 @@ class TestBackAndAdvancePay(TestCase):
         late = _make_app(self.cohort, self.org, pathway='poly', reporting=date(2026, 8, 5),
                          vircle_suffix='0012')
         with mock.patch('django.utils.timezone.localdate', return_value=date(2026, 7, 15)):
-            run = payments.create_run(self.org, date(2026, 7, 25), self.AUG)
+            run = _run(self.org, date(2026, 7, 25), self.AUG)
         picked = set(run.items.values_list('application_id', flat=True))
         self.assertIn(ready.id, picked)
         self.assertNotIn(late.id, picked)
@@ -757,7 +778,7 @@ class TestBackAndAdvancePay(TestCase):
         student because 26 July precedes their 1 August floor."""
         app = _make_app(self.cohort, self.org, pathway='university', reporting=date(2026, 7, 10))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            run = payments.create_run(self.org, date(2026, 7, 26), self.AUG)
+            run = _run(self.org, date(2026, 7, 26), self.AUG)
         self.assertIn(app.id, set(run.items.values_list('application_id', flat=True)))
 
     # ── rule 3 — reported BEFORE the month begins; the 1st does not count ─────────────
@@ -812,7 +833,7 @@ class TestFinanceCheck(TestCase):
     def _run(self):
         _make_app(self.cohort, self.org, reporting=date(2026, 6, 1))
         with mock.patch('apps.scholarship.payments.timezone.localdate', return_value=date(2026, 7, 20)):
-            return payments.create_run(self.org, date(2026, 8, 1), date(2026, 8, 1))
+            return _run(self.org, date(2026, 8, 1), date(2026, 8, 1))
 
     def _deactivate_finance(self):
         PartnerAdmin.objects.filter(pk=self.finance.pk).update(is_active=False)

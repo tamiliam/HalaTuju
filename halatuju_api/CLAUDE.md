@@ -592,6 +592,37 @@ Branch `feat/p4b-credit-endpoint` (worktree; another agent was working the same 
 - **▶ THE SABAH RM100,000 IS STILL A POSSIBILITY, NOT A COMMITMENT.** P4b does not change the owner
   gate above: record nothing until the programme is inked AND the money has changed hands.
 
+**✅ CODE COMPLETE 2026-07-26 — P2b: a payment run pays ONE gift. NOT DEPLOYED.** Branch
+`feat/p2b-payment-programme` (worktree). Retro
+`docs/retrospective-2026-07-26-platform-p2b-payment-programme.md`; decisions ×4; lessons ×2.
+- **Why it mattered:** `PaymentRun` was fenced to an ORGANISATION only. The moment BrightPath runs
+  a second programme, one run draws from both — **one benefactor's money paying another's
+  students**, on the LIVE payout path, with no per-programme reconciliation possible after.
+- **`PaymentRun.programme`** (migration `0126`, additive + **permanently nullable**) + backfill
+  (`0127`) deriving each existing run's gift **from the students already in it**. An ambiguous run
+  (items spanning two gifts) is left NULL for a human — never guessed.
+- **`create_run(organisation, programme, …)` — REQUIRED and positional, no default.** The P2a
+  discipline: a default would compile, pass every pre-P2b test, and silently pay across gifts.
+  The requirement lives in `create_run`, NOT a `NOT NULL` constraint (which would also have to
+  refuse the backfill's own intermediate state on a live payout path).
+- **`eligible_rows(…, programme=)`** narrows ALONGSIDE the org filter — the org stays the fence.
+- **The endpoint takes `programme_id`**, re-fenced on the caller's org (another tenant's programme
+  is **404**). Omitted + one active programme → that one (BrightPath today, so **nothing visible
+  changes**); omitted + two → `programme_required`, never a silent pick.
+- **The channel sweep found what the brief missed:** the run detail's *"skipped this run"* list
+  computes live from the same choke-point, so a student of another gift — never a candidate —
+  would have read as skipped by this run. Now narrowed; a legacy run with no programme keeps the
+  pre-P2b whole-org view.
+- **Funding summary gains a `programme` COLUMN** (owner decision) — not a grouping, which is a
+  layout change to a live finance screen and owes a design pass. The exact-key-set snapshot failed
+  first, by design, and was updated deliberately.
+- **4696 pytest** (+18), 0 failed. `makemigrations --check` clean. **No FE change.**
+- **▶ AT DEPLOY (owner-gated): apply `0126`+`0127` MIGRATE-FIRST, then merge + push.** Post-check:
+  every run with items has a programme; **no run disagrees with its own students**; the open draft
+  `PR-2026-08-01` still holds **30 items** and the same total.
+- **▶ OWED before a second programme goes live:** the FE create-run **programme picker**. The API
+  preselects when an org runs one, which is why this is a follow-up and not a blocker.
+
 ---
 
 ## Superseded — previous Next Sprint (2026-07-26, institution must-fill S3)

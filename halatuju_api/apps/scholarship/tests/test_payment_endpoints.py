@@ -14,7 +14,9 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship import payments
-from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import (
+    Programme, ScholarshipApplication, ScholarshipCohort,
+)
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 _PREFIX = '8000400175'
@@ -32,10 +34,19 @@ class _Base(TestCase):
     def setUpTestData(cls):
         cls.org_a = PartnerOrganisation.objects.create(code='pe-a', name='Org A')
         cls.org_b = PartnerOrganisation.objects.create(code='pe-b', name='Org B')
+        # Each org runs exactly ONE gift, which is BrightPath's real shape today — so the create
+        # endpoint's "omitted + one programme → use it" path is what these tests exercise. The
+        # two-programme case (where the operator must choose) is covered in TestProgrammeChoice.
+        cls.prog_a = Programme.objects.create(
+            organisation=cls.org_a, code='pe-pa', name_en='A Bursary')
+        cls.prog_b = Programme.objects.create(
+            organisation=cls.org_b, code='pe-pb', name_en='B Bursary')
         cls.cohort_a = ScholarshipCohort.objects.create(
-            code='pe-ca', name='CA', year=2026, owning_organisation=cls.org_a)
+            code='pe-ca', name='CA', year=2026, owning_organisation=cls.org_a,
+            programme=cls.prog_a)
         cls.cohort_b = ScholarshipCohort.objects.create(
-            code='pe-cb', name='CB', year=2026, owning_organisation=cls.org_b)
+            code='pe-cb', name='CB', year=2026, owning_organisation=cls.org_b,
+            programme=cls.prog_b)
 
         def app(cohort, org, i, suffix='001'):
             prof = StudentProfile.objects.create(
@@ -338,8 +349,12 @@ class TestFundingSummaryEndpoint(_FinanceBase):
     # The exact key set finance is allowed to see. A snapshot, so ADDING a field to the
     # serializer fails here and becomes a deliberate role-matrix decision rather than a
     # quiet widening of what a no-B40-scope role can read.
+    # `programme` added DELIBERATELY in P2b (owner decision, 2026-07-26): finance reconciles per
+    # gift once an org runs more than one, and this snapshot failing is exactly how that addition
+    # was reviewed rather than slipped in. It names the gift and nothing else — no code, no
+    # organisation — so it widens what finance sees by one non-identifying fact.
     KEYS = {'application_id', 'name', 'ref', 'status', 'pathway', 'award_amount',
-            'paid_to_date', 'remaining', 'vircle_id', 'last_run'}
+            'paid_to_date', 'remaining', 'vircle_id', 'last_run', 'programme'}
 
     def test_role_gate(self):
         for uid in ('pe-mk', 'pe-ap', 'pe-fi'):

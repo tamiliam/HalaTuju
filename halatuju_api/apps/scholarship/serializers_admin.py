@@ -773,6 +773,11 @@ class FundingSummaryRowSerializer(serializers.Serializer):
     remaining = serializers.SerializerMethodField()
     vircle_id = serializers.SerializerMethodField()
     last_run = serializers.SerializerMethodField()
+    # P2b — WHICH GIFT funds this student. Finance reconciles per programme once an org runs
+    # more than one, and a payment file is drawn from one gift's money. A column, deliberately
+    # not a grouping: grouping is a layout change to a live finance screen and owes a design
+    # pass; the fact itself is useful now and costs no redesign.
+    programme = serializers.SerializerMethodField()
 
     # Coarse funding status — the three payable states, nothing finer. A finance admin needs to
     # know a student is in the paying loop, not where they sit in the review funnel.
@@ -808,6 +813,14 @@ class FundingSummaryRowSerializer(serializers.Serializer):
 
     def get_vircle_id(self, obj):
         return (obj.vircle_id or '').strip()
+
+    def get_programme(self, obj):
+        """The gift funding this student — ``{id, name}`` or None. Name only (no code, no
+        organisation): finance needs to tell two gifts apart, not to navigate the tenancy."""
+        p = getattr(obj, 'programme', None)
+        if p is None:
+            return None
+        return {'id': p.id, 'name': (p.name_en or '').strip()}
 
     def get_last_run(self, obj):
         """The newest COMPLETED run this student was paid in — {reference, payment_date}, or

@@ -5527,3 +5527,49 @@ Note this is deliberately **not** `org_admin` for the maker — Poongulali is a 
 **Rationale:** Zero user-visible value today, a real FE deploy and a design gate. The backend half has value today — it removes the developer from the money path.
 
 **Revisit if:** a second programme becomes real (Sabah or Inspire), at which point the grouping stops being cosmetic and should be designed properly.
+
+## The OPERATOR states which gift a payment run pays from — Platform P2b, 2026-07-26
+
+**Decision:** `create_run` takes `programme` as a REQUIRED positional argument, and the create endpoint takes `programme_id`. When the organisation runs exactly one active programme the endpoint fills it in (so BrightPath's screen is unchanged today); when it runs more than one, the caller must name it — `programme_required`, never a silent pick.
+
+**Alternatives considered:** (a) Derive it from the org's single active programme and raise only when ambiguous — rejected: it is the exact shape of PF-1, the routing bug where `resolve_open_cohort` returned "the most recent open cohort platform-wide" and would have silently routed applicants into the wrong tenant. A derivation that is correct only while there is one of something is a bug waiting for the second one. (b) Derive per item, letting a run span whatever its students carry — rejected by the sprint's own goal: a run that spans two gifts pays one benefactor's students out of another's money, and no per-programme reconciliation is possible afterwards.
+
+**Rationale:** The operator knows which gift they are paying from; the system does not, and cannot infer it once two exist. Stating it costs one preselected dropdown and removes a whole class of silent cross-fund payment.
+
+**Trade-offs:** One more field on the create screen, invisible while there is a single programme. The FE picker is owed before a second programme goes live — the API's preselection is what makes that a follow-up rather than a blocker.
+
+**Revisit if:** an organisation ever legitimately needs one run to span several gifts (e.g. a shared administrative payout) — at which point the run needs a set of programmes, not one, and the reconciliation model needs redesigning first.
+
+## The funding summary gains a programme COLUMN, not a grouping — Platform P2b, 2026-07-26
+
+**Decision:** `FundingSummaryRowSerializer` gains `programme` (`{id, name}`); org totals and the layout are unchanged. The exact-key-set snapshot was updated deliberately, with a comment recording the decision.
+
+**Alternatives considered:** (a) Group rows under programme headings with per-programme subtotals — more useful once two gifts exist, but it is a **layout change to a live finance screen**, which owes a Stitch prototype and owner approval before template code; and it would be a visual no-op today. (b) Leave the funding summary untouched this sprint — rejected: finance is the role that reconciles payments, and "which gift funds this student" is precisely the fact it will need first.
+
+**Rationale:** A column is additive to an allowlist serialiser, needs no FE deploy, passes no new identifying data (name only — no code, no organisation), and delivers the fact today. Grouping can follow when it stops being cosmetic.
+
+**Trade-offs:** With two gifts the flat list will want grouping, so this is one step of two. Accepted — the second step is a design task, not an engineering one.
+
+**Revisit if:** a second programme goes live (then design the grouped view properly), or finance asks for per-programme totals.
+
+## `PaymentRun.programme` stays permanently nullable; the requirement lives in `create_run` — Platform P2b, 2026-07-26
+
+**Decision:** The column is `null=True` forever. New runs are required to carry a programme, enforced in `payments.create_run`, not by a `NOT NULL` constraint.
+
+**Alternatives considered:** (a) Backfill, then tighten to `NOT NULL` — rejected on two counts: the constraint would also have to refuse the backfill's own intermediate state (a two-step dance on the live payout path), and a hypothetical legacy run with no items has no gift to derive, so `NOT NULL` would force it into a claim the data cannot support. (b) Backfill ambiguous runs by picking one of their programmes — rejected outright: that attributes one gift's students to another, which is the exact harm this sprint exists to prevent. Ambiguous runs are left NULL and surface for a human.
+
+**Rationale:** The rule is behavioural ("a new run names its gift"), so it belongs with the behaviour. A schema constraint would express it less precisely and cost more to land safely on a live payout path.
+
+**Trade-offs:** The column's nullability no longer documents the invariant — a reader must look at `create_run`. Mitigated by saying so in the model's own comment and in both migration docstrings.
+
+**Revisit if:** every legacy run is confirmed to carry a programme AND a maintenance window makes the tighten free — even then the gain is small.
+
+## The payment-run reference scheme is left alone — Platform P2b, 2026-07-26
+
+**Decision:** Keep `PR-YYYY-MM-DD` with the existing `-02` collision suffix. Do not encode the programme in the reference.
+
+**Alternatives considered:** Add a programme token (e.g. `PR-SABAH-2026-08-01`) so two same-dated runs are legible at a glance — rejected. The scheme is not broken: `_next_reference` already guarantees uniqueness. Changing it would touch a live audit trail, the Vircle instruction email and the payment CSV filed to Drive, for a legibility gain that the new `programme` field on both run payloads delivers with no risk.
+
+**Rationale:** References identify; they do not have to describe. The gift is now a field, shown beside the reference.
+
+**Revisit if:** operators report confusing two same-dated runs in practice despite the programme being displayed.

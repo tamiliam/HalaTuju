@@ -146,7 +146,27 @@ present. Retro: `docs/retrospective-2026-07-26-platform-p2a-funds-per-programme.
 **▶ DEPLOY: still not required.** Schema is ahead of code on both P1a and P2a — the safe direction.
 The next functional push carries them together. Owner-gated, as every HalaTuju deploy is.
 
-### P2b — Payment runs carry their programme (NOT started)
+### P2b — Payment runs carry their programme — ✅ **CODE COMPLETE 2026-07-26** (migrations `0126`+`0127` NOT yet applied; branch `feat/p2b-payment-programme`)
+
+Delivered as scoped, **plus three surfaces the brief did not name** — the run-detail's "skipped
+this run" list (which would otherwise have shown another gift's students as skipped by this run),
+and the `programme` field on both run payloads. `create_run(organisation, programme, …)` takes the
+gift **required and positional**; the endpoint takes `programme_id`, re-fenced on the caller's org
+(cross-tenant → 404), preselecting when the org runs exactly one. Funding summary gains a
+programme **column** (owner decision — not a grouping, which owes a design pass).
+
+**Two of the brief's open questions dissolved on investigation:** run references already
+disambiguate (`_next_reference` appends `-02`), and per-programme rates are already expressible
+through the contract template's `monthly_amount`. Neither needed building.
+
+4696 pytest (+18). Retro `docs/retrospective-2026-07-26-platform-p2b-payment-programme.md`.
+
+**▶ AT DEPLOY: apply `0126`+`0127` migrate-first, THEN merge.** Post-check: every run with items
+has a programme; no run disagrees with its own students; `PR-2026-08-01` still holds 30 items.
+**▶ OWED before a second programme goes live:** the FE create-run programme picker (the API's
+preselection is why this is a follow-up and not a blocker).
+
+### P2b — original brief (for reference)
 
 - **Goal:** A payment run carries its programme, so a run can never pay students from more than one gift and a benefactor can be reported to per programme.
 - **Scope:** `PaymentRun.programme` FK (additive, nullable → backfill → read); `payments.eligible_rows` narrows by programme alongside its existing org filter; the funding summary becomes programme-aware. **The Sprint-14 maker-checker chain is untouched** — only the run's candidate set narrows.

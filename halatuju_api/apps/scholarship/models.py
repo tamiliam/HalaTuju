@@ -1873,6 +1873,17 @@ class PaymentRun(models.Model):
     organisation = models.ForeignKey(
         'courses.PartnerOrganisation', on_delete=models.PROTECT, related_name='payment_runs',
     )
+    # The GIFT this run pays from (P2b). A run pays students of ONE programme, so a benefactor's
+    # money can never leave the gift it was given to and each programme reconciles on its own.
+    # NULLABLE for history: every run created before P2b is backfilled to its items' programme,
+    # and the column stays nullable so a legacy row is never rewritten into a claim it cannot
+    # support. New runs REQUIRE it — enforced in `payments.create_run`, not by the column, so
+    # the rule lives with the behaviour rather than in a schema constraint that would also
+    # refuse the backfill.
+    programme = models.ForeignKey(
+        'Programme', on_delete=models.PROTECT, related_name='payment_runs',
+        null=True, blank=True,
+    )
     payment_date = models.DateField(help_text="The Vircle payment date; validated >= today at creation.")
     # The MONTH this run pays for (1st of that month). A run dated 30 Jun can pay for July, so the
     # covered month is explicit, not derived from payment_date. A student already paid for a month

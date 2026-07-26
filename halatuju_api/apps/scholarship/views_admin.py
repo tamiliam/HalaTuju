@@ -2244,12 +2244,22 @@ def _sig(name, email, at):
     return {'name': name, 'email': email, 'at': at} if at else None
 
 
+def _run_programme(run):
+    """The gift a run pays from — ``{id, name}`` or None for a pre-P2b run. Shown beside the
+    reference so an operator can tell two same-dated runs apart (references disambiguate with a
+    `-02` suffix, which says there are two but not which is which)."""
+    p = getattr(run, 'programme', None)
+    if p is None:
+        return None
+    return {'id': p.id, 'name': (p.name_en or '').strip()}
+
+
 def _payment_run_summary(run):
     included = [i for i in run.items.all() if i.included]
     total = sum((i.amount for i in included), _Decimal('0'))
     return {
         'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
-        'period_month': run.period_month,
+        'period_month': run.period_month, 'programme': _run_programme(run),
         'status': run.status, 'students': len(included), 'total': str(total),
         'created_at': run.created_at,
     }
@@ -2266,7 +2276,12 @@ def _payment_run_detail(run):
     from . import payments
     item_app_ids = {i.application_id for i in items}
     skipped = []
-    for row in payments.eligible_rows(run.organisation, run.payment_date, period_month=run.period_month):
+    # Narrowed to the run's own programme (P2b) — a run pays ONE gift, so a student of another
+    # gift was never a candidate and must not read as "skipped by this run". A legacy run with
+    # no programme passes None and keeps the pre-P2b whole-org behaviour.
+    for row in payments.eligible_rows(run.organisation, run.payment_date,
+                                      period_month=run.period_month,
+                                      programme=run.programme):
         if not row['eligible'] and row['application'].id not in item_app_ids:
             a = row['application']
             p = getattr(a, 'profile', None)
@@ -2275,7 +2290,7 @@ def _payment_run_detail(run):
     from django.conf import settings as _settings
     return {
         'id': run.id, 'reference': run.reference, 'payment_date': run.payment_date,
-        'period_month': run.period_month,
+        'period_month': run.period_month, 'programme': _run_programme(run),
         'vircle_email': getattr(_settings, 'VIRCLE_PAYMENTS_EMAIL', ''),
         'status': run.status, 'note': run.note, 'drive_file_url': run.drive_file_url,
         'created_by': run.created_by, 'created_at': run.created_at,
@@ -2358,9 +2373,27 @@ class AdminPaymentRunListView(_PaymentsBase):
         pm = parse_date(pm_raw) if pm_raw else pd
         if pm is None:
             return Response({'error': 'bad_month', 'code': 'bad_month'}, status=status.HTTP_400_BAD_REQUEST)
+        # The GIFT this run pays from (P2b). Re-fenced on the caller's own organisation, so an
+        # admin cannot create a run against another tenant's programme even by id. Omitted +
+        # the org runs exactly one programme → that one is used; omitted + more than one → the
+        # operator must say which (`programme_required`), never a silent pick.
+        from .models import Programme
+        org_programmes = Programme.objects.filter(organisation=org, is_active=True)
+        programme_id = request.data.get('programme_id')
+        if programme_id:
+            programme = org_programmes.filter(pk=programme_id).first()
+            if programme is None:
+                return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            candidates = list(org_programmes[:2])
+            if len(candidates) != 1:
+                return Response({'error': 'programme_required', 'code': 'programme_required'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            programme = candidates[0]
         from . import payments
         try:
-            run = payments.create_run(org, pd, pm, by_email=getattr(admin, 'email', '') or '')
+            run = payments.create_run(org, programme, pd, pm,
+                                      by_email=getattr(admin, 'email', '') or '')
         except payments.PaymentsError as e:
             body = {'error': e.code, 'code': e.code}
             if e.code == 'too_early':
