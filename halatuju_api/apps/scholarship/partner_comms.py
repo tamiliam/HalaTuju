@@ -4,9 +4,14 @@ Weekly + milestone emails to the referral organisations that run this bursary al
 Roadmap: docs/plans/2026-07-26-partner-comms-roadmap.md.
 
 Everything this feature decides is decided here: which organisations qualify, which
-applications count as theirs, how the stages are counted, who the email goes to, whether a
-kind is switched on, and how a stored template becomes a subject + text + HTML body.
-Sending itself lives in the management commands; this module never talks to SMTP.
+applications count as theirs, how the stages are counted, who an email would go to, and
+whether a kind is switched on.
+
+**S1 scope, stated plainly: nothing here renders or sends an email.** The five templates
+exist as editable text with `{placeholder}` tokens, and the switches work, but there is no
+code yet that turns a template into a subject + text + HTML body, and none that sends one.
+`render()` and the two management commands arrive in S2/S3; this module will never talk to
+SMTP itself.
 
 Three things that are easy to get wrong and are therefore fixed here:
 
