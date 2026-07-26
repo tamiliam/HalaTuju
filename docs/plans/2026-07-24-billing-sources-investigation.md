@@ -58,3 +58,52 @@ Not billable to HalaTuju: Vircle (manual relay, no fee in any code path); Cloudf
 
 ### Sources (provider research, July 2026)
 GCP billing export/budgets: docs.cloud.google.com/billing (export-data-bigquery, budget-api-overview, budgets-programmatic-notifications) · Gemini: ai.google.dev/gemini-api/docs (pricing, billing, deprecations) · Supabase: supabase.com/docs (api introduction, telemetry/metrics, billing-on-supabase, manage-your-usage/egress) · Brevo: developers.brevo.com (get-smtp-report, getaggregatedsmtpreport, get-email-event-report) · Attribution patterns: particula.tech, oneuptime.com, dodopayments.com (multi-tenant billing) · Malaysia: duittools.com SST guide, vatabout.com digital-services 2026.
+
+---
+
+## Addendum — pricing readiness, measured against the LIVE meter (2026-07-26)
+
+The meter has now been running since **25 Jul 2026 ~02:32 MYT** (first recorded call). Owner asked
+what it would take to put PRICES on the Billing & usage screen. Measured, not estimated:
+
+### The data IS priceable — no re-instrumentation needed
+`UsageEvent` records the **model name plus a separate input/output token split**, which is the
+billing-grade source §2 prescribed. First 55 events: `gemini-2.5-flash` 21 calls (15,623 in /
+3,293 out), `gemini-2.5-pro` 3 calls (6,942 in / 1,272 out), `vision_ocr` 13, `email` 16,
+`whatsapp` 2.
+
+### The finding that should shape the build: metered usage is PENNIES
+Those 55 events cost roughly **RM0.16 across a day and a half** at market rates — consistent with
+the Mar-2026 snapshot ("normal usage well under RM5/mo"). Against a fixed floor that becomes
+~RM150/mo once Supabase Pro ($25) and Brevo Starter (~$9) trigger with tenant #2.
+
+**So the per-token rate is not where the money is — the PLATFORM FEE is.** Setting a token price
+is the interesting engineering problem and the trivial commercial one. Do not let it absorb the
+effort; §4 line 1 (the fixed fee) is the number that decides whether this is profitable.
+
+### Three gaps between here and a price on screen
+1. **No price table exists at all** — `usage.py` states this explicitly ("NO prices anywhere in
+   v1"). This is the actual build.
+2. **`unit_price_version` was specified in §3 and never built.** Without it, changing a price
+   silently rewrites last month's invoice. An invoice must reproduce. Either stamp the version on
+   the event at write time, or use an effective-dated price table plus a snapshot at issue.
+3. **Email attribution — 16 of the first 55 events are org-NULL.** Pricing today under-charges the
+   tenant by every email sent. Close before any figure reaches a tenant. (The help-engine's
+   org-NULL rows are correct and must stay — the coach is firewalled from application data.)
+
+### Recommended split (the risk profiles differ sharply)
+- **Now — cost visible to the OWNER only.** Versioned internal price table + cost per line on the
+  usage screen, super-only. No invoice semantics, no tenant sees a figure, reversible. This is what
+  proves the pricing is sane before anyone is billed. Pairs with the email-attribution fix.
+- **Later — bill a tenant.** Needs price versioning, issued-invoice snapshots, the platform-fee
+  decision, and the **MyInvois e-invoicing check with the accountant** (§5 prerequisite — a real
+  blocker, not an engineering one).
+
+### Still-open owner decisions (business, not engineering)
+- The **platform fee** per organisation per month (floor ~RM150 and rising with tenant #2).
+- The **margin** — Sprint 14 recorded "cost + 15–30%"; never fixed to a number.
+- Whether the screen shows **cost only, or cost + marked-up price** (recommendation: both to the
+  owner, neither to a tenant until a full month has been watched).
+
+§4's standing rules are unchanged and still bind: never bill raw provider actuals, and **price
+against Gemini 3.x rates, not 2.5** — the October migration puts 3.x Flash ≈5× today's rate.
