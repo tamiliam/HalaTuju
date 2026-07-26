@@ -36,10 +36,16 @@ for: *"I want this feature activated, even though there are no emails at present
 ### Notes
 - ms/ta for the three new keys are first drafts — **TD-180** already tracks the review of this
   screen's copy; these ride along on it.
-- **Not done, and the owner's call**: 56 applications already sit in a milestone state with no stamp
-  (46 `awarded`, 10 `profile_complete`). The moment a partner gets a contact email *and* that
-  milestone is switched on, the first run emails the history, up to 20 students per email. Either
-  backfill the two stamps so only future transitions count, or let it go out once as a catch-up.
+- **Milestone history suppressed — "only moving forward" (owner).** 56 applications sat in a
+  milestone state unstamped, and would have gone out as a history dump the first time a partner had
+  an address and that milestone was on. Both stamps backfilled on prod to `now()`: **10** rows
+  `partner_awaiting_notified_at` (ids 28, 43, 48, 88, 114, 126, 128, 132, 133, 134) and **46** rows
+  `partner_awarded_notified_at` (ids 4, 6, 8, 9, 10, 15, 18, 20, 23, 24, 25, 27, 29, 30, 33, 35, 36,
+  37, 45, 47, 50, 53, 54, 58, 61, 62, 63, 66, 69, 72, 75, 76, 78, 80, 83, 95, 102, 104, 107, 110,
+  112, 115, 117, 123, 125, 130) — recorded so it is reversible. Both milestone querysets now return
+  **0**; only a student who *reaches* one of those states from here produces an email. A backlog
+  email headed "a funder has committed to your student" would have read oddly for an award from
+  three months ago.
 
 ## Partner comms S2+S3 — the five emails can now actually be sent — 2026-07-26
 
