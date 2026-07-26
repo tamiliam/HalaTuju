@@ -552,7 +552,15 @@ ORGANISATION) and BrightPath Sabah (a second PROGRAMME under BrightPath).
   chain's typed-name match and role gate**: P4a's service takes `signer` as a free string, so it
   enforces distinctness but NOT identity. Gates: maker `role=='admin'` (Poongulali), checker
   `finance` (dark), approver `org_admin` (Suresh) — do NOT gate the maker on `org_admin`.
-  **P4b is what unblocks recording the RM100,000**; until then it stays in a manual ring-fence.
+  **Why P4b, stated accurately:** crediting a sponsor wallet today requires a DEVELOPER touching
+  the database — that is the real gap, and it is what makes P4a's sign-off chain a control on
+  paper rather than one anybody can drive. **P4b is NOT gated by, and does not gate, the Sabah
+  RM100,000** — see the owner gate below.
+- **⚠ THE SABAH RM100,000 IS A POSSIBILITY, NOT A COMMITMENT (owner, 2026-07-26).** Nothing is
+  inked and no money has moved. It is **not** recorded, seeded or forecast anywhere in the
+  platform, and it must not be until BOTH: (1) the Sabah programme is **inked**, and (2) the
+  **money has actually changed hands**. Shipping P4b does not satisfy either. Do not create a
+  Sabah `Programme` row, a membership or a credit in anticipation.
 - Then **P2b** (`PaymentRun.programme` — payments is live with an open draft run), routing PF-1
   (**date-parked ~May/June 2027**), reviewer programme scoping, Phase 2 S7–S9, Sprint E.
 

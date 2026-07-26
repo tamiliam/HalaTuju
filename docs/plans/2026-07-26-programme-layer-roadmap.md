@@ -155,9 +155,29 @@ The next functional push carries them together. Owner-gated, as every HalaTuju d
 - **Risk + mitigation:** *Risk:* prod holds an OPEN DRAFT run (PR-2026-08-01) and this is the live payout path. *Mitigation:* additive-then-read, backfill the existing run to the flagship explicitly, and verify the draft's item set is identical before and after.
 - **Complexity:** Medium. ~10 files.
 
-**Owner gate (carried):** do **not** record the RM100,000 as a platform donation until **P2a's** migrations are applied — before that there is no programme column, so it would land in a balance with no expressible restriction. Hold it in a documented manual ring-fence until then.
+**Owner gate — RESTATED 2026-07-26, this supersedes the earlier technical-only wording.** The
+RM100,000 is a **possibility, not a commitment**. Nothing is inked and no money has moved. It is
+**not** to be recorded until **BOTH** conditions hold:
 
-## Sprint P3 — Sponsor Programme membership
+1. the **Sabah programme is inked** (agreement signed), and
+2. the **money has actually changed hands** (funds in the Foundation's account, with a bank
+   reference to cite).
+
+Shipping P2a, P4a or P4b does **not** satisfy either — those only make the recording *expressible
+and auditable* when the day comes. Until both hold there is nothing to ring-fence, because there
+is nothing to record. **Do not create a Sabah `Programme`, membership or credit row in
+anticipation** — a seeded-but-unfunded programme is indistinguishable, downstream, from a real
+one, and it would put a fictitious restricted balance into a financial surface.
+
+## Sprint P3 — Sponsor Programme membership — ✅ **SHIPPED 2026-07-26 (migrations `0122`+`0123` APPLIED + verified on prod, DEPLOYED)**
+
+Shipped as scoped, with one addition the plan below missed: the **weekly digest and the real-time
+alert** (`sponsor_notifications.py`) selected from the unfenced queryset and had to be narrowed
+too — fencing the API surface alone would have leaked, by email, that other programmes' students
+exist. A source guard now asserts every sponsor-facing pool read AND both notification paths
+narrow by membership. Prod verify: 9 sponsors → 9 memberships (approved 8, rejected 1),
+**0 status mismatches**. The sponsor-facing programme picker is **deferred** — every live sponsor
+holds exactly one membership, so there is nothing to pick between until Sabah opens.
 
 - **Goal:** A sponsor's vetting and acceptance attach to a programme; the anonymised pool shows only the programmes they are accepted into.
 - **Scope:**
@@ -173,7 +193,7 @@ The next functional push carries them together. Owner-gated, as every HalaTuju d
 
 **SPLIT 2026-07-26 into P4a (record + chain) and P4b (endpoint + statement).**
 
-### P4a — the credit record and its sign-off chain — ✅ **CODE COMPLETE 2026-07-26** (migrations not applied)
+### P4a — the credit record and its sign-off chain — ✅ **SHIPPED 2026-07-26 (migration `0124` APPLIED + verified on prod, DEPLOYED)**
 
 `Donation` gains `source` / `external_reference` and the chain (`draft → admin_signed →
 [finance_checked] → confirmed`), driven by `sponsorship.record_admin_credit` /
@@ -186,9 +206,16 @@ spendable balance. Defaults (`legacy` / `confirmed`) leave every existing balanc
 ### P4b — endpoint + programme-grouped statement (NOT started)
 
 The admin HTTP surface to drive the chain, and `sponsor_statement` grouped by programme (it
-already renders both ledgers). **This is what actually unblocks recording the RM100,000** — P4a
-built the machinery, P4b is the way to drive it. Returns (lapsed/cancelled allocations) must show
-as their own entries, not a silently shrinking total.
+already renders both ledgers). Returns (lapsed/cancelled allocations) must show as their own
+entries, not a silently shrinking total.
+
+**Why it is worth doing, stated accurately:** every wallet credit on this platform today —
+including the RM172,000 already recorded — was written by a **developer touching the database**.
+P4a built the sign-off chain but gave it no surface, so it is currently a control on paper: the
+people it names (`admin` maker, `org_admin` approver) have no way to execute their own steps.
+P4b removes the developer from the money path and makes the chain real. **It is not gated by,
+and does not gate, the Sabah RM100,000** — that is gated on the agreement being inked and the
+money moving (see the owner gate under P2b).
 
 **Role gates — mirror `payments.sign` exactly** (owner 2026-07-26; verified against live roles):
 
