@@ -173,6 +173,32 @@ after 2026-07-28 before treating the saving as banked.
 **Effect on the floor below:** if the reclaim lands, GCP falls to roughly **RM69/month** and the
 combined fixed floor to about **RM187/month**. Do not re-price on that until it is measured.
 
+### ⚠ Waste finding 2 — Cloud Run **Jobs** was the biggest line — ACTIONED 2026-07-26
+SKU-level reading of the June bill (BigQuery export) put **Cloud Run Jobs CPU at RM29.81 + Jobs
+Memory RM3.31 = RM33.12**, ahead of Artifact Registry and ~37% of the GCP total. One job exists:
+`release-decisions`, 2 vCPU / 2 GiB, fired every 15 minutes.
+
+Working back from the bill: **~51 seconds per execution × 2,880/month**, almost entirely Django
+start-up. The same work on the always-warm api service measured **200 in 66 ms**.
+
+**Actioned:** the scheduler now calls the HTTP cron endpoint that 22 of its 23 siblings already use
+(`decision-emails` was already registered in `CronRunView.JOBS`). The Job is left dormant — Cloud Run
+Jobs bill per execution, so the saving is banked and rollback is one scheduler edit. See
+`docs/decisions.md` 2026-07-26.
+
+### Revised expectation for the GCP floor
+| line | June actual | after both fixes |
+|---|---|---|
+| Cloud Run Jobs (CPU + memory) | 33.12 | **~0** |
+| Artifact Registry storage | 26.95 | ~7 (projected, re-measure after 28 Jul) |
+| everything else | 28.37 | 28.37 |
+| **GCP total** | **88.44** | **~RM36** |
+
+That is a **~59% reduction** on infrastructure that no tenant's activity was driving. **Both figures
+are projections until the July/August invoice confirms them** — the Artifact Registry reclaim is
+asynchronous, and the Jobs line only stops accruing from 2026-07-26. Do not set the platform fee off
+this table; set it off the next invoice.
+
 **Tooling gotcha:** `gcloud artifacts repositories list` reported the size as **"72.2 MB"**;
 `describe` reports **77,576 MB**. A thousandfold discrepancy — always size a repository with
 `describe`, never the list column.

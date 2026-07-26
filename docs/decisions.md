@@ -5673,3 +5673,44 @@ Note this is deliberately **not** `org_admin` for the maker — Poongulali is a 
 **Trade-offs:** The flag's name no longer describes its whole behaviour (it reads as global). Mitigated by the view docstring, this record, and three tests that pin each role's status code. A non-super role also now gets a 403 instead of a 404 **once the feature is live** — correct, and the while-dark 404 is preserved by ordering the flag check before the role check.
 
 **Revisit if:** a second super ever exists who should not see cross-tenant cost data — today there is exactly one (the owner), which is what makes this safe.
+
+---
+
+## 2026-07-26 — `release-decisions` runs on the warm service, not a cold Cloud Run Job
+
+**Decision:** Repointed the `release-decisions-15m` Cloud Scheduler job from the `release-decisions`
+**Cloud Run Job** to the existing HTTP cron endpoint (`/api/v1/internal/cron/decision-emails/`), which
+22 of its 23 sibling crons already use. The Cloud Run Job is **left in place, dormant** rather than
+deleted.
+
+**Why:** It was the single largest line on the GCP bill. Measured from the June invoice via the
+BigQuery billing export: **Cloud Run Jobs CPU RM29.81 + Jobs Memory RM3.31 = RM33.12/month**, ~37% of
+the RM89 total. Working back from the bill, each of the 2,880 monthly executions ran ~51 seconds at
+2 vCPU / 2 GiB — almost all of it Django start-up (the eligibility engine loads the course catalogue
+into pandas at boot). The HTTP endpoint on the always-warm service does the identical work: measured
+**200 in 66 ms**. Fifty-one seconds of boot for sixty-six milliseconds of work, ninety-six times a day.
+
+`'decision-emails': 'send_pending_decision_emails'` was **already registered** in `CronRunView.JOBS`,
+so nothing needed building — the Job was simply the odd one out.
+
+**Why the Job is kept, not deleted:** Cloud Run Jobs bill per execution, so an uninvoked job costs
+nothing. The saving is fully realised by the scheduler change alone. Keeping the Job makes the
+rollback a one-line scheduler edit rather than a re-creation, at zero cost.
+
+**Second benefit:** this retires the documented stale-image hazard. The api build trigger carries a
+non-fatal `SyncReleaseJob` step purely to re-point the Job at each new image, and its env vars were
+never auto-synced ("after changing a service env var that the job also needs, mirror it onto the job
+manually"). Running on the service means the cron is *by construction* on current code and current
+env. The `SyncReleaseJob` step now updates a dormant job — harmless, and a tidy-up candidate.
+
+**Trade-offs:** The cron now runs **in-request** on the api service, so it is bound by that service's
+request timeout rather than a job's generous budget. At 66 ms against a 180 s attempt deadline the
+headroom is four orders of magnitude, and the frequent siblings (`application-nudges`,
+`interview-reminders`) have run this way at the same `*/15` cadence for months. A pathological backlog
+would be the thing to watch.
+
+**Verified:** repoint applied, job triggered manually, scheduler status empty (no error), and the
+service log shows `POST … /decision-emails/ → 200` in 66 ms.
+
+**Revisit if:** the decision-email backlog ever grows enough that a single pass approaches the attempt
+deadline — then move it to a queue, not back to a cold job.
