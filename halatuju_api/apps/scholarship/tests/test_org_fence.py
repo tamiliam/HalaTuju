@@ -195,6 +195,15 @@ class TestFenceCoverageCompleteness(TestCase):
         # base
         '_BursaryAdminBase': 'base — shared _agreement lookup',
         '_PaymentsBase': 'base — shared payments gate + org-fenced run lookup',
+        '_CreditsBase': 'base — shared credits gate + org-fenced credit lookup',
+        # Wallet credits (P4b) — org-fenced on `programme__organisation_id` (cross-org 404).
+        # NB the fence is on the PROGRAMME, not the sponsor: a Sponsor is a platform-level
+        # account (deliberately unfenced, see AdminSponsorListView), but the money inside a
+        # gift belongs to the organisation running that gift. POST also re-fences the target
+        # programme, so an admin cannot credit a wallet inside another tenant's gift.
+        'AdminWalletCreditListCreateView': 'credits-org-fenced',
+        'AdminWalletCreditSignView': 'credits-org-fenced',
+        'AdminWalletCreditCancelView': 'credits-org-fenced',
         # Payments module (P2) — org-fenced via _run_for (cross-org 404) + admin/org_admin role
         # gate; the list is filtered to the caller's organisation. PaymentRun/PaymentRunItem are
         # not watched applicant models, so no static-guard pragma is needed.

@@ -203,7 +203,27 @@ inherited, not reimplemented, and both are pinned by tests. Only a `confirmed` c
 spendable balance. Defaults (`legacy` / `confirmed`) leave every existing balance unchanged, so
 **no data migration**. Migration `0124`. 19 tests + two source guards. Full suite 4635 green.
 
-### P4b — endpoint + programme-grouped statement (NOT started)
+### P4b — the credit endpoints + identity on the chain — ✅ **CODE COMPLETE 2026-07-26** (migration `0125` NOT yet applied; branch `feat/p4b-credit-endpoint`)
+
+**SPLIT on investigation.** P4b as scoped bundled the credit endpoints with programme-grouping
+`sponsor_statement`. The grouping is consumed by the sponsor account page — a **sponsor-facing
+layout change** owing a Stitch pass — and is a **visual no-op today** (every live sponsor holds
+exactly one membership, so the grouped page renders what it renders now). It is deferred to
+**P4b-ii**, to be designed when a second programme makes it visible.
+
+Delivered: three org-fenced endpoints (`credits/` list+record, `<pk>/sign/`, `<pk>/cancel/`);
+**TD-176 closed** — one `sign_admin_credit(credit, admin, typed_name)` mirroring `payments.sign`,
+with the typed-name match and the maker `admin` / checker `finance` / approver `org_admin` gates,
+placed in the SERVICE rather than the endpoint so a shell caller cannot bypass it; distinctness
+re-keyed onto **email** (migration `0125`) because prod carries two active admins sharing the name
+"Ve. Elanjelian". **Also fixed a P4a defect the channel sweep found:** draft and cancelled credits
+were visible on the sponsor's own statement and could conjure a wallet — all sponsor-facing reads
+now narrow through `sponsorship.visible_donations`, with a source guard. 4678 pytest.
+
+**▶ AT DEPLOY: apply `0125` migrate-first, THEN merge/push.** Post-check: all three email columns
+empty on every row; confirmed-donation total per programme unchanged.
+
+### P4b-ii — programme-grouped statement (DEFERRED, trigger-parked)
 
 The admin HTTP surface to drive the chain, and `sponsor_statement` grouped by programme (it
 already renders both ledgers). Returns (lapsed/cancelled allocations) must show as their own

@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## Platform programme layer P4b — the credit endpoints, and identity on the chain — 2026-07-26
+
+Fifth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **P4a built the wallet-credit
+sign-off chain but gave it no surface**, so it was a control on paper: the people it names — an
+`admin` maker, an `org_admin` approver — had no way to execute their own steps, and every credit on
+the platform (including the RM172,000 already recorded) was written by a developer touching the
+database. P4b removes the developer from the money path.
+
+### Added
+- **Three admin endpoints**, org-fenced on the programme's organisation:
+  `GET/POST admin/scholarship/credits/` (ledger + record), `POST .../<pk>/sign/` (whichever step is
+  next), `POST .../<pk>/cancel/` (void an unconfirmed credit — a mis-keyed bank reference would
+  otherwise be permanent; the row is never deleted).
+- **`sponsorship.visible_donations(sponsor)`** — the ONE narrowing seam for every sponsor-facing read
+  of the money-in ledger, same shape and same reason as P3's `pool.for_sponsor()`.
+- **Migration `0125`** — `recorded_by_email` / `finance_checked_by_email` / `confirmed_by_email`
+  (additive, no data migration, no balance moves).
+
+### Changed
+- **`sign_admin_credit` is now ONE function mirroring `payments.sign`**, replacing P4a's three
+  (`sign_` / `finance_check_` / `confirm_`). One mirrored function against one function is what stops
+  the two chains drifting into two subtly different controls; a source guard pins that it keeps
+  CALLING `payments._name_matches` and `payments.finance_check_required` rather than growing a private
+  copy, and that it uses the same guard vocabulary (`bad_state` / `name_mismatch` / `wrong_role` /
+  `same_signer` / `finance_check_required`).
+- **`record_admin_credit` stamps no signature** — recording opens the chain, signing is a separate act
+  with a typed name, the same separation payments keeps between `create_run` and `sign`.
+
+### Fixed
+- **TD-176 — the chain now checks WHO, not just that two signatures differ.** P4a took the signer as
+  a free string: it enforced distinctness but not identity. Signing now requires the caller's typed
+  name to match their own `PartnerAdmin.name`, and gates each step on role — maker `admin`, checker
+  `finance`, approver `org_admin` (verified against live roles: Poongulali Veeran is a plain `admin`,
+  so gating the maker on `org_admin` would have locked out the person who does the work).
+- **Distinctness now keys on EMAIL, not the displayed name.** Prod carries two active admins both
+  named "Ve. Elanjelian" (a super and an org_admin, genuinely different accounts); a name key is wrong
+  in both directions there — it would let one person fill two slots under two spellings and refuse two
+  different people who share a name.
+- **Unconfirmed and cancelled credits were visible to the sponsor.** Found by the P3 channel sweep,
+  not by a test: `sponsor_statement`, the sponsor wallet endpoint and `sponsor_programme_balances` all
+  read `sponsor.donations` unfiltered. P4a made unconfirmed money *unspendable* but left it *visible*,
+  so a draft credit appeared on the sponsor's own giving statement as money we hold — and a draft
+  could conjure a wallet for a programme they had been given nothing in. All three now narrow through
+  `visible_donations`; a source guard fails CI if a fourth surface reads donations directly.
+
+### Notes
+- **4678 pytest** (from 4635), 0 failed. `makemigrations --check` clean. No frontend change — the
+  programme-grouped statement is deferred (every live sponsor holds exactly one membership, so
+  grouping renders identically today and it is a sponsor-facing layout change owing a Stitch pass).
+- **⚠ NOT DEPLOYED. Migration `0125` must be applied migrate-first, before this code ships.**
+
 ## Platform programme layer P4a — org-admin wallet credit (record + sign-off) — 2026-07-26
 
 Fourth sprint of `docs/plans/2026-07-26-programme-layer-roadmap.md`. **The primary funding path
