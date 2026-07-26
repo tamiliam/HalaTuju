@@ -157,7 +157,15 @@ The next functional push carries them together. Owner-gated, as every HalaTuju d
 
 **Owner gate (carried):** do **not** record the RM100,000 as a platform donation until **P2a's** migrations are applied — before that there is no programme column, so it would land in a balance with no expressible restriction. Hold it in a documented manual ring-fence until then.
 
-## Sprint P3 — Sponsor Programme membership
+## Sprint P3 — Sponsor Programme membership — ✅ **SHIPPED 2026-07-26 (migrations `0122`+`0123` APPLIED + verified on prod, DEPLOYED)**
+
+Shipped as scoped, with one addition the plan below missed: the **weekly digest and the real-time
+alert** (`sponsor_notifications.py`) selected from the unfenced queryset and had to be narrowed
+too — fencing the API surface alone would have leaked, by email, that other programmes' students
+exist. A source guard now asserts every sponsor-facing pool read AND both notification paths
+narrow by membership. Prod verify: 9 sponsors → 9 memberships (approved 8, rejected 1),
+**0 status mismatches**. The sponsor-facing programme picker is **deferred** — every live sponsor
+holds exactly one membership, so there is nothing to pick between until Sabah opens.
 
 - **Goal:** A sponsor's vetting and acceptance attach to a programme; the anonymised pool shows only the programmes they are accepted into.
 - **Scope:**
@@ -173,7 +181,7 @@ The next functional push carries them together. Owner-gated, as every HalaTuju d
 
 **SPLIT 2026-07-26 into P4a (record + chain) and P4b (endpoint + statement).**
 
-### P4a — the credit record and its sign-off chain — ✅ **CODE COMPLETE 2026-07-26** (migrations not applied)
+### P4a — the credit record and its sign-off chain — ✅ **SHIPPED 2026-07-26 (migration `0124` APPLIED + verified on prod, DEPLOYED)**
 
 `Donation` gains `source` / `external_reference` and the chain (`draft → admin_signed →
 [finance_checked] → confirmed`), driven by `sponsorship.record_admin_credit` /
