@@ -7,11 +7,10 @@ Everything this feature decides is decided here: which organisations qualify, wh
 applications count as theirs, how the stages are counted, who an email would go to, and
 whether a kind is switched on.
 
-**S1 scope, stated plainly: nothing here renders or sends an email.** The five templates
-exist as editable text with `{placeholder}` tokens, and the switches work, but there is no
-code yet that turns a template into a subject + text + HTML body, and none that sends one.
-`render()` and the two management commands arrive in S2/S3; this module will never talk to
-SMTP itself.
+`render()` (at the foot of this module) turns a stored template into a subject + plain-text
+body + inner HTML. **It never sends.** The envelope is `emails.send_partner_email`, the
+sequencing is `partner_notify`, and this module talks to SMTP nowhere — which is what keeps
+it cheap to test.
 
 Three things that are easy to get wrong and are therefore fixed here:
 
