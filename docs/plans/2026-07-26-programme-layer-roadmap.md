@@ -166,15 +166,6 @@ has a programme; no run disagrees with its own students; `PR-2026-08-01` still h
 **▶ OWED before a second programme goes live:** the FE create-run programme picker (the API's
 preselection is why this is a follow-up and not a blocker).
 
-### P2b — original brief (for reference)
-
-- **Goal:** A payment run carries its programme, so a run can never pay students from more than one gift and a benefactor can be reported to per programme.
-- **Scope:** `PaymentRun.programme` FK (additive, nullable → backfill → read); `payments.eligible_rows` narrows by programme alongside its existing org filter; the funding summary becomes programme-aware. **The Sprint-14 maker-checker chain is untouched** — only the run's candidate set narrows.
-- **Migrations:** 1 additive + 1 data.
-- **Test plan:** a run cannot include an application from another programme; the existing 139 payments + fence tests pass unmodified; the open draft run is unaffected by the backfill.
-- **Risk + mitigation:** *Risk:* prod holds an OPEN DRAFT run (PR-2026-08-01) and this is the live payout path. *Mitigation:* additive-then-read, backfill the existing run to the flagship explicitly, and verify the draft's item set is identical before and after.
-- **Complexity:** Medium. ~10 files.
-
 **Owner gate — RESTATED 2026-07-26, this supersedes the earlier technical-only wording.** The
 RM100,000 is a **possibility, not a commitment**. Nothing is inked and no money has moved. It is
 **not** to be recorded until **BOTH** conditions hold:
