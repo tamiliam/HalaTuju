@@ -266,6 +266,14 @@ class TestFenceCoverageCompleteness(TestCase):
         # super sees all orgs + the platform (NULL) reconciliation row. The aggregate query lives
         # in usage.py, not a raw views_admin query, so no static-guard pragma applies.
         'AdminBillingUsageView': 'billing-org-fenced (org_admin own org; super all+platform)',
+        # Platform-level commercial config: the rate and margins applied to EVERY tenant. Not
+        # org-scoped data at all, so there is nothing to fence — the control is that only a
+        # super may read or write it (403 for org_admin, not 404: the route's existence is not
+        # the secret, its contents are).
+        'AdminBillingRatesView': 'super-only (platform commercial config, no tenant data)',
+        # Org-scoped: filtered on organisation_id, cross-org is 404. Super writes (a charge
+        # against a tenant), org_admin reads its own only.
+        'AdminOrgBuildHoursView': 'org-fenced (org_admin own org read; super writes)',
         # gate-fenced (via _scoped_application / _require_app_write / _require_qc)
         'AdminApplicationDetailView': 'gate', 'AdminVerdictSummaryView': 'gate',
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',

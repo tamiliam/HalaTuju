@@ -2735,6 +2735,192 @@ class AdminBillingUsageView(_AdminBase):
         return Response(payload)
 
 
+class AdminBillingRatesView(_AdminBase):
+    """SUPER-ONLY: read + set the conversion rate and per-category margins.
+
+    Owner design 2026-07-27: the rate and margins are PLATFORM-side editable values, while
+    hours sit on the org side. This is the platform side.
+
+    **Super-only, with no flag and no org_admin path — on purpose.** These numbers decide what
+    every tenant is charged. A tenant being able to read (let alone set) the margin applied to
+    them is a commercial disclosure, not a feature; org_admin gets a **403**, not a 404, because
+    unlike the dark usage screen there is nothing to hide about this route's existence — only
+    about its contents.
+
+    POST never updates in place. It writes a NEW effective-dated row, so changing a rate cannot
+    retroactively re-price a month that has already been billed. The history IS the audit trail.
+    """
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+
+        from .models import BillingRate
+        rows = BillingRate.objects.all()   # org-fence: platform-level config, no tenant data
+        return Response({'rates': [{
+            'id': r.id,
+            'category': r.category,
+            'kind': r.kind,
+            'value': str(r.value),
+            'effective_from': r.effective_from.isoformat(),
+            'updated_by_email': r.updated_by_email,
+            'note': r.note,
+        } for r in rows]})
+
+    def post(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+
+        from datetime import date
+        from decimal import Decimal, InvalidOperation
+
+        from .models import BillingRate
+
+        category = (request.data.get('category') or '').strip()
+        kind = (request.data.get('kind') or '').strip()
+        if category not in dict(BillingRate.CATEGORY_CHOICES):
+            return Response({'error': 'bad_category', 'code': 'bad_category'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if kind not in dict(BillingRate.KIND_CHOICES):
+            return Response({'error': 'bad_kind', 'code': 'bad_kind'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            value = Decimal(str(request.data.get('value')))
+        except (InvalidOperation, TypeError):
+            return Response({'error': 'bad_value', 'code': 'bad_value'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if value < 0:
+            # A negative margin or rate is almost certainly a typo, and it would silently
+            # produce a credit note rather than an invoice.
+            return Response({'error': 'negative_value', 'code': 'negative_value'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        raw_from = (request.data.get('effective_from') or '').strip()
+        try:
+            effective_from = (date.fromisoformat(raw_from) if raw_from
+                              else timezone.now().date().replace(day=1))
+        except ValueError:
+            return Response({'error': 'bad_effective_from', 'code': 'bad_effective_from'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        row, _created = BillingRate.objects.update_or_create(
+            category=category, kind=kind, effective_from=effective_from,
+            defaults={'value': value,
+                      'updated_by_email': (admin.email or ''),
+                      'note': (request.data.get('note') or '')})
+        return Response({'id': row.id, 'category': row.category, 'kind': row.kind,
+                         'value': str(row.value),
+                         'effective_from': row.effective_from.isoformat()},
+                        status=status.HTTP_201_CREATED)
+
+
+class AdminOrgBuildHoursView(_AdminBase):
+    """Build hours for ONE organisation's modules. Super writes; org_admin reads its own.
+
+    The org side of the owner's 2026-07-27 design. Fenced on `organisation_id` like every other
+    org-scoped surface: an org_admin sees only its own hours, and a cross-org id is a **404**,
+    never a 403 — consistent with the rest of the admin API, so the route leaks no existence.
+
+    Only a super may RECORD hours: it is a charge against a tenant, and a tenant recording what
+    it will be billed for is not a control anyone would accept.
+    """
+
+    def get(self, request, org_id):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        is_super = self.has_role(admin, 'super')
+        if not (is_super or admin.role == 'org_admin'):
+            return self._deny_role()
+        if not is_super and admin.owning_organisation_id != int(org_id):
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        month = (request.query_params.get('month') or '').strip()
+        if month and not _MONTH_RE.match(month):
+            return Response({'error': 'bad_month', 'code': 'bad_month'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        from .models import OrgBuildHours
+        qs = OrgBuildHours.objects.filter(organisation_id=org_id)  # org-fence: explicit filter
+        if month:
+            qs = qs.filter(period_month=month)
+        payload = {'organisation_id': int(org_id), 'lines': [{
+            'id': r.id, 'period_month': r.period_month, 'module': r.module,
+            'hours': str(r.hours), 'basis': r.basis,
+        } for r in qs]}
+
+        # The charge is only computed when a month is asked for AND its rates are set. A
+        # missing rate is reported as such, never silently rendered as RM0.00.
+        if month:
+            from . import platform_cost
+            try:
+                charge = platform_cost.development_charge(
+                    admin.owning_organisation if not is_super else _org_or_none(org_id), month)
+                payload['charge'] = {k: (str(v) if v is not None else None)
+                                     for k, v in charge.items() if k != 'lines'}
+            except platform_cost.RateMissing as exc:
+                payload['charge'] = None
+                payload['charge_blocked'] = str(exc)
+        return Response(payload)
+
+    def post(self, request, org_id):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+
+        from decimal import Decimal, InvalidOperation
+
+        from .models import OrgBuildHours
+
+        month = (request.data.get('period_month') or '').strip()
+        if not _MONTH_RE.match(month):
+            return Response({'error': 'bad_month', 'code': 'bad_month'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        module = (request.data.get('module') or '').strip()
+        basis = (request.data.get('basis') or '').strip()
+        if not module:
+            return Response({'error': 'module_required', 'code': 'module_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not basis:
+            # The whole point of the model: an hours figure with no stated reconstruction is
+            # not auditable, and this is the only place that can insist on one.
+            return Response({'error': 'basis_required', 'code': 'basis_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            hours = Decimal(str(request.data.get('hours')))
+        except (InvalidOperation, TypeError):
+            return Response({'error': 'bad_hours', 'code': 'bad_hours'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if hours <= 0:
+            return Response({'error': 'bad_hours', 'code': 'bad_hours'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        org = _org_or_none(org_id)
+        if org is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        row = OrgBuildHours.objects.create(
+            organisation=org, period_month=month, module=module, hours=hours,
+            basis=basis, recorded_by_email=(admin.email or ''))
+        return Response({'id': row.id, 'period_month': row.period_month,
+                         'module': row.module, 'hours': str(row.hours)},
+                        status=status.HTTP_201_CREATED)
+
+
+def _org_or_none(org_id):
+    from apps.courses.models import PartnerOrganisation
+    # org-fence: super-only callers reach this; the org id is validated, not trusted.
+    return PartnerOrganisation.objects.filter(pk=org_id).first()
+
+
 # ── Contract module (org-owned versioned bursary templates) — S3 admin API ────────
 # Access: super or org_admin ONLY, org-fenced (a cross-org template is 404, never
 # 403). Deploy is SUPER-only (org_admin -> 403). The service (apps.scholarship.

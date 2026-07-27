@@ -118,7 +118,9 @@ from .views_admin import (
     AdminPaymentRunCancelView,
     AdminPaymentRunCsvView,
     AdminPaymentFundingSummaryView,
+    AdminBillingRatesView,
     AdminBillingUsageView,
+    AdminOrgBuildHoursView,
     AdminOrgRequestListView,
     AdminOrgRequestCountView,
     AdminOrgRequestDetailView,
@@ -236,6 +238,10 @@ urlpatterns = [
     path('admin/scholarship/payments/funding-summary/', AdminPaymentFundingSummaryView.as_view()),
     # Billing & usage v1 (Sprint 13a) — super/org_admin usage screen, flag-gated 404-first.
     path('admin/scholarship/billing/usage/', AdminBillingUsageView.as_view()),
+    # Platform-side editable rates (SUPER only) + org-side build hours (super writes,
+    # org_admin reads its own). Owner design 2026-07-27.
+    path('admin/scholarship/billing/rates/', AdminBillingRatesView.as_view()),
+    path('admin/scholarship/billing/hours/<int:org_id>/', AdminOrgBuildHoursView.as_view()),
     path('admin/scholarship/payment-runs/', AdminPaymentRunListView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/', AdminPaymentRunDetailView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/items/<int:item_id>/', AdminPaymentRunItemView.as_view()),

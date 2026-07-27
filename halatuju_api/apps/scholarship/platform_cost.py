@@ -124,6 +124,94 @@ def month_totals(period_month):
     }
 
 
+# ── Rates + charges (owner design 2026-07-27) ─────────────────────────────────
+# Hours are recorded ORG-side; the conversion rate and per-category margins are PLATFORM-side
+# editable values. Everything below reads those rates — nothing here carries a hard-coded price.
+
+class RateMissing(Exception):
+    """No rate in force for a (category, kind) on the date asked for.
+
+    Raised, never swallowed. A missing rate must stop a charge being computed: an unbilled
+    month is a visible problem somebody fixes, whereas a month billed at a defaulted rate is
+    an invoice you have to withdraw and explain.
+    """
+
+
+def _month_start(period_month):
+    from datetime import date
+    year, mon = (int(x) for x in str(period_month).split('-'))
+    return date(year, mon, 1)
+
+
+def rate_in_force(category, kind, on_date):
+    """The value that applied ON that date — not the current one.
+
+    This is what stops a rate change in September silently re-pricing August. Returns the
+    latest row whose ``effective_from`` is on or before ``on_date``.
+    """
+    from .models import BillingRate
+
+    row = (BillingRate.objects
+           .filter(category=category, kind=kind, effective_from__lte=on_date)
+           .order_by('-effective_from')
+           .first())
+    if row is None:
+        raise RateMissing(
+            f'No {kind} in force for {category} on {on_date}. Set one on the platform '
+            f'billing-rates screen before billing this month — it will not be guessed.')
+    return row.value
+
+
+def development_charge(organisation, period_month):
+    """What this organisation is charged for build hours in a month.
+
+    hours x hourly_rate x (1 + development margin), each factor read from the rate table as at
+    the FIRST of the billed month. Returns a dict, never a bare number, because a charge on an
+    invoice needs to show its own working — the tenant is entitled to see how it was reached.
+    """
+    from .models import OrgBuildHours
+
+    rows = OrgBuildHours.objects.filter(
+        organisation=organisation, period_month=period_month)
+    hours = sum((r.hours for r in rows), Decimal('0.0'))
+    if not rows:
+        return {'month': period_month, 'hours': Decimal('0.0'), 'lines': [],
+                'rate_myr': None, 'margin_pct': None,
+                'subtotal_myr': Decimal('0.00'), 'charge_myr': Decimal('0.00')}
+
+    from .models import BillingRate
+    on = _month_start(period_month)
+    # Deliberately NOT wrapped in try/except — a missing rate propagates to the caller.
+    rate = rate_in_force(BillingRate.CATEGORY_DEVELOPMENT, BillingRate.KIND_HOURLY_RATE, on)
+    margin = rate_in_force(BillingRate.CATEGORY_DEVELOPMENT, BillingRate.KIND_MARGIN_PCT, on)
+
+    subtotal = (hours * rate).quantize(Decimal('0.01'))
+    charge = (subtotal * (Decimal('1') + margin / Decimal('100'))).quantize(Decimal('0.01'))
+    return {
+        'month': period_month,
+        'hours': hours,
+        'lines': [{'module': r.module, 'hours': r.hours, 'basis': r.basis} for r in rows],
+        'rate_myr': rate,
+        'margin_pct': margin,
+        'subtotal_myr': subtotal,
+        'charge_myr': charge,
+    }
+
+
+def apply_margin(amount_myr, category, period_month):
+    """Add the category's in-force margin to a cost. Used for infrastructure + metered lines.
+
+    Kept separate from `development_charge` because those two categories start from a COST we
+    paid, whereas development starts from hours we spent — different inputs, same margin
+    mechanism, and conflating them would hide which is which on the invoice.
+    """
+    from .models import BillingRate
+
+    margin = rate_in_force(category, BillingRate.KIND_MARGIN_PCT, _month_start(period_month))
+    return ((amount_myr or Decimal('0.00'))
+            * (Decimal('1') + margin / Decimal('100'))).quantize(Decimal('0.01'))
+
+
 def reconcile(period_month):
     """Compare what the METER recorded against the attributable slice of the real invoice.
 

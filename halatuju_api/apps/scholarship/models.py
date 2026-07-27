@@ -3038,6 +3038,118 @@ class PlatformCost(models.Model):
         return f'{self.period_month} {self.source}/{self.sku or self.service}: RM{self.amount_myr}'
 
 
+class BillingRate(models.Model):
+    """PLATFORM-side, super-only: the editable numbers that turn cost + effort into a charge.
+
+    Owner design (2026-07-27): hours are recorded on the ORG side; the conversion rate and the
+    per-category margins live here, on the platform side, as editable values. One home, so a
+    rate cannot drift between the screen that shows it and the code that bills on it.
+
+    **Effective-dated, deliberately.** A rate is not a setting, it is a term — and a term has a
+    date. Storing a single mutable number would mean editing the hourly rate in September
+    silently re-prices August's invoice, which is the kind of quiet retroactive change that
+    destroys trust in a bill. `rate_in_force()` therefore always asks "what was true on THAT
+    day?", never "what is true now?".
+
+    **There is no default and no fallback.** If no rate is in force, the charge calculation
+    REFUSES rather than returning zero or a guess. An unbilled month is a visible problem
+    somebody fixes; a month billed at an invented rate is an invoice you have to withdraw.
+    """
+    CATEGORY_INFRASTRUCTURE = 'infrastructure'   # what we pay Google/Supabase to keep it running
+    CATEGORY_METERED = 'metered'                 # per-event usage the tenant actually drives
+    CATEGORY_DEVELOPMENT = 'development'         # building the tenant's modules
+    CATEGORY_CHOICES = [
+        (CATEGORY_INFRASTRUCTURE, 'Infrastructure (platform fee)'),
+        (CATEGORY_METERED, 'Metered usage'),
+        (CATEGORY_DEVELOPMENT, 'Development hours'),
+    ]
+
+    KIND_MARGIN_PCT = 'margin_pct'
+    KIND_HOURLY_RATE = 'hourly_rate'
+    KIND_CHOICES = [
+        (KIND_MARGIN_PCT, 'Margin (%) added to the category'),
+        (KIND_HOURLY_RATE, 'Hourly rate (RM per hour)'),
+    ]
+
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    value = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        help_text='Percent for margin_pct (15 = +15%), RM/hour for hourly_rate. Decimal, '
+                  'never float — this ends up on an invoice.')
+    effective_from = models.DateField(
+        help_text='The day this value takes effect. A month is billed on the value in force '
+                  'during that month, so changing a rate never re-prices a closed month.')
+    updated_by_email = models.EmailField(
+        blank=True, default='',
+        help_text='Who set it. A rate change is a commercial act and should have a name on it.')
+    note = models.TextField(
+        blank=True, default='',
+        help_text='Why this value. A future reader asking "why 15%?" deserves an answer here '
+                  'rather than in somebody\'s memory.')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'billing_rates'
+        ordering = ['category', 'kind', '-effective_from']
+        constraints = [
+            # One value per (category, kind) per start date — a new value is a NEW ROW with a
+            # later date, never an edit of the old one. The history is the audit trail.
+            models.UniqueConstraint(
+                fields=['category', 'kind', 'effective_from'],
+                name='billing_rate_unique_effective'),
+        ]
+
+    def __str__(self):
+        unit = '%' if self.kind == self.KIND_MARGIN_PCT else ' RM/h'
+        return f'{self.category}.{self.kind} = {self.value}{unit} from {self.effective_from}'
+
+
+class OrgBuildHours(models.Model):
+    """ORG-side: hours spent building THIS organisation's modules, in a given month.
+
+    Owner requirement (2026-07-27): the billing must include the hours spent building the
+    tenant's modules. This is the record of those hours — deliberately separate from
+    `PlatformCost`, which holds money we PAY OUT. Hours are money we CHARGE. Summing the two
+    in one table would make every total meaningless.
+
+    **`basis` is required and is the point of the model.** No time-tracking system has ever
+    existed here, so every hours figure is somebody's reconstruction — from working days, from
+    a sprint count, from memory. That is legitimate input, but only if the reconstruction
+    travels with the number. "70 working days at 4h" is auditable; "280" is not.
+    """
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        related_name='build_hours',
+        help_text='The tenant whose modules were built. PROTECT: billing history must outlive '
+                  'any tidy-up of the organisation record.')
+    period_month = models.CharField(max_length=7, help_text="'YYYY-MM' the work is billed in.")
+    module = models.CharField(
+        max_length=200,
+        help_text="What was built, in the owner's words — e.g. 'Payments module', "
+                  "'Programme layer P1a-P4b'. This is what the tenant reads on the invoice.")
+    hours = models.DecimalField(
+        max_digits=8, decimal_places=1,
+        help_text='Hours spent. One decimal place: nobody can honestly reconstruct minutes.')
+    basis = models.TextField(
+        help_text='REQUIRED. How this figure was arrived at — the working-day count, the '
+                  'sprint span, whatever it was. There is no time tracker, so the number is a '
+                  'reconstruction and is only trustworthy if it says so.')
+    recorded_by_email = models.EmailField(blank=True, default='')
+    recorded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'org_build_hours'
+        ordering = ['-period_month', 'organisation']
+        indexes = [
+            models.Index(fields=['organisation', 'period_month'], name='build_hours_org_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.period_month} {self.organisation_id}: {self.hours}h {self.module}'
+
+
 # ── Partner-organisation comms (2026-07-26) ───────────────────────────────────
 # Weekly + milestone emails to the referral organisations that run this bursary
 # alongside us. See docs/plans/2026-07-26-partner-comms-roadmap.md.
