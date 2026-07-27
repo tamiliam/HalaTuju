@@ -6,6 +6,7 @@ import {
   getSources, createSource, updateSource, type SourceItem,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatPhone, isValidPhone } from '@/lib/scholarship'
 import PartnerEmailsCard from '@/components/sources/PartnerEmailsCard'
 import { Toggle } from '@/components/sources/shared'
@@ -43,9 +44,9 @@ export default function SourcesPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
 
-  const isSuper = !!(role?.is_super_admin || role?.role === 'super')
+  const isSuper = effectiveRole(role) === 'super'
   // Sources management: super + admin + org_admin (owner 2026-07-19). Matches the backend gate.
-  const canManage = isSuper || role?.role === 'org_admin' || role?.role === 'admin'
+  const canManage = canAccess('/admin/sources', effectiveRole(role))
 
   const [sources, setSources] = useState<SourceItem[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)

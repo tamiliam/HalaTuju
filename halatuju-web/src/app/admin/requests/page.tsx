@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 import {
   getOrgRequests, createOrgRequest, uploadOrgRequestAttachment, type OrgRequestDetail,
 } from '@/lib/admin-api'
@@ -32,7 +33,7 @@ const URGENCY_OPTIONS = ['blocking', 'important', 'nice_to_have']
 export default function AdminRequestsPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const isSuper = !!(role?.is_super_admin || role?.role === 'super')
+  const isSuper = effectiveRole(role) === 'super'
   const isOrgAdmin = role?.role === 'org_admin'
 
   const [requests, setRequests] = useState<OrgRequestDetail[]>([])

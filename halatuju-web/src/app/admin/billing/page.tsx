@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { canAccess, effectiveRole } from '@/lib/navigation'
 import { getBillingUsage, type BillingUsagePayload, type BillingOrgBlock } from '@/lib/admin-api'
 import {
   orderedServices, formatBytes, formatCount, formatMonth,
@@ -116,8 +117,8 @@ function OrgCard({ block, t }: { block: BillingOrgBlock; t: (k: string) => strin
 export default function AdminBillingPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const isSuper = !!(role?.is_super_admin || role?.role === 'super')
-  const isOrgAdmin = role?.role === 'org_admin'
+  const isSuper = effectiveRole(role) === 'super'
+  const mayView = canAccess('/admin/billing', effectiveRole(role))
 
   const [data, setData] = useState<BillingUsagePayload | null>(null)
   const [month, setMonth] = useState('')
@@ -137,7 +138,7 @@ export default function AdminBillingPage() {
 
   useEffect(() => { load() }, [load])
 
-  if (role && !isSuper && !isOrgAdmin) {
+  if (role && !mayView) {
     return <p className="text-red-600 p-6">{t('apiErrors.superAdminRequired')}</p>
   }
   if (loading && !data) return <p className="p-6 text-gray-500">{t('admin.billing.loading')}</p>

@@ -12,6 +12,7 @@ import {
 import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
 import { adminLanding } from '@/lib/adminLanding'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 
 type Step = 'login' | 'forgot' | 'forgot-sent'
 
@@ -64,7 +65,7 @@ export default function AdminLoginPage() {
         // One privileged scope per identity (super exempt): ends an active sponsor session.
         await enforceSingleScope('admin', {
           token: data.session.access_token,
-          isSuper: !!(role.is_super_admin || role.role === 'super'),
+          isSuper: effectiveRole(role) === 'super',
         })
         // Temp-password 7-day expiry (owner 2026-07-14). An UNCHANGED temp password
         // (must_change_password) older than the TTL is refused here — a clear message beats the

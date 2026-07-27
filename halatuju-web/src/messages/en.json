@@ -3000,6 +3000,14 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "nav": {
+      "group": {
+        "platform": "Platform",
+        "organisation": "Organisation",
+        "programme": "Programme",
+        "utility": "Account"
+      }
+    },
     "sources": {
       "nav": "Sources",
       "title": "Sources",

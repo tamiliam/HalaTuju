@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import {
   getPaymentRun, updatePaymentRunItem, signPaymentRun, cancelPaymentRun, fetchPaymentRunCsv,
@@ -58,12 +59,11 @@ export default function PaymentRunDetailPage() {
   const id = Number(params?.id)
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const allowed = !!(role?.is_super_admin || role?.role === 'super'
-    || role?.role === 'admin' || role?.role === 'org_admin' || role?.role === 'finance')
+  const allowed = canAccess('/admin/payments', effectiveRole(role))
   // Finance reads and signs the check; it never creates, edits or cancels a run (the backend
   // refuses those with 403 regardless — hiding the controls just keeps dead affordances off
   // the screen). It also has no B40 route, so applicant links must not render for it.
-  const isFinanceViewer = role?.role === 'finance'
+  const isFinanceViewer = effectiveRole(role) === 'finance'
 
   const [run, setRun] = useState<PaymentRunDetail | null>(null)
   const [error, setError] = useState('')

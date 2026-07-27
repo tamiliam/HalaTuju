@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 import {
   getOrgRequest, answerOrgRequest, approveOrgRequest, deferOrgRequest, modifyOrgRequest,
   declineOrgRequest, triageOrgRequest, quoteOrgRequest, requoteOrgRequest, scheduleOrgRequest,
@@ -34,7 +35,7 @@ export default function AdminRequestDetailPage() {
   const params = useParams<{ id: string }>()
   const id = Number(params.id)
 
-  const isSuper = !!(role?.is_super_admin || role?.role === 'super')
+  const isSuper = effectiveRole(role) === 'super'
   const reqRole: 'super' | 'org_admin' = isSuper ? 'super' : 'org_admin'
 
   const [req, setReq] = useState<OrgRequestDetail | null>(null)

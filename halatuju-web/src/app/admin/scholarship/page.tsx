@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
   getAssignableAdmins,
@@ -43,7 +44,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
 export default function AdminScholarshipList() {
   const { token, role } = useAdminAuth()
-  const isSuper = role?.role === 'super' || !!role?.is_super_admin
+  const isSuper = effectiveRole(role) === 'super'
   // Assignment (the "Assigned" column + inline dropdown) is a super or org_admin power —
   // an org_admin assigns their own org's reviewers (backend fences the target + application).
   const canAssign = isSuper || role?.role === 'org_admin'

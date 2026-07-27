@@ -3000,6 +3000,14 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "nav": {
+      "group": {
+        "platform": "Platform",
+        "organisation": "Organisasi",
+        "programme": "Program",
+        "utility": "Akaun"
+      }
+    },
     "sources": {
       "nav": "Sumber",
       "title": "Sumber",

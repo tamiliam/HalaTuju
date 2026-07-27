@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getContractTemplates, createContractTemplate, importContractDocx, putContractClauses,
   updateContractConfig,
@@ -28,9 +29,8 @@ export default function ContractsListPage() {
   const { t } = useT()
   const router = useRouter()
 
-  const isSuper = !!(role?.is_super_admin || role?.role === 'super')
-  const isOrgAdmin = role?.role === 'org_admin'
-  const allowed = isSuper || isOrgAdmin
+  const isSuper = effectiveRole(role) === 'super'
+  const allowed = canAccess('/admin/contracts', effectiveRole(role))
 
   const [templates, setTemplates] = useState<ContractTemplateSummary[]>([])
   const [loading, setLoading] = useState(true)

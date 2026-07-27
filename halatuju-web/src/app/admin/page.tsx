@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import QRCode from 'react-qr-code'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useT } from '@/lib/i18n'
+import { canAccess, effectiveRole } from '@/lib/navigation'
 
 export default function AdminDashboard() {
   const { token, role } = useAdminAuth()
@@ -17,22 +18,22 @@ export default function AdminDashboard() {
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
 
-  // The HalaTuju dashboard is for the org rep (partner) + super only. BrightPath roles
-  // (admin / qc / reviewer) have no dashboard — send them to their scholarship queue.
-  const effRole = role?.is_super_admin ? 'super' : role?.role
+  // The HalaTuju dashboard is a PLATFORM surface — the org rep (partner) + super only. The
+  // registry owns who reaches it; a BrightPath role (admin / qc / reviewer / org_admin) has no
+  // dashboard and goes to its scholarship queue instead.
+  const effRole = effectiveRole(role)
+  const mayView = canAccess('/admin', effRole)
   useEffect(() => {
-    if (effRole === 'admin' || effRole === 'qc' || effRole === 'reviewer' || effRole === 'org_admin') {
-      router.replace('/admin/scholarship')
-    }
-  }, [effRole, router])
+    if (role && !mayView) router.replace('/admin/scholarship')
+  }, [role, mayView, router])
 
   useEffect(() => {
     if (!token) return
-    if (effRole !== 'partner' && effRole !== 'super') return  // BrightPath roles redirect instead
+    if (!mayView) return  // BrightPath roles redirect instead
     getPartnerDashboard({ token })
       .then(setData)
       .catch(() => setError(t('admin.notPartnerAdmin')))
-  }, [token, effRole])
+  }, [token, mayView])
 
   const referralUrl = data?.org_code
     ? `${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${data.org_code}`

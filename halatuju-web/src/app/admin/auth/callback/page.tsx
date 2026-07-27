@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/admin-supabase'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
 import { adminLanding } from '@/lib/adminLanding'
+import { effectiveRole } from '@/lib/navigation'
 import { useT } from '@/lib/i18n'
 
 export default function AdminAuthCallbackPage() {
@@ -44,7 +45,7 @@ export default function AdminAuthCallbackPage() {
         // One privileged scope per identity (super exempt): ends an active sponsor session.
         await enforceSingleScope('admin', {
           token: session.access_token,
-          isSuper: !!(role.is_super_admin || role.role === 'super'),
+          isSuper: effectiveRole(role) === 'super',
         })
         // Reviewers/viewers have no partner-org dashboard — send them to their workspace
         // (B40 Applications); org admins/super keep the dashboard; a reviewer with an

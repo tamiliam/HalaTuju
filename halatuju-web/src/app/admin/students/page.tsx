@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 import { formatNricDisplay } from '@/lib/scholarship'
 import { Pagination } from '@/components/Pagination'
 
@@ -43,7 +44,7 @@ export default function AdminStudentList() {
   const router = useRouter()
   // Platform surface — super-only (surface partition). The backend 403s a non-super, but
   // a direct-URL visitor gets a clean redirect rather than an error flash.
-  const isSuper = role?.is_super_admin || role?.role === 'super'
+  const isSuper = effectiveRole(role) === 'super'
   useEffect(() => {
     if (role && !isSuper) router.replace('/admin/scholarship')
   }, [role, isSuper, router])
@@ -201,7 +202,7 @@ export default function AdminStudentList() {
               <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.examHeader')}</th>
               <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.schoolHeader')}</th>
               <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.phoneHeader')}</th>
-              {role?.is_super_admin && (
+              {isSuper && (
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">
                   {t('admin.sourceHeader')} <span className="text-[10px] text-gray-400 ml-1 normal-case">[{t('admin.superAdmin')}]</span>
                 </th>
@@ -240,7 +241,7 @@ export default function AdminStudentList() {
                 </td>
                 <td className="px-4 py-3.5 text-gray-600">{s.school || '\u2014'}</td>
                 <td className="px-4 py-3.5 text-gray-600">{formatPhone(s.contact_phone)}</td>
-                {role?.is_super_admin && (
+                {isSuper && (
                   <td className="px-4 py-3.5">
                     <div className="text-gray-600">{s.referral_source || '\u2014'}</div>
                     {s.org_name && (

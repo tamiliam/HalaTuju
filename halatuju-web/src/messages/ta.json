@@ -3000,6 +3000,14 @@
     "accessRestored": "அணுகல் மீட்டெடுக்கப்பட்டது"
   },
   "admin": {
+    "nav": {
+      "group": {
+        "platform": "தளம்",
+        "organisation": "நிறுவனம்",
+        "programme": "திட்டம்",
+        "utility": "கணக்கு"
+      }
+    },
     "sources": {
       "nav": "மூலங்கள்",
       "title": "மூலங்கள்",

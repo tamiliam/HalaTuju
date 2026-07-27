@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 import { getContractTemplate, type ContractTemplateDetail, type ContractStatus } from '@/lib/admin-api'
 import ConfigForm from '@/components/contracts/ConfigForm'
 import ClauseEditor from '@/components/contracts/ClauseEditor'
@@ -29,7 +30,7 @@ export default function ContractEditorPage() {
   const { t } = useT()
   const router = useRouter()
 
-  const isSuper = !!(role?.is_super_admin || role?.role === 'super')
+  const isSuper = effectiveRole(role) === 'super'
   const [tpl, setTpl] = useState<ContractTemplateDetail | null>(null)
   const [tab, setTab] = useState<Tab>('config')
   const [loading, setLoading] = useState(true)

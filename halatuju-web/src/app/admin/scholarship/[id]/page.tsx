@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 import InterviewScheduleCard from '@/components/admin/InterviewScheduleCard'
 import VerifiedTick from '@/components/VerifiedTick'
 import { formatPhone, formatAddress, isValidPhone, formatNric, referralAcronym, expandMatricInstitution, preUTrackMalay } from '@/lib/scholarship'
@@ -221,7 +222,7 @@ export default function AdminScholarshipDetailPage() {
   const id = Number(params?.id)
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const isSuper = role?.role === 'super' || !!role?.is_super_admin
+  const isSuper = effectiveRole(role) === 'super'
   // Assignment (F7) is a super or org_admin power — an org_admin assigns their own org's reviewers.
   const canAssign = isSuper || role?.role === 'org_admin'
   // Sources / witness-org management: super + admin + org_admin (owner 2026-07-19). Distinct from

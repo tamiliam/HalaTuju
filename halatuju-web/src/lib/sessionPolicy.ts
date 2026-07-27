@@ -11,6 +11,7 @@
 // localStorage propagates to any other tab on that scope via the client's storage listener.
 import { getAdminSupabase } from './admin-supabase'
 import { getSponsorSupabase } from './sponsor-supabase'
+import { effectiveRole } from './navigation'
 
 type Scope = 'admin' | 'sponsor'
 
@@ -24,7 +25,7 @@ async function isSuperIdentity(token: string): Promise<boolean> {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     })
     const data = await res.json()
-    return !!(data?.is_super_admin || data?.role === 'super')
+    return effectiveRole(data) === 'super'
   } catch {
     return false  // fail-closed: treat as non-super (enforce the policy)
   }

@@ -9,6 +9,7 @@ import {
 } from '@/lib/admin-api'
 import { programmeStaff, referralPartners, tenantAdmins } from '@/lib/adminStaff'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 
 // The Administration panel (Stitch v2): a cPanel-style icon grid split into a PLATFORM
 // section (super only — referral partners + add-tenant + the ALL-staff table across
@@ -68,14 +69,15 @@ export default function AdministrationPage() {
   const { t } = useT()
   const router = useRouter()
 
-  const isSuper = !!(role?.is_super_admin || role?.role === 'super')
-  const isOrgAdmin = role?.role === 'org_admin'
+  const r = effectiveRole(role)
+  const isSuper = r === 'super'
+  const isOrgAdmin = r === 'org_admin'
   // Admin-General (matrix 2026-07-15): READ-ONLY view of the org staff table — no invite
   // forms, no resend/revoke, no acting icon-cards. Only super + org_admin may manage.
-  const isAdminGeneral = role?.role === 'admin'
+  const isAdminGeneral = r === 'admin'
   // Finance (matrix 2026-07-23): same read-only Administration branch as Admin-General, but
   // its cards are Sponsors / Payments / Billing -- no Sources, no Contracts, no Invite.
-  const isFinance = role?.role === 'finance'
+  const isFinance = r === 'finance'
   const canManage = isSuper || isOrgAdmin
 
   const [panel, setPanel] = useState<Panel>(null)

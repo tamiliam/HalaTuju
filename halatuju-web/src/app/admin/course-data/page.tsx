@@ -5,6 +5,7 @@ import { getCourseDataStatus, runCourseDataCheck, type CourseDataStatusResponse,
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 
 function fmtDate(iso: string | null): string | null {
   if (!iso) return null
@@ -18,7 +19,7 @@ export default function CourseDataDashboard() {
   const { t } = useT()
   const router = useRouter()
   // Platform surface — super-only (surface partition); non-super redirects (backend also 403s).
-  const isSuper = role?.is_super_admin || role?.role === 'super'
+  const isSuper = effectiveRole(role) === 'super'
   useEffect(() => {
     if (role && !isSuper) router.replace('/admin/scholarship')
   }, [role, isSuper, router])

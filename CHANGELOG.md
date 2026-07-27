@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## One route registry behind the admin menu (nav/IA sprint N1) — 2026-07-27
+
+First of three sprints on the console navigation restructure. **Zero visual change**: the menu
+renders exactly as it did, for all seven roles, proven by a test that encodes the pre-sprint bar.
+What changed is that it now comes from data rather than a chain of role checks.
+
+Design of record: <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1cb157a6>.
+
+### Added
+- **`src/lib/navigation.ts`** — every admin route, grouped by the scope it belongs to
+  (Platform / Organisation / Programme / utility), each carrying its i18n key, the roles that may
+  see it, and how it is gated. Pure and node-testable, like `adminLanding.ts`. The module docstring
+  states plainly that it is **not the security fence** — the org fence and the per-endpoint role
+  gates are unchanged, and hiding a link has never been access control.
+- **`navigation.test.ts` (61 tests)** — i18n parity for every label across en/ms/ta; a per-role
+  visibility snapshot; active-route resolution for every href, every alias and every nested detail
+  page; dark-ship probe semantics; and a drift guard that reads the app router off disk so a new
+  admin page with no menu home fails the build.
+- Four nav group headings in en/ms/ta (parity 3976). Malay and Tamil are first drafts.
+
+### Fixed
+- **Three pages highlighted nothing in the menu.** `isActive` special-cased Payments, Contracts and
+  Sponsors and forgot Requests, Sources and Billing, so standing on those three the console could
+  not tell you where you were. Resolution is now longest-match over the registry, and each item
+  declares the hub it lives under — no special cases left to forget.
+- **The index route was swallowing unknown paths.** `/admin` prefixes every admin URL, so an
+  unrecognised route resolved to the dashboard and inherited *its* roles — which would have refused
+  a reviewer on a page nobody had declared. `/admin` now matches exactly. Found by a test, not in
+  review.
+- **The Students list disagreed with its own gate.** The page guard admitted `role === 'super'`
+  while the source column and export control read the raw `is_super_admin` flag, so an account with
+  one and not the other reached the page with controls missing. Both now read the one normaliser.
+
+### Changed
+- The role chain in `admin/layout.tsx` (8 link objects, seven branches) is deleted; the bar renders
+  from the registry. The sponsor badge no longer re-derives who may see it.
+- **`effectiveRole()` replaces 17 hand-written copies** of `is_super_admin ? 'super' : role` across
+  the layout, 13 admin pages, `sessionPolicy.ts`, the login page and the OAuth callback. Route-level
+  guards now ask `canAccess()`. Anything finer than "may you open this page" — `canCreate` on
+  Payments, `canManage` on Administration, the cockpit predicates — deliberately stays local.
+
+### Verification
+`npx jest` 841 passed (55 suites, +61); `node scripts/check-i18n.js` 3976 keys × 3; `next build`
+exit 0. No backend change, no migration, pytest untouched.
 ## Sponsor module S1 — one sponsor, whole — 2026-07-27
 
 Sprint 1 of `.claude/plans/snazzy-whistling-biscuit.md` (owner-approved; design of record

@@ -2,12 +2,15 @@
 
 import { AdminAuthProvider, useAdminAuth } from '@/lib/admin-auth-context'
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { adminSignOut } from '@/lib/admin-supabase'
 import { mustCompleteProfile } from '@/lib/adminLanding'
 import { getPendingSponsorCount } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import {
+  effectiveRole, legacyBarItems, legacyBarActiveId, NO_PROBES,
+} from '@/lib/navigation'
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const { isAdminAuthenticated, isLoading, role, token } = useAdminAuth()
@@ -16,6 +19,16 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [pendingSponsors, setPendingSponsors] = useState(0)
   const { t } = useT()
+
+  // The menu now comes from the route registry (lib/navigation.ts), not a chain of role checks.
+  // NO_PROBES is correct here: the two dark-shipped routes (Requests, Billing) are reached from
+  // the Administration hub, never the bar, so nothing on this surface depends on a probe. The
+  // shell that probes for real arrives with the sidebar.
+  const r = effectiveRole(role)
+  const navItems = useMemo(
+    () => legacyBarItems({ role: r, probes: NO_PROBES }),
+    [r],
+  )
 
   useEffect(() => {
     // Don't redirect if on login or callback pages
@@ -37,10 +50,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     setMobileOpen(false)
   }, [pathname])
 
-  // Pending-sponsor count for the Administration badge — only the roles that can see Sponsors
-  // (super / org_admin / Admin-General). Refetched on navigation so it stays fresh after vetting.
+  // Pending-sponsor count for the Administration badge. Who may see it is no longer re-derived
+  // here: the registry says which items carry the badge and which roles reach them, so this
+  // fetch fires iff a badged item is actually on this person's bar. Refetched on navigation so
+  // it stays fresh after vetting. A badge is a hint — a refusal is swallowed, never surfaced.
   useEffect(() => {
-    const canSee = !!(role?.is_super_admin || role?.role === 'admin' || role?.role === 'org_admin')
+    const canSee = navItems.some((i) => i.badge === 'pendingSponsors')
     if (!isAdminAuthenticated || !token || !canSee) { setPendingSponsors(0); return }
     getPendingSponsorCount({ token })
       .then((d) => setPendingSponsors(d.count))
@@ -69,17 +84,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     router.replace('/admin/login')
   }
 
-  // Payments + Contracts + Sponsors are sub-pages of Administration (no top-level nav entry), so
-  // their pages highlight the Administration link as active (owner, 2026-07-16/18/21).
-  const isActive = (href: string) =>
-    pathname === href || (href === '/admin/administration'
-      && (pathname.startsWith('/admin/payments') || pathname.startsWith('/admin/contracts')
-          || pathname.startsWith('/admin/sponsors')))
+  // Which bar entry is highlighted. Payments / Contracts / Sponsors / Sources / Billing /
+  // Requests have no entry of their own and light up the Administration hub they live under —
+  // the registry says so per item, so the three that used to highlight NOTHING (requests,
+  // sources, billing) now work without another special case here.
+  const activeId = legacyBarActiveId(pathname)
 
-  // Role-driven menu (2026-06): super/admin see everything; partner sees only
-  // Dashboard + Students (own org) — no Guide/FAQ; reviewer + qc see only B40 Applications
-  // (qc lands on the awaiting-QC queue).
-  const r = role?.is_super_admin ? 'super' : (role?.role || 'reviewer')
   // Header identity suffix: only a genuine super sees "(Super admin)". Org members show their
   // org; everyone else shows their real role label (a reviewer/qc must NOT read "Super Admin"
   // just because they have no org).
@@ -88,34 +98,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     : role?.org_name
       ? role.org_name
       : t(`admin.role.${r}`)
-  const dashboard = { href: '/admin', label: t('common.dashboard') }
-  const students = { href: '/admin/students', label: t('admin.students') }
-  const scholarship = { href: '/admin/scholarship', label: t('admin.scholarship.nav') }
-  const courseData = { href: '/admin/course-data', label: t('admin.courseData.nav') }
-  const administration = { href: '/admin/administration', label: t('admin.administration.nav') }
-  const profile = { href: '/admin/profile', label: t('admin.profile') }
-  const guide = { href: '/admin/guide', label: t('admin.guideNav') }
-  const faq = { href: '/admin/faq', label: t('admin.faqNav') }
-  const navLinks =
-    // BrightPath (bursary) roles — admin + qc + reviewer + org_admin — see the scholarship
-    // side, NOT the HalaTuju course-selector pages (Dashboard/Students/Course Data), which
-    // only super retains. Per the role matrix (2026-07-15): QC has NO Sponsors; Admin-General
-    // and org_admin get the Administration panel (org_admin manages staff, Admin-General views it
-    // read-only); super gets it as the platform console. Sponsors is NO LONGER a top-level entry
-    // (owner 2026-07-21) — it lives inside Administration as a card, with the pending-approval badge.
-    r === 'partner' ? [dashboard, students, profile]        // HalaTuju org rep
-    : r === 'reviewer' ? [scholarship, profile, guide, faq]
-    : r === 'qc' ? [scholarship, profile, guide, faq]        // QC: no Sponsors (matrix)
-    : r === 'admin' ? [scholarship, administration, profile, guide, faq]
-    : r === 'org_admin' ? [scholarship, administration, profile, guide, faq]
-    // Finance has NO B40 scope, so NO Scholarship link -- it would 403. It reaches Payments
-    // through the Administration card, exactly as admin/org_admin do.
-    : r === 'finance' ? [administration, profile, guide, faq]
-    : [dashboard, students, scholarship, courseData, administration, profile, guide, faq]  // super
 
   // A small red count on the Administration entry when sponsor accounts await vetting.
-  const navBadge = (href: string) =>
-    href === '/admin/administration' && pendingSponsors > 0 ? (
+  const navBadge = (badge?: string) =>
+    badge === 'pendingSponsors' && pendingSponsors > 0 ? (
       <span
         className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-none align-middle"
         title={t('admin.administration.pendingApproval', { count: String(pendingSponsors) })}
@@ -133,13 +119,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-4 ml-6">
-            {navLinks.map(link => (
+            {navItems.map(item => (
               <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm font-medium ${isActive(link.href) ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
+                key={item.id}
+                href={item.href}
+                className={`text-sm font-medium ${activeId === item.id ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'}`}
               >
-                {link.label}{navBadge(link.href)}
+                {t(item.labelKey)}{navBadge(item.badge)}
               </Link>
             ))}
           </div>
@@ -178,13 +164,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden border-t bg-white px-4 py-3 space-y-1">
-            {navLinks.map(link => (
+            {navItems.map(item => (
               <Link
-                key={link.href}
-                href={link.href}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-medium ${isActive(link.href) ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
+                key={item.id}
+                href={item.href}
+                className={`block px-3 py-2.5 rounded-lg text-sm font-medium ${activeId === item.id ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
               >
-                {link.label}{navBadge(link.href)}
+                {t(item.labelKey)}{navBadge(item.badge)}
               </Link>
             ))}
             <div className="border-t border-gray-100 pt-2 mt-2">

@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import {
   getPaymentRuns, createPaymentRun, getFundingSummary,
@@ -33,9 +34,11 @@ export default function PaymentsLandingPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const router = useRouter()
-  const allowed = !!(role?.is_super_admin || role?.role === 'super'
-    || role?.role === 'admin' || role?.role === 'org_admin' || role?.role === 'finance')
-  const canCreate = allowed && role?.role !== 'finance'
+  const r = effectiveRole(role)
+  const allowed = canAccess('/admin/payments', r)
+  // Finer than the route: finance may READ a run and sign the finance check, but may never
+  // create, edit, cancel or price one (role matrix). That stays a local capability check.
+  const canCreate = allowed && r !== 'finance'
 
   const [runs, setRuns] = useState<PaymentRunSummary[]>([])
   const [funding, setFunding] = useState<FundingSummary | null>(null)

@@ -6,11 +6,15 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { effectiveRole } from '@/lib/navigation'
 import { formatNricDisplay } from '@/lib/scholarship'
 
 export default function AdminStudentDetail() {
   const { id } = useParams<{ id: string }>()
   const { token, role } = useAdminAuth()
+  // Platform surface — the source + danger-zone controls are super-only. Read through the
+  // one role normaliser so this can't disagree with the page's own gate.
+  const isSuper = effectiveRole(role) === 'super'
   const router = useRouter()
   const { t } = useT()
   const [data, setData] = useState<StudentDetailData | null>(null)
@@ -242,7 +246,7 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 9: Sumber Rujukan (super admin only) */}
-        {role?.is_super_admin && (
+        {isSuper && (
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128279;</span> {t('admin.referralSource')}
@@ -257,7 +261,7 @@ export default function AdminStudentDetail() {
       </div>
 
       {/* Danger Zone - super admin only */}
-      {role?.is_super_admin && (
+      {isSuper && (
         <div className="mt-8 bg-white border border-red-200 rounded-xl overflow-hidden">
           <div className="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center justify-between">
             <div>
