@@ -524,7 +524,44 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-27)
 
-**✅ CODE COMPLETE + MIGRATED 2026-07-27 — SPONSOR MODULE S1: one sponsor, whole.** Commit
+**✅ SHIPPED + LIVE 2026-07-27 — NAV/IA SPRINT N1: one route registry behind the admin menu.**
+Commit `20d683b4`; build `39732b6` SUCCESS both services (api `…00886-zgt`, web `…00729-hth`);
+smoke green. Plan `docs/plans/2026-07-27-nav-ia-roadmap.md` (3 sprints, owner-approved); design of
+record <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1cb157a6>; retro
+`docs/retrospective-2026-07-27-nav-registry-n1.md`; decisions ×3; lessons ×2. **NO migration,
+NO backend change** — `halatuju-web` only (plus one ported backend test).
+- **Why:** the menu was a hardcoded ternary chain over 8 links in `admin/layout.tsx`, with no
+  sub-items and no notion of scope, so the Organisation → Programme hierarchy had nowhere to land.
+  Six routes had NO nav entry at all, and `isActive` special-cased three of them and forgot three,
+  so `/admin/requests`, `/admin/sources` and `/admin/billing` highlighted **nothing**.
+- **`src/lib/navigation.ts` is the one home** — every admin route grouped by scope (platform /
+  organisation / programme / utility) with its i18n key, roles and gate. Pure + node-testable like
+  `adminLanding.ts`. **It is NOT the fence** (docstring says so): the org fence + endpoint role
+  gates are untouched. Role sets were derived by READING each page's existing guard, so N1 changes
+  no behaviour — pinned by a test that encodes the pre-sprint bar for all seven roles.
+- **`effectiveRole()` replaced 17 hand-written copies** of `is_super_admin ? 'super' : role`
+  (layout + 13 pages + `sessionPolicy` + login + OAuth callback). Route guards ask `canAccess()`;
+  anything finer (`canCreate` on Payments, `canManage` on Administration, the cockpit predicates)
+  deliberately stays local — the registry is not a permission engine.
+- **⚠ `/admin` matches EXACTLY** (`exact: true`). It prefixes every admin URL, so longest-match
+  alone made an unrecognised route resolve to the dashboard and inherit ITS roles — which would
+  have refused a reviewer on a page nobody declared. Found by a test, not review.
+- **⚠ FOR THE NEXT AGENT ADDING AN ADMIN ROUTE:** a route-drift test reads the app router off disk
+  and FAILS the build if a new **top-level** `/admin/<x>/page.tsx` has no registry entry. That is
+  deliberate (it is what stops orphan #7). Nested dynamic routes (`sponsors/[id]`) need nothing —
+  they resolve to their parent. Add one `NAV_GROUPS` entry with `roles` + a labelKey to clear it.
+- **Transitional fields to delete in N2** (`chrome`, `hubParent`, `LEGACY_BAR_ORDER`) reproduce
+  today's bar order exactly; **TD-181** tracks them so they cannot quietly become permanent.
+- **863 jest** (+61) / i18n parity **4034 ×3**; `tsc` clean. `next build` OOMs intermittently on the
+  8 GB box after a full test run — that is the documented memory issue, not code; `tsc` is the
+  authoritative type check here.
+- **▶ NEXT = N2** (the shell: scope sidebar, breadcrumb, ⌘K palette, help + account menus,
+  notification bell aggregating existing counts). No backend, no migration. Then N3 (org/programme
+  switchers + one new fenced endpoint + the Administration route split).
+
+**✅ SHIPPED + LIVE 2026-07-27 — SPONSOR MODULE S1: one sponsor, whole.** Deployed in build
+`e0234ed` (SUCCESS both services); `/api/v1/admin/sponsors/<pk>/` answers 401 unauthenticated, no
+API errors post-deploy. The four authenticated smoke checks remain owed. Commit
 `f69be3c4` (worktree `.worktrees/sponsor-detail`, branch `feat/sponsor-detail`). Plan
 `.claude/plans/snazzy-whistling-biscuit.md`; design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>; retro

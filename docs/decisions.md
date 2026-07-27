@@ -5844,3 +5844,54 @@ never recover most of this cost, because most of this cost is not usage.
 **Revisit if:** a second tenant arrives (the platform-driven share is spread, not doubled), or
 the two 2026-07-26 waste fixes land and pull GCP from RM88 to ~RM36 — which would move the
 monthly floor to roughly RM138 and, at +15%, a fee near **RM159/month** with one paying org.
+
+## The admin menu is data, and that data is NOT the fence — Nav/IA N1, 2026-07-27
+**Decision:** `halatuju-web/src/lib/navigation.ts` holds every admin route with the roles that may
+see it, and the menu renders from it. Its docstring states explicitly that it is a UX artefact and
+never access control; the org fence (`_AdminBase._org_scoped` / `_org_allows`) and the per-endpoint
+role gates are untouched. Role sets were derived by reading each page's existing guard, so the
+sprint changed no behaviour. `docs/scholarship/role-matrix.md` now points back at the file, and the
+order of change is: matrix, then registry, then page guard, in one commit.
+**Alternatives considered:** (a) leave the ternary chain and add the Programme level to it — the
+chain was already at seven branches and had no notion of sub-items; (b) make the registry the
+authority and have pages ask it for permission — rejected, because that relocates a security
+decision into the client, which is the mistake the 2026-07-15 surface-partition sprint fixed.
+**Rationale:** the Organisation → Programme hierarchy needs somewhere to land, and a hardcoded
+chain has no room for it. Encoding visibility as data also made six routes with no menu home and
+three with no active state visible as defects rather than as normal.
+**Trade-offs:** one more keep-in-sync pair (registry ↔ role matrix). Accepted because the menu must
+render before any request, so the client genuinely needs the rule and not just a value — mitigated
+with cross-references in both directions and a per-role snapshot test.
+**Revisit if:** the console ever gains a role whose visibility depends on per-record state rather
+than on role alone; a static registry would then be the wrong shape.
+
+## The N1 menu keeps its old ORDER on transitional scaffolding — Nav/IA N1, 2026-07-27
+**Decision:** `NAV_GROUPS` carries the target scope structure (platform → organisation → programme
+→ utility), but three fields — `chrome`, `hubParent`, `LEGACY_BAR_ORDER` — reproduce the existing
+bar sequence exactly, so N1 is visually inert for all seven roles. Logged as **TD-181**; N2 deletes
+all three when the sidebar renders every item in its own group.
+**Alternatives considered:** (a) ship scope order immediately — for admin/org_admin that moves
+Administration above B40 Applications, a visible change to the daily-driver roles in a sprint whose
+whole ship criterion was "the menu does not move"; (b) reorder the groups to fake the old sequence
+— makes the sidebar order wrong in N2, trading a temporary problem for a permanent one.
+**Rationale:** a restructure that also moves everyone's menu on day one is two changes wearing one
+commit, and if something breaks there is no way to tell which caused it.
+**Trade-offs:** `LEGACY_BAR_ORDER` is a literal list of ids mirroring the registry — the shape
+lessons.md warns about. Accepted only because a test asserts it is complete against the registry in
+both directions, and because it is scheduled for deletion rather than merely disliked.
+**Revisit if:** N2 slips more than one sprint — scaffolding with no delivery date stops being
+scaffolding.
+
+## Dark-shipped routes gate on the API's 404, never on a client flag — Nav/IA N1, 2026-07-27
+**Decision:** `NavGate` has a `probe` mode. Requests and Billing are shown only once their endpoint
+answers; `unknown` (not yet loaded) and `dark` (404) both count as not-live, and each item declares
+how it renders while dark — Requests hides, Billing degrades to "coming soon".
+**Alternatives considered:** mirroring `REQUESTS_ENABLED` / `BILLING_USAGE_ENABLED` into
+`NEXT_PUBLIC_*` build-time flags — a second source of truth for whether a feature exists, settable
+in the wrong place, and stale until the next build.
+**Rationale:** the API already answers the question; the 404 IS the value. This follows the standing
+lesson that the best fix for a keep-in-sync pair is to delete one side, and reproduces exactly what
+the Administration hub has done since the features were dark-shipped.
+**Trade-offs:** a per-render round trip decides visibility, so a slow probe briefly hides a live
+feature. Preferred to the reverse (flashing in a dark one), and pinned by a test.
+**Revisit if:** a dark feature ever needs to be visible-but-disabled before its endpoint exists.

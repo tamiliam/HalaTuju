@@ -1180,7 +1180,10 @@ the partner has none**. **What it needs:** (1) an org-scoped scholarship-applica
 serializer that gives a partner only the non-sensitive view of *their* referred applicants (decide the field
 allowlist — a partner is not a reviewer/sponsor, so no verdict/QC internals, and mind two-way anonymity);
 (3) the partner nav gains a conditional `scholarship` item shown only when the count > 0; (4) the FE list
-page filtered to the partner's org. **Note:** "BrightPath Partner" as a *separate* role was considered and
+page filtered to the partner's org. **Update 2026-07-27 (nav/IA N1):** item (3) is now a
+few lines of data — add a `NavItem` to the `programme` group in `halatuju-web/src/lib/navigation.ts`
+with `roles: ['partner']` and a probe-style gate for the count. The nav half is no longer a
+code change; (1), (2) and (4) are unaffected. **Note:** "BrightPath Partner" as a *separate* role was considered and
 **dropped** — there is one unified `partner`. **Risk if left:** none (feature not promised to users yet).
 **Size:** small-to-medium (one scoped endpoint + serializer + nav conditional + a list view + tests).
 
@@ -1480,3 +1483,21 @@ so a fee set today prices in ~RM20/month of avoidable retention. Fix BEFORE fixi
   ×3) was written in one pass; the Malay and Tamil are unreviewed. The EMAILS themselves are English-only
   by design (as every staff/partner email is), so this is the admin screen only. Owner pass wanted.
   (Logged 2026-07-26, partner comms S1.)
+
+### [TD-181] Transitional nav fields (`chrome` / `hubParent` / `LEGACY_BAR_ORDER`) must die with N2
+**Status:** Open — introduced deliberately 2026-07-27 (nav/IA sprint N1, commit `20d683b4`).
+**Context:** N1 moved the admin menu onto a route registry (`halatuju-web/src/lib/navigation.ts`)
+but kept rendering the OLD flat top bar, because the sprint's ship criterion was "the menu does not
+move". Three fields exist only to reproduce that bar: `NavItem.chrome` (`top` vs `hub`),
+`NavItem.hubParent` (which bar entry a hub page highlights), and `LEGACY_BAR_ORDER` (today's
+sequence, which is accretion rather than meaning). The scope grouping in `NAV_GROUPS` is the real
+structure and is already correct.
+**Why it is debt, not design:** `LEGACY_BAR_ORDER` is a literal list of ids mirroring the registry —
+exactly the shape lessons.md warns about. It is currently safe because `navigation.test.ts` asserts
+it is COMPLETE against every `chrome: 'top'` item in both directions, so it cannot silently fall
+behind. But that guard is a mitigation for scaffolding, not a reason to keep it.
+**To resolve:** N2 replaces the bar with the scope sidebar, where every item renders in its own
+group and highlights itself. Delete all three fields, the two `legacyBar*` functions and their
+tests; `visibleNav()` + `activeItem()` are what remain. **Risk if left:** low but compounding — if
+N2 slips, a fourth scope or a reordered menu has to be expressed twice.
+**Size:** small (a deletion, once the sidebar exists).

@@ -10,6 +10,13 @@ are the human-readable rendering of this matrix (content in `halatuju-web/src/co
 **Currency rule:** any change to a role's powers here must update that role's Manual chapter AND
 its FAQ entries in the same change — the prose must never drift from the gate.
 
+**Menu rendering (keep-in-sync pair, 2026-07-27):** `halatuju-web/src/lib/navigation.ts` encodes
+which roles SEE which route, and its docstring points back here. That file is UX only — it decides
+what is worth showing, never what is permitted; the fence stays `_AdminBase._org_scoped` /
+`_org_allows` plus the per-endpoint role gates. **Order of change is this table first, then
+`navigation.ts`, then the page guard, in one commit.** `navigation.test.ts` holds a per-role
+visibility snapshot, so a drift shows up as a failing test rather than a quietly wrong menu.
+
 | Role | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|
 | **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* | edit | view |
