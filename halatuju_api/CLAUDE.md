@@ -522,7 +522,50 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-26)
+## Next Sprint (as of 2026-07-27)
+
+**✅ CODE COMPLETE + MIGRATED 2026-07-27 — SPONSOR MODULE S1: one sponsor, whole.** Commit
+`f69be3c4` (worktree `.worktrees/sponsor-detail`, branch `feat/sponsor-detail`). Plan
+`.claude/plans/snazzy-whistling-biscuit.md`; design of record
+<https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>; retro
+`docs/retrospective-2026-07-27-sponsor-detail-s1.md`; decisions ×3; lessons ×3.
+**Migration `0132` APPLIED to prod + verified** (additive nullable `sponsors.last_seen_at`;
+existing table so no RLS work; 9 sponsors / 0 stamped / RM172,000 + 48 sponsorships unchanged).
+- **Why:** `/admin/sponsors` was a Phase-E1 vetting gate and never grew past it. Crediting a
+  wallet still needed a developer — the P4b chain has been live since `0125` with **no
+  frontend**, so all RM172,000 was keyed in by hand. A sponsor was approved and never told.
+  And `last_seen_at` did not exist anywhere, so a dormant sponsor looked active.
+- **THE SPLIT (the load-bearing decision).** A `Sponsor` is platform-level with no
+  organisation → **identity is cross-org by design**. A credit belongs to a programme an org
+  runs and a sponsorship to an application an org owns → **money + students are org-fenced**
+  (`_SponsorScope`, one object per request so the three fenced reads cannot drift). New
+  `test_org_fence.py` category **`identity-cross-org+money-fenced`** — both existing labels
+  would have been false (one leaks a tenant's giving, the other breaks a super's screen).
+- **`sponsorship.programme_ledger`** = given/committed/available per wallet; `available` is
+  re-read from `sponsor_balance` (the spend authority), never subtracted locally.
+  `_wallet_programmes` extracted so wallet discovery has ONE home.
+- **`last_seen_at`** stamped by `SponsorMeView` (the call every sponsor page makes), throttled
+  to once a day (`SPONSOR_SEEN_THROTTLE_HOURS`), via `update()` NOT `save()` so a visit never
+  reads as an edit, and swallowed on failure (fault-injection tested).
+- **`sponsor_statement` gains a `committed` line** — prod has **0 active of 48** sponsorships
+  (award acceptance is off), so the statement read RM172,000 in / RM0 out beside a balance
+  saying otherwise. **Payload only; programme-grouping stays deferred (P4b-ii).**
+- **List:** `Organisation` dropped (empty on all 9 rows) for **Given** (one annotated query,
+  same fence) + **Last seen**.
+- **⚠ BADGES DEFERRED TO S3 ON PURPOSE** — the Emails panel IS S3, and a badge that opens
+  nothing is the failure the partner-comms card exists to avoid. Do not add it early.
+- **3598 scholarship + 1260 courses/reports pytest; 802 jest** (56 suites); `next build`
+  clean; `makemigrations --check` clean.
+- **▶ AT DEPLOY: migration is DONE — just push** `f69be3c4:main` (api + web both rebuild).
+  Post-check: `/admin/sponsors` shows Given + Last seen and no Organisation; a row opens
+  `/admin/sponsors/<id>`; `/api/v1/sponsor/me/` still 200s and stamps `last_seen_at`.
+- **▶ NEXT = S2** (wallet-credit UI against the LIVE endpoints — record/sign/void, reusing
+  `paymentStatus.signOffView`'s shape; **no backend, no migration**), then S3 (eleven editable
+  sponsor emails + the badge pair, two-gate dark launch), then S4 (mandatory reject/suspend
+  reason, per-sponsor email log, CSV export).
+- **▶ CARRY:** ms/ta first drafts for ~45 new `admin.sponsors.*` keys.
+
+## Superseded — previous Next Sprint (as of 2026-07-26)
 
 **✅ SHIPPED + LIVE (DARK) 2026-07-26 — PARTNER COMMS S1: an org_admin decides what partner
 organisations hear.** Roadmap `docs/plans/2026-07-26-partner-comms-roadmap.md` (3 sprints,
