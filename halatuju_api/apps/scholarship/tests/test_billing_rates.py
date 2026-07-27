@@ -117,6 +117,17 @@ class TestDevelopmentCharge(_Base):
         self.assertEqual(
             platform_cost.development_charge(self.org, '2026-07')['hours'], Decimal('10.0'))
 
+    def test_hours_are_scoped_to_the_MONTH_as_well_as_the_organisation(self):
+        """The sibling above fences one org from another; this fences one month from the next.
+        Both matter: a charge that quietly swept in a later month's hours would bill work that
+        had not happened yet, and the org fence would not catch it."""
+        self._rate('development', 'hourly_rate', 100)
+        self._rate('development', 'margin_pct', 0)
+        self._hours(10, month='2026-07')
+        self._hours(5, month='2026-08')
+        self.assertEqual(
+            platform_cost.development_charge(self.org, '2026-07')['hours'], Decimal('10.0'))
+
     def test_the_charge_shows_its_working(self):
         """A tenant is entitled to see how a figure was reached, including the reconstruction
         behind the hours — there is no time tracker, so the basis IS the evidence."""
