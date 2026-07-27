@@ -253,11 +253,25 @@ def _credit_org(credit):
     return credit.programme.organisation if credit.programme_id else None
 
 
-def sponsor_programme_balances(sponsor):
-    """Every wallet this sponsor holds: ``[(programme, balance), ...]``, over the
-    distinct programmes they have donated into or allocated within. Ordered by
-    programme id so the output is stable. Display + reconciliation; per-wallet figures
-    here are each a real spend authority, the *sum* of them is not."""
+def _money(value):
+    """Money as a 2-decimal string, ALWAYS.
+
+    A `DecimalField` read gives `'3000.00'` but a `Sum()` aggregate over the same column
+    gives `'20000'` — so a payload mixing the two renders "RM 20000" beside "RM 3,000.00"
+    on the same card. Quantising here rather than in the template keeps every money string
+    the API emits the same shape.
+    """
+    return str((value or Decimal('0')).quantize(Decimal('0.01')))
+
+
+def _wallet_programmes(sponsor):
+    """**The one home for "which wallets does this sponsor hold".** Every programme they
+    have donated into or allocated within, resolved to `Programme` objects (None for the
+    NULL bucket) and ordered by id so output is stable.
+
+    Extracted so `sponsor_programme_balances` and `programme_ledger` cannot drift: the
+    set of wallets a sponsor holds must be the same question wherever it is asked.
+    """
     programme_ids = set(
         visible_donations(sponsor).values_list('programme_id', flat=True)
     ) | set(
@@ -265,9 +279,41 @@ def sponsor_programme_balances(sponsor):
         .values_list('application__programme_id', flat=True)
     )
     by_id = {p.id: p for p in Programme.objects.filter(id__in=[i for i in programme_ids if i])}
+    return [by_id.get(pid) for pid in sorted(programme_ids, key=lambda i: (i is None, i))]
+
+
+def sponsor_programme_balances(sponsor):
+    """Every wallet this sponsor holds: ``[(programme, balance), ...]``. Display +
+    reconciliation; per-wallet figures here are each a real spend authority, the *sum*
+    of them is not."""
+    return [(p, sponsor_balance(sponsor, p)) for p in _wallet_programmes(sponsor)]
+
+
+def programme_ledger(sponsor):
+    """Per-wallet money, split three ways for an ADMIN reading one sponsor.
+
+    ``[{'programme': p|None, 'given', 'committed', 'available', 'credits', 'students'}]``
+
+    - **given** — CONFIRMED donations only (through `visible_donations`, so a draft or
+      cancelled credit is money we have not agreed we hold and never appears).
+    - **committed** — allocations still HOLDING (offered or active) in this programme.
+    - **available** — `sponsor_balance`, i.e. given − committed. Recomputed by the
+      authority rather than subtracted here, so this display can never disagree with
+      the figure that actually authorises a spend.
+    """
     out = []
-    for pid in sorted(programme_ids, key=lambda i: (i is None, i)):
-        out.append((by_id.get(pid), sponsor_balance(sponsor, by_id.get(pid))))
+    for programme in _wallet_programmes(sponsor):
+        confirmed = visible_donations(sponsor).filter(programme=programme)
+        holding = sponsor.sponsorships.filter(
+            status__in=Sponsorship.HOLDING, application__programme=programme)
+        out.append({
+            'programme': programme,
+            'given': _money(confirmed.aggregate(s=Sum('amount'))['s']),
+            'committed': _money(holding.aggregate(s=Sum('amount'))['s']),
+            'available': _money(sponsor_balance(sponsor, programme)),
+            'credits': confirmed.count(),
+            'students': holding.count(),
+        })
     return out
 
 
@@ -329,12 +375,27 @@ def sponsor_statement(sponsor):
                .select_related('application').order_by('-decided_at')):
         gifts.append({'ref': pool.pool_ref(sp.application_id), 'amount': str(sp.amount), 'at': sp.decided_at})
         out_total += sp.amount
+    # Allocations that HOLD the balance but are not yet accepted by the student. Without
+    # this line the statement contradicts the wallet: while award acceptance is switched
+    # off nothing ever reaches 'active', so a sponsor with every ringgit allocated read
+    # "RM172,000 in / RM0 out" beside a balance that said otherwise. Kept as its own
+    # total rather than folded into `total_out` — committed is not yet given away, and
+    # `gifts` is the settled record.
+    committed = []
+    committed_total = Decimal('0')
+    for sp in (sponsor.sponsorships.filter(status='offered')
+               .select_related('application').order_by('-offered_at')):
+        committed.append({'ref': pool.pool_ref(sp.application_id),
+                          'amount': str(sp.amount), 'at': sp.offered_at})
+        committed_total += sp.amount
     in_total = sum((Decimal(d['amount']) for d in donations), Decimal('0'))
     return {
         'donations': donations,
         'gifts': gifts,
+        'committed': committed,
         'total_in': str(in_total),
         'total_out': str(out_total),
+        'total_committed': str(committed_total),
     }
 
 

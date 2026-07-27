@@ -3118,8 +3118,6 @@
       "allStatuses": "Semua status",
       "empty": "Tiada penaja yang sepadan.",
       "name": "Nama",
-      "organisation": "Organisasi",
-      "email": "E-mel",
       "status": "Status",
       "registered": "Didaftar",
       "actions": "Tindakan",
@@ -3127,6 +3125,80 @@
         "approve": "Luluskan",
         "reject": "Tolak",
         "suspend": "Gantung"
+      },
+      "colGiven": "Diberi",
+      "colLastSeen": "Kali terakhir dilihat",
+      "seen": {
+        "never": "Tidak sejak menyertai",
+        "today": "Hari ini",
+        "recent": "{date}",
+        "dormant": "{date}"
+      },
+      "detail": {
+        "loadFailed": "Tidak dapat memuatkan penaja ini.",
+        "trusted": "Dipercayai",
+        "registeredOn": "Berdaftar {date}",
+        "vettedBy": "Disemak oleh {who}, {date}",
+        "consent": "Persetujuan PDPA {version}",
+        "fencedNote": "Wang dan pelajar di bawah adalah bahagian organisasi anda daripada akaun ini. Akaun penaja itu sendiri merangkumi seluruh platform.",
+        "walletTitle": "Dompet",
+        "noWallet": "Penaja ini belum mempunyai dompet — tiada yang diberi, tiada yang dikomitkan.",
+        "noProgramme": "Program tidak ditetapkan",
+        "given": "Diberi",
+        "committed": "Dikomitkan",
+        "available": "Tersedia",
+        "creditsCount": "{count} kredit disahkan",
+        "studentsCount": "{count} pelajar",
+        "pendingCaveat": "RM {amount} sedang menunggu kelulusan dan sengaja tidak dimasukkan dalam angka di atas. Wang yang belum kami sahkan bukan wang yang boleh kami katakan kami pegang.",
+        "creditsTitle": "Kredit dompet",
+        "creditsNote": "Setiap kredit membawa rujukan bank supaya ia sepadan satu-dengan-satu dengan satu baris pada penyata. Kredit yang dibatalkan tidak pernah dihapuskan.",
+        "noCredits": "Tiada kredit direkodkan untuk penaja ini.",
+        "received": "Diterima",
+        "bankRef": "Rujukan bank",
+        "amount": "Jumlah",
+        "signOff": "Pengesahan",
+        "actionsSoon": "Merekod dan menandatangani akan menyusul.",
+        "studentsTitle": "Sejarah penajaan",
+        "studentsNote": "Pelajar ditunjukkan dengan kod anonim yang dilihat penaja, supaya kedua pihak merujuk orang yang sama; anak panah membuka permohonan penuh.",
+        "noStudents": "Penaja ini belum membiayai mana-mana pelajar.",
+        "offered": "Ditawarkan",
+        "student": "Pelajar",
+        "programme": "Program",
+        "invitedTitle": "Orang yang mereka jemput · {count}",
+        "noInvites": "Mereka belum menjemput sesiapa.",
+        "scrubbed": "dibersihkan selepas 60 hari",
+        "joinedOn": "Menyertai {date}",
+        "membershipsTitle": "Penerimaan program",
+        "digest": {
+          "realtime": "Makluman masa nyata",
+          "weekly": "Ringkasan mingguan",
+          "off": "Tiada e-mel"
+        },
+        "creditStatus": {
+          "draft": "Draf",
+          "admin_signed": "Menunggu pengesah",
+          "finance_checked": "Menunggu pengesah",
+          "confirmed": "Disahkan",
+          "cancelled": "Dibatalkan"
+        },
+        "chain": {
+          "recordedDone": "Direkod oleh {who} · {date}",
+          "recordedPending": "Belum direkod",
+          "checkedDone": "Disemak oleh {who} · {date}",
+          "checkedPending": "Semakan kewangan belum selesai",
+          "approvedDone": "Disahkan oleh {who} · {date}",
+          "approvedPending": "Pengesah: seorang admin organisasi"
+        },
+        "stage": {
+          "awaiting": "Menunggu penerimaan",
+          "active": "Aktif",
+          "ended": "Tamat"
+        },
+        "invite": {
+          "invited": "Dijemput",
+          "joined": "Menyertai",
+          "expired": "Tamat tempoh"
+        }
       }
     },
     "disbursement": {

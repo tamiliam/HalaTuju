@@ -1,10 +1,23 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { seenBand } from '@/lib/sponsorDetail'
 import { listSponsors, reviewSponsor, type AdminSponsor } from '@/lib/admin-api'
+
+// The ORGANISATION column was dropped on 2026-07-27: empty on all nine prod rows, and it cost
+// a quarter of the table's width. Its space pays for GIVEN + LAST SEEN — what an admin
+// actually scans a funder list for. `given` is org-fenced server-side (a tenant sees its own
+// share); `last_seen_at` had no home at all before this sprint.
+const seenTone: Record<string, string> = {
+  never: 'text-amber-700 font-semibold',
+  dormant: 'text-amber-700',
+  recent: 'text-gray-500',
+  today: 'text-gray-500',
+}
 
 const statusBadge = (s: string) =>
   s === 'approved' ? 'bg-green-100 text-green-700'
@@ -84,9 +97,9 @@ export default function AdminSponsorsList() {
             <thead className="bg-gray-50/80 border-b">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.name')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.organisation')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.email')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.status')}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.colGiven')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.colLastSeen')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.registered')}</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.actions')}</th>
               </tr>
@@ -95,13 +108,23 @@ export default function AdminSponsorsList() {
               {sponsors.map((s) => (
                 <tr key={s.id} className="hover:bg-blue-50/40 transition-colors align-top">
                   <td className="px-4 py-3 border-l-[3px] border-l-blue-500">
-                    <div className="font-medium text-gray-900">{s.name || '—'}</div>
+                    {/* The name opens the whole record — everything the flat table could not show. */}
+                    <Link href={`/admin/sponsors/${s.id}`} className="font-medium text-blue-600 hover:text-blue-800">
+                      {s.name || '—'}
+                    </Link>
+                    <div className="text-xs text-gray-500 mt-0.5">{s.email || '—'}</div>
                     {s.note && <div className="text-xs text-gray-500 mt-0.5 max-w-xs whitespace-pre-wrap">{s.note}</div>}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{s.organisation || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{s.email || '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusBadge(s.status)}`}>{s.status}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums text-gray-700">
+                    {Number(s.given) > 0 ? Number(s.given).toLocaleString('en-MY', { minimumFractionDigits: 2 }) : '—'}
+                  </td>
+                  <td className={`px-4 py-3 text-sm ${seenTone[seenBand(s.last_seen_at)]}`}>
+                    {s.last_seen_at
+                      ? t(`admin.sponsors.seen.${seenBand(s.last_seen_at)}`, { date: formatDate(s.last_seen_at) })
+                      : t('admin.sponsors.seen.never')}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(s.created_at)}</td>
                   <td className="px-4 py-3">

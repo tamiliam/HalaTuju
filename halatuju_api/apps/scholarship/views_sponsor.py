@@ -6,6 +6,7 @@ anonymised student pool. These endpoints govern the sponsor's OWN account only �
 nothing here exposes student data. All paths are under /api/v1/sponsor/ and are
 whitelisted from the NRIC gate (sponsors have no NRIC).
 """
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
@@ -40,6 +41,29 @@ from .serializers import (
 # PDPA consent text version a sponsor accepts at registration. Bump when the
 # sponsor consent wording changes (separate from the student CONSENT_VERSION).
 SPONSOR_CONSENT_VERSION = '2026-sponsor-draft-1'
+
+
+def _touch_last_seen(sponsor):
+    """Stamp `last_seen_at`, at most once per `SPONSOR_SEEN_THROTTLE_HOURS`.
+
+    Throttled because the question this answers is "is this sponsor still with us?", which
+    is measured in days — writing on every portal request would put a pointless UPDATE on a
+    read path for no extra information.
+
+    Best-effort by design: swallowed on failure. A sponsor must never see their portal
+    break because we could not record that they visited it.
+    """
+    try:
+        hours = getattr(settings, 'SPONSOR_SEEN_THROTTLE_HOURS', 24)
+        now = timezone.now()
+        if sponsor.last_seen_at and (now - sponsor.last_seen_at) < timedelta(hours=hours):
+            return
+        # update() not save() — never touches `updated_at`, so a visit does not read as an
+        # edit to the account, and it cannot race with a concurrent field write.
+        Sponsor.objects.filter(pk=sponsor.pk).update(last_seen_at=now)
+        sponsor.last_seen_at = now
+    except Exception:   # noqa: BLE001 — telemetry must not break the caller
+        pass
 
 
 class SponsorMixin:
@@ -135,11 +159,17 @@ class SponsorRegisterView(SponsorMixin, APIView):
 
 class SponsorMeView(SponsorMixin, APIView):
     """GET /api/v1/sponsor/me/ — the caller's own sponsor account, or
-    {registered: false} if they haven't registered yet."""
+    {registered: false} if they haven't registered yet.
+
+    Also the ONE place `last_seen_at` is stamped. Every sponsor page calls this, so it is
+    the natural heartbeat; the alternative (a stamp per endpoint) would be five places to
+    forget. Best-effort and throttled — see `_touch_last_seen`.
+    """
     def get(self, request):
         sponsor = self.get_sponsor(request)
         if not sponsor:
             return Response({'registered': False})
+        _touch_last_seen(sponsor)
         return Response(SponsorSerializer(sponsor).data)
 
 

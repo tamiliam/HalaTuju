@@ -311,6 +311,10 @@ class TestFenceCoverageCompleteness(TestCase):
         # cross-org by design (platform-level Sponsor account; not applicant data — D-1).
         # Role-gated to super/org_admin (review) and super/org_admin/admin (list) since 2026-07-15.
         'AdminSponsorListView': 'cross-org-by-design', 'AdminSponsorReviewView': 'cross-org-by-design',
+        # The ACCOUNT is cross-org by design (as above); the MONEY and STUDENTS inside it are
+        # fenced per-request by _SponsorScope (programme->organisation for credits + wallets,
+        # application->owning_organisation for sponsorships). Same split as the credit endpoints.
+        'AdminSponsorDetailView': 'identity-cross-org+money-fenced',
         'AdminSponsorPendingCountView': 'cross-org-by-design',
         # self-scoped (caller's own reviewer profile, no application)
         'ReviewerProfileView': 'self-scoped',

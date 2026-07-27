@@ -334,6 +334,10 @@ DECLINE_QC_COOLOFF_HOURS = float(os.environ.get('DECLINE_QC_COOLOFF_HOURS', '24'
 # strict (recommended-only), so a funded card can never be double-funded or inflate the counter.
 POOL_FUNDED_GRACE_HOURS = float(os.environ.get('POOL_FUNDED_GRACE_HOURS', '48'))
 AWARD_COOLOFF_DAYS = float(os.environ.get('AWARD_COOLOFF_DAYS', '0'))
+# Sponsor "last seen": how long between stamps of Sponsor.last_seen_at. Deliberately a day —
+# the question is "is this sponsor still with us", which is measured in days, and a write on
+# every portal request would be an UPDATE on a read path for no extra information.
+SPONSOR_SEEN_THROTTLE_HOURS = float(os.environ.get('SPONSOR_SEEN_THROTTLE_HOURS', '24'))
 
 # Interview scheduling: the assigned reviewer proposes a few times, the student books
 # one in-app, and we send confirmations + reminders. OFF by default — the whole surface

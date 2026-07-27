@@ -2,6 +2,82 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor module S1 — one sponsor, whole — 2026-07-27
+
+Sprint 1 of `.claude/plans/snazzy-whistling-biscuit.md` (owner-approved; design of record
+<https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>). **Migration `0132`,
+additive.**
+
+**Why:** `/admin/sponsors` was built in Phase E1 as a *gate* — approve this person or don't —
+and never grew past it. Meanwhile the sponsor side got deep: a per-programme wallet, 48
+sponsorships, 8 people invited, digest subscriptions. An administrator could see none of it.
+Three specific holes: crediting a wallet still needed a developer (the P4b sign-off chain has
+been live since migration `0125` with **no frontend**, so every RM of the RM172,000 was keyed
+in by hand); a sponsor was approved and never told; and `last_seen_at` did not exist anywhere
+in the codebase, so a dormant sponsor was indistinguishable from an active one.
+
+### Added
+- **`GET /api/v1/admin/sponsors/<pk>/`** (`AdminSponsorDetailView`) — identity, vetting
+  stamps, consent, digest cadence, per-programme wallets, the credits ledger, sponsorship
+  history, referrals and programme memberships in one payload. Same role gate as the list
+  (super / org_admin / admin / finance).
+- **THE SPLIT, which is the sprint's load-bearing decision.** A `Sponsor` is a platform-level
+  account with no organisation, so **identity is shown whole and cross-org by design**. But a
+  credit belongs to a programme an org runs and a sponsorship belongs to an application an org
+  owns, so **every figure with money or a student in it is fenced** to the caller's own
+  organisation (`_SponsorScope`, one object per request so the three fenced reads cannot
+  drift). `fenced` on the payload lets the screen say whose share it is. Classified in
+  `test_org_fence.py` as `identity-cross-org+money-fenced` — a new category, because the two
+  existing ones would each have been a lie.
+- **`sponsorship.programme_ledger(sponsor)`** — given / committed / available per wallet.
+  `available` is re-read from `sponsor_balance` (the spend authority) rather than subtracted
+  here, so the display can never disagree with the figure that authorises a spend.
+  `_wallet_programmes` extracted so this and `sponsor_programme_balances` ask "which wallets
+  does this sponsor hold" in exactly one place.
+- **`Sponsor.last_seen_at`** (migration `0132`) stamped by `SponsorMeView` — the one call every
+  sponsor page makes. Throttled to once a day (`SPONSOR_SEEN_THROTTLE_HOURS`): the question is
+  measured in days, and a write per request would be an UPDATE on a read path for nothing.
+  Written with `update()` not `save()`, so a *visit* never reads as an *edit* to the account.
+  Best-effort — a fault-injection test proves the portal still serves when the stamp fails.
+- **`/admin/sponsors/[id]`** — money first (that is what you open a sponsor to answer), then
+  what it is funding, then who they brought with them. The student is shown by the anonymous
+  `pool_ref` the sponsor sees, hyperlinked to the cockpit; the credits list renders each
+  sign-off chain **keyed on the signatures collected**, so a credit confirmed before finance
+  existed shows two steps rather than implying a skipped one.
+- **`lib/sponsorDetail.ts`** — the pure decisions (`seenBand`, `creditChain`, `canVoid`,
+  `pendingTotal`, `studentStage`), 18 tests.
+
+### Changed
+- **The sponsors list can now be scanned, not just read.** `Organisation` dropped — empty on
+  all nine production rows, and it cost a quarter of the table. Its space pays for **Given**
+  (confirmed money, annotated in ONE query, org-fenced by the same rule) and **Last seen**. A
+  sponsor who gave nothing reads `—`, not `0.00`, which would look like a real figure.
+- **`sponsor_statement` gains a `committed` line** (payload only). Prod has **0 active of 48**
+  sponsorships — award acceptance is off, so nothing ever reaches `active` — which meant a
+  sponsor's own statement read **RM172,000 in / RM0 out** beside a balance saying otherwise.
+  Two numbers on one screen contradicting each other. The sponsor-facing *layout* is
+  untouched: programme-grouping that statement was deliberately deferred (P4b-ii, 2026-07-26)
+  and this does not reopen it.
+- **`_money()`** — a `DecimalField` read gives `'3000.00'` but a `Sum()` over the same column
+  gives `'20000'`, so a payload mixing them rendered "RM 20000" beside "RM 3,000.00" on one
+  card. Every money string the API emits is now the same shape.
+- **`_credit_dict` reused** rather than re-spelled for the detail page — two copies of a money
+  payload is two places for the next column to be added to only one.
+
+### Notes
+- **Badges deferred to S3, deliberately.** The plan put the Sponsors/Emails badge pair in S1,
+  but the Emails panel is S3 — a badge that opens nothing is exactly the "switch that looks
+  like it works" failure the partner-comms card was built to avoid. They arrive together.
+- ms/ta for the ~45 new keys are **first drafts** awaiting owner review.
+- Two orphaned keys removed (`admin.sponsors.organisation` / `.email`) — the i18n guard does
+  not cover this namespace, so they would have rotted silently.
+- **3598 scholarship + 1260 courses/reports pytest**, **802 jest** (56 suites),
+  `next build` compiled clean, `makemigrations --check` clean.
+- **▶ AT DEPLOY — ORDER MATTERS.** `0131_billing_rates_and_hours` (another agent's, on `main`)
+  is **not yet on prod**; prod is at `0130`. `0132` sits on top of it, so **`0131` must land
+  first** or the chain breaks. Then apply `0132` (one nullable timestamp on `sponsors`, no RLS
+  work — existing table), then push.
+
 ## Partner comms switched ON, and the Sources page split into two badges — 2026-07-26
 
 Small change (`Settings/_workflows/small-change-lane.md`), plus the live activation the owner asked

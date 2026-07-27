@@ -1513,6 +1513,14 @@ class Sponsor(models.Model):
     # When the last weekly digest was sent to THIS sponsor; the next digest only
     # includes students published after it (so a sponsor never gets a duplicate).
     last_digest_sent_at = models.DateTimeField(null=True, blank=True)
+    # Last time this sponsor was seen using their own portal — stamped by SponsorMeView,
+    # the one call every sponsor page makes. Nothing recorded this before (no `last_login`
+    # anywhere in the codebase), so an approved sponsor who never came back was
+    # indistinguishable from an active one. NULL = not seen since this shipped.
+    # Deliberately coarse: throttled to one write a day (`SPONSOR_SEEN_THROTTLE_HOURS`),
+    # because "are they still with us" is a question about days, not minutes, and a write
+    # on every portal request would put a needless UPDATE on a read path.
+    last_seen_at = models.DateTimeField(null=True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.CharField(
         max_length=254, blank=True, default='',

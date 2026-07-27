@@ -3118,8 +3118,6 @@
       "allStatuses": "All statuses",
       "empty": "No sponsors match.",
       "name": "Name",
-      "organisation": "Organisation",
-      "email": "Email",
       "status": "Status",
       "registered": "Registered",
       "actions": "Actions",
@@ -3127,6 +3125,80 @@
         "approve": "Approve",
         "reject": "Reject",
         "suspend": "Suspend"
+      },
+      "colGiven": "Given",
+      "colLastSeen": "Last seen",
+      "seen": {
+        "never": "Not since joining",
+        "today": "Today",
+        "recent": "{date}",
+        "dormant": "{date}"
+      },
+      "detail": {
+        "loadFailed": "Could not load this sponsor.",
+        "trusted": "Trusted",
+        "registeredOn": "Registered {date}",
+        "vettedBy": "Vetted by {who}, {date}",
+        "consent": "PDPA consent {version}",
+        "fencedNote": "Money and students below are your organisation’s share of this account. The sponsor account itself is platform-wide.",
+        "walletTitle": "Wallet",
+        "noWallet": "This sponsor holds no wallet yet — nothing given, nothing committed.",
+        "noProgramme": "Unassigned programme",
+        "given": "Given",
+        "committed": "Committed",
+        "available": "Available",
+        "creditsCount": "{count} confirmed credit(s)",
+        "studentsCount": "{count} student(s)",
+        "pendingCaveat": "RM {amount} is awaiting approval and is deliberately absent from the figures above. Money we have not signed off is not money we can tell a donor we hold.",
+        "creditsTitle": "Wallet credits",
+        "creditsNote": "Every credit carries a bank reference so it reconciles one-to-one with a line on the statement. A voided credit is never deleted.",
+        "noCredits": "No credits recorded against this sponsor.",
+        "received": "Received",
+        "bankRef": "Bank reference",
+        "amount": "Amount",
+        "signOff": "Sign-off",
+        "actionsSoon": "Recording and signing arrive next.",
+        "studentsTitle": "Sponsorship history",
+        "studentsNote": "The student is shown by the anonymous code the sponsor sees, so both sides of a conversation mean the same person; the arrow opens the full application.",
+        "noStudents": "This sponsor has not funded a student yet.",
+        "offered": "Offered",
+        "student": "Student",
+        "programme": "Programme",
+        "invitedTitle": "People they invited · {count}",
+        "noInvites": "They have not invited anyone.",
+        "scrubbed": "scrubbed after 60 days",
+        "joinedOn": "Joined {date}",
+        "membershipsTitle": "Programme acceptance",
+        "digest": {
+          "realtime": "Real-time alerts",
+          "weekly": "Weekly digest",
+          "off": "No emails"
+        },
+        "creditStatus": {
+          "draft": "Draft",
+          "admin_signed": "Awaiting approver",
+          "finance_checked": "Awaiting approver",
+          "confirmed": "Confirmed",
+          "cancelled": "Voided"
+        },
+        "chain": {
+          "recordedDone": "Recorded by {who} · {date}",
+          "recordedPending": "Not yet recorded",
+          "checkedDone": "Checked by {who} · {date}",
+          "checkedPending": "Finance check outstanding",
+          "approvedDone": "Approved by {who} · {date}",
+          "approvedPending": "Approver: an organisation admin"
+        },
+        "stage": {
+          "awaiting": "Awaiting acceptance",
+          "active": "Active",
+          "ended": "Ended"
+        },
+        "invite": {
+          "invited": "Invited",
+          "joined": "Joined",
+          "expired": "Expired"
+        }
       }
     },
     "disbursement": {

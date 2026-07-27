@@ -10,7 +10,7 @@ import re
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -55,6 +55,7 @@ from .services import (
     cancel_pending_decline, org_admin_reject, set_reporting_date_by_officer,
     submit_interview,
 )
+from . import sponsorship as sponsorship_service
 from .sponsorship import hold_pending_award
 
 logger = logging.getLogger(__name__)
@@ -976,6 +977,12 @@ def _sponsor_dict(s):
         'source': s.source, 'organisation': s.organisation,
         'note': s.note, 'status': s.status, 'reviewed_at': s.reviewed_at,
         'reviewed_by': s.reviewed_by, 'created_at': s.created_at,
+        # Added 2026-07-27 so the list can be scanned rather than merely read: `last_seen_at`
+        # answers "is this sponsor still with us" (nothing recorded it before), and `given`
+        # is what an admin actually looks for. `given` is annotated THROUGH THE SAME FENCE as
+        # the detail page — an org sees its own share, never another tenant's giving.
+        'last_seen_at': s.last_seen_at,
+        'given': sponsorship_service._money(getattr(s, 'given_total', None)),
     }
 
 
@@ -1003,6 +1010,13 @@ class AdminSponsorListView(_AdminBase):
         status_filter = request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
+        # `given` per row in ONE query (no N+1 over the list). CONFIRMED money only — the
+        # same rule `visible_donations` applies — and org-fenced for a non-super caller, so
+        # the account stays cross-org while the MONEY inside it does not.
+        money = Q(donations__status=Donation.STATUS_CONFIRMED)
+        if not self.has_role(admin, 'super'):
+            money &= Q(donations__programme__organisation_id=admin.owning_organisation_id)
+        qs = qs.annotate(given_total=Sum('donations__amount', filter=money))
         return Response({'sponsors': [_sponsor_dict(s) for s in qs]})
 
 
@@ -1044,6 +1058,176 @@ class AdminSponsorReviewView(_AdminBase):
         sponsor.reviewed_by = admin.email
         sponsor.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'updated_at'])
         return Response(_sponsor_dict(sponsor))
+
+
+def _sponsor_detail_dict(sponsor, admin, base):
+    """The one sponsor, built field-by-field — NEVER a ModelSerializer.
+
+    An exact-key-set test pins this payload, so a column added to `Sponsor` later cannot
+    reach an admin screen (or a log, or a CSV) by accident. Same reasoning as the sponsor
+    pool's allowlist, applied in the other direction.
+
+    **The account is platform-level; the money and the students inside it are NOT.** A
+    `Sponsor` deliberately has no organisation (`AdminSponsorListView` is classified
+    cross-org-by-design), but a credit belongs to a programme owned by an org, and a
+    sponsorship belongs to an application owned by an org. So identity is shown whole and
+    everything with money or a student in it is fenced through ``base`` — the same split
+    the credit endpoints already make. `fenced` tells the screen to say whose share it is.
+    """
+    from . import payments as payments_service
+
+    programmes = base.programmes
+    ledger = [
+        {
+            'programme_id': row['programme'].id if row['programme'] else None,
+            'programme_name': getattr(row['programme'], 'name_en', '') or '',
+            'given': row['given'],
+            'committed': row['committed'],
+            'available': row['available'],
+            'credits': row['credits'],
+            'students': row['students'],
+        }
+        for row in sponsorship_service.programme_ledger(sponsor)
+        if base.covers(row['programme'])
+    ]
+
+    # The credits ledger shows EVERY state including draft/cancelled — an admin has to see
+    # an unsigned credit in order to sign it. That is the opposite of the sponsor-facing
+    # read, which narrows through `visible_donations`; the tiles above use that seam, this
+    # list deliberately does not. Both are correct for their audience.
+    #
+    # REUSES `_credit_dict` (the credit endpoints' own allowlist) rather than spelling the
+    # fields again — two copies of a money payload is two places for the next column to be
+    # added to only one.
+    # org-fence: fenced on programme→organisation via base.credits(), never all donations.
+    credits = [_credit_dict(d) for d in base.credits()]
+
+    sponsorships = [
+        {
+            'id': sp.id,
+            'application_id': sp.application_id,
+            'ref': pool.pool_ref(sp.application_id),
+            'programme_name': getattr(sp.application.programme, 'name_en', '') or '',
+            'amount': str(sp.amount),
+            'status': sp.status,
+            'offered_at': sp.offered_at,
+            'decided_at': sp.decided_at,
+        }
+        for sp in base.sponsorships()
+    ]
+
+    return {
+        'id': sponsor.id,
+        'name': sponsor.name,
+        'email': sponsor.email,
+        'phone': sponsor.phone,
+        'organisation': sponsor.organisation,
+        'source': sponsor.source,
+        'note': sponsor.note,
+        'status': sponsor.status,
+        'is_trusted': sponsor.is_trusted,
+        'created_at': sponsor.created_at,
+        'reviewed_at': sponsor.reviewed_at,
+        'reviewed_by': sponsor.reviewed_by,
+        'last_seen_at': sponsor.last_seen_at,
+        'consent_at': sponsor.consent_at,
+        'consent_version': sponsor.consent_version,
+        'notify_frequency': sponsor.notify_frequency,
+        'last_digest_sent_at': sponsor.last_digest_sent_at,
+        'programmes': ledger,
+        'credits': credits,
+        'sponsorships': sponsorships,
+        'referrals': [
+            {
+                'id': r.id,
+                'invitee_name': r.invitee_name,
+                'invitee_email': r.invitee_email,
+                'status': r.status,
+                'created_at': r.created_at,
+                'joined_at': r.joined_at,
+            }
+            for r in sponsor.referrals_sent.all()
+        ],
+        'memberships': [
+            {
+                'programme_name': getattr(m.programme, 'name_en', '') or '',
+                'status': m.status,
+                'vetted_by': m.vetted_by,
+                'vetted_at': m.vetted_at,
+            }
+            for m in sponsor.programme_memberships.select_related('programme')
+            if base.covers(m.programme)
+        ],
+        # Live, never stored — appointing a finance admin arms the middle step of the credit
+        # chain retroactively, so the screen must ask at read time, exactly as the sign
+        # service does. (S2's credit UI reads this; S1 only carries it.)
+        'finance_check_required': any(
+            payments_service.finance_check_required(p.organisation)
+            for p in programmes if p is not None
+        ),
+        # True when this caller sees only their own organisation's share of the account, so
+        # the screen can say so rather than implying it is the sponsor's whole giving record.
+        'fenced': base.is_fenced,
+    }
+
+
+class _SponsorScope:
+    """How much of one sponsor's money + students this caller may see.
+
+    Super sees everything. Everyone else sees only what their organisation owns — the
+    programmes it runs and the applications it owns. Built once per request so the three
+    fenced reads cannot drift apart.
+    """
+    def __init__(self, sponsor, org_id, is_super):
+        self.sponsor = sponsor
+        self.org_id = org_id
+        self.is_fenced = not is_super
+        self.programmes = [
+            p for p in sponsorship_service._wallet_programmes(sponsor)
+            if self.covers(p)
+        ]
+
+    def covers(self, programme):
+        if not self.is_fenced:
+            return True
+        # A NULL-programme wallet belongs to no organisation, so a fenced caller never sees
+        # it. Bare test fixtures self-partition the same way the org fence does.
+        return programme is not None and programme.organisation_id == self.org_id
+
+    def credits(self):
+        qs = self.sponsor.donations.select_related('programme').order_by('-created_at')
+        if self.is_fenced:
+            qs = qs.filter(programme__organisation_id=self.org_id)
+        return qs
+
+    def sponsorships(self):
+        qs = (self.sponsor.sponsorships
+              .select_related('application', 'application__programme')
+              .order_by('-offered_at'))
+        if self.is_fenced:
+            qs = qs.filter(application__owning_organisation_id=self.org_id)
+        return qs
+
+
+class AdminSponsorDetailView(_AdminBase):
+    """GET .../admin/sponsors/<pk>/ — everything an admin needs about ONE sponsor.
+
+    Same role gate as the list (super / org_admin / admin / finance). The ACCOUNT is
+    platform-level and shown whole; the money and the students are org-fenced — see
+    `_sponsor_detail_dict`.
+    """
+    def get(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
+            return self._deny_role()
+        sponsor = Sponsor.objects.filter(pk=pk).first()
+        if sponsor is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        scope = _SponsorScope(sponsor, admin.owning_organisation_id,
+                              self.has_role(admin, 'super'))
+        return Response(_sponsor_detail_dict(sponsor, admin, scope))
 
 
 class AdminSetAwardAmountView(_AdminBase):

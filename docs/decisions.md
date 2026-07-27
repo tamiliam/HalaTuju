@@ -1,5 +1,58 @@
 # Architectural Decisions — HalaTuju
 
+## A sponsor account is cross-org; the money and students inside it are not — Sponsor S1, 2026-07-27
+**Decision:** `AdminSponsorDetailView` shows a sponsor's IDENTITY to any permitted admin regardless of
+organisation, and fences everything with money or a student in it (wallets, credits, sponsorships,
+programme memberships) to the caller's own organisation. Classified in `test_org_fence.py` under a new
+category, `identity-cross-org+money-fenced`.
+
+**Why a new category rather than reusing one.** The two existing labels would each have been false.
+`cross-org-by-design` (what the sponsor LIST carries) is true of the account and wrong about the money —
+a `Donation` belongs to a programme an organisation runs, and a `Sponsorship` to an application an
+organisation owns, so an unfenced detail page would show one tenant another tenant's giving. `list-fenced`
+is the opposite error: fence the identity and a super's screen breaks, and an org admin can no longer see
+that the funder they are vetting exists at all. The credit endpoints already drew this exact line
+(fenced on `programme__organisation_id` while the Sponsor stays unfenced); this extends the same line to
+a surface that shows both halves at once, and names it so the next reader does not have to re-derive it.
+
+**Alternatives considered:** (a) Fence the whole page on the sponsor's "primary" organisation — rejected:
+a sponsor has no organisation, and inventing one from their largest wallet would be a guess that changes
+when they give again. (b) Leave the detail page super-only and let org admins keep the flat list —
+rejected: the org admin is the person who vets sponsors and records their credits, so it is precisely
+their screen; withholding it would mean the work stays with a developer, which is what this sprint exists
+to end. **Revisit if:** a Sponsor ever gains an owning organisation, at which point the identity half can
+be fenced too and the category collapses back to `list-fenced`.
+
+## `last_seen_at` is stamped once a day, not once a request — Sponsor S1, 2026-07-27
+**Decision:** `SponsorMeView` stamps `Sponsor.last_seen_at` at most once per
+`SPONSOR_SEEN_THROTTLE_HOURS` (default 24), via `update()` rather than `save()`, wrapped so a failure is
+swallowed.
+
+**Why:** the question the field answers — "is this sponsor still with us?" — is measured in days. Writing
+on every portal request would put an UPDATE on a read path and buy no extra information. `update()` is
+deliberate too: `save()` would move `updated_at` (`auto_now`), so a mere visit would read as an edit to
+the account and pollute any future audit of who changed what. And the stamp is telemetry: a sponsor must
+never see their portal fail because we could not record that they opened it (proven by a fault-injection
+test, not asserted in a comment).
+
+**Alternatives considered:** (a) A separate `sponsor_visits` table — rejected as premature; nobody has
+asked for a visit history, and one timestamp answers the actual question. (b) Reading Supabase Auth's
+`last_sign_in_at` — rejected: it records authentication, not engagement with the programme, and would put
+a network call on a hot path.
+
+## `sponsor_statement` gains a committed line, without reopening the deferred grouping — Sponsor S1, 2026-07-27
+**Decision:** add `committed` + `total_committed` to `sponsor_statement`'s payload; leave the
+sponsor-facing statement LAYOUT untouched.
+
+**Why:** the statement listed only `status='active'` gifts, and production has **0 active of 48**
+sponsorships because `AWARD_ACCEPTANCE_ENABLED` is off, so nothing ever reaches `active`. A sponsor with
+every ringgit allocated read "RM172,000 in / RM0 out" beside a balance that said otherwise — two numbers
+on one screen contradicting each other. That is a correctness fault, not a layout preference. The
+programme-GROUPING of that statement was deliberately deferred on 2026-07-26 (P4b-ii) because it is a
+sponsor-facing layout change owing a design pass; adding a field to the payload and rendering it on the
+ADMIN page respects that deferral rather than quietly overturning it. **Revisit if:** the deferred design
+pass happens — the field is already there for it.
+
 ## Partner emails are switched per EMAIL, never per organisation — 2026-07-26
 **Decision:** A partner email is on for every qualifying organisation or off for all of them.
 `enabled` lives on `partner_email_templates` (one row per kind), not on an (organisation, kind)

@@ -1507,6 +1507,100 @@ export interface AdminSponsor {
   reviewed_at: string | null
   reviewed_by: string
   created_at: string
+  /** Confirmed money, ORG-FENCED (a tenant sees its own share). Always a 2dp string. */
+  given: string
+  /** Null until this sponsor next opens their portal — nothing recorded it before 2026-07-27. */
+  last_seen_at: string | null
+}
+
+/** One wallet. The sponsor's money is per (sponsor, programme) — never a single pooled figure. */
+export interface AdminSponsorWallet {
+  programme_id: number | null
+  programme_name: string
+  given: string
+  committed: string
+  available: string
+  credits: number
+  students: number
+}
+
+export interface AdminSponsorCredit {
+  id: number
+  programme_id: number | null
+  programme_name: string
+  amount: string
+  source: string
+  external_reference: string
+  status: 'draft' | 'admin_signed' | 'finance_checked' | 'confirmed' | 'cancelled'
+  is_spendable: boolean
+  recorded_by: string
+  recorded_at: string | null
+  finance_checked_by: string
+  finance_checked_at: string | null
+  confirmed_by: string
+  confirmed_at: string | null
+  created_at: string
+}
+
+export interface AdminSponsorStudent {
+  id: number
+  application_id: number
+  /** The ANONYMOUS code the sponsor sees — the vocabulary both sides share. */
+  ref: string
+  programme_name: string
+  amount: string
+  status: string
+  offered_at: string | null
+  decided_at: string | null
+}
+
+/**
+ * One sponsor, whole. The ACCOUNT is platform-level and shown in full; the money and the
+ * students are fenced to the caller's organisation — `fenced` says which you are looking at.
+ */
+export interface AdminSponsorDetail {
+  id: number
+  name: string
+  email: string
+  phone: string
+  organisation: string
+  source: string
+  note: string
+  status: 'pending' | 'approved' | 'rejected' | 'suspended'
+  is_trusted: boolean
+  created_at: string
+  reviewed_at: string | null
+  reviewed_by: string
+  last_seen_at: string | null
+  consent_at: string | null
+  consent_version: string
+  notify_frequency: 'realtime' | 'weekly' | 'off'
+  last_digest_sent_at: string | null
+  programmes: AdminSponsorWallet[]
+  credits: AdminSponsorCredit[]
+  sponsorships: AdminSponsorStudent[]
+  referrals: Array<{
+    id: number
+    invitee_name: string
+    invitee_email: string
+    status: string
+    created_at: string
+    joined_at: string | null
+  }>
+  memberships: Array<{
+    programme_name: string
+    status: string
+    vetted_by: string
+    vetted_at: string | null
+  }>
+  /** Live, never stored — appointing a finance admin arms the credit chain's middle step. */
+  finance_check_required: boolean
+  /** True when this caller sees only their own organisation's share of the account. */
+  fenced: boolean
+}
+
+export async function getSponsorDetail(id: number, options?: ApiOptions): Promise<AdminSponsorDetail> {
+  return adminFetch(`/api/v1/admin/sponsors/${id}/`, options)
 }
 
 export async function listSponsors(status?: string, options?: ApiOptions): Promise<{ sponsors: AdminSponsor[] }> {

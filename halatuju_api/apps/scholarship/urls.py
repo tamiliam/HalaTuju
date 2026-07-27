@@ -105,6 +105,7 @@ from .views_admin import (
     ReviewerProfileView,
     AdminSponsorListView,
     AdminSponsorPendingCountView,
+    AdminSponsorDetailView,
     AdminSponsorReviewView,
     AdminSuggestGapsView,
     AdminVerifyAcceptView,
@@ -302,6 +303,7 @@ urlpatterns = [
     # Phase E: sponsor account vetting
     path('admin/sponsors/', AdminSponsorListView.as_view()),
     path('admin/sponsors/pending-count/', AdminSponsorPendingCountView.as_view()),  # nav + hub badge
+    path('admin/sponsors/<int:pk>/', AdminSponsorDetailView.as_view()),
     path('admin/sponsors/<int:pk>/review/', AdminSponsorReviewView.as_view()),
     # Phase E3: match oversight + set the award amount
     path('admin/sponsorships/', AdminSponsorshipListView.as_view()),
