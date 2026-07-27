@@ -3000,7 +3000,34 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "shell": {
+        "primaryNav": "Navigasi utama",
+        "search": "Cari",
+        "searchPlaceholder": "Cari halaman…",
+        "searchNothing": "Tiada padanan.",
+        "searchScopeNote": "Carian permohonan, pelajar dan penaja akan datang — ini mencari menu anda.",
+        "help": "Bantuan",
+        "guideSub": "Manual untuk peranan anda",
+        "notifications": "Pemberitahuan",
+        "attention": "Perlu perhatian anda",
+        "nothingWaiting": "Tiada yang menunggu.",
+        "attentionNote": "Ini ialah kiraan dari seluruh konsol, dikumpulkan di satu tempat.",
+        "account": "Akaun",
+        "attn": {
+          "sponsors": "{count} penaja menunggu semakan"
+        }
+    },
     "nav": {
+        "organisations": "Organisasi",
+        "referralPartners": "Rakan rujukan",
+        "billingRates": "Kadar bil",
+        "staff": "Kakitangan",
+        "programmeOverview": "Gambaran keseluruhan",
+        "reviewers": "Penilai",
+        "years": "Tahun kemasukan",
+        "fund": "Dana",
+        "rules": "Peraturan",
+        "soon": "Akan datang",
       "group": {
         "platform": "Platform",
         "organisation": "Organisasi",

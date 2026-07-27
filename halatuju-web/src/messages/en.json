@@ -3000,7 +3000,34 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "shell": {
+        "primaryNav": "Main navigation",
+        "search": "Search",
+        "searchPlaceholder": "Search pages…",
+        "searchNothing": "Nothing matches that.",
+        "searchScopeNote": "Searching applications, students and sponsors is coming later — this searches your menu.",
+        "help": "Help",
+        "guideSub": "Your role’s manual",
+        "notifications": "Notifications",
+        "attention": "Needs your attention",
+        "nothingWaiting": "Nothing waiting.",
+        "attentionNote": "These are counts from across the console, gathered in one place.",
+        "account": "Account",
+        "attn": {
+          "sponsors": "{count} sponsors awaiting vetting"
+        }
+    },
     "nav": {
+        "organisations": "Organisations",
+        "referralPartners": "Referral partners",
+        "billingRates": "Billing rates",
+        "staff": "Staff",
+        "programmeOverview": "Overview",
+        "reviewers": "Reviewers",
+        "years": "Intake years",
+        "fund": "Fund",
+        "rules": "Rules",
+        "soon": "Soon",
       "group": {
         "platform": "Platform",
         "organisation": "Organisation",

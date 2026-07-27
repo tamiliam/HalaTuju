@@ -10,6 +10,7 @@ import { roleOrgAdmin } from './role-org-admin'
 import { roleAdminGeneral } from './role-admin-general'
 import { roleFinance } from './role-finance'
 import { helpChapter } from './help'
+import { effectiveRole } from '@/lib/navigation'
 
 export type { ManualChapter, ManualSection, ManualRole, Audience } from './types'
 
@@ -21,10 +22,16 @@ export const CHAPTERS: ManualChapter[] = [
 ]
 
 /** Normalise an admin-auth role object to a ManualRole. A super (by flag or role) is 'super';
- *  a partner/unknown → undefined (sees Basics + Help + no role chapter). */
+ *  a partner/unknown → undefined (sees Basics + Help + no role chapter).
+ *
+ *  The super rule is the one `effectiveRole` owns (lib/navigation.ts) — it was written out in
+ *  eleven places before N1 and this was the last copy. The REST is deliberately still explicit:
+ *  `effectiveRole` falls back to 'reviewer' for an unknown or missing role, which is right for a
+ *  menu (show the least) and wrong here (it would hand a partner the reviewer's manual). The
+ *  manual's fallback is "no role chapter at all", so the accepted list stays literal. */
 export function manualRole(role: { role?: string; is_super_admin?: boolean } | null | undefined): ManualRole | undefined {
   if (!role) return undefined
-  if (role.is_super_admin || role.role === 'super') return 'super'
+  if (effectiveRole(role) === 'super') return 'super'
   if (role.role === 'reviewer' || role.role === 'qc' || role.role === 'org_admin'
       || role.role === 'admin' || role.role === 'finance') {
     return role.role
