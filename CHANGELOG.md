@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## The console shell — scope sidebar, breadcrumb, command palette (nav/IA N2) — 2026-07-28
+
+Second of three sprints on the console navigation. N1 turned the menu into data; N2 turns it
+into a shell. Design of record:
+<https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1cb157a6>.
+
+### Added
+- **`components/admin/AppShell`** — the three-zone shell. Probes and the pending-sponsor count
+  are fetched once here and passed down, so the sidebar badge and the notification bell can
+  never disagree.
+- **`Sidebar`** — the scope stack: Platform / Organisation / Programme, each collapsible, each
+  headed by the thing it names (the organisation, the programme) with the scope as a quiet tag.
+- **`Topbar`** — breadcrumb on the left, search + help + notifications + account on the right.
+  The breadcrumb is static text this sprint; N3 makes it a switcher when there is more than one
+  organisation to switch to.
+- **`Menu`** — one dropdown primitive with the keyboard behaviour written once: Escape closes
+  and returns focus to the trigger, arrow keys wrap, a click outside dismisses. Used by help,
+  notifications and the account menu.
+- **`CommandPalette`** — Ctrl-K over the menu, ranked by `searchNav`. Its footer states plainly
+  that it does not search records, so nobody types a student name and concludes search is broken.
+- **`icons.tsx`** — ~25 single-colour stroke paths drawn in `currentColor` (owner decision).
+  They take the colour of the text beside them and follow a tenant brand ramp; multicoloured
+  emoji could do neither. No icon library was added.
+- **Nine reserved slots** — Organisations, Referral partners, Billing rates, Staff, Programme
+  overview, Reviewers, Intake years, Fund, Rules. They render disabled with a "soon" pill so a
+  later sprint fills a slot rather than re-cutting the menu.
+
+### Changed
+- **`admin/layout.tsx` is now only a guard — 220 lines to 60.** The role ternary, the
+  hand-written active-route rule, the badge fetch and two copies of the nav markup are gone.
+- **`manualRole()` delegates the super rule to `effectiveRole`** — the last of seventeen copies.
+  The rest stays explicit deliberately: `effectiveRole` falls back to `reviewer`, which is right
+  for a menu and wrong for a manual, whose fallback must be "no role chapter at all".
+
+### Removed
+- **TD-181 closed.** The transitional `chrome`, `hubParent` and `LEGACY_BAR_ORDER` are deleted.
+  Every page that used to highlight the Administration hub now highlights itself — which was the
+  entire reason that scaffolding existed.
+
+### Fixed
+- **The sidebar heading printed the scope label twice** for any account with no organisation
+  ("Organisation  Organisation"). Caught by the new per-role render test, not by review.
+
+### Verification
+`npx jest` 890 passed (60 suites, +27 — including jsdom tests for the menu, the palette, and the
+shell rendered for all seven roles); `check-i18n` 4057 keys x 3; `tsc` clean; `next build` exit 0.
+Reviewed in a browser against the approved design before merge. No backend, no migration, no new
+dependency.
+
 ## Billing: what it costs, who it belongs to, and what to charge — 2026-07-26/27
 
 Three connected arcs. The through-line: **the platform could not say what it cost**, so no fee

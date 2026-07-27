@@ -1499,8 +1499,11 @@ so a fee set today prices in ~RM20/month of avoidable retention. Fix BEFORE fixi
   by design (as every staff/partner email is), so this is the admin screen only. Owner pass wanted.
   (Logged 2026-07-26, partner comms S1.)
 
-### [TD-181] Transitional nav fields (`chrome` / `hubParent` / `LEGACY_BAR_ORDER`) must die with N2
-**Status:** Open — introduced deliberately 2026-07-27 (nav/IA sprint N1, commit `20d683b4`).
+### [TD-181] Transitional nav fields (`chrome` / `hubParent` / `LEGACY_BAR_ORDER`) must die with N2 — RESOLVED 2026-07-28
+**Status:** RESOLVED 2026-07-28 (nav/IA N2, commit `e07f8f2e`) — introduced deliberately
+2026-07-27 (N1, `20d683b4`) and deleted one sprint later, as designed. The sidebar gives every
+item a row of its own, so each highlights itself and the hub-parent indirection had nothing
+left to do. Kept below as the record of a piece of scaffolding that did NOT become permanent.
 **Context:** N1 moved the admin menu onto a route registry (`halatuju-web/src/lib/navigation.ts`)
 but kept rendering the OLD flat top bar, because the sprint's ship criterion was "the menu does not
 move". Three fields exist only to reproduce that bar: `NavItem.chrome` (`top` vs `hub`),
@@ -1516,3 +1519,28 @@ group and highlights itself. Delete all three fields, the two `legacyBar*` funct
 tests; `visibleNav()` + `activeItem()` are what remain. **Risk if left:** low but compounding — if
 N2 slips, a fourth scope or a reordered menu has to be expressed twice.
 **Size:** small (a deletion, once the sidebar exists).
+
+### [TD-182] Admin Google sign-in fails on a local dev origin (PKCE code is never exchanged)
+**Status:** Open — found 2026-07-28 while reviewing the nav shell locally. **Not reproduced on**
+**production**, where Google sign-in works.
+**Symptom:** on `http://localhost:3000`, Google OAuth returns to
+`/admin/auth/callback?code=…` and the page shows `errors.authFailed`. That string is only
+reachable from the `!session` branch (`admin/auth/callback/page.tsx`), so `getSession()` found
+nothing — the PKCE code was never exchanged for a session. Persists after clearing site data,
+so it is not stale verifier state.
+**Most likely cause (NOT yet confirmed):** the globally-mounted STUDENT supabase client also has
+`detectSessionInUrl` on, and races the admin client for the `?code=` in the URL. supabase-js
+consumes the code on the attempt, so whichever client loses finds nothing. `flowType: pkce`
+(added v2.23.1) stops the student client from SUCCEEDING — the leak it was written to prevent —
+but does not stop it from consuming. Why production wins the race consistently is the open
+question; script/mount order is the obvious suspect.
+**Why it matters beyond dev convenience:** it makes the admin console unreviewable on localhost
+without a password account, and a race that lands the right way "in production so far" is not a
+property anyone has actually pinned.
+**To resolve:** exchange explicitly in the callback rather than relying on auto-detect — read
+`?code=` and `await supabase.auth.exchangeCodeForSession(code)` when `getSession()` is empty,
+which is safe whichever client won. Add a test. **This is production auth code: it deserves its
+own commit, not a fold-in.** A cheap first diagnostic is to set `detectSessionInUrl: false` on
+the student client and see whether the admin flow starts working.
+**Risk if left:** low in production, high friction for any future local UI review of the console.
+**Size:** small (one callback + a test), once the cause is confirmed.

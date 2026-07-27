@@ -71,45 +71,20 @@ fields (`chrome`, `hubParent`, `LEGACY_BAR_ORDER`) that N2 deletes.
 
 ---
 
-## N2 — the shell (~24 files)
+## ✅ N2 — the shell — SHIPPED 2026-07-28
 
-New components under `halatuju-web/src/components/admin/`:
+Commit `e07f8f2e`. Retrospective `docs/retrospective-2026-07-28-nav-shell-n2.md`; decisions ×2;
+lessons ×4.
 
-| Component | Job |
-|---|---|
-| `AppShell.tsx` | three-zone grid; owns probe fetch, badge fetch, mobile drawer, ⌘K keybinding |
-| `Sidebar.tsx` / `NavRow.tsx` | renders `visibleNav()`; `variant: 'rail' \| 'drawer'`; placeholder rows disabled with a "soon" pill |
-| `Topbar.tsx` / `Breadcrumb.tsx` | breadcrumb left, search + help + account right. Breadcrumb is **static text** this sprint, read from `role.owning_org_name` — no new endpoint |
-| `Menu.tsx` | headless dropdown: click-outside, Escape, arrow-key roving focus, `aria-expanded`. ~80 lines, written once, used three times |
-| `HelpMenu.tsx` / `AccountMenu.tsx` | Guide + FAQ; Profile, notifications, language, sign out. Reuses `src/components/LanguageSelector.tsx` |
-| `CommandPalette.tsx` | ⌘K modal over `searchNav()`. ~25 routes — no fuzzy-search dependency needed |
-| `NotificationBell.tsx` | aggregates the counts `AppShell` already fetches. No new API |
-| `src/lib/useNavProbes.ts` | `Record<ProbeKey, ProbeState>`; the same two calls the hub makes today |
+`AppShell` + `Sidebar` + `Topbar` + `Menu` + `CommandPalette` + `useNavProbes` + a single-colour
+`icons` set; `admin/layout.tsx` reduced to a guard (220 → 60 lines); nine reserved slots added;
+**TD-181 closed** (`chrome` / `hubParent` / `LEGACY_BAR_ORDER` deleted, every page now highlights
+itself); `manualRole()` delegates the super rule to `effectiveRole`. Reviewed in a browser against
+the approved design before merge. 890 jest, i18n 4057 ×3, no backend, no migration, no new
+dependency.
 
-**Registry work in N2:** add the empty slots the roadmap asks for (Organisations, Referral partners,
-Billing rates, Staff, Programme overview, Reviewers, Intake years, Fund, Rules) with a `placeholder`
-flag, and **delete `chrome` / `hubParent` / `LEGACY_BAR_ORDER`** (TD-181) once the sidebar renders
-every item in its own group. `layout.tsx` shrinks to the guard.
-
-**`/admin/administration` stays a live hub this sprint** — sidebar and hub coexist, both fed by the
-registry, so rollback is one import. The hub stops probing and reads props from `AppShell`.
-
-**No new dependency.** Not shadcn, not Radix, not `cmdk`, not an icon set — the project has none and
-this adds none. Icons stay emoji literals with `aria-hidden`.
-
-**Two styling traps:** brand colours must go through `primary.*` (RGB-channel vars in
-`tailwind.config.ts` so `/40` opacity modifiers work — never hardcode a hex for an active state); and
-the shell must **not** set `font-plex`, which is deliberately scoped to four org modules and would
-silently restyle them.
-
-**Also fold in:** `adminLanding()` and the third landing rule at `admin/page.tsx` become
-`defaultRoute()`. Keep outputs byte-identical so `adminLanding.test.ts` passes **unmodified**.
-`manualRole()` in `src/content/manual/index.ts` is the last surviving copy of the role
-normalisation — have it delegate to `effectiveRole()`.
-
-**No backend, no migration.**
-
----
+**Carried into N3:** TD-182 — admin Google sign-in fails on a local dev origin (PKCE code never
+exchanged; works in production). Production auth code, so it owes its own commit and test.
 
 ## N3 — scopes, switchers, route split (~22 web + 6 api files)
 

@@ -522,8 +522,34 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-27)
+## Next Sprint (as of 2026-07-28)
 
+**✅ SHIPPED 2026-07-28 — NAV/IA N2: the console SHELL.** Commit `e07f8f2e`. Roadmap
+`docs/plans/2026-07-27-nav-ia-roadmap.md`; retro `docs/retrospective-2026-07-28-nav-shell-n2.md`;
+decisions ×2; lessons ×4. **NO migration, NO backend, NO new dependency** — `halatuju-web` only.
+- **`admin/layout.tsx` is now ONLY a guard — 220 → 60 lines.** The shell lives in
+  `components/admin/` (`AppShell`, `Sidebar`, `Topbar`, `Menu`, `CommandPalette`, `icons`) and who
+  sees what still lives in `lib/navigation.ts`.
+- **Scope sidebar** (Platform / Organisation / Programme, collapsible) + breadcrumb + Ctrl-K
+  palette + help/account menus + a bell that aggregates counts the console ALREADY fetches (no
+  notification model, no read state — deliberate).
+- **⚠ ICONS ARE A SINGLE-COLOUR SET NOW** (`components/admin/icons.tsx`, owner 2026-07-28) —
+  inline stroke paths in `currentColor`, so they inherit row state AND a tenant brand ramp. Emoji
+  remain elsewhere in the console; do NOT reintroduce them in the shell.
+- **TD-181 CLOSED** — `chrome`/`hubParent`/`LEGACY_BAR_ORDER` deleted one sprint after they were
+  introduced. Every page highlights ITSELF now.
+- **⚠ STILL TRUE FROM N1: a new TOP-LEVEL `/admin/<x>/page.tsx` fails the build until it has a
+  registry entry.** Nested dynamic routes need nothing. A RESERVED slot (`placeholder: true`) must
+  lose that flag the moment its page exists — a test enforces both directions.
+- **890 jest** (+27, incl. jsdom tests for the menu, palette and the shell per role); i18n 4057×3;
+  `tsc` clean; `next build` exit 0. Browser-reviewed against the approved design before merge.
+- **▶ NEW: TD-182** — admin Google sign-in fails on a LOCAL dev origin (PKCE `?code=` never
+  exchanged; most likely the globally-mounted student client consumes it first). **Works in
+  production.** Production auth code → owes its own commit + test, not a fold-in.
+- **▶ NEXT = N3** — org/programme switchers (ONE new endpoint `admin/scholarship/scopes/`, which
+  MUST be classified in `test_org_fence.py` or CI fails) + the Administration route split
+  (`/admin/administration` → `/admin/organisation`, hub panels lifted to real pages). Manual/FAQ
+  currency rule applies to that split.
 **✅ SHIPPED + LIVE 2026-07-26/27 — BILLING: what it costs, who it belongs to, what to charge.**
 Three arcs, commits `89dcfb8b`..`72e74fd2`. Retro
 `docs/retrospective-2026-07-27-billing-cost-ledger.md`; decisions ×4; lessons ×4.

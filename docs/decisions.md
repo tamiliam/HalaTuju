@@ -5895,3 +5895,32 @@ the Administration hub has done since the features were dark-shipped.
 **Trade-offs:** a per-render round trip decides visibility, so a slow probe briefly hides a live
 feature. Preferred to the reverse (flashing in a dark one), and pinned by a test.
 **Revisit if:** a dark feature ever needs to be visible-but-disabled before its endpoint exists.
+
+## The console shell uses a single-colour icon set, not emoji — Nav/IA N2, 2026-07-28
+**Decision:** every glyph in the admin shell is an inline stroke path drawn in `currentColor`
+(`components/admin/icons.tsx`, ~25 paths). Icons take the colour of the text beside them: grey at
+rest, brand-coloured on the active row, red on a destructive item. Emoji stay where they already
+are elsewhere in the console; the shell is the single-colour surface.
+**Alternatives considered:** (a) emoji, the existing convention (the Administration hub uses them,
+and the sprint shipped that way first) — rejected by the owner on sight; (b) an icon library —
+rejected, the sprint added no dependency and 25 paths is smaller than any package.
+**Rationale:** multicoloured glyphs at 13–16px read as decoration rather than interface, and they
+structurally cannot follow a theme — a tenant brand ramp has no effect on an emoji. `currentColor`
+means the icons inherit both state and tenant branding for free.
+**Trade-offs:** the shell now differs from the hub it sits beside until the hub is rewritten in
+N3. Accepted; the alternative was to keep a convention nobody liked in order to stay consistent
+with a page that is being deleted.
+**Revisit if:** a surface needs an icon this small set cannot express — extend the map rather than
+reintroducing a second visual language.
+
+## The Administration hub keeps probing for itself — Nav/IA N2, 2026-07-28
+**Decision:** `AppShell` owns the probe and badge state for the sidebar and the bell, but
+`admin/administration/page.tsx` continues to run its own two probes.
+**Alternatives considered:** a `NavProbesContext` so the hub reads the shell's values.
+**Rationale:** the hub needs the request COUNT for its badge, not merely whether the endpoint
+answers, so sharing would mean widening the hook — and N3 deletes that page when the hub is split
+into real routes. Refactoring a file that is about to be removed buys nothing.
+**Trade-offs:** two duplicate requests on one page until N3. The AppShell docstring says so
+explicitly rather than claiming a single owner it does not have.
+**Revisit if:** N3 slips, or a third surface needs probe state — at that point the context is
+worth its weight.
