@@ -17,9 +17,9 @@ import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 import {
-  NAV_GROUPS, NAV_ITEMS, LEGACY_BAR_ORDER, CHROMELESS, ROLE_NAMES, NO_PROBES,
-  effectiveRole, canSee, visibleNav, activeItem, canAccess, legacyBarItems, legacyBarActiveId,
-  type AdminRoleName, type NavContext, type ProbeState,
+  NAV_GROUPS, NAV_ITEMS, CHROMELESS, ROLE_NAMES, NO_PROBES, SIDEBAR_SCOPES,
+  effectiveRole, canSee, visibleNav, activeItem, canAccess, searchNav, defaultRoute,
+  type AdminRoleName, type NavContext, type ProbeState, type LabelledNavItem,
 } from '@/lib/navigation'
 
 const ctx = (role: AdminRoleName, probes: Partial<Record<'requests' | 'billing', ProbeState>> = {}): NavContext =>
@@ -59,26 +59,27 @@ describe('every registry label resolves in all three locales', () => {
 describe('visibleNav per role', () => {
   const EXPECTED: Record<AdminRoleName, string[]> = {
     super: [
-      'overview', 'students', 'courseData',
-      'administration', 'sponsors', 'payments', 'contracts', 'sources', 'billing',
-      'applications',
+      'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
+      'administration', 'staff', 'sponsors', 'payments', 'contracts', 'sources', 'billing',
+      'programmeOverview', 'applications', 'reviewers', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
     org_admin: [
-      'administration', 'sponsors', 'payments', 'contracts', 'sources', 'billing',
-      'applications',
+      'administration', 'staff', 'sponsors', 'payments', 'contracts', 'sources', 'billing',
+      'programmeOverview', 'applications', 'reviewers', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'sponsors', 'payments', 'sources',
-      'applications',
+      'administration', 'staff', 'sponsors', 'payments', 'sources',
+      'programmeOverview', 'applications',
       'profile', 'guide', 'faq',
     ],
     finance: [
-      'administration', 'sponsors', 'payments',
+      'administration', 'staff', 'sponsors', 'payments',
+      'fund',
       'profile', 'guide', 'faq',
     ],
-    qc: ['applications', 'profile', 'guide', 'faq'],
+    qc: ['programmeOverview', 'applications', 'profile', 'guide', 'faq'],
     reviewer: ['applications', 'profile', 'guide', 'faq'],
     partner: ['overview', 'students', 'profile'],
   }
@@ -105,9 +106,12 @@ describe('visibleNav per role', () => {
 
 // ── 3. activeItem ────────────────────────────────────────────────────────────
 describe('activeItem resolves by longest match', () => {
-  it.each(NAV_ITEMS.map((i) => [i.href, i.id]))('%s -> %s', (href, id) => {
-    expect(activeItem(href as string)?.id).toBe(id)
-  })
+  // Reserved slots are excluded on purpose — they have no page, so nothing resolves to them
+  // (asserted separately below).
+  it.each(NAV_ITEMS.filter((i) => !i.placeholder).map((i) => [i.href, i.id]))(
+    '%s -> %s', (href, id) => {
+      expect(activeItem(href as string)?.id).toBe(id)
+    })
 
   it.each(
     NAV_ITEMS.flatMap((i) => (i.match ?? []).map((m) => [m, i.id])),
@@ -148,12 +152,25 @@ describe('activeItem resolves by longest match', () => {
     }
   })
 
-  it('highlights the hub parent for a page with no bar entry of its own', () => {
-    for (const p of ['/admin/payments', '/admin/contracts', '/admin/sponsors',
-      '/admin/sources', '/admin/billing', '/admin/requests', '/admin/invite']) {
-      expect(legacyBarActiveId(p)).toBe('administration')
+  // N1 shipped these as "hub" pages that highlighted Administration because they had no entry
+  // of their own. The sidebar gives each one a row, so each now highlights ITSELF — which is
+  // the whole reason the transitional chrome/hubParent fields could be deleted (TD-181).
+  it('every previously-hub page now highlights itself', () => {
+    for (const [p, id] of [
+      ['/admin/payments', 'payments'], ['/admin/contracts', 'contracts'],
+      ['/admin/sponsors', 'sponsors'], ['/admin/sources', 'sources'],
+      ['/admin/billing', 'billing'], ['/admin/requests', 'requests'],
+    ] as const) {
+      expect(activeItem(p)?.id).toBe(id)
     }
-    expect(legacyBarActiveId('/admin/scholarship/12')).toBe('applications')
+    // /admin/invite is a redirect stub with no row, so it keeps pointing at Administration.
+    expect(activeItem('/admin/invite')?.id).toBe('administration')
+  })
+
+  it('a reserved slot never claims a path — it has no page to be inside', () => {
+    for (const item of NAV_ITEMS.filter((i) => i.placeholder)) {
+      expect(activeItem(item.href)).toBeUndefined()
+    }
   })
 })
 
@@ -212,8 +229,8 @@ describe('the registry and the app router agree', () => {
     expect(orphans).toEqual([])
   })
 
-  it('every registry href has a page behind it', () => {
-    const missing = NAV_ITEMS.filter((i) => {
+  it('every NON-reserved registry href has a page behind it', () => {
+    const missing = NAV_ITEMS.filter((i) => !i.placeholder).filter((i) => {
       const seg = i.href.replace(/^\/admin\/?/, '')
       const file = seg === ''
         ? path.join(ADMIN_DIR, 'page.tsx')
@@ -221,6 +238,16 @@ describe('the registry and the app router agree', () => {
       return !fs.existsSync(file)
     })
     expect(missing.map((i) => i.href)).toEqual([])
+  })
+
+  // The other direction of the same guard: a slot must stay reserved only while it is genuinely
+  // empty. Build the page and forget to drop the flag, and it would render disabled forever.
+  it('every RESERVED slot is genuinely empty — build the page and the flag must go', () => {
+    const built = NAV_ITEMS.filter((i) => i.placeholder).filter((i) => {
+      const seg = i.href.replace(/^\/admin\/?/, '')
+      return fs.existsSync(path.join(ADMIN_DIR, seg, 'page.tsx'))
+    })
+    expect(built.map((i) => i.href)).toEqual([])
   })
 })
 
@@ -243,36 +270,84 @@ describe('effectiveRole', () => {
   })
 })
 
-// ── 7. The legacy bar is byte-for-byte what shipped before this sprint ───────
-// LITERAL on purpose: this is the OLD behaviour, an external fact, and it is the whole ship
-// criterion for N1 — the menu must not move.
-describe('legacyBarItems reproduces the pre-sprint top bar exactly', () => {
-  const BEFORE: Record<AdminRoleName, string[]> = {
-    super: ['overview', 'students', 'applications', 'courseData', 'administration',
-      'profile', 'guide', 'faq'],
-    admin: ['applications', 'administration', 'profile', 'guide', 'faq'],
-    org_admin: ['applications', 'administration', 'profile', 'guide', 'faq'],
-    finance: ['administration', 'profile', 'guide', 'faq'],
-    qc: ['applications', 'profile', 'guide', 'faq'],
-    reviewer: ['applications', 'profile', 'guide', 'faq'],
-    partner: ['overview', 'students', 'profile'],
-  }
-
-  it.each(ROLE_NAMES)('%s', (role) => {
-    expect(legacyBarItems(ctx(role)).map((i) => i.id)).toEqual(BEFORE[role])
+// ── 7. The sidebar shape the shell renders ──────────────────────────
+describe('visibleNav groups', () => {
+  it('orders groups by scope hierarchy, platform outermost', () => {
+    expect(visibleNav(ctx('super')).map((g) => g.scope))
+      .toEqual(['platform', 'organisation', 'programme', 'utility'])
   })
 
-  it('LEGACY_BAR_ORDER is complete against the registry, in both directions', () => {
-    const topIds = NAV_ITEMS.filter((i) => i.chrome === 'top').map((i) => i.id).sort()
-    expect([...LEGACY_BAR_ORDER].sort()).toEqual(topIds)
+  it('drops a scope a role cannot reach rather than showing an empty heading', () => {
+    expect(visibleNav(ctx('reviewer')).map((g) => g.scope)).toEqual(['programme', 'utility'])
+    expect(visibleNav(ctx('partner')).map((g) => g.scope)).toEqual(['platform', 'utility'])
   })
 
-  it('every hub item names a real parent that is itself a bar entry', () => {
-    for (const i of NAV_ITEMS.filter((x) => x.chrome === 'hub')) {
-      const parent = NAV_ITEMS.find((x) => x.id === i.hubParent)
-      expect(parent).toBeDefined()
-      expect(parent!.chrome).toBe('top')
+  it('the sidebar renders three scopes; utility belongs to the account and help menus', () => {
+    expect(SIDEBAR_SCOPES).toEqual(['platform', 'organisation', 'programme'])
+    expect(SIDEBAR_SCOPES).not.toContain('utility')
+  })
+
+  it('marks reserved slots so the sidebar can disable them', () => {
+    const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
+    expect(prog.items.find((i) => i.id === 'applications')!.placeholder).toBeFalsy()
+    expect(prog.items.find((i) => i.id === 'fund')!.placeholder).toBe(true)
+  })
+})
+
+// ── 7b. searchNav (the palette ranking) ────────────────────────────
+describe('searchNav', () => {
+  const L = (id: string, label: string): LabelledNavItem =>
+    ({ item: NAV_ITEMS.find((i) => i.id === id)!, label })
+  const items = [
+    L('overview', 'Dashboard'), L('students', 'Students'),
+    L('payments', 'Payments'), L('applications', 'B40 Applications'),
+    L('fund', 'Fund'),                       // reserved
+  ]
+
+  it('an empty query lists everything navigable, in registry order', () => {
+    expect(searchNav('', items).map((i) => i.id))
+      .toEqual(['overview', 'students', 'payments', 'applications'])
+  })
+
+  it('never offers a reserved slot — there is nowhere to go', () => {
+    expect(searchNav('fund', items)).toEqual([])
+  })
+
+  it('ranks a prefix hit above a word hit above a bare substring', () => {
+    // "App" starts B40 Applications' second WORD; it is a bare substring of nothing else here.
+    expect(searchNav('app', items).map((i) => i.id)).toEqual(['applications'])
+    // "s" starts Students, and appears inside Applications and Payments.
+    const ids = searchNav('s', items).map((i) => i.id)
+    expect(ids[0]).toBe('students')
+  })
+
+  it('is case-insensitive and ignores surrounding space', () => {
+    expect(searchNav('  PAYM '.trim(), items).map((i) => i.id)).toEqual(['payments'])
+  })
+
+  it('returns nothing rather than everything when nothing matches', () => {
+    expect(searchNav('zzzz', items)).toEqual([])
+  })
+})
+
+// ── 7c. defaultRoute ───────────────────────────────────────
+// Byte-identical to the adminLanding() it replaces — adminLanding.test.ts is unmodified and
+// still passes. See the docstring for why this is NOT written in terms of canAccess.
+describe('defaultRoute', () => {
+  it('holds an incomplete reviewer on their profile', () => {
+    expect(defaultRoute({ role: 'reviewer' }, false)).toBe('/admin/profile')
+  })
+  it('sends a reviewer and the legacy viewer to the workspace', () => {
+    expect(defaultRoute({ role: 'reviewer' }, true)).toBe('/admin/scholarship')
+    expect(defaultRoute({ role: 'viewer' })).toBe('/admin/scholarship')
+  })
+  it('sends everyone else to /admin, which bounces them if they may not see it', () => {
+    for (const r of ['super', 'admin', 'org_admin', 'qc', 'finance', 'partner'] as const) {
+      expect(defaultRoute({ role: r })).toBe('/admin')
     }
+  })
+  it('never traps on an OLD payload that omits the completeness flag', () => {
+    expect(defaultRoute({ role: 'reviewer' })).toBe('/admin/scholarship')
   })
 })
 

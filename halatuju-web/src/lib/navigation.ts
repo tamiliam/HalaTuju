@@ -70,16 +70,13 @@ export interface NavItem {
   exact?: boolean
   badge?: 'pendingSponsors'
   /**
-   * TRANSITIONAL (N1 → N2). Where the item sits in TODAY's chrome:
-   *   'top' — a top-bar entry.
-   *   'hub' — no menu entry; reached from the /admin/administration card grid, and
-   *           highlights `hubParent` in the bar.
-   * N2 replaces the bar with the scope sidebar, where every item renders in its own group;
-   * `chrome`, `hubParent` and `LEGACY_BAR_ORDER` are deleted then.
+   * A reserved slot: the sidebar renders it disabled with a "soon" pill and it links nowhere.
+   * These are the empty slots the programme-layer roadmap asks the shell to ship with (risk #6,
+   * "each extraction sprint fills one — no second redesign"), so a later sprint fills a slot
+   * rather than re-cutting the menu. A placeholder has no page, and the route-drift test knows
+   * not to look for one.
    */
-  chrome: 'top' | 'hub'
-  /** Item id to highlight in the legacy bar. Required when `chrome === 'hub'`. */
-  hubParent?: string
+  placeholder?: boolean
 }
 
 export interface NavGroup {
@@ -91,13 +88,16 @@ export interface NavGroup {
 /**
  * Every route in the console, grouped by scope.
  *
- * Role sets reproduce the guards that exist today, so N1 changes no behaviour:
+ * Role sets reproduce the guards that exist on the pages themselves:
  *   payments  super/admin/org_admin/finance  (payments/page.tsx `allowed`)
  *   contracts super/org_admin                (contracts/page.tsx `allowed`)
  *   sources   super/org_admin/admin          (sources/page.tsx `canManage`)
  *   billing   super/org_admin                (billing/page.tsx)
- * `sponsors` and `requests` have NO client guard today — they rely on the backend alone.
- * Their role sets here drive menu visibility only; N1 adds no new client-side block.
+ * `sponsors` and `requests` have NO client guard — they rely on the backend alone. Their role
+ * sets here drive menu visibility only and add no client-side block.
+ *
+ * Items marked `placeholder` are the roadmap's reserved slots: they render disabled with a
+ * "soon" pill and have no page behind them yet.
  */
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
@@ -109,11 +109,22 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // are platform pages, not any organisation's.
       { id: 'overview', href: '/admin', labelKey: 'common.dashboard',
         scope: 'platform', roles: ['super', 'partner'], gate: { mode: 'always' },
-        exact: true, chrome: 'top' },
+        exact: true },
       { id: 'students', href: '/admin/students', labelKey: 'admin.students',
-        scope: 'platform', roles: ['super', 'partner'], gate: { mode: 'always' }, chrome: 'top' },
+        scope: 'platform', roles: ['super', 'partner'], gate: { mode: 'always' } },
       { id: 'courseData', href: '/admin/course-data', labelKey: 'admin.courseData.nav',
-        scope: 'platform', roles: ['super'], gate: { mode: 'always' }, chrome: 'top' },
+        scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
+      // Reserved. The tenant list + referral-partner management currently live as panels inside
+      // the Administration hub; N3 lifts them out to their own platform pages.
+      { id: 'organisations', href: '/admin/organisations', labelKey: 'admin.nav.organisations',
+        scope: 'platform', roles: ['super'], gate: { mode: 'always' }, placeholder: true },
+      { id: 'referralPartners', href: '/admin/referral-partners',
+        labelKey: 'admin.nav.referralPartners',
+        scope: 'platform', roles: ['super'], gate: { mode: 'always' }, placeholder: true },
+      // Reserved. `billing_rates` shipped 2026-07-27 (super-only, 403 for org_admin — the margin
+      // applied to a tenant is a commercial disclosure) but has no page yet.
+      { id: 'billingRates', href: '/admin/billing-rates', labelKey: 'admin.nav.billingRates',
+        scope: 'platform', roles: ['super'], gate: { mode: 'always' }, placeholder: true },
     ],
   },
   {
@@ -121,30 +132,31 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     headingKey: 'admin.nav.group.organisation',
     items: [
       // The security fence: staff, sponsors, money out, contracts, billing.
+      // Overview keeps /admin/administration for now: N2 ships the sidebar beside the live hub so
+      // a rollback is one import. N3 splits the hub and this becomes /admin/organisation.
       { id: 'administration', href: '/admin/administration', labelKey: 'admin.administration.nav',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' }, match: ['/admin/invite'], badge: 'pendingSponsors',
-        chrome: 'top' },
+        gate: { mode: 'always' }, match: ['/admin/invite'] },
+      // Reserved. Staff management is a panel inside the hub today; N3 gives it a page.
+      { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.staff',
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
+        gate: { mode: 'always' }, placeholder: true },
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' }, chrome: 'hub', hubParent: 'administration' },
+        gate: { mode: 'always' }, badge: 'pendingSponsors' },
       { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' }, chrome: 'hub', hubParent: 'administration' },
+        gate: { mode: 'always' } },
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title',
-        scope: 'organisation', roles: ['super', 'org_admin'],
-        gate: { mode: 'always' }, chrome: 'hub', hubParent: 'administration' },
+        scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin'],
-        gate: { mode: 'always' }, chrome: 'hub', hubParent: 'administration' },
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title',
         scope: 'organisation', roles: ['super', 'org_admin'],
-        gate: { mode: 'probe', probe: 'billing', dark: 'soon' },
-        chrome: 'hub', hubParent: 'administration' },
+        gate: { mode: 'probe', probe: 'billing', dark: 'soon' } },
       { id: 'requests', href: '/admin/requests', labelKey: 'admin.requests.nav',
         scope: 'organisation', roles: ['super', 'org_admin'],
-        gate: { mode: 'probe', probe: 'requests', dark: 'hide' },
-        chrome: 'hub', hubParent: 'administration' },
+        gate: { mode: 'probe', probe: 'requests', dark: 'hide' } },
     ],
   },
   {
@@ -153,42 +165,50 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       // The gift itself. `finance` is absent deliberately: it has no B40 scope at all
       // (`_b40_scope` -> 'none'), so an Applications link would only ever 403.
+      // Reserved. The programme is the gift; its own overview lands when the Programme model is
+      // read by the web app (nothing does yet).
+      { id: 'programmeOverview', href: '/admin/programme', labelKey: 'admin.nav.programmeOverview',
+        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc'],
+        gate: { mode: 'always' }, placeholder: true },
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
-        gate: { mode: 'always' }, chrome: 'top' },
+        gate: { mode: 'always' } },
+      // Reserved slots the programme-layer roadmap owes: reviewer assignment/scoping, the intake
+      // years beneath the gift, the fund, and the rules that currently live on the cohort.
+      { id: 'reviewers', href: '/admin/programme/reviewers', labelKey: 'admin.nav.reviewers',
+        scope: 'programme', roles: ['super', 'org_admin'],
+        gate: { mode: 'always' }, placeholder: true },
+      { id: 'years', href: '/admin/programme/years', labelKey: 'admin.nav.years',
+        scope: 'programme', roles: ['super', 'org_admin'],
+        gate: { mode: 'always' }, placeholder: true },
+      { id: 'fund', href: '/admin/programme/fund', labelKey: 'admin.nav.fund',
+        scope: 'programme', roles: ['super', 'org_admin', 'finance'],
+        gate: { mode: 'always' }, placeholder: true },
+      { id: 'rules', href: '/admin/programme/rules', labelKey: 'admin.nav.rules',
+        scope: 'programme', roles: ['super', 'org_admin'],
+        gate: { mode: 'always' }, placeholder: true },
     ],
   },
   {
     scope: 'utility',
     headingKey: 'admin.nav.group.utility',
     items: [
-      // Yours, not any scope's. N2 moves these into the help and account menus.
+      // Yours, not any scope's — the sidebar skips this group (SIDEBAR_SCOPES) and the account
+      // and help menus render it instead.
       { id: 'profile', href: '/admin/profile', labelKey: 'admin.profile',
-        scope: 'utility', roles: ROLE_NAMES, gate: { mode: 'always' }, chrome: 'top' },
+        scope: 'utility', roles: ROLE_NAMES, gate: { mode: 'always' } },
       { id: 'guide', href: '/admin/guide', labelKey: 'admin.guideNav',
         scope: 'utility', roles: ['super', 'admin', 'org_admin', 'reviewer', 'qc', 'finance'],
-        gate: { mode: 'always' }, chrome: 'top' },
+        gate: { mode: 'always' } },
       { id: 'faq', href: '/admin/faq', labelKey: 'admin.faqNav',
         scope: 'utility', roles: ['super', 'admin', 'org_admin', 'reviewer', 'qc', 'finance'],
-        gate: { mode: 'always' }, chrome: 'top' },
+        gate: { mode: 'always' } },
     ],
   },
 ]
 
 /** Flat view of the registry. */
 export const NAV_ITEMS: readonly NavItem[] = NAV_GROUPS.flatMap((g) => g.items)
-
-/**
- * TRANSITIONAL (N1 → N2): the order of today's top bar, which is accretion rather than
- * meaning. Scope order is the target (see NAV_GROUPS) but reordering the live bar is not
- * this sprint's job, so N1 renders in exactly today's sequence. Deleted with `chrome` in N2.
- * `navigation.test.ts` asserts this list is COMPLETE against every `chrome: 'top'` item, so
- * it cannot silently fall behind the registry.
- */
-export const LEGACY_BAR_ORDER: readonly string[] = [
-  'overview', 'students', 'applications', 'courseData', 'administration',
-  'profile', 'guide', 'faq',
-]
 
 /** Routes that render WITHOUT the admin chrome (login / OAuth callback / set-password). */
 export const CHROMELESS: readonly string[] = [
@@ -272,6 +292,8 @@ export function activeItem(pathname: string): NavItem | undefined {
   let best: NavItem | undefined
   let bestLen = -1
   for (const item of NAV_ITEMS) {
+    // A reserved slot has no page, so nothing can be "inside" it.
+    if (item.placeholder) continue
     for (const href of [item.href, ...(item.match ?? [])]) {
       const hit = item.exact ? pathname === href : under(pathname, href)
       if (hit && href.length > bestLen) {
@@ -281,30 +303,6 @@ export function activeItem(pathname: string): NavItem | undefined {
     }
   }
   return best
-}
-
-/**
- * Which item the LEGACY top bar should highlight for a path: a hub page (Payments, Sources,
- * …) has no bar entry of its own and highlights the hub it lives under.
- * TRANSITIONAL — deleted with `chrome` in N2, where every item highlights itself.
- */
-export function legacyBarActiveId(pathname: string): string | undefined {
-  const item = activeItem(pathname)
-  if (!item) return undefined
-  return item.chrome === 'hub' ? item.hubParent : item.id
-}
-
-/**
- * The legacy top bar for a context: today's items, in today's order.
- * TRANSITIONAL — N2's sidebar renders `visibleNav()` directly instead.
- */
-export function legacyBarItems(ctx: NavContext): VisibleNavItem[] {
-  const visible = new Map(
-    visibleNav(ctx).flatMap((g) => g.items).map((i) => [i.id, i] as const),
-  )
-  return LEGACY_BAR_ORDER
-    .map((id) => visible.get(id))
-    .filter((i): i is VisibleNavItem => !!i && i.chrome === 'top' && i.state === 'show')
 }
 
 /**
@@ -320,4 +318,58 @@ export function legacyBarItems(ctx: NavContext): VisibleNavItem[] {
 export function canAccess(href: string, role: AdminRoleName): boolean {
   const item = activeItem(href)
   return item ? item.roles.includes(role) : true
+}
+
+/** An item paired with its already-translated label, which is all the palette needs. */
+export interface LabelledNavItem { item: NavItem; label: string }
+
+/**
+ * Rank navigable items for the ⌘K palette.
+ *
+ * Deliberately not a fuzzy-search dependency: there are ~20 reachable routes, and the ranking
+ * that matters is "the word I typed starts this label" over "it appears somewhere in it".
+ * Order: label starts with the query, then a word inside it starts with the query, then any
+ * substring. Ties keep registry order, so a blank query lists the menu as the sidebar shows it.
+ *
+ * Reserved slots are excluded — offering to navigate somewhere that does not exist is worse
+ * than not offering it.
+ */
+export function searchNav(query: string, items: readonly LabelledNavItem[]): NavItem[] {
+  const q = query.trim().toLowerCase()
+  const live = items.filter(({ item }) => !item.placeholder)
+  if (!q) return live.map(({ item }) => item)
+
+  const rank = ({ label }: LabelledNavItem): number => {
+    const l = label.toLowerCase()
+    if (l.startsWith(q)) return 0
+    if (l.split(/\s+/).some((w) => w.startsWith(q))) return 1
+    return l.includes(q) ? 2 : -1
+  }
+
+  return live
+    .map((entry, i) => ({ entry, r: rank(entry), i }))
+    .filter((x) => x.r >= 0)
+    .sort((a, b) => (a.r - b.r) || (a.i - b.i))
+    .map((x) => x.entry.item)
+}
+
+/**
+ * Where an authenticated admin lands after sign-in. `adminLanding()` delegates here, so the
+ * rule has one home; the outputs are IDENTICAL to the previous implementation and its tests
+ * pass unmodified.
+ *
+ * ⚠ Deliberately NOT `canAccess('/admin', r) ? … : …`, which reads better and is wrong: it
+ * would send admin / org_admin / qc / finance straight to `/admin/scholarship`, whereas today
+ * they land on `/admin` and are bounced by the page. Same destination, one hop fewer — but
+ * that is a behaviour change, and this sprint ships the shell, not a new landing rule. The
+ * double hop is worth removing later; it is not worth smuggling in here.
+ */
+export function defaultRoute(role: { role?: string; is_super_admin?: boolean } | null | undefined,
+                             reviewerProfileComplete?: boolean): string {
+  // A newly-invited reviewer is held on their profile until the compulsory fields are filled.
+  // Checked as `=== false` so an OLD payload that omits the field never traps anyone.
+  if (role?.role === 'reviewer' && reviewerProfileComplete === false) return '/admin/profile'
+  // 'viewer' is a legacy value that is not a real role; it lands where a reviewer does.
+  if (role?.role === 'reviewer' || role?.role === 'viewer') return '/admin/scholarship'
+  return '/admin'
 }
