@@ -1509,6 +1509,8 @@ export interface AdminSponsor {
   created_at: string
   /** Confirmed money, ORG-FENCED (a tenant sees its own share). Always a 2dp string. */
   given: string
+  /** Students this sponsor is currently holding money for. Fenced the same way `given` is. */
+  students: number
   /** Null until this sponsor next opens their portal — nothing recorded it before 2026-07-27. */
   last_seen_at: string | null
 }

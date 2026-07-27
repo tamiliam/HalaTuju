@@ -12,9 +12,11 @@ import type { AdminSponsorCredit, AdminSponsorDetail } from './admin-api'
 export type SeenBand = 'never' | 'today' | 'recent' | 'dormant'
 
 /**
- * `never` is the one that matters: an approved sponsor who has not come back at all was
- * invisible before this field existed. `dormant` is 30+ days — long enough to mean something
- * for a giving relationship, short enough to still be actionable.
+ * `never` means **no record**, NOT "never came back" — the column only started recording on
+ * 2026-07-27, so every sponsor who joined before that reads `never` until their next visit.
+ * The copy says so ("No sign-in recorded"); it originally said "Not since joining", which
+ * asserted history this field does not have. `dormant` is 30+ days — long enough to mean
+ * something for a giving relationship, short enough to still be actionable.
  */
 export function seenBand(lastSeenAt: string | null, now: Date = new Date()): SeenBand {
   if (!lastSeenAt) return 'never'

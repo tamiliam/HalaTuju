@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsors: attribute a referral by email, count the students, tell the truth about last seen — 2026-07-28
+
+Three fixes the owner found by comparing the shipped sponsor screens against their approved
+design. Two are defects the sprint exposed rather than caused; one is a piece of the design
+that was quietly dropped. **No migration.**
+
+### Fixed
+- **A referral was only ever attributed to the link.** `attribute_referral` fires when
+  someone registers through `/sponsor?ref=<code>` — and most people don't: they read the
+  invite, then go to the site and sign up. Every one of those invitations stayed "Invited"
+  for ever, so on production **five of eight invitees had joined and all eight read as
+  unconverted**. New `referrals.attribute_referral_by_email` closes the invitation on the
+  invitee's own email at registration; the code still wins when both are present, because
+  a clicked link is the stronger signal. Pre-existing since Sprint 11 (June) — S1's
+  referral list is what made it visible.
+- **"Not since joining" asserted history the column does not have.** `last_seen_at` has
+  only been recorded since 2026-07-27, so a null means *no record*, not *never came back*.
+  The copy now reads "No sign-in recorded" (en/ms/ta) with a tooltip saying since when.
+  The mechanism itself was verified working before the copy was changed.
+
+### Added
+- **A Students column on `/admin/sponsors`** — in the approved design, dropped from the
+  build. Money given says what a sponsor has put in; students says what it is doing, and a
+  large balance with no students is the case an admin most needs to spot. Counted from
+  HOLDING allocations, the same rule the detail page's per-wallet `students` uses, and
+  fenced on the **application's** owner (the detail page's split, not the programme's).
+- **`backfill_referral_attribution`** (report by default, `--apply` to write) — the one-off
+  repair for invitations answered before attribution-by-email existed. Same matching as the
+  live path plus one guard it does not need: the sponsor must have registered *after* the
+  invitation, since someone who was already a sponsor is not a conversion. `joined_at` is
+  stamped with the sponsor's own registration date, so the record stays honest about when
+  it happened.
+
+### Notes
+- `students` is counted in its **own aggregate query**, deliberately not a second
+  `annotate()` beside the money: two multi-valued joins in one queryset multiply each
+  other, and the usual `distinct=True` cure is wrong for a `Sum` (it collapses two credits
+  of the same amount into one). A test pins both failure modes.
+- The org-fence static guard caught the new raw `Sponsorship.objects` query and required
+  its `# org-fence:` pragma — working as intended.
+- **3617 scholarship + 1260 courses/reports pytest · 891 jest.**
+
 ## The console shell — scope sidebar, breadcrumb, command palette (nav/IA N2) — 2026-07-28
 
 Second of three sprints on the console navigation. N1 turned the menu into data; N2 turns it

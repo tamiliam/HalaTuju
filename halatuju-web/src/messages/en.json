@@ -3162,9 +3162,11 @@
         "suspend": "Suspend"
       },
       "colGiven": "Given",
+      "colStudents": "Students",
       "colLastSeen": "Last seen",
       "seen": {
-        "never": "Not since joining",
+        "never": "No sign-in recorded",
+        "neverHint": "Sign-ins have only been recorded since 27 July 2026.",
         "today": "Today",
         "recent": "{date}",
         "dormant": "{date}"

@@ -29,13 +29,13 @@ const SPONSORS = [
     id: 5, name: 'Bharathan Nair', email: 'nair@example.com', phone: '', source: '',
     organisation: 'Should Not Render Ltd', note: '', status: 'approved',
     reviewed_at: null, reviewed_by: '', created_at: '2026-07-15T00:00:00Z',
-    given: '20000.00', last_seen_at: '2026-07-24T00:00:00Z',
+    given: '20000.00', students: 6, last_seen_at: '2026-07-24T00:00:00Z',
   },
   {
     id: 6, name: 'Chong Lee Min', email: 'lee@example.com', phone: '', source: '',
     organisation: '', note: '', status: 'approved',
     reviewed_at: null, reviewed_by: '', created_at: '2026-07-08T00:00:00Z',
-    given: '0.00', last_seen_at: null,
+    given: '0.00', students: 0, last_seen_at: null,
   },
 ] as unknown as api.AdminSponsor[]
 
@@ -50,6 +50,7 @@ describe('sponsors list columns', () => {
     await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
 
     expect(screen.getByText('admin.sponsors.colGiven')).toBeTruthy()
+    expect(screen.getByText('admin.sponsors.colStudents')).toBeTruthy()
     expect(screen.getByText('admin.sponsors.colLastSeen')).toBeTruthy()
     expect(screen.queryByText('admin.sponsors.organisation')).toBeNull()
     // The value must not leak through either — dropping the header alone would still render it.
@@ -71,10 +72,22 @@ describe('sponsors list columns', () => {
     expect(screen.queryByText('0.00')).toBeNull()
   })
 
-  it('calls out a sponsor who has never come back', async () => {
-    // The signal that did not exist before this sprint: approved, then silence.
+  it('shows how many students a sponsor is holding money for', async () => {
+    // Money in says what they have given; students says what it is DOING. A large balance
+    // with no students is the case an admin most needs to spot, so a zero dashes.
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    expect(screen.getByText('6')).toBeTruthy()
+    expect(screen.queryByText('0')).toBeNull()
+  })
+
+  it('says there is NO RECORD of a sign-in, not that they never came back', async () => {
+    // `last_seen_at` has only been recorded since 2026-07-27, so a null means we do not
+    // know — the earlier copy ("Not since joining") asserted history this field lacks.
     render(<AdminSponsorsList />)
     await waitFor(() => expect(screen.getByText('Chong Lee Min')).toBeTruthy())
-    expect(screen.getByText('admin.sponsors.seen.never')).toBeTruthy()
+    const cell = screen.getByText('admin.sponsors.seen.never')
+    expect(cell).toBeTruthy()
+    expect(cell.getAttribute('title')).toBe('admin.sponsors.seen.neverHint')
   })
 })

@@ -105,8 +105,11 @@ export default function AdminSponsorDetailPage() {
               date: detail.reviewed_at ? formatDate(detail.reviewed_at) : '—',
             })}</span>
           )}
-          <span className={seenBand(detail.last_seen_at) === 'never' || seenBand(detail.last_seen_at) === 'dormant'
-            ? 'text-amber-700 font-medium' : ''}>
+          <span
+            className={seenBand(detail.last_seen_at) === 'never' || seenBand(detail.last_seen_at) === 'dormant'
+              ? 'text-amber-700 font-medium' : ''}
+            title={detail.last_seen_at ? undefined : t('admin.sponsors.seen.neverHint')}
+          >
             {detail.last_seen_at
               ? t(`admin.sponsors.seen.${seenBand(detail.last_seen_at)}`, { date: formatDate(detail.last_seen_at) })
               : t('admin.sponsors.seen.never')}

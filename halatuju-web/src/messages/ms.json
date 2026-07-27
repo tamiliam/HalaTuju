@@ -3162,9 +3162,11 @@
         "suspend": "Gantung"
       },
       "colGiven": "Diberi",
+      "colStudents": "Pelajar",
       "colLastSeen": "Kali terakhir dilihat",
       "seen": {
-        "never": "Tidak sejak menyertai",
+        "never": "Tiada log masuk direkodkan",
+        "neverHint": "Log masuk hanya direkodkan sejak 27 Julai 2026.",
         "today": "Hari ini",
         "recent": "{date}",
         "dormant": "{date}"

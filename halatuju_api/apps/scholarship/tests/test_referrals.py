@@ -4,9 +4,12 @@ Service + endpoint coverage: invite creation (+ email + idempotency), attributio
 on register via the ref code, the 60-day PDPA purge, and the approved-sponsor gate.
 """
 from datetime import timedelta
+from io import StringIO
+from unittest.mock import patch
 
 import jwt
 from django.core import mail
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -77,6 +80,69 @@ class TestReferralService(TestCase):
         joiner = _sponsor('j')
         self.assertIsNone(referrals.attribute_referral('nope', joiner))
 
+    # ── attribution by EMAIL (2026-07-28) ────────────────────────────────────────
+    # The code path only fires when the invitee clicks the ?ref= link. Most don't: they
+    # read the invite, then register on their own — and every one of those invitations
+    # sat at "Invited" for ever, so a real conversion read as none.
+
+    def test_attribute_by_email_closes_a_direct_signup(self):
+        inviter = _sponsor('inv')
+        ref = referrals.create_referral(inviter, invitee_email='Direct@X.org')
+        joiner = _sponsor('joiner', status='pending', email='direct@x.org')
+        out = referrals.attribute_referral_by_email(joiner)
+        self.assertIsNotNone(out)
+        ref.refresh_from_db()
+        self.assertEqual(ref.status, 'joined')
+        self.assertEqual(ref.registered_sponsor_id, joiner.id)
+        self.assertIsNotNone(ref.joined_at)
+
+    def test_attribute_by_email_is_case_insensitive(self):
+        inviter = _sponsor('inv')
+        ref = referrals.create_referral(inviter, invitee_email='mixed@x.org')
+        joiner = _sponsor('joiner', status='pending', email='  MiXeD@X.ORG ')
+        self.assertIsNotNone(referrals.attribute_referral_by_email(joiner))
+        ref.refresh_from_db()
+        self.assertEqual(ref.status, 'joined')
+
+    def test_attribute_by_email_never_self_refers(self):
+        inviter = _sponsor('inv', email='self@x.org')
+        ref = referrals.create_referral(inviter, invitee_email='self@x.org')
+        self.assertIsNone(referrals.attribute_referral_by_email(inviter))
+        ref.refresh_from_db()
+        self.assertEqual(ref.status, 'invited')
+
+    def test_attribute_by_email_oldest_invitation_wins(self):
+        """Two sponsors invited the same person — credit the one who introduced them."""
+        first = _sponsor('first', email='first@x.org')
+        second = _sponsor('second', email='second@x.org')
+        early = referrals.create_referral(first, invitee_email='pop@x.org')
+        late = referrals.create_referral(second, invitee_email='pop@x.org')
+        SponsorReferral.objects.filter(id=early.id).update(
+            created_at=timezone.now() - timedelta(days=10))
+        joiner = _sponsor('joiner', status='pending', email='pop@x.org')
+        referrals.attribute_referral_by_email(joiner)
+        early.refresh_from_db(); late.refresh_from_db()
+        self.assertEqual(early.status, 'joined')
+        self.assertEqual(late.status, 'invited')      # still open, not double-counted
+
+    def test_attribute_by_email_needs_an_email(self):
+        inviter = _sponsor('inv')
+        referrals.create_referral(inviter, invitee_email='someone@x.org')
+        self.assertIsNone(referrals.attribute_referral_by_email(
+            _sponsor('joiner', status='pending', email='')))
+        self.assertIsNone(referrals.attribute_referral_by_email(None))
+
+    def test_attribute_by_email_ignores_a_closed_row(self):
+        inviter = _sponsor('inv')
+        ref = referrals.create_referral(inviter, invitee_email='once@x.org')
+        joiner = _sponsor('joiner', status='pending', email='once@x.org')
+        referrals.attribute_referral_by_email(joiner)
+        ref.refresh_from_db()
+        first_joined_at = ref.joined_at
+        self.assertIsNone(referrals.attribute_referral_by_email(joiner))   # idempotent
+        ref.refresh_from_db()
+        self.assertEqual(ref.joined_at, first_joined_at)
+
     def test_purge_scrubs_old_pii_only(self):
         inviter = _sponsor()
         old = referrals.create_referral(inviter, invitee_email='old@x.org', invitee_name='Old')
@@ -110,8 +176,8 @@ class TestReferralEndpoints(TestCase):
     def setUp(self):
         self.client = APIClient()
 
-    def _auth(self, uid):
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+    def _auth(self, uid, email=''):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, email)}')
 
     def test_create_and_list(self):
         _sponsor('a1', status='approved')
@@ -148,3 +214,106 @@ class TestReferralEndpoints(TestCase):
         ref.refresh_from_db()
         self.assertEqual(ref.status, 'joined')
         self.assertEqual(ref.registered_sponsor.supabase_user_id, 'newbie')
+
+    def test_register_without_ref_attributes_by_email(self):
+        """The case the code path missed: they read the invite and signed up directly."""
+        inviter = _sponsor('inv', status='approved')
+        ref = referrals.create_referral(inviter, invitee_email='lead@x.org')
+        self._auth('newbie', 'lead@x.org')
+        r = self.client.post('/api/v1/sponsor/register/', {
+            'name': 'Newbie', 'phone': '0123', 'source': 'friend', 'consent': True,
+        }, format='json')
+        self.assertEqual(r.status_code, 201)
+        ref.refresh_from_db()
+        self.assertEqual(ref.status, 'joined')
+        self.assertEqual(ref.registered_sponsor.supabase_user_id, 'newbie')
+
+    def test_register_attributes_the_code_not_the_email(self):
+        """Both signals present and disagreeing → the link they actually clicked wins."""
+        by_code = _sponsor('a', status='approved', email='a@x.org')
+        by_email = _sponsor('b', status='approved', email='b@x.org')
+        code_ref = referrals.create_referral(by_code, invitee_email='someone.else@x.org')
+        email_ref = referrals.create_referral(by_email, invitee_email='lead@x.org')
+        self._auth('newbie', 'lead@x.org')
+        r = self.client.post('/api/v1/sponsor/register/', {
+            'name': 'Newbie', 'phone': '0123', 'source': 'friend',
+            'consent': True, 'ref': code_ref.code,
+        }, format='json')
+        self.assertEqual(r.status_code, 201)
+        code_ref.refresh_from_db(); email_ref.refresh_from_db()
+        self.assertEqual(code_ref.status, 'joined')
+        self.assertEqual(email_ref.status, 'invited')   # exactly one invitation closed
+
+    def test_register_survives_a_broken_attribution(self):
+        """Bookkeeping must never cost someone their registration."""
+        _sponsor('inv', status='approved')
+        with patch('apps.scholarship.referrals.attribute_referral_by_email',
+                   side_effect=RuntimeError('boom')):
+            r = self.client.post('/api/v1/sponsor/register/', {
+                'name': 'Newbie', 'phone': '0123', 'source': 'friend', 'consent': True,
+            }, format='json', HTTP_AUTHORIZATION=f'Bearer {_token("newbie", "x@x.org")}')
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(Sponsor.objects.filter(supabase_user_id='newbie').exists())
+
+
+class TestBackfillReferralAttribution(TestCase):
+    """The one-off repair for invitations answered before attribution-by-email existed.
+
+    Same matching as the live path plus one guard it does not need: the sponsor must have
+    registered AFTER the invitation. At registration that is true by construction; reading
+    history it is not, and someone who was already a sponsor is not a conversion.
+    """
+    def _run(self, apply=False):
+        out = StringIO()
+        args = ['backfill_referral_attribution'] + (['--apply'] if apply else [])
+        call_command(*args, stdout=out)
+        return out.getvalue()
+
+    def test_reports_without_writing_then_applies(self):
+        inviter = _sponsor('inv', email='inv@x.org')
+        ref = referrals.create_referral(inviter, invitee_email='joined@x.org')
+        joiner = _sponsor('joiner', status='approved', email='joined@x.org')
+
+        self.assertIn('1 referral(s) would be attributed', self._run())
+        ref.refresh_from_db()
+        self.assertEqual(ref.status, 'invited')          # report mode wrote nothing
+
+        self.assertIn('1 referral(s) attributed', self._run(apply=True))
+        ref.refresh_from_db()
+        self.assertEqual(ref.status, 'joined')
+        self.assertEqual(ref.registered_sponsor_id, joiner.id)
+        # `joined_at` is the sponsor's own registration date, not today — the record has to
+        # stay honest about WHEN it happened.
+        self.assertEqual(ref.joined_at, joiner.created_at)
+
+    def test_leaves_a_sponsor_who_predates_the_invite(self):
+        early = _sponsor('early', status='approved', email='early@x.org')
+        Sponsor.objects.filter(id=early.id).update(
+            created_at=timezone.now() - timedelta(days=90))
+        inviter = _sponsor('inv', email='inv@x.org')
+        ref = referrals.create_referral(inviter, invitee_email='early@x.org')
+
+        out = self._run(apply=True)
+        self.assertIn('BEFORE the invite', out)
+        self.assertIn('0 referral(s) attributed', out)
+        ref.refresh_from_db()
+        self.assertEqual(ref.status, 'invited')
+
+    def test_leaves_a_self_referral(self):
+        inviter = _sponsor('inv', email='inv@x.org')
+        ref = referrals.create_referral(inviter, invitee_email='inv@x.org')
+        self.assertIn('0 referral(s) attributed', self._run(apply=True))
+        ref.refresh_from_db()
+        self.assertEqual(ref.status, 'invited')
+
+    def test_is_idempotent(self):
+        inviter = _sponsor('inv', email='inv@x.org')
+        referrals.create_referral(inviter, invitee_email='joined@x.org')
+        _sponsor('joiner', status='approved', email='joined@x.org')
+        self._run(apply=True)
+        self.assertIn('0 referral(s) attributed', self._run(apply=True))
+
+    def test_ignores_an_invitee_who_never_registered(self):
+        inviter = _sponsor('inv', email='inv@x.org')
+        referrals.create_referral(inviter, invitee_email='ghost@x.org')
+        self.assertIn('0 referral(s) attributed', self._run(apply=True))

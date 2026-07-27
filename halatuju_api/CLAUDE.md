@@ -667,11 +667,35 @@ existing table so no RLS work; 9 sponsors / 0 stamped / RM172,000 + 48 sponsorsh
 - **▶ AT DEPLOY: migration is DONE — just push** `f69be3c4:main` (api + web both rebuild).
   Post-check: `/admin/sponsors` shows Given + Last seen and no Organisation; a row opens
   `/admin/sponsors/<id>`; `/api/v1/sponsor/me/` still 200s and stamps `last_seen_at`.
+- **▶ CARRY:** ms/ta first drafts for ~45 new `admin.sponsors.*` keys.
+
+**✅ CODE COMPLETE 2026-07-28 — SPONSOR S1.1: the three fixes off the owner's screen-vs-design
+comparison. NOT DEPLOYED.** Worktree `.worktrees/sponsor-detail`, branch `feat/sponsor-detail`.
+Decision ×1; lessons ×3. **NO migration** — api + web.
+- Of the owner's five findings, **two dissolved**: the Emails tab IS S3 and Record-a-credit IS
+  S2, both deliberately unbuilt. Three were real:
+- **A referral was only ever attributed to the LINK.** `attribute_referral` fires solely for
+  `/sponsor?ref=<code>`; most invitees read the invite and then register on their own, so
+  **5 of 8 production invitees had joined while all 8 read "Invited"**. New
+  `referrals.attribute_referral_by_email` + a `_attribute_referral` helper in `views_sponsor`
+  (link wins when both are present; oldest invitation wins on a tie; best-effort so it can
+  never fail a registration). **Pre-existing since Sprint 11 in June** — S1 only displayed it.
+- **"Not since joining" asserted history the column does not have** — `last_seen_at` has only
+  recorded since 2026-07-27. Now "No sign-in recorded" + a since-when tooltip (en/ms/ta). The
+  MECHANISM was verified working before the copy was touched.
+- **Students column on `/admin/sponsors`** — in the approved design, dropped from the build.
+  **⚠ Counted in its OWN aggregate query, not a second `annotate()`**: two multi-valued joins
+  multiply each other, and `Sum(distinct=True)` (the reflex fix) collapses two equal credits
+  into one — a wrong figure that looks plausible. A test pins both failure modes.
+- **▶ AT DEPLOY: push. No migrate-first. THEN run `backfill_referral_attribution` on the LIVE
+  service** — report first (expect **5 rows**: referral ids 1, 2, 3, 5, 7 → sponsors 4, 5, 8,
+  7, 9; ids 4, 6, 8 are genuinely still open), read it, then `--apply`.
+- **3617 scholarship + 1260 courses/reports pytest · 891 jest**; `makemigrations --check` clean. The org-fence static
+  guard caught the new raw `Sponsorship.objects` query and required its pragma — as intended.
 - **▶ NEXT = S2** (wallet-credit UI against the LIVE endpoints — record/sign/void, reusing
   `paymentStatus.signOffView`'s shape; **no backend, no migration**), then S3 (eleven editable
   sponsor emails + the badge pair, two-gate dark launch), then S4 (mandatory reject/suspend
   reason, per-sponsor email log, CSV export).
-- **▶ CARRY:** ms/ta first drafts for ~45 new `admin.sponsors.*` keys.
 
 ## Superseded — previous Next Sprint (as of 2026-07-26)
 

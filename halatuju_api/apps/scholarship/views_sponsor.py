@@ -66,6 +66,26 @@ def _touch_last_seen(sponsor):
         pass
 
 
+def _attribute_referral(data, sponsor):
+    """F4: close the invitation this registration answers, if there is one.
+
+    TWO ways in, tried in order: the ``?ref=<code>`` link they clicked, then the invitee
+    email we sent the invite to. The code is the stronger signal (they demonstrably came
+    through that link), so it wins; the email closes the far commoner case of someone who
+    read the invite and then registered on their own — which, until 2026-07-28, left every
+    such invitation reading "Invited" for ever.
+
+    Best-effort: an attribution failure must never cost someone their registration.
+    """
+    try:
+        ref = (data.get('ref') or '').strip()
+        if ref and referral_service.attribute_referral(ref, sponsor):
+            return
+        referral_service.attribute_referral_by_email(sponsor)
+    except Exception:   # noqa: BLE001 — bookkeeping must not break the caller
+        pass
+
+
 class SponsorMixin:
     """Resolve the Sponsor for the authenticated Supabase user (by UID)."""
     permission_classes = [SupabaseIsAuthenticated]
@@ -131,6 +151,7 @@ class SponsorRegisterView(SponsorMixin, APIView):
             existing.consent_at = timezone.now()
             existing.consent_version = SPONSOR_CONSENT_VERSION
             existing.save()
+            _attribute_referral(data, existing)
             return Response(SponsorSerializer(existing).data)
 
         sponsor = Sponsor.objects.create(
@@ -145,10 +166,7 @@ class SponsorRegisterView(SponsorMixin, APIView):
             consent_version=SPONSOR_CONSENT_VERSION,
             status='pending',
         )
-        # F4: attribute a referral if they arrived via a /sponsor?ref=<code> link.
-        ref = (data.get('ref') or '').strip()
-        if ref:
-            referral_service.attribute_referral(ref, sponsor)
+        _attribute_referral(data, sponsor)
         # Best-effort: alert the admin there's a new sponsor to vet.
         send_sponsor_interest_admin_email(
             name=sponsor.name, email=sponsor.email,

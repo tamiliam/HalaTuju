@@ -63,6 +63,19 @@ def create_referral(inviter, *, invitee_email, invitee_name='', note=''):
     return referral
 
 
+def _mark_joined(referral, new_sponsor, when=None):
+    """Close one still-``invited`` row against the account that registered.
+
+    ``when`` exists for the backfill, which knows the real join moment (the sponsor's own
+    registration date) and should not stamp all of history with today's date.
+    """
+    referral.registered_sponsor = new_sponsor
+    referral.status = 'joined'
+    referral.joined_at = when or timezone.now()
+    referral.save(update_fields=['registered_sponsor', 'status', 'joined_at'])
+    return referral
+
+
 def attribute_referral(code, new_sponsor):
     """When a sponsor registers via a ``/sponsor?ref=<code>`` link, attribute it:
     flip the matching still-``invited`` referral to ``joined`` and link the account.
@@ -73,11 +86,38 @@ def attribute_referral(code, new_sponsor):
     referral = SponsorReferral.objects.filter(code=code, status='invited').first()
     if referral is None or referral.inviter_id == new_sponsor.id:
         return None
-    referral.registered_sponsor = new_sponsor
-    referral.status = 'joined'
-    referral.joined_at = timezone.now()
-    referral.save(update_fields=['registered_sponsor', 'status', 'joined_at'])
-    return referral
+    return _mark_joined(referral, new_sponsor)
+
+
+def attribute_referral_by_email(new_sponsor):
+    """Close an invitation when the person we invited registers DIRECTLY.
+
+    ``attribute_referral`` fires only if they come back through the ``?ref=<code>`` link,
+    and most people don't — they read the invite, then go to the site and sign up. Every
+    such invitation stayed ``invited`` for ever, so a real conversion read as none. The
+    invitee's own email is the join key, and it is the one thing the invite and the
+    registration are guaranteed to share.
+
+    Same rules as the code path: a still-``invited`` row only, never a self-referral, and
+    the row is closed exactly once. The OLDEST invitation wins when two sponsors invited
+    the same person, so the one who actually introduced them is credited.
+
+    Returns the referral when attributed, else None. Never raises — attribution must not
+    be able to fail a registration.
+    """
+    if new_sponsor is None:
+        return None
+    email = (new_sponsor.email or '').strip().lower()
+    if not email:
+        return None
+    referral = (SponsorReferral.objects
+                .filter(invitee_email=email, status='invited')
+                .exclude(inviter_id=new_sponsor.id)
+                .order_by('created_at', 'id')
+                .first())
+    if referral is None:
+        return None
+    return _mark_joined(referral, new_sponsor)
 
 
 def purge_expired_referrals(now=None, days=RETENTION_DAYS):

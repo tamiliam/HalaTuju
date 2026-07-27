@@ -979,10 +979,15 @@ def _sponsor_dict(s):
         'reviewed_by': s.reviewed_by, 'created_at': s.created_at,
         # Added 2026-07-27 so the list can be scanned rather than merely read: `last_seen_at`
         # answers "is this sponsor still with us" (nothing recorded it before), and `given`
-        # is what an admin actually looks for. `given` is annotated THROUGH THE SAME FENCE as
-        # the detail page — an org sees its own share, never another tenant's giving.
+        # is what an admin actually looks for. `given` + `students` are annotated THROUGH THE
+        # SAME FENCE as the detail page — an org sees its own share, never another tenant's.
         'last_seen_at': s.last_seen_at,
         'given': sponsorship_service._money(getattr(s, 'given_total', None)),
+        # Money given says what they have put in; students says what it is DOING. The pair is
+        # the whole point of the row — a large balance with no students is the case an admin
+        # most needs to spot. Counted the same way the detail page's per-wallet `students` is
+        # (HOLDING allocations), so the list and the page can never disagree.
+        'students': getattr(s, 'students_total', None) or 0,
     }
 
 
@@ -1017,7 +1022,28 @@ class AdminSponsorListView(_AdminBase):
         if not self.has_role(admin, 'super'):
             money &= Q(donations__programme__organisation_id=admin.owning_organisation_id)
         qs = qs.annotate(given_total=Sum('donations__amount', filter=money))
-        return Response({'sponsors': [_sponsor_dict(s) for s in qs]})
+
+        # Students is counted in its OWN query, deliberately NOT a second annotate() on the
+        # line above: two multi-valued joins in one queryset multiply each other, and the
+        # usual `distinct=True` cure is wrong for a Sum (it would collapse two credits of the
+        # same amount into one). One extra aggregate query, no N+1, no inflated money.
+        held = Q(status__in=Sponsorship.HOLDING)
+        if not self.has_role(admin, 'super'):
+            # Students fence on the APPLICATION's owner, not the programme's — a sponsorship
+            # belongs to a student an organisation owns. Same split as the detail page.
+            held &= Q(application__owning_organisation_id=admin.owning_organisation_id)
+        rows = list(qs)
+        # org-fence: `held` carries application__owning_organisation_id for a non-super
+        # caller (built above), so this count never crosses a tenant boundary.
+        counts = dict(
+            Sponsorship.objects.filter(held, sponsor__in=rows)
+            .values('sponsor_id')
+            .annotate(n=Count('id'))
+            .values_list('sponsor_id', 'n')
+        )
+        for s in rows:
+            s.students_total = counts.get(s.id, 0)
+        return Response({'sponsors': [_sponsor_dict(s) for s in rows]})
 
 
 class AdminSponsorPendingCountView(_AdminBase):

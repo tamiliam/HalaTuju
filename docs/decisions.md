@@ -1,5 +1,27 @@
 # Architectural Decisions — HalaTuju
 
+## A referral is attributed by the link OR the invitee's email, link first — Sponsor fixes, 2026-07-28
+**Decision:** `SponsorRegisterView` closes an invitation on the `?ref=<code>` link if one was used,
+otherwise on a still-`invited` row whose `invitee_email` matches the registering account. Where two
+sponsors invited the same person, the OLDEST invitation wins. Attribution is best-effort — wrapped so it
+can never fail a registration.
+
+**Why email at all.** The code path assumes the invitee returns through our link. Production says
+otherwise: five of eight invitees had joined and every row still read "Invited", because they read the
+invite and then went to the site themselves. The email is the one identifier the invitation and the
+registration are guaranteed to share, so it is the only join key available after the fact.
+
+**Why the link still wins.** A clicked link is evidence of the route taken; an email match is an
+inference. When both are present and they disagree, exactly one invitation should close, and it should be
+the one we can prove. **Why oldest-wins:** the person who actually introduced them is the earlier
+inviter; crediting the most recent would reward whoever invited last.
+
+**Alternatives considered:** (a) Close every matching invitation — rejected: it would report two
+conversions for one person and inflate a metric the whole feature exists to make honest. (b) Match on
+phone as well — rejected: an invitation carries no phone, so there is nothing to match against.
+**Revisit if:** invitations ever gain a second identifier (a phone, an account link), at which point the
+precedence list grows rather than the rule changing.
+
 ## A sponsor account is cross-org; the money and students inside it are not — Sponsor S1, 2026-07-27
 **Decision:** `AdminSponsorDetailView` shows a sponsor's IDENTITY to any permitted admin regardless of
 organisation, and fences everything with money or a student in it (wallets, credits, sponsorships,
