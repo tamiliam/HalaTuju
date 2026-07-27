@@ -8,6 +8,8 @@ import {
   useCallback,
   type ReactNode,
 } from 'react'
+import { usePathname } from 'next/navigation'
+import { isPrivilegedConsolePath } from '@/lib/sessionPolicy'
 import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { StudentProfile } from '@/lib/api'
@@ -47,7 +49,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authGateReason, setAuthGateReason] = useState<AuthGateReason>(null)
   const [authGateCourseId, setAuthGateCourseId] = useState<string | null>(null)
 
+  const pathname = usePathname()
+  // The STUDENT auth stack must not run on the privileged consoles. They have their own
+  // isolated clients, and the student client here would otherwise do two harmful things on
+  // /admin/auth/callback: its `detectSessionInUrl` (on by default) claims the `?code=` meant
+  // for the admin client and fails to exchange it — it holds no matching PKCE verifier, since
+  // the verifier is stored per storageKey — which BURNS the single-use code and leaves the
+  // admin callback with no session; and it then signs the visitor in ANONYMOUSLY on an admin
+  // page. Whichever client initialises first wins, which is why this reproduced on a local
+  // origin and not in production: a race, never a guarantee. (TD-182.)
+  //
+  // Same guard, same reason, as AuthGateModal's (TD-073), and now the same helper — a bare
+  // startsWith('/admin') also swallows '/administrivia'. No admin or sponsor surface consumes
+  // this context, so the provider simply stays inert there.
+  const isPrivilegedConsole = isPrivilegedConsolePath(pathname)
+
   useEffect(() => {
+    if (isPrivilegedConsole) { setIsLoading(false); return }
     getSession()
       .then(async ({ session: existingSession }) => {
         let session = existingSession
@@ -92,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [isPrivilegedConsole])
 
   const showAuthGate = useCallback(
     (reason: NonNullable<AuthGateReason>, options?: AuthGateOptions) => {

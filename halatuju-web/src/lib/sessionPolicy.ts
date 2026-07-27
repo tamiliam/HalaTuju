@@ -15,6 +15,20 @@ import { effectiveRole } from './navigation'
 
 type Scope = 'admin' | 'sponsor'
 
+/**
+ * Is this path inside one of the privileged consoles (the partner console or the sponsor
+ * portal), which run their own isolated auth?
+ *
+ * The boundary matters and is not decoration: a bare `startsWith('/admin')` also swallows
+ * `/administrivia`, so a future student route could silently inherit console behaviour. Same
+ * class of bug as the route registry's `/admin` prefix (fixed in nav/IA N1) — a prefix rule
+ * needs an exception for anything that is not actually a section.
+ */
+export function isPrivilegedConsolePath(pathname: string | null | undefined): boolean {
+  if (!pathname) return false
+  return ['/admin', '/sponsor'].some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 // Set on the scope that was ended, read by that scope's login page to explain why.
 const SUPERSEDED_KEY = 'halatuju_scope_superseded'
