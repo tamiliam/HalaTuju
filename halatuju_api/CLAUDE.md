@@ -524,6 +524,51 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-27)
 
+**✅ SHIPPED + LIVE 2026-07-26/27 — BILLING: what it costs, who it belongs to, what to charge.**
+Three arcs, commits `89dcfb8b`..`72e74fd2`. Retro
+`docs/retrospective-2026-07-27-billing-cost-ledger.md`; decisions ×4; lessons ×4.
+**Migrations `0129`, `0130`, `0131` ALL APPLIED to prod migrate-first + verified** (RLS + one
+`service_role` policy each; advisor shows no new finding). **4859 combined pytest**
+(scholarship+courses+reports) — NB the repo's commit messages quote the scholarship-only number
+(3584); always state the scope.
+- **The problem:** the platform could not say what it cost, so no fee could be set honestly.
+  It can now, to the SKU, for both providers.
+- **⚠ THE NUMBER THAT SHAPES PRICING: only ~10% of cost moves with tenant activity.**
+  June 2026 = **RM190.71 total → RM19.91 tenant-driven / RM165.76 platform / RM5.04 tax.**
+  A usage-metered price can never recover most of this, because most of it is not usage. It
+  belongs in a **platform fee**. (The earlier "23%" was GCP-only; Supabase is a flat
+  subscription and entirely platform.)
+- **Two waste findings, both fixed BEFORE any price was derived from them:**
+  **Artifact Registry 77,576 MB → 15,943 MB** (79%, RM27 → ~RM6) — the policy was working; the
+  retention was 4× longer than any rollback needs. **Cloud Run Jobs RM33.12 → ~0** —
+  `release-decisions` booted a 2 vCPU/2 GiB job every 15 min (~51 s, nearly all Django start-up)
+  for work the warm service does in **66 ms**. **GCP floor RM88 → ~RM35; combined ~RM137.**
+- **⚠ DO NOT "FIX" THE SCHEDULER.** `release-decisions-15m` now calls the HTTP cron endpoint
+  (`decision-emails`, already registered, as 22 of its 23 siblings do). The Cloud Run Job
+  `release-decisions` is **dormant BY DESIGN, not deleted** — Jobs bill per execution, so the
+  saving is banked and rollback is one scheduler edit. The trigger's `SyncReleaseJob` step still
+  re-points that dormant job each build: harmless, expected.
+- **Metering now bills the tenant.** 18 of 18 email events had been org-NULL. Fixed at the four
+  seams that fire; the billing screen's "Emails (Brevo)" will move from Platform to BrightPath.
+  The help engine kept its **sealed signature** — `usage_context` inherits org from an enclosing
+  frame, so the VIEW was wrapped rather than adding the parameter its firewall test forbids.
+- **⚠ `google-cloud-bigquery` is deliberately NOT in `requirements.txt`** — `sync_gcp_costs`
+  imports it inside a method and raises a clear `CommandError`. Owner-run local tool; keep it out
+  of the service image.
+- **Owner decisions (docs/decisions.md):** calendar-month billing, spot FX, **cost + 15%** (fixes
+  the undecided 15–30%); HalaTuju carries 100% of Supabase + **99.7%** of GCP (verified, not
+  assumed — the sync still filters by project id, because the filter is what keeps it true).
+- **▶ BLOCKED ON THE OWNER — three numbers, and nothing sensible is built without them:**
+  the **development hourly rate**, the **development margin %**, and the **BrightPath hours
+  basis**. `BillingRate` is seeded with infrastructure 15% ONLY; the dev rate and margin are
+  deliberately UNSET and `rate_in_force` **RAISES** rather than defaulting. **Do not seed
+  placeholder values to make a screen render — the refusal is the feature.**
+- **▶ NEXT, once those land:** (a) the **metered price table** (units → money) — without it the
+  meter shows counts, not cost; (b) the **rates/hours UI** (Stitch pass FIRST, per the workflow —
+  backend + endpoints are ready behind it); (c) re-measure against the **August invoice** before
+  fixing the fee, since RM35/RM137 are derived from a mid-month change.
+- **▶ Watch:** `BILLING_USAGE_ENABLED` flips **1 Aug** (env var, not a deploy).
+
 **✅ SHIPPED + LIVE 2026-07-27 — NAV/IA SPRINT N1: one route registry behind the admin menu.**
 Commit `20d683b4`; build `39732b6` SUCCESS both services (api `…00886-zgt`, web `…00729-hth`);
 smoke green. Plan `docs/plans/2026-07-27-nav-ia-roadmap.md` (3 sprints, owner-approved); design of

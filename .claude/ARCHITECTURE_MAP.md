@@ -349,6 +349,33 @@ Administration hub Billing card goes live for super + org_admin when the flag is
 as Requests); Finance stays "Coming soon". Decisions: `docs/decisions.md` ("Billing & usage v1",
 Sprint 13a, 2026-07-25); retrospective: `docs/retrospective-2026-07-25-billing-usage-v1.md`.
 
+**Billing — the COST side (`platform_cost.py`, 2026-07-26/27).** Read this before touching
+anything priced. There are **two ledgers answering different questions**; summing them in one
+place makes every total meaningless:
+- **`usage_events`** (above) — "what did this ORGANISATION consume?" Per event, per tenant.
+- **`platform_costs`** (`PlatformCost`, migrations `0129`+`0130`) — "what did the PLATFORM cost?"
+  Per month × source × **SKU**, each row flagged `attributable` (moves with tenant activity) or
+  not, plus `provenance` (`measured` = re-derivable from the provider's billing data; `entered` =
+  typed from a PDF, because Supabase has no supported billing API). Foreign-currency invoices keep
+  `currency`/`amount_original`/`fx_rate`; **`amount_myr` is nullable** so a held invoice is
+  representable, and `month_totals` reports `is_complete: False` rather than understating a total.
+- **`billing_rates` + `org_build_hours`** (migration `0131`) — owner design: **hours on the ORG
+  side; conversion rate + per-category margins PLATFORM-side and editable**. Rates are
+  **effective-dated**: `rate_in_force(category, kind, on_date)` asks what was true on THAT day, so
+  changing a rate never re-prices a month already billed.
+- **The one judgement is `classify_sku`** — matched on SKU, never on service name, because
+  "Cloud Run" contains both tenant request-serving and our cron compute. Unrecognised SKUs default
+  to **platform**: an unbilled tenant is a pricing conversation, an over-billed one is a refund.
+- **`RateMissing` is raised, never swallowed.** No rate → no charge computed. Do NOT add a default
+  or seed a placeholder to make a screen render — the refusal is the feature.
+- Commands (owner-run, NOT on the service): `sync_gcp_costs` (BigQuery export, idempotent UPSERT,
+  scoped to the HalaTuju project) and `record_platform_cost` (hand entry + monthly reconciliation).
+  **`google-cloud-bigquery` is deliberately absent from `requirements.txt`.**
+- Endpoints: `billing/rates/` (**super-only**, 403 for org_admin — the route's existence is not the
+  secret, its contents are) and `billing/hours/<org_id>/` (org-fenced, cross-org 404).
+- Decisions: `docs/decisions.md` 2026-07-26/27; retro
+  `docs/retrospective-2026-07-27-billing-cost-ledger.md`.
+
 **Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
 (`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +
 deterministic, **no LLM** — composes `_ic_identity_blockers`, `application_completeness`, the Vision matchers, doc-assist

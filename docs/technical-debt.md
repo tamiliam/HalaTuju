@@ -1366,7 +1366,22 @@ Harmless today — the column is nullable, the command is dev/e2e-only, and prod
 — but it is a half-updated write path of exactly the kind that bites once routing reads the column.
 **Fix:** set both, alongside the routing work (PF-1). (Logged 2026-07-26, platform P1a.)
 
-### [TD-178] Artifact Registry: 30-day retention costs RM27/mo — retention is 4× longer than any rollback needs (ACTIONED 2026-07-26, reclaim pending verification)
+### [TD-178] Artifact Registry: 30-day retention costs RM27/mo — RESOLVED 2026-07-27 (reclaim MEASURED)
+
+> **✅ RESOLVED 2026-07-27 — measured, not projected.**
+> **`Repository Size: 77,576 MB → 15,943 MB`** — a **79% reclaim**, better than the projected
+> 20–25 GB. At $0.10/GB above the 0.5 GB free tier that is **RM27 → ~RM6, a confirmed
+> RM21/month.** The close-out condition set below ("re-read after 2026-07-28") is met a day early
+> and is discharged; cause (a), "the policy is not executing", stays disproved.
+>
+> Verified alongside it: the sibling Cloud Run Jobs fix (see the 2026-07-26 decision record) —
+> job `release-decisions` shows **no execution since `2026-07-26T10:45`**, minutes before the
+> scheduler was repointed, while the scheduler's own last attempt reports empty status. Both
+> halves of the 2026-07-26 cost work are therefore confirmed in production.
+>
+> **Still owed, and it is a different claim:** the RM6/RM0 figures are derived from measured
+> *physical* facts (bytes held, executions run). The **August invoice** is what confirms them as
+> *money*. Do not fix the platform fee before it lands.
 
 > **ACTIONED 2026-07-26.** Both fixes applied:
 > - **Fix B done** — the six orphan packages were deleted (`halatuju-api`, `halatuju-web` old-path;

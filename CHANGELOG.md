@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## Billing: what it costs, who it belongs to, and what to charge — 2026-07-26/27
+
+Three connected arcs. The through-line: **the platform could not say what it cost**, so no fee
+could be set honestly. It can now, to the SKU, for both providers — and the two biggest lines
+turned out to be waste, both removed before any price was derived from them.
+
+### Added
+- **`PlatformCost` (migration `0129`)** — the cost ledger: one row per month × source × SKU,
+  each marked `attributable` (moves with tenant activity) or not. Deliberately **separate from
+  `usage_events`**: that one answers "what did this org consume?", this answers "what did the
+  platform cost?". June 2026 loaded and reconciling: **RM190.71 = RM19.91 tenant + RM165.76
+  platform + RM5.04 tax**.
+- **`sync_gcp_costs`** — pulls the BigQuery billing export by SKU, idempotent UPSERT, scoped to
+  the HalaTuju project. **`record_platform_cost`** — hand entry (Supabase has no supported
+  billing API) plus the monthly reconciliation against the meter.
+- **Foreign-currency support (migration `0130`)** — `currency`, `amount_original`, `fx_rate`,
+  `invoice_ref`, `period_note`. Supabase invoices in USD; `amount_myr` is **nullable** so
+  "we hold the invoice but do not yet know the ringgit" is representable. A month with an
+  unconverted row reports `is_complete: False` and prints `<- FLOOR ONLY` **before** the total.
+- **`BillingRate` + `OrgBuildHours` (migration `0131`)** — owner design: hours on the ORG side,
+  conversion rate and per-category margins PLATFORM-side and editable. Rates are
+  **effective-dated**, so changing one never re-prices a month already billed.
+- **Two super-only endpoints** — `billing/rates/` (403 for org_admin: the route's existence is
+  not the secret, its contents are) and `billing/hours/<org_id>/` (org-fenced, cross-org 404).
+- **`test_usage_attribution.py`, `test_platform_cost.py`, `test_billing_rates.py`** — behavioural
+  plus structural guards, including a completeness check over the scheduling entry points with a
+  floor assertion so it cannot pass vacuously.
+
+### Fixed
+- **Tenant-raised email and AI were billed to the platform, not the tenant.** Measured: **18 of
+  18** email events were org-NULL, so an invoice generated that day would have under-charged the
+  tenant for every email sent on its behalf. The meter reads an ambient context and the seams
+  that send outside a request — the crons, the release job — set none. Fixed at the four call
+  sites that actually fire. The help engine kept its **sealed signature**: `usage_context`
+  inherits the org from an enclosing frame, so wrapping the view attributes `doc_help` and
+  `answer_relevance` without adding the parameter its firewall test forbids.
+- **Artifact Registry: 77,576 MB → 15,943 MB** (79% reclaim, **RM27 → ~RM6**). The cleanup policy
+  was working correctly all along; retention was simply 4× longer than any rollback needs
+  (~11 builds/day × ~258 MB × 30 days). Cut to 7 days, six orphan packages deleted.
+- **Cloud Run Jobs, the largest line on the bill (RM33.12), is now ~0.** `release-decisions` was
+  booting a 2 vCPU / 2 GiB job every 15 minutes — ~51 seconds each, almost all Django start-up —
+  to do work the always-warm service does in **66 ms**. `decision-emails` was already registered
+  in the HTTP cron endpoint 22 of its 23 siblings use; the scheduler now calls that. The Job is
+  left **dormant, not deleted** (Jobs bill per execution, so the saving is banked and rollback is
+  one edit). Also retires the documented stale-image hazard.
+
+### Changed
+- **Billing basis fixed by owner decision**: calendar month, spot FX, **cost + 15%** — superseding
+  the undecided "15–30%" carried since Sprint 14.
+- **Attribution ruling, verified not assumed**: HalaTuju carries 100% of Supabase (the other two
+  projects on the org subscription are INACTIVE) and **99.7%** of GCP (measured against the June
+  bill). The sync still filters by project id, because the filter is what keeps that true.
+- Two stale claims corrected in the billing-sources investigation: GCP "RM≈3–4/mo" → **RM89.07
+  actual**; Supabase "free plan today" → **already on Pro**.
+
 ## One route registry behind the admin menu (nav/IA sprint N1) — 2026-07-27
 
 First of three sprints on the console navigation restructure. **Zero visual change**: the menu
