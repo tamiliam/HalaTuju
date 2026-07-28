@@ -63,9 +63,9 @@ This is the cheapest this change will ever be.
 
 ## Pre-flight (must land before, or inside, Sprint P1)
 
-**PF-1 — Cohort routing has no organisation context.** `services.resolve_open_cohort()` (`services.py:188`) returns *the single most recent active+open cohort platform-wide*, and the public "are applications open?" endpoint (`views.py:103-115`) does the same. With two open programmes, a student arriving without an explicit cohort code is silently routed into whichever sorts first by `-year, code` — i.e. into the wrong organisation's fence. **Not currently live** (`is_open = false`), and it **must not reopen until this is fixed**. Folded into Sprint P1.
+**PF-1 — Cohort routing has no organisation context. ✅ RESOLVED (verified in code 2026-07-28).** `resolve_open_cohort(cohort_code, programme_code)` now RAISES `AmbiguousOpenCohort` rather than guessing, and each organisation gets its own apply link carrying its `Programme.code` (`?programme=<code>`, wired through the intake view and the create serializer). The description below is the ORIGINAL finding, kept for context — it no longer describes the code. **This is no longer date-parked to May/June 2027 and no longer blocks a second tenant.** Original finding: `services.resolve_open_cohort()` (`services.py:188`) returns *the single most recent active+open cohort platform-wide*, and the public "are applications open?" endpoint (`views.py:103-115`) does the same. With two open programmes, a student arriving without an explicit cohort code is silently routed into whichever sorts first by `-year, code` — i.e. into the wrong organisation's fence. **Not currently live** (`is_open = false`), and it **must not reopen until this is fixed**. Folded into Sprint P1.
 
-**PF-2 — Module flags contradict production.** Migration `0098` seeded BrightPath `module_payout = False`, but the payout stack (payments, Vircle, contracts, the Sprint-14 finance chain) shipped afterwards and `VIRCLE_SETUP_ENABLED = 1` on the live service. The four flags (`models.py:451-454`) are currently **read by nothing**, so this is latent — but any sprint that starts enforcing them must reconcile first, or BrightPath's payout surfaces go dark in production. A data migration, applied migrate-first and verified, **before** any enforcing code ships. (Carried from Sprint 10b of the platform roadmap; not otherwise part of this layer.)
+**PF-2 — Module flags contradict production. ✅ RESOLVED 2026-07-28** (migration `courses/0067_reconcile_module_flags`, applied migrate-first + verified: BrightPath now reads True on all four; the nine referral orgs still read False on all four). Reconciled against EVIDENCE, not intent — only `module_payout` was actually wrong; sponsor-pool and WhatsApp were already True. `apps/scholarship/module_flags.py` + `test_module_flags.py` now detect this class of drift, so the enforcement sprint (S10b) has a pre-flight check. Original finding: Migration `0098` seeded BrightPath `module_payout = False`, but the payout stack (payments, Vircle, contracts, the Sprint-14 finance chain) shipped afterwards and `VIRCLE_SETUP_ENABLED = 1` on the live service. The four flags (`models.py:451-454`) are currently **read by nothing**, so this is latent — but any sprint that starts enforcing them must reconcile first, or BrightPath's payout surfaces go dark in production. A data migration, applied migrate-first and verified, **before** any enforcing code ships. (Carried from Sprint 10b of the platform roadmap; not otherwise part of this layer.)
 
 ---
 
@@ -146,7 +146,7 @@ present. Retro: `docs/retrospective-2026-07-26-platform-p2a-funds-per-programme.
 **▶ DEPLOY: still not required.** Schema is ahead of code on both P1a and P2a — the safe direction.
 The next functional push carries them together. Owner-gated, as every HalaTuju deploy is.
 
-### P2b — Payment runs carry their programme — ✅ **CODE COMPLETE 2026-07-26** (migrations `0126`+`0127` NOT yet applied; branch `feat/p2b-payment-programme`)
+### P2b — Payment runs carry their programme — ✅ **SHIPPED + LIVE 2026-07-26** (migrations `0126`+`0127` **APPLIED + verified on prod**; merged to main)
 
 Delivered as scoped, **plus three surfaces the brief did not name** — the run-detail's "skipped
 this run" list (which would otherwise have shown another gift's students as skipped by this run),
@@ -214,7 +214,7 @@ inherited, not reimplemented, and both are pinned by tests. Only a `confirmed` c
 spendable balance. Defaults (`legacy` / `confirmed`) leave every existing balance unchanged, so
 **no data migration**. Migration `0124`. 19 tests + two source guards. Full suite 4635 green.
 
-### P4b — the credit endpoints + identity on the chain — ✅ **CODE COMPLETE 2026-07-26** (migration `0125` NOT yet applied; branch `feat/p4b-credit-endpoint`)
+### P4b — the credit endpoints + identity on the chain — ✅ **SHIPPED + LIVE 2026-07-26** (migration `0125` **APPLIED + verified on prod**; merged to main)
 
 **SPLIT on investigation.** P4b as scoped bundled the credit endpoints with programme-grouping
 `sponsor_statement`. The grouping is consumed by the sponsor account page — a **sponsor-facing

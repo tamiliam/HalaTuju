@@ -36,11 +36,22 @@ class TestBrightPathSeed:
         assert org.email_support == 'help@halatuju.xyz'
         assert org.frontend_url == 'https://halatuju.xyz'
         assert org.is_active is True
-        # Module flags mirror today's global env flags (unenforced until Sprint 10)
+        # Module flags. Still unenforced (nothing reads them yet — Sprint 10b/S10b is the
+        # enforcement sprint), but they must now MATCH PRODUCTION rather than the intent held
+        # at seed time.
+        #
+        # `module_payout` flipped False -> True in `courses/0067_reconcile_module_flags` (PF-2,
+        # 2026-07-28). Migration 0098 seeded it False; the payout stack — payments, Vircle,
+        # contracts, the Sprint-14 finance chain — shipped afterwards and has since moved real
+        # money (15 payment runs, 19 disbursements, 46 Vircle wallets). The flag had been
+        # contradicting production for weeks, harmlessly only because nothing reads it. This
+        # assertion failed when 0067 landed, which is exactly what it is for: the seed's values
+        # and production's values are two different claims, and a test that pins the first must
+        # be updated ON PURPOSE when the second is reconciled — never quietly relaxed.
         assert org.module_scholarship is True
         assert org.module_sponsor_pool is True
         assert org.module_comms_whatsapp is True
-        assert org.module_payout is False
+        assert org.module_payout is True
 
     def test_seed_is_idempotent(self):
         _seed()
