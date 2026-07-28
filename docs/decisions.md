@@ -6035,7 +6035,7 @@ absolutely positioned over the content. Opening it changes no layout.
 **Rationale:** (a) moves the page sideways underneath a cursor already travelling toward something,
 so the click lands on whatever slid into place. Supabase overlays for the same reason. (b) is what
 we had, and the whole point was to give the page its width back.
-**Trade-offs:** the rail cannot scroll (TD-185) — the "Go to" chip must escape it, and CSS offers no
+**Trade-offs:** the rail cannot scroll (TD-187) — the "Go to" chip must escape it, and CSS offers no
 per-axis overflow. Accepted while the longest menu is 19 rows; the trigger is in the debt entry.
 **Revisit if:** any role's menu passes ~20 rows, or the chip moves into a portal for other reasons.
 
@@ -6085,4 +6085,23 @@ and two collapse mechanisms in one component produce states nobody designed — 
 every group shut is a 216px column of headings.
 **Trade-offs:** a super with all three scopes has a longer list than before. That list is 19 rows.
 **Revisit if:** the reserved slots fill and a scope grows past a screen — the same trigger as
-TD-185, which is not a coincidence.
+TD-187, which is not a coincidence.
+
+## N3a (org/programme switchers) is PARKED against a trigger, not cancelled — Nav/IA arc close, 2026-07-28
+**Decision:** The scopes endpoint and the switchers are not built. They are parked, and the roadmap
+names the condition that un-parks them: **a second organisation exists in production with an active
+programme.**
+**Alternatives considered:** (a) build it now, since the second tenant is credible; (b) delete it
+from the roadmap as speculative; (c) fold it into the theming work as "console polish".
+**Rationale:** until there is a second organisation, a switcher is a dropdown with one entry — a
+control that teaches nobody anything and cannot be tested against the case it exists for. More
+importantly the ORDER is wrong: N3a is the console's answer to multi-tenancy and **PF-1 is the
+platform's**. PF-1 decides which organisation a student's application belongs to; N3a only decides
+what an admin is looking at. Shipping the viewer before the router is furniture on an unsound floor,
+and PF-1 will also settle how a programme is identified in a request — which N3a's endpoint should
+then match rather than pre-empt.
+**Trade-offs:** the roadmap closes with a promise unbuilt, which is a real cost to anyone reading it
+later; mitigated by stating the trigger and a cheap tell for it rather than "revisit sometime".
+**Revisit if:** `PartnerOrganisation.objects.filter(is_active=True)` returns more than one row in
+production — or PF-1's design turns out to need the scopes endpoint anyway, in which case build it
+there and delete this entry.

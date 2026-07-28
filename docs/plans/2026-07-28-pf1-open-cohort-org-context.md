@@ -1,6 +1,10 @@
 # PF-1 — a new application is routed to a cohort chosen platform-wide
 
-**Written 2026-07-28 as a handoff brief for another agent.** Author had not implemented any of it.
+**Written 2026-07-28 as a handoff brief for another agent; the owner then reassigned it to the
+author** — *"On second thought, I think you should implement PF-1."* Kept in handoff form on
+purpose: it was written to be executed by someone with no memory of this conversation, which is the
+right shape for a brief that may be picked up after a compaction, by a different session, or by a
+different agent after all.
 **Priority: highest queued work on this project.** Everything else — nav N3a, theming — is behind it.
 
 > **Verify every claim below against the code before you build.** Line numbers are as at
@@ -187,7 +191,10 @@ The bug's whole character is that it is **silent**, so the tests are the deliver
 
 ## 8. Working alongside another agent
 
-The nav/IA agent (this brief's author) is on `main` and may start theming planning. Use a git
-worktree (`Settings/_workflows/parallel-work-isolation.md`) or stage explicit paths — **never**
-`git add -A` on a shared tree. `main` is currently clean at `b054af04`, everything pushed, and
-`halatuju-web-00733-zpl` is live.
+If a second agent is active on this repo, use a git worktree
+(`Settings/_workflows/parallel-work-isolation.md`) or stage explicit paths — **never** `git add -A`
+on a shared tree. The sponsor agent was last seen merged at `a89d04cd`; check `git worktree list`
+and `git log origin/main..HEAD` before assuming you are alone.
+
+`main` was clean at `b054af04` when this was written, everything pushed, and
+`halatuju-web-00733-zpl` live.

@@ -524,7 +524,34 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-28)
 
-**🚨 READ FIRST — PF-1 NOW OUTRANKS EVERYTHING QUEUED BELOW.** The owner confirmed 2026-07-28 that
+**▶ NEXT SPRINT IS PF-1, AND THE BRIEF IS ALREADY WRITTEN:**
+`docs/plans/2026-07-28-pf1-open-cohort-org-context.md`. Read it before anything else — it was
+written to be executed by an agent with no memory of the conversation that produced it, and it
+carries three things the one-line description below does not:
+1. **There are TWO unscoped reads, not one.** `services.resolve_open_cohort()` (the apply path) and
+   `IntakeStatusView` (`views.py:110`, **public**) run the same platform-wide query. Fixing one
+   moves the bug rather than closing it — with two tenants, A's open round makes B's landing page
+   advertise "Apply".
+2. **Nothing in the web app ever sends `cohort_code`** — it is a read-only field end to end. So
+   every application already takes the unscoped default branch; this is not an edge case.
+3. **It is split.** The safety half (refuse when ambiguous; today's single-tenant behaviour
+   unchanged) does **not** depend on the open product question and ships first. The routing half
+   waits on the owner answering §2 of the brief: how a student's application knows which
+   organisation. **Do not answer that by reaching for `referred_by_org` — that is attribution,
+   never ownership, and the model docstring says so.**
+
+**✅ NAV/IA ARC CLOSED 2026-07-28 (N1 → N4).** Roadmap
+`docs/plans/2026-07-27-nav-ia-roadmap.md` is closed; arc retro
+`docs/retrospective-2026-07-28-nav-ia-arc.md`. `admin/layout.tsx` 220 → 60 lines over a route
+registry; 17 copies of one role check → 1; a 414-line hub → four pages; the sidebar → a 48px rail.
+**863 → 968 jest.** Live at `halatuju-web-00733-zpl`.
+**⏸ N3a (org/programme switchers) is PARKED with a trigger** — build it when a second organisation
+exists in production with an active programme. It is the console's answer to multi-tenancy while
+PF-1 is the platform's; the viewer should not ship before the router.
+**⛔ THEMING is its own planning exercise** across admin, sponsor and student surfaces, after PF-1
+(owner, 2026-07-28). Nothing theme-related shipped; see the note further down.
+
+**🚨 WHY PF-1 OUTRANKS EVERYTHING.** The owner confirmed 2026-07-28 that
 the **second-tenant meeting happened and looks credible**. `services.resolve_open_cohort()` returns
 the most recent active+open cohort **PLATFORM-WIDE with no org context** — harmless only while
 `is_open=false`. The moment a second organisation has an open programme, a student is routed into
@@ -544,8 +571,8 @@ backend, NO new dependency** — web only, 24 files, **968 jest / 63 suites**, i
   the row you point at; **`G` then a letter** jumps, 14 routes carry one.
 - `chord` is OPTIONAL registry data guarded by a uniqueness TEST, and `chordTarget()` resolves
   against the VISIBLE menu — courtesy, **not** a fence. Per-group collapse was removed.
-- **TD-185** the rail cannot scroll (the chip must escape it; trigger = a menu past ~20 rows).
-  **TD-186** three shell sprints have now closed with no browser pass, because TD-182 still breaks
+- **TD-187** the rail cannot scroll (the chip must escape it; trigger = a menu past ~20 rows).
+  **TD-188** three shell sprints have now closed with no browser pass, because TD-182 still breaks
   admin Google sign-in on localhost.
 
 **⛔ THEMING IS NOT AN N5 — owner, 2026-07-28.** I drafted a two-sprint dark-mode plan; the owner

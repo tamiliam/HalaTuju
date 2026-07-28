@@ -1644,7 +1644,7 @@ mechanism that manages those clause/question pairs too, not a third copy of the 
 snapshot model, an editing surface with review, a version lifecycle and a quiz manager are four
 deliverables. **Do not fold it into a sponsor-module sprint.** (Logged 2026-07-28, PARKED.)
 
-### [TD-185] The rail cannot scroll, and the "Go to" chip is why — low, but it has a trigger
+### [TD-187] The rail cannot scroll, and the "Go to" chip is why — low, but it has a trigger
 **Status:** Open — logged 2026-07-28 at N4's own introduction, with the condition that ends it.
 **What.** `Sidebar` deliberately sets no `overflow` on the rail. The chip is positioned outside the
 element (`left-full`), and CSS gives no "clip vertically, spill horizontally": one non-visible axis
@@ -1657,7 +1657,7 @@ rail may scroll freely.
 **Cheap tell during review:** a sprint that fills two or three reserved slots at once.
 **Size:** small (a portal + its test), once it is actually needed. (Logged 2026-07-28, nav/IA N4.)
 
-### [TD-186] The rail's own review is still owed a browser — low, but it is the third in a row
+### [TD-188] The rail's own review is still owed a browser — low, but it is the third in a row
 **Status:** Open — logged 2026-07-28.
 **What.** N4 closes on 968 jest, `check-i18n` and a clean build, plus an interactive mock-up the
 owner approved. What no test covers is whether the open/close *feels* right: hover latency, whether

@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Nav/IA arc CLOSED (N1 -> N4) — 2026-07-28
+
+No code. The roadmap `docs/plans/2026-07-27-nav-ia-roadmap.md` is closed and marked so; arc
+retrospective in `docs/retrospective-2026-07-28-nav-ia-arc.md`.
+
+Four sprints, two days, all live: a 220-line layout became a 60-line guard over a route registry,
+17 copies of one role check became 1, three routes that highlighted nothing were fixed, a 414-line
+hub became four pages, and the sidebar became a 48px rail. 863 -> 968 jest.
+
+### Changed
+- **N3a (org/programme switchers) is PARKED with a trigger**, not cancelled: build it when a second
+  organisation exists in production with an active programme. Until then it is a dropdown with one
+  entry, and — more to the point — it is the console's answer to multi-tenancy while **PF-1 is the
+  platform's**. The viewer should not ship before the router.
+- **TD-185/TD-186 renumbered to TD-187/TD-188.** Two agents on separate worktrees allocated the same
+  two numbers the same day; the merge was clean because the additions sat at different offsets, so
+  git never saw a conflict. Caught by sprint-close step 4, fixed across all seven referencing
+  documents. The sponsor agent's rows keep the original numbers.
+- `.claude/ARCHITECTURE_MAP.md` gains the console shell — including the two rules that fail a build
+  for an agent who does not know them (the route-drift test, and module scope in `StaffAdmin`).
+
 ## The sidebar becomes a rail (nav/IA N4) — 2026-07-28
 
 Fourth sprint on the console navigation, and the first driven by a preview rather than a written

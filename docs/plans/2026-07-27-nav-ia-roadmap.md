@@ -1,8 +1,19 @@
-# Nav/IA roadmap — the partner console shell (3 sprints)
+# Nav/IA roadmap — the partner console shell — ✅ CLOSED 2026-07-28
+
+> **This roadmap is closed.** Four sprints shipped and are live: **N1** registry → **N2** shell →
+> **N3b** route split → **N4** the rail. Arc retrospective:
+> `docs/retrospective-2026-07-28-nav-ia-arc.md`.
+>
+> **One piece was deliberately NOT built: N3a**, the organisation/programme switchers. It is parked
+> with a trigger rather than cancelled — see *N3a — PARKED* below. Everything else the roadmap
+> promised exists.
+>
+> **Do not add work to this file.** Theming and PF-1 have their own homes, named at the bottom.
 
 **Owner-approved 2026-07-27.** Design of record:
 <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1cb157a6> (interactive mock-up; switch
-role and sidebar model in the controls).
+role and sidebar model in the controls). The N4 rail was approved from a second mock-up:
+<https://claude.ai/code/artifact/df8ab5ae-cc10-47b5-acc4-ed57e944a280>.
 
 ---
 
@@ -118,13 +129,27 @@ first drafts.
 > Navigation is now the least urgent thing on this list. N3a is worth doing — it is the switcher a
 > second organisation needs — but it should not go ahead of PF-1.
 
-## ▶ N3a — scopes endpoint + switchers — STILL OWED
+## ⏸ N3a — scopes endpoint + switchers — PARKED 2026-07-28, WITH A TRIGGER
 
-Order was inverted deliberately (owner, 2026-07-28): N3b turned four greyed slots into working
-pages, which was visible value, while the switchers show one entry until a second organisation
-exists. **That calculus has changed** — the owner confirmed the second-tenant meeting happened and
-looks credible, so N3a is no longer anticipatory. See the escalation note below before scheduling
-it, because something outranks it.
+**Not cancelled, not owed-and-drifting: parked against a condition.**
+
+**The trigger: a second organisation exists in production with an active programme.** Until then a
+switcher is a dropdown with exactly one entry — a control that teaches nobody anything and cannot
+be tested against the case it exists for. Build it when there is a second thing to switch *to*.
+
+**Why it is parked rather than built now**, given the second tenant is credible: the switcher is the
+*console's* answer to multi-tenancy, and **PF-1 is the platform's**. PF-1 decides which organisation
+a student's application belongs to; N3a only decides what an admin is looking at. Shipping the
+viewer before the router would be furniture on an unsound floor — and PF-1 also settles how a
+programme is identified in a request, which N3a's endpoint should then match rather than pre-empt.
+
+**When it is picked up**, the spec below is still good. Two things in it are non-negotiable:
+`AdminScopeListView` must be classified in `FENCED_OR_EXEMPT` (`test_org_fence.py`) or CI fails by
+design, and the switcher must not become an ambient auth context — no global header, no cookie, no
+middleware rewrite. For super it persists a client-side *display* preference only.
+
+**Cheap tell that the trigger has fired:** `PartnerOrganisation.objects.filter(is_active=True)`
+returns more than one row in production.
 
 ### N3a spec — what is left of it
 
@@ -218,7 +243,7 @@ was chosen versus what was overlooked.
 
 ## ✅ N4 — the icon rail — SHIPPED 2026-07-28
 
-Retro `docs/retrospective-2026-07-28-nav-rail-n4.md`; decisions ×5; lessons ×5; TD-185 + TD-186.
+Retro `docs/retrospective-2026-07-28-nav-rail-n4.md`; decisions ×5; lessons ×5; TD-187 + TD-188.
 **968 jest / 63 suites · i18n 4090 ×3 · build clean · 17 files · no backend, no migration.**
 Built to the plan below, with two things worth knowing: the rail **overlays** (a spacer holds the
 48px, so nothing reflows), and **per-group collapse was removed** — it existed to shorten a long
@@ -303,3 +328,14 @@ it starts **after PF-1**, not after N4.
 ## ⚠ Both of these still queue behind PF-1
 
 Recorded in the escalation note above, and unchanged by this arc being approved.
+
+---
+
+# Where the remaining work lives — this file is closed
+
+| Work | Home | State |
+|---|---|---|
+| **PF-1** — the open cohort is chosen platform-wide | `docs/plans/2026-07-28-pf1-open-cohort-org-context.md` | **Next.** Brief written; owner reassigned it to this agent 2026-07-28. Blocked on one product question (§2 of the brief), and its **safety half is not** — that ships first. |
+| **Theming** — admin + sponsor + student surfaces | its own roadmap, not yet written (`implementation-planning.md`) | After PF-1, by the owner's sequencing. |
+| **N3a** — switchers | above, parked with its trigger | After a second organisation exists. |
+| **Sprint E** (erasure) + the unsignable DPA | tenant gates, not engineering | Neither closed. |

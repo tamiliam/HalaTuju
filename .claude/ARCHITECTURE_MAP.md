@@ -840,6 +840,33 @@ Student clicks pathway (Matric/STPM)
 
 ---
 
+## The admin console shell (nav/IA arc N1→N4, 2026-07-27/28)
+
+Four sprints replaced a hardcoded top bar with a data-driven shell. Two files carry the rules, and
+**both will fail a build for an agent who does not know they exist**:
+
+- **`halatuju-web/src/lib/navigation.ts`** — the route registry: every admin route grouped by scope
+  (platform / organisation / programme / utility) with its i18n key, role set, dark-ship gate and
+  keyboard chord. Pure and node-testable. **⚠ IT IS NOT THE SECURITY FENCE** and its docstring says
+  so at length — the fence is `_AdminBase._org_scoped` / `_org_allows` in `views_admin.py`.
+  - **A drift test reads the app router off disk**: a new TOP-LEVEL `src/app/admin/<x>/page.tsx`
+    with no registry entry FAILS the build, deliberately (it is what stopped a seventh orphaned
+    route). Nested dynamic routes (`sponsors/[id]`) need nothing.
+  - `activeItem()` is longest-prefix with `exact: true` on routes that are pages rather than
+    sections — `/admin` and `/admin/organisation` both need it.
+  - Chords are optional; a test asserts they are unique across the whole registry.
+- **`halatuju-web/src/components/admin/`** — `AppShell` (owns probe + badge state, the ⌘K palette
+  and the `G`-then-letter listener), `Sidebar` (the 48px rail; opens on hover/focus, overlays),
+  `Topbar` (breadcrumb + rail pin + search/help/bell/account), `Menu` (ONE dropdown primitive, used
+  3×), `CommandPalette`, `icons` (~27 single-colour stroke paths in `currentColor` — **no emoji in
+  the shell**, owner decision), `StaffAdmin` (shared by the four organisation pages).
+  - **⚠ Every component in `StaffAdmin.tsx` must stay at MODULE scope.** One declared inside its
+    parent remounts the subtree and steals focus from the invite inputs each keystroke.
+  - `admin/layout.tsx` is a guard and nothing else (220 → 60 lines).
+
+Reserved nav slots render disabled with a "soon" pill; a test enforces both directions — a slot has
+no page, and building the page forces the flag off. Six remain.
+
 ## Partner-organisation comms (2026-07-26)
 
 Weekly + milestone emails to the REFERRAL organisations that run the bursary alongside us — distinct

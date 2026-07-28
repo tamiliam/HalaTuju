@@ -44,7 +44,7 @@ a row shows "Go to <page>" with a keyboard chord, and `G` then that letter jumps
 - **A second stale FAQ answer surfaced the same way** and was self-contradicting: *"It's in the
   sidebar … Payments card. There is no separate menu entry for it."* Both halves were true at
   different points in the last fortnight; neither was true together.
-- **Debt was logged at introduction with its trigger named** (TD-185), which is the habit that made
+- **Debt was logged at introduction with its trigger named** (TD-187), which is the habit that made
   TD-181 close itself on schedule one sprint after N1 created it.
 
 ---
@@ -120,7 +120,7 @@ Logged in `docs/decisions.md` (2026-07-28):
   measured groundwork stands as input: 1,537 hard-coded colours across 119 files, and a brand ramp
   that is already CSS variables and must not be touched by a theme.
 - **▶ N3a still owed** — scopes endpoint + switchers, with its mandatory `FENCED_OR_EXEMPT` entry.
-- **▶ TD-182** unfixed; **TD-185** (rail cannot scroll) and **TD-186** (three shell sprints with no
+- **▶ TD-182** unfixed; **TD-187** (rail cannot scroll) and **TD-188** (three shell sprints with no
   browser pass) logged this sprint.
 - **Owner tasks:** re-capture the Manual screenshots — now wrong twice over, and the manifest says
   to take them with the rail **pinned open**; review the ms/ta drafts for the four new strings.
