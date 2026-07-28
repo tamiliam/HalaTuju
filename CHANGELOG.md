@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Data operations — 2026-07-28 (post-deploy, no code change)
+
+Both run against production after the sponsor S2 deploy, owner-authorised, verified.
+
+- **Referral attribution backfilled: 5 of 8 invitations closed.** Referral ids 1, 2, 3, 5, 7 →
+  sponsors 4, 5, 8, 7, 9; `joined_at` stamped with each sponsor's own registration date. Ids 4, 6
+  and 8 have no matching sponsor and stay open. Every row passed the same guards the live path
+  applies plus the backfill's timing check — and the timings make the case: Bharathan registered
+  **14 minutes** after his invite, Divya 10, Suresh 17. All three were reading as unconverted.
+- **The six legacy credits now carry a signature pair** — `Ve. Elanjelian` as recorder,
+  `Suresh Thirugnanam` as approver, both stamped with the credit's `created_at`
+  (owner-attested: *"we both did discuss"*). They predate the chain, so they had no signers and
+  the table rendered a green **Confirmed** badge above amber "Not yet recorded" lines.
+  **`external_reference` was deliberately left blank on all six** — that field reconciles 1:1
+  against a bank-statement line, so inventing one would defeat its purpose. Rationale and the
+  rejected code-only alternative are in `docs/decisions.md`; the residual code defect is TD-185.
+
+Unchanged either side of both operations: RM172,000 confirmed, 48 sponsorships, 9 sponsors, 8
+referral rows, and no credit with the same person in both signature slots.
+
 ## Wallet credits get their interface — record, sign, void (sponsor S2) — 2026-07-28
 
 The P4b endpoints have been live and org-fenced since 27 July with **nothing calling them**,

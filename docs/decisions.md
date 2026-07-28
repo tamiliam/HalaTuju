@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## The six legacy wallet credits carry a RECONSTRUCTED signature pair — data op, 2026-07-28
+**Decision:** all six `source='legacy'` confirmed credits (RM172,000 total) were stamped
+`recorded_by = 'Ve. Elanjelian' <tamiliam@gmail.com>` and
+`confirmed_by = 'Suresh Thirugnanam' <surithiru@gmail.com>`, with **both timestamps set to the
+credit's own `created_at`**. `external_reference` was left EMPTY on all six. Owner-attested:
+*"you can say it was created by me and approved by Suresh. We both did discuss."*
+
+**Why it was needed.** These rows predate the P4b sign-off chain, so they carried no signer names
+and no timestamps. The S1 credits table decides a chain step is complete by looking for its
+timestamp, so a green **Confirmed** badge rendered above two amber lines reading "Not yet
+recorded" and "Approver: an organisation admin" — a screen contradicting itself about money.
+
+**Why names but NOT bank references.** The signatures are a reconstruction of something that
+actually happened: the owner and the approver did agree each of these credits, and the only thing
+missing is that no system existed to capture it. A bank transfer reference is different in kind —
+it is an external fact that either matches a line on a statement or does not, and the field exists
+precisely to make each credit reconcile 1:1 against one. Inventing one would destroy the guarantee
+the column was added for, so those stay blank and the screen shows "—".
+
+**Why `created_at` for both timestamps.** The real signing moments were never recorded and are not
+recoverable. Using the credit's own creation date is the one defensible choice available; it does
+imply both signatures landed at once, which is why this entry exists rather than the data being
+left to speak for itself.
+
+**Alternatives considered:** (a) fix it in code — treat a `confirmed` credit's chain as complete
+regardless of stamps, showing "—" for who. Rejected as the primary remedy because the owner can
+actually attest to *who*, and a real name is worth more than an honest blank; the code change
+remains worth doing for robustness (TD-185) but no longer has a live symptom. (b) Leave it —
+rejected: the panel is the screen an admin uses to check the money, and it read as broken.
+**Revisit if:** a bank reference is ever recovered for any of these six, in which case fill that
+row's `external_reference` from the statement rather than leaving it blank.
+
 ## The credit UI mirrors the chain's ROLE map, and deliberately not its IDENTITY rules — Sponsor S2, 2026-07-28
 **Decision:** `lib/sponsorDetail.creditActions` mirrors `sponsorship.sign_admin_credit` step for
 step (which role owns the next step, when the finance step exists, who may void), so the screen

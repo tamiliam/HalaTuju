@@ -1569,3 +1569,21 @@ defect a click-through catches and a suite does not.
 (`admin`), sign as her, countersign as Suresh (`org_admin`), and confirm `available` moves by the
 amount. It is a five-minute pass, and until it happens the wallet-credit interface is *verified*
 but not *witnessed*. (Logged 2026-07-28, sponsor S2.)
+
+### [TD-185] `creditChain` decides a step is done by its TIMESTAMP, not the credit's status — low, no live symptom
+`lib/sponsorDetail.creditChain` sets each step's `done` from the presence of `recorded_at` /
+`finance_checked_at` / `confirmed_at`. That is right for anything the P4b service wrote (it always
+stamps) and wrong for a row whose status says otherwise: the six legacy credits rendered a green
+**Confirmed** badge above amber "Not yet recorded" / "Approver: an organisation admin" lines, a
+screen contradicting itself about RM172,000. **Resolved in DATA on 2026-07-28** (owner-attested
+signature pair — see `docs/decisions.md`), so there is no live symptom today, and the code was
+deliberately not changed in the same pass: the owner could attest to *who*, and a real name beats
+an honest blank.
+**Still worth fixing** because the rule is simply wrong: status is the authority on progress and
+the stamps should supply only *who* and *when*. A `confirmed` row shows recorded + approved as
+done (finance too, iff a finance signature exists); `finance_checked` shows the first two;
+`admin_signed` the first. Any future hand-inserted or migrated row would otherwise reproduce the
+contradiction, and the next person to see it will not know it is cosmetic.
+**To resolve:** derive `done` from status ordering in `creditChain`, keep the stamps for the who/when
+line, and add a test using a confirmed credit with NO timestamps — the exact shape of the six
+legacy rows before the data fix. Small, web-only, no migration. (Logged 2026-07-28, sponsor S2.)
