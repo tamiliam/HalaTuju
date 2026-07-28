@@ -1757,10 +1757,20 @@ have now shipped on structural verification alone. That is a pattern, not an inc
 the live console after deploy. ~~**Do not** send anyone at `/admin/login` on localhost meanwhile.~~
 (Logged 2026-07-28, nav/IA N4.)
 
-**Update 2026-07-28 — the blocker is gone.** TD-182 is fixed: `/admin/login` on localhost now
-starts and finishes a Google sign-in on one origin, and this sprint drove it in a real browser.
-The rail still has not been *felt* by a person, so this stays open — but it is now open for want
-of ten minutes, not for want of a working login. Sign in at `http://localhost:3000/admin/login`.
+**✅ CLOSED 2026-07-28 — the owner reviewed the live console and the verdict was "seems right".**
+Four screenshots covering the collapsed rail, the hover-open rail with both group headings, the
+"Go to …" chip with its `G` then `B` / `G` then `A` chord hints, and the breadcrumb at all three
+depths (`HalaTuju` → `HalaTuju / BrightPath` → `HalaTuju / BrightPath / BrightPath Bursary`).
+Three shell sprints are now witnessed, not merely verified.
+
+**⚠ It was reviewed on PRODUCTION, not localhost, and the distinction matters for next time.**
+TD-182's fix unblocked *sign-in*, not *local review*: `.env.local` points the console at
+`http://localhost:8000` (nothing listening) and the live API's `CORS_ALLOWED_ORIGINS` lists only
+`halatuju.xyz` and the two Cloud Run hosts, so the role check straight after sign-in cannot
+succeed locally either way. Local console review needs one of: a local Django API against the live
+DB via the session pooler (no production change), or `http://localhost:3000` added to
+`CORS_ALLOWED_ORIGINS` (a production config change for a dev convenience — owner's call). Logged as
+part of TD-194.
 
 ### [TD-189] A bare `/apply` has no programme picker — the fallback the owner asked for is not built
 **Status:** Open — logged 2026-07-28 at PF-1's own close, with the condition that ends it.
@@ -2026,3 +2036,40 @@ though the fence is doing exactly what it should.
 server-side, the safe shape) or a saved default the lists read; then apply it list by list, with a
 fence test per endpoint. **Do not** solve it by attaching the scope to requests globally.
 (Logged 2026-07-28, nav/IA N3a.)
+
+### [TD-194] Local console review is still not possible — the CORS/API half was never addressed — medium
+**Status:** Open — logged 2026-07-28, at TD-182's close, because I announced the wrong thing.
+**What.** TD-182 fixed the origin split that broke console Google sign-in on localhost. I then told
+the owner local review was unblocked. It is not. `halatuju-web/.env.local` sets
+`NEXT_PUBLIC_API_URL=http://localhost:8000`, nothing runs there, and the live API's
+`CORS_ALLOWED_ORIGINS` (read live, not from a settings default) is
+`https://halatuju-web-90344691621.asia-southeast1.run.app,https://halatuju-web-l6l7b6xaia-as.a.run.app,https://halatuju.xyz`
+— no localhost. So sign-in now completes and the very next call, `/api/v1/admin/role/`, cannot.
+**Why it matters.** Six sprints of shell work shipped without a browser pass, and the eventual
+review (2026-07-28) had to happen on production. Reviewing on production is fine for reading, and
+NOT fine for anything that writes — which is most of what is coming (themes touches every surface;
+sponsor vetting per TD-192 touches real sponsors).
+**Two routes, and they are not equivalent:**
+1. **Local Django API against the live DB via the `aws-1` session pooler** (see supabase.md §8 and
+   the lesson about `db.{ref}.supabase.co` being IPv6-only). No production change at all. Needs the
+   DB vars and, for document work, `SUPABASE_SERVICE_ROLE_KEY`. Preferred.
+2. **Add `http://localhost:3000` to the live `CORS_ALLOWED_ORIGINS`.** One `--update-env-vars`, but
+   it is a production config change bought for developer convenience, and it widens which origins
+   may call the live API with a valid token. **Owner's decision, not the agent's.**
+**To resolve:** pick a route and write it into the project CLAUDE.md as the standing local-review
+recipe, so the next person does not rediscover this at the moment they need it.
+
+### [TD-195] Two "Go to …" chips can show at once in the rail — low, cosmetic
+**Status:** Open — spotted 2026-07-28 in the owner's own review screenshots, which is the point.
+**What.** The chip shows on `group-hover/row` **or** `group-focus-visible/row`. Those are usually
+the same row, so one chip. But after a keyboard jump (`G` then a letter) the target row keeps
+`focus-visible` while the pointer sits elsewhere — so the focused row and the hovered row each
+render a chip. Visible in screenshot 2 of the review: "Go to Organisations" beside the pointer and
+"Go to Billing & usage" beside the focused row, simultaneously.
+**Why it is only low.** Both chips are truthful and it resolves the moment the pointer moves or a
+key is pressed. It is noise, not a wrong answer — and no test would ever have found it, because
+"two correct tooltips" is not an assertion anyone writes.
+**To resolve:** suppress the focus chip while the nav itself is hovered — a `group/nav` on the
+`<nav>` and a `[.group\/nav:hover_&]:hidden` on the focus branch. Small, web-only, one file.
+**Do not** fix it by dropping the focus chip: keyboard users need it, and that is the whole reason
+the chord hint exists.
