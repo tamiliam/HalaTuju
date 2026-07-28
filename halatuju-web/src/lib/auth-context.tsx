@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { usePathname } from 'next/navigation'
-import { isPrivilegedConsolePath } from '@/lib/sessionPolicy'
+import { isAnonymousAuthSuppressed } from '@/lib/sessionPolicy'
 import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { StudentProfile } from '@/lib/api'
@@ -62,7 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Same guard, same reason, as AuthGateModal's (TD-073), and now the same helper — a bare
   // startsWith('/admin') also swallows '/administrivia'. No admin or sponsor surface consumes
   // this context, so the provider simply stays inert there.
-  const isPrivilegedConsole = isPrivilegedConsolePath(pathname)
+  // Also inert on the design sandbox, for a DIFFERENT reason — it is handed to people outside the
+  // organisation and must not create real auth rows. See `isAnonymousAuthSuppressed`.
+  const isPrivilegedConsole = isAnonymousAuthSuppressed(pathname)
 
   useEffect(() => {
     if (isPrivilegedConsole) { setIsLoading(false); return }

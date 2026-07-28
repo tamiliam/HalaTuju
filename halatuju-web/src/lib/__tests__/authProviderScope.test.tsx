@@ -70,3 +70,27 @@ describe('the student AuthProvider stays out of the privileged consoles', () => 
     expect(getSession).toHaveBeenCalled()
   })
 })
+
+describe('the student AuthProvider stays out of the design sandbox', () => {
+  /*
+   * A DIFFERENT reason from the consoles above, deliberately not merged with them.
+   *
+   * The sandbox is handed to people outside the organisation. `AuthProvider` mints an ANONYMOUS
+   * Supabase user on mount, so without this guard every design review would create real auth rows
+   * — and the first browser check of the sandbox did exactly that, visible as two 401s against
+   * `/auth/v1/signup`. Caught by looking at the console, not by a test, which is why there is now
+   * a test.
+   */
+  it.each(['/sandbox', '/sandbox/documents'])('touches no student auth on %s', (path) => {
+    mount(path)
+    expect(getSession).not.toHaveBeenCalled()
+    expect(signInAnonymously).not.toHaveBeenCalled()
+    expect(onAuthStateChange).not.toHaveBeenCalled()
+  })
+
+  it('does not treat a lookalike path as the sandbox', () => {
+    // Same prefix trap as `/administrivia` — `/sandboxes` is a student route, not the sandbox.
+    mount('/sandboxes')
+    expect(getSession).toHaveBeenCalled()
+  })
+})

@@ -33,6 +33,37 @@ said nothing about what each field was for. **No backend change; no migration.**
 - The rehearsal is the same component shape T3's sponsor-facing wizard needs, so building it here
   does most of that work early.
 
+## A design sandbox, so an outside team can work without the codebase — 2026-07-28
+
+Sprint 1 of the configuration-layers roadmap (`docs/plans/2026-07-28-configuration-layers-roadmap.md`).
+
+BrightPath's UI/UX team can now open a URL and work with the real screens, without repo access and
+without a single real person's data in front of them. `/sandbox` mounts the actual components
+against invented data — same components, same loading states, same code path as production.
+
+### Why it is built this way
+- **Compiled out, not hidden.** The sandbox's pages are named `page.sandbox.tsx`, and that
+  extension is only a route when `NEXT_PUBLIC_SANDBOX` is set. An ordinary build contains no
+  sandbox route and none of its code — a runtime check would still have shipped the fixtures and
+  the stubbed network layer to every visitor.
+- **The compiler is what stops it rotting.** Fixtures are typed against the real payload
+  interfaces, so a change to a payload breaks the sandbox immediately and gets fixed in the same
+  commit. A sandbox quietly showing last month's screen is worse than none, because someone
+  approves it.
+- **It mounts screens; it never copies one.** Enforced by a test, because the moment the sandbox
+  holds its own version of a page, a designer signs off on something that does not exist.
+- **Nothing in it resembles a person.** Identity numbers render as `XXXXXX-XX-XXXX`, every email
+  address is on a domain that cannot receive mail, and the names are Malay for "example" and
+  "model". All three are enforced mechanically, not remembered.
+
+### Fixed
+**The student auth stack no longer mints an anonymous account on the sandbox.** The first browser
+check produced two failed signup calls: the sandbox has its own provider stack that deliberately
+omits the provider responsible, but it nests inside the root layout, which still mounted it. A
+design review should not create login records. The suppression now lives where the provider itself
+decides, under its own name and its own reason — deliberately not folded into the existing
+privileged-console rule, which means something different.
+
 ## Sponsor terms T2.1 — the panel adopts the Contract Templates shape, and imports Word — 2026-07-28
 
 Owner, comparing the Terms tab against the Contract Templates screen: adopt that layout, give the
