@@ -1,0 +1,41 @@
+# Builds the DESIGN SANDBOX image from the same Dockerfile as the live site.
+#
+# Two build arguments are the whole difference, and both default to the production values in the
+# Dockerfile — so the ordinary web build is unaffected by this file existing:
+#
+#   SANDBOX=1        turns on the `page.sandbox.tsx` page extension (see next.config.js), which is
+#                    what makes /sandbox a route at all. Without it the sandbox code is not merely
+#                    hidden, it is absent from the bundle.
+#   API_URL=…invalid points the app at a host that cannot resolve. The fixtures answer every call,
+#                    so a request reaching the network is a BUG — it should fail loudly here rather
+#                    than quietly succeed against the live API.
+#
+# Run it by hand; there is deliberately no trigger. The sandbox is rebuilt when someone wants the
+# designers to see newer screens, not on every push — an automatic rebuild would silently move the
+# ground under a review that was in progress.
+#
+#   gcloud builds submit halatuju-web \
+#     --config halatuju-web/cloudbuild.sandbox.yaml \
+#     --project gen-lang-client-0871147736 --account tamiliam@gmail.com
+#
+# Access is Identity-Aware Proxy with an explicit allowlist — see the roadmap. The image itself
+# contains no real data, but the screens are ours and the link is not for the open web.
+
+substitutions:
+  _IMAGE: asia-southeast1-docker.pkg.dev/gen-lang-client-0871147736/cloud-run-source-deploy/halatuju-sandbox
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg=SANDBOX=1
+      - --build-arg=API_URL=https://api.invalid
+      - -t
+      - '${_IMAGE}:latest'
+      - .
+
+images:
+  - '${_IMAGE}:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

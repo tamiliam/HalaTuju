@@ -311,8 +311,42 @@ with their own Google account; no account is created in HalaTuju, and the sandbo
 data either way. The image is the same `halatuju-web/Dockerfile` built with
 `--build-arg SANDBOX=1 --build-arg API_URL=https://api.invalid`; both arguments default to the
 production values so an ordinary build is unchanged.
-**Still needed from the owner:** the list of Google addresses to admit, and a one-time IAP consent
-screen on the GCP project if it has never been configured.
+**DEPLOYED 2026-07-28, and CLOSED pending one console step.**
+
+| | |
+|---|---|
+| Service | `halatuju-sandbox`, `asia-southeast1`, revision `00001-gc9` |
+| URL | `https://halatuju-sandbox-l6l7b6xaia-as.a.run.app` |
+| Build | `halatuju-web/cloudbuild.sandbox.yaml`, run by hand — **deliberately no trigger** (an automatic rebuild would move the ground under a review in progress) |
+| Access | `--no-allow-unauthenticated` + IAP enabled; `roles/run.invoker` granted to `tamiliam@gmail.com` and the IAP service agent |
+| State | **502 to everyone, including the owner.** Closed and safe, but not yet usable. |
+
+**⚠ The blocker, stated by IAP itself** (`x-goog-iap-generated-response: true`):
+
+> `Empty Google Account OAuth client ID(s)/secret(s).`
+
+IAP has no OAuth client to send people to Google with. The classic fix — `gcloud iap oauth-brands
+create` — refuses here: *"Project must belong to an organization."* **HalaTuju is org-homeless**
+(see `memory/halatuju_org_status.md`), so that API is closed to it, and those OAuth Admin APIs were
+shut down in March 2026 regardless. `gcloud beta run services update` exposes no flag to attach a
+client.
+
+**So this needs a browser, on the owner's account, once:** create an OAuth client (Google Auth
+Platform → Clients → Web application) with the authorised redirect URI IAP asks for, then attach it
+to the sandbox service's IAP configuration. Nothing about it is per-designer; it is a one-time
+project setting.
+
+**If that turns out to be blocked by the missing organisation too**, the fallbacks, in the order I
+would take them: (1) an unguessable URL with no gate — the sandbox holds no real data, only our
+screen layouts, so the exposure is competitive rather than personal; (2) an app-level Google
+sign-in checking an email allowlist, reusing the Supabase Google provider already configured — real
+work, and it puts a doorman back into a surface built to have none; (3) put the GCP project under
+an organisation, which is the standing org-homeless item and fixes several other things at once.
+
+**Owner intent recorded for later, NOT built:** *"Later we may create a surface for the super to
+add/remove emails from an allow-list."* That is an intention in this document, deliberately not a
+stub in the code — same rule as Layer 2 above. Until then, adding a designer is one `gcloud run
+services add-iam-policy-binding … --member=user:<email> --role=roles/run.invoker`.
 
 **Blocks Sprint 2:**
 2. **Which items are CORE**, never switchable off? Assumption absent an answer: identity card, results
