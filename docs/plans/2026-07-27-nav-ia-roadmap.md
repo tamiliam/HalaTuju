@@ -86,7 +86,47 @@ dependency.
 **Carried into N3:** TD-182 — admin Google sign-in fails on a local dev origin (PKCE code never
 exchanged; works in production). Production auth code, so it owes its own commit and test.
 
-## N3 — scopes, switchers, route split (~22 web + 6 api files)
+## ✅ N3b — the route split — SHIPPED 2026-07-28
+
+Commit `e38e5eac`. Retro `docs/retrospective-2026-07-28-hub-split-n3b.md`; decisions ×2; lessons ×3.
+The 414-line hub became four pages plus a permanent redirect, on a shared `StaffAdmin` module;
+Manual + FAQ updated in the same commit. 905 jest, i18n 4065 ×3.
+
+**Owner tasks:** re-capture the Manual screenshots (prose correct, images stale); review the ms/ta
+first drafts.
+
+---
+
+> ## ⚠ ESCALATION — READ BEFORE SCHEDULING ANY MORE NAVIGATION WORK (2026-07-28)
+>
+> The owner confirmed the **second-tenant meeting happened and looks credible**. Two things that
+> were safely parked are now live risks, and BOTH outrank the rest of this roadmap:
+>
+> **1. PF-1 — silent cross-tenant misrouting.** `services.resolve_open_cohort()` returns the most
+> recent active+open cohort **platform-wide, with no organisation context**
+> (`apps/scholarship/services.py`). Today that is harmless only because `is_open=false`. The moment
+> a second organisation has an open programme, a student applying is routed into the WRONG
+> organisation's fence — and it fails silently, with no error, on the path that decides whose money
+> pays for them. It is date-parked to ~May/June 2027 on the assumption that tenant #2 was
+> hypothetical. That assumption no longer holds. **Fix it before tenant #2 has an open programme,
+> not after.**
+>
+> **2. Sprint E (erasure) is hard-blocking** before any real applicant data from a second tenant,
+> and separately **no entity can sign a DPA** — BrightPath's CLBG is unregistered and HalaTuju is
+> org-homeless. Neither is an engineering gate; neither is closed.
+>
+> Navigation is now the least urgent thing on this list. N3a is worth doing — it is the switcher a
+> second organisation needs — but it should not go ahead of PF-1.
+
+## ▶ N3a — scopes endpoint + switchers — STILL OWED
+
+Order was inverted deliberately (owner, 2026-07-28): N3b turned four greyed slots into working
+pages, which was visible value, while the switchers show one entry until a second organisation
+exists. **That calculus has changed** — the owner confirmed the second-tenant meeting happened and
+looks credible, so N3a is no longer anticipatory. See the escalation note below before scheduling
+it, because something outranks it.
+
+### N3a spec — what is left of it
 
 **Backend — one new endpoint:** `GET /api/v1/admin/scholarship/scopes/` → `AdminScopeListView(_AdminBase)`.
 
@@ -110,23 +150,14 @@ programme excluded; NULL-owning-org reviewer gets empty lists, not a 500).
 middleware rewrite — that would relocate the fence into the client. For super it persists a
 client-side *display* preference only. Say this in the component docstring.
 
-**Web — route split:**
+**The route split that used to be specified here shipped as N3b on 2026-07-28** — four pages plus a
+permanent redirect, and every other URL kept. Nothing of it is outstanding.
 
-| Old | New | Mechanism |
-|---|---|---|
-| `/admin/administration` | `/admin/organisation` | redirect page, pattern of `admin/invite/page.tsx` |
-| `/admin/administration` (platform section) | `/admin/organisations` + `/admin/partners` | new pages, lifted from `administration/page.tsx` |
-| `/admin/administration` (staff panel) | `/admin/organisation/staff` | new page |
-| `/admin/invite` | `/admin/organisation/staff` | retarget the existing stub — keep it one hop |
-
-Everything else keeps its URL, so every deep link in emails, the manual and bookmarks survives.
-
-**Cut-line if it overruns ~40 files:** N3a = backend + switchers, hub untouched. N3b = route split +
-redirects. N3b also touches `src/content/manual/role-org-admin.ts`, `role-admin-general.ts`,
-`role-finance.ts` and `docs/plans/2026-07-16-manual-screenshot-manifest.md`, which name
-"Administration" — budget for that ripple. **Manual/FAQ currency rule applies**
-(`docs/scholarship/role-matrix.md`): a change to what a role sees updates that role's Manual chapter
-and FAQ entries in the same commit.
+**Manual/FAQ currency rule still applies** (`docs/scholarship/role-matrix.md`): a change to what a
+role sees updates that role's Manual chapter and FAQ entries in the same commit. N3b is the evidence
+that it earns its keep — rewriting the "Administration" mentions caught a Finance sentence that had
+silently become false, and the sponsor merge turned up one more ("Administration → Payments") in
+prose written the same day on another branch.
 
 ---
 

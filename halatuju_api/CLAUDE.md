@@ -524,6 +524,42 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-28)
 
+**🚨 READ FIRST — PF-1 NOW OUTRANKS EVERYTHING QUEUED BELOW.** The owner confirmed 2026-07-28 that
+the **second-tenant meeting happened and looks credible**. `services.resolve_open_cohort()` returns
+the most recent active+open cohort **PLATFORM-WIDE with no org context** — harmless only while
+`is_open=false`. The moment a second organisation has an open programme, a student is routed into
+the WRONG organisation's fence, **silently, with no error**, on the path that decides whose money
+pays for them. It was date-parked to ~May/June 2027 assuming tenant #2 was hypothetical; that
+assumption is dead. **Fix before tenant #2 has an open programme.** Alongside it: **Sprint E
+(erasure) is hard-blocking** before any real second-tenant applicant data, and **no entity can sign
+a DPA** (BrightPath's CLBG unregistered; HalaTuju org-homeless). Navigation is now the least urgent
+work on the list.
+
+**✅ SHIPPED 2026-07-28 — NAV/IA N3b: the Administration hub became REAL PAGES.** Commit
+`e38e5eac`. Roadmap `docs/plans/2026-07-27-nav-ia-roadmap.md`; retro
+`docs/retrospective-2026-07-28-hub-split-n3b.md`; decisions ×2; lessons ×3. **NO migration, NO
+backend, NO new dependency** — web only.
+- The 414-line hub → `/admin/organisation`, `/admin/organisation/staff`, `/admin/organisations`,
+  `/admin/partners`, on a shared `components/admin/StaffAdmin` module (**every component at MODULE
+  scope** — that file previously stole focus from the invite inputs each keystroke).
+- `/admin/administration` is a permanent REDIRECT; `/admin/invite` retargeted to Staff (one hop).
+  Both still highlight the right sidebar row; asserted.
+- **Manual/FAQ currency done in the same commit** — 16 mentions. The Finance chapter had been
+  asserting *"there is no Payments item in the main menu"*, which the shell made false.
+- **▶ OWNER: re-capture the Manual screenshots** — prose corrected, images still show the old hub
+  (manifest annotated). Plus ms/ta first drafts for the new pages.
+- **905 jest**, i18n 4065×3, tsc clean, build 0.
+
+**⚠ TD-182 — CAUSE CONFIRMED, NOT FIXED.** Admin Google sign-in fails on a LOCAL origin: *"PKCE
+code verifier not found in storage … for SSR frameworks use @supabase/ssr to store it in cookies"*.
+**Works in production.** Two confident diagnoses were WRONG before the callback was made to print
+its own error (`b26ba393`) — both recorded in the TD so they are not repeated. Remedy = cookie-
+backed storage via `@supabase/ssr`; touches live auth for every admin, **owes its own sprint**.
+It has now blocked two sprint reviews, so it is worth doing before the next UI sprint needs one.
+
+**▶ N3a STILL OWED** — scopes endpoint (`admin/scholarship/scopes/`, **MUST** be classified in
+`test_org_fence.py` `FENCED_OR_EXEMPT` or CI fails) + org/programme switchers. No longer
+anticipatory now tenant #2 is credible — but schedule it AFTER PF-1.
 **✅ SHIPPED 2026-07-28 — NAV/IA N2: the console SHELL.** Commit `e07f8f2e`. Roadmap
 `docs/plans/2026-07-27-nav-ia-roadmap.md`; retro `docs/retrospective-2026-07-28-nav-shell-n2.md`;
 decisions ×2; lessons ×4. **NO migration, NO backend, NO new dependency** — `halatuju-web` only.

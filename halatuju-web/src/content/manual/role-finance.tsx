@@ -25,12 +25,12 @@ export const roleFinance: ManualChapter = {
       anchor: 'finance-where',
       title: 'Where to find Payments',
       body: (
-        <>Open <strong>Administration</strong> from the menu, then the <strong>Payments</strong> card. There is no
-        Payments item in the main menu &mdash; the Administration page is the way in, the same as for everyone
-        else who uses it. You&rsquo;ll see the list of payment runs, newest first.</>
+        <>Open <strong>Payments</strong> from the sidebar, under your organisation. You&rsquo;ll see the list of
+        payment runs, newest first. (Payments used to be reached through an Administration page; it now has its
+        own place in the menu.)</>
       ),
       img: '/manual/finance-payments.png',
-      alt: 'The Payments card on the Administration page',
+      alt: 'The Payments page, reached from the organisation section of the sidebar',
     },
     {
       anchor: 'finance-checking',

@@ -3000,6 +3000,20 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "orgPage": {
+        "nav": "Gambaran keseluruhan",
+        "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
+        "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
+        "invitesPending": "{count} dijemput, belum diterima",
+        "awaitingVetting": "menunggu semakan",
+        "needsAttention": "Perlu perhatian anda"
+    },
+    "organisations": {
+      "sub": "Organisasi penyewa yang dikendalikan HalaTuju, dan siapa yang mengetuainya."
+    },
+    "partners": {
+      "sub": "Organisasi rujukan yang menghantar pelajar ke pemilih kursus."
+    },
     "shell": {
         "primaryNav": "Navigasi utama",
         "search": "Cari",

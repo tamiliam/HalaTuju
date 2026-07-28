@@ -13,7 +13,7 @@ export const roleAdminGeneral: ManualChapter = {
       title: 'Your remit',
       body: (
         <>As a <strong>general admin</strong> you can <strong>read</strong> everything in your organisation — all
-        applications, the Sponsors list, the Administration staff table — without acting on any of it. No verdicts,
+        applications, the Sponsors list, the Staff page — without acting on any of it. No verdicts,
         no assignments, no staff changes. There is <strong>one exception, and it is money in</strong>: you are the
         person who <em>prepares</em> it. See <em>Money: you prepare, someone else approves</em> below.</>
       ),
@@ -23,7 +23,7 @@ export const roleAdminGeneral: ManualChapter = {
       title: 'What you can see',
       body: (
         <>Your organisation&rsquo;s <strong>B40 Applications</strong> (all of them, to read), the
-        <strong> Sponsors</strong> list, and the <strong>Administration</strong> page&rsquo;s organisation staff
+        <strong> Sponsors</strong> list, and the <strong>Staff</strong> page&rsquo;s organisation staff
         table. You won&rsquo;t see another organisation&rsquo;s data, and you won&rsquo;t see the platform-only
         tools.</>
       ),
@@ -35,7 +35,7 @@ export const roleAdminGeneral: ManualChapter = {
         <>On both money paths you are the <strong>maker</strong> — the person who prepares the entry and signs it
         first. Nothing you prepare pays out or becomes spendable on your signature alone.
         <br /><br />
-        <strong>A payment run</strong> (Administration → Payments): you build the month&rsquo;s run and sign it,
+        <strong>A payment run</strong> (<strong>Payments</strong> in the menu): you build the month&rsquo;s run and sign it,
         then your <strong>organisation admin countersigns</strong> — and only at their countersignature is the
         instruction emailed out.
         <br /><br />

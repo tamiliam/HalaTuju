@@ -9,6 +9,7 @@ import { useT } from '@/lib/i18n'
 import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 import IcInput from './IcInput'
 import { validateIc, formatIc } from '@/lib/ic-utils'
+import { isPrivilegedConsolePath } from '@/lib/sessionPolicy'
 
 type ModalStep = 'login' | 'otp' | 'ic'
 
@@ -97,7 +98,7 @@ export default function AuthGateModal() {
   // Never show the STUDENT auth gate over the admin / sponsor consoles — they have
   // their own isolated auth. (The student AuthProvider is mounted globally; this
   // keeps its modal from overlaying those pages — see TD-073.)
-  if (!authGateReason || pathname?.startsWith('/admin') || pathname?.startsWith('/sponsor')) return null
+  if (!authGateReason || isPrivilegedConsolePath(pathname)) return null
 
   const reasonKey =
     authGateReason === 'quiz'
