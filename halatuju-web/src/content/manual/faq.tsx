@@ -199,7 +199,7 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>How does a payment run work?</>,
-      a: <>Open <strong>Payments</strong> from the sidebar and create a run for the month. The system lists the
+      a: <>Open the menu (point at the icons on the left), choose <strong>Payments</strong> and create a run for the month. The system lists the
         students who qualify and skips the rest with a reason. Someone signs it as the preparer, and you
         countersign &mdash; and only then is the instruction emailed to Vircle with the payment file. Every
         signature must be a different person, and editing the list after any signature returns the run to
@@ -207,7 +207,7 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>Can I appoint a finance admin myself?</>,
-      a: <>Yes. <strong>Staff</strong> in the sidebar, then invite them as <strong>Finance</strong>. The moment their account is active, the
+      a: <>Yes. <strong>Staff</strong> in the menu, then invite them as <strong>Finance</strong>. The moment their account is active, the
         finance check becomes part of your payment chain &mdash; including for a run that is already waiting for
         your countersignature.</>,
     },
@@ -295,8 +295,9 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>Where is Payments? I don&rsquo;t see it in the menu.</>,
-      a: <>It&rsquo;s in the sidebar, under your organisation &mdash; <strong>Payments</strong>
-        card. There is no separate menu entry for it.</>,
+      a: <>The menu is the strip of icons down the left, and it only shows the names when you point at
+        it. Do that, and <strong>Payments</strong> is there under your organisation. If you would rather it
+        stayed open, use the <strong>pin</strong> at the top of the page.</>,
     },
   ],
 }

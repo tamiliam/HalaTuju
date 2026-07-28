@@ -22,7 +22,7 @@ export const roleOrgAdmin: ManualChapter = {
       anchor: 'org-admin-team',
       title: 'Your team',
       body: (
-        <>Open <strong>Staff</strong> from the sidebar to build your
+        <>Open <strong>Staff</strong> from the menu to build your
         team. You can invite three programme roles into your organisation:
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li><strong>Reviewer</strong> — works the applicants you assign them.</li>
@@ -128,9 +128,10 @@ export const roleOrgAdmin: ManualChapter = {
     },
     {
       anchor: 'org-admin-administration',
-      title: 'Your organisation in the sidebar',
+      title: 'Your organisation in the menu',
       body: (
-        <>The sidebar groups everything by what it belongs to. Your organisation&rsquo;s group holds
+        <>The menu — the strip of icons on the left, which opens when you point at it — groups everything
+        by what it belongs to. Your organisation&rsquo;s group holds
         <strong> Overview</strong>, <strong>Staff</strong>, <strong>Sponsors</strong>, <strong>Payments</strong>,
         <strong> Contracts</strong>, <strong>Sources</strong> and <strong>Billing &amp; usage</strong> (marked
         <em> soon</em> until metering is switched on). Below it sits your programme&rsquo;s own group, with the
@@ -138,7 +139,7 @@ export const roleOrgAdmin: ManualChapter = {
         those stay with the HalaTuju platform team.</>
       ),
       img: '/manual/org-admin-administration.png',
-      alt: 'The organisation group in the sidebar (placeholder)',
+      alt: 'The organisation group in the menu (placeholder)',
     },
     {
       anchor: 'org-admin-payments',

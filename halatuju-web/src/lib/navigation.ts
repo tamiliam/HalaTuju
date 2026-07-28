@@ -70,6 +70,19 @@ export interface NavItem {
   exact?: boolean
   badge?: 'pendingSponsors'
   /**
+   * The second key of the `G`-then-X jump, upper-case, e.g. 'A' → Applications.
+   *
+   * OPTIONAL on purpose, inverting the usual "make a new dimension required" rule: most routes
+   * will never earn a chord, and a required field would force a fake letter onto every one of
+   * them. The guard is a test instead — `navigation.test.ts` asserts the letters are unique
+   * across the WHOLE registry, single upper-case characters, and never on a placeholder.
+   *
+   * Uniqueness is global rather than per-role deliberately. Two roles seeing different pages
+   * under one letter would make the sidebar's own hint wrong for somebody, and "what does G T
+   * do" must have exactly one answer.
+   */
+  chord?: string
+  /**
    * A reserved slot: the sidebar renders it disabled with a "soon" pill and it links nowhere.
    * These are the empty slots the programme-layer roadmap asks the shell to ship with (risk #6,
    * "each extraction sprint fills one — no second redesign"), so a later sprint fills a slot
@@ -107,20 +120,20 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // The platform base — the student account and the course selector. Super-only since the
       // surface-partition sprint (2026-07-15); `partner` is a referral-org rep, whose two pages
       // are platform pages, not any organisation's.
-      { id: 'overview', href: '/admin', labelKey: 'common.dashboard',
+      { id: 'overview', href: '/admin', labelKey: 'common.dashboard', chord: 'D',
         scope: 'platform', roles: ['super', 'partner'], gate: { mode: 'always' },
         exact: true },
-      { id: 'students', href: '/admin/students', labelKey: 'admin.students',
+      { id: 'students', href: '/admin/students', labelKey: 'admin.students', chord: 'S',
         scope: 'platform', roles: ['super', 'partner'], gate: { mode: 'always' } },
-      { id: 'courseData', href: '/admin/course-data', labelKey: 'admin.courseData.nav',
+      { id: 'courseData', href: '/admin/course-data', labelKey: 'admin.courseData.nav', chord: 'C',
         scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
       // Lifted out of the Administration hub in N3b. Creating a tenant and appointing its
       // org_admin are withheld from every ORGANISATION role (role matrix), so both are super.
-      { id: 'organisations', href: '/admin/organisations', labelKey: 'admin.nav.organisations',
+      { id: 'organisations', href: '/admin/organisations', labelKey: 'admin.nav.organisations', chord: 'O',
         scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
       // A referral org is an attribution relationship, never an access scope — which is why it
       // sits in the PLATFORM scope rather than inside any organisation.
-      { id: 'referralPartners', href: '/admin/partners',
+      { id: 'referralPartners', href: '/admin/partners', chord: 'R',
         labelKey: 'admin.nav.referralPartners',
         scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
       // Reserved. `billing_rates` shipped 2026-07-27 (super-only, 403 for org_admin — the margin
@@ -138,26 +151,26 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // (a permanent redirect) highlighting here, so an old bookmark still lights the right row.
       // `exact` because /admin/organisation is a page, not a section — /admin/organisation/staff
       // is its sibling in the menu, not its child.
-      { id: 'administration', href: '/admin/organisation', labelKey: 'admin.orgPage.nav',
+      { id: 'administration', href: '/admin/organisation', labelKey: 'admin.orgPage.nav', chord: 'V',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, exact: true, match: ['/admin/administration'] },
-      { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.staff',
+      { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.staff', chord: 'T',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, match: ['/admin/invite'] },
-      { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav',
+      { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
-      { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title',
+      { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title', chord: 'Y',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' } },
-      { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title',
+      { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
         scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
-      { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav',
+      { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
-      { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title',
+      { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title', chord: 'B',
         scope: 'organisation', roles: ['super', 'org_admin'],
         gate: { mode: 'probe', probe: 'billing', dark: 'soon' } },
-      { id: 'requests', href: '/admin/requests', labelKey: 'admin.requests.nav',
+      { id: 'requests', href: '/admin/requests', labelKey: 'admin.requests.nav', chord: 'Q',
         scope: 'organisation', roles: ['super', 'org_admin'],
         gate: { mode: 'probe', probe: 'requests', dark: 'hide' } },
     ],
@@ -173,7 +186,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'programmeOverview', href: '/admin/programme', labelKey: 'admin.nav.programmeOverview',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc'],
         gate: { mode: 'always' }, placeholder: true },
-      { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav',
+      { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
         gate: { mode: 'always' } },
       // Reserved slots the programme-layer roadmap owes: reviewer assignment/scoping, the intake
@@ -354,6 +367,33 @@ export function searchNav(query: string, items: readonly LabelledNavItem[]): Nav
     .filter((x) => x.r >= 0)
     .sort((a, b) => (a.r - b.r) || (a.i - b.i))
     .map((x) => x.entry.item)
+}
+
+/** The first key of the jump. Held here so the listener, the hint chip and the tests agree. */
+export const CHORD_PREFIX = 'g'
+
+/**
+ * The route a `G`-then-X jump should open, or undefined if that letter goes nowhere.
+ *
+ * Resolved against the VISIBLE groups rather than the whole registry, so a chord can never
+ * carry someone to a page their sidebar does not offer. That is a courtesy, not a fence — the
+ * page's own guard and the endpoint still refuse them (see the module docstring) — but a
+ * shortcut that lands on a 403 is a worse experience than one that does nothing.
+ *
+ * A reserved slot is skipped for the same reason `searchNav` skips it: there is no page there.
+ */
+export function chordTarget(
+  letter: string,
+  groups: readonly VisibleNavGroup[],
+): VisibleNavItem | undefined {
+  const want = letter.toUpperCase()
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (item.placeholder || item.state !== 'show') continue
+      if (item.chord === want) return item
+    }
+  }
+  return undefined
 }
 
 /**

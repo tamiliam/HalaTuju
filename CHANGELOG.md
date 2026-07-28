@@ -48,6 +48,66 @@ editable emails now close that, shipping **dark** behind two independent gates.
   the sender.
 - **3662 scholarship pytest · 956 jest** (64 suites); `makemigrations --check` clean.
 
+## Nav/IA arc CLOSED (N1 -> N4) — 2026-07-28
+
+No code. The roadmap `docs/plans/2026-07-27-nav-ia-roadmap.md` is closed and marked so; arc
+retrospective in `docs/retrospective-2026-07-28-nav-ia-arc.md`.
+
+Four sprints, two days, all live: a 220-line layout became a 60-line guard over a route registry,
+17 copies of one role check became 1, three routes that highlighted nothing were fixed, a 414-line
+hub became four pages, and the sidebar became a 48px rail. 863 -> 968 jest.
+
+### Changed
+- **N3a (org/programme switchers) is PARKED with a trigger**, not cancelled: build it when a second
+  organisation exists in production with an active programme. Until then it is a dropdown with one
+  entry, and — more to the point — it is the console's answer to multi-tenancy while **PF-1 is the
+  platform's**. The viewer should not ship before the router.
+- **TD-185/TD-186 renumbered to TD-187/TD-188.** Two agents on separate worktrees allocated the same
+  two numbers the same day; the merge was clean because the additions sat at different offsets, so
+  git never saw a conflict. Caught by sprint-close step 4, fixed across all seven referencing
+  documents. The sponsor agent's rows keep the original numbers.
+- `.claude/ARCHITECTURE_MAP.md` gains the console shell — including the two rules that fail a build
+  for an agent who does not know them (the route-drift test, and module scope in `StaffAdmin`).
+
+## The sidebar becomes a rail (nav/IA N4) — 2026-07-28
+
+Fourth sprint on the console navigation, and the first driven by a preview rather than a written
+spec: the owner approved an interactive mock-up
+(<https://claude.ai/code/artifact/df8ab5ae-cc10-47b5-acc4-ed57e944a280>) with "looks good, proceed".
+
+### Added
+- **The rail.** The sidebar rests at 48px of icons and opens to 216px when pointed at or tabbed
+  into. It opens *over* the page: a spacer holds the collapsed width, so nothing reflows under the
+  cursor mid-click.
+- **A pin**, beside the breadcrumb, remembered per device (`src/lib/uiPrefs.ts`). Beside the thing
+  it changes rather than buried in the account menu.
+- **"Go to <page>"** on the row being pointed at, carrying that page's keyboard chord.
+- **`G` then a letter jumps** to a page — 14 routes carry one. The armed `G` expires after 1.2s so
+  a forgotten keystroke cannot navigate later, and a wrong second key disarms rather than waiting.
+- **Two icons** for the pin, in the existing single-colour family.
+
+### Changed
+- A waiting count (Sponsors) shows as a **dot on the icon** while collapsed and a number once open.
+  Hiding it would have removed the only reason the badge exists.
+- Group headings fade in on open; a hairline holds the scope boundary while collapsed. The heading
+  text stays in the DOM at both widths, so a screen reader never loses the grouping.
+- **Manual + FAQ, in the same commit** (currency rule). This found a sentence that had been wrong
+  since N2 — *"The links along the top are your workspace"* — which two previous currency passes
+  missed because it named neither "Administration" nor "sidebar".
+
+### Removed
+- **Per-group collapse.** It existed to shorten a long wide sidebar; the rail is short by
+  construction, and two collapse mechanisms in one component is one too many.
+
+### Verification
+`npx jest` 968 passed (63 suites, +35); `check-i18n` 4090 keys x 3; `next build` compiled, 66 pages.
+24 files.
+No backend, no migration, no new dependency.
+
+### Not in this sprint
+Theming. A two-sprint theme plan was drafted here and **withdrawn by the owner** — themes get their
+own planning exercise covering admin, sponsor and student surfaces, after PF-1. The reserved
+`theme` key was deleted from `uiPrefs` rather than left to presume an answer.
 
 ## Data operations — 2026-07-28 (post-deploy, no code change)
 

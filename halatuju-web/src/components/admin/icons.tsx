@@ -43,6 +43,11 @@ const PATHS: Record<string, string> = {
   profile: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
   signOut: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   menu: 'M4 6h16M4 12h16M4 18h16',
+  // The rail pin. Two panels with the divider parked left (hover-open) or right (pinned open) —
+  // a drawing of what the control does, rather than a pushpin, which says "favourite" to most
+  // people and is already what a bookmark looks like elsewhere in the console.
+  pin: 'M3 4h18v16H3zM9 4v16',
+  pinned: 'M3 4h18v16H3zM9 4v16M5.5 8.5h1.5M5.5 12h1.5M5.5 15.5h1.5',
   chevron: 'M6 9l6 6 6-6',
   dot: 'M12 12h.01',
 }

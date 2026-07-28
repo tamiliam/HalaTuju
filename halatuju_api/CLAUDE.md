@@ -563,6 +563,35 @@ decisions ×3; lessons ×2. **⚠ MIGRATION `0133` — APPLY MIGRATE-FIRST (two 
 
 
 **🚨 READ FIRST — PF-1 NOW OUTRANKS EVERYTHING QUEUED BELOW.** The owner confirmed 2026-07-28 that
+
+**▶ NEXT SPRINT IS PF-1, AND THE BRIEF IS ALREADY WRITTEN:**
+`docs/plans/2026-07-28-pf1-open-cohort-org-context.md`. Read it before anything else — it was
+written to be executed by an agent with no memory of the conversation that produced it, and it
+carries three things the one-line description below does not:
+1. **There are TWO unscoped reads, not one.** `services.resolve_open_cohort()` (the apply path) and
+   `IntakeStatusView` (`views.py:110`, **public**) run the same platform-wide query. Fixing one
+   moves the bug rather than closing it — with two tenants, A's open round makes B's landing page
+   advertise "Apply".
+2. **Nothing in the web app ever sends `cohort_code`** — it is a read-only field end to end. So
+   every application already takes the unscoped default branch; this is not an edge case.
+3. **It is split.** The safety half (refuse when ambiguous; today's single-tenant behaviour
+   unchanged) does **not** depend on the open product question and ships first. The routing half
+   waits on the owner answering §2 of the brief: how a student's application knows which
+   organisation. **Do not answer that by reaching for `referred_by_org` — that is attribution,
+   never ownership, and the model docstring says so.**
+
+**✅ NAV/IA ARC CLOSED 2026-07-28 (N1 → N4).** Roadmap
+`docs/plans/2026-07-27-nav-ia-roadmap.md` is closed; arc retro
+`docs/retrospective-2026-07-28-nav-ia-arc.md`. `admin/layout.tsx` 220 → 60 lines over a route
+registry; 17 copies of one role check → 1; a 414-line hub → four pages; the sidebar → a 48px rail.
+**863 → 968 jest.** Live at `halatuju-web-00733-zpl`.
+**⏸ N3a (org/programme switchers) is PARKED with a trigger** — build it when a second organisation
+exists in production with an active programme. It is the console's answer to multi-tenancy while
+PF-1 is the platform's; the viewer should not ship before the router.
+**⛔ THEMING is its own planning exercise** across admin, sponsor and student surfaces, after PF-1
+(owner, 2026-07-28). Nothing theme-related shipped; see the note further down.
+
+**🚨 WHY PF-1 OUTRANKS EVERYTHING.** The owner confirmed 2026-07-28 that
 the **second-tenant meeting happened and looks credible**. `services.resolve_open_cohort()` returns
 the most recent active+open cohort **PLATFORM-WIDE with no org context** — harmless only while
 `is_open=false`. The moment a second organisation has an open programme, a student is routed into
@@ -572,6 +601,27 @@ assumption is dead. **Fix before tenant #2 has an open programme.** Alongside it
 (erasure) is hard-blocking** before any real second-tenant applicant data, and **no entity can sign
 a DPA** (BrightPath's CLBG unregistered; HalaTuju org-homeless). Navigation is now the least urgent
 work on the list.
+
+**✅ SHIPPED 2026-07-28 — NAV/IA N4: the sidebar became a RAIL.** Retro
+`docs/retrospective-2026-07-28-nav-rail-n4.md`; decisions ×5; lessons ×5. **NO migration, NO
+backend, NO new dependency** — web only, 24 files, **968 jest / 63 suites**, i18n 4090 ×3.
+- 48px of icons at rest, opening to 216px on hover or keyboard focus. It **overlays** — a spacer
+  holds the collapsed width, so nothing reflows under the cursor.
+- A **pin** beside the breadcrumb (device-local, `src/lib/uiPrefs.ts`); a **"Go to <page>"** chip on
+  the row you point at; **`G` then a letter** jumps, 14 routes carry one.
+- `chord` is OPTIONAL registry data guarded by a uniqueness TEST, and `chordTarget()` resolves
+  against the VISIBLE menu — courtesy, **not** a fence. Per-group collapse was removed.
+- **TD-187** the rail cannot scroll (the chip must escape it; trigger = a menu past ~20 rows).
+  **TD-188** three shell sprints have now closed with no browser pass, because TD-182 still breaks
+  admin Google sign-in on localhost.
+
+**⛔ THEMING IS NOT AN N5 — owner, 2026-07-28.** I drafted a two-sprint dark-mode plan; the owner
+withdrew it: *"Themes should be its own planning. Not just dark but other likely themes… We'll
+discuss themes (admin pages, sponsor pages, and student pages) separately after we've landed on
+PF-1."* Nothing theme-related shipped, and a reserved `theme` key was **deleted** from `uiPrefs`
+rather than left to presume that a theme is a device preference. Measured input for that exercise:
+**1,537 hard-coded light colours across 119 files** (31 in the console); the brand ramp is already
+CSS variables and a theme must never touch it.
 
 **✅ SHIPPED 2026-07-28 — NAV/IA N3b: the Administration hub became REAL PAGES.** Commit
 `e38e5eac`. Roadmap `docs/plans/2026-07-27-nav-ia-roadmap.md`; retro

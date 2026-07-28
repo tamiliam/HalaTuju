@@ -37,6 +37,7 @@ function Breadcrumb({ orgName, programmeName }: { orgName?: string | null; progr
 export function Topbar({
   orgName, programmeName, adminName, roleLabel, attention,
   onOpenSearch, onOpenMobileNav, onSignOut, guideHref, faqHref, profileHref,
+  navPinned, onTogglePin,
 }: {
   orgName?: string | null
   programmeName?: string
@@ -46,6 +47,9 @@ export function Topbar({
   onOpenSearch: () => void
   onOpenMobileNav: () => void
   onSignOut: () => void
+  /** The rail's state, so the toggle can say which way it will go. */
+  navPinned: boolean
+  onTogglePin: () => void
   guideHref?: string
   faqHref?: string
   profileHref: string
@@ -66,6 +70,21 @@ export function Topbar({
         className="-ml-1 rounded-lg p-2 text-gray-600 hover:bg-gray-50 lg:hidden"
       >
         <Icon name="menu" size={20} />
+      </button>
+
+      {/* The pin sits beside the breadcrumb rather than in the account menu: it changes the
+          thing immediately to its left, and burying a layout control two clicks deep is how
+          people never find out the rail can stay open. Desktop only — the rail is too. */}
+      <button
+        type="button"
+        onClick={onTogglePin}
+        aria-pressed={navPinned}
+        title={t(navPinned ? 'admin.shell.unpinNav' : 'admin.shell.pinNav')}
+        className={`hidden rounded-lg p-1.5 transition-colors lg:block
+          ${navPinned ? 'bg-primary-50 text-primary-700' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}
+      >
+        <span className="sr-only">{t(navPinned ? 'admin.shell.unpinNav' : 'admin.shell.pinNav')}</span>
+        <Icon name={navPinned ? 'pinned' : 'pin'} size={16} />
       </button>
 
       <Breadcrumb orgName={orgName} programmeName={programmeName} />

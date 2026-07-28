@@ -1647,3 +1647,28 @@ mechanism that manages those clause/question pairs too, not a third copy of the 
 **Size:** unknown until (1)–(4) are answered — plausibly its own multi-sprint roadmap, since a
 snapshot model, an editing surface with review, a version lifecycle and a quiz manager are four
 deliverables. **Do not fold it into a sponsor-module sprint.** (Logged 2026-07-28, PARKED.)
+
+### [TD-187] The rail cannot scroll, and the "Go to" chip is why — low, but it has a trigger
+**Status:** Open — logged 2026-07-28 at N4's own introduction, with the condition that ends it.
+**What.** `Sidebar` deliberately sets no `overflow` on the rail. The chip is positioned outside the
+element (`left-full`), and CSS gives no "clip vertically, spill horizontally": one non-visible axis
+forces the other to `auto`. So a rail taller than the viewport would push the page rather than
+scroll, and the longest menu today — super's, 19 rows at 32px plus headings — fits comfortably.
+**The trigger, stated so nobody has to rediscover it:** the moment a role's menu passes ~20 rows,
+or a row grows taller, this becomes a real bug. The fix is not to tighten the overflow — that
+silently eats the chip — but to move the chip into a portal anchored to the row, at which point the
+rail may scroll freely.
+**Cheap tell during review:** a sprint that fills two or three reserved slots at once.
+**Size:** small (a portal + its test), once it is actually needed. (Logged 2026-07-28, nav/IA N4.)
+
+### [TD-188] The rail's own review is still owed a browser — low, but it is the third in a row
+**Status:** Open — logged 2026-07-28.
+**What.** N4 closes on 968 jest, `check-i18n` and a clean build, plus an interactive mock-up the
+owner approved. What no test covers is whether the open/close *feels* right: hover latency, whether
+the chip lands where the eye is, whether a person who has never seen a rail finds the pin.
+**Why it is logged rather than shrugged off.** N2 and N3b both closed without a browser pass for
+the same reason — TD-182 breaks admin Google sign-in on localhost — and three sprints of shell work
+have now shipped on structural verification alone. That is a pattern, not an incident.
+**To resolve:** either fix TD-182 (which unblocks all local console review), or take one pass over
+the live console after deploy. **Do not** send anyone at `/admin/login` on localhost meanwhile.
+(Logged 2026-07-28, nav/IA N4.)

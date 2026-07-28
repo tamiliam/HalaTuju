@@ -40,11 +40,23 @@ export const basicsProgramme: ManualChapter = {
       anchor: 'finding-your-way',
       title: 'Finding your way around',
       body: (
-        <>The links along the top are your workspace. <strong>B40 Applications</strong> is where cases live;
-        the other links depend on your role. This manual has a chapter for <em>your</em> role — it opens there
-        automatically — plus these shared <em>Basics</em>. When something isn&rsquo;t clear, the
-        <strong> FAQ</strong> has short answers, and the HalaTuju team is one email away
-        (<strong>help@halatuju.xyz</strong>).</>
+        <>Down the left is a narrow strip of icons — that is your menu. <strong>Point at it and it opens</strong>,
+        showing the name of every page you can reach; move away and it closes again, so it takes up almost no
+        room while you work. If you would rather it stayed open, use the <strong>pin</strong> beside the
+        HalaTuju name at the top, and the console will remember. The page you are on is the coloured one.
+        <br /><br />
+        The pages are grouped by what they belong to: <strong>HalaTuju</strong> (the platform),
+        <strong> your organisation</strong>, and <strong>your programme</strong> — which is where
+        <strong> B40 Applications</strong> lives. You only ever see the groups your role reaches, so a short
+        menu is not a fault. A few entries are marked <em>soon</em>: those are pages being built.
+        <br /><br />
+        Two shortcuts, once the strip is familiar. Pointing at an entry shows <em>Go to…</em> with a pair of
+        keys — press <strong>G</strong>, then that letter, and you are there. <strong>Ctrl&nbsp;K</strong>
+        opens a search box over the menu if you would rather type the name of a page than look for it.
+        <br /><br />
+        This manual has a chapter for <em>your</em> role — it opens there automatically — plus these shared
+        <em> Basics</em>. When something isn&rsquo;t clear, the <strong>FAQ</strong> has short answers, and the
+        HalaTuju team is one email away (<strong>help@halatuju.xyz</strong>).</>
       ),
     },
   ],

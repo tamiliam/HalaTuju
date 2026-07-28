@@ -3029,7 +3029,11 @@
       "account": "Akaun",
       "attn": {
         "sponsors": "{count} penaja menunggu semakan"
-      }
+      },
+      "goTo": "Pergi ke {page}",
+      "then": "kemudian",
+      "pinNav": "Biarkan menu terbuka",
+      "unpinNav": "Biarkan menu mengecil"
     },
     "nav": {
       "organisations": "Organisasi",
