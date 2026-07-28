@@ -211,6 +211,41 @@ letter off proves: no blocker, no Pathway fact, no ticket, no Check-2 request, n
 
 **Complexity: high** (~30 files). Do not add the admin screen to it.
 
+### ✅ Sprint 3a SHIPPED 2026-07-29 (`92784b20`, live `halatuju-api-00901-485`) — backend half only
+
+Gates, blockers, income switch and verdict facts read the seam. 5022 pytest, no existing test edited.
+Production catalogue **seeded** (8 documents / 10 questions, 0 programme overrides). Retro
+`docs/retrospective-2026-07-29-layer0-documents-gate.md`.
+
+**⚠ FOUR RULES FROM 3a's NEAR-MISS — BINDING ON 3b AND EVERY LATER SPRINT.** An application WITH a
+programme against an EMPTY catalogue resolved to "requires nothing", which would have let all 60
+students inside the submission gate submit with no documents. **The full suite passed throughout**,
+because no fixture seeds the catalogue, so every test took the fallback branch and none took the new one.
+1. An empty config source means **"not configured"**, never "requires nothing" — fall back to the OLD
+   behaviour, per kind.
+2. Write at least one test from **production's shape**, not from what the code is meant to do.
+3. **Disable a new guard and watch the tests fail** before trusting it.
+4. When a sprint consumes what an earlier sprint **deferred**, that deferral is in this change's blast
+   radius.
+
+### Sprint 3b — the front end reads the payload
+
+**Goal.** Delete the duplicate rule. `COMPULSORY_DOC_TYPES` (`src/lib/scholarship.ts:1096`) says
+`['ic','results_slip']` while the backend gates on more — **the two already disagree in production
+today**. 3b makes the server the single source and leaves the front end rendering what it is told.
+
+**Prerequisite already met:** 3a exposes nothing on the payload yet. **3b's first task is the serializer**
+— surface the resolved required/optional sets on the application payload, then have the FE read them.
+
+**⚠ THE REVIEW SURFACE EXISTS NOW.** The design sandbox (`/sandbox/documents`, config sprint 1) mounts
+the REAL `ScholarshipDocuments` component against fixtures. **3b is the first sprint that can be seen
+before it ships** — use it, in both the "asks for everything" and "asks for less" states. TD-194 (no
+local console) does not block this: the sandbox needs no API and no login.
+
+**Known hazard:** `src/components/ScholarshipDocuments.tsx` is 1,899 lines with ~25 unexported in-file
+components. Extraction is justified on readability alone there — but only as far as the sprint already
+touches, and never as Layer-2 groundwork (see the standing constraint at the top of this file).
+
 ## Sprint 4 — Questions: the catalogue governs the student application
 
 **Goal.** A programme configures which questions it asks. One journey for every tenant, different contents.
