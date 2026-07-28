@@ -13,7 +13,20 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV NEXT_PUBLIC_API_URL=https://halatuju-api-90344691621.asia-southeast1.run.app
+# The design sandbox is built from this same image, with two arguments changed. Both DEFAULT to
+# the production values, so an ordinary build is byte-identical to before this line existed —
+# `SANDBOX` empty means `pageExtensions` never picks up `page.sandbox.tsx` and no sandbox code
+# enters the bundle at all (see next.config.js).
+#
+#   docker build --build-arg SANDBOX=1 --build-arg API_URL=https://api.invalid .
+#
+# API_URL is deliberately pointed at an unresolvable host for the sandbox: the fixtures answer
+# every call, so a request escaping to the network is a bug, and it should fail rather than
+# quietly reach the live API.
+ARG SANDBOX=
+ARG API_URL=https://halatuju-api-90344691621.asia-southeast1.run.app
+ENV NEXT_PUBLIC_SANDBOX=${SANDBOX}
+ENV NEXT_PUBLIC_API_URL=${API_URL}
 ENV NEXT_PUBLIC_SUPABASE_URL=https://pbrrlyoyyiftckqvzvvo.supabase.co
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ADKtlHpjwGRqWGpYd1JuCg_riPMtc3l
 # Cloudflare Turnstile PUBLIC site key (secret stays in Supabase + the Edge Function).
