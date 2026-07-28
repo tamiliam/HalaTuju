@@ -3319,3 +3319,186 @@ class SponsorEmailLog(models.Model):
 
     def __str__(self):
         return f'{self.kind} → sponsor={self.sponsor_id} @ {self.sent_at:%Y-%m-%d %H:%M}'
+
+
+class SponsorTermsVersion(models.Model):
+    """One version of the terms a sponsor accepts when they join.
+
+    The sibling of `ContractTemplate` in intent and deliberately a fraction of its size. What is
+    kept from there: draft immutability, a publish that archives the previous active row inside one
+    transaction, and a version string that a past acceptance can point at forever. What is dropped:
+    the payment schedule, the counterparty/signing apparatus, the lawyer-vetting attestation, .docx
+    import, PDF rendering, and the three-level clause hierarchy — sections here are a FLAT numbered
+    list, because a thirteen-section document does not need an outline tree.
+
+    PLATFORM-LEVEL, with no `organisation` FK, matching `Sponsor` and `SponsorEmailTemplate` (both
+    classified `cross-org-by-design` in test_org_fence.py). A sponsor account is not a tenant's
+    property, so neither are the terms it accepts. A second tenant wanting its own terms is a
+    documented later decision, not a field guessed at now.
+
+    ⚠ These are NOT the bursary agreement. That is a 94-clause instrument between BrightPath and a
+    STUDENT, and a sponsor is not a party to it (see TD-191). Do not merge the two.
+    """
+    STATUS_DRAFT = 'draft'
+    STATUS_ACTIVE = 'active'
+    STATUS_ARCHIVED = 'archived'
+    STATUS_CHOICES = (
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_ACTIVE, 'Active'),
+        (STATUS_ARCHIVED, 'Archived'),
+    )
+
+    version = models.CharField(max_length=50, unique=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+
+    # English is authoritative; ms/ta are courtesy translations and may lag (warning W1).
+    title_en = models.CharField(max_length=255, blank=True, default='')
+    title_ms = models.CharField(max_length=255, blank=True, default='')
+    title_ta = models.CharField(max_length=255, blank=True, default='')
+    intro_en = models.TextField(blank=True, default='')
+    intro_ms = models.TextField(blank=True, default='')
+    intro_ta = models.TextField(blank=True, default='')
+
+    created_by_email = models.CharField(max_length=254, blank=True, default='')
+    published_by_email = models.CharField(max_length=254, blank=True, default='')
+    published_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sponsor_terms_versions'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.version} ({self.status})'
+
+    @property
+    def languages_available(self):
+        """Locales a sponsor may be served WHOLE. English is always available.
+
+        A locale only counts when the title, the intro AND every section heading and body carry
+        it — a half-translated document would otherwise silently fall back mid-page, which reads
+        as a bug to the person it happens to.
+        """
+        out = ['en']
+        sections = list(self.sections.all())
+        for loc in ('ms', 'ta'):
+            if not (getattr(self, f'title_{loc}').strip() and getattr(self, f'intro_{loc}').strip()):
+                continue
+            if all(getattr(sec, f'heading_{loc}').strip() and getattr(sec, f'body_{loc}').strip()
+                   for sec in sections) and sections:
+                out.append(loc)
+        return out
+
+
+class SponsorTermsSection(models.Model):
+    """One numbered section of a `SponsorTermsVersion`, and optionally its quiz checkpoint.
+
+    FLAT — there is no `level`. Sections are numbered 1..N by `order`, contiguously, and the number
+    shown is the order itself rather than a computed outline label. That single choice removes the
+    whole hierarchy apparatus the contract module needs (`normalise_levels`, `clause_numbers`,
+    `MAX_QUIZ_LEVEL`, ancestor/descendant resolution, indent/outdent and their guards).
+
+    Headings are TextField rather than CharField(255) on purpose: the contract module needed a
+    `_fit_heading` guard on every write path because an over-long heading could overflow the
+    varchar and 500 a save. A TextField cannot.
+
+    `quiz_{en,ms,ta}` reuses the payload shape the student bursary quiz already uses —
+    ``{tag, plain, question, options: [3 strings], correct: 0-2, why}`` — so the authoring editor
+    and the sponsor-facing quiz component both port from working code. An empty dict means no quiz
+    in that language; `en` is mandatory whenever `is_quiz_candidate` is set.
+    """
+    terms = models.ForeignKey(
+        SponsorTermsVersion, on_delete=models.CASCADE, related_name='sections',
+    )
+    order = models.PositiveIntegerField()
+
+    heading_en = models.TextField(blank=True, default='')
+    heading_ms = models.TextField(blank=True, default='')
+    heading_ta = models.TextField(blank=True, default='')
+    body_en = models.TextField(blank=True, default='')
+    body_ms = models.TextField(blank=True, default='')
+    body_ta = models.TextField(blank=True, default='')
+
+    is_quiz_candidate = models.BooleanField(default=False)
+    quiz_en = models.JSONField(default=dict, blank=True)
+    quiz_ms = models.JSONField(default=dict, blank=True)
+    quiz_ta = models.JSONField(default=dict, blank=True)
+    # Blank = hand-written. Otherwise the model that drafted it, kept as provenance.
+    quiz_generated_model = models.CharField(max_length=80, blank=True, default='')
+
+    class Meta:
+        db_table = 'sponsor_terms_sections'
+        ordering = ['terms_id', 'order']
+        constraints = [
+            models.UniqueConstraint(fields=['terms', 'order'],
+                                    name='uniq_sponsor_terms_section_order'),
+        ]
+
+    def __str__(self):
+        return f'{self.terms_id}.{self.order} {self.heading_en[:40]}'
+
+
+class SponsorTermsAcceptance(models.Model):
+    """That a given sponsor accepted a given VERSION — or was deliberately not asked.
+
+    One row per (sponsor, version), and a HISTORY table rather than a latest-value field on
+    `Sponsor`: publishing a new version can then re-ask without destroying the record of what was
+    agreed before. `terms` is PROTECT so a version that has governed an acceptance can never be
+    deleted out from under it.
+
+    ⚠ `basis` is load-bearing and must never be collapsed to a boolean. `grandfathered` means WE DID
+    NOT ASK THIS PERSON, which is the opposite of "they agreed" — every surface that reads it must
+    say so. Same principle as `SponsorEmailLog` writing a row for a skip: silence has to be visible,
+    not indistinguishable from success.
+
+    ⚠ This is NOT `Sponsor.consent_at` / `consent_version`. Those hold the PDPA privacy consent — a
+    permission the sponsor GRANTS US, imposing no duty on them. Merging the two is the error TD-191
+    exists to prevent.
+    """
+    BASIS_ACCEPTED = 'accepted'
+    BASIS_GRANDFATHERED = 'grandfathered'
+    BASIS_CHOICES = (
+        (BASIS_ACCEPTED, 'Accepted by the sponsor'),
+        (BASIS_GRANDFATHERED, 'Grandfathered — never asked'),
+    )
+
+    sponsor = models.ForeignKey(
+        'Sponsor', on_delete=models.CASCADE, related_name='terms_acceptances',
+    )
+    terms = models.ForeignKey(
+        SponsorTermsVersion, on_delete=models.PROTECT, related_name='acceptances',
+    )
+    basis = models.CharField(max_length=20, choices=BASIS_CHOICES, default=BASIS_ACCEPTED)
+
+    # Typing a name IS the signature here, matching `BursaryAgreement.student_signed_name` and the
+    # credit chain's `admin_signed_name` / `finance_signed_name` / `org_admin_signed_name`.
+    # `registered_name_at_acceptance` freezes the account name at that moment so a divergence stays
+    # visible to an admin forever — we never REFUSE a variant spelling, because there is no IC to
+    # match against and rejecting someone their own name is a worse failure than storing a
+    # difference.
+    signed_name = models.CharField(max_length=200, blank=True, default='')
+    registered_name_at_acceptance = models.CharField(max_length=200, blank=True, default='')
+
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    quiz_passed_at = models.DateTimeField(null=True, blank=True)
+    locale = models.CharField(max_length=5, blank=True, default='en')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    # Grandfathering only: who granted the exemption and why.
+    granted_by_email = models.CharField(max_length=254, blank=True, default='')
+    reason = models.CharField(max_length=300, blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'sponsor_terms_acceptances'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['sponsor', 'terms'],
+                                    name='uniq_sponsor_terms_acceptance'),
+        ]
+
+    def __str__(self):
+        return f'sponsor={self.sponsor_id} {self.terms_id} ({self.basis})'

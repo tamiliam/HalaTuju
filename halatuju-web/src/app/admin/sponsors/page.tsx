@@ -16,6 +16,7 @@ import { PAGE_SIZE_OPTIONS, nextSort, sortIndicator } from '@/lib/tableView'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { Pagination } from '@/components/Pagination'
 import SponsorEmailsCard from '@/components/sponsors/SponsorEmailsCard'
+import SponsorTermsCard from '@/components/sponsors/SponsorTermsCard'
 
 // The ORGANISATION column was dropped on 2026-07-27: empty on all nine prod rows, and it cost
 // a quarter of the table's width. Its space pays for GIVEN + LAST SEEN — what an admin
@@ -40,12 +41,13 @@ const STATUS_OPTIONS = ['pending', 'approved', 'rejected', 'suspended']
 // doing this. Sponsors is the default: the list is what the page is for, and Emails is a
 // deliberate second click. The badges were held back from S1 on purpose (a badge that opens
 // nothing is the failure the partner-comms card exists to avoid); the Emails panel IS this sprint.
-const PANELS = ['sponsors', 'emails'] as const
+const PANELS = ['sponsors', 'emails', 'terms'] as const
 type Panel = (typeof PANELS)[number]
 
 const panelLabel: Record<Panel, string> = {
   sponsors: 'admin.sponsors.tabSponsors',
   emails: 'admin.sponsors.tabEmails',
+  terms: 'admin.sponsors.tabTerms',
 }
 
 // Editing what every donor is told is an editorial power, not a reading one — so the badge is
@@ -159,6 +161,11 @@ export default function AdminSponsorsList() {
       {/* Mounted only while its badge is selected, so each reveal re-reads the templates and an
           emails hiccup can never take the vetting list down with it. */}
       {panel === 'emails' && mayEditEmails && <SponsorEmailsCard token={token} t={t} />}
+
+      {/* Terms — authoring only. A sponsor does not meet this document until T3. */}
+      {panel === 'terms' && mayEditEmails && (
+        <SponsorTermsCard token={token} isSuper={Boolean(role?.is_super_admin)} t={t} />
+      )}
 
       {panel === 'sponsors' && (<>
       <div className="flex flex-wrap gap-3 mb-4">

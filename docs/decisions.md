@@ -1,5 +1,51 @@
 # Architectural Decisions — HalaTuju
 
+## Sponsor-terms sections are FLAT, not a hierarchy — Sponsor terms T2, 2026-07-28
+**Decision:** `SponsorTermsSection` has an `order` and no `level`. Sections are numbered 1..N
+contiguously, and the number shown is the order itself.
+
+**Why.** The contract module's three-level tree is the single most expensive thing in it. Level 2
+is what forces `MAX_QUIZ_LEVEL` to exist, which forces `_clause_and_descendants`, which forces
+`_resolve_quiz_flags`'s ancestor stack, the subtree-aware AI prompt, `ancestorsOf`/`descendantsOf`
+on the frontend, indent/outdent buttons and their two guards, and the "no skipping a level" rule —
+plus `clause_numbers` and its paired TS mirror. A thirteen-section document that someone reads in
+three minutes needs none of it.
+
+**Alternatives considered:** two levels (section + sub-point) — rejected, because it still requires
+normalisation, the guards and the mirror, for a nesting nobody asked for. Copying all three levels
+"in case" — rejected as the clearest form of building for an imagined requirement.
+
+**Trade-offs:** a genuinely nested clause would have to be written as prose inside one section's
+body, or split into two sections. Accepted: if the terms ever need real sub-clauses they have
+stopped being the short readable thing that makes a sponsor actually read them, and that is a
+product problem before it is a schema one.
+
+**Revisit if:** the document passes roughly twenty-five sections, or a lawyer requires numbered
+sub-clauses for citation.
+
+## The typed name is the signature, and a variant spelling is recorded rather than refused — Sponsor terms T2, 2026-07-28
+**Decision (owner: *"They accept by typing their name"*):** acceptance is a typed name, stored on
+`SponsorTermsAcceptance.signed_name` — the same field name and shape as
+`BursaryAgreement.student_signed_name` and the credit chain's `admin_signed_name` /
+`finance_signed_name` / `org_admin_signed_name`. The account name at that moment is frozen
+alongside it in `registered_name_at_acceptance`. **A name that differs from the account name is
+never refused.**
+
+**Why not refuse a mismatch.** The bursary flow does have `parent_ic_name_mismatch`, but that check
+exists because there is an IC DOCUMENT to compare against. A sponsor has no IC on file (that is
+TD-192), so the only comparison available is against a name they typed at registration — and "Ve.
+Elanjelian" versus "Elanjelian Venugopal" is the same person. An acceptance screen that tells
+someone their own name is wrong is a worse failure than a stored difference an admin can see.
+
+**Alternatives considered:** a tick-box — rejected by the owner, and rightly: typing a name is a
+deliberate act and a tick is a reflex. A fuzzy match with a warning — rejected as the worst of both,
+since it still blocks sometimes and nobody can predict when.
+
+**Trade-offs:** the record proves someone typed a name in an authenticated session, not that a
+handwriting expert would agree. Accepted — it is exactly what the student agreement already relies
+on. **Revisit if:** TD-192 lands identity documents, at which point a real comparison becomes
+possible and this can tighten without guessing.
+
 ## A sponsor NOMINATES; the programme AWARDS — Sponsor terms T1, 2026-07-28
 **Decision (owner):** all sponsor-facing copy, and the terms document, state that a sponsor
 *nominates* a student and that **the final decision on every award rests with the programme**. The

@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor terms T2 — the document becomes editable and versioned — 2026-07-28
+
+The authoring half of the sponsor-terms roadmap. **Migration `0134` APPLIED migrate-first** (three
+tables, RLS on, one `service_role` policy each, `django_migrations` row inserted and verified).
+**Nothing here is sponsor-facing** — the wizard, the acceptance and the gate are T3.
+
+### Added
+- **Three models.** `SponsorTermsVersion` (draft → active → archived), `SponsorTermsSection`
+  (**flat, numbered 1..N** — no hierarchy) and `SponsorTermsAcceptance`, a HISTORY table keyed on
+  (sponsor, version) so publishing a new version re-asks without destroying the old record.
+- **`sponsor_terms.py`** (~430 lines against the contract module's 1,140). Kept: draft
+  immutability, archive-then-activate in one transaction with `select_for_update`, a validation
+  checklist of machine codes the frontend renders without knowing a single rule, the mockable
+  Gemini seam with no downgrade fallback, and per-item locale→English fallback.
+- **Seven admin endpoints** under `admin/scholarship/sponsor-terms/`, all classified in
+  `test_org_fence.py` as `cross-org-by-design` — a sponsor has no organisation, so the document a
+  sponsor accepts is not tenant content.
+- **A third badge on `/admin/sponsors`**: Sponsors | Emails | **Terms**. Sections and their quiz
+  checkpoints are edited together, not on separate tabs — a question only makes sense beside the
+  words it tests.
+- **`seed_sponsor_terms`** — v1 from the approved draft, 13 sections, 6 checkpoints. Idempotent,
+  and it **never publishes**; it also asserts its own output would pass the publish gate, because a
+  seed that cannot be published is a trap for whoever tries.
+
+### Deliberately not copied from the contract module
+The payment schedule, the counterparty/signing apparatus, the lawyer attestation, `.docx` import,
+PDF rendering, and the three-level clause hierarchy. Sections are flat, which removes
+`normalise_levels`, `clause_numbers`, `MAX_QUIZ_LEVEL`, the ancestor/descendant resolution and
+indent/outdent along with it.
+
+### Fixed — found by the two guards this sprint added
+- **Nine `sponsorAuth.*` keys were referenced by the live sponsor reset-password and login pages and
+  existed in NO locale** — so a sponsor resetting their password saw the literal string
+  `sponsorAuth.resetVerifying`. This is L109 recurring, and it went unnoticed because
+  `check-i18n.js` proves the three locales AGREE and says nothing about whether a referenced key
+  exists at all. Added in en/ms/ta.
+- **A tenant name was baked into an i18n placeholder** (`admin.sponsors.terms.titlePh` said
+  "Joining BrightPath as a sponsor"). The existing brand-guard caught it — brand names come from
+  branding tokens on a multi-tenant platform, never from a message value.
+
+### Added — the guards themselves
+- **`admin-sponsors-i18n.test.ts`**, which did not exist: hundreds of `admin.sponsors.*` leaves,
+  including all ~59 from S3, had no key-existence guard at all.
+- **`sponsorAuth` added to `sponsor-i18n.test.ts`'s namespaces**, which is what surfaced the nine.
+- Both skip **co-located `.test.tsx` files and comments**, because a test asserting a key is ABSENT
+  and a doc comment naming a deliberately-nonexistent key are not usages.
+
+### Notes
+- **3768 scholarship pytest** (+50) · **1104 jest** / 72 suites (+51) · `next build` exit 0 ·
+  `makemigrations --check` clean.
+- ms/ta for the 45 new admin strings are first drafts (TD-183). The sponsor-facing terms themselves
+  are seeded **English only**, on purpose: machine-drafting a document people are BOUND by is not a
+  risk worth taking for a courtesy translation. Validation warning W1 says so honestly.
+
 ## Sponsor terms T1 — the words: "you nominate, we award" — 2026-07-28
 
 The first sprint of the sponsor-terms roadmap (`.claude/plans/snazzy-whistling-biscuit.md`). **Words

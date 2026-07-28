@@ -23,7 +23,7 @@ import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
 
 const SRC_DIR = path.join(__dirname, '..', '..') // .../src
-const NAMESPACES = ['sponsorPortal', 'sponsorPool', 'sponsorLanding']
+const NAMESPACES = ['sponsorPortal', 'sponsorPool', 'sponsorLanding', 'sponsorAuth']
 
 function collectSource(dir: string, acc: string[]): void {
   fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {

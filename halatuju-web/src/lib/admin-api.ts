@@ -447,6 +447,131 @@ export async function updateSponsorEmail(
   return adminMutate(`/api/v1/admin/scholarship/sponsor-emails/${kind}/`, 'PATCH', patch, options)
 }
 
+// ── Sponsor terms (T2) ───────────────────────────────────────────────────────
+// The versioned document a sponsor accepts. Authoring only — nothing here is sponsor-facing.
+
+export interface SponsorTermsSection {
+  order: number
+  heading_en: string; heading_ms: string; heading_ta: string
+  body_en: string; body_ms: string; body_ta: string
+  is_quiz_candidate: boolean
+  /** `{tag, plain, question, options[3], correct, why}` — the same shape the student quiz uses. */
+  quiz_en: SponsorQuizPayload
+  quiz_ms: SponsorQuizPayload
+  quiz_ta: SponsorQuizPayload
+  /** Blank = hand-written. Otherwise the model that drafted it. */
+  quiz_generated_model: string
+}
+
+export interface SponsorQuizPayload {
+  tag?: string
+  plain?: string
+  question?: string
+  options?: string[]
+  correct?: number
+  why?: string
+}
+
+export interface SponsorTermsSummary {
+  id: number
+  version: string
+  status: 'draft' | 'active' | 'archived'
+  title_en: string
+  section_count: number
+  created_by_email: string
+  published_by_email: string
+  published_at: string | null
+  archived_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SponsorTermsDetail extends SponsorTermsSummary {
+  title_ms: string; title_ta: string
+  intro_en: string; intro_ms: string; intro_ta: string
+  /** Locales servable WHOLE. A half-translated version stays English-only. */
+  languages_available: string[]
+  sections: SponsorTermsSection[]
+  acceptance_count: number
+}
+
+export interface SponsorTermsRule { code: string; label: string }
+export interface SponsorTermsValidation {
+  ok: boolean
+  errors: SponsorTermsRule[]
+  warnings: SponsorTermsRule[]
+}
+
+export interface SponsorTermsListPayload {
+  versions: SponsorTermsSummary[]
+  active_version: string
+  sponsor_count: number
+}
+
+const ST = '/api/v1/admin/scholarship/sponsor-terms'
+
+export async function getSponsorTermsList(options?: ApiOptions): Promise<SponsorTermsListPayload> {
+  return adminFetch(`${ST}/`, options)
+}
+
+export async function getSponsorTerms(id: number, options?: ApiOptions): Promise<SponsorTermsDetail> {
+  return adminFetch(`${ST}/${id}/`, options)
+}
+
+export async function createSponsorTerms(
+  body: { version: string; copy_from?: number },
+  options?: ApiOptions,
+): Promise<SponsorTermsDetail> {
+  return adminMutate(`${ST}/`, 'POST', body, options)
+}
+
+export async function updateSponsorTermsIntro(
+  id: number,
+  patch: Partial<Pick<SponsorTermsDetail,
+    'title_en' | 'title_ms' | 'title_ta' | 'intro_en' | 'intro_ms' | 'intro_ta'>>,
+  options?: ApiOptions,
+): Promise<SponsorTermsDetail> {
+  return adminMutate(`${ST}/${id}/`, 'PATCH', patch, options)
+}
+
+export async function putSponsorTermsSections(
+  id: number,
+  sections: Array<Partial<SponsorTermsSection>>,
+  options?: ApiOptions,
+): Promise<SponsorTermsDetail> {
+  return adminMutate(`${ST}/${id}/sections/`, 'PUT', { sections }, options)
+}
+
+export async function generateSponsorTermsQuiz(
+  id: number, order: number, options?: ApiOptions,
+): Promise<SponsorTermsDetail> {
+  return adminMutate(`${ST}/${id}/sections/${order}/generate-quiz/`, 'POST', {}, options)
+}
+
+export async function validateSponsorTerms(
+  id: number, options?: ApiOptions,
+): Promise<SponsorTermsValidation> {
+  return adminFetch(`${ST}/${id}/validate/`, options)
+}
+
+export async function publishSponsorTerms(
+  id: number, options?: ApiOptions,
+): Promise<SponsorTermsDetail> {
+  return adminMutate(`${ST}/${id}/publish/`, 'POST', {}, options)
+}
+
+export async function previewSponsorTerms(
+  id: number, locale: string, options?: ApiOptions,
+): Promise<{
+  document: {
+    version: string; locale_used: string; title: string; intro: string
+    sections: Array<{ order: number; heading: string; body: string; has_quiz: boolean }>
+  }
+  checkpoints: Array<SponsorQuizPayload & { order: number }>
+}> {
+  return adminFetch(`${ST}/${id}/preview/?locale=${encodeURIComponent(locale)}`, options)
+}
+
 export async function getPartnerEmails(options?: ApiOptions) {
   return adminFetch<PartnerEmailsPayload>('/api/v1/admin/scholarship/partner-emails/', options)
 }

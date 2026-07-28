@@ -331,6 +331,18 @@ class TestFenceCoverageCompleteness(TestCase):
         '_SponsorEmailsBase': 'cross-org-by-design',
         'AdminSponsorEmailsView': 'cross-org-by-design',
         'AdminSponsorEmailDetailView': 'cross-org-by-design',
+    # Sponsor TERMS (T2) are platform-level for exactly the reason the sponsor-emails block above
+    # gives: a Sponsor has no organisation, so the document a sponsor accepts is not tenant
+    # content and there is nothing here to fence. A second tenant wanting its own terms is a
+    # product decision that would add an organisation FK — and would then need classifying here.
+    '_SponsorTermsBase': 'cross-org-by-design',
+    'AdminSponsorTermsListView': 'cross-org-by-design',
+    'AdminSponsorTermsDetailView': 'cross-org-by-design',
+    'AdminSponsorTermsSectionsView': 'cross-org-by-design',
+    'AdminSponsorTermsGenerateQuizView': 'cross-org-by-design',
+    'AdminSponsorTermsValidateView': 'cross-org-by-design',
+    'AdminSponsorTermsPublishView': 'cross-org-by-design+super-publish',
+    'AdminSponsorTermsPreviewView': 'cross-org-by-design',
         # self-scoped (caller's own reviewer profile, no application)
         'ReviewerProfileView': 'self-scoped',
         # grandfathered referral-org authorisation (orthogonal to ownership; dark)

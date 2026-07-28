@@ -159,6 +159,10 @@ from .views_admin import (
     AdminPartnerEmailDetailView,
     AdminSponsorEmailsView,
     AdminSponsorEmailDetailView,
+    AdminSponsorTermsListView, AdminSponsorTermsDetailView,
+    AdminSponsorTermsSectionsView, AdminSponsorTermsGenerateQuizView,
+    AdminSponsorTermsValidateView, AdminSponsorTermsPublishView,
+    AdminSponsorTermsPreviewView,
     AdminApplicationWitnessView,
 )
 
@@ -320,6 +324,16 @@ urlpatterns = [
     # not under admin/sponsors/, so the two editable-email families sit together.
     path('admin/scholarship/sponsor-emails/', AdminSponsorEmailsView.as_view()),
     path('admin/scholarship/sponsor-emails/<str:kind>/', AdminSponsorEmailDetailView.as_view()),
+    # Sponsor terms (T2) — beside sponsor-emails for the same reason that block gives: the two
+    # editable sponsor-facing families sit together, not under admin/sponsors/.
+    path('admin/scholarship/sponsor-terms/', AdminSponsorTermsListView.as_view()),
+    path('admin/scholarship/sponsor-terms/<int:pk>/', AdminSponsorTermsDetailView.as_view()),
+    path('admin/scholarship/sponsor-terms/<int:pk>/sections/', AdminSponsorTermsSectionsView.as_view()),
+    path('admin/scholarship/sponsor-terms/<int:pk>/sections/<int:order>/generate-quiz/',
+         AdminSponsorTermsGenerateQuizView.as_view()),
+    path('admin/scholarship/sponsor-terms/<int:pk>/validate/', AdminSponsorTermsValidateView.as_view()),
+    path('admin/scholarship/sponsor-terms/<int:pk>/publish/', AdminSponsorTermsPublishView.as_view()),
+    path('admin/scholarship/sponsor-terms/<int:pk>/preview/', AdminSponsorTermsPreviewView.as_view()),
     path('admin/scholarship/applications/<int:pk>/witness/', AdminApplicationWitnessView.as_view()),
     path('admin/scholarship/applications/<int:pk>/award-amount/', AdminSetAwardAmountView.as_view()),
     # Post-award S4: disbursement/tranche ledger (schedule + release/withhold/return)
