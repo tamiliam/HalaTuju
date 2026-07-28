@@ -103,6 +103,32 @@ schema acquires callers.
 A later sprint reading this file must treat the section above as an intention to preserve
 FLEXIBILITY, never as a design for Layer 2 and never as permission to start it.
 
+### The POSITIVE half of the same constraint — how the option is actually kept open
+
+Owner, 2026-07-29: *"I am NOT narrowing the scope. Maintain the planned scope, including optionality
+for Layer 2 in future."*
+
+Banning stubs is only half the instruction, and on its own it reads as "do nothing", which is the
+wrong lesson. **Layer 2 stays possible through decisions that are already correct for Layer 1** —
+none of which is a placeholder, and every one of which is justified on its own merits today:
+
+| Decision | Why it is right for Layer 1 | Why it happens to keep Layer 2 open |
+|---|---|---|
+| `data-theme` + CSS variables, never Tailwind's `dark:` | a tenant tint cannot be expressed as a compiled class pair | a theme stays DATA; a third theme, or a per-section override, is a new variable set, not a new build |
+| Semantic tokens (`--surface-*`, `--text-*`, tone families) | an organisation tints meaning-free ground, not meaning | a moved section carries its own tones with it and cannot land somewhere it reads wrong |
+| Page sections as NAMED components taking props | a 1,899-line file is unreadable and untestable | a thing with a name and a boundary is a thing that could later be ordered; inline markup is not |
+| Section visibility COMPUTED from configuration at render | Layer 0 already collapses a section whose documents are all off | order and visibility stay derived, so neither has to be un-stored later |
+
+**The distinction that matters:** do not RESERVE anything, and do not FORECLOSE anything. A reserved
+`layout` column is a guess about Layer 2. A 500-line inline JSX blob with no component boundaries
+forecloses it — not because it lacks a stub, but because there is nothing there to move. Neither is
+acceptable; the middle is simply writing Layer 1 well.
+
+**Do not read this table as a Layer 2 design.** It is a list of Layer-1 decisions with a favourable
+side effect. If a future sprint finds itself arguing for something on this table *because of the
+right-hand column*, the argument has already gone wrong.
+
+
 ## ⚠ Migration numbers are NOT reserved here
 
 The roadmap originally pencilled `0134` for Sprint 2. By the time it was approved, another agent had
@@ -448,16 +474,58 @@ services add-iam-policy-binding … --member=user:<email> --role=roles/run.invok
 4. **Do configuration changes apply to applications already in flight?** Recommend **no** — snapshot
    at submit, so a tick today never re-gates yesterday's student. Costs one column.
 
-**Blocks Phase 2 only:**
-5. **Layer 1 hands colour control to an `org_admin`, reversing a recorded decision.** The platform PRD
-   says the per-org configuration surface is a closed list of seven branding rows, all **superadmin**-
-   editable. Layer 1 as described gives that to Suresh — a deliberate reversal that needs saying out
-   loud. Recommend: they pick and tint; `brandRamp()` derives the ramp and the semantic tones stay
-   ours, so an organisation cannot make error text green.
-6. **Does a theme belong to a person, a device or a tenant?** The owner's reserved question. Recommend:
-   the **tenant** owns the palette, the **person** owns the choice among them (it follows them between
-   machines — a reviewer who needs dark needs it everywhere), and `prefers-color-scheme` is the initial
-   default, never an override of an explicit choice.
-7. **How many themes beyond light and dark, and who authors them?** Recommend a platform-authored set
-   an organisation picks from. Org-authored means a colour editor, a contrast checker and a preview —
-   its own arc.
+**Blocks Phase 2 only — the owner's answers, 2026-07-29:**
+
+> *"1) We — i.e. the platform — has two default themes, light and dark. 2) Organisations can have
+> their own themes, palettes, and should be able to customise their surfaces however they want.
+> Layer 0 and Layer 1 that we have planned. 3) I am NOT narrowing the scope."*
+
+**⚠ A MISREADING TO NOT REPEAT.** An earlier remark — *"for now, I am only thinking of light and
+dark"* — was recorded here as "light and dark ONLY, no organisation-authored themes", and the arc was
+written down as smaller because of it. That was wrong in the way that matters: it read a statement
+about **what the PLATFORM ships** as a **ceiling on what a TENANT may have**. Light and dark are our
+two defaults. They are the floor an organisation starts from, not the limit it is held to. When an
+answer could be about the platform or about a tenant, it is about whichever one the sentence names —
+ask rather than infer, because the two produce different roadmaps.
+
+5. **✅ ANSWERED — an `org_admin` determines their organisation's colours.** This is a deliberate
+   REVERSAL of a recorded decision and must not be quietly reversed back by a later reader: the
+   platform PRD says the per-org configuration surface is a closed list of seven branding rows, all
+   **superadmin**-editable. Colour control moves to the tenant.
+   **▶ ONE GUARD STILL NEEDS THE OWNER'S RULING, because "however they want" and this guard pull in
+   opposite directions.** Recommendation: an organisation owns `--brand-*` and the ground it sits on;
+   the SEMANTIC tone families (`positive` / `critical` / `caution` / `info`) stay ours. Those carry
+   MEANING rather than identity — green error text is not a taste to have, and `components/InfoBox.tsx`
+   already enforces that convention across the product. This is the one place I would hold a line
+   inside "customise however they want", and it is the owner's call to overrule.
+6. **STILL OPEN — who owns the light/dark MODE.** The owner answered about COLOURS, which is the
+   palette. Which mode a person sits in is a separate question and was not answered.
+   **Working assumption:** the org_admin sets the organisation's default and a person may override it
+   for themselves (`src/lib/uiPrefs.ts` — the pattern exists), with `prefers-color-scheme` as the
+   initial default, never an override of an explicit choice.
+   **⚠ Why it leans that way:** dark mode is frequently an ACCESSIBILITY need rather than a
+   preference. A reviewer with light sensitivity needs dark on every screen; if the organisation is
+   locked to light their only recourse is to ask Suresh. The override costs one preference key.
+   **Confirm before sprint 12 — do not build the switch on an assumption.**
+7. **✅ ANSWERED — organisations MAY author their own themes and palettes. This is the opposite of
+   what was briefly recorded here on 2026-07-29 and it makes the arc BIGGER, not smaller.**
+   The platform ships light and dark as defaults; a tenant may customise its surfaces.
+   **⚠ WHAT THAT MEANS FOR THE PLAN, stated plainly rather than absorbed quietly.** Sprints 6–12 as
+   written are the FOUNDATION only — a semantic token vocabulary and the repaint of every surface
+   onto it (measured: **1,858 chromatic colour literals across 114 files** against 624 `primary-N`;
+   the sponsor portal at **1** `primary-N` versus 90 `blue-N`; zero dark-mode readiness anywhere),
+   plus the switch. **The authoring surface an `org_admin` actually touches is NOT in those seven
+   sprints** — this file's own question 7 flagged it as "its own arc": a colour picker, a contrast
+   checker (a tenant WILL choose an unreadable pair, and it must be refused before it ships, not
+   after a student cannot read the page), a live preview, and a place to store a theme.
+   **The foundation is not optional and cannot be skipped to reach the authoring** — an editor over
+   1,858 hard-coded literals changes nothing on screen. **▶ Re-plan Phase 2 at the full scope: the
+   foundation arc, then the authoring arc, presented together with an honest sprint count.**
+
+---
+
+## Phase 2 status, in one line
+
+**NOT approved, and now known to be UNDER-PLANNED.** The seven sprints in this file cover the
+repaint; org-authored themes need their own arc on top. Nothing here should be started until Phase 2
+is re-planned at full scope and approved on that basis.
