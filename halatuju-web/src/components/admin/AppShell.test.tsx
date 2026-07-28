@@ -9,16 +9,18 @@
  * It is not a substitute for looking at it: this asserts structure, not whether the thing is
  * pleasant to use. The browser pass is still owed (see the sprint notes).
  */
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 
 import { AppShell } from './AppShell'
 import type { AdminRoleName } from '@/lib/navigation'
 
 let mockRole: Record<string, unknown> = {}
 
+const mockPush = jest.fn()
+
 jest.mock('next/navigation', () => ({
   usePathname: () => '/admin/scholarship',
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn() }),
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
 jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ role: mockRole, token: null }) }))
@@ -96,5 +98,108 @@ describe('AppShell renders the scope sidebar per role', () => {
     render(<AppShell>the page</AppShell>)
     expect(screen.getAllByText('Test Person').length).toBeGreaterThan(0)
     expect(screen.getByText('the page')).toBeTruthy()
+  })
+})
+
+// ── N4: the rail's pin, and the G-then-X chord ───────────────────────────────
+describe('the rail pin', () => {
+  beforeEach(() => window.localStorage.clear())
+
+  it('starts hover-open — the first paint must not depend on storage', () => {
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    expect(sidebar().style.width).toBe('48px')
+  })
+
+  it('pins on click, and says so to a screen reader', () => {
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    const pin = screen.getByRole('button', { name: 'admin.shell.pinNav' })
+    expect(pin.getAttribute('aria-pressed')).toBe('false')
+
+    fireEvent.click(pin)
+    expect(sidebar().style.width).toBe('216px')
+    expect(screen.getByRole('button', { name: 'admin.shell.unpinNav' })
+      .getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('remembers the choice for the next visit', () => {
+    asRole('org_admin')
+    const first = render(<AppShell>content</AppShell>)
+    fireEvent.click(screen.getByRole('button', { name: 'admin.shell.pinNav' }))
+    first.unmount()
+
+    render(<AppShell>content</AppShell>)
+    expect(sidebar().style.width).toBe('216px')
+  })
+
+  it('survives storage being unavailable rather than taking the shell down', () => {
+    const boom = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError: storage disabled')
+    })
+    asRole('org_admin')
+    expect(() => render(<AppShell>content</AppShell>)).not.toThrow()
+    boom.mockRestore()
+  })
+})
+
+describe('G then a letter jumps', () => {
+  const press = (key: string) => fireEvent.keyDown(document, { key })
+
+  beforeEach(() => { mockPush.mockClear(); window.localStorage.clear() })
+
+  it('opens the page the chord names', () => {
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    press('g'); press('t')
+    expect(mockPush).toHaveBeenCalledWith('/admin/organisation/staff')
+  })
+
+  it('does nothing for a letter nobody claims', () => {
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    press('g'); press('z')
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('will not carry a reviewer to a page their menu does not offer', () => {
+    asRole('reviewer')
+    render(<AppShell>content</AppShell>)
+    press('g'); press('p')          // Sponsors — organisation scope, not theirs
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('ignores the chord while someone is typing', () => {
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    press('g'); press('t')
+    expect(mockPush).not.toHaveBeenCalled()
+    input.remove()
+  })
+
+  it('needs the prefix — a bare letter navigates nowhere', () => {
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    press('t')
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('disarms after a wrong second key instead of staying armed', () => {
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    press('g'); press('z')          // consumed, goes nowhere
+    press('t')                      // must NOT be read as the second half
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('is not fired by Ctrl-G — that belongs to the browser', () => {
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    fireEvent.keyDown(document, { key: 'g', ctrlKey: true })
+    press('t')
+    expect(mockPush).not.toHaveBeenCalled()
   })
 })

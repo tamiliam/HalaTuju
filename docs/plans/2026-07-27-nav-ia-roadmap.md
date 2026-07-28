@@ -195,3 +195,111 @@ qc / reviewer / partner, and confirm the sidebar matches the role snapshot and t
   need nothing.
 - **`PF-2` module flags contradict prod** — migration `0098` seeded BrightPath `module_payout=False`
   while payout is live. Nothing reads the flags today, so this work must not start reading them.
+
+---
+
+# Second arc — the rail and the theme (owner, 2026-07-28)
+
+Design of record: <https://claude.ai/code/artifact/df8ab5ae-cc10-47b5-acc4-ed57e944a280>
+(interactive: hover-open rail, brand active state, "Go to" chip, System/Light/Dark, role switch).
+
+The owner approved the preview with "looks good, proceed" and did not answer the five open
+questions, so each is settled below with the recommendation that was in the preview. **Every one is
+reversible in a line; none is a fence.** They are recorded here so nobody has to guess later what
+was chosen versus what was overlooked.
+
+| # | Question | Settled as | Why |
+|---|---|---|---|
+| 1 | Hover-open or pinned? | **Hover-open, with a pin remembered per person** | The Supabase behaviour they asked for, and the pin answers the people it annoys. |
+| 2 | Everywhere, or desktop only? | **Desktop only** | The mobile drawer already works and is a different interaction. Untouched. |
+| 3 | Keyboard chords? | **Yes — build them** | The preview shows the chip with a key. Shipping the chip without the key would be a label for something that does not happen. |
+| 4 | Dark: console or whole app? | ~~Console only~~ **WITHDRAWN 2026-07-28** | Theming became its own planning track — see below. This was my answer, not the owner's, and it presumed dark was the requirement. |
+| 5 | Theme per person or per device? | ~~Per device~~ **WITHDRAWN 2026-07-28** | Same. Whether a theme belongs to a person, a device or a tenant is an input to that exercise, not a default. |
+
+## ✅ N4 — the icon rail — SHIPPED 2026-07-28
+
+Retro `docs/retrospective-2026-07-28-nav-rail-n4.md`; decisions ×5; lessons ×5; TD-185 + TD-186.
+**968 jest / 63 suites · i18n 4090 ×3 · build clean · 17 files · no backend, no migration.**
+Built to the plan below, with two things worth knowing: the rail **overlays** (a spacer holds the
+48px, so nothing reflows), and **per-group collapse was removed** — it existed to shorten a long
+wide sidebar and the rail is short by construction.
+
+The Manual pass found a sentence false since N2 — *"The links along the top are your workspace"* —
+which both previous currency passes missed because it names neither "Administration" nor "sidebar".
+
+**Original deliverable:** the sidebar collapses to a 48px icon rail that opens on hover/focus over
+the content, the active row is the only brand-coloured thing in it, and pointing at a row shows
+"Go to <page>" with its chord.
+
+| File | Change |
+|---|---|
+| `src/lib/navigation.ts` | `NavItem.chord?: string` — one letter, the `G`-then-X key |
+| `src/lib/uiPrefs.ts` | new — SSR-safe `localStorage` prefs; **N5 reuses it for the theme** |
+| `src/components/admin/Sidebar.tsx` | rail states: collapsed / open / pinned; group rule; dot badge; "Go to" chip |
+| `src/components/admin/AppShell.tsx` | rail slot (no reflow), pin state, the chord listener |
+| `src/components/admin/Topbar.tsx` | pin toggle |
+| tests ×3 | `navigation.test.ts`, new `Sidebar.test.tsx`, `AppShell.test.tsx` |
+| `src/messages/{en,ms,ta}.json` | `admin.shell.goTo`, `pinNav`, `unpinNav`, `navHint` |
+| Manual + FAQ | the currency rule: chapters that describe the menu |
+
+**Lessons carried in (sprint-start step 2) — these are the ones with teeth here:**
+
+- *"A prefix rule needs an exception for the root of its namespace" (N1).* The analogue for chords
+  is **collision**: two routes claiming `G T` is the same class of bug. A test asserts chords are
+  unique, upper-case, and never on a placeholder — a slot with no page cannot own a key.
+- *"Make a new scoping parameter REQUIRED rather than default" (P2a).* Inverted deliberately here:
+  `chord` is **optional**, because most routes will never have one and a required field would force
+  a fake. The guard is the uniqueness test, not the type.
+- *"Never run the suite while someone is looking at a dev server" (N2).* No jest while a review
+  server is up. If a review is wanted, the artifact above already renders the work.
+- *"Build the preview at the FIRST blocker" (N3b).* **TD-182 still breaks admin Google sign-in on
+  localhost.** It is not fixed and this sprint does not fix it. The preview is the review surface;
+  do not send the owner at `/admin/login` again.
+- *"Asserting a bulk edit matched says nothing about whether it reads correctly" (N3b).* Manual copy
+  about the sidebar gets read back line by line, and grepped for what it MEANS ("in the menu",
+  "on the left") as well as for the words being changed.
+- *"A quoted test count is not a measured one" (N1).* Baseline is **933 jest / 4882 pytest**,
+  measured on the merged tree at N3b close. Re-measure at close; do not add.
+
+**Not in scope:** the switchers (N3a), any backend, the mobile drawer, and any page that is not
+the shell.
+
+## ⛔ Theming is NOT part of this roadmap — owner, 2026-07-28
+
+I had drafted a two-sprint theme plan here (a System/Light/Dark switch, then a console repaint).
+**The owner removed it:** *"Themes should be its own planning. Not just dark but other likely
+themes, as well, which may cover UX, etc."*
+
+That is the right call and the draft was the wrong shape — it treated "dark mode" as the
+requirement, when dark is one theme among several and the expensive part (naming every colour in
+the app) is the same work regardless of how many themes end up sitting on top of it. A plan built
+around one output would have chosen the token set that suited that output.
+
+**Nothing theme-related shipped.** The only artefact was a `theme` key reserved in
+`src/lib/uiPrefs.ts`, which presumed the answer to "does it follow the person or the device" — it
+has been deleted, and that module now carries a note saying its reasoning covers a menu's width
+and does not generalise.
+
+**Carried forward as INPUT to that planning exercise, not as decisions:**
+
+- **Measured cost.** 1,537 hard-coded light colours across 119 files; 31 of those files are the
+  console. The brand ramp is already CSS variables (`--brand-*`, overridden per tenant at runtime),
+  so a theme changes the GROUND under the brand and must never touch the brand itself.
+- **Open questions the removed draft had silently answered:** how many themes; whether a theme is a
+  person's choice, a device's, or a tenant's; whether it covers the student and sponsor surfaces or
+  only the console; how it interacts with tenant branding; and whether density/typography belong to
+  the same setting.
+- The interactive mock-up
+  <https://claude.ai/code/artifact/df8ab5ae-cc10-47b5-acc4-ed57e944a280> shows a working
+  light/dark console. Treat it as evidence that the ground can move, **not** as an approved design.
+
+**Scope and sequence, owner 2026-07-28:** *"We'll discuss themes (admin pages, sponsor pages, and
+student pages) separately after we've landed on PF-1."* So it spans **all three surfaces**, not the
+console alone — which retires my "console only" answer on its own terms, not just procedurally — and
+it starts **after PF-1**, not after N4.
+
+**Route in:** `Settings/_workflows/implementation-planning.md`, its own roadmap file.
+
+## ⚠ Both of these still queue behind PF-1
+
+Recorded in the escalation note above, and unchanged by this arc being approved.

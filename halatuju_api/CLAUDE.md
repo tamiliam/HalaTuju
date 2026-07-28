@@ -535,6 +535,27 @@ assumption is dead. **Fix before tenant #2 has an open programme.** Alongside it
 a DPA** (BrightPath's CLBG unregistered; HalaTuju org-homeless). Navigation is now the least urgent
 work on the list.
 
+**✅ SHIPPED 2026-07-28 — NAV/IA N4: the sidebar became a RAIL.** Retro
+`docs/retrospective-2026-07-28-nav-rail-n4.md`; decisions ×5; lessons ×5. **NO migration, NO
+backend, NO new dependency** — web only, 24 files, **968 jest / 63 suites**, i18n 4090 ×3.
+- 48px of icons at rest, opening to 216px on hover or keyboard focus. It **overlays** — a spacer
+  holds the collapsed width, so nothing reflows under the cursor.
+- A **pin** beside the breadcrumb (device-local, `src/lib/uiPrefs.ts`); a **"Go to <page>"** chip on
+  the row you point at; **`G` then a letter** jumps, 14 routes carry one.
+- `chord` is OPTIONAL registry data guarded by a uniqueness TEST, and `chordTarget()` resolves
+  against the VISIBLE menu — courtesy, **not** a fence. Per-group collapse was removed.
+- **TD-185** the rail cannot scroll (the chip must escape it; trigger = a menu past ~20 rows).
+  **TD-186** three shell sprints have now closed with no browser pass, because TD-182 still breaks
+  admin Google sign-in on localhost.
+
+**⛔ THEMING IS NOT AN N5 — owner, 2026-07-28.** I drafted a two-sprint dark-mode plan; the owner
+withdrew it: *"Themes should be its own planning. Not just dark but other likely themes… We'll
+discuss themes (admin pages, sponsor pages, and student pages) separately after we've landed on
+PF-1."* Nothing theme-related shipped, and a reserved `theme` key was **deleted** from `uiPrefs`
+rather than left to presume that a theme is a device preference. Measured input for that exercise:
+**1,537 hard-coded light colours across 119 files** (31 in the console); the brand ramp is already
+CSS variables and a theme must never touch it.
+
 **✅ SHIPPED 2026-07-28 — NAV/IA N3b: the Administration hub became REAL PAGES.** Commit
 `e38e5eac`. Roadmap `docs/plans/2026-07-27-nav-ia-roadmap.md`; retro
 `docs/retrospective-2026-07-28-hub-split-n3b.md`; decisions ×2; lessons ×3. **NO migration, NO

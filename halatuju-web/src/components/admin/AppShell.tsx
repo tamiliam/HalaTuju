@@ -1,14 +1,15 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { getPendingSponsorCount } from '@/lib/admin-api'
 import { adminSignOut } from '@/lib/admin-supabase'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useNavProbes } from '@/lib/useNavProbes'
-import { activeItem, effectiveRole, visibleNav } from '@/lib/navigation'
+import { activeItem, chordTarget, effectiveRole, visibleNav, CHORD_PREFIX } from '@/lib/navigation'
+import { PREF_KEYS, readPref, writePref } from '@/lib/uiPrefs'
 import { Sidebar } from '@/components/admin/Sidebar'
 import { Topbar, type Attention } from '@/components/admin/Topbar'
 import { CommandPalette } from '@/components/admin/CommandPalette'
@@ -38,6 +39,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileNav, setMobileNav] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
 
+  /*
+   * The rail starts on hover-open for everyone, then adopts the person's saved choice after
+   * mount. Reading `localStorage` during render would give the server one answer and the
+   * browser another and hydrate mismatched — so the first paint is deliberately the default,
+   * and a pinned rail widens a frame later. Nothing moves under the cursor: the person has to
+   * reach the pin to have set it.
+   */
+  const [pinned, setPinned] = useState(false)
+  useEffect(() => {
+    setPinned(readPref(PREF_KEYS.navPin, ['pinned', 'hover'] as const, 'hover') === 'pinned')
+  }, [])
+  const togglePin = () => {
+    setPinned((was) => {
+      writePref(PREF_KEYS.navPin, was ? 'hover' : 'pinned')
+      return !was
+    })
+  }
+
   const probes = useNavProbes(token)
   const r = effectiveRole(role)
   const groups = useMemo(() => visibleNav({ role: r, probes }), [r, probes])
@@ -61,6 +80,48 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [])
+
+  /*
+   * `G` then a letter jumps to a page — the chord the rail's own "Go to" chip advertises.
+   *
+   * The armed `G` expires after 1.2s. Without that, pressing G and wandering off leaves the
+   * console silently waiting, and the next stray keystroke navigates — the classic complaint
+   * about chorded shortcuts. An unrecognised second key simply disarms.
+   *
+   * `chordTarget` resolves against the VISIBLE menu, so a chord never carries anyone to a page
+   * their sidebar does not offer. That is courtesy, not access control: the page guard and the
+   * endpoint are unchanged and still refuse them.
+   */
+  const armed = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    const disarm = () => {
+      if (armed.current) clearTimeout(armed.current)
+      armed.current = null
+    }
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const el = document.activeElement
+      const typing = el instanceof HTMLElement
+        && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)
+      if (typing || paletteOpen) return
+
+      if (!armed.current) {
+        if (e.key.toLowerCase() !== CHORD_PREFIX) return
+        armed.current = setTimeout(disarm, 1200)
+        return
+      }
+
+      disarm()
+      const target = chordTarget(e.key, groups)
+      if (!target) return
+      e.preventDefault()
+      router.push(target.href)
+    }
+
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('keydown', onKey); disarm() }
+  }, [groups, paletteOpen, router])
 
   // The badge fires iff a badged item is actually on this person's sidebar — the registry
   // answers "who may see Sponsors", so it is not re-derived here. A refusal is swallowed: a
@@ -106,20 +167,35 @@ export function AppShell({ children }: { children: ReactNode }) {
         attention={attention}
         onOpenSearch={() => setPaletteOpen(true)}
         onOpenMobileNav={() => setMobileNav(true)}
+        navPinned={pinned}
+        onTogglePin={togglePin}
         onSignOut={async () => { await adminSignOut(); router.replace('/admin/login') }}
         guideHref={hrefOf('guide')}
         faqHref={hrefOf('faq')}
         profileHref={hrefOf('profile') ?? '/admin/profile'}
       />
 
-      <div className="flex flex-1">
-        <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white lg:block">
-          <div className="sticky top-0">
+      <div className="relative flex flex-1">
+        {/*
+          Two elements, one rail. The spacer is a plain box in the flow that reserves exactly
+          the collapsed width; the rail itself is absolutely positioned over the content, so
+          opening it changes nothing about the page's layout. Pinned, the two swap roles — the
+          spacer widens and the rail sits flush against it — which is why the pinned rail casts
+          no shadow: it is not floating over anything.
+        */}
+        <div
+          aria-hidden
+          className="hidden shrink-0 transition-[width] duration-150 ease-out lg:block"
+          style={{ width: pinned ? 216 : 48 }}
+        />
+        <aside className="absolute inset-y-0 left-0 z-30 hidden lg:block">
+          <div className="sticky top-0 h-full">
             <Sidebar
               groups={groups}
               activeId={activeId}
               pendingSponsors={pendingSponsors}
               orgName={role?.owning_org_name ?? role?.org_name}
+              pinned={pinned}
             />
           </div>
         </aside>
@@ -131,12 +207,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setMobileNav(false)}
               aria-hidden
             />
+            {/* The drawer is always open and never chorded: there is no hover on a phone and
+                no keyboard to press G on. Same component, different truth about the device. */}
             <div className="absolute inset-y-0 left-0 w-64 overflow-y-auto bg-white shadow-xl">
               <Sidebar
                 groups={groups}
                 activeId={activeId}
                 pendingSponsors={pendingSponsors}
                 orgName={role?.owning_org_name ?? role?.org_name}
+                pinned
+                chords={false}
                 onNavigate={() => setMobileNav(false)}
               />
             </div>

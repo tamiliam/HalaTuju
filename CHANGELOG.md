@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## The sidebar becomes a rail (nav/IA N4) — 2026-07-28
+
+Fourth sprint on the console navigation, and the first driven by a preview rather than a written
+spec: the owner approved an interactive mock-up
+(<https://claude.ai/code/artifact/df8ab5ae-cc10-47b5-acc4-ed57e944a280>) with "looks good, proceed".
+
+### Added
+- **The rail.** The sidebar rests at 48px of icons and opens to 216px when pointed at or tabbed
+  into. It opens *over* the page: a spacer holds the collapsed width, so nothing reflows under the
+  cursor mid-click.
+- **A pin**, beside the breadcrumb, remembered per device (`src/lib/uiPrefs.ts`). Beside the thing
+  it changes rather than buried in the account menu.
+- **"Go to <page>"** on the row being pointed at, carrying that page's keyboard chord.
+- **`G` then a letter jumps** to a page — 14 routes carry one. The armed `G` expires after 1.2s so
+  a forgotten keystroke cannot navigate later, and a wrong second key disarms rather than waiting.
+- **Two icons** for the pin, in the existing single-colour family.
+
+### Changed
+- A waiting count (Sponsors) shows as a **dot on the icon** while collapsed and a number once open.
+  Hiding it would have removed the only reason the badge exists.
+- Group headings fade in on open; a hairline holds the scope boundary while collapsed. The heading
+  text stays in the DOM at both widths, so a screen reader never loses the grouping.
+- **Manual + FAQ, in the same commit** (currency rule). This found a sentence that had been wrong
+  since N2 — *"The links along the top are your workspace"* — which two previous currency passes
+  missed because it named neither "Administration" nor "sidebar".
+
+### Removed
+- **Per-group collapse.** It existed to shorten a long wide sidebar; the rail is short by
+  construction, and two collapse mechanisms in one component is one too many.
+
+### Verification
+`npx jest` 968 passed (63 suites, +35); `check-i18n` 4090 keys x 3; `next build` compiled, 66 pages.
+24 files.
+No backend, no migration, no new dependency.
+
+### Not in this sprint
+Theming. A two-sprint theme plan was drafted here and **withdrawn by the owner** — themes get their
+own planning exercise covering admin, sponsor and student surfaces, after PF-1. The reserved
+`theme` key was deleted from `uiPrefs` rather than left to presume an answer.
+
 ## Data operations — 2026-07-28 (post-deploy, no code change)
 
 Both run against production after the sponsor S2 deploy, owner-authorised, verified.

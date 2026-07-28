@@ -6026,3 +6026,63 @@ real fix owes its own commit and test; the same rule has to apply to the diagnos
 or the rule is decorative. A reviewer looking at a navigation sprint should not find auth in it.
 **Trade-offs:** two commits where one would have been quicker.
 **Revisit if:** never — this is the general rule, not a one-off.
+
+## The rail overlays the page; a spacer holds its width — Nav/IA N4, 2026-07-28
+**Decision:** The collapsed rail's 48px is reserved by an empty flex child, and the rail itself is
+absolutely positioned over the content. Opening it changes no layout.
+**Alternatives considered:** (a) let the rail widen in the normal flow and push the content across;
+(b) keep a fixed-width sidebar with a separate expand button.
+**Rationale:** (a) moves the page sideways underneath a cursor already travelling toward something,
+so the click lands on whatever slid into place. Supabase overlays for the same reason. (b) is what
+we had, and the whole point was to give the page its width back.
+**Trade-offs:** the rail cannot scroll (TD-185) — the "Go to" chip must escape it, and CSS offers no
+per-axis overflow. Accepted while the longest menu is 19 rows; the trigger is in the debt entry.
+**Revisit if:** any role's menu passes ~20 rows, or the chip moves into a portal for other reasons.
+
+## Chords are optional registry data, guarded by a test rather than by the type — Nav/IA N4, 2026-07-28
+**Decision:** `NavItem.chord?: string`. Uniqueness, upper-case form and "never on a placeholder"
+are asserted in `navigation.test.ts`; nothing in the type system enforces them.
+**Alternatives considered:** a required `chord` on every item; a separate chord-to-href map beside
+the registry.
+**Rationale:** this inverts the standing lesson that a new scoping dimension should be REQUIRED
+rather than optional-with-a-default — correctly, because that lesson concerns a parameter whose
+absence changes an ANSWER (a pooled balance). A missing chord changes nothing; a DUPLICATE one
+does, and no type can express uniqueness across a collection. A separate map would be a second
+source of truth for "what is this route", which N1 exists to have eliminated.
+**Trade-offs:** the guarantee lives in a test file, so it holds only while the test runs. It runs.
+**Revisit if:** chords ever become per-role — uniqueness would then be per-visible-set, and the
+test has to change shape with it.
+
+## A chord resolves against the VISIBLE menu, not the whole registry — Nav/IA N4, 2026-07-28
+**Decision:** `chordTarget(letter, groups)` searches the groups the person can actually see, so an
+unreachable page's letter does nothing.
+**Alternatives considered:** resolve against `NAV_ITEMS` and let the destination page refuse.
+**Rationale:** a shortcut that reliably lands on a 403 is worse than one that does nothing. This is
+courtesy, NOT access control — and the distinction is written into the function's docstring so it
+cannot later be mistaken for a fence, which is the exact confusion the 2026-07-15 surface-partition
+sprint exists to have corrected.
+**Trade-offs:** a dark-shipped route's chord is inert until its probe answers. Right, but it makes
+"G then Q does nothing" a legitimate state with no feedback.
+**Revisit if:** the console gains a "you cannot see this" explanation surface worth routing to.
+
+## The rail pin sits beside the breadcrumb, not in the account menu — Nav/IA N4, 2026-07-28
+**Decision:** A single toggle in the top bar, right of the hamburger and left of the breadcrumb,
+remembered per device.
+**Alternatives considered:** the account menu (where Supabase keeps theme and timezone); a control
+inside the rail itself.
+**Rationale:** it changes the thing immediately to its left, and a layout control two clicks deep is
+one most people never discover. Inside the rail it would only be reachable once the rail is open —
+the state you are in when you least need it.
+**Trade-offs:** one more permanent control in a bar we have been keeping sparse.
+**Revisit if:** a preferences surface ever exists; the pin can then live in both.
+
+## Per-group collapse is removed from the sidebar — Nav/IA N4, 2026-07-28
+**Decision:** The scope groups no longer collapse individually. The rail's open/closed state is the
+only thing a person sets.
+**Alternatives considered:** keep both; keep collapse only while pinned.
+**Rationale:** collapse existed to shorten a long WIDE sidebar. The rail is short by construction,
+and two collapse mechanisms in one component produce states nobody designed — a pinned rail with
+every group shut is a 216px column of headings.
+**Trade-offs:** a super with all three scopes has a longer list than before. That list is 19 rows.
+**Revisit if:** the reserved slots fill and a scope grows past a screen — the same trigger as
+TD-185, which is not a coincidence.

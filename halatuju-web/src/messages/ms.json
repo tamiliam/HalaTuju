@@ -3001,12 +3001,12 @@
   },
   "admin": {
     "orgPage": {
-        "nav": "Gambaran keseluruhan",
-        "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
-        "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
-        "invitesPending": "{count} dijemput, belum diterima",
-        "awaitingVetting": "menunggu semakan",
-        "needsAttention": "Perlu perhatian anda"
+      "nav": "Gambaran keseluruhan",
+      "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
+      "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
+      "invitesPending": "{count} dijemput, belum diterima",
+      "awaitingVetting": "menunggu semakan",
+      "needsAttention": "Perlu perhatian anda"
     },
     "organisations": {
       "sub": "Organisasi penyewa yang dikendalikan HalaTuju, dan siapa yang mengetuainya."
@@ -3015,33 +3015,37 @@
       "sub": "Organisasi rujukan yang menghantar pelajar ke pemilih kursus."
     },
     "shell": {
-        "primaryNav": "Navigasi utama",
-        "search": "Cari",
-        "searchPlaceholder": "Cari halaman…",
-        "searchNothing": "Tiada padanan.",
-        "searchScopeNote": "Carian permohonan, pelajar dan penaja akan datang — ini mencari menu anda.",
-        "help": "Bantuan",
-        "guideSub": "Manual untuk peranan anda",
-        "notifications": "Pemberitahuan",
-        "attention": "Perlu perhatian anda",
-        "nothingWaiting": "Tiada yang menunggu.",
-        "attentionNote": "Ini ialah kiraan dari seluruh konsol, dikumpulkan di satu tempat.",
-        "account": "Akaun",
-        "attn": {
-          "sponsors": "{count} penaja menunggu semakan"
-        }
+      "primaryNav": "Navigasi utama",
+      "search": "Cari",
+      "searchPlaceholder": "Cari halaman…",
+      "searchNothing": "Tiada padanan.",
+      "searchScopeNote": "Carian permohonan, pelajar dan penaja akan datang — ini mencari menu anda.",
+      "help": "Bantuan",
+      "guideSub": "Manual untuk peranan anda",
+      "notifications": "Pemberitahuan",
+      "attention": "Perlu perhatian anda",
+      "nothingWaiting": "Tiada yang menunggu.",
+      "attentionNote": "Ini ialah kiraan dari seluruh konsol, dikumpulkan di satu tempat.",
+      "account": "Akaun",
+      "attn": {
+        "sponsors": "{count} penaja menunggu semakan"
+      },
+      "goTo": "Pergi ke {page}",
+      "then": "kemudian",
+      "pinNav": "Biarkan menu terbuka",
+      "unpinNav": "Biarkan menu mengecil"
     },
     "nav": {
-        "organisations": "Organisasi",
-        "referralPartners": "Rakan rujukan",
-        "billingRates": "Kadar bil",
-        "staff": "Kakitangan",
-        "programmeOverview": "Gambaran keseluruhan",
-        "reviewers": "Penilai",
-        "years": "Tahun kemasukan",
-        "fund": "Dana",
-        "rules": "Peraturan",
-        "soon": "Akan datang",
+      "organisations": "Organisasi",
+      "referralPartners": "Rakan rujukan",
+      "billingRates": "Kadar bil",
+      "staff": "Kakitangan",
+      "programmeOverview": "Gambaran keseluruhan",
+      "reviewers": "Penilai",
+      "years": "Tahun kemasukan",
+      "fund": "Dana",
+      "rules": "Peraturan",
+      "soon": "Akan datang",
       "group": {
         "platform": "Platform",
         "organisation": "Organisasi",

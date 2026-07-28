@@ -43,3 +43,14 @@ reverts it to `reviewer`.
 > panels became `/admin/organisations` and `/admin/partners`. Every shot below that frames "the
 > Administration page" needs re-taking against the scope sidebar. The Manual prose has already
 > been corrected; only the images are stale.
+>
+> **⚠ AND THE SIDEBAR ITSELF CHANGED AGAIN (nav/IA N4, 2026-07-28).** It is now a 48px rail of
+> icons that opens on hover, with a pin beside the breadcrumb. **Every shot framing the menu is
+> therefore wrong twice over** — wrong pages AND wrong shape. Two things to decide before
+> re-taking any of them, because they change what the shot should show:
+>
+> 1. **Take them with the rail PINNED OPEN.** A still photograph of a hover state teaches nobody
+>    that the menu opens when pointed at — the prose does that. An open menu shows the names,
+>    which is what the caption is about.
+> 2. **`org-admin-administration.png` is now `org-admin-menu`** in everything but filename; the
+>    section it illustrates is titled "Your organisation in the menu".

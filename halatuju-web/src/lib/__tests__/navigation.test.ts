@@ -19,6 +19,7 @@ import ta from '@/messages/ta.json'
 import {
   NAV_GROUPS, NAV_ITEMS, CHROMELESS, ROLE_NAMES, NO_PROBES, SIDEBAR_SCOPES,
   effectiveRole, canSee, visibleNav, activeItem, canAccess, searchNav, defaultRoute,
+  chordTarget, CHORD_PREFIX,
   type AdminRoleName, type NavContext, type ProbeState, type LabelledNavItem,
 } from '@/lib/navigation'
 
@@ -377,5 +378,83 @@ describe('canAccess', () => {
 
   it('never invents a block for a route it does not know', () => {
     expect(canAccess('/admin/something-new', 'reviewer')).toBe(true)
+  })
+})
+
+// ── 9. chords ────────────────────────────────────────────────────────────────
+//
+// The N1 lesson was that a matching rule needs an exception for the root of its namespace;
+// the same shape of bug here is a COLLISION — two routes claiming one letter. `chord` is
+// deliberately optional (most routes will never earn one), so these tests, not the type, are
+// the guard. Everything is derived from the registry: adding a route with a duplicate letter
+// fails without anyone having to remember this file exists.
+describe('chords', () => {
+  const chorded = NAV_ITEMS.filter((i) => i.chord)
+
+  it('gives every chord to exactly one route', () => {
+    const letters = chorded.map((i) => i.chord)
+    const dupes = letters.filter((l, i) => letters.indexOf(l) !== i)
+    expect(dupes).toEqual([])
+  })
+
+  it('uses a single upper-case letter, never a word or a symbol', () => {
+    for (const item of chorded) expect(item.chord).toMatch(/^[A-Z]$/)
+  })
+
+  it('never chords a reserved slot — there is no page to land on', () => {
+    expect(NAV_ITEMS.filter((i) => i.placeholder && i.chord)).toEqual([])
+  })
+
+  it('never collides with the prefix that arms it', () => {
+    expect(chorded.map((i) => i.chord?.toLowerCase())).not.toContain(CHORD_PREFIX)
+  })
+
+  it('chords the routes people live in', () => {
+    // A short literal list on purpose: it asserts the FEATURE is wired to the pages that
+    // matter, which no derivation from the registry can tell you.
+    const byId = Object.fromEntries(NAV_ITEMS.map((i) => [i.id, i.chord]))
+    expect(byId.applications).toBe('A')
+    expect(byId.sponsors).toBe('P')
+    expect(byId.staff).toBe('T')
+  })
+})
+
+describe('chordTarget', () => {
+  const groups = (role: AdminRoleName, probes: Partial<Record<'requests' | 'billing', ProbeState>> = {}) =>
+    visibleNav(ctx(role, probes))
+
+  it('resolves a letter to its route, either case', () => {
+    expect(chordTarget('A', groups('super'))?.href).toBe('/admin/scholarship')
+    expect(chordTarget('a', groups('super'))?.href).toBe('/admin/scholarship')
+  })
+
+  it('returns nothing for a letter nobody claims', () => {
+    expect(chordTarget('Z', groups('super'))).toBeUndefined()
+  })
+
+  it('never carries someone to a page their own menu does not offer', () => {
+    // A reviewer sees Applications and nothing else; Sponsors (P) must not be reachable.
+    expect(chordTarget('A', groups('reviewer'))?.href).toBe('/admin/scholarship')
+    expect(chordTarget('P', groups('reviewer'))).toBeUndefined()
+    expect(chordTarget('D', groups('reviewer'))).toBeUndefined()
+  })
+
+  it('respects a dark-shipped gate — Requests is unreachable until the API answers', () => {
+    expect(chordTarget('Q', groups('org_admin'))).toBeUndefined()
+    expect(chordTarget('Q', groups('org_admin', { requests: 'live' }))?.href).toBe('/admin/requests')
+  })
+
+  it('does not fire for a gate rendering as "soon" — the page is not there yet', () => {
+    // Billing dark renders disabled with a pill; a chord to it would land on nothing.
+    expect(chordTarget('B', groups('org_admin'))).toBeUndefined()
+    expect(chordTarget('B', groups('org_admin', { billing: 'live' }))?.href).toBe('/admin/billing')
+  })
+
+  it('every chord in the registry is reachable by SOMEBODY', () => {
+    // Catches a letter assigned to a route no role can see — a shortcut nobody can press.
+    const everyone = ROLE_NAMES.flatMap((r) => groups(r, { requests: 'live', billing: 'live' }))
+    for (const item of NAV_ITEMS.filter((i) => i.chord)) {
+      expect(chordTarget(item.chord as string, everyone)?.id).toBe(item.id)
+    }
   })
 })
