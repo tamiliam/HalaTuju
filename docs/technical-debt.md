@@ -1672,3 +1672,20 @@ have now shipped on structural verification alone. That is a pattern, not an inc
 **To resolve:** either fix TD-182 (which unblocks all local console review), or take one pass over
 the live console after deploy. **Do not** send anyone at `/admin/login` on localhost meanwhile.
 (Logged 2026-07-28, nav/IA N4.)
+
+### [TD-187] Sponsor tables sort and page CLIENT-side — move to the server above ~200 rows — low
+The sponsors list and the three sponsor-detail tables sort and slice rows the browser already
+holds (`lib/tableView.ts`, 2026-07-28, owner decision after investigation). Correct at today's
+volumes — **9 sponsors, 38 sponsorships at the worst, 8 invitations, 1 credit** — and it has a
+real advantage beyond effort: it reorders the very figures the org fence produced, so a sort can
+never disagree with them.
+**It stops being correct when a list outgrows one payload.** The tell is the sponsors list passing
+a few hundred rows, or a single sponsor's history passing a few hundred sponsorships.
+**To resolve:** give `/admin/sponsors/` the paged + sorted envelope the applications list already
+uses (`count`/`total_count`/`total_pages`/`page`/`page_size`), and add a **`Subquery` annotation
+for `students`** — it cannot simply join, because a second multi-valued join in that queryset
+inflates `given`, and `Sum(distinct=True)` is worse than the bug (it collapses two equal credits
+into one). The three detail tables share ONE payload, so paging them server-side needs either
+three endpoints or nested page params; at that point the detail page probably wants its own
+sub-resources anyway. Low priority — sponsors grow at the rate people volunteer money.
+(Logged 2026-07-28.)

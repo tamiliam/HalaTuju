@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sortable sponsor table + pagination on the four sponsor tables — 2026-07-28
+
+Owner request: the applications-list footer on the sponsors list, sponsorship history, people
+invited and wallet credits, appearing only above 10 rows; and sorting on every sponsor-table
+header except Actions. **Client-side, by owner decision after investigation. No backend, no
+migration, no new endpoint.**
+
+### Added
+- **`lib/tableView.ts`** — the threshold, clamped paging, and three comparators that each exist
+  because the obvious version is wrong for this data: money arrives as a **string** (`'9000.00'`
+  sorts above `'20000.00'` as text), a null last-seen means **unknown** rather than oldest and so
+  stays at the bottom in *both* directions, and a page number can outlive the list it points into.
+- **`lib/sponsorTable.ts`** — what each column means when sorted. **Status leads with the ones
+  waiting on you** (pending → approved → suspended → rejected) rather than alphabetically: the
+  column exists to find work. Money, counts and dates open descending; text opens ascending.
+- **`lib/usePagedRows.ts`** — page state that resets to 1 when the row count changes, so filtering
+  to "pending" while on page 3 cannot blank the table.
+
+### Notes
+- The footer control already existed (`components/Pagination`) — this is wiring, not design. It is
+  gated on `shouldPaginate` at the call site, because the component itself still draws its
+  page-size selector on a single page.
+- **Page size 10 with a 10/25/50 selector**, so the size and the ">10" threshold agree; a test
+  asserts they cannot drift apart.
+- **Why client-side:** the rows already arrive in one fenced, computed payload, so sorting them
+  cannot disagree with the fenced figures. Server-side would have meant three new endpoints for
+  the detail tables (they share one payload) plus a `Subquery` so `students` could be ordered
+  without reintroducing the join fan-out that inflates `given`. Revisit above ~200 sponsors.
+- On production today only **one** of the four tables reaches the threshold — Suresh Thiru's 38
+  sponsorships; the others are 9, 8 and 1 rows. The tests use those exact counts, so the
+  thresholds are pinned against real data rather than invented numbers.
+- **1026 jest** (67 suites); `tsc` clean.
+
+
 ## An org_admin decides what sponsors hear (sponsor S3) — 2026-07-28 — SHIPPED + LIVE (DARK)
 
 A sponsor registered, was vetted, was approved — and was told none of it. `AdminSponsorReviewView`
