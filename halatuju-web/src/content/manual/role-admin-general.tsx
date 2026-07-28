@@ -13,7 +13,7 @@ export const roleAdminGeneral: ManualChapter = {
       title: 'Your read-only remit',
       body: (
         <>As a <strong>general admin</strong> you have a <strong>read-only</strong> view of everything in your
-        organisation. You can see all applications, the Sponsors list, and the Administration staff list — but you
+        organisation. You can see all applications, the Sponsors list, and the Staff list — but you
         don&rsquo;t <em>act</em> on them. It&rsquo;s oversight without operational control.</>
       ),
     },
@@ -22,7 +22,7 @@ export const roleAdminGeneral: ManualChapter = {
       title: 'What you can see',
       body: (
         <>Your organisation&rsquo;s <strong>B40 Applications</strong> (all of them, to read), the
-        <strong> Sponsors</strong> list, and the <strong>Administration</strong> page&rsquo;s organisation staff
+        <strong> Sponsors</strong> list, and the <strong>Staff</strong> page&rsquo;s organisation staff
         table. You won&rsquo;t see another organisation&rsquo;s data, and you won&rsquo;t see the platform-only
         tools.</>
       ),

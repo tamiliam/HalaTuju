@@ -6,7 +6,7 @@ export const roleOrgAdmin: ManualChapter = {
   title: 'Organisation admin',
   group: 'role',
   role: 'org_admin',
-  blurb: 'Run your programme: your team, your cases, sponsors and the Administration panel.',
+  blurb: 'Run your programme: your team, your cases, your sponsors and your money.',
   sections: [
     {
       anchor: 'org-admin-overview',
@@ -22,7 +22,7 @@ export const roleOrgAdmin: ManualChapter = {
       anchor: 'org-admin-team',
       title: 'Your team',
       body: (
-        <>Open <strong>Administration</strong> → <strong>Invite reviewers &amp; admins</strong> to build your
+        <>Open <strong>Staff</strong> from the sidebar to build your
         team. You can invite three programme roles into your organisation:
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li><strong>Reviewer</strong> — works the applicants you assign them.</li>
@@ -35,7 +35,7 @@ export const roleOrgAdmin: ManualChapter = {
           admin, so your organisation is never left without one.</span></>
       ),
       img: '/manual/org-admin-team.png',
-      alt: 'The Administration staff table with invite and revoke controls (placeholder)',
+      alt: 'The Staff table with invite and revoke controls (placeholder)',
     },
     {
       anchor: 'org-admin-assigning',
@@ -75,22 +75,23 @@ export const roleOrgAdmin: ManualChapter = {
     },
     {
       anchor: 'org-admin-administration',
-      title: 'The Administration panel',
+      title: 'Your organisation in the sidebar',
       body: (
-        <>The <strong>Administration</strong> page is your control room. Its <strong>Organisation</strong> section
-        holds your staff management and a <strong>Billing &amp; usage</strong> card (marked <em>coming soon</em> —
-        it will show your programme&rsquo;s costs and usage once metering is switched on). The platform-only tools
-        (adding organisations, referral partners) don&rsquo;t appear for you — those stay with the HalaTuju
-        platform team.</>
+        <>The sidebar groups everything by what it belongs to. Your organisation&rsquo;s group holds
+        <strong> Overview</strong>, <strong>Staff</strong>, <strong>Sponsors</strong>, <strong>Payments</strong>,
+        <strong> Contracts</strong>, <strong>Sources</strong> and <strong>Billing &amp; usage</strong> (marked
+        <em> soon</em> until metering is switched on). Below it sits your programme&rsquo;s own group, with the
+        applications. Platform-only tools — adding organisations or referral partners — never appear for you;
+        those stay with the HalaTuju platform team.</>
       ),
       img: '/manual/org-admin-administration.png',
-      alt: 'The Administration panel organisation section (placeholder)',
+      alt: 'The organisation group in the sidebar (placeholder)',
     },
     {
       anchor: 'org-admin-payments',
       title: 'Payment runs',
       body: (
-        <>Each month a payment run is built in <strong>Administration → Payments</strong>. It lists the students
+        <>Each month a payment run is built in <strong>Payments</strong>. It lists the students
         who qualify for that month, with the amount each is due, and greys out the rest with the reason (no
         eWallet confirmed yet, already paid this month, no balance left, and so on). Somebody prepares and signs
         it, then <strong>you countersign</strong>. Only at your countersignature is the payment instruction
@@ -107,7 +108,7 @@ export const roleOrgAdmin: ManualChapter = {
         match that account&rsquo;s name exactly. If your organisation has a <strong>finance admin</strong>, there
         is a middle step: the run must be <em>checked</em> by finance before you can countersign, and until then
         you&rsquo;ll see &ldquo;waiting for the finance check&rdquo;. You can appoint one yourself from
-        <strong> Invite staff → Finance</strong>; the moment their account is active the step applies, including
+        <strong> Staff</strong>, inviting them as <strong>Finance</strong>; the moment their account is active the step applies, including
         to a run already sitting in front of you. If you have no finance admin, the chain is just the two
         signatures. <strong>Editing a run after any signature returns it to draft and clears every signature
         collected so far</strong> — deliberately, so nobody signs one list and a different one goes out.</>
