@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## What a programme asks for becomes configuration — 2026-07-28
+
+Sprint 2 of the configuration-layers roadmap. **Nothing changes for anybody yet, and that is the
+point.**
+
+An organisation will eventually tick which documents and questions its programme asks a student
+for, instead of asking us to change code. This sprint builds the list and the one place the
+question gets answered — and deliberately stops there, leaving the existing rules running exactly
+as they were, so the two can be compared before either is removed.
+
+### Added
+- **A catalogue** of everything an application can ask for: eight documents, ten questions. It is a
+  list we maintain and translate — an organisation chooses from it and never writes its own. A
+  document is *read* by the system, not merely stored, so it can only offer types that already
+  exist; a question has to exist in English, Malay and Tamil before it can be asked.
+- **A per-programme selection**, with three states: not asked for, offered, or required. Six items
+  are locked and can never be switched off — identity card, results slip, offer letter, proof of
+  household income, the family details, and consent.
+- **One place that answers "what does this programme ask for?"**, so the rules can move there one
+  at a time in the next two sprints rather than all at once.
+
+### Notes
+- **5018 backend tests pass and not one existing test was edited** — that, rather than the 15 new
+  ones, is the evidence that nothing moved.
+- Proof of household income stays a **single** switch. It is a route — a national-aid document or
+  payslips, with evidence per family member — and letting it be taken apart piece by piece is how
+  the assessment would quietly break.
+- Two of our own mistakes were caught before they shipped: a setting that could not express
+  "offered but not required", and a gap that would have skipped the consent step for older
+  applications. Both now have tests rather than notes.
+
 ## Sponsor terms — an org_admin can publish — 2026-07-28
 
 Owner: *"I'll allow Suresh to publish the terms."* Suresh is `org_admin`; the owner is the only

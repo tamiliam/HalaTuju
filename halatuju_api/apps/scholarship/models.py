@@ -3502,3 +3502,122 @@ class SponsorTermsAcceptance(models.Model):
 
     def __str__(self):
         return f'sponsor={self.sponsor_id} {self.terms_id} ({self.basis})'
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# What a programme ASKS FOR — the Layer 0 catalogue (config roadmap, sprint 2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Shared by the catalogue's DEFAULT and a programme's CHOICE, so the two can never drift into
+# meaning different things. 'optional' is a real state, not a shade of off: four documents are
+# offered today without ever blocking a submission.
+ITEM_STATE_CHOICES = [
+    ('off', 'Not asked for'),
+    ('optional', 'Offered, never blocks'),
+    ('required', 'Must be provided'),
+]
+
+
+class ApplicationItem(models.Model):
+    """One thing an application can ask a student for — a document or a question.
+
+    **THIS IS A CATALOGUE, NOT A FORM BUILDER, and the distinction is the whole design.**
+    Every row here is OUR content: we write it, we translate it into en/ms/ta, we know what
+    the engine does with it. An organisation chooses WHICH of these apply to its programme
+    (``ProgrammeApplicationItem`` below). It never authors a new one.
+
+    Why it cannot be otherwise:
+
+    * **Documents are read, not merely stored.** Each ``doc_type`` has recognition logic, a
+      versioned signature model and verification behaviour behind it. An organisation can
+      switch on a document the engine already understands; it cannot invent "water bill" and
+      have anything comprehend the result. Hence the hard rule below that ``code`` must name
+      an EXISTING ``ApplicantDocument.DOC_TYPES`` value.
+    * **Questions must exist in three languages.** ``scripts/check-i18n.js`` fails the build on
+      a missing key, and the owner is the Tamil authority. An org-authored question would
+      quietly become his homework or ship English to a Tamil-speaking student.
+    * **New personal data lands on erasure.** A free-text field an organisation invented is a
+      new category of applicant data that Sprint E must know how to delete.
+
+    This is the shipped form of the recorded platform rule: *"tenants configure WHICH checks
+    and documents apply to their programme; they never get bespoke logic."*
+    """
+    KIND_CHOICES = [('document', 'Document'), ('question', 'Question')]
+
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+
+    # ⚠ For kind='document' this MUST be a value in ApplicantDocument.DOC_TYPES. The catalogue
+    # NAMES an existing type; it never invents one. Enforced by test, not by a DB constraint,
+    # because DOC_TYPES is a Python list and a migration cannot follow it.
+    code = models.CharField(max_length=50)
+
+    # Full i18n key, resolved by the web app. Never a literal label — a label stored here would
+    # be a fourth place translations live and would escape check-i18n.js entirely.
+    label_key = models.CharField(max_length=200)
+
+    # An organisation may NOT switch this off. The floor is a POLICY decision, not an
+    # engineering one — owner 2026-07-28: identity card, results slip, offer letter, consent,
+    # and the family/income block.
+    is_core = models.BooleanField(default=False)
+
+    # What a NEWLY created programme starts with, before anybody ticks anything.
+    #
+    # ⚠ Three states, not a boolean. The first cut of this column was `default_on: bool`, which
+    # cannot express "offered by default but never blocking" — and four items are exactly that
+    # today (water bill, electricity bill, statement of intent, photo). A flag that cannot
+    # represent a state the system already has is a schema asserting something false; caught
+    # while writing the seed, fixed before any row existed.
+    default_state = models.CharField(max_length=20, choices=ITEM_STATE_CHOICES, default='off')
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'application_items'
+        ordering = ['kind', 'code']
+        constraints = [
+            models.UniqueConstraint(fields=['kind', 'code'], name='uniq_application_item'),
+        ]
+
+    def __str__(self):
+        return f'{self.kind}:{self.code}'
+
+
+class ProgrammeApplicationItem(models.Model):
+    """One programme's answer to one catalogue item: off, optional, or required.
+
+    **On PROGRAMME, not on ScholarshipCohort** — owner-approved 2026-07-28, and a deliberate
+    departure from the "new tunables go on the cohort" convention. That convention exists to
+    stop tunables becoming module CONSTANTS; both models are data, so it is not violated in
+    spirit. What a programme asks for is the gift's IDENTITY, not the year's: a cohort-level
+    home would make every annual intake re-tick the same list, which is exactly the rot this
+    work exists to prevent. ``ScholarshipApplication.programme`` is already denormalised and
+    set once in ``save()``, so resolution is one hop with no join through the cohort.
+
+    ⚠ **NOT A SECURITY BOUNDARY.** Which items a programme asks for is configuration, never
+    access control. The organisation fence (``_AdminBase._org_scoped`` / ``_org_allows``,
+    cross-org ⇒ 404) is untouched by anything here. Confusing a configuration surface with a
+    fence is the 2026-07-15 surface-partition incident, and it is worth restating in every
+    model that a tenant can edit.
+    """
+    programme = models.ForeignKey(
+        Programme, on_delete=models.CASCADE, related_name='application_items',
+    )
+    item = models.ForeignKey(
+        ApplicationItem, on_delete=models.PROTECT, related_name='programme_selections',
+    )
+    state = models.CharField(max_length=20, choices=ITEM_STATE_CHOICES)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by_email = models.CharField(max_length=254, blank=True, default='')
+
+    class Meta:
+        db_table = 'programme_application_items'
+        ordering = ['programme_id', 'item_id']
+        constraints = [
+            models.UniqueConstraint(fields=['programme', 'item'],
+                                    name='uniq_programme_application_item'),
+        ]
+
+    def __str__(self):
+        return f'programme={self.programme_id} {self.item_id}={self.state}'
