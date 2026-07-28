@@ -350,10 +350,31 @@ own client. Two dead ends on the way, both worth skipping:
    the client's own ID, so it cannot be filled in before the client exists.
 3. Security → Identity-Aware Proxy → the service → **Custom OAuth** → paste ID + secret → Save.
 
-**Adding a designer** is then one command, no console:
-`gcloud run services add-iam-policy-binding halatuju-sandbox --region=asia-southeast1
---member=user:<email> --role=roles/run.invoker --project=gen-lang-client-0871147736
---account=tamiliam@gmail.com`
+**⚠ SECOND TRAP, immediately after the first: signing IN and being LET in are different checks.**
+With the OAuth client attached, Google authenticated the owner correctly and IAP then refused him —
+*"You don't have access"*, naming his own address. `roles/run.invoker` is not the permission IAP
+asks about; it wants **`roles/iap.httpsResourceAccessor`**. And that role **cannot be bound to the
+Cloud Run service** (`gcloud run services add-iam-policy-binding` → *"Role
+roles/iap.httpsResourceAccessor is not supported for this resource"*), so it goes on the
+**project**.
+
+**Consequence to remember:** a project-level grant covers **every IAP-protected resource in the
+project**. Today only `halatuju-sandbox` has IAP enabled, so the two are equivalent — but the
+moment IAP is switched on for `halatuju-web` or `halatuju-api`, everyone on this list reaches those
+too. **Before enabling IAP on any other service, re-read this list.**
+
+**Adding a designer** is then two commands, no console:
+```
+gcloud run services add-iam-policy-binding halatuju-sandbox --region=asia-southeast1 \
+  --member=user:<email> --role=roles/run.invoker \
+  --project=gen-lang-client-0871147736 --account=tamiliam@gmail.com
+
+gcloud projects add-iam-policy-binding gen-lang-client-0871147736 \
+  --member=user:<email> --role=roles/iap.httpsResourceAccessor --condition=None \
+  --account=tamiliam@gmail.com
+```
+Removing someone is the same pair with `remove-iam-policy-binding`, and takes effect within about a
+minute (IAP caches briefly).
 
 **Owner intent recorded for later, NOT built:** *"Later we may create a surface for the super to
 add/remove emails from an allow-list."* That is an intention in this document, deliberately not a
