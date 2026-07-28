@@ -524,7 +524,7 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-28)
 
-**✅ CODE COMPLETE 2026-07-28 — SPONSOR S3: an org_admin decides what sponsors hear. NOT DEPLOYED.**
+**✅ SHIPPED + LIVE (DARK) 2026-07-28 — SPONSOR S3: an org_admin decides what sponsors hear.** Merged `9589c32a`; migration `0133` APPLIED migrate-first + verified; templates seeded (3 on, 6 off); api `…00888-s5b` / web `…00734-72q`; 0 log rows; `SPONSOR_COMMS_ENABLED` unset.
 Worktree `.worktrees/sponsor-detail`. Retro `docs/retrospective-2026-07-28-sponsor-comms-s3.md`;
 decisions ×3; lessons ×2. **⚠ MIGRATION `0133` — APPLY MIGRATE-FIRST (two tables + RLS).**
 - **Why:** a sponsor registered, was vetted and was approved without being told — the review

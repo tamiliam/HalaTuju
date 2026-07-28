@@ -1,7 +1,8 @@
 # Retrospective — sponsor comms (S3): an org_admin decides what sponsors hear
 
 **Date:** 2026-07-28
-**Branch:** `feat/sponsor-detail` (worktree). **Migration `0133` — NOT yet applied.**
+**Branch:** `feat/sponsor-detail` (worktree), merged to `main` as `9589c32a`.
+**Migration `0133` APPLIED migrate-first + verified; templates SEEDED on prod (3 on, 6 off).**
 **Roadmap:** `docs/plans/2026-07-27-sponsor-module-roadmap.md` · design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>
 
@@ -122,7 +123,7 @@ the pre-template email truncated at five in silence.
 | scholarship pytest | 3622 | **3662** |
 | jest | 918 | **956** |
 | jest suites | 62 | 64 |
-| migrations | — | **0133** (not applied) |
+| migrations | — | **0133** (applied + verified) |
 
 New files: `email_templates.py`, `sponsor_comms.py`, `sponsor_notify.py`,
 `seed_sponsor_email_templates.py`, `migrations/0133`, `test_sponsor_comms.py`,
@@ -134,9 +135,12 @@ i18n: +59 leaves × 3 locales.
 
 ## Carry
 
-1. **▶ AT DEPLOY: apply migration `0133` MIGRATE-FIRST** (two tables, RLS + one `service_role`
-   policy each), then push. **THEN run `seed_sponsor_email_templates` once** — all nine arrive OFF
-   and `SPONSOR_COMMS_ENABLED` is unset, so nothing sends.
+1. **✅ DEPLOYED 2026-07-28.** Migration `0133` applied migrate-first (both tables, RLS + one
+   `service_role` policy each, verified); pushed as `9589c32a`; both Cloud Builds SUCCESS
+   (api `…00888-s5b`, web `…00734-72q`); seed run once via the new `seed-sponsor-emails` cron
+   slug — **3 on, 6 off, 0 log rows**. `SPONSOR_COMMS_ENABLED` absent from the live service, so
+   the pre-S3 senders are still doing the work and nothing a sponsor receives has changed.
+   RM172,000 / 48 sponsorships / 9 sponsors / 5 joined referrals all unchanged; no API errors.
 2. **▶ OWNER:** the three already-sending emails arrive switched ON, so the flip is safe — read
    their wording first if you want to change it, since the flip moves them onto these templates.
    The six new ones arrive OFF: read each, edit the wording, switch on the ones you want. Then

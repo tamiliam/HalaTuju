@@ -2,12 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## An org_admin decides what sponsors hear (sponsor S3) — 2026-07-28
+## An org_admin decides what sponsors hear (sponsor S3) — 2026-07-28 — SHIPPED + LIVE (DARK)
 
 A sponsor registered, was vetted, was approved — and was told none of it. `AdminSponsorReviewView`
 flipped a status field and returned; eight people on production were approved in silence. Nine
 editable emails now close that, shipping **dark** behind two independent gates.
-**Migration `0133` — apply migrate-first.**
+**Migration `0133` APPLIED migrate-first + verified** (both tables, RLS + one `service_role`
+policy each). Merged `9589c32a`; both builds SUCCESS; templates seeded — **3 on (the ones
+already sending), 6 off for review, 0 log rows**. `SPONSOR_COMMS_ENABLED` is absent from the
+live service, so the pre-S3 senders still do the work and nothing a sponsor receives changed.
 
 ### Added
 - **`SponsorEmailTemplate` + `SponsorEmailLog`** (migration `0133`, RLS at deploy) — the siblings
