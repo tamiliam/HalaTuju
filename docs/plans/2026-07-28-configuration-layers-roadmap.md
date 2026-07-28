@@ -311,7 +311,8 @@ with their own Google account; no account is created in HalaTuju, and the sandbo
 data either way. The image is the same `halatuju-web/Dockerfile` built with
 `--build-arg SANDBOX=1 --build-arg API_URL=https://api.invalid`; both arguments default to the
 production values so an ordinary build is unchanged.
-**DEPLOYED 2026-07-28, and CLOSED pending one console step.**
+**✅ DEPLOYED AND WORKING 2026-07-28.** `https://halatuju-sandbox-l6l7b6xaia-as.a.run.app/sandbox`
+— IAP redirects to Google sign-in; only allowlisted addresses get through.
 
 | | |
 |---|---|
@@ -319,29 +320,40 @@ production values so an ordinary build is unchanged.
 | URL | `https://halatuju-sandbox-l6l7b6xaia-as.a.run.app` |
 | Build | `halatuju-web/cloudbuild.sandbox.yaml`, run by hand — **deliberately no trigger** (an automatic rebuild would move the ground under a review in progress) |
 | Access | `--no-allow-unauthenticated` + IAP enabled; `roles/run.invoker` granted to `tamiliam@gmail.com` and the IAP service agent |
-| State | **502 to everyone, including the owner.** Closed and safe, but not yet usable. |
+| OAuth | **Custom OAuth client `HalaTuju Sandbox IAP`** — NOT the live `HalaTuju Web` client |
+| Allowed | `tamiliam@gmail.com` only |
 
-**⚠ The blocker, stated by IAP itself** (`x-goog-iap-generated-response: true`):
+**⚠ THE TRAP, WRITTEN DOWN BECAUSE IT COSTS AN HOUR TO REDISCOVER.** Enabling IAP on Cloud Run
+leaves it on **Google-managed OAuth**, which is the default and is described in the console as
+*"recommended for simplicity"*. On a project with **no organisation** — which HalaTuju is, see
+`memory/halatuju_org_status.md` — Google cannot self-provision the client, and every request
+returns a bare `502` whose body is the only clue:
 
+> `x-goog-iap-generated-response: true`
 > `Empty Google Account OAuth client ID(s)/secret(s).`
 
-IAP has no OAuth client to send people to Google with. The classic fix — `gcloud iap oauth-brands
-create` — refuses here: *"Project must belong to an organization."* **HalaTuju is org-homeless**
-(see `memory/halatuju_org_status.md`), so that API is closed to it, and those OAuth Admin APIs were
-shut down in March 2026 regardless. `gcloud beta run services update` exposes no flag to attach a
-client.
+The container is healthy throughout; the failure is entirely in front of it. The console's own
+small print names the condition — Google-managed is *"best suited for apps for users within your
+organisation"* — but it is selected by default and nothing warns you.
 
-**So this needs a browser, on the owner's account, once:** create an OAuth client (Google Auth
-Platform → Clients → Web application) with the authorised redirect URI IAP asks for, then attach it
-to the sandbox service's IAP configuration. Nothing about it is per-designer; it is a one-time
-project setting.
+**The fix is the second radio button: Custom OAuth** (*"external users … allowlisting"*), with your
+own client. Two dead ends on the way, both worth skipping:
+- `gcloud iap oauth-brands create` → *"Project must belong to an organization."* Those OAuth Admin
+  APIs were shut down in March 2026 anyway.
+- `gcloud beta run services update` has **no flag** to attach a client. This step is console-only.
 
-**If that turns out to be blocked by the missing organisation too**, the fallbacks, in the order I
-would take them: (1) an unguessable URL with no gate — the sandbox holds no real data, only our
-screen layouts, so the exposure is competitive rather than personal; (2) an app-level Google
-sign-in checking an email allowlist, reusing the Supabase Google provider already configured — real
-work, and it puts a doorman back into a surface built to have none; (3) put the GCP project under
-an organisation, which is the standing org-homeless item and fixes several other things at once.
+**Recipe, ~5 minutes, one time per project:**
+1. Google Auth Platform → Clients → **Create client**, type *Web application*. Do **not** edit the
+   existing `HalaTuju Web` client — it is the live Google sign-in for students and admins.
+2. Create it with **no** redirect URI, then reopen it and add
+   `https://iap.googleapis.com/v1/oauth/clientIds/<CLIENT_ID>:handleRedirect` — the URI must contain
+   the client's own ID, so it cannot be filled in before the client exists.
+3. Security → Identity-Aware Proxy → the service → **Custom OAuth** → paste ID + secret → Save.
+
+**Adding a designer** is then one command, no console:
+`gcloud run services add-iam-policy-binding halatuju-sandbox --region=asia-southeast1
+--member=user:<email> --role=roles/run.invoker --project=gen-lang-client-0871147736
+--account=tamiliam@gmail.com`
 
 **Owner intent recorded for later, NOT built:** *"Later we may create a surface for the super to
 add/remove emails from an allow-list."* That is an intention in this document, deliberately not a
