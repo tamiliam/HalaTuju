@@ -1718,3 +1718,63 @@ into one). The three detail tables share ONE payload, so paging them server-side
 three endpoints or nested page params; at that point the detail page probably wants its own
 sub-resources anyway. Low priority — sponsors grow at the rate people volunteer money.
 (Logged 2026-07-28. Renumbered from TD-187 on the merge — the nav sprint claimed that number concurrently.)
+
+### [TD-191] A sponsor has agreed to a PRIVACY consent, not to any TERMS — so a suspension cites nothing — medium
+**Owner, 2026-07-28:** *"I feel you cannot reject/suspend someone without first having the consent
+done. The donors agree to certain things. If they fail to do it, then we'd have a reason to suspend
+or reject."* The reasoning is right and it points at a gap that is NOT TD-186.
+
+**What a sponsor actually agrees to, verbatim** (`sponsorAuth.consent`): *"I consent to the
+collection, use and disclosure of my personal data for the purposes set out in our…"*. That is a
+PDPA data-processing consent — a permission the sponsor GRANTS US. It imposes no duty on them, so
+**there is nothing in it for a sponsor to fail to do.** Searched the whole copy surface for sponsor
+undertakings ("you agree to", "you must not", contact/identify a student, code of conduct,
+obligation): **there are none.** No terms of participation, no undertaking, no conduct rules —
+nowhere, in any locale.
+
+**So the register is now tracking two different things and they must not be merged:**
+- **TD-186** = a document EXISTS (the privacy consent) but is unmanaged — no stored snapshot, no
+  version lifecycle, no way to read it. A *management* gap.
+- **TD-191 (this)** = the document that a suspension would cite DOES NOT EXIST. An *authoring* gap,
+  and it needs a lawyer and a legal counterparty, not a screen.
+
+**Reject and suspend are NOT the same decision, and only one of them needs terms:**
+- **Vetting rejection** happens at registration, before the person has done anything. Its basis is
+  our own admission criteria (identity unverified, source of funds unclear, we do not want this
+  donor) — never a breach. The one rejected sponsor on production was rejected in exactly this way.
+  **S4's free-text reason is adequate here**, and it is an internal note.
+- **Suspension** is of an already-approved sponsor, mid-relationship, and its basis is conduct. This
+  is where there is nothing to point at. **Nobody has been suspended on production yet** (8 approved
+  + 1 rejected as of 2026-07-28), so this is not yet a live problem — it becomes one the first time
+  someone is.
+
+**⚠ THE IMMEDIATE CONSEQUENCE FOR S3, ALREADY SHIPPED:** the `suspended` email deliberately ships
+WITHOUT a `{reason}` token (deferred because the field does not exist). **That accident is the safe
+state and S4 must not casually undo it.** Telling a donor in writing "your account is suspended
+because X" where X cites no agreed term is a worse position than saying less. Do not add `{reason}`
+to the suspension email until this row is answered; the rejection email is a different case, and
+even there the reason is a courtesy, not a citation.
+
+**Plausible sponsor undertakings, for whoever drafts them** (NOT decided — a starting list only):
+funds are lawfully sourced; no attempt to identify or contact a student outside the platform; no use
+of the relationship for recruitment, proselytising or publicity; committed amounts are honoured. Each
+of these is a suspension ground, and none is written down.
+
+**⚠ BLOCKER, and it is not engineering:** a set of terms needs a COUNTERPARTY, and there is no legal
+entity to be one — HalaTuju is org-homeless and the same absence already blocks the DPA. So this
+cannot be "written up next sprint"; the entity question gates it.
+
+**Cheap interim, if S4 wants suspension to be defensible without waiting:** replace the free-text
+suspension reason with a **fixed list of stated grounds**, chosen by the admin and recorded. It gives
+an auditable, consistent basis, forces the grounds to be articulated once, and that list becomes the
+first draft of the terms when there is finally an entity to publish them under. It does NOT make the
+grounds contractual — nobody has agreed to them — so it is a governance improvement, not a legal one,
+and the suspension email still should not quote them at the sponsor.
+
+**To resolve:** (1) owner decides whether sponsor participation needs terms at all, or whether
+suspension stays a discretionary platform right stated plainly on the sponsor page; (2) if terms,
+they queue behind the entity question and a lawyer pass, alongside the student consent wording
+already awaiting one; (3) either way, S4 keeps the reason field internal and leaves the suspension
+email as it is. (Logged 2026-07-28 from the owner's challenge at sprint close. **Number allocated
+when TD-190 was the highest — re-verify it is still unique at the next close**, per the concurrent-
+agent lesson.)
