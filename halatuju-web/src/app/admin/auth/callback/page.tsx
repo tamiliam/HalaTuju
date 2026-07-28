@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import { getAdminSupabase, ADMIN_STORAGE_KEY } from '@/lib/admin-supabase'
-import { oauthOriginMismatch } from '@/lib/oauthOrigin'
+import { oauthOriginMismatchAtEntry } from '@/lib/oauthOrigin'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
 import { adminLanding } from '@/lib/adminLanding'
 import { effectiveRole } from '@/lib/navigation'
@@ -17,6 +17,15 @@ export default function AdminAuthCallbackPage() {
   const [detail, setDetail] = useState<string>('')
 
   useEffect(() => {
+    /*
+     * FIRST, before the client exists. Constructing it starts `detectSessionInUrl`, whose
+     * exchange attempt DELETES the verifier whether it succeeds or fails — so after this line
+     * an absent verifier no longer means "it was never here". Asking later turned every
+     * unrelated exchange failure into a confident accusation about the origin. Ask now, keep
+     * the answer, and let the rest of the flow proceed normally. (TD-182 follow-up.)
+     */
+    const startedElsewhere = oauthOriginMismatchAtEntry(window.location.search, ADMIN_STORAGE_KEY)
+
     const supabase = getAdminSupabase()
 
     /**
@@ -42,18 +51,18 @@ export default function AdminAuthCallbackPage() {
       if (!code) return { session: null, reason: 'no code in callback URL' }
 
       /*
-       * Answer the origin question BEFORE asking supabase-js, because its answer misleads.
-       * When the verifier is missing it advises adopting `@supabase/ssr` to hold the verifier in
-       * cookies — which fixes nothing, cookies being host-scoped too. That sentence cost this
-       * ticket two wrong diagnoses (TD-182). If the code cannot be exchanged here because the
-       * sign-in began somewhere else, say THAT, in words the person can act on.
+       * The origin answer was taken at entry (above). Use it only when the exchange has actually
+       * failed — it explains WHY, it does not predict THAT. Supabase's own text for this case
+       * advises adopting `@supabase/ssr` to hold the verifier in cookies, which fixes nothing
+       * (cookies are host-scoped too) and has already produced three wrong diagnoses on TD-182.
        */
-      if (oauthOriginMismatch(window.location.search, ADMIN_STORAGE_KEY)) {
-        return { session: null, reason: '', mismatch: true }
-      }
-
       const { data, error: exErr } = await supabase.auth.exchangeCodeForSession(code)
-      return { session: data?.session ?? null, reason: exErr?.message ?? 'exchange returned no session' }
+      if (data?.session) return { session: data.session, reason: '' }
+      return {
+        session: null,
+        reason: exErr?.message ?? 'exchange returned no session',
+        mismatch: startedElsewhere,
+      }
     }
 
     resolveSession().then(async ({ session, reason, mismatch }) => {

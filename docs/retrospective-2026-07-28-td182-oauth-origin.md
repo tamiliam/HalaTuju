@@ -73,6 +73,37 @@ would.
 returns there and works; bouncing it would manufacture this exact bug. Normalise state where it is
 created, not where it is consumed.
 
+## Then I did the same class of thing again, within the hour
+
+The new message shipped, the owner tried it, and got told his sign-in *"began at a different web
+address"* — on `localhost:3000`, where it had in fact begun.
+
+The check ran after `getSession()`. That awaits client init, which runs `detectSessionInUrl`, which
+attempts the exchange, and `_exchangeCodeForSession` deletes the verifier once it has POSTed
+whether it succeeded or not. After that point a consumed verifier and an absent one are the same
+observation. So every unrelated exchange failure came out as a confident accusation about the
+address bar.
+
+The function was right. The call site was wrong. Two things I want to keep:
+
+- **A diagnostic that reads mutable state has a validity window, and that window is part of its
+  contract.** It now reads `oauthOriginMismatchAtEntry` — the requirement travels with every call
+  site, where a comment would not have.
+- **A diagnostic should explain a failure that happened, never predict one.** Take the reading
+  early, carry the boolean, apply it only once something has actually gone wrong.
+
+I had just spent the morning writing that confident explanations from unmeasured premises are how
+this ticket stayed open. Then I wrote one. It is easier to see the pattern in a ticket's history
+than in your own next commit.
+
+## And the review was still blocked
+
+I told the owner localhost was unblocked. It was not: `.env.local` points the console at
+`http://localhost:8000` with nothing listening, and the live API's `CORS_ALLOWED_ORIGINS` covers
+only `halatuju.xyz` and the two Cloud Run hosts. Sign-in works now; the role check right after it
+cannot. **I fixed the step I was looking at and announced the outcome I wanted.** Walk the path to
+the end before calling it clear. (Live review went to production, which was always available.)
+
 ## Cost of the delay
 
 Six sprints closed without a browser pass, N2/N3b/N4 explicitly citing this ticket. Three defects

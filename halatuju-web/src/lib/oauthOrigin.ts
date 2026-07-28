@@ -71,8 +71,18 @@ type StorageLike = Pick<Storage, 'getItem'>
  * origin's storage. That pair is what distinguishes an origin mismatch from the other ways a
  * callback fails (no code at all, an expired code, a refused exchange) — each of which wants a
  * different sentence in front of the person.
+ *
+ * ⚠⚠ **TIMING IS PART OF THE CONTRACT: call this BEFORE anything can attempt an exchange —
+ * before `getSession()`, and ideally before the supabase client is even constructed.**
+ * `_exchangeCodeForSession` deletes the verifier once it has POSTed, whether the exchange
+ * succeeded or failed (auth-js 2.95.3, `GoTrueClient.js:788`), and `detectSessionInUrl` — on by
+ * default — runs that during client initialisation, which `getSession()` awaits. Ask afterwards
+ * and an absent verifier means "never here OR just consumed", so every unrelated exchange failure
+ * gets blamed on the origin. I shipped exactly that on 2026-07-28 and the owner hit it within the
+ * hour: a wrong explanation delivered confidently, which is worse than the vague one it replaced.
+ * The name says `AtEntry` so the requirement travels with the call site.
  */
-export function oauthOriginMismatch(
+export function oauthOriginMismatchAtEntry(
   search: string,
   storageKey: string,
   storage?: StorageLike | null,

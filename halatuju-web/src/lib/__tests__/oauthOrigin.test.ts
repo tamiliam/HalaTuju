@@ -2,7 +2,7 @@ import {
   CANONICAL_LOOPBACK_HOST,
   canonicalLoopbackUrl,
   isLoopbackAlias,
-  oauthOriginMismatch,
+  oauthOriginMismatchAtEntry,
   verifierKeyFor,
 } from '../oauthOrigin'
 
@@ -79,32 +79,64 @@ describe('canonicalLoopbackUrl', () => {
   })
 })
 
-describe('oauthOriginMismatch', () => {
+describe('oauthOriginMismatchAtEntry', () => {
   it('is true when a code arrives at an origin holding no verifier — the TD-182 failure', () => {
-    expect(oauthOriginMismatch('?code=abc', ADMIN, storageWith({}))).toBe(true)
+    expect(oauthOriginMismatchAtEntry('?code=abc', ADMIN, storageWith({}))).toBe(true)
   })
 
   it('is false when this origin holds the verifier — the flow can proceed', () => {
-    expect(oauthOriginMismatch('?code=abc', ADMIN, storageWith({
+    expect(oauthOriginMismatchAtEntry('?code=abc', ADMIN, storageWith({
       'halatuju_admin_session-code-verifier': 'v',
     }))).toBe(false)
   })
 
   it('is false with no code — that is a different failure and wants a different sentence', () => {
-    expect(oauthOriginMismatch('', ADMIN, storageWith({}))).toBe(false)
-    expect(oauthOriginMismatch('?error=access_denied', ADMIN, storageWith({}))).toBe(false)
+    expect(oauthOriginMismatchAtEntry('', ADMIN, storageWith({}))).toBe(false)
+    expect(oauthOriginMismatchAtEntry('?error=access_denied', ADMIN, storageWith({}))).toBe(false)
   })
 
   it('reads the key for the scope it was asked about, not a sibling scope', () => {
     // The sponsor verifier being present says nothing about the admin flow: separate clients,
     // separate storage keys. Confusing them would blame the wrong cause on a real failure.
-    expect(oauthOriginMismatch('?code=abc', ADMIN, storageWith({
+    expect(oauthOriginMismatchAtEntry('?code=abc', ADMIN, storageWith({
       'halatuju_sponsor_session-code-verifier': 'v',
     }))).toBe(true)
   })
 
   it('claims nothing when there is no storage to inspect', () => {
     // SSR, or a browser with storage blocked. An unreadable vault is not evidence of an empty one.
-    expect(oauthOriginMismatch('?code=abc', ADMIN, null)).toBe(false)
+    expect(oauthOriginMismatchAtEntry('?code=abc', ADMIN, null)).toBe(false)
+  })
+
+  /**
+   * The regression that gives this function its `AtEntry` name.
+   *
+   * First shipped, it was called AFTER `getSession()`. `detectSessionInUrl` runs an exchange
+   * during client init and `_exchangeCodeForSession` deletes the verifier once it has POSTed —
+   * success or failure alike (auth-js 2.95.3, GoTrueClient.js:788). So by the time the question
+   * was asked, a consumed verifier and an absent one looked identical, and every unrelated
+   * exchange failure was reported to the person as "you started somewhere else". The owner hit
+   * it within the hour of deploy, on the very host the sign-in HAD started from.
+   *
+   * The function itself was never wrong — the call site was. These two cases pin the meaning so
+   * the distinction survives, and the page reads the answer before constructing the client.
+   */
+  describe('the reading is only meaningful before an exchange can run', () => {
+    it('a consumed verifier is INDISTINGUISHABLE from one that was never here', () => {
+      const beforeExchange = storageWith({ 'halatuju_admin_session-code-verifier': 'v' })
+      const afterExchange = storageWith({})  // supabase removed it, whatever the outcome
+
+      expect(oauthOriginMismatchAtEntry('?code=abc', ADMIN, beforeExchange)).toBe(false)
+      expect(oauthOriginMismatchAtEntry('?code=abc', ADMIN, afterExchange)).toBe(true)
+    })
+
+    it('so a caller must snapshot the answer, not re-ask for it', () => {
+      // What the pages now do: read once at entry, carry the boolean, use it only to EXPLAIN a
+      // failure that has actually happened. Re-reading here would flip a correct false to true.
+      const storage = storageWith({ 'halatuju_admin_session-code-verifier': 'v' })
+      const snapshot = oauthOriginMismatchAtEntry('?code=abc', ADMIN, storage)
+      expect(snapshot).toBe(false)
+      expect(oauthOriginMismatchAtEntry('?code=abc', ADMIN, storageWith({}))).not.toBe(snapshot)
+    })
   })
 })

@@ -1612,6 +1612,18 @@ its own (separate bug, correctly described in the paragraph above).
 19 tests in `lib/__tests__/oauthOrigin.test.ts`, including the production hostnames — a guard that
 ever fired on `halatuju.xyz` would redirect live admins to their own laptop.
 
+**⚠ FOLLOW-UP, same day: the first cut of the new message was itself unsound, and the owner hit it
+within the hour of deploy.** The check was called AFTER `getSession()`. `detectSessionInUrl` (on by
+default) runs an exchange during client initialisation, and `_exchangeCodeForSession` deletes the
+verifier once it has POSTed — success or failure alike (auth-js 2.95.3, `GoTrueClient.js:788`). So
+by the time the question was asked, a *consumed* verifier and an *absent* one were
+indistinguishable, and every unrelated exchange failure was reported as "you started somewhere
+else" — on the very host the sign-in had started from. Fixed by reading the answer at entry, before
+the client is constructed, and using it only to EXPLAIN a failure rather than predict one. Renamed
+`oauthOriginMismatchAtEntry` so the ordering requirement travels with each call site; two tests pin
+the distinction. **The function was never wrong — the call site was.** A diagnostic that can be
+asked at the wrong moment will be, so put the moment in the name. 21 tests.
+
 ### [TD-183] Sponsor-module ms/ta copy is a first draft (~70 leaves) — low
 The sponsor detail page (S1), its three fixes (S1.1) and the credit UI (S2) added roughly seventy
 `admin.sponsors.*` leaves across `en`/`ms`/`ta`. English is owner-voiced; the Malay and Tamil are

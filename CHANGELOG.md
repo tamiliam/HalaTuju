@@ -25,8 +25,15 @@ addresses. Production was never affected: `halatuju.xyz` cannot be spelled two w
 The callback pages are deliberately *not* guarded: a sign-in that legitimately begins on
 `127.0.0.1` also returns there and works fine, and redirecting it would create the very bug.
 
-19 new tests, including both production hostnames — a guard that ever fired on the live site would
-send admins to their own laptop.
+### Fixed again, same day — the new message could accuse the wrong thing
+The check ran a moment too late. Supabase discards the one-time key as soon as it has tried to use
+it, succeed or fail, so asking afterwards could not tell "the key was never here" from "the key was
+here and has just been used" — and any other kind of failure came out as *"you started at a
+different address"*, on the address you had in fact started from. It now takes its reading before
+anything can touch the key, and uses it only to explain a failure, never to predict one.
+
+21 tests, including both production hostnames — a guard that ever fired on the live site would send
+admins to their own laptop.
 
 ## The breadcrumb says where you ARE — 2026-07-28
 
