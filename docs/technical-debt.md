@@ -1544,3 +1544,28 @@ own commit, not a fold-in.** A cheap first diagnostic is to set `detectSessionIn
 the student client and see whether the admin flow starts working.
 **Risk if left:** low in production, high friction for any future local UI review of the console.
 **Size:** small (one callback + a test), once the cause is confirmed.
+
+### [TD-183] Sponsor-module ms/ta copy is a first draft (~70 leaves) — low
+The sponsor detail page (S1), its three fixes (S1.1) and the credit UI (S2) added roughly seventy
+`admin.sponsors.*` leaves across `en`/`ms`/`ta`. English is owner-voiced; the Malay and Tamil are
+**machine first drafts written by me** and have not been through the owner, who is the Tamil
+authority. The riskiest of them are the ones a person acts on: `detail.creditError.*` (nine server
+refusals — a mistranslated `same_signer` or `finance_check_required` sends an admin looking for the
+wrong fix), `detail.sign.*` (three button labels naming a signature step), `detail.recordHint`
+(explains WHY the bank reference is mandatory), and `seen.neverHint` (carries a date).
+**To resolve:** owner review pass over the `admin.sponsors.*` block in `ms.json` + `ta.json`,
+alongside the standing partner-comms draft review (TD-180) — one sitting, not two. Low priority
+while BrightPath's admins work in English, and parity/orphan tests already guarantee the keys
+exist and interpolate; this is about the words being right. (Logged 2026-07-28, sponsor S2.)
+
+### [TD-184] The credit chain has never been driven end-to-end by a human — low, but it is the only gap left
+Every step is covered by tests: 22 endpoint-level tests including the full chain over the wire, and
+17 jsdom tests over the UI's wiring. **Nobody has recorded a real credit in a browser and walked it
+to `confirmed`.** The three prior sprints in this module all shipped green and each still produced
+something only a person could see — a money format mixing `'20000'` with `'3000.00'`, a Students
+column silently dropped, copy that asserted history the column did not have. That is the class of
+defect a click-through catches and a suite does not.
+**To resolve:** the owner smoke listed in the deploy notes — record a credit as Poongulali
+(`admin`), sign as her, countersign as Suresh (`org_admin`), and confirm `available` moves by the
+amount. It is a five-minute pass, and until it happens the wallet-credit interface is *verified*
+but not *witnessed*. (Logged 2026-07-28, sponsor S2.)

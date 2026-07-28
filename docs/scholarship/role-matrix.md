@@ -19,9 +19,9 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
 
 | Role | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* | edit | view |
-| **Admin — General** (`admin`) | View all *(read-only)* | View all | **View-only** (org section; no invites/actions) | edit | view |
-| **Admin — Finance** (`finance`) | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
+| **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **countersign + void a wallet credit** *(never records one)* | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **Payments: create/edit/cancel + countersignature** | edit | view |
+| **Admin — General** (`admin`) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
+| **Admin — Finance** (`finance`) | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
 | **QC** (`qc`) | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
 | **Reviewer** (`reviewer`) | View assigned · review assigned | ✗ *(vetting REMOVED — was reviewer-gated pre-2026-07-15)* | ✗ | edit | view |
 
@@ -78,6 +78,36 @@ collected signatures ("nobody signs one list and sends another").
 This is **not** a Billing power. The money here is programme money OUT to students, gated by named
 signers. Platform billing — HalaTuju invoicing the organisation for metered service usage — is a
 separate future deliverable and its Administration card stays "Coming soon".
+
+## Wallet credits (sponsor money IN) — access
+
+The mirror image of Payments: money coming IN to a sponsor's wallet, recorded from a bank transfer
+that happened off the platform. Reached from **Sponsors → open a sponsor** (no separate route), so
+it inherits that surface's role gate; the credit itself is org-fenced on the programme's
+organisation (`AdminSponsorDetailView`, `_CreditsBase`).
+
+**Access.** READ the ledger: `admin` + `org_admin` + `finance` (+ super). **RECORD: `admin` only**
+(+ super) — `org_admin` is deliberately refused, because the person who opens a chain must not also
+close it, and on production the person doing this work is a plain `admin`. VOID an unconfirmed
+credit: `admin` + `org_admin`. `reviewer` / `qc` / referral `partner` are refused everywhere.
+
+**The chain is the payments chain**, deliberately — one design, one implementation
+(`sponsorship.sign_admin_credit` mirrors `payments.sign`):
+`draft → admin_signed → [finance_checked] → confirmed`, with the middle step required iff the
+organisation has ≥1 ACTIVE `finance` admin, evaluated live at every attempt.
+
+- **maker** signs the draft (role `admin`) → `admin_signed`.
+- **finance check** (role `finance`) → `finance_checked`. An `org_admin` countersigning at
+  `admin_signed` while finance is active is refused with `finance_check_required`.
+- **approver** countersigns (role `org_admin`) → `confirmed`. **`confirmed` is the step that makes
+  the money spendable** on a student (`Donation.is_spendable`).
+
+**Distinctness is keyed on EMAIL, not the typed name** — production carries two active admins both
+named "Ve. Elanjelian", so a name key would be wrong in both directions (migration `0125`). Each
+signer must type their own name, matched against `PartnerAdmin.name`.
+
+**A confirmed credit is never cancelled** — it is reversed by a compensating entry. Only a
+`draft` / `admin_signed` / `finance_checked` credit may be voided, and the row is kept either way.
 
 ## Implementation state (2026-07-23)
 

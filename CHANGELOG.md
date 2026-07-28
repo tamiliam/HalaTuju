@@ -247,7 +247,7 @@ Design of record: <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1
 exit 0. No backend change, no migration, pytest untouched.
 ## Sponsor module S1 — one sponsor, whole — 2026-07-27
 
-Sprint 1 of `.claude/plans/snazzy-whistling-biscuit.md` (owner-approved; design of record
+Sprint 1 of `docs/plans/2026-07-27-sponsor-module-roadmap.md` (owner-approved; design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>). **Migration `0132`,
 additive.**
 

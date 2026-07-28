@@ -634,7 +634,7 @@ NO backend change** — `halatuju-web` only (plus one ported backend test).
 `e0234ed` (SUCCESS both services); `/api/v1/admin/sponsors/<pk>/` answers 401 unauthenticated, no
 API errors post-deploy. The four authenticated smoke checks remain owed. Commit
 `f69be3c4` (worktree `.worktrees/sponsor-detail`, branch `feat/sponsor-detail`). Plan
-`.claude/plans/snazzy-whistling-biscuit.md`; design of record
+`docs/plans/2026-07-27-sponsor-module-roadmap.md`; design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>; retro
 `docs/retrospective-2026-07-27-sponsor-detail-s1.md`; decisions ×3; lessons ×3.
 **Migration `0132` APPLIED to prod + verified** (additive nullable `sponsors.last_seen_at`;
