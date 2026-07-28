@@ -52,7 +52,7 @@ class TestScopeList(TestCase):
             HTTP_AUTHORIZATION=f'Bearer {_make_token(admin.supabase_user_id)}')
         return self.client.get(URL + query)
 
-    def test_super_sees_every_organisation_and_programme(self):
+    def test_super_sees_every_TENANT_organisation_and_programme(self):
         resp = self._as(_admin('super-1', role='super', super_=True))
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
@@ -64,6 +64,41 @@ class TestScopeList(TestCase):
         prog_codes = [p['code'] for p in body['programmes']]
         self.assertIn('a-bursary', prog_codes)
         self.assertIn('b-bursary', prog_codes)
+
+    def test_a_REFERRAL_organisation_is_never_offered_as_a_tenant(self):
+        """The bug this endpoint shipped with, and the reason this file exists twice over.
+
+        `partner_organisations` holds tenant organisations AND referral organisations (schools,
+        NGOs that send us students) in ONE table with no flag between them. Production has ten
+        rows and exactly one tenant. The first cut listed the table, so a super's switcher offered
+        Sri Murugan Centre and Tara Foundation as if they were tenants to switch into.
+
+        A referral org owns no programme and has no org_admin. Its logins, where it has any, are
+        `partner`-role course-selector accounts — which is why the tenant test keys on
+        `role='org_admin'` and not on "has a PartnerAdmin".
+        """
+        referral = _org('sri-murugan-centre')
+        PartnerAdmin.objects.create(
+            supabase_user_id='course-selector-login', email='cs@example.com', name='CS',
+            role='partner', is_active=True, org=referral,      # referring org, NOT owning
+        )
+        body = self._as(_admin('super-ref', role='super', super_=True)).json()
+        self.assertNotIn('sri-murugan-centre', [o['code'] for o in body['organisations']])
+
+    def test_a_tenant_mid_creation_still_appears(self):
+        """Org + org_admin but no programme yet — the create form makes all three together, and
+        a tenant must not vanish from the switcher between those writes."""
+        fresh = _org('new-tenant')
+        _admin('new-tenant-admin', org=fresh, role='org_admin')
+        body = self._as(_admin('super-fresh', role='super', super_=True)).json()
+        self.assertIn('new-tenant', [o['code'] for o in body['organisations']])
+
+    def test_a_tenant_whose_admin_was_revoked_still_appears(self):
+        """It owns a live programme and holds applications; losing its admin does not un-tenant
+        it. This is why the rule is OWNS-A-PROGRAMME **or** HAS-AN-ORG-ADMIN, not either alone."""
+        body = self._as(_admin('super-revoked', role='super', super_=True)).json()
+        # org_a owns a programme and has no org_admin in this fixture.
+        self.assertIn('tenant-a', [o['code'] for o in body['organisations']])
 
     def test_an_org_admin_sees_only_their_own(self):
         body = self._as(_admin('org-a', org=self.org_a)).json()

@@ -97,3 +97,29 @@ describe('degenerate scopes', () => {
     expect(screen.getByText('BrightPath Bursary')).toBeTruthy()
   })
 })
+
+describe('when a tenant names its programme after itself', () => {
+  const SAME = { id: 9, code: 'bp-bursary', name: 'BrightPath' }
+
+  it('shows the name once, not twice', () => {
+    render(
+      <ScopeSwitcher
+        organisations={[ORG_A]} programmes={[SAME]}
+        selectedOrg="tenant-a" selectedProgramme="bp-bursary"
+        onSelectOrg={jest.fn()} onSelectProgramme={jest.fn()}
+      />,
+    )
+    expect(screen.getAllByText('BrightPath')).toHaveLength(1)
+  })
+
+  it('still shows both once there is something to switch — the switcher must not vanish', () => {
+    render(
+      <ScopeSwitcher
+        organisations={[ORG_A, ORG_B]} programmes={[SAME]}
+        selectedOrg="tenant-a" selectedProgramme="bp-bursary"
+        onSelectOrg={jest.fn()} onSelectProgramme={jest.fn()}
+      />,
+    )
+    expect(screen.getAllByText('BrightPath').length).toBeGreaterThan(1)
+  })
+})

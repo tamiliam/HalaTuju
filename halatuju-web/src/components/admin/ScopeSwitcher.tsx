@@ -97,7 +97,15 @@ export function ScopeSwitcher({
           />
         </>
       )}
-      {programme && (
+      {/*
+        A tenant may name its programme after itself — production's only one does, so the
+        breadcrumb read "BrightPath Bursary / BrightPath Bursary". Rendering a name twice is
+        noise, not information. Suppressed only when the two are IDENTICAL and neither is
+        switchable: the moment there is a choice to make, both crumbs must show even if the
+        current pair happens to match, or the switcher disappears exactly when it matters.
+      */}
+      {programme && !(programme.name === org?.name
+                      && organisations.length <= 1 && programmes.length <= 1) && (
         <>
           {sep}
           <Crumb

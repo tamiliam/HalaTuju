@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix — the org switcher offered REFERRAL organisations as tenants — 2026-07-28
+
+Owner, on the live console: *"You got the organisation wrong. There is only one organisation as of
+now. Sources or referal orgs are not tenants. Only tenants are considered the top organisation.
+Tenants would have org admin."*
+
+`AdminScopeListView` listed `PartnerOrganisation.objects.filter(is_active=True)` — the whole table.
+That table holds tenant organisations AND referral organisations (schools, NGOs that send us
+students) with **no flag between them**: production has ten rows and exactly ONE tenant. So a
+super's switcher offered Sri Murugan Centre, Tara Foundation and seven others as places to switch
+into.
+
+### Fixed
+- **A tenant OWNS an active programme, or has an active `org_admin`.** Both, not either alone:
+  ownership alone loses a tenant created moments before its programme (the create form makes org +
+  programme + admin together), and `org_admin` alone loses a live tenant whose admin was revoked.
+  `role='org_admin'` specifically — a referral org's logins are `partner`-role course-selector
+  accounts (CUMIG has two), and counting any `PartnerAdmin` would readmit exactly the rows this
+  excludes.
+- **The breadcrumb no longer prints the same name twice.** Production's tenant names its programme
+  after itself, so it read `BrightPath Bursary / BrightPath Bursary`. Suppressed only when the two
+  are identical AND neither is switchable — the moment there is a choice, both crumbs show even if
+  the current pair matches, or the switcher would vanish exactly when it starts to matter.
+
+### Why the tests did not catch it
+They asserted the wrong thing. `test_super_sees_every_organisation_and_programme` encoded the same
+misunderstanding as the code, so it passed and cemented the bug. Replaced with
+`test_super_sees_every_TENANT_organisation_and_programme`, plus three that pin the rule from both
+sides: a referral organisation is never offered; a tenant mid-creation still appears; a tenant whose
+admin was revoked still appears.
+
+**Verification:** `pytest apps/scholarship` **3718** · `jest` **1049** / 68 suites. No migration.
+
 ## The breadcrumb switchers (nav/IA N3a) — 2026-07-28
 
 The owner compared the live console with the design of record and asked why the top bar did not
