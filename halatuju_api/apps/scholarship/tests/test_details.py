@@ -649,3 +649,114 @@ class TestGuardianDocsDone(TestCase):
         )
         # Father relationship → no letter required → done.
         self.assertTrue(application_completeness(app)['guardian_docs_done'])
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestRequirementsOnThePayload(TestCase):
+    """Sprint 3b — the Documents tab is TOLD what to ask for; it no longer decides.
+
+    Written against the wire, not against `requirements.py`, because the point of this sprint is
+    that the two sides now agree — and only a response body can show that. `test_requirements.py`
+    proves the seam resolves correctly; these prove the answer reaches the student.
+
+    ⚠ EVERY CASE BELOW SETS A PROGRAMME. The default fixtures in this file do not, so an
+    application built the easy way takes the no-programme fallback — which is exactly how Sprint
+    3a's near-miss stayed invisible through 5018 passing tests. One case deliberately leaves the
+    catalogue EMPTY beside a set programme, because that is production's shape for any
+    organisation onboarded before somebody remembers to seed.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.courses.models import PartnerOrganisation
+        from apps.scholarship.models import Programme
+        cls.org = PartnerOrganisation.objects.create(code='req-org', name='Req Org')
+        cls.programme = Programme.objects.create(
+            organisation=cls.org, code='req-programme', name_en='Req Programme')
+        cls.cohort = ScholarshipCohort.objects.create(
+            code='req-c', name='Req', year=2026, programme=cls.programme)
+        cls.profile = StudentProfile.objects.create(
+            supabase_user_id=USER_A, nric='080303-14-9999')
+        cls.app = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.profile, status='shortlisted', bucket='A')
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(USER_A)}')
+
+    def _documents(self):
+        resp = self.client.get(f'/api/v1/scholarship/applications/{self.app.id}/')
+        self.assertEqual(resp.status_code, 200)
+        return resp.json()['requirements']['documents']
+
+    def _seed(self):
+        from django.core.management import call_command
+        call_command('seed_application_catalogue', verbosity=0)
+
+    def _set(self, code, state):
+        from apps.scholarship.models import ApplicationItem, ProgrammeApplicationItem
+        item = ApplicationItem.objects.get(kind='document', code=code)
+        ProgrammeApplicationItem.objects.update_or_create(
+            programme=self.programme, item=item, defaults={'state': state})
+
+    def test_the_payload_carries_only_the_documents_block_for_now(self):
+        # Pinned so Sprint 4 adding 'questions' is a deliberate change to this test rather than a
+        # field that appears one day and nobody notices the front end is ignoring it.
+        self._seed()
+        resp = self.client.get(f'/api/v1/scholarship/applications/{self.app.id}/')
+        self.assertEqual(set(resp.json()['requirements']), {'documents'})
+        self.assertEqual(set(self._documents()), {'required', 'optional'})
+
+    def test_a_seeded_catalogue_asks_for_what_the_gate_enforces(self):
+        # The whole point: what the student is SHOWN is now the same list the submission gate
+        # checks. `income_proof` is the income route engine as one switch, not a card.
+        self._seed()
+        docs = self._documents()
+        self.assertEqual(docs['required'],
+                         ['ic', 'income_proof', 'offer_letter', 'results_slip'])
+        self.assertEqual(docs['optional'],
+                         ['electricity_bill', 'photo', 'school_leaving_cert',
+                          'statement_of_intent', 'water_bill'])
+
+    def test_an_empty_catalogue_beside_a_programme_still_asks_for_everything(self):
+        # PRODUCTION'S SHAPE. Not "what should happen" — what the rows actually look like for an
+        # organisation whose catalogue nobody has seeded. An empty answer here would render a
+        # Documents tab with no cards at all and mark nothing compulsory.
+        from apps.scholarship.models import ApplicationItem
+        self.assertEqual(ApplicationItem.objects.count(), 0)
+        docs = self._documents()
+        self.assertEqual(docs['required'],
+                         ['ic', 'income_proof', 'offer_letter', 'results_slip'])
+        self.assertIn('water_bill', docs['optional'])
+
+    def test_a_programme_promoting_a_bill_to_required_reaches_the_student(self):
+        self._seed()
+        self._set('water_bill', 'required')
+        docs = self._documents()
+        self.assertIn('water_bill', docs['required'])
+        self.assertNotIn('water_bill', docs['optional'])
+        # ⚠ The two lines above pass on their own even if EVERYTHING is reported as required —
+        # which is a real way to get this wrong, and it is the shape the Documents tab would
+        # render as a wall of red asterisks. So assert the other bill did NOT move.
+        self.assertIn('electricity_bill', docs['optional'])
+        self.assertNotIn('electricity_bill', docs['required'])
+
+    def test_a_document_switched_off_appears_in_neither_list(self):
+        # "Off" is not a third list the front end has to interpret — it is absence, which is the
+        # only state that can safely mean "do not draw this".
+        self._seed()
+        self._set('statement_of_intent', 'off')
+        docs = self._documents()
+        self.assertNotIn('statement_of_intent', docs['required'] + docs['optional'])
+
+    def test_a_core_document_cannot_be_switched_off_via_the_payload_either(self):
+        self._seed()
+        self._set('ic', 'off')
+        self.assertIn('ic', self._documents()['required'])
+
+    def test_the_lists_are_sorted(self):
+        # So a payload diff means a real change, not dict ordering.
+        self._seed()
+        docs = self._documents()
+        self.assertEqual(docs['required'], sorted(docs['required']))
+        self.assertEqual(docs['optional'], sorted(docs['optional']))

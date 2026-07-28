@@ -2163,3 +2163,32 @@ organisation registration comes close. **This one parks by consequence, not by c
 *is* the go-live sequence, and that sequence is now parked too, so the wizard stays unwitnessed for as
 long as the terms stay dark. Whoever unparks the cluster should do this first — it is five minutes and
 it is the only item here that could invalidate the others' assumptions.
+
+
+### [TD-197] The Layer 0 catalogue's `label_key` values point at i18n keys that do not exist — low, until Sprint 5
+All nine document rows and all ten question rows in `application_items` carry a `label_key` of the
+form `apply.docs.<code>.title` / `apply.questions.<code>.title`. **None of those keys exists in
+`src/messages/{en,ms,ta}.json`.** They were written in Sprint 2 as the name the future admin screen
+would render, and nothing has rendered one since.
+
+**Why it is invisible.** `scripts/check-i18n.js` compares the three message files against each other
+and against the source tree. It cannot see a key stored in a database row, which is precisely the
+hazard `test_requirements.py::test_every_item_has_an_i18n_key_never_a_literal_label` was written to
+guard — except that test checks the SHAPE of the string (`starts with 'apply.'`, no spaces), not that
+anything answers to it. A label stored in the database is a fourth place translations live, and this
+is what that looks like when the fourth place is empty.
+
+**Why it is not urgent.** Nothing consumes `label_key`. Sprint 3b sends CODES on the payload and the
+student Documents tab keeps using its own `scholarship.docs.type.<code>` titles, which do exist in all
+three languages. So no student or reviewer can see a raw key today.
+
+**Why it will bite exactly once.** Sprint 5 builds the screen where an org_admin ticks what their
+programme asks for. That screen is the FIRST consumer of `label_key`, and if it is built by wiring
+`t(item.label_key)` it will render nineteen raw dotted strings on a tenant-facing page.
+
+**To resolve (Sprint 5, before any page code):** create the `apply.docs.*` / `apply.questions.*` leaves
+in en/ms/ta, and strengthen the backend test from "looks like a key" to "IS a key" — it can read
+`en.json` directly, the same cross-runtime parity trick `test_subject_drift.py` already uses to pin
+`academic_engine._SUBJECT_BM` against `subjects.ts`. That converts a silent gap into a failing test.
+(Logged 2026-07-29, config Layer 0 sprint 3b — found while adding `school_leaving_cert` to the seed.)
+

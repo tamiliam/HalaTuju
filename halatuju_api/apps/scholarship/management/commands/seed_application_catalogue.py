@@ -38,11 +38,18 @@ DOCUMENTS = [
     ('offer_letter',         'apply.docs.offer_letter.title',            True,  'required'),
     # ONE switch over the whole income route engine — see DOCUMENT_AGGREGATES in requirements.py.
     ('income_proof',         'apply.docs.income_proof.title',            True,  'required'),
-    # Offered, never blocking. These four are why `default_state` had to stop being a boolean.
+    # Offered, never blocking. These are why `default_state` had to stop being a boolean.
     ('water_bill',           'apply.docs.water_bill.title',              False, 'optional'),
     ('electricity_bill',     'apply.docs.electricity_bill.title',        False, 'optional'),
     ('statement_of_intent',  'apply.docs.statement_of_intent.title',     False, 'optional'),
     ('photo',                'apply.docs.photo.title',                   False, 'optional'),
+    # Added in Sprint 3b, and the reason is worth recording: the student Documents tab has been
+    # rendering a `school_leaving_cert` card all along, but the Sprint 2 catalogue never listed it
+    # and neither did the front end's own `OTHER_OPTIONAL_DOC_TYPES` — three descriptions of "what
+    # we offer", all different, none of them complete. It went unnoticed because nothing consumed
+    # the catalogue for RENDERING until now. From 3b the catalogue decides which cards appear, so
+    # an omission here would have silently withdrawn a document students can upload today.
+    ('school_leaving_cert',  'apply.docs.school_leaving_cert.title',     False, 'optional'),
 ]
 
 QUESTIONS = [

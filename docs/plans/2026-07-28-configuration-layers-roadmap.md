@@ -228,23 +228,44 @@ because no fixture seeds the catalogue, so every test took the fallback branch a
 4. When a sprint consumes what an earlier sprint **deferred**, that deferral is in this change's blast
    radius.
 
-### Sprint 3b — the front end reads the payload
+### ✅ Sprint 3b SHIPPED 2026-07-29 — the front end reads the payload. **SPRINT 3 IS NOW COMPLETE.**
 
-**Goal.** Delete the duplicate rule. `COMPULSORY_DOC_TYPES` (`src/lib/scholarship.ts:1096`) says
-`['ic','results_slip']` while the backend gates on more — **the two already disagree in production
-today**. 3b makes the server the single source and leaves the front end rendering what it is told.
+`requirements.documents.{required,optional}` on the student payload; `documentRequirement()` /
+`asksForDocument()` are the only readers; `COMPULSORY_DOC_TYPES`, `OTHER_OPTIONAL_DOC_TYPES` and
+`documentsComplete()` deleted. **NO migration.** 5077 pytest · 1137 jest · both configurations reviewed
+in a browser before merge. Retro `docs/retrospective-2026-07-29-layer0-documents-frontend.md`;
+decisions ×3; lessons ×3.
 
-**Prerequisite already met:** 3a exposes nothing on the payload yet. **3b's first task is the serializer**
-— surface the resolved required/optional sets on the application payload, then have the FE read them.
+**What scoping found that this section did not predict:** the rule existed in FOUR places, not two, and
+the two named constants were nearly dead — consumed only to build the `DocType` union, with
+`documentsComplete()` having no caller outside its own test. What actually governed what a student saw
+was the JSX, four hand-written sections each asserting its own `required: true`.
 
-**⚠ THE REVIEW SURFACE EXISTS NOW.** The design sandbox (`/sandbox/documents`, config sprint 1) mounts
-the REAL `ScholarshipDocuments` component against fixtures. **3b is the first sprint that can be seen
-before it ships** — use it, in both the "asks for everything" and "asks for less" states. TD-194 (no
-local console) does not block this: the sandbox needs no API and no login.
+**⚠ A FIFTH RULE, and it generalises rule 4 above.** `school_leaving_cert` had been rendered by the
+Documents tab for months while missing from the catalogue, from `OTHER_OPTIONAL_DOC_TYPES`, and from
+the `DocType` union (it compiled because the card helper takes a bare `string`). Harmless while nothing
+read those lists to decide what to DRAW — and a silent withdrawal of a live document the moment the
+catalogue started governing the render.
+5. **When a sprint changes what a list is USED for, everything that list ever omitted is in the blast
+   radius. A list nobody reads is never wrong.** Before wiring a source of truth into a new consumer,
+   diff it against the thing it now claims to govern.
 
-**Known hazard:** `src/components/ScholarshipDocuments.tsx` is 1,899 lines with ~25 unexported in-file
-components. Extraction is justified on readability alone there — but only as far as the sprint already
-touches, and never as Layer-2 groundwork (see the standing constraint at the top of this file).
+**Two boundaries this sprint set, which Sprint 4 must not blur:**
+- **A missing `requirements` block degrades to `'optional'`** — every card renders, nothing marked
+  compulsory. Not `'off'` (blanks the page) and not a front-end copy of the platform defaults (the
+  mirror we just deleted). The front end displays; the server gates. Same shape for questions.
+- **`DOC_TYPES` stays a static literal.** What a programme ASKS FOR is configuration; what a document
+  type IS is not. Sprint 4's question codes are the same: an organisation ticks "ask about
+  aspirations", it never authors a question.
+
+**Production at close:** 9 document items · **0 programme overrides** · 143/143 applications carry a
+programme · 41 inside the submission gate. With no overrides every application resolves to the
+defaults, so the deploy is a no-op for BrightPath bar the offer letter and income section gaining the
+compulsory marker they always deserved.
+
+**Carried into Sprint 4:** the `requirements` block currently carries `documents` only, pinned by a
+test — adding `questions` is a deliberate edit to `test_the_payload_carries_only_the_documents_block_for_now`.
+**TD-197** (the catalogue's `apply.*` label keys have no messages behind them) belongs to Sprint 5, not 4.
 
 ## Sprint 4 — Questions: the catalogue governs the student application
 

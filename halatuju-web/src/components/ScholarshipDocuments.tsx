@@ -15,7 +15,9 @@ import {
 } from '@/lib/api'
 import {
   INCOME_PROOF_TYPES,
+  asksForDocument,
   docFileLayout,
+  documentRequirement,
   formatFileSize,
   formatNric,
 } from '@/lib/scholarship'
@@ -1648,7 +1650,13 @@ function IncomeWizard({
           same regardless of STR vs salary). Household-level and always optional, so it folds into
           a quiet collapsible (default closed) — never a wall. Electricity first, then Water. */}
       {ready && (() => {
-        const utils = UTILITY_DOCS.filter((dt) => reqs.optional.includes(dt))
+        // Two independent filters, and they answer different questions. `reqs.optional` is the
+        // income ROUTE engine ("does this household's route surface a utility bill?");
+        // `asksForDocument` is the PROGRAMME ("does this organisation collect one at all?").
+        // A bill has to clear both — the route can no more override the configuration than the
+        // configuration can reach inside the route.
+        const utils = UTILITY_DOCS.filter(
+          (dt) => reqs.optional.includes(dt) && asksForDocument(app.requirements, dt))
         return (
           <div className="space-y-3 pt-1">
             {utils.length > 0 && (
@@ -1825,24 +1833,45 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   // Documents are grouped by the four verification facts (matching the officer's
   // verdict + Documents drawer) + an Other bucket:
   //   Identity (IC) · Academic (results slip) · Pathway (offer letter) ·
-  //   Income (income proof + parent IC + utility bills) · Other (intent, photo).
+  //   Income (income proof + parent IC + utility bills) · Other (cert, intent, photo).
+  //
+  // ⚠ WHICH of these appear, and which carry the compulsory marker, is the PROGRAMME'S answer —
+  // read from the payload, never decided here (Layer 0, Sprint 3b). Until then this JSX was the
+  // real source of truth for "what we ask for", spelling out `required: true` inline while a
+  // separate constant in lib/scholarship.ts claimed a different, shorter list. Adding a literal
+  // `required` back to any card below re-opens that gap.
+  //
+  // A section whose only document is switched off collapses out entirely: a heading over nothing
+  // reads as a page that failed to load.
+  const req = app?.requirements
+  const docState = (dt: string) => documentRequirement(req, dt)
+  const section = (key: string, dt: string, extra: Record<string, unknown> = {}) => {
+    const state = docState(dt)
+    if (state === 'off') return null
+    return (
+      <section>
+        {sectionHead(key, null)}
+        <div className="space-y-3">{card(dt, { ...extra, required: state === 'required' })}</div>
+      </section>
+    )
+  }
+  // The Other bucket is a plain list, so it thins rather than disappears — unless every one of
+  // its documents is off, in which case the collapsible would open onto nothing.
+  const otherDocs = ['school_leaving_cert', 'statement_of_intent', 'photo']
+    .filter((dt) => docState(dt) !== 'off')
+
   return (
     <div className="space-y-6">
-      <section>
-        {sectionHead('identity', null)}
-        <div className="space-y-3">{card('ic', { showVisionChip: true, required: true })}</div>
-      </section>
+      {section('identity', 'ic', { showVisionChip: true })}
+      {section('academic', 'results_slip')}
+      {section('pathway', 'offer_letter')}
 
-      <section>
-        {sectionHead('academic', null)}
-        <div className="space-y-3">{card('results_slip', { required: true })}</div>
-      </section>
-
-      <section>
-        {sectionHead('pathway', null)}
-        <div className="space-y-3">{card('offer_letter', { required: true })}</div>
-      </section>
-
+      {/* `income_proof` is ONE switch over the whole household-income route engine — see
+          requirements.DOCUMENT_AGGREGATES. Off means this programme does not means-test at all,
+          so the wizard, its per-member clusters and the utility bills all go together. Letting an
+          organisation keep "the father's IC" while dropping "his payslip" would produce an
+          assessment nobody designed. */}
+      {asksForDocument(req, 'income_proof') && (
       <section id="income-wizard" className="scroll-mt-6">
         {sectionHead('income', null)}
         {app ? (
@@ -1874,10 +1903,13 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
           <div className="space-y-3 mt-3">{card('guardianship_letter')}</div>
         )}
       </section>
+      )}
 
+      {otherDocs.length > 0 && (
       <section>
         {/* Additional documents are all optional — folded by default so they never read as a
-            wall of extra tasks; the student opens it only if they have more to add. */}
+            wall of extra tasks; the student opens it only if they have more to add. A programme
+            MAY promote one to required; the card then carries the marker inside the fold. */}
         <CollapsibleSection
           tone="optional"
           title={t('scholarship.docs.section.other.title')}
@@ -1886,12 +1918,13 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
           hideLabel={t('scholarship.docs.hide')}
         >
           <div className="space-y-3">
-            {card('school_leaving_cert')}
-            {card('statement_of_intent')}
-            {card('photo')}
+            {otherDocs.map((dt) => (
+              <div key={dt}>{card(dt, { required: docState(dt) === 'required' })}</div>
+            ))}
           </div>
         </CollapsibleSection>
       </section>
+      )}
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
     </div>

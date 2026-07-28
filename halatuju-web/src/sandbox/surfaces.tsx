@@ -13,7 +13,7 @@
  */
 import type { ReactNode } from 'react'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
-import { sandboxApplication } from './fixtures/scholarship'
+import { sandboxApplication, sandboxApplicationLeanProgramme } from './fixtures/scholarship'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
 
@@ -34,6 +34,18 @@ export const SURFACES: Surface[] = [
       + 'household income evidenced by an approved STR. The remaining cards are still empty.',
     render: () => (
       <ScholarshipDocuments token={SANDBOX_TOKEN} app={sandboxApplication} />
+    ),
+  },
+  {
+    slug: 'documents-lean',
+    title: 'Documents — a leaner programme',
+    note:
+      'The SAME student, at an organisation that asks for less: identity card and results slip '
+      + 'only, no household means test, and one optional extra. Nothing about this page is coded '
+      + 'differently — it is the same component reading a different configuration, which is what '
+      + 'Layer 0 buys. Style both: a tenant will land on each.',
+    render: () => (
+      <ScholarshipDocuments token={SANDBOX_TOKEN} app={sandboxApplicationLeanProgramme} />
     ),
   },
 ]

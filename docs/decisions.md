@@ -6516,3 +6516,61 @@ so the next reader sees the severity, not just the park.
 strangers before it does.** The trigger is open sign-up; the registration is only its expected
 occasion. TD-196 should be cleared first when the cluster unparks: it is five minutes, and it is the
 only item that could invalidate the others' assumptions.
+
+## A missing `requirements` block degrades to "optional", not "off" — Config Layer 0 sprint 3b, 2026-07-29
+**Decision:** when the application payload carries no `requirements` block, `documentRequirement()`
+returns `'optional'` for every document: the Documents tab renders every card and marks none
+compulsory.
+**Alternatives considered:** (a) treat absence as `'off'` — the literal reading of the data, and the
+same shape as Sprint 3a's near-miss one layer up; (b) keep a front-end copy of
+`PLATFORM_REQUIRED_DOCUMENTS` to fall back to; (c) make the field non-optional on the TypeScript
+interface and let the absence be a type error.
+**Rationale:** (a) blanks the page — the failure is invisible and total, and a student sees an upload
+screen with nothing on it. (b) reintroduces the exact mirror this sprint exists to delete, and it
+would drift again for the same reason. (c) does not help: the type is a compile-time claim about a
+runtime payload, and a stale cached response satisfies neither. `'optional'` is the honest
+degradation because **the front end displays and has never been the gate** —
+`application_completeness` on the server still refuses the submission. Losing the red asterisk is a
+cosmetic cost; losing the cards is a broken product.
+**Trade-offs:** a genuine server bug that dropped the block would show a slightly under-marked form
+rather than failing loudly. Accepted: the gate still holds, and a test pins the behaviour so the
+choice is visible rather than incidental.
+**Revisit if:** the front end ever becomes authoritative for any part of the submission decision. It
+must not, but if it does, this default becomes permissive rather than merely quiet.
+
+## `DOC_TYPES` stays a static literal while WHAT IS ASKED FOR becomes configuration — Config Layer 0 sprint 3b, 2026-07-29
+**Decision:** Sprint 3b deleted the front end's classification of documents (which are compulsory,
+which are optional) but deliberately KEPT `DOC_TYPES` as a hard-coded union, and added
+`school_leaving_cert` to it by hand rather than deriving it from the payload.
+**Alternatives considered:** deriving the union from `requirements.documents` at runtime, which would
+have made the front end fully data-driven and removed a file to maintain.
+**Rationale:** two different questions were being conflated. *What a programme asks for* is
+configuration and belongs to the organisation. *What a document type IS* is not: each entry in the
+backend's `ApplicantDocument.DOC_TYPES` carries recognition logic, a versioned genuineness model,
+extraction fields and verification behaviour. An organisation NAMES an existing type; it never
+invents one. A runtime-derived union would make `DocType` a `string`, delete the compile-time check
+that keeps fixtures honest, and turn the catalogue into a form builder — which the owner explicitly
+ruled out ("not too much that it makes too complicated").
+**Trade-offs:** adding a document type still needs a code change in two repos. That is the intended
+cost: a type with no recogniser behind it is a blob a human must read.
+**Revisit if:** a document type is ever introduced that carries no recognition behaviour at all — a
+pure attachment slot. That would be the first genuine case for a data-driven entry, and it should be
+argued on its own rather than smuggled in as a refactor.
+
+## The utility bills clear TWO independent filters, and neither may absorb the other — Config Layer 0 sprint 3b, 2026-07-29
+**Decision:** a water or electricity bill renders only if BOTH the income route engine surfaces it
+(`reqs.optional`) AND the programme's catalogue asks for it (`asksForDocument`). The two conditions
+stay written out separately, with a comment saying why.
+**Alternatives considered:** folding the catalogue check into the route engine's own requirement
+computation (`incomeWizard.ts`), so there is one list to read.
+**Rationale:** they answer different questions and change for different reasons. The route engine
+asks *"does THIS household's evidence route involve a utility bill?"* — a per-student rule. The
+catalogue asks *"does THIS organisation collect one at all?"* — a per-tenant setting. Merging them
+would let a configuration change appear to alter route logic, or a route change appear to override a
+tenant's configuration, and the next person debugging either would be reading a function that does
+both. The same boundary is why `income_proof` is one switch rather than a per-document set.
+**Trade-offs:** two filters on one line, which reads as redundancy to anyone who has not been told.
+Hence the comment, which is load-bearing rather than decorative.
+**Revisit if:** a third dimension appears (a per-cohort rule, say). Three conditions inline stops
+being readable, and the right answer then is a named predicate — not a merge.
+

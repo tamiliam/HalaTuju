@@ -2,13 +2,12 @@
 
 Layer 0 of the configuration roadmap (`docs/plans/2026-07-28-configuration-layers-roadmap.md`).
 
-⚠ **THIS SPRINT IS DELIBERATELY INERT.** Nothing calls these functions to make a decision yet.
-The literals they will eventually replace are still in `services.py`, untouched, and the proof
-that this seam is correct is `test_requirements.py` asserting the two agree — plus the entire
-existing test suite passing UNMODIFIED. Sprint 3 (documents) and Sprint 4 (questions) move the
-gates over one at a time. Landing the seam and the switchover together would mean the sprint
-that introduces the abstraction is also the sprint that changes behaviour, with nothing to diff
-against.
+**Status.** Sprint 2 landed this module inert (nothing called it), Sprint 3a moved the backend
+DOCUMENT gates onto it, and Sprint 3b put the resolved document sets on the application payload
+so the front end renders what it is told. Questions (Sprint 4) still resolve here but no gate
+reads them yet. The staging was deliberate: landing the seam and the switchover together would
+mean the sprint that introduces the abstraction is also the sprint that changes behaviour, with
+nothing to diff against.
 
 **The seam rule, from the branding extraction that did this well in July:** this module is the
 only place the catalogue tables are read for a decision. No per-call-site queries. When Sprint 3
@@ -55,7 +54,11 @@ DOCUMENT_AGGREGATES = frozenset({'income_proof'})
 # the two cannot drift without a test failing. They exist so that an application with no
 # programme keeps behaving exactly as it does now.
 PLATFORM_REQUIRED_DOCUMENTS = ('ic', 'results_slip', 'offer_letter', 'income_proof')
-PLATFORM_OPTIONAL_DOCUMENTS = ('water_bill', 'electricity_bill', 'statement_of_intent', 'photo')
+PLATFORM_OPTIONAL_DOCUMENTS = ('water_bill', 'electricity_bill', 'statement_of_intent', 'photo',
+                               # Sprint 3b: rendered by the student Documents tab since long
+                               # before Layer 0, and missing from every list that claimed to
+                               # describe it. See the seed command for the full account.
+                               'school_leaving_cert')
 PLATFORM_REQUIRED_QUESTIONS = (
     'aspirations', 'plans', 'daily_life', 'fears',
     'family_roster', 'funding', 'address',
@@ -187,3 +190,26 @@ def asks_for(application, kind: str, code: str) -> bool:
     chased, must not appear as outstanding, and must not produce a verdict fact.
     """
     return resolve(application, kind).get(code, 'off') != 'off'
+
+
+def payload_for(application, kind: str) -> dict[str, list[str]]:
+    """The resolved sets, shaped for a serializer: `{'required': [...], 'optional': [...]}`.
+
+    **The front end is sent VALUES, never the rule that produced them** — `docs/lessons.md`
+    (2026-07-22): *"before mirroring a rule across the language boundary, ask what the other side
+    actually needs — usually a VALUE."* The web app used to carry its own `COMPULSORY_DOC_TYPES`,
+    and it disagreed with this module in production: it said `['ic', 'results_slip']` while the
+    submission gate required an offer letter and the income route as well. Two descriptions of one
+    rule, drifted. This function exists so there is one description.
+
+    Sorted, so a payload diff means a real change rather than a dict-ordering artefact.
+
+    Only `kind='document'` has a caller today (Sprint 3b). Sprint 4 adds the questions block to
+    the serializer; this function needs nothing for that, which is why it takes `kind` rather than
+    hard-coding one.
+    """
+    resolved = resolve(application, kind)
+    return {
+        'required': sorted(c for c, s in resolved.items() if s == 'required'),
+        'optional': sorted(c for c, s in resolved.items() if s == 'optional'),
+    }

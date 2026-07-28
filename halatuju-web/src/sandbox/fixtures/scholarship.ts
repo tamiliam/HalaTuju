@@ -18,6 +18,7 @@
 import type {
   ApplicantDocument,
   ApplicationCompleteness,
+  ApplicationRequirements,
   ConsentStatus,
   FundingNeed,
   ScholarshipApplication,
@@ -35,6 +36,29 @@ const completeness: ApplicationCompleteness = {
   address_done: true,
   family_done: true,
   complete: false,
+}
+
+/**
+ * What BrightPath asks for today — the platform defaults, resolved server-side.
+ *
+ * ⚠ Kept in the SAME ORDER and shape the API returns (sorted lists), so a designer is looking at
+ * a real payload rather than a tidied one. `income_proof` is the aggregate switch over the whole
+ * household-income route, not a card.
+ */
+const fullRequirements: ApplicationRequirements = {
+  documents: {
+    required: ['ic', 'income_proof', 'offer_letter', 'results_slip'],
+    optional: ['electricity_bill', 'photo', 'school_leaving_cert', 'statement_of_intent',
+               'water_bill'],
+  },
+}
+
+/** A leaner programme: identity and results only, no means test, one optional extra. */
+const leanRequirements: ApplicationRequirements = {
+  documents: {
+    required: ['ic', 'results_slip'],
+    optional: ['statement_of_intent'],
+  },
 }
 
 const fundingNeed: FundingNeed = {
@@ -112,9 +136,28 @@ export const sandboxApplication: ScholarshipApplication = {
 
   funding_need: fundingNeed,
   completeness,
+  requirements: fullRequirements,
   notify_email: 'aisyah@sandbox.invalid',
   contact_phone: '+60000000000',
   form_data: {},
+}
+
+/**
+ * The SAME application as configured by a leaner programme — no means test, no offer letter, and
+ * the extras trimmed to one.
+ *
+ * This exists so the sandbox can show both ends of Layer 0 side by side. A designer looking only
+ * at the full form would style a page that half our tenants never render, and the reviewer of a
+ * configuration sprint would have nothing to check the "less" case against except a passing test.
+ *
+ * Only `requirements` differs from `sandboxApplication` — spread, not retyped, so the two can
+ * never drift into being two different students.
+ */
+export const sandboxApplicationLeanProgramme: ScholarshipApplication = {
+  ...sandboxApplication,
+  id: 1002,
+  cohort_name: 'Sandbox Intake 2026 — lean programme',
+  requirements: leanRequirements,
 }
 
 /**

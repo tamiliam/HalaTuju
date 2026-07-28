@@ -522,7 +522,64 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-28)
+## Next Sprint (as of 2026-07-29)
+
+**✅ SHIPPED 2026-07-29 — CONFIG LAYER 0, SPRINT 3 IS COMPLETE (3a backend + 3b front end).** An
+organisation can now change WHAT ITS PROGRAMME ASKS FOR without us writing code, for documents.
+Roadmap `docs/plans/2026-07-28-configuration-layers-roadmap.md`; retros
+`docs/retrospective-2026-07-29-layer0-documents-gate.md` (3a) +
+`docs/retrospective-2026-07-29-layer0-documents-frontend.md` (3b). **NO migration in either half.**
+`pytest` **5077** (scholarship + courses + reports) · `jest` **1137** / 76 suites · i18n 4293×3.
+- **Why any of this exists:** Suresh wants his own UI/UX team shaping the logged-in surfaces. The
+  owner's constraint is durability, not design — *"Suresh's team may have the enthusiasm today, but
+  this may not last. And we don't want to end up with a broken system."* So the answer is
+  CONFIGURATION through controls we built and tested, not repo access. **Layer 2 (moving elements)
+  is explicitly NOT being built.**
+- **3a** moved `application_completeness`, `consent_blockers`, `_offer_blocks`, `income_doc_blockers`
+  and `build_verdict` onto `apps/scholarship/requirements.py`. **3b** put the resolved sets on the
+  student payload (`requirements.documents.{required,optional}`) and deleted the web app's duplicate
+  rule.
+- **⚠ THE FIVE RULES FROM THIS SPRINT ARE BINDING ON SPRINTS 4 AND 5.** 3a nearly shipped a resolver
+  that returned "requires nothing" for a programme with an empty catalogue — **all 5018 tests passed
+  while it was true**, because no fixture seeds the catalogue. (1) An empty config source means **NOT
+  CONFIGURED**, never "requires nothing". (2) Write at least one test from **production's shape**.
+  (3) **Disable a new guard and watch the tests fail** before trusting it. (4) A **consumed deferral**
+  is in the blast radius. (5) **When a list acquires a new READER, everything it ever omitted is in
+  the blast radius** — `school_leaving_cert` had been rendered for months while absent from the
+  catalogue, from `OTHER_OPTIONAL_DOC_TYPES` and from the `DocType` union.
+- **⚠ A MISSING `requirements` BLOCK DEGRADES TO `optional`, NEVER `off`** — every card renders,
+  nothing marked compulsory. `off` would blank the page; a front-end fallback list would reintroduce
+  the mirror this sprint deleted. **The front end displays and has never been the gate.** Same rule
+  applies to Sprint 4's questions. Decision recorded; do not "tighten" it.
+- **⚠ `income_proof` IS ONE SWITCH OVER THE WHOLE ROUTE ENGINE**, not a card. Off means the income
+  section, its per-member clusters and the utility bills all go together. The utility bills clear
+  **two independent filters** — the route engine's and the catalogue's — and neither may absorb the
+  other (that pair of conditions is deliberate, not redundant).
+- **⚠ `DOC_TYPES` STAYS A STATIC LITERAL.** What a programme asks for is configuration; what a
+  document TYPE is is not — each entry carries recognition logic, a versioned genuineness model and
+  verification behaviour. An organisation NAMES an existing type; it never invents one. That is what
+  keeps this a catalogue rather than a form builder.
+- **PRODUCTION DATA:** catalogue now **9 document items** (8 seeded in 3a + `school_leaving_cert`
+  added in 3b) / **10 questions** / **0 programme overrides**. With no overrides all 143 applications
+  resolve to the defaults, so nothing about BrightPath's behaviour moved — the only visible change
+  is the offer letter and income section gaining the compulsory marker the gate always enforced.
+- **The design sandbox is the review surface** (`/sandbox/<slug>`, behind IAP, allowlist =
+  tamiliam@gmail.com). It mounts the REAL components against typed fixtures — no API, no login, so
+  **TD-194 does not block reviewing student surfaces**. Two Documents states are live there: the full
+  form and a lean programme. Run locally by setting `NEXT_PUBLIC_SANDBOX=1` in `.env.local`.
+- **▶ NEXT = Sprint 4** (questions: the catalogue governs the student application). The payload's
+  `requirements` block carries `documents` ONLY and a test pins that, so adding `questions` is a
+  deliberate edit. `TAB_ORDER`/`NEXT_STEP_ORDER` are **not** configurable — a section whose questions
+  are all off collapses at render time; a stored step list is Layer 2 in disguise.
+- **▶ BEFORE SPRINT 5, both still owed:** the `check2_queries.py` pass (it is income-driven but also
+  carries academic/family follow-ups, so it cannot be gated wholesale) and the **submit-time
+  snapshot** so a configuration change never re-gates a submitted student. **TD-197** (the catalogue's
+  `apply.docs.*` / `apply.questions.*` label keys have no messages behind them) is Sprint 5's, and it
+  must be cleared BEFORE any page code or the screen renders nineteen raw dotted strings.
+- **▶ Themes (Layer 1, roadmap sprints 6–12) are PLANNED, NOT APPROVED** — approve separately now
+  Layer 0 has landed.
+
+## Superseded — previous Next Sprint (as of 2026-07-28)
 
 **✅ SHIPPED + LIVE (DARK) 2026-07-28 — SPONSOR TERMS T1→T3: a sponsor now reads, is quizzed on, and SIGNS what they are agreeing to.** Commits `5df0eb14` → `c784225e`; both services green on `c784225`. **Migration `0134` APPLIED migrate-first + RLS verified — do NOT re-run.** Retro `docs/retrospective-2026-07-28-sponsor-terms-arc.md`; decisions ×4; lessons ×4.
 - **Why:** a sponsor could be registered, vetted and approved having agreed to ONE PDPA checkbox — a

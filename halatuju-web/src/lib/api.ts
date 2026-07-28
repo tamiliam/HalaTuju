@@ -1428,6 +1428,22 @@ export interface ApplicationCompleteness {
   complete: boolean
 }
 
+/**
+ * What the programme asks this applicant for — resolved SERVER-SIDE (Layer 0, Sprint 3b).
+ *
+ * The codes are `ApplicantDocument.DOC_TYPES` values, with one deliberate exception:
+ * `income_proof` is an AGGREGATE standing for the whole household-income route (STR vs salary,
+ * per-member evidence). It is a switch over that engine, not a card — the engine itself stays on
+ * the server and is never configurable document-by-document.
+ *
+ * Read this as data, never as a rule to re-derive. The front end used to keep its own list of
+ * which documents were compulsory, and it disagreed with the submission gate in production.
+ */
+export interface ApplicationRequirements {
+  documents: { required: string[]; optional: string[] }
+  // Sprint 4 adds `questions` here. Not declared until it exists.
+}
+
 export interface ScholarshipApplication {
   id: number
   cohort_code: string
@@ -1511,6 +1527,15 @@ export interface ScholarshipApplication {
   pre_u_institution?: string
   funding_need: FundingNeed | null
   completeness: ApplicationCompleteness
+  /**
+   * Layer 0 — what THIS programme asks for, resolved by the server.
+   *
+   * Optional on the type because a cached or partial payload from before Sprint 3b has no such
+   * key; `documentRequirement()` in `lib/scholarship.ts` treats an absent block as "ask for
+   * everything", never as "ask for nothing". Do NOT make it required and do NOT read it
+   * directly — go through that helper, which is where the absent case is decided once.
+   */
+  requirements?: ApplicationRequirements
   notify_email?: string   // where decision/comms emails are sent (resolved at submit)
   contact_phone?: string  // profile phone — pre-fills the Vircle setup task's mobile field
   form_data: Record<string, unknown>

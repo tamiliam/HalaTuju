@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## The student's Documents tab shows what the programme actually asks for — 2026-07-29
+
+Sprint 3b of the configuration-layers roadmap, and the half that a student can see. Last sprint the
+submission rules started asking the catalogue what a programme requires; the upload page was still
+deciding for itself, from a list written into the web app. Now the server sends the answer and the
+page renders it.
+
+### The two sides had already drifted, in production
+The web app said two documents were compulsory — identity card and results slip. The rule that
+actually blocks a submission required four: those two, the offer letter, and proof of household
+income. A student could complete every card marked compulsory on screen and still be refused at the
+final step, with nothing on the page explaining why.
+
+Nobody changed either side carelessly. The rule simply existed in two places, and one of them moved.
+There is now one description of it, on the server, and the page reads it.
+
+### A document that had quietly gone missing from the record
+The Documents tab has been offering a school-leaving certificate card for months. It appeared in
+neither the catalogue nor the web app's own list of what it offers — three descriptions of the same
+thing, none of them complete. It went unnoticed because nothing had ever consulted those lists to
+decide what to DRAW. From this sprint the catalogue does, so the omission would have silently
+withdrawn a document students can upload today. It is now recorded in both places.
+
+### What an organisation can now do without us
+Switch a document off and its card disappears — and if it was the only one in its section, the
+heading goes too, rather than leaving a title over an empty space. Promote an optional document and
+it gains the compulsory marker. Proof of household income remains one switch over the whole means
+test: on, and the income section works exactly as it does today; off, and it is not asked at all.
+Half an income assessment is not something anyone designed.
+
+### Nothing changes for BrightPath
+The catalogue holds no per-programme choices, so all 143 live applications resolve to the same
+defaults the page used to hard-code. The one visible difference is the offer letter and the income
+section now carrying the compulsory marker they always deserved.
+
+### Also
+- The upload page has its first test that actually opens it. At ~1,900 lines it had never been
+  rendered in a test, which is how a wrong list of compulsory documents sat in the code unnoticed.
+- Both configurations — the full form and a leaner one — can now be viewed in the design sandbox
+  before anything ships.
+
 ## The catalogue now governs which documents an application needs — 2026-07-29
 
 Sprint 3a of the configuration-layers roadmap. The rules that decide whether a student may submit no

@@ -659,6 +659,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
+    requirements = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     # The address decision/comms emails are actually sent to (resolved at submit).
     notify_email = serializers.EmailField(read_only=True)
@@ -711,7 +712,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).
             'address', 'postal_code', 'city', 'preferred_state',
-            'funding_need', 'completeness', 'notify_email', 'contact_phone',
+            'funding_need', 'completeness', 'requirements', 'notify_email', 'contact_phone',
             'form_data', 'intake_snapshot',
         ]
 
@@ -747,6 +748,27 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     def get_completeness(self, obj):
         from .services import application_completeness
         return application_completeness(obj)
+
+    def get_requirements(self, obj):
+        """What THIS programme asks for — `{'documents': {'required': [...], 'optional': [...]}}`.
+
+        The Documents tab renders from this, so a document an organisation has not asked for is
+        not drawn at all, and one it has promoted to required carries the marker. Before Sprint 3b
+        the web app decided that for itself from a hard-coded list, and the two disagreed in
+        production: `COMPULSORY_DOC_TYPES` said identity card + results slip while the submission
+        gate also required the offer letter and the income route. A student could complete every
+        card the front end marked compulsory and still be blocked.
+
+        `income_proof` is an AGGREGATE, not a card: it switches the whole income route engine on
+        or off (see `requirements.DOCUMENT_AGGREGATES`). The Documents tab reads it as "render the
+        income section", which is a membership test, not a re-implementation of the route rules —
+        those stay entirely on the server.
+
+        Cheap: `requirements.resolve` is one query, memoised on the instance, and
+        `get_completeness` above has already paid for it on every application.
+        """
+        from . import requirements
+        return {'documents': requirements.payload_for(obj, 'document')}
 
 
 # ── Documents / referee / consent (Sprint 5a) ────────────────────────────

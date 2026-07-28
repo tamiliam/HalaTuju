@@ -1092,8 +1092,18 @@ export function isStepComplete(k: NextStepKey, c: ApplicationCompleteness): bool
 
 // ── Documents (Sprint 5b / S4 redesign) ─────────────────────────────────
 
-/** The two documents every applicant must provide. */
-export const COMPULSORY_DOC_TYPES = ['ic', 'results_slip'] as const
+/**
+ * ⚠ THERE IS NO LIST HERE OF WHICH DOCUMENTS ARE COMPULSORY, AND THERE MUST NOT BE ONE AGAIN.
+ *
+ * `COMPULSORY_DOC_TYPES = ['ic', 'results_slip']` lived at this spot until Sprint 3b, and in
+ * production it was WRONG: the submission gate also required the offer letter and the household
+ * income route. A student could satisfy every card this file marked compulsory and still be
+ * refused at submit, with nothing on screen explaining why. Nobody had changed either side
+ * carelessly — the rule simply existed twice, and one copy moved.
+ *
+ * The programme's answer now arrives on the application payload (`app.requirements.documents`,
+ * resolved by `requirements.py`), and this module only READS it. See `documentRequirement`.
+ */
 
 /** Any one of these counts as proof of household income (combined card). */
 export const INCOME_PROOF_TYPES = ['str', 'salary_slip', 'epf'] as const
@@ -1124,53 +1134,68 @@ export function docFileLayout(fileCount: number): DocFileLayout {
 }
 
 /**
- * S17 — additional documents only relevant when the applicant is a minor:
- * - `parent_ic` is COMPULSORY for any minor (the parent/guardian's IC).
- * - `guardianship_letter` is COMPULSORY when the consenting adult is NOT the
- *   father or mother (court-issued order or parent's written authorisation).
+ * The VOCABULARY of document types the front end knows — deliberately still a static literal.
  *
- * Both surface in the Documents tab when `isMinor` so the student can upload
- * them in advance, before reaching the Consent step. The Consent submit
- * blocks (with a backend 400) until the relevant doc(s) are present.
- */
-export const MINOR_GUARDIAN_DOC_TYPES = ['parent_ic', 'guardianship_letter'] as const
-
-/** Optional docs shown as individual cards (excluding the income group). */
-export const OTHER_OPTIONAL_DOC_TYPES = [
-  'water_bill', 'electricity_bill', 'statement_of_intent', 'offer_letter', 'photo',
-] as const
-
-/**
- * Full union of all doc types known to the frontend.
- * `reference_letter` is kept for back-compat (admin stage) but not shown in
- * the student UI.
+ * ⚠ This is not the thing Sprint 3b deleted. What a programme ASKS FOR is configuration and now
+ * comes from the server; what a document type IS remains a closed set with recognition logic, a
+ * versioned genuineness model and verification behaviour behind each entry (the backend's
+ * `ApplicantDocument.DOC_TYPES`). An organisation NAMES an existing type; it never invents one.
+ * Keeping this static is what makes `DocType` a compile-time union and the catalogue a catalogue
+ * rather than a form builder.
+ *
+ * `reference_letter` is kept for back-compat (admin stage) but not shown in the student UI.
+ * `school_leaving_cert` was rendered by the Documents tab for months while missing from this
+ * union — it type-checked only because the card helper takes a bare `string`. Sprint 3b added it
+ * here and to the catalogue together.
  */
 export const DOC_TYPES = [
-  ...COMPULSORY_DOC_TYPES,
+  'ic', 'results_slip',
   ...INCOME_PROOF_TYPES,
-  ...OTHER_OPTIONAL_DOC_TYPES,
-  ...MINOR_GUARDIAN_DOC_TYPES,
+  'water_bill', 'electricity_bill', 'statement_of_intent', 'offer_letter', 'photo',
+  'school_leaving_cert',
+  // S17 — surfaced for a minor so they can upload ahead of the Consent step. Whether they are
+  // REQUIRED is a per-student rule the server enforces at consent submit (parent_ic for any
+  // minor; guardianship_letter when the consenting adult is not the father or mother), not a
+  // per-organisation setting, so it is not in the catalogue.
+  'parent_ic', 'guardianship_letter',
   'reference_letter',
 ] as const
 export type DocType = typeof DOC_TYPES[number]
 
+/** How a programme treats one document: shown with a marker, shown without, or not shown. */
+export type DocRequirement = 'required' | 'optional' | 'off'
+
 /**
- * Returns true when an applicant has uploaded the compulsory documents.
- * S22: parent_ic is compulsory for everyone (the admin cross-checks STR/EPF
- * and similar supporting documents — usually issued in a parent's name —
- * against the parent's IC).
- * S23: proof of household income is compulsory too — any one of
- * INCOME_PROOF_TYPES satisfies it. STR recipients are nudged in the UI to
- * also upload salary/EPF for each working household member, but one upload
- * is enough to pass the completeness gate.
- * The conditional `guardianship_letter` for minors with non-parent guardians
- * is enforced separately at the consent submit step.
+ * What this programme asks for, for one document type.
+ *
+ * **An absent block means "we were not told", never "asks for nothing".** That distinction is the
+ * whole lesson of Sprint 3a: resolving an unconfigured programme to the empty set made
+ * `documents_done` vacuously true and would have let sixty students submit with no documents at
+ * all. Here the failure would be quieter but the same shape — a Documents tab with no cards on it.
+ * So a missing block degrades to `'optional'`: every card renders, nothing is asserted compulsory.
+ * The front end displays; it has never been the gate, and `application_completeness` on the
+ * server still decides whether a submission is allowed.
+ *
+ * `income_proof` is an aggregate — asking about it means "does this programme want the household
+ * income section at all", not "is there a card called income proof".
  */
-export function documentsComplete(presentTypes: string[]): boolean {
-  const present = new Set(presentTypes)
-  const hasCompulsory = ['ic', 'results_slip', 'parent_ic'].every((t) => present.has(t))
-  const hasIncomeProof = INCOME_PROOF_TYPES.some((t) => present.has(t))
-  return hasCompulsory && hasIncomeProof
+export function documentRequirement(
+  requirements: { documents: { required: string[]; optional: string[] } } | null | undefined,
+  docType: string,
+): DocRequirement {
+  const docs = requirements?.documents
+  if (!docs) return 'optional'
+  if (docs.required.includes(docType)) return 'required'
+  if (docs.optional.includes(docType)) return 'optional'
+  return 'off'
+}
+
+/** Is this document asked for at all (required OR optional)? */
+export function asksForDocument(
+  requirements: { documents: { required: string[]; optional: string[] } } | null | undefined,
+  docType: string,
+): boolean {
+  return documentRequirement(requirements, docType) !== 'off'
 }
 
 export function formatFileSize(bytes: number): string {

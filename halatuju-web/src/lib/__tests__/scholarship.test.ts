@@ -29,10 +29,9 @@ import {
   applicationToDetailsForm,
   buildDetailsPayload,
   DOC_TYPES,
-  COMPULSORY_DOC_TYPES,
   INCOME_PROOF_TYPES,
-  OTHER_OPTIONAL_DOC_TYPES,
-  documentsComplete,
+  documentRequirement,
+  asksForDocument,
   formatFileSize,
   REFERRING_ORG_OPTIONS,
   CALL_LANGUAGE_OPTIONS,
@@ -1093,8 +1092,7 @@ describe('formatFileSize', () => {
 
 describe('DOC_TYPES', () => {
   it('lists all supporting document types including S4 + S17 additions', () => {
-    // 2 compulsory + 3 income proof + 5 other optional + 2 S17 minor guardian + reference_letter = 13
-    expect(DOC_TYPES).toHaveLength(13)
+    expect(DOC_TYPES).toHaveLength(14)
     expect(DOC_TYPES).toContain('ic')
     expect(DOC_TYPES).toContain('reference_letter')
     expect(DOC_TYPES).toContain('salary_slip')
@@ -1104,73 +1102,93 @@ describe('DOC_TYPES', () => {
     // S17 — minor consent flow
     expect(DOC_TYPES).toContain('parent_ic')
     expect(DOC_TYPES).toContain('guardianship_letter')
+    // Added in Sprint 3b. The Documents tab had rendered a school-leaving-certificate card for
+    // months while this union omitted it — it compiled because the card helper takes a bare
+    // `string`, so `DocType` never had to be right for the page to work.
+    expect(DOC_TYPES).toContain('school_leaving_cert')
+  })
+
+  it('every type the union names is unique', () => {
+    // A duplicate would go unnoticed: the union collapses it and the length assertion above
+    // would still be satisfiable by adding another entry.
+    expect(new Set(DOC_TYPES).size).toBe(DOC_TYPES.length)
   })
 })
 
-describe('COMPULSORY_DOC_TYPES / INCOME_PROOF_TYPES / OTHER_OPTIONAL_DOC_TYPES', () => {
-  it('has ic and results_slip as compulsory', () => {
-    expect(COMPULSORY_DOC_TYPES).toContain('ic')
-    expect(COMPULSORY_DOC_TYPES).toContain('results_slip')
-    expect(COMPULSORY_DOC_TYPES).toHaveLength(2)
-  })
-
+describe('INCOME_PROOF_TYPES', () => {
   it('has three income proof types', () => {
     expect(INCOME_PROOF_TYPES).toContain('str')
     expect(INCOME_PROOF_TYPES).toContain('salary_slip')
     expect(INCOME_PROOF_TYPES).toContain('epf')
     expect(INCOME_PROOF_TYPES).toHaveLength(3)
   })
-
-  it('has five other optional doc types', () => {
-    expect(OTHER_OPTIONAL_DOC_TYPES).toContain('water_bill')
-    expect(OTHER_OPTIONAL_DOC_TYPES).toContain('electricity_bill')
-    expect(OTHER_OPTIONAL_DOC_TYPES).toContain('offer_letter')
-    expect(OTHER_OPTIONAL_DOC_TYPES).toHaveLength(5)
-  })
 })
 
-describe('documentsComplete', () => {
-  // S22: parent_ic compulsory for everyone. S23: + at least one income proof
-  // (STR / salary_slip / EPF) — STR recipients are nudged in the UI to also
-  // upload salary/EPF per working household member, but one is enough.
-  it('returns true when ic + results_slip + parent_ic + STR are present', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'str'])).toBe(true)
+/**
+ * Sprint 3b replaced three constants with one reader.
+ *
+ * `COMPULSORY_DOC_TYPES`, `OTHER_OPTIONAL_DOC_TYPES` and `documentsComplete()` used to be tested
+ * here. All three described WHICH documents a programme asks for, and all three were wrong about
+ * production: the first named two documents while the submission gate enforced four, the second
+ * omitted `school_leaving_cert` although the tab rendered it, and the third had no caller outside
+ * this file. Their tests passed the whole time, because a test can only check that a list says
+ * what it says. The programme's answer now arrives on the payload and these functions read it.
+ */
+describe('documentRequirement / asksForDocument', () => {
+  const reqs = {
+    documents: {
+      required: ['ic', 'income_proof', 'offer_letter', 'results_slip'],
+      optional: ['electricity_bill', 'photo', 'school_leaving_cert', 'statement_of_intent',
+                 'water_bill'],
+    },
+  }
+
+  it('reports required, optional and off from the payload', () => {
+    expect(documentRequirement(reqs, 'ic')).toBe('required')
+    expect(documentRequirement(reqs, 'photo')).toBe('optional')
+    // Absent from BOTH lists — the programme does not ask for it, so nothing is drawn.
+    expect(documentRequirement(reqs, 'reference_letter')).toBe('off')
   })
 
-  it('returns true when salary_slip stands in for STR as income proof', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'salary_slip'])).toBe(true)
+  it('follows a programme that promotes an optional document', () => {
+    const promoted = {
+      documents: {
+        required: [...reqs.documents.required, 'water_bill'],
+        optional: reqs.documents.optional.filter((d) => d !== 'water_bill'),
+      },
+    }
+    expect(documentRequirement(promoted, 'water_bill')).toBe('required')
+    // ...and leaves its neighbour alone. Without this line the test also passes when EVERY
+    // document is reported required, which is a real way to get the payload wrong.
+    expect(documentRequirement(promoted, 'electricity_bill')).toBe('optional')
   })
 
-  it('returns true when EPF stands in for STR as income proof', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'epf'])).toBe(true)
+  it('treats a MISSING block as "we were not told", never as "asks for nothing"', () => {
+    // The Sprint 3a failure shape, one layer up: resolving absence to the empty set would render
+    // a Documents tab with no cards at all. Absence degrades to optional — every card shows,
+    // nothing is asserted compulsory — because this file displays and the server gates.
+    for (const missing of [undefined, null]) {
+      expect(documentRequirement(missing, 'ic')).toBe('optional')
+      expect(asksForDocument(missing, 'ic')).toBe(true)
+      expect(asksForDocument(missing, 'photo')).toBe(true)
+    }
   })
 
-  it('returns true with multiple income proofs uploaded (encouraged for STR families)', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'str', 'salary_slip', 'epf'])).toBe(true)
+  it('answers the income aggregate, which governs the whole route section', () => {
+    expect(asksForDocument(reqs, 'income_proof')).toBe(true)
+    const noMeansTest = {
+      documents: {
+        required: reqs.documents.required.filter((d) => d !== 'income_proof'),
+        optional: reqs.documents.optional,
+      },
+    }
+    expect(asksForDocument(noMeansTest, 'income_proof')).toBe(false)
   })
 
-  it('returns false when income proof is missing (S23 — was true pre-S23)', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'parent_ic'])).toBe(false)
-  })
-
-  it('returns false when no documents are present', () => {
-    expect(documentsComplete([])).toBe(false)
-  })
-
-  it('returns false when only ic + results_slip (missing parent_ic and income proof)', () => {
-    expect(documentsComplete(['ic', 'results_slip'])).toBe(false)
-  })
-
-  it('returns false when only ic is present', () => {
-    expect(documentsComplete(['ic'])).toBe(false)
-  })
-
-  it('returns false when parent_ic is missing but income proof present', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'str'])).toBe(false)
-  })
-
-  it('returns false when only income proofs are present (compulsory docs missing)', () => {
-    expect(documentsComplete(['salary_slip', 'photo', 'epf'])).toBe(false)
+  it('asksForDocument is true for required and optional alike', () => {
+    expect(asksForDocument(reqs, 'ic')).toBe(true)
+    expect(asksForDocument(reqs, 'photo')).toBe(true)
+    expect(asksForDocument(reqs, 'reference_letter')).toBe(false)
   })
 })
 

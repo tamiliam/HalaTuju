@@ -90,12 +90,22 @@ class TestSeamMatchesTodaysBehaviour(TestCase):
         )
 
     def test_optional_documents_match_the_student_UI(self):
-        # `OTHER_OPTIONAL_DOC_TYPES` in halatuju-web/src/lib/scholarship.ts, minus offer_letter
-        # which the 2026-06-05 gate promoted to compulsory for every route.
+        """What the student Documents tab actually offers.
+
+        ⚠ CHANGED IN SPRINT 3b, and not because a policy moved. The original version of this test
+        was written against `OTHER_OPTIONAL_DOC_TYPES` in halatuju-web/src/lib/scholarship.ts, and
+        that constant was itself incomplete: the tab renders a `school_leaving_cert` card which
+        appears in neither list. Reading one description of the UI and calling it the UI is how
+        the omission survived — the card is in the JSX, and only the JSX was ever authoritative.
+
+        `offer_letter` is absent because the 2026-06-05 gate promoted it to compulsory for every
+        route; it is required, not optional.
+        """
         app = _stub(self.programme)
         self.assertEqual(
             requirements.optional_documents(app),
-            {'water_bill', 'electricity_bill', 'statement_of_intent', 'photo'},
+            {'water_bill', 'electricity_bill', 'statement_of_intent', 'photo',
+             'school_leaving_cert'},
         )
 
     def test_required_questions_match_the_completeness_parts(self):
