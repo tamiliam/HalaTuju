@@ -1939,3 +1939,24 @@ adviser and not for this register.** What is recorded here is only that we curre
 
 (Logged 2026-07-28 from the owner's instruction at sprint close. **Number allocated when TD-191 was
 the highest — re-verify uniqueness at the next close**, per the concurrent-agent lesson.)
+### [TD-193] The scope switcher changes the breadcrumb and nothing else — low, but it will read as broken
+**Status:** Open — logged 2026-07-28 at N3a's own close, with the condition that makes it matter.
+**What.** `ScopeSwitcher` lets a super choose an organisation or programme, and the selection moves
+the breadcrumb. It does **not** filter any page: B40 Applications, Sponsors and Payments still show
+everything the caller's fence allows, exactly as before.
+**Why it shipped that way, deliberately.** The roadmap's own constraint is that the selection is a
+DISPLAY preference and must never become an ambient auth context — no header, no cookie, no
+middleware rewrite, because that relocates the organisation fence into the client. Making the
+selection *filter* is a different and larger question: whether each list takes an explicit
+`?organisation=` / `?programme=` parameter, re-fenced server-side on every endpoint. That is a
+sprint, not a follow-on, and doing it badly is precisely how the 2026-07-15 surface-partition
+incident happened.
+**Unreachable today:** with one organisation and one programme each crumb renders as plain text, so
+there is nothing to select and nothing to be confused by.
+**The trigger:** a second organisation or a second programme going active. From that moment a super
+can pick "Inspire" and see BrightPath's applications underneath it, which reads as a bug even
+though the fence is doing exactly what it should.
+**To resolve:** decide whether scope filtering is per-endpoint query parameters (re-fenced
+server-side, the safe shape) or a saved default the lists read; then apply it list by list, with a
+fence test per endpoint. **Do not** solve it by attaching the scope to requests globally.
+(Logged 2026-07-28, nav/IA N3a.)

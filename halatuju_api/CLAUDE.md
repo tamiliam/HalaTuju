@@ -625,6 +625,29 @@ NOT**); retro `docs/retrospective-2026-07-28-multiprogramme-m1.md`; decisions ×
 - **⚠ Until M2, two live applications = refusal.** Correct floor: a locked upload is recoverable, a
   document filed under another foundation is not.
 
+**✅ NAV/IA N3a SHIPPED 2026-07-28 — the breadcrumb switchers. THE NAV/IA ROADMAP IS NOW
+GENUINELY COMPLETE (N1, N2, N3a, N3b, N4).** Retro `docs/retrospective-2026-07-28-nav-n3a.md`;
+decisions ×2; lessons ×3. **NO migration.** `pytest` **4968** (full scope) · `jest` **1047** / 68
+suites · i18n 4153×3.
+- **Why it ran:** the owner compared the live console with the design of record. **Not a
+  regression** — `AppShell.tsx` passed `programmeName={undefined}` HARDCODED, so that crumb was
+  skipped on every render since N2, and the org crumb was static text. N2 shipped the shape and
+  left the content for N3a. **⚠ The parking trigger NEVER FIRED** (one org still owns everything);
+  the owner simply decided. Recorded that way in decisions.md — do not read the parking mechanism
+  as more predictive than it is.
+- `GET admin/scholarship/scopes/` — **classified in `FENCED_OR_EXEMPT`** (`AdminScopeListView`), or
+  CI fails by design. super sees all; everyone else their own; **partner NOTHING** (a referral org
+  is attribution, never a scope); no-org → empty lists, not a 500.
+- **⚠ IT CANNOT WIDEN ACCESS BY CONSTRUCTION** — derived from the same `owning_organisation` the
+  fence uses, so a client ignoring it reaches identical data. **The selection is a DISPLAY
+  preference: never a header, cookie or middleware rewrite**, which would relocate the fence into
+  the client (the 2026-07-15 surface-partition incident in a new costume).
+- **⚠ ONE OPTION RENDERS AS PLAIN TEXT, not a dropdown of one** — production's state today, so it
+  is the path everyone sees and the one most likely to be "simplified". It has its own test.
+- **TD-193: the switcher moves the breadcrumb and NOTHING ELSE** — it filters no list. Deliberate;
+  filtering means per-endpoint scope parameters re-fenced server-side, which is a sprint. Trigger:
+  a second organisation or programme going active.
+
 **▶ NEXT: THEMES** (owner sequencing — admin, sponsor and student surfaces, its own planning
 exercise via `implementation-planning.md`). Still hard-blocking a second tenant, and NOT
 engineering: **Sprint E (erasure)** before any real second-tenant applicant data, and **no entity

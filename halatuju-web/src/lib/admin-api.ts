@@ -2221,3 +2221,31 @@ export async function fetchContractPreviewPdf(id: number, locale: string, option
   if (!res.ok) throw new Error(`Preview PDF failed: ${res.status}`)
   return res.blob()
 }
+
+// ── nav/IA N3a: the breadcrumb switchers ─────────────────────────────────────
+/** One organisation or programme the caller may LOOK AT. */
+export interface AdminScopeOrg { id: number; code: string; name: string }
+export interface AdminScopeProgramme extends AdminScopeOrg { organisation_id: number }
+export interface AdminScopes {
+  organisations: AdminScopeOrg[]
+  programmes: AdminScopeProgramme[]
+}
+
+/**
+ * What this admin may look at — feeds the breadcrumb switchers.
+ *
+ * ⚠ NOT an access check and must never be used as one. The answer is derived server-side from
+ * the same `owning_organisation` the org fence uses, so it cannot widen anything; a client that
+ * ignores it reaches exactly the same data. The selection it produces is a DISPLAY preference —
+ * it must not travel as a header, a cookie, or anything ambient, because that would relocate the
+ * fence into the client.
+ *
+ * Never throws upward in the shell: a switcher is furniture, and a failed fetch must not take
+ * the console down. Callers treat a rejection as "no scopes to offer".
+ */
+export async function getAdminScopes(
+  lang: string,
+  options?: ApiOptions,
+): Promise<AdminScopes> {
+  return adminFetch(`/api/v1/admin/scholarship/scopes/?lang=${encodeURIComponent(lang)}`, options)
+}

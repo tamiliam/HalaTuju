@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { getPendingSponsorCount } from '@/lib/admin-api'
+import { getPendingSponsorCount, getAdminScopes, type AdminScopes } from '@/lib/admin-api'
 import { adminSignOut } from '@/lib/admin-supabase'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
@@ -13,6 +13,7 @@ import { PREF_KEYS, readPref, writePref } from '@/lib/uiPrefs'
 import { Sidebar } from '@/components/admin/Sidebar'
 import { Topbar, type Attention } from '@/components/admin/Topbar'
 import { CommandPalette } from '@/components/admin/CommandPalette'
+import { ScopeSwitcher } from '@/components/admin/ScopeSwitcher'
 
 /**
  * The console shell: breadcrumb + scope sidebar + the account cluster.
@@ -31,7 +32,7 @@ import { CommandPalette } from '@/components/admin/CommandPalette'
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const { role, token } = useAdminAuth()
-  const { t } = useT()
+  const { t, locale } = useT()
   const pathname = usePathname()
   const router = useRouter()
 
@@ -56,6 +57,26 @@ export function AppShell({ children }: { children: ReactNode }) {
       return !was
     })
   }
+
+  /*
+   * The scopes behind the breadcrumb switchers (nav/IA N3a).
+   *
+   * ⚠ A selected scope is a DISPLAY preference. It is not sent with any request, and nothing is
+   * re-scoped because of it — the organisation fence is server-side and unchanged. Putting it in
+   * a header or a cookie would relocate that fence into the client.
+   *
+   * A failed fetch is swallowed: a switcher is furniture, and the console must not go down
+   * because a dropdown could not be populated. Empty scopes fall back to the static crumbs.
+   */
+  const [scopes, setScopes] = useState<AdminScopes>({ organisations: [], programmes: [] })
+  const [selectedOrg, setSelectedOrg] = useState('')
+  const [selectedProgramme, setSelectedProgramme] = useState('')
+  useEffect(() => {
+    if (!token) return
+    getAdminScopes(locale, { token })
+      .then(setScopes)
+      .catch(() => { /* furniture — never block the shell */ })
+  }, [token, locale])
 
   const probes = useNavProbes(token)
   const r = effectiveRole(role)
@@ -167,6 +188,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         attention={attention}
         onOpenSearch={() => setPaletteOpen(true)}
         onOpenMobileNav={() => setMobileNav(true)}
+        scopes={
+          scopes.organisations.length || scopes.programmes.length ? (
+            <ScopeSwitcher
+              organisations={scopes.organisations}
+              programmes={scopes.programmes}
+              selectedOrg={selectedOrg}
+              selectedProgramme={selectedProgramme}
+              onSelectOrg={setSelectedOrg}
+              onSelectProgramme={setSelectedProgramme}
+            />
+          ) : undefined
+        }
         navPinned={pinned}
         onTogglePin={togglePin}
         onSignOut={async () => { await adminSignOut(); router.replace('/admin/login') }}

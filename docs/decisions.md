@@ -6223,6 +6223,8 @@ later; mitigated by stating the trigger and a cheap tell for it rather than "rev
 count(DISTINCT owning_organisation_id) FROM scholarship_cohorts WHERE is_active` returns more than 1
 (it returns 1 today) — or PF-1's design turns out to need the scopes endpoint anyway, in which case
 build it there and delete this entry.
+**▶ UN-PARKED 2026-07-28 BY OWNER DECISION — and the trigger never fired.** *"now that we have built PF-1, can we build n3a?"* Recorded precisely, because the honest reason matters for anyone reading this later: production still has exactly ONE organisation owning anything, so the condition written above did NOT become true. The owner simply decided the console should match the design of record they approved, which is a legitimate reason and a different one. The prediction in the rationale did hold — PF-1 settled that a programme is identified by `Programme.code`, so the endpoint matches it rather than pre-empting it. **The parking was still right:** it cost nothing, it kept the switcher from being designed before PF-1 answered that question, and it was reversed by a sentence.
+
 **Correction, same day:** this entry first gave the trigger as "more than one active
 `PartnerOrganisation`", which was **already true when it was written** — production has 10, of which
 9 are REFERRAL organisations and only BrightPath owns anything. A trigger that has already fired is
@@ -6324,3 +6326,35 @@ with an explanation is the honest floor, and it is unreachable while one program
 because the state cannot occur today, and because a locked screen is recoverable while a document
 filed under the wrong foundation is not.
 **Revisit if:** M4 is approved — at which point this branch becomes the chooser.
+
+## A single scope renders as text, never a dropdown of one — Nav/IA N3a, 2026-07-28
+**Decision:** `ScopeSwitcher` renders a crumb as plain text when there is one option, and as a menu
+only when there are two or more. Both crumbs behave this way independently.
+**Alternatives considered:** (a) always render the control, so the affordance is consistent and the
+component has one code path; (b) render the control disabled.
+**Rationale:** a chevron that opens a menu containing one entry is a promise the data does not keep,
+and it invites the click that teaches a person the control is pointless. (b) is worse: a disabled
+control implies permission is missing, when in fact nothing else exists. **This is production's
+state today** — one organisation, one programme — so it is the path everyone sees and the one most
+likely to be "simplified" into a single code path later. Hence its own test.
+**Trade-offs:** two rendering paths in a small component, and a person who gains a second
+organisation sees the affordance appear rather than activate.
+**Revisit if:** the console ever needs to show that other scopes exist but are unreachable — a
+different requirement, and one that would want an explicit empty/locked state rather than text.
+
+## The selected scope is a display preference and is deliberately NOT persisted — Nav/IA N3a, 2026-07-28
+**Decision:** The selection lives in component state. It is not written to `localStorage`, not sent
+with any request, and nothing is re-scoped because of it.
+**Alternatives considered:** (a) persist it via `uiPrefs` (which exists, and which the roadmap's
+own spec hinted at with "persists a client-side display preference"); (b) attach it to requests so
+the console filters by it.
+**Rationale:** (b) is forbidden and the roadmap says why — it relocates the organisation fence into
+the client, which is the 2026-07-15 surface-partition incident in a new costume. (a) is more
+interesting: persisting a value that NOTHING consumes is a placeholder asserting a future design,
+and this project has just been bitten twice by exactly that (`programmeName={undefined}` here, the
+reserved `theme` key in N4). Storing it would encode an assumption about how filtering will
+eventually work, before that has been designed.
+**Trade-offs:** a super who switches, navigates and returns is back on the first entry. Invisible
+today, and mildly annoying the day a second organisation exists — which is also the day TD-192
+makes filtering a real sprint, and the right moment to decide persistence alongside it.
+**Revisit if:** TD-192 is picked up; persistence should be designed with the filtering it serves.

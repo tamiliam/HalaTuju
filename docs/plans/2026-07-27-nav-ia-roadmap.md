@@ -4,9 +4,9 @@
 > **N3b** route split → **N4** the rail. Arc retrospective:
 > `docs/retrospective-2026-07-28-nav-ia-arc.md`.
 >
-> **One piece was deliberately NOT built: N3a**, the organisation/programme switchers. It is parked
-> with a trigger rather than cancelled — see *N3a — PARKED* below. Everything else the roadmap
-> promised exists.
+> **Everything this roadmap promised now exists.** N3a was parked and then un-parked by the
+> owner on 2026-07-28 (the trigger never fired — see `decisions.md`); it shipped the same
+> day. Retro `docs/retrospective-2026-07-28-nav-n3a.md`.
 >
 > **Do not add work to this file.** Theming and PF-1 have their own homes, named at the bottom.
 
@@ -129,7 +129,18 @@ first drafts.
 > Navigation is now the least urgent thing on this list. N3a is worth doing — it is the switcher a
 > second organisation needs — but it should not go ahead of PF-1.
 
-## ⏸ N3a — scopes endpoint + switchers — PARKED 2026-07-28, WITH A TRIGGER
+## ✅ N3a — scopes endpoint + switchers — SHIPPED 2026-07-28
+
+> **The owner reopened this**: *"now that we have built PF-1, can we build n3a?"* — after
+> noticing the built console does not match the approved design (the top bar shows
+> `HalaTuju / BrightPath` as static text; the programme crumb is hardcoded
+> `programmeName={undefined}` and never renders). **The trigger below never fired** —
+> one organisation still owns everything. It was an owner decision, not a condition
+> being met, and the record says so.
+
+> This is the one item for which the roadmap is reopened. Everything else in this file
+> stays closed.
+
 
 **Not cancelled, not owed-and-drifting: parked against a condition.**
 

@@ -192,6 +192,13 @@ class TestFenceCoverageCompleteness(TestCase):
 
     # name → how it is fenced (see docs/plans/2026-07-15-phase1-s3a-endpoint-audit.md).
     FENCED_OR_EXEMPT = {
+        # nav/IA N3a — the breadcrumb switchers. LIST-fenced on the same
+        # owning_organisation the fence itself uses, so it cannot widen anything: super sees
+        # every active org/programme, everyone else exactly their own, `partner` nothing (a
+        # referral org is attribution, never a scope), NULL-org empty rather than a 500.
+        # ⚠ The SELECTION it feeds is a display preference — it must never travel as a
+        # header/cookie/middleware rewrite, which would relocate the fence into the client.
+        'AdminScopeListView': 'nav-scopes-list-fenced',
         # base
         '_BursaryAdminBase': 'base — shared _agreement lookup',
         '_PaymentsBase': 'base — shared payments gate + org-fenced run lookup',

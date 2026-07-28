@@ -9,15 +9,20 @@ import { Icon } from '@/components/admin/icons'
 /**
  * The top bar: where you ARE on the left, what is YOURS on the right.
  *
- * The breadcrumb is static text this sprint. An organisation switcher needs a scopes endpoint
- * (org-fenced, classified in the backend fence test) and BrightPath runs exactly one
- * organisation and one programme today, so a switcher would be a dropdown with one entry.
- * N3 adds the endpoint and turns these into switchers; the shape is already right.
+ * The breadcrumb takes its scope crumbs from `AppShell` (nav/IA N3a) — this component never
+ * fetches or decides scope, it only renders what it is handed. When no switchers are passed it
+ * falls back to the static org/programme text, which is what a caller with nothing to switch
+ * between gets.
+ *
+ * ⚠ A selected scope is a DISPLAY preference and must never become an auth context — see the
+ * ScopeSwitcher docstring for why that distinction is load-bearing.
  */
 
 export interface Attention { key: string; label: string; sub?: string; tone: 'info' | 'warn' | 'crit' }
 
-function Breadcrumb({ orgName, programmeName }: { orgName?: string | null; programmeName?: string }) {
+function Breadcrumb({ orgName, programmeName, scopes }: {
+  orgName?: string | null; programmeName?: string; scopes?: React.ReactNode
+}) {
   const crumb = (text: string, muted?: boolean) => (
     <span className={`truncate ${muted ? 'text-gray-500' : 'font-medium text-gray-800'}`}>{text}</span>
   )
@@ -28,8 +33,12 @@ function Breadcrumb({ orgName, programmeName }: { orgName?: string | null; progr
         <span aria-hidden className="grid h-5 w-5 place-items-center rounded bg-primary-600 text-[10px] font-extrabold text-white">H</span>
         HalaTuju
       </span>
-      {orgName && <>{sep}{crumb(orgName, true)}</>}
-      {programmeName && <>{sep}{crumb(programmeName)}</>}
+      {scopes ?? (
+        <>
+          {orgName && <>{sep}{crumb(orgName, true)}</>}
+          {programmeName && <>{sep}{crumb(programmeName)}</>}
+        </>
+      )}
     </nav>
   )
 }
@@ -37,7 +46,7 @@ function Breadcrumb({ orgName, programmeName }: { orgName?: string | null; progr
 export function Topbar({
   orgName, programmeName, adminName, roleLabel, attention,
   onOpenSearch, onOpenMobileNav, onSignOut, guideHref, faqHref, profileHref,
-  navPinned, onTogglePin,
+  navPinned, onTogglePin, scopes,
 }: {
   orgName?: string | null
   programmeName?: string
@@ -50,6 +59,9 @@ export function Topbar({
   /** The rail's state, so the toggle can say which way it will go. */
   navPinned: boolean
   onTogglePin: () => void
+  /** The scope switchers (nav/IA N3a). When present they REPLACE the static org/programme
+   *  crumbs — Topbar stays presentational and never fetches or decides scope itself. */
+  scopes?: React.ReactNode
   guideHref?: string
   faqHref?: string
   profileHref: string
@@ -87,7 +99,7 @@ export function Topbar({
         <Icon name={navPinned ? 'pinned' : 'pin'} size={16} />
       </button>
 
-      <Breadcrumb orgName={orgName} programmeName={programmeName} />
+      <Breadcrumb orgName={orgName} programmeName={programmeName} scopes={scopes} />
 
       <div className="flex-1" />
 

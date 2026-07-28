@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 
 from halatuju.pagination import FlexiblePageNumberPagination
 
-from apps.courses.models import PartnerAdmin
+from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.courses.search import apply_people_search
 from apps.courses.views_admin import PartnerAdminMixin
 
@@ -33,7 +33,7 @@ from .verdict_engine import build_verdict
 from .models import (
     ApplicantDocument, Disbursement, Donation, GraduationMessage, InterviewSession,
     InterviewSlot, OrgRequest, OrgRequestAttachment, Referee, ReviewerProfile,
-    ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
+    Programme, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
 from . import scheduling
 from . import sponsor_comms as sponsor_comms_mod
@@ -1888,6 +1888,77 @@ class AdminMaintenanceSubstateView(_AdminBase):
         except maintenance_service.MaintenanceError as e:
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminScopeListView(_AdminBase):
+    """GET .../scopes/ — the organisations and programmes this admin may LOOK AT (nav/IA N3a).
+
+    Feeds the console's breadcrumb switchers. Until now the breadcrumb was static text and the
+    programme crumb was hardcoded `undefined`, so it never rendered at all — the approved design
+    had two switchers and the build had neither.
+
+    ⚠ THIS IS NOT THE FENCE, and the switcher built on it must never become one.
+    The org fence is `_org_scoped` / `_org_allows`, unchanged. This endpoint answers "what may I
+    look at", and its answer is DERIVED from the same `owning_organisation` the fence uses — so it
+    cannot widen anything. A client that ignores it entirely reaches exactly the same data.
+
+    Specifically forbidden, and the reason the roadmap called it out: the selected scope must not
+    travel as a global header, a cookie, or a middleware rewrite. That would relocate the fence
+    into the client, which is the 2026-07-15 surface-partition incident in a new costume. For a
+    super it is a DISPLAY preference and nothing more.
+
+    Who sees what:
+      super      — every active organisation and programme (they genuinely work across tenants)
+      everyone   — exactly their own `owning_organisation`, and that org's active programmes
+      partner    — nothing. A referral organisation is an attribution relationship, NEVER an
+                   access scope (`PartnerAdmin.org` / `referred_by_org`); handing a school a
+                   scope switcher would say otherwise.
+      no org     — empty lists, not a 500. A reviewer with `owning_organisation` NULL is a real
+                   row in production and must get a usable console.
+
+    Programme codes are `Programme.code`, which is what PF-1 settled a programme is identified by
+    (`/scholarship/apply?p=<code>`) — one vocabulary for "which programme", not two.
+
+    Names come from the trilingual `name_*` columns with the en-fallback convention used across
+    branding: a blank `ms`/`ta` falls back to `en` rather than rendering empty.
+    """
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+
+        lang = (request.query_params.get('lang') or 'en').lower()
+        if lang not in ('en', 'ms', 'ta'):
+            lang = 'en'
+
+        # A referral-org rep has no scope to switch between, and saying so with empty lists is
+        # the honest answer — not an error, because nothing has gone wrong.
+        if admin.role == 'partner':
+            return Response({'organisations': [], 'programmes': []})
+
+        orgs = PartnerOrganisation.objects.filter(is_active=True).order_by('name')
+        programmes = (Programme.objects.filter(is_active=True)
+                      .select_related('organisation').order_by('organisation__name', 'code'))
+        if not self.has_role(admin, 'super'):
+            # Derived from the SAME column the fence uses — so this can never widen access.
+            # NULL owning_organisation narrows to nothing, which is correct and not an error.
+            org_id = admin.owning_organisation_id
+            orgs = orgs.filter(id=org_id) if org_id else orgs.none()
+            programmes = programmes.filter(organisation_id=org_id) if org_id else programmes.none()
+
+        def _name(p):
+            return getattr(p, f'name_{lang}', '') or p.name_en
+
+        return Response({
+            'organisations': [
+                {'id': o.id, 'code': o.code, 'name': o.name} for o in orgs
+            ],
+            'programmes': [
+                {'id': p.id, 'code': p.code, 'name': _name(p),
+                 'organisation_id': p.organisation_id} for p in programmes
+            ],
+        })
 
 
 class AdminAssignableAdminsView(_AdminBase):
