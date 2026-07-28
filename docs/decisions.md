@@ -1,5 +1,50 @@
 # Architectural Decisions — HalaTuju
 
+## The sponsor tables sort and page in the BROWSER, not in the query — Sponsor tables, 2026-07-28
+**Decision (owner, after being shown the trade):** all four tables — the sponsor list, and the
+sponsorship history / people invited / wallet credits on the detail page — sort and paginate over
+rows the server has already sent. No query parameters, no new endpoints, no migration.
+
+**Why.** Two reasons, and the second is the one that decided it.
+
+1. **The three detail tables share ONE payload.** `getSponsorDetail` returns credits, sponsorships
+   and referrals together, so server-side paging would have meant either three new endpoints or a
+   single endpoint with three independent page cursors. That is a lot of surface for a table whose
+   largest instance on production is 38 rows.
+2. **Sorting must not be able to disagree with the figures.** `given` and `students` are computed
+   under the org fence, and `students` is deliberately counted in a **separate** aggregate query
+   because two `annotate()`s over multi-valued joins multiply (that bug read RM60,000 as RM120,000
+   during S1.1). Ordering by `students` server-side means a `Subquery` — reintroducing the exact
+   shape that caused the fan-out, to order a list of nine. Sorting the payload the fence already
+   produced cannot drift from it, because it *is* it.
+
+**Alternatives considered:** (a) server-side `order_by` + DRF pagination — rejected on the two
+grounds above; (b) a table library (TanStack) — rejected, ~14 kB for arithmetic we can pin with
+28 tests, and the footer control already existed from the partner-pagination sprint; (c) sort only
+the list and leave the detail tables — rejected by the owner, who asked for all four.
+
+**Trade-offs:** every row crosses the wire before the first page renders, and `students` cannot be
+ordered without the count the list endpoint already computes. Accepted at production's nine
+sponsors; it is a real cost at a few hundred.
+
+**Revisit if:** the sponsor list passes ~200 rows, or any single sponsor's history passes a few
+hundred — whichever first (**TD-190**). The threshold is stated as a row count rather than a date
+because it is the row count that makes it hurt.
+
+## Status sorts by WHO IS WAITING, not alphabetically — Sponsor tables, 2026-07-28
+**Decision (owner):** ascending on the Status column orders `pending → approved → suspended →
+rejected`, not `approved → pending → rejected → suspended`.
+
+**Why.** The column exists to find work. Alphabetical is the honest default for a *label*; it is
+the wrong default for a *queue*. `pending` is the only value that asks something of the admin, so
+it leads, and the two terminal-ish states sink. An unrecognised status sorts last rather than
+throwing, so adding a state later degrades quietly instead of breaking the page.
+
+**Trade-offs:** the order has to be learned — it is not guessable from the badge text. Accepted:
+one click reveals it, and the alternative buries the only actionable rows in the middle.
+**Revisit if:** the list gains a real status filter used more than the sort, which would make the
+ordering within a single status the interesting question instead.
+
 ## Sponsor comms ships NINE kinds, not eleven — Sponsor S3, 2026-07-28
 **Decision:** `low_balance` and `annual_statement` are not built, not seeded and not in the model's
 choices. The other nine ship together, dark.

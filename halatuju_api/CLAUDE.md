@@ -524,9 +524,14 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-28)
 
-**✅ SHIPPED + LIVE (DARK) 2026-07-28 — SPONSOR S3: an org_admin decides what sponsors hear.** Merged `9589c32a`; migration `0133` APPLIED migrate-first + verified; templates seeded (3 on, 6 off); api `…00888-s5b` / web `…00734-72q`; 0 log rows; `SPONSOR_COMMS_ENABLED` unset.
-Worktree `.worktrees/sponsor-detail`. Retro `docs/retrospective-2026-07-28-sponsor-comms-s3.md`;
-decisions ×3; lessons ×2. **⚠ MIGRATION `0133` — APPLY MIGRATE-FIRST (two tables + RLS).**
+**✅ SHIPPED + LIVE 2026-07-28 — SPONSOR S3: an org_admin decides what sponsors hear. THE PLATFORM
+FLAG IS NOW ON.** Merged `9589c32a`; migration `0133` APPLIED migrate-first + verified; templates
+seeded (**3 on, 6 off**); `SPONSOR_COMMS_ENABLED=1` on api `…00889-x6r` (owner: *"Enable the comms,
+and I'll let the org admin switch on what they want, when they want it"*) — **read back off the
+running service, and 0 rows in `sponsor_email_log` at the flip**, so nothing a sponsor receives
+changed at that moment. Worktree `.worktrees/sponsor-detail`. Retro
+`docs/retrospective-2026-07-28-sponsor-comms-s3.md`; decisions ×3; lessons ×2.
+**⚠ `0133` IS ALREADY APPLIED — do not re-run it.**
 - **Why:** a sponsor registered, was vetted and was approved without being told — the review
   endpoint flipped a field and returned. **Eight people on prod were approved in silence.**
 - Nine editable emails, each with its own switch and wording, behind TWO gates
@@ -550,16 +555,28 @@ decisions ×3; lessons ×2. **⚠ MIGRATION `0133` — APPLY MIGRATE-FIRST (two 
   TemplateEditor` (the wording editor, which gained a jsdom test neither copy had).
 - Emails panel gated **narrower than the sponsor list**: super/org_admin/admin. Finance reads
   sponsors (money is its business) but does not decide what donors are told.
-- **3662 scholarship pytest · 956 jest** (64 suites); `makemigrations --check` clean.
-- **▶ AT DEPLOY, in order: (1) apply `0133` migrate-first + RLS; (2) push; (3) run
-  `seed_sponsor_email_templates` ONCE** — the three already-sending kinds arrive ON, the six new
-  ones OFF, and the platform flag is unset, so nothing changes yet. **▶ THEN OWNER: read the six
-  new templates, edit the wording, switch on the ones wanted, and only then
-  `SPONSOR_COMMS_ENABLED=1` via `--update-env-vars`** (the flip moves the three live emails onto
-  their templates; nothing a sponsor receives changes).
+- **✅ ALSO SHIPPED SAME DAY — the four sponsor tables SORT and PAGE** (`2408ac12`, web
+  `…00736-9mw`). Owner request; **client-side by owner decision after being shown the trade**, so
+  no endpoint and no migration. `lib/tableView.ts` + `lib/sponsorTable.ts` + `lib/usePagedRows.ts`,
+  reusing the existing `components/Pagination` footer from the partner sprint. Three things there
+  are deliberate and easy to "fix" wrongly: **money arrives as a STRING** (`'9000.00'` sorts above
+  `'20000.00'` as text), **a null `last_seen_at` means UNKNOWN** and sinks in *both* directions
+  (the column has only recorded since 2026-07-27), and **Status sorts by who is WAITING** —
+  `pending → approved → suspended → rejected`, not alphabetically. Footer appears only **above 10
+  rows**; on prod today just 1 of the 4 tables reaches it. Retro
+  `docs/retrospective-2026-07-28-sponsor-tables-sort-paginate.md`; decisions ×2; lessons ×3;
+  **TD-190** = move server-side above ~200 rows.
+- **Measured on the merged tree at close: pytest 4947** (3687 scholarship + 1260 courses/reports) ·
+  **jest 1032** (67 suites); `makemigrations --check` clean; `tsc` clean.
+- **▶ OWNER, the only thing outstanding on this module: read the six new templates, edit the
+  wording, and switch on the ones you want.** The flag is already on, so a switch takes effect
+  immediately — there is no second gate to remember.
 - **▶ NEXT = S4** (mandatory reject/suspend reason — which also gives `rejected`/`suspended` the
   `{reason}` token they ship without — the per-sponsor email log, CSV export). TD-185 folds in.
-- **▶ CARRY:** ms/ta first drafts, ~59 new `admin.sponsors.emails.*` leaves (TD-183).
+- **▶ CARRY:** ms/ta first drafts, ~59 new `admin.sponsors.emails.*` leaves (TD-183). **TD-184 is
+  the one real gap left: no human has driven a credit through the chain in a browser** — it needs
+  two accounts (Kulaly as `admin`, Suresh as `org_admin`), because a super fills one signature slot
+  like anyone else.
 
 
 **🚨 READ FIRST — PF-1 NOW OUTRANKS EVERYTHING QUEUED BELOW.** The owner confirmed 2026-07-28 that

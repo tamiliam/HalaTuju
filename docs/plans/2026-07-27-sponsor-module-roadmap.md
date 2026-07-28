@@ -1,4 +1,4 @@
-# Sponsor module enrichment — roadmap (S3, S4 remaining)
+# Sponsor module enrichment — roadmap (S4 remaining)
 
 **Design of record:** <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>
 (both screens + the email panel, built on real production figures).
@@ -12,101 +12,22 @@ unbuilt half of the roadmap lives in the repo rather than a scratch file. S1/S1.
 - **S1 (2026-07-27)** — the sponsor detail page, read-only. Migration `0132` (`last_seen_at`).
 - **S1.1 (2026-07-28)** — referral attribution by email, honest last-seen copy, Students column.
 - **S2 (2026-07-28)** — the wallet-credit interface: record / sign / void. No migration.
+- **S3 (2026-07-28)** — nine editable sponsor emails, each with its own switch. Migration `0133`
+  (`sponsor_email_templates` + `sponsor_email_log`). **Platform flag `SPONSOR_COMMS_ENABLED=1` is
+  ON**; three templates seeded on, six off for the owner to review. Retro
+  `docs/retrospective-2026-07-28-sponsor-comms-s3.md`. Section pruned from this file at close.
+- **Tables (2026-07-28)** — sorting on every sponsor-list header except Actions, and the paging
+  footer on all four sponsor tables above 10 rows. Client-side (TD-190). Retro
+  `docs/retrospective-2026-07-28-sponsor-tables-sort-paginate.md`.
 
 ## Owner decisions still governing the remainder (2026-07-27)
 
-1. The three existing hardcoded sponsor emails become editable too, via a `{student_cards}`
-   structural token — so the panel covers all eleven and is not a half-truth.
+1. ~~The three existing hardcoded sponsor emails become editable too, via a `{student_cards}`
+   structural token — so the panel covers all eleven and is not a half-truth.~~ *(Done in S3 —
+   though the count settled at **nine**, not eleven: `low_balance` and `annual_statement` were
+   deferred by the owner as marketing-adjacent against consent we cannot inspect, TD-186.)*
 2. Sponsorship history shows the anonymous `pool_ref` only, hyperlinked to the cockpit. *(Done in S1.)*
 3. The mockup is approved before any code (CLAUDE.md design-first rule).
-
----
-
-## S3 — sponsor email templates — SCOPE FIXED 2026-07-28, IN PROGRESS
-
-**Owner decisions at sprint start:**
-- **NINE kinds, not eleven.** `low_balance` and `annual_statement` are deferred: PDPA consent at
-  registration covers transactional account mail, those two edge into marketing, and consent
-  management is now parked as TD-186 — so there is no way to check what a sponsor actually agreed
-  to. They are not built, not seeded, not scheduled.
-- **One sprint, end-to-end** (templates + switches + renderer + sends + panel, shipping dark),
-  rather than the wording-then-send split. Same call the owner made for partner comms after
-  challenging that split: a sprint that can store wording but not send it is half a feature.
-
-**Lessons carried in (sprint-start step 2 — these are the ones that bite THIS scope):**
-1. **The 113 email goldens are a byte-identity contract, and the last refactor of `emails.py`
-   broke placeholders OUTSIDE the golden set.** The branding sprint's string-concat form silently
-   dropped an `f` prefix, so `{month}` shipped literal in two emails the snapshots didn't cover.
-   → run the goldens AND grep for that signature (`\+ _[A-Z]+ \+ .[^{]*\{`); the snapshot proves
-   only what it renders.
-2. **L109 — parity does not prove a key EXISTS.** Nine kinds of copy is this module's largest i18n
-   surface. New keys go into the key-existence guard; any server-code→copy mapping goes through an
-   allowlist (the `creditErrorKey` shape), never string interpolation into a key path.
-3. **L380 — "dark by default" in a comment is not a gate.** The panel gates on a real
-   `comms_enabled` returned by the backend, exactly as the partner card does.
-4. **A test that enumerates what it guards silently narrows.** `PLACEHOLDERS` and `KINDS` get a
-   consistency test derived from the model's own choices, not a hand-copied list.
-5. **L113 / L289** — hand-written `CreateModel` uses `BigAutoField`; declared serializer fields get
-   an explicit `max_length`.
-6. **When a sprint gives a role a new power, the role-matrix SUMMARY ROW and the chapter's OPENING
-   SENTENCE go stale, not just the section you add** (learned this sprint: `admin` had been
-   documented "read-only" since 16 July while being the maker on payment runs). S3 gives
-   `org_admin` control of what sponsors hear.
-7. **Extraction must not change behaviour:** `partner_comms.render` keeps its exact output while
-   delegating to the shared seam — its existing tests are the regression guard, unmodified.
-
-**Seeding (owner, mid-sprint):** the three ALREADY-SENDING kinds ship switched **ON**; the six
-new ones ship OFF for review. That in turn fixes the fallback condition — it keys on the PLATFORM
-gate, not each template's switch, so "off" is enforceable on the adopted three.
-
-**Deferred within this sprint, deliberately:** the `{reason}` token on `rejected`/`suspended`.
-There is no reason field yet — that is S4 — so those two templates ship without it rather than
-referencing a placeholder the renderer cannot fill.
-
-**The gap it closes:** a sponsor is approved and never told. `AdminSponsorReviewView` flips the
-status field and returns. There is no approval email, no rejection email, no suspension email, and
-no welcome email on registration (registration emails *us*, not them). Eight people were approved
-in silence.
-
-**Copy the partner-comms architecture exactly** (`partner_comms.py` + `PartnerEmailTemplate` + the
-Sources card, shipped 2026-07-26): one switch per email, wording editable inline, two-gate dark
-launch (`SPONSOR_COMMS_ENABLED` platform flag **and** each template's own `enabled`), every attempt
-logged, placeholders validated against a per-kind allowlist.
-
-New `SponsorEmailTemplate` (kind unique, `enabled`, subject, body, `updated_by_email`) and
-`SponsorEmailLog` (sponsor FK, kind, recipients, subject, ok, note, sent_at) — the siblings of
-`partner_email_templates` / `partner_email_log`, same RLS convention. Migrate-first.
-
-**Eleven kinds**, five of them closing the silence above:
-
-| Kind | When | Exists today? |
-|---|---|---|
-| `welcome` | registered, vetting pending | **No — new** |
-| `approved` | vetting approved | **No — new** |
-| `rejected` | vetting declined | **No — new** |
-| `suspended` | account suspended | **No — new** |
-| `reinstated` | suspension lifted | **No — new** |
-| `credit_confirmed` | a credit reaches `confirmed` | **No — new** |
-| `new_students` | hourly realtime alert | Yes, hardcoded |
-| `weekly_digest` | Monday digest | Yes, hardcoded |
-| `referral_invite` | they invite someone | Yes, hardcoded |
-| ~~`low_balance`~~ | balance below one award | **DEFERRED (owner, 2026-07-28)** |
-| ~~`annual_statement`~~ | yearly giving summary | **DEFERRED (owner, 2026-07-28)** |
-
-The three existing ones carry generated per-student mini-cards with artwork. Adopting them into
-editable templates requires a **`{student_cards}` structural token** — exactly the
-`{counts_table}` / `{student_table}` mechanism `partner_comms.render` already implements. **Extract
-that renderer into a shared `email_templates.py` seam** so partner and sponsor templates share one
-block-splitting implementation rather than growing a second copy.
-
-**`credit_confirmed` fires only on `confirmed`** — reading through `visible_donations`, never on a
-draft. Telling a donor we hold money that has not been signed off is the one unrecoverable mistake
-available here. (S2 makes this reachable: a real person now drives credits to `confirmed` in the UI.)
-
-**The badge pair ships with this sprint, not before.** `/admin/sponsors` gains the segmented
-**Sponsors** | **Emails** badges we shipped on the Sources page. They were deferred from S1
-deliberately: the Emails panel *is* S3, and a badge that opens nothing is the failure the
-partner-comms card exists to avoid. Do not add them early.
 
 ---
 

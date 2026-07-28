@@ -33,7 +33,7 @@ migration, no new endpoint.**
 - On production today only **one** of the four tables reaches the threshold — Suresh Thiru's 38
   sponsorships; the others are 9, 8 and 1 rows. The tests use those exact counts, so the
   thresholds are pinned against real data rather than invented numbers.
-- **1026 jest** (67 suites); `tsc` clean.
+- **1032 jest** (67 suites); `tsc` clean.
 
 ## PF-1 — the platform stops guessing which programme a student applied to — 2026-07-28
 
