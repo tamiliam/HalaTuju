@@ -4539,6 +4539,9 @@ def _terms_summary_dict(terms):
         'version': terms.version,
         'status': terms.status,
         'title_en': terms.title_en,
+        # The list table shows these two, so they belong on the summary. `languages_available`
+        # walks the sections, which is why the list view prefetches them.
+        'languages_available': terms.languages_available,
         'section_count': terms.sections.count(),
         'created_by_email': terms.created_by_email,
         'published_by_email': terms.published_by_email,
@@ -4743,6 +4746,38 @@ class AdminSponsorTermsPublishView(_SponsorTermsBase):
             return _terms_err(exc)
         terms.refresh_from_db()
         return Response(_terms_detail_dict(terms))
+
+
+class AdminSponsorTermsImportDocxView(_SponsorTermsBase):
+    """POST a .docx — parse it into a PROPOSED flat section list for the author to review.
+
+    Nothing is saved and the upload is NOT retained. On confirm the frontend PUTs the reviewed
+    sections, exactly as the contract importer works. Draft-only.
+    """
+    from rest_framework.parsers import MultiPartParser
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, pk):
+        admin, err = self._terms_admin(request)
+        if err:
+            return err
+        terms = self._version_or_404(pk)
+        if not terms:
+            return Response({'error': 'not_found'}, status=404)
+        if terms.status != 'draft':
+            return Response({'error': 'not_draft'}, status=400)
+        upload = request.FILES.get('file')
+        if upload is None:
+            return Response({'error': 'no_file'}, status=400)
+        try:
+            proposal = sponsor_terms_mod.import_docx(upload.read())   # bytes only; never stored
+        except sponsor_terms_mod.SponsorTermsError as exc:
+            return _terms_err(exc)
+        except Exception:
+            # contracts.* raises ContractsError for an unreadable/empty document. Map anything
+            # that escapes to one code rather than leaking a stack trace into the panel.
+            return Response({'error': 'docx_unreadable'}, status=400)
+        return Response(proposal)
 
 
 class AdminSponsorTermsPreviewView(_SponsorTermsBase):

@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor terms T2.1 — the panel adopts the Contract Templates shape, and imports Word — 2026-07-28
+
+Owner, comparing the Terms tab against the Contract Templates screen: adopt that layout, give the
+editor **Clauses / Quiz / Preview / Deploy** (no sub-clauses), and let a Word document be uploaded.
+**No migration; no change to the terms already seeded.**
+
+### Changed
+- **The Terms badge now renders the versions TABLE** — Version · Status · Languages · Published by ·
+  Updated — with a New version form offering **start blank / upload a .docx / copy an existing
+  version**, exactly as the contracts list does. A row opens the editor.
+- **The editor is a real page**, `/admin/sponsors/terms/<id>`, with four tabs. It is a NESTED route,
+  so `activeItem` resolves it to the Sponsors nav entry by longest match and it needs no registry
+  entry — the same mechanism `/admin/contracts/9` uses. The back link carries `?panel=terms` so it
+  returns you to the tab you came from.
+- **The quiz moved out of the Clauses list onto its own tab.** T2 kept them inline on the argument
+  that a question belongs beside the words it tests; with a table-and-tabs shell that made the
+  Clauses tab enormous. The Quiz tab labels every card with its section number and heading instead.
+- **Title and intro live at the top of Clauses**, since there is no Config tab. They are the
+  document's opening lines, so that is where they read naturally.
+
+### Added
+- **Word import.** `sponsor_terms.import_docx` reuses the contract module's parsing — which reads
+  Word's OWN list numbering out of the XML rather than guessing from text, with Gemini only as a
+  fallback for unstyled documents — and one new endpoint, `POST …/sponsor-terms/<pk>/import-docx/`.
+  Proposal only: nothing is saved and the upload is never retained.
+- **Sub-clauses FOLD into their parent's body** (owner's choice). A 13-clause document with
+  sub-clauses would otherwise import as thirty-odd sections, working against the shortness that
+  makes anyone read it. Nothing is lost — a `1.1` becomes a paragraph inside section 1, its own
+  heading kept as a lead-in — and a leading sub-clause with no parent still becomes its own section
+  rather than vanishing.
+
+### Two things deliberately NOT inherited from the contract module
+- **`segment_docx` itself.** It extracts a "Donor" counterparty by regex and rewrites their name,
+  NRIC and address into `{{tokens}}`. Sponsor terms have **no merge tokens by design** — the
+  counterparty is named in prose, so a new legal entity is a new version rather than a templating
+  system. A test asserts an imported parties recital comes back with no `{{` in it.
+- **The "Vetted by" column.** It exists because a lawyer signs off a contract template, and the
+  owner decided against a lawyer pass here — so it could only ever show an em-dash. The column
+  reports **who published** instead, which is the real accountability line for these terms.
+
+### Notes
+- **3775 scholarship pytest** (+7) · **1107 jest** / 72 suites (+3) · `next build` exit 0.
+- ⚠ **`tsc --noEmit` was run BEFORE the build this time**, per the lesson from T2's failed api
+  build, and it caught two errors a warm `next build` would have sailed past: a stale `isSuper`
+  prop and a test fixture missing the new `languages_available` field.
+
 ## Sponsor terms T2 — the document becomes editable and versioned — 2026-07-28
 
 The authoring half of the sponsor-terms roadmap. **Migration `0134` APPLIED migrate-first** (three

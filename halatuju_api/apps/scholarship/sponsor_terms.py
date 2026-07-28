@@ -277,6 +277,64 @@ def generate_quiz(section, *, model=None):
     return section
 
 
+# ── Word import ──────────────────────────────────────────────────────────────
+
+def import_docx(data, *, model=None):
+    """Propose a flat section list from an author's `.docx`. PROPOSAL ONLY — nothing is saved and
+    the upload is never retained; the caller reviews it and PUTs the result.
+
+    Reuses the contract module's parsing, which is the valuable part: `_docx_structure` reads
+    Word's OWN list numbering (`1.` / `1.1` / `i)`) out of the XML rather than guessing from the
+    text, and only an unstyled document falls back to Gemini segmentation of flat text.
+
+    ⚠ It does NOT reuse `contracts.segment_docx`, and that is deliberate. That function also
+    extracts a "Donor" counterparty from the parties recital and rewrites their name, NRIC and
+    address into `{{tokens}}`. Sponsor terms have **no merge tokens by design** — the counterparty
+    is named in prose, so a new legal entity is a new version rather than a templating system.
+    Inheriting the tokeniser would quietly reintroduce the thing we chose not to have.
+
+    **Sub-clauses FOLD into their parent's body** (owner, 2026-07-28) rather than becoming
+    sections of their own. Sections here are flat, and a 13-clause document with sub-clauses would
+    otherwise import as thirty-odd sections — working against the shortness that makes anyone read
+    it. Nothing is lost: a `1.1` becomes a paragraph inside section 1, in its original order.
+    """
+    from . import contracts
+
+    structured = contracts._docx_structure(data)
+    if structured is None:
+        text = contracts._extract_docx_text(data)
+        model = model or getattr(settings, 'CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+        from . import usage
+        with usage.usage_context(source='sponsor_terms_docx'):
+            raw = contracts._gemini_generate(contracts._build_segment_prompt(text), model)
+        structured = {'title': '', 'preamble': '', 'clauses': contracts._parse_segments(raw)}
+
+    sections = []
+    for clause in structured.get('clauses', []):
+        heading = (clause.get('heading') or '').strip()
+        body = (clause.get('body') or '').strip()
+        if not (heading or body):
+            continue
+        if clause.get('level', 0) > 0 and sections:
+            # Fold into the parent, keeping the sub-clause's own heading as a lead-in so the
+            # author can see what it was before deciding how to word it.
+            parent = sections[-1]
+            piece = '\n\n'.join(p for p in (heading, body) if p)
+            parent['body_en'] = '\n\n'.join(p for p in (parent['body_en'], piece) if p)
+            continue
+        sections.append({'heading_en': heading, 'body_en': body,
+                         'is_quiz_candidate': False, 'quiz_en': {}})
+
+    if not sections:
+        raise SponsorTermsError('segmentation_failed')
+
+    return {
+        'title': (structured.get('title') or '').strip(),
+        'intro': (structured.get('preamble') or '').strip(),
+        'sections': sections,
+    }
+
+
 # ── validation ───────────────────────────────────────────────────────────────
 
 def validate_for_publish(terms):

@@ -162,7 +162,7 @@ from .views_admin import (
     AdminSponsorTermsListView, AdminSponsorTermsDetailView,
     AdminSponsorTermsSectionsView, AdminSponsorTermsGenerateQuizView,
     AdminSponsorTermsValidateView, AdminSponsorTermsPublishView,
-    AdminSponsorTermsPreviewView,
+    AdminSponsorTermsPreviewView, AdminSponsorTermsImportDocxView,
     AdminApplicationWitnessView,
 )
 
@@ -333,6 +333,8 @@ urlpatterns = [
          AdminSponsorTermsGenerateQuizView.as_view()),
     path('admin/scholarship/sponsor-terms/<int:pk>/validate/', AdminSponsorTermsValidateView.as_view()),
     path('admin/scholarship/sponsor-terms/<int:pk>/publish/', AdminSponsorTermsPublishView.as_view()),
+    path('admin/scholarship/sponsor-terms/<int:pk>/import-docx/',
+         AdminSponsorTermsImportDocxView.as_view()),
     path('admin/scholarship/sponsor-terms/<int:pk>/preview/', AdminSponsorTermsPreviewView.as_view()),
     path('admin/scholarship/applications/<int:pk>/witness/', AdminApplicationWitnessView.as_view()),
     path('admin/scholarship/applications/<int:pk>/award-amount/', AdminSetAwardAmountView.as_view()),

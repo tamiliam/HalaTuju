@@ -3430,8 +3430,43 @@
           "not_publishable": "Fix everything in the checklist before publishing.",
           "signature_required": "A name is needed to accept.",
           "not_found": "That version no longer exists.",
-          "generic": "Something went wrong. Please try again."
-        }
+          "generic": "Something went wrong. Please try again.",
+          "docx_unreadable": "That file could not be read. Is it a .docx?",
+          "docx_empty": "That document appears to be empty.",
+          "segmentation_failed": "We could not find any sections in that document.",
+          "no_file": "Choose a file first."
+        },
+        "colVersion": "Version",
+        "colStatus": "Status",
+        "colLanguages": "Languages",
+        "colPublishedBy": "Published by",
+        "colUpdated": "Updated",
+        "newVersion": "New version",
+        "noVersions": "No versions yet.",
+        "startBlank": "Start blank",
+        "uploadDoc": "Upload a Word document",
+        "copyFrom": "Copy from",
+        "uploadNeedsFile": "Choose a .docx file first.",
+        "uploadHint": "We read the document’s own numbering. Sub-clauses fold into their parent section — nothing is lost, and you can edit everything afterwards.",
+        "creating": "Creating…",
+        "cancel": "Cancel",
+        "backToList": "← Back to sponsors",
+        "tab": {
+          "clauses": "Clauses",
+          "quiz": "Quiz",
+          "preview": "Preview",
+          "deploy": "Deploy"
+        },
+        "clausesIntro": "The title and opening a sponsor reads first, then the sections in order.",
+        "quizNone": "No section is marked as a checkpoint yet. Turn one on in Clauses.",
+        "quizIntro": "One question per checkpoint. A wrong answer is never penalised — it explains itself and lets them try again.",
+        "previewIntro": "Exactly what a sponsor will read.",
+        "previewLocale": "Language",
+        "deployIntro": "Publishing makes this version the one sponsors are asked to accept, and archives whatever was active before.",
+        "importing": "Reading the document…",
+        "imported": "Imported {n} sections. Review them, then save.",
+        "previewFallback": "Shown in English — {loc} is not complete for every section, so a sponsor choosing it would read this.",
+        "acceptedBy": "Accepted by {n} sponsors."
       }
     },
     "disbursement": {

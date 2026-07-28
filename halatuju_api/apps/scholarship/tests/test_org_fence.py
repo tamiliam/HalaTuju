@@ -343,6 +343,7 @@ class TestFenceCoverageCompleteness(TestCase):
     'AdminSponsorTermsValidateView': 'cross-org-by-design',
     'AdminSponsorTermsPublishView': 'cross-org-by-design+super-publish',
     'AdminSponsorTermsPreviewView': 'cross-org-by-design',
+    'AdminSponsorTermsImportDocxView': 'cross-org-by-design',
         # self-scoped (caller's own reviewer profile, no application)
         'ReviewerProfileView': 'self-scoped',
         # grandfathered referral-org authorisation (orthogonal to ownership; dark)

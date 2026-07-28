@@ -481,3 +481,89 @@ class TestTheSeed(TestCase):
         from apps.scholarship.management.commands import seed_sponsor_terms as seed
         blob = ' '.join(b for _h, b, _q in seed.SECTIONS).lower()
         self.assertIn('cannot issue a tax-deductible receipt', blob)
+
+
+class TestWordImport(TestCase):
+    """Import proposes; it never saves. And sub-clauses FOLD rather than multiply."""
+
+    def _docx(self, clauses, title='', preamble=''):
+        return {'title': title, 'preamble': preamble, 'clauses': clauses}
+
+    @patch('apps.scholarship.contracts._docx_structure')
+    def test_a_styled_document_becomes_flat_sections(self, structure):
+        structure.return_value = self._docx(
+            [{'heading': 'Your gift', 'body': 'Nothing is repaid.', 'level': 0},
+             {'heading': 'How money moves', 'body': 'Monthly, via Vircle.', 'level': 0}],
+            title='Joining as a sponsor', preamble='Short on purpose.')
+        out = sponsor_terms.import_docx(b'x')
+        self.assertEqual(out['title'], 'Joining as a sponsor')
+        self.assertEqual(out['intro'], 'Short on purpose.')
+        self.assertEqual([s['heading_en'] for s in out['sections']],
+                         ['Your gift', 'How money moves'])
+
+    @patch('apps.scholarship.contracts._docx_structure')
+    def test_sub_clauses_fold_into_their_parent_rather_than_becoming_sections(self, structure):
+        # Owner decision: a 13-clause document with sub-clauses would otherwise import as thirty
+        # sections, working against the shortness that makes anyone read it.
+        structure.return_value = self._docx([
+            {'heading': 'Your gift', 'body': 'It is a donation.', 'level': 0},
+            {'heading': '', 'body': 'Nothing is repaid.', 'level': 1},
+            {'heading': 'No interest', 'body': 'None is due.', 'level': 1},
+            {'heading': 'Anonymity', 'body': 'You will not know them.', 'level': 0},
+        ])
+        out = sponsor_terms.import_docx(b'x')
+        self.assertEqual(len(out['sections']), 2)
+        body = out['sections'][0]['body_en']
+        self.assertIn('It is a donation.', body)
+        self.assertIn('Nothing is repaid.', body)      # nothing is lost
+        self.assertIn('No interest', body)             # the sub-heading survives as a lead-in
+        self.assertIn('None is due.', body)
+        self.assertEqual(out['sections'][1]['heading_en'], 'Anonymity')
+
+    @patch('apps.scholarship.contracts._docx_structure')
+    def test_a_leading_sub_clause_with_no_parent_becomes_its_own_section(self, structure):
+        # Nothing to fold into, so it must not be silently dropped.
+        structure.return_value = self._docx(
+            [{'heading': 'Orphan', 'body': 'Text.', 'level': 1}])
+        out = sponsor_terms.import_docx(b'x')
+        self.assertEqual(len(out['sections']), 1)
+        self.assertEqual(out['sections'][0]['heading_en'], 'Orphan')
+
+    @patch('apps.scholarship.contracts._docx_structure')
+    def test_imported_sections_never_arrive_pre_flagged_for_a_quiz(self, structure):
+        structure.return_value = self._docx(
+            [{'heading': 'A', 'body': 'B', 'level': 0}])
+        out = sponsor_terms.import_docx(b'x')
+        self.assertFalse(out['sections'][0]['is_quiz_candidate'])
+        self.assertEqual(out['sections'][0]['quiz_en'], {})
+
+    @patch('apps.scholarship.contracts._docx_structure')
+    def test_an_empty_document_raises_rather_than_creating_nothing_quietly(self, structure):
+        structure.return_value = self._docx([])
+        with self.assertRaises(sponsor_terms.SponsorTermsError) as cm:
+            sponsor_terms.import_docx(b'x')
+        self.assertEqual(cm.exception.code, 'segmentation_failed')
+
+    @patch('apps.scholarship.contracts._gemini_generate')
+    @patch('apps.scholarship.contracts._extract_docx_text')
+    @patch('apps.scholarship.contracts._docx_structure')
+    def test_an_unstyled_document_falls_back_to_ai_segmentation(self, structure, text, gen):
+        structure.return_value = None          # no list numbering to read
+        text.return_value = 'Your gift. Nothing is repaid.'
+        gen.return_value = json.dumps(
+            [{'heading': 'Your gift', 'body': 'Nothing is repaid.', 'level': 0}])
+        out = sponsor_terms.import_docx(b'x')
+        self.assertEqual(out['sections'][0]['heading_en'], 'Your gift')
+
+    @patch('apps.scholarship.contracts._docx_structure')
+    def test_import_does_NOT_tokenise_a_counterparty(self, structure):
+        # contracts.segment_docx rewrites a donor's name/NRIC/address into {{tokens}}. Sponsor
+        # terms have no merge tokens by design, so that behaviour must not come along for the ride.
+        structure.return_value = self._docx(
+            [{'heading': 'Parties', 'body': 'between Ve. Elanjelian, NRIC 000000-00-0000, '
+                                            'of 1 Jalan Test ("Donor")', 'level': 0}],
+            preamble='between Ve. Elanjelian, NRIC 000000-00-0000, of 1 Jalan Test ("Donor")')
+        out = sponsor_terms.import_docx(b'x')
+        blob = out['intro'] + out['sections'][0]['body_en']
+        self.assertNotIn('{{', blob)
+        self.assertIn('Ve. Elanjelian', blob)

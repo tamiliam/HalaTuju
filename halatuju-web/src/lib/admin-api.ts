@@ -477,6 +477,8 @@ export interface SponsorTermsSummary {
   version: string
   status: 'draft' | 'active' | 'archived'
   title_en: string
+  /** Locales servable WHOLE — the table's Languages column. */
+  languages_available: string[]
   section_count: number
   created_by_email: string
   published_by_email: string
@@ -489,8 +491,6 @@ export interface SponsorTermsSummary {
 export interface SponsorTermsDetail extends SponsorTermsSummary {
   title_ms: string; title_ta: string
   intro_en: string; intro_ms: string; intro_ta: string
-  /** Locales servable WHOLE. A half-translated version stays English-only. */
-  languages_available: string[]
   sections: SponsorTermsSection[]
   acceptance_count: number
 }
@@ -558,6 +558,33 @@ export async function publishSponsorTerms(
   id: number, options?: ApiOptions,
 ): Promise<SponsorTermsDetail> {
   return adminMutate(`${ST}/${id}/publish/`, 'POST', {}, options)
+}
+
+/**
+ * Propose a flat section list from an author's .docx. PROPOSAL ONLY — nothing is saved, and the
+ * upload is never retained. Sub-clauses fold into their parent's body (owner, 2026-07-28).
+ */
+export async function importSponsorTermsDocx(
+  id: number, file: File, options?: ApiOptions,
+): Promise<{
+  title: string
+  intro: string
+  sections: Array<Pick<SponsorTermsSection, 'heading_en' | 'body_en' | 'is_quiz_candidate' | 'quiz_en'>>
+}> {
+  const headers: Record<string, string> = {}
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch(`${API_BASE}${ST}/${id}/import-docx/`, {
+    method: 'POST', headers, body: form,
+  })
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}))
+    const err = new Error(b.error || `Import failed: ${res.status}`) as Error & { code?: string }
+    err.code = b.error || ''
+    throw err
+  }
+  return res.json()
 }
 
 export async function previewSponsorTerms(

@@ -3430,8 +3430,43 @@
           "not_publishable": "Betulkan semua dalam senarai semak sebelum menerbitkan.",
           "signature_required": "Nama diperlukan untuk menerima.",
           "not_found": "Versi itu tidak wujud lagi.",
-          "generic": "Ada sesuatu yang tidak kena. Sila cuba lagi."
-        }
+          "generic": "Ada sesuatu yang tidak kena. Sila cuba lagi.",
+          "docx_unreadable": "Fail itu tidak dapat dibaca. Adakah ia .docx?",
+          "docx_empty": "Dokumen itu kelihatan kosong.",
+          "segmentation_failed": "Kami tidak menemui sebarang bahagian dalam dokumen itu.",
+          "no_file": "Pilih fail dahulu."
+        },
+        "colVersion": "Versi",
+        "colStatus": "Status",
+        "colLanguages": "Bahasa",
+        "colPublishedBy": "Diterbitkan oleh",
+        "colUpdated": "Dikemas kini",
+        "newVersion": "Versi baharu",
+        "noVersions": "Belum ada versi.",
+        "startBlank": "Mula kosong",
+        "uploadDoc": "Muat naik dokumen Word",
+        "copyFrom": "Salin daripada",
+        "uploadNeedsFile": "Pilih fail .docx dahulu.",
+        "uploadHint": "Kami membaca penomboran dokumen itu sendiri. Sub-klausa akan digabungkan ke dalam bahagian induknya — tiada apa yang hilang, dan anda boleh menyunting semuanya selepas itu.",
+        "creating": "Mencipta…",
+        "cancel": "Batal",
+        "backToList": "← Kembali ke penaja",
+        "tab": {
+          "clauses": "Klausa",
+          "quiz": "Kuiz",
+          "preview": "Pratonton",
+          "deploy": "Terbitkan"
+        },
+        "clausesIntro": "Tajuk dan pembukaan yang dibaca penaja dahulu, kemudian bahagian mengikut urutan.",
+        "quizNone": "Belum ada bahagian ditanda sebagai soalan. Hidupkan satu dalam Klausa.",
+        "quizIntro": "Satu soalan bagi setiap tanda. Jawapan salah tidak pernah dihukum — ia menerangkan dirinya dan membenarkan percubaan semula.",
+        "previewIntro": "Tepat seperti yang akan dibaca penaja.",
+        "previewLocale": "Bahasa",
+        "deployIntro": "Penerbitan menjadikan versi ini yang diminta penaja terima, dan mengarkibkan apa-apa yang aktif sebelum ini.",
+        "importing": "Membaca dokumen…",
+        "imported": "{n} bahagian diimport. Semak dahulu, kemudian simpan.",
+        "previewFallback": "Dipaparkan dalam Bahasa Inggeris — {loc} belum lengkap bagi setiap bahagian, jadi penaja yang memilihnya akan membaca ini.",
+        "acceptedBy": "Diterima oleh {n} penaja."
       }
     },
     "disbursement": {

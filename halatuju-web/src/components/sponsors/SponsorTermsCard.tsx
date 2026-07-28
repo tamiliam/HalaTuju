@@ -1,239 +1,192 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { btnGhost, btnPrimary, inputCls } from '@/components/contracts/shared'
-import TermsSectionEditor from './TermsSectionEditor'
+import { useRouter } from 'next/navigation'
+import { inputCls } from '@/components/contracts/shared'
+import { STATUS_TONE, termsErrorKey } from '@/lib/sponsorTerms'
 import {
-  checkpointCount, isEditable, STATUS_TONE, termsErrorKey, translationProgress,
-} from '@/lib/sponsorTerms'
-import {
-  createSponsorTerms, generateSponsorTermsQuiz, getSponsorTerms, getSponsorTermsList,
-  publishSponsorTerms, putSponsorTermsSections, updateSponsorTermsIntro, validateSponsorTerms,
-  type SponsorTermsDetail, type SponsorTermsListPayload, type SponsorTermsSection,
-  type SponsorTermsValidation,
+  createSponsorTerms, getSponsorTermsList, importSponsorTermsDocx, putSponsorTermsSections,
+  updateSponsorTermsIntro,
+  type SponsorTermsListPayload,
 } from '@/lib/admin-api'
 
 /**
- * The Terms panel: every version down the left, the selected one edited on the right.
+ * The versions table, adopting the Contract Templates layout (owner, 2026-07-28).
  *
- * Nothing here is sponsor-facing — a sponsor meets this document in T3. What this panel does is
- * let an org_admin author it and a super make it binding, which is the same two-person split the
- * credit chain and the contract deploy already use.
+ * A row opens `/admin/sponsors/terms/<id>` — a nested route, so it resolves to the Sponsors nav
+ * item by longest match and needs no registry entry, exactly as `/admin/contracts/9` does.
+ *
+ * The fifth column is **Published by**, not the contracts screen's "Vetted by": that column exists
+ * because a lawyer signs off a contract template, and the owner decided against a lawyer pass for
+ * the sponsor terms. A column that could only ever show an em-dash is worse than one that reports
+ * who made a version binding.
  */
-export default function SponsorTermsCard({ token, isSuper, t }: {
+export default function SponsorTermsCard({ token, t }: {
   token: string | null
-  isSuper: boolean
   t: (k: string, p?: Record<string, string>) => string
 }) {
-  const [list, setList] = useState<SponsorTermsListPayload | null>(null)
-  const [current, setCurrent] = useState<SponsorTermsDetail | null>(null)
-  const [sections, setSections] = useState<SponsorTermsSection[]>([])
-  const [validation, setValidation] = useState<SponsorTermsValidation | null>(null)
-  const [dirty, setDirty] = useState(false)
+  const router = useRouter()
+  const [data, setData] = useState<SponsorTermsListPayload | null>(null)
+  const [showNew, setShowNew] = useState(false)
+  const [version, setVersion] = useState('')
+  // '' = start blank · 'upload' = populate from a .docx · a numeric id = copy that version.
+  const [source, setSource] = useState('')
+  const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
-  const [generating, setGenerating] = useState<number | null>(null)
   const [error, setError] = useState('')
-  const [newVersion, setNewVersion] = useState('')
+  const [notice, setNotice] = useState('')
 
-  const editable = isEditable(current)
-
-  const loadList = useCallback(() => {
+  const load = useCallback(() => {
     if (!token) return
     getSponsorTermsList({ token })
-      .then(setList)
+      .then(setData)
       .catch(() => setError(t('admin.sponsors.terms.loadError')))
   }, [token, t])
 
-  useEffect(() => { loadList() }, [loadList])
+  useEffect(() => { load() }, [load])
 
-  const open = useCallback((id: number) => {
-    if (!token) return
-    setError('')
-    getSponsorTerms(id, { token }).then((d) => {
-      setCurrent(d)
-      setSections(d.sections)
-      setDirty(false)
-      return validateSponsorTerms(id, { token }).then(setValidation)
-    }).catch(() => setError(t('admin.sponsors.terms.loadError')))
-  }, [token, t])
-
-  const fail = (e: unknown) => {
-    const code = (e as { code?: string })?.code
-    setError(t(termsErrorKey(code)))
-  }
-
-  const save = async () => {
-    if (!token || !current) return
-    setBusy(true); setError('')
+  const submitNew = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(''); setNotice('')
+    if (source === 'upload' && !file) {
+      setError(t('admin.sponsors.terms.uploadNeedsFile'))
+      return
+    }
+    setBusy(true)
     try {
-      await putSponsorTermsSections(current.id, sections, { token })
-      await updateSponsorTermsIntro(current.id, {
-        title_en: current.title_en, title_ms: current.title_ms, title_ta: current.title_ta,
-        intro_en: current.intro_en, intro_ms: current.intro_ms, intro_ta: current.intro_ta,
-      }, { token })
-      open(current.id)
-      loadList()
-    } catch (e) { fail(e) } finally { setBusy(false) }
+      const created = await createSponsorTerms({
+        version: version.trim(),
+        ...(source && source !== 'upload' ? { copy_from: Number(source) } : {}),
+      }, { token: token! })
+
+      if (source === 'upload' && file) {
+        setNotice(t('admin.sponsors.terms.importing'))
+        try {
+          const proposal = await importSponsorTermsDocx(created.id, file, { token: token! })
+          await putSponsorTermsSections(created.id, proposal.sections, { token: token! })
+          const patch: Record<string, string> = {}
+          if (proposal.title) patch.title_en = proposal.title
+          if (proposal.intro) patch.intro_en = proposal.intro
+          if (Object.keys(patch).length) {
+            await updateSponsorTermsIntro(created.id, patch, { token: token! })
+          }
+        } catch {
+          // Soft-fail, as the contract importer does: the draft exists and is usable, so land the
+          // author in the editor to hand-write rather than losing the version they just named.
+        }
+      }
+      router.push(`/admin/sponsors/terms/${created.id}`)
+    } catch (err) {
+      setError(t(termsErrorKey((err as { code?: string })?.code)))
+      setBusy(false)
+    }
   }
 
-  const generate = async (order: number) => {
-    if (!token || !current) return
-    setGenerating(order); setError('')
-    try {
-      // Save first: the server generates from what it HAS, so an unsaved edit would produce a
-      // question about the previous wording.
-      await putSponsorTermsSections(current.id, sections, { token })
-      const d = await generateSponsorTermsQuiz(current.id, order, { token })
-      setCurrent(d); setSections(d.sections); setDirty(false)
-    } catch (e) { fail(e) } finally { setGenerating(null) }
-  }
-
-  const publish = async () => {
-    if (!token || !current) return
-    setBusy(true); setError('')
-    try {
-      await publishSponsorTerms(current.id, { token })
-      open(current.id)
-      loadList()
-    } catch (e) { fail(e) } finally { setBusy(false) }
-  }
-
-  const create = async () => {
-    if (!token || !newVersion.trim()) return
-    setBusy(true); setError('')
-    try {
-      const d = await createSponsorTerms({ version: newVersion.trim() }, { token })
-      setNewVersion('')
-      loadList()
-      open(d.id)
-    } catch (e) { fail(e) } finally { setBusy(false) }
-  }
-
-  if (!list) return <p className="text-sm text-gray-500 py-8 text-center">{t('common.loading')}</p>
-
-  const progress = current ? translationProgress(current, sections) : null
+  if (!data) return <p className="text-sm text-gray-500 py-8 text-center">{t('common.loading')}</p>
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-base font-semibold">{t('admin.sponsors.terms.title')}</h2>
-        <p className="text-sm text-gray-500 mt-1">{t('admin.sponsors.terms.subtitle')}</p>
+    <div className="max-w-5xl">
+      <div className="flex items-start justify-between gap-4 mb-2">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">{t('admin.sponsors.terms.title')}</h2>
+          <p className="text-sm text-gray-500 mt-1">{t('admin.sponsors.terms.subtitle')}</p>
+        </div>
+        <button type="button" onClick={() => setShowNew((s) => !s)}
+          className="shrink-0 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+          {t('admin.sponsors.terms.newVersion')}
+        </button>
       </div>
 
-      {!list.active_version && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      {!data.active_version && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 mt-4">
           <p className="font-semibold">{t('admin.sponsors.terms.noneActiveTitle')}</p>
           <p className="mt-1">{t('admin.sponsors.terms.noneActiveBody')}</p>
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <div className="grid gap-5 md:grid-cols-[16rem_1fr]">
-        {/* versions */}
-        <div className="flex flex-col gap-2">
-          {list.versions.map((v) => (
-            <button key={v.id} type="button" onClick={() => open(v.id)}
-              className={`text-left rounded-lg border px-3 py-2 transition-colors ${
-                current?.id === v.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-              <span className="flex items-center justify-between gap-2">
-                <span className="font-mono text-xs">{v.version}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                  STATUS_TONE[v.status] || STATUS_TONE.archived}`}>
-                  {t(`admin.sponsors.terms.status.${v.status}`)}
-                </span>
-              </span>
-              <span className="block text-xs text-gray-500 mt-0.5">
-                {t('admin.sponsors.terms.sectionCount', { n: String(v.section_count) })}
-              </span>
-            </button>
-          ))}
-
-          <div className="flex gap-2 mt-2">
-            <input className={inputCls} value={newVersion} disabled={busy}
-              placeholder={t('admin.sponsors.terms.newVersionPh')}
-              onChange={(e) => setNewVersion(e.target.value)} />
-            <button type="button" className={btnGhost} disabled={busy || !newVersion.trim()}
-              onClick={create}>{t('admin.sponsors.terms.create')}</button>
-          </div>
+      {error && (
+        <div className="rounded-lg p-3 my-4 bg-red-50 border border-red-200 text-red-600 text-sm">
+          {error}
         </div>
+      )}
+      {notice && <p className="text-sm text-gray-500 my-2">{notice}</p>}
 
-        {/* the selected version */}
-        {!current ? (
-          <p className="text-sm text-gray-500">{t('admin.sponsors.terms.pickOne')}</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {!editable && (
-              <p className="text-xs text-gray-500 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
-                {t('admin.sponsors.terms.readOnly', { status: t(`admin.sponsors.terms.status.${current.status}`) })}
-              </p>
-            )}
-
-            <input className={inputCls} disabled={!editable} value={current.title_en}
-              placeholder={t('admin.sponsors.terms.titlePh')}
-              onChange={(e) => { setCurrent({ ...current, title_en: e.target.value }); setDirty(true) }} />
-            <textarea className={inputCls} rows={2} disabled={!editable} value={current.intro_en}
-              placeholder={t('admin.sponsors.terms.introPh')}
-              onChange={(e) => { setCurrent({ ...current, intro_en: e.target.value }); setDirty(true) }} />
-
-            <TermsSectionEditor
-              sections={sections} disabled={!editable} generating={generating}
-              onChange={(next) => { setSections(next); setDirty(true) }}
-              onGenerate={generate} t={t}
-            />
-
-            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-              <span>{t('admin.sponsors.terms.checkpointCount', { n: String(checkpointCount(sections)) })}</span>
-              {progress && (['ms', 'ta'] as const).map((loc) => (
-                <span key={loc} className={progress[loc].complete ? 'text-green-700' : ''}>
-                  {t('admin.sponsors.terms.translated', {
-                    loc: loc.toUpperCase(),
-                    done: String(progress[loc].done),
-                    total: String(progress[loc].total),
-                  })}
-                </span>
+      {showNew && (
+        <form onSubmit={submitNew} className="mt-4 mb-6 bg-white rounded-xl border shadow-sm p-6 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <input className={inputCls} required maxLength={50} value={version}
+              placeholder={t('admin.sponsors.terms.newVersionPh')}
+              onChange={(e) => setVersion(e.target.value)} />
+            <select className={inputCls} value={source}
+              onChange={(e) => { setSource(e.target.value); if (e.target.value !== 'upload') setFile(null) }}>
+              <option value="">{t('admin.sponsors.terms.startBlank')}</option>
+              <option value="upload">{t('admin.sponsors.terms.uploadDoc')}</option>
+              {data.versions.map((v) => (
+                <option key={v.id} value={String(v.id)}>
+                  {t('admin.sponsors.terms.copyFrom')} {v.version}
+                </option>
               ))}
-            </div>
-
-            {editable && (
-              <div className="flex gap-2">
-                <button type="button" className={btnPrimary} disabled={busy || !dirty} onClick={save}>
-                  {busy ? t('admin.sources.saving') : t('admin.sources.save')}
-                </button>
-              </div>
-            )}
-
-            {/* the publish checklist — labels come from the server, so the panel knows no rules */}
-            {validation && (
-              <div className="rounded-xl border border-gray-200 p-4 flex flex-col gap-2">
-                <h3 className="text-sm font-semibold">{t('admin.sponsors.terms.checklist')}</h3>
-                {validation.errors.map((e) => (
-                  <p key={e.code} className="text-xs text-red-600">✗ {e.label}</p>
-                ))}
-                {validation.warnings.map((w) => (
-                  <p key={w.code} className="text-xs text-amber-700">! {w.label}</p>
-                ))}
-                {validation.ok && validation.warnings.length === 0 && (
-                  <p className="text-xs text-green-700">✓ {t('admin.sponsors.terms.allClear')}</p>
-                )}
-
-                {editable && (
-                  isSuper ? (
-                    <button type="button" className={`${btnPrimary} mt-2 self-start`}
-                      disabled={busy || !validation.ok || dirty} onClick={publish}>
-                      {t('admin.sponsors.terms.publish')}
-                    </button>
-                  ) : (
-                    <p className="text-xs text-gray-500 mt-2">{t('admin.sponsors.terms.superOnly')}</p>
-                  )
-                )}
-                {editable && dirty && (
-                  <p className="text-xs text-gray-500">{t('admin.sponsors.terms.saveFirst')}</p>
-                )}
-              </div>
-            )}
+            </select>
           </div>
-        )}
+          {source === 'upload' && (
+            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
+              <input type="file" accept=".docx" className="text-sm text-gray-700"
+                onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              <p className="text-xs text-gray-500 mt-1">{t('admin.sponsors.terms.uploadHint')}</p>
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button type="submit" disabled={busy || !version.trim()}
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
+              {busy ? t('admin.sponsors.terms.creating') : t('admin.sponsors.terms.create')}
+            </button>
+            <button type="button" onClick={() => setShowNew(false)}
+              className="px-6 py-2.5 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50">
+              {t('admin.sponsors.terms.cancel')}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="bg-white rounded-lg shadow-sm border overflow-x-auto mt-4">
+        <table className="w-full text-sm min-w-[640px]">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              {(['colVersion', 'colStatus', 'colLanguages', 'colPublishedBy', 'colUpdated'] as const)
+                .map((c) => (
+                  <th key={c} className="text-left px-4 py-3 font-medium text-gray-600">
+                    {t(`admin.sponsors.terms.${c}`)}
+                  </th>
+                ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {data.versions.map((v) => (
+              <tr key={v.id} className="hover:bg-blue-50/40 cursor-pointer"
+                onClick={() => router.push(`/admin/sponsors/terms/${v.id}`)}>
+                <td className="px-4 py-3 font-medium text-gray-900">{v.version}</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${
+                    STATUS_TONE[v.status] || STATUS_TONE.archived}`}>
+                    {t(`admin.sponsors.terms.status.${v.status}`)}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-gray-500 uppercase">
+                  {v.languages_available.join(' · ')}
+                </td>
+                <td className="px-4 py-3 text-gray-500">{v.published_by_email || '—'}</td>
+                <td className="px-4 py-3 text-gray-500">
+                  {new Date(v.updated_at).toLocaleDateString('en-GB')}
+                </td>
+              </tr>
+            ))}
+            {data.versions.length === 0 && (
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">
+                {t('admin.sponsors.terms.noVersions')}
+              </td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )

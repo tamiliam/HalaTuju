@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
@@ -94,7 +95,12 @@ const actionStyle: Record<string, string> = {
 export default function AdminSponsorsList() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const [panel, setPanel] = useState<Panel>('sponsors')
+  // `?panel=terms` deep-links the badge, so the editor's back link returns you to the tab you
+  // came from rather than dumping you on the vetting list.
+  const search = useSearchParams()
+  const wanted = search?.get('panel') as Panel | null
+  const [panel, setPanel] = useState<Panel>(
+    wanted && (PANELS as readonly string[]).includes(wanted) ? wanted : 'sponsors')
   const mayEditEmails = CAN_EDIT_EMAILS.includes(effectiveRole(role))
   const [sponsors, setSponsors] = useState<AdminSponsor[]>([])
   const [statusF, setStatusF] = useState('')
@@ -163,9 +169,7 @@ export default function AdminSponsorsList() {
       {panel === 'emails' && mayEditEmails && <SponsorEmailsCard token={token} t={t} />}
 
       {/* Terms — authoring only. A sponsor does not meet this document until T3. */}
-      {panel === 'terms' && mayEditEmails && (
-        <SponsorTermsCard token={token} isSuper={Boolean(role?.is_super_admin)} t={t} />
-      )}
+      {panel === 'terms' && mayEditEmails && <SponsorTermsCard token={token} t={t} />}
 
       {panel === 'sponsors' && (<>
       <div className="flex flex-wrap gap-3 mb-4">
