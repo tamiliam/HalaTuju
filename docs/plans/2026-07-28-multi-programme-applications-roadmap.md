@@ -1,7 +1,17 @@
 # Multi-programme applications — roadmap
 
-**Drafted 2026-07-28** per `Settings/_workflows/implementation-planning.md`. **NOT APPROVED — do not
-start Sprint 1.**
+**Drafted 2026-07-28** per `Settings/_workflows/implementation-planning.md`.
+
+> **▶ OWNER DECISION 2026-07-28: M1 ONLY IS APPROVED.** *"M1 only for now."*
+>
+> **M2–M4 are NOT approved and must not be started.** They are kept below because M1 is only
+> worth doing if this is where it leads, and because the owner's rulings and scenarios are
+> recorded against them — not as a commitment to build them.
+>
+> **Why this is a sound place to stop.** M1 closes the silent-misattribution risk on its own and
+> changes nothing a student sees. It is the only piece that is dangerous to leave undone: the
+> others are absent features, whereas this one is a wrong answer waiting for a second programme.
+> **Re-plan M2–M4 when a second programme is actually close** — the scenarios will have moved.
 
 Follows PF-1, which stopped the platform guessing which programme an application was FOR. This
 roadmap is the other half: letting a student hold applications to more than one programme, which
@@ -20,6 +30,22 @@ the owner has now asked for.
 |---|---|---|
 | **1** | *"Student goes to Inspire. In their website they provide an application link. Through that they should come to halatuju and register/login."* | **They must NOT see other programmes.** *"Which may confuse."* Single-programme tunnel, and the context has to survive **registration and login**. |
 | **2** | *"Student lands in HalaTuju course selection. Clicks on student aid. Sees two scholarship programmes active. Believes she qualifies for both and applies to both, one at a time."* | **Browse, choose, and then hold two.** *"Here the picker might be useful, if she has two live applications."* |
+| **3** | *"Student from Scenario 1 who has already submitted application but comes to halatuju. She clicks on the student aid menu, and see two programmes listed. She picks the one that is relevant to her and proceeds."* | **The tunnel is per-visit, not permanent.** Having arrived once through Inspire's link does not brand her account; browsing organically later, she sees everything that is open. |
+
+**Scenario 3 is the one that shapes the surface**, and it retires a reading of scenario 1 that would
+otherwise have been built. The single-programme tunnel is a property of **how she arrived this
+time**, not a flag on her account — so:
+
+- the listing must be **application-aware**: a programme she already has a live application with
+  reads *"Continue your application"*, one she does not reads *"Apply"*;
+- **the picker and the switcher are the same surface.** M4 had them as two things. They are one
+  list, with each row in one of two states — which is simpler, and is why scenario 3 is worth
+  having before M3/M4 are built rather than after.
+
+⚠ **One ambiguity, deliberately not resolved here.** *"Picks the one that is relevant to her and
+proceeds"* reads either as *continues the application she already holds* or as *applies to the
+other one*. The list above serves both without choosing, which is why it is safe to defer — but
+whoever builds M3/M4 should confirm rather than assume.
 
 Read scenario 2 carefully: the picker is wanted **once she has two live applications**, not only at
 the moment of choosing. It is a *switcher* as much as a chooser.
