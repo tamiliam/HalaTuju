@@ -1600,3 +1600,46 @@ contradiction, and the next person to see it will not know it is cosmetic.
 **To resolve:** derive `done` from status ordering in `creditChain`, keep the stamps for the who/when
 line, and add a test using a confirmed credit with NO timestamps — the exact shape of the six
 legacy rows before the data fix. Small, web-only, no migration. (Logged 2026-07-28, sponsor S2.)
+
+### [TD-186] Sponsor PDPA consent is a bare version STRING — it needs a managed surface, and a quiz — PARKED for investigation
+**Owner, 2026-07-28, reading the sponsor detail header:** *"You see: PDPA consent
+2026-sponsor-draft-1 — but this is not properly built. This should be another tab in the sponsor
+page, where the content could be reviewed and edited, and new versions created. It also involves
+[a] quiz that needs to be managed. Park it for future investigation and development."*
+
+**What exists today.** `SPONSOR_CONSENT_VERSION = '2026-sponsor-draft-1'` is a **module constant in
+`views_sponsor.py`**, stamped onto `Sponsor.consent_at` / `consent_version` at registration. The
+wording the sponsor actually agreed to lives only in the frontend registration copy. So:
+- **The text of what a sponsor consented to is not stored anywhere** — only the label of it. If the
+  copy is edited, every past consent silently re-points at wording nobody agreed to. (The student
+  side has the same shape and TD-166 already records it: *"the consent panel renders the CURRENT
+  wording, not the version agreed"*. This is the sponsor twin.)
+- Bumping the version means editing Python and deploying. There is no review step, no diff, no
+  record of who changed it or when.
+- The detail header shows the version string with no way to read it.
+
+**Why the quiz belongs in the same investigation.** The comprehension quiz already built for the
+student bursary agreement (`bursary.py` AGREEMENT_CLAUSES + `comprehension_passed_at`, still dark
+behind `BURSARY_AGREEMENT_ENABLED`) is the same problem in a second place: clause text and quiz
+questions that must move together and stay reconciled — a phantom-term guardrail test exists
+precisely because they drifted once. Whatever manages sponsor consent versions should be the
+mechanism that manages those clause/question pairs too, not a third copy of the idea.
+
+**Open questions the investigation must answer** (do NOT start building before these are settled):
+1. Is a consent version a **document** (a stored, immutable snapshot per version, which is what
+   makes a past consent auditable) or a **template**? Auditability says snapshot.
+2. Does an existing consent become invalid when a new version is published — i.e. does anyone get
+   **re-asked**? The student side went forward-only on the grounds that a narrower version permits
+   less than prior consenters already allowed (2026-07-23). Sponsor consent may not be narrower.
+3. What is the quiz FOR, for a sponsor? For the student bursary it gates a signature. Nothing in
+   the sponsor flow currently gates on comprehension.
+4. Does this belong on the *sponsor* screens at all, or is it a platform-level consent registry
+   (students, sponsors, partners, staff) with per-audience versions? A tab on one sponsor's record
+   is a strange home for a document that governs all sponsors.
+5. **Legal review.** The student consent wording is already awaiting a lawyer pass; this is the
+   same class of artefact and should not be built as an editable free-text box that lets anyone
+   change a legal instrument without one.
+
+**Size:** unknown until (1)–(4) are answered — plausibly its own multi-sprint roadmap, since a
+snapshot model, an editing surface with review, a version lifecycle and a quiz manager are four
+deliverables. **Do not fold it into a sponsor-module sprint.** (Logged 2026-07-28, PARKED.)
