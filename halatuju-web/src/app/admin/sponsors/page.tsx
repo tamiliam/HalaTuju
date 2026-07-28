@@ -99,6 +99,7 @@ export default function AdminSponsorsList() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.name')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.status')}</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.colGiven')}</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.colStudents')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.colLastSeen')}</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.registered')}</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.actions')}</th>
@@ -121,7 +122,13 @@ export default function AdminSponsorsList() {
                   <td className="px-4 py-3 text-right tabular-nums text-gray-700">
                     {Number(s.given) > 0 ? Number(s.given).toLocaleString('en-MY', { minimumFractionDigits: 2 }) : '—'}
                   </td>
-                  <td className={`px-4 py-3 text-sm ${seenTone[seenBand(s.last_seen_at)]}`}>
+                  <td className="px-4 py-3 text-right tabular-nums text-gray-700">
+                    {s.students > 0 ? s.students : '—'}
+                  </td>
+                  <td
+                    className={`px-4 py-3 text-sm ${seenTone[seenBand(s.last_seen_at)]}`}
+                    title={s.last_seen_at ? undefined : t('admin.sponsors.seen.neverHint')}
+                  >
                     {s.last_seen_at
                       ? t(`admin.sponsors.seen.${seenBand(s.last_seen_at)}`, { date: formatDate(s.last_seen_at) })
                       : t('admin.sponsors.seen.never')}

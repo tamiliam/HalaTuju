@@ -74,6 +74,29 @@ export const roleOrgAdmin: ManualChapter = {
       alt: 'The Sponsors vetting list with approve/reject/suspend (placeholder)',
     },
     {
+      anchor: 'org-admin-sponsor-record',
+      title: 'A sponsor’s record and their wallet',
+      body: (
+        <>Click a sponsor&rsquo;s name to open their whole record: what they have <strong>given</strong>, what is
+        already <strong>committed</strong> to students, what is still <strong>available</strong> — one set of
+        figures per gift, because a wallet belongs to a gift and the money is not interchangeable between them.
+        Below that sit the credits behind those figures, the students they are funding (by the anonymous code the
+        sponsor sees, so you and they mean the same person), and the people they have invited.
+        <br /><br />
+        <strong>Wallet credits are the money coming in.</strong> A sponsor transfers to us off the platform, and a
+        <strong> general admin</strong> records it against the gift with the bank transfer reference and signs as
+        recorder. <strong>You countersign</strong> — and only then is that money spendable on a student. Every
+        signature must be a different person and each typed name must match that account&rsquo;s name exactly. If
+        your organisation has a <strong>finance admin</strong> there is a middle step, and until they have checked
+        it you will see &ldquo;waiting for the finance check&rdquo; instead of a countersign button — the same
+        chain as a payment run.
+        <br /><br />
+        You cannot record a credit yourself, deliberately: the person who opens a chain cannot also close it. An
+        unconfirmed credit can be <strong>voided</strong> if it was mis-keyed; a confirmed one never can, and is
+        corrected by a balancing entry instead.</>
+      ),
+    },
+    {
       anchor: 'org-admin-administration',
       title: 'Your organisation in the sidebar',
       body: (

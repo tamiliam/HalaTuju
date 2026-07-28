@@ -35,6 +35,100 @@ existed only because there was no sidebar to reach its parts. There is one now.
 ### Verification
 `npx jest` 905 passed (61 suites); `check-i18n` 4065 keys x 3; `tsc` clean; `next build` exit 0
 with all four routes. No backend, no migration, no new dependency.
+## Wallet credits get their interface — record, sign, void (sponsor S2) — 2026-07-28
+
+The P4b endpoints have been live and org-fenced since 27 July with **nothing calling them**,
+which made the sign-off chain a control on paper: the people it names — an `admin` maker, an
+`org_admin` approver — had no way to execute their own steps, so all RM172,000 of credits was
+keyed in by a developer. This removes the developer from the money path. **No migration; no
+new route** (the controls live on the sponsor detail page).
+
+### Added
+- **Record a credit** — a maker-only panel on the credits block: gift, amount, bank
+  reference. The reference is mandatory because it is the only thread back to the money and
+  what makes each credit reconcile against a statement line.
+- **Sign** — one button per row, labelled with the step the credit is actually waiting on
+  (recorder / finance check / countersign). The signature is **typed per row** and matched
+  against the caller's own admin record server-side; a click alone is not a signature.
+- **Void** — offered to the maker and the approver on an unconfirmed credit only. A
+  confirmed credit is reversed by a compensating entry, never cancelled.
+- **`creditActions`** in `lib/sponsorDetail.ts` — the per-credit action set, mirroring
+  `sponsorship.sign_admin_credit` step for step, with tests pinning the mirror.
+
+### Changed
+- **`memberships` on the sponsor detail payload now carries `programme_id`.** The creditable
+  set is "gifts the sponsor was ACCEPTED into", which is the memberships list and not the
+  wallet ledger: a sponsor accepted into a gift they have not yet given to holds no wallet,
+  and that is exactly the case a first credit is recorded for.
+
+### Fixed
+- **`finance_check_required` was computed from the wallets alone, so it read false exactly
+  when it mattered most.** A wallet exists only once a credit is CONFIRMED, so a first credit
+  — recorded and awaiting its signatures, the one whose chain the screen must draw correctly —
+  sits in a programme with no wallet row. The flag now asks across the wallets, the credits
+  and the approved memberships. Latent in S1 and harmless today (BrightPath has no finance
+  admin, so the flag is false everywhere); it would have surfaced the day one was appointed,
+  as a two-step chain and a countersign button the service refuses.
+- **Every mutation re-reads the whole record.** The response carries the updated credit, but
+  confirming one also moves the wallet tiles, `available` and the pending caveat — patching
+  the row locally would leave the money on screen disagreeing with the money in the database.
+
+### Notes
+- **Two rules are deliberately NOT mirrored client-side.** `same_signer` keys on email
+  server-side because production has two active admins sharing the name "Ve. Elanjelian", and
+  the payload carries names only — so the button is offered and the refusal is rendered.
+  `name_mismatch` is likewise the server's to judge.
+- **An org_admin looking at a credit awaiting the finance check is told so**, rather than
+  shown a countersign button the service would refuse with `finance_check_required` — the same
+  choice the payments sign-off card already makes.
+- Error codes go through a `creditErrorKey` allowlist: our `t()` returns the key on a miss, so
+  an unmapped server code would otherwise print `admin.sponsors.detail.creditError.…` to an
+  admin (the failure mode of L109).
+- **3622 scholarship pytest · 918 jest.** The credit endpoints already carried 22
+  endpoint-level tests including the full chain over the wire, so this sprint adds the UI's
+  own coverage rather than re-proving the server.
+
+## Sponsors: attribute a referral by email, count the students, tell the truth about last seen — 2026-07-28
+
+Three fixes the owner found by comparing the shipped sponsor screens against their approved
+design. Two are defects the sprint exposed rather than caused; one is a piece of the design
+that was quietly dropped. **No migration.**
+
+### Fixed
+- **A referral was only ever attributed to the link.** `attribute_referral` fires when
+  someone registers through `/sponsor?ref=<code>` — and most people don't: they read the
+  invite, then go to the site and sign up. Every one of those invitations stayed "Invited"
+  for ever, so on production **five of eight invitees had joined and all eight read as
+  unconverted**. New `referrals.attribute_referral_by_email` closes the invitation on the
+  invitee's own email at registration; the code still wins when both are present, because
+  a clicked link is the stronger signal. Pre-existing since Sprint 11 (June) — S1's
+  referral list is what made it visible.
+- **"Not since joining" asserted history the column does not have.** `last_seen_at` has
+  only been recorded since 2026-07-27, so a null means *no record*, not *never came back*.
+  The copy now reads "No sign-in recorded" (en/ms/ta) with a tooltip saying since when.
+  The mechanism itself was verified working before the copy was changed.
+
+### Added
+- **A Students column on `/admin/sponsors`** — in the approved design, dropped from the
+  build. Money given says what a sponsor has put in; students says what it is doing, and a
+  large balance with no students is the case an admin most needs to spot. Counted from
+  HOLDING allocations, the same rule the detail page's per-wallet `students` uses, and
+  fenced on the **application's** owner (the detail page's split, not the programme's).
+- **`backfill_referral_attribution`** (report by default, `--apply` to write) — the one-off
+  repair for invitations answered before attribution-by-email existed. Same matching as the
+  live path plus one guard it does not need: the sponsor must have registered *after* the
+  invitation, since someone who was already a sponsor is not a conversion. `joined_at` is
+  stamped with the sponsor's own registration date, so the record stays honest about when
+  it happened.
+
+### Notes
+- `students` is counted in its **own aggregate query**, deliberately not a second
+  `annotate()` beside the money: two multi-valued joins in one queryset multiply each
+  other, and the usual `distinct=True` cure is wrong for a `Sum` (it collapses two credits
+  of the same amount into one). A test pins both failure modes.
+- The org-fence static guard caught the new raw `Sponsorship.objects` query and required
+  its `# org-fence:` pragma — working as intended.
+- **3617 scholarship + 1260 courses/reports pytest · 891 jest.**
 
 ## The console shell — scope sidebar, breadcrumb, command palette (nav/IA N2) — 2026-07-28
 
@@ -186,7 +280,7 @@ Design of record: <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1
 exit 0. No backend change, no migration, pytest untouched.
 ## Sponsor module S1 — one sponsor, whole — 2026-07-27
 
-Sprint 1 of `.claude/plans/snazzy-whistling-biscuit.md` (owner-approved; design of record
+Sprint 1 of `docs/plans/2026-07-27-sponsor-module-roadmap.md` (owner-approved; design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>). **Migration `0132`,
 additive.**
 

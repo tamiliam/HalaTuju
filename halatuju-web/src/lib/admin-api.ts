@@ -1509,6 +1509,8 @@ export interface AdminSponsor {
   created_at: string
   /** Confirmed money, ORG-FENCED (a tenant sees its own share). Always a 2dp string. */
   given: string
+  /** Students this sponsor is currently holding money for. Fenced the same way `given` is. */
+  students: number
   /** Null until this sponsor next opens their portal — nothing recorded it before 2026-07-27. */
   last_seen_at: string | null
 }
@@ -1588,6 +1590,8 @@ export interface AdminSponsorDetail {
     joined_at: string | null
   }>
   memberships: Array<{
+    /** Null only on a legacy row with no programme; the credit form skips those. */
+    programme_id: number | null
     programme_name: string
     status: string
     vetted_by: string
@@ -1617,6 +1621,35 @@ export async function reviewSponsor(
   id: number, action: 'approve' | 'reject' | 'suspend', options?: ApiOptions
 ): Promise<AdminSponsor> {
   return adminMutate(`/api/v1/admin/sponsors/${id}/review/`, 'POST', { action }, options)
+}
+
+// ---- Wallet credits (P4b endpoints, live since 2026-07-27; UI added in sponsor S2) ----
+// These three have existed and been org-fenced on the server since P4b; until now nothing
+// called them, so every credit was keyed in by a developer. The chain is
+// draft → admin_signed → [finance_checked] → confirmed, and `sign` posts to ONE endpoint
+// whichever step is next — the service decides which, so the client never names a step.
+
+/** Record an off-platform gift as a `draft`. `external_reference` is the bank ref, mandatory. */
+export async function recordSponsorCredit(
+  body: { sponsor_id: number; programme_id: number; amount: string; external_reference: string },
+  options?: ApiOptions,
+): Promise<AdminSponsorCredit> {
+  return adminMutate('/api/v1/admin/scholarship/credits/', 'POST', body, options)
+}
+
+/** Sign whichever step is next. The typed name must match the caller's own admin record. */
+export async function signSponsorCredit(
+  id: number, typedName: string, options?: ApiOptions,
+): Promise<AdminSponsorCredit> {
+  return adminMutate(`/api/v1/admin/scholarship/credits/${id}/sign/`, 'POST',
+    { typed_name: typedName }, options)
+}
+
+/** Void an UNCONFIRMED credit. The row is kept — a confirmed credit is never cancelled. */
+export async function voidSponsorCredit(
+  id: number, options?: ApiOptions,
+): Promise<AdminSponsorCredit> {
+  return adminMutate(`/api/v1/admin/scholarship/credits/${id}/cancel/`, 'POST', null, options)
 }
 
 // ---- Requests space (Sprint 15) ----

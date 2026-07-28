@@ -1,6 +1,6 @@
 # Retrospective — Sponsor module S1: one sponsor, whole (2026-07-27)
 
-Plan `.claude/plans/snazzy-whistling-biscuit.md`; design of record
+Plan `docs/plans/2026-07-27-sponsor-module-roadmap.md`; design of record
 <https://claude.ai/code/artifact/9eec1f75-e38d-49d3-9df9-d4ad7a7b9fe3>.
 Branch `feat/sponsor-detail` (worktree — another agent holds uncommitted work in the primary
 checkout). Migration `0132`, additive. **Not deployed** (owner gates it, and `0131` must land

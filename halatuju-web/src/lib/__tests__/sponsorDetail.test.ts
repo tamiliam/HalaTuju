@@ -1,5 +1,6 @@
 import {
-  canVoid, creditChain, hasNoMoney, pendingTotal, seenBand, studentStage,
+  canRecordCredit, canVoid, creditActions, creditableProgrammes, creditChain, creditErrorKey,
+  hasNoMoney, pendingTotal, seenBand, studentStage,
 } from '../sponsorDetail'
 import type { AdminSponsorCredit, AdminSponsorDetail } from '../admin-api'
 
@@ -132,5 +133,129 @@ describe('hasNoMoney', () => {
 
   it('is false once a wallet exists', () => {
     expect(hasNoMoney({ programmes: [{}] } as unknown as AdminSponsorDetail)).toBe(false)
+  })
+})
+
+// ── S2: the actions the credit UI may offer ─────────────────────────────────────
+// Every rule below is ENFORCED by `sponsorship.sign_admin_credit`; these tests pin the
+// mirror, so a divergence shows up here rather than as a button the server refuses.
+
+describe('creditActions', () => {
+  it('offers the maker signature on a draft, to the maker only', () => {
+    const draft = credit({ status: 'draft' })
+    expect(creditActions(draft, false, 'admin')).toMatchObject({ nextStep: 'recorded', canSign: true })
+    expect(creditActions(draft, false, 'org_admin').canSign).toBe(false)
+    expect(creditActions(draft, false, 'finance').canSign).toBe(false)
+  })
+
+  it('sends a signed credit to the APPROVER when finance is dormant', () => {
+    // BrightPath's live path today: no finance admin, so the chain is two steps.
+    const signed = credit({ status: 'admin_signed' })
+    expect(creditActions(signed, false, 'org_admin')).toMatchObject({ nextStep: 'approved', canSign: true })
+    expect(creditActions(signed, false, 'admin').canSign).toBe(false)
+  })
+
+  it('sends it to FINANCE instead once a finance admin is appointed', () => {
+    const signed = credit({ status: 'admin_signed' })
+    expect(creditActions(signed, true, 'finance')).toMatchObject({ nextStep: 'checked', canSign: true })
+  })
+
+  it('tells an org_admin WHY they cannot countersign yet, rather than hiding the reason', () => {
+    // The service answers `finance_check_required` for exactly this case, because from the
+    // approver's seat nothing looks amiss. The screen says the same thing.
+    const signed = credit({ status: 'admin_signed' })
+    expect(creditActions(signed, true, 'org_admin')).toMatchObject({
+      canSign: false, blocked: 'awaiting_finance',
+    })
+  })
+
+  it('returns the credit to the approver after the finance check', () => {
+    const checked = credit({ status: 'finance_checked' })
+    expect(creditActions(checked, true, 'org_admin')).toMatchObject({ nextStep: 'approved', canSign: true })
+    expect(creditActions(checked, true, 'finance').canSign).toBe(false)
+  })
+
+  it('lets a super sign any step', () => {
+    expect(creditActions(credit({ status: 'draft' }), false, 'super').canSign).toBe(true)
+    expect(creditActions(credit({ status: 'admin_signed' }), true, 'super').canSign).toBe(true)
+    expect(creditActions(credit({ status: 'finance_checked' }), true, 'super').canSign).toBe(true)
+  })
+
+  it('offers nothing at all on a settled credit', () => {
+    for (const status of ['confirmed', 'cancelled'] as const) {
+      expect(creditActions(credit({ status }), true, 'super')).toEqual({
+        nextStep: null, canSign: false, blocked: null, canVoid: false,
+      })
+    }
+  })
+
+  it('offers Void to the maker and the approver, never on confirmed money', () => {
+    const draft = credit({ status: 'draft' })
+    expect(creditActions(draft, false, 'admin').canVoid).toBe(true)
+    expect(creditActions(draft, false, 'org_admin').canVoid).toBe(true)
+    expect(creditActions(draft, false, 'super').canVoid).toBe(true)
+    // Finance checks; it does not undo.
+    expect(creditActions(draft, false, 'finance').canVoid).toBe(false)
+    expect(creditActions(credit({ status: 'confirmed' }), false, 'admin').canVoid).toBe(false)
+  })
+
+  it('refuses every action to a role with no business here', () => {
+    for (const role of ['reviewer', 'qc', 'partner']) {
+      const a = creditActions(credit({ status: 'draft' }), false, role)
+      expect(a.canSign).toBe(false)
+      expect(a.canVoid).toBe(false)
+    }
+  })
+})
+
+describe('canRecordCredit', () => {
+  it('is the maker or a super — org_admin is deliberately excluded', () => {
+    // The approver must stay free to countersign; a maker who is also the approver cannot
+    // complete their own chain (`record_admin_credit` refuses org_admin for this reason).
+    expect(canRecordCredit('admin')).toBe(true)
+    expect(canRecordCredit('super')).toBe(true)
+    expect(canRecordCredit('org_admin')).toBe(false)
+    expect(canRecordCredit('finance')).toBe(false)
+    expect(canRecordCredit('reviewer')).toBe(false)
+  })
+})
+
+describe('creditableProgrammes', () => {
+  const detail = (memberships: unknown[]) =>
+    ({ memberships } as unknown as AdminSponsorDetail)
+
+  it('offers a gift the sponsor was accepted into but holds NO wallet in', () => {
+    // The case a first credit is for. Reading the wallet list instead would offer nothing.
+    expect(creditableProgrammes(detail([
+      { programme_id: 7, programme_name: 'BrightPath Bursary', status: 'approved' },
+    ]))).toEqual([{ programme_id: 7, programme_name: 'BrightPath Bursary' }])
+  })
+
+  it('excludes a membership that is not approved — the service would refuse the credit', () => {
+    expect(creditableProgrammes(detail([
+      { programme_id: 7, programme_name: 'Pending Gift', status: 'pending' },
+      { programme_id: 8, programme_name: 'Revoked Gift', status: 'revoked' },
+    ]))).toEqual([])
+  })
+
+  it('skips a legacy membership with no programme', () => {
+    expect(creditableProgrammes(detail([
+      { programme_id: null, programme_name: '', status: 'approved' },
+    ]))).toEqual([])
+  })
+})
+
+describe('creditErrorKey', () => {
+  it('passes a code the server actually answers with', () => {
+    expect(creditErrorKey('same_signer')).toBe('same_signer')
+    expect(creditErrorKey('sponsor_not_in_programme')).toBe('sponsor_not_in_programme')
+  })
+
+  it('falls back rather than rendering a raw key path on screen', () => {
+    // Our t() returns the key on a miss, so an unmapped code would print
+    // "admin.sponsors.detail.creditError.some_new_code" to an admin (cf. L109).
+    expect(creditErrorKey('some_new_code')).toBe('unknown')
+    expect(creditErrorKey(undefined)).toBe('unknown')
+    expect(creditErrorKey('')).toBe('unknown')
   })
 })

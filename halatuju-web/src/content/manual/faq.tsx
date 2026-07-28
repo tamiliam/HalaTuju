@@ -167,6 +167,13 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   org_admin: [
     {
+      q: <>A sponsor&rsquo;s wallet is short. Who adds the money?</>,
+      a: <>A <strong>general admin</strong> records the credit against the gift with its bank transfer reference and
+        signs as recorder; <strong>you countersign</strong>, and only then is it spendable on a student. You
+        deliberately cannot record one yourself — whoever opens a chain cannot also close it. Open the sponsor from
+        the <strong>Sponsors</strong> list to see the credits and their signatures.</>,
+    },
+    {
       q: <>Why can&rsquo;t I countersign this payment run yet?</>,
       a: <>Because your organisation has a <strong>finance admin</strong>, and the run hasn&rsquo;t been checked
         yet. The chain is: someone prepares and signs it, finance checks it, then you countersign and the money
@@ -217,10 +224,31 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   admin: [
     {
-      q: <>Why can&rsquo;t I click anything?</>,
-      a: <>Your role is <strong>view-only</strong>: you can see everything in your organisation (applications, the
-        Sponsors list, the Staff list) but the buttons that change things aren&rsquo;t shown to
-        you. Ask your organisation admin to make a change.</>,
+      q: <>Why can&rsquo;t I click anything on a case?</>,
+      a: <>On cases and staff your role is <strong>read-only</strong>: you see everything in your organisation
+        (applications, the Sponsors list, the Staff page) but the buttons that change those
+        aren&rsquo;t shown to you. Ask your organisation admin. <strong>Money is the exception</strong> — you
+        prepare payment runs and record wallet credits, and someone else countersigns them.</>,
+    },
+    {
+      q: <>A sponsor has transferred us money. How do I put it in their wallet?</>,
+      a: <>Open <strong>Sponsors</strong>, click their name, then <strong>Record a credit</strong>. Pick the gift
+        the money was given to, enter the amount and the <strong>bank transfer reference</strong> — one credit per
+        transfer, so it can be matched to a line on the statement. It is saved as a draft; <strong>sign as
+        recorder</strong> (type your full name exactly as it appears on your account), then your organisation admin
+        countersigns. The money only becomes spendable on a student after that countersignature.</>,
+    },
+    {
+      q: <>I typed the wrong amount on a credit. Can I fix it?</>,
+      a: <>If it is not yet confirmed, use <strong>Void this credit</strong> and record it again — the voided row
+        stays visible as history. Once a credit has been confirmed it cannot be voided; tell your organisation
+        admin, and the correction is made by recording a balancing entry so the trail shows exactly what
+        happened.</>,
+    },
+    {
+      q: <>Why can&rsquo;t I countersign the credit I just recorded?</>,
+      a: <>Because every step of a money chain must be a <strong>different person</strong> — that is the whole
+        point of it. You record and sign as recorder; your <strong>organisation admin</strong> countersigns.</>,
     },
   ],
   finance: [

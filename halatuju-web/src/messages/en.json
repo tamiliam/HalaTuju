@@ -3176,9 +3176,11 @@
         "suspend": "Suspend"
       },
       "colGiven": "Given",
+      "colStudents": "Students",
       "colLastSeen": "Last seen",
       "seen": {
-        "never": "Not since joining",
+        "never": "No sign-in recorded",
+        "neverHint": "Sign-ins have only been recorded since 27 July 2026.",
         "today": "Today",
         "recent": "{date}",
         "dormant": "{date}"
@@ -3206,7 +3208,30 @@
         "bankRef": "Bank reference",
         "amount": "Amount",
         "signOff": "Sign-off",
-        "actionsSoon": "Recording and signing arrive next.",
+        "recordCredit": "Record a credit",
+        "recordHint": "One row per bank transfer. The reference is the only thread back to the money, so it is what makes each credit reconcile against a statement line.",
+        "recordSave": "Record",
+        "typedNameHint": "Type your full name exactly as it appears in your profile.",
+        "fullName": "Full name",
+        "sign": {
+          "recorded": "Sign as recorder",
+          "checked": "Finance check",
+          "approved": "Countersign"
+        },
+        "awaitingFinanceCheck": "Waiting for the finance check before this can be countersigned.",
+        "void": "Void this credit",
+        "creditError": {
+          "invalid_amount": "Enter an amount greater than zero.",
+          "external_reference_required": "The bank transfer reference is required.",
+          "programme_required": "Choose which gift this credit belongs to.",
+          "sponsor_not_in_programme": "This sponsor has not been accepted into that gift, so they could not spend the money.",
+          "wrong_role": "Your role cannot take that step.",
+          "bad_state": "This credit is already settled.",
+          "name_mismatch": "That name does not match your profile name.",
+          "same_signer": "Each step needs a different person. You have already signed this credit.",
+          "finance_check_required": "This credit needs the finance check before it can be countersigned.",
+          "unknown": "That did not go through. Nothing was changed."
+        },
         "studentsTitle": "Sponsorship history",
         "studentsNote": "The student is shown by the anonymous code the sponsor sees, so both sides of a conversation mean the same person; the arrow opens the full application.",
         "noStudents": "This sponsor has not funded a student yet.",

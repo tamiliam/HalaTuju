@@ -188,6 +188,20 @@ class TestMoneyIsOrgFenced(SponsorDetailBase):
         self.assertNotIn('Beta Bursary', body)
         self.assertNotIn('5000', body)
 
+    def test_memberships_carry_the_programme_id_the_credit_form_posts(self):
+        """S2: the creditable set is "gifts they were ACCEPTED into", which is the memberships
+        list — not the wallet ledger. A sponsor accepted into a gift they have not yet given
+        to holds no wallet, and that is exactly the case a first credit is recorded for."""
+        prog_c = Programme.objects.create(organisation=self.org_a, code='sd-pc',
+                                          name_en='Alpha Second Gift')
+        SponsorProgrammeMembership.objects.create(
+            sponsor=self.sponsor, programme=prog_c, status='approved')
+        rows = {m['programme_name']: m for m in self._get(self.approver_a).data['memberships']}
+        self.assertEqual(rows['Alpha Second Gift']['programme_id'], prog_c.id)
+        # …and it has no wallet, so the ledger could not have supplied it.
+        self.assertNotIn(prog_c.id, [w['programme_id'] for w in
+                                     self._get(self.approver_a).data['programmes']])
+
     def test_memberships_are_fenced_too(self):
         res = self._get(self.approver_a)
         self.assertEqual([m['programme_name'] for m in res.data['memberships']],
@@ -239,8 +253,8 @@ class TestWalletFigures(SponsorDetailBase):
 
 
 class TestListColumns(SponsorDetailBase):
-    """The list gained `given` + `last_seen_at` so it can be SCANNED. `given` carries the
-    same fence as the detail page — the account is cross-org, the money is not."""
+    """The list gained `given` + `students` + `last_seen_at` so it can be SCANNED. All three
+    carry the same fence as the detail page — the account is cross-org, the money is not."""
 
     def _list(self, admin):
         client = APIClient()
@@ -273,7 +287,92 @@ class TestListColumns(SponsorDetailBase):
                                email='none@x.com', status='approved')
         rows = {r['name']: r for r in self._list(self.superadmin).data['sponsors']}
         self.assertEqual(rows['Nobody']['given'], '0.00')
+        self.assertEqual(rows['Nobody']['students'], 0)
         self.assertIsNone(rows['Nobody']['last_seen_at'])
+
+    def test_students_is_org_fenced_on_the_list_too(self):
+        """Students fence on the APPLICATION's owner, not the programme's."""
+        self._student(self.org_a, self.prog_a, '21')
+        self._student(self.org_a, self.prog_a, '22')
+        self._student(self.org_b, self.prog_b, '23')
+
+        rows = {r['id']: r for r in self._list(self.superadmin).data['sponsors']}
+        self.assertEqual(rows[self.sponsor.id]['students'], 3)
+
+        rows = {r['id']: r for r in self._list(self.approver_a).data['sponsors']}
+        self.assertEqual(rows[self.sponsor.id]['students'], 2)
+
+        rows = {r['id']: r for r in self._list(self.org_admin_b).data['sponsors']}
+        self.assertEqual(rows[self.sponsor.id]['students'], 1)
+
+    def test_money_and_students_do_not_inflate_each_other(self):
+        """The join-fan-out trap: counting students in the SAME annotate() as the money
+        multiplies the two relations, so 2 credits × 3 students would read 6 of each — and
+        `Sum(distinct=True)`, the usual cure, is worse (it collapses two equal credits into
+        one). Hence the separate aggregate. This is the test that catches either mistake."""
+        self._confirmed_credit(self.prog_a, '10000', 'TRF-A-1', self.maker_a, self.approver_a)
+        self._confirmed_credit(self.prog_a, '10000', 'TRF-A-2', self.maker_a, self.approver_a)
+        for uid in ('31', '32', '33'):
+            self._student(self.org_a, self.prog_a, uid, amount='1000')
+
+        row = {r['id']: r for r in self._list(self.approver_a).data['sponsors']}[self.sponsor.id]
+        self.assertEqual(row['given'], '20000.00')   # not 60,000, and not 10,000
+        self.assertEqual(row['students'], 3)         # not 6
+
+    def test_each_sponsor_gets_its_own_count(self):
+        """The count is one grouped query, not one per row — so it has to be keyed correctly.
+        With a single sponsor in the fixture a mis-keyed total would still look right."""
+        other = Sponsor.objects.create(supabase_user_id='sd-other', name='Other Giver',
+                                       email='other@x.com', status='approved')
+        self._student(self.org_a, self.prog_a, '51')
+        app = self._student(self.org_a, self.prog_a, '52')
+        Sponsorship.objects.filter(application=app).update(sponsor=other)
+
+        rows = {r['name']: r for r in self._list(self.approver_a).data['sponsors']}
+        self.assertEqual(rows['Bharathan Nair']['students'], 1)
+        self.assertEqual(rows['Other Giver']['students'], 1)
+
+    def test_a_finished_sponsorship_is_not_a_current_student(self):
+        """`students` counts HOLDING allocations — the same rule the detail page's per-wallet
+        `students` uses, so the two surfaces cannot disagree."""
+        app = self._student(self.org_a, self.prog_a, '41')
+        Sponsorship.objects.filter(application=app).update(status='cancelled')
+        rows = {r['id']: r for r in self._list(self.approver_a).data['sponsors']}
+        self.assertEqual(rows[self.sponsor.id]['students'], 0)
+
+
+class TestFinanceCheckFlag(SponsorDetailBase):
+    """`finance_check_required` tells the screen whether to draw the chain's middle step.
+
+    It has to be true BEFORE a wallet exists. A wallet appears only once a credit is
+    confirmed, so a first credit — recorded and awaiting signatures — sits in a programme
+    with no wallet row; reading wallets alone drew a two-step chain and offered an org_admin
+    a countersign the service then refused.
+    """
+    def test_false_when_no_finance_admin_is_appointed(self):
+        self._confirmed_credit(self.prog_a, '1000', 'TRF-F-0', self.maker_a, self.approver_a)
+        self.assertFalse(self._get(self.approver_a).data['finance_check_required'])
+
+    def test_true_for_an_approved_MEMBERSHIP_before_any_wallet_exists(self):
+        _admin(self.org_a, 'finance', 'Sam Finance', 'finance@a.com')
+        res = self._get(self.approver_a)
+        self.assertEqual(res.data['programmes'], [])          # no wallet at all yet…
+        self.assertTrue(res.data['finance_check_required'])    # …but the chain has three steps
+
+    def test_true_for_an_UNCONFIRMED_credit_whose_programme_has_no_wallet(self):
+        _admin(self.org_a, 'finance', 'Sam Finance', 'finance@a.com')
+        svc.record_admin_credit(
+            sponsor=self.sponsor, programme=self.prog_a, amount=Decimal('9000'),
+            external_reference='TRF-F-DRAFT', admin=self.maker_a)
+        res = self._get(self.approver_a)
+        self.assertEqual(res.data['programmes'], [])
+        self.assertTrue(res.data['finance_check_required'])
+
+    def test_a_fenced_caller_never_reads_another_tenants_finance_setting(self):
+        _admin(self.org_b, 'finance', 'B Finance', 'finance@b.com')
+        # org_a has no finance admin; org_b does. An org_a admin must see its own chain.
+        self.assertFalse(self._get(self.approver_a).data['finance_check_required'])
+        self.assertTrue(self._get(self.org_admin_b).data['finance_check_required'])
 
 
 class TestReferralsAndStudents(SponsorDetailBase):

@@ -1,5 +1,51 @@
 # Architectural Decisions — HalaTuju
 
+## The credit UI mirrors the chain's ROLE map, and deliberately not its IDENTITY rules — Sponsor S2, 2026-07-28
+**Decision:** `lib/sponsorDetail.creditActions` mirrors `sponsorship.sign_admin_credit` step for
+step (which role owns the next step, when the finance step exists, who may void), so the screen
+never draws a control the endpoint would refuse. It does NOT mirror `same_signer` or
+`name_mismatch`: those buttons are offered and the server's refusal is rendered.
+
+**Why the split.** The role map is a function of data the client already holds — the credit's
+status, `finance_check_required` from the payload, and the viewer's own role — so mirroring it
+costs nothing and buys an honest screen. The identity rules are not: `same_signer` keys on
+signer EMAIL server-side, and deliberately so, because production has two active admins both
+named "Ve. Elanjelian" (see the 0125 migration). The detail payload carries signer NAMES only,
+so a client-side distinctness check would be wrong in both directions — it would let one person
+sign twice under a shared name, and refuse two different people who share one. Rendering the
+server's refusal is strictly more correct than guessing.
+
+**Alternatives considered:** (a) Add signer emails to the payload so the client can check —
+rejected: it widens an admin allowlist with personal data to save one round trip on a rare
+error, and the exact-key-set test exists to stop exactly that kind of drift. (b) Mirror nothing
+and let every refusal surface as an error — rejected: an org_admin would see a countersign
+button on a credit awaiting the finance check, click it, and be told no; the payments card
+already chose to state the reason instead, and the two chains are one design.
+**Revisit if:** the credit payload ever needs signer emails for another reason, at which point
+the same-signer check can move client-side as a courtesy — never as the authority.
+
+## A referral is attributed by the link OR the invitee's email, link first — Sponsor fixes, 2026-07-28
+**Decision:** `SponsorRegisterView` closes an invitation on the `?ref=<code>` link if one was used,
+otherwise on a still-`invited` row whose `invitee_email` matches the registering account. Where two
+sponsors invited the same person, the OLDEST invitation wins. Attribution is best-effort — wrapped so it
+can never fail a registration.
+
+**Why email at all.** The code path assumes the invitee returns through our link. Production says
+otherwise: five of eight invitees had joined and every row still read "Invited", because they read the
+invite and then went to the site themselves. The email is the one identifier the invitation and the
+registration are guaranteed to share, so it is the only join key available after the fact.
+
+**Why the link still wins.** A clicked link is evidence of the route taken; an email match is an
+inference. When both are present and they disagree, exactly one invitation should close, and it should be
+the one we can prove. **Why oldest-wins:** the person who actually introduced them is the earlier
+inviter; crediting the most recent would reward whoever invited last.
+
+**Alternatives considered:** (a) Close every matching invitation — rejected: it would report two
+conversions for one person and inflate a metric the whole feature exists to make honest. (b) Match on
+phone as well — rejected: an invitation carries no phone, so there is nothing to match against.
+**Revisit if:** invitations ever gain a second identifier (a phone, an account link), at which point the
+precedence list grows rather than the rule changing.
+
 ## A sponsor account is cross-org; the money and students inside it are not — Sponsor S1, 2026-07-27
 **Decision:** `AdminSponsorDetailView` shows a sponsor's IDENTITY to any permitted admin regardless of
 organisation, and fences everything with money or a student in it (wallets, credits, sponsorships,

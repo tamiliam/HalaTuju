@@ -979,10 +979,15 @@ def _sponsor_dict(s):
         'reviewed_by': s.reviewed_by, 'created_at': s.created_at,
         # Added 2026-07-27 so the list can be scanned rather than merely read: `last_seen_at`
         # answers "is this sponsor still with us" (nothing recorded it before), and `given`
-        # is what an admin actually looks for. `given` is annotated THROUGH THE SAME FENCE as
-        # the detail page — an org sees its own share, never another tenant's giving.
+        # is what an admin actually looks for. `given` + `students` are annotated THROUGH THE
+        # SAME FENCE as the detail page — an org sees its own share, never another tenant's.
         'last_seen_at': s.last_seen_at,
         'given': sponsorship_service._money(getattr(s, 'given_total', None)),
+        # Money given says what they have put in; students says what it is DOING. The pair is
+        # the whole point of the row — a large balance with no students is the case an admin
+        # most needs to spot. Counted the same way the detail page's per-wallet `students` is
+        # (HOLDING allocations), so the list and the page can never disagree.
+        'students': getattr(s, 'students_total', None) or 0,
     }
 
 
@@ -1017,7 +1022,28 @@ class AdminSponsorListView(_AdminBase):
         if not self.has_role(admin, 'super'):
             money &= Q(donations__programme__organisation_id=admin.owning_organisation_id)
         qs = qs.annotate(given_total=Sum('donations__amount', filter=money))
-        return Response({'sponsors': [_sponsor_dict(s) for s in qs]})
+
+        # Students is counted in its OWN query, deliberately NOT a second annotate() on the
+        # line above: two multi-valued joins in one queryset multiply each other, and the
+        # usual `distinct=True` cure is wrong for a Sum (it would collapse two credits of the
+        # same amount into one). One extra aggregate query, no N+1, no inflated money.
+        held = Q(status__in=Sponsorship.HOLDING)
+        if not self.has_role(admin, 'super'):
+            # Students fence on the APPLICATION's owner, not the programme's — a sponsorship
+            # belongs to a student an organisation owns. Same split as the detail page.
+            held &= Q(application__owning_organisation_id=admin.owning_organisation_id)
+        rows = list(qs)
+        # org-fence: `held` carries application__owning_organisation_id for a non-super
+        # caller (built above), so this count never crosses a tenant boundary.
+        counts = dict(
+            Sponsorship.objects.filter(held, sponsor__in=rows)
+            .values('sponsor_id')
+            .annotate(n=Count('id'))
+            .values_list('sponsor_id', 'n')
+        )
+        for s in rows:
+            s.students_total = counts.get(s.id, 0)
+        return Response({'sponsors': [_sponsor_dict(s) for s in rows]})
 
 
 class AdminSponsorPendingCountView(_AdminBase):
@@ -1060,6 +1086,22 @@ class AdminSponsorReviewView(_AdminBase):
         return Response(_sponsor_dict(sponsor))
 
 
+def _chain_organisations(programmes, credit_rows, membership_rows):
+    """Every organisation whose finance setting governs a credit on this screen.
+
+    Three sources, because a credit can exist before its wallet does: a wallet appears only
+    once a credit is CONFIRMED (`visible_donations`), so a freshly-recorded credit awaiting
+    its signatures — the one whose chain the screen must draw correctly — belongs to a
+    programme with no wallet row. The approved memberships cover the step before that, when
+    the maker is about to record a first credit into a gift.
+    """
+    orgs = {p.organisation for p in programmes if p is not None}
+    orgs |= {c.programme.organisation for c in credit_rows if c.programme_id}
+    orgs |= {m.programme.organisation for m in membership_rows
+             if m.programme_id and m.status == 'approved'}
+    return {o for o in orgs if o is not None}
+
+
 def _sponsor_detail_dict(sponsor, admin, base):
     """The one sponsor, built field-by-field — NEVER a ModelSerializer.
 
@@ -1100,7 +1142,13 @@ def _sponsor_detail_dict(sponsor, admin, base):
     # fields again — two copies of a money payload is two places for the next column to be
     # added to only one.
     # org-fence: fenced on programme→organisation via base.credits(), never all donations.
-    credits = [_credit_dict(d) for d in base.credits()]
+    credit_rows = list(base.credits())
+    credits = [_credit_dict(d) for d in credit_rows]
+
+    membership_rows = [
+        m for m in sponsor.programme_memberships.select_related('programme__organisation')
+        if base.covers(m.programme)
+    ]
 
     sponsorships = [
         {
@@ -1150,20 +1198,32 @@ def _sponsor_detail_dict(sponsor, admin, base):
         ],
         'memberships': [
             {
+                # `programme_id` is what the credit form posts (S2). It has to come from the
+                # MEMBERSHIPS and not the wallet ledger above: `record_admin_credit` refuses
+                # `sponsor_not_in_programme`, so the creditable set is "gifts they were
+                # accepted into" — which includes a gift they hold no money in yet, and that
+                # is exactly the case a FIRST credit is being recorded for.
+                'programme_id': m.programme_id,
                 'programme_name': getattr(m.programme, 'name_en', '') or '',
                 'status': m.status,
                 'vetted_by': m.vetted_by,
                 'vetted_at': m.vetted_at,
             }
-            for m in sponsor.programme_memberships.select_related('programme')
-            if base.covers(m.programme)
+            for m in membership_rows
         ],
         # Live, never stored — appointing a finance admin arms the middle step of the credit
         # chain retroactively, so the screen must ask at read time, exactly as the sign
-        # service does. (S2's credit UI reads this; S1 only carries it.)
+        # service does.
+        #
+        # Asked across the WALLETS, the CREDITS and the approved MEMBERSHIPS, not the wallets
+        # alone. A wallet only exists once a credit is CONFIRMED (`visible_donations`), so a
+        # first credit — recorded, then awaiting its signatures — belongs to a programme with
+        # no wallet yet. Reading wallets only, the screen would draw a two-step chain and
+        # offer an org_admin a countersign the service then refuses with
+        # `finance_check_required`, which is exactly the mismatch this flag exists to prevent.
         'finance_check_required': any(
-            payments_service.finance_check_required(p.organisation)
-            for p in programmes if p is not None
+            payments_service.finance_check_required(org)
+            for org in _chain_organisations(programmes, credit_rows, membership_rows)
         ),
         # True when this caller sees only their own organisation's share of the account, so
         # the screen can say so rather than implying it is the sponsor's whole giving record.
