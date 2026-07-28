@@ -26,7 +26,7 @@ export default function TermsSectionEditor({
   disabled: boolean
   onGenerate: (order: number) => void
   generating: number | null
-  t: (k: string, p?: Record<string, string | number>) => string
+  t: (k: string, p?: Record<string, string>) => string
 }) {
   const [lang, setLang] = useState<CLocale>('en')
   const [open, setOpen] = useState<number | null>(null)
@@ -142,9 +142,9 @@ export default function TermsSectionEditor({
                     <input type="radio" name={`correct-${s.order}-${lang}`} disabled={disabled}
                       checked={quiz.correct === oi}
                       onChange={() => patchQuiz(i, { correct: oi })}
-                      aria-label={t('admin.sponsors.terms.markCorrect', { n: oi + 1 })} />
+                      aria-label={t('admin.sponsors.terms.markCorrect', { n: String(oi + 1) })} />
                     <input className={inputCls} disabled={disabled}
-                      placeholder={t('admin.sponsors.terms.optionPh', { n: oi + 1 })}
+                      placeholder={t('admin.sponsors.terms.optionPh', { n: String(oi + 1) })}
                       value={(quiz.options || [])[oi] || ''}
                       onChange={(e) => setOption(i, oi, e.target.value)} />
                   </label>

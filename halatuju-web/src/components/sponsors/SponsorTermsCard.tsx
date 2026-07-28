@@ -23,7 +23,7 @@ import {
 export default function SponsorTermsCard({ token, isSuper, t }: {
   token: string | null
   isSuper: boolean
-  t: (k: string, p?: Record<string, string | number>) => string
+  t: (k: string, p?: Record<string, string>) => string
 }) {
   const [list, setList] = useState<SponsorTermsListPayload | null>(null)
   const [current, setCurrent] = useState<SponsorTermsDetail | null>(null)
@@ -144,7 +144,7 @@ export default function SponsorTermsCard({ token, isSuper, t }: {
                 </span>
               </span>
               <span className="block text-xs text-gray-500 mt-0.5">
-                {t('admin.sponsors.terms.sectionCount', { n: v.section_count })}
+                {t('admin.sponsors.terms.sectionCount', { n: String(v.section_count) })}
               </span>
             </button>
           ))}
@@ -183,11 +183,13 @@ export default function SponsorTermsCard({ token, isSuper, t }: {
             />
 
             <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-              <span>{t('admin.sponsors.terms.checkpointCount', { n: checkpointCount(sections) })}</span>
+              <span>{t('admin.sponsors.terms.checkpointCount', { n: String(checkpointCount(sections)) })}</span>
               {progress && (['ms', 'ta'] as const).map((loc) => (
                 <span key={loc} className={progress[loc].complete ? 'text-green-700' : ''}>
                   {t('admin.sponsors.terms.translated', {
-                    loc: loc.toUpperCase(), done: progress[loc].done, total: progress[loc].total,
+                    loc: loc.toUpperCase(),
+                    done: String(progress[loc].done),
+                    total: String(progress[loc].total),
                   })}
                 </span>
               ))}

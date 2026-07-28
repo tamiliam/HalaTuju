@@ -12,7 +12,7 @@ import * as api from '@/lib/admin-api'
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 
-const t = (k: string, p?: Record<string, string | number>) =>
+const t = (k: string, p?: Record<string, string>) =>
   (p ? `${k}:${Object.values(p).join(',')}` : k)
 
 const SUMMARY = {
