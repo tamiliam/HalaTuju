@@ -3434,7 +3434,6 @@
         "checklist": "Before publishing",
         "allClear": "Ready to publish.",
         "publish": "Publish this version",
-        "superOnly": "A super admin publishes. Whoever writes the terms should not be the one who makes them binding.",
         "saveFirst": "Save your changes first.",
         "status": {
           "draft": "Draft",
@@ -3503,7 +3502,8 @@
         "rehearseFinish": "Finish",
         "rehearseRestart": "Start again",
         "rehearseDone": "All {n} — that is the whole quiz.",
-        "rehearseDoneBody": "A sponsor reaches the signature step here. Nothing is recorded from a rehearsal."
+        "rehearseDoneBody": "A sponsor reaches the signature step here. Nothing is recorded from a rehearsal.",
+        "publisherOnly": "A super admin or an organisation admin publishes. You can write and edit the wording here."
       }
     },
     "disbursement": {

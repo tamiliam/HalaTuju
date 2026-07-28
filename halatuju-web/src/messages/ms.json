@@ -3434,7 +3434,6 @@
         "checklist": "Sebelum menerbitkan",
         "allClear": "Sedia untuk diterbitkan.",
         "publish": "Terbitkan versi ini",
-        "superOnly": "Pentadbir super yang menerbitkan. Penulis terma tidak sepatutnya menjadi orang yang menjadikannya mengikat.",
         "saveFirst": "Simpan perubahan anda dahulu.",
         "status": {
           "draft": "Draf",
@@ -3503,7 +3502,8 @@
         "rehearseFinish": "Tamat",
         "rehearseRestart": "Mula semula",
         "rehearseDone": "Kesemua {n} — itulah keseluruhan kuiz.",
-        "rehearseDoneBody": "Penaja sampai ke langkah tandatangan di sini. Tiada apa direkodkan daripada latihan ini."
+        "rehearseDoneBody": "Penaja sampai ke langkah tandatangan di sini. Tiada apa direkodkan daripada latihan ini.",
+        "publisherOnly": "Pentadbir super atau pentadbir organisasi yang menerbitkan. Anda boleh menulis dan menyunting kata-katanya di sini."
       }
     },
     "disbursement": {

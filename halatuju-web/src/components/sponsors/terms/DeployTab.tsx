@@ -7,13 +7,16 @@ import type { SponsorTermsDetail, SponsorTermsValidation } from '@/lib/admin-api
  * Deploy — the publish checklist and the button.
  *
  * Every rule label comes from the SERVER, so this panel knows none of them: a rule can be added or
- * reworded without touching the client. Publish is super-only, and an org_admin is told who does it
- * rather than being shown a button that could only 403.
+ * reworded without touching the client.
+ *
+ * Publish is open to a super OR an org_admin (owner, 2026-07-28 — the programme lead should not
+ * need the platform owner). A plain `admin` may author but is told who publishes, rather than being
+ * shown a button that could only 403.
  */
-export default function DeployTab({ terms, validation, isSuper, dirty, busy, onPublish, t }: {
+export default function DeployTab({ terms, validation, canPublish, dirty, busy, onPublish, t }: {
   terms: SponsorTermsDetail
   validation: SponsorTermsValidation | null
-  isSuper: boolean
+  canPublish: boolean
   dirty: boolean
   busy: boolean
   onPublish: () => void
@@ -52,13 +55,13 @@ export default function DeployTab({ terms, validation, isSuper, dirty, busy, onP
         )}
 
         {editable && (
-          isSuper ? (
+          canPublish ? (
             <button type="button" className={`${btnPrimary} mt-2 self-start`}
               disabled={busy || !validation?.ok || dirty} onClick={onPublish}>
               {t('admin.sponsors.terms.publish')}
             </button>
           ) : (
-            <p className="text-xs text-gray-500 mt-2">{t('admin.sponsors.terms.superOnly')}</p>
+            <p className="text-xs text-gray-500 mt-2">{t('admin.sponsors.terms.publisherOnly')}</p>
           )
         )}
         {editable && dirty && (

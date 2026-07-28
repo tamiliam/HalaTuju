@@ -380,13 +380,22 @@ def validate_for_publish(terms):
 # ── lifecycle ────────────────────────────────────────────────────────────────
 
 @transaction.atomic
-def publish(terms, *, by_email='', is_super=False):
+def publish(terms, *, by_email='', allowed=False):
     """Make this version the active one, archiving whatever was active before.
 
-    Super-only, and validated again HERE rather than trusting an earlier check — a publish must
-    not be able to ride on a validation that passed before the last edit.
+    `allowed` is the CALLER's assertion that this admin may publish — the role rule lives in the
+    view, not here. It defaults to False so a bare shell call cannot publish by accident.
+
+    ⚠ Owner decision 2026-07-28: **an org_admin may publish, including a version they wrote
+    themselves.** This was super-only at first, on the reasoning that whoever writes the terms
+    should not be the one who makes them binding. The owner weighed that against there being
+    exactly two people who do either job and chose to trust them. So there is deliberately NO
+    same-author check here — do not add one back without asking.
+
+    Validated again HERE rather than trusting an earlier check: a publish must not be able to ride
+    on a validation that passed before the last edit.
     """
-    if not is_super:
+    if not allowed:
         raise SponsorTermsError('publish_forbidden')
     _require_draft(terms)
 

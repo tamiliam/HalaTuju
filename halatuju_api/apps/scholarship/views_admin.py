@@ -4727,10 +4727,11 @@ class AdminSponsorTermsValidateView(_SponsorTermsBase):
 
 
 class AdminSponsorTermsPublishView(_SponsorTermsBase):
-    """POST .../sponsor-terms/<pk>/publish/ — SUPER ONLY.
+    """POST .../sponsor-terms/<pk>/publish/ — super or org_admin.
 
-    Whoever writes the terms should not be the one who makes them binding, which is the same
-    two-person shape the contract module's deploy uses and the credit chain's countersignature.
+    Opened from super-only on 2026-07-28 at the owner's direction, so the programme lead can
+    publish without going through the platform owner. A plain `admin` is still refused: authoring
+    is staff work, but making a document binding on a donor is not.
     """
     def post(self, request, pk):
         admin, err = self._terms_admin(request)
@@ -4740,8 +4741,10 @@ class AdminSponsorTermsPublishView(_SponsorTermsBase):
         if not terms:
             return Response({'error': 'not_found'}, status=404)
         try:
-            sponsor_terms_mod.publish(terms, by_email=admin.email or '',
-                                      is_super=bool(admin.is_super_admin))
+            # super OR org_admin. A plain `admin` may AUTHOR but not make it binding: they are
+            # staff doing the work, not the people answerable for what a donor is bound by.
+            may_publish = bool(admin.is_super_admin) or admin.role == 'org_admin'
+            sponsor_terms_mod.publish(terms, by_email=admin.email or '', allowed=may_publish)
         except sponsor_terms_mod.SponsorTermsError as exc:
             return _terms_err(exc)
         terms.refresh_from_db()

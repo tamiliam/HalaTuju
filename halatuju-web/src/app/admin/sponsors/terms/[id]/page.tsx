@@ -34,7 +34,9 @@ export default function SponsorTermsEditorPage() {
   const { t } = useT()
   const router = useRouter()
 
-  const isSuper = effectiveRole(role) === 'super'
+  // Publish is a super OR an org_admin decision (owner, 2026-07-28). A plain `admin`
+  // authors but does not make a document binding on a donor.
+  const canPublish = ['super', 'org_admin'].includes(effectiveRole(role))
   const [terms, setTerms] = useState<SponsorTermsDetail | null>(null)
   const [sections, setSections] = useState<SponsorTermsSection[]>([])
   const [validation, setValidation] = useState<SponsorTermsValidation | null>(null)
@@ -137,7 +139,7 @@ export default function SponsorTermsEditorPage() {
       {tab === 'quiz' && <QuizRehearsal sections={sections} t={t} />}
       {tab === 'preview' && <PreviewTab id={id} token={token!} t={t} />}
       {tab === 'deploy' && (
-        <DeployTab terms={terms} validation={validation} isSuper={isSuper} dirty={dirty}
+        <DeployTab terms={terms} validation={validation} canPublish={canPublish} dirty={dirty}
           busy={busy} onPublish={publish} t={t} />
       )}
     </div>

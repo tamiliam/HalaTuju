@@ -75,7 +75,7 @@ class TestAuthoring(TestCase):
 
     def test_a_published_version_is_immutable(self):
         terms = _draft()
-        sponsor_terms.publish(terms, by_email='s@x.com', is_super=True)
+        sponsor_terms.publish(terms, by_email='s@x.com', allowed=True)
         for call in (
             lambda: sponsor_terms.update_intro(terms, {'title_en': 'new'}),
             lambda: sponsor_terms.replace_sections(terms, []),
@@ -86,7 +86,7 @@ class TestAuthoring(TestCase):
 
     def test_copying_a_version_clones_content_but_never_the_publish_stamps(self):
         original = _draft('v1')
-        sponsor_terms.publish(original, by_email='s@x.com', is_super=True)
+        sponsor_terms.publish(original, by_email='s@x.com', allowed=True)
         copy = sponsor_terms.create_version(version='v2', copy_from=original)
         self.assertEqual(copy.status, SponsorTermsVersion.STATUS_DRAFT)
         self.assertEqual(copy.published_at, None)
@@ -175,9 +175,9 @@ class TestValidation(TestCase):
 class TestPublishing(TestCase):
     def test_publishing_archives_the_previous_active_version(self):
         first = _draft('v1')
-        sponsor_terms.publish(first, is_super=True)
+        sponsor_terms.publish(first, allowed=True)
         second = _draft('v2')
-        sponsor_terms.publish(second, is_super=True)
+        sponsor_terms.publish(second, allowed=True)
 
         first.refresh_from_db()
         second.refresh_from_db()
@@ -186,23 +186,25 @@ class TestPublishing(TestCase):
         self.assertEqual(second.status, SponsorTermsVersion.STATUS_ACTIVE)
         self.assertEqual(sponsor_terms.active_version().version, 'v2')
 
-    def test_only_a_super_may_publish(self):
+    def test_the_service_refuses_unless_the_caller_asserts_permission(self):
+        # `allowed` defaults to False so a bare shell call cannot publish by accident; the ROLE
+        # rule lives in the view.
         terms = _draft()
         with self.assertRaises(sponsor_terms.SponsorTermsError) as cm:
-            sponsor_terms.publish(terms, is_super=False)
+            sponsor_terms.publish(terms)
         self.assertEqual(cm.exception.code, 'publish_forbidden')
 
     def test_publish_revalidates_rather_than_trusting_an_earlier_check(self):
         terms = _draft()
         SponsorTermsSection.objects.filter(terms=terms).update(body_en='')
         with self.assertRaises(sponsor_terms.SponsorTermsError) as cm:
-            sponsor_terms.publish(terms, is_super=True)
+            sponsor_terms.publish(terms, allowed=True)
         self.assertEqual(cm.exception.code, 'not_publishable')
         self.assertIn('C2', cm.exception.errors)
 
     def test_a_published_version_can_never_be_deleted_out_from_under_an_acceptance(self):
         terms = _draft()
-        sponsor_terms.publish(terms, is_super=True)
+        sponsor_terms.publish(terms, allowed=True)
         sponsor = Sponsor.objects.create(supabase_user_id='s1', name='A B', email='a@b.com')
         sponsor_terms.record_acceptance(sponsor, terms, signed_name='A B')
         from django.db.models import ProtectedError
@@ -223,12 +225,12 @@ class TestTheGate(TestCase):
         self.assertFalse(state['terms_accepted'])
 
     def test_an_active_version_gates_a_sponsor_with_no_row(self):
-        sponsor_terms.publish(_draft(), is_super=True)
+        sponsor_terms.publish(_draft(), allowed=True)
         self.assertTrue(sponsor_terms.acceptance_state(self.sponsor)['needs_terms'])
 
     def test_accepting_clears_the_gate(self):
         terms = _draft()
-        sponsor_terms.publish(terms, is_super=True)
+        sponsor_terms.publish(terms, allowed=True)
         sponsor_terms.record_acceptance(self.sponsor, terms, signed_name='Ve. Elanjelian')
         state = sponsor_terms.acceptance_state(self.sponsor)
         self.assertFalse(state['needs_terms'])
@@ -237,7 +239,7 @@ class TestTheGate(TestCase):
 
     def test_grandfathering_clears_the_gate_but_NEVER_reads_as_an_acceptance(self):
         terms = _draft()
-        sponsor_terms.publish(terms, is_super=True)
+        sponsor_terms.publish(terms, allowed=True)
         sponsor_terms.grandfather(self.sponsor, terms, by_email='o@x.com',
                                   reason='friends and family')
         state = sponsor_terms.acceptance_state(self.sponsor)
@@ -249,12 +251,12 @@ class TestTheGate(TestCase):
 
     def test_publishing_a_NEW_version_re_asks_everyone_including_the_grandfathered(self):
         v1 = _draft('v1')
-        sponsor_terms.publish(v1, is_super=True)
+        sponsor_terms.publish(v1, allowed=True)
         sponsor_terms.grandfather(self.sponsor, v1, reason='pre-dates the terms')
         self.assertFalse(sponsor_terms.acceptance_state(self.sponsor)['needs_terms'])
 
         v2 = _draft('v2')
-        sponsor_terms.publish(v2, is_super=True)
+        sponsor_terms.publish(v2, allowed=True)
         self.assertTrue(sponsor_terms.acceptance_state(self.sponsor)['needs_terms'])
 
 
@@ -263,7 +265,7 @@ class TestTheSignature(TestCase):
         self.sponsor = Sponsor.objects.create(supabase_user_id='s1', name='Ve. Elanjelian',
                                               email='a@b.com')
         self.terms = _draft()
-        sponsor_terms.publish(self.terms, is_super=True)
+        sponsor_terms.publish(self.terms, allowed=True)
 
     def test_typing_a_name_records_it_as_the_signature(self):
         row, created = sponsor_terms.record_acceptance(
@@ -406,6 +408,7 @@ class TestEndpoints(TestCase):
         cls.org_admin = _admin(cls.org, 'org_admin', 'oa', 'oa@x.com')
         cls.super = _admin(cls.org, 'super', 'su', 'su@x.com', is_super=True)
         cls.finance = _admin(cls.org, 'finance', 'fi', 'fi@x.com')
+        cls.plain_admin = _admin(cls.org, 'admin', 'ad', 'ad@x.com')
 
     def _client(self, admin):
         c = APIClient()
@@ -428,15 +431,42 @@ class TestEndpoints(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['title_en'], 'Joining')
 
-    def test_an_org_admin_cannot_publish_but_a_super_can(self):
+    def test_an_org_admin_may_publish(self):
+        # Owner decision 2026-07-28: opened from super-only so the programme lead can publish
+        # without the platform owner. Deliberately no same-author check.
         terms = _draft('2026-sponsor-1')
         res = self._client(self.org_admin).post(f'{TERMS}{terms.id}/publish/')
-        self.assertEqual(res.status_code, 403)
-        self.assertEqual(res.data['error'], 'publish_forbidden')
-
-        res = self._client(self.super).post(f'{TERMS}{terms.id}/publish/')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['status'], 'active')
+        self.assertEqual(res.data['published_by_email'], 'oa@x.com')
+
+    def test_a_super_may_publish(self):
+        terms = _draft('2026-sponsor-2')
+        res = self._client(self.super).post(f'{TERMS}{terms.id}/publish/')
+        self.assertEqual(res.status_code, 200)
+
+    def test_a_plain_admin_may_author_but_NOT_make_it_binding(self):
+        # Authoring is staff work; binding a donor is not.
+        terms = _draft('2026-sponsor-3')
+        res = self._client(self.plain_admin).post(f'{TERMS}{terms.id}/publish/')
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.data['error'], 'publish_forbidden')
+        # ...but they can still edit the draft.
+        self.assertEqual(
+            self._client(self.plain_admin).get(f'{TERMS}{terms.id}/').status_code, 200)
+
+    def test_org_admin_publishing_their_OWN_draft_is_allowed(self):
+        # There is no same-author check, by owner decision. Pinned so nobody adds one back
+        # believing it was an oversight.
+        terms = sponsor_terms.create_version(version='2026-sponsor-4', by_email='oa@x.com')
+        terms.title_en, terms.intro_en = 'T', 'I'
+        terms.save()
+        sponsor_terms.replace_sections(terms, [{
+            'heading_en': 'S', 'body_en': 'B', 'is_quiz_candidate': True,
+            'quiz_en': {'tag': 'T', 'plain': 'p', 'question': 'q?',
+                        'options': ['a', 'b', 'c'], 'correct': 0, 'why': 'w'}}])
+        res = self._client(self.org_admin).post(f'{TERMS}{terms.id}/publish/')
+        self.assertEqual(res.status_code, 200)
 
     def test_the_validate_endpoint_mirrors_the_service(self):
         terms = _draft()
@@ -580,7 +610,7 @@ class TestSponsorFacing(TestCase):
             supabase_user_id='sp1', name='Ve. Elanjelian', email='a@b.com',
             phone='+60 12', source='friend', consent_at=timezone.now(), status='approved')
         self.terms = _draft('2026-sponsor-1')
-        sponsor_terms.publish(self.terms, is_super=True)
+        sponsor_terms.publish(self.terms, allowed=True)
 
     def _client(self):
         c = APIClient()
@@ -625,7 +655,7 @@ class TestSponsorFacing(TestCase):
         # They read v1, a v2 was published while they were reading, and they must not end up
         # having "accepted" wording they never saw.
         v2 = _draft('2026-sponsor-2')
-        sponsor_terms.publish(v2, is_super=True)
+        sponsor_terms.publish(v2, allowed=True)
         res = self._client().post('/api/v1/sponsor/terms/accept/',
                                   {'version': '2026-sponsor-1', 'signed_name': 'A B'},
                                   format='json')
@@ -666,7 +696,7 @@ class TestSponsorFacing(TestCase):
 class TestGrandfatherCommand(TestCase):
     def setUp(self):
         self.terms = _draft('2026-sponsor-1')
-        sponsor_terms.publish(self.terms, is_super=True)
+        sponsor_terms.publish(self.terms, allowed=True)
         self.a = Sponsor.objects.create(supabase_user_id='a', name='A', email='a@x.com')
         self.b = Sponsor.objects.create(supabase_user_id='b', name='B', email='pilot@x.com')
 

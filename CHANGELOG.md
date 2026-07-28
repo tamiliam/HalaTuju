@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor terms — an org_admin can publish — 2026-07-28
+
+Owner: *"I'll allow Suresh to publish the terms."* Suresh is `org_admin`; the owner is the only
+super, so publish was closed to him.
+
+### Changed
+- **Publish opens from super-only to super OR org_admin**, with **no same-author check** — the owner
+  weighed a two-person rule that would always be the same two people and chose to trust them. See
+  `docs/decisions.md` for what that gives up and what still mitigates it. A plain `admin` may author
+  but not publish: authoring is staff work, binding a donor is not.
+- `sponsor_terms.publish`'s `is_super=` becomes **`allowed=`** — the parameter was claiming
+  something that is no longer true, and the ROLE rule belongs in the view. It still defaults to
+  False so a bare shell call cannot publish by accident.
+- The Deploy tab's `superOnly` copy becomes `publisherOnly` and now names both roles.
+
+### Notes
+- Four tests changed shape and three were added, including one pinning that **an org_admin may
+  publish their own draft** — so nobody restores the check believing it was an oversight.
+- 73 sponsor-terms tests pass; `tsc` clean; i18n parity 4293 × 3.
+
 ## Sponsor terms T3 — read, quiz, sign — 2026-07-28
 
 The sponsor-facing half. **No migration** (`0134` already carries everything). **Ships DARK behind

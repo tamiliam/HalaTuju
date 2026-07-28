@@ -1,5 +1,34 @@
 # Architectural Decisions — HalaTuju
 
+## An org_admin publishes the sponsor terms — including a version they wrote — 2026-07-28
+**Decision (owner):** *"I'll allow Suresh to publish the terms."* Publish opens from **super-only**
+to **super OR org_admin**, with **no same-author check**. A plain `admin` may still author but not
+publish.
+
+**What this reverses.** T2 made publish super-only on the reasoning that whoever writes the terms
+should not be the one who makes them binding — the shape the credit chain uses (one records, a
+different person countersigns, distinctness on email) and the contract module's deploy.
+
+**Why the owner overrode it.** There are exactly two people who do either job: the owner (the only
+super) and Suresh (org_admin, and the countersigner on the credit chain). Requiring a super meant
+the programme lead could not publish a document he had reviewed without the platform owner being
+available. Weighed against a two-person check that would, in practice, always be those same two
+people, the owner chose to trust them.
+
+**Alternatives considered:** (a) org_admin may publish but **not their own draft** — recommended by
+me, mirrors the credit chain, rejected as more ceremony than the situation warrants; (b) make Suresh
+a **super admin** — rejected outright: a super bypasses the organisation fence, sees every tenant and
+can deploy bursary contract templates, so it solves one permission by granting all of them.
+
+**Trade-offs, stated plainly:** nothing now stops a binding document going live unreviewed by a
+second person. The mitigations that remain are that a published version is **immutable** (a mistake
+is corrected by publishing a new version, never by editing history), `published_by_email` records
+who did it, and `SPONSOR_TERMS_ENABLED` still gates whether anyone is actually asked.
+
+**⚠ Do not add a same-author check back believing it was an oversight** — a test pins that an
+org_admin may publish their own draft. **Revisit if:** a third org_admin joins, at which point "not
+your own draft" stops being ceremony and starts being a real second pair of eyes.
+
 ## Publishing a terms version and GATING sponsors on it are separate decisions — Sponsor terms T3, 2026-07-28
 **Decision:** `acceptance_state.needs_terms` is forced False whenever `SPONSOR_TERMS_ENABLED` is
 unset, so an ACTIVE version gates nobody until the platform flag is flipped. Two independent
