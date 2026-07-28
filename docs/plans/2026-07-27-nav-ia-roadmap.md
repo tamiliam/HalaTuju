@@ -176,7 +176,7 @@ N3 additionally:
 ```
 cd halatuju_api
 pytest apps/scholarship/tests/test_org_fence.py apps/scholarship/tests/test_admin_scopes.py
-pytest        # full suite — baseline 4859 as at 2026-07-27
+pytest        # full suite — baseline 4882 as at 2026-07-28 (post sponsor-S2 merge)
 ```
 
 **Manual check per sprint:** `npm run dev`, sign in as each of super / org_admin / admin / finance /
@@ -186,9 +186,10 @@ qc / reviewer / partner, and confirm the sidebar matches the role snapshot and t
 
 ## Known friction
 
-- **`administration/page.tsx` is 413 lines doing five jobs.** N3's split is the largest single chunk.
-  The hoist comment at its top warns that naive extraction remounts inputs and steals focus — keep
-  sub-components at module scope.
+- ~~**`administration/page.tsx` is 413 lines doing five jobs.**~~ Split in N3b; it is a 20-line
+  redirect now. **The warning it carried still binds:** every component in `StaffAdmin.tsx` must stay
+  at module scope, because one declared inside its parent remounts the subtree and steals focus from
+  the invite inputs.
 - **A new top-level admin route now fails the build until it has a registry entry.** Deliberate (it
   is what stops orphan #7), but it will surprise an agent who does not know. Nested dynamic routes
   need nothing.
