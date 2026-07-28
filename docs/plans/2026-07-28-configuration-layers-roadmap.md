@@ -46,7 +46,38 @@ separately, after Layer 0 lands. Nothing in Phase 1 depends on Phase 2.
 
 ---
 
-## ⚠ Standing constraint — "anticipating" Layer 2 must not become a placeholder
+## Layer 2 — not built, but deliberately NOT closed off
+
+**Owner, 2026-07-28:** *"While I do not want to build layer 2, I want to have some option to do it.
+I do not want to completely close that option."*
+
+That is a real distinction and it changes what we owe. There are two different things:
+
+| | Where it lives | Verdict |
+|---|---|---|
+| **Keeping the option open** | In this document, and in the SHAPE of the code | **Yes — do this** |
+| **Leaving a placeholder** | In the code, as a stub, column, flag or format | **No — see below** |
+
+**What would genuinely CLOSE the option**, and is therefore forbidden even though Layer 2 is not
+being built:
+- A page written as one undivided blob, so no part of it has a name or a boundary.
+- A section that reaches into shared mutable state rather than taking what it needs as arguments —
+  it then cannot be rendered anywhere else.
+- A section whose correctness depends on another having rendered first.
+- Styling that assumes a fixed position ("this card is always second, so it needs no top margin").
+
+**What keeps it open, and costs nothing** because each is better code on its own terms:
+- Every section a named component that takes explicit inputs.
+- No positional styling assumptions.
+- No order-dependent side effects between sections.
+
+Each page touched during the Phase 2 repaint should be *left* in that state. Not as groundwork —
+as ordinary quality, which happens to mean that if Layer 2 is ever approved it starts from a
+tractable position rather than a rewrite.
+
+**Revisit if:** the owner approves Layer 2, at which point this section becomes its brief.
+
+## ⚠ Standing constraint — the option stays in the DOCUMENT, never as a stub in the code
 
 `docs/lessons.md`: *"A placeholder for future work encodes an assumption about that work — if the
 assumption is not yours to make, do not leave the placeholder."* Written after a reserved `theme`
@@ -61,8 +92,16 @@ a comment reserving a seam.
 own test) **and only on a page the sprint is already touching**. If the sole argument is "this helps
 later", don't.
 
-A later sprint reading this file must not treat any structure here as groundwork for arranging
-anything.
+**Why the option lives here and not in the code.** A stub encodes a guess about *how* Layer 2 would
+work — that order is a stored integer, that it belongs to a programme rather than a person, that
+hiding and reordering are the same feature. A later sprint finds the stub, reads it as settled, and
+builds on a guess nobody made deliberately. That already happened once on this project: a reserved
+`theme` key in `uiPrefs.ts` silently asserted that a theme is a device preference, which was
+precisely the open question. A sentence in a roadmap can be re-read and changed; a column in a
+schema acquires callers.
+
+A later sprint reading this file must treat the section above as an intention to preserve
+FLEXIBILITY, never as a design for Layer 2 and never as permission to start it.
 
 ## ⚠ Migration numbers are NOT reserved here
 
@@ -265,9 +304,15 @@ raw hex in 20 files) against 624 uses of the themed `primary-N`. Dark-mode readi
 
 # Open — owner's to answer, not the agent's to default
 
-**Blocks Sprint 1's DEPLOY (not its build):**
-1. **The sandbox as a second Cloud Run service** — small monthly cost, and does the URL need to be
-   private? If private, that is Cloud Run IAM, and it changes who can hand it to Suresh's team.
+**~~Blocks Sprint 1's DEPLOY~~ — ANSWERED 2026-07-28: Google-account allowlist.**
+Access is Identity-Aware Proxy, which Cloud Run now supports **directly** (`gcloud beta run
+services update --iap`) — no external load balancer, so no ~RM80/month for one. Designers sign in
+with their own Google account; no account is created in HalaTuju, and the sandbox holds no real
+data either way. The image is the same `halatuju-web/Dockerfile` built with
+`--build-arg SANDBOX=1 --build-arg API_URL=https://api.invalid`; both arguments default to the
+production values so an ordinary build is unchanged.
+**Still needed from the owner:** the list of Google addresses to admit, and a one-time IAP consent
+screen on the GCP project if it has never been configured.
 
 **Blocks Sprint 2:**
 2. **Which items are CORE**, never switchable off? Assumption absent an answer: identity card, results
