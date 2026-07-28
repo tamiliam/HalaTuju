@@ -6490,3 +6490,29 @@ eventually work, before that has been designed.
 today, and mildly annoying the day a second organisation exists — which is also the day TD-192
 makes filtering a real sprint, and the right moment to decide persistence alongside it.
 **Revisit if:** TD-192 is picked up; persistence should be designed with the filtering it serves.
+
+## The sponsor module is parked as one cluster, triggered by the organisation registration — 2026-07-28
+**Decision:** Every open sponsor-module item is deferred together — TD-192 (vetting), sponsor S4,
+TD-196, TD-184, the TD-186 residual, TD-183, TD-190 — and so is the sponsor-terms go-live sequence.
+The trigger to unpark is **the organisation registration coming close**. Owner: *"Fold all of this as
+future work. We'll attend to them once the organisation registration comes close."*
+**Alternatives considered:** (a) park the low items but carry TD-192 as an active HIGH, since money
+has already come in against no vetting; (b) park everything on a review date instead of an event;
+(c) finish the terms go-live first and park only what is unbuilt.
+**Rationale:** every parked item is about the moment sign-up opens to strangers, and none of them is
+about the nine sponsors we have — who were hand-picked, are known to the owner personally, and are
+being grandfathered anyway. An event trigger beats a date because the risk is not time-based: a
+review in October means nothing if registration slips to December, and means it too late if a public
+sign-up link goes out in August. (a) was tempting and was rejected for a specific reason rather than
+convenience — TD-192's first gating question is *who is the legal counterparty*, and that question is
+**answered by the very event that triggers it**, so working it earlier means designing a KYC record
+against an entity that does not exist yet. (c) splits a cluster that is easier to reason about whole.
+**Trade-offs:** stated plainly — **RM172,000 has been received from eight people approved with
+nothing in front of the reviewer**, `is_trusted` still defaults to `True`, and one sponsor has been
+rejected in production with no recorded reason. We are choosing to leave that as-is. It is defensible
+only while sign-up is invite-only. **TD-192 stays HIGH in the register — parked is not downgraded**,
+so the next reader sees the severity, not just the park.
+**Revisit if:** the organisation registration approaches — **or sooner, if sponsor sign-up opens to
+strangers before it does.** The trigger is open sign-up; the registration is only its expected
+occasion. TD-196 should be cleared first when the cluster unparks: it is five minutes, and it is the
+only item that could invalidate the others' assumptions.

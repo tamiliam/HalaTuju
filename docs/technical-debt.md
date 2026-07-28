@@ -44,6 +44,35 @@ post-audit work (TD-053–143). Both are searchable by id.
   disbursement + suspension are mocked (Phase 3, folds into TD-075).
 - **TD-148** — no officer/admin view of a student's bank details (the payout surface); folds into TD-075.
 
+**Sponsor module — ⏸ PARKED as one cluster until the organisation registration comes close (owner, 2026-07-28):**
+Everything still open on the sponsor module is deferred together. **The trigger is the organisation
+registration approaching — not a date, and not a code event.** The reasoning is the owner's and it is sound:
+today's nine sponsors are friends and family who were hand-picked, and every item below is about the moment
+sign-up opens to strangers. That moment arrives with the entity, so the entity is the trigger.
+- **TD-192** — *the one that matters.* Sponsor vetting is a **button, not a process**; no NRIC, DOB, address,
+  identity document, source-of-funds declaration or company registration is collected, and `is_trusted`
+  defaults to `True`. RM172,000 has been received from eight people approved on that basis. **HIGH, and
+  unparked the moment sign-up is no longer invite-only.** Its first gating decision — whether the counterparty
+  is Suresh personally or the new entity — is *answered* by the same registration that triggers it (ties to
+  **TD-152** / **TD-140**).
+- **Sponsor S4** (roadmap) — Approve/Reject record **no reason**; one sponsor has been rejected in production
+  with nothing stored saying why. Reason capture + `{reason}` email token + per-sponsor email log + CSV export.
+  **TD-185** folds in.
+- **TD-196** — nobody has taken the sponsor-terms wizard through a browser (the T3 twin of TD-184).
+- **TD-184** — the credit chain has never been driven end-to-end by a human.
+- **TD-186 residual** — the *registration* PDPA consent is still a bare module constant (the terms half closed
+  under T1–T3).
+- **TD-183** — ~80 sponsor-module ms/ta leaves are first drafts; the 24 sponsor-facing `sponsorPortal.terms.*`
+  keys are the riskiest.
+- **TD-190** — sponsor tables sort and page client-side; move server-side above ~200 rows. Naturally triggered
+  by the same growth.
+
+**⚠ Also parked with the cluster: the sponsor-terms go-live sequence.** `2026-sponsor-1` is authored, validated
+and deployable but remains a **draft**, and `SPONSOR_TERMS_ENABLED` is unset, so no sponsor is asked anything.
+The owner had authorised Suresh to publish; that authorisation stands and publishing remains harmless at any
+time (the platform flag gates independently), but it is **no longer a pending action** — see the go-live
+sequence in the T3 retrospective when this is picked back up.
+
 **Bursary / scholarship — operational:**
 - **TD-144** — bursary-agreement panel ticks should derive from the real agreement once the feature is live.
 - **TD-145** — a wrong **public**-university offer isn't caught when the declared institution field is blank.
@@ -1651,6 +1680,8 @@ is English-only by design (validation warning W1 says so honestly); this is the 
 alongside the standing partner-comms draft review (TD-180) — one sitting, not two. Low priority
 while BrightPath's admins work in English, and parity/orphan tests already guarantee the keys
 exist and interpolate; this is about the words being right. (Logged 2026-07-28, sponsor S2.)
+**⏸ PARKED 2026-07-28 (owner)** — folded into the sponsor-module cluster; deferred until the
+organisation registration comes close. See the cluster note in the Open Items Index.
 
 ### [TD-184] The credit chain has never been driven end-to-end by a human — low, but it is the only gap left
 Every step is covered by tests: 22 endpoint-level tests including the full chain over the wire, and
@@ -1663,6 +1694,8 @@ defect a click-through catches and a suite does not.
 (`admin`), sign as her, countersign as Suresh (`org_admin`), and confirm `available` moves by the
 amount. It is a five-minute pass, and until it happens the wallet-credit interface is *verified*
 but not *witnessed*. (Logged 2026-07-28, sponsor S2.)
+**⏸ PARKED 2026-07-28 (owner)** — folded into the sponsor-module cluster; deferred until the
+organisation registration comes close. See the cluster note in the Open Items Index.
 
 ### [TD-185] `creditChain` decides a step is done by its TIMESTAMP, not the credit's status — low, no live symptom
 `lib/sponsorDetail.creditChain` sets each step's `done` from the presence of `recorded_at` /
@@ -1681,6 +1714,8 @@ contradiction, and the next person to see it will not know it is cosmetic.
 **To resolve:** derive `done` from status ordering in `creditChain`, keep the stamps for the who/when
 line, and add a test using a confirmed credit with NO timestamps — the exact shape of the six
 legacy rows before the data fix. Small, web-only, no migration. (Logged 2026-07-28, sponsor S2.)
+**⏸ PARKED 2026-07-28 (owner)** — folded into the sponsor-module cluster (it folds into S4);
+deferred until the organisation registration comes close. See the Open Items Index.
 
 ### [TD-186] Sponsor PDPA consent is a bare version STRING — it needs a managed surface, and a quiz — ✅ LARGELY CLOSED 2026-07-28 (T1–T3)
 **What shipped:** a versioned, editable sponsor-terms document with a comprehension quiz, an
@@ -1744,6 +1779,8 @@ mechanism that manages those clause/question pairs too, not a third copy of the 
 **Size:** unknown until (1)–(4) are answered — plausibly its own multi-sprint roadmap, since a
 snapshot model, an editing surface with review, a version lifecycle and a quiz manager are four
 deliverables. **Do not fold it into a sponsor-module sprint.** (Logged 2026-07-28, PARKED.)
+**⏸ PARK CONFIRMED 2026-07-28 (owner)** — the residual now sits in the sponsor-module cluster and is
+deferred until the organisation registration comes close. See the Open Items Index.
 
 ### [TD-187] The rail cannot scroll, and the "Go to" chip is why — low, but it has a trigger
 **Status:** Open — logged 2026-07-28 at N4's own introduction, with the condition that ends it.
@@ -1819,6 +1856,8 @@ into one). The three detail tables share ONE payload, so paging them server-side
 three endpoints or nested page params; at that point the detail page probably wants its own
 sub-resources anyway. Low priority — sponsors grow at the rate people volunteer money.
 (Logged 2026-07-28. Renumbered from TD-187 on the merge — the nav sprint claimed that number concurrently.)
+**⏸ PARKED 2026-07-28 (owner)** — folded into the sponsor-module cluster; deferred until the
+organisation registration comes close, which is also roughly when the row counts justify it.
 
 ### [TD-191] A sponsor has agreed to a PRIVACY consent, not to any TERMS — so a suspension cites nothing — ✅ CLOSED 2026-07-28 (T3)
 **Closed by the sponsor-terms arc.** §13 of `2026-sponsor-1` states three suspension grounds —
@@ -2034,6 +2073,16 @@ reason to design it so the record transfers cleanly to the Successor Company whe
 **Whether we are legally obliged to do KYC, and to what standard, is a question for a professional
 adviser and not for this register.** What is recorded here is only that we currently do none.
 
+**⏸ PARKED 2026-07-28 (owner): *"We'll attend to them once the organisation registration comes
+close."*** Deferred with the rest of the sponsor-module cluster. **The severity stays HIGH — parked is
+not downgraded.** The park is defensible for exactly one reason: sign-up is invite-only and all nine
+sponsors are known personally to the owner. **It stops being defensible the day a stranger can register**,
+and that day arrives with the entity — which is why the entity is the trigger. Note the happy accident
+that this item's first gating decision (is the counterparty Suresh personally or the new company?) is
+*answered* by the very event that unparks it. **⚠ If sign-up opens before the registration completes,
+this unparks immediately and ahead of it** — the trigger is open sign-up; the registration is only the
+expected occasion for it.
+
 (Logged 2026-07-28 from the owner's instruction at sprint close. **Number allocated when TD-191 was
 the highest — re-verify uniqueness at the next close**, per the concurrent-agent lesson.)
 ### [TD-193] The scope switcher changes the breadcrumb and nothing else — low, but it will read as broken
@@ -2109,3 +2158,8 @@ that sponsor and walk it. Five minutes, and until it happens the wizard is *veri
 *witnessed*. **⚠ Note the local-review blocker (TD-182 / TD-194) does not apply here** — this is a
 SPONSOR surface, not the admin console, so it can be walked on production by a real sponsor account.
 (Logged 2026-07-28, sponsor terms T3.)
+**⏸ PARKED 2026-07-28 (owner)** — folded into the sponsor-module cluster; deferred until the
+organisation registration comes close. **This one parks by consequence, not by choice:** its smoke test
+*is* the go-live sequence, and that sequence is now parked too, so the wizard stays unwitnessed for as
+long as the terms stay dark. Whoever unparks the cluster should do this first — it is five minutes and
+it is the only item here that could invalidate the others' assumptions.

@@ -555,12 +555,32 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 - **TD-191 CLOSED** — §13 states three suspension grounds a sponsor has now accepted, so **S4's
   mandatory reject/suspend reason can finally cite something and the `suspended` email can safely
   gain its `{reason}` token.** TD-186 narrowed to the registration PDPA consent alone.
-- **5048 pytest** (3788 scholarship + 1260 courses/reports) · **1136 jest** / 75 suites.
-- **▶ CARRY: TD-196** — nobody has walked the wizard in a browser (the go-live sequence IS the smoke
-  test; unlike TD-182/194 this is a SPONSOR surface, so it can be done on production). **TD-183** —
-  ~80 more ms/ta leaves, of which the 24 sponsor-facing `sponsorPortal.terms.*` are the riskiest.
-- **▶ NEXT = THEMES** (owner sequencing), then sponsor **S4** (reject/suspend reason + `{reason}`,
-  per-sponsor email log, CSV export; TD-185 folds in).
+- **AFTER THE CLOSE, `3869d498`: an `org_admin` may publish, including a version they wrote
+  themselves.** Owner: *"I'll allow Suresh to publish the terms."* `publish(allowed=…)` takes the
+  caller's assertion; the ROLE RULE LIVES IN THE VIEW, not the service, and `allowed` defaults to
+  False so a bare shell call cannot publish by accident. **There is deliberately NO same-author
+  check** — a test pins that, so nobody restores one thinking it was an oversight. A plain `admin`
+  is still refused. Trade-off recorded plainly in decisions.md: nothing now stops a binding document
+  going live unreviewed by a second person.
+- **5048 pytest** (3791 scholarship + 1260 courses/reports) · **1136 jest** / 75 suites.
+
+**⏸ THE WHOLE SPONSOR MODULE IS PARKED AS OF 2026-07-28 — owner: *"Fold all of this as future work.
+We'll attend to them once the organisation registration comes close."*** The trigger is **the
+organisation registration approaching** — not a date. Nothing sponsor-side is pending until then.
+- **Parked together:** **TD-192** (vetting is a button, not a process — *the one that matters*, and
+  it stays **HIGH**), sponsor **S4** (reject/suspend reason + `{reason}`, per-sponsor email log, CSV
+  export; **TD-185** folds in), **TD-196**, **TD-184**, **TD-186 residual**, **TD-183**, **TD-190**.
+  Full cluster note + per-entry markers in `docs/technical-debt.md`.
+- **⚠ THE GO-LIVE SEQUENCE ABOVE IS PARKED WITH IT.** `2026-sponsor-1` stays a **draft** and
+  `SPONSOR_TERMS_ENABLED` stays unset, so no sponsor is asked anything. Suresh's authorisation to
+  publish **stands** and publishing remains harmless whenever wanted (the platform flag gates
+  independently) — it is simply no longer a pending action.
+- **⚠ Why parking is defensible, and exactly when it stops being so:** sign-up is invite-only and all
+  nine sponsors are known to the owner personally. **TD-192 unparks the day a stranger can register**
+  — expected to be the registration, but **if open sign-up comes first, it unparks then and ahead of
+  it.** RM172,000 has already been taken from eight people vetted with nothing in front of the
+  reviewer, so this is a deliberate acceptance, not an oversight.
+- **▶ NEXT = THEMES / L0** (owner sequencing) — sponsor work resumes only on the trigger above.
 
 
 **✅ SHIPPED + LIVE 2026-07-28 — SPONSOR S3: an org_admin decides what sponsors hear. THE PLATFORM
