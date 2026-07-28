@@ -7,7 +7,7 @@ import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import { STATUS_TONE, isEditable, termsErrorKey } from '@/lib/sponsorTerms'
 import ClausesTab from '@/components/sponsors/terms/ClausesTab'
-import QuizTab from '@/components/sponsors/terms/QuizTab'
+import QuizRehearsal from '@/components/sponsors/terms/QuizRehearsal'
 import PreviewTab from '@/components/sponsors/terms/PreviewTab'
 import DeployTab from '@/components/sponsors/terms/DeployTab'
 import {
@@ -130,13 +130,11 @@ export default function SponsorTermsEditorPage() {
         <ClausesTab terms={terms} sections={sections} disabled={!editable} busy={busy} dirty={dirty}
           onTerms={(next) => { setTerms(next); setDirty(true) }}
           onSections={(next) => { setSections(next); setDirty(true) }}
-          onSave={save} t={t} />
-      )}
-      {tab === 'quiz' && (
-        <QuizTab sections={sections} disabled={!editable} busy={busy} dirty={dirty}
-          onSections={(next) => { setSections(next); setDirty(true) }}
           onSave={save} onGenerate={generate} generating={generating} t={t} />
       )}
+      {/* Not a second form — the quiz is WRITTEN inline on Clauses and TAKEN here, off the
+          sections currently on screen, so an unsaved edit can be rehearsed before saving. */}
+      {tab === 'quiz' && <QuizRehearsal sections={sections} t={t} />}
       {tab === 'preview' && <PreviewTab id={id} token={token!} t={t} />}
       {tab === 'deploy' && (
         <DeployTab terms={terms} validation={validation} isSuper={isSuper} dirty={dirty}

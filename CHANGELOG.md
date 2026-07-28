@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor terms T2.2 — write the quiz in the shape a sponsor reads it, then take it — 2026-07-28
+
+Owner, looking at the checkpoint editor: *"We cannot see how it would look and behave in practice.
+Right now, we are not sure which text is bolded, which one is the title."* Six identical input boxes
+said nothing about what each field was for. **No backend change; no migration.**
+
+### Changed
+- **The checkpoint returns INLINE under its clause** (owner: *"I like the concept of having the quiz
+  just after the clause"*), reversing T2.1's move to a separate form. `CheckpointEditor` types every
+  field **in the style it will be rendered in** — the tag small and uppercase, the plain restatement
+  muted, the question large and bold, the options as answer rows with the correct one tinted green,
+  and the explanation inside the green feedback panel a sponsor sees after answering. Inputs are
+  borderless until focused, so at rest the editor reads as the card and a focus ring appears only
+  when you go to change something.
+- **The Quiz tab is now a REHEARSAL, not a second form.** You take the quiz exactly as a sponsor
+  will: a wrong answer marks itself, explains, and leaves the other options live to try again;
+  Next stays shut until the checkpoint is passed. It runs off the sections **currently on screen**,
+  not the saved ones, so an edit can be rehearsed before it is committed. One place to write, one
+  place to test.
+
+### Removed
+- `QuizTab.tsx` and `TermsSectionEditor.tsx` — both replaced, both deleted rather than left to
+  confuse the next reader. `TermsSectionEditor` had been orphaned since T2.1 and was still what a
+  cached browser was showing.
+
+### Notes
+- **1115 jest** / 73 suites (+8) · i18n 4269 × 3 · `tsc --noEmit` clean before the build, again ·
+  `next build` exit 0. Backend untouched: 3775 pytest still stands.
+- The rehearsal is the same component shape T3's sponsor-facing wizard needs, so building it here
+  does most of that work early.
+
 ## Sponsor terms T2.1 — the panel adopts the Contract Templates shape, and imports Word — 2026-07-28
 
 Owner, comparing the Terms tab against the Contract Templates screen: adopt that layout, give the

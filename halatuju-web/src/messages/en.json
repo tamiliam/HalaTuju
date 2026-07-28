@@ -3466,7 +3466,18 @@
         "importing": "Reading the document…",
         "imported": "Imported {n} sections. Review them, then save.",
         "previewFallback": "Shown in English — {loc} is not complete for every section, so a sponsor choosing it would read this.",
-        "acceptedBy": "Accepted by {n} sponsors."
+        "acceptedBy": "Accepted by {n} sponsors.",
+        "afterAnswer": "What they read after answering",
+        "rehearseIntro": "Take the quiz exactly as a sponsor will. Get one wrong on purpose — that is the behaviour worth checking.",
+        "rehearseProgress": "Checkpoint {n} of {total} · section {sec}",
+        "rehearseComplete": "Complete",
+        "rehearseRight": "That is it.",
+        "rehearseWrong": "Not quite — try again.",
+        "rehearseNext": "Next",
+        "rehearseFinish": "Finish",
+        "rehearseRestart": "Start again",
+        "rehearseDone": "All {n} — that is the whole quiz.",
+        "rehearseDoneBody": "A sponsor reaches the signature step here. Nothing is recorded from a rehearsal."
       }
     },
     "disbursement": {

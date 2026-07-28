@@ -3466,7 +3466,18 @@
         "importing": "Membaca dokumen…",
         "imported": "{n} bahagian diimport. Semak dahulu, kemudian simpan.",
         "previewFallback": "Dipaparkan dalam Bahasa Inggeris — {loc} belum lengkap bagi setiap bahagian, jadi penaja yang memilihnya akan membaca ini.",
-        "acceptedBy": "Diterima oleh {n} penaja."
+        "acceptedBy": "Diterima oleh {n} penaja.",
+        "afterAnswer": "Apa yang mereka baca selepas menjawab",
+        "rehearseIntro": "Ambil kuiz ini persis seperti penaja. Cuba jawab salah dengan sengaja — itulah kelakuan yang patut disemak.",
+        "rehearseProgress": "Soalan {n} daripada {total} · bahagian {sec}",
+        "rehearseComplete": "Selesai",
+        "rehearseRight": "Betul.",
+        "rehearseWrong": "Belum tepat — cuba lagi.",
+        "rehearseNext": "Seterusnya",
+        "rehearseFinish": "Tamat",
+        "rehearseRestart": "Mula semula",
+        "rehearseDone": "Kesemua {n} — itulah keseluruhan kuiz.",
+        "rehearseDoneBody": "Penaja sampai ke langkah tandatangan di sini. Tiada apa direkodkan daripada latihan ini."
       }
     },
     "disbursement": {
