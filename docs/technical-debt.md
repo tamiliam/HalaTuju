@@ -673,6 +673,17 @@ these are resolved in follow-up entries — always trust the entry's `✅ RESOLV
   English (the `send_sponsor_*` templates are trilingual and ready). **To resolve:** add a `locale` to `Sponsor`
   (captured at registration) and pass it through `sponsor_notifications`. Low priority. (Logged 2026-06-09, B40 Phase
   E/F Sprint 4.)
+  **⚠ THE STATED FIX IS NO LONGER SUFFICIENT — S3 changed the shape of this problem (noted 2026-07-28).** Six of the
+  nine sponsor emails are now driven by `SponsorEmailTemplate` rows whose wording an org_admin edits, and `kind` is
+  `unique=True` — **one row per kind means one LANGUAGE per kind.** So adding a `locale` to `Sponsor` would now give us
+  a locale we cannot honour: there is no second body to send. The trilingual `send_sponsor_*` hardcoded templates only
+  still cover the three adopted kinds, and only until someone edits them. A real fix is therefore bigger than it was:
+  either (a) `unique_together = (kind, locale)` plus a locale switcher in the Emails panel — which multiplies the
+  owner's review burden by three and needs the ms/ta drafts of TD-183 done first; or (b) an explicit decision that
+  sponsor correspondence is English-only, recorded in `decisions.md` and stated in the panel so nobody assumes
+  otherwise. **(b) is the honest default today** — BrightPath's sponsors are English-reading and the alternative is
+  three times the copy nobody has reviewed once. Do NOT add a `Sponsor.locale` field without settling this first: it
+  would look like the fix and change nothing.
 - TD-097: **The F6 reviewer-credentials Tamil copy is a first-draft.** `admin.reviewer.*` Tamil strings were written
   to ship trilingual but need the owner's refinement (joins the Tamil-refine queue with TD-091/094). English + Malay
   are final. Low risk — the page is staff-only and held local until the batch deploy. **To resolve:** owner Tamil
