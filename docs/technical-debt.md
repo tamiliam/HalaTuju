@@ -1672,3 +1672,22 @@ have now shipped on structural verification alone. That is a pattern, not an inc
 **To resolve:** either fix TD-182 (which unblocks all local console review), or take one pass over
 the live console after deploy. **Do not** send anyone at `/admin/login` on localhost meanwhile.
 (Logged 2026-07-28, nav/IA N4.)
+
+### [TD-189] A bare `/apply` has no programme picker — the fallback the owner asked for is not built
+**Status:** Open — logged 2026-07-28 at PF-1's own close, with the condition that ends it.
+**What.** PF-1 makes the platform refuse to guess: with two rounds open and no `?p=` code, the API
+returns `409 programme_required` and the apply page shows its generic error. The owner's answer
+named a picker as the fallback for a bare `/apply` — that half is **not built**.
+**Why it was left.** A picker needs a PUBLIC endpoint listing the open programmes, which publishes
+the names of every organisation on the platform to anyone who asks. That is a disclosure decision
+the owner has not been asked, and it is precisely the reasoning that made the intake endpoint read
+"closed" rather than 404 for an unknown programme. Building the list first and asking later would
+be the wrong order. It is also **unreachable today**: one programme runs, so a bare `/apply`
+resolves correctly and the picker would be dead code.
+**The trigger, so nobody has to rediscover it:** the moment a second programme is `is_open=true`.
+From then on, any student arriving without the organisation's link hits a dead end.
+`SELECT count(*) FROM scholarship_cohorts WHERE is_active AND is_open;` returning >1.
+**To resolve:** ask the owner whether open programme names may be listed publicly; if yes, a public
+list endpoint + a picker step; if no, the apply page needs honest copy naming the two links instead.
+**Size:** small-to-medium, and mostly a copy/product decision rather than code.
+(Logged 2026-07-28, PF-1.)
