@@ -114,13 +114,15 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         scope: 'platform', roles: ['super', 'partner'], gate: { mode: 'always' } },
       { id: 'courseData', href: '/admin/course-data', labelKey: 'admin.courseData.nav',
         scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
-      // Reserved. The tenant list + referral-partner management currently live as panels inside
-      // the Administration hub; N3 lifts them out to their own platform pages.
+      // Lifted out of the Administration hub in N3b. Creating a tenant and appointing its
+      // org_admin are withheld from every ORGANISATION role (role matrix), so both are super.
       { id: 'organisations', href: '/admin/organisations', labelKey: 'admin.nav.organisations',
-        scope: 'platform', roles: ['super'], gate: { mode: 'always' }, placeholder: true },
-      { id: 'referralPartners', href: '/admin/referral-partners',
+        scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
+      // A referral org is an attribution relationship, never an access scope — which is why it
+      // sits in the PLATFORM scope rather than inside any organisation.
+      { id: 'referralPartners', href: '/admin/partners',
         labelKey: 'admin.nav.referralPartners',
-        scope: 'platform', roles: ['super'], gate: { mode: 'always' }, placeholder: true },
+        scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
       // Reserved. `billing_rates` shipped 2026-07-27 (super-only, 403 for org_admin — the margin
       // applied to a tenant is a commercial disclosure) but has no page yet.
       { id: 'billingRates', href: '/admin/billing-rates', labelKey: 'admin.nav.billingRates',
@@ -132,15 +134,16 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     headingKey: 'admin.nav.group.organisation',
     items: [
       // The security fence: staff, sponsors, money out, contracts, billing.
-      // Overview keeps /admin/administration for now: N2 ships the sidebar beside the live hub so
-      // a rollback is one import. N3 splits the hub and this becomes /admin/organisation.
-      { id: 'administration', href: '/admin/administration', labelKey: 'admin.administration.nav',
+      // The old Administration hub is now this overview. `match` keeps the retired hub route
+      // (a permanent redirect) highlighting here, so an old bookmark still lights the right row.
+      // `exact` because /admin/organisation is a page, not a section — /admin/organisation/staff
+      // is its sibling in the menu, not its child.
+      { id: 'administration', href: '/admin/organisation', labelKey: 'admin.orgPage.nav',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' }, match: ['/admin/invite'] },
-      // Reserved. Staff management is a panel inside the hub today; N3 gives it a page.
+        gate: { mode: 'always' }, exact: true, match: ['/admin/administration'] },
       { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.staff',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' }, placeholder: true },
+        gate: { mode: 'always' }, match: ['/admin/invite'] },
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, badge: 'pendingSponsors' },

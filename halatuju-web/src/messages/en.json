@@ -3000,6 +3000,20 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "orgPage": {
+        "nav": "Overview",
+        "sub": "Your organisation — its people, its sponsors and its money.",
+        "staffSub": "Who can act inside this organisation, and what each of them may do.",
+        "invitesPending": "{count} invited, not yet accepted",
+        "awaitingVetting": "awaiting vetting",
+        "needsAttention": "Needs your attention"
+    },
+    "organisations": {
+      "sub": "The tenant organisations HalaTuju runs, and who leads each one."
+    },
+    "partners": {
+      "sub": "Roadshow and referral organisations that send students to the course selector."
+    },
     "shell": {
         "primaryNav": "Main navigation",
         "search": "Search",

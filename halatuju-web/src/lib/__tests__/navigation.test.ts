@@ -163,8 +163,17 @@ describe('activeItem resolves by longest match', () => {
     ] as const) {
       expect(activeItem(p)?.id).toBe(id)
     }
-    // /admin/invite is a redirect stub with no row, so it keeps pointing at Administration.
-    expect(activeItem('/admin/invite')?.id).toBe('administration')
+    // Two permanent redirects, each pointing at the row it now belongs to (N3b). An old
+    // bookmark must light the correct sidebar row, not merely land somewhere.
+    expect(activeItem('/admin/administration')?.id).toBe('administration')  // → the org overview
+    expect(activeItem('/admin/invite')?.id).toBe('staff')                   // → org staff
+  })
+
+  it('the organisation overview is a page, not a section', () => {
+    // /admin/organisation must not swallow /admin/organisation/staff, which is its SIBLING in
+    // the menu rather than its child — the same boundary rule as the /admin index route.
+    expect(activeItem('/admin/organisation')?.id).toBe('administration')
+    expect(activeItem('/admin/organisation/staff')?.id).toBe('staff')
   })
 
   it('a reserved slot never claims a path — it has no page to be inside', () => {

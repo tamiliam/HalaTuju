@@ -37,3 +37,9 @@ reverts it to `reviewer`.
 1. Owner drops the PNGs into `/public/manual/` (five original + four from Sprint 14).
 2. A docs-only follow-up commit adds the files (rides the next push; no dedicated deploy).
 3. Owner reverts `elanjelian@me.com` → `reviewer`.
+
+> **⚠ SUPERSEDED NAVIGATION (nav/IA N3b, 2026-07-28).** The Administration hub no longer exists:
+> it became `/admin/organisation` (overview) plus `/admin/organisation/staff`, and the platform
+> panels became `/admin/organisations` and `/admin/partners`. Every shot below that frames "the
+> Administration page" needs re-taking against the scope sidebar. The Manual prose has already
+> been corrected; only the images are stale.
