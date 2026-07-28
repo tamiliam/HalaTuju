@@ -6174,6 +6174,11 @@ and PF-1 will also settle how a programme is identified in a request — which N
 then match rather than pre-empt.
 **Trade-offs:** the roadmap closes with a promise unbuilt, which is a real cost to anyone reading it
 later; mitigated by stating the trigger and a cheap tell for it rather than "revisit sometime".
-**Revisit if:** `PartnerOrganisation.objects.filter(is_active=True)` returns more than one row in
-production — or PF-1's design turns out to need the scopes endpoint anyway, in which case build it
-there and delete this entry.
+**Revisit if:** more than one organisation OWNS a cohort or programme — `SELECT
+count(DISTINCT owning_organisation_id) FROM scholarship_cohorts WHERE is_active` returns more than 1
+(it returns 1 today) — or PF-1's design turns out to need the scopes endpoint anyway, in which case
+build it there and delete this entry.
+**Correction, same day:** this entry first gave the trigger as "more than one active
+`PartnerOrganisation`", which was **already true when it was written** — production has 10, of which
+9 are REFERRAL organisations and only BrightPath owns anything. A trigger that has already fired is
+not a trigger. Checked against the database rather than inferred from the model.
