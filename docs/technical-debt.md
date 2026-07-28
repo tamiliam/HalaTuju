@@ -1633,8 +1633,20 @@ wording the sponsor actually agreed to lives only in the frontend registration c
   record of who changed it or when.
 - The detail header shows the version string with no way to read it.
 
-**Why the quiz belongs in the same investigation.** The comprehension quiz already built for the
-student bursary agreement (`bursary.py` AGREEMENT_CLAUSES + `comprehension_passed_at`, still dark
+**⚠ WHICH QUIZ THE OWNER MEANT (clarified by them 2026-07-28).** The quiz in the quotation above is
+a **SPONSOR** quiz — "when they sign up, they are required to take a quiz, which tells them the dos
+and don'ts" — NOT the student's bursary comprehension quiz being managed in a second place. This row
+originally framed it as the latter. The reusable part is the clause+quiz **authoring machinery**; the
+CONTENT is a new artefact nobody has drafted. See **TD-192**, which is the vetting half of the same
+sign-up moment.
+
+**Why the student quiz's machinery belongs in the same investigation.** The comprehension quiz already built for the
+student bursary agreement (**corrected 2026-07-28: the clauses and their quiz payloads are DATABASE
+rows — `ContractClause.body_*` + `quiz_*` + `is_quiz_candidate`, authored via the contract module's
+`ClauseEditor`/`QuizEditor`. `bursary.py AGREEMENT_CLAUSES` no longer exists; the static checkpoints
+were captured into a seed fixture and deleted when Sprint 4 moved the questions onto the org's active
+template. Production holds 94 clauses / 11 quizzed on template id 9, status `draft`.** Kept
+`comprehension_passed_at`, which is still the student's gate, still dark
 behind `BURSARY_AGREEMENT_ENABLED`) is the same problem in a second place: clause text and quiz
 questions that must move together and stay reconciled — a phantom-term guardrail test exists
 precisely because they drifted once. Whatever manages sponsor consent versions should be the
@@ -1784,6 +1796,20 @@ owner personally, whoever funded the wallet** — sponsors pay in; the owner is 
 counterparty. And the 11 quiz checkpoints are served to the **STUDENT** at `/scholarship/award`
 before signing. **Nothing anywhere quizzes a sponsor.**
 
+**⚠ SECOND CORRECTION — THE OWNER'S, AND IT MATTERS MORE THAN MINE.** *"The donor in the agreement
+is different from sponsors. Donor there is the BrightPath organisation signing a contract with
+students. Sponsors sign up, and when they do so, they are required to take a quiz, which tells them
+the dos and don'ts. That is different from the organisation's contract with students. Do not confuse
+one with the other."* **The Donor in template 9 is BRIGHTPATH, the organisation** — clause 41's
+"personal capacity pending the incorporation of a company" is an INTERIM drafting state while the
+entity is established, not the model, and I read it as the model. **These are two unrelated
+instruments with different parties, and comparing them is the error to avoid:**
+- **BrightPath ↔ Student.** The bursary agreement. 94 clauses; the STUDENT takes the 11-checkpoint
+  comprehension quiz before signing. A platform sponsor is not a party and never sees it.
+- **Platform ↔ Sponsor.** A sponsor's own dos-and-don'ts, accepted at sign-up, with its own quiz.
+  **Its content is NOT a variant of the bursary agreement** — different audience, different
+  obligations. The clause+quiz AUTHORING surface may be reusable; the words are new.
+
 **Therefore the gap is narrower and sharper than first written:** it is not that donor terms are
 unwritten — it is that **no undertaking binds the PERSON a suspension would be served on**. Suspend
 Chong Lee Min and clause 61 cannot be cited at her: she never signed it and is not its Donor. The
@@ -1812,3 +1838,104 @@ already awaiting one; (3) either way, S4 keeps the reason field internal and lea
 email as it is. (Logged 2026-07-28 from the owner's challenge at sprint close. **Number allocated
 when TD-190 was the highest — re-verify it is still unique at the next close**, per the concurrent-
 agent lesson.)
+
+### [TD-192] Sponsor vetting is a BUTTON, not a process — we do not know our customers — HIGH
+**Owner, 2026-07-28:** *"This is a gap. There must be vetting. We need to know our customers."*
+
+**What vetting is today.** A sponsor registers with **name, email, phone, a "how did you find us?"
+dropdown, an optional organisation and an optional note**, ticks one PDPA box, and lands in
+`pending`. An admin then clicks **Approve** or **Reject**. That is the whole process. No reason is
+recorded for either outcome (S4), and nothing is verified against anything.
+
+**What we do NOT collect — verified against the production schema, not inferred.** The `sponsors`
+table has 19 columns and among them there is **no NRIC, no passport number, no date of birth, no
+address, no identity document, no source-of-funds declaration, and no entity/company registration
+details for a corporate donor.** There is no sponsor-side document model at all: students upload
+documents through a whole recognition pipeline, sponsors upload nothing.
+
+**What that means in production, as of 2026-07-28.** Nine sponsors. **All nine have an EMPTY
+organisation and an EMPTY note** — so the only fields an admin could have looked at were a name, an
+email address, a phone number and a dropdown value. All nine carry `reviewed_at` + `reviewed_by`:
+somebody clicked the button on every one of them, with nothing in front of them to review.
+**RM172,000 has been received from eight people approved on that basis.** Nobody has been suspended;
+one was rejected, also with no recorded reason.
+
+**⚠ AND THE ONE TRUST FLAG WE HAVE IS ON BY DEFAULT AND WIDENS DATA EXPOSURE.** `Sponsor.is_trusted`
+defaults to **`True`** (migration `0043`, 2026-06-07) and its stated purpose is to *"gate
+institution-level detail to trusted (launch) sponsors"* on the anonymised student card. So the single
+dimension of trust in the system is granted automatically to everyone who signs up, and what it
+controls is **how much student detail they can see.** A reasonable launch default for a hand-picked
+group of eight; the wrong default the moment sign-up is open.
+
+**Why this is HIGH and not low.** Every other money control in this module was built carefully — the
+credit chain needs two distinct signatures, a confirmed credit can only be reversed and never
+cancelled, the wallet re-reads `available` from the spend authority. All of that guards money once it
+is INSIDE. The front door has no lock at all. It also compounds two other rows: TD-191 (no
+undertaking binds a sponsor, so there is nothing to cite when suspending one) and TD-186 (we cannot
+show a sponsor what they agreed to). Onboarding, terms and identity are one moment in the product and
+three unbuilt things in the register.
+
+**What it is NOT.** Not a UI polish item, and not something to bolt onto S4. **This is its own
+roadmap** — run `Settings/_workflows/implementation-planning.md`. Any new page needs Stitch first.
+
+**Owner decisions that gate planning (do NOT start building before these):**
+1. **Individuals only, or organisations too?** A corporate donor needs a completely different field
+   set (SSM registration number, registered address, directors / beneficial owners, authorised
+   signatory) and its own verification path. Nine of production's ten `partner_organisations` are
+   referral orgs, so "sponsor" and "organisation" are already distinct concepts — this must not
+   accidentally merge them.
+2. **Risk tiering by amount, or one standard for everyone?** RM2,000 and RM100,000 do not deserve the
+   same scrutiny, and a flat standard set high enough for the latter will deter the former.
+   Recommendation: tier it, with the threshold as configuration rather than code.
+3. **Which documents, and does the existing pipeline read them?** The document stack (DOC_SPECS,
+   Vision/Gemini extraction, superseding, the genuineness signature model) is built and proven on
+   student documents; an NRIC is a type it already knows. Reusing it is cheap. **But sponsor identity
+   documents are a new class of PII on a surface that currently holds none** — that needs its own
+   retention and access answer, not an inherited one.
+4. **Does vetting BLOCK the money, or run alongside it?** Today money arrives out-of-band by bank
+   transfer and an admin records the credit afterwards, so an unvetted person can already pay. Decide
+   whether an unverified sponsor's credit can be recorded at all, or only held unconfirmed.
+5. **Screening — sanctions / PEP — in or out of scope?** It implies a third-party service and a cost,
+   and the answer probably differs by tier.
+6. **`is_trusted` must be re-decided in this work**, not inherited. Its default and its meaning both
+   change once sign-up is not eight hand-picked people.
+
+**⚠ THE SUBSTANCE OF A SPONSOR QUIZ ALREADY EXISTS — SCATTERED, AS DECISIONS, NEVER AS AN ARTEFACT.**
+The owner recalls taking a sign-up quiz asking *"whether this is loan or gift, if [we] could reallocate
+the funds"*. Searched five ways — working tree, `git log -S` for deleted code, the production database,
+`docs/` + `docs/plans/`, and the Stitch project — **no sponsor quiz has ever existed in any of them.**
+But every proposition it would have tested is already a recorded position:
+- **Gift, not a loan** — live on the public `/terms` page: *"Assistance is a gift, not a loan; there is
+  nothing to repay."* (Written in the STUDENT's direction, not the sponsor's.)
+- **Finality / no refund** — `docs/scholarship/phase-e-sponsor-roadmap.md`: *"A sponsor donates into
+  myNADI (final, never a bank refund)."* The E3a commit (`8f2f292a`) adds: *"The donation's finality
+  (no bank refund) must be explicit in the donation terms"* — an instruction to write terms that were
+  never written.
+- **Reallocation** — two mechanics, both decided: a lapsed or declined award returns to the giving
+  balance *"to redirect — never a bank refund"* (`lawyer-review-bundle.md`), and TD-075(f) carries
+  *"the 2-year allocation window (then myNADI reallocates)"*.
+- **Administered, not a direct transfer** — `/terms`, Sponsors section, which is **three sentences long
+  and ends `"(More detailed sponsor terms to follow.)"`**
+
+**⚠ AND ONE SHIPPED FEATURE ALREADY RELIES ON THOSE UNWRITTEN TERMS.**
+`docs/retrospective-sponsor-redesign-r6.md` justifies the StandingGift auto-sponsoring feature with:
+*"**Consent:** none — rely on the existing donation terms (the donation is already final into the
+trust; this only automates the 'offer' click)."* There are no existing donation terms. A feature that
+spends a sponsor's money without asking each time was cleared by pointing at a document that does not
+exist. **That is the sharpest single item in this row** — it is not a missing screen, it is a shipped
+decision resting on a phantom. Re-examine it when the terms are authored: either the terms cover
+standing gifts explicitly, or that feature needs its own consent step.
+
+**So the drafting job is assembly, not invention.** Four recorded positions, one public page marked
+"to follow", and a lawyer bundle that already states the legal framing. What is missing is the single
+sponsor-facing artefact that says them in the sponsor's direction — and the comprehension check that
+proves they were read.
+
+**⚠ The legal counterparty question sits underneath all of it** (see TD-191): KYC obligations attach
+to an ENTITY, and none exists yet. That is not a reason to defer collecting the record — it is a
+reason to design it so the record transfers cleanly to the Successor Company when it is incorporated.
+**Whether we are legally obliged to do KYC, and to what standard, is a question for a professional
+adviser and not for this register.** What is recorded here is only that we currently do none.
+
+(Logged 2026-07-28 from the owner's instruction at sprint close. **Number allocated when TD-191 was
+the highest — re-verify uniqueness at the next close**, per the concurrent-agent lesson.)
