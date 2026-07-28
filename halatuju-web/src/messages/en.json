@@ -1884,6 +1884,10 @@
         "title": "Your bursary agreement",
         "body": "You've signed your Conditional Bursary Award Agreement. Keep a copy for your records.",
         "download": "Download (PDF)"
+      },
+      "multiple": {
+        "title": "You have more than one application",
+        "body": "You have {count} applications open. Please email {supportEmail} and we will point you to the right one."
       }
     },
     "banner": {

@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## M1 — "which application is this about" stops being answered by position — 2026-07-28
+
+First sprint of the multi-programme roadmap, and the only one approved
+(`docs/plans/2026-07-28-multi-programme-applications-roadmap.md`). Same defect as PF-1, one layer
+up: `_current_application()` was `.order_by('-submitted_at').first()`, with *"latest wins"* in its
+docstring as though it were a rule. It was an assumption that held only because one cohort had
+ever existed. **Thirteen endpoints** resolve through it, so a student holding applications to two
+programmes uploads their IC for programme B and it attaches to whichever they submitted most
+recently — silently, into the wrong organisation's hands.
+
+### Fixed
+- **The backend refuses rather than guesses.** `AmbiguousApplication` (409, `application_ambiguous`).
+  Deliberately a DRF `APIException` rather than this module's usual explicit `Response` — the house
+  style would need a `try/except` at all thirteen sites, and forgetting one gives a 500, while the
+  whole point is that a **fourteenth** site cannot reintroduce the bug. New code is safe by default
+  rather than by remembering.
+- **The client stops taking `applications[0]`.** `soleLiveApplication()` returns null for BOTH
+  "none" and "more than one" — a screen that cannot say which application it is showing must not
+  show one. With several it renders an honest message instead.
+
+### Verification
+`pytest` **4957** (full scope) · `jest` **1039** / 67 suites · i18n **4151 x 3** · build compiled.
+**No migration.** Inert today and provably so: the `(cohort, profile)` constraint excludes only
+`expired`, so within one cohort a student holds at most one non-expired application — the tests
+have to create a second programme to reach the bug at all.
+
+One test exists purely to protect the restart case: an `expired` application beside a live one must
+not read as ambiguous, or every student who ever restarted would be locked out by this fix.
+
+### Not built
+M2-M4 are not approved. Until M2 gives the client a way to NAME an application, two live
+applications means a refusal — recoverable, unlike a document filed under another foundation.
+
 ## Sortable sponsor table + pagination on the four sponsor tables — 2026-07-28
 
 Owner request: the applications-list footer on the sponsors list, sponsorship history, people

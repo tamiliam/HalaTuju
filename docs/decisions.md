@@ -6289,3 +6289,38 @@ fence returning 404 rather than 403 on the admin side, pointed the other way.
 programme", which is confusing for whoever printed the link. Acceptable: the link is generated once
 by us, not typed by students.
 **Revisit if:** an authenticated variant is ever needed for the console, which can 404 freely.
+
+## The ambiguous-application guard is an exception, not a return value — Multi-programme M1, 2026-07-28
+**Decision:** `_current_application()` raises `AmbiguousApplication(APIException, status=409,
+code='application_ambiguous')` when the caller holds more than one live application. None of the
+thirteen call sites were changed.
+**Alternatives considered:** (a) return `None` and let each site render its existing "no
+application" error; (b) return a sentinel or a `(app, error)` tuple and add an explicit
+`Response(..., 409)` at each site, matching this module's house style.
+**Rationale:** (a) is actively wrong — "you have two applications" would read as "you have none",
+which is the same class of dishonesty the fix exists to remove. (b) is consistent with the module
+but needs thirteen edits now and one more for every endpoint added later; the failure mode of
+missing one is a 500 or the old silent misattribution. The purpose of this change is that a
+FOURTEENTH call site cannot reintroduce the bug, and only the exception achieves that — DRF's
+handler renders it without any call site participating.
+**Trade-offs:** exception-based control flow is a divergence from the surrounding code, and a
+reader of any single view will not see that this can 409. Mitigated by saying so in the class
+docstring and by the `detail` dict keeping the `{error, code}` body shape every other 409 returns.
+**Revisit if:** the module adopts a general exception-to-response convention, at which point this
+stops being a divergence — or if a call site ever needs to HANDLE ambiguity rather than report it
+(M2's explicit application id), which would want a resolver that returns the candidates.
+
+## The application screen shows nothing rather than one of several — Multi-programme M1, 2026-07-28
+**Decision:** `soleLiveApplication()` returns null for BOTH "no live application" and "more than
+one", and `/scholarship/application` renders an honest "you have more than one" message in the
+second case.
+**Alternatives considered:** (a) keep showing the most recent and add a note; (b) render a list of
+the applications immediately (the M4 switcher, pulled forward).
+**Rationale:** (a) is "latest wins" with a label on it — the screen would still be choosing for the
+student, and a note does not make a guess true. (b) is the right end state but is M4, and M4 is not
+approved; building it here would smuggle an unapproved sprint into an approved one. Showing nothing
+with an explanation is the honest floor, and it is unreachable while one programme runs.
+**Trade-offs:** a student in that state can do nothing on that screen until support helps. Accepted
+because the state cannot occur today, and because a locked screen is recoverable while a document
+filed under the wrong foundation is not.
+**Revisit if:** M4 is approved — at which point this branch becomes the chooser.
