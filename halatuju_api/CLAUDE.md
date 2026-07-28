@@ -692,10 +692,44 @@ Decision ×1; lessons ×3. **NO migration** — api + web.
   7, 9; ids 4, 6, 8 are genuinely still open), read it, then `--apply`.
 - **3617 scholarship + 1260 courses/reports pytest · 891 jest**; `makemigrations --check` clean. The org-fence static
   guard caught the new raw `Sponsorship.objects` query and required its pragma — as intended.
-- **▶ NEXT = S2** (wallet-credit UI against the LIVE endpoints — record/sign/void, reusing
-  `paymentStatus.signOffView`'s shape; **no backend, no migration**), then S3 (eleven editable
-  sponsor emails + the badge pair, two-gate dark launch), then S4 (mandatory reject/suspend
-  reason, per-sponsor email log, CSV export).
+**✅ CODE COMPLETE 2026-07-28 — SPONSOR S2: the wallet-credit INTERFACE. NOT DEPLOYED.**
+Same worktree/branch. **NO migration, NO new route** (the controls sit on the existing detail
+page, so `navigation.ts` is untouched).
+- **Why:** the P4b endpoints have been live and org-fenced since 27 July with **nothing
+  calling them**, so the sign-off chain was a control on paper — the `admin` maker and
+  `org_admin` approver it names had no way to execute their own steps, and all RM172,000 was
+  keyed in by a developer. This removes the developer from the money path.
+- **Record** (maker-only panel: gift · amount · bank ref, all mandatory) · **Sign** (one
+  button per row, labelled with the step the credit is actually waiting on, typed name **per
+  row**) · **Void** (unconfirmed only; a confirmed credit is reversed, never cancelled).
+- **`creditActions` mirrors `sign_admin_credit` step for step** and is test-pinned. **⚠ TWO
+  rules are deliberately NOT mirrored:** `same_signer` (the service keys distinctness on
+  EMAIL because prod has two active admins named "Ve. Elanjelian"; the payload carries names
+  only, so a client-side check would be wrong in both directions) and `name_mismatch`. Both
+  are offered and the server's refusal is rendered. An org_admin awaiting the finance check
+  is TOLD so instead of shown a button — the payments card's own choice.
+- **⚠ ONE backend change, and it was required: `memberships` now carries `programme_id`.** The
+  creditable set is "gifts the sponsor was ACCEPTED into" (the memberships list), NOT the
+  wallet ledger — a sponsor accepted into a gift they have not yet given to holds no wallet,
+  which is the first-credit case exactly. Test-pinned in both directions.
+- **Every mutation RE-READS the whole record** — confirming a credit moves the tiles,
+  `available` and the pending caveat too, so a local row patch would leave the money on
+  screen disagreeing with the database.
+- **⚠ FIXED a latent S1 payload bug: `finance_check_required` was computed from the WALLETS
+  alone**, and a wallet exists only once a credit is CONFIRMED — so for a first credit
+  awaiting signatures (precisely the chain the screen must draw right) it read false. Now
+  asked across wallets + credits + approved memberships (`_chain_organisations`). Harmless
+  today (no finance admin exists), would have bitten the day one was appointed.
+- **3622 scholarship pytest · 918 jest** (new `[id]/page.test.tsx` covers the wiring: the
+  endpoint, the typed name, the re-read, and that no control is drawn for a step the viewer
+  cannot take). The credit endpoints already had 22 endpoint-level tests including the full
+  chain over the wire.
+- **▶ AT DEPLOY (this build carries S1.1 + S2 together — owner folded them): push. No
+  migrate-first.** Then in order: (1) `backfill_referral_attribution` report → `--apply`;
+  (2) walk ONE credit through the chain in the UI — record as Poongulali (`admin`), sign as
+  her, countersign as Suresh (`org_admin`), confirm `available` moves.
+- **▶ NEXT = S3** (eleven editable sponsor emails + the badge pair, two-gate dark launch),
+  then S4 (mandatory reject/suspend reason, per-sponsor email log, CSV export).
 
 ## Superseded — previous Next Sprint (as of 2026-07-26)
 

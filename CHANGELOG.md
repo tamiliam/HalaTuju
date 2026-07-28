@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
+## Wallet credits get their interface — record, sign, void (sponsor S2) — 2026-07-28
+
+The P4b endpoints have been live and org-fenced since 27 July with **nothing calling them**,
+which made the sign-off chain a control on paper: the people it names — an `admin` maker, an
+`org_admin` approver — had no way to execute their own steps, so all RM172,000 of credits was
+keyed in by a developer. This removes the developer from the money path. **No migration; no
+new route** (the controls live on the sponsor detail page).
+
+### Added
+- **Record a credit** — a maker-only panel on the credits block: gift, amount, bank
+  reference. The reference is mandatory because it is the only thread back to the money and
+  what makes each credit reconcile against a statement line.
+- **Sign** — one button per row, labelled with the step the credit is actually waiting on
+  (recorder / finance check / countersign). The signature is **typed per row** and matched
+  against the caller's own admin record server-side; a click alone is not a signature.
+- **Void** — offered to the maker and the approver on an unconfirmed credit only. A
+  confirmed credit is reversed by a compensating entry, never cancelled.
+- **`creditActions`** in `lib/sponsorDetail.ts` — the per-credit action set, mirroring
+  `sponsorship.sign_admin_credit` step for step, with tests pinning the mirror.
+
+### Changed
+- **`memberships` on the sponsor detail payload now carries `programme_id`.** The creditable
+  set is "gifts the sponsor was ACCEPTED into", which is the memberships list and not the
+  wallet ledger: a sponsor accepted into a gift they have not yet given to holds no wallet,
+  and that is exactly the case a first credit is recorded for.
+
+### Fixed
+- **`finance_check_required` was computed from the wallets alone, so it read false exactly
+  when it mattered most.** A wallet exists only once a credit is CONFIRMED, so a first credit
+  — recorded and awaiting its signatures, the one whose chain the screen must draw correctly —
+  sits in a programme with no wallet row. The flag now asks across the wallets, the credits
+  and the approved memberships. Latent in S1 and harmless today (BrightPath has no finance
+  admin, so the flag is false everywhere); it would have surfaced the day one was appointed,
+  as a two-step chain and a countersign button the service refuses.
+- **Every mutation re-reads the whole record.** The response carries the updated credit, but
+  confirming one also moves the wallet tiles, `available` and the pending caveat — patching
+  the row locally would leave the money on screen disagreeing with the money in the database.
+
+### Notes
+- **Two rules are deliberately NOT mirrored client-side.** `same_signer` keys on email
+  server-side because production has two active admins sharing the name "Ve. Elanjelian", and
+  the payload carries names only — so the button is offered and the refusal is rendered.
+  `name_mismatch` is likewise the server's to judge.
+- **An org_admin looking at a credit awaiting the finance check is told so**, rather than
+  shown a countersign button the service would refuse with `finance_check_required` — the same
+  choice the payments sign-off card already makes.
+- Error codes go through a `creditErrorKey` allowlist: our `t()` returns the key on a miss, so
+  an unmapped server code would otherwise print `admin.sponsors.detail.creditError.…` to an
+  admin (the failure mode of L109).
+- **3622 scholarship pytest · 918 jest.** The credit endpoints already carried 22
+  endpoint-level tests including the full chain over the wire, so this sprint adds the UI's
+  own coverage rather than re-proving the server.
+
 ## Sponsors: attribute a referral by email, count the students, tell the truth about last seen — 2026-07-28
 
 Three fixes the owner found by comparing the shipped sponsor screens against their approved

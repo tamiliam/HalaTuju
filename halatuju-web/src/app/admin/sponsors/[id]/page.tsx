@@ -2,12 +2,19 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
-import { canVoid, creditChain, hasNoMoney, pendingTotal, seenBand, studentStage } from '@/lib/sponsorDetail'
-import { getSponsorDetail, type AdminSponsorDetail } from '@/lib/admin-api'
+import { effectiveRole } from '@/lib/navigation'
+import {
+  canRecordCredit, creditActions, creditableProgrammes, creditChain, creditErrorKey,
+  hasNoMoney, pendingTotal, seenBand, studentStage,
+} from '@/lib/sponsorDetail'
+import {
+  getSponsorDetail, recordSponsorCredit, signSponsorCredit, voidSponsorCredit,
+  type AdminSponsorDetail,
+} from '@/lib/admin-api'
 
 // One sponsor, whole — the page that did not exist until 2026-07-27. Money first, because
 // that is the question you open a sponsor to answer; then what it is funding, then who they
@@ -48,27 +55,82 @@ function Block({ title, action, children, note }: {
   )
 }
 
+const inputCls = 'border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200'
+
 export default function AdminSponsorDetailPage() {
-  const { token } = useAdminAuth()
+  const { token, role } = useAdminAuth()
   const { t } = useT()
   const params = useParams<{ id: string }>()
   const id = Number(params?.id)
+  const viewerRole = effectiveRole(role)
 
   const [detail, setDetail] = useState<AdminSponsorDetail | null>(null)
   const [error, setError] = useState('')
+  // One busy flag and one error line for the whole credits block: only one action can be in
+  // flight at a time, and a second Sign fired mid-request would race the reload.
+  const [busy, setBusy] = useState(false)
+  const [creditError, setCreditError] = useState('')
+  const [recording, setRecording] = useState(false)
+  const [form, setForm] = useState({ programme_id: '', amount: '', external_reference: '' })
+  // Typed name per credit — the signature is per row, so one shared input would let a click
+  // on row B submit the name typed for row A.
+  const [typedNames, setTypedNames] = useState<Record<number, string>>({})
 
-  useEffect(() => {
-    if (!token || !id) return
-    getSponsorDetail(id, { token })
+  const load = useCallback(() => {
+    if (!token || !id) return Promise.resolve()
+    return getSponsorDetail(id, { token })
       .then(setDetail)
       .catch(() => setError(t('admin.sponsors.detail.loadFailed')))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
+  useEffect(() => { load() }, [load])
+
+  /**
+   * Run one credit mutation, then RE-FETCH the whole record.
+   *
+   * The response carries the updated credit, but confirming one moves the wallet tiles, the
+   * pending caveat and `available` too — patching the row locally would leave the money on
+   * screen disagreeing with the money in the database, which is the one thing this page
+   * exists to stop.
+   */
+  const runCreditAction = async (fn: () => Promise<unknown>) => {
+    setBusy(true)
+    setCreditError('')
+    try {
+      await fn()
+      await load()
+      return true
+    } catch (e) {
+      const code = (e as { code?: string }).code
+      setCreditError(t(`admin.sponsors.detail.creditError.${creditErrorKey(code)}`))
+      return false
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (error) return <div className="text-red-600">{error}</div>
   if (!detail) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
 
   const pending = pendingTotal(detail.credits)
+  const creditable = creditableProgrammes(detail)
+  const mayRecord = canRecordCredit(viewerRole) && creditable.length > 0
+
+  const submitRecord = async () => {
+    const programmeId = Number(form.programme_id || creditable[0]?.programme_id)
+    if (!programmeId) return
+    const ok = await runCreditAction(() => recordSponsorCredit({
+      sponsor_id: detail.id,
+      programme_id: programmeId,
+      amount: form.amount.trim(),
+      external_reference: form.external_reference.trim(),
+    }, { token: token! }))
+    if (ok) {
+      setRecording(false)
+      setForm({ programme_id: '', amount: '', external_reference: '' })
+    }
+  }
 
   return (
     <div className="max-w-5xl font-plex flex flex-col gap-5">
@@ -162,7 +224,89 @@ export default function AdminSponsorDetailPage() {
       )}
 
       {/* ── wallet credits + their sign-off chain ────────────────────────────── */}
-      <Block title={t('admin.sponsors.detail.creditsTitle')} note={t('admin.sponsors.detail.creditsNote')}>
+      <Block
+        title={t('admin.sponsors.detail.creditsTitle')}
+        note={t('admin.sponsors.detail.creditsNote')}
+        action={mayRecord && !recording ? (
+          <button
+            onClick={() => { setRecording(true); setCreditError('') }}
+            className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+          >
+            + {t('admin.sponsors.detail.recordCredit')}
+          </button>
+        ) : undefined}
+      >
+        {creditError && (
+          <div className="mx-4 sm:mx-5 mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+            {creditError}
+          </div>
+        )}
+
+        {recording && mayRecord && (
+          <div className="mx-4 sm:mx-5 mt-3 rounded-lg border bg-gray-50 p-3.5">
+            <p className="text-sm font-semibold text-gray-900">{t('admin.sponsors.detail.recordCredit')}</p>
+            <p className="mt-1 text-xs text-gray-500 max-w-2xl">{t('admin.sponsors.detail.recordHint')}</p>
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              {/* One gift needs no choice; two or more must be picked, because the wallet is
+                  per (sponsor, programme) and the money is not interchangeable. */}
+              {creditable.length > 1 ? (
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  {t('admin.sponsors.detail.programme')}
+                  <select
+                    value={form.programme_id || String(creditable[0].programme_id)}
+                    onChange={(e) => setForm({ ...form, programme_id: e.target.value })}
+                    className={inputCls}
+                  >
+                    {creditable.map((p) => (
+                      <option key={p.programme_id} value={p.programme_id}>{p.programme_name}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <div className="flex flex-col gap-1 text-xs text-gray-600">
+                  {t('admin.sponsors.detail.programme')}
+                  <span className="py-1.5 text-sm text-gray-900">{creditable[0].programme_name}</span>
+                </div>
+              )}
+              <label className="flex flex-col gap-1 text-xs text-gray-600">
+                {t('admin.sponsors.detail.amount')} (RM)
+                <input
+                  value={form.amount}
+                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  inputMode="decimal"
+                  placeholder="10000"
+                  className={`${inputCls} w-32 tabular-nums`}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-gray-600">
+                {t('admin.sponsors.detail.bankRef')}
+                <input
+                  value={form.external_reference}
+                  onChange={(e) => setForm({ ...form, external_reference: e.target.value })}
+                  maxLength={100}
+                  placeholder="TRF-88214"
+                  className={`${inputCls} w-44 font-mono`}
+                />
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={submitRecord}
+                  disabled={busy || !form.amount.trim() || !form.external_reference.trim()}
+                  className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {t('admin.sponsors.detail.recordSave')}
+                </button>
+                <button
+                  onClick={() => { setRecording(false); setCreditError('') }}
+                  className="rounded-lg border px-3 py-1.5 text-sm text-gray-600 hover:bg-white"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {detail.credits.length === 0 ? (
           <p className="px-4 sm:px-5 py-5 text-sm text-gray-500">{t('admin.sponsors.detail.noCredits')}</p>
         ) : (
@@ -177,7 +321,9 @@ export default function AdminSponsorDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {detail.credits.map((c) => (
+                {detail.credits.map((c) => {
+                  const actions = creditActions(c, detail.finance_check_required, viewerRole)
+                  return (
                   <tr key={c.id} className="align-top">
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDate(c.created_at)}</td>
                     <td className="px-4 py-3 font-mono text-[12.5px] text-gray-600">{c.external_reference || '—'}</td>
@@ -201,16 +347,51 @@ export default function AdminSponsorDetailPage() {
                           </span>
                         ))}
                       </div>
-                      {/* Recording, signing and voiding arrive in S2 — this sprint reads only,
-                          so no button is drawn that the endpoint would then have to refuse. */}
-                      {canVoid(c) && (
-                        <div className="mt-1 text-[11px] text-gray-400">
-                          {t('admin.sponsors.detail.actionsSoon')}
+
+                      {/* The signature is typed, per row, and checked against the caller's own
+                          admin record server-side — a click alone is not a signature. */}
+                      {actions.canSign && (
+                        <div className="mt-2">
+                          <p className="text-[11px] text-gray-500">{t('admin.sponsors.detail.typedNameHint')}</p>
+                          <div className="mt-1 flex gap-2">
+                            <input
+                              value={typedNames[c.id] || ''}
+                              onChange={(e) => setTypedNames({ ...typedNames, [c.id]: e.target.value })}
+                              placeholder={t('admin.sponsors.detail.fullName')}
+                              aria-label={t('admin.sponsors.detail.fullName')}
+                              className={`${inputCls} w-44`}
+                            />
+                            <button
+                              onClick={() => runCreditAction(() => signSponsorCredit(c.id, typedNames[c.id] || '', { token: token! }))}
+                              disabled={busy || !(typedNames[c.id] || '').trim()}
+                              className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {t(`admin.sponsors.detail.sign.${actions.nextStep}`)}
+                            </button>
+                          </div>
                         </div>
+                      )}
+                      {/* An org_admin cannot countersign while the finance check is outstanding.
+                          Say which step it is waiting on rather than draw a button the server
+                          would refuse with `finance_check_required`. */}
+                      {actions.blocked === 'awaiting_finance' && (
+                        <p className="mt-2 text-[11px] text-amber-700">
+                          {t('admin.sponsors.detail.awaitingFinanceCheck')}
+                        </p>
+                      )}
+                      {actions.canVoid && (
+                        <button
+                          onClick={() => runCreditAction(() => voidSponsorCredit(c.id, { token: token! }))}
+                          disabled={busy}
+                          className="mt-2 block text-[11px] font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                        >
+                          {t('admin.sponsors.detail.void')}
+                        </button>
                       )}
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>

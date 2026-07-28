@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## The credit UI mirrors the chain's ROLE map, and deliberately not its IDENTITY rules — Sponsor S2, 2026-07-28
+**Decision:** `lib/sponsorDetail.creditActions` mirrors `sponsorship.sign_admin_credit` step for
+step (which role owns the next step, when the finance step exists, who may void), so the screen
+never draws a control the endpoint would refuse. It does NOT mirror `same_signer` or
+`name_mismatch`: those buttons are offered and the server's refusal is rendered.
+
+**Why the split.** The role map is a function of data the client already holds — the credit's
+status, `finance_check_required` from the payload, and the viewer's own role — so mirroring it
+costs nothing and buys an honest screen. The identity rules are not: `same_signer` keys on
+signer EMAIL server-side, and deliberately so, because production has two active admins both
+named "Ve. Elanjelian" (see the 0125 migration). The detail payload carries signer NAMES only,
+so a client-side distinctness check would be wrong in both directions — it would let one person
+sign twice under a shared name, and refuse two different people who share one. Rendering the
+server's refusal is strictly more correct than guessing.
+
+**Alternatives considered:** (a) Add signer emails to the payload so the client can check —
+rejected: it widens an admin allowlist with personal data to save one round trip on a rare
+error, and the exact-key-set test exists to stop exactly that kind of drift. (b) Mirror nothing
+and let every refusal surface as an error — rejected: an org_admin would see a countersign
+button on a credit awaiting the finance check, click it, and be told no; the payments card
+already chose to state the reason instead, and the two chains are one design.
+**Revisit if:** the credit payload ever needs signer emails for another reason, at which point
+the same-signer check can move client-side as a courtesy — never as the authority.
+
 ## A referral is attributed by the link OR the invitee's email, link first — Sponsor fixes, 2026-07-28
 **Decision:** `SponsorRegisterView` closes an invitation on the `?ref=<code>` link if one was used,
 otherwise on a still-`invited` row whose `invitee_email` matches the registering account. Where two

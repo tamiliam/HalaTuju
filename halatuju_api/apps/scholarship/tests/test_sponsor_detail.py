@@ -188,6 +188,20 @@ class TestMoneyIsOrgFenced(SponsorDetailBase):
         self.assertNotIn('Beta Bursary', body)
         self.assertNotIn('5000', body)
 
+    def test_memberships_carry_the_programme_id_the_credit_form_posts(self):
+        """S2: the creditable set is "gifts they were ACCEPTED into", which is the memberships
+        list — not the wallet ledger. A sponsor accepted into a gift they have not yet given
+        to holds no wallet, and that is exactly the case a first credit is recorded for."""
+        prog_c = Programme.objects.create(organisation=self.org_a, code='sd-pc',
+                                          name_en='Alpha Second Gift')
+        SponsorProgrammeMembership.objects.create(
+            sponsor=self.sponsor, programme=prog_c, status='approved')
+        rows = {m['programme_name']: m for m in self._get(self.approver_a).data['memberships']}
+        self.assertEqual(rows['Alpha Second Gift']['programme_id'], prog_c.id)
+        # …and it has no wallet, so the ledger could not have supplied it.
+        self.assertNotIn(prog_c.id, [w['programme_id'] for w in
+                                     self._get(self.approver_a).data['programmes']])
+
     def test_memberships_are_fenced_too(self):
         res = self._get(self.approver_a)
         self.assertEqual([m['programme_name'] for m in res.data['memberships']],
@@ -325,6 +339,40 @@ class TestListColumns(SponsorDetailBase):
         Sponsorship.objects.filter(application=app).update(status='cancelled')
         rows = {r['id']: r for r in self._list(self.approver_a).data['sponsors']}
         self.assertEqual(rows[self.sponsor.id]['students'], 0)
+
+
+class TestFinanceCheckFlag(SponsorDetailBase):
+    """`finance_check_required` tells the screen whether to draw the chain's middle step.
+
+    It has to be true BEFORE a wallet exists. A wallet appears only once a credit is
+    confirmed, so a first credit — recorded and awaiting signatures — sits in a programme
+    with no wallet row; reading wallets alone drew a two-step chain and offered an org_admin
+    a countersign the service then refused.
+    """
+    def test_false_when_no_finance_admin_is_appointed(self):
+        self._confirmed_credit(self.prog_a, '1000', 'TRF-F-0', self.maker_a, self.approver_a)
+        self.assertFalse(self._get(self.approver_a).data['finance_check_required'])
+
+    def test_true_for_an_approved_MEMBERSHIP_before_any_wallet_exists(self):
+        _admin(self.org_a, 'finance', 'Sam Finance', 'finance@a.com')
+        res = self._get(self.approver_a)
+        self.assertEqual(res.data['programmes'], [])          # no wallet at all yet…
+        self.assertTrue(res.data['finance_check_required'])    # …but the chain has three steps
+
+    def test_true_for_an_UNCONFIRMED_credit_whose_programme_has_no_wallet(self):
+        _admin(self.org_a, 'finance', 'Sam Finance', 'finance@a.com')
+        svc.record_admin_credit(
+            sponsor=self.sponsor, programme=self.prog_a, amount=Decimal('9000'),
+            external_reference='TRF-F-DRAFT', admin=self.maker_a)
+        res = self._get(self.approver_a)
+        self.assertEqual(res.data['programmes'], [])
+        self.assertTrue(res.data['finance_check_required'])
+
+    def test_a_fenced_caller_never_reads_another_tenants_finance_setting(self):
+        _admin(self.org_b, 'finance', 'B Finance', 'finance@b.com')
+        # org_a has no finance admin; org_b does. An org_a admin must see its own chain.
+        self.assertFalse(self._get(self.approver_a).data['finance_check_required'])
+        self.assertTrue(self._get(self.org_admin_b).data['finance_check_required'])
 
 
 class TestReferralsAndStudents(SponsorDetailBase):
