@@ -8,6 +8,13 @@ import { useT } from '@/lib/i18n'
 import { seenBand } from '@/lib/sponsorDetail'
 import { listSponsors, reviewSponsor, type AdminSponsor } from '@/lib/admin-api'
 import { effectiveRole } from '@/lib/navigation'
+import {
+  DEFAULT_SORT, SPONSOR_SORT_LABEL, firstDirFor, sortSponsors,
+  type SponsorSortKey,
+} from '@/lib/sponsorTable'
+import { PAGE_SIZE_OPTIONS, nextSort, sortIndicator } from '@/lib/tableView'
+import { usePagedRows, useSort } from '@/lib/usePagedRows'
+import { Pagination } from '@/components/Pagination'
 import SponsorEmailsCard from '@/components/sponsors/SponsorEmailsCard'
 
 // The ORGANISATION column was dropped on 2026-07-27: empty on all nine prod rows, and it cost
@@ -52,6 +59,30 @@ const actionsFor = (status: string): Array<'approve' | 'reject' | 'suspend'> =>
     : status === 'approved' ? ['suspend']
       : ['approve'] // rejected / suspended → reconsider
 
+/** A sortable header. Every column except Actions uses this, so none can drift. */
+function SortHeader({ col, sort, onSort, align, t }: {
+  col: SponsorSortKey
+  sort: { key: SponsorSortKey; dir: 'asc' | 'desc' }
+  onSort: (col: SponsorSortKey) => void
+  align?: 'right'
+  t: (k: string) => string
+}) {
+  const active = sort.key === col
+  return (
+    <th className={`px-4 py-3 ${align === 'right' ? 'text-right' : 'text-left'}`}
+      aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button type="button" onClick={() => onSort(col)}
+        className={`inline-flex items-center gap-1 font-semibold text-xs uppercase tracking-wider hover:text-blue-600 ${
+          active ? 'text-blue-600' : 'text-gray-600'}`}>
+        {t(SPONSOR_SORT_LABEL[col])}
+        <span aria-hidden className="text-[9px] leading-none">
+          {sortIndicator(active, sort.dir)}
+        </span>
+      </button>
+    </th>
+  )
+}
+
 const actionStyle: Record<string, string> = {
   approve: 'bg-green-600 hover:bg-green-700',
   reject: 'bg-red-600 hover:bg-red-700',
@@ -68,6 +99,7 @@ export default function AdminSponsorsList() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<number | null>(null)
+  const { sort, setSort } = useSort<SponsorSortKey>(DEFAULT_SORT)
 
   const load = useCallback(() => {
     if (!token) return
@@ -80,6 +112,13 @@ export default function AdminSponsorsList() {
   }, [token, statusF])
 
   useEffect(() => { load() }, [load])
+
+  // Sort the whole list, then page the sorted result — the other order would sort one page at a
+  // time and shuffle rows between pages.
+  const sorted = sortSponsors(sponsors, sort.key, sort.dir)
+  const paged = usePagedRows(sorted)
+  const onSort = (col: SponsorSortKey) =>
+    setSort(nextSort(sort, col, firstDirFor(col)))
 
   const handleReview = async (id: number, action: 'approve' | 'reject' | 'suspend') => {
     if (!token) return
@@ -139,17 +178,18 @@ export default function AdminSponsorsList() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50/80 border-b">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.name')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.status')}</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.colGiven')}</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.colStudents')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.colLastSeen')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.registered')}</th>
+                <SortHeader col="name" sort={sort} onSort={onSort} t={t} />
+                <SortHeader col="status" sort={sort} onSort={onSort} t={t} />
+                <SortHeader col="given" sort={sort} onSort={onSort} align="right" t={t} />
+                <SortHeader col="students" sort={sort} onSort={onSort} align="right" t={t} />
+                <SortHeader col="lastSeen" sort={sort} onSort={onSort} t={t} />
+                <SortHeader col="registered" sort={sort} onSort={onSort} t={t} />
+                {/* Actions is the one unsortable column — there is nothing to order it by. */}
                 <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.sponsors.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {sponsors.map((s) => (
+              {paged.rows.map((s) => (
                 <tr key={s.id} className="hover:bg-blue-50/40 transition-colors align-top">
                   <td className="px-4 py-3 border-l-[3px] border-l-blue-500">
                     {/* The name opens the whole record — everything the flat table could not show. */}
@@ -195,6 +235,15 @@ export default function AdminSponsorsList() {
               ))}
             </tbody>
           </table>
+          {paged.visible && (
+            <div className="px-4 sm:px-5 pb-4">
+              <Pagination
+                page={paged.page} totalPages={paged.totalPages} pageSize={paged.pageSize}
+                onPageChange={paged.setPage}
+                pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={paged.setPageSize}
+              />
+            </div>
+          )}
         </div>
       )}
       </>)}

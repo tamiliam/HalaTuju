@@ -15,6 +15,9 @@ import {
   getSponsorDetail, recordSponsorCredit, signSponsorCredit, voidSponsorCredit,
   type AdminSponsorDetail,
 } from '@/lib/admin-api'
+import { PAGE_SIZE_OPTIONS } from '@/lib/tableView'
+import { usePagedRows, type PagedRows } from '@/lib/usePagedRows'
+import { Pagination } from '@/components/Pagination'
 
 // One sponsor, whole — the page that did not exist until 2026-07-27. Money first, because
 // that is the question you open a sponsor to answer; then what it is funding, then who they
@@ -56,6 +59,26 @@ function Block({ title, action, children, note }: {
 }
 
 const inputCls = 'border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200'
+
+/**
+ * The paging footer for one of the detail tables.
+ *
+ * Renders NOTHING below the threshold — the `Pagination` component itself would still draw its
+ * page-size selector on a single page, and a footer on a table of one credit is furniture. On
+ * production today only the sponsorship history (38 rows for one sponsor) reaches it.
+ */
+function TableFooter({ paged }: { paged: PagedRows<unknown> }) {
+  if (!paged.visible) return null
+  return (
+    <div className="px-4 sm:px-5 pb-4">
+      <Pagination
+        page={paged.page} totalPages={paged.totalPages} pageSize={paged.pageSize}
+        onPageChange={paged.setPage}
+        pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={paged.setPageSize}
+      />
+    </div>
+  )
+}
 
 export default function AdminSponsorDetailPage() {
   const { token, role } = useAdminAuth()
@@ -109,6 +132,12 @@ export default function AdminSponsorDetailPage() {
       setBusy(false)
     }
   }
+
+  // These three sit ABOVE the early returns on purpose: hooks cannot be called conditionally, so
+  // they read through `detail?.` and simply page an empty list until the record arrives.
+  const pagedCredits = usePagedRows(detail?.credits ?? [])
+  const pagedStudents = usePagedRows(detail?.sponsorships ?? [])
+  const pagedReferrals = usePagedRows(detail?.referrals ?? [])
 
   if (error) return <div className="text-red-600">{error}</div>
   if (!detail) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
@@ -321,7 +350,7 @@ export default function AdminSponsorDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {detail.credits.map((c) => {
+                {pagedCredits.rows.map((c) => {
                   const actions = creditActions(c, detail.finance_check_required, viewerRole)
                   return (
                   <tr key={c.id} className="align-top">
@@ -394,6 +423,7 @@ export default function AdminSponsorDetailPage() {
                 })}
               </tbody>
             </table>
+            <TableFooter paged={pagedCredits} />
           </div>
         )}
       </Block>
@@ -415,7 +445,7 @@ export default function AdminSponsorDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {detail.sponsorships.map((s) => (
+                {pagedStudents.rows.map((s) => (
                   <tr key={s.id}>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">
                       {s.offered_at ? formatDate(s.offered_at) : '—'}
@@ -439,6 +469,7 @@ export default function AdminSponsorDetailPage() {
                 ))}
               </tbody>
             </table>
+            <TableFooter paged={pagedStudents} />
           </div>
         )}
       </Block>
@@ -449,7 +480,7 @@ export default function AdminSponsorDetailPage() {
           <p className="px-4 sm:px-5 py-5 text-sm text-gray-500">{t('admin.sponsors.detail.noInvites')}</p>
         ) : (
           <ul className="divide-y">
-            {detail.referrals.map((r) => (
+            {pagedReferrals.rows.map((r) => (
               <li key={r.id} className="flex items-baseline justify-between gap-4 px-4 sm:px-5 py-2.5 text-sm">
                 <span>
                   <b className="font-medium text-gray-900">{r.invitee_name || '—'}</b>{' '}
@@ -464,6 +495,7 @@ export default function AdminSponsorDetailPage() {
             ))}
           </ul>
         )}
+        <TableFooter paged={pagedReferrals} />
       </Block>
 
       {detail.memberships.length > 0 && (

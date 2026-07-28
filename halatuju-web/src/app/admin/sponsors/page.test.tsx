@@ -124,3 +124,87 @@ describe('the Sponsors | Emails badges', () => {
     expect(screen.queryByRole('tab', { name: 'admin.sponsors.tabEmails' })).toBeNull()
   })
 })
+
+// ── sorting + pagination (2026-07-28) ─────────────────────────────────────────
+// Client-side: the page sorts and slices what the server already sent, so these tests are the
+// whole proof — there is no server behaviour behind them to fall back on.
+
+const many = (n: number) => Array.from({ length: n }, (_, i) => ({
+  id: i + 100, name: `Sponsor ${String(i).padStart(3, '0')}`, email: `s${i}@x.com`,
+  phone: '', source: '', organisation: '', note: '', status: 'approved',
+  reviewed_at: null, reviewed_by: '', created_at: '2026-07-01T00:00:00Z',
+  given: '1000.00', students: 1, last_seen_at: null,
+})) as unknown as api.AdminSponsor[]
+
+describe('sortable headers', () => {
+  it('offers a sort control on every column except Actions', async () => {
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    for (const key of ['name', 'status', 'colGiven', 'colStudents', 'colLastSeen', 'registered']) {
+      expect(screen.getByRole('button', { name: new RegExp(key) })).toBeTruthy()
+    }
+    // Actions is a plain header — there is nothing to order it by.
+    expect(screen.queryByRole('button', { name: /admin\.sponsors\.actions/ })).toBeNull()
+  })
+
+  it('sorts by money as a number, so 20,000 leads 0.00', async () => {
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: /colGiven/ }))
+    const rows = screen.getAllByRole('row').slice(1)          // drop the header row
+    expect(rows[0].textContent).toContain('Bharathan Nair')   // 20,000.00
+  })
+
+  it('flips direction when the same header is clicked twice', async () => {
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    const given = screen.getByRole('button', { name: /colGiven/ })
+    fireEvent.click(given)
+    expect(screen.getAllByRole('row')[1].textContent).toContain('Bharathan Nair')
+    fireEvent.click(given)
+    expect(screen.getAllByRole('row')[1].textContent).toContain('Chong Lee Min')
+  })
+
+  it('marks the sorted column for a screen reader', async () => {
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: /^admin\.sponsors\.name/ }))
+    const header = screen.getByRole('button', { name: /^admin\.sponsors\.name/ }).closest('th')!
+    expect(header.getAttribute('aria-sort')).toBe('ascending')
+  })
+})
+
+describe('pagination', () => {
+  it('shows no footer for the nine sponsors on production today', async () => {
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    expect(screen.queryByText('admin.pageOf')).toBeNull()
+  })
+
+  it('stays hidden at exactly ten rows and appears at eleven', async () => {
+    mockApi.listSponsors.mockResolvedValue({ sponsors: many(10) })
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Sponsor 000')).toBeTruthy())
+    expect(screen.queryByText('admin.pageOf')).toBeNull()
+
+    mockApi.listSponsors.mockResolvedValue({ sponsors: many(11) })
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getAllByText('Sponsor 000').length).toBeGreaterThan(0))
+    expect(screen.getAllByText('admin.pageOf').length).toBeGreaterThan(0)
+  })
+
+  it('renders one page of ten and moves to the next', async () => {
+    mockApi.listSponsors.mockResolvedValue({ sponsors: many(25) })
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Sponsor 000')).toBeTruthy())
+    expect(screen.getAllByRole('row').slice(1)).toHaveLength(10)
+    expect(screen.queryByText('Sponsor 010')).toBeNull()
+
+    // The control renders a mobile and a desktop copy (hidden by CSS, both in the DOM), so take
+    // the desktop one rather than assuming there is only ever a single Next.
+    const nexts = screen.getAllByRole('button', { name: 'admin.next' })
+    fireEvent.click(nexts[nexts.length - 1])
+    expect(screen.getByText('Sponsor 010')).toBeTruthy()
+    expect(screen.queryByText('Sponsor 000')).toBeNull()
+  })
+})
