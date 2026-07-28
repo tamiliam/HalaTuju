@@ -3037,7 +3037,9 @@
       "goTo": "Go to {page}",
       "then": "then",
       "pinNav": "Keep the menu open",
-      "unpinNav": "Let the menu collapse"
+      "unpinNav": "Let the menu collapse",
+      "switchOrg": "Switch organisation",
+      "switchProgramme": "Switch programme"
     },
     "nav": {
       "organisations": "Organisations",

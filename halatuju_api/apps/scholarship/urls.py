@@ -74,6 +74,7 @@ from .views_admin import (
     AdminSponsorshipListView,
     AdminApplicationRefereeView,
     AdminAssignableAdminsView,
+    AdminScopeListView,
     AdminGenerateProfileView,
     AdminPublishAnonProfileView,
     AdminInterviewView,
@@ -332,6 +333,7 @@ urlpatterns = [
     # Post-award S6: manual closure (status='closed' + closure_reason)
     path('admin/scholarship/applications/<int:pk>/close/',
          AdminCloseApplicationView.as_view()),
+    path('admin/scholarship/scopes/', AdminScopeListView.as_view()),
     path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),

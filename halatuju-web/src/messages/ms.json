@@ -3037,7 +3037,9 @@
       "goTo": "Pergi ke {page}",
       "then": "kemudian",
       "pinNav": "Biarkan menu terbuka",
-      "unpinNav": "Biarkan menu mengecil"
+      "unpinNav": "Biarkan menu mengecil",
+      "switchOrg": "Tukar organisasi",
+      "switchProgramme": "Tukar program"
     },
     "nav": {
       "organisations": "Organisasi",

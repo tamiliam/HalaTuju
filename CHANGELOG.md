@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## The breadcrumb switchers (nav/IA N3a) — 2026-07-28
+
+The owner compared the live console with the design of record and asked why the top bar did not
+show organisation then programme. **Not a regression:** `AppShell.tsx:164` passed
+`programmeName={undefined}` — hardcoded — so that crumb has been skipped on every render since N2,
+and the organisation crumb was static text. N2 shipped the shape and left the content for N3a,
+which had been parked. The owner un-parked it. **The trigger written into the parking decision
+never fired** — one organisation still owns everything; this was a decision, not a condition.
+
+### Added
+- `GET /api/v1/admin/scholarship/scopes/` — the organisations and programmes a caller may look at.
+  super sees all; everyone else their own; **partner sees nothing** (a referral organisation is
+  attribution, never an access scope); an admin with no organisation gets empty lists, not a 500.
+- `ScopeSwitcher` in the breadcrumb. Programme codes are `Programme.code` — the same vocabulary
+  PF-1 settled on for `/scholarship/apply?p=<code>`.
+
+### Changed
+- **With one option a crumb renders as PLAIN TEXT, not a dropdown of one.** A chevron opening a
+  menu with a single entry is a promise the data does not keep. This is production's state today,
+  so it has its own test.
+- The Topbar docstring said "the breadcrumb is static text this sprint". True when written, false
+  now — corrected in the same change.
+
+### Verification
+`pytest` **4968** (full scope) · `jest` **1047** / 68 suites · i18n **4153 x 3** · build compiled.
+**No migration.** The endpoint derives from the same `owning_organisation` the org fence uses, so
+it cannot widen access: a client ignoring it entirely reaches identical data.
+
+### Known limit
+**TD-192 — the selection moves the breadcrumb and nothing else.** It does not filter any list.
+Making it filter means per-endpoint scope parameters re-fenced server-side, which is a sprint, and
+attaching scope to requests globally would relocate the fence into the client.
+
 ## M1 — "which application is this about" stops being answered by position — 2026-07-28
 
 First sprint of the multi-programme roadmap, and the only one approved
