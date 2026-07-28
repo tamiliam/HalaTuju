@@ -126,7 +126,7 @@ exists. **That calculus has changed** — the owner confirmed the second-tenant 
 looks credible, so N3a is no longer anticipatory. See the escalation note below before scheduling
 it, because something outranks it.
 
-## N3 — scopes, switchers, route split (~22 web + 6 api files)
+### N3a spec — what is left of it
 
 **Backend — one new endpoint:** `GET /api/v1/admin/scholarship/scopes/` → `AdminScopeListView(_AdminBase)`.
 
@@ -150,23 +150,14 @@ programme excluded; NULL-owning-org reviewer gets empty lists, not a 500).
 middleware rewrite — that would relocate the fence into the client. For super it persists a
 client-side *display* preference only. Say this in the component docstring.
 
-**Web — route split:**
+**The route split that used to be specified here shipped as N3b on 2026-07-28** — four pages plus a
+permanent redirect, and every other URL kept. Nothing of it is outstanding.
 
-| Old | New | Mechanism |
-|---|---|---|
-| `/admin/administration` | `/admin/organisation` | redirect page, pattern of `admin/invite/page.tsx` |
-| `/admin/administration` (platform section) | `/admin/organisations` + `/admin/partners` | new pages, lifted from `administration/page.tsx` |
-| `/admin/administration` (staff panel) | `/admin/organisation/staff` | new page |
-| `/admin/invite` | `/admin/organisation/staff` | retarget the existing stub — keep it one hop |
-
-Everything else keeps its URL, so every deep link in emails, the manual and bookmarks survives.
-
-**Cut-line if it overruns ~40 files:** N3a = backend + switchers, hub untouched. N3b = route split +
-redirects. N3b also touches `src/content/manual/role-org-admin.ts`, `role-admin-general.ts`,
-`role-finance.ts` and `docs/plans/2026-07-16-manual-screenshot-manifest.md`, which name
-"Administration" — budget for that ripple. **Manual/FAQ currency rule applies**
-(`docs/scholarship/role-matrix.md`): a change to what a role sees updates that role's Manual chapter
-and FAQ entries in the same commit.
+**Manual/FAQ currency rule still applies** (`docs/scholarship/role-matrix.md`): a change to what a
+role sees updates that role's Manual chapter and FAQ entries in the same commit. N3b is the evidence
+that it earns its keep — rewriting the "Administration" mentions caught a Finance sentence that had
+silently become false, and the sponsor merge turned up one more ("Administration → Payments") in
+prose written the same day on another branch.
 
 ---
 
