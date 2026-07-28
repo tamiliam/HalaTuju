@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## The catalogue now governs which documents an application needs — 2026-07-29
+
+Sprint 3a of the configuration-layers roadmap. The rules that decide whether a student may submit no
+longer have the document list written into them; they ask the catalogue built last sprint. **Nothing
+changes for BrightPath** — the catalogue's defaults reproduce the existing behaviour exactly, and no
+existing test needed editing.
+
+### Fixed before it could ship — a hole that would have opened every submission gate
+Wiring the gates left one case unguarded: an application that belongs to a programme, where the
+catalogue has nothing in it yet. That resolved to *"this programme requires nothing"*, which would have
+let all 60 students currently mid-application submit with no documents at all.
+
+**All 5018 tests passed while this was true.** They passed because no test fixture uses the catalogue,
+so every one of them exercised a different branch from the one just written. Production was the
+opposite shape: every application belongs to a programme, and the catalogue was empty.
+
+An empty catalogue now means *"not configured yet"* and falls back to the previous behaviour — never
+*"nothing is required"*. Four tests were written from production's actual shape rather than from what
+the code was supposed to do, and the guard was then switched off to watch them fail before being
+restored.
+
+### Also
+- **Proof of household income stays a single switch.** It is a route — a national-aid document, or
+  payslips with evidence per family member — and letting it be dismantled piece by piece is how the
+  assessment would quietly break.
+- **A verification tile whose document a programme doesn't ask for is now hidden**, rather than shown
+  green (claiming we checked something) or red (claiming a gap that isn't one).
+- The production catalogue has been filled in, and its contents verified line by line against the rules
+  still running in code.
+
 ## What a programme asks for becomes configuration — 2026-07-28
 
 Sprint 2 of the configuration-layers roadmap. **Nothing changes for anybody yet, and that is the

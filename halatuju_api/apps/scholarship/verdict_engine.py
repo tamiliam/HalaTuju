@@ -1148,11 +1148,36 @@ def build_verdict(application) -> list[dict]:
     GET. Each fact: ``{fact, status, evidence[], unresolved[]}`` where evidence
     and unresolved items are ``{code, params}`` dicts resolved on the frontend.
 
-    Genuineness is applied last: the LADDER (identity/academic/pathway) + the flat cap (income)."""
+    Genuineness is applied last: the LADDER (identity/academic/pathway) + the flat cap (income).
+
+    **A fact whose evidence this programme does not ask for is OMITTED (Layer 0).** Not green and
+    not red — both would be lies. Green asserts we verified something; red asserts a gap, when
+    there is no gap because nobody wanted the document. The reviewer should simply not be shown a
+    Pathway tile for a programme that does not collect offer letters. Callers already map over
+    whatever facts they receive, so a shorter list is not a new shape.
+
+    For every programme today the answer is all four, because the catalogue defaults make all four
+    documents required — so this is inert until an organisation changes something in Sprint 5.
+    """
+    from . import requirements
+
+    # fact name → the catalogue item that supplies its evidence.
+    EVIDENCE_FOR = {
+        'identity': 'ic',
+        'academic': 'results_slip',
+        'pathway': 'offer_letter',
+        'income': 'income_proof',
+    }
+
     facts = [
         _verdict_identity(application),
         _verdict_academic(application),
         _verdict_pathway(application),
         _verdict_income(application),
+    ]
+    facts = [
+        f for f in facts
+        if requirements.asks_for(application, 'document', EVIDENCE_FOR.get(f.get('fact'), ''))
+        or f.get('fact') not in EVIDENCE_FOR   # an unmapped fact is never silently dropped
     ]
     return _apply_genuineness_ladder(application, _apply_genuineness_caps(application, facts))

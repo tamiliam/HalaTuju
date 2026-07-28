@@ -30,6 +30,8 @@ back to today's behaviour, not to an empty set.
 """
 from __future__ import annotations
 
+from django.db.models import OuterRef, Subquery
+
 from .models import ApplicationItem, ProgrammeApplicationItem
 
 # ── The one exception to "a document code names a real DOC_TYPE" ─────────────
@@ -79,46 +81,76 @@ def _programme_of(application):
     return getattr(application, 'programme', None)
 
 
-def _selected(programme) -> dict[tuple[str, str], str]:
-    """Every explicit selection this programme has made, keyed by (kind, code).
-
-    One query. The gates that will call this run per-application inside list endpoints, so a
-    per-item query here would become an N+1 the moment Sprint 3 wires it in.
-    """
-    if programme is None:
-        return {}
-    rows = (ProgrammeApplicationItem.objects
-            .filter(programme_id=programme.pk)
-            .select_related('item'))
-    return {(r.item.kind, r.item.code): r.state for r in rows}
-
-
-def _catalogue(kind: str) -> list[ApplicationItem]:
-    return list(ApplicationItem.objects.filter(kind=kind, is_active=True))
-
-
 def resolve(application, kind: str) -> dict[str, str]:
     """`{code: state}` for every active catalogue item of `kind`, for this application.
 
     The single entry point. `state` is one of 'off' | 'optional' | 'required'.
+
+    **ONE query, and memoised per application instance.** `application_completeness` calls this,
+    and the serializers call THAT once per row — so a careless implementation becomes an N+1 the
+    moment Sprint 3 wires it in. The catalogue and the programme's overrides are fetched together
+    by a correlated subquery rather than two round trips, and the result is cached on the instance
+    for the life of the request.
+
+    The memo is per INSTANCE, deliberately, rather than per programme in a module-level dict. A
+    process-wide cache would go stale the moment an org_admin changed a setting on another Cloud
+    Run instance, and a wrong answer about what an application requires is far worse than a query.
     """
+    memo = getattr(application, '_requirements_memo', None)
+    if memo is not None and kind in memo:
+        return memo[kind]
+
     programme = _programme_of(application)
     if programme is None:
-        return _platform_defaults(kind)
+        out = _platform_defaults(kind)
+    else:
+        # ⚠⚠ AN EMPTY CATALOGUE MEANS "NOT CONFIGURED", NEVER "ASKS FOR NOTHING".
+        #
+        # This guard exists because its absence was nearly shipped. Every one of the 143 live
+        # applications carries a programme, and production's catalogue tables were still empty
+        # (seeding was deferred to a later sprint on the grounds that nothing read them). Without
+        # this line the resolved set came back {} for every one of them, `documents_done` became
+        # `set().issubset(present)` — vacuously true — and all 60 students inside the submission
+        # gate could have submitted with no documents at all.
+        #
+        # The full 5018-test suite passed throughout, because no fixture seeds the catalogue: the
+        # tests never exercised the dependency they were supposedly covering. Green meant nothing.
+        #
+        # So: the catalogue is only believed when it has something to say. Falling back costs a
+        # cheap COUNT; getting it wrong opens every gate in the system silently.
+        if not ApplicationItem.objects.filter(kind=kind, is_active=True).exists():
+            return _memoise(application, kind, _platform_defaults(kind))
+        chosen = (ProgrammeApplicationItem.objects
+                  .filter(item_id=OuterRef('pk'), programme_id=programme.pk)
+                  .values('state')[:1])
+        items = (ApplicationItem.objects
+                 .filter(kind=kind, is_active=True)
+                 .annotate(chosen=Subquery(chosen)))
+        out = {}
+        for item in items:
+            if item.chosen is not None:
+                # ⚠ A core item cannot be switched off even by an explicit row. The UI refuses it
+                # and the API will refuse it, but the FLOOR belongs here too — a row written by a
+                # migration, a fixture or a future bulk edit passes through neither.
+                out[item.code] = 'required' if (item.is_core and item.chosen == 'off') else item.chosen
+            elif item.is_core:
+                out[item.code] = 'required'
+            else:
+                out[item.code] = item.default_state
 
-    selected = _selected(programme)
-    out: dict[str, str] = {}
-    for item in _catalogue(kind):
-        explicit = selected.get((kind, item.code))
-        if explicit is not None:
-            # ⚠ A core item cannot be switched off even by an explicit row. The UI refuses it and
-            # the API will refuse it, but the FLOOR belongs here too — a row written by a
-            # migration, a fixture or a future bulk edit never passes through either of those.
-            out[item.code] = 'required' if (item.is_core and explicit == 'off') else explicit
-        elif item.is_core:
-            out[item.code] = 'required'
-        else:
-            out[item.code] = item.default_state
+    return _memoise(application, kind, out)
+
+
+def _memoise(application, kind: str, out: dict[str, str]) -> dict[str, str]:
+    """Cache on the instance for the life of the request; never fail because caching failed."""
+    try:
+        memo = getattr(application, '_requirements_memo', None)
+        if memo is None:
+            memo = {}
+            application._requirements_memo = memo
+        memo[kind] = out
+    except AttributeError:
+        pass  # a frozen/slotted stub — correctness does not depend on the memo
     return out
 
 

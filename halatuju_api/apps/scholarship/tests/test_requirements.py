@@ -144,6 +144,65 @@ class TestSeamMatchesTodaysBehaviour(TestCase):
         self.assertIn('consent', requirements.required_questions(_stub(None)))
 
 
+class TestEmptyCatalogueCannotOpenTheGates(TestCase):
+    """The near-miss this sprint produced, pinned so it cannot recur.
+
+    **What was almost shipped.** Production carries 143 applications, every one of them with a
+    programme, and the catalogue tables were empty because seeding had been deferred on the
+    grounds that nothing read them yet. The first cut of `resolve()` took "programme present" as
+    licence to trust the catalogue, so it returned `{}` — and `documents_done` became
+    `set().issubset(present)`, which is vacuously true. All 60 applications inside the submission
+    gate could have submitted with no documents whatsoever.
+
+    **Why the suite did not catch it.** No fixture seeds the catalogue, so ~5000 tests exercised
+    the fallback branch and none exercised the branch that mattered. They passed for the wrong
+    reason, which is indistinguishable from passing for the right one.
+
+    These tests are written from the shape of PRODUCTION — programme set, catalogue empty — rather
+    than from what the code was meant to do.
+    """
+
+    def setUp(self):
+        # Deliberately NOT seeded. This is production's exact state at the moment of writing.
+        self.org = PartnerOrganisation.objects.create(code='empty-org', name='Empty Org')
+        self.programme = Programme.objects.create(
+            organisation=self.org, code='empty-programme', name_en='Empty Programme')
+
+    def test_an_empty_catalogue_still_requires_everything(self):
+        self.assertEqual(ApplicationItem.objects.count(), 0)
+        app = _stub(self.programme)
+        self.assertEqual(
+            requirements.required_documents(app),
+            {'ic', 'results_slip', 'offer_letter', 'income_proof'},
+        )
+
+    def test_an_empty_catalogue_still_asks_for_each_gate(self):
+        # The four `asks_for` calls the gates in services.py depend on. If any returns False the
+        # corresponding gate silently stops running.
+        app = _stub(self.programme)
+        for code in ('ic', 'results_slip', 'offer_letter', 'income_proof'):
+            self.assertTrue(requirements.asks_for(app, 'document', code), code)
+
+    def test_a_catalogue_with_only_QUESTIONS_still_requires_documents(self):
+        # Half-seeded is a real state — a partial seed, or a kind added in a later sprint. The
+        # fallback is per KIND for exactly this reason.
+        ApplicationItem.objects.create(kind='question', code='aspirations',
+                                       label_key='apply.questions.aspirations.title',
+                                       default_state='required')
+        app = _stub(self.programme)
+        self.assertEqual(
+            requirements.required_documents(app),
+            {'ic', 'results_slip', 'offer_letter', 'income_proof'},
+        )
+
+    def test_the_fallback_stops_the_moment_the_catalogue_has_documents(self):
+        # And the converse: once documents ARE seeded, the catalogue governs — otherwise the
+        # fallback would quietly override every configuration an organisation ever makes.
+        seed()
+        ApplicationItem.objects.filter(kind='document', code='photo').update(is_active=False)
+        self.assertNotIn('photo', requirements.resolve(_stub(self.programme), 'document'))
+
+
 class TestProgrammeSelection(TestCase):
     def setUp(self):
         seed()

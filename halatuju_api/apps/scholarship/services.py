@@ -52,6 +52,7 @@ POST_SHORTLIST_EDITABLE = ('shortlisted', 'profile_complete', 'interviewing', 'i
 # count_spm_a_grades + the A-grade set now live with the shortlisting engine
 # (the single place that scores academics). Re-exported here for callers that
 # still import it from services.
+from . import requirements
 from .shortlisting import A_GRADES, count_spm_a_grades, evaluate  # noqa: F401
 
 # Financial fields the apply form may collect/refresh. Their canonical home is
@@ -1904,9 +1905,18 @@ def application_completeness(application):
         slip = (application.documents.filter(doc_type='results_slip', superseded_at__isnull=True)
                 .order_by('-uploaded_at').first())
         slip_name_ok = slip is None or _slip_name_status(slip) != 'mismatch'
+        # Layer 0: WHICH documents this programme asks for now comes from the catalogue
+        # (`requirements.py`), not from a literal here. For every programme today the answer is
+        # the same set this line used to spell out — ic + results_slip + offer_letter, plus the
+        # income route — because the catalogue defaults reproduce it by construction. Nothing
+        # about the route ENGINE moves: `income_proof` is one switch over the whole of
+        # `income_doc_blockers`, never a way to take it apart.
+        required = requirements.required_documents(application)
+        required_types = required - requirements.DOCUMENT_AGGREGATES
         documents_done = (
-            {'ic', 'results_slip', 'offer_letter'}.issubset(present)
-            and slip_name_ok
+            required_types.issubset(present)
+            # A results slip in a different name only matters if we asked for one.
+            and (slip_name_ok or 'results_slip' not in required)
             and not income_doc_blockers(application)
         )
     else:
@@ -2109,6 +2119,15 @@ def income_doc_blockers(application):
                                 _member_ic_doc, _cluster_docs, str_not_breached,
                                 salary_income_satisfied, usable_salary_slip,
                                 member_income_evidenced, household_str_status)
+    # ⚠ LAYER 0 TOUCHES THIS FUNCTION IN EXACTLY ONE PLACE: whether it runs at all.
+    #
+    # Everything below is the income ROUTE ENGINE — STR versus salary, per-member evidence,
+    # relationship documents, the either-route-satisfies rules. None of it is configurable and
+    # none of it may become configurable: letting an organisation switch off "the father's IC"
+    # while leaving "his payslip" on would produce an assessment nobody designed. So the catalogue
+    # offers ONE item, `income_proof`, and it means "run this engine, or don't".
+    if not requirements.asks_for(application, 'document', 'income_proof'):
+        return []
     route = (getattr(application, 'income_route', '') or '').strip()
     if not route:
         return ['income_incomplete']
@@ -2194,6 +2213,11 @@ def _offer_blocks(application):
     verdict may legitimately stay red). Presence is still required (`offer_letter_missing` — they must
     upload *something*); only the genuineness block is lifted, and only for STPM. Other routes —
     incl. Matriculation, which DOES get a recognisable official offer — are unaffected."""
+    # Layer 0: a programme that does not ask for an offer letter cannot be blocked by one.
+    # This is the ORGANISATION's setting; the STPM exemption immediately below is a per-STUDENT
+    # rule and is untouched — the two are different questions and stay separate.
+    if not requirements.asks_for(application, 'document', 'offer_letter'):
+        return False
     if (getattr(application, 'chosen_pathway', '') or '').strip().lower() == 'stpm':
         return False
     from .pathway_engine import offer_official_status
@@ -2234,11 +2258,17 @@ def consent_blockers(application):
         blockers.append('funding_incomplete')
     present = set(application.documents.filter(superseded_at__isnull=True)
                   .values_list('doc_type', flat=True))
-    if 'ic' not in present:
+    # Layer 0: only chase what this programme actually asks for. A document that is not asked for
+    # must not appear as outstanding — the student would be looking for something nobody wants.
+    # The default catalogue makes all three required, so this reads identically today.
+    required = requirements.required_documents(application)
+    if 'ic' in required and 'ic' not in present:
         blockers.append('ic_missing')
-    if 'results_slip' not in present:
+    if 'results_slip' in required and 'results_slip' not in present:
         blockers.append('results_slip_missing')
-    if 'offer_letter' not in present:                 # gate v2: compulsory for everyone
+    if 'offer_letter' not in required:
+        pass                                          # not asked for — neither missing nor checked
+    elif 'offer_letter' not in present:               # gate v2: compulsory for everyone
         blockers.append('offer_letter_missing')
     elif application.profile_completed_at is None and _offer_blocks(application):
         # Owner 2026-07-08: the offer gate follows the PATHWAY VERDICT the officer sees — we accept
