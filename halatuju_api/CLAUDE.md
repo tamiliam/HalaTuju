@@ -531,11 +531,15 @@ decisions ×3; lessons ×2. **⚠ MIGRATION `0133` — APPLY MIGRATE-FIRST (two 
   endpoint flipped a field and returned. **Eight people on prod were approved in silence.**
 - Nine editable emails, each with its own switch and wording, behind TWO gates
   (`SPONSOR_COMMS_ENABLED` **and** each template's `enabled`). Every attempt logged, skips too.
-- **⚠ THE THING THAT WOULD HAVE BROKEN PRODUCTION: three of the nine are LIVE today**
-  (`new_students`, `weekly_digest`, `referral_invite`). Routing them through a switched-off
-  template silences them with **no error and no failing test** — a tidy row of "off" switches,
-  exactly as designed. Each keeps its pre-S3 sender behind `if not is_enabled(kind)`, with a test
-  per path. **Do not delete those fallbacks until all three templates are switched on.**
+- **⚠ THREE OF THE NINE ARE LIVE TODAY** (`new_students`, `weekly_digest`, `referral_invite`)
+  and are **SEEDED SWITCHED ON** (owner: *"many are already active. Keep them activated. Only the
+  new ones can be inactive and subject to review."*). **The legacy-sender fallback keys on
+  `comms_enabled()` — the PLATFORM gate — NEVER on the template's own switch.** That distinction
+  is load-bearing: with these three on, "off" means *stop sending*, and keying the fallback on the
+  switch would make that unenforceable (tick it off, the hardcoded sender carries on, the screen
+  disagrees with the system). Two clean worlds: pre-flip nothing a sponsor receives changes,
+  post-flip the templates govern completely. **Do not "simplify" that condition to
+  `is_enabled(kind)`** — two tests exist precisely to stop it.
 - **NINE kinds, not eleven** (owner): `low_balance` + `annual_statement` deferred — marketing-
   adjacent, and sponsor consent is a bare version string with no wording behind it (TD-186).
 - **The voice guard refuses a TAX-RELIEF claim** — no LHDN s44(6) approval exists; also "your
@@ -546,11 +550,13 @@ decisions ×3; lessons ×2. **⚠ MIGRATION `0133` — APPLY MIGRATE-FIRST (two 
   TemplateEditor` (the wording editor, which gained a jsdom test neither copy had).
 - Emails panel gated **narrower than the sponsor list**: super/org_admin/admin. Finance reads
   sponsors (money is its business) but does not decide what donors are told.
-- **3658 scholarship pytest · 954 jest** (64 suites); `makemigrations --check` clean.
+- **3662 scholarship pytest · 956 jest** (64 suites); `makemigrations --check` clean.
 - **▶ AT DEPLOY, in order: (1) apply `0133` migrate-first + RLS; (2) push; (3) run
-  `seed_sponsor_email_templates` ONCE** — all nine arrive OFF and the platform flag is unset, so
-  nothing sends. **▶ THEN OWNER: read + edit the nine templates, switch on the ones wanted, and
-  only then `SPONSOR_COMMS_ENABLED=1` via `--update-env-vars`.**
+  `seed_sponsor_email_templates` ONCE** — the three already-sending kinds arrive ON, the six new
+  ones OFF, and the platform flag is unset, so nothing changes yet. **▶ THEN OWNER: read the six
+  new templates, edit the wording, switch on the ones wanted, and only then
+  `SPONSOR_COMMS_ENABLED=1` via `--update-env-vars`** (the flip moves the three live emails onto
+  their templates; nothing a sponsor receives changes).
 - **▶ NEXT = S4** (mandatory reject/suspend reason — which also gives `rejected`/`suspended` the
   `{reason}` token they ship without — the per-sponsor email log, CSV export). TD-185 folds in.
 - **▶ CARRY:** ms/ta first drafts, ~59 new `admin.sponsors.emails.*` leaves (TD-183).

@@ -16,10 +16,27 @@ not a substitute for a consent question nobody has answered, and a seeded templa
 invitation to switch it on. **Revisit if:** TD-186 lands a reviewable consent record, or the owner
 takes a decision on marketing consent independently.
 
-## A LIVE email routed through a dark template must keep its old sender — Sponsor S3, 2026-07-28
-**Decision:** `referral_invite`, `new_students` and `weekly_digest` fall back to their pre-S3
-hardcoded senders whenever `sponsor_comms.is_enabled(kind)` is false. The template takes over the
-moment an org_admin switches it on.
+## The three ALREADY-SENDING emails ship switched ON, and the fallback keys on the PLATFORM gate — Sponsor S3, 2026-07-28
+**Decision (owner, revising my first cut):** `referral_invite`, `new_students` and
+`weekly_digest` are **seeded `enabled=True`**; the six new kinds are seeded off for review. The
+legacy-sender fallback keys on `comms_enabled()` — the platform gate — and **not** on the
+template's own switch.
+
+*"For the sponsor comms, many are already active. Keep them activated. Only the new ones can be
+inactive and subject to review."*
+
+**Why the second half follows from the first, and why my first cut was wrong.** I had seeded all
+nine off and made the fallback key on `is_enabled(kind)` (platform gate AND switch). That was
+defensible while "off" meant "not yet adopted". The moment the adopted three ship ON, "off" comes
+to mean *stop sending this* — and a fallback keyed on the switch would have made that
+unenforceable on exactly the three emails that already reach people: the owner ticks a switch off,
+the hardcoded sender carries on regardless, and the screen says one thing while the system does
+another. Keying on the platform gate gives two clean worlds instead: before the flip nothing about
+what sponsors receive changes at all; after it, the templates govern completely.
+
+**The seeding is also what makes the flip safe.** With those three on, turning
+`SPONSOR_COMMS_ENABLED=1` moves them onto editable wording and changes nothing a sponsor would
+notice. With them off it would have stopped three working emails.
 
 **Why this is the load-bearing bit of the sprint.** Those three are live on production with their
 cron jobs enabled. Adopting them into a two-gate dark launch without a fallback would have

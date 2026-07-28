@@ -129,21 +129,29 @@ def send_credit_confirmed(credit):
 # ── the three ADOPTED sends ───────────────────────────────────────────────────
 #
 # `referral_invite`, `new_students` and `weekly_digest` are NOT new — they are live on production
-# today as hardcoded emails, with the cron jobs that drive them enabled. So each keeps its
-# pre-S3 sender as the path taken while its template is dark.
+# today as hardcoded emails, with the cron jobs that drive them enabled. Each therefore keeps its
+# pre-S3 sender for exactly as long as the PLATFORM gate is shut.
 #
-# **This is the whole reason S3 can ship dark without a regression.** Routing a LIVE email
-# through a switched-off template would silently stop it: sponsors would simply stop being told
-# about new students, and nothing would look broken. The template takes over the moment an
-# org_admin switches it on, and not one moment before.
+# **The fallback keys on `comms_enabled()`, NOT on `is_enabled(kind)`, and the difference is the
+# whole safety property.** Before the flip we are in the pre-S3 world: templates are inert and
+# these three send as they always have. After the flip the templates govern completely — so an
+# org_admin switching one OFF genuinely stops it. Keying the fallback on the template's own
+# switch would have made "off" unenforceable on precisely the three emails that already reach
+# people: the owner would tick a switch off, the legacy sender would carry on regardless, and the
+# screen would say one thing while the system did another.
+#
+# These three are SEEDED ON (owner, 2026-07-28: *"many are already active. Keep them activated.
+# Only the new ones can be inactive and subject to review."*), so flipping the platform gate
+# changes nothing about what sponsors receive — it only moves them onto editable wording.
 
 def send_referral_invite(referral, *, inviter_name='', invite_link='', lang='en'):
     """The invitation to a prospective sponsor.
 
     Goes to somebody with no account, so the log row carries the INVITER as its sponsor and the
-    invitee's address as the recipient. Falls back to the live hardcoded invite while dark.
+    invitee's address as the recipient. Uses the pre-S3 hardcoded invite until the PLATFORM gate
+    opens; after that the template governs, switch and all.
     """
-    if not sponsor_comms.is_enabled('referral_invite'):
+    if not sponsor_comms.comms_enabled():
         from .emails import send_sponsor_referral_invite
         return send_sponsor_referral_invite(
             to_email=referral.invitee_email,
@@ -161,12 +169,13 @@ def send_referral_invite(referral, *, inviter_name='', invite_link='', lang='en'
 def send_student_alert(sponsor, cards, *, weekly=False, lang='en'):
     """The new-student alert (`new_students`) or the Monday digest (`weekly_digest`).
 
-    Falls back to the live hardcoded email while the template is dark — see the note above.
+    Uses the pre-S3 hardcoded email until the PLATFORM gate opens — see the note above. After
+    that the template governs, so switching it off really does stop it.
     """
     if not cards:
         return False
     kind = 'weekly_digest' if weekly else 'new_students'
-    if not sponsor_comms.is_enabled(kind):
+    if not sponsor_comms.comms_enabled():
         from .emails import send_sponsor_digest_email, send_sponsor_new_student_email
         sender = send_sponsor_digest_email if weekly else send_sponsor_new_student_email
         return bool(sender(sponsor.email, cards, name=sponsor.name))

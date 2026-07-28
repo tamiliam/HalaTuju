@@ -1,8 +1,18 @@
 """Seed the nine sponsor-email templates (S3, 2026-07-28).
 
 Idempotent: creates a missing kind, leaves an existing row's wording ALONE (an org_admin may have
-edited it) unless `--reset` is passed. **Never flips `enabled`** — that is the owner's switch, and
-every seed arrives OFF.
+edited it) unless `--reset` is passed. **Never flips `enabled` on a row that already exists** —
+that is the owner's switch.
+
+WHICH ONES ARRIVE ON (owner, 2026-07-28: *"many are already active. Keep them activated. Only the
+new ones can be inactive and subject to review."*):
+
+  * The THREE already reaching sponsors today — `new_students`, `weekly_digest`,
+    `referral_invite` — are seeded **ON**. They are live right now through their pre-S3 senders,
+    so seeding them off would mean the platform flip silently stopped three working emails. On,
+    they simply move onto editable wording and nobody notices.
+  * The SIX new ones arrive **OFF**, for the owner to read and approve first. Nobody has ever
+    received them, so there is nothing to preserve and everything to review.
 
 THE VOICE, and why it is enforced rather than suggested (`sponsor_comms.banned_phrases` refuses a
 save that breaks it, and a test asserts these seeds pass):
@@ -20,6 +30,10 @@ from django.core.management.base import BaseCommand
 
 from apps.scholarship import sponsor_comms
 from apps.scholarship.models import SponsorEmailTemplate
+
+#: Seeded ON because they are ALREADY sending. Kept in step with `sponsor_notify`'s adopted
+#: sends and with `lib/sponsorComms.ts` ALREADY_LIVE — a test pins the three lists together.
+SEEDED_ON = ('new_students', 'weekly_digest', 'referral_invite')
 
 SEEDS = {
     'welcome': {
@@ -209,11 +223,13 @@ class Command(BaseCommand):
 
             row = SponsorEmailTemplate.objects.filter(kind=kind).first()
             if row is None:
+                on = kind in SEEDED_ON
                 SponsorEmailTemplate.objects.create(
-                    kind=kind, enabled=False,          # never on by seeding — the owner decides
+                    kind=kind, enabled=on,
                     subject=seed['subject'], body=seed['body'])
                 created += 1
-                self.stdout.write(f'  created {kind} (off)')
+                self.stdout.write(
+                    f'  created {kind} ({"ON — already sending today" if on else "off, for review"})')
             elif reset:
                 row.subject, row.body = seed['subject'], seed['body']
                 row.save(update_fields=['subject', 'body', 'updated_at'])
@@ -223,7 +239,8 @@ class Command(BaseCommand):
             else:
                 skipped += 1
 
+        live = SponsorEmailTemplate.objects.filter(enabled=True).count()
         self.stdout.write(self.style.SUCCESS(
             f'{created} created, {updated} reset, {skipped} left alone. '
-            f'Every template is OFF unless somebody switched it on; '
-            f'SPONSOR_COMMS_ENABLED is {"set" if sponsor_comms.comms_enabled() else "unset"}.'))
+            f'{live} switched on (the ones already sending); the new ones are off for review. '
+            f'SPONSOR_COMMS_ENABLED is {"SET — templates govern from now on" if sponsor_comms.comms_enabled() else "unset, so the pre-S3 senders are still doing the work"}.'))

@@ -6,7 +6,7 @@ import {
   type SponsorEmailTemplate, type SponsorEmailsPayload,
 } from '@/lib/admin-api'
 import { formatDate } from '@/lib/formatDate'
-import { ALREADY_LIVE, errorKey, ordered, sendsToday, switchedOn } from '@/lib/sponsorComms'
+import { errorKey, ordered, sendingDespiteSwitch, sendsToday, switchedOn } from '@/lib/sponsorComms'
 import TemplateEditor from '@/components/emails/TemplateEditor'
 import { Toggle } from '@/components/sources/shared'
 
@@ -105,6 +105,7 @@ export default function SponsorEmailsCard({ token, t }: {
         {rows.map((tpl) => {
           const open = openKind === tpl.kind
           const live = sendsToday(tpl.kind, tpl.enabled, data.comms_enabled)
+          const despite = sendingDespiteSwitch(tpl.kind, tpl.enabled, data.comms_enabled)
           return (
             <li key={tpl.kind} className={open ? 'bg-blue-50/40' : undefined}>
               <div className="grid grid-cols-[44px_minmax(0,1fr)] sm:grid-cols-[44px_minmax(0,1fr)_auto] gap-x-3.5 items-start px-4 sm:px-5 py-3.5">
@@ -119,8 +120,9 @@ export default function SponsorEmailsCard({ token, t }: {
                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 whitespace-nowrap">
                       {t(`admin.sponsors.emails.when.${tpl.kind}`)}
                     </span>
-                    {/* An "off" switch on an email that is demonstrably going out would be a lie. */}
-                    {ALREADY_LIVE.includes(tpl.kind) && !tpl.enabled && (
+                    {/* An "off" switch on an email that is demonstrably going out would be a lie.
+                        Once the platform gate opens the switch tells the truth by itself. */}
+                    {despite && (
                       <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700 whitespace-nowrap">
                         {t('admin.sponsors.emails.alreadyLive')}
                       </span>

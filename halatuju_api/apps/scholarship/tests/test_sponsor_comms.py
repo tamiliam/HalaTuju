@@ -17,7 +17,9 @@ rather than merely fail:
    so an editable template cannot become a new route around the anonymity the pool serializers
    enforce.
 """
+import re
 from decimal import Decimal
+from pathlib import Path
 from unittest import mock
 
 import jwt
@@ -29,7 +31,7 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.scholarship import sponsor_comms, sponsor_notify
 from apps.scholarship import sponsorship as svc
-from apps.scholarship.management.commands.seed_sponsor_email_templates import SEEDS
+from apps.scholarship.management.commands.seed_sponsor_email_templates import SEEDED_ON, SEEDS
 from apps.scholarship.models import (
     Donation, Programme, Sponsor, SponsorEmailLog, SponsorEmailTemplate,
     SponsorProgrammeMembership, SponsorReferral,
@@ -37,6 +39,23 @@ from apps.scholarship.models import (
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 EMAILS = '/api/v1/admin/scholarship/sponsor-emails/'
+
+
+def _frontend_already_live():
+    """`ALREADY_LIVE` as the FRONTEND declares it, read off disk.
+
+    The two lists must agree — the backend decides which templates ship switched on, the panel
+    decides which rows to label as sending anyway — and a copy of the list in this file would
+    drift silently, which is the failure mode a keep-in-sync pair exists to prevent.
+    """
+    src = (Path(__file__).resolve().parents[3].parent
+           / 'halatuju-web' / 'src' / 'lib' / 'sponsorComms.ts')
+    body = re.search(r'ALREADY_LIVE:\s*readonly string\[\]\s*=\s*\[(.*?)\]',
+                     src.read_text(encoding='utf-8'), re.S).group(1)
+    return {m.group(1) for m in re.finditer(r"'([a-z_]+)'", body)}
+
+
+ALREADY_SENDING = _frontend_already_live()
 
 
 def _token(uid):
@@ -156,7 +175,7 @@ class TestAdoptedEmailsKeepSendingWhileDark(CommsBase):
         legacy.assert_called_once()
 
     @override_settings(SPONSOR_COMMS_ENABLED=True)
-    def test_the_template_takes_over_once_it_is_switched_on(self):
+    def test_the_template_takes_over_once_the_platform_gate_opens(self):
         _template('referral_invite')
         referral = SponsorReferral.objects.create(
             inviter=self.sponsor, invitee_email='friend@example.com',
@@ -166,6 +185,35 @@ class TestAdoptedEmailsKeepSendingWhileDark(CommsBase):
         legacy.assert_not_called()
         self.assertEqual(len(mail.outbox), 1)
         self.assertTrue(SponsorEmailLog.objects.get().ok)
+
+    @override_settings(SPONSOR_COMMS_ENABLED=True)
+    def test_switching_an_ADOPTED_email_off_really_stops_it(self):
+        """The bug the owner's seeding decision exposed (2026-07-28).
+
+        These three now ship switched ON, so "off" stops meaning "not yet adopted" and starts
+        meaning "stop sending this". Had the fallback kept keying on the TEMPLATE's own switch
+        rather than the platform gate, ticking one off would have fallen straight back to the
+        hardcoded sender: the email would carry on, and the screen would say one thing while the
+        system did another.
+        """
+        _template('referral_invite', enabled=False)
+        referral = SponsorReferral.objects.create(
+            inviter=self.sponsor, invitee_email='friend@example.com',
+            invitee_name='Friend', code='abc123', status='invited')
+        with mock.patch('apps.scholarship.emails.send_sponsor_referral_invite') as legacy:
+            self.assertFalse(sponsor_notify.send_referral_invite(referral))
+        legacy.assert_not_called()
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(SponsorEmailLog.objects.get().note, 'disabled')
+
+    @override_settings(SPONSOR_COMMS_ENABLED=True)
+    def test_switching_an_adopted_ALERT_off_really_stops_it(self):
+        _template('weekly_digest', enabled=False)
+        cards = [{'ref': 'S-AAA111', 'course': 'Medicine', 'amount': '3000'}]
+        with mock.patch('apps.scholarship.emails.send_sponsor_digest_email') as legacy:
+            self.assertFalse(sponsor_notify.send_student_alert(self.sponsor, cards, weekly=True))
+        legacy.assert_not_called()
+        self.assertEqual(SponsorEmailLog.objects.get().note, 'disabled')
 
 
 # ── credit_confirmed: the one that must never fire early ──────────────────────
@@ -305,12 +353,31 @@ class TestTheSeeds(TestCase):
     def test_every_kind_has_a_placeholder_allowlist(self):
         self.assertEqual(set(sponsor_comms.PLACEHOLDERS), set(sponsor_comms.KINDS))
 
-    def test_seeding_is_idempotent_and_never_switches_anything_on(self):
+    def test_the_frontend_agrees_which_three_are_already_sending(self):
+        """A keep-in-sync pair, so the FE list is read off disk rather than copied. If these two
+        disagree the panel labels the wrong rows as sending — the exact contradiction the label
+        exists to prevent."""
+        self.assertEqual(set(SEEDED_ON), ALREADY_SENDING)
+
+    def test_the_already_sending_three_are_seeded_ON_and_the_six_new_ones_OFF(self):
+        """Owner, 2026-07-28: *"many are already active. Keep them activated. Only the new ones
+        can be inactive and subject to review."*
+
+        Seeding those three OFF would mean the platform flip silently stopped three working
+        emails. Nobody has ever received the other six, so there is nothing to preserve and
+        everything to review.
+        """
+        call_command('seed_sponsor_email_templates', verbosity=0)
+        on = set(SponsorEmailTemplate.objects.filter(enabled=True).values_list('kind', flat=True))
+        self.assertEqual(on, set(SEEDED_ON))
+        self.assertEqual(len(SEEDS) - len(on), 6)      # six new ones, all off
+
+    def test_seeding_is_idempotent_and_never_switches_an_existing_row(self):
         call_command('seed_sponsor_email_templates', verbosity=0)
         self.assertEqual(SponsorEmailTemplate.objects.count(), len(SEEDS))
-        self.assertEqual(SponsorEmailTemplate.objects.filter(enabled=True).count(), 0)
 
         tpl = SponsorEmailTemplate.objects.get(kind='welcome')
+        self.assertFalse(tpl.enabled)                  # a NEW kind arrives off, for review
         tpl.enabled, tpl.subject = True, 'Edited by an org admin'
         tpl.save()
 

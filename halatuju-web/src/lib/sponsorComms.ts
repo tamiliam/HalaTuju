@@ -39,16 +39,32 @@ export function ordered(templates: SponsorEmailTemplate[]): SponsorEmailTemplate
 }
 
 /**
- * Which kinds are LIVE today via their pre-S3 hardcoded sender, and so are already reaching
- * sponsors while their template is switched off.
+ * The three that reach sponsors TODAY through their pre-S3 hardcoded senders.
  *
- * The panel says so on those rows. Without it the screen would read "off" against an email that
- * is demonstrably going out, which is the kind of quiet contradiction this module exists to stop.
+ * They are seeded switched ON (owner, 2026-07-28), so normally their switch already tells the
+ * truth. This list exists for the window before that seeding runs, and for the case where someone
+ * switches one off while the platform gate is still shut — in both, the legacy sender is still
+ * doing the work and an unqualified "off" would be a lie about an email that is going out.
  */
 export const ALREADY_LIVE: readonly string[] = ['new_students', 'weekly_digest', 'referral_invite']
 
+/**
+ * Is this kind actually reaching sponsors right now?
+ *
+ * **Two different worlds, and the platform gate is the border.** While it is SHUT we are in the
+ * pre-S3 world: templates are inert and only the three legacy senders run, whatever their
+ * switches say. Once it is OPEN the templates govern completely — so `enabled` is the whole
+ * answer, and switching an adopted email off genuinely stops it.
+ */
 export function sendsToday(kind: string, enabled: boolean, commsEnabled: boolean): boolean {
-  return (commsEnabled && enabled) || ALREADY_LIVE.includes(kind)
+  return commsEnabled ? enabled : ALREADY_LIVE.includes(kind)
+}
+
+/** True when a row is sending DESPITE its own switch — the contradiction worth labelling. */
+export function sendingDespiteSwitch(
+  kind: string, enabled: boolean, commsEnabled: boolean,
+): boolean {
+  return !enabled && sendsToday(kind, enabled, commsEnabled)
 }
 
 /** How many templates are switched on — the panel's one-line summary. */

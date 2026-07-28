@@ -55,6 +55,10 @@ unbuilt half of the roadmap lives in the repo rather than a scratch file. S1/S1.
 7. **Extraction must not change behaviour:** `partner_comms.render` keeps its exact output while
    delegating to the shared seam — its existing tests are the regression guard, unmodified.
 
+**Seeding (owner, mid-sprint):** the three ALREADY-SENDING kinds ship switched **ON**; the six
+new ones ship OFF for review. That in turn fixes the fallback condition — it keys on the PLATFORM
+gate, not each template's switch, so "off" is enforceable on the adopted three.
+
 **Deferred within this sprint, deliberately:** the `{reason}` token on `rejected`/`suspended`.
 There is no reason field yet — that is S4 — so those two templates ship without it rather than
 referencing a placeholder the renderer cannot fill.

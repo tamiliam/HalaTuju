@@ -31,10 +31,13 @@ editable emails now close that, shipping **dark** behind two independent gates.
   template can carry an optional token (the invite's personal note) on its own line.
 
 ### Notes
-- **⚠ The three LIVE emails keep their old sender while dark.** `new_students`, `weekly_digest`
-  and `referral_invite` are sending on production today. Routing them through a switched-off
-  template would have silenced them with no error and no failing test — the panel would have shown
-  a tidy row of "off" switches, exactly as designed. See `docs/decisions.md`.
+- **⚠ The three ALREADY-SENDING emails are seeded switched ON** (owner: *"many are already
+  active. Keep them activated. Only the new ones can be inactive and subject to review."*), and
+  the legacy-sender fallback keys on the **platform gate**, not on each template's switch. Two
+  clean worlds: before the flip nothing a sponsor receives changes; after it the templates govern
+  completely, so switching an adopted email off genuinely stops it. Keying the fallback on the
+  switch — my first cut — would have made "off" unenforceable on precisely those three. The six
+  new kinds arrive off, for review. See `docs/decisions.md`.
 - **NINE kinds, not eleven.** `low_balance` and `annual_statement` are deferred: they edge into
   marketing, and sponsor consent is a bare version string with no stored wording behind it
   (TD-186), so there is no way to check what was agreed to.
@@ -43,7 +46,7 @@ editable emails now close that, shipping **dark** behind two independent gates.
   funds a student rather than acquiring one) and urgency copy.
 - **`credit_confirmed` fires on `confirmed` and nothing earlier**, guarded in both the caller and
   the sender.
-- **3658 scholarship pytest · 954 jest** (64 suites); `makemigrations --check` clean.
+- **3662 scholarship pytest · 956 jest** (64 suites); `makemigrations --check` clean.
 
 
 ## Data operations — 2026-07-28 (post-deploy, no code change)

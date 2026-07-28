@@ -49,20 +49,30 @@ rather than the wording-then-send split.
 
 ## What Went Wrong
 
-**1. The sprint's central risk was one I nearly designed straight into it.**
+**1. The sprint's central risk was one I nearly designed straight into it — and my fix was
+still half wrong until the owner corrected the seeding.**
 *What happened:* the plan was "route the three existing hardcoded emails through the new template
-system". Both gates default to off. Had I built exactly that, the first deploy would have silently
-stopped three emails that are live on production — no error, no failing test, and a panel showing
-a tidy row of switches all correctly reading "off".
-*Why it happened:* a dark launch is a safe pattern for NEW behaviour, and I was applying it by
-analogy to the partner sprint, where every one of the five emails was new. The word "adopt" in the
-roadmap hid a migration inside what read like a build.
-*What prevents recurrence:* each adopted path keeps its pre-S3 sender behind
-`if not is_enabled(kind)`, with a test per path asserting the LEGACY sender still fires while
-dark, and the panel marks those rows "Sending today" so an unlit switch never implies silence.
-Lesson recorded in the general form: **when a sprint moves an EXISTING feature behind a flag, list
-what is live first and treat each as a migration with a fallback.** The tell is a description
-containing "route the existing X through the new Y".
+system". Both gates default to off, so the first deploy would have silently stopped three emails
+that are live on production — no error, no failing test, and a panel showing a tidy row of
+switches all correctly reading "off". I caught that and added a fallback to the pre-S3 senders.
+But I keyed the fallback on `is_enabled(kind)` — platform gate AND switch — and seeded all nine
+off. The owner then said to keep the already-active ones active, which exposed the rest of the
+problem: with those three shipping ON, "off" stops meaning "not yet adopted" and starts meaning
+"stop sending this", and a fallback keyed on the switch would have made that **unenforceable**.
+Ticking `weekly_digest` off would have fallen straight back to the hardcoded sender: the email
+carries on, the screen says otherwise.
+*Why it happened:* a dark launch is a safe pattern for NEW behaviour, and I applied it by analogy
+to the partner sprint, where all five emails were new. The word "adopt" hid a migration inside
+what read like a build. Then, having found the fallback, I picked the gate condition that looked
+symmetrical with `is_enabled` elsewhere instead of asking what "off" would come to MEAN once these
+three were switched on — a question only the seeding decision surfaced.
+*What prevents recurrence:* the fallback keys on `comms_enabled()` alone, giving two clean worlds
+(pre-flip: nothing changes; post-flip: templates govern completely), with tests asserting both
+that the legacy sender still fires while dark AND that switching an adopted email off after the
+flip really stops it. Lesson recorded in the general form: **when a sprint moves an EXISTING
+feature behind a flag, list what is live first, treat each as a migration with a fallback, and
+then ask what the flag's "off" position will MEAN to the person who owns it** — a fallback that
+silently overrides "off" is worse than no fallback, because it makes the control a lie.
 
 **2. Generalising the editor broke an i18n guard, for a reason worth keeping.**
 *What happened:* passing `prefix="admin.sources.emails"` to the shared editor failed the
@@ -92,8 +102,9 @@ All three in `docs/decisions.md`:
 1. **Nine kinds, not eleven** — `low_balance` and `annual_statement` edge into marketing, and
    sponsor consent is a bare version string with no stored wording behind it (TD-186), so what was
    agreed to cannot be checked.
-2. **A live email routed through a dark template keeps its old sender** — the failure mode that
-   looks like success.
+2. **The three already-sending emails ship switched ON, and the fallback keys on the PLATFORM
+   gate** — not on each template's switch, so "off" is enforceable on precisely the emails that
+   already reach people.
 3. **The voice guard refuses a tax-relief claim** — no LHDN s44(6) approval exists; it is the one
    sentence on this surface that could cost a donor money rather than merely read badly.
 
@@ -108,8 +119,8 @@ the pre-template email truncated at five in silence.
 
 | | Before | After |
 |---|---|---|
-| scholarship pytest | 3622 | **3658** |
-| jest | 918 | **954** |
+| scholarship pytest | 3622 | **3662** |
+| jest | 918 | **956** |
 | jest suites | 62 | 64 |
 | migrations | — | **0133** (not applied) |
 
@@ -126,9 +137,11 @@ i18n: +59 leaves × 3 locales.
 1. **▶ AT DEPLOY: apply migration `0133` MIGRATE-FIRST** (two tables, RLS + one `service_role`
    policy each), then push. **THEN run `seed_sponsor_email_templates` once** — all nine arrive OFF
    and `SPONSOR_COMMS_ENABLED` is unset, so nothing sends.
-2. **▶ OWNER, in order, before any sponsor hears anything:** read the nine templates in the panel
-   and edit the wording; switch on the ones wanted; then set `SPONSOR_COMMS_ENABLED=1` via
-   `--update-env-vars`. Nothing sends until both are done.
+2. **▶ OWNER:** the three already-sending emails arrive switched ON, so the flip is safe — read
+   their wording first if you want to change it, since the flip moves them onto these templates.
+   The six new ones arrive OFF: read each, edit the wording, switch on the ones you want. Then
+   `SPONSOR_COMMS_ENABLED=1` via `--update-env-vars`. After the flip, switching an email off
+   really does stop it.
 3. **ms/ta first drafts** for the ~59 new `admin.sponsors.emails.*` leaves — TD-183, ideally the
    same sitting as the partner drafts (TD-180). The nine `error.*` strings matter most.
 4. **TD-185** (`creditChain` should key on status, not the timestamp) folds naturally into S4.

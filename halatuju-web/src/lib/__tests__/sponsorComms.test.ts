@@ -1,5 +1,5 @@
 import {
-  ALREADY_LIVE, errorKey, ordered, sendsToday, switchedOn,
+  ALREADY_LIVE, errorKey, ordered, sendingDespiteSwitch, sendsToday, switchedOn,
 } from '../sponsorComms'
 import type { SponsorEmailTemplate } from '../admin-api'
 
@@ -24,19 +24,34 @@ describe('ordered', () => {
 })
 
 describe('sendsToday', () => {
-  it('is true for the three that are ALREADY live through their pre-S3 sender', () => {
-    // These reach sponsors right now with their template switched off. Showing them as simply
-    // "off" would be a lie about an email that is demonstrably going out.
+  it('reads the pre-S3 world while the platform gate is shut', () => {
+    // Templates are inert; only the three legacy senders run, whatever the switches say.
     for (const kind of ALREADY_LIVE) {
       expect(sendsToday(kind, false, false)).toBe(true)
+      expect(sendsToday(kind, true, false)).toBe(true)
     }
+    expect(sendsToday('welcome', true, false)).toBe(false)   // a new kind cannot send yet
   })
 
-  it('is false for a new kind until BOTH gates are open', () => {
-    expect(sendsToday('welcome', false, false)).toBe(false)
-    expect(sendsToday('welcome', true, false)).toBe(false)   // platform gate shut
-    expect(sendsToday('welcome', false, true)).toBe(false)   // template switched off
+  it('hands over completely once the platform gate opens', () => {
+    // This is the half that matters after the owner's seeding decision: the adopted three ship
+    // switched ON, so "off" now means STOP — and it has to actually stop.
+    expect(sendsToday('weekly_digest', true, true)).toBe(true)
+    expect(sendsToday('weekly_digest', false, true)).toBe(false)
     expect(sendsToday('welcome', true, true)).toBe(true)
+    expect(sendsToday('welcome', false, true)).toBe(false)
+  })
+})
+
+describe('sendingDespiteSwitch', () => {
+  it('flags a row that is going out even though its switch reads off', () => {
+    expect(sendingDespiteSwitch('weekly_digest', false, false)).toBe(true)
+  })
+
+  it('says nothing once the switch tells the truth by itself', () => {
+    expect(sendingDespiteSwitch('weekly_digest', true, false)).toBe(false)   // on and sending
+    expect(sendingDespiteSwitch('weekly_digest', false, true)).toBe(false)   // off and stopped
+    expect(sendingDespiteSwitch('welcome', false, false)).toBe(false)        // never sent
   })
 })
 
