@@ -1760,6 +1760,40 @@ funds are lawfully sourced; no attempt to identify or contact a student outside 
 of the relationship for recruitment, proselytising or publicity; committed amounts are honoured. Each
 of these is a suspension ground, and none is written down.
 
+**⚠ CORRECTION, 2026-07-28, same day — THE CLAIM ABOVE THAT NO SPONSOR UNDERTAKINGS EXIST IS WRONG.**
+I searched the i18n copy surface and the Python, found nothing, and wrote "there are none". I never
+queried `contract_clauses`. **Donor obligations ARE drafted, and they are lawyer-shaped:**
+`contract_templates` id **9**, *"2026 BPB Student Agreement Final 240726"* — 94 clauses, 11
+quiz-flagged, status **`draft`** (0 active). It carries a `Donor Obligations` section: provide the
+bursary solely for educational expenses (cl. 14, quizzed); make payments while the student stays
+eligible and **not unreasonably withhold** them (cl. 39, quizzed); keep the student's information
+confidential (cl. 71, quizzed); process personal data under the PDPA 2010 having provided a Personal
+Data Notice (cl. 73/78); may suspend on suspected fraud or pending verification, **deferred not
+cancelled** (cl. 50–53); may terminate on an Event of Default with repayment limited to funds
+obtained by fraud or misapplied (cl. 65/68); may publish photo/course/achievements **but not the
+name** in group profiles, individual naming needing separate withdrawable opt-in (cl. 79–81).
+*(This is the PF-1 lesson failed again: a schema tells you what CAN exist, never what DOES — any
+sentence of the form "there is no X" is a query, and I asserted it from a grep.)*
+
+**But the row's CONCLUSION survives, for a different reason.** Those clauses bind **one configured
+counterparty**, not each registered sponsor — `ContractTemplate.counterparty_{name,title,nric,
+address}`, rendered as the Foundation signatory / `{{donor_name}}`. Clause 41 states it plainly:
+*"the Donor presently enters into this Agreement in his/her personal capacity pending the
+incorporation of a company ('Successor Company')"*. **So the Donor of record on every bursary is the
+owner personally, whoever funded the wallet** — sponsors pay in; the owner is the student's
+counterparty. And the 11 quiz checkpoints are served to the **STUDENT** at `/scholarship/award`
+before signing. **Nothing anywhere quizzes a sponsor.**
+
+**Therefore the gap is narrower and sharper than first written:** it is not that donor terms are
+unwritten — it is that **no undertaking binds the PERSON a suspension would be served on**. Suspend
+Chong Lee Min and clause 61 cannot be cited at her: she never signed it and is not its Donor. The
+missing artefact is a **sponsor-side undertaking accepted at registration**, mirroring the donor
+clauses that already exist, which is a much smaller drafting job than starting from nothing — cl. 14,
+39, 71 and 79–81 are close to reusable. **Whether a comprehension quiz should gate it is the owner's
+open question** (TD-186 Q3) and the clause+quiz authoring surface to manage one already exists in the
+contract module (`ContractClause.is_quiz_candidate` + `QuizEditor`), so this would not be a third copy
+of the idea.
+
 **⚠ BLOCKER, and it is not engineering:** a set of terms needs a COUNTERPARTY, and there is no legal
 entity to be one — HalaTuju is org-homeless and the same absence already blocks the DPA. So this
 cannot be "written up next sprint"; the entity question gates it.
