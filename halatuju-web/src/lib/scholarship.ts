@@ -683,6 +683,42 @@ export function declarationNameMismatch(form: ApplyFormState): boolean {
 export const APPLY_STASH_KEY = 'halatuju_apply_stash'
 export const APPLY_RETURN_KEY = 'halatuju_apply_return'
 
+/**
+ * The programme an organisation's own apply link names (PF-1 P2).
+ *
+ * `/scholarship/apply?p=<programme-code>` — a PROGRAMME code, never a cohort code: a cohort is
+ * year-specific (`b40-2026`), so a link pinned to one would rot every intake, whereas a
+ * programme never lapses. The backend refuses to guess when more than one round is open, so
+ * this value is what tells it which organisation the student is applying to.
+ *
+ * Stored in sessionStorage because the apply flow can detour through onboarding to edit
+ * results, and the student returns via a bare `/scholarship/apply` with no query string. The
+ * form is already stashed across that detour; the programme has to survive it too, or a student
+ * who edits their grades silently loses the organisation they came in for.
+ */
+export const APPLY_PROGRAMME_KEY = 'halatuju_apply_programme'
+
+/** Read the code from a URL, remember it, and return the one in force (URL wins over stored). */
+export function rememberApplyProgramme(
+  search: string | null | undefined,
+  storage?: StorageLike,
+): string {
+  const s = storage ?? safeSession()
+  const fromUrl = (new URLSearchParams(search ?? '').get('p') ?? '').trim()
+  if (fromUrl) {
+    s?.setItem(APPLY_PROGRAMME_KEY, fromUrl)
+    return fromUrl
+  }
+  return (s?.getItem(APPLY_PROGRAMME_KEY) ?? '').trim()
+}
+
+/** Forget it once the application is submitted — a later visit is a fresh decision. */
+export function clearApplyProgramme(storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  s?.removeItem(APPLY_PROGRAMME_KEY)
+}
+
+
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 /** sessionStorage if available (browser), else null (SSR / node tests without injection). */

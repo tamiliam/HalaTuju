@@ -47,6 +47,8 @@ import {
   formatMoney2dp,
   nricChanged,
   stashApplyForm,
+  rememberApplyProgramme,
+  clearApplyProgramme,
   popApplyStash,
   clearApplyReturn,
   REFERRING_ORG_OPTIONS,
@@ -133,6 +135,12 @@ export default function ScholarshipApplyPage() {
   // in-progress edits and land back on the Results tab. Runs once on mount,
   // before the profile prefill below (which then skips, seeing populatedRef).
   useEffect(() => {
+    // PF-1: capture the organisation's apply link (`?p=<programme>`) the moment the student
+    // ARRIVES, not at submit. The My Results detour returns them to a bare /scholarship/apply
+    // with no query string, so reading it only at submit would silently lose the organisation
+    // they came in for — and the backend would then have nothing to route on.
+    rememberApplyProgramme(window.location.search)
+
     const stashed = popApplyStash()
     if (stashed) {
       setForm(stashed)
@@ -357,7 +365,15 @@ export default function ScholarshipApplyPage() {
 
     try {
       const payload = buildApplicationPayload(form) as unknown as Record<string, unknown>
+      // PF-1: which organisation's programme this application is FOR. Absent is fine while one
+      // programme runs; with two open the backend refuses rather than guessing, so an application
+      // can never be filed under the wrong foundation.
+      const programme = rememberApplyProgramme(
+        typeof window === 'undefined' ? '' : window.location.search,
+      )
+      if (programme) payload.programme_code = programme
       await submitScholarshipApplication(payload, locale, { token })
+      clearApplyProgramme()
       router.replace('/scholarship/application')
     } catch (err) {
       // If a field was rejected for length, name the exact question to shorten.

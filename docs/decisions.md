@@ -6174,6 +6174,73 @@ and PF-1 will also settle how a programme is identified in a request — which N
 then match rather than pre-empt.
 **Trade-offs:** the roadmap closes with a promise unbuilt, which is a real cost to anyone reading it
 later; mitigated by stating the trigger and a cheap tell for it rather than "revisit sometime".
-**Revisit if:** `PartnerOrganisation.objects.filter(is_active=True)` returns more than one row in
-production — or PF-1's design turns out to need the scopes endpoint anyway, in which case build it
-there and delete this entry.
+**Revisit if:** more than one organisation OWNS a cohort or programme — `SELECT
+count(DISTINCT owning_organisation_id) FROM scholarship_cohorts WHERE is_active` returns more than 1
+(it returns 1 today) — or PF-1's design turns out to need the scopes endpoint anyway, in which case
+build it there and delete this entry.
+**Correction, same day:** this entry first gave the trigger as "more than one active
+`PartnerOrganisation`", which was **already true when it was written** — production has 10, of which
+9 are REFERRAL organisations and only BrightPath owns anything. A trigger that has already fired is
+not a trigger. Checked against the database rather than inferred from the model.
+
+## `resolve_open_cohort` refuses rather than guesses, across ALL open rounds — PF-1, 2026-07-28
+**Decision:** With more than one active+open cohort and no code naming which, the resolver raises
+`AmbiguousOpenCohort`. Ambiguity is counted across every open round, NOT per organisation.
+**Alternatives considered:** (a) keep `.first()` and add an organisation filter; (b) return None and
+let the caller show "no open round"; (c) count ambiguity only ACROSS organisations, letting two
+intakes of the same organisation resolve by newest year.
+**Rationale:** (a) needs an organisation, which a student request does not have — that is the whole
+problem. (b) tells the student something false: rounds ARE open, we just cannot tell which is
+theirs, and "no open round" would send them away rather than to support. (c) is the same defect one
+layer down: BrightPath running its 2026 and 2027 intakes open at once is equally unanswerable, and
+a rule that is correct only at one level of a hierarchy will be wrong at the next. One rule, one
+layer.
+**Trade-offs:** an operator who deliberately opens two rounds gets a hard failure on the apply path
+rather than a default. That is the intent — the failure is loud, logged at ERROR with both candidate
+codes, and fixable in one click.
+**Revisit if:** a legitimate reason appears for two rounds of the same programme to be open at once
+(e.g. a rolling intake), which would need a rule for choosing between them rather than a refusal.
+
+## The apply link carries the PROGRAMME, not the cohort — PF-1, 2026-07-28
+**Decision:** `/scholarship/apply?p=<Programme.code>`. The backend narrows the open-cohort query to
+that programme.
+**Alternatives considered:** (a) the cohort code (`b40-2026`), which the serializer already accepted
+end-to-end; (b) the organisation code; (c) an opaque per-organisation token.
+**Rationale:** (a) is year-specific, so every printed link, email and poster would rot at each
+intake — and the Programme model exists precisely because that level never lapses. (b) is one level
+too coarse: an organisation may run two programmes (BrightPath flagship and Sabah were the driving
+prospects). (c) buys nothing — the code is not a secret, and an opaque token is one more thing to
+mint and revoke.
+**Trade-offs:** the code appears in a URL a student can edit. Harmless: naming another organisation's
+open programme applies to that programme, which is what the link means; there is no privilege in it.
+**Revisit if:** programmes ever need to be un-guessable, at which point the link needs a token and
+the query parameter becomes a lookup rather than the identifier.
+
+## `programme_code` is OPTIONAL, deliberately against the standing "make it required" lesson — PF-1, 2026-07-28
+**Decision:** The new scoping argument on `resolve_open_cohort` is optional, and the guard against
+forgetting it is the refusal, not the signature.
+**Alternatives considered:** making it required with no default, as `sponsor_balance(programme=...)`
+did in Platform P2a — the lesson this repo already carries.
+**Rationale:** that lesson is about a parameter whose ABSENCE SILENTLY CHANGES AN ANSWER — a pooled
+balance that still looks plausible. Here absence no longer produces an answer at all: P1 made it
+raise. The failure mode the lesson exists to prevent is already prevented by a louder mechanism.
+Requiring it would also break the bare `/apply` link, which is correct and sufficient while one
+programme runs, and would force every caller and test to pass a value that means nothing today.
+**Trade-offs:** a future caller can still omit it without a type error. They will get an exception
+the moment a second round opens, which is the same day it would have mattered.
+**Revisit if:** the resolver ever gains a path that returns a cohort without the ambiguity check —
+at that point the signature would become the only guard, and it should be required.
+
+## An unknown programme reads CLOSED, never 404 — PF-1, 2026-07-28
+**Decision:** `GET /api/v1/scholarship/intake/?programme=<code>` answers `{open: false}` for a code
+that does not exist or whose programme is inactive.
+**Alternatives considered:** 404 for an unknown code, which is the more conventional REST answer and
+better for debugging a mistyped link.
+**Rationale:** the endpoint is PUBLIC and unauthenticated. A 404-vs-200 difference is an oracle:
+anyone could enumerate which organisations run programmes on this platform, and tenant names are
+commercially sensitive before a partnership is announced. The same reasoning that keeps the org
+fence returning 404 rather than 403 on the admin side, pointed the other way.
+**Trade-offs:** a mistyped apply link reads as "applications are closed" rather than "no such
+programme", which is confusing for whoever printed the link. Acceptable: the link is generated once
+by us, not typed by students.
+**Revisit if:** an authenticated variant is ever needed for the console, which can 404 freely.

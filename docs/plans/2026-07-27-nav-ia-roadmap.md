@@ -148,8 +148,18 @@ programme is identified in a request, which N3a's endpoint should then match rat
 design, and the switcher must not become an ambient auth context — no global header, no cookie, no
 middleware rewrite. For super it persists a client-side *display* preference only.
 
-**Cheap tell that the trigger has fired:** `PartnerOrganisation.objects.filter(is_active=True)`
-returns more than one row in production.
+**Cheap tell that the trigger has fired — and NOT the obvious one.** Checked against production
+2026-07-28: there are already **10 active `PartnerOrganisation` rows**, so "more than one
+organisation" is true today and means nothing. Nine of them are **referral** organisations (schools,
+NGOs — Sri Murugan Centre, Tara Foundation, …) that send students; exactly one, **BrightPath Bursary
+(id 11)**, OWNS anything. The table holds both kinds and does not distinguish them by a flag.
+
+The real tell is more than one organisation **owning** something:
+
+```sql
+SELECT count(DISTINCT owning_organisation_id) FROM scholarship_cohorts WHERE is_active;
+-- 1 today
+```
 
 ### N3a spec — what is left of it
 

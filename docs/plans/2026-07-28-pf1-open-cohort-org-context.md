@@ -1,4 +1,21 @@
-# PF-1 — a new application is routed to a cohort chosen platform-wide
+# PF-1 — a new application is routed to a cohort chosen platform-wide — ✅ FIXED 2026-07-28
+
+> **DONE.** `4008d362` (the refusal) + `f7f652ef` (the apply link). Retro
+> `docs/retrospective-2026-07-28-pf1-open-cohort.md`; decisions ×4; lessons ×4; **no migration**.
+> `pytest` 4947 (full scope) · `jest` 997 · `next build` clean.
+>
+> The brief held up under execution, with two corrections worth keeping visible:
+> - **It said the bug was dormant "because one organisation exists".** Production has **ten** — nine
+>   referral organisations and one owner. Dormancy was real, the reason was not.
+> - **§3 said make the scoping argument REQUIRED.** It shipped OPTIONAL, reasoned in the docstring
+>   and in `decisions.md`: that lesson guards a parameter whose absence silently changes an answer,
+>   and P1 had already replaced silence with a raise.
+>
+> §2's question was answered by the owner: **per-organisation apply link.** One thing it named as a
+> fallback is NOT built — the picker for a bare `/apply` — because it needs a public list of every
+> tenant's programme names and that disclosure was never agreed. **TD-189**, with its trigger.
+>
+> Kept in full below as the record of what was found and why each call was made.
 
 **Written 2026-07-28 as a handoff brief for another agent; the owner then reassigned it to the
 author** — *"On second thought, I think you should implement PF-1."* Kept in handoff form on

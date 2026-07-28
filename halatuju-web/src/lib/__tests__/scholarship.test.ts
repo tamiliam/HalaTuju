@@ -51,6 +51,9 @@ import {
   showsActionCentre,
   isFundedStatus,
   type ApplyFormState,
+  APPLY_PROGRAMME_KEY,
+  rememberApplyProgramme,
+  clearApplyProgramme,
 } from '@/lib/scholarship'
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
 import { collegesForTrack } from '@/data/matric-colleges'
@@ -1279,5 +1282,59 @@ describe('showsActionCentre / isFundedStatus', () => {
       expect(showsActionCentre(s)).toBe(false)
     }
     expect(isFundedStatus('shortlisted')).toBe(false)
+  })
+})
+
+// ── PF-1 P2: the per-organisation apply link ─────────────────────────────────
+//
+// `?p=<programme-code>` is what tells the backend which organisation an application is for.
+// The failure it prevents is silent (wrong foundation, wrong money), so the thing worth
+// pinning is that the code SURVIVES the My Results → onboarding detour, which returns the
+// student to a bare /scholarship/apply with no query string.
+describe('rememberApplyProgramme', () => {
+  const store = () => {
+    const m = new Map<string, string>()
+    return {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => { m.set(k, v) },
+      removeItem: (k: string) => { m.delete(k) },
+    }
+  }
+
+  it('reads the code from the URL and remembers it', () => {
+    const s = store()
+    expect(rememberApplyProgramme('?p=brightpath-flagship', s)).toBe('brightpath-flagship')
+    expect(s.getItem(APPLY_PROGRAMME_KEY)).toBe('brightpath-flagship')
+  })
+
+  it('survives the detour — a later bare visit still returns the code', () => {
+    const s = store()
+    rememberApplyProgramme('?p=brightpath-flagship', s)
+    expect(rememberApplyProgramme('', s)).toBe('brightpath-flagship')
+    expect(rememberApplyProgramme(null, s)).toBe('brightpath-flagship')
+  })
+
+  it('lets a fresh link override a remembered one', () => {
+    const s = store()
+    rememberApplyProgramme('?p=old-programme', s)
+    expect(rememberApplyProgramme('?p=new-programme', s)).toBe('new-programme')
+  })
+
+  it('returns empty when no link ever named a programme', () => {
+    expect(rememberApplyProgramme('', store())).toBe('')
+    expect(rememberApplyProgramme('?other=1', store())).toBe('')
+  })
+
+  it('ignores a blank or whitespace-only code rather than storing it', () => {
+    const s = store()
+    expect(rememberApplyProgramme('?p=%20%20', s)).toBe('')
+    expect(s.getItem(APPLY_PROGRAMME_KEY)).toBeNull()
+  })
+
+  it('forgets it on submit — a later visit is a fresh decision', () => {
+    const s = store()
+    rememberApplyProgramme('?p=brightpath-flagship', s)
+    clearApplyProgramme(s)
+    expect(rememberApplyProgramme('', s)).toBe('')
   })
 })

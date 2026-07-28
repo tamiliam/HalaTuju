@@ -397,6 +397,15 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
         required=False, allow_blank=True, write_only=True,
         help_text="Optional; defaults to the active open cohort",
     )
+    programme_code = serializers.CharField(
+        required=False, allow_blank=True, write_only=True,
+        help_text=(
+            "Optional; the programme this application is FOR, from the organisation's own apply "
+            "link (PF-1). Programme rather than cohort because a cohort code is year-specific "
+            "and would rot each intake. Absent + more than one round open = refused, never "
+            "guessed."
+        ),
+    )
     household_income = serializers.IntegerField(
         required=False, allow_null=True, min_value=0, write_only=True,
     )
@@ -427,7 +436,7 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScholarshipApplication
         fields = [
-            'cohort_code',
+            'cohort_code', 'programme_code',
             'household_income', 'household_size', 'receives_str', 'receives_jkm',
             # About Me + My Family profile fields (write-only; synced to profile)
             'name', 'school', 'preferred_state', 'contact_phone',

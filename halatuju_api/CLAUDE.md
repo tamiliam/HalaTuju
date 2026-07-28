@@ -564,7 +564,36 @@ decisions ×3; lessons ×2. **⚠ MIGRATION `0133` — APPLY MIGRATE-FIRST (two 
 
 **🚨 READ FIRST — PF-1 NOW OUTRANKS EVERYTHING QUEUED BELOW.** The owner confirmed 2026-07-28 that
 
-**▶ NEXT SPRINT IS PF-1, AND THE BRIEF IS ALREADY WRITTEN:**
+**✅ PF-1 FIXED 2026-07-28** — `4008d362` (the refusal) + `f7f652ef` (the apply link). Retro
+`docs/retrospective-2026-07-28-pf1-open-cohort.md`; decisions ×4; lessons ×4. **NO migration.**
+`pytest` **4947** (scholarship+courses+reports — full scope) · `jest` **997** · build clean.
+- `resolve_open_cohort()` **raises `AmbiguousOpenCohort`** instead of `.first()`-ing an unscoped
+  set. **BOTH platform-wide reads closed** — `IntakeStatusView` ran its own copy, so fixing only
+  the apply path would have moved the bug. Apply returns `409 programme_required`, logged ERROR.
+- **⚠ Ambiguity counts across ALL open rounds, not per organisation** — two intakes of the SAME org
+  is the identical defect. One rule, one layer.
+- **Each organisation now has its own apply link: `/scholarship/apply?p=<Programme.code>`**
+  (owner's answer). **PROGRAMME, not cohort** — a cohort code is year-specific and the link would
+  rot each intake. Captured on ARRIVAL (the My Results detour returns to a bare `/apply`, so
+  reading it at submit would silently lose it). BrightPath's code is **`brightpath-flagship`**.
+- **⚠ `programme_code` is OPTIONAL on purpose**, against the standing "make a new scoping dimension
+  REQUIRED" lesson: that lesson guards a parameter whose absence silently changes an ANSWER, and
+  absence now RAISES. Reasoned in the docstring — do not "tighten" it without reading that.
+- **⚠ An unknown programme reads CLOSED, never 404** — the intake endpoint is public, and the
+  difference would let anyone enumerate the platform's tenants.
+- **TD-189: no picker on a bare `/apply`** when several rounds are open. Needs a public list of
+  tenant programme names, which was never agreed. Trigger: a second programme going `is_open=true`.
+- **⚠ A CORRECTION WORTH KEEPING:** production has **10 active `partner_organisations`**, of which
+  **nine are REFERRAL orgs** and only BrightPath owns anything. That table holds both kinds with no
+  flag between them. An N3a trigger written the day before ("more than one active organisation")
+  had therefore already fired — corrected everywhere. Do not infer tenant counts from that table.
+
+**▶ NEXT: THEMES** (owner sequencing — admin, sponsor and student surfaces, its own planning
+exercise via `implementation-planning.md`). Still hard-blocking a second tenant, and NOT
+engineering: **Sprint E (erasure)** before any real second-tenant applicant data, and **no entity
+can sign a DPA** (BrightPath's CLBG unregistered; HalaTuju org-homeless).
+
+**◻ SUPERSEDED — the PF-1 brief that drove the above:**
 `docs/plans/2026-07-28-pf1-open-cohort-org-context.md`. Read it before anything else — it was
 written to be executed by an agent with no memory of the conversation that produced it, and it
 carries three things the one-line description below does not:

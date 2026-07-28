@@ -29,12 +29,52 @@ migration, no new endpoint.**
 - **Why client-side:** the rows already arrive in one fenced, computed payload, so sorting them
   cannot disagree with the fenced figures. Server-side would have meant three new endpoints for
   the detail tables (they share one payload) plus a `Subquery` so `students` could be ordered
-  without reintroducing the join fan-out that inflates `given`. Revisit above ~200 sponsors.
+  without reintroducing the join fan-out that inflates `given`. Revisit above ~200 sponsors (TD-190).
 - On production today only **one** of the four tables reaches the threshold — Suresh Thiru's 38
   sponsorships; the others are 9, 8 and 1 rows. The tests use those exact counts, so the
   thresholds are pinned against real data rather than invented numbers.
 - **1026 jest** (67 suites); `tsc` clean.
 
+## PF-1 — the platform stops guessing which programme a student applied to — 2026-07-28
+
+`resolve_open_cohort()` answered "the most recent active+open cohort" with `.first()` over an
+unscoped set. That is a PLATFORM-wide question, and the caller used the answer to decide which
+round a student JOINS — while `save()` denormalises `owning_organisation` from it. With two
+organisations open, a student applying to B was filed under A: visible to A's staff, invisible to
+B's, funded from A's money, **and no error anywhere**. `.first()` over an unscoped set is not a
+tie-break; it is a guess about tenancy.
+
+Harmless until now only because `is_open=false` and one organisation owns anything. Shipped in two
+commits so the safety half did not wait on a product decision.
+
+### Fixed
+- **It refuses rather than guesses** (`AmbiguousOpenCohort`). The apply path returns
+  `409 programme_required` and logs at ERROR — an operator problem, not a student one.
+- **BOTH unscoped reads, not one.** `IntakeStatusView` ran its own copy of the same query, so
+  fixing only the apply path would have moved the bug: it told every visitor about whichever round
+  sorted first. It now shares the resolver, stays truthfully "open", and refuses to NAME a
+  programme it cannot identify.
+
+### Added
+- **A per-organisation apply link** — `/scholarship/apply?p=<programme-code>` (owner's answer).
+  **Programme, not cohort:** a cohort code is year-specific, so a link pinned to one would rot every
+  intake. Captured on ARRIVAL so it survives the My Results detour, which returns the student to a
+  bare `/apply` with no query string.
+- `GET /api/v1/scholarship/intake/?programme=<code>` answers for that programme only. An unknown
+  programme reads **closed, not 404** — the endpoint is public, and the difference would let anyone
+  enumerate the platform's tenants.
+
+### Verification
+`pytest` **4947** (scholarship + courses + reports — full scope); `jest` **997** / 65 suites;
+i18n **4149 x 3**; `next build` compiled. **No migration.** Baselines moved because sponsor S3
+merged mid-sprint; this sprint's delta is 25 backend + 6 frontend tests.
+
+The reproduction is in the tests: `test_no_application_is_created_under_an_arbitrary_organisation`
+returned **201** against the pre-fix code, creating the wrong-tenant row.
+
+### Owner
+When a second organisation gets an open programme, give them
+`/scholarship/apply?p=<their programme code>`. BrightPath's is `brightpath-flagship`.
 
 ## An org_admin decides what sponsors hear (sponsor S3) — 2026-07-28 — SHIPPED + LIVE (DARK)
 

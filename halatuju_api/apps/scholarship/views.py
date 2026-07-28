@@ -42,6 +42,7 @@ from .services import (
     POST_SHORTLIST_EDITABLE,
     complete_onboarding,
     confirm_profile,
+    AmbiguousOpenCohort,
     consent_blockers,
     create_application,
     is_minor,
@@ -102,16 +103,33 @@ class ScholarshipIntakeView(APIView):
     now (drives the landing 'Apply' button + the apply page). Open iff an active, open
     cohort exists. Existing applicants continue via their own application regardless of
     this flag — it only governs starting a fresh application.
+
+    ⚠ PF-1, second half. This ran its OWN copy of the platform-wide query, so fixing only the
+    apply path would have moved the bug rather than closed it: with two tenants open, this told
+    every visitor about whichever round sorted first — organisation A's programme name on
+    organisation B's landing page.
+
+    It now shares `resolve_open_cohort`, so there is ONE rule about what "the open round" means.
+    Ambiguity is not an error here: applications genuinely ARE open, and this endpoint is public
+    with no scope to narrow by. What it must not do is NAME a programme it cannot identify — so
+    the name goes blank and the caller falls back to generic copy.
+
+    Takes an optional `?programme=<code>` — the organisation's own apply link (PF-1 P2). It
+    answers for THAT programme only, so a tenant's landing page never reports on another's round.
+    An unknown or inactive programme reads closed rather than 404: this endpoint is public and
+    unauthenticated, and distinguishing "no such programme" from "not open" would let anyone
+    enumerate which tenants exist on the platform.
     """
     permission_classes = [AllowAny]
 
     def get(self, request):
-        cohort = (
-            ScholarshipCohort.objects
-            .filter(is_active=True, is_open=True)
-            .order_by('-year', 'code')
-            .first()
-        )
+        programme_code = (request.query_params.get('programme') or '').strip()
+        try:
+            cohort = resolve_open_cohort(programme_code=programme_code)
+        except AmbiguousOpenCohort:
+            # Only reachable WITHOUT a programme code (or with one running two open intakes):
+            # applications are open, but nothing here can say which round, so name none.
+            return Response({'open': True, 'cohort_name': ''})
         return Response({'open': cohort is not None, 'cohort_name': cohort.name if cohort else ''})
 
 
@@ -150,7 +168,25 @@ class ApplicationListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         validated = serializer.validated_data
 
-        cohort = resolve_open_cohort(validated.get('cohort_code', ''))
+        # PF-1: refuse rather than guess. `resolve_open_cohort` raises when more than one round is
+        # open and nothing named which — filing the student under an arbitrary organisation is
+        # silent and permanent (tenancy is denormalised onto the application at save), whereas an
+        # error here is a support message. Logged at ERROR because it is an operator problem, not
+        # a student one: either two rounds are open that should not both be, or the apply link
+        # they followed lost its programme code.
+        try:
+            cohort = resolve_open_cohort(
+                validated.get('cohort_code', ''), validated.get('programme_code', ''),
+            )
+        except AmbiguousOpenCohort as exc:
+            logger.error('PF-1 ambiguous open cohort at apply: %s', exc)
+            return Response(
+                {
+                    'error': 'We could not tell which programme this application is for.',
+                    'code': 'programme_required',
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
         if cohort is None:
             return Response(
                 {'error': 'No open application round is currently available.'},
