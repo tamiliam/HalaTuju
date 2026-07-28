@@ -51,7 +51,7 @@ from .views_sponsor import (
     SponsorPoolDetailView,
     SponsorPoolListView,
     SponsorReferralView,
-    SponsorRegisterView,
+    SponsorRegisterView, SponsorTermsView, SponsorTermsQuizView, SponsorTermsAcceptView,
     SponsorSponsorshipsView,
     SponsorStandingGiftView,
     SponsorStatementView,
@@ -212,6 +212,10 @@ urlpatterns = [
 
     # Phase E: sponsor accounts (authenticated self-registration + own status)
     path('sponsor/register/', SponsorRegisterView.as_view()),
+    # Sponsor terms (T3) — signed-in only; an outsider gets the summary on the public /terms page.
+    path('sponsor/terms/', SponsorTermsView.as_view()),
+    path('sponsor/terms/quiz/', SponsorTermsQuizView.as_view()),
+    path('sponsor/terms/accept/', SponsorTermsAcceptView.as_view()),
     path('sponsor/me/', SponsorMeView.as_view()),
     path('sponsor/notifications/', SponsorNotificationsView.as_view()),  # F3: notify preference
     path('sponsor/pool/count/', SponsorPoolCountView.as_view()),  # F1: public landing counter

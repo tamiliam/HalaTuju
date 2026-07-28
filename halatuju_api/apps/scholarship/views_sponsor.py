@@ -27,6 +27,7 @@ from . import referrals as referral_service
 from . import sponsor_feed
 from . import sponsor_notify
 from . import sponsorship as sponsorship_service
+from . import sponsor_terms
 from . import trust as trust_service
 from .emails import send_sponsor_interest_admin_email
 from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship, StandingGift
@@ -539,3 +540,103 @@ class SponsorCancelOfferView(_PoolBase):
                 return Response({'error': e.code}, status=status.HTTP_404_NOT_FOUND)
             return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(SponsorSponsorshipSerializer(s).data)
+
+# ── Sponsor terms (T3) ───────────────────────────────────────────────────────
+# What a sponsor reads and accepts. SIGNED-IN ONLY (owner: "These terms cannot be reached by
+# outsiders") — the public /terms page carries the short summary an outsider gets.
+
+class _TermsBase(SponsorMixin, APIView):
+    """Any registered sponsor may read the terms, including one still pending vetting.
+
+    Deliberately NOT `require_approved_sponsor`: acceptance is part of onboarding, and a sponsor
+    waiting on vetting should be able to read what they will be agreeing to.
+    """
+    def _sponsor_or_error(self, request):
+        sponsor = self.get_sponsor(request)
+        if sponsor is None:
+            return None, Response({'error': 'not_registered'}, status=status.HTTP_404_NOT_FOUND)
+        return sponsor, None
+
+
+class SponsorTermsView(_TermsBase):
+    """GET /api/v1/sponsor/terms/ — the active version, plus where this sponsor stands with it.
+
+    Readable at ANY time, not just while the gate is up: half of TD-186 is that a sponsor could
+    never re-read what they had agreed to.
+    """
+    def get(self, request):
+        sponsor, err = self._sponsor_or_error(request)
+        if err:
+            return err
+        terms = sponsor_terms.active_version()
+        if terms is None:
+            return Response({'terms': None, 'state': sponsor_terms.acceptance_state(sponsor)})
+        locale = request.query_params.get('locale') or 'en'
+        row = sponsor_terms.acceptance_for(sponsor, terms)
+        return Response({
+            'terms': sponsor_terms.document(terms, locale),
+            'state': sponsor_terms.acceptance_state(sponsor),
+            # What they signed, if they did — never a grandfathered row's blank name.
+            'signed_name': row.signed_name if (row and row.basis == 'accepted') else '',
+            'accepted_at': row.accepted_at if (row and row.basis == 'accepted') else None,
+        })
+
+
+class SponsorTermsQuizView(_TermsBase):
+    """GET /api/v1/sponsor/terms/quiz/ — the checkpoints for the active version.
+
+    ⚠ The `correct` index IS returned. This is a comprehension check, not an exam: the whole design
+    is that a wrong answer explains itself and lets them try again, unlimited, so hiding the answer
+    would buy nothing and cost a round trip per attempt.
+    """
+    def get(self, request):
+        sponsor, err = self._sponsor_or_error(request)
+        if err:
+            return err
+        terms = sponsor_terms.active_version()
+        if terms is None:
+            return Response({'error': 'no_active_terms'}, status=status.HTTP_404_NOT_FOUND)
+        locale = request.query_params.get('locale') or 'en'
+        return Response({
+            'version': terms.version,
+            'checkpoints': sponsor_terms.quiz_checkpoints(terms, locale),
+        })
+
+
+class SponsorTermsAcceptView(_TermsBase):
+    """POST /api/v1/sponsor/terms/accept/ {version, signed_name, locale?}.
+
+    Typing a name IS the signature. A version that changed while they were reading returns
+    **409 version_changed** so the client re-fetches and re-takes rather than recording an
+    acceptance of wording nobody saw — the same guard the student comprehension flow uses.
+    """
+    def post(self, request):
+        sponsor, err = self._sponsor_or_error(request)
+        if err:
+            return err
+        terms = sponsor_terms.active_version()
+        if terms is None:
+            return Response({'error': 'no_active_terms'}, status=status.HTTP_404_NOT_FOUND)
+
+        posted = (request.data.get('version') or '').strip()
+        if posted and posted != terms.version:
+            return Response({'error': 'version_changed', 'version': terms.version},
+                            status=status.HTTP_409_CONFLICT)
+        try:
+            sponsor_terms.record_acceptance(
+                sponsor, terms,
+                signed_name=request.data.get('signed_name') or '',
+                locale=request.data.get('locale') or 'en',
+                ip_address=_client_ip(request),
+            )
+        except sponsor_terms.SponsorTermsError as exc:
+            return Response({'error': exc.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(SponsorSerializer(sponsor).data)
+
+
+def _client_ip(request):
+    """Best-effort caller IP for the acceptance record. Cloud Run sits behind a proxy, so the
+    first X-Forwarded-For hop is the real client; a malformed header simply yields None rather
+    than storing rubbish."""
+    fwd = (request.META.get('HTTP_X_FORWARDED_FOR') or '').split(',')[0].strip()
+    return fwd or request.META.get('REMOTE_ADDR') or None

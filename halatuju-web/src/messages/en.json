@@ -368,6 +368,32 @@
       "saved": "Saved",
       "note": "We only offer support while your balance covers it; when it runs low we simply wait until you top up. Each offer still needs the student's acceptance.",
       "lastAllocated": "Last matched on {date}"
+    },
+    "terms": {
+      "loadError": "We could not load the terms. Please try again.",
+      "noneYet": "There are no terms to show yet.",
+      "startQuiz": "I have read this — {n} quick questions",
+      "continue": "Continue",
+      "privacyNote": "How we handle your own information is set out in our",
+      "right": "That is it.",
+      "wrong": "Not quite — try again.",
+      "next": "Next",
+      "toSign": "Continue",
+      "progress": "{n} of {total}",
+      "signTitle": "One last step",
+      "signBody": "Typing your name is how you accept these terms. We record your name, the version you accepted, and the date.",
+      "yourName": "Your account name is",
+      "typeName": "Type your full name to accept",
+      "accept": "Accept the terms",
+      "accepting": "Recording…",
+      "signNote": "If your name is written differently here, that is fine — we record what you type.",
+      "accepted": "Accepted",
+      "acceptedStamp": "Version {version}",
+      "acceptFailed": "We could not record that. Please try again.",
+      "versionChanged": "These terms were updated while you were reading. Here is the new version — sorry, you will need to go through it again.",
+      "youAccepted": "You accepted these terms",
+      "grandfathered": "You joined before these terms existed, so we did not ask you to accept them. They describe how the programme works, and they apply to it.",
+      "navTerms": "Terms"
     }
   },
   "sponsorPool": {

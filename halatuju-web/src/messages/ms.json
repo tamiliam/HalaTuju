@@ -368,6 +368,32 @@
       "saved": "Disimpan",
       "note": "Kami hanya menawarkan sokongan selagi baki anda mencukupi; apabila ia berkurangan, kami hanya menunggu sehingga anda menambah. Setiap tawaran masih memerlukan penerimaan pelajar.",
       "lastAllocated": "Sepadan kali terakhir pada {date}"
+    },
+    "terms": {
+      "loadError": "Kami tidak dapat memuatkan terma. Sila cuba lagi.",
+      "noneYet": "Belum ada terma untuk dipaparkan.",
+      "startQuiz": "Saya telah membacanya — {n} soalan ringkas",
+      "continue": "Teruskan",
+      "privacyNote": "Cara kami mengendalikan maklumat anda sendiri dinyatakan dalam",
+      "right": "Betul.",
+      "wrong": "Belum tepat — cuba lagi.",
+      "next": "Seterusnya",
+      "toSign": "Teruskan",
+      "progress": "{n} daripada {total}",
+      "signTitle": "Satu langkah terakhir",
+      "signBody": "Menaip nama anda ialah cara anda menerima terma ini. Kami merekodkan nama anda, versi yang anda terima, dan tarikhnya.",
+      "yourName": "Nama akaun anda ialah",
+      "typeName": "Taip nama penuh anda untuk menerima",
+      "accept": "Terima terma ini",
+      "accepting": "Merekod…",
+      "signNote": "Jika nama anda ditulis berbeza di sini, itu tidak mengapa — kami merekodkan apa yang anda taip.",
+      "accepted": "Diterima",
+      "acceptedStamp": "Versi {version}",
+      "acceptFailed": "Kami tidak dapat merekodkannya. Sila cuba lagi.",
+      "versionChanged": "Terma ini telah dikemas kini semasa anda membacanya. Ini versi baharunya — maaf, anda perlu melaluinya sekali lagi.",
+      "youAccepted": "Anda telah menerima terma ini",
+      "grandfathered": "Anda menyertai sebelum terma ini wujud, jadi kami tidak meminta anda menerimanya. Terma ini menerangkan cara program berjalan dan terpakai kepadanya.",
+      "navTerms": "Terma"
     }
   },
   "sponsorPool": {

@@ -644,6 +644,65 @@ export interface SponsorAccount {
   profile_complete?: boolean         // false until phone + source + PDPA consent are set
   notify_frequency?: 'realtime' | 'weekly' | 'off'   // F3: email-update cadence
   created_at?: string
+  /** Where this sponsor stands with the current terms. The RULE lives on the server — the screen
+   *  only reads `needs_terms`, and never computes it. */
+  terms?: {
+    terms_version: string
+    terms_accepted: boolean
+    /** True only when a version is active, this sponsor has no row for it, AND the platform flag
+     *  is on. Grandfathering is a pre-written row, not a special case here. */
+    needs_terms: boolean
+    terms_basis: '' | 'accepted' | 'grandfathered'
+  }
+}
+
+export interface SponsorTermsDocument {
+  version: string
+  locale_used: string
+  title: string
+  intro: string
+  sections: Array<{ order: number; heading: string; body: string; has_quiz: boolean }>
+}
+
+export interface SponsorTermsCheckpoint {
+  order: number
+  tag: string
+  plain: string
+  question: string
+  options: string[]
+  correct: number
+  why: string
+}
+
+/** The active terms plus where this sponsor stands. Readable at ANY time — being able to re-read
+ *  what you agreed to is half of what this feature is for. */
+export async function getSponsorTerms(locale = 'en', options?: ApiOptions): Promise<{
+  terms: SponsorTermsDocument | null
+  state: NonNullable<SponsorAccount['terms']>
+  signed_name: string
+  accepted_at: string | null
+}> {
+  return apiRequest(`/api/v1/sponsor/terms/?locale=${encodeURIComponent(locale)}`, options)
+}
+
+export async function getSponsorTermsQuiz(locale = 'en', options?: ApiOptions): Promise<{
+  version: string
+  checkpoints: SponsorTermsCheckpoint[]
+}> {
+  return apiRequest(`/api/v1/sponsor/terms/quiz/?locale=${encodeURIComponent(locale)}`, options)
+}
+
+/** Typing a name IS the signature. A 409 means the version changed while they were reading — the
+ *  caller must re-fetch and re-take rather than record an acceptance of unseen wording. */
+export async function acceptSponsorTerms(
+  body: { version: string; signed_name: string; locale?: string },
+  options?: ApiOptions,
+): Promise<SponsorAccount> {
+  return apiRequest('/api/v1/sponsor/terms/accept/', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    ...options,
+  })
 }
 
 export async function getSponsorMe(options?: ApiOptions): Promise<SponsorAccount> {

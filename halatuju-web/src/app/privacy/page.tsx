@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       <div className="container mx-auto px-6 py-8 max-w-2xl">
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('common.privacy')}</h1>
-          <p className="text-sm text-gray-500">Last updated: June 2026</p>
+          <p className="text-sm text-gray-500">Last updated: July 2026</p>
 
           <p className="text-gray-600">
             HalaTuju provides two things: a free <strong>course-matching tool</strong> for

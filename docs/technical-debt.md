@@ -1677,7 +1677,15 @@ contradiction, and the next person to see it will not know it is cosmetic.
 line, and add a test using a confirmed credit with NO timestamps — the exact shape of the six
 legacy rows before the data fix. Small, web-only, no migration. (Logged 2026-07-28, sponsor S2.)
 
-### [TD-186] Sponsor PDPA consent is a bare version STRING — it needs a managed surface, and a quiz — PARKED for investigation
+### [TD-186] Sponsor PDPA consent is a bare version STRING — it needs a managed surface, and a quiz — ✅ LARGELY CLOSED 2026-07-28 (T1–T3)
+**What shipped:** a versioned, editable sponsor-terms document with a comprehension quiz, an
+acceptance record pinned to the exact version, and a sponsor-facing page that can be RE-READ at
+any time — which was the sharpest part of this row. Migration `0134`; see the T1/T2/T3 CHANGELOG
+entries. **What remains open:** the PDPA consent at registration (`SPONSOR_CONSENT_VERSION`) is
+still a bare module constant with no stored wording — the terms are a SEPARATE instrument and do
+not replace it. Questions 1–5 below were answered for the terms; the privacy consent still needs
+the same treatment, and is now the whole of what this row covers.
+
 **Owner, 2026-07-28, reading the sponsor detail header:** *"You see: PDPA consent
 2026-sponsor-draft-1 — but this is not properly built. This should be another tab in the sponsor
 page, where the content could be reviewed and edited, and new versions created. It also involves
@@ -1807,7 +1815,15 @@ three endpoints or nested page params; at that point the detail page probably wa
 sub-resources anyway. Low priority — sponsors grow at the rate people volunteer money.
 (Logged 2026-07-28. Renumbered from TD-187 on the merge — the nav sprint claimed that number concurrently.)
 
-### [TD-191] A sponsor has agreed to a PRIVACY consent, not to any TERMS — so a suspension cites nothing — medium
+### [TD-191] A sponsor has agreed to a PRIVACY consent, not to any TERMS — so a suspension cites nothing — ✅ CLOSED 2026-07-28 (T3)
+**Closed by the sponsor-terms arc.** §13 of `2026-sponsor-1` states three suspension grounds —
+terms broken, funds unverifiable, or an attempt to identify or contact a student — and a sponsor
+now ACCEPTS them by typing their name, recorded against that exact version. **S4's mandatory
+reject/suspend reason can finally cite something, and the `suspended` email can safely gain its
+`{reason}` token** — the thing this row warned must not happen until terms existed.
+⚠ The blocker below still stands: there is no legal entity to be the counterparty, so these are
+our own stated grounds rather than a contract with a company behind it.
+
 **Owner, 2026-07-28:** *"I feel you cannot reject/suspend someone without first having the consent
 done. The donors agree to certain things. If they fail to do it, then we'd have a reason to suspend
 or reject."* The reasoning is right and it points at a gap that is NOT TD-186.

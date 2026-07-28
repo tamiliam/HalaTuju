@@ -317,6 +317,12 @@ PARTNER_COMMS_ENABLED = os.environ.get('PARTNER_COMMS_ENABLED', '').lower() in (
 # Sponsor comms (S3) — the PLATFORM half of a two-gate dark launch. Unset by default; each of
 # the nine templates also carries its own `enabled`, so flipping this alone still sends nothing.
 SPONSOR_COMMS_ENABLED = os.environ.get('SPONSOR_COMMS_ENABLED', '').lower() in ('1', 'true', 'yes')
+
+# Sponsor TERMS (T3) — the gate that holds a sponsor on the acceptance wizard. Unset by default,
+# and deliberately independent of whether a version is published: publishing must be safe to do
+# while this is off, so the wording can be finalised without anyone being stopped at the door.
+# Grandfathering is DATA (a pre-written acceptance row), not a second flag.
+SPONSOR_TERMS_ENABLED = os.environ.get('SPONSOR_TERMS_ENABLED', '').lower() in ('1', 'true', 'yes')
 # Soft per-run cap on partner emails, mirroring SPONSOR_NOTIFY_MAX_PER_RUN — a run must never
 # blow the Brevo daily quota; the overflow is logged and picked up next run.
 PARTNER_NOTIFY_MAX_PER_RUN = int(os.environ.get('PARTNER_NOTIFY_MAX_PER_RUN', '100') or 100)

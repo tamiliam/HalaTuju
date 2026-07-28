@@ -567,3 +567,127 @@ class TestWordImport(TestCase):
         blob = out['intro'] + out['sections'][0]['body_en']
         self.assertNotIn('{{', blob)
         self.assertIn('Ve. Elanjelian', blob)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   SPONSOR_TERMS_ENABLED=True)
+class TestSponsorFacing(TestCase):
+    """What a sponsor meets. The failures that matter are a version changing under someone
+    mid-read, and a gate that could lock out the eight people already using the portal."""
+
+    def setUp(self):
+        self.sponsor = Sponsor.objects.create(
+            supabase_user_id='sp1', name='Ve. Elanjelian', email='a@b.com',
+            phone='+60 12', source='friend', consent_at=timezone.now(), status='approved')
+        self.terms = _draft('2026-sponsor-1')
+        sponsor_terms.publish(self.terms, is_super=True)
+
+    def _client(self):
+        c = APIClient()
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("sp1")}')
+        return c
+
+    def test_a_sponsor_can_read_the_terms(self):
+        res = self._client().get('/api/v1/sponsor/terms/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['terms']['title'], 'Joining as a sponsor')
+        self.assertTrue(res.data['state']['needs_terms'])
+
+    def test_a_sponsor_still_awaiting_vetting_may_read_them(self):
+        # They are being asked to agree to this; making them wait for approval to read it first
+        # would be backwards.
+        Sponsor.objects.filter(pk=self.sponsor.pk).update(status='pending')
+        self.assertEqual(self._client().get('/api/v1/sponsor/terms/').status_code, 200)
+
+    def test_an_outsider_gets_nothing(self):
+        self.assertIn(APIClient().get('/api/v1/sponsor/terms/').status_code, (401, 403))
+
+    def test_the_quiz_returns_the_checkpoints(self):
+        res = self._client().get('/api/v1/sponsor/terms/quiz/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data['checkpoints']), 1)
+        # The correct index IS sent: this is a comprehension check, not an exam, and the retry
+        # loop would otherwise cost a round trip per wrong answer.
+        self.assertEqual(res.data['checkpoints'][0]['correct'], 1)
+
+    def test_typing_a_name_accepts_and_clears_the_gate(self):
+        res = self._client().post('/api/v1/sponsor/terms/accept/',
+                                  {'version': '2026-sponsor-1', 'signed_name': 'Ve. Elanjelian'},
+                                  format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.data['terms']['needs_terms'])
+        row = SponsorTermsAcceptance.objects.get(sponsor=self.sponsor)
+        self.assertEqual(row.signed_name, 'Ve. Elanjelian')
+        self.assertEqual(row.registered_name_at_acceptance, 'Ve. Elanjelian')
+        self.assertIsNotNone(row.accepted_at)
+
+    def test_a_stale_version_is_refused_with_409_rather_than_recorded(self):
+        # They read v1, a v2 was published while they were reading, and they must not end up
+        # having "accepted" wording they never saw.
+        v2 = _draft('2026-sponsor-2')
+        sponsor_terms.publish(v2, is_super=True)
+        res = self._client().post('/api/v1/sponsor/terms/accept/',
+                                  {'version': '2026-sponsor-1', 'signed_name': 'A B'},
+                                  format='json')
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data['error'], 'version_changed')
+        self.assertEqual(res.data['version'], '2026-sponsor-2')
+        self.assertEqual(SponsorTermsAcceptance.objects.count(), 0)
+
+    def test_a_blank_signature_is_refused(self):
+        res = self._client().post('/api/v1/sponsor/terms/accept/',
+                                  {'version': '2026-sponsor-1', 'signed_name': ' '},
+                                  format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['error'], 'signature_required')
+
+    @override_settings(SPONSOR_TERMS_ENABLED=False)
+    def test_the_PLATFORM_FLAG_alone_keeps_the_gate_down(self):
+        # The eight sponsors already using the portal must not be stopped at the door merely
+        # because a version was published. Publishing and gating are separate decisions.
+        res = self._client().get('/api/v1/sponsor/me/')
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.data['terms']['needs_terms'])
+        self.assertEqual(res.data['terms']['terms_version'], '2026-sponsor-1')
+
+    def test_the_account_payload_reports_the_gate(self):
+        res = self._client().get('/api/v1/sponsor/me/')
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.data['terms']['needs_terms'])
+
+    def test_a_grandfathered_sponsor_is_not_gated_and_never_reads_as_accepted(self):
+        sponsor_terms.grandfather(self.sponsor, self.terms, reason='friends and family')
+        res = self._client().get('/api/v1/sponsor/terms/')
+        self.assertFalse(res.data['state']['needs_terms'])
+        self.assertEqual(res.data['state']['terms_basis'], 'grandfathered')
+        self.assertEqual(res.data['signed_name'], '')      # never asked, so never signed
+
+
+class TestGrandfatherCommand(TestCase):
+    def setUp(self):
+        self.terms = _draft('2026-sponsor-1')
+        sponsor_terms.publish(self.terms, is_super=True)
+        self.a = Sponsor.objects.create(supabase_user_id='a', name='A', email='a@x.com')
+        self.b = Sponsor.objects.create(supabase_user_id='b', name='B', email='pilot@x.com')
+
+    def test_a_dry_run_writes_nothing(self):
+        from django.core.management import call_command
+        call_command('grandfather_sponsor_terms', verbosity=0)
+        self.assertEqual(SponsorTermsAcceptance.objects.count(), 0)
+
+    def test_apply_exempts_everyone_except_the_pilot(self):
+        from django.core.management import call_command
+        call_command('grandfather_sponsor_terms', '--apply', '--except', 'pilot@x.com',
+                     verbosity=0)
+        rows = SponsorTermsAcceptance.objects.all()
+        self.assertEqual([r.sponsor_id for r in rows], [self.a.id])
+        self.assertEqual(rows[0].basis, 'grandfathered')
+        self.assertIsNone(rows[0].accepted_at)
+        # The pilot has no row, so they and only they meet the wizard.
+        self.assertTrue(sponsor_terms.acceptance_state(self.b)['needs_terms'])
+
+    def test_it_is_idempotent(self):
+        from django.core.management import call_command
+        call_command('grandfather_sponsor_terms', '--apply', verbosity=0)
+        call_command('grandfather_sponsor_terms', '--apply', verbosity=0)
+        self.assertEqual(SponsorTermsAcceptance.objects.count(), 2)

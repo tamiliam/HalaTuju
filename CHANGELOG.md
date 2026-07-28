@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor terms T3 — read, quiz, sign — 2026-07-28
+
+The sponsor-facing half. **No migration** (`0134` already carries everything). **Ships DARK behind
+`SPONSOR_TERMS_ENABLED`**, which is unset, so nothing changes for the eight sponsors using the
+portal today.
+
+### Added
+- **The acceptance wizard** — read the whole document, then one checkpoint at a time, then sign.
+  **A wrong answer is never penalised**: it marks itself, explains, and leaves the other options
+  live, unlimited retries; Accept is unreachable until every checkpoint is passed.
+- **Typing a name IS the signature.** Their account name is shown above the field so they know what
+  to type, and a variant spelling is **recorded, never refused** — there is no IC to check against,
+  and telling someone their own name is wrong on an acceptance screen would be worse than storing
+  the difference. `registered_name_at_acceptance` freezes the account name so any divergence stays
+  visible to an admin forever.
+- **`/sponsor/terms`** — the terms, re-readable at any time, showing what you signed and when.
+  Inside the `(portal)` group, so an outsider gets the sign-in wall and the public `/terms` summary
+  instead (owner: *"These terms cannot be reached by outsiders"*).
+- **The portal gate** — one branch in `(portal)/layout.tsx`, after details and before the vetting
+  statuses, rendering `Chrome` **without nav** so there is nothing to click away to. It reads
+  `account.terms.needs_terms`, computed entirely on the server; the screen never decides.
+- **`grandfather_sponsor_terms`** — `--dry-run` by default, `--except alice@x.com` to leave the
+  pilot testers out. Writes `basis='grandfathered'`, which means *we did not ask this person* and is
+  never dressed up as an acceptance: `accepted_at` stays NULL and `signed_name` blank. It also
+  reports an `--except` address that matched nobody, because that typo would silently exempt the
+  person you meant to pilot with.
+- **Three sponsor endpoints**: read, quiz, accept. Accept returns **`409 version_changed`** if a
+  version was published mid-read, and the wizard restarts on the new wording rather than recording
+  an acceptance of something nobody saw.
+
+### Fixed — the privacy notice was unreachable from inside the portal
+§12 says *"as set out in our privacy notice"*, but section bodies are plain text with no links, the
+sponsor portal has its own footer that never linked it, and the only route was a link beside the
+registration checkbox seen once. Now: a **link in the portal footer**, and a standing link on both
+terms surfaces — in the page chrome, so section bodies stay plain text. The notice's date also said
+*June 2026* despite gaining its sponsor section in T1; corrected to July.
+
+### Notes
+- **3788 scholarship pytest** (+13) · **1136 jest** / 75 suites (+21) · `tsc --noEmit` clean on every
+  changed file · `next build` exit 0 · `makemigrations --check` clean.
+- ⚠ **The gate is gated twice on purpose.** `needs_terms` is False whenever `SPONSOR_TERMS_ENABLED`
+  is unset, so **publishing a version is safe while the flag is off** — the wording can be finalised
+  without anyone being stopped at the door. Publishing and gating are separate decisions.
+- ⚠ **Publishing a NEW version re-asks everyone, grandfathered included** — a new version has no
+  rows at all. Right default for a material change, but grandfathering must be re-granted
+  deliberately rather than inherited.
+
 ## Sponsor terms T2.2 — write the quiz in the shape a sponsor reads it, then take it — 2026-07-28
 
 Owner, looking at the checkpoint editor: *"We cannot see how it would look and behave in practice.

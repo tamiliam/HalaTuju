@@ -15,12 +15,13 @@ class SponsorSerializer(serializers.ModelSerializer):
     pending/approved/rejected state. Excludes internal vetting fields."""
     is_approved = serializers.BooleanField(read_only=True)
     profile_complete = serializers.SerializerMethodField()
+    terms = serializers.SerializerMethodField()
 
     class Meta:
         model = Sponsor
         fields = ['id', 'name', 'email', 'phone', 'source', 'organisation',
                   'status', 'is_approved', 'profile_complete', 'notify_frequency',
-                  'created_at']
+                  'created_at', 'terms']
         read_only_fields = fields
 
     def get_profile_complete(self, obj):
@@ -28,6 +29,25 @@ class SponsorSerializer(serializers.ModelSerializer):
         consent) are all present — a Google sponsor lands without them and must
         complete this step before vetting proceeds."""
         return bool(obj.phone and obj.source and obj.consent_at)
+
+    def get_terms(self, obj):
+        """Whether this sponsor still owes an acceptance of the current terms.
+
+        The RULE lives on the server (`sponsor_terms.acceptance_state`) and the screen only reads
+        the answer — the same discipline as `finance_check_required`. `needs_terms` is the whole
+        gate: an active version exists and this sponsor has no row for it. Grandfathering is
+        therefore data (a pre-written row), never a branch here.
+
+        ⚠ Also gated on the PLATFORM flag. While `SPONSOR_TERMS_ENABLED` is off, `needs_terms` is
+        always False, so today's approved sponsors cannot be locked out of a portal they already
+        use by a version being published.
+        """
+        from django.conf import settings
+        from . import sponsor_terms
+        state = sponsor_terms.acceptance_state(obj)
+        if not getattr(settings, 'SPONSOR_TERMS_ENABLED', False):
+            state = {**state, 'needs_terms': False}
+        return state
 
 
 def _funding_need_or_none(application):

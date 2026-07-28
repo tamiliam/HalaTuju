@@ -11,6 +11,7 @@ import { wasScopeSuperseded } from '@/lib/sessionPolicy'
 import { getStudentsWaitingCount } from '@/lib/api'
 import SponsorLanding from '@/components/SponsorLanding'
 import SponsorDetailsForm from '@/components/SponsorDetailsForm'
+import SponsorTermsWizard from '@/components/sponsors/SponsorTermsWizard'
 import SponsorNotifyPrefs from '@/components/SponsorNotifyPrefs'
 import { SponsorPortalProvider, useSponsorPortal } from '@/lib/sponsor-portal-context'
 
@@ -25,7 +26,7 @@ import { SponsorPortalProvider, useSponsorPortal } from '@/lib/sponsor-portal-co
 export default function SponsorPortalLayout({ children }: { children: ReactNode }) {
   const { t } = useT()
   const router = useRouter()
-  const { isLoading, isSignedIn, account } = useSponsorAuth()
+  const { isLoading, isSignedIn, account, token, refreshAccount } = useSponsorAuth()
 
   // Public "students waiting" counter for the signed-out landing (mirrors /scholarship).
   const [waitingCount, setWaitingCount] = useState(0)
@@ -55,6 +56,25 @@ export default function SponsorPortalLayout({ children }: { children: ReactNode 
   const needsDetails = account != null && (!isRegistered || !profileComplete)
 
   if (needsDetails) return <Chrome><CardWrap><SponsorDetailsForm /></CardWrap></Chrome>
+
+  // Terms acceptance sits HERE — after details, before the vetting statuses.
+  //
+  // `needs_terms` is computed entirely on the server (`sponsor_terms.acceptance_state`, gated on
+  // SPONSOR_TERMS_ENABLED), so this branch never decides anything: it renders what the account
+  // payload reports. Chrome WITHOUT `nav` means no tabs are drawn, so there is nothing to click
+  // away to — the same enforcement SponsorDetailsForm already relies on.
+  //
+  // ⚠ Placed above the status branches on purpose, but it can only fire for a sponsor who could
+  // otherwise reach the portal: showing a suspended account a terms wizard instead of "your access
+  // is inactive" would be worse than useless, and the server never sets needs_terms for one.
+  if (account?.terms?.needs_terms) {
+    return (
+      <Chrome><CardWrap>
+        <SponsorTermsWizard token={token} accountName={account?.name || ''}
+          onAccepted={refreshAccount} />
+      </CardWrap></Chrome>
+    )
+  }
 
   if (account?.status === 'pending') {
     return (
@@ -171,6 +191,10 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
         <footer className="container mx-auto px-4 sm:px-6 py-6 text-center text-xs text-gray-400">
           <Link href="/sponsor/trust" className="text-gray-500 hover:text-blue-600 underline">
             {t('sponsorPortal.trust.footerLink')}
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/privacy" className="hover:text-gray-600">
+            {t('sponsorAuth.privacyNotice')}
           </Link>
         </footer>
       )}
