@@ -1937,26 +1937,10 @@ class AdminScopeListView(_AdminBase):
         if admin.role == 'partner':
             return Response({'organisations': [], 'programmes': []})
 
-        # ⚠ TENANTS ONLY. `partner_organisations` holds BOTH tenant organisations and REFERRAL
-        # organisations (schools, NGOs that send students) in one table with NO flag between
-        # them — production has ten rows and exactly ONE tenant. Listing the table is the bug
-        # this endpoint shipped with: a super's switcher offered Sri Murugan Centre and Tara
-        # Foundation as if they were tenants.
-        #
-        # A tenant is an organisation that OWNS a programme, or has an active `org_admin`.
-        # Both, not either alone: ownership alone loses a tenant created moments before its
-        # programme (the create form makes org + programme + admin together), and org_admin
-        # alone loses a live tenant whose admin was revoked. `role='org_admin'` specifically —
-        # NOT any PartnerAdmin — because a referral org's logins are `partner`-role
-        # course-selector accounts (CUMIG has two), and counting those would readmit exactly
-        # the rows this excludes.
-        owns_programme = Programme.objects.filter(
-            organisation_id=OuterRef('pk'), is_active=True)
-        has_org_admin = PartnerAdmin.objects.filter(
-            owning_organisation_id=OuterRef('pk'), role='org_admin', is_active=True)
-        orgs = (PartnerOrganisation.objects.filter(is_active=True)
-                .filter(Q(Exists(owns_programme)) | Q(Exists(has_org_admin)))
-                .order_by('name'))
+        # ⚠ TENANTS ONLY — `partner_organisations` also holds REFERRAL organisations
+        # (schools, NGOs that send us students) with no flag between them. The rule and the
+        # reason it is BOTH conditions live on the manager, so nobody has to know it here.
+        orgs = PartnerOrganisation.objects.tenants().filter(is_active=True).order_by('name')
         programmes = (Programme.objects.filter(is_active=True)
                       .select_related('organisation').order_by('organisation__name', 'code'))
         if not self.has_role(admin, 'super'):

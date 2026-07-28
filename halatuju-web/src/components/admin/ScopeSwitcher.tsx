@@ -3,6 +3,7 @@
 import { Menu, MenuItem, MenuSeparator } from '@/components/admin/Menu'
 import { Icon } from '@/components/admin/icons'
 import { useT } from '@/lib/i18n'
+import type { NavScope } from '@/lib/navigation'
 
 /**
  * The breadcrumb's organisation and programme switchers (nav/IA N3a).
@@ -69,6 +70,7 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel }: {
 
 export function ScopeSwitcher({
   organisations, programmes, selectedOrg, selectedProgramme, onSelectOrg, onSelectProgramme,
+  scope,
 }: {
   organisations: ScopeOption[]
   programmes: ScopeOption[]
@@ -76,16 +78,33 @@ export function ScopeSwitcher({
   selectedProgramme: string
   onSelectOrg: (code: string) => void
   onSelectProgramme: (code: string) => void
+  /** The scope of the page being viewed — from the route registry, never guessed. */
+  scope?: NavScope
 }) {
   const { t } = useT()
   const sep = <span aria-hidden className="shrink-0 text-gray-300">/</span>
+
+  /*
+   * The breadcrumb says WHERE YOU ARE, not what exists (owner, 2026-07-28). A platform page is
+   * outside any organisation, so it shows HalaTuju alone; an organisation page adds the tenant;
+   * a programme page adds the gift beneath it.
+   *
+   * The scope comes from the ROUTE REGISTRY (`NavItem.scope`) — the same field that groups the
+   * sidebar into Platform / Organisation / Programme, so the two can never disagree about which
+   * level a page belongs to. Nothing here is inferred from the URL.
+   *
+   * `utility` (Profile, Guide, FAQ) shows HalaTuju alone: the registry calls that scope "yours,
+   * not any scope's", and those pages belong to the person rather than to a tenant.
+   */
+  const showOrg = scope === 'organisation' || scope === 'programme'
+  const showProgramme = scope === 'programme'
 
   const org = organisations.find((o) => o.code === selectedOrg) ?? organisations[0]
   const programme = programmes.find((p) => p.code === selectedProgramme) ?? programmes[0]
 
   return (
     <>
-      {org && (
+      {showOrg && org && (
         <>
           {sep}
           <Crumb
@@ -97,15 +116,7 @@ export function ScopeSwitcher({
           />
         </>
       )}
-      {/*
-        A tenant may name its programme after itself — production's only one does, so the
-        breadcrumb read "BrightPath Bursary / BrightPath Bursary". Rendering a name twice is
-        noise, not information. Suppressed only when the two are IDENTICAL and neither is
-        switchable: the moment there is a choice to make, both crumbs must show even if the
-        current pair happens to match, or the switcher disappears exactly when it matters.
-      */}
-      {programme && !(programme.name === org?.name
-                      && organisations.length <= 1 && programmes.length <= 1) && (
+      {showProgramme && programme && (
         <>
           {sep}
           <Crumb

@@ -30,6 +30,7 @@ const renderSwitcher = (props = {}) => {
       selectedProgramme="a-bursary"
       onSelectOrg={onSelectOrg}
       onSelectProgramme={onSelectProgramme}
+      scope="programme"
       {...props}
     />,
   )
@@ -98,28 +99,47 @@ describe('degenerate scopes', () => {
   })
 })
 
-describe('when a tenant names its programme after itself', () => {
-  const SAME = { id: 9, code: 'bp-bursary', name: 'BrightPath' }
-
-  it('shows the name once, not twice', () => {
-    render(
+// ── The breadcrumb says WHERE YOU ARE (owner, 2026-07-28) ────────────────────
+//
+// Not "what exists". A platform page is outside any organisation. The scope comes from the route
+// registry — the same NavItem.scope that groups the sidebar — so the breadcrumb and the sidebar
+// can never disagree about which level a page belongs to.
+describe('breadcrumb depth follows the page scope', () => {
+  const at = (scope?: string) => {
+    const { container } = render(
       <ScopeSwitcher
-        organisations={[ORG_A]} programmes={[SAME]}
-        selectedOrg="tenant-a" selectedProgramme="bp-bursary"
+        organisations={[ORG_A]} programmes={[PROG_A]}
+        selectedOrg="tenant-a" selectedProgramme="a-bursary"
         onSelectOrg={jest.fn()} onSelectProgramme={jest.fn()}
+        scope={scope as never}
       />,
     )
-    expect(screen.getAllByText('BrightPath')).toHaveLength(1)
+    return container.textContent ?? ''
+  }
+
+  it('a PLATFORM page shows neither — you are outside any organisation', () => {
+    const text = at('platform')
+    expect(text).not.toContain('BrightPath')
+    expect(text).not.toContain('BrightPath Bursary')
   })
 
-  it('still shows both once there is something to switch — the switcher must not vanish', () => {
-    render(
-      <ScopeSwitcher
-        organisations={[ORG_A, ORG_B]} programmes={[SAME]}
-        selectedOrg="tenant-a" selectedProgramme="bp-bursary"
-        onSelectOrg={jest.fn()} onSelectProgramme={jest.fn()}
-      />,
-    )
-    expect(screen.getAllByText('BrightPath').length).toBeGreaterThan(1)
+  it('an ORGANISATION page shows the organisation, not the programme', () => {
+    const text = at('organisation')
+    expect(text).toContain('BrightPath')
+    expect(text).not.toContain('BrightPath Bursary')
+  })
+
+  it('a PROGRAMME page shows both', () => {
+    const text = at('programme')
+    expect(text).toContain('BrightPath')
+    expect(text).toContain('BrightPath Bursary')
+  })
+
+  it('a UTILITY page shows neither — Profile and Guide belong to the person, not a tenant', () => {
+    expect(at('utility')).not.toContain('BrightPath')
+  })
+
+  it('an unknown route shows neither rather than guessing a scope', () => {
+    expect(at(undefined)).not.toContain('BrightPath')
   })
 })

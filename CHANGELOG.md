@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## The breadcrumb says where you ARE — 2026-07-28
+
+Owner, from three screenshots: *"First should only show halatuju, as it is outside BrightPath. The
+second is when I am in BrightPath itself... Third screen is where I am in programme."*
+
+The breadcrumb rendered the same two crumbs on every page. It now shows crumbs down to the scope of
+the page being viewed — and the scope comes from `NavItem.scope` in the route registry, the same
+field that groups the sidebar into Platform / Organisation / Programme, so the two can never
+disagree about which level a page belongs to.
+
+| Page | Breadcrumb |
+|---|---|
+| platform (Dashboard, Students, Course Data…) | `HalaTuju` |
+| organisation (Overview, Staff, Sponsors…) | `HalaTuju / BrightPath` |
+| programme (B40 Applications, Reviewers…) | `HalaTuju / BrightPath / BrightPath Bursary` |
+| utility (Profile, Guide, FAQ) | `HalaTuju` — "yours, not any scope's" |
+
+### Fixed — a data error, not a display one
+**Organisation 11 was named "BrightPath Bursary". It is the ORGANISATION; "BrightPath Bursary" is
+the PROGRAMME.** Renamed to `BrightPath` in production (its `code` was already `brightpath`).
+Blast radius checked first: the name reaches the console header and internal Requests emails only —
+`PLATFORM_ORG_CODE = 'brightpath'` means this tenant renders branding from the platform constants,
+where `org_short_name` was already `'BrightPath'`, so no student, sponsor or contract copy moves.
+
+**The duplicate-crumb suppression added earlier the same day is REVERTED.** It treated a misnamed
+row as a display problem and hid the symptom. With correct data the collision cannot occur, and if
+two names ever match again that is a signal someone misnamed something — worth seeing.
+
+### Added
+**`PartnerOrganisation.objects.tenants()`** — the tenant rule moves from one endpoint onto the
+model, where the queryset gets typed. Its docstring carries the reason, including the incident: the
+switcher shipped listing referral organisations, written by someone who had verified that exact
+trap against production the same morning and written it down. A note in a knowledge base does not
+reach the moment `.filter(is_active=True)` is typed; a manager method does.
+
+**Verification:** `pytest` **4930** (scholarship + courses) · `jest` **1052** / 68 suites ·
+i18n 4153 x 3 · build compiled. No migration.
+
 ## Fix — the org switcher offered REFERRAL organisations as tenants — 2026-07-28
 
 Owner, on the live console: *"You got the organisation wrong. There is only one organisation as of

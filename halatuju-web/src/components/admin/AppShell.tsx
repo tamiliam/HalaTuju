@@ -81,7 +81,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const probes = useNavProbes(token)
   const r = effectiveRole(role)
   const groups = useMemo(() => visibleNav({ role: r, probes }), [r, probes])
-  const activeId = activeItem(pathname)?.id
+  const active = activeItem(pathname)
+  const activeId = active?.id
 
   // Close the drawer on navigation — a menu that stays open over the page you just chose is
   // the mobile equivalent of not responding.
@@ -197,6 +198,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               selectedProgramme={selectedProgramme}
               onSelectOrg={setSelectedOrg}
               onSelectProgramme={setSelectedProgramme}
+              scope={active?.scope}
             />
           ) : undefined
         }

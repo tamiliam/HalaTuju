@@ -394,6 +394,43 @@ class CourseInstitution(models.Model):
         return f"{self.course_id} @ {self.institution_id}"
 
 
+class PartnerOrganisationQuerySet(models.QuerySet):
+    """Makes the SAFE read the obvious one — see `tenants()`."""
+
+    def tenants(self):
+        """Only TENANT organisations: those that own an active programme, or have an active
+        `org_admin`.
+
+        ⚠ THIS EXISTS BECAUSE THE PLAIN QUERYSET IS A TRAP. This table is dual-role (see the
+        model docstring): it holds tenant organisations AND referral organisations — schools and
+        NGOs that send us students — with **no flag distinguishing them**. Production has ten
+        rows and exactly one tenant. So `PartnerOrganisation.objects.filter(is_active=True)`
+        reads like "the organisations" and returns nine things that are not.
+
+        That is not hypothetical: the console's organisation switcher shipped on 2026-07-28
+        offering Sri Murugan Centre and Tara Foundation as tenants to switch into, written by
+        someone who had verified this exact trap against production the same morning and written
+        it down. A note in a knowledge base does not reach the moment the queryset is typed; a
+        manager method does.
+
+        Both conditions, not either alone: ownership alone loses a tenant created moments before
+        its programme (the admin form makes organisation + programme + administrator together),
+        and `org_admin` alone loses a live tenant whose administrator was revoked.
+
+        `role='org_admin'` specifically, NOT "has a PartnerAdmin" — a referral organisation's
+        logins are `partner`-role course-selector accounts, and counting those would readmit
+        precisely the rows this excludes.
+        """
+        from django.db.models import Exists, OuterRef, Q
+        from apps.scholarship.models import Programme
+
+        owns_programme = Programme.objects.filter(
+            organisation_id=OuterRef('pk'), is_active=True)
+        has_org_admin = PartnerAdmin.objects.filter(
+            owning_organisation_id=OuterRef('pk'), role='org_admin', is_active=True)
+        return self.filter(Q(Exists(owns_programme)) | Q(Exists(has_org_admin)))
+
+
 class PartnerOrganisation(models.Model):
     """Referral partner AND the platform's tenant Organisation record (dual role).
 
@@ -452,6 +489,10 @@ class PartnerOrganisation(models.Model):
     module_sponsor_pool = models.BooleanField(default=False)
     module_comms_whatsapp = models.BooleanField(default=False)
     module_payout = models.BooleanField(default=False)
+
+    # Use `PartnerOrganisation.objects.tenants()` for anything that means "the
+    # organisations we run" — the plain queryset also returns REFERRAL organisations.
+    objects = PartnerOrganisationQuerySet.as_manager()
 
     class Meta:
         db_table = 'partner_organisations'
