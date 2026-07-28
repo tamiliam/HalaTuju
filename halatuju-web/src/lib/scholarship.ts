@@ -696,6 +696,39 @@ export const APPLY_RETURN_KEY = 'halatuju_apply_return'
  * form is already stashed across that detour; the programme has to survive it too, or a student
  * who edits their grades silently loses the organisation they came in for.
  */
+
+/**
+ * The caller's ONE live application, or null when that question has no single answer.
+ *
+ * The application screen used to take `applications[0]` — the same "assume one" shape the
+ * backend carried in `_current_application`, and the same shape PF-1 fixed in
+ * `resolve_open_cohort`. It is not a tie-break; it is a guess about which programme the student
+ * is looking at, and with two live applications it silently shows one and hides the other.
+ *
+ * Returns `null` for BOTH "none" and "more than one", because a screen that cannot say which
+ * application it is showing must not show one. The caller distinguishes the two with
+ * `liveApplications().length` and renders an honest state — the chooser itself is M4 of
+ * `docs/plans/2026-07-28-multi-programme-applications-roadmap.md`.
+ *
+ * Live means the editable funnel plus the funded post-award states, mirroring the backend's
+ * `POST_SHORTLIST_EDITABLE + _FUNDED_STATES`. ⚠ KEEP-IN-SYNC PAIR — if a status is added there,
+ * add it here; a drift makes the two disagree about what the student is even working on.
+ */
+export const LIVE_APPLICATION_STATES = [
+  'shortlisted', 'profile_complete', 'interviewing', 'interviewed',
+  'awarded', 'active', 'maintenance',
+] as const
+
+export function liveApplications<T extends { status: string }>(apps: readonly T[]): T[] {
+  return apps.filter((a) => (LIVE_APPLICATION_STATES as readonly string[]).includes(a.status))
+}
+
+/** The single live application, or null when there is none — or more than one. */
+export function soleLiveApplication<T extends { status: string }>(apps: readonly T[]): T | null {
+  const live = liveApplications(apps)
+  return live.length === 1 ? live[0] : null
+}
+
 export const APPLY_PROGRAMME_KEY = 'halatuju_apply_programme'
 
 /** Read the code from a URL, remember it, and return the one in force (URL wins over stored). */

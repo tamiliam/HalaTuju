@@ -8,7 +8,9 @@ import { useT } from '@/lib/i18n'
 import { getMyScholarshipApplications, getStudentAward, getBursaryAgreement, type ScholarshipApplication, type StudentAward, type BursaryAgreement } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ActionCentre from '@/components/ActionCentre'
-import { showsActionCentre, isFundedStatus } from '@/lib/scholarship'
+import {
+  showsActionCentre, isFundedStatus, soleLiveApplication, liveApplications,
+} from '@/lib/scholarship'
 import InterviewBookingPanel from '@/components/scholarship/InterviewBookingPanel'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -26,6 +28,8 @@ export default function ScholarshipApplicationPage() {
   const { status, token, profile } = useAuth()
   const router = useRouter()
   const [app, setApp] = useState<ScholarshipApplication | null>(null)
+  // >1 live application: the screen refuses to pick one (M4 adds the chooser).
+  const [liveCount, setLiveCount] = useState(0)
   const [award, setAward] = useState<StudentAward | null>(null)
   // Gates the award/onboarding panel. Default false: the accept→onboarding flow
   // isn't exposed yet (students are invited by a later email), so the panel stays
@@ -42,7 +46,14 @@ export default function ScholarshipApplicationPage() {
       return
     }
     getMyScholarshipApplications({ token })
-      .then((res) => { if (active) setApp(res.applications[0] ?? null) })
+      .then((res) => {
+        if (!active) return
+        // Not `applications[0]`: position is not an answer to "which application is this".
+        // `soleLiveApplication` returns null when there is more than one, so this screen shows
+        // nothing rather than silently showing one of them and hiding the other.
+        setApp(soleLiveApplication(res.applications))
+        setLiveCount(liveApplications(res.applications).length)
+      })
       .catch(() => { if (active) setApp(null) })
       .finally(() => { if (active) setLoading(false) })
     // The award offer is fetched alongside the application so the "accept your
@@ -190,6 +201,23 @@ export default function ScholarshipApplicationPage() {
 
   if (status === 'loading' || loading) {
     return wrap(<p className="text-gray-500">{t('scholarship.apply.loading')}</p>)
+  }
+
+  // More than one live application and no way yet to say which this screen is about. Showing
+  // one of them would be the same guess the backend just stopped making, so it says so plainly
+  // instead. The chooser is M4 of the multi-programme roadmap; until then this is honest rather
+  // than convenient, and it is unreachable while one programme runs.
+  if (!app && liveCount > 1) {
+    return wrap(
+      <div className="rounded-2xl border bg-white p-6 text-center shadow-sm">
+        <p className="mb-2 font-semibold text-gray-900">
+          {t('scholarship.application.multiple.title')}
+        </p>
+        <p className="text-gray-700">
+          {t('scholarship.application.multiple.body', { count: String(liveCount) })}
+        </p>
+      </div>
+    )
   }
 
   if (!app) {

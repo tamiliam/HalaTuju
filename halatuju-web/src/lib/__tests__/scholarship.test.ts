@@ -54,6 +54,9 @@ import {
   APPLY_PROGRAMME_KEY,
   rememberApplyProgramme,
   clearApplyProgramme,
+  soleLiveApplication,
+  liveApplications,
+  LIVE_APPLICATION_STATES,
 } from '@/lib/scholarship'
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse, ApplicationCompleteness } from '@/lib/api'
 import { collegesForTrack } from '@/data/matric-colleges'
@@ -1336,5 +1339,55 @@ describe('rememberApplyProgramme', () => {
     rememberApplyProgramme('?p=brightpath-flagship', s)
     clearApplyProgramme(s)
     expect(rememberApplyProgramme('', s)).toBe('')
+  })
+})
+
+// ── M1: "which application" is not answered by position ──────────────────────
+//
+// The application screen took `applications[0]`. With two live applications that silently shows
+// one and hides the other — the same "assume one" shape PF-1 fixed in the backend resolver.
+describe('soleLiveApplication', () => {
+  const app = (id: number, status: string) => ({ id, status })
+
+  it('returns the single live application', () => {
+    expect(soleLiveApplication([app(1, 'profile_complete')])?.id).toBe(1)
+  })
+
+  it('returns null when there is more than one — never a positional pick', () => {
+    expect(soleLiveApplication([app(1, 'profile_complete'), app(2, 'shortlisted')])).toBeNull()
+  })
+
+  it('returns null when there are none', () => {
+    expect(soleLiveApplication([])).toBeNull()
+  })
+
+  it('ignores finished applications when deciding', () => {
+    // The restart case: an expired row beside a live one must not read as ambiguous, or every
+    // student who ever restarted would lose their screen.
+    expect(soleLiveApplication([app(1, 'expired'), app(2, 'shortlisted')])?.id).toBe(2)
+    expect(soleLiveApplication([app(1, 'rejected'), app(2, 'interviewing')])?.id).toBe(2)
+  })
+
+  it('counts the funded states as live — a funded student still uses the screen', () => {
+    expect(soleLiveApplication([app(1, 'active')])?.id).toBe(1)
+    expect(soleLiveApplication([app(1, 'awarded'), app(2, 'maintenance')])).toBeNull()
+  })
+})
+
+describe('liveApplications', () => {
+  it('counts only the live ones, so the screen can say how many', () => {
+    const apps = [
+      { id: 1, status: 'expired' }, { id: 2, status: 'shortlisted' },
+      { id: 3, status: 'active' }, { id: 4, status: 'rejected' },
+    ]
+    expect(liveApplications(apps).map((a) => a.id)).toEqual([2, 3])
+  })
+
+  it('mirrors the backend live-state set exactly (keep-in-sync pair)', () => {
+    // Drift here makes the two disagree about what the student is working on.
+    expect([...LIVE_APPLICATION_STATES]).toEqual([
+      'shortlisted', 'profile_complete', 'interviewing', 'interviewed',
+      'awarded', 'active', 'maintenance',
+    ])
   })
 })

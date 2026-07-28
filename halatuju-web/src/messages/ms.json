@@ -1884,6 +1884,10 @@
         "title": "Perjanjian biasiswa anda",
         "body": "Anda telah menandatangani Perjanjian Pemberian Biasiswa Bersyarat anda. Simpan satu salinan untuk rekod anda.",
         "download": "Muat turun (PDF)"
+      },
+      "multiple": {
+        "title": "Anda mempunyai lebih daripada satu permohonan",
+        "body": "Anda mempunyai {count} permohonan yang terbuka. Sila e-mel {supportEmail} dan kami akan menunjukkan yang mana satu."
       }
     },
     "banner": {

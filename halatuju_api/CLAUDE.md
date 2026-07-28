@@ -605,6 +605,26 @@ changed at that moment. Worktree `.worktrees/sponsor-detail`. Retro
   flag between them. An N3a trigger written the day before ("more than one active organisation")
   had therefore already fired — corrected everywhere. Do not infer tenant counts from that table.
 
+**✅ M1 SHIPPED 2026-07-28 — "which application is this about" stops being positional.** Roadmap
+`docs/plans/2026-07-28-multi-programme-applications-roadmap.md` (**M1 ONLY approved; M2-M4 are
+NOT**); retro `docs/retrospective-2026-07-28-multiprogramme-m1.md`; decisions ×2; lessons ×3.
+**NO migration.** `pytest` **4957** (full scope) · `jest` **1039** / 67 suites · i18n 4151×3.
+- `views._current_application()` was `.order_by('-submitted_at').first()` with **"latest wins"** in
+  its docstring as though it were a rule. **13 call sites** resolve through it — document
+  sign-upload and listing, consent, bank details, Action Centre. Two live applications meant a
+  document uploaded for programme B attached to whichever was submitted last. Silently.
+- **⚠ IT RAISES `AmbiguousApplication` — a DRF `APIException` (409 `application_ambiguous`), NOT
+  this module's usual explicit `Response`.** Deliberate: the house style needs a `try/except` at
+  every call site and forgetting one gives a 500, while the point is that a FOURTEENTH site cannot
+  reintroduce the bug. **Do not "fix" the inconsistency** — see decisions.md.
+- FE `applications[0]` → `soleLiveApplication()`, which returns null for BOTH none and >1; the
+  screen then says so rather than showing one of them.
+- **⚠ INERT TODAY, PROVABLY:** the `(cohort, profile)` constraint excludes only `expired`, so one
+  cohort = at most one live application. The tests must CREATE a second programme to reach it.
+  One test exists solely to protect the RESTART case (expired beside live ≠ ambiguous).
+- **⚠ Until M2, two live applications = refusal.** Correct floor: a locked upload is recoverable, a
+  document filed under another foundation is not.
+
 **▶ NEXT: THEMES** (owner sequencing — admin, sponsor and student surfaces, its own planning
 exercise via `implementation-planning.md`). Still hard-blocking a second tenant, and NOT
 engineering: **Sprint E (erasure)** before any real second-tenant applicant data, and **no entity
