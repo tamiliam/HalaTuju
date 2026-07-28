@@ -1,5 +1,60 @@
 # Architectural Decisions — HalaTuju
 
+## Sponsor comms ships NINE kinds, not eleven — Sponsor S3, 2026-07-28
+**Decision:** `low_balance` and `annual_statement` are not built, not seeded and not in the model's
+choices. The other nine ship together, dark.
+
+**Why.** Consent taken at sponsor registration covers transactional account correspondence; those
+two edge into marketing (one nudges you to give more, the other is an annual summary nobody asked
+for). Worse, we cannot check: sponsor consent is a bare version STRING with no stored wording
+behind it, so there is no way to read what a sponsor actually agreed to — that gap is now parked
+as TD-186. Building a marketing-adjacent email against consent we cannot inspect is the wrong
+order of operations.
+
+**Alternatives considered:** build both and ship them switched off — rejected, because "off" is
+not a substitute for a consent question nobody has answered, and a seeded template is an
+invitation to switch it on. **Revisit if:** TD-186 lands a reviewable consent record, or the owner
+takes a decision on marketing consent independently.
+
+## A LIVE email routed through a dark template must keep its old sender — Sponsor S3, 2026-07-28
+**Decision:** `referral_invite`, `new_students` and `weekly_digest` fall back to their pre-S3
+hardcoded senders whenever `sponsor_comms.is_enabled(kind)` is false. The template takes over the
+moment an org_admin switches it on.
+
+**Why this is the load-bearing bit of the sprint.** Those three are live on production with their
+cron jobs enabled. Adopting them into a two-gate dark launch without a fallback would have
+*silently stopped them*: sponsors would simply stop being told about new students, no error would
+be raised, and the panel would show a tidy row of switches that all read "off" — exactly as
+designed. It is the failure mode that looks like success, and it would have been found by a
+sponsor noticing silence, not by us.
+
+**Alternatives considered:** (a) seed those three switched ON — rejected: it makes "everything
+ships dark" false, and the whole point of the dark launch is that the owner decides when wording
+goes live. (b) Ship the six new kinds now and adopt the three later — rejected: the owner's
+standing ruling is that a panel covering six of nine emails is a half-truth, which is why the
+`{student_cards}` token exists at all. **Revisit if:** all three templates are switched on and
+have been stable for a cycle, at which point the fallback is dead code and should be deleted
+rather than left as a second path nobody exercises.
+
+## The sponsor voice guard refuses a TAX-RELIEF claim — Sponsor S3, 2026-07-28
+**Decision:** `sponsor_comms.BANNED_PHRASES` refuses "tax deductible" / "tax exempt" / "tax
+relief", student-ownership phrasing ("your student"), and urgency copy ("act now", "limited
+time"). A save containing any of them is rejected with the offending phrase named.
+
+**Why a guard rather than guidance.** The partner family already established that a copy rule
+living in a reviewer's head gets edited away later. But the tax line is different in kind from the
+partner voice rules: HalaTuju holds **no LHDN s44(6) approval**, and the entity question behind it
+is still open. "Your gift is tax deductible" in a donor email is a false statement about someone
+else's tax position — the only sentence available on this surface that could cost the reader
+money rather than merely read badly. It should not be possible to type it into a template and save.
+
+**Trade-offs:** the list is blunt — a legitimate future sentence like "we cannot offer tax relief"
+would also be refused, since the phrase is present. Accepted deliberately: the failure mode of a
+false claim is far worse than the friction of rewording a true one, and the refusal names the
+phrase so the fix is obvious. **Revisit if:** s44(6) approval is granted, at which point the tax
+entries come out and the copy needs a lawyer's eye rather than a grep.
+
+
 ## The six legacy wallet credits carry a RECONSTRUCTED signature pair — data op, 2026-07-28
 **Decision:** all six `source='legacy'` confirmed credits (RM172,000 total) were stamped
 `recorded_by = 'Ve. Elanjelian' <tamiliam@gmail.com>` and

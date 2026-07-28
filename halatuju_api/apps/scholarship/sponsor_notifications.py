@@ -19,7 +19,10 @@ from django.conf import settings
 from django.utils import timezone
 
 from . import pool
-from .emails import send_sponsor_digest_email, send_sponsor_new_student_email
+# S3: both alerts now go through `sponsor_notify`, which routes them to an editable template
+# once its switch is on and to the ORIGINAL hardcoded sender until then — these two are
+# live on production, so a dark template must not silence them.
+from . import sponsor_notify
 from .models import ScholarshipApplication, Sponsor, SponsorProfile
 
 logger = logging.getLogger(__name__)
@@ -65,7 +68,7 @@ def send_sponsor_realtime():
         theirs = [a for a in new_apps if a.programme_id in set(pool.approved_programme_ids(s))]
         if not theirs:
             continue
-        if send_sponsor_new_student_email(s.email, _serialise_cards(theirs, s), name=s.name):
+        if sponsor_notify.send_student_alert(s, _serialise_cards(theirs, s)):
             sent += 1
 
     # Stamp the whole batch as real-time-notified (whether or not any sponsor is
@@ -101,7 +104,7 @@ def send_sponsor_digests():
         apps = list(qs)
         if not apps:
             continue
-        send_sponsor_digest_email(s.email, _serialise_cards(apps, s), name=s.name)
+        sponsor_notify.send_student_alert(s, _serialise_cards(apps, s), weekly=True)
         sent += 1
         # Advance the clock whether or not the best-effort send succeeded, so the
         # sponsor is never sent the same digest twice (the students remain browsable

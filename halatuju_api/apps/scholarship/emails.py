@@ -1249,6 +1249,26 @@ def send_partner_email(to_email, *, subject, text_body, html_body):
     )
 
 
+def send_sponsor_email(to_email, *, subject, text_body, html_body):
+    """Send ONE already-rendered sponsor email (S3, 2026-07-28).
+
+    The twin of `send_partner_email`, and for the same reason: the subject/text/html come from
+    `sponsor_comms.render`, which owns the WORDING, and this owns only the ENVELOPE — the shared
+    HTML shell (so an editable email still looks like every other HalaTuju email and stays inside
+    the branding guard), the programme's sender identity, and the sponsor reply-to that already
+    serves the notification emails.
+
+    HTML primary, plain text carrying the same information. Best-effort → bool.
+    """
+    if not to_email:
+        return False
+    return _send_html(
+        to_email, subject, text_body, _html_email_shell(html_body),
+        from_email=_P.email_from,
+        reply_to=[_P.sponsor_reply_to],
+    )
+
+
 def send_countersign_pending_email(to_email, *, applicant_name='', link=''):
     """Internal (English) nudge to the Foundation officer / super admins: a bursary agreement
     is awaiting the Foundation's COUNTERSIGNATURE (the binding, final signature that activates

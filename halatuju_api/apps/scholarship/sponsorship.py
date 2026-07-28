@@ -227,6 +227,12 @@ def sign_admin_credit(credit, admin, typed_name):
     credit.status = Donation.STATUS_CONFIRMED
     credit.save(update_fields=[
         'confirmed_by', 'confirmed_by_email', 'confirmed_at', 'status'])
+    # S3: tell the donor, but ONLY here — this is the single line in the chain where the money
+    # becomes spendable, and it is the only point at which saying "we hold it" is true. Fired
+    # from the SERVICE rather than the endpoint so a shell-driven confirmation notifies too, and
+    # imported locally to keep this money module free of a hard dependency on the sending layer.
+    from . import sponsor_notify
+    sponsor_notify.send_credit_confirmed(credit)
     return credit
 
 

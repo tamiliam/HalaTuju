@@ -156,6 +156,8 @@ from .views_admin import (
     AdminSourceDetailView,
     AdminPartnerEmailsView,
     AdminPartnerEmailDetailView,
+    AdminSponsorEmailsView,
+    AdminSponsorEmailDetailView,
     AdminApplicationWitnessView,
 )
 
@@ -313,6 +315,10 @@ urlpatterns = [
     # Partner comms: the five programme-wide partner emails (switch + wording). Same gate as Sources.
     path('admin/scholarship/partner-emails/', AdminPartnerEmailsView.as_view()),
     path('admin/scholarship/partner-emails/<str:kind>/', AdminPartnerEmailDetailView.as_view()),
+    # Sponsor comms (S3). Lives under the scholarship admin prefix beside its partner sibling,
+    # not under admin/sponsors/, so the two editable-email families sit together.
+    path('admin/scholarship/sponsor-emails/', AdminSponsorEmailsView.as_view()),
+    path('admin/scholarship/sponsor-emails/<str:kind>/', AdminSponsorEmailDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/witness/', AdminApplicationWitnessView.as_view()),
     path('admin/scholarship/applications/<int:pk>/award-amount/', AdminSetAwardAmountView.as_view()),
     # Post-award S4: disbursement/tranche ledger (schedule + release/withhold/return)

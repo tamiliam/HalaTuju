@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## An org_admin decides what sponsors hear (sponsor S3) — 2026-07-28
+
+A sponsor registered, was vetted, was approved — and was told none of it. `AdminSponsorReviewView`
+flipped a status field and returned; eight people on production were approved in silence. Nine
+editable emails now close that, shipping **dark** behind two independent gates.
+**Migration `0133` — apply migrate-first.**
+
+### Added
+- **`SponsorEmailTemplate` + `SponsorEmailLog`** (migration `0133`, RLS at deploy) — the siblings
+  of the partner pair. One row per kind: **one switch per EMAIL, not per sponsor.**
+- **`sponsor_comms.py`** — nine kinds, a per-kind placeholder allowlist, the voice guard, both
+  gates, and the render vocabulary. Pure: it cannot send.
+- **`sponsor_notify.py`** — the only module that can send. Every path logs, including the skips.
+- **Six emails that never existed**: `welcome`, `approved`, `rejected`, `suspended`,
+  `reinstated`, `credit_confirmed`.
+- **`seed_sponsor_email_templates`** — idempotent, `--reset` rewrites wording, and it **never**
+  flips a switch. Each seed is validated against the same guards a hand-edit faces.
+- **The Sponsors | Emails badge pair** on `/admin/sponsors`, plus `SponsorEmailsCard`. Held back
+  from S1 on purpose: a badge that opens nothing is the failure the partner card exists to avoid.
+
+### Changed
+- **`email_templates.py`** — the block-splitting renderer is now SHARED. `partner_comms.render`
+  delegates to it and its 113 email goldens pass unmodified, which is the regression guard.
+- **`components/emails/TemplateEditor`** — the wording editor is shared too, parameterised by
+  save-call, error mapper and i18n prefix. It gained a jsdom test neither copy had.
+- A block that fills to nothing is now DROPPED rather than rendered as an empty paragraph, so a
+  template can carry an optional token (the invite's personal note) on its own line.
+
+### Notes
+- **⚠ The three LIVE emails keep their old sender while dark.** `new_students`, `weekly_digest`
+  and `referral_invite` are sending on production today. Routing them through a switched-off
+  template would have silenced them with no error and no failing test — the panel would have shown
+  a tidy row of "off" switches, exactly as designed. See `docs/decisions.md`.
+- **NINE kinds, not eleven.** `low_balance` and `annual_statement` are deferred: they edge into
+  marketing, and sponsor consent is a bare version string with no stored wording behind it
+  (TD-186), so there is no way to check what was agreed to.
+- **The voice guard refuses a tax-relief claim** — we hold no LHDN s44(6) approval, and that is
+  the one sentence here that could cost a donor money. Also refused: "your student" (a sponsor
+  funds a student rather than acquiring one) and urgency copy.
+- **`credit_confirmed` fires on `confirmed` and nothing earlier**, guarded in both the caller and
+  the sender.
+- **3658 scholarship pytest · 954 jest** (64 suites); `makemigrations --check` clean.
+
+
 ## Data operations — 2026-07-28 (post-deploy, no code change)
 
 Both run against production after the sponsor S2 deploy, owner-authorised, verified.

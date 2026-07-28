@@ -22,7 +22,42 @@ unbuilt half of the roadmap lives in the repo rather than a scratch file. S1/S1.
 
 ---
 
-## S3 — sponsor email templates
+## S3 — sponsor email templates — SCOPE FIXED 2026-07-28, IN PROGRESS
+
+**Owner decisions at sprint start:**
+- **NINE kinds, not eleven.** `low_balance` and `annual_statement` are deferred: PDPA consent at
+  registration covers transactional account mail, those two edge into marketing, and consent
+  management is now parked as TD-186 — so there is no way to check what a sponsor actually agreed
+  to. They are not built, not seeded, not scheduled.
+- **One sprint, end-to-end** (templates + switches + renderer + sends + panel, shipping dark),
+  rather than the wording-then-send split. Same call the owner made for partner comms after
+  challenging that split: a sprint that can store wording but not send it is half a feature.
+
+**Lessons carried in (sprint-start step 2 — these are the ones that bite THIS scope):**
+1. **The 113 email goldens are a byte-identity contract, and the last refactor of `emails.py`
+   broke placeholders OUTSIDE the golden set.** The branding sprint's string-concat form silently
+   dropped an `f` prefix, so `{month}` shipped literal in two emails the snapshots didn't cover.
+   → run the goldens AND grep for that signature (`\+ _[A-Z]+ \+ .[^{]*\{`); the snapshot proves
+   only what it renders.
+2. **L109 — parity does not prove a key EXISTS.** Nine kinds of copy is this module's largest i18n
+   surface. New keys go into the key-existence guard; any server-code→copy mapping goes through an
+   allowlist (the `creditErrorKey` shape), never string interpolation into a key path.
+3. **L380 — "dark by default" in a comment is not a gate.** The panel gates on a real
+   `comms_enabled` returned by the backend, exactly as the partner card does.
+4. **A test that enumerates what it guards silently narrows.** `PLACEHOLDERS` and `KINDS` get a
+   consistency test derived from the model's own choices, not a hand-copied list.
+5. **L113 / L289** — hand-written `CreateModel` uses `BigAutoField`; declared serializer fields get
+   an explicit `max_length`.
+6. **When a sprint gives a role a new power, the role-matrix SUMMARY ROW and the chapter's OPENING
+   SENTENCE go stale, not just the section you add** (learned this sprint: `admin` had been
+   documented "read-only" since 16 July while being the maker on payment runs). S3 gives
+   `org_admin` control of what sponsors hear.
+7. **Extraction must not change behaviour:** `partner_comms.render` keeps its exact output while
+   delegating to the shared seam — its existing tests are the regression guard, unmodified.
+
+**Deferred within this sprint, deliberately:** the `{reason}` token on `rejected`/`suspended`.
+There is no reason field yet — that is S4 — so those two templates ship without it rather than
+referencing a placeholder the renderer cannot fill.
 
 **The gap it closes:** a sponsor is approved and never told. `AdminSponsorReviewView` flips the
 status field and returns. There is no approval email, no rejection email, no suspension email, and
@@ -51,8 +86,8 @@ New `SponsorEmailTemplate` (kind unique, `enabled`, subject, body, `updated_by_e
 | `new_students` | hourly realtime alert | Yes, hardcoded |
 | `weekly_digest` | Monday digest | Yes, hardcoded |
 | `referral_invite` | they invite someone | Yes, hardcoded |
-| `low_balance` | balance below one award | **No — new** |
-| `annual_statement` | yearly giving summary | **No — new** |
+| ~~`low_balance`~~ | balance below one award | **DEFERRED (owner, 2026-07-28)** |
+| ~~`annual_statement`~~ | yearly giving summary | **DEFERRED (owner, 2026-07-28)** |
 
 The three existing ones carry generated per-student mini-cards with artwork. Adopting them into
 editable templates requires a **`{student_cards}` structural token** — exactly the

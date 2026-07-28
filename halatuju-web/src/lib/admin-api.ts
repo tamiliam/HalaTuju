@@ -407,6 +407,46 @@ export interface PartnerEmailsPayload {
   comms_enabled: boolean
 }
 
+// ---- Sponsor comms (S3, 2026-07-28) ----
+// The twin of the partner-email pair. One switch per EMAIL, not per sponsor: a sponsor is not a
+// tenant, and "which donors hear about a new student" is not a per-donor decision.
+
+export interface SponsorEmailTemplate {
+  kind: string
+  /** The model's own human label for the kind — the panel prefers its i18n copy. */
+  label: string
+  enabled: boolean
+  subject: string
+  body: string
+  placeholders: string[]
+  updated_by_email: string
+  updated_at: string | null
+  last_sent_at: string | null
+  last_sent_count: number
+}
+
+export interface SponsorEmailsPayload {
+  templates: SponsorEmailTemplate[]
+  /** The PLATFORM gate. Switches still save while it is off; nothing sends. */
+  comms_enabled: boolean
+  /** Seeded vs expected — a mismatch means the seed command has not been run. */
+  seeded: number
+  expected: number
+  sponsor_count: number
+}
+
+export async function getSponsorEmails(options?: ApiOptions): Promise<SponsorEmailsPayload> {
+  return adminFetch('/api/v1/admin/scholarship/sponsor-emails/', options)
+}
+
+export async function updateSponsorEmail(
+  kind: string,
+  patch: { enabled?: boolean; subject?: string; body?: string },
+  options?: ApiOptions,
+): Promise<SponsorEmailTemplate> {
+  return adminMutate(`/api/v1/admin/scholarship/sponsor-emails/${kind}/`, 'PATCH', patch, options)
+}
+
 export async function getPartnerEmails(options?: ApiOptions) {
   return adminFetch<PartnerEmailsPayload>('/api/v1/admin/scholarship/partner-emails/', options)
 }

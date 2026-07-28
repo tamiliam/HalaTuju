@@ -57,7 +57,16 @@ collectSource(SRC_DIR, files)
 const blob = files.map((f) => fs.readFileSync(f, 'utf8')).join('\n')
 
 const re = new RegExp(`['"\`](admin\\.sources\\.[\\w.]+?)(?=['"\`])`, 'g')
-const usedStatic = Array.from(new Set(captureGroup1(re, blob))).filter((k) => !k.endsWith('.'))
+// A NAMESPACE passed as a prop is not a key reference. `TemplateEditor` (shared with the sponsor
+// family since 2026-07-28) takes `prefix="admin.sources.emails"` and builds `${prefix}.subject`
+// itself, so that literal resolves to an object rather than a string. Excluding the namespaces
+// themselves keeps this guard strict about LEAVES — which is what it is for — rather than failing
+// on a prop doing exactly what it should.
+const NAMESPACE_PROPS = ['admin.sources.emails']
+
+const usedStatic = Array.from(new Set(captureGroup1(re, blob)))
+  .filter((k) => !k.endsWith('.'))
+  .filter((k) => !NAMESPACE_PROPS.includes(k))
 
 describe('admin.sources i18n hygiene', () => {
   test('every referenced admin.sources key resolves in en.json (no missing keys)', () => {

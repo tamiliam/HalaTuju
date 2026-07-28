@@ -7,7 +7,7 @@
  * table. Its space pays for Given and Last seen. These pin the swap (a future edit could
  * quietly restore a dead column) and the row link, which is the only way into the detail page.
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AdminSponsorsList from './page'
 import * as api from '@/lib/admin-api'
 
@@ -17,8 +17,13 @@ jest.mock('next/link', () => ({
     <a href={href}>{children}</a>,
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
+let viewerRole: { role: string; is_super_admin?: boolean } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin' } }),
+  useAdminAuth: () => ({ token: 'tok', role: viewerRole }),
+}))
+jest.mock('@/components/sponsors/SponsorEmailsCard', () => ({
+  __esModule: true,
+  default: () => <div>EMAILS PANEL</div>,
 }))
 jest.mock('@/lib/admin-api')
 
@@ -41,6 +46,7 @@ const SPONSORS = [
 
 beforeEach(() => {
   jest.clearAllMocks()
+  viewerRole = { role: 'org_admin' }
   mockApi.listSponsors.mockResolvedValue({ sponsors: SPONSORS })
 })
 
@@ -89,5 +95,32 @@ describe('sponsors list columns', () => {
     const cell = screen.getByText('admin.sponsors.seen.never')
     expect(cell).toBeTruthy()
     expect(cell.getAttribute('title')).toBe('admin.sponsors.seen.neverHint')
+  })
+})
+
+// ── the badge pair (S3) ───────────────────────────────────────────────────────
+// Held back from S1 deliberately: a badge that opens nothing is the failure the partner-comms
+// card exists to avoid. The Emails panel IS S3, so the badges arrive with it.
+
+describe('the Sponsors | Emails badges', () => {
+  it('lands on the vetting list, not the emails panel', async () => {
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    expect(screen.queryByText('EMAILS PANEL')).toBeNull()
+  })
+
+  it('swaps to the emails panel and hides the list', async () => {
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    fireEvent.click(screen.getByRole('tab', { name: 'admin.sponsors.tabEmails' }))
+    expect(screen.getByText('EMAILS PANEL')).toBeTruthy()
+    expect(screen.queryByText('Bharathan Nair')).toBeNull()
+  })
+
+  it('is not offered to finance, which may read sponsors but not write their emails', async () => {
+    viewerRole = { role: 'finance' }
+    render(<AdminSponsorsList />)
+    await waitFor(() => expect(screen.getByText('Bharathan Nair')).toBeTruthy())
+    expect(screen.queryByRole('tab', { name: 'admin.sponsors.tabEmails' })).toBeNull()
   })
 })

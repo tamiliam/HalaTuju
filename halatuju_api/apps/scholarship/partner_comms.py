@@ -43,6 +43,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Count, Max, Q
 
+from . import email_templates
 from .models import ApplicantDocument, PartnerEmailTemplate, ScholarshipApplication
 
 # The platform's own bursary programme — the "house" organisation, i.e. us. It is the residual
@@ -94,13 +95,7 @@ _TOKEN_RE = re.compile(r'\{([a-z_]+)\}')
 def unknown_placeholders(kind, *parts):
     """Placeholder tokens in `parts` that this kind does not supply — sorted, so an error
     message is stable. Empty tuple means the template is safe to save."""
-    allowed = PLACEHOLDERS.get(kind, set())
-    found = set()
-    for part in parts:
-        found.update(_TOKEN_RE.findall(part or ''))
-    return tuple(sorted(found - allowed))
-
-
+    return email_templates.unknown_placeholders(PLACEHOLDERS.get(kind, set()), *parts)
 # ── the voice guard ───────────────────────────────────────────────────────────
 
 # Owner ruling, 2026-07-26: a partner organisation co-owns this bursary and may market it as
@@ -119,10 +114,7 @@ BANNED_PHRASES = (
 
 def banned_phrases(*parts):
     """Conduit/ownership phrasings present in `parts`, sorted. Empty means the copy is clean."""
-    haystack = ' '.join(p or '' for p in parts).lower()
-    return tuple(sorted({p for p in BANNED_PHRASES if p in haystack}))
-
-
+    return email_templates.banned_phrases(BANNED_PHRASES, *parts)
 # ── who qualifies ─────────────────────────────────────────────────────────────
 
 def qualifying_partners():
@@ -341,12 +333,10 @@ def fmt_date(value):
     return f'{value.day} {_MONTHS[value.month - 1]} {value.year}'
 
 
-def _esc(value):
-    """HTML-escape an interpolated value. Names and organisation names come from the database, so
-    escaping means a stray `<` in a name can never break a partner's email."""
-    return html_escape('' if value is None else str(value), quote=True)
-
-
+# HTML-escape an interpolated value. Shared with every editable-email family now that sponsor
+# comms is the second one — see `email_templates.esc`. The local alias keeps this module's many
+# call sites unchanged.
+_esc = email_templates.esc
 def _counts_blocks(counts):
     """The stage table as `(html, text)` — lines in `STAGE_LABELS` order, then the total."""
     cell = 'padding:5px 0;border-top:1px solid #f3f4f6;'
@@ -414,12 +404,8 @@ def _chase_blocks(rows, today=None):
 
 
 def _list_blocks(names):
-    """A plain student list as `(html, text)`."""
-    items = ''.join('<li style="margin-bottom:3px;">' + _esc(n) + '</li>' for n in names)
-    return ('<ul style="margin:0 0 12px;padding-left:22px;">' + items + '</ul>',
-            '\n'.join('- ' + str(n) for n in names))
-
-
+    """A plain student list as `(html, text)` — the shared bulleted-list block."""
+    return email_templates.list_blocks(names)
 def _blocks_for(context):
     """`{token: (html, text)}` for the structural tokens this context supplies."""
     out = {}
@@ -447,48 +433,15 @@ def _scalars(context):
     }
 
 
-def _fill(text, scalars, escape):
-    """Substitute the scalar tokens. The template text is escaped by the caller BEFORE this runs
-    (a `{token}` survives escaping), so `escape` here applies to the VALUES."""
-    out = text
-    for token, value in scalars.items():
-        out = out.replace('{' + token + '}', _esc(value) if escape else str(value))
-    return out
-
-
+# Substitute the scalar tokens; the shared implementation. The template text is escaped by the
+# caller BEFORE this runs (a `{token}` survives escaping), so `escape` applies to the VALUES.
+_fill = email_templates.fill
 def render(kind, template, context):
     """A stored template + one organisation's data → `(subject, text_body, html_body)`.
 
-    `html_body` is the INNER html; the caller wraps it in the shared email shell, which is why this
-    module still imports no email code.
-
-    The body splits on blank lines. A block that is exactly a structural token
-    (`{counts_table}` / `{student_table}` / `{student_list}`) becomes that table or list; every
-    other block becomes a paragraph, with single newlines inside it kept as line breaks.
-
-    A structural token in the SUBJECT is flattened to a one-line summary rather than rendered or
-    left raw — a partner must never receive a subject reading `{counts_table}`.
+    The mechanics — blank-line paragraphs, structural-token blocks, escaping, subject
+    flattening — live in `email_templates.render`, shared with the sponsor family. What stays
+    HERE is the partner vocabulary: which scalars and which tables this family supplies.
     """
-    scalars = _scalars(context)
-    blocks = _blocks_for(context)
-
-    subject = _fill(template.subject, scalars, escape=False)
-    for token, (_, text_form) in blocks.items():
-        subject = subject.replace('{' + token + '}', ' '.join(text_form.split())[:120])
-
-    html_parts, text_parts = [], []
-    for raw in re.split(r'\n\s*\n', template.body or ''):
-        block = raw.strip()
-        if not block:
-            continue
-        token = block[1:-1] if block.startswith('{') and block.endswith('}') else ''
-        if token in blocks:
-            html_form, text_form = blocks[token]
-            html_parts.append(html_form)
-            text_parts.append(text_form)
-            continue
-        text_parts.append(_fill(block, scalars, escape=False))
-        safe = _fill(html_escape(block, quote=False), scalars, escape=True)
-        html_parts.append('<p style="margin:0 0 14px;">' + safe.replace('\n', '<br>') + '</p>')
-
-    return subject, '\n\n'.join(text_parts), ''.join(html_parts)
+    return email_templates.render(
+        template.subject, template.body, _scalars(context), _blocks_for(context))

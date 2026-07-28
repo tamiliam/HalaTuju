@@ -25,6 +25,7 @@ from . import pool
 from . import in_programme as in_programme_service
 from . import referrals as referral_service
 from . import sponsor_feed
+from . import sponsor_notify
 from . import sponsorship as sponsorship_service
 from . import trust as trust_service
 from .emails import send_sponsor_interest_admin_email
@@ -152,6 +153,7 @@ class SponsorRegisterView(SponsorMixin, APIView):
             existing.consent_version = SPONSOR_CONSENT_VERSION
             existing.save()
             _attribute_referral(data, existing)
+            sponsor_notify.send_welcome(existing)
             return Response(SponsorSerializer(existing).data)
 
         sponsor = Sponsor.objects.create(
@@ -167,6 +169,9 @@ class SponsorRegisterView(SponsorMixin, APIView):
             status='pending',
         )
         _attribute_referral(data, sponsor)
+        # S3: the first thing we have ever said to a sponsor. Dark until the template is switched
+        # on; best-effort either way, so a mail problem can never cost someone their registration.
+        sponsor_notify.send_welcome(sponsor)
         # Best-effort: alert the admin there's a new sponsor to vet.
         send_sponsor_interest_admin_email(
             name=sponsor.name, email=sponsor.email,

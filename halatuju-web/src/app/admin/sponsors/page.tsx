@@ -7,6 +7,8 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { seenBand } from '@/lib/sponsorDetail'
 import { listSponsors, reviewSponsor, type AdminSponsor } from '@/lib/admin-api'
+import { effectiveRole } from '@/lib/navigation'
+import SponsorEmailsCard from '@/components/sponsors/SponsorEmailsCard'
 
 // The ORGANISATION column was dropped on 2026-07-27: empty on all nine prod rows, and it cost
 // a quarter of the table's width. Its space pays for GIVEN + LAST SEEN — what an admin
@@ -27,6 +29,23 @@ const statusBadge = (s: string) =>
 
 const STATUS_OPTIONS = ['pending', 'approved', 'rejected', 'suspended']
 
+// TWO PANELS, one badge each — the same idiom as the Sources page, so the console has one way of
+// doing this. Sponsors is the default: the list is what the page is for, and Emails is a
+// deliberate second click. The badges were held back from S1 on purpose (a badge that opens
+// nothing is the failure the partner-comms card exists to avoid); the Emails panel IS this sprint.
+const PANELS = ['sponsors', 'emails'] as const
+type Panel = (typeof PANELS)[number]
+
+const panelLabel: Record<Panel, string> = {
+  sponsors: 'admin.sponsors.tabSponsors',
+  emails: 'admin.sponsors.tabEmails',
+}
+
+// Editing what every donor is told is an editorial power, not a reading one — so the badge is
+// shown to the roles the endpoint admits (super / org_admin / admin) and not to finance, which
+// may read the sponsor list. The endpoint is the authority; this only avoids offering a 403.
+const CAN_EDIT_EMAILS = ['super', 'org_admin', 'admin']
+
 // Which review actions to offer for a sponsor in a given status.
 const actionsFor = (status: string): Array<'approve' | 'reject' | 'suspend'> =>
   status === 'pending' ? ['approve', 'reject']
@@ -40,8 +59,10 @@ const actionStyle: Record<string, string> = {
 }
 
 export default function AdminSponsorsList() {
-  const { token } = useAdminAuth()
+  const { token, role } = useAdminAuth()
   const { t } = useT()
+  const [panel, setPanel] = useState<Panel>('sponsors')
+  const mayEditEmails = CAN_EDIT_EMAILS.includes(effectiveRole(role))
   const [sponsors, setSponsors] = useState<AdminSponsor[]>([])
   const [statusF, setStatusF] = useState('')
   const [error, setError] = useState('')
@@ -79,6 +100,28 @@ export default function AdminSponsorsList() {
       <h1 className="text-xl sm:text-2xl font-bold">{t('admin.sponsors.title')}</h1>
       <p className="text-sm text-gray-500 mt-1 mb-4">{t('admin.sponsors.desc')}</p>
 
+      {mayEditEmails && (
+        <div role="tablist" aria-label={t('admin.sponsors.tabsAria')} className="flex items-center gap-2 mb-6">
+          {PANELS.map((key) => {
+            const on = panel === key
+            return (
+              <button key={key} type="button" role="tab" aria-selected={on}
+                onClick={() => setPanel(key)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                  on ? 'border-blue-600 bg-blue-600 text-white'
+                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
+                {t(panelLabel[key])}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Mounted only while its badge is selected, so each reveal re-reads the templates and an
+          emails hiccup can never take the vetting list down with it. */}
+      {panel === 'emails' && mayEditEmails && <SponsorEmailsCard token={token} t={t} />}
+
+      {panel === 'sponsors' && (<>
       <div className="flex flex-wrap gap-3 mb-4">
         <select value={statusF} onChange={(e) => setStatusF(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.sponsors.allStatuses')}</option>
@@ -154,6 +197,7 @@ export default function AdminSponsorsList() {
           </table>
         </div>
       )}
+      </>)}
     </div>
   )
 }

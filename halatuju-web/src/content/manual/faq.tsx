@@ -167,6 +167,22 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   org_admin: [
     {
+      q: <>A sponsor was approved. Do they get told?</>,
+      a: <>They do now, if you switch that email on. Open <strong>Sponsors → Emails</strong>: there
+        is one for the welcome, one for each vetting outcome, one for a recorded gift, and the
+        student alerts. Before this they were approved in silence. Nothing sends until the feature
+        is turned on for the whole programme <em>and</em> the individual email is switched on — the
+        panel says at the top if the first is still pending.</>,
+    },
+    {
+      q: <>Can I change what those emails say?</>,
+      a: <>Yes — <strong>Edit wording</strong> on any of them, with a live preview of what the
+        sponsor receives. Two things are refused: a detail we cannot fill in for that email (use
+        the chips under the box), and wording that claims <strong>tax relief</strong> (we hold no
+        approval for that), calls someone &ldquo;your student&rdquo;, or presses the reader. If a
+        save is refused the message names exactly what to change.</>,
+    },
+    {
       q: <>A sponsor&rsquo;s wallet is short. Who adds the money?</>,
       a: <>A <strong>general admin</strong> records the credit against the gift with its bank transfer reference and
         signs as recorder; <strong>you countersign</strong>, and only then is it spendable on a student. You

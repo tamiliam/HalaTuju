@@ -3001,12 +3001,12 @@
   },
   "admin": {
     "orgPage": {
-        "nav": "Overview",
-        "sub": "Your organisation — its people, its sponsors and its money.",
-        "staffSub": "Who can act inside this organisation, and what each of them may do.",
-        "invitesPending": "{count} invited, not yet accepted",
-        "awaitingVetting": "awaiting vetting",
-        "needsAttention": "Needs your attention"
+      "nav": "Overview",
+      "sub": "Your organisation — its people, its sponsors and its money.",
+      "staffSub": "Who can act inside this organisation, and what each of them may do.",
+      "invitesPending": "{count} invited, not yet accepted",
+      "awaitingVetting": "awaiting vetting",
+      "needsAttention": "Needs your attention"
     },
     "organisations": {
       "sub": "The tenant organisations HalaTuju runs, and who leads each one."
@@ -3015,33 +3015,33 @@
       "sub": "Roadshow and referral organisations that send students to the course selector."
     },
     "shell": {
-        "primaryNav": "Main navigation",
-        "search": "Search",
-        "searchPlaceholder": "Search pages…",
-        "searchNothing": "Nothing matches that.",
-        "searchScopeNote": "Searching applications, students and sponsors is coming later — this searches your menu.",
-        "help": "Help",
-        "guideSub": "Your role’s manual",
-        "notifications": "Notifications",
-        "attention": "Needs your attention",
-        "nothingWaiting": "Nothing waiting.",
-        "attentionNote": "These are counts from across the console, gathered in one place.",
-        "account": "Account",
-        "attn": {
-          "sponsors": "{count} sponsors awaiting vetting"
-        }
+      "primaryNav": "Main navigation",
+      "search": "Search",
+      "searchPlaceholder": "Search pages…",
+      "searchNothing": "Nothing matches that.",
+      "searchScopeNote": "Searching applications, students and sponsors is coming later — this searches your menu.",
+      "help": "Help",
+      "guideSub": "Your role’s manual",
+      "notifications": "Notifications",
+      "attention": "Needs your attention",
+      "nothingWaiting": "Nothing waiting.",
+      "attentionNote": "These are counts from across the console, gathered in one place.",
+      "account": "Account",
+      "attn": {
+        "sponsors": "{count} sponsors awaiting vetting"
+      }
     },
     "nav": {
-        "organisations": "Organisations",
-        "referralPartners": "Referral partners",
-        "billingRates": "Billing rates",
-        "staff": "Staff",
-        "programmeOverview": "Overview",
-        "reviewers": "Reviewers",
-        "years": "Intake years",
-        "fund": "Fund",
-        "rules": "Rules",
-        "soon": "Soon",
+      "organisations": "Organisations",
+      "referralPartners": "Referral partners",
+      "billingRates": "Billing rates",
+      "staff": "Staff",
+      "programmeOverview": "Overview",
+      "reviewers": "Reviewers",
+      "years": "Intake years",
+      "fund": "Fund",
+      "rules": "Rules",
+      "soon": "Soon",
       "group": {
         "platform": "Platform",
         "organisation": "Organisation",
@@ -3272,6 +3272,77 @@
           "invited": "Invited",
           "joined": "Joined",
           "expired": "Expired"
+        }
+      },
+      "tabSponsors": "Sponsors",
+      "tabEmails": "Emails",
+      "tabsAria": "Sponsors or emails",
+      "emails": {
+        "title": "What sponsors hear from us",
+        "subtitle": "{on} of {total} emails switched on · {sponsors} sponsors",
+        "loadError": "Could not load the sponsor emails.",
+        "edit": "Edit wording",
+        "editLabel": "Wording",
+        "previewLabel": "What they receive",
+        "subject": "Subject",
+        "body": "Message",
+        "placeholderHint": "Click to drop a detail into the message where your cursor is.",
+        "sharedNote": "One wording, used for every sponsor.",
+        "lastSent": "Last sent {date} · {count} sponsor(s)",
+        "neverSent": "Never sent.",
+        "neverSentYet": "No send recorded through this template yet.",
+        "alreadyLive": "Sending today",
+        "flagOffTitle": "These switches are not live yet.",
+        "flagOffBody": "Wording and switches save normally, but nothing is sent until sponsor emails are turned on for the whole programme.",
+        "notSeeded": "Only {seeded} of {expected} emails exist. Run the seed step to create the rest.",
+        "error": {
+          "unknownPlaceholder": "This message uses a detail we cannot fill in for this email: {list}. Remove it, or pick one of the chips below the box.",
+          "bannedPhrasing": "This wording cannot be used: {list}. We hold no tax-relief approval, a sponsor funds a student rather than acquiring one, and account emails should not press people.",
+          "required": "A subject and a message are both required."
+        },
+        "kind": {
+          "welcome": "Welcome",
+          "approved": "Approved",
+          "rejected": "Not approved",
+          "suspended": "Suspended",
+          "reinstated": "Reinstated",
+          "credit_confirmed": "Gift recorded",
+          "new_students": "New students",
+          "weekly_digest": "Weekly digest",
+          "referral_invite": "Invitation"
+        },
+        "when": {
+          "welcome": "On registering",
+          "approved": "When you approve them",
+          "rejected": "When you decline them",
+          "suspended": "When you suspend them",
+          "reinstated": "When you lift a suspension",
+          "credit_confirmed": "When a gift is countersigned",
+          "new_students": "Hourly",
+          "weekly_digest": "Monday mornings",
+          "referral_invite": "When a sponsor invites someone"
+        },
+        "desc": {
+          "welcome": "Tells a new sponsor we have their registration and are checking it. Until now the first thing they heard from us was nothing at all.",
+          "approved": "Tells them they are in, and how to see the students waiting.",
+          "rejected": "A short, respectful decline that invites a reply if they think we have it wrong.",
+          "suspended": "Explains that the account is paused, and that support already committed to a student continues.",
+          "reinstated": "Tells a previously suspended sponsor they can sign in again.",
+          "credit_confirmed": "Confirms a gift once two of your team have signed it off. It never fires on money that is still awaiting a signature.",
+          "new_students": "The real-time alert for sponsors who asked to hear as soon as a student is published.",
+          "weekly_digest": "The Monday round-up of students still waiting for support.",
+          "referral_invite": "The invitation an existing sponsor sends to someone they think would help."
+        },
+        "note": {
+          "welcome": "Goes to every new sponsor, whatever the vetting outcome turns out to be.",
+          "approved": "Sent the moment you press Approve.",
+          "rejected": "No reason is included yet — a reason field is coming, and until then keep the wording general.",
+          "suspended": "Say why in your own words if you can; the account holder cannot see your internal notes.",
+          "reinstated": "Sent when you approve someone who was suspended, rather than the Approved email.",
+          "credit_confirmed": "The amounts come from the credit itself, so they always match the sponsor record.",
+          "new_students": "The student cards are the same anonymised cards a sponsor sees when browsing — never a name.",
+          "weekly_digest": "A sponsor can change how often they hear from us, or stop these, in their own account.",
+          "referral_invite": "This one goes to somebody who is not a sponsor yet, so it explains the programme from scratch."
         }
       }
     },

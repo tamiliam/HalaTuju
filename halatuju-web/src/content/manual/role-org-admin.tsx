@@ -97,6 +97,36 @@ export const roleOrgAdmin: ManualChapter = {
       ),
     },
     {
+      anchor: 'org-admin-sponsor-emails',
+      title: 'What sponsors hear from us',
+      body: (
+        <>Open <strong>Sponsors</strong> and switch to the <strong>Emails</strong> badge. Nine
+        emails sit there — a welcome when someone registers, the outcome of your vetting decision
+        either way, a confirmation when a gift is recorded, the alerts about students waiting, and
+        the invitation a sponsor sends to a friend. Each one has its own switch and its own
+        wording, and you can edit both.
+        <br /><br />
+        This exists because until now a sponsor was <em>approved and never told</em>. The decision
+        flipped a field on our side and nothing reached them.
+        <br /><br />
+        <strong>Two things have to be true before anything sends:</strong> the feature must be
+        turned on for the whole programme, and that particular email must be switched on. Until
+        the first is done the panel says so plainly at the top — your switches still save, but
+        nothing goes out. Three of the nine are <em>already</em> reaching sponsors through the
+        older system; those are marked <strong>Sending today</strong>, so an unlit switch never
+        means an email is silent when it isn&rsquo;t.
+        <br /><br />
+        <strong>Two things the editor will refuse to save.</strong> A detail we cannot fill in for
+        that email (the chips under the box are the ones that work — anything else would print as
+        <code>{'{'}like_this{'}'}</code> in someone&rsquo;s inbox, and the same list is what stops
+        a template ever naming a student). And three kinds of wording: any claim about
+        <strong> tax relief</strong> — we hold no approval for that and it is the one line that
+        could cost a donor money — anything calling someone &ldquo;your student&rdquo;, because a
+        sponsor funds a student rather than acquiring one, and pressure wording, because these are
+        account emails and not marketing.</>
+      ),
+    },
+    {
       anchor: 'org-admin-administration',
       title: 'Your organisation in the sidebar',
       body: (

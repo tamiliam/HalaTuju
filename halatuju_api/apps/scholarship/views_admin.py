@@ -36,6 +36,7 @@ from .models import (
     ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
 from . import scheduling
+from . import sponsor_comms as sponsor_comms_mod
 from .profile_engine import generate_anon_blurb, refine_sponsor_profile
 from . import in_programme as in_programme_service
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
@@ -1079,10 +1080,17 @@ class AdminSponsorReviewView(_AdminBase):
         new_status = self._ACTION_STATUS.get(request.data.get('action'))
         if not new_status:
             return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
+        previous_status = sponsor.status
         sponsor.status = new_status
         sponsor.reviewed_at = timezone.now()
         sponsor.reviewed_by = admin.email
         sponsor.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'updated_at'])
+        # S3: until now this endpoint flipped a field and returned — eight people on production
+        # were approved and never told. `previous_status` is read BEFORE the write because an
+        # approval that lifts a suspension is a REINSTATEMENT, and the two read very differently
+        # to the person receiving them. Dark until the template is switched on; best-effort.
+        from . import sponsor_notify
+        sponsor_notify.send_vetting_outcome(sponsor, new_status, previous_status=previous_status)
         return Response(_sponsor_dict(sponsor))
 
 
@@ -1627,6 +1635,129 @@ class AdminPartnerEmailDetailView(_SourcesBase):
             fields += ['updated_by_email', 'updated_at']
             tpl.save(update_fields=fields)
         return Response(_partner_email_dict(tpl))
+
+
+def _sponsor_email_dict(tpl, last=None):
+    """Allowlist view of one sponsor-email template. Explicit fields — never model passthrough."""
+    return {
+        'kind': tpl.kind,
+        'label': tpl.get_kind_display(),
+        'enabled': tpl.enabled,
+        'subject': tpl.subject,
+        'body': tpl.body,
+        'placeholders': sorted(sponsor_comms_mod.PLACEHOLDERS.get(tpl.kind, set())),
+        'updated_by_email': tpl.updated_by_email or '',
+        'updated_at': tpl.updated_at.isoformat() if tpl.updated_at else None,
+        'last_sent_at': last['sent_at'].isoformat() if last and last.get('sent_at') else None,
+        'last_sent_count': (last or {}).get('sponsors', 0),
+    }
+
+
+class _SponsorEmailsBase(_AdminBase):
+    """Gate for the sponsor-email panel.
+
+    The SAME gate as the Sponsors list it lives on (super / org_admin / admin / finance) would be
+    wrong: deciding what every donor hears is an editorial power, not a reading one. So this
+    mirrors the Sources gate instead — super, org_admin, admin. Finance reads sponsors because
+    money is its business; the wording of a welcome email is not.
+    """
+    def _emails_admin(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not (self.has_role(admin, 'admin') or admin.role == 'org_admin'):
+            return None, self._deny_role()
+        return admin, None
+
+
+class AdminSponsorEmailsView(_SponsorEmailsBase):
+    """GET .../admin/scholarship/sponsor-emails/ — the nine templates + the honest state of play.
+
+    `comms_enabled` is the PLATFORM gate, returned rather than assumed: the panel must be able to
+    say "these switches do nothing yet" instead of implying a switched-on template will send.
+    That is the lesson from the bursary panel, which rendered for everyone because its gate lived
+    only in a comment (L380).
+    """
+    def get(self, request):
+        admin, err = self._emails_admin(request)
+        if err:
+            return err
+        from .models import SponsorEmailLog, SponsorEmailTemplate
+
+        by_kind = {t.kind: t for t in SponsorEmailTemplate.objects.all()}
+        last = {}
+        # org-fence: sponsor comms is platform-level by design — a Sponsor has no organisation
+        # (see AdminSponsorListView), and one switch per email serves every sponsor.
+        for row in (SponsorEmailLog.objects.filter(ok=True).values('kind')
+                    .annotate(sent_at=Max('sent_at'), sponsors=Count('sponsor', distinct=True))):
+            last[row['kind']] = row
+        templates = [
+            _sponsor_email_dict(by_kind[k], last.get(k))
+            for k in sponsor_comms_mod.KINDS if k in by_kind
+        ]
+        return Response({
+            'templates': templates,
+            'comms_enabled': sponsor_comms_mod.comms_enabled(),
+            'seeded': len(templates),
+            'expected': len(sponsor_comms_mod.KINDS),
+            'sponsor_count': Sponsor.objects.count(),
+        })
+
+
+class AdminSponsorEmailDetailView(_SponsorEmailsBase):
+    """PATCH .../admin/scholarship/sponsor-emails/<kind>/ {enabled?, subject?, body?}.
+
+    Two refusals, both deliberate. An unknown `{placeholder}` would render literally into a
+    donor's inbox — and, more seriously, the allowlist is a privacy control: no token resolves to
+    a student's identity, so a template cannot become a new route around the anonymity the pool
+    serializers enforce. The voice guard refuses a tax-relief claim (we hold no s44(6) approval),
+    student-ownership phrasing, and urgency copy that would turn account mail into marketing.
+    """
+    def patch(self, request, kind):
+        admin, err = self._emails_admin(request)
+        if err:
+            return err
+        from .models import SponsorEmailTemplate
+
+        tpl = SponsorEmailTemplate.objects.filter(kind=kind).first()
+        if tpl is None:
+            return Response({'error': 'not_found', 'code': 'not_found'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        subject = tpl.subject if 'subject' not in request.data else (
+            (request.data.get('subject') or '').strip()[:255])
+        body = tpl.body if 'body' not in request.data else (request.data.get('body') or '').strip()
+        if 'subject' in request.data or 'body' in request.data:
+            if not subject or not body:
+                return Response({'error': 'subject_and_body_required',
+                                 'code': 'subject_and_body_required'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            unknown = sponsor_comms_mod.unknown_placeholders(kind, subject, body)
+            if unknown:
+                return Response({'error': 'unknown_placeholder', 'code': 'unknown_placeholder',
+                                 'placeholders': list(unknown)},
+                                status=status.HTTP_400_BAD_REQUEST)
+            banned = sponsor_comms_mod.banned_phrases(subject, body)
+            if banned:
+                return Response({'error': 'banned_phrasing', 'code': 'banned_phrasing',
+                                 'phrases': list(banned)},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        fields = []
+        if 'enabled' in request.data:
+            tpl.enabled = bool(request.data.get('enabled'))
+            fields.append('enabled')
+        if subject != tpl.subject:
+            tpl.subject = subject
+            fields.append('subject')
+        if body != tpl.body:
+            tpl.body = body
+            fields.append('body')
+        if fields:
+            tpl.updated_by_email = (getattr(admin, 'email', '') or '')[:254]
+            fields += ['updated_by_email', 'updated_at']
+            tpl.save(update_fields=fields)
+        return Response(_sponsor_email_dict(tpl))
 
 
 class AdminApplicationWitnessView(_SourcesBase):

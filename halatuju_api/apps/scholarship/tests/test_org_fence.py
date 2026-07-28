@@ -316,6 +316,14 @@ class TestFenceCoverageCompleteness(TestCase):
         # application->owning_organisation for sponsorships). Same split as the credit endpoints.
         'AdminSponsorDetailView': 'identity-cross-org+money-fenced',
         'AdminSponsorPendingCountView': 'cross-org-by-design',
+        # Sponsor comms (S3): the templates are PLATFORM-level, not tenant content. A Sponsor has
+        # no organisation, and enablement is per EMAIL not per recipient — so there is exactly one
+        # welcome email for every sponsor, and nothing here to fence. Gated to super/org_admin/
+        # admin (deliberately NARROWER than the sponsor LIST, which finance may also read: seeing
+        # who funds the programme is finance's business, deciding what donors are told is not).
+        '_SponsorEmailsBase': 'cross-org-by-design',
+        'AdminSponsorEmailsView': 'cross-org-by-design',
+        'AdminSponsorEmailDetailView': 'cross-org-by-design',
         # self-scoped (caller's own reviewer profile, no application)
         'ReviewerProfileView': 'self-scoped',
         # grandfathered referral-org authorisation (orthogonal to ownership; dark)

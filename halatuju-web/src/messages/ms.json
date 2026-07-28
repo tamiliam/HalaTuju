@@ -3001,12 +3001,12 @@
   },
   "admin": {
     "orgPage": {
-        "nav": "Gambaran keseluruhan",
-        "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
-        "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
-        "invitesPending": "{count} dijemput, belum diterima",
-        "awaitingVetting": "menunggu semakan",
-        "needsAttention": "Perlu perhatian anda"
+      "nav": "Gambaran keseluruhan",
+      "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
+      "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
+      "invitesPending": "{count} dijemput, belum diterima",
+      "awaitingVetting": "menunggu semakan",
+      "needsAttention": "Perlu perhatian anda"
     },
     "organisations": {
       "sub": "Organisasi penyewa yang dikendalikan HalaTuju, dan siapa yang mengetuainya."
@@ -3015,33 +3015,33 @@
       "sub": "Organisasi rujukan yang menghantar pelajar ke pemilih kursus."
     },
     "shell": {
-        "primaryNav": "Navigasi utama",
-        "search": "Cari",
-        "searchPlaceholder": "Cari halaman…",
-        "searchNothing": "Tiada padanan.",
-        "searchScopeNote": "Carian permohonan, pelajar dan penaja akan datang — ini mencari menu anda.",
-        "help": "Bantuan",
-        "guideSub": "Manual untuk peranan anda",
-        "notifications": "Pemberitahuan",
-        "attention": "Perlu perhatian anda",
-        "nothingWaiting": "Tiada yang menunggu.",
-        "attentionNote": "Ini ialah kiraan dari seluruh konsol, dikumpulkan di satu tempat.",
-        "account": "Akaun",
-        "attn": {
-          "sponsors": "{count} penaja menunggu semakan"
-        }
+      "primaryNav": "Navigasi utama",
+      "search": "Cari",
+      "searchPlaceholder": "Cari halaman…",
+      "searchNothing": "Tiada padanan.",
+      "searchScopeNote": "Carian permohonan, pelajar dan penaja akan datang — ini mencari menu anda.",
+      "help": "Bantuan",
+      "guideSub": "Manual untuk peranan anda",
+      "notifications": "Pemberitahuan",
+      "attention": "Perlu perhatian anda",
+      "nothingWaiting": "Tiada yang menunggu.",
+      "attentionNote": "Ini ialah kiraan dari seluruh konsol, dikumpulkan di satu tempat.",
+      "account": "Akaun",
+      "attn": {
+        "sponsors": "{count} penaja menunggu semakan"
+      }
     },
     "nav": {
-        "organisations": "Organisasi",
-        "referralPartners": "Rakan rujukan",
-        "billingRates": "Kadar bil",
-        "staff": "Kakitangan",
-        "programmeOverview": "Gambaran keseluruhan",
-        "reviewers": "Penilai",
-        "years": "Tahun kemasukan",
-        "fund": "Dana",
-        "rules": "Peraturan",
-        "soon": "Akan datang",
+      "organisations": "Organisasi",
+      "referralPartners": "Rakan rujukan",
+      "billingRates": "Kadar bil",
+      "staff": "Kakitangan",
+      "programmeOverview": "Gambaran keseluruhan",
+      "reviewers": "Penilai",
+      "years": "Tahun kemasukan",
+      "fund": "Dana",
+      "rules": "Peraturan",
+      "soon": "Akan datang",
       "group": {
         "platform": "Platform",
         "organisation": "Organisasi",
@@ -3272,6 +3272,77 @@
           "invited": "Dijemput",
           "joined": "Menyertai",
           "expired": "Tamat tempoh"
+        }
+      },
+      "tabSponsors": "Penaja",
+      "tabEmails": "E-mel",
+      "tabsAria": "Penaja atau e-mel",
+      "emails": {
+        "title": "Apa yang penaja dengar daripada kami",
+        "subtitle": "{on} daripada {total} e-mel dihidupkan · {sponsors} penaja",
+        "loadError": "Tidak dapat memuatkan e-mel penaja.",
+        "edit": "Sunting kata-kata",
+        "editLabel": "Kata-kata",
+        "previewLabel": "Apa yang mereka terima",
+        "subject": "Subjek",
+        "body": "Mesej",
+        "placeholderHint": "Klik untuk memasukkan butiran ke dalam mesej di kedudukan kursor anda.",
+        "sharedNote": "Satu kata-kata, digunakan untuk setiap penaja.",
+        "lastSent": "Terakhir dihantar {date} · {count} penaja",
+        "neverSent": "Belum pernah dihantar.",
+        "neverSentYet": "Belum ada penghantaran melalui templat ini.",
+        "alreadyLive": "Sedang dihantar",
+        "flagOffTitle": "Suis ini belum aktif.",
+        "flagOffBody": "Kata-kata dan suis disimpan seperti biasa, tetapi tiada apa-apa dihantar sehingga e-mel penaja dihidupkan untuk keseluruhan program.",
+        "notSeeded": "Hanya {seeded} daripada {expected} e-mel wujud. Jalankan langkah penyemaian untuk mencipta selebihnya.",
+        "error": {
+          "unknownPlaceholder": "Mesej ini menggunakan butiran yang tidak dapat kami isi untuk e-mel ini: {list}. Buang ia, atau pilih salah satu cip di bawah kotak.",
+          "bannedPhrasing": "Kata-kata ini tidak boleh digunakan: {list}. Kami tiada kelulusan pelepasan cukai, penaja membiayai seorang pelajar dan bukan memilikinya, dan e-mel akaun tidak sepatutnya mendesak.",
+          "required": "Subjek dan mesej kedua-duanya diperlukan."
+        },
+        "kind": {
+          "welcome": "Selamat datang",
+          "approved": "Diluluskan",
+          "rejected": "Tidak diluluskan",
+          "suspended": "Digantung",
+          "reinstated": "Dipulihkan",
+          "credit_confirmed": "Sumbangan direkodkan",
+          "new_students": "Pelajar baharu",
+          "weekly_digest": "Ringkasan mingguan",
+          "referral_invite": "Jemputan"
+        },
+        "when": {
+          "welcome": "Semasa mendaftar",
+          "approved": "Apabila anda meluluskan",
+          "rejected": "Apabila anda menolak",
+          "suspended": "Apabila anda menggantung",
+          "reinstated": "Apabila anda menarik balik penggantungan",
+          "credit_confirmed": "Apabila sumbangan ditandatangan balas",
+          "new_students": "Setiap jam",
+          "weekly_digest": "Pagi Isnin",
+          "referral_invite": "Apabila penaja menjemput seseorang"
+        },
+        "desc": {
+          "welcome": "Memberitahu penaja baharu bahawa kami menerima pendaftaran mereka dan sedang menyemaknya. Sebelum ini mereka tidak mendengar apa-apa langsung.",
+          "approved": "Memberitahu mereka bahawa mereka diterima, dan cara melihat pelajar yang menunggu.",
+          "rejected": "Penolakan yang ringkas dan hormat, mempelawa balasan jika mereka rasa kami tersilap.",
+          "suspended": "Menjelaskan bahawa akaun dijeda, dan sokongan yang sudah dijanjikan kepada pelajar diteruskan.",
+          "reinstated": "Memberitahu penaja yang pernah digantung bahawa mereka boleh log masuk semula.",
+          "credit_confirmed": "Mengesahkan sumbangan setelah dua orang daripada pasukan anda menandatanganinya. Ia tidak pernah dihantar untuk wang yang masih menunggu tandatangan.",
+          "new_students": "Makluman segera untuk penaja yang mahu tahu sebaik sahaja seorang pelajar diterbitkan.",
+          "weekly_digest": "Ringkasan Isnin tentang pelajar yang masih menunggu sokongan.",
+          "referral_invite": "Jemputan yang dihantar oleh penaja sedia ada kepada seseorang yang mereka fikir boleh membantu."
+        },
+        "note": {
+          "welcome": "Dihantar kepada setiap penaja baharu, apa pun keputusan penyemakan nanti.",
+          "approved": "Dihantar sebaik sahaja anda menekan Luluskan.",
+          "rejected": "Tiada sebab disertakan buat masa ini — medan sebab akan datang; sementara itu kekalkan kata-kata yang umum.",
+          "suspended": "Nyatakan sebabnya dengan kata-kata anda sendiri jika boleh; pemegang akaun tidak dapat melihat nota dalaman anda.",
+          "reinstated": "Dihantar apabila anda meluluskan seseorang yang pernah digantung, menggantikan e-mel Diluluskan.",
+          "credit_confirmed": "Jumlahnya diambil daripada rekod sumbangan itu sendiri, jadi ia sentiasa sepadan dengan rekod penaja.",
+          "new_students": "Kad pelajar ialah kad tanpa nama yang sama seperti yang dilihat penaja semasa melayari — tidak pernah nama sebenar.",
+          "weekly_digest": "Penaja boleh menukar kekerapan atau menghentikan e-mel ini dalam akaun mereka sendiri.",
+          "referral_invite": "Yang ini dihantar kepada orang yang belum menjadi penaja, jadi ia menerangkan program dari awal."
         }
       }
     },

@@ -19,9 +19,9 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
 
 | Role | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **countersign + void a wallet credit** *(never records one)* | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **Payments: create/edit/cancel + countersignature** | edit | view |
-| **Admin — General** (`admin`) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
-| **Admin — Finance** (`finance`) | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
+| **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **Payments: create/edit/cancel + countersignature** | edit | view |
+| **Admin — General** (`admin`) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
+| **Admin — Finance** (`finance`) | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
 | **QC** (`qc`) | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
 | **Reviewer** (`reviewer`) | View assigned · review assigned | ✗ *(vetting REMOVED — was reviewer-gated pre-2026-07-15)* | ✗ | edit | view |
 
@@ -136,3 +136,35 @@ signer must type their own name, matched against `PartnerAdmin.name`.
 - Billing & usage: still future. It means HalaTuju invoicing the organisation for metered service
   usage (Gemini / Vision / GCP / Supabase / Twilio / change requests at cost + 15–30%) and needs a
   billing-sources investigation that has not happened. The Administration card stays disabled.
+
+## Sponsor emails (what a donor hears) — access
+
+Nine editable emails behind the **Emails** badge on `/admin/sponsors`
+(`AdminSponsorEmailsView` / `AdminSponsorEmailDetailView`, S3, 2026-07-28).
+
+**Access: super + `org_admin` + `admin`. `finance` is refused, deliberately** — and that makes
+this gate NARROWER than the sponsor list it sits on. Finance reads sponsors because who funds the
+programme is finance's business; deciding what every donor is told is editorial, not financial.
+`qc` / `reviewer` / referral `partner` are refused everywhere, as on the list.
+
+**Not org-fenced, by construction.** A `Sponsor` is a platform-level account with no organisation
+(see the Sponsors caveat above), and enablement is per EMAIL, not per recipient — there is exactly
+one welcome email and every sponsor gets that one. Classified `cross-org-by-design` in
+`test_org_fence.py`.
+
+**Two independent gates before anything sends:** the platform flag `SPONSOR_COMMS_ENABLED`
+(unset today) AND each template's own `enabled` (all off on seeding). Either one shut means
+nothing goes out; the panel states the platform gate rather than implying the switches work.
+
+**Two refusals on save**, both enforced in the service and surfaced by the endpoint:
+- an **unknown `{placeholder}`** — a rendering guard, and a privacy control: no token in any
+  kind's allowlist resolves to a student's identity, so an editable template cannot become a
+  route around the pool serializers' anonymity. `{student_cards}` renders the same anonymised
+  card a sponsor already sees.
+- **banned phrasing** — a **tax-relief claim** (HalaTuju holds no LHDN s44(6) approval, and this
+  is the one line that could cost a donor money), student-ownership wording ("your student"), and
+  urgency copy that would turn account correspondence into marketing.
+
+**Three of the nine are already live** through their pre-S3 hardcoded senders (`new_students`,
+`weekly_digest`, `referral_invite`) and keep sending while their template is dark — otherwise
+switching this feature on dark would have silently stopped them.

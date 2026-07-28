@@ -524,6 +524,38 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-28)
 
+**✅ CODE COMPLETE 2026-07-28 — SPONSOR S3: an org_admin decides what sponsors hear. NOT DEPLOYED.**
+Worktree `.worktrees/sponsor-detail`. Retro `docs/retrospective-2026-07-28-sponsor-comms-s3.md`;
+decisions ×3; lessons ×2. **⚠ MIGRATION `0133` — APPLY MIGRATE-FIRST (two tables + RLS).**
+- **Why:** a sponsor registered, was vetted and was approved without being told — the review
+  endpoint flipped a field and returned. **Eight people on prod were approved in silence.**
+- Nine editable emails, each with its own switch and wording, behind TWO gates
+  (`SPONSOR_COMMS_ENABLED` **and** each template's `enabled`). Every attempt logged, skips too.
+- **⚠ THE THING THAT WOULD HAVE BROKEN PRODUCTION: three of the nine are LIVE today**
+  (`new_students`, `weekly_digest`, `referral_invite`). Routing them through a switched-off
+  template silences them with **no error and no failing test** — a tidy row of "off" switches,
+  exactly as designed. Each keeps its pre-S3 sender behind `if not is_enabled(kind)`, with a test
+  per path. **Do not delete those fallbacks until all three templates are switched on.**
+- **NINE kinds, not eleven** (owner): `low_balance` + `annual_statement` deferred — marketing-
+  adjacent, and sponsor consent is a bare version string with no wording behind it (TD-186).
+- **The voice guard refuses a TAX-RELIEF claim** — no LHDN s44(6) approval exists; also "your
+  student" and urgency copy. The placeholder allowlist is a PRIVACY control: no token resolves to
+  a student identity, and `{student_cards}` renders the same anonymised card the pool serves.
+- **Shared, not duplicated:** `email_templates.py` (block renderer, partner delegates to it — its
+  **113 email goldens pass UNMODIFIED**, the regression guard) and `components/emails/
+  TemplateEditor` (the wording editor, which gained a jsdom test neither copy had).
+- Emails panel gated **narrower than the sponsor list**: super/org_admin/admin. Finance reads
+  sponsors (money is its business) but does not decide what donors are told.
+- **3658 scholarship pytest · 954 jest** (64 suites); `makemigrations --check` clean.
+- **▶ AT DEPLOY, in order: (1) apply `0133` migrate-first + RLS; (2) push; (3) run
+  `seed_sponsor_email_templates` ONCE** — all nine arrive OFF and the platform flag is unset, so
+  nothing sends. **▶ THEN OWNER: read + edit the nine templates, switch on the ones wanted, and
+  only then `SPONSOR_COMMS_ENABLED=1` via `--update-env-vars`.**
+- **▶ NEXT = S4** (mandatory reject/suspend reason — which also gives `rejected`/`suspended` the
+  `{reason}` token they ship without — the per-sponsor email log, CSV export). TD-185 folds in.
+- **▶ CARRY:** ms/ta first drafts, ~59 new `admin.sponsors.emails.*` leaves (TD-183).
+
+
 **🚨 READ FIRST — PF-1 NOW OUTRANKS EVERYTHING QUEUED BELOW.** The owner confirmed 2026-07-28 that
 the **second-tenant meeting happened and looks credible**. `services.resolve_open_cohort()` returns
 the most recent active+open cohort **PLATFORM-WIDE with no org context** — harmless only while

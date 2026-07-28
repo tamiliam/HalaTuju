@@ -6,20 +6,26 @@ inviter sees their invitations + conversion. The invitee's email is PII for some
 who has not consented, so ``purge_expired_referrals`` scrubs it after 60 days.
 
 Writes live here; the invite email is best-effort (a mail failure never blocks the
-record). Import direction: this module imports ``emails`` + ``models`` only.
+record). Import direction: ``models`` at module scope; the SENDING layer (``sponsor_notify``)
+is imported inside the function, so the invite can route through an editable template without
+this module depending on the email stack.
 """
 import re
 import secrets
 from datetime import timedelta
 
+from django.conf import settings
 from django.utils import timezone
 
-from .emails import send_sponsor_referral_invite
 from .models import SponsorReferral
 
 RETENTION_DAYS = 60   # owner decision 2026-06-09: purge unconverted invitee PII after 60 days
 
 _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+
+
+def _frontend():
+    return (getattr(settings, 'FRONTEND_URL', '') or '').rstrip('/')
 
 
 class ReferralError(Exception):
@@ -56,9 +62,12 @@ def create_referral(inviter, *, invitee_email, invitee_name='', note=''):
         invitee_name=(invitee_name or '').strip()[:200],
         note=(note or '').strip()[:500], code=code, status='invited',
     )
-    send_sponsor_referral_invite(
-        to_email=email, inviter_name=inviter.name,
-        note=referral.note, code=code, lang='en',
+    # S3: goes through the template path when `referral_invite` is switched on, and through the
+    # original hardcoded invite while it is dark — this email is LIVE, so it must not stop.
+    from . import sponsor_notify
+    sponsor_notify.send_referral_invite(
+        referral, inviter_name=inviter.name,
+        invite_link=f'{_frontend()}/sponsor?ref={code}',
     )
     return referral
 

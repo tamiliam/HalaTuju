@@ -3240,3 +3240,82 @@ class PartnerEmailLog(models.Model):
 
     def __str__(self):
         return f'{self.kind} → org={self.organisation_id} @ {self.sent_at:%Y-%m-%d %H:%M}'
+
+
+class SponsorEmailTemplate(models.Model):
+    """One of the nine sponsor emails: its wording AND its on/off switch.
+
+    The sibling of `PartnerEmailTemplate`, and deliberately the same shape — one row per kind,
+    enablement on the TEMPLATE rather than on a (sponsor, kind) pair. A per-sponsor switch was
+    never considered: a sponsor is not a tenant, and "which of my donors hear about a new
+    student" is not a decision anyone should be making one donor at a time.
+
+    `body` is plain text with `{placeholder}` tokens (the allowlist per kind lives in
+    `sponsor_comms.PLACEHOLDERS`); blank lines are paragraph breaks and a block that is exactly
+    `{student_cards}` becomes the rich per-student cards. Rendering goes through
+    `email_templates.render`, shared with the partner family.
+
+    Nine kinds, not eleven: `low_balance` and `annual_statement` were deferred by the owner on
+    2026-07-28 because they edge from transactional account mail into marketing, and what a
+    sponsor consented to at registration is not currently reviewable (TD-186).
+    """
+    KIND_CHOICES = [
+        ('welcome', 'Welcome — registered, awaiting vetting'),
+        ('approved', 'Approved'),
+        ('rejected', 'Not approved'),
+        ('suspended', 'Suspended'),
+        ('reinstated', 'Reinstated'),
+        ('credit_confirmed', 'Credit confirmed'),
+        ('new_students', 'New students to consider'),
+        ('weekly_digest', 'Weekly digest'),
+        ('referral_invite', 'Invitation to a prospective sponsor'),
+    ]
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES, unique=True)
+    enabled = models.BooleanField(default=False)
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    updated_by_email = models.CharField(max_length=254, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sponsor_email_templates'
+        ordering = ['kind']
+
+    def __str__(self):
+        return f'{self.kind} ({"on" if self.enabled else "off"})'
+
+
+class SponsorEmailLog(models.Model):
+    """Every sponsor email we attempted — the audit trail and the "last sent" the panel shows.
+
+    A row is written even when the send FAILS and when it is SKIPPED for having no recipient or
+    a switched-off template: silence must be visible, not indistinguishable from success. That
+    rule is inherited from partner comms, where it exists because an unreachable organisation
+    looked exactly like a quiet one.
+
+    `sponsor` is nullable for one reason: `referral_invite` goes to a prospective sponsor who has
+    no account yet, so the row records the INVITER and the recipient address separately.
+    """
+    sponsor = models.ForeignKey(
+        'Sponsor', on_delete=models.SET_NULL, null=True, blank=True, related_name='email_log',
+    )
+    kind = models.CharField(max_length=32, choices=SponsorEmailTemplate.KIND_CHOICES)
+    # The addresses actually written to, as stored (already lower-cased + de-duplicated).
+    recipients = models.JSONField(default=list, blank=True)
+    subject = models.CharField(max_length=255, blank=True, default='')
+    ok = models.BooleanField(default=False)
+    note = models.CharField(max_length=200, blank=True, default='',
+                            help_text="Why nothing was sent, e.g. 'no_recipient', 'disabled'.")
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'sponsor_email_log'
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['sponsor', 'kind', '-sent_at'],
+                         name='sponsor_email_kind_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.kind} → sponsor={self.sponsor_id} @ {self.sent_at:%Y-%m-%d %H:%M}'

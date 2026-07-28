@@ -1566,6 +1566,10 @@ authority. The riskiest of them are the ones a person acts on: `detail.creditErr
 refusals — a mistranslated `same_signer` or `finance_check_required` sends an admin looking for the
 wrong fix), `detail.sign.*` (three button labels naming a signature step), `detail.recordHint`
 (explains WHY the bank reference is mandatory), and `seen.neverHint` (carries a date).
+**Grew on 2026-07-28 (S3):** +59 leaves per locale for the nine editable sponsor emails —
+`emails.kind/when/desc/note` ×9 plus the panel chrome. The nine `emails.error.*` strings are the
+riskiest of the lot: they tell an org_admin WHY a save was refused, and a mistranslated
+tax-relief refusal could read as permission.
 **To resolve:** owner review pass over the `admin.sponsors.*` block in `ms.json` + `ta.json`,
 alongside the standing partner-comms draft review (TD-180) — one sitting, not two. Low priority
 while BrightPath's admins work in English, and parity/orphan tests already guarantee the keys
