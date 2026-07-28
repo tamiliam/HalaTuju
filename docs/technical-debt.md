@@ -1531,8 +1531,11 @@ tests; `visibleNav()` + `activeItem()` are what remain. **Risk if left:** low bu
 N2 slips, a fourth scope or a reordered menu has to be expressed twice.
 **Size:** small (a deletion, once the sidebar exists).
 
-### [TD-182] Admin Google sign-in fails on a local dev origin (PKCE code is never exchanged) — CAUSE CONFIRMED 2026-07-28
-**Status:** Open. Cause now KNOWN, and it is not what this entry first claimed.
+### [TD-182] Admin Google sign-in fails on a local dev origin (PKCE code is never exchanged) — ✅ RESOLVED 2026-07-28
+**Status:** RESOLVED. Cause reproduced, fixed and tested — see the RESOLVED block at the foot of
+this entry. The three diagnoses above are kept **on purpose**: each was confident, each was written
+from something other than a measurement, and each was wrong. The entry is more useful as a record
+of how that happens than it would be trimmed to the answer.
 
 **The actual error, surfaced by the callback (2026-07-28):** *"PKCE code verifier not found in
 storage. This can happen if the auth flow was initiated in a different browser or device, or if
@@ -1561,13 +1564,65 @@ same storage does succeed, which is itself unexplained and worth understanding b
 The concrete cost is that the admin console cannot be reviewed on a local origin with Google
 sign-in, which has now blocked two sprint reviews.
 
-**To resolve:** adopt `@supabase/ssr` for the admin client (and the sponsor client, which shares
-the pattern) so the PKCE verifier lives in a cookie rather than `localStorage`. Its own commit,
-its own test, and a live check on BOTH origins — production works today and must keep working.
-**Do not fold this into a feature sprint.** **Size:** small-to-medium; the risk is that it touches
-live auth for every admin.
+**~~To resolve:~~ adopt `@supabase/ssr` ... so the PKCE verifier lives in a cookie rather than
+`localStorage`.** ⚠ **THIS WAS WRONG TOO — the third wrong diagnosis on this ticket, and it was
+written straight from the failure message.** Cookies are scoped to the HOST. A cookie written on
+`127.0.0.1` is exactly as invisible to `localhost` as a `localStorage` entry is. Migrating the
+storage layer would have changed nothing, cost a day, and touched live auth for every admin.
+Supabase's message names `@supabase/ssr` because it assumes the SERVER needs to read the verifier;
+it has no idea the two ends of your flow are different origins.
 
-**Workaround meanwhile:** email + password sign-in does not use PKCE and is unaffected.
+---
+
+#### RESOLVED 2026-07-28 — it was an ORIGIN split, not a storage-mechanism problem
+
+**Reproduced in a browser, no Google account required.** Start a sign-in at
+`http://localhost:3000/admin/login`: supabase-js writes `halatuju_admin_session-code-verifier` into
+localStorage, and it is **still there** at `http://localhost:3000/admin/auth/callback` — the flow
+would complete. Open the same callback path at `http://127.0.0.1:3000` and localStorage is
+**completely empty**, reproducing the owner's error word for word. Same machine, same dev server,
+same browser, same code. Different origin, different vault. That is all this ever was.
+
+**Corroborated by the Supabase auth log**, which shows the owner's two attempts nine seconds apart
+on 2026-07-28: one `/authorize` refered from `http://localhost:3000/...`, the next from
+`http://127.0.0.1:3000/...`. Both hosts ARE in the redirect allowlist — probed against a
+known-bad origin as a control, which does get rewritten to the site URL — so Supabase never
+switched the return address. The browser did.
+
+**Why production always worked** (the entry called this "unexplained and worth understanding"):
+there is only one origin to be on. `https://halatuju.xyz` cannot be spelled two ways.
+
+**Fixed by** `lib/oauthOrigin.ts`, two pure functions and one four-line redirect:
+- `enforceCanonicalOrigin()` on the admin and sponsor LOGIN pages moves a loopback IP to
+  `localhost` before a sign-in can start. Since `redirectTo` is built from the initiating origin,
+  a flow that can only start canonical can only finish canonical. Inert wherever the hostname is
+  not a loopback literal, which is everywhere in production.
+- `oauthOriginMismatch()` on the two CALLBACK pages replaces Supabase's misdirecting text with a
+  sentence naming the actual cause. `errors.authOriginMismatch`, en/ms/ta.
+
+**Deliberately NOT guarded: the callbacks.** A sign-in that legitimately begins on `127.0.0.1`
+also returns there and works. Bouncing that callback to `localhost` would strand it away from the
+verifier it was about to use — turning a healthy flow into this very bug. Guard the entry, not the
+exit.
+
+**What stays true from the original entry:** email + password never used PKCE and was never
+affected, and the student `AuthProvider` fix kept from the first attempt remains worth having on
+its own (separate bug, correctly described in the paragraph above).
+
+19 tests in `lib/__tests__/oauthOrigin.test.ts`, including the production hostnames — a guard that
+ever fired on `halatuju.xyz` would redirect live admins to their own laptop.
+
+**⚠ FOLLOW-UP, same day: the first cut of the new message was itself unsound, and the owner hit it
+within the hour of deploy.** The check was called AFTER `getSession()`. `detectSessionInUrl` (on by
+default) runs an exchange during client initialisation, and `_exchangeCodeForSession` deletes the
+verifier once it has POSTed — success or failure alike (auth-js 2.95.3, `GoTrueClient.js:788`). So
+by the time the question was asked, a *consumed* verifier and an *absent* one were
+indistinguishable, and every unrelated exchange failure was reported as "you started somewhere
+else" — on the very host the sign-in had started from. Fixed by reading the answer at entry, before
+the client is constructed, and using it only to EXPLAIN a failure rather than predict one. Renamed
+`oauthOriginMismatchAtEntry` so the ordering requirement travels with each call site; two tests pin
+the distinction. **The function was never wrong — the call site was.** A diagnostic that can be
+asked at the wrong moment will be, so put the moment in the name. 21 tests.
 
 ### [TD-183] Sponsor-module ms/ta copy is a first draft (~70 leaves) — low
 The sponsor detail page (S1), its three fixes (S1.1) and the credit UI (S2) added roughly seventy
@@ -1699,8 +1754,13 @@ the chip lands where the eye is, whether a person who has never seen a rail find
 the same reason — TD-182 breaks admin Google sign-in on localhost — and three sprints of shell work
 have now shipped on structural verification alone. That is a pattern, not an incident.
 **To resolve:** either fix TD-182 (which unblocks all local console review), or take one pass over
-the live console after deploy. **Do not** send anyone at `/admin/login` on localhost meanwhile.
+the live console after deploy. ~~**Do not** send anyone at `/admin/login` on localhost meanwhile.~~
 (Logged 2026-07-28, nav/IA N4.)
+
+**Update 2026-07-28 — the blocker is gone.** TD-182 is fixed: `/admin/login` on localhost now
+starts and finishes a Google sign-in on one origin, and this sprint drove it in a real browser.
+The rail still has not been *felt* by a person, so this stays open — but it is now open for want
+of ten minutes, not for want of a working login. Sign in at `http://localhost:3000/admin/login`.
 
 ### [TD-189] A bare `/apply` has no programme picker — the fallback the owner asked for is not built
 **Status:** Open — logged 2026-07-28 at PF-1's own close, with the condition that ends it.

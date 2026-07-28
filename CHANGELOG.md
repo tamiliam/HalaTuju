@@ -43,7 +43,38 @@ what the owner asked for ("we want them; we don't want to scare them away").
 - ms/ta are first drafts (TD-183), including the Tamil for all five strings.
 - Nothing collects identity or source-of-funds evidence yet — §10 states the obligation so **TD-192**
   has something to enforce. T2 builds the document; T3 the acceptance wizard and the gate.
+## Console sign-in works on localhost again — 2026-07-28
 
+Google sign-in to the partner console and sponsor portal had been broken on a local address for
+weeks (TD-182), which is why the last six sprints shipped without anyone looking at the console in
+a browser.
+
+**It was never an auth bug.** Sign-in began at `http://localhost:3000` and returned at
+`http://127.0.0.1:3000`. A browser keeps storage per *web address*, so the one-time security key
+written by the first was invisible to the second — same machine, same server, same code, two
+addresses. Production was never affected: `halatuju.xyz` cannot be spelled two ways.
+
+### Fixed
+- **A sign-in now always starts on the canonical address.** Open a console login page on a loopback
+  IP and it moves to `localhost` before anything begins; since the return address is built from
+  wherever the sign-in started, it can no longer split part-way. Inert in production.
+- **The error message tells the truth.** It previously showed Supabase's own text, which recommends
+  adopting `@supabase/ssr` to keep the key in cookies — advice that would have changed nothing here
+  (cookies are per-address too) and which had already produced three wrong diagnoses on this
+  ticket. It now names the actual cause, in English, Malay and Tamil.
+
+The callback pages are deliberately *not* guarded: a sign-in that legitimately begins on
+`127.0.0.1` also returns there and works fine, and redirecting it would create the very bug.
+
+### Fixed again, same day — the new message could accuse the wrong thing
+The check ran a moment too late. Supabase discards the one-time key as soon as it has tried to use
+it, succeed or fail, so asking afterwards could not tell "the key was never here" from "the key was
+here and has just been used" — and any other kind of failure came out as *"you started at a
+different address"*, on the address you had in fact started from. It now takes its reading before
+anything can touch the key, and uses it only to explain a failure, never to predict one.
+
+21 tests, including both production hostnames — a guard that ever fired on the live site would send
+admins to their own laptop.
 ## The breadcrumb says where you ARE — 2026-07-28
 
 Owner, from three screenshots: *"First should only show halatuju, as it is outside BrightPath. The

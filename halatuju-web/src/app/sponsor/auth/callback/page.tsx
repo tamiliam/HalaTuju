@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSponsorSupabase } from '@/lib/sponsor-supabase'
+import { getSponsorSupabase, SPONSOR_STORAGE_KEY } from '@/lib/sponsor-supabase'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
+import { oauthOriginMismatchAtEntry } from '@/lib/oauthOrigin'
 import { useT } from '@/lib/i18n'
 
 export default function SponsorAuthCallbackPage() {
@@ -12,9 +13,15 @@ export default function SponsorAuthCallbackPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Before the client exists — constructing it starts an exchange that deletes the verifier
+    // either way, so this question has no honest answer afterwards. See lib/oauthOrigin.ts.
+    const startedElsewhere = oauthOriginMismatchAtEntry(window.location.search, SPONSOR_STORAGE_KEY)
+
     getSponsorSupabase().auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
-        setError(t('errors.authFailed'))
+        setError(startedElsewhere
+          ? t('errors.authOriginMismatch', { host: window.location.host })
+          : t('errors.authFailed'))
         return
       }
       // One privileged scope per identity (super exempt): ends an active partner session.

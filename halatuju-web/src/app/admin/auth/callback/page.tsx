@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAdminSupabase } from '@/lib/admin-supabase'
+import type { Session } from '@supabase/supabase-js'
+import { getAdminSupabase, ADMIN_STORAGE_KEY } from '@/lib/admin-supabase'
+import { oauthOriginMismatchAtEntry } from '@/lib/oauthOrigin'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
 import { adminLanding } from '@/lib/adminLanding'
 import { effectiveRole } from '@/lib/navigation'
@@ -15,6 +17,15 @@ export default function AdminAuthCallbackPage() {
   const [detail, setDetail] = useState<string>('')
 
   useEffect(() => {
+    /*
+     * FIRST, before the client exists. Constructing it starts `detectSessionInUrl`, whose
+     * exchange attempt DELETES the verifier whether it succeeds or fails — so after this line
+     * an absent verifier no longer means "it was never here". Asking later turned every
+     * unrelated exchange failure into a confident accusation about the origin. Ask now, keep
+     * the answer, and let the rest of the flow proceed normally. (TD-182 follow-up.)
+     */
+    const startedElsewhere = oauthOriginMismatchAtEntry(window.location.search, ADMIN_STORAGE_KEY)
+
     const supabase = getAdminSupabase()
 
     /**
@@ -30,20 +41,35 @@ export default function AdminAuthCallbackPage() {
      * told nobody anything, including me: it cost several rounds of guessing at a failure the
      * page already knew the cause of. A code like `invalid_grant` is diagnostic, not sensitive.
      */
-    const resolveSession = async () => {
+    type Resolved = { session: Session | null; reason: string; mismatch?: boolean }
+
+    const resolveSession = async (): Promise<Resolved> => {
       const { data: { session: existing } } = await supabase.auth.getSession()
       if (existing) return { session: existing, reason: '' }
 
       const code = new URLSearchParams(window.location.search).get('code')
       if (!code) return { session: null, reason: 'no code in callback URL' }
 
+      /*
+       * The origin answer was taken at entry (above). Use it only when the exchange has actually
+       * failed — it explains WHY, it does not predict THAT. Supabase's own text for this case
+       * advises adopting `@supabase/ssr` to hold the verifier in cookies, which fixes nothing
+       * (cookies are host-scoped too) and has already produced three wrong diagnoses on TD-182.
+       */
       const { data, error: exErr } = await supabase.auth.exchangeCodeForSession(code)
-      return { session: data?.session ?? null, reason: exErr?.message ?? 'exchange returned no session' }
+      if (data?.session) return { session: data.session, reason: '' }
+      return {
+        session: null,
+        reason: exErr?.message ?? 'exchange returned no session',
+        mismatch: startedElsewhere,
+      }
     }
 
-    resolveSession().then(async ({ session, reason }) => {
+    resolveSession().then(async ({ session, reason, mismatch }) => {
       if (!session) {
-        setError(t('errors.authFailed'))
+        setError(mismatch
+          ? t('errors.authOriginMismatch', { host: window.location.host })
+          : t('errors.authFailed'))
         setDetail(reason)
         return
       }

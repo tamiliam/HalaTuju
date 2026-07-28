@@ -10,6 +10,7 @@ import {
   sponsorResetPassword,
 } from '@/lib/sponsor-supabase'
 import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
+import { enforceCanonicalOrigin } from '@/lib/oauthOrigin'
 import { useT } from '@/lib/i18n'
 
 type Step = 'login' | 'forgot' | 'forgot-sent'
@@ -26,6 +27,8 @@ export default function SponsorLoginPage() {
   // partner console (one active privileged scope per identity, except super admins).
   const [superseded, setSuperseded] = useState(false)
   useEffect(() => { setSuperseded(consumeSuperseded('sponsor')) }, [])
+  // Same canonical-host rule as the partner console — see the note there and TD-182.
+  useEffect(() => { enforceCanonicalOrigin() }, [])
   // Shown after an email-confirmation link that couldn't open a session in this browser
   // (cross-device / already-used link). The email IS confirmed — just sign in.
   const [emailConfirmed, setEmailConfirmed] = useState(false)
