@@ -1642,6 +1642,11 @@ closely: proofreading my own five sentences turned up FOUR errors** (a dropped d
 one doubled that should not be, an active participle where the passive was meant, and a dangling
 `தமது`) — all corrected, but a 4-in-5 error rate is the honest measure of how much these
 drafts need the owner.
+**Grew again 2026-07-28 (terms T2/T2.1/T2.2/T3):** ~80 more leaves — the `admin.sponsors.terms.*`
+authoring block and, more importantly, the 24 **sponsor-facing** `sponsorPortal.terms.*` strings a
+donor reads while accepting. Those last are the riskiest translations in the module: they explain
+what a signature means and what happens when a version changes under someone. The DOCUMENT itself
+is English-only by design (validation warning W1 says so honestly); this is the chrome around it.
 **To resolve:** owner review pass over the `admin.sponsors.*` block in `ms.json` + `ta.json`,
 alongside the standing partner-comms draft review (TD-180) — one sitting, not two. Low priority
 while BrightPath's admins work in English, and parity/orphan tests already guarantee the keys
@@ -2089,3 +2094,18 @@ key is pressed. It is noise, not a wrong answer — and no test would ever have 
 `<nav>` and a `[.group\/nav:hover_&]:hidden` on the focus branch. Small, web-only, one file.
 **Do not** fix it by dropping the focus chip: keyboard users need it, and that is the whole reason
 the chord hint exists.
+
+
+### [TD-196] Nobody has taken the sponsor-terms wizard in a browser — the T3 twin of TD-184 — low, but it is the gap
+Every step is covered: 83 backend tests including the 409 re-take over the wire, and 21 jsdom tests
+over the wizard, the rehearsal and the gate. **No human has read the terms, failed a checkpoint on
+purpose, typed their name and watched the gate clear.** Three prior sprints in this module all
+shipped green and each still produced something only a person could see — a money format mixing
+`'20000'` with `'3000.00'`, a dropped column, copy asserting history a field did not have.
+
+**To resolve:** the owner's go-live sequence is the smoke test. Publish `2026-sponsor-1`, run
+`grandfather_sponsor_terms --except <one address>`, flip `SPONSOR_TERMS_ENABLED=1`, then sign in as
+that sponsor and walk it. Five minutes, and until it happens the wizard is *verified* but not
+*witnessed*. **⚠ Note the local-review blocker (TD-182 / TD-194) does not apply here** — this is a
+SPONSOR surface, not the admin console, so it can be walked on production by a real sponsor account.
+(Logged 2026-07-28, sponsor terms T3.)

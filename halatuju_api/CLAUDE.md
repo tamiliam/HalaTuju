@@ -524,6 +524,45 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-28)
 
+**✅ SHIPPED + LIVE (DARK) 2026-07-28 — SPONSOR TERMS T1→T3: a sponsor now reads, is quizzed on, and SIGNS what they are agreeing to.** Commits `5df0eb14` → `c784225e`; both services green on `c784225`. **Migration `0134` APPLIED migrate-first + RLS verified — do NOT re-run.** Retro `docs/retrospective-2026-07-28-sponsor-terms-arc.md`; decisions ×4; lessons ×4.
+- **Why:** a sponsor could be registered, vetted and approved having agreed to ONE PDPA checkbox — a
+  permission they GRANT us, imposing no duty. A suspension could cite nothing (TD-191), and
+  AutoSponsor had shipped cleared against "the existing donation terms" that did not exist.
+- **⚠ DARK: `SPONSOR_TERMS_ENABLED` is UNSET.** `needs_terms` is forced False while it is off, so
+  **publishing a version gates nobody** — publishing and gating are separate decisions on purpose
+  (see decisions.md). `2026-sponsor-1` is SEEDED as a **draft**, 13 sections, 6 checkpoints,
+  validates clean with one W1 warning (no ms/ta).
+- **⚠ OWNER GO-LIVE, IN THIS ORDER:** (1) Terms tab → Deploy → publish `2026-sponsor-1`;
+  (2) `grandfather_sponsor_terms --except <pilot emails>` — **dry run by default, read both lists**;
+  (3) same command `--apply`; (4) `SPONSOR_TERMS_ENABLED=1` via `--update-env-vars`; (5) the pilot
+  signs in. **Nobody but the pilot sees the wizard at any point in that sequence.**
+- **The document:** `/admin/sponsors` → **Terms** badge → versions table → `/admin/sponsors/terms/<id>`
+  with **Clauses · Quiz · Preview · Deploy**. Sections are **FLAT** (no sub-clauses). The checkpoint
+  is edited INLINE under its clause, styled as the sponsor reads it; the **Quiz tab is a REHEARSAL**
+  you take, not a second form. Word import folds sub-clauses into the parent's body.
+- **⚠ `segment_docx` is reused for PARSING ONLY** — `sponsor_terms.import_docx` deliberately skips
+  its counterparty regex and `{{token}}` rewriting. **Sponsor terms have NO merge tokens by design**:
+  the counterparty is named in prose, so a new legal entity is a NEW VERSION, not a templating
+  system. A test asserts an imported parties recital comes back with no `{{` in it.
+- **⚠ Acceptance is a TYPED NAME** (`signed_name`, matching `BursaryAgreement.student_signed_name`
+  and the credit chain's `*_signed_name`). **A variant spelling is RECORDED, never refused** — there
+  is no IC to check against and refusing someone their own name is worse than storing a difference;
+  `registered_name_at_acceptance` freezes the account name so divergence stays visible.
+- **⚠ Publishing a NEW version re-asks EVERYONE, grandfathered included** (a new version has no rows).
+  Correct default for a material change, but grandfathering must be **re-granted deliberately**.
+- **A published version is IMMUTABLE.** Change the wording → new version; the old one survives so a
+  past acceptance still means something. `terms_id` is PROTECT.
+- **TD-191 CLOSED** — §13 states three suspension grounds a sponsor has now accepted, so **S4's
+  mandatory reject/suspend reason can finally cite something and the `suspended` email can safely
+  gain its `{reason}` token.** TD-186 narrowed to the registration PDPA consent alone.
+- **5048 pytest** (3788 scholarship + 1260 courses/reports) · **1136 jest** / 75 suites.
+- **▶ CARRY: TD-196** — nobody has walked the wizard in a browser (the go-live sequence IS the smoke
+  test; unlike TD-182/194 this is a SPONSOR surface, so it can be done on production). **TD-183** —
+  ~80 more ms/ta leaves, of which the 24 sponsor-facing `sponsorPortal.terms.*` are the riskiest.
+- **▶ NEXT = THEMES** (owner sequencing), then sponsor **S4** (reject/suspend reason + `{reason}`,
+  per-sponsor email log, CSV export; TD-185 folds in).
+
+
 **✅ SHIPPED + LIVE 2026-07-28 — SPONSOR S3: an org_admin decides what sponsors hear. THE PLATFORM
 FLAG IS NOW ON.** Merged `9589c32a`; migration `0133` APPLIED migrate-first + verified; templates
 seeded (**3 on, 6 off**); `SPONSOR_COMMS_ENABLED=1` on api `…00889-x6r` (owner: *"Enable the comms,

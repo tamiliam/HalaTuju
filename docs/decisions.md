@@ -1,5 +1,30 @@
 # Architectural Decisions — HalaTuju
 
+## Publishing a terms version and GATING sponsors on it are separate decisions — Sponsor terms T3, 2026-07-28
+**Decision:** `acceptance_state.needs_terms` is forced False whenever `SPONSOR_TERMS_ENABLED` is
+unset, so an ACTIVE version gates nobody until the platform flag is flipped. Two independent
+switches, deliberately.
+
+**Why.** The alternative — publishing implies gating — makes publishing frightening. The wording is
+the part that needs the most iteration and the owner review, and it can only be finalised by being
+published (a published version is immutable, which is what lets a past acceptance mean something).
+If publishing also stopped eight sponsors at the door, every wording change would become a
+production incident, and the natural response would be to delay publishing, leaving the document in
+draft where nothing can reference it.
+
+**Alternatives considered:** (a) gate on "an active version exists" alone — rejected for the above;
+(b) a per-sponsor `terms_required` boolean — rejected because it makes the gate rule two branches
+instead of one, and grandfathering is already data. **Grandfathering is a pre-written acceptance
+row, not a third switch** — one gate rule, no special cases: *an active version exists AND this
+sponsor has no row for it AND the flag is on*.
+
+**Trade-offs:** two switches is one more thing to remember at go-live, and a version can sit active
+and unenforced indefinitely without anything complaining. Accepted — the panel says plainly when
+nothing is published, and an unenforced published version is a safe state rather than a broken one.
+
+**Revisit if:** the flag has been on for long enough that the dark-launch machinery is only
+ceremony, at which point removing it is a deliberate simplification rather than a default.
+
 ## Sponsor-terms sections are FLAT, not a hierarchy — Sponsor terms T2, 2026-07-28
 **Decision:** `SponsorTermsSection` has an `order` and no `level`. Sections are numbered 1..N
 contiguously, and the number shown is the order itself.
