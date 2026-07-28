@@ -67,7 +67,12 @@ export default function TermsPage() {
           <p className="text-gray-600">
             Sponsor contributions support students through the programme&rsquo;s
             administering non-profit; they are not a direct transfer to a student and are
-            not a commercial transaction. <em>(More detailed sponsor terms to follow.)</em>
+            not a commercial transaction. A contribution is a <strong>gift</strong> &mdash; nothing
+            is repaid, and it cannot be withdrawn once given. A sponsor <strong>nominates</strong> a
+            student from those we have vetted, and the programme makes the award; we follow a
+            sponsor&rsquo;s choice wherever we can, and credit returns to their balance for another
+            student where we cannot. We are <strong>not</strong> an approved institution for tax
+            deduction, so we cannot issue a tax-deductible receipt.
           </p>
 
           <h2 className="text-lg font-semibold text-gray-900">Minors</h2>

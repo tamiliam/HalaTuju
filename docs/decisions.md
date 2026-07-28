@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## A sponsor NOMINATES; the programme AWARDS — Sponsor terms T1, 2026-07-28
+**Decision (owner):** all sponsor-facing copy, and the terms document, state that a sponsor
+*nominates* a student and that **the final decision on every award rests with the programme**. The
+previous framing — a sponsor "gifting" to a student out of "your balance" — is retired.
+
+**Why.** Donor-advised-fund practice is consistent on this: a donor *recommends*, the charity
+*retains final authority*, and that is precisely what makes the contribution a **completed gift**
+rather than the donor's money held on their behalf. Three consequences follow for us, and all three
+are things we already do:
+1. **Reallocation is only lawful if we hold the discretion.** TD-075(f)'s two-year window, and the
+   existing "a lapsed award returns to the balance to redirect — never a bank refund", both assume
+   the programme may decide. Directive framing would undercut both.
+2. **AutoSponsor already allocates without asking each time.** That is only coherent if the
+   programme is the one making awards; §3 of the terms now says so explicitly, replacing the missing
+   justification in `docs/retrospective-sponsor-redesign-r6.md`.
+3. **Charitable status later.** A conduit that passes earmarked money to a named beneficiary on a
+   donor's instruction is a different animal from a charity receiving gifts, and the difference
+   matters when the Foundation is established.
+
+**Alternatives considered:** (a) fix the terms document only and leave the product copy — rejected by
+the owner: the screens would say one thing and the terms another, which is how TD-166 happened;
+(b) keep "you gift to a student" for warmth — rejected: it is the sentence that creates the problem.
+
+**Trade-offs:** "nominate" is a colder word than "gift", on a surface whose whole job is to feel
+warm. Mitigated by keeping the softening clause everywhere it appears — *"we follow your choice
+wherever we can"* — and by changing only the five strings that actually assert the mechanism, not
+every sentence containing the word "support".
+
+**Revisit if:** a lawyer takes a different view of the fund-flow (none has looked yet — owner
+decision 2026-07-28 was to proceed without one), or the Foundation is established with a structure
+that makes the programme a genuine agent for the donor rather than the recipient of a gift.
+
 ## The sponsor tables sort and page in the BROWSER, not in the query — Sponsor tables, 2026-07-28
 **Decision (owner, after being shown the trade):** all four tables — the sponsor list, and the
 sponsorship history / people invited / wallet credits on the detail page — sort and paginate over

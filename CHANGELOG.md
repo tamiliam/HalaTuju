@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor terms T1 — the words: "you nominate, we award" — 2026-07-28
+
+The first sprint of the sponsor-terms roadmap (`.claude/plans/snazzy-whistling-biscuit.md`). **Words
+and copy only — no models, no endpoints, no migration.** A sponsor today ticks one PDPA checkbox and
+agrees to nothing else, so a suspension can cite nothing (TD-191) and AutoSponsor shipped justified
+by "the existing donation terms", which did not exist.
+
+### Added
+- **`docs/scholarship/sponsor-terms-draft.md`** — thirteen short sections, British English, second
+  person, six marked as quiz checkpoints. Written to be *read*, not to be defensive. Load-bearing
+  sentences are flagged inline with the reason, so a later editor can change the wording freely
+  without unknowingly changing the meaning. This is the source of record until T2 turns it into
+  editable, versioned rows.
+- **A sponsor section in the privacy notice** (`app/privacy/page.tsx`). The notice described student
+  data only — so a sponsor consented to a document that never mentioned them. It now says what we
+  hold about a sponsor, what we do with it, and that we may ask them to explain where funds came
+  from.
+
+### Changed
+- **`/terms`' Sponsors section** no longer ends *"(More detailed sponsor terms to follow.)"* — it
+  states the gift, the nomination, and that we cannot issue a tax-deductible receipt.
+- **Five strings across en/ms/ta** now say *you nominate, we award* rather than describing a sponsor
+  handing money to a student: the giving-statement intro and gifts note, the award confirmation, and
+  the landing FAQ's "Can I choose who I support?".
+
+### Why the framing changed
+Research on donor-advised funds is consistent: a donor **recommends** and the charity **retains final
+authority** over every distribution. That is what makes a contribution a *completed gift* rather than
+the donor's money held on their behalf — and it is the only basis on which unused credit may be
+reallocated at all. Our copy said a sponsor *"gifted to students"* from *"your balance"*, which
+describes a conduit holding someone else's money. Owner adopted the correction 2026-07-28.
+
+**Deliberately surgical.** Most sponsor copy already said the right thing — `statement.donationsNote`
+already read *"It becomes the charity's — it can't be withdrawn, only redirected"* — and is untouched.
+Rewriting every warm sentence would turn the product into a legal notice, which is the opposite of
+what the owner asked for ("we want them; we don't want to scare them away").
+
+### Notes
+- ms/ta are first drafts (TD-183), including the Tamil for all five strings.
+- Nothing collects identity or source-of-funds evidence yet — §10 states the obligation so **TD-192**
+  has something to enforce. T2 builds the document; T3 the acceptance wizard and the gate.
+
 ## The breadcrumb says where you ARE — 2026-07-28
 
 Owner, from three screenshots: *"First should only show halatuju, as it is outside BrightPath. The

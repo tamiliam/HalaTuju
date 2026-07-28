@@ -264,13 +264,13 @@
     },
     "statement": {
       "title": "Penyata pemberian",
-      "intro": "Dua rekod berasingan: apa yang anda masukkan ke dalam amanah, dan apa yang anda hadiahkan kepada pelajar.",
+      "intro": "Dua rekod berasingan: apa yang anda masukkan ke dalam amanah, dan apa yang telah dianugerahkan kepada pelajar atas pencalonan anda.",
       "taxNote": "(Resit boleh tolak cukai setelah Seksyen 44(6) disahkan.)",
       "print": "Cetak / simpan sebagai PDF",
       "donations": "Derma kepada amanah",
       "donationsNote": "Wang yang anda dermakan ke dalam amanah. Ia menjadi milik badan amal — tidak boleh dikeluarkan, hanya dialihkan.",
-      "gifts": "Hadiah kepada pelajar",
-      "giftsNote": "Hadiah daripada baki anda kepada pelajar — setiap satu disahkan secara bebas sebagai pelajar berdaftar."
+      "gifts": "Anugerah kepada pelajar",
+      "giftsNote": "Dianugerahkan daripada baki anda kepada pelajar yang anda calonkan — setiap satu disahkan secara bebas sebagai pelajar berdaftar."
     },
     "students": {
       "title": "Pelajar",
@@ -285,7 +285,7 @@
       "filteredEmpty": "Tiada pelajar sepadan dengan tapisan ini.",
       "support": "Sokong",
       "balanceLabel": "Baki {orgShortName} anda",
-      "confirmBody": "Ini mengikat RM {amount} daripada baki anda dan mengeluarkan tawaran bantuan. Pelajar akan dimaklumkan untuk melengkapkan butiran mereka.",
+      "confirmBody": "Ini mengikat RM {amount} daripada baki anda dan meminta kami menganugerahkannya kepada pelajar ini. Kami membuat anugerah itu, dan pelajar akan dimaklumkan untuk melengkapkan butiran mereka.",
       "confirmAward": "Sahkan bantuan",
       "funded": "Telah diberikan — RM {amount} dikomit. Pelajar akan dimaklumkan untuk melengkapkan butiran mereka.",
       "errInsufficient": "Baki tidak mencukupi untuk memberi bantuan kepada pelajar ini.",
@@ -444,7 +444,7 @@
       "q2": "Ke mana wang saya pergi?",
       "a2": "Dana akan ditadbir oleh sebuah yayasan amanah bebas dan dikeluarkan mengikut pencapaian pengajian yang disahkan — tidak pernah diserahkan terus kepada pelajar. Yayasan ini sedang ditubuhkan.",
       "q3": "Bolehkah saya memilih siapa yang saya taja?",
-      "a3": "Boleh. Setelah diluluskan, anda boleh melihat profil tanpa nama dan memilih pelajar yang ingin anda taja.",
+      "a3": "Boleh. Setelah diluluskan, anda boleh melihat profil tanpa nama dan mencalonkan pelajar yang ingin anda taja. Kami membuat anugerah itu, dan kami mengikut pilihan anda sedaya mungkin — kadangkala kami tidak dapat berbuat demikian, jika pelajar menarik diri atau tempat pengajiannya terbatal, dan baki anda akan dikembalikan untuk pelajar lain.",
       "q4": "Apa berlaku jika pelajar berhenti?",
       "a4": "Jika pelajar berhenti pengajian, baki dana kekal dalam program untuk membantu pelajar lain yang disahkan.",
       "q5": "Berapa kos untuk menaja seseorang?",

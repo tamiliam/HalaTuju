@@ -264,13 +264,13 @@
     },
     "statement": {
       "title": "Giving statement",
-      "intro": "Two separate records: what you put into the trust, and what you gifted to students.",
+      "intro": "Two separate records: what you put into the trust, and what has been awarded to students on your nomination.",
       "taxNote": "(Tax-deductible receipts once Section 44(6) is confirmed.)",
       "print": "Print / save as PDF",
       "donations": "Donations to the trust",
       "donationsNote": "Money you donated into the trust. It becomes the charity's — it can't be withdrawn, only redirected.",
-      "gifts": "Gifts to students",
-      "giftsNote": "Gifts from your balance to a student — each independently verified as enrolled."
+      "gifts": "Awards to students",
+      "giftsNote": "Awarded from your balance to a student you nominated — each independently verified as enrolled."
     },
     "students": {
       "title": "Students",
@@ -285,7 +285,7 @@
       "filteredEmpty": "No students match these filters.",
       "support": "Support",
       "balanceLabel": "Your {orgShortName} balance",
-      "confirmBody": "This commits RM {amount} from your balance and issues an award offer. The student will be notified to complete their details.",
+      "confirmBody": "This commits RM {amount} from your balance and asks us to award it to this student. We make the award, and they will be notified to complete their details.",
       "confirmAward": "Confirm award",
       "funded": "Awarded — RM {amount} committed. The student will be notified to complete their details.",
       "errInsufficient": "Not enough balance to award this student.",
@@ -444,7 +444,7 @@
       "q2": "Where does my money go?",
       "a2": "Funds will be administered by an independent trust foundation and released against verified study milestones — never handed directly to a student. We're establishing this foundation.",
       "q3": "Can I choose who I support?",
-      "a3": "Yes. Once approved, you can browse the anonymised profiles and choose the student you'd like to support.",
+      "a3": "Yes. Once approved, you browse the anonymised profiles and nominate the student you would like to support. We make the award, and we follow your choice wherever we can — occasionally we cannot, if a student withdraws or their place falls through, and then your credit returns to your balance for someone else.",
       "q4": "What happens if a student withdraws?",
       "a4": "If a student leaves their studies, any remaining funds stay within the programme to support another verified student.",
       "q5": "How much does it cost to sponsor someone?",

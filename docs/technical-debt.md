@@ -1581,6 +1581,12 @@ wrong fix), `detail.sign.*` (three button labels naming a signature step), `deta
 `emails.kind/when/desc/note` ×9 plus the panel chrome. The nine `emails.error.*` strings are the
 riskiest of the lot: they tell an org_admin WHY a save was refused, and a mistranslated
 tax-relief refusal could read as permission.
+**Grew again 2026-07-28 (sponsor terms T1):** five `sponsorPortal.*` / `sponsorLanding.*` strings
+were rewritten for the "you nominate, we award" framing, ms + ta included. **Read the Tamil
+closely: proofreading my own five sentences turned up FOUR errors** (a dropped doubled consonant,
+one doubled that should not be, an active participle where the passive was meant, and a dangling
+`தமது`) — all corrected, but a 4-in-5 error rate is the honest measure of how much these
+drafts need the owner.
 **To resolve:** owner review pass over the `admin.sponsors.*` block in `ms.json` + `ta.json`,
 alongside the standing partner-comms draft review (TD-180) — one sitting, not two. Low priority
 while BrightPath's admins work in English, and parity/orphan tests already guarantee the keys

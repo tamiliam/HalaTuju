@@ -29,6 +29,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-6 text-gray-600 space-y-1">
             <li><em>Course tool:</em> your IC number (NRIC, stored securely and shown only masked, e.g. ****-**-1234), SPM/STPM grades, optional profile details (name, gender, nationality, state, contact details, family background), optional quiz answers, and your sign-in identifier (phone number or Google account).</li>
             <li><em>{b.programmeName.en} Programme (only if you apply):</em> household and family income details, and <strong>documents you upload</strong> to verify your application &mdash; your IC, results slip, university/college offer letter, a parent/guardian IC, and proof of household income or aid (e.g. an STR letter, EPF statement, payslip, or utility bill).</li>
+            <li><em>Sponsors (only if you register as one):</em> your name, email address, phone number, how you heard about us, and any organisation you give on behalf of &mdash; plus your giving history and the terms you have accepted. We may ask you to <strong>identify yourself or explain where funds came from</strong> before accepting a donation.</li>
           </ul>
 
           <h2 className="text-lg font-semibold text-gray-900">How we use and process your data</h2>
@@ -36,6 +37,7 @@ export default function PrivacyPage() {
             <li>To generate course recommendations and to assess and administer assistance applications.</li>
             <li><strong>Automated processing:</strong> to help us read and check your documents, we use automated text-recognition and AI services (Google Cloud Vision and Google Gemini) to extract text from uploaded documents and to prepare an anonymised profile for sponsors. We also use an automated rule to check eligibility against the published criteria. <strong>These are decision-support tools &mdash; a person reviews your application before any decision</strong>, and you can ask us to review any automated outcome.</li>
             <li>To send you relevant follow-up emails (e.g. assistance opportunities, important changes). You can unsubscribe at any time.</li>
+            <li><strong>If you are a sponsor:</strong> to run your account &mdash; vetting you, recording what you give, acting on the students you nominate, reporting back on how funds were used, and keeping the record of which version of our sponsor terms you accepted. We do not use a sponsor&rsquo;s details for anything else, and we never pass them to a student.</li>
           </ul>
 
           <h2 className="text-lg font-semibold text-gray-900">Who we share it with</h2>
