@@ -1838,6 +1838,10 @@ class CronRunView(APIView):
         'seed-partner-emails': 'seed_partner_email_templates',  # one-off/idempotent: create the five partner-email templates (all OFF)
         'partner-digests': 'send_partner_digests',  # weekly (Mon 08:00 MYT): partner stage summary + chase list
         'partner-milestones': 'send_partner_milestones',  # hourly: awaiting-review + awarded, batched per organisation
+        # one-off/idempotent (S3): create the nine sponsor-email templates. The three that
+        # already send arrive ON, the six new ones OFF for review; SPONSOR_COMMS_ENABLED
+        # gates the lot, so running this changes nothing a sponsor receives.
+        'seed-sponsor-emails': 'seed_sponsor_email_templates',
     }
 
     def post(self, request, job):
