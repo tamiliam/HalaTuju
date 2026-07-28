@@ -5924,3 +5924,27 @@ into real routes. Refactoring a file that is about to be removed buys nothing.
 explicitly rather than claiming a single owner it does not have.
 **Revisit if:** N3 slips, or a third surface needs probe state — at that point the context is
 worth its weight.
+
+## The Organisation overview is not a grid of links — Nav/IA N3b, 2026-07-28
+**Decision:** `/admin/organisation` shows two counts it can derive from calls the console already
+makes (active staff, sponsors awaiting vetting) and a single needs-attention line. It does NOT
+list the pages beside it.
+**Alternatives considered:** (a) port the hub's icon-card grid — that is what the hub WAS, and it
+existed only because there was no sidebar; rebuilding it inside its own replacement is circular.
+(b) A richer summary — committed funds, programme totals, payment state — which is what an
+overview should eventually be.
+**Rationale:** (b) needs an organisation-summary endpoint that does not exist. Deriving those
+figures client-side from partial data would put approximate money on a financial surface, and a
+number that is nearly right is worse there than no number at all.
+**Trade-offs:** the page is thin today. Accepted as honest rather than padded.
+**Revisit if:** a summary endpoint lands — the tiles are the natural first consumer.
+
+## The auth-callback change ships separately from the sprint that found it — Nav/IA N3b, 2026-07-28
+**Decision:** the callback now claims its PKCE code explicitly and prints its failure reason. That
+went in its own commit (`b26ba393`), not the N3b commit.
+**Alternatives considered:** folding it in, since it was a two-line change found mid-sprint.
+**Rationale:** it is production auth code touching every admin sign-in. TD-182 states that the
+real fix owes its own commit and test; the same rule has to apply to the diagnostic that led to it,
+or the rule is decorative. A reviewer looking at a navigation sprint should not find auth in it.
+**Trade-offs:** two commits where one would have been quicker.
+**Revisit if:** never — this is the general rule, not a one-off.

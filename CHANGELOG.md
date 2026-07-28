@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Administration hub becomes real pages (nav/IA N3b) — 2026-07-28
+
+Third sprint on the console navigation. The hub was one 414-line component doing five jobs, and it
+existed only because there was no sidebar to reach its parts. There is one now.
+
+### Added
+- **Four pages** — `/admin/organisation` (overview), `/admin/organisation/staff`,
+  `/admin/organisations` (tenants, super), `/admin/partners` (referral orgs, super).
+- **`components/admin/StaffAdmin`** — the shared table, banner, header and invite/resend/revoke
+  actions, so one page becoming four did not become four staff tables. Every component at module
+  scope: a sub-component declared inside its parent remounts the subtree and steals focus from the
+  invite inputs, which this exact file had suffered before.
+
+### Changed
+- **`/admin/administration` is now a permanent redirect**, and `/admin/invite` points straight at
+  Staff instead of bouncing through it. Both light the correct sidebar row.
+- **The Manual and FAQ move in the same commit** (role-matrix currency rule): all 16
+  "Administration" mentions rewritten. The Finance chapter had been asserting *"there is no
+  Payments item in the main menu"* — there is one now.
+- Four reserved nav slots become real routes; the overview is `exact`-matched so it cannot swallow
+  its own Staff page.
+
+### Known / owed
+- **Manual screenshots are stale.** The prose is corrected; the images still show a page that no
+  longer exists. The manifest is annotated — re-capturing is an owner task.
+- **TD-182 cause confirmed, not fixed:** the PKCE verifier is absent from storage at the callback.
+  Supabase names the Next.js remedy (cookie storage via `@supabase/ssr`); it touches live auth for
+  every admin and owes its own sprint. A separate commit makes the callback state its own failure
+  reason rather than "please try again".
+
+### Verification
+`npx jest` 905 passed (61 suites); `check-i18n` 4065 keys x 3; `tsc` clean; `next build` exit 0
+with all four routes. No backend, no migration, no new dependency.
+
 ## The console shell — scope sidebar, breadcrumb, command palette (nav/IA N2) — 2026-07-28
 
 Second of three sprints on the console navigation. N1 turned the menu into data; N2 turns it

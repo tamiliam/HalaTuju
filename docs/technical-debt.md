@@ -1520,27 +1520,40 @@ tests; `visibleNav()` + `activeItem()` are what remain. **Risk if left:** low bu
 N2 slips, a fourth scope or a reordered menu has to be expressed twice.
 **Size:** small (a deletion, once the sidebar exists).
 
-### [TD-182] Admin Google sign-in fails on a local dev origin (PKCE code is never exchanged)
-**Status:** Open — found 2026-07-28 while reviewing the nav shell locally. **Not reproduced on**
-**production**, where Google sign-in works.
-**Symptom:** on `http://localhost:3000`, Google OAuth returns to
-`/admin/auth/callback?code=…` and the page shows `errors.authFailed`. That string is only
-reachable from the `!session` branch (`admin/auth/callback/page.tsx`), so `getSession()` found
-nothing — the PKCE code was never exchanged for a session. Persists after clearing site data,
-so it is not stale verifier state.
-**Most likely cause (NOT yet confirmed):** the globally-mounted STUDENT supabase client also has
-`detectSessionInUrl` on, and races the admin client for the `?code=` in the URL. supabase-js
-consumes the code on the attempt, so whichever client loses finds nothing. `flowType: pkce`
-(added v2.23.1) stops the student client from SUCCEEDING — the leak it was written to prevent —
-but does not stop it from consuming. Why production wins the race consistently is the open
-question; script/mount order is the obvious suspect.
-**Why it matters beyond dev convenience:** it makes the admin console unreviewable on localhost
-without a password account, and a race that lands the right way "in production so far" is not a
-property anyone has actually pinned.
-**To resolve:** exchange explicitly in the callback rather than relying on auto-detect — read
-`?code=` and `await supabase.auth.exchangeCodeForSession(code)` when `getSession()` is empty,
-which is safe whichever client won. Add a test. **This is production auth code: it deserves its
-own commit, not a fold-in.** A cheap first diagnostic is to set `detectSessionInUrl: false` on
-the student client and see whether the admin flow starts working.
-**Risk if left:** low in production, high friction for any future local UI review of the console.
-**Size:** small (one callback + a test), once the cause is confirmed.
+### [TD-182] Admin Google sign-in fails on a local dev origin (PKCE code is never exchanged) — CAUSE CONFIRMED 2026-07-28
+**Status:** Open. Cause now KNOWN, and it is not what this entry first claimed.
+
+**The actual error, surfaced by the callback (2026-07-28):** *"PKCE code verifier not found in
+storage. This can happen if the auth flow was initiated in a different browser or device, or if
+the storage was cleared. For SSR frameworks (Next.js, SvelteKit, etc.), use @supabase/ssr on both
+the server and client to store the code verifier in cookies."*
+
+So the verifier is written by `signInWithOAuth` at sign-in and is absent by the time the callback
+runs. Nothing in this codebase clears it — there is no `localStorage.clear`, no `removeItem`, and
+nothing else referencing `halatuju_admin_session`. Supabase names the remedy for a Next.js app:
+cookie-backed storage via `@supabase/ssr`, on both server and client.
+
+**⚠ Two wrong diagnoses are recorded here deliberately, because both were confident and neither
+held.** (1) "The globally-mounted student client consumes the `?code=` first" — plausible, and the
+guard shipped for it (`93da774b`) did NOT fix the login. (2) "`getSession()` races auto-detect" —
+also wrong; `getSession()` awaits initialisation. The lesson is in lessons.md: I built a story from
+a partial read twice instead of surfacing the error the page already had. Making the callback show
+its own failure reason took minutes and ended the guessing immediately.
+
+**Kept from the first attempt, on narrower grounds:** the student `AuthProvider` no longer runs on
+`/admin/*` and `/sponsor/*`. That does not fix this bug, but it fixes a real and separate one — the
+provider was minting an ANONYMOUS Supabase user on every admin page visit, which is deterministic,
+not a race. The commit message overstates its effect; this entry is the correction.
+
+**Impact.** Production is unaffected — Google sign-in works there, and the same code path with the
+same storage does succeed, which is itself unexplained and worth understanding before trusting it.
+The concrete cost is that the admin console cannot be reviewed on a local origin with Google
+sign-in, which has now blocked two sprint reviews.
+
+**To resolve:** adopt `@supabase/ssr` for the admin client (and the sponsor client, which shares
+the pattern) so the PKCE verifier lives in a cookie rather than `localStorage`. Its own commit,
+its own test, and a live check on BOTH origins — production works today and must keep working.
+**Do not fold this into a feature sprint.** **Size:** small-to-medium; the risk is that it touches
+live auth for every admin.
+
+**Workaround meanwhile:** email + password sign-in does not use PKCE and is unaffected.
