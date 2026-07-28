@@ -3,6 +3,10 @@ import { getTurnstileToken } from '@/lib/turnstile'
 
 let _sponsorSupabase: SupabaseClient | null = null
 
+/** The sponsor scope's storage key — exported for the same reason as the admin one
+ *  (see ADMIN_STORAGE_KEY and lib/oauthOrigin.ts). */
+export const SPONSOR_STORAGE_KEY = 'halatuju_sponsor_session'
+
 /**
  * Separate Supabase client for sponsor auth (mirrors the admin client pattern).
  * Its own storage key keeps the sponsor session isolated from the student and
@@ -18,7 +22,7 @@ export function getSponsorSupabase(): SupabaseClient {
     }
     _sponsorSupabase = createClient(url, key, {
       auth: {
-        storageKey: 'halatuju_sponsor_session',
+        storageKey: SPONSOR_STORAGE_KEY,
         // PKCE so this OAuth session can't be read off the URL hash by the
         // globally-mounted student client (which would leak sponsor → student).
         flowType: 'pkce',

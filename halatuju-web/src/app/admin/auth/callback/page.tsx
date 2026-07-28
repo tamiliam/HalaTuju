@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAdminSupabase } from '@/lib/admin-supabase'
+import type { Session } from '@supabase/supabase-js'
+import { getAdminSupabase, ADMIN_STORAGE_KEY } from '@/lib/admin-supabase'
+import { oauthOriginMismatch } from '@/lib/oauthOrigin'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
 import { adminLanding } from '@/lib/adminLanding'
 import { effectiveRole } from '@/lib/navigation'
@@ -30,20 +32,35 @@ export default function AdminAuthCallbackPage() {
      * told nobody anything, including me: it cost several rounds of guessing at a failure the
      * page already knew the cause of. A code like `invalid_grant` is diagnostic, not sensitive.
      */
-    const resolveSession = async () => {
+    type Resolved = { session: Session | null; reason: string; mismatch?: boolean }
+
+    const resolveSession = async (): Promise<Resolved> => {
       const { data: { session: existing } } = await supabase.auth.getSession()
       if (existing) return { session: existing, reason: '' }
 
       const code = new URLSearchParams(window.location.search).get('code')
       if (!code) return { session: null, reason: 'no code in callback URL' }
 
+      /*
+       * Answer the origin question BEFORE asking supabase-js, because its answer misleads.
+       * When the verifier is missing it advises adopting `@supabase/ssr` to hold the verifier in
+       * cookies — which fixes nothing, cookies being host-scoped too. That sentence cost this
+       * ticket two wrong diagnoses (TD-182). If the code cannot be exchanged here because the
+       * sign-in began somewhere else, say THAT, in words the person can act on.
+       */
+      if (oauthOriginMismatch(window.location.search, ADMIN_STORAGE_KEY)) {
+        return { session: null, reason: '', mismatch: true }
+      }
+
       const { data, error: exErr } = await supabase.auth.exchangeCodeForSession(code)
       return { session: data?.session ?? null, reason: exErr?.message ?? 'exchange returned no session' }
     }
 
-    resolveSession().then(async ({ session, reason }) => {
+    resolveSession().then(async ({ session, reason, mismatch }) => {
       if (!session) {
-        setError(t('errors.authFailed'))
+        setError(mismatch
+          ? t('errors.authOriginMismatch', { host: window.location.host })
+          : t('errors.authFailed'))
         setDetail(reason)
         return
       }

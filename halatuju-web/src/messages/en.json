@@ -2870,6 +2870,7 @@
     "pageNotFoundDesc": "The page you are looking for does not exist or has been moved.",
     "backToHome": "Back to Home",
     "authFailed": "Authentication failed. Please try again.",
+    "authOriginMismatch": "This sign-in began at a different web address from the one you have come back to ({host}), and the security key it created is stored only at the address it started from. Please sign in again, staying on the same address the whole way through.",
     "noAdminAccess": "This account does not have admin access.",
     "adminVerifyFailed": "Failed to verify admin access.",
     "notSignedIn": "Not signed in. Please go back and sign in again.",

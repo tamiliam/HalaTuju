@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSponsorSupabase } from '@/lib/sponsor-supabase'
+import { getSponsorSupabase, SPONSOR_STORAGE_KEY } from '@/lib/sponsor-supabase'
 import { enforceSingleScope } from '@/lib/sessionPolicy'
+import { oauthOriginMismatch } from '@/lib/oauthOrigin'
 import { useT } from '@/lib/i18n'
 
 export default function SponsorAuthCallbackPage() {
@@ -14,7 +15,10 @@ export default function SponsorAuthCallbackPage() {
   useEffect(() => {
     getSponsorSupabase().auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
-        setError(t('errors.authFailed'))
+        // Same origin trap as the partner console, same honest answer — see lib/oauthOrigin.ts.
+        setError(oauthOriginMismatch(window.location.search, SPONSOR_STORAGE_KEY)
+          ? t('errors.authOriginMismatch', { host: window.location.host })
+          : t('errors.authFailed'))
         return
       }
       // One privileged scope per identity (super exempt): ends an active partner session.

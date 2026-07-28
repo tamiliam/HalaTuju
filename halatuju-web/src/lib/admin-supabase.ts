@@ -3,6 +3,10 @@ import { getTurnstileToken } from '@/lib/turnstile'
 
 let _adminSupabase: SupabaseClient | null = null
 
+/** The admin scope's storage key. Exported because the callback needs it to look for the PKCE
+ *  verifier this origin should be holding (see lib/oauthOrigin.ts) — one spelling, not two. */
+export const ADMIN_STORAGE_KEY = 'halatuju_admin_session'
+
 /**
  * Separate Supabase client for admin auth.
  * Uses a different storage key so admin and student sessions don't conflict.
@@ -16,7 +20,7 @@ export function getAdminSupabase(): SupabaseClient {
     }
     _adminSupabase = createClient(url, key, {
       auth: {
-        storageKey: 'halatuju_admin_session',
+        storageKey: ADMIN_STORAGE_KEY,
         // PKCE so this OAuth session can't be read off the URL hash by the
         // globally-mounted student client (which would leak admin → student).
         flowType: 'pkce',

@@ -2870,6 +2870,7 @@
     "pageNotFoundDesc": "Halaman yang anda cari tidak wujud atau telah dipindahkan.",
     "backToHome": "Kembali ke Laman Utama",
     "authFailed": "Pengesahan gagal. Sila cuba lagi.",
+    "authOriginMismatch": "Log masuk ini bermula di alamat web yang berbeza daripada alamat yang anda kembali ini ({host}), dan kunci keselamatan yang dijananya hanya tersimpan di alamat asal tersebut. Sila log masuk semula dan kekal pada alamat yang sama sepanjang proses.",
     "noAdminAccess": "Akaun ini tiada akses pentadbir.",
     "adminVerifyFailed": "Gagal mengesahkan akses pentadbir.",
     "notSignedIn": "Belum log masuk. Sila kembali dan log masuk semula.",

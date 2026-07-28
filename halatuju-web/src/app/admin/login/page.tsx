@@ -10,6 +10,7 @@ import {
   adminResetPassword,
 } from '@/lib/admin-supabase'
 import { enforceSingleScope, consumeSuperseded } from '@/lib/sessionPolicy'
+import { enforceCanonicalOrigin } from '@/lib/oauthOrigin'
 import { adminLanding } from '@/lib/adminLanding'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
@@ -28,6 +29,10 @@ export default function AdminLoginPage() {
   // sponsor portal (one active privileged scope per identity, except super admins).
   const [superseded, setSuperseded] = useState(false)
   useEffect(() => { setSuperseded(consumeSuperseded('admin')) }, [])
+  // A sign-in must start on the canonical host, because PKCE keeps its verifier per ORIGIN and
+  // `127.0.0.1:3000` is a different vault from `localhost:3000` (TD-182). Inert in production,
+  // where the hostname is never a loopback literal.
+  useEffect(() => { enforceCanonicalOrigin() }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

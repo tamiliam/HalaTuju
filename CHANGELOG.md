@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## Console sign-in works on localhost again — 2026-07-28
+
+Google sign-in to the partner console and sponsor portal had been broken on a local address for
+weeks (TD-182), which is why the last six sprints shipped without anyone looking at the console in
+a browser.
+
+**It was never an auth bug.** Sign-in began at `http://localhost:3000` and returned at
+`http://127.0.0.1:3000`. A browser keeps storage per *web address*, so the one-time security key
+written by the first was invisible to the second — same machine, same server, same code, two
+addresses. Production was never affected: `halatuju.xyz` cannot be spelled two ways.
+
+### Fixed
+- **A sign-in now always starts on the canonical address.** Open a console login page on a loopback
+  IP and it moves to `localhost` before anything begins; since the return address is built from
+  wherever the sign-in started, it can no longer split part-way. Inert in production.
+- **The error message tells the truth.** It previously showed Supabase's own text, which recommends
+  adopting `@supabase/ssr` to keep the key in cookies — advice that would have changed nothing here
+  (cookies are per-address too) and which had already produced three wrong diagnoses on this
+  ticket. It now names the actual cause, in English, Malay and Tamil.
+
+The callback pages are deliberately *not* guarded: a sign-in that legitimately begins on
+`127.0.0.1` also returns there and works fine, and redirecting it would create the very bug.
+
+19 new tests, including both production hostnames — a guard that ever fired on the live site would
+send admins to their own laptop.
+
 ## The breadcrumb says where you ARE — 2026-07-28
 
 Owner, from three screenshots: *"First should only show halatuju, as it is outside BrightPath. The
