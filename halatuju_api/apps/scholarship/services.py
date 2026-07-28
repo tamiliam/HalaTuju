@@ -185,19 +185,67 @@ def build_intake_snapshot(profile, app_data):
     }
 
 
+class AmbiguousOpenCohort(Exception):
+    """More than one round is open and nothing in the request says which (PF-1).
+
+    Carries the candidate codes so the operator reading the log can see what to close, or which
+    code the apply link should have carried.
+    """
+
+    def __init__(self, codes):
+        self.codes = list(codes)
+        super().__init__(
+            'More than one open cohort and no cohort_code given: ' + ', '.join(self.codes)
+        )
+
+
 def resolve_open_cohort(cohort_code=''):
     """
-    Return the cohort to apply to. An explicit code wins; otherwise the most
-    recent active + open cohort. Returns None if nothing matches.
+    Return the cohort to apply to. An explicit code wins; otherwise THE one open round.
+
+    Returns None when nothing matches — a closed intake is a normal state with its own message.
+
+    ⚠ PF-1. This used to answer "the most recent active+open cohort" with `.first()` on a
+    `-year, code` sort, which is a platform-wide question. The caller uses the answer to decide
+    which round a student JOINS, and `ScholarshipApplication.save()` denormalises
+    `owning_organisation` from it — so with two organisations open, a student applying to B was
+    filed under A: visible to A's staff, invisible to B's, funded from A's money, and **no error
+    anywhere**. `.first()` over an unscoped set is not a tie-break, it is a guess about tenancy.
+
+    It now RAISES on ambiguity rather than picking. A student who sees "we could not tell which
+    programme you are applying to" writes a support message; a student filed under the wrong
+    foundation is a refund and an apology.
+
+    Deliberately NOT resolved by narrowing on the referring organisation: `PartnerAdmin.org` /
+    `referred_by_org` mean the REFERRING org (attribution), never ownership — the model docstring
+    on `ScholarshipCohort.owning_organisation` says so. A school that refers a student is not the
+    foundation funding them.
+
+    Ambiguity is counted across ALL open rounds, not per organisation, because "which round?" is
+    equally unanswerable between two intakes of the SAME organisation. One rule, one layer.
+
+    An explicit code is returned WITHOUT checking `is_open` — `views.py` re-checks and explains
+    that the round has closed, which is a different and more useful message than "no open round".
     """
     if cohort_code:
         return ScholarshipCohort.objects.filter(code=cohort_code).first()
-    return (
+
+    open_cohorts = list(
         ScholarshipCohort.objects
         .filter(is_active=True, is_open=True)
-        .order_by('-year', 'code')
-        .first()
+        .order_by('-year', 'code')[:2]
     )
+    if not open_cohorts:
+        return None
+    if len(open_cohorts) > 1:
+        # Re-read unsliced so the error names every candidate, not just the two we fetched.
+        raise AmbiguousOpenCohort(
+            ScholarshipCohort.objects
+            .filter(is_active=True, is_open=True)
+            .order_by('-year', 'code')
+            .values_list('code', flat=True)
+        )
+    return open_cohorts[0]
 
 
 def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
