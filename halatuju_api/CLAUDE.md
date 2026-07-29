@@ -524,6 +524,51 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-29)
 
+**✅ CODE COMPLETE 2026-07-29 — A SPONSOR WHO REGISTERS TODAY BELONGS TO A GIFT. NOT PUSHED
+(owner gates the deploy).** Commits `01d7dcd1` + `225c4404`. Retro
+`docs/retrospective-2026-07-29-sponsor-gift-membership.md`; lessons ×4. **Migration `0136`
+(data only, no DDL) is ALREADY APPLIED to production migrate-first — do not re-run it.**
+`pytest` **3823** scholarship + **1260** courses/reports. No FE change.
+- **Why:** migration `0123` (2026-07-25) backfilled a flagship membership for every sponsor
+  then alive, and **nothing was ever written to keep doing it**. The next person to register —
+  28/07, sponsor id 10 — belonged to no gift at all, and so would everyone after. Their student
+  pool read empty, their weekly digest would have been silent despite being switched on, and no
+  wallet credit could be recorded (`record_admin_credit` → `sponsor_not_in_programme`).
+- **⚠ THE LESSON, because it will recur: a backfill migration WITHOUT the matching write path is
+  a bug with a delay on it.** The counts reconcile, the suite passes, and the defect starts on
+  the next INSERT — after everyone has moved on. Whenever a migration populates a column or table
+  for existing rows, **name the code path that populates it for the next one**.
+- `sponsorship.sync_account_membership(sponsor, vetted_by='')` is the one home; called from
+  registration (opens it `pending`) and from `AdminSponsorReviewView` (settles it), mirroring
+  0123's "the membership copies the account status" rule exactly. Idempotent, so it HEALS a
+  missing row rather than duplicating one.
+- **⚠ It touches ONLY the default gift** (`DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'`).
+  Acceptance into a second gift is that organisation's decision and must never be revoked as a
+  side-effect of platform-level account vetting — a test pins it, and nothing can reach that
+  state today, which is why it is written down while the reason is legible.
+- **⚠ A SPONSOR HOLDING NO WALLET IS NORMAL and was never the bug** — a wallet exists once money
+  is recorded, and most sponsors have given nothing. **Seeing students has never depended on
+  holding credit and must not**: the balance is read at exactly ONE point,
+  `sponsorship.py` `fund_student`, the moment a sponsor funds someone. Do not "fix" this toward
+  gating the pool on a balance.
+- Six regression tests, **each verified to fail with the write path disabled**; the twelve
+  pre-existing membership tests stayed green, which is what shows the new ones exercise the new
+  path rather than the fence that already worked.
+- **Production after:** all 10 sponsors hold a membership mirroring their account status. Nobody
+  gained sight of anyone their account did not already permit — 0123's invariant holds.
+- **⚠ FOUND IN PASSING, ALREADY FIXED: migration `0135_application_catalogue` had its TABLES on
+  prod (RLS on, 19 catalogue rows — everything its retro claimed was true) but its
+  `django_migrations` row was never recorded**, so the ledger read 0134 → nothing → 0136. It
+  would have surfaced as a `CREATE TABLE` against existing tables at the next `migrate`. Row
+  recorded, back-stamped to the commit time (2026-07-28 15:50).
+- **▶ GUARDRAIL OWED, NOT BUILT: compare `showmigrations` against production at sprint close.**
+  `makemigrations --check` only proves the FILES match the MODELS; it is structurally blind to
+  what production recorded, which is the one thing migrate-first gets wrong. Belongs in
+  `Settings/_workflows/sprint-close.md`, not in this sprint.
+- **▶ AT DEPLOY: push. NO migrate-first** (0136 is already applied). Post-check: `/admin/sponsors`
+  → Gan Tee Jin shows **+ Record a credit**, and a newly-registered test sponsor holds a `pending`
+  membership that flips to `approved` on vetting.
+
 **✅ SHIPPED 2026-07-29 — CONFIG LAYER 0, SPRINT 3 IS COMPLETE (3a backend + 3b front end).** An
 organisation can now change WHAT ITS PROGRAMME ASKS FOR without us writing code, for documents.
 Roadmap `docs/plans/2026-07-28-configuration-layers-roadmap.md`; retros
