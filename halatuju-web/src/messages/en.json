@@ -1312,7 +1312,8 @@
         "birth_certificate": "Birth certificate",
         "income_support_doc": "Income support document",
         "school_leaving_cert": "School-leaving certificate",
-        "bank_statement": "Bank statement"
+        "bank_statement": "Bank statement",
+        "income_proof": "Proof of household income"
       },
       "help": {
         "ic": "A photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",
@@ -5222,6 +5223,20 @@
       "uploadDoc": "Upload a document…",
       "uploadDocHint": "We'll read the clauses (and their 1 / 1.1 / i) structure) from a .docx; you review and edit before deploying.",
       "uploadNeedsFile": "Choose a .docx file to upload, or pick another option."
+    },
+    "programme": {
+      "question": {
+        "aspirations": "Aspirations",
+        "plans": "Plans after school",
+        "daily_life": "Daily life at home",
+        "fears": "Worries and concerns",
+        "family_roster": "Family details",
+        "funding": "What the support is for",
+        "address": "Home address",
+        "consent": "Consent",
+        "justification": "Why they need support",
+        "anything_else": "Anything else"
+      }
     }
   }
 }

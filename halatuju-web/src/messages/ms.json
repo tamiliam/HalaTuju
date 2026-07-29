@@ -1312,7 +1312,8 @@
         "birth_certificate": "Sijil kelahiran",
         "income_support_doc": "Dokumen sokongan pendapatan",
         "school_leaving_cert": "Sijil berhenti sekolah",
-        "bank_statement": "Penyata bank"
+        "bank_statement": "Penyata bank",
+        "income_proof": "Bukti pendapatan isi rumah"
       },
       "help": {
         "ic": "Gambar bahagian depan MyKad anda. Kami akan menggunakannya untuk mengesahkan identiti anda dan memastikan nama serta nombor KP anda sepadan dengan permohonan dan dokumen sokongan anda.",
@@ -5222,6 +5223,20 @@
       "uploadDoc": "Muat naik dokumen…",
       "uploadDocHint": "Kami akan membaca klausa (dan struktur 1 / 1.1 / i)) daripada .docx; anda menyemak dan menyunting sebelum melancarkan.",
       "uploadNeedsFile": "Pilih fail .docx untuk dimuat naik, atau pilih pilihan lain."
+    },
+    "programme": {
+      "question": {
+        "aspirations": "Cita-cita",
+        "plans": "Rancangan selepas sekolah",
+        "daily_life": "Kehidupan harian di rumah",
+        "fears": "Kebimbangan",
+        "family_roster": "Maklumat keluarga",
+        "funding": "Tujuan bantuan",
+        "address": "Alamat rumah",
+        "consent": "Persetujuan",
+        "justification": "Sebab memerlukan bantuan",
+        "anything_else": "Apa-apa lagi"
+      }
     }
   }
 }
