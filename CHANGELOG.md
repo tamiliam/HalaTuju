@@ -29,8 +29,10 @@ holding a live claim on a real person's IC number, which the true owner can then
 with.
 
 **And whenever the card disagrees, the profile now says so** — showing both values, and declining
-to say which is wrong, because our own reader splits and glues names and blaming the student would
-sometimes mean blaming us.
+to say which is wrong. That hedge is a precaution, not a response to a known failure: two
+applications first cited as evidence for it (#27, #118) turned out to read as an exact match once
+the real matcher was run rather than a SQL approximation of it, so nothing on production is
+currently known to mis-blame a student. Recorded as an a-priori choice in the retro.
 
 Three things inside that rule are easy to get wrong and each carries a bite-checked test: an
 unscored card is **not** genuine (every other consumer of genuineness fails open, which is right

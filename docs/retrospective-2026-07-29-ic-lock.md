@@ -94,6 +94,30 @@ and the endpoint is documented around that case rather than the one I first desc
 **A vivid risk crowds out the real one.** Walking the scenario concretely, when asked, produced a
 better answer than my confident summary of it.
 
+### A fourth: "#27 and #118 show our OCR blaming students" — it doesn't
+
+I cited those two applications repeatedly — here, in the CHANGELOG, and as the justification for
+the flag copy hedging on which side is wrong — as cases where our reader mangled a name and would
+have accused the student. Asked to look at them, the cockpit showed both as **Verified · Exact**
+with Name and IC No green, and running the real matcher confirms it:
+
+    #27  card 'KALIANA KUMAR SANJANA'    typed 'KALIANAKUMAR SANJANA'   -> match
+    #118 card 'KRISHNAN THACHAYAHNIA/P'  typed 'KRISHNAN THACHAYAHNI'   -> match
+
+`name_match` has a glued-token path for exactly the OCR space-split in #27, and strips a trailing
+`A/P` for #118. **Both were artefacts of my own SQL approximation** — I stripped parentage markers
+only between spaces and had no glued comparison at all — and I then repeated the two app numbers
+as though they were findings.
+
+What survives: the *principle* that a reader which mangles names should not accuse the student.
+What does not: any evidence that ours does. Production's flagged bucket is one test account. The
+copy hedge is therefore an a-priori choice, and it should be recorded as one rather than dressed
+in two cases that dissolve on inspection.
+
+**An approximation used to FIND something must not become the evidence FOR it.** The SQL was the
+right tool for locating candidates and the wrong tool for characterising them; the real predicate
+was one call away the whole time, in a codebase whose entire design is that the rule has one home.
+
 ## The design, and the three places it is easy to get wrong
 
 `apps/scholarship/identity.py` is the one home, because "is this settled?" has to be answered by
