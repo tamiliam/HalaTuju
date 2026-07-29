@@ -195,7 +195,11 @@ export default function ProfilePage() {
       setIcFlagCodes(profileData.ic_flags || [])
       setIcCardNric(profileData.ic_card_nric || '')
       setIcCardName(profileData.ic_card_name || '')
-      setNricDraft(profileData.nric || '')
+      // Through formatIc, not raw: 11 production profiles store the number with no dashes
+      // (050202022022), so the editable box would show a wall of digits. formatIc strips and
+      // re-inserts, so it is a no-op for the properly formatted rows — and saving an edit now
+      // normalises one of those 11 on the way past, since the claim endpoint requires dashes.
+      setNricDraft(formatIc(profileData.nric || ''))
       setFamily({
         fatherName: profileData.father_name || '',
         fatherOccupation: profileData.father_occupation || '',

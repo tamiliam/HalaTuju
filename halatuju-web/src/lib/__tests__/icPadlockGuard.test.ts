@@ -50,6 +50,13 @@ describe('the IC field is gated by the stored lock', () => {
     expect((src.match(/\{!icEditable && \(/g) || []).length).toBe(padlocks.length)
   })
 
+  it('formats the loaded number before putting it in the editable box', () => {
+    // 11 production profiles store the IC with no dashes (050202022022), so the raw value
+    // renders as a wall of digits. formatIc is a no-op on the properly formatted rows.
+    expect(src).toMatch(/setNricDraft\(formatIc\(profileData\.nric \|\| ''\)\)/)
+    expect(src).not.toMatch(/setNricDraft\(profileData\.nric \|\| ''\)/)
+  })
+
   it('never renders the mask into an editable box', () => {
     // Enabling the old field as-is would have let a student edit '****-**-2022' and submit
     // asterisks. The editable branch must show the raw draft.
