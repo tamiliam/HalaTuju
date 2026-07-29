@@ -2721,6 +2721,27 @@
     "family": "Family",
     "name": "Name",
     "icMasked": "IC Number",
+    "icEditable": "You can correct this until we've confirmed it against your uploaded IC.",
+    "icLockedNote": "Confirmed against your uploaded IC, so this can no longer be changed. If it's wrong, please contact us.",
+    "icInvalid": "That doesn't look like a valid IC number. Please check it and try again.",
+    "icTaken": "That IC number already belongs to another account. Please check it, or contact us if you think this is a mistake.",
+    "icRefused": "We couldn't accept that IC number. Please check it, or contact us for help.",
+    "icNeedsCheck": "Please check",
+    "icFlagTitle": "Your uploaded IC reads differently",
+    "icOnCard": "IC number on your card:",
+    "icNameOnCard": "Name on your card:",
+    "icFlag": {
+      "nric_one_digit": "The IC number you entered differs from your card by one digit.",
+      "nric_differs": "The IC number you entered doesn't match your card.",
+      "name_incomplete": "Your card carries more of your name than you've entered here.",
+      "name_differs": "The name you entered doesn't match the name on your card."
+    },
+    "icFixable": {
+      "nric": "If your card is right, correct the IC number above and save.",
+      "name": "If your card is right, correct your name above and save.",
+      "both": "If your card is right, correct the details above and save.",
+      "neither": "We may have misread your card, or it may need to be re-uploaded. Please contact us and we'll sort it out."
+    },
     "incompleteFields": "{count} fields to complete",
     "profileComplete": "Profile complete",
     "school": "School",

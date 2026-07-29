@@ -2721,6 +2721,27 @@
     "family": "Keluarga",
     "name": "Nama",
     "icMasked": "Nombor IC",
+    "icEditable": "Anda boleh membetulkannya sehingga kami mengesahkannya dengan IC yang anda muat naik.",
+    "icLockedNote": "Telah disahkan dengan IC yang anda muat naik, jadi ini tidak boleh diubah lagi. Jika ia salah, sila hubungi kami.",
+    "icInvalid": "Nombor IC itu nampaknya tidak sah. Sila periksa dan cuba lagi.",
+    "icTaken": "Nombor IC itu sudah dimiliki akaun lain. Sila periksa, atau hubungi kami jika anda fikir ini satu kesilapan.",
+    "icRefused": "Kami tidak dapat menerima nombor IC itu. Sila periksa, atau hubungi kami untuk bantuan.",
+    "icNeedsCheck": "Sila periksa",
+    "icFlagTitle": "IC yang anda muat naik berbeza",
+    "icOnCard": "Nombor IC pada kad anda:",
+    "icNameOnCard": "Nama pada kad anda:",
+    "icFlag": {
+      "nric_one_digit": "Nombor IC yang anda masukkan berbeza satu digit daripada kad anda.",
+      "nric_differs": "Nombor IC yang anda masukkan tidak sepadan dengan kad anda.",
+      "name_incomplete": "Kad anda membawa nama anda yang lebih panjang daripada yang anda masukkan di sini.",
+      "name_differs": "Nama yang anda masukkan tidak sepadan dengan nama pada kad anda."
+    },
+    "icFixable": {
+      "nric": "Jika kad anda betul, betulkan nombor IC di atas dan simpan.",
+      "name": "Jika kad anda betul, betulkan nama anda di atas dan simpan.",
+      "both": "Jika kad anda betul, betulkan maklumat di atas dan simpan.",
+      "neither": "Mungkin kami salah membaca kad anda, atau ia perlu dimuat naik semula. Sila hubungi kami dan kami akan uruskannya."
+    },
     "incompleteFields": "{count} medan belum diisi",
     "profileComplete": "Profil lengkap",
     "school": "Sekolah",

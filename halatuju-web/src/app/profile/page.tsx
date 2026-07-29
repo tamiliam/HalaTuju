@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { maskIc } from '@/lib/ic-utils'
+import { formatIc, maskIc, validateIc } from '@/lib/ic-utils'
+import {
+  canEditIc, hasIcFlags, icFieldValue, icFixableSide, icFlags,
+} from '@/lib/icEditor'
 import {
   getProfile,
+  claimNric,
   updateProfile,
   getSavedCourses,
   unsaveCourse,
@@ -113,6 +117,16 @@ export default function ProfilePage() {
   const [colorblind, setColorblind] = useState(false)
   const [disability, setDisability] = useState(false)
   const [identityVerified, setIdentityVerified] = useState(false)
+  // The IC lock, kept SEPARATE from identityVerified above. The padlock keys on this one; the
+  // green "Verified" badge keys on that one. They are not the same question — see icEditor.ts.
+  // Default true so a payload that predates the field renders locked rather than offering an
+  // edit the server would refuse.
+  const [nricLocked, setNricLocked] = useState(true)
+  const [icFlagCodes, setIcFlagCodes] = useState<string[]>([])
+  const [icCardNric, setIcCardNric] = useState('')
+  const [icCardName, setIcCardName] = useState('')
+  const [nricDraft, setNricDraft] = useState('')      // the in-progress correction
+  const [nricError, setNricError] = useState('')
   // Structured family roster — the durable profile-level home (two-way synced with
   // an open B40 application by the backend). Shown in Family & Background.
   const [family, setFamily] = useState<FamilyRosterForm>(EMPTY_FAMILY)
@@ -148,6 +162,10 @@ export default function ProfilePage() {
   // UI state
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  // Derived once so the field, the padlock and the flag panel cannot disagree about whether
+  // this student may edit. `icEditable` is the ONLY thing that grants the edit.
+  const icEditable = canEditIc({ nric_locked: nricLocked })
+  const icFixable = icFixableSide(icFlagCodes, icEditable)
   const [editingSection, setEditingSection] = useState<EditingSection>(null)
   const [snapshot, setSnapshot] = useState<Record<string, unknown>>({})
 
@@ -173,6 +191,11 @@ export default function ProfilePage() {
       setColorblind(!!profileData.colorblind)
       setDisability(!!profileData.disability)
       setIdentityVerified(!!profileData.identity_verified)
+      setNricLocked(profileData.nric_locked !== false)
+      setIcFlagCodes(profileData.ic_flags || [])
+      setIcCardNric(profileData.ic_card_nric || '')
+      setIcCardName(profileData.ic_card_name || '')
+      setNricDraft(profileData.nric || '')
       setFamily({
         fatherName: profileData.father_name || '',
         fatherOccupation: profileData.father_occupation || '',
@@ -288,11 +311,41 @@ export default function ProfilePage() {
         return false
       }
     }
+    // The IC goes through the VALIDATED claim endpoint, never the profile PUT — which strips it
+    // read-only on purpose. Enabling the input without this would let a student type, press
+    // Save, see it succeed, and change nothing.
+    //
+    // ⚠ `confirm` is NEVER sent from here. It does not re-point a record: it moves the primary
+    // key in raw SQL and re-parents saved courses, outcomes, reports and email verifications —
+    // an account takeover. The sign-in prompt uses it deliberately ("this IC already has an
+    // account, is it you?"); a profile edit must not. So a number belonging to somebody else is
+    // a flat refusal here.
+    if (icEditable && nricDraft && nricDraft !== nric) {
+      const bad = validateIc(nricDraft)
+      if (bad) {
+        setNricError(t('profile.icInvalid'))
+        showToast(t('profile.icInvalid'), 'error')
+        return false
+      }
+      try {
+        const res = await claimNric(nricDraft, false, { token })
+        if (res.status === 'exists') {
+          setNricError(t('profile.icTaken'))
+          showToast(t('profile.icTaken'), 'error')
+          return false
+        }
+      } catch {
+        // 400 (format / date / age / state code) or 403 (already locked server-side).
+        setNricError(t('profile.icRefused'))
+        showToast(t('profile.icRefused'), 'error')
+        return false
+      }
+    }
     setSaving(true)
     try {
       await updateProfile({
         name,
-        // nric is read-only on PUT — only /apply's claim path can change it.
+        // nric is read-only on PUT — only the claim path above can change it.
         ...(gender ? { gender } : {}),
         nationality,
         preferred_state: state,
@@ -503,17 +556,70 @@ export default function ProfilePage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.icMasked')}</label>
                   <div className="relative">
+                    {/* ⚠ Keyed on `nricLocked` (the STORED lock), never on identityVerified.
+                        Until 2026-07-29 `disabled` was a bare attribute here, so every student
+                        saw a padlock whether or not anything had locked — which is why Gopal's
+                        "correct it on your Profile page" read as nonsense. */}
                     <input
                       type="text"
-                      value={nric ? maskIc(nric) : '—'}
-                      disabled
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 font-mono cursor-not-allowed pr-10"
+                      value={icEditable
+                        ? nricDraft
+                        : icFieldValue(nric, nric ? maskIc(nric) : '', false) || '—'}
+                      onChange={e => { setNricDraft(formatIc(e.target.value)); setNricError('') }}
+                      disabled={!icEditable}
+                      inputMode="numeric"
+                      placeholder="XXXXXX-XX-XXXX"
+                      aria-label={t('profile.icMasked')}
+                      className={`w-full px-3 py-2.5 border rounded-lg text-sm font-mono pr-10 ${
+                        icEditable
+                          ? 'border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none'
+                          : 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
+                      }`}
                     />
-                    <svg className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                    </svg>
+                    {!icEditable && (
+                      <svg className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                      </svg>
+                    )}
                   </div>
+                  {nricError && <p className="mt-1.5 text-xs text-red-600">{nricError}</p>}
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    {icEditable ? t('profile.icEditable') : t('profile.icLockedNote')}
+                  </p>
                 </div>
+
+                {/* What the uploaded card disagrees with. Deliberately shows BOTH values and
+                    does not say which is wrong: our OCR splits and glues names (apps #27, #118),
+                    so blaming the student would sometimes be blaming ourselves. */}
+                {hasIcFlags(icFlagCodes) && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                    <p className="text-xs font-medium text-amber-900">{t('profile.icFlagTitle')}</p>
+                    <ul className="mt-1.5 space-y-1">
+                      {icFlags(icFlagCodes).map(code => (
+                        <li key={code} className="text-xs text-amber-800">
+                          {t(`profile.icFlag.${code}`)}
+                        </li>
+                      ))}
+                    </ul>
+                    <dl className="mt-2 space-y-0.5 text-xs text-amber-900">
+                      {icCardNric && (
+                        <div className="flex gap-2">
+                          <dt className="font-medium">{t('profile.icOnCard')}</dt>
+                          <dd className="font-mono">{icCardNric}</dd>
+                        </div>
+                      )}
+                      {icCardName && (
+                        <div className="flex gap-2">
+                          <dt className="font-medium">{t('profile.icNameOnCard')}</dt>
+                          <dd>{icCardName}</dd>
+                        </div>
+                      )}
+                    </dl>
+                    <p className="mt-2 text-xs text-amber-800">
+                      {t(`profile.icFixable.${icFixable}`)}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.name')} <span className="text-red-500">*</span></label>
                   <input
@@ -590,15 +696,24 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                    </svg>
+                    {/* Same correction as the edit panel: the padlock is drawn only when the IC
+                        is actually locked, not on every render. */}
+                    {!icEditable && (
+                      <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                      </svg>
+                    )}
                     {t('profile.icMasked')}
                   </span>
                   <span className="text-sm text-gray-900 font-mono flex items-center gap-1.5">
                     {nric ? maskIc(nric) : '—'}
                     {nric && identityVerified && (
                       <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                    )}
+                    {/* A quiet marker that something needs their attention, so a student who
+                        never opens the edit panel still learns the card disagrees. */}
+                    {hasIcFlags(icFlagCodes) && (
+                      <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded-full">{t('profile.icNeedsCheck')}</span>
                     )}
                   </span>
                 </div>

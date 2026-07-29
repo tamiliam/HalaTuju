@@ -320,6 +320,60 @@ them, completes, and the generated sponsor profile doesn't mention them — audi
 
 ## Sprint 5 — The screen Suresh's team actually touches
 
+### ✅ DESIGN OF RECORD, APPROVED BY THE OWNER 2026-07-29
+
+<https://stitch.withgoogle.com/preview/10844973747787673276?node-id=65b95d25a7584957a5242534a246240d>
+
+Stitch, HalaTuju project, screen `65b95d25a7584957a5242534a246240d`, titled *"What we ask for —
+Programme Configuration"*. **The house rule is satisfied: no page code before an approved visual.**
+
+**⚠ THREE THINGS IN THAT MOCK ARE INVENTED AND MUST NOT BE BUILT.** The approval covers the CONTENT
+COLUMN only.
+1. **The sidebar's active item is ORANGE.** In this product amber *means caution* (Layer 1 F1 made
+   that a token family). An amber active-nav row would read as a warning and would break the
+   meaning-colour vocabulary product-wide. Use the real rail.
+2. **The whole shell is invented** — a top nav AND a sidebar repeating the same items. The real
+   console has the icon rail, breadcrumb and ⌘K palette from nav/IA N2–N4. Take the shell from the
+   app, never from the mock.
+3. **Cosmetic artefacts:** a stock avatar, and "BrightPath Bursary" as the product name — BrightPath
+   is the TENANT, HalaTuju is the product.
+
+**Two corrections to make while building:** the "Always required" badge is caps blue in the mock and
+competes with the brand actions — it is information, so mute it to grey sentence case. And the footer
+bar is pale blue, which reads as an info panel; a neutral tint reads as a toolbar.
+
+### The five decisions the owner approved
+
+1. **Three states as a segmented control, not a dropdown** — Don't ask / Optional / Required.
+   "Optional" already exists in the product (five documents are offered without blocking anyone), so a
+   tick box cannot express what is true; and the screen's whole job is comparing rows at a glance,
+   which a per-row dropdown hides.
+2. **Locked rows stay VISIBLE with their reason.** "Identity card — always required" is information;
+   a missing row is a mystery someone emails us about.
+3. **Household income is drawn heavier than the rest** — a tinted band and an accent edge. It is not
+   one upload: it is the whole means test (the family questions, every earner's payslip and IC, the
+   utility bills). "Off" there removes far more than the label suggests.
+4. **The live-applicant warning names a REAL number and sits ABOVE the controls**, not in a
+   confirmation dialog after the decision. 41 applications are inside the submission gate today.
+5. **Documents only.** Questions are NOT on this screen yet — they are not enforced anywhere, and a
+   switch that governs nothing is a lie. Sprint 4 adds them as more rows in the same list, so no
+   layout change. Likewise **no tab strip**: the colours tab (Layer 1 A2) shares this route later,
+   and a single tab is just a page.
+
+### ⚠ Prerequisite: DONE
+
+**TD-197 is closed** (`4e53b68a`) — all nineteen catalogue labels now point at messages that exist,
+and the guard asserts they RESOLVE rather than merely look like keys. This screen is their first
+consumer, so building before that fix would have rendered nineteen raw dotted strings at a tenant.
+
+### Still owed BEFORE this ships (both from 3a, neither started)
+
+- **The `check2_queries.py` pass** — income-driven but also carries academic and family follow-ups,
+  so it cannot be gated wholesale on the income switch.
+- **The submit-time snapshot** — so a change made today never re-gates a student who submitted
+  yesterday. This is the sprint that first makes a configuration change POSSIBLE, so the guard and
+  the capability belong together.
+
 **Goal.** An `org_admin` ticks what their programme asks for, sees it in the sandbox, and cannot break
 anything.
 

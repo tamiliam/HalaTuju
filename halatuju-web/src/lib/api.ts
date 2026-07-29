@@ -62,6 +62,18 @@ export interface StudentProfile {
   referral_source?: string
   nric_verified?: boolean
   identity_verified?: boolean   // name + IC confirmed by the MyKad scan, or admin-locked
+  // ⚠ THE PADLOCK KEYS ON `nric_locked`, NEVER ON `identity_verified`. They are not
+  // interchangeable: `identity_verified` is a display badge that also greens for a card
+  // matching but not yet locked (e.g. never scored for genuineness), and it is DERIVED on
+  // every read — so a student deleting their card would un-green it. `nric_locked` is the
+  // stored, one-way lock. Wiring the padlock to the badge would lock people with no
+  // genuineness check and then unlock them again when they removed the evidence.
+  nric_locked?: boolean
+  // What the uploaded card disagrees with, as codes the screen turns into copy. Never assert
+  // which side is wrong — our OCR mangles names too (see apps #27 and #118).
+  ic_flags?: string[]
+  ic_card_nric?: string
+  ic_card_name?: string
   name?: string
   school?: string
   nric?: string
