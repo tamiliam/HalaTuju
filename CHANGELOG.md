@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## A student can fix their own IC — until we've confirmed it — 2026-07-29
+
+It began as one student with one wrong digit: birthplace code `11` typed against a card reading
+`14`. She could not correct it, and neither could anybody else — one function in the whole
+codebase changes an IC number, reachable from two screens, both closed to her.
+
+Then a better question: why was it locked at all? She was shortlisted, unassigned, unverified.
+
+**It wasn't.** The padlock on the profile page was hard-coded — `disabled` written as a bare
+attribute, with an icon beside it that had no condition. Neither consulted anything. Every student
+saw a padlock, always, which on production meant 85 of 143 applicants were told their IC was
+locked when nothing had locked it. It is also why Cikgu Gopal's advice — *"you can correct it on
+your Profile page"* — read as nonsense to anyone who followed it: they arrived at a padlock and a
+greyed-out box.
+
+So the fix was not "let her edit it". It was that the screen had been asserting a state it never
+checked, for as long as the field had existed.
+
+**The rule now:** an IC locks when the uploaded MyKad is genuine, its number matches what the
+student typed, and the name matches too. Until then they may correct it themselves. After it, only
+a super can release it — and the reason that exists is narrower than it sounds. Somebody who
+uploads a card that is not theirs and types it to match locks their account onto another person's
+identity; their own results slip then fails the academic gate, so the account is abandoned — still
+holding a live claim on a real person's IC number, which the true owner can then never register
+with.
+
+**And whenever the card disagrees, the profile now says so** — showing both values, and declining
+to say which is wrong, because our own reader splits and glues names and blaming the student would
+sometimes mean blaming us.
+
+Three things inside that rule are easy to get wrong and each carries a bite-checked test: an
+unscored card is **not** genuine (every other consumer of genuineness fails open, which is right
+for a soft signal and wrong for a one-way lock); the name may differ by whole parts but never by
+spelling; and a single-digit difference words the nudge without ever widening the lock.
+
+**Nothing locked retroactively on its own.** The lock is taken when a card is read, so shipping it
+would have locked nobody while a student uploading the same card tomorrow locked at once — same
+evidence, different answer. `backfill_nric_locks` closes that, re-applying the live rule to reads
+already stored, with no API calls and no re-extraction.
+
+No migration. 5071 pytest · 1176 jest · i18n parity 4321 ×3. Backend deployed; the web half awaits
+a copy review. Retro `docs/retrospective-2026-07-29-ic-lock.md`; five lessons.
+
 ## A sponsor who joins today belongs to a gift — 2026-07-29
 
 On 25 July the platform learned that acceptance is per gift, and a one-off backfill put every

@@ -522,7 +522,48 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-29)
+## Next Sprint (as of 2026-07-30)
+
+**⚠ BACKEND SHIPPED + LIVE, WEB HALF ON `main` BUT NOT DEPLOYED — THE IC LOCK.** Commits
+`2dc44c00`, `e6aafa81`, `c3a2b676` (+ the web half, which a concurrent agent's `git add -A`
+swept into `70566e55`). api live at `halatuju-api-00905-hxf`; web still on the 29 Jul build
+because that commit's web build was CANCELLED. Retro `docs/retrospective-2026-07-29-ic-lock.md`;
+lessons ×5. **NO migration.** `pytest` **5071** · `jest` **1176** · i18n 4321 ×3.
+- **The rule (owner):** an IC locks when the uploaded MyKad is **genuine** AND its number matches
+  what the student typed AND the name matches. Until then the student may correct it on
+  `/profile`. After it, only a **super** may release it (`AdminReleaseNricLockView`, reason
+  mandatory, audited).
+- **⚠ WHY: the padlock was HARD-CODED.** `disabled` was a bare attribute with an unconditional
+  icon; neither read `nric_verified`. 85 of 143 applicants were told their IC was locked when
+  nothing had locked it — and that is why Gopal's "correct it on your Profile page" was a dead
+  end. A **static guard** (`icPadlockGuard.test.ts`) now fails if it goes back to a constant.
+- **⚠ THE PADLOCK KEYS ON `nric_locked`, NEVER ON `identity_verified`.** The latter is broader
+  (also true when the card merely matches) and is **re-derived every read**, so keying on it
+  locks with no genuineness check AND unlocks again when the student deletes the card. For the
+  student who motivated the sprint the wrong flag gives the RIGHT answer, so testing that case
+  would not have caught it. `apps/scholarship/identity.py` is the ONE home for the question.
+- **⚠ AN UNSCORED CARD IS NOT GENUINE — do not "fix" this to match the neighbours.** Every other
+  consumer of genuineness fails OPEN on an absent verdict (`income_engine` treats `''` as
+  passing); that is right for a soft signal an officer overrules and wrong for a one-way lock.
+- **⚠ The name may differ by whole PARTS, never by SPELLING.** `relationship_name_match` (folds
+  w↔v, doubled letters) is next door and is deliberately kept OFF identity. `nric_close` words
+  the nudge as "differs by one digit" and must never widen the lock.
+- **⚠ `confirm:true` is NEVER sent from the profile editor.** It moves a primary key in raw SQL
+  and re-parents saved courses, outcomes, reports and email verifications — an account takeover.
+  It belongs to the sign-in prompt only; a number owned by someone else is a flat refusal here.
+- **⚠ NOTHING LOCKS RETROACTIVELY BY ITSELF.** The lock is taken at the end of an IC READ, so the
+  deploy locked nobody. **`backfill_nric_locks`** (report-only until `--apply`) re-applies the
+  live predicate to reads ALREADY STORED — no API calls, no re-extraction.
+- **PRODUCTION NOW: 58 locked / 85 open, unchanged.** After the sweep: 93 / 50 (39 have no IC on
+  file, 10 need a Re-run first, 1 is a test account).
+- **▶ OWNER, IN ORDER:** (1) `python manage.py backfill_nric_locks` on the live service — **report
+  only**, read it, expect ~35 + #43; (2) `--apply`; (3) cockpit Re-run on apps **5, 22, 44, 55**
+  (unscored cards, one multimodal call each — the 6 rejected ones are not worth scoring), then a
+  second sweep; (4) **review the amber flag copy** — it shows BOTH values and declines to say
+  which is wrong, because our reader splits and glues names (#27, #118); (5) push/deploy the web.
+- **▶ CARRY:** ms/ta first drafts for ~20 new `profile.ic*` keys.
+
+## Superseded — previous Next Sprint (as of 2026-07-29)
 
 **✅ CODE COMPLETE 2026-07-29 — A SPONSOR WHO REGISTERS TODAY BELONGS TO A GIFT. NOT PUSHED
 (owner gates the deploy).** Commits `01d7dcd1` + `225c4404`. Retro
