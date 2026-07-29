@@ -82,37 +82,37 @@ export default function SponsorTermsCard({ token, t }: {
     }
   }
 
-  if (!data) return <p className="text-sm text-gray-500 py-8 text-center">{t('common.loading')}</p>
+  if (!data) return <p className="text-sm text-ground-500 py-8 text-center">{t('common.loading')}</p>
 
   return (
     <div className="max-w-5xl">
       <div className="flex items-start justify-between gap-4 mb-2">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">{t('admin.sponsors.terms.title')}</h2>
-          <p className="text-sm text-gray-500 mt-1">{t('admin.sponsors.terms.subtitle')}</p>
+          <h2 className="text-xl font-bold text-ground-900">{t('admin.sponsors.terms.title')}</h2>
+          <p className="text-sm text-ground-500 mt-1">{t('admin.sponsors.terms.subtitle')}</p>
         </div>
         <button type="button" onClick={() => setShowNew((s) => !s)}
-          className="shrink-0 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+          className="shrink-0 px-4 py-2.5 bg-info-600 text-white rounded-lg font-medium hover:bg-info-700">
           {t('admin.sponsors.terms.newVersion')}
         </button>
       </div>
 
       {!data.active_version && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 mt-4">
+        <div className="rounded-xl border border-caution-200 bg-caution-50 p-4 text-sm text-caution-900 mt-4">
           <p className="font-semibold">{t('admin.sponsors.terms.noneActiveTitle')}</p>
           <p className="mt-1">{t('admin.sponsors.terms.noneActiveBody')}</p>
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg p-3 my-4 bg-red-50 border border-red-200 text-red-600 text-sm">
+        <div className="rounded-lg p-3 my-4 bg-critical-50 border border-critical-200 text-critical-600 text-sm">
           {error}
         </div>
       )}
-      {notice && <p className="text-sm text-gray-500 my-2">{notice}</p>}
+      {notice && <p className="text-sm text-ground-500 my-2">{notice}</p>}
 
       {showNew && (
-        <form onSubmit={submitNew} className="mt-4 mb-6 bg-white rounded-xl border shadow-sm p-6 space-y-4">
+        <form onSubmit={submitNew} className="mt-4 mb-6 bg-ground-0 rounded-xl border shadow-sm p-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <input className={inputCls} required maxLength={50} value={version}
               placeholder={t('admin.sponsors.terms.newVersionPh')}
@@ -129,32 +129,32 @@ export default function SponsorTermsCard({ token, t }: {
             </select>
           </div>
           {source === 'upload' && (
-            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
-              <input type="file" accept=".docx" className="text-sm text-gray-700"
+            <div className="rounded-lg border border-dashed border-ground-300 bg-ground-50 p-3">
+              <input type="file" accept=".docx" className="text-sm text-ground-700"
                 onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              <p className="text-xs text-gray-500 mt-1">{t('admin.sponsors.terms.uploadHint')}</p>
+              <p className="text-xs text-ground-500 mt-1">{t('admin.sponsors.terms.uploadHint')}</p>
             </div>
           )}
           <div className="flex gap-3">
             <button type="submit" disabled={busy || !version.trim()}
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
+              className="px-6 py-2.5 bg-info-600 text-white rounded-lg font-medium hover:bg-info-700 disabled:opacity-50">
               {busy ? t('admin.sponsors.terms.creating') : t('admin.sponsors.terms.create')}
             </button>
             <button type="button" onClick={() => setShowNew(false)}
-              className="px-6 py-2.5 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50">
+              className="px-6 py-2.5 rounded-lg font-medium border border-ground-300 text-ground-700 hover:bg-ground-50">
               {t('admin.sponsors.terms.cancel')}
             </button>
           </div>
         </form>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border overflow-x-auto mt-4">
+      <div className="bg-ground-0 rounded-lg shadow-sm border overflow-x-auto mt-4">
         <table className="w-full text-sm min-w-[640px]">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-ground-50 border-b">
             <tr>
               {(['colVersion', 'colStatus', 'colLanguages', 'colPublishedBy', 'colUpdated'] as const)
                 .map((c) => (
-                  <th key={c} className="text-left px-4 py-3 font-medium text-gray-600">
+                  <th key={c} className="text-left px-4 py-3 font-medium text-ground-600">
                     {t(`admin.sponsors.terms.${c}`)}
                   </th>
                 ))}
@@ -162,26 +162,26 @@ export default function SponsorTermsCard({ token, t }: {
           </thead>
           <tbody className="divide-y">
             {data.versions.map((v) => (
-              <tr key={v.id} className="hover:bg-blue-50/40 cursor-pointer"
+              <tr key={v.id} className="hover:bg-info-50/40 cursor-pointer"
                 onClick={() => router.push(`/admin/sponsors/terms/${v.id}`)}>
-                <td className="px-4 py-3 font-medium text-gray-900">{v.version}</td>
+                <td className="px-4 py-3 font-medium text-ground-900">{v.version}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${
                     STATUS_TONE[v.status] || STATUS_TONE.archived}`}>
                     {t(`admin.sponsors.terms.status.${v.status}`)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500 uppercase">
+                <td className="px-4 py-3 text-ground-500 uppercase">
                   {v.languages_available.join(' · ')}
                 </td>
-                <td className="px-4 py-3 text-gray-500">{v.published_by_email || '—'}</td>
-                <td className="px-4 py-3 text-gray-500">
+                <td className="px-4 py-3 text-ground-500">{v.published_by_email || '—'}</td>
+                <td className="px-4 py-3 text-ground-500">
                   {new Date(v.updated_at).toLocaleDateString('en-GB')}
                 </td>
               </tr>
             ))}
             {data.versions.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-ground-400">
                 {t('admin.sponsors.terms.noVersions')}
               </td></tr>
             )}

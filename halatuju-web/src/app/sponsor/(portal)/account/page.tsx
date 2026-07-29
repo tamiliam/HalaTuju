@@ -61,7 +61,7 @@ export default function AccountPage() {
     } catch { /* keep the form on failure */ } finally { setSgSaving(false) }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
   const sendInvite = async () => {
     if (!token || !inviteEmail.trim() || inviting) return
@@ -82,72 +82,72 @@ export default function AccountPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">{t('sponsorPortal.account.title')}</h1>
+      <h1 className="text-2xl font-bold text-ground-900">{t('sponsorPortal.account.title')}</h1>
 
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Profile */}
-        <div className="rounded-2xl border bg-white p-5">
-          <h2 className="font-semibold text-gray-900 mb-3">{t('sponsorPortal.account.detailsTitle')}</h2>
+        <div className="rounded-2xl border bg-ground-0 p-5">
+          <h2 className="font-semibold text-ground-900 mb-3">{t('sponsorPortal.account.detailsTitle')}</h2>
           <dl className="text-sm space-y-2">
-            <div className="flex justify-between gap-3"><dt className="text-gray-500">{t('sponsorAuth.fullName')}</dt><dd className="font-medium text-gray-900 text-right">{account?.name || '—'}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-gray-500">{t('sponsorPortal.account.email')}</dt><dd className="font-medium text-gray-900 text-right break-all">{account?.email || '—'}</dd></div>
-            {account?.phone && <div className="flex justify-between gap-3"><dt className="text-gray-500">{t('sponsorAuth.phone')}</dt><dd className="font-medium text-gray-900 text-right">{account.phone}</dd></div>}
+            <div className="flex justify-between gap-3"><dt className="text-ground-500">{t('sponsorAuth.fullName')}</dt><dd className="font-medium text-ground-900 text-right">{account?.name || '—'}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-ground-500">{t('sponsorPortal.account.email')}</dt><dd className="font-medium text-ground-900 text-right break-all">{account?.email || '—'}</dd></div>
+            {account?.phone && <div className="flex justify-between gap-3"><dt className="text-ground-500">{t('sponsorAuth.phone')}</dt><dd className="font-medium text-ground-900 text-right">{account.phone}</dd></div>}
           </dl>
           <div className="mt-4">
-            <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-700">
+            <span className="inline-block px-2 py-1 text-xs font-semibold rounded-full bg-positive-50 text-positive-700">
               ✓ {t('sponsorPortal.myStudents.approvedPill')}
             </span>
           </div>
         </div>
 
         {/* Notifications */}
-        <div className="rounded-2xl border bg-white p-5">
+        <div className="rounded-2xl border bg-ground-0 p-5">
           <SponsorNotifyPrefs />
         </div>
       </div>
 
       {/* AutoSponsor — standing gift (R6) */}
-      <section className="rounded-2xl border bg-white p-5">
+      <section className="rounded-2xl border bg-ground-0 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-bold text-gray-900">🔁 {t('sponsorPortal.autoSponsor.title')}</h2>
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+          <h2 className="text-lg font-bold text-ground-900">🔁 {t('sponsorPortal.autoSponsor.title')}</h2>
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-ground-700">
             <input type="checkbox" checked={sgActive}
               onChange={(e) => { setSgActive(e.target.checked); setSgSaved(false) }} className="h-4 w-4" />
             {t('sponsorPortal.autoSponsor.enable')}
           </label>
         </div>
-        <p className="text-sm text-gray-600 mt-1 max-w-2xl">{t('sponsorPortal.autoSponsor.intro')}</p>
+        <p className="text-sm text-ground-600 mt-1 max-w-2xl">{t('sponsorPortal.autoSponsor.intro')}</p>
         <div className="mt-4 grid sm:grid-cols-3 gap-3">
           <label className="text-sm block">
-            <span className="text-gray-500">{t('sponsorPortal.autoSponsor.field')}</span>
+            <span className="text-ground-500">{t('sponsorPortal.autoSponsor.field')}</span>
             <select value={sgField} onChange={(e) => { setSgField(e.target.value); setSgSaved(false) }} className={inputCls}>
               <option value="">{t('sponsorPortal.autoSponsor.any')}</option>
               {facets.fields.map((f) => <option key={f} value={f}>{f}</option>)}
             </select>
           </label>
           <label className="text-sm block">
-            <span className="text-gray-500">{t('sponsorPortal.autoSponsor.state')}</span>
+            <span className="text-ground-500">{t('sponsorPortal.autoSponsor.state')}</span>
             <select value={sgState} onChange={(e) => { setSgState(e.target.value); setSgSaved(false) }} className={inputCls}>
               <option value="">{t('sponsorPortal.autoSponsor.any')}</option>
               {facets.states.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </label>
           <label className="text-sm block">
-            <span className="text-gray-500">{t('sponsorPortal.autoSponsor.maxAmount')}</span>
+            <span className="text-ground-500">{t('sponsorPortal.autoSponsor.maxAmount')}</span>
             <input type="number" min="0" value={sgMax} onChange={(e) => { setSgMax(e.target.value); setSgSaved(false) }}
               placeholder={t('sponsorPortal.autoSponsor.noCap')} className={inputCls} />
           </label>
         </div>
         <div className="mt-4 flex items-center gap-3">
           <button onClick={saveStandingGift} disabled={sgSaving}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            className="rounded-lg bg-info-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
             {sgSaving ? t('sponsorPortal.autoSponsor.saving') : t('sponsorPortal.autoSponsor.save')}
           </button>
-          {sgSaved && <span className="text-sm text-green-600">{t('sponsorPortal.autoSponsor.saved')}</span>}
+          {sgSaved && <span className="text-sm text-positive-600">{t('sponsorPortal.autoSponsor.saved')}</span>}
         </div>
-        <p className="text-[11px] text-gray-400 mt-3">{t('sponsorPortal.autoSponsor.note')}</p>
+        <p className="text-[11px] text-ground-400 mt-3">{t('sponsorPortal.autoSponsor.note')}</p>
         {sgConfigured && sgLast && (
-          <p className="text-[11px] text-gray-400 mt-1">
+          <p className="text-[11px] text-ground-400 mt-1">
             {t('sponsorPortal.autoSponsor.lastAllocated').replace('{date}', formatDate(sgLast))}
           </p>
         )}
@@ -156,13 +156,16 @@ export default function AccountPage() {
       {/* Messages from students you supported — anonymous, linked to ref only */}
       {gradMessages.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold text-gray-900">{t('sponsorPortal.graduationMessages.title')}</h2>
-          <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.graduationMessages.subtitle')}</p>
+          <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.graduationMessages.title')}</h2>
+          <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.graduationMessages.subtitle')}</p>
+          {/* Each card is a graduate's thank-you note. These were indigo until Layer 1 F1: that
+              carried the same "graduated" meaning as the portfolio badge, and the same reasoning
+              moves both onto `positive` — see PORTFOLIO_BADGE_TONE in lib/poolCard.ts. */}
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             {gradMessages.map((m, i) => (
-              <div key={i} className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
-                <p className="text-sm text-gray-800">💬 “{m.text}”</p>
-                <p className="text-xs text-gray-500 mt-3">{t('sponsorPortal.graduationMessages.attribution')} · {m.ref}</p>
+              <div key={i} className="rounded-xl border border-positive-200 bg-positive-50/40 p-4">
+                <p className="text-sm text-ground-800">💬 “{m.text}”</p>
+                <p className="text-xs text-ground-500 mt-3">{t('sponsorPortal.graduationMessages.attribution')} · {m.ref}</p>
               </div>
             ))}
           </div>
@@ -171,9 +174,9 @@ export default function AccountPage() {
 
       {/* Invite a friend + your invitations */}
       <div className="grid lg:grid-cols-2 gap-4">
-        <div className="rounded-2xl border bg-white p-5">
-          <h2 className="text-lg font-bold text-gray-900">{t('sponsorPortal.referrals.title')}</h2>
-          <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.referrals.subtitle')}</p>
+        <div className="rounded-2xl border bg-ground-0 p-5">
+          <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.referrals.title')}</h2>
+          <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.referrals.subtitle')}</p>
           <div className="mt-3 space-y-3">
             <input value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteSent(false) }}
               type="email" placeholder={t('sponsorPortal.referrals.emailPh')} className={inputCls} />
@@ -181,33 +184,33 @@ export default function AccountPage() {
               placeholder={t('sponsorPortal.referrals.namePh')} className={inputCls} />
             <textarea value={inviteNote} onChange={(e) => setInviteNote(e.target.value)} rows={3} maxLength={500}
               placeholder={t('sponsorPortal.referrals.notePh')} className={inputCls} />
-            {inviteError && <p className="text-sm text-red-600">{inviteError}</p>}
-            {inviteSent && <p className="text-sm text-green-600">{t('sponsorPortal.referrals.sent')}</p>}
+            {inviteError && <p className="text-sm text-critical-600">{inviteError}</p>}
+            {inviteSent && <p className="text-sm text-positive-600">{t('sponsorPortal.referrals.sent')}</p>}
             <button onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}
-              className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+              className="w-full rounded-lg bg-info-600 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
               {inviting ? t('sponsorPortal.referrals.sending') : t('sponsorPortal.referrals.send')}
             </button>
-            <p className="text-xs text-gray-400">{t('sponsorPortal.referrals.privacy')}</p>
+            <p className="text-xs text-ground-400">{t('sponsorPortal.referrals.privacy')}</p>
           </div>
         </div>
-        <div className="rounded-2xl border bg-white p-5">
-          <h2 className="text-lg font-bold text-gray-900">{t('sponsorPortal.referrals.listTitle')}</h2>
-          <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.referrals.listSubtitle')}</p>
+        <div className="rounded-2xl border bg-ground-0 p-5">
+          <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.referrals.listTitle')}</h2>
+          <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.referrals.listSubtitle')}</p>
           {referrals.length > 0 ? (
-            <ul className="mt-3 divide-y divide-gray-100">
+            <ul className="mt-3 divide-y divide-ground-100">
               {referrals.map((r) => (
                 <li key={r.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="text-gray-700 truncate pr-2">{r.invitee_name || r.invitee_email || '—'}</span>
+                  <span className="text-ground-700 truncate pr-2">{r.invitee_name || r.invitee_email || '—'}</span>
                   <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    r.status === 'joined' ? 'bg-green-100 text-green-700'
-                      : r.status === 'expired' ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-600'}`}>
+                    r.status === 'joined' ? 'bg-positive-100 text-positive-700'
+                      : r.status === 'expired' ? 'bg-caution-50 text-caution-600' : 'bg-ground-100 text-ground-600'}`}>
                     {t(`sponsorPortal.referrals.status.${r.status}`)}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-gray-400">{t('sponsorPortal.referrals.empty')}</p>
+            <p className="mt-3 text-sm text-ground-400">{t('sponsorPortal.referrals.empty')}</p>
           )}
         </div>
       </div>
@@ -216,46 +219,46 @@ export default function AccountPage() {
       {statement && (statement.donations.length > 0 || statement.gifts.length > 0) && (
         <section>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">{t('sponsorPortal.statement.title')}</h2>
-            <button onClick={() => window.print()} className="px-3 py-1.5 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl">
+            <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.statement.title')}</h2>
+            <button onClick={() => window.print()} className="px-3 py-1.5 text-sm font-semibold text-info-700 bg-info-50 hover:bg-info-100 rounded-xl">
               {t('sponsorPortal.statement.print')}
             </button>
           </div>
-          <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.statement.intro')} <span className="text-gray-400">{t('sponsorPortal.statement.taxNote')}</span></p>
+          <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.statement.intro')} <span className="text-ground-400">{t('sponsorPortal.statement.taxNote')}</span></p>
           <div className="mt-3 grid md:grid-cols-2 gap-4">
-            <div className="rounded-2xl border bg-white p-5">
+            <div className="rounded-2xl border bg-ground-0 p-5">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-900">⬇ {t('sponsorPortal.statement.donations')}</h3>
-                <span className="text-xs text-gray-400">RM {statement.total_in}</span>
+                <h3 className="text-sm font-semibold text-ground-900">⬇ {t('sponsorPortal.statement.donations')}</h3>
+                <span className="text-xs text-ground-400">RM {statement.total_in}</span>
               </div>
               {statement.donations.length > 0 ? (
-                <ul className="text-sm divide-y divide-gray-100">
+                <ul className="text-sm divide-y divide-ground-100">
                   {statement.donations.map((d, i) => (
                     <li key={i} className="py-2 flex justify-between gap-2">
-                      <span>{formatDate(d.at)}{d.reference ? <span className="text-gray-400"> · {d.reference}</span> : null}</span>
+                      <span>{formatDate(d.at)}{d.reference ? <span className="text-ground-400"> · {d.reference}</span> : null}</span>
                       <b>RM {d.amount}</b>
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-sm text-gray-400">—</p>}
-              <p className="text-[11px] text-gray-400 mt-2">{t('sponsorPortal.statement.donationsNote')}</p>
+              ) : <p className="text-sm text-ground-400">—</p>}
+              <p className="text-[11px] text-ground-400 mt-2">{t('sponsorPortal.statement.donationsNote')}</p>
             </div>
-            <div className="rounded-2xl border bg-white p-5">
+            <div className="rounded-2xl border bg-ground-0 p-5">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-900">⬆ {t('sponsorPortal.statement.gifts')}</h3>
-                <span className="text-xs text-gray-400">RM {statement.total_out}</span>
+                <h3 className="text-sm font-semibold text-ground-900">⬆ {t('sponsorPortal.statement.gifts')}</h3>
+                <span className="text-xs text-ground-400">RM {statement.total_out}</span>
               </div>
               {statement.gifts.length > 0 ? (
-                <ul className="text-sm divide-y divide-gray-100">
+                <ul className="text-sm divide-y divide-ground-100">
                   {statement.gifts.map((g, i) => (
                     <li key={i} className="py-2 flex justify-between gap-2">
-                      <span>{formatDate(g.at)} <span className="text-gray-400">· {g.ref}</span></span>
+                      <span>{formatDate(g.at)} <span className="text-ground-400">· {g.ref}</span></span>
                       <b>RM {g.amount}</b>
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-sm text-gray-400">—</p>}
-              <p className="text-[11px] text-gray-400 mt-2">{t('sponsorPortal.statement.giftsNote')}</p>
+              ) : <p className="text-sm text-ground-400">—</p>}
+              <p className="text-[11px] text-ground-400 mt-2">{t('sponsorPortal.statement.giftsNote')}</p>
             </div>
           </div>
         </section>

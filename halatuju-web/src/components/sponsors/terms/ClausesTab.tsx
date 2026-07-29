@@ -55,7 +55,7 @@ export default function ClausesTab({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm text-gray-500">{t('admin.sponsors.terms.clausesIntro')}</p>
+        <p className="text-sm text-ground-500">{t('admin.sponsors.terms.clausesIntro')}</p>
         <LangTabs value={lang} onChange={setLang} />
       </div>
 
@@ -68,16 +68,16 @@ export default function ClausesTab({
         value={terms[`intro_${lang}` as 'intro_en']}
         onChange={(e) => onTerms({ ...terms, [`intro_${lang}`]: e.target.value })} />
 
-      <p className="text-xs text-gray-500">{t('admin.sponsors.terms.sectionsHint')}</p>
+      <p className="text-xs text-ground-500">{t('admin.sponsors.terms.sectionsHint')}</p>
 
       {sections.length === 0 && (
-        <p className="text-sm text-gray-500 py-6 text-center">{t('admin.sponsors.terms.noSections')}</p>
+        <p className="text-sm text-ground-500 py-6 text-center">{t('admin.sponsors.terms.noSections')}</p>
       )}
 
       {sections.map((s, i) => (
-        <div key={s.order} className="border border-gray-200 rounded-xl bg-white overflow-hidden">
+        <div key={s.order} className="border border-ground-200 rounded-xl bg-ground-0 overflow-hidden">
         <div className="p-3 flex items-start gap-3">
-          <span className="text-xs font-mono text-gray-400 mt-2.5 w-6 text-right">{s.order}</span>
+          <span className="text-xs font-mono text-ground-400 mt-2.5 w-6 text-right">{s.order}</span>
           <div className="flex-1 flex flex-col gap-2">
             <input className={inputCls} disabled={disabled}
               placeholder={t('admin.sponsors.terms.headingPh')}
@@ -93,17 +93,17 @@ export default function ClausesTab({
                   label={t('admin.sponsors.terms.quizToggle')}
                   onClick={() => onSections(sections.map((x, idx) =>
                     (idx === i ? setQuizFlag(x, !x.is_quiz_candidate) : x)))} />
-                <span className="text-gray-600">{t('admin.sponsors.terms.quizToggle')}</span>
+                <span className="text-ground-600">{t('admin.sponsors.terms.quizToggle')}</span>
               </span>
               {s.is_quiz_candidate && (
                 <>
-                  <button type="button" className="text-blue-600 hover:underline"
+                  <button type="button" className="text-info-600 hover:underline"
                     onClick={() => setOpen(open === s.order ? null : s.order)}>
                     {open === s.order
                       ? t('admin.sponsors.terms.hideQuiz')
                       : t('admin.sponsors.terms.editQuiz')}
                   </button>
-                  <span className={quizComplete(s.quiz_en) ? 'text-green-700' : 'text-amber-700 font-medium'}>
+                  <span className={quizComplete(s.quiz_en) ? 'text-positive-700' : 'text-caution-700 font-medium'}>
                     {quizComplete(s.quiz_en)
                       ? t('admin.sponsors.terms.quizReady')
                       : t('admin.sponsors.terms.quizIncomplete')}

@@ -21,6 +21,183 @@
   --brand-900: 7 35 71;      /* #072347 */
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   THEME TOKENS — Layer 1 sprint F1 (docs/plans/2026-07-29-layer1-themes-roadmap.md)
+
+   Three families, and the boundaries between them are RULES, not conventions:
+
+     --ground-*   the neutral ground: pages, cards, wells, text, borders.
+     --{tone}-*   the four meanings the product already speaks in — positive,
+                  info, caution, critical. **These belong to the PLATFORM.**
+     --brand-*    tenant identity, above. **A theme may never write it, and a
+                  tenant may never write a tone.** (Owner ruling, 2026-07-29.)
+                  Enforced by `src/lib/__tests__/theme.test.ts`, not by this
+                  comment.
+
+   ── Why the ramps keep Tailwind's NUMBERS instead of semantic names ──
+   The measurement behind this sprint found 3,681 ground utilities and 1,834
+   tone utilities already in the codebase, and 93% of the tone uses belong to
+   exactly these four families — a convention applied by hand ~1,800 times and
+   named outright in `components/InfoBox.tsx`. Keeping the position (`-50`,
+   `-600`) makes the migration a FAMILY RENAME: `bg-gray-50` → `bg-ground-50`,
+   `text-green-700` → `text-positive-700`. That buys three things a
+   hand-authored semantic set could not:
+     1. light mode comes out PIXEL-IDENTICAL, because the values below are
+        Tailwind's own, generated from `tailwindcss/colors` rather than typed;
+     2. ~5,500 utilities convert mechanically and reviewably;
+     3. nobody has to decide, 3,681 times, whether a given white thing is a
+        card, a modal, a header or a row.
+
+   ── How dark is derived ──
+   **The dark set is the light set read from the other end** (0↔1000, 50↔900,
+   100↔800, 200↔700, 300↔600, 400↔500). A pale green well becomes a deep green
+   well; dark green text becomes light green text; and it cannot be half-done,
+   because it is one reversal rather than 52 separate judgements.
+   Reversal is the STARTING POINT and is expected to be tuned where it reads
+   badly — saturated mid-ramp stops are the known weak spot. **Tuning is an edit
+   to this file, never to a component**, which is the entire reason for working
+   this way.
+
+   ⚠ `text-white` IS NOT `text-ground-0` AND MUST NOT BECOME IT. 214 uses across
+   the product, nearly all on a coloured or dark surface — a button label, a
+   filled badge. They have to STAY white when the ground inverts, or every
+   primary button in dark mode gets black text. Only a BACKGROUND white maps to
+   `--ground-0`. `scripts/theme-codemod.js` encodes this; a test pins it.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* ground — 0 is white, 1000 is black. */
+  --ground-0: 255 255 255;
+  --ground-50: 249 250 251;
+  --ground-100: 243 244 246;
+  --ground-200: 229 231 235;
+  --ground-300: 209 213 219;
+  --ground-400: 156 163 175;
+  --ground-500: 107 114 128;
+  --ground-600: 75 85 99;
+  --ground-700: 55 65 81;
+  --ground-800: 31 41 55;
+  --ground-900: 17 24 39;
+  --ground-1000: 0 0 0;
+
+  /* positive — Tailwind green */
+  --positive-50: 240 253 244;
+  --positive-100: 220 252 231;
+  --positive-200: 187 247 208;
+  --positive-300: 134 239 172;
+  --positive-400: 74 222 128;
+  --positive-500: 34 197 94;
+  --positive-600: 22 163 74;
+  --positive-700: 21 128 61;
+  --positive-800: 22 101 52;
+  --positive-900: 20 83 45;
+
+  /* info — Tailwind blue */
+  --info-50: 239 246 255;
+  --info-100: 219 234 254;
+  --info-200: 191 219 254;
+  --info-300: 147 197 253;
+  --info-400: 96 165 250;
+  --info-500: 59 130 246;
+  --info-600: 37 99 235;
+  --info-700: 29 78 216;
+  --info-800: 30 64 175;
+  --info-900: 30 58 138;
+
+  /* caution — Tailwind amber */
+  --caution-50: 255 251 235;
+  --caution-100: 254 243 199;
+  --caution-200: 253 230 138;
+  --caution-300: 252 211 77;
+  --caution-400: 251 191 36;
+  --caution-500: 245 158 11;
+  --caution-600: 217 119 6;
+  --caution-700: 180 83 9;
+  --caution-800: 146 64 14;
+  --caution-900: 120 53 15;
+
+  /* critical — Tailwind red */
+  --critical-50: 254 242 242;
+  --critical-100: 254 226 226;
+  --critical-200: 254 202 202;
+  --critical-300: 252 165 165;
+  --critical-400: 248 113 113;
+  --critical-500: 239 68 68;
+  --critical-600: 220 38 38;
+  --critical-700: 185 28 28;
+  --critical-800: 153 27 27;
+  --critical-900: 127 29 29;
+}
+
+/* The reversed ramp. Applied by `data-theme="dark"` on <html> — set from a
+   person's own preference (Light / Dark / Auto), never by an organisation.
+   ⚠ A mode change is a VARIABLE SWAP UNDER THE SAME DOM: no re-render, no
+   re-mount, no re-fetch. Auto follows the device, so this can fire at sunset
+   mid-session while a form is half-filled. Losing that form would not be
+   reported as a theming bug. */
+:root[data-theme='dark'] {
+  /* ground — 0 is white, 1000 is black. */
+  --ground-0: 0 0 0;
+  --ground-50: 17 24 39;
+  --ground-100: 31 41 55;
+  --ground-200: 55 65 81;
+  --ground-300: 75 85 99;
+  --ground-400: 107 114 128;
+  --ground-500: 156 163 175;
+  --ground-600: 209 213 219;
+  --ground-700: 229 231 235;
+  --ground-800: 243 244 246;
+  --ground-900: 249 250 251;
+  --ground-1000: 255 255 255;
+
+  /* positive — Tailwind green */
+  --positive-50: 20 83 45;
+  --positive-100: 22 101 52;
+  --positive-200: 21 128 61;
+  --positive-300: 22 163 74;
+  --positive-400: 34 197 94;
+  --positive-500: 74 222 128;
+  --positive-600: 134 239 172;
+  --positive-700: 187 247 208;
+  --positive-800: 220 252 231;
+  --positive-900: 240 253 244;
+
+  /* info — Tailwind blue */
+  --info-50: 30 58 138;
+  --info-100: 30 64 175;
+  --info-200: 29 78 216;
+  --info-300: 37 99 235;
+  --info-400: 59 130 246;
+  --info-500: 96 165 250;
+  --info-600: 147 197 253;
+  --info-700: 191 219 254;
+  --info-800: 219 234 254;
+  --info-900: 239 246 255;
+
+  /* caution — Tailwind amber */
+  --caution-50: 120 53 15;
+  --caution-100: 146 64 14;
+  --caution-200: 180 83 9;
+  --caution-300: 217 119 6;
+  --caution-400: 245 158 11;
+  --caution-500: 251 191 36;
+  --caution-600: 252 211 77;
+  --caution-700: 253 230 138;
+  --caution-800: 254 243 199;
+  --caution-900: 255 251 235;
+
+  /* critical — Tailwind red */
+  --critical-50: 127 29 29;
+  --critical-100: 153 27 27;
+  --critical-200: 185 28 28;
+  --critical-300: 220 38 38;
+  --critical-400: 239 68 68;
+  --critical-500: 248 113 113;
+  --critical-600: 252 165 165;
+  --critical-700: 254 202 202;
+  --critical-800: 254 226 226;
+  --critical-900: 254 242 242;
+}
+
 /* Base styles */
 @layer base {
   html {

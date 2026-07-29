@@ -8,6 +8,7 @@ import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { useSponsorPortal } from '@/lib/sponsor-portal-context'
 import { journeyStages, type JourneyStatus } from '@/lib/sponsorJourney'
 import { formatRM } from '@/lib/sponsorTrust'
+import { portfolioBadgeTone } from '@/lib/poolCard'
 import type { SponsorPoolCard } from '@/lib/api'
 
 /**
@@ -37,29 +38,29 @@ export default function MyGivingPage() {
       {/* Welcome + browse CTA */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-wide text-gray-400">{t('sponsorPortal.myStudents.welcome')}</p>
+          <p className="text-xs uppercase tracking-wide text-ground-400">{t('sponsorPortal.myStudents.welcome')}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-2xl font-bold text-gray-900">{account?.name || ''}</span>
-            <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
+            <span className="text-2xl font-bold text-ground-900">{account?.name || ''}</span>
+            <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-positive-100 text-positive-700">
               {t('sponsorPortal.myStudents.approvedPill')}
             </span>
           </div>
         </div>
-        <Link href="/sponsor/students" className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 whitespace-nowrap">
+        <Link href="/sponsor/students" className="rounded-xl bg-info-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-info-700 whitespace-nowrap">
           {t('sponsorPortal.nav.support')} →
         </Link>
       </div>
 
       {/* Assurance strip → Trust hub (R5) */}
       {trust && (
-        <Link href="/sponsor/trust" className="block rounded-2xl border border-green-100 bg-white p-5 hover:border-green-200 transition-colors">
+        <Link href="/sponsor/trust" className="block rounded-2xl border border-positive-100 bg-ground-0 p-5 hover:border-positive-200 transition-colors">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <span className="text-2xl">🛡️</span>
               <div>
-                <p className="font-semibold text-gray-900">{t('sponsorPortal.trust.assured.title')}</p>
-                <p className="text-sm text-gray-500 max-w-2xl">{t('sponsorPortal.trust.assured.desc')}</p>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="font-semibold text-ground-900">{t('sponsorPortal.trust.assured.title')}</p>
+                <p className="text-sm text-ground-500 max-w-2xl">{t('sponsorPortal.trust.assured.desc')}</p>
+                <p className="text-xs text-ground-400 mt-2">
                   {t('sponsorPortal.trust.assured.latest')
                     .replace('{fy}', trust.assurance.fy || '—')
                     .replace('{verified}', String(trust.assurance.students_verified ?? 0))
@@ -68,7 +69,7 @@ export default function MyGivingPage() {
                 </p>
               </div>
             </div>
-            <span className="text-sm font-semibold text-green-700 bg-green-50 px-3 py-2 rounded-xl whitespace-nowrap shrink-0">
+            <span className="text-sm font-semibold text-positive-700 bg-positive-50 px-3 py-2 rounded-xl whitespace-nowrap shrink-0">
               {t('sponsorPortal.trust.assured.cta')} →
             </span>
           </div>
@@ -85,19 +86,19 @@ export default function MyGivingPage() {
           <Stat label={t('sponsorPortal.impact.semesters')} value={String(impact.semesters_completed)}
             sub={t('sponsorPortal.impact.semestersBy')} />
           <Stat label={t('sponsorPortal.impact.graduated')} value={impact.students_graduated > 0 ? `${impact.students_graduated} 🎉` : '0'}
-            sub={t('sponsorPortal.impact.graduatedSub')} valueClass={impact.students_graduated > 0 ? 'text-green-600' : 'text-gray-900'} />
+            sub={t('sponsorPortal.impact.graduatedSub')} valueClass={impact.students_graduated > 0 ? 'text-positive-600' : 'text-ground-900'} />
         </div>
       )}
 
       {/* Giving donut */}
       {impact && (
-        <div className="rounded-2xl border bg-white p-5 sm:max-w-md">
-          <h2 className="font-semibold text-gray-900">{t('sponsorPortal.impact.givingTitle')}</h2>
+        <div className="rounded-2xl border bg-ground-0 p-5 sm:max-w-md">
+          <h2 className="font-semibold text-ground-900">{t('sponsorPortal.impact.givingTitle')}</h2>
           <div className="flex items-center gap-5 mt-4">
             <div aria-hidden="true" className="w-28 h-28 shrink-0 rounded-full grid place-items-center" style={{ background: donut }}>
-              <div className="bg-white w-16 h-16 rounded-full grid place-items-center text-center">
-                <span className="text-[11px] leading-tight text-gray-500">
-                  {t('sponsorPortal.impact.available')}<br /><b className="text-gray-900 text-sm">RM {available.toLocaleString()}</b>
+              <div className="bg-ground-0 w-16 h-16 rounded-full grid place-items-center text-center">
+                <span className="text-[11px] leading-tight text-ground-500">
+                  {t('sponsorPortal.impact.available')}<br /><b className="text-ground-900 text-sm">RM {available.toLocaleString()}</b>
                 </span>
               </div>
             </div>
@@ -107,24 +108,24 @@ export default function MyGivingPage() {
               <LegendRow color="#e5e7eb" label={t('sponsorPortal.impact.available')} amount={available} />
             </ul>
           </div>
-          <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">{t('sponsorPortal.impact.balanceNote')}</p>
+          <p className="text-[11px] text-ground-400 mt-3 leading-relaxed">{t('sponsorPortal.impact.balanceNote')}</p>
         </div>
       )}
 
       {/* Recent activity */}
       {activity.length > 0 && (
-        <section className="rounded-2xl border bg-white p-5">
+        <section className="rounded-2xl border bg-ground-0 p-5">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">{t('sponsorPortal.activity.title')}</h2>
-            <span className="text-xs text-gray-400">{t('sponsorPortal.activity.live')}</span>
+            <h2 className="font-semibold text-ground-900">{t('sponsorPortal.activity.title')}</h2>
+            <span className="text-xs text-ground-400">{t('sponsorPortal.activity.live')}</span>
           </div>
-          <ul className="divide-y divide-gray-100 mt-1">
+          <ul className="divide-y divide-ground-100 mt-1">
             {activity.slice(0, 8).map((e, i) => (
               <li key={i} className="py-3 flex items-start gap-3">
                 <span className="mt-0.5 text-lg">{ACTIVITY_ICON[e.type] || '•'}</span>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-800">{t(`sponsorPortal.activity.${e.type}`).replace('{ref}', e.ref)}</p>
-                  <p className="text-xs text-gray-400">{formatDate(e.at)}</p>
+                  <p className="text-sm text-ground-800">{t(`sponsorPortal.activity.${e.type}`).replace('{ref}', e.ref)}</p>
+                  <p className="text-xs text-ground-400">{formatDate(e.at)}</p>
                 </div>
               </li>
             ))}
@@ -135,8 +136,8 @@ export default function MyGivingPage() {
       {/* Students you support */}
       {wallet && wallet.sponsorships.length > 0 ? (
         <section>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t('sponsorPortal.myStudents.title')}</h2>
-          <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.myStudents.subtitle')}</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-ground-900">{t('sponsorPortal.myStudents.title')}</h2>
+          <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.myStudents.subtitle')}</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {wallet.sponsorships.map((sp) => {
               const st = sp.student
@@ -144,18 +145,18 @@ export default function MyGivingPage() {
               const discontinued = st.portfolio_status === 'discontinued'
               return (
                 <Link key={sp.id} href={`/sponsor/my-students/${st.id}`}
-                  className={`block rounded-2xl border p-4 transition-colors hover:border-blue-300 ${offered ? 'bg-gray-50' : 'bg-white'}`}>
+                  className={`block rounded-2xl border p-4 transition-colors hover:border-info-300 ${offered ? 'bg-ground-50' : 'bg-ground-0'}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-mono text-sm font-semibold text-gray-900">{st.ref}</span>
+                    <span className="font-mono text-sm font-semibold text-ground-900">{st.ref}</span>
                     {offered
-                      ? <span className="text-xs rounded-full bg-gray-200 text-gray-600 px-2 py-0.5 whitespace-nowrap">⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
+                      ? <span className="text-xs rounded-full bg-ground-200 text-ground-600 px-2 py-0.5 whitespace-nowrap">⏳ {t('sponsorPortal.myStudents.awaiting')}</span>
                       : <PortfolioBadge status={st.portfolio_status} t={t} />}
                   </div>
                   {/* Full course + institution (was the bare field slug). */}
-                  <p className="text-[15px] font-semibold text-gray-900 mt-2 leading-snug">{st.course || st.field || '—'}</p>
-                  {st.institution && <p className="text-xs text-gray-500 mt-0.5">{st.institution}</p>}
+                  <p className="text-[15px] font-semibold text-ground-900 mt-2 leading-snug">{st.course || st.field || '—'}</p>
+                  {st.institution && <p className="text-xs text-ground-500 mt-0.5">{st.institution}</p>}
                   {/* Key details */}
-                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-gray-100 pt-3">
+                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-ground-100 pt-3">
                     {st.state && <Fact k={t('sponsorPortal.myStudents.fRegion')} v={st.state} />}
                     <Fact k={t('sponsorPortal.myStudents.fSupport')} v={`RM ${sp.amount}`} />
                     {st.academic && <Fact k={t('sponsorPortal.myStudents.fAcademic')} v={st.academic} />}
@@ -173,9 +174,9 @@ export default function MyGivingPage() {
           </div>
         </section>
       ) : (
-        <div className="rounded-2xl border border-dashed bg-white px-6 py-10 text-center">
-          <p className="text-sm text-gray-500">{t('sponsorPortal.myStudents.none')}</p>
-          <Link href="/sponsor/students" className="inline-block mt-3 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+        <div className="rounded-2xl border border-dashed bg-ground-0 px-6 py-10 text-center">
+          <p className="text-sm text-ground-500">{t('sponsorPortal.myStudents.none')}</p>
+          <Link href="/sponsor/students" className="inline-block mt-3 rounded-xl bg-info-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-info-700">
             {t('sponsorPortal.nav.support')} →
           </Link>
         </div>
@@ -183,13 +184,13 @@ export default function MyGivingPage() {
 
       {/* Community belonging strip */}
       {community && community.students_supported > 0 && (
-        <div className="rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="rounded-2xl bg-gradient-to-r from-info-600 to-info-700 text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm opacity-90">{t('sponsorPortal.community.line1').replace('{n}', String(community.sponsors))}</p>
             <p className="text-lg font-semibold">{t('sponsorPortal.community.line2').replace('{n}', String(community.students_supported))}</p>
           </div>
           {community.students_waiting > 0 && (
-            <Link href="/sponsor/students" className="px-4 py-2 bg-white/15 hover:bg-white/25 rounded-xl text-sm font-semibold whitespace-nowrap">
+            <Link href="/sponsor/students" className="px-4 py-2 bg-ground-0/15 hover:bg-ground-0/25 rounded-xl text-sm font-semibold whitespace-nowrap">
               {t('sponsorPortal.community.waiting').replace('{n}', String(community.students_waiting))} →
             </Link>
           )}
@@ -203,12 +204,12 @@ const ACTIVITY_ICON: Record<string, string> = {
   funded: '🤝', accepted: '✅', semester: '📘', graduated: '🎓', thank_you: '💬',
 }
 
-function Stat({ label, value, sub, valueClass = 'text-gray-900' }: { label: string; value: string; sub?: string; valueClass?: string }) {
+function Stat({ label, value, sub, valueClass = 'text-ground-900' }: { label: string; value: string; sub?: string; valueClass?: string }) {
   return (
-    <div className="bg-white rounded-2xl border p-4">
-      <p className="text-xs text-gray-500">{label}</p>
+    <div className="bg-ground-0 rounded-2xl border p-4">
+      <p className="text-xs text-ground-500">{label}</p>
       <p className={`text-2xl font-bold ${valueClass}`}>{value}</p>
-      {sub && <p className="text-[11px] text-gray-400 mt-1">{sub}</p>}
+      {sub && <p className="text-[11px] text-ground-400 mt-1">{sub}</p>}
     </div>
   )
 }
@@ -223,17 +224,17 @@ function LegendRow({ color, label, amount }: { color: string; label: string; amo
 }
 
 const DOT: Record<JourneyStatus, string> = {
-  done: 'bg-green-500',
-  now: 'bg-blue-500 ring-4 ring-blue-100',
-  todo: 'bg-gray-200',
+  done: 'bg-positive-500',
+  now: 'bg-info-500 ring-4 ring-info-100',
+  todo: 'bg-ground-200',
 }
 
 /** A labelled key-detail cell on the sponsored-student card. */
 function Fact({ k, v }: { k: string; v: string }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wide text-gray-400">{k}</div>
-      <div className="text-xs font-semibold text-gray-800">{v}</div>
+      <div className="text-[10px] uppercase tracking-wide text-ground-400">{k}</div>
+      <div className="text-xs font-semibold text-ground-800">{v}</div>
     </div>
   )
 }
@@ -255,10 +256,10 @@ function JourneyTracker({ onboarded, state, semesters, discontinued, t }: {
           const withdrew = !!discontinued && s.key === 'studying'
           return (
             <Fragment key={s.key}>
-              {i > 0 && <div className={`flex-1 h-px mt-1 ${stages[i - 1].status === 'done' ? 'bg-green-200' : 'bg-gray-200'}`} />}
+              {i > 0 && <div className={`flex-1 h-px mt-1 ${stages[i - 1].status === 'done' ? 'bg-positive-200' : 'bg-ground-200'}`} />}
               <div className="flex flex-col items-center">
-                <span className={`w-2.5 h-2.5 rounded-full ${withdrew ? 'bg-red-500' : DOT[s.status]}`} />
-                <span className={`text-[9px] mt-1 ${withdrew ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                <span className={`w-2.5 h-2.5 rounded-full ${withdrew ? 'bg-critical-500' : DOT[s.status]}`} />
+                <span className={`text-[9px] mt-1 ${withdrew ? 'text-critical-500 font-semibold' : 'text-ground-400'}`}>
                   {t(withdrew ? 'sponsorPortal.journey.withdrew' : `sponsorPortal.journey.${s.key}`)}
                 </span>
               </div>
@@ -267,7 +268,7 @@ function JourneyTracker({ onboarded, state, semesters, discontinued, t }: {
         })}
       </div>
       {semesters > 0 && !discontinued && (
-        <p className="text-[10px] text-gray-400 mt-1.5">{t('sponsorPortal.journey.semesters').replace('{n}', String(semesters))}</p>
+        <p className="text-[10px] text-ground-400 mt-1.5">{t('sponsorPortal.journey.semesters').replace('{n}', String(semesters))}</p>
       )}
     </div>
   )
@@ -276,16 +277,8 @@ function JourneyTracker({ onboarded, state, semesters, discontinued, t }: {
 /** The single sponsor-facing lifecycle badge on a sponsored-student card (post-acceptance). */
 function PortfolioBadge({ status, t }: { status: SponsorPoolCard['portfolio_status']; t: (k: string) => string }) {
   if (!status) return null
-  const tone: Record<string, string> = {
-    on_track: 'bg-blue-100 text-blue-700',
-    semester_completed: 'bg-green-100 text-green-700',
-    needs_attention: 'bg-amber-100 text-amber-700',
-    paused: 'bg-red-100 text-red-700',
-    discontinued: 'bg-red-100 text-red-700',
-    graduated: 'bg-indigo-100 text-indigo-700',
-  }
   return (
-    <span className={`inline-block px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${tone[status] || 'bg-gray-100 text-gray-600'}`}>
+    <span className={`inline-block px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${portfolioBadgeTone(status)}`}>
       {t(`sponsorPortal.myStudents.status.${status}`)}
     </span>
   )

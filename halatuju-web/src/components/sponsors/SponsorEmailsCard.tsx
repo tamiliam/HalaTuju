@@ -39,7 +39,7 @@ export default function SponsorEmailsCard({ token, t }: {
 
   if (!data) {
     return error ? (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">{error}</div>
+      <div className="rounded-lg border border-critical-200 bg-critical-50 p-4 text-sm text-critical-600">{error}</div>
     ) : null
   }
 
@@ -62,10 +62,10 @@ export default function SponsorEmailsCard({ token, t }: {
   const notSeeded = data.seeded < data.expected
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <div className="bg-ground-0 rounded-xl shadow-sm border overflow-hidden">
       <div className="px-4 sm:px-5 py-4 border-b">
-        <h2 className="font-semibold text-gray-900">{t('admin.sponsors.emails.title')}</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h2 className="font-semibold text-ground-900">{t('admin.sponsors.emails.title')}</h2>
+        <p className="text-sm text-ground-500 mt-0.5">
           {t('admin.sponsors.emails.subtitle', {
             on: String(switchedOn(data.templates)),
             total: String(data.seeded),
@@ -77,7 +77,7 @@ export default function SponsorEmailsCard({ token, t }: {
       {/* The platform gate, stated rather than implied. A switch that saves but cannot send is
           exactly the "dark by default lives only in a comment" failure (L380). */}
       {!data.comms_enabled && (
-        <p className="flex items-baseline gap-2.5 px-4 sm:px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-sm text-amber-700">
+        <p className="flex items-baseline gap-2.5 px-4 sm:px-5 py-2.5 bg-caution-50 border-b border-caution-200 text-sm text-caution-700">
           <span aria-hidden>◆</span>
           <span>
             <b className="font-semibold">{t('admin.sponsors.emails.flagOffTitle')}</b>{' '}
@@ -87,7 +87,7 @@ export default function SponsorEmailsCard({ token, t }: {
       )}
 
       {notSeeded && (
-        <p className="flex items-baseline gap-2.5 px-4 sm:px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-sm text-amber-700">
+        <p className="flex items-baseline gap-2.5 px-4 sm:px-5 py-2.5 bg-caution-50 border-b border-caution-200 text-sm text-caution-700">
           <span aria-hidden>◆</span>
           <span>{t('admin.sponsors.emails.notSeeded', {
             seeded: String(data.seeded), expected: String(data.expected),
@@ -96,7 +96,7 @@ export default function SponsorEmailsCard({ token, t }: {
       )}
 
       {error && (
-        <div className="mx-4 sm:mx-5 mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+        <div className="mx-4 sm:mx-5 mt-3 rounded-lg border border-critical-200 bg-critical-50 p-3 text-sm text-critical-600">
           {error}
         </div>
       )}
@@ -107,31 +107,31 @@ export default function SponsorEmailsCard({ token, t }: {
           const live = sendsToday(tpl.kind, tpl.enabled, data.comms_enabled)
           const despite = sendingDespiteSwitch(tpl.kind, tpl.enabled, data.comms_enabled)
           return (
-            <li key={tpl.kind} className={open ? 'bg-blue-50/40' : undefined}>
+            <li key={tpl.kind} className={open ? 'bg-info-50/40' : undefined}>
               <div className="grid grid-cols-[44px_minmax(0,1fr)] sm:grid-cols-[44px_minmax(0,1fr)_auto] gap-x-3.5 items-start px-4 sm:px-5 py-3.5">
                 <Toggle on={tpl.enabled} disabled={busyKind === tpl.kind}
                   onClick={() => toggle(tpl)}
                   label={t(`admin.sponsors.emails.kind.${tpl.kind}`)} />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-ground-900">
                       {t(`admin.sponsors.emails.kind.${tpl.kind}`)}
                     </span>
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 whitespace-nowrap">
+                    <span className="rounded-full bg-ground-100 px-2 py-0.5 text-[11px] font-medium text-ground-500 whitespace-nowrap">
                       {t(`admin.sponsors.emails.when.${tpl.kind}`)}
                     </span>
                     {/* An "off" switch on an email that is demonstrably going out would be a lie.
                         Once the platform gate opens the switch tells the truth by itself. */}
                     {despite && (
-                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700 whitespace-nowrap">
+                      <span className="rounded-full bg-positive-100 px-2 py-0.5 text-[11px] font-semibold text-positive-700 whitespace-nowrap">
                         {t('admin.sponsors.emails.alreadyLive')}
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-sm text-gray-500">
+                  <p className="mt-0.5 text-sm text-ground-500">
                     {t(`admin.sponsors.emails.desc.${tpl.kind}`)}
                   </p>
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-ground-400">
                     {tpl.last_sent_at
                       ? t('admin.sponsors.emails.lastSent', {
                           date: formatDate(tpl.last_sent_at),
@@ -145,7 +145,7 @@ export default function SponsorEmailsCard({ token, t }: {
                 <div className="col-start-2 sm:col-start-3 mt-2 sm:mt-0 self-center">
                   <button type="button"
                     onClick={() => setOpenKind(open ? null : tpl.kind)}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                    className="text-sm font-medium text-info-600 hover:text-info-800">
                     {open ? t('admin.sources.cancel') : t('admin.sponsors.emails.edit')}
                   </button>
                 </div>

@@ -16,7 +16,7 @@ import type { SponsorQuizPayload, SponsorTermsSection } from '@/lib/admin-api'
  * card, and a focus ring appears the moment you go to change something.
  */
 const FIELD = 'w-full bg-transparent border border-transparent rounded-md px-2 py-1 -mx-2 ' +
-  'hover:border-gray-200 focus:border-blue-400 focus:bg-white focus:outline-none ' +
+  'hover:border-ground-200 focus:border-info-400 focus:bg-ground-0 focus:outline-none ' +
   'disabled:hover:border-transparent'
 
 export default function CheckpointEditor({
@@ -34,9 +34,9 @@ export default function CheckpointEditor({
   const quiz: SponsorQuizPayload = section[`quiz_${lang}` as 'quiz_en'] || {}
 
   return (
-    <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-4 flex flex-col gap-1">
+    <div className="border-t border-ground-100 bg-ground-50/60 px-4 py-4 flex flex-col gap-1">
       <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ground-400">
           {t('admin.sponsors.terms.checkpoint')}
         </span>
         <button type="button" className={btnGhost} disabled={disabled || generating}
@@ -45,24 +45,24 @@ export default function CheckpointEditor({
         </button>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-2">
+      <div className="bg-ground-0 border border-ground-200 rounded-xl p-4 flex flex-col gap-2">
         {/* the small uppercase label above the question */}
         <input
-          className={`${FIELD} text-[11px] font-bold uppercase tracking-[0.1em] text-gray-500`}
+          className={`${FIELD} text-[11px] font-bold uppercase tracking-[0.1em] text-ground-500`}
           disabled={disabled} value={quiz.tag || ''}
           placeholder={t('admin.sponsors.terms.tagPh')}
           onChange={(e) => onPatch({ tag: e.target.value })} />
 
         {/* the plain-language restatement, muted */}
         <textarea
-          className={`${FIELD} text-sm text-gray-500 resize-none`} rows={2}
+          className={`${FIELD} text-sm text-ground-500 resize-none`} rows={2}
           disabled={disabled} value={quiz.plain || ''}
           placeholder={t('admin.sponsors.terms.plainPh')}
           onChange={(e) => onPatch({ plain: e.target.value })} />
 
         {/* the question itself — the biggest thing on the card */}
         <textarea
-          className={`${FIELD} text-base font-semibold text-gray-900 resize-none`} rows={2}
+          className={`${FIELD} text-base font-semibold text-ground-900 resize-none`} rows={2}
           disabled={disabled} value={quiz.question || ''}
           placeholder={t('admin.sponsors.terms.questionPh')}
           onChange={(e) => onPatch({ question: e.target.value })} />
@@ -74,12 +74,12 @@ export default function CheckpointEditor({
             return (
               <label key={oi}
                 className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
-                  isCorrect ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50/60'}`}>
+                  isCorrect ? 'border-positive-300 bg-positive-50' : 'border-ground-200 bg-ground-50/60'}`}>
                 <input type="radio" name={`ck-${section.order}-${lang}`} disabled={disabled}
                   checked={isCorrect} onChange={() => onPatch({ correct: oi })}
                   aria-label={t('admin.sponsors.terms.markCorrect', { n: String(oi + 1) })} />
                 <input
-                  className={`${FIELD} text-sm ${isCorrect ? 'text-green-800 font-medium' : 'text-gray-700'}`}
+                  className={`${FIELD} text-sm ${isCorrect ? 'text-positive-800 font-medium' : 'text-ground-700'}`}
                   disabled={disabled} value={(quiz.options || [])[oi] || ''}
                   placeholder={t('admin.sponsors.terms.optionPh', { n: String(oi + 1) })}
                   onChange={(e) => onSetOption(oi, e.target.value)} />
@@ -89,21 +89,21 @@ export default function CheckpointEditor({
         </div>
 
         {/* what they read after answering — shown in the feedback panel's own colours */}
-        <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2">
-          <p className="text-[11px] font-bold text-green-800 mb-0.5">
+        <div className="mt-2 rounded-lg border border-positive-200 bg-positive-50 px-3 py-2">
+          <p className="text-[11px] font-bold text-positive-800 mb-0.5">
             {t('admin.sponsors.terms.afterAnswer')}
           </p>
           <textarea
-            className={`${FIELD} text-sm text-green-900 resize-none`} rows={2}
+            className={`${FIELD} text-sm text-positive-900 resize-none`} rows={2}
             disabled={disabled} value={quiz.why || ''}
             placeholder={t('admin.sponsors.terms.whyPh')}
             onChange={(e) => onPatch({ why: e.target.value })} />
         </div>
       </div>
 
-      <p className="text-[11px] text-gray-500 mt-1">{t('admin.sponsors.terms.quizHint')}</p>
+      <p className="text-[11px] text-ground-500 mt-1">{t('admin.sponsors.terms.quizHint')}</p>
       {section.quiz_generated_model && (
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] text-ground-400">
           {t('admin.sponsors.terms.draftedBy', { model: section.quiz_generated_model })}
         </p>
       )}

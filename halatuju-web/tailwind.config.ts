@@ -1,5 +1,12 @@
 import type { Config } from 'tailwindcss'
 
+/** One tone ramp wired to its CSS variables. Values (and the dark reversal) live in globals.css. */
+const toneRamp = (tone: string) => Object.fromEntries(
+  [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map(
+    (stop) => [stop, `rgb(var(--${tone}-${stop}) / <alpha-value>)`],
+  ),
+)
+
 const config: Config = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
@@ -24,7 +31,40 @@ const config: Config = {
           800: 'rgb(var(--brand-800) / <alpha-value>)',
           900: 'rgb(var(--brand-900) / <alpha-value>)',
         },
-        // Semantic colors (stay literal — not brand-themed)
+        // ── Theme tokens (Layer 1 F1) ────────────────────────────────────────
+        // Same mechanism as `primary` above, extended to the ground and to the
+        // four meanings the product speaks in. Values live in globals.css; the
+        // dark set is the light set reversed. See that file for why the ramps
+        // keep Tailwind's numbers rather than semantic names.
+        //
+        // ⚠ `ground` REPLACES `gray` in themed code, but Tailwind's own `gray`
+        // stays available on purpose — deleting it would break every unmigrated
+        // surface at once, and this arc migrates one surface per sprint. The
+        // palette guard test is what stops `gray` creeping back into a surface
+        // already converted; the absence of the utility is not the guard.
+        ground: {
+          0: 'rgb(var(--ground-0) / <alpha-value>)',
+          50: 'rgb(var(--ground-50) / <alpha-value>)',
+          100: 'rgb(var(--ground-100) / <alpha-value>)',
+          200: 'rgb(var(--ground-200) / <alpha-value>)',
+          300: 'rgb(var(--ground-300) / <alpha-value>)',
+          400: 'rgb(var(--ground-400) / <alpha-value>)',
+          500: 'rgb(var(--ground-500) / <alpha-value>)',
+          600: 'rgb(var(--ground-600) / <alpha-value>)',
+          700: 'rgb(var(--ground-700) / <alpha-value>)',
+          800: 'rgb(var(--ground-800) / <alpha-value>)',
+          900: 'rgb(var(--ground-900) / <alpha-value>)',
+          1000: 'rgb(var(--ground-1000) / <alpha-value>)',
+        },
+        positive: toneRamp('positive'),
+        info: toneRamp('info'),
+        caution: toneRamp('caution'),
+        critical: toneRamp('critical'),
+
+        // Legacy flat semantics — predate the ramps above and are effectively
+        // unused (`bg-success`, not `bg-green-500`). Left alone rather than
+        // deleted in a sprint that is not about them; the palette guard will
+        // surface them if anything starts using them.
         success: '#22c55e',
         warning: '#f59e0b',
         error: '#ef4444',

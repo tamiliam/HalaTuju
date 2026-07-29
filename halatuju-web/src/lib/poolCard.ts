@@ -43,3 +43,34 @@ export function rmWhole(v: string | number | null | undefined): string {
   return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
+
+/**
+ * The single lifecycle badge on a sponsored-student card, as token classes.
+ *
+ * ⚠ THIS USED TO EXIST TWICE — the same six-entry map in `my-students/[id]/page.tsx` and in the
+ * My-students grid, the second carrying a comment saying it "mirrors" the first. `docs/lessons.md`
+ * is blunt about that shape: the fix for a keep-in-sync pair is to DELETE ONE SIDE, not to sync
+ * harder. A duplicated colour map is how one surface gets restyled and the other quietly does not.
+ *
+ * ⚠ `graduated` MOVED OFF INDIGO in Layer 1 F1, and it is the one deliberate visual change in that
+ * sprint. Indigo was a fifth meaning the tone vocabulary does not name, on three uses against ~1,800
+ * — too thin to mint a family from, and left raw it would have been the one badge that failed to
+ * invert in dark mode. Graduation is the best outcome the programme has, so it is `positive`, given
+ * the DEEPER weight so it still reads apart from `semester_completed` at a glance. Distinction by
+ * intensity within a meaning, rather than by borrowing an unrelated hue.
+ */
+export const PORTFOLIO_BADGE_TONE: Record<string, string> = {
+  on_track: 'bg-info-100 text-info-700',
+  semester_completed: 'bg-positive-100 text-positive-700',
+  needs_attention: 'bg-caution-100 text-caution-700',
+  paused: 'bg-critical-100 text-critical-700',
+  discontinued: 'bg-critical-100 text-critical-700',
+  graduated: 'bg-positive-200 text-positive-800',
+}
+
+/** Fallback is a real state (an unrecognised status), so it is grey on purpose, not a bug. */
+export const PORTFOLIO_BADGE_FALLBACK = 'bg-ground-100 text-ground-600'
+
+export function portfolioBadgeTone(status: string | null | undefined): string {
+  return (status && PORTFOLIO_BADGE_TONE[status]) || PORTFOLIO_BADGE_FALLBACK
+}

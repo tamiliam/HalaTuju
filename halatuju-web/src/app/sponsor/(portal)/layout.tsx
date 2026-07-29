@@ -80,9 +80,9 @@ export default function SponsorPortalLayout({ children }: { children: ReactNode 
     return (
       <Chrome><CardWrap>
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xl">⏳</div>
-          <h1 className="text-xl font-bold text-gray-900 mt-3">{t('sponsorPortal.pendingTitle')}</h1>
-          <p className="text-sm text-gray-600 mt-2">{t('sponsorPortal.pendingBody')}</p>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-caution-100 text-caution-700 text-xl">⏳</div>
+          <h1 className="text-xl font-bold text-ground-900 mt-3">{t('sponsorPortal.pendingTitle')}</h1>
+          <p className="text-sm text-ground-600 mt-2">{t('sponsorPortal.pendingBody')}</p>
         </div>
       </CardWrap></Chrome>
     )
@@ -99,8 +99,8 @@ export default function SponsorPortalLayout({ children }: { children: ReactNode 
   return (
     <Chrome><CardWrap>
       <div className="text-center">
-        <h1 className="text-xl font-bold text-gray-900">{t('sponsorPortal.inactiveTitle')}</h1>
-        <p className="text-sm text-gray-600 mt-2">{t('sponsorPortal.inactiveBody')}</p>
+        <h1 className="text-xl font-bold text-ground-900">{t('sponsorPortal.inactiveTitle')}</h1>
+        <p className="text-sm text-ground-600 mt-2">{t('sponsorPortal.inactiveBody')}</p>
       </div>
     </CardWrap></Chrome>
   )
@@ -118,10 +118,10 @@ function ApprovedPortal({ children }: { children: ReactNode }) {
     return (
       <Chrome><CardWrap>
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700 text-xl">✓</div>
-          <h1 className="text-xl font-bold text-gray-900 mt-3">{t('sponsorPortal.approvedTitle')}</h1>
-          <p className="text-sm text-gray-600 mt-2">{t('sponsorPortal.approvedBody')}</p>
-          <div className="mt-5 rounded-xl bg-gray-50 border border-dashed border-gray-200 px-4 py-5 text-sm text-gray-500">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-positive-100 text-positive-700 text-xl">✓</div>
+          <h1 className="text-xl font-bold text-ground-900 mt-3">{t('sponsorPortal.approvedTitle')}</h1>
+          <p className="text-sm text-ground-600 mt-2">{t('sponsorPortal.approvedBody')}</p>
+          <div className="mt-5 rounded-xl bg-ground-50 border border-dashed border-ground-200 px-4 py-5 text-sm text-ground-500">
             {t('sponsorPortal.comingSoon')}
           </div>
           <div className="mt-5"><SponsorNotifyPrefs /></div>
@@ -156,13 +156,13 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
     // Sponsor portal typeface (owner 2026-07-18): Inter — crisp at small sizes, trustworthy
     // for the money/facts. Scoped here; the rest of HalaTuju stays on Lexend. (--font-inter
     // is registered in the root layout.)
-    <div className="min-h-screen flex flex-col bg-gray-50"
+    <div className="min-h-screen flex flex-col bg-ground-50"
       style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
-      <header className="bg-white border-b sticky top-0 z-20">
+      <header className="bg-ground-0 border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/sponsor" className="flex items-center gap-2 shrink-0">
             <BrandLogo width={100} height={36} />
-            <span className="text-sm font-semibold text-blue-600">{t('sponsorAuth.badge')}</span>
+            <span className="text-sm font-semibold text-info-600">{t('sponsorAuth.badge')}</span>
           </Link>
           <div className="flex items-center gap-0.5 sm:gap-1">
             {nav && (
@@ -172,7 +172,7 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
                     key={tb.href} href={tb.href}
                     aria-current={active(tb.href) ? 'page' : undefined}
                     className={`px-2.5 sm:px-3 py-2 text-sm font-medium rounded-lg ${
-                      active(tb.href) ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'
+                      active(tb.href) ? 'text-info-600 bg-info-50' : 'text-ground-600 hover:bg-ground-50'
                     }`}
                   >
                     {tb.label}
@@ -180,7 +180,7 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
                 ))}
               </nav>
             )}
-            <button onClick={signOut} className="ml-1 sm:ml-2 px-2.5 sm:px-3 py-2 text-sm text-gray-400 hover:text-gray-600">
+            <button onClick={signOut} className="ml-1 sm:ml-2 px-2.5 sm:px-3 py-2 text-sm text-ground-400 hover:text-ground-600">
               {t('header.logout')}
             </button>
           </div>
@@ -188,12 +188,12 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
       </header>
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
       {nav && (
-        <footer className="container mx-auto px-4 sm:px-6 py-6 text-center text-xs text-gray-400">
-          <Link href="/sponsor/trust" className="text-gray-500 hover:text-blue-600 underline">
+        <footer className="container mx-auto px-4 sm:px-6 py-6 text-center text-xs text-ground-400">
+          <Link href="/sponsor/trust" className="text-ground-500 hover:text-info-600 underline">
             {t('sponsorPortal.trust.footerLink')}
           </Link>
           <span className="mx-2">·</span>
-          <Link href="/privacy" className="hover:text-gray-600">
+          <Link href="/privacy" className="hover:text-ground-600">
             {t('sponsorAuth.privacyNotice')}
           </Link>
         </footer>
@@ -205,11 +205,11 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
 function CardWrap({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-center justify-center px-2 py-8">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border p-8">{children}</div>
+      <div className="w-full max-w-md bg-ground-0 rounded-2xl shadow-sm border p-8">{children}</div>
     </div>
   )
 }
 
 function Centered({ children }: { children: ReactNode }) {
-  return <p className="text-center text-sm text-gray-400 mt-12">{children}</p>
+  return <p className="text-center text-sm text-ground-400 mt-12">{children}</p>
 }

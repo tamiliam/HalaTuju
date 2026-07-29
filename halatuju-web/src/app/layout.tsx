@@ -4,6 +4,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { ReferralCapture } from '@/components/ReferralCapture'
 import { HtmlLang } from '@/components/HtmlLang'
+import { THEME_BOOT_SRC } from '@/lib/theme'
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -67,6 +68,24 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${lexend.variable} ${inter.variable} ${ibmPlexSans.variable}`}>
+      <head>
+        {/*
+          Paints the person's theme before the first pixel (Layer 1 F1). Render-blocking on
+          purpose: the account's copy of Light/Dark/Auto arrives with the session, which is after
+          first paint, so resolving it in React would make a dark user watch every page turn white
+          then dark. See public/theme-boot.js — it sets one attribute and globals.css does the rest.
+        */}
+        {/*
+          The synchronous-script rule is suppressed on the next line as A DELIBERATE EXCEPTION, not
+          an oversight. That rule exists to stop render-blocking scripts delaying first paint — and
+          here, delaying first paint is precisely the requirement: the attribute has to be on <html>
+          BEFORE the first pixel, or a dark user sees a white flash on every navigation. Both
+          `async` and `defer` run after paint and would put the flash straight back. The cost is one
+          ~700-byte same-origin file that caches after the first request.
+        */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src={THEME_BOOT_SRC} />
+      </head>
       <body className="font-sans">
         <Providers>
           <HtmlLang />

@@ -53,7 +53,7 @@ export default function SponsorAuthConfirmPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-600">{t('login.completingSignIn')}</p>
+      <p className="text-ground-600">{t('login.completingSignIn')}</p>
     </main>
   )
 }

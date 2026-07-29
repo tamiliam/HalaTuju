@@ -271,6 +271,17 @@ dark. Arc A alone gives a tenant colour where `primary-N` already reaches. They 
      there the answer is Auto (the device) with any explicit toggle held device-local until they sign
      in, at which point their account value wins. State it, or the first person to notice will report
      it as a bug.
-3. **Sprint 5 of Layer 0 (the configuration screen) and A2 (the colour editor) are the same screen for
-   the same person.** Consider whether they should be one surface with two tabs rather than two entries
-   in the menu. Worth deciding before either is built.
+3. **✅ ANSWERED 2026-07-29 — ONE SCREEN, TWO TABS.** Owner. Layer 0's configuration screen (what a
+   programme asks for) and Layer 1's colour picker are the same person doing two related jobs, so
+   they share one route with two tabs rather than two menu entries.
+   **⚠ THIS CREATES A DEPENDENCY THAT DID NOT EXIST BEFORE, and it points BACKWARDS.** Layer 0
+   Sprint 5 is not built yet. Whichever of the two is built first **owns the tabbed shell** — a route,
+   a `NAV_GROUPS` entry, the role gate (`org_admin` + `super`), and the org fence entry in
+   `test_org_fence.py` — and the second one adds a tab to it. Build either as a single-purpose page
+   and the other arrives as a retro-fit.
+   **▶ Recommend Layer 0 Sprint 5 goes first** and lands the shell, because its tab is the one that
+   completes work already shipped: sprints 2, 3a and 3b are all plumbing, and **until that screen
+   exists an `org_admin` cannot actually change anything.** Three sprints of Layer 0 have shipped and
+   Suresh still has no control to touch. Not a blocker for F1 — nothing in F1 touches that route —
+   but it is the sequencing question worth putting to the owner before A2 is scheduled.
+

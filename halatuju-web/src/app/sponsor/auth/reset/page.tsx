@@ -66,26 +66,26 @@ export default function SponsorResetPasswordPage() {
     router.replace('/sponsor')
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center py-12">
+    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-12">
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
-          <span className="text-lg font-bold text-blue-600">{t('sponsorAuth.badge')}</span>
+          <span className="text-lg font-bold text-info-600">{t('sponsorAuth.badge')}</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
           {phase === 'verifying' && (
-            <p className="text-center text-gray-600">{t('sponsorAuth.resetVerifying')}</p>
+            <p className="text-center text-ground-600">{t('sponsorAuth.resetVerifying')}</p>
           )}
 
           {phase === 'error' && (
             <div className="text-center">
-              <h1 className="text-xl font-bold text-gray-900 mb-2">{t('sponsorAuth.resetPassword')}</h1>
-              <p className="text-red-600 text-sm mb-6">{t('sponsorAuth.resetLinkError')}</p>
-              <Link href="/sponsor/login" className="inline-block text-blue-600 font-semibold hover:underline">
+              <h1 className="text-xl font-bold text-ground-900 mb-2">{t('sponsorAuth.resetPassword')}</h1>
+              <p className="text-critical-600 text-sm mb-6">{t('sponsorAuth.resetLinkError')}</p>
+              <Link href="/sponsor/login" className="inline-block text-info-600 font-semibold hover:underline">
                 {t('sponsorAuth.requestNewLink')}
               </Link>
             </div>
@@ -93,35 +93,35 @@ export default function SponsorResetPasswordPage() {
 
           {phase === 'form' && (
             <>
-              <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('sponsorAuth.resetNewTitle')}</h1>
-              <p className="text-gray-600 text-center mb-6">{t('sponsorAuth.resetNewSubtitle')}</p>
+              <h1 className="text-2xl font-bold text-ground-900 text-center mb-2">{t('sponsorAuth.resetNewTitle')}</h1>
+              <p className="text-ground-600 text-center mb-6">{t('sponsorAuth.resetNewSubtitle')}</p>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6"><p className="text-red-600 text-sm">{error}</p></div>
+                <div className="bg-critical-50 border border-critical-200 rounded-lg p-4 mb-6"><p className="text-critical-600 text-sm">{error}</p></div>
               )}
 
               <form onSubmit={handleSave} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.newPassword')} <span className="text-red-500">*</span></label>
-                  <div className="rounded-lg bg-blue-50/70 border border-blue-100 px-3 py-2 mb-2 text-xs text-gray-600">
-                    <p className="font-medium text-gray-700 mb-1">{t('sponsorAuth.pwRulesTitle')}</p>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.newPassword')} <span className="text-critical-500">*</span></label>
+                  <div className="rounded-lg bg-info-50/70 border border-info-100 px-3 py-2 mb-2 text-xs text-ground-600">
+                    <p className="font-medium text-ground-700 mb-1">{t('sponsorAuth.pwRulesTitle')}</p>
                     <ul className="space-y-0.5">
-                      <li className={pw.minLength ? 'text-green-600' : ''}>{pw.minLength ? '✓' : '•'} {t('sponsorAuth.pwMinLength')}</li>
-                      <li className={pw.mixedCase ? 'text-green-600' : ''}>{pw.mixedCase ? '✓' : '•'} {t('sponsorAuth.pwMixedCase')}</li>
-                      <li className={pw.hasNumber ? 'text-green-600' : ''}>{pw.hasNumber ? '✓' : '•'} {t('sponsorAuth.pwNumber')}</li>
+                      <li className={pw.minLength ? 'text-positive-600' : ''}>{pw.minLength ? '✓' : '•'} {t('sponsorAuth.pwMinLength')}</li>
+                      <li className={pw.mixedCase ? 'text-positive-600' : ''}>{pw.mixedCase ? '✓' : '•'} {t('sponsorAuth.pwMixedCase')}</li>
+                      <li className={pw.hasNumber ? 'text-positive-600' : ''}>{pw.hasNumber ? '✓' : '•'} {t('sponsorAuth.pwNumber')}</li>
                     </ul>
                   </div>
                   <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} autoComplete="new-password" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.reenterPassword')} <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.reenterPassword')} <span className="text-critical-500">*</span></label>
                   <input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} className={inputCls} autoComplete="new-password" />
                   {password2.length > 0 && !pwMatch && (
-                    <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.pwMismatch')}</p>
+                    <p className="text-xs text-critical-600 mt-1">{t('sponsorAuth.pwMismatch')}</p>
                   )}
                 </div>
                 <button type="submit" disabled={!canSave}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
+                  className="w-full bg-info-600 text-white py-3 rounded-lg font-medium hover:bg-info-700 transition-colors disabled:opacity-50">
                   {saving ? t('sponsorAuth.resetSaving') : t('sponsorAuth.resetSave')}
                 </button>
               </form>
@@ -130,7 +130,7 @@ export default function SponsorResetPasswordPage() {
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/sponsor/login" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">{t('login.backToLogin')}</Link>
+          <Link href="/sponsor/login" className="text-sm text-ground-500 hover:text-info-600 transition-colors">{t('login.backToLogin')}</Link>
         </div>
       </div>
     </main>
