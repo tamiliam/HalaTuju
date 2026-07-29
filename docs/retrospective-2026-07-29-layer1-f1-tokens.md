@@ -88,6 +88,25 @@ sunset.
 - The sandbox fixture, being typed, refused to compile without four fields the equivalent jsdom test
   has silently omitted for months. A cast in a test silences the compiler; a typed fixture does not.
 
+## The defect this sprint shipped, found by the owner within the hour
+
+**The product went dark for anyone whose computer is set to dark.**
+
+F1 described the mechanism as "behind a flag, unreachable until F7". The flag gated the switcher a
+person clicks. It did not gate the before-paint script in the root layout, which runs on every page
+and whose default mode is `auto` — follow the device. So the moment F1 deployed, every visitor on a
+dark-set machine got a dark product across five surfaces nothing had repainted.
+
+No test would have caught it: the suite runs in a light environment, and the flag was visibly
+present in the code. It took a person opening the live site.
+
+Fixed by gating the script itself — flag off means no script, so no attribute, so the dark ramp
+cannot match. The guard is pinned by a test that also asserts the flag sits BEFORE the tag and wraps
+it, bite-checked by putting the tag back outside it.
+
+**The lesson generalises past themes** and is in `lessons.md`: a feature ships dark when its EFFECT
+is unreachable, not when its button is. Name every path that still executes with the flag off.
+
 ## Carry
 
 - **The switch a person clicks, and its account storage - split out as its own sprint.** Four
