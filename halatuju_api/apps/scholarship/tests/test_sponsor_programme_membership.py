@@ -16,10 +16,14 @@ governs WHICH cards are visible, never WHAT a card shows.
 import inspect
 from decimal import Decimal
 
+import jwt
 from django.test import TestCase, override_settings
+from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerOrganisation, StudentProfile
-from apps.scholarship import pool, sponsor_notifications, standing_gift, views_sponsor
+from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
+from apps.scholarship import (
+    pool, sponsor_notifications, sponsorship, standing_gift, views_sponsor,
+)
 from apps.scholarship.models import (
     Consent, Programme, ScholarshipApplication, ScholarshipCohort, Sponsor,
     SponsorProfile, SponsorProgrammeMembership,
@@ -199,3 +203,124 @@ class TestEverySponsorPoolReadIsFenced(TestCase):
                 f'{fn.__qualname__} must fence by programme membership — an email that '
                 f'routes around the pool fence leaks that other programmes exist.',
             )
+
+
+TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+
+
+def _token(uid, email=''):
+    return jwt.encode(
+        {'sub': uid, 'aud': 'authenticated', 'role': 'authenticated',
+         'email': email, 'is_anonymous': False},
+        TEST_JWT_SECRET, algorithm='HS256')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestNewSponsorIsOnboardedIntoTheGift(TestCase):
+    """A sponsor who registers TODAY must end where migration 0123 would have put them.
+
+    0123 backfilled a flagship membership for everyone alive on 2026-07-25 and nothing was
+    written to keep doing it, so the first sponsor to register afterwards (production id 10,
+    28/07) held ZERO memberships. That is invisible on the account — status reads "approved" —
+    but it emptied their student pool, silenced their digest, and made a wallet credit
+    impossible (`record_admin_credit` refuses `sponsor_not_in_programme`).
+
+    These are the regression tests for the write path. The flagship programme is NOT created
+    here: migration 0119 seeds `brightpath-flagship` into the test DB, and keying on the real
+    code is the point — a helper looking up a different programme would pass while production
+    stayed broken.
+    """
+    FULL = {'name': 'Nina', 'phone': '012-345 6789', 'source': 'google', 'consent': True}
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.flagship = Programme.objects.get(code='brightpath-flagship')
+        PartnerAdmin.objects.create(supabase_user_id='oa2', role='org_admin', is_active=True,
+                                    name='OA', email='oa@x.com')
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def _auth(self, uid, email=''):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, email)}')
+
+    def _register(self, uid='new-1', email='n@x.com', **extra):
+        self._auth(uid, email)
+        r = self.client.post('/api/v1/sponsor/register/', {**self.FULL, **extra}, format='json')
+        self.assertIn(r.status_code, (200, 201), r.content)
+        return Sponsor.objects.get(supabase_user_id=uid)
+
+    def _review(self, sponsor, action):
+        self._auth('oa2', 'oa@x.com')
+        r = self.client.post(f'/api/v1/admin/sponsors/{sponsor.id}/review/',
+                             {'action': action}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        sponsor.refresh_from_db()
+
+    def _membership(self, sponsor):
+        return SponsorProgrammeMembership.objects.filter(
+            sponsor=sponsor, programme=self.flagship).first()
+
+    def test_registration_opens_a_pending_membership(self):
+        sponsor = self._register()
+        membership = self._membership(sponsor)
+        self.assertIsNotNone(membership, 'registration left the sponsor in no gift at all')
+        self.assertEqual(membership.status, 'pending')
+        self.assertIsNone(membership.vetted_at)
+
+    def test_approval_settles_the_membership_and_opens_the_pool(self):
+        """The end-to-end assertion: an approved new sponsor SEES students."""
+        org = PartnerOrganisation.objects.get(code='brightpath')
+        app = _pooled_app(self.flagship, org, 'u-new', 'c-new')
+        sponsor = self._register()
+        # Before vetting the account gate holds them out — as it should.
+        self.assertEqual(list(pool.for_sponsor(
+            pool.display_pool_queryset(ScholarshipApplication), sponsor)), [])
+
+        self._review(sponsor, 'approve')
+
+        membership = self._membership(sponsor)
+        self.assertEqual(membership.status, 'approved')
+        self.assertEqual(membership.vetted_by, 'oa@x.com')
+        self.assertIsNotNone(membership.vetted_at)
+        self.assertEqual(
+            [a.id for a in pool.for_sponsor(
+                pool.display_pool_queryset(ScholarshipApplication), sponsor)],
+            [app.id],
+            'an approved sponsor with no credit must still see the students',
+        )
+
+    def test_membership_mirrors_a_rejection_too(self):
+        sponsor = self._register(uid='new-2', email='n2@x.com')
+        self._review(sponsor, 'reject')
+        self.assertEqual(self._membership(sponsor).status, 'rejected')
+
+    def test_syncing_twice_never_duplicates(self):
+        sponsor = self._register(uid='new-3', email='n3@x.com')
+        sponsorship.sync_account_membership(sponsor)
+        sponsorship.sync_account_membership(sponsor)
+        self.assertEqual(
+            SponsorProgrammeMembership.objects.filter(sponsor=sponsor).count(), 1)
+
+    def test_healing_an_existing_sponsor_who_has_no_row(self):
+        """The migration's case: a sponsor already in the gap gets a membership, not a duplicate."""
+        sponsor = _sponsor(email='gap@x.com', uid='gap-1', status='approved')
+        self.assertIsNone(self._membership(sponsor))
+        sponsorship.sync_account_membership(sponsor, vetted_by='heal')
+        self.assertEqual(self._membership(sponsor).status, 'approved')
+
+    def test_account_vetting_never_touches_another_gift(self):
+        """Acceptance into a second gift is that organisation's decision, not a side-effect."""
+        org = _org('other-org')
+        sabah = _programme(org, 'p-sabah-2', 'Sabah Bursary')
+        sponsor = self._register(uid='new-4', email='n4@x.com')
+        _accept(sponsor, sabah, status='approved')
+
+        self._review(sponsor, 'suspend')
+
+        self.assertEqual(self._membership(sponsor).status, 'suspended')
+        self.assertEqual(
+            SponsorProgrammeMembership.objects.get(sponsor=sponsor, programme=sabah).status,
+            'approved',
+            'suspending the ACCOUNT silently revoked a gift the sponsor was accepted into',
+        )

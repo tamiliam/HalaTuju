@@ -1086,6 +1086,10 @@ class AdminSponsorReviewView(_AdminBase):
         sponsor.reviewed_at = timezone.now()
         sponsor.reviewed_by = admin.email
         sponsor.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'updated_at'])
+        # Vetting the ACCOUNT settles their membership of the default gift the same way, which is
+        # what migration 0123 did for every sponsor who predates the programme layer. Without it
+        # an approved sponsor sees no students and can hold no wallet.
+        sponsorship_service.sync_account_membership(sponsor, vetted_by=admin.email)
         # S3: until now this endpoint flipped a field and returned — eight people on production
         # were approved and never told. `previous_status` is read BEFORE the write because an
         # approval that lifts a suspension is a REINSTATEMENT, and the two read very differently

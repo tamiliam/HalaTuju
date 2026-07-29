@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## A sponsor who joins today belongs to a gift — 2026-07-29
+
+On 25 July the platform learned that acceptance is per gift, and a one-off backfill put every
+sponsor who existed at that moment into the flagship. Nothing was ever written to keep doing it.
+The first person to register afterwards — 28 July — arrived belonging to no gift at all.
+
+Nothing on their account said so. It read *approved*, vetted, consented. But the gift is what
+decides which students a sponsor can see, so their pool was empty; it is what the weekly digest
+is drawn from, so they would have received nothing despite the digest being switched on; and it
+is what a wallet credit is recorded into, so there was no way to give them one. The
+Record-a-credit button was simply absent, which is the only reason anyone noticed.
+
+The write now exists in both places it belongs: registering opens the membership as pending, and
+vetting settles it — the same "the membership copies the account status" rule the backfill used,
+so someone registering today ends up exactly where they would have been a week ago. Only the
+default gift is touched; acceptance into a second gift is that organisation's decision and must
+never be revoked as a side-effect of platform-level account vetting.
+
+A data migration heals whoever fell in the window. It copies each account's status verbatim, so
+nobody sees anything their account did not already entitle them to.
+
+**Worth keeping straight:** a sponsor holding no wallet is normal — a wallet exists once money is
+recorded, and most sponsors have given nothing yet. That is not the bug and was never meant to
+gate anything. Seeing students has never depended on having credit, and still does not: the
+balance is checked at exactly one point, the moment a sponsor funds someone.
+
+Migration `0136` (data only, no DDL). `pytest` 3823 scholarship + 1260 courses/reports.
+
 ## Light and dark, and a foundation an organisation's own colours can sit on — 2026-07-29
 
 Sprint F1 of the themes roadmap. The colour vocabulary, the light/dark mechanism, and the sponsor

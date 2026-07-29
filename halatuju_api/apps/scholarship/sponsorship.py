@@ -135,6 +135,59 @@ def _is_accepted_into(sponsor, programme):
         sponsor=sponsor, programme=programme, status='approved').exists()
 
 
+# The gift a sponsor is onboarded into when they register through the public form. There is
+# exactly one today and the form does not ask which gift, so it cannot mean anything else. When
+# a second gift opens its own onboarding the programme comes from the form and this retires —
+# it is the DEFAULT for the one registration path, never a fallback to lean on elsewhere.
+DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'
+
+
+def sync_account_membership(sponsor, vetted_by=''):
+    """Create or refresh this sponsor's membership of the DEFAULT gift, mirroring their ACCOUNT status.
+
+    Migration ``0123`` gave every sponsor alive on 2026-07-25 a flagship membership copied from
+    their account status — and **nothing was ever written to do the same for a sponsor who
+    registers afterwards**. The first one to arrive (28/07) landed with zero memberships, which
+    made them invisible to ``pool.for_sponsor`` (an empty student pool, no digest — see
+    ``sponsor_notifications``) and un-creditable, because ``record_admin_credit`` refuses
+    ``sponsor_not_in_programme``. This is that missing write.
+
+    It mirrors ``0123`` EXACTLY — same programme, same "the membership copies the account
+    status" rule — so a sponsor who registers today ends in the state they would have been in
+    had they registered a week earlier. Called from registration (which opens it ``pending``)
+    and from vetting (which settles it), and it is idempotent, so calling it on an existing
+    sponsor heals a missing row rather than duplicating one.
+
+    **Only the default gift's row is touched.** A membership of a second gift is a separate
+    acceptance decision by the organisation running it, and must never be flipped as a
+    side-effect of platform-level account vetting.
+
+    Best-effort in the sense that a missing programme row (a bare or partial test DB, exactly as
+    ``0123`` allows for) returns None rather than inventing an acceptance — but it does NOT
+    swallow database errors: a registration that silently loses its membership is the bug this
+    exists to fix.
+    """
+    from .models import SponsorProgrammeMembership
+    programme = Programme.objects.filter(code=DEFAULT_PROGRAMME_CODE).first()
+    if programme is None:
+        return None
+    settled = sponsor.status != 'pending'
+    membership, created = SponsorProgrammeMembership.objects.get_or_create(
+        sponsor=sponsor, programme=programme,
+        defaults={
+            'status': sponsor.status,
+            'vetted_by': vetted_by if settled else '',
+            'vetted_at': timezone.now() if settled else None,
+        },
+    )
+    if not created and membership.status != sponsor.status:
+        membership.status = sponsor.status
+        membership.vetted_by = vetted_by
+        membership.vetted_at = timezone.now()
+        membership.save(update_fields=['status', 'vetted_by', 'vetted_at', 'updated_at'])
+    return membership
+
+
 def _collected_signer_emails(credit):
     """Every email that has already signed this credit, casefolded — the basis of the
     three-distinct-signers rule. Keyed on EMAIL, never on the displayed name: prod has two
