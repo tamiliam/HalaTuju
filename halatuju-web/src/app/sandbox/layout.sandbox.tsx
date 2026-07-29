@@ -16,21 +16,25 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { SandboxProviders } from '@/sandbox/providers'
 import { SURFACES } from '@/sandbox/surfaces'
+import { SandboxThemeToggle } from '@/sandbox/ThemeToggle'
 
 export default function SandboxLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 
   return (
     <SandboxProviders>
-      <div className="min-h-screen bg-gray-50">
-        <header className="border-b border-amber-300 bg-amber-50">
+      <div className="min-h-screen bg-ground-50">
+        <header className="border-b border-caution-300 bg-caution-50">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-            <span className="rounded bg-amber-200 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-amber-900">
+            <span className="rounded bg-caution-200 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-caution-900">
               Sandbox
             </span>
-            <p className="text-sm text-amber-900">
+            <p className="text-sm text-caution-900">
               Real components, invented data. Nothing here is a person, and nothing you do is saved.
             </p>
+            {/* Layer 1: flip modes without a login. The product's own switch lives on a person's
+                account and is later work — this is chrome, so a repaint sprint can be reviewed. */}
+            <div className="ml-auto"><SandboxThemeToggle /></div>
           </div>
           <nav className="mx-auto flex max-w-6xl flex-wrap gap-1 px-4 pb-3">
             {SURFACES.map((s) => {
@@ -41,8 +45,8 @@ export default function SandboxLayout({ children }: { children: ReactNode }) {
                   href={`/sandbox/${s.slug}`}
                   className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
                     active
-                      ? 'bg-gray-900 font-semibold text-white'
-                      : 'text-gray-700 hover:bg-white'
+                      ? 'bg-ground-900 font-semibold text-ground-0'
+                      : 'text-ground-700 hover:bg-ground-0'
                   }`}
                 >
                   {s.title}
