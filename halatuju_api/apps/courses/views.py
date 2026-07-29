@@ -1049,19 +1049,38 @@ class ProfileView(APIView):
         # Identity verified — drives the Name + IC "Verified" badges on /profile. True when
         # the student's uploaded MyKad SCAN confirms both name and IC No against the profile
         # (the "verified with an IC" sense), OR an admin has locked the NRIC at verify-&-accept.
+        # The IC lock, and what the card disagrees with (2026-07-29).
+        #
+        # `nric_locked` is the STORED lock and the only thing the padlock may key on. The
+        # separate `identity_verified` below is a DISPLAY badge and deliberately broader — it
+        # also greens for a card that matches but has not (yet) locked, e.g. one that was never
+        # scored for genuineness. **These are not interchangeable.** Wiring the padlock to the
+        # badge would lock students the moment they upload a matching card, with no genuineness
+        # check and no admin — and worse, it would UNLOCK again if they deleted the document,
+        # because the badge is derived on every read and the lock is not.
+        #
+        # `ic_flags` is what makes a wrong number fixable at all: until now a student whose
+        # typed IC disagreed with their card was told nothing here, and found out only when
+        # consent refused them. Codes, not sentences — the screen owns the wording, and must
+        # not assert which side is wrong (our OCR mangles names too; see #27 and #118).
         identity_verified = bool(profile.nric_verified)
-        if not identity_verified and profile.name and profile.nric:
-            try:
-                from apps.scholarship.models import ApplicantDocument
-                from apps.scholarship.vision import name_match, nric_match
-                ic = (ApplicantDocument.objects
-                      .filter(application__profile=profile, doc_type='ic')
-                      .exclude(vision_name='').order_by('-id').first())
-                if ic is not None:
-                    identity_verified = (name_match(ic.vision_name, profile.name) == 'match'
-                                         and nric_match(ic.vision_nric, profile.nric))
-            except Exception:
-                pass
+        nric_locked = bool(profile.nric_verified)
+        ic_flags, ic_card_nric, ic_card_name = [], '', ''
+        try:
+            from apps.scholarship import identity as identity_rules
+            from apps.scholarship.models import ApplicantDocument
+            ic = (ApplicantDocument.objects
+                  .filter(application__profile=profile, doc_type='ic',
+                          superseded_at__isnull=True)     # a REPLACED card decides nothing
+                  .exclude(vision_name='').order_by('-id').first())
+            if ic is not None and profile.name and profile.nric:
+                cmp_ = identity_rules.compare(ic, profile)
+                ic_flags = identity_rules.flags(cmp_)
+                ic_card_nric, ic_card_name = cmp_['card_nric'], cmp_['card_name']
+                if not identity_verified:
+                    identity_verified = (cmp_['name'] == 'match' and cmp_['nric'] == 'match')
+        except Exception:
+            pass
 
         return Response({
             'grades': profile.grades,
@@ -1079,6 +1098,11 @@ class ProfileView(APIView):
             'nric': profile.nric,
             'nric_verified': profile.nric_verified,
             'identity_verified': identity_verified,
+            # The padlock keys on THIS, never on identity_verified above.
+            'nric_locked': nric_locked,
+            'ic_flags': ic_flags,
+            'ic_card_nric': ic_card_nric,
+            'ic_card_name': ic_card_name,
             'angka_giliran': profile.angka_giliran,
             'address': profile.address,
             'postal_code': profile.postal_code,
@@ -1311,10 +1335,14 @@ class NricClaimView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        try:
-            existing = StudentProfile.objects.get(nric=nric)
-        except StudentProfile.DoesNotExist:
-            existing = None
+        # `.get()` here caught DoesNotExist only — and the uniqueness index is PARTIAL
+        # (WHERE nric_verified AND nric <> ''), so two UNVERIFIED profiles may legally hold the
+        # same number and this raised MultipleObjectsReturned → 500. Nothing hit it while the
+        # only callers were registration and the apply form; opening the field to every student
+        # on /profile is exactly what makes it reachable. Prefer a VERIFIED holder when several
+        # exist, since that is the one whose claim actually stands.
+        existing = (StudentProfile.objects.filter(nric=nric)
+                    .order_by('-nric_verified', 'supabase_user_id').first())
 
         if existing is None:
             # New NRIC — create or update caller's profile

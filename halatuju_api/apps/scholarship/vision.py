@@ -906,7 +906,52 @@ def run_vision_for_document(doc) -> dict:
         doc.vision_fields = vf
         update_fields.append('vision_fields')
     doc.save(update_fields=update_fields)
+    try:
+        _lock_nric_if_confirmed(doc)
+    except Exception:               # noqa: BLE001 — an upload must survive a failed lock
+        logger.exception('ic lock failed for document %s', getattr(doc, 'id', None))
     return result
+
+
+def _lock_nric_if_confirmed(doc):
+    """Take the IC lock the first time the card confirms what the student typed (2026-07-29).
+
+    Sits at the END of the IC read so every route in — first upload, the cockpit's Re-run, the
+    bulk re-extract — takes the lock at the same moment. The alternative was three call sites
+    each remembering to, which is how the sponsor-membership gap happened a day earlier: a rule
+    with no single home is a rule waiting to be forgotten at one of its edges.
+
+    **Stored, one-way, never re-derived.** A lock recomputed on every page load would disappear
+    the moment the student deleted the document that earned it — upload a matching card, lock,
+    delete it, unlock, change the number. That is not a lock.
+
+    Never raises. This runs inside the upload request, and nobody should lose an upload because
+    we could not take a lock.
+    """
+    # A parent's card is uploaded through this same function (minor consent). It must never
+    # lock the STUDENT's number — different person, different card.
+    if getattr(doc, 'doc_type', '') != 'ic':
+        return
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    if profile is None or profile.nric_verified:
+        return          # already locked — one-way, so nothing to do and nothing to undo
+    from . import identity
+    if not identity.locks_now(identity.compare(doc, profile)):
+        return
+    # Locking ARMS the partial unique index on nric (WHERE nric_verified). If another profile
+    # already holds this number verified, the save would raise — and a student would lose their
+    # upload over somebody else's duplicate. Leave it unlocked instead: verify-&-accept already
+    # surfaces the clash to an admin as `nric_conflict`, which is where a human settles it.
+    from apps.courses.models import StudentProfile
+    clash = (StudentProfile.objects
+             .filter(nric=profile.nric, nric_verified=True)
+             .exclude(pk=profile.pk).exists())
+    if clash:
+        logger.warning('ic lock skipped — nric already verified on another profile (app=%s)',
+                       getattr(doc, 'application_id', None))
+        return
+    profile.nric_verified = True
+    profile.save(update_fields=['nric_verified'])
 
 
 # ── Generic supporting-document soft checks (S: results slip / income / bills) ──
