@@ -498,15 +498,31 @@ ask rather than infer, because the two produce different roadmaps.
    MEANING rather than identity — green error text is not a taste to have, and `components/InfoBox.tsx`
    already enforces that convention across the product. This is the one place I would hold a line
    inside "customise however they want", and it is the owner's call to overrule.
-6. **STILL OPEN — who owns the light/dark MODE.** The owner answered about COLOURS, which is the
-   palette. Which mode a person sits in is a separate question and was not answered.
-   **Working assumption:** the org_admin sets the organisation's default and a person may override it
-   for themselves (`src/lib/uiPrefs.ts` — the pattern exists), with `prefers-color-scheme` as the
-   initial default, never an override of an explicit choice.
-   **⚠ Why it leans that way:** dark mode is frequently an ACCESSIBILITY need rather than a
-   preference. A reviewer with light sensitivity needs dark on every screen; if the organisation is
-   locked to light their only recourse is to ask Suresh. The override costs one preference key.
-   **Confirm before sprint 12 — do not build the switch on an assumption.**
+6. **✅ ANSWERED — the MODE is personal, with an AUTO that follows the time of day.** Owner,
+   2026-07-29: *"Dark or light is a personal choice. And there are those like light at day time and
+   dark in the evenings, auto set. Which is how I see it."*
+   So the split is clean and each half has one owner: **the ORGANISATION owns the colours, the
+   PERSON owns the mode.** An `org_admin` never sets what mode a reviewer sits in. Three states —
+   **Light · Dark · Auto**, and Auto is the default.
+   **▶ RECOMMENDATION FOR "AUTO", because it has two possible meanings and they are not equivalent.**
+   Auto should mean **follow the device**, i.e. the `prefers-color-scheme` media query — NOT a
+   time-of-day switch we implement ourselves. Both macOS and Windows already offer a scheduled
+   light/dark that flips at the user's local sunset, so following the device inherits a schedule that
+   is already location-aware and already the person's own choice. Writing our own means picking a
+   cutover hour and a timezone, getting it wrong for anyone travelling or on a night shift, and
+   fighting the setting their machine is already applying. One media query versus a scheduler we own
+   and support forever.
+   **⚠ AND ONE CONSTRAINT THIS PUTS ON THE TOKEN WORK, which is easy to miss until it bites.** If the
+   mode can flip at sunset, it can flip **mid-session** — while a student is halfway through the
+   Documents tab, or a reviewer is part-way through a verdict. **The repaint must therefore be pure
+   CSS: a variable set swapping under the same DOM, never a re-render, a re-mount or a re-fetch.**
+   Anyone who loses a half-filled form to a sunset will not report it as a theming bug. This is a
+   testable acceptance criterion for the Phase 2 sprints, not a nicety.
+   **▶ SMALLER CALL, recommendation only:** an EXPLICIT Light or Dark should be stored against the
+   PERSON (so it follows them between machines — someone who needs dark needs it on every machine),
+   while Auto needs no storage at all because the device answers. Note `src/lib/uiPrefs.ts` is
+   currently device-local, so this is the first preference that would want an account home; decide it
+   when sprint 12 is planned, not before.
 7. **✅ ANSWERED — organisations MAY author their own themes and palettes. This is the opposite of
    what was briefly recorded here on 2026-07-29 and it makes the arc BIGGER, not smaller.**
    The platform ships light and dark as defaults; a tenant may customise its surfaces.
