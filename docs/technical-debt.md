@@ -2165,7 +2165,7 @@ long as the terms stay dark. Whoever unparks the cluster should do this first �
 it is the only item here that could invalidate the others' assumptions.
 
 
-### [TD-197] The Layer 0 catalogue's `label_key` values point at i18n keys that do not exist — low, until Sprint 5
+### ✅ [TD-197 — RESOLVED 2026-07-29] The Layer 0 catalogue's `label_key` values point at i18n keys that do not exist — low, until Sprint 5
 All nine document rows and all ten question rows in `application_items` carry a `label_key` of the
 form `apply.docs.<code>.title` / `apply.questions.<code>.title`. **None of those keys exists in
 `src/messages/{en,ms,ta}.json`.** They were written in Sprint 2 as the name the future admin screen
@@ -2192,3 +2192,23 @@ in en/ms/ta, and strengthen the backend test from "looks like a key" to "IS a ke
 `academic_engine._SUBJECT_BM` against `subjects.ts`. That converts a silent gap into a failing test.
 (Logged 2026-07-29, config Layer 0 sprint 3b — found while adding `school_leaving_cert` to the seed.)
 
+**RESOLVED 2026-07-29, and the fix was smaller AND better than the one this entry proposed.** The
+entry assumed the `apply.docs.*` / `apply.questions.*` keys had to be CREATED. They did not: **eight
+of the nine document labels already existed** as `scholarship.docs.type.<code>`, translated into all
+three languages. Minting a parallel `apply.*` set would have been the same document named twice —
+the drift Layer 0 exists to remove. So `label_key` was re-pointed at the labels that already exist,
+and only ELEVEN new strings were written: `income_proof` (the income ROUTE, which never had a
+student-facing card) plus the ten questions, which genuinely had no coherent set and now live at
+`admin.programme.question.<code>` — named for the screen that will render them.
+
+**The guard was the real defect.** `test_every_item_has_an_i18n_key_never_a_literal_label` asserted
+the key's SHAPE (`startswith('apply.')`, no spaces) as a stand-in for "looks like an i18n key", and
+passed happily for two sprints while all nineteen keys pointed at a namespace that existed nowhere.
+It now READS `en.json` from Python and asserts each key RESOLVES — the same cross-runtime trick
+`test_subject_drift.py` uses. Bite-checked twice: removing one label fails it, and deleting the whole
+question namespace (the exact shape of this bug) fails it.
+
+**Production re-pointed** in the same change; 19 rows, verified.
+
+**The transferable lesson is in `lessons.md`:** a guard that checks the SHAPE of a reference is not
+checking that the reference resolves, and the difference is invisible until something dereferences it.

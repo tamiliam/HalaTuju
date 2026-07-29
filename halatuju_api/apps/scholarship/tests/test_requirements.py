@@ -42,12 +42,41 @@ class TestCatalogueIntegrity(TestCase):
         # here and argue for it rather than quietly widen a frozenset.
         self.assertEqual(requirements.DOCUMENT_AGGREGATES, frozenset({'income_proof'}))
 
-    def test_every_item_has_an_i18n_key_never_a_literal_label(self):
-        # A label stored in the database is a fourth place translations live, invisible to
-        # scripts/check-i18n.js, and it is how an org ends up shipping English to a Tamil reader.
-        for item in ApplicationItem.objects.all():
-            self.assertTrue(item.label_key.startswith('apply.'), item.code)
-            self.assertNotIn(' ', item.label_key, item.code)
+    def test_every_item_label_key_RESOLVES_in_the_message_catalogue(self):
+        """Every catalogue label names a string that actually exists, in the file the app reads.
+
+        ⚠ THIS TEST USED TO CHECK THE SHAPE OF THE KEY, AND THAT IS WHY IT MISSED THE REAL BUG.
+        It asserted `label_key.startswith('apply.')` and no spaces — a stand-in for "looks like an
+        i18n key" — and passed for two sprints while all nineteen keys pointed at an `apply.*`
+        namespace **that did not exist in any message file**. `scripts/check-i18n.js` could not see
+        it either: it compares the three catalogues against each other and against the source tree,
+        and a key held in a DATABASE ROW is in neither. So the one guard that could have caught it
+        was the one checking the wrong property. (TD-197.)
+
+        Reading `en.json` from Python is the same cross-runtime trick `test_subject_drift.py` uses
+        to pin `academic_engine._SUBJECT_BM` against `subjects.ts` — same repo, so the backend can
+        simply open the front end's file and stop guessing.
+
+        Only `en.json` is read: `check-i18n.js` already enforces that ms and ta carry every key en
+        does, so existence in en plus that parity check covers all three without a second reader.
+        """
+        import json
+        from pathlib import Path
+        messages = Path(__file__).resolve().parents[4] / 'halatuju-web' / 'src' / 'messages' / 'en.json'
+        self.assertTrue(messages.exists(), f'cannot find the message catalogue at {messages}')
+        catalogue = json.loads(messages.read_text(encoding='utf-8'))
+
+        def resolve(dotted):
+            node = catalogue
+            for part in dotted.split('.'):
+                if not isinstance(node, dict) or part not in node:
+                    return None
+                node = node[part]
+            return node if isinstance(node, str) else None
+
+        missing = [f'{i.kind}:{i.code} -> {i.label_key}'
+                   for i in ApplicationItem.objects.all() if resolve(i.label_key) is None]
+        self.assertEqual(missing, [], 'catalogue labels with no message behind them')
 
     def test_the_core_floor_is_exactly_what_the_owner_named(self):
         # Owner, 2026-07-28: identity card, results slip, consent, the family/income block —

@@ -19,6 +19,23 @@ from ...models import ApplicationItem, Programme, ProgrammeApplicationItem
 # ─────────────────────────────────────────────────────────────────────────────
 # The catalogue. Each row is (code, label_key, is_core, default_state).
 #
+# ⚠ `label_key` POINTS AT A KEY THAT ALREADY EXISTS WHEREVER ONE DOES. Sprint 2 invented an
+# `apply.docs.*` / `apply.questions.*` namespace and nothing was ever created behind it — 19 keys
+# with no messages, invisible to `check-i18n.js` because it cannot see a string held in a database
+# row (TD-197). Correcting it in Layer 0 Sprint 5 showed the fix was smaller AND better than
+# creating them: EIGHT of the nine document labels already existed as `scholarship.docs.type.<code>`,
+# translated into all three languages, and minting a parallel set would have been the same document
+# named twice — the drift this whole layer exists to remove. Only `income_proof` needed a new one
+# (it is the income ROUTE, not a document, so it never had a student-facing card).
+#
+# Questions genuinely had no coherent set, so they get `admin.programme.question.<code>` — named
+# for the screen that renders them, which is the honest home for an admin-facing label.
+#
+# The two prefixes differ on purpose. A document label is genuinely shared with the student UI (the
+# same noun); a question label is an admin's summary of a form field. `test_requirements.py` no
+# longer checks the PREFIX — it asserts the key EXISTS in `en.json`, which is what was wanted all
+# along and what a shape-check was standing in for.
+#
 # `is_core` is a POLICY floor set by the owner on 2026-07-28 — identity card, results slip,
 # offer letter, consent, and the family/income block — NOT an engineering judgement. An
 # organisation may never switch a core item off.
@@ -29,49 +46,49 @@ from ...models import ApplicationItem, Programme, ProgrammeApplicationItem
 
 DOCUMENTS = [
     # code,                  label_key,                                  core,  default
-    ('ic',                   'apply.docs.ic.title',                      True,  'required'),
-    ('results_slip',         'apply.docs.results_slip.title',            True,  'required'),
+    ('ic',                   'scholarship.docs.type.ic',                      True,  'required'),
+    ('results_slip',         'scholarship.docs.type.results_slip',            True,  'required'),
     # Compulsory for every route since the 2026-06-05 gate v2. A Form-Six student has no
     # university offer letter and uploads a school enrolment letter instead — that is handled
     # per-STUDENT inside `_offer_blocks`, and is NOT a per-organisation setting. Core here means
     # the ORGANISATION cannot remove it; it does not flatten the route logic.
-    ('offer_letter',         'apply.docs.offer_letter.title',            True,  'required'),
+    ('offer_letter',         'scholarship.docs.type.offer_letter',            True,  'required'),
     # ONE switch over the whole income route engine — see DOCUMENT_AGGREGATES in requirements.py.
-    ('income_proof',         'apply.docs.income_proof.title',            True,  'required'),
+    ('income_proof',         'scholarship.docs.type.income_proof',            True,  'required'),
     # Offered, never blocking. These are why `default_state` had to stop being a boolean.
-    ('water_bill',           'apply.docs.water_bill.title',              False, 'optional'),
-    ('electricity_bill',     'apply.docs.electricity_bill.title',        False, 'optional'),
-    ('statement_of_intent',  'apply.docs.statement_of_intent.title',     False, 'optional'),
-    ('photo',                'apply.docs.photo.title',                   False, 'optional'),
+    ('water_bill',           'scholarship.docs.type.water_bill',              False, 'optional'),
+    ('electricity_bill',     'scholarship.docs.type.electricity_bill',        False, 'optional'),
+    ('statement_of_intent',  'scholarship.docs.type.statement_of_intent',     False, 'optional'),
+    ('photo',                'scholarship.docs.type.photo',                   False, 'optional'),
     # Added in Sprint 3b, and the reason is worth recording: the student Documents tab has been
     # rendering a `school_leaving_cert` card all along, but the Sprint 2 catalogue never listed it
     # and neither did the front end's own `OTHER_OPTIONAL_DOC_TYPES` — three descriptions of "what
     # we offer", all different, none of them complete. It went unnoticed because nothing consumed
     # the catalogue for RENDERING until now. From 3b the catalogue decides which cards appear, so
     # an omission here would have silently withdrawn a document students can upload today.
-    ('school_leaving_cert',  'apply.docs.school_leaving_cert.title',     False, 'optional'),
+    ('school_leaving_cert',  'scholarship.docs.type.school_leaving_cert',     False, 'optional'),
 ]
 
 QUESTIONS = [
     # The four "your story" fields — `details_done` requires all four today.
-    ('aspirations',          'apply.questions.aspirations.title',        False, 'required'),
-    ('plans',                'apply.questions.plans.title',              False, 'required'),
-    ('daily_life',           'apply.questions.daily_life.title',         False, 'required'),
-    ('fears',                'apply.questions.fears.title',              False, 'required'),
+    ('aspirations',          'admin.programme.question.aspirations',        False, 'required'),
+    ('plans',                'admin.programme.question.plans',              False, 'required'),
+    ('daily_life',           'admin.programme.question.daily_life',         False, 'required'),
+    ('fears',                'admin.programme.question.fears',              False, 'required'),
     # `_family_done` — the structured roster. Core: the family/income block, per the owner.
-    ('family_roster',        'apply.questions.family_roster.title',      True,  'required'),
+    ('family_roster',        'admin.programme.question.family_roster',      True,  'required'),
     # `funding_done` — categories + programme_months.
-    ('funding',              'apply.questions.funding.title',            False, 'required'),
+    ('funding',              'admin.programme.question.funding',            False, 'required'),
     # `address_done` — resolved from the profile, asked on the apply form.
-    ('address',             'apply.questions.address.title',             False, 'required'),
+    ('address',             'admin.programme.question.address',             False, 'required'),
     # `consent_done`. Core, and it is worth saying why plainly: consent is a legal requirement,
     # not a programme preference. It appears in the catalogue so an org admin can SEE that the
     # application asks for it and that they cannot remove it — a locked row is information, a
     # missing row is a mystery.
-    ('consent',              'apply.questions.consent.title',            True,  'required'),
+    ('consent',              'admin.programme.question.consent',            True,  'required'),
     # Never blocked anything.
-    ('justification',        'apply.questions.justification.title',      False, 'optional'),
-    ('anything_else',        'apply.questions.anything_else.title',      False, 'optional'),
+    ('justification',        'admin.programme.question.justification',      False, 'optional'),
+    ('anything_else',        'admin.programme.question.anything_else',      False, 'optional'),
 ]
 
 
