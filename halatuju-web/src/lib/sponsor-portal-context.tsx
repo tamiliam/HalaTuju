@@ -43,7 +43,13 @@ interface SponsorPortalValue {
   refreshWallet: () => Promise<void>
 }
 
-const SponsorPortalContext = createContext<SponsorPortalValue | null>(null)
+/**
+ * Exported so a HARNESS can supply the value — the design sandbox mounts real portal pages
+ * against fixtures this way (Layer 1 F1), and jsdom tests mock the hook directly. Product code
+ * must keep using `useSponsorPortal()`; providing this context anywhere outside a harness would
+ * mean a second source of portal data.
+ */
+export const SponsorPortalContext = createContext<SponsorPortalValue | null>(null)
 
 /**
  * Fetches the approved sponsor's portal data ONCE (pool, wallet, grad messages, referrals)

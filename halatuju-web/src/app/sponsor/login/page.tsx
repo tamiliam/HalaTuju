@@ -117,7 +117,7 @@ export default function SponsorLoginPage() {
                   <input
                     type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
+                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
@@ -126,13 +126,13 @@ export default function SponsorLoginPage() {
                   <input
                     type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('sponsorAuth.enterPassword')}
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
+                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <button
                   type="submit" disabled={loading || !email || !password}
-                  className="w-full bg-info-600 text-white py-3 rounded-lg font-medium hover:bg-info-700 transition-colors disabled:opacity-50"
+                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
                 >
                   {loading ? t('sponsorAuth.signingIn') : t('sponsorAuth.signIn')}
                 </button>
@@ -183,12 +183,12 @@ export default function SponsorLoginPage() {
                 <input
                   type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   required
                 />
                 <button
                   type="submit" disabled={loading || !email}
-                  className="w-full bg-info-600 text-white py-3 rounded-lg font-medium hover:bg-info-700 transition-colors disabled:opacity-50"
+                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
                 >
                   {loading ? t('sponsorAuth.sending') : t('sponsorAuth.sendResetLink')}
                 </button>

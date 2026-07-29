@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## Light and dark, and a foundation an organisation's own colours can sit on — 2026-07-29
+
+Sprint F1 of the themes roadmap. The colour vocabulary, the light/dark mechanism, and the sponsor
+portal converted onto it. **Nothing is reachable yet** — the switch stays hidden until every surface
+is converted, so nobody can put half the product into a mode it has not been painted for.
+
+### The approach, in one sentence
+Colours become names with meanings — *ground*, *positive*, *information*, *caution*, *critical* —
+and dark mode is the same set read from the other end. It is one reversal rather than several
+hundred separate decisions, which is what makes it possible to finish rather than merely start.
+
+Light mode is unchanged, to the pixel. That is not a hope: the values were generated from the
+colours already in use rather than retyped.
+
+### What looking at it in a browser found, which the tests could not
+**The "Fully fund this student" button was being treated as an information colour rather than as
+our brand.** In dark mode it came out pale with white text on it — hard to read. But the deeper
+problem was the classification: the sponsor portal had ninety blues and exactly one that followed
+the brand, so an organisation setting its own colour would have changed almost nothing on that
+page. Filled buttons and badges now carry the brand, which is both easier to read and the point of
+the exercise.
+
+**The giving donut kept its colours in a place no check could see.** A ring chart cannot be built
+from ordinary styling, so its three colours sat as raw values inside the page and stayed light while
+everything around them inverted. Fixed, and the guard widened so the next one is caught rather than
+noticed.
+
+### Also
+- A "graduated" badge was a colour outside the vocabulary, and the only one that would have failed
+  to invert. It is now the strongest weight of the "good outcome" colour — the one deliberate visual
+  change in this sprint.
+- The same status-colour list existed in two files, one carrying a note saying it mirrored the
+  other. There is one now.
+- Reviewers and designers can flip between light and dark on any sandbox screen, without a login.
+
 ## The student's Documents tab shows what the programme actually asks for — 2026-07-29
 
 Sprint 3b of the configuration-layers roadmap, and the half that a student can see. Last sprint the

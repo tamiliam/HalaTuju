@@ -13,7 +13,10 @@
  */
 import type { ReactNode } from 'react'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
+import SponsorStudentsPage from '@/app/sponsor/(portal)/students/page'
+import { SponsorPortalContext } from '@/lib/sponsor-portal-context'
 import { sandboxApplication, sandboxApplicationLeanProgramme } from './fixtures/scholarship'
+import { sandboxPool } from './fixtures/sponsor'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
 
@@ -48,7 +51,39 @@ export const SURFACES: Surface[] = [
       <ScholarshipDocuments token={SANDBOX_TOKEN} app={sandboxApplicationLeanProgramme} />
     ),
   },
+  {
+    slug: 'sponsor-browse',
+    title: 'Sponsor — browse students',
+    note:
+      'The sponsor’s discovery grid, and the FIRST surface converted onto the theme tokens '
+      + '(Layer 1 F1). Five cards chosen to put every conditional state on screen at once: '
+      + 'verified against unverified enrolment, artwork against none, fully funded against '
+      + 'part-funded against untouched, a written blurb against an empty one, and a reporting '
+      + 'date against a missing one. Check it in BOTH modes — this is the surface the sprint '
+      + 'claims is correct in dark.',
+    render: () => (
+      <WithSponsorPortal>
+        <SponsorStudentsPage />
+      </WithSponsorPortal>
+    ),
+  },
 ]
+
+/**
+ * The portal pages read their data from a context rather than props, so the sandbox supplies that
+ * context with fixtures instead of the network. `SponsorPortalContext` is exported for exactly this
+ * — the page below is the REAL one, unmodified.
+ *
+ * Only the fields this page reads are filled. Casting a partial value is deliberate: filling
+ * fourteen unrelated fields with nulls would suggest they are part of what this surface shows.
+ */
+function WithSponsorPortal({ children }: { children: ReactNode }) {
+  return (
+    <SponsorPortalContext.Provider value={{ pool: sandboxPool } as never}>
+      {children}
+    </SponsorPortalContext.Provider>
+  )
+}
 
 export function surfaceBySlug(slug: string): Surface | undefined {
   return SURFACES.find((s) => s.slug === slug)

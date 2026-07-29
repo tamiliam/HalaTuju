@@ -123,7 +123,7 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
           🛡️ {t('sponsorPool.verified')}
         </span>
         {s.enrolment_verified && (
-          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-info-600/90 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary-600/90 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm">
             ✓ {t('sponsorPool.enrolmentVerified')}
           </span>
         )}
@@ -164,7 +164,7 @@ function PoolCard({ s }: { s: SponsorPoolCard }) {
             {s.award_amount ? <span className="text-xl font-bold text-ground-900">RM{rmWhole(s.award_amount)}</span> : <span />}
             {s.funded
               ? <span className="rounded-md bg-ground-100 px-3 py-2 text-xs font-semibold text-ground-500">✓ {t('sponsorPool.funded')}</span>
-              : <span className="rounded-md bg-info-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>}
+              : <span className="rounded-md bg-primary-600 px-3 py-2 text-xs font-semibold text-white">{t('sponsorPool.fullyFund')}</span>}
           </div>
         </div>
       </div>

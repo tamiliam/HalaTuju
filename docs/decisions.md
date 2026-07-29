@@ -6574,3 +6574,56 @@ Hence the comment, which is load-bearing rather than decorative.
 **Revisit if:** a third dimension appears (a per-cohort rule, say). Three conditions inline stops
 being readable, and the right answer then is a named predicate — not a merge.
 
+## The theme ramps keep Tailwind's NUMBERS; dark is the light set reversed — Layer 1 F1, 2026-07-29
+**Decision:** tokens are `--ground-0…1000` and four tone ramps (`positive`/`info`/`caution`/
+`critical`) at `50…900`, each mapping value-for-value onto Tailwind's own scales. Migration is a
+family rename (`bg-gray-50` → `bg-ground-50`). The dark set is the light set read from the other end
+(0↔1000, 50↔900, 100↔800, 200↔700, 300↔600, 400↔500).
+**Alternatives considered:** hand-authored semantic names (`--surface-card`, `--text-muted`), which
+is the conventional design-system answer; and Tailwind's `dark:` variant.
+**Rationale:** the vocabulary was EXTRACTED from measurement, not designed — 93% of 1,963 chromatic
+utilities already belong to these four families, twelve property/shade pairs cover 88% of them, and
+`InfoBox.tsx` names the convention outright. Keeping the position gives three things semantic names
+cannot: light mode is pixel-identical by construction (values generated from `tailwindcss/colors`,
+never typed); ~5,500 utilities convert mechanically; and nobody has to decide 3,681 times whether a
+given white thing is a card, a modal, a header or a row. Reversal makes the dark set impossible to
+half-do — it is one relationship, pinned by a test, rather than 52 judgements. `dark:` was rejected
+outright: it doubles every class across 160 files, hard-codes a two-theme world, and cannot express
+a tenant tint, which is the whole point.
+**Trade-offs:** `ground-600` says less at a glance than `text-muted`, and the reversal is a starting
+point that needs tuning where saturated mid-stops read badly. Tuning is one CSS file.
+**Revisit if:** a surface needs a colour relationship the ramps cannot express, or the tuning pass
+ends up overriding so many stops that the reversal stops being the real rule.
+
+## A filled control the user ACTS on carries the brand; a coloured surface that INFORMS carries the tone — Layer 1 F1, 2026-07-29
+**Decision:** filled, high-emphasis interactive elements (`bg-*-600` + `text-white`: primary buttons,
+status badges) use the tenant `primary-*` ramp. Pale informational surfaces (`bg-*-50`,
+`text-*-700`, notice boxes) keep the platform tone.
+**Alternatives considered:** leaving the codemod's mechanical `blue → info` mapping in place.
+**Rationale:** two problems, one cause. The mapping was right in each individual case and wrong
+about the page — a primary CTA is brand intent, not "information". Left as a tone it reversed to a
+pale blue with white text in dark mode, AND it meant a tenant's colour would never reach the button
+on a surface that had 90 blues and exactly ONE brand-aware colour. Tenant theming that does not
+reach the buttons is not tenant theming.
+**Trade-offs:** it is a judgement call per use, so every repaint sprint owes a review pass the
+codemod cannot do. Accepted — that is the 12% the tool was never going to get right.
+**Revisit if:** a tenant's brand colour turns out to carry poor contrast as a filled control, which
+is what A2's contrast gate exists to refuse.
+
+## The theme is stored on the account but READ from the device first — Layer 1 F1, 2026-07-29
+**Decision:** a person's Light/Dark/Auto choice belongs to their account (owner ruling), but a
+render-blocking script in `<head>` reads a device-local copy before first paint, and the account
+reconciles afterwards. `Auto` follows `prefers-color-scheme` rather than a clock we own.
+**Alternatives considered:** resolving the mode in React from the session; storing it device-only;
+implementing our own sunset schedule.
+**Rationale:** the account value arrives with the session, which is after first paint — resolve it
+in React and a dark user watches every page turn white then dark. Device-only was rejected because
+someone who needs dark for accessibility needs it on every machine. Our own clock would need a
+cutover hour and a timezone and would be wrong for anyone travelling or on nights, while fighting
+the schedule their OS already applies.
+**Trade-offs:** a render-blocking script (~700 bytes, cached) and the Next lint rule suppressed at
+that line with the reason beside it; plus one duplicated set of literals between the script and
+`lib/theme.ts`, pinned by a test that reads the file.
+**Revisit if:** the account write path lands and the reconciliation proves visible — at which point
+the cache-first read is still right, and only the reconcile timing is in question.
+

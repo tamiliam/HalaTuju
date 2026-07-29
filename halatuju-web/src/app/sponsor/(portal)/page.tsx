@@ -29,9 +29,15 @@ export default function MyGivingPage() {
   const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0)
   const c1 = pct(committed)
   const c2 = c1 + pct(completed)
+  // ⚠ COLOUR IN AN INLINE STYLE, WHICH NO TAILWIND CLASS SCAN CAN SEE. A conic-gradient cannot be
+  // expressed as utilities, so these read the theme variables directly — the same values the
+  // classes resolve to, so the donut inverts with everything else instead of staying a light-mode
+  // island. Found in the Layer 1 F1 browser pass; the palette guard now scans for bare hex too.
+  const tone = (name: string) => `rgb(var(--${name}))`
   const donut = total > 0
-    ? `conic-gradient(#2563eb 0 ${c1}%, #22c55e ${c1}% ${c2}%, #e5e7eb ${c2}% 100%)`
-    : '#e5e7eb'
+    ? `conic-gradient(${tone('info-600')} 0 ${c1}%, ${tone('positive-500')} ${c1}% ${c2}%, `
+      + `${tone('ground-200')} ${c2}% 100%)`
+    : tone('ground-200')
 
   return (
     <div className="space-y-8">
@@ -46,7 +52,7 @@ export default function MyGivingPage() {
             </span>
           </div>
         </div>
-        <Link href="/sponsor/students" className="rounded-xl bg-info-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-info-700 whitespace-nowrap">
+        <Link href="/sponsor/students" className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 whitespace-nowrap">
           {t('sponsorPortal.nav.support')} →
         </Link>
       </div>
@@ -103,9 +109,9 @@ export default function MyGivingPage() {
               </div>
             </div>
             <ul className="text-sm space-y-2 flex-1">
-              <LegendRow color="#2563eb" label={t('sponsorPortal.impact.committed')} amount={committed} />
-              <LegendRow color="#22c55e" label={t('sponsorPortal.impact.completed')} amount={completed} />
-              <LegendRow color="#e5e7eb" label={t('sponsorPortal.impact.available')} amount={available} />
+              <LegendRow color={tone('info-600')} label={t('sponsorPortal.impact.committed')} amount={committed} />
+              <LegendRow color={tone('positive-500')} label={t('sponsorPortal.impact.completed')} amount={completed} />
+              <LegendRow color={tone('ground-200')} label={t('sponsorPortal.impact.available')} amount={available} />
             </ul>
           </div>
           <p className="text-[11px] text-ground-400 mt-3 leading-relaxed">{t('sponsorPortal.impact.balanceNote')}</p>
@@ -176,7 +182,7 @@ export default function MyGivingPage() {
       ) : (
         <div className="rounded-2xl border border-dashed bg-ground-0 px-6 py-10 text-center">
           <p className="text-sm text-ground-500">{t('sponsorPortal.myStudents.none')}</p>
-          <Link href="/sponsor/students" className="inline-block mt-3 rounded-xl bg-info-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-info-700">
+          <Link href="/sponsor/students" className="inline-block mt-3 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
             {t('sponsorPortal.nav.support')} →
           </Link>
         </div>

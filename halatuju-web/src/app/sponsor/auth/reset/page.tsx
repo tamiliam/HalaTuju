@@ -66,7 +66,7 @@ export default function SponsorResetPasswordPage() {
     router.replace('/sponsor')
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
+  const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-12">
@@ -121,7 +121,7 @@ export default function SponsorResetPasswordPage() {
                   )}
                 </div>
                 <button type="submit" disabled={!canSave}
-                  className="w-full bg-info-600 text-white py-3 rounded-lg font-medium hover:bg-info-700 transition-colors disabled:opacity-50">
+                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50">
                   {saving ? t('sponsorAuth.resetSaving') : t('sponsorAuth.resetSave')}
                 </button>
               </form>

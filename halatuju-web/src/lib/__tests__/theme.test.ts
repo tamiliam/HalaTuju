@@ -144,6 +144,25 @@ describe('the sponsor portal is fully converted', () => {
     expect(offenders).toEqual([])
   })
 
+
+  it('has no raw hex colour either — the half a class scan cannot see', () => {
+    // Found in the F1 browser pass: the giving donut is a conic-gradient, which cannot be a
+    // utility, so it carried `#2563eb` / `#22c55e` / `#e5e7eb` in an inline style. It stayed a
+    // light-mode island in dark and NOTHING caught it — the class scan above looks only at
+    // Tailwind class names. Colour hides in inline styles, SVG fills and lib constants.
+    //
+    // The allowlist is Google's own four brand hexes in the sign-in button's logo. A third-party
+    // mark must NOT follow our theme; recolouring someone else's logo is a misuse of it.
+    const GOOGLE_LOGO = new Set(['#4285F4', '#34A853', '#FBBC05', '#EA4335'])
+    const offenders: string[] = []
+    for (const f of files) {
+      for (const hex of read(f).match(/#[0-9a-fA-F]{6}/g) ?? []) {
+        if (!GOOGLE_LOGO.has(hex.toUpperCase())) offenders.push(`${f}: ${hex}`)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
   it('keeps text-white literal — it must NOT invert with the ground', () => {
     // 214 uses across the product, nearly all on a coloured or dark surface: a button label, a
     // filled badge. Mapped onto --ground-0 they would turn black in dark mode. The codemod converts
