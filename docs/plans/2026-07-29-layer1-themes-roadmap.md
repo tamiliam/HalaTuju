@@ -153,23 +153,64 @@ which the owner has now confirmed is in scope.
 `branding-context`. `brandRamp()` already derives ten shades from one hex, so the derivation exists.
 **Acceptance.** Two organisations, two colours, no leakage; the fence unchanged. *medium.*
 
-#### A2 — The colour editor, and the contrast gate
+#### A2 — The colour picker, and the contrast gate
 **Goal.** An `org_admin` picks a colour, sees it immediately, and **cannot ship an unreadable one**.
+
+**⚠ THE STAGING DECISION, AND THE ONE THING THAT MAKES IT SAFE.** The owner's intent (2026-07-29) is
+a **full token set** eventually; the near-term build is a **single-colour picker**, expanded "when
+there is a real ask". That is the right call — but only if the small version does not foreclose the
+large one, and there is an obvious way to build it that does:
+
+> **Store the TOKEN SET from day one. The picker is a UI that WRITES it.**
+> A picker that stores `brand_hex` and derives the ramp at serve time is smaller by one table column
+> and makes the full palette a migration — two storage shapes, a backfill, and every reader taught
+> both. A picker that derives ten shades in the editor and saves them AS TOKENS makes the full
+> palette a **second editor over the same storage**: new screen, no migration, no second reader.
+
+**And it is the right design on its own merits, which is why it is not a placeholder.** A tenant
+approved *those* colours and they passed *that* contrast check. If the resolved values were derived
+per request, improving `brandRamp()` would silently restyle every tenant's product without anyone
+asking — the same reasoning behind snapshotting an application at submit and freezing a published
+terms version. Storing what was approved is correct here regardless of what comes next.
+
+**The contrast gate follows the same rule:** check **token PAIRS**, not "is this hex safe". A checker
+written against a hex has to be rewritten when tokens arrive; one written against the pairs actually
+rendered simply gets more pairs. Deterministic relative-luminance maths, tested, **blocking at save —
+it refuses, it does not warn.** A tenant will pick a colour that renders 4:1 against white; a warning
+is dismissed and a student cannot read the page.
+
 **Prerequisite.** Stitch prototype approved before any page code (house rule).
-**Design calls.**
-- **The preview surface already exists.** The design sandbox mounts real components against fixtures —
-  a tenant previews their colour on genuine screens without touching live data.
-- **The contrast check REFUSES, it does not warn.** A tenant will pick a pretty colour that renders
-  4:1 against white; a warning gets dismissed and a student cannot read the page. Deterministic
-  relative-luminance maths over the pairs we actually render, tested, blocking at save.
-- **A tenant tints the brand and the ground. The tones stay ours.** Owner ruling, enforced in A1's
-  serializer as well as here — a UI-only guard is not a guard.
+
+**Also settled.**
+- **The preview surface already exists.** The design sandbox mounts real components against fixtures,
+  so a tenant previews their colour on genuine screens without touching live data.
+- **A tenant tints the brand and the ground; the tones stay ours.** Owner ruling, enforced in A1's
+  serializer as well as in the UI — a UI-only guard is not a guard.
+
 **Complexity: medium-high.**
 
 #### A3 — Draft, preview, publish, revert
 **Goal.** Changing a colour is not a live experiment on applicants.
 **Scope.** Draft → sandbox preview → publish, mirroring the sponsor-terms shape already in the
 codebase; an `AUDIT` line per publish; one-click revert. *medium.*
+
+#### A4 — The full palette — DEFERRED, WITH A WRITTEN TRIGGER
+**Not scheduled.** The owner's stated intent, held until there is a real ask.
+
+**⚠ THE TRIGGER, written down because this project has watched an unwritten one fail to fire.** The
+nav/IA N3a trigger had *already fired* before anyone noticed, because "when there is a second
+organisation" lived in prose nobody re-read. So, explicitly — build A4 when **any one** of these is
+true:
+
+1. A tenant asks for a colour the ramp cannot produce (a distinct accent, a different surface tint).
+2. A tenant's brand cannot pass the contrast gate as a single hex, and the honest fix is per-token
+   control rather than telling them to pick a different brand colour.
+3. A second tenant onboards with a designer who asks what they can change, and the answer "one
+   colour" ends the conversation badly.
+
+**What A4 is NOT allowed to be, in the meantime:** a `tokens` column that nothing writes, a disabled
+"advanced" tab, or a reserved key. The forward-compatibility is entirely in A2's storage shape, which
+is justified above on its own merits. See the standing constraint in the Layer 0 roadmap.
 
 ---
 
@@ -204,10 +245,11 @@ dark. Arc A alone gives a tenant colour where `primary-N` already reaches. They 
 
 ## Open, and not mine to default
 
-1. **Does a tenant get a THEME (many tokens) or a COLOUR (one hex, ramp derived)?** A2 assumes the
-   latter — one hex, `brandRamp()` derives ten shades, contrast checked once. "Customise their
-   surfaces however they want" could mean more. More is a bigger arc and a much bigger contrast
-   surface. **Ask before A2 is scoped.**
+1. **✅ ANSWERED 2026-07-29 — a full token set eventually, a single-colour picker now.** Owner:
+   *"I meant full set of tokens. But can we start with picker and move to the full set? … we build
+   picker; stabilise it, and move to the full palette when there is a real ask."* Reflected in A2
+   (which stores tokens from the first day so the expansion is a screen, not a migration) and A4
+   (deferred, with a written trigger).
 2. **Where does an explicit Light/Dark live — the device or the account?** `uiPrefs.ts` is device-local
    today. Recommend the account, so someone who needs dark has it on every machine. Decide at F1.
 3. **Sprint 5 of Layer 0 (the configuration screen) and A2 (the colour editor) are the same screen for
