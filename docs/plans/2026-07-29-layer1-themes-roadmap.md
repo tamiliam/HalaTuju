@@ -250,8 +250,27 @@ dark. Arc A alone gives a tenant colour where `primary-N` already reaches. They 
    picker; stabilise it, and move to the full palette when there is a real ask."* Reflected in A2
    (which stores tokens from the first day so the expansion is a screen, not a migration) and A4
    (deferred, with a written trigger).
-2. **Where does an explicit Light/Dark live — the device or the account?** `uiPrefs.ts` is device-local
-   today. Recommend the account, so someone who needs dark has it on every machine. Decide at F1.
+2. **✅ ANSWERED 2026-07-29 — the account.** Owner: *"Light/dark choice would be under the personal
+   account settings/profile."* So it is a PERSON's setting stored against their account, and it
+   follows them between machines — which is the outcome that matters for anyone who needs dark for
+   accessibility rather than taste.
+   **⚠ THREE THINGS THIS PULLS IN THAT ARE EASY TO COST AT ZERO. Size F1 with them, not without.**
+   - **There are FOUR account surfaces, not one**, because there are four kinds of person:
+     `/settings` and `/profile` (student), `/admin/profile` (every console role),
+     `/sponsor/(portal)/account` (sponsor). The control has to appear on each, and the value has to
+     persist against three different identity models — `StudentProfile`, `PartnerAdmin`, `Sponsor`.
+     A single shared control component, three small write paths.
+   - **Account-stored means a FLASH OF THE WRONG THEME unless it is handled deliberately.** The value
+     arrives with the session, which is after first paint, so a dark user would see a white page and
+     then watch it turn — on every navigation. The fix is standard and must be in the sprint from the
+     start rather than patched later: **the account is the source of truth, mirrored to
+     device-local storage for an instant first paint**; read local synchronously before paint,
+     reconcile with the account when the session resolves. Getting this wrong is not subtle — it is
+     visible on every page load, and it is the single most likely thing to be discovered late.
+   - **An anonymous visitor has no account.** The public course guide is browsable logged-out, so
+     there the answer is Auto (the device) with any explicit toggle held device-local until they sign
+     in, at which point their account value wins. State it, or the first person to notice will report
+     it as a bug.
 3. **Sprint 5 of Layer 0 (the configuration screen) and A2 (the colour editor) are the same screen for
    the same person.** Consider whether they should be one surface with two tabs rather than two entries
    in the menu. Worth deciding before either is built.
