@@ -23,7 +23,18 @@ export function SandboxThemeToggle() {
 
   // Read after mount, never during render: the server has no localStorage, and reading it in
   // render would make the first client render disagree with the server's HTML.
-  useEffect(() => { setMode(readStoredMode()) }, [])
+  //
+  // ⚠ IT ALSO APPLIES, not just reads. The before-paint boot script is gated on the theme flag —
+  // which is unset everywhere except a deliberate test — so on a sandbox load there is no
+  // `data-theme` on <html> at all and the page starts light. Without this the toggle would show
+  // "Dark" while the page sat light until you clicked something. A brief light-first flash is the
+  // right trade here: the sandbox is a design tool, and the alternative is shipping the boot
+  // script to real visitors before their surfaces are painted for it.
+  useEffect(() => {
+    const stored = readStoredMode()
+    setMode(stored)
+    applyTheme(resolveTheme(stored, devicePrefersDark()))
+  }, [])
 
   // On `auto`, the device can change its mind mid-session — that is the whole point of auto, and
   // the sunset flip is the case this arc has to survive without losing a half-filled form.

@@ -4,7 +4,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { ReferralCapture } from '@/components/ReferralCapture'
 import { HtmlLang } from '@/components/HtmlLang'
-import { THEME_BOOT_SRC } from '@/lib/theme'
+import { THEME_BOOT_SRC, themeSwitchEnabled } from '@/lib/theme'
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -74,17 +74,31 @@ export default function RootLayout({
           purpose: the account's copy of Light/Dark/Auto arrives with the session, which is after
           first paint, so resolving it in React would make a dark user watch every page turn white
           then dark. See public/theme-boot.js — it sets one attribute and globals.css does the rest.
+
+          ⚠⚠ THE FLAG GATES THE SCRIPT ITSELF, AND IT HAS TO. F1 shipped this tag unconditionally
+          while claiming the feature was "behind a flag" — but the flag only hid the CONTROL. The
+          script still ran on every page, and its default is `auto`, which follows the device. So
+          every visitor whose computer is set to dark got a dark product the moment F1 deployed,
+          across surfaces no sprint has repainted yet. Reported from the live sponsor page.
+
+          With the flag unset there is NO script, therefore no `data-theme` attribute, therefore
+          `:root[data-theme='dark']` never matches and every page is light — the mechanism is
+          completely inert rather than merely invisible. That is what "ships dark" has to mean for
+          anything that paints. A flag that gates only the affordance gates nothing.
         */}
-        {/*
-          The synchronous-script rule is suppressed on the next line as A DELIBERATE EXCEPTION, not
-          an oversight. That rule exists to stop render-blocking scripts delaying first paint — and
-          here, delaying first paint is precisely the requirement: the attribute has to be on <html>
-          BEFORE the first pixel, or a dark user sees a white flash on every navigation. Both
-          `async` and `defer` run after paint and would put the flash straight back. The cost is one
-          ~700-byte same-origin file that caches after the first request.
-        */}
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-        <script src={THEME_BOOT_SRC} />
+        {themeSwitchEnabled() && (
+          <>
+            {/*
+              The synchronous-script rule is suppressed below as A DELIBERATE EXCEPTION, not an
+              oversight. That rule exists to stop render-blocking scripts delaying first paint —
+              and here, delaying first paint is precisely the requirement: the attribute has to be
+              on <html> BEFORE the first pixel, or a dark user sees a white flash on every
+              navigation. Both `async` and `defer` run after paint and would put it straight back.
+            */}
+            {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+            <script src={THEME_BOOT_SRC} />
+          </>
+        )}
       </head>
       <body className="font-sans">
         <Providers>

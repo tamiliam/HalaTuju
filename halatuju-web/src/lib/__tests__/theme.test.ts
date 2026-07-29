@@ -61,6 +61,25 @@ describe('the before-paint boot script', () => {
     expect(boot).toContain('catch')
   })
 
+  it('IS GATED ON THE FLAG — with the switch off, nothing paints a theme at all', () => {
+    // ⚠ THE F1 DEFECT, PINNED. F1 shipped this tag unconditionally and called the feature
+    // "flag-gated", but the flag only hid the CONTROL. The script still ran everywhere, and its
+    // default is `auto` — which follows the device — so every visitor whose computer was set to
+    // dark got a dark product across surfaces no sprint had repainted. It was reported from the
+    // live sponsor page, not caught here.
+    //
+    // With the flag off there must be NO script, so no `data-theme` attribute exists, so the dark
+    // ramp cannot match and every page is light. Inert, not merely invisible.
+    const layout = read('src/app/layout.tsx')
+    const head = layout.slice(layout.indexOf('<head>'), layout.indexOf('</head>'))
+    const tagAt = head.indexOf('<script')
+    expect(tagAt).toBeGreaterThan(-1)
+    // The guard has to sit BEFORE the tag and wrap it — not merely appear somewhere in the file.
+    const guardAt = head.indexOf('themeSwitchEnabled()')
+    expect(guardAt).toBeGreaterThan(-1)
+    expect(guardAt).toBeLessThan(tagAt)
+  })
+
   it('is loaded render-blocking from the head, not deferred and not in the body', () => {
     // If this ever becomes `defer`, `async`, or moves into <body>, the flash comes back and no
     // other test would notice — the page still works, it just looks wrong for a moment on every
@@ -74,6 +93,14 @@ describe('the before-paint boot script', () => {
     const tag = head.slice(head.indexOf('<script'), head.indexOf('/>', head.indexOf('<script')) + 2)
     expect(tag).toContain('THEME_BOOT_SRC')
     expect(tag).not.toMatch(/\bdefer\b|\basync\b/)
+  })
+})
+
+describe('the switch is off by default', () => {
+  it('the flag is unset in the environment the tests run in', () => {
+    // If this ever fails, someone has turned the theme switch on globally — which, before F6,
+    // means an unpainted surface can be put into dark mode by a visitor's own OS setting.
+    expect(process.env.NEXT_PUBLIC_THEME_SWITCH).not.toBe('1')
   })
 })
 
