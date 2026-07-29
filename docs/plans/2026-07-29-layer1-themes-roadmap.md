@@ -79,36 +79,33 @@ half-repainted dark mode.
 
 ### Arc F — the foundation (dark mode, and surfaces ready to be tinted)
 
-#### F1 — The vocabulary, the switch, and one surface proven end to end
-**Goal.** A person can pick Light / Dark / Auto, and the sponsor portal is completely correct in both.
-Everything else is untouched and unaffected.
+#### ✅ F1 — SHIPPED 2026-07-29 (`8cf6251c` → `e9d62b8c`) — vocabulary, mechanism, sponsor portal
 
-**Why the switch is FIRST and not last.** The superseded plan built the switch in sprint 12. That
-means repainting six surfaces before anything can prove the vocabulary survives a mode flip — and a
-token set that is wrong in dark is discovered after 1,900 edits rather than after 300. The switch is
-the falsifier; it belongs at the front, on the smallest surface.
+Retro `docs/retrospective-2026-07-29-layer1-f1-tokens.md`; decisions ×3; lessons ×4. NO migration.
+1153 jest / 77 suites. **Both modes reviewed in a browser on the real page.**
 
-**Scope.** `globals.css` (light + dark token sets), `tailwind.config.ts`, a `data-theme` root
-attribute, `src/lib/uiPrefs.ts` (Light/Dark/Auto), a theme switcher, the tone codemod as a reusable
-script, and the **sponsor portal repaint** (21 files — smallest surface, worst ratio at 307 chromatic
-against 1 brand use, and the one place the vocabulary cannot hide behind existing brand awareness).
+**⚠ THE SWITCH A PERSON CLICKS, AND ITS ACCOUNT STORAGE, ARE SPLIT OUT — call it F1b.** Four
+settings surfaces (`/profile`, `/settings`, `/admin/profile`, `/sponsor/account`) across three
+identity models (`StudentProfile`, `PartnerAdmin`, `Sponsor`) plus a migration. Bolting it onto F1
+made a sprint nobody could review in one sitting, and nothing needs it until F7. The mechanism,
+the storage cache and the before-paint script all exist; only the control and the write path do not.
 
-**Design calls.**
-- **`data-theme` + CSS variables, never Tailwind's `dark:`.** `dark:` doubles every class across 160
-  files, hard-codes a two-theme world, and cannot express a tenant tint — which is the whole point.
-- **Auto = follow the device (`prefers-color-scheme`), NOT a clock we own.** macOS and Windows both
-  already flip at the user's local sunset; following the device inherits a schedule that is already
-  location-aware and already theirs. Our own would need a cutover hour and a timezone, and would be
-  wrong for anyone travelling or on a night shift.
-- **A theme may never write `--brand-*`, and a tenant may never write the semantic tones.** Owner
-  ruling. Enforced by a test in the posture of `brand-guard.test.ts`, not by a comment.
-- **Ships behind a flag.** The switcher is unreachable until F7.
+**⚠ TWO DEFECTS FOUND BY LOOKING, NEITHER FINDABLE BY A TEST I WOULD HAVE WRITTEN.** Both are
+recorded in full in the retro and both generalise to every remaining repaint sprint:
+1. **The codemod classifies mechanically and can be semantically wrong.** `blue → info` was right in
+   every individual case and wrong about the page — the primary CTA is BRAND intent. Left as a tone
+   it reversed to pale-blue-under-white in dark, **and** a tenant's colour would never have reached
+   it (90 blues, 1 brand-aware colour on that surface). **Rule for F2a–F6: a filled control the user
+   ACTS on carries the brand; a coloured surface that INFORMS carries the tone.** Budget review time.
+2. **Colour hides where a class scan cannot see it** — the giving donut carried raw hex in an inline
+   `conic-gradient`. The guard now refuses a bare hex. **F6 in particular has ~78 more of these**:
+   `courseBadges.ts`, `applicationStatus.ts`, `requestStatus.ts`, `paymentStatus.ts` return Tailwind
+   classes as STRINGS from TypeScript, which no `.tsx` codemod will ever touch.
 
-**Acceptance.** The sponsor portal is correct in both modes, reviewed in a browser on the sandbox.
-**A mid-session flip loses no state** — a half-filled form survives the sunset, because the repaint is
-a variable swap under the same DOM and never a re-render. A test asserts the brand and tone guards.
-
-**Complexity: high** (~30 files). It is the only sprint here that is hard for a reason other than volume.
+**▶ CARRY INTO F2a:** a **tone-tuning pass** — reversal handles the ground well, saturated mid-stops
+want an eye; best done once two or three surfaces are converted. And the sandbox now has a
+**Light/Dark/Auto toggle** plus a pattern for mounting a context-driven page against fixtures
+(`SponsorPortalContext` is exported for harness use) — every later repaint sprint reviews this way.
 
 #### F2a / F2b — Shared components
 **Goal.** The 52 components everything else mounts, split into two reviewable halves (student-journey
