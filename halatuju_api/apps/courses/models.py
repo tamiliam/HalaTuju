@@ -642,6 +642,20 @@ class StudentProfile(models.Model):
     # Identity (Lentera longitudinal tracking)
     nric = models.CharField(max_length=14, blank=True, default='',
                             help_text="NRIC: XXXXXX-XX-XXXX")
+    # ⚠ The help_text below is now UNDERSTATED and is left alone only because changing it costs
+    # a migration for prose. Since 2026-07-29 there are TWO routes to this lock: an admin at
+    # verify-&-accept (as described), AND the document check — `vision._lock_nric_if_confirmed`
+    # sets it with no human in the loop when a GENUINE MyKad's name and number both match what
+    # the student typed. The rule has one home: `apps.scholarship.identity`.
+    #
+    # ⚠ THIS FLAG IS A PROPERTY OF THE PROFILE; THE ONLY WAY TO UNSET IT IS ADDRESSED BY
+    # APPLICATION (`AdminReleaseNricLockView`, super-only). That works because both routes above
+    # require an application, so a locked profile always has one — 0 exceptions on production
+    # against 643 profiles that have no application at all. **A new route that locks a profile
+    # without an application would make that student's lock permanent and unreachable.** The
+    # likely candidate is confirming a course-selector identity for Lentera's longitudinal
+    # tracking, which is what this column was originally added for. Read that endpoint's
+    # docstring before adding one.
     nric_verified = models.BooleanField(
         default=False,
         help_text="True once an admin verifies the NRIC against the uploaded MyKad "

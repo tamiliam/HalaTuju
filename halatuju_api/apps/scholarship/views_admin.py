@@ -1088,6 +1088,22 @@ class AdminReleaseNricLockView(_AdminBase):
     The reason is mandatory and goes to the audit log. There is no audit TABLE in this system
     (``audit.py`` is verdict-override metrics), so the structured log is the record — which is
     also why this cannot be done with a direct database write.
+
+    ⚠ **This reaches the lock THROUGH an application, while the lock itself lives on the
+    PROFILE.** That is safe only because both routes to a lock require an application — reading
+    an uploaded MyKad (the document hangs off one) and verify-&-accept (a bursary review). So a
+    locked profile always has an application to address it by, and production agrees: 0 locked
+    profiles without one, against 643 course-selector profiles that have no application at all.
+
+    **If you ever add a route that locks a profile WITHOUT an application** — the obvious
+    candidate is confirming a course-selector identity for Lentera's longitudinal tracking,
+    which is what ``nric_verified`` was originally added for — then this endpoint can no longer
+    reach it: there is no ``pk`` to put in the URL, and that student's lock becomes permanent
+    with no escape. Re-address it by profile at that point, and note it widens the reachable set
+    from 143 records to 786, which is why it is not built that way today.
+
+    The note sits here rather than in a debt register on purpose: nothing is owed while the
+    invariant holds, and this is where somebody would be standing when they broke it.
     """
     def post(self, request, pk):
         admin = self.get_admin(request)
