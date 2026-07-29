@@ -1063,6 +1063,64 @@ class AdminSponsorPendingCountView(_AdminBase):
         return Response({'count': Sponsor.objects.filter(status='pending').count()})
 
 
+class AdminReleaseNricLockView(_AdminBase):
+    """POST .../applications/<pk>/release-nric-lock/ {reason} — the break-glass. SUPER ONLY.
+
+    An IC lock is one-way by design: once the uploaded MyKad confirms the typed number, the
+    student can never change it and neither can an admin. That is right, and it has one failure
+    mode with a victim who did nothing wrong.
+
+    Somebody uploads a card that is not theirs — a sibling's, say — and types that card's name
+    and number so the two agree. It locks. Their own results slip then carries a different name,
+    fails the academic gate, and the account is unusable, so they abandon it. **But the abandoned
+    account still holds a live claim on a real person's IC number.** When the true owner
+    registers, uniqueness refuses them their own number, and without this endpoint nobody can
+    free it — they cannot apply at all.
+
+    So this is a housekeeping power over an ORPHANED CLAIM, not an appeal against a decision.
+    It clears ``nric_verified`` so the number stops blocking; it does not blank the number, does
+    not touch the application, and does not re-open anything else.
+
+    SUPER ONLY (owner, 2026-07-29), deliberately narrower than the gate that TAKES the lock —
+    verify-&-accept admits org_admin, qc and the assigned reviewer. Setting an identity is
+    routine casework; unsetting one is not.
+
+    The reason is mandatory and goes to the audit log. There is no audit TABLE in this system
+    (``audit.py`` is verdict-override metrics), so the structured log is the record — which is
+    also why this cannot be done with a direct database write.
+    """
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+        # Unfenced BY CONSTRUCTION: the gate above admits super only, and a super's scope is
+        # every organisation, so no tenant dimension is left to narrow. Widen this to org_admin
+        # and it needs `self._org_scoped(...)` like every other application lookup.
+        # org-fence: super-only endpoint — no org dimension
+        app = ScholarshipApplication.objects.filter(pk=pk).select_related('profile').first()
+        if app is None or app.profile is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        reason = (request.data.get('reason') or '').strip()
+        if not reason:
+            return Response({'error': 'A reason is required to release an identity lock.',
+                             'code': 'reason_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        profile = app.profile
+        if not profile.nric_verified:
+            return Response({'error': 'This IC is not locked.', 'code': 'not_locked'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        profile.nric_verified = False
+        profile.save(update_fields=['nric_verified'])
+        # The record of who unset an identity, and why. Deliberately logged BEFORE anything can
+        # fail afterwards, and with the application id rather than the NRIC — the log must not
+        # become a place identity numbers accumulate.
+        logger.info('AUDIT nric_lock_released admin_id=%s app_id=%s reason=%r',
+                    admin.id, pk, reason[:200])
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
 class AdminSponsorReviewView(_AdminBase):
     """Phase E: POST .../admin/sponsors/<pk>/review/ {action: approve|reject|suspend}
     — vet a sponsor account. Matrix (2026-07-15): sponsor vetting is a super or ORG_ADMIN

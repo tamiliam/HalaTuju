@@ -57,12 +57,22 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         from apps.scholarship.views import SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
+        # ``ic`` is deliberately OUTSIDE the default scope but reachable with an explicit
+        # --doc-type. The original exclusion ("ic/parent_ic already store their read in
+        # dedicated columns") was true when written and stopped being the whole truth once ICs
+        # gained a GENUINENESS model, which lands in vision_fields like everything else — and
+        # from 2026-07-29 that verdict decides whether an identity locks. Production carries 36
+        # cards read before the model existed, which can never lock until they are scored.
+        # Kept opt-in rather than folded into the default sweep because an IC read costs a
+        # multimodal call per card and should be a deliberate act, not a side-effect of a
+        # routine supporting-doc pass.
         types = sorted(SUPPORTING_NAME_CHECK_TYPES | TEXT_READ_DOC_TYPES)
+        targeted_only = {'ic'}
         only = (opts.get('doc_type') or '').strip()
         if only:
-            if only not in types:
-                self.stderr.write(f"reextract: --doc-type '{only}' is not a re-extractable "
-                                  f"supporting type ({', '.join(types)}).")
+            if only not in set(types) | targeted_only:
+                self.stderr.write(f"reextract: --doc-type '{only}' is not re-extractable "
+                                  f"({', '.join(sorted(set(types) | targeted_only))}).")
                 return
             types = [only]
         limit = max(1, opts['limit'])

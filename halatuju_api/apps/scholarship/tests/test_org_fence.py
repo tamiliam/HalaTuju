@@ -297,6 +297,10 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminSuggestGapsView': 'gate', 'AdminProfileEditView': 'gate',
         'AdminPublishProfileView': 'gate', 'AdminInterviewView': 'gate',
         'AdminInterviewSubmitView': 'gate', 'AdminInterviewReopenView': 'gate',
+        # Break-glass on an IC lock — SUPER ONLY, and a super is unfenced by definition, so
+        # there is no org dimension to fence. No other role reaches it, including org_admin,
+        # which is deliberately narrower than the gate that TAKES the lock.
+        'AdminReleaseNricLockView': 'gate — super-only',
         'AdminSetAwardAmountView': 'gate', 'AdminDisbursementScheduleView': 'gate',
         'AdminCloseApplicationView': 'gate', 'AdminMaintenanceSubstateView': 'gate',
         'AdminRequestInfoView': 'gate', 'AdminResolutionItemView': 'gate',

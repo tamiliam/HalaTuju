@@ -109,6 +109,7 @@ from .views_admin import (
     AdminSponsorDetailView,
     AdminSponsorReviewView,
     AdminSuggestGapsView,
+    AdminReleaseNricLockView,
     AdminVerifyAcceptView,
     AdminPaymentRunListView,
     AdminPaymentRunDetailView,
@@ -363,6 +364,10 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/org-reject/', AdminOrgRejectView.as_view()),
     path('admin/scholarship/applications/<int:pk>/reporting-date/', AdminReportingDateView.as_view()),
     path('admin/scholarship/applications/<int:pk>/nudge/', AdminNudgeStudentView.as_view()),
+    # Break-glass: release an IC lock so an orphaned claim stops blocking the number's real
+    # owner. SUPER ONLY — narrower than the gate that takes the lock, on purpose.
+    path('admin/scholarship/applications/<int:pk>/release-nric-lock/',
+         AdminReleaseNricLockView.as_view()),
     # Conditional Bursary Award Agreement — Foundation countersignature (super-only) +
     # partner-org witness attestation (referring-org admin or super; non-blocking).
     path('admin/scholarship/applications/<int:pk>/bursary-agreement/countersign/',
