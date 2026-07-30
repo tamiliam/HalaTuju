@@ -6627,3 +6627,50 @@ that line with the reason beside it; plus one duplicated set of literals between
 **Revisit if:** the account write path lands and the reconciliation proves visible — at which point
 the cache-first read is still right, and only the reconcile timing is in question.
 
+
+## An unscored card is NOT genuine — IC lock, 2026-07-29
+**Decision:** the IC lock requires a POSITIVE genuineness verdict (`genuine` or `likely_genuine`,
+via `genuineness.bands.canonical_status`). A card that was never scored does not lock.
+**Alternatives considered:** fail OPEN on an absent verdict, matching every other consumer of
+genuineness in this codebase — `income_engine` literally treats `''` as passing.
+**Rationale:** those consumers are soft signals an officer can overrule; this lock is one-way and
+takes no human. "We could not check the card" must mean "not confirmed", never "confirmed". Same
+shape as the Layer 0 ruling that an empty catalogue means NOT CONFIGURED rather than "requires
+nothing".
+**Trade-offs:** production had 10 students whose cards predate the model and therefore could not
+lock until re-scored, of whom 5 were live; the owner re-ran those and they locked. The remaining 5
+are rejected applications, left unscored deliberately. It also DEPARTS from a convention a future
+reader will see everywhere else and may "fix" — hence the warning in `identity.py` and CLAUDE.md.
+**Revisit if:** genuineness scoring ever becomes unavailable for a sustained period, at which point
+new uploads would stop locking and the queue would need a different answer.
+
+## The lock is STORED, never re-derived — IC lock, 2026-07-29
+**Decision:** `nric_verified` is written when the card first confirms the number, and the padlock
+reads that stored flag. It is never recomputed from the document.
+**Alternatives considered:** deriving it on every profile read, which is cheaper, needs no write
+path and self-heals.
+**Rationale:** a derived lock is reversible by deleting the evidence — upload a matching card,
+lock; delete the card, unlock; change the number; upload a different card. Anything irreversible
+must be recorded when its condition first holds, not re-read from inputs the user still controls.
+**Trade-offs:** it needs a write path at every route into an IC read (one seam,
+`vision._lock_nric_if_confirmed`) AND a sweep for rows that already existed, because shipping an
+event-triggered rule locks nobody retroactively.
+**Revisit if:** never, for this field. The reasoning generalises to any one-way flag.
+
+## The break-glass is narrower than the gate that takes the lock — IC lock, 2026-07-29
+**Decision:** releasing an IC lock is SUPER ONLY, with a mandatory reason, audited to the log.
+Taking a lock admits org_admin, qc and the assigned reviewer (verify-&-accept).
+**Alternatives considered:** matching the locking gate; or no release at all, which is what the
+owner first described ("cannot be changed again, even by Admin").
+**Rationale:** setting an identity is routine casework; unsetting one is not. The case it exists
+for is not an appeal — it is an ORPHANED CLAIM: somebody uploads a card that is not theirs and
+types it to match, the account locks onto another person's identity, their own results slip then
+fails the academic gate so the account is abandoned, and the claim on a real person's number
+outlives it. Without a release the true owner can never register. The other argument is
+self-directed: the day our own matcher is found wrong across 98 locked records, a migration is the
+only alternative.
+**Trade-offs:** a super can undo an identity decision, which the absolute version would not allow.
+Accepted because the likeliest thing needing undoing is our code, not a student's honesty.
+**Revisit if:** anything ever locks a profile that has no application — the endpoint is addressed
+by application and could not reach it. Noted at the endpoint and on the model field rather than
+filed as debt, because nothing is owed while both lock routes require an application.
