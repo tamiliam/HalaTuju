@@ -6812,3 +6812,53 @@ the model — safe because the whole AI draft is owner-only, and a test asserts 
 serializer carries neither.
 **Revisit if:** the metered cost of `requests_triage` becomes material, in which case send images
 only on the FIRST run rather than every re-run.
+
+## The reviewer's reasoning is shared; its estimate is not — 2026-07-30 (TD-202)
+
+**Decision:** `ai_draft_note`, `ai_draft_model` and `ai_draft_at` reach the requesting organisation.
+`ai_draft_hours` does not. Neither do `triaged_kind`, `lane` or `triage_note`.
+
+**Alternatives considered:** (a) keep the whole `ai_draft_*` family owner-only, as before; (b) share
+all of it including the estimate; (c) split it.
+
+**Rationale:** the owner filed request #4 as an org_admin and reported the AI had not responded — it
+had, 21 seconds in, with an accurate reading. The fence was the silence. A price whose reasoning is
+invisible looks arbitrary, and the reasoning was already written. But the *estimate* is unreliable
+in a specific, evidenced way: the model has no codebase context, so it quoted 24h for a sponsor
+invite whose engine is in `referrals.py` and 8h for a notification whose mailer is in `emails.py`.
+Publishing an untrustworthy number as the basis of a price makes it the figure the real quote must
+argue against. The triage note stays private for the opposite reason — the owner must stay free to
+be blunt, and they already have two channels that do reach the org (the `ask` thread and the quote
+note), one of which they had already used for exactly this.
+
+**Trade-offs:** `ai_draft_note` is free-form prose, so the reviewer *may* state an hours figure even
+though the field is withheld. Accepted knowingly — negotiation optics, not correctness, since the
+owner sets the final quote. The cheap remedy, if it bites, is an instruction in the review prompt,
+not a filter in the serializer.
+
+**Revisit if:** the prose leak becomes a recurring nuisance, or an organisation starts treating the
+shared rationale as a commitment rather than a reading.
+
+## The AI classifies and asks; the engineer prices — 2026-07-30
+
+**Decision:** `_build_review_prompt` no longer requests `estimated_hours` and explicitly forbids
+stating one; `_parse_draft` discards a volunteered figure rather than storing it. The column remains
+on the model (history preserved, no migration) but is no longer rendered anywhere.
+
+**Alternatives considered:** (a) keep the estimate as a weak signal for the owner only; (b) label it
+"unreliable" and show it anyway; (c) feed the model a hand-maintained per-component inventory of
+what already exists so its estimates improve; (d) stop asking.
+
+**Rationale:** (a) and (b) both keep a number in play that we have decided not to trust — and the
+owner reads it first, which anchors the real quote. (c) is a real option and may return, but it is a
+standing maintenance burden for a module receiving roughly one request every other day. The model is
+demonstrably good at classification and lane and demonstrably bad at cost, so the honest move is to
+ask it only for what it can know. A prompt cannot bind a model, hence the parser-side enforcement:
+guarding only the prompt would leave the figure one chatty response away from returning.
+
+**Trade-offs:** the owner loses a first-pass number and must wait for the engineer's estimate. That
+is the point — the engineer's estimate cites the files it was read from and can be checked in a
+minute, which the model's never could.
+
+**Revisit if:** request volume grows enough that a first-pass number has real triage value, at which
+point (c) — a component capability inventory in the prompt — is the option to reach for.

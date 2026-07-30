@@ -552,6 +552,41 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-30)
 
+**✅ SHIPPED 2026-07-30 (wave 3) — THE REVIEWER IS HEARD, AND STOPS QUOTING.** `7aee74dd` (TD-202)
++ `d3592817`. Retro `docs/retrospective-2026-07-30-requests-ai-reasoning.md`; decisions ×2.
+**NO migration** — prod ledger reconciled: scholarship **137/137**, courses **67/67**, no gaps.
+
+- **⚠ "NO RESPONSE FROM AI" WAS THE FENCE, NOT THE MODEL.** The owner filed request #4 as an
+  org_admin and saw silence. The reviewer had answered **21 seconds** after submission with an
+  accurate reading of the bug — into a room the requester was not in. **Query before diagnosing an
+  integration: the DB said `ai_draft_at` was populated and `clarifications` empty.**
+- **⚠ THE THREE `ai_draft_*` FIELDS SPLIT THREE WAYS — do not re-bundle them.**
+  `ai_draft_note`/`_model`/`_at` **are sent** to the org (rendered *How we read this*, requester-only;
+  the super keeps the fuller block). `ai_draft_hours` is **withheld** — not secrecy, the margin is
+  already gone and the real quote IS sent; the number is unreliable. `triaged_kind`/`lane`/
+  `triage_note` are **withheld** — the owner must stay free to be blunt. Each reason is in
+  `OrgRequestOrgSerializer`'s docstring; `test_the_ai_split_is_exact` pins the positive half and
+  `test_the_org_NEVER_sees_the_STEER` the negative.
+- **⚠ ACCEPTED KNOWINGLY: `ai_draft_note` is free-form prose and MAY state an hours figure** even
+  though the field is withheld. Negotiation optics, not correctness — the owner sets the quote. The
+  remedy, if it bites, is a line in the review prompt, **not** a filter in the serializer.
+- **⚠ THE REVIEWER IS NO LONGER ASKED TO PRICE, and the parser enforces it.** The prompt drops
+  `estimated_hours`; `_parse_draft` **discards** a volunteered figure. A prompt cannot bind a model —
+  guarding only the prompt leaves the number one chatty response away from returning. Evidence for
+  the ruling: **24h** for the sponsor invite whose engine is in `referrals.py` (invite creation, the
+  email, the `/sponsor?ref=` acceptance page, attribution by code AND by email), **8h** for #3 whose
+  mailer is `emails.send_student_assigned_reviewer_email`. Classification and lane it gets right.
+  The column stays (history, no migration) but is rendered nowhere.
+- **▶ NEXT, AND IT IS THE ONE THAT REMOVES THE OWNER'S MANUAL WORK (TD-201):** the thread has only
+  ONE verb that reaches the requester — `ask` a question. There is **no way to post a STATEMENT**
+  ("here is what we would build, and why"), so a conclusion has to travel as a quote note or not at
+  all. Agreed workflow: requester posts → AI classifies/asks → engineer analyses from the CODE and
+  discusses with the owner → conclusion + quote posted to the requester → accept → build. **TD-201
+  inherits TD-202's visibility rule** (shared reasoning, private judgement) — do not re-decide it.
+- **⚠ THE ESTIMATE MUST CITE ITS FILES.** That is the only thing separating the engineer's number
+  from the model's: 3.5h on #3 named the mailer and the hook and was checkable in a minute; 24h on
+  the sponsor invite named nothing and was wrong by a factor of six.
+
 **✅ SHIPPED 2026-07-30 — A TYPED "A/ P" IS TIDIED TO "A/P" AT THE WRITE BOUNDARY.** No migration.
 `pytest` **3905** scholarship + **1274** courses/reports (+14). Lessons ×2.
 - **Why:** app 20's canonical name read `SHARVANI A/ P KANAGEVELLU`; her MyKad (and every document
