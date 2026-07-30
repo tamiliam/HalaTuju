@@ -524,28 +524,59 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-30)
 
-**⚠ THREE COMMITS ON `main`, NOT PUSHED — THE PUSH DEPLOYS BOTH SERVICES.** `a1552464` (the
-awarded sign-off + the override trail), `f5e81b5d` (Requests deliberation), `e5a903e2` +
-this close (records). The IC lock backend is already live (`halatuju-api-00905-hxf`); **the web
-half has been sitting on `main` undeployed since 29 Jul** because a concurrent agent's
-`git add -A` swept it into `70566e55` and that commit's web build was CANCELLED. So this push
-releases the IC-lock frontend **and** two sprints at once. **NO migration in any of them** —
-production's `django_migrations` is reconciled through `0136` with no gaps (checked 30 Jul).
-`pytest` **5143** (incl. 121 subtests) · `jest` **1184** · i18n parity 4333 ×3.
+**✅ ALL PUSHED AND DEPLOYED 2026-07-30.** The IC lock (backend + the web half that had sat
+undeployed since 29 Jul), the awarded sign-off + override trail, the Requests deliberation, and
+four follow-up fixes from the owner reviewing requests #2/#3 live. **NO migration anywhere in it** —
+production's `django_migrations` reconciled through `0136`, no gaps, `makemigrations --check` clean.
 
-**▶ OWNER, IN ORDER**
-1. **Push** (this is the deploy — both api and web).
-2. **Verify on request #2** — paste a screenshot from the clipboard; click a thumbnail for the full
-   image; check the AI draft names its model; ask the requester a question and confirm it renders as
-   yours and emails them; add a triage note, re-run, and confirm the rationale engages with the
-   steer and the screenshots instead of repeating itself.
-3. **Review the amber IC-flag copy** — it shows BOTH values and declines to say which is wrong.
-   Application **94** is currently the only record that renders it.
-4. **Decide TD-198** — an awarded student cannot be declined directly (your ruling), and there is
-   no admin withdrawal route once the award email has gone. **47 applications sit in `awarded`.**
-   It moves money back to a sponsor and retracts a promise, so it is yours to call.
+**⚠ THE WEB BUILD FAILED THE FIRST TIME AND ONLY THE API LANDED**, so the owner opened the page and
+correctly reported nothing had changed. Cause: two `eslint-disable` comments naming
+`@typescript-eslint/no-var-requires`, a rule this config does not load (it extends only
+`next/core-web-vitals`), and `next build` **lints before it emits**. `tsc --noEmit` and `jest` do not
+run ESLint. **`npx next lint` (0 Errors) is now a required gate before any push that deploys web** —
+warnings are fine, the passing builds carry several.
 
-**▶ CARRY:** ms/ta first drafts for ~20 `profile.ic*` keys.
+**▶ OWNER, STILL OWED**
+1. **Review the amber IC-flag copy** (shows BOTH values, declines to say which is wrong).
+   Application **94** is the only record that renders it. Plus ms/ta drafts for ~20 `profile.ic*`
+   keys and the new `detail.unanswered` key.
+2. **Decide TD-198** — an awarded student cannot be declined directly (your ruling), and there is no
+   admin withdrawal route once the award email has gone. **47 applications sit in `awarded`.**
+3. **Rule on TD-200, bundled with TD-199** — whether the organisation sees the AI's reasoning.
+   Analysis is recorded in the register; both were deferred ("4 can wait").
+
+### The Requests rules that now bind (four owner rulings, 30 Jul)
+
+- **⚠ A REQUEST IS OPEN TO SHAPING UNTIL ITS QUOTE IS ACCEPTED.** One named window —
+  `org_requests.OPEN_FOR_SHAPING` / `requestStatus.REQUEST_OPEN_FOR_SHAPING` =
+  `submitted/triaged/quoted/deferred` — governs BOTH answering a question and adding a screenshot,
+  with a test on each side pinning them equal. It arrived as two separate rulings that turned out to
+  be one principle; do not let them drift apart again. **`ask` stays NARROWER** (`submitted/triaged`)
+  and a test pins it as a strict subset: replying to a question asked before the quote completes the
+  record, but a NEW question after quoting would mean the price was set against something nobody
+  raised.
+- **⚠ "Answer needed" ONLY WHERE ANSWERING IS OFFERED.** Request #3 was quoted with a question open;
+  the box unmounted while the thread kept demanding an answer, permanently, since `approved` never
+  returns. Both surfaces derive the prompt from `requestActionsFor`, never from `answer == null`.
+  **This was the FOURTH "the UI asserts what nothing checks" in a week** (the hard-coded padlock,
+  `qc_override_reason`, `ai_draft_model`, this) — flagged in `consolidation-log.md` as a cluster
+  wanting a guardrail, not a fifth fix.
+- **⚠ THE MARGIN IS NEVER SHOWN TO THE ORGANISATION** and is **absent from the org payload**, not
+  merely hidden on the page. Verified before removing: nothing in the codebase multiplies by
+  `quote_margin_pct`, so `quote_hours` is the whole of what is quoted and billed. It stays on
+  `OrgRequestOwnerSerializer` for the quote form.
+- **⚠ THE QUOTE RENDERS BELOW THE THREAD** — it is the conclusion, so the deliberation reads first.
+- **⚠ TWO SURFACES ACCEPT SCREENSHOTS AND THEY CANNOT SHARE A COMPONENT** — the detail page uploads
+  against an existing id; the create form stages `File`s because no id exists yet. Paste/drop
+  shipped to the detail page only and the owner reported it twice. The shared rule lives in
+  `lib/screenshotInput.ts`, and `screenshotInput.test.ts` walks a `SURFACES` list asserting each
+  wires paste, drop, the shared filter and the hint. **A third surface must be added to that list.**
+- **⚠ The AI reviewer has NO codebase context, so it over-quotes anything extending existing
+  machinery.** It said 24h for the sponsor-invite request (most of it built — `referrals.py`) and 8h
+  for #3 (the mailer exists — `send_student_assigned_reviewer_email`). The `triage_note` steer works
+  — it dropped #3 to 4.0h and small_change once told — but **it agrees rather than verifies**, so
+  the steer being right is load-bearing. `AI_RUN_CAP = 3`; the triage note is written ONCE
+  (`triage` accepts `submitted` only), so there is one shot at the steer.
 
 ### What shipped in the last three sprints — and the traps inside them
 
