@@ -2220,3 +2220,12 @@ question namespace (the exact shape of this bug) fails it.
 
 **The transferable lesson is in `lessons.md`:** a guard that checks the SHAPE of a reference is not
 checking that the reference resolves, and the difference is invisible until something dereferences it.
+
+### [TD-199] The eWallet-ID band has ~55 students of headroom before Vircle's sequence rolls past it
+**Status:** Open · logged 2026-07-30 (Vircle ID band sprint, commit `21d48037`)
+**File(s):** `halatuju/settings/base.py` (`VIRCLE_ID_BAND_MIN`/`_MAX`), `apps/scholarship/payments.py` (`vircle_id_band`, `valid_vircle_id`)
+**What it is:** `valid_vircle_id` now requires the first digit the student types to sit in the issued band (5–9). That band is what separates a real eWallet ID from a **truncated DuitNow Transfer number**, which shares the prefix and the length. It is bounded: production wallets span `…175129` → `…177350`, i.e. **~2,221 numbers consumed across 46 students (~48 per student we onboard)** because the sequence advances with **Vircle's entire customer base**, not just ours. With 2,649 left before `…179999`, roll-over into `800040018xxxx` is roughly **55 students away — plausibly within the next intake**, at which point position 10 becomes `0` and every new student is refused.
+**What consistent looks like:** at roll-over, `VIRCLE_ID_BAND_MIN=0` (or the new block's range) via `--update-env-vars`, plus `VIRCLE_ID_PREFIX` widened if the 9-digit prefix itself moves. Deliberately **settings, not literals**, so this is an env change and never a deploy.
+**Risk if left:** **Low, and it fails in the SAFE direction** — a legitimate new number is REFUSED loudly (the student reports it; a super/org_admin can correct via the cockpit) rather than silently accepted and paid to the wrong destination. That asymmetry is the whole reason a bounded band was acceptable in the first place. A WARNING already fires whenever an accepted id sits at the top of the band (`VIRCLE_ID_BAND_MAX`), so the approach is visible in logs before it bites.
+**Dependencies:** none — one env var. The only judgement needed is whether the new block's band can still exclude DuitNow numbers; if Vircle's two number families ever overlap, no format rule can separate them and the fallback is the held first-time-wallet flag (see CLAUDE.md).
+**Do not conflate with:** narrowing the band. `{7,8,9}` on that digit would refuse **39 of the 46** current students — tested, and recorded in the brief.

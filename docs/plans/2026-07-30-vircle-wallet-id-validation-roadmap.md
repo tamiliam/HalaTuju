@@ -1,6 +1,8 @@
 # Vircle e-Wallet ID validation — incident brief + sprint roadmap
 
-**Date:** 2026-07-30 · **Status:** roadmap awaiting owner approval · **Migrations:** none in any sprint
+**Date:** 2026-07-30 · **Status:** ✅ **SPRINT SHIPPED (code complete, not pushed)** — commit
+`21d48037`, retro `docs/retrospective-2026-07-30-vircle-id-band.md`. §4b (the first-time-wallet flag)
+remains **HELD, not scheduled**. · **Migrations:** none
 
 ---
 
