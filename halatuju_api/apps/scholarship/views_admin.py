@@ -4373,8 +4373,10 @@ class AdminOrgRequestAttachmentSignUploadView(_OrgRequestsBase):
         if err:
             return err
         from . import org_requests
-        if req.status in org_requests.TERMINAL_STATUSES:
-            return Response({'error': 'request_terminal', 'code': 'request_terminal'},
+        # Evidence closes when the quote is ACCEPTED, not merely at a terminal status — changing
+        # a screenshot under an accepted quote changes what was priced. See org_requests.can_attach.
+        if not org_requests.can_attach(req):
+            return Response({'error': 'request_closed', 'code': 'request_closed'},
                             status=status.HTTP_400_BAD_REQUEST)
         # Count cap BEFORE signing (≤5 recorded attachments).
         if req.attachments.count() >= org_requests.MAX_ATTACHMENTS:
@@ -4404,8 +4406,10 @@ class AdminOrgRequestAttachmentCreateView(_OrgRequestsBase):
         if err:
             return err
         from . import org_requests
-        if req.status in org_requests.TERMINAL_STATUSES:
-            return Response({'error': 'request_terminal', 'code': 'request_terminal'},
+        # Evidence closes when the quote is ACCEPTED, not merely at a terminal status — changing
+        # a screenshot under an accepted quote changes what was priced. See org_requests.can_attach.
+        if not org_requests.can_attach(req):
+            return Response({'error': 'request_closed', 'code': 'request_closed'},
                             status=status.HTTP_400_BAD_REQUEST)
         storage_path = (request.data.get('storage_path') or '').strip()
         content_type = (request.data.get('content_type') or '').strip()
@@ -4453,8 +4457,10 @@ class AdminOrgRequestAttachmentDeleteView(_OrgRequestsBase):
         if err:
             return err
         from . import org_requests
-        if req.status in org_requests.TERMINAL_STATUSES:
-            return Response({'error': 'request_terminal', 'code': 'request_terminal'},
+        # Evidence closes when the quote is ACCEPTED, not merely at a terminal status — changing
+        # a screenshot under an accepted quote changes what was priced. See org_requests.can_attach.
+        if not org_requests.can_attach(req):
+            return Response({'error': 'request_closed', 'code': 'request_closed'},
                             status=status.HTTP_400_BAD_REQUEST)
         # Scoped to THIS (already org-fenced) request — a foreign attachment id is 404.
         att = req.attachments.filter(pk=att_id).first()

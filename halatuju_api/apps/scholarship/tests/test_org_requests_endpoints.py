@@ -181,7 +181,10 @@ class TestOrgPayloadAllowlist(_Base):
     ORG_KEYS = {
         'id', 'kind', 'title', 'description', 'component', 'urgency', 'steps_to_reproduce',
         'status', 'clarifications',
-        'quote_hours', 'quote_margin_pct', 'quote_note', 'quoted_at', 'approved_at',
+        # 'quote_margin_pct' REMOVED 2026-07-30 (owner: "do not mention the margin"). Dropped from
+        # the payload rather than hidden in the UI — this snapshot failing is the allowlist doing
+        # its job, and the removal is the deliberate change it asked us to confirm.
+        'quote_hours', 'quote_note', 'quoted_at', 'approved_at',
         'scheduled_for', 'decline_reason', 'created_at', 'updated_at', 'submitted_by_name',
         'attachments',
     }

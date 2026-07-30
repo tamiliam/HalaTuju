@@ -4954,7 +4954,7 @@
         "answerSend": "பதிலை அனுப்பவும்",
         "historyModified": "கோரிக்கை திருத்தப்பட்டது.",
         "quote": "மதிப்பீடு",
-        "quoteValue": "≈{hours} மணிநேரம் · {margin}% விளிம்பு உட்பட",
+        "quoteValue": "≈{hours} மணிநேரம்",
         "quoteNote": "குறிப்பு",
         "declinedReason": "காரணம்",
         "scheduledFor": "திட்டமிடப்பட்ட நாள்",

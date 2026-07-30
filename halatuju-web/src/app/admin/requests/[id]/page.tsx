@@ -14,7 +14,7 @@ import {
 } from '@/lib/admin-api'
 import {
   statusLabelKey, statusTone, kindLabelKey, laneLabelKey, requestActionsFor,
-  hasUnansweredQuestions, type RequestAction,
+  hasUnansweredQuestions, canAttach, type RequestAction,
 } from '@/lib/requestStatus'
 import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 
@@ -129,31 +129,15 @@ export default function AdminRequestDetailPage() {
         </div>
       )}
 
-      {/* Screenshots — add/remove while the request is non-terminal (submitter org + super). */}
+      {/* Screenshots — evidence, so it closes when the quote is ACCEPTED, not merely at a terminal
+          status. Adding a screenshot to an accepted request would change what was priced. */}
       <OrgRequestAttachments
         requestId={id}
         attachments={req.attachments || []}
-        editable={!['done', 'declined'].includes(req.status) && (isSuper || reqRole === 'org_admin')}
+        editable={canAttach(req.status) && (isSuper || reqRole === 'org_admin')}
         token={token}
         onChange={setReq}
       />
-
-      {/* Quote (org-facing) */}
-      {req.quote_hours != null && (
-        <div className="bg-white rounded-xl border p-5 mb-4">
-          <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.quote')}</h2>
-          <p className="text-lg font-semibold text-gray-900">
-            {t('admin.requests.detail.quoteValue', { hours: req.quote_hours, margin: String(req.quote_margin_pct ?? 0) })}
-          </p>
-          {req.quote_note && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{req.quote_note}</p>}
-          {req.scheduled_for && (
-            <p className="text-sm text-gray-500 mt-2">{t('admin.requests.detail.scheduledFor')}: {formatDate(req.scheduled_for)}</p>
-          )}
-          {req.status === 'declined' && req.decline_reason && (
-            <p className="text-sm text-red-600 mt-2">{t('admin.requests.detail.declinedReason')}: {req.decline_reason}</p>
-          )}
-        </div>
-      )}
 
       {/* Clarification thread */}
       <div className="bg-white rounded-xl border p-5 mb-4">
@@ -233,6 +217,26 @@ export default function AdminRequestDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Quote (org-facing) — deliberately BELOW the thread (owner, 2026-07-30): the quote is the
+          CONCLUSION, so the deliberation that produced it should be read first. */}
+      {req.quote_hours != null && (
+        <div className="bg-white rounded-xl border p-5 mb-4">
+          <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.quote')}</h2>
+          <p className="text-lg font-semibold text-gray-900">
+            {/* Hours only — the margin is not shown to the organisation and is no longer on the
+                org-facing payload at all (owner, 2026-07-30). */}
+            {t('admin.requests.detail.quoteValue', { hours: req.quote_hours })}
+          </p>
+          {req.quote_note && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{req.quote_note}</p>}
+          {req.scheduled_for && (
+            <p className="text-sm text-gray-500 mt-2">{t('admin.requests.detail.scheduledFor')}: {formatDate(req.scheduled_for)}</p>
+          )}
+          {req.status === 'declined' && req.decline_reason && (
+            <p className="text-sm text-red-600 mt-2">{t('admin.requests.detail.declinedReason')}: {req.decline_reason}</p>
+          )}
+        </div>
+      )}
 
       {/* Requestee actions (org_admin) */}
       {(has('accept') || has('defer') || has('modify') || has('withdraw')) && (

@@ -103,7 +103,7 @@ export function requestActionsFor(
     // asked before the quote was priced into it, so replying completes the record; a NEW question
     // after quoting could re-price it. Mirrors TRANSITIONS['answer'] in org_requests.py.
     if (hasUnansweredQuestions
-        && ['submitted', 'triaged', 'quoted', 'deferred'].includes(status)) out.push('answer')
+        && (REQUEST_OPEN_FOR_SHAPING as readonly string[]).includes(status)) out.push('answer')
     if (status === 'quoted' || status === 'deferred') out.push('accept')
     if (status === 'quoted') out.push('defer')
     if (status === 'quoted' || status === 'deferred') out.push('modify')
@@ -163,6 +163,22 @@ export function componentLabelKey(value: string): string {
 export const REQUEST_COMPONENT_VALUES = REQUEST_COMPONENT_PARENTS.flatMap(
   (parent) => [parent, ...requestSubComponents(parent)],
 )
+
+/**
+ * The statuses in which a request is still BEING SHAPED — evidence and clarification may still
+ * change what it is and what it should cost. Acceptance is the boundary (owner, 2026-07-30):
+ * once a quote is accepted, the request is priced against a fixed record, so adding a screenshot
+ * after the fact would change the evidence behind an agreed number.
+ *
+ * The same window governs `answer`. Kept as one named set so the two cannot drift apart, and so
+ * the reason lives in one place rather than being re-derived at each call site.
+ */
+export const REQUEST_OPEN_FOR_SHAPING = ['submitted', 'triaged', 'quoted', 'deferred'] as const
+
+/** Whether screenshots may still be added or removed. See REQUEST_OPEN_FOR_SHAPING. */
+export function canAttach(status: string): boolean {
+  return (REQUEST_OPEN_FOR_SHAPING as readonly string[]).includes(status)
+}
 
 /** True if the request carries an unanswered clarifying question (a clarification with a
  *  question and no answer). Used by the list badge + the detail answer box. */

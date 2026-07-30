@@ -4954,7 +4954,7 @@
         "answerSend": "Send answer",
         "historyModified": "The request was amended.",
         "quote": "Quote",
-        "quoteValue": "≈{hours} hours · includes {margin}% margin",
+        "quoteValue": "≈{hours} hours",
         "quoteNote": "Note",
         "declinedReason": "Reason",
         "scheduledFor": "Scheduled for",

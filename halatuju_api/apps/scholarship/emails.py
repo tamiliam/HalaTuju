@@ -2075,7 +2075,10 @@ def send_org_request_quote_email(req):
     to_email = (getattr(req.submitted_by, 'email', '') or '').strip()
     if not to_email:
         return False
-    margin = req.quote_margin_pct if req.quote_margin_pct is not None else 0
+    # The MARGIN IS NOT MENTIONED to the organisation (owner, 2026-07-30). `quote_hours` is the
+    # figure they are asked to accept and the only one anything bills on — nothing in the codebase
+    # multiplies by `quote_margin_pct`, so naming it disclosed our padding without changing the
+    # number. It stays owner-side (OrgRequestOwnerSerializer + the quote form).
     note = (req.quote_note or '').strip()
     try:
         EmailMessage(
@@ -2083,7 +2086,7 @@ def send_org_request_quote_email(req):
             body=(
                 f'Hello {req.submitted_by.name},\n\n'
                 f'We\'ve reviewed your request "{req.title}". Our estimate is '
-                f'≈{_fmt_hours(req.quote_hours)} hours (includes {margin}% margin).\n\n'
+                f'≈{_fmt_hours(req.quote_hours)} hours.\n\n'
                 + (f'{note}\n\n' if note else '')
                 + f'You can accept it, defer it for later, or ask to change your request here:\n'
                 f'{_org_request_link(req)}\n\n'

@@ -4954,7 +4954,7 @@
         "answerSend": "Hantar jawapan",
         "historyModified": "Permintaan telah dipinda.",
         "quote": "Sebut harga",
-        "quoteValue": "≈{hours} jam · termasuk margin {margin}%",
+        "quoteValue": "≈{hours} jam",
         "quoteNote": "Nota",
         "declinedReason": "Sebab",
         "scheduledFor": "Dijadualkan untuk",

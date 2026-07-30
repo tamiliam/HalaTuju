@@ -81,13 +81,13 @@ class TestSignUpload(_Base):
         self.assertEqual(r.json()['code'], 'attachment_limit')
 
     @mock.patch('apps.scholarship.storage.create_signed_upload_url', return_value='https://x/put')
-    def test_terminal_request_refuses_sign(self, _m):
+    def test_closed_request_refuses_sign(self, _m):
         self.req_a.status = 'done'
         self.req_a.save(update_fields=['status'])
         self._auth('att-oa-a')
         r = self.client.post(f'{BASE}{self.req_a.id}/attachments/sign-upload/', {}, format='json')
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.json()['code'], 'request_terminal')
+        self.assertEqual(r.json()['code'], 'request_closed')
 
     @mock.patch('apps.scholarship.storage.create_signed_upload_url', return_value='https://x/put')
     def test_cross_org_sign_404(self, _m):
@@ -148,14 +148,39 @@ class TestRecord(_Base):
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'attachment_limit')
 
-    def test_terminal_request_refuses_record(self):
+    def test_closed_request_refuses_record(self):
         self.req_a.status = 'declined'
         self.req_a.save(update_fields=['status'])
         self._auth('att-oa-a')
         r = self.client.post(f'{BASE}{self.req_a.id}/attachments/',
                              _good_payload(self.org_a.id, self.req_a.id), format='json')
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.json()['code'], 'request_terminal')
+        self.assertEqual(r.json()['code'], 'request_closed')
+
+    def test_an_ACCEPTED_quote_closes_the_evidence(self):
+        """The rule the owner set on 2026-07-30, and the reason it is wider than "terminal".
+
+        Until then the guard was ``status in TERMINAL_STATUSES``, so an APPROVED request — a quote
+        already agreed and priced — still accepted new screenshots. Changing the evidence under an
+        agreed number is the thing to prevent; 'done' was never the boundary that mattered.
+        The FE hides the control (``canAttach``); this is the half that actually refuses.
+        """
+        for closed in ('approved', 'scheduled'):
+            with self.subTest(status=closed):
+                self.req_a.status = closed
+                self.req_a.save(update_fields=['status'])
+                self._auth('att-oa-a')
+                r = self.client.post(f'{BASE}{self.req_a.id}/attachments/',
+                                     _good_payload(self.org_a.id, self.req_a.id), format='json')
+                self.assertEqual(r.status_code, 400)
+                self.assertEqual(r.json()['code'], 'request_closed')
+
+    def test_the_shaping_window_matches_the_answer_window(self):
+        # Both are "the request is still being shaped". Held as one tuple so a later edit to one
+        # cannot silently diverge from the other (the FE mirrors this pair too).
+        from apps.scholarship import org_requests
+        self.assertEqual(set(org_requests.OPEN_FOR_SHAPING),
+                         set(org_requests.TRANSITIONS['answer'][0]))
 
 
 class TestDownloadUrlOrgAssertion(_Base):
@@ -216,7 +241,7 @@ class TestDelete(_Base):
         self._auth('att-oa-a')
         r = self.client.delete(f'{BASE}{self.req_a.id}/attachments/{att.id}/')
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.json()['code'], 'request_terminal')
+        self.assertEqual(r.json()['code'], 'request_closed')
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,

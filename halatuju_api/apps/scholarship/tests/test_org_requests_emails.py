@@ -86,7 +86,12 @@ class TestSendFunctions(TestCase):
         m = self._last()
         self.assertEqual(m.to, ['dina@acme.test'])
         self.assertIn('8 hours', m.body)          # tidy hours, not '8.0'
-        self.assertIn('50% margin', m.body)
+        # The MARGIN IS NOT MENTIONED to the organisation (owner, 2026-07-30). This asserted
+        # '50% margin' until then; now the absence is the requirement, so it is pinned as such —
+        # `quote_hours` is the only figure the org is asked to accept, and nothing bills on the
+        # margin. `_assert_clean` covers the owner-private fields; this covers our own padding.
+        self.assertNotIn('margin', m.body.lower())
+        self.assertNotIn('50%', m.body)
         self._assert_clean(m)
 
     def test_accepted_goes_to_owner(self):

@@ -58,6 +58,27 @@ record.
 No migration. Small-change lane; the regression is pinned on both sides, and one existing test
 that asserted the old cap was superseded with the reason written into it.
 
+**And the same boundary turned out to govern screenshots.** Attachments were gated on *terminal*
+statuses only — `done` and `declined` — so an **approved** request still accepted new ones. Adding
+evidence under an already-agreed number is the thing worth preventing; `done` was never the line
+that mattered. Both rules are now one named window, `OPEN_FOR_SHAPING`
+(`submitted`/`triaged`/`quoted`/`deferred`), held once on each side with a test pinning them equal,
+because they are the same idea: **a request is open to shaping until its quote is accepted.** The
+server refuses (`request_closed`) and the UI merely hides the control — that order, not the reverse.
+
+**The quote now sits below the questions**, not above them. It is the conclusion, so the
+deliberation that produced it should be read first.
+
+**And the margin is no longer mentioned to the organisation.** The quote read *"≈3.5 hours ·
+includes 15% margin"* on the page and in the email — disclosing our own padding for no purpose.
+Checked before removing it: **nothing in the codebase multiplies by `quote_margin_pct`**, so
+`quote_hours` is the whole of what is quoted and billed, and dropping the mention understates
+nothing. It is now gone from the **payload**, not merely hidden on the page — a field the
+organisation must not see is a field we must not send, which is what the org serializer's allowlist
+is for. The margin stays owner-side, on the quote form. Two guards failed on the change and were
+updated deliberately: the exact-key payload snapshot, and the email test, which now pins the
+*absence* of the word.
+
 ## The awarded sign-off, and a reason nobody could read — 2026-07-30
 
 From one screenshot: #27 and #118 showed different sign-offs on identical data.

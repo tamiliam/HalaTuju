@@ -17,6 +17,7 @@ import ta from '@/messages/ta.json'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, hasStatusTone,
   kindLabelKey, laneLabelKey, requestActionsFor, hasUnansweredQuestions,
+  canAttach, REQUEST_OPEN_FOR_SHAPING,
   REQUEST_COMPONENT_TREE, REQUEST_COMPONENT_PARENTS, REQUEST_COMPONENT_VALUES,
   requestSubComponents, componentLabelKey,
 } from '@/lib/requestStatus'
@@ -221,6 +222,20 @@ describe("the requester's 'answer' window", () => {
   it('is not offered when nothing is actually waiting', () => {
     for (const status of ['submitted', 'triaged', 'quoted', 'deferred']) {
       expect(requestActionsFor('org_admin', status, 'feature', false)).not.toContain('answer')
+    }
+  })
+
+  it('shares its window with attaching evidence — both close at acceptance', () => {
+    // Owner, 2026-07-30: a screenshot added after the quote is accepted would change the evidence
+    // behind an agreed number. Answering and attaching are the same "still being shaped" window,
+    // held as one named set so they cannot drift apart.
+    for (const status of REQUEST_OPEN_FOR_SHAPING) {
+      expect(canAttach(status)).toBe(true)
+      expect(requestActionsFor('org_admin', status, 'feature', true)).toContain('answer')
+    }
+    for (const status of ['approved', 'scheduled', 'done', 'declined']) {
+      expect(canAttach(status)).toBe(false)
+      expect(requestActionsFor('org_admin', status, 'feature', true)).not.toContain('answer')
     }
   })
 

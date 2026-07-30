@@ -877,8 +877,9 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     **Allowlist by construction** — a plain ``Serializer`` with every field explicit and ZERO
     model passthrough, so the AI DRAFT (``ai_draft_*``) and the owner's private triage
     (``triaged_kind``/``lane``/``triage_note``) can NEVER reach the org. The org sees only the
-    outcome the owner deliberately sends: the QUOTE (hours + margin + note), the schedule/approval
-    stamps, and the clarification thread (the questions the AI/owner chose to flow to them). The
+    outcome the owner deliberately sends: the QUOTE (hours + note — **the MARGIN is not sent**,
+    owner 2026-07-30), the schedule/approval stamps, and the clarification thread (the questions
+    the AI/owner chose to flow to them). The
     single worst failure this class prevents is the AI's hours estimate leaking to the org before
     the owner has approved a quote — an exact-key snapshot test pins the key set so a new field
     can't slip in.
@@ -896,7 +897,11 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     status = serializers.CharField()
     clarifications = serializers.JSONField()
     quote_hours = serializers.SerializerMethodField()
-    quote_margin_pct = serializers.IntegerField()
+    # quote_margin_pct is DELIBERATELY ABSENT (owner, 2026-07-30): "do not mention the margin".
+    # Removed from the PAYLOAD, not merely hidden in the UI — a field the org must not see is a
+    # field we must not send, which is the whole point of this allowlist. `quote_hours` is the
+    # figure they accept and the only one anything bills on; nothing multiplies by the margin.
+    # It remains on OrgRequestOwnerSerializer for the quote form.
     quote_note = serializers.CharField()
     quoted_at = serializers.DateTimeField()
     approved_at = serializers.DateTimeField()

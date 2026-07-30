@@ -103,6 +103,22 @@ TRANSITIONS = {
 
 TERMINAL_STATUSES = ('done', 'declined')
 
+# The statuses in which a request is still BEING SHAPED — evidence and clarification may still
+# change what it is and what it should cost. Acceptance is the boundary (owner, 2026-07-30): a
+# screenshot added after the quote is accepted would change the evidence behind an agreed number.
+# Deliberately the SAME window as TRANSITIONS['answer'], held once so the two cannot drift; the
+# frontend mirror is REQUEST_OPEN_FOR_SHAPING in requestStatus.ts, pinned by a test on each side.
+OPEN_FOR_SHAPING = ('submitted', 'triaged', 'quoted', 'deferred')
+
+
+def can_attach(req):
+    """Whether screenshots may still be added or removed. See OPEN_FOR_SHAPING.
+
+    Wider than "not terminal", which is what the attachment views enforced until 2026-07-30 —
+    that let evidence change under an accepted quote.
+    """
+    return getattr(req, 'status', None) in OPEN_FOR_SHAPING
+
 
 class OrgRequestError(Exception):
     """Raised by the service with a machine code for the view (e.g. 'bad_transition',

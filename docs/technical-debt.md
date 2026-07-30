@@ -2220,3 +2220,39 @@ question namespace (the exact shape of this bug) fails it.
 
 **The transferable lesson is in `lessons.md`:** a guard that checks the SHAPE of a reference is not
 checking that the reference resolves, and the difference is invisible until something dereferences it.
+
+---
+
+### [TD-199] The Requests thread is a question/answer register, not a discussion — medium, deferred by the owner
+**File(s):** `apps/scholarship/org_requests.py` (`clarifications`, `ask_question`, `answer_clarification`, `TRANSITIONS`), `serializers_admin.OrgRequestOrgSerializer` / `OrgRequestOwnerSerializer`, `app/admin/requests/[id]/page.tsx`
+**Owner, 2026-07-30:** *"my idea of bug report/feature request is informed by bugzilla, where there is open discussion/debate, even after it has been assigned to someone."* Raised alongside the fix that widened the answer window; **explicitly deferred — "4 can wait. It is not urgent, and can be done separately."** Logged so the reasoning is not lost.
+
+**What it is.** `clarifications` is a `JSONField` list of `{question, answer, asked_by, asked_at, answered_at}` — **pairs, not a stream**. The consequences, all by construction rather than oversight:
+
+| Bugzilla | Here |
+|---|---|
+| anyone with access comments, any time | only the AI or a super may **ask**; only the submitting org may **answer** |
+| a free-form thread; you can reply to a reply | fixed question→answer pairs, one answer each |
+| discussion continues after assignment | closes at acceptance (`OPEN_FOR_SHAPING`) |
+| every participant reads the same history | the org sees the Q&A; `ai_draft_*` and `triage_note` are super-only |
+
+A second org_admin **can** open the request (requests are org-fenced, super global) but can only watch — there is no comment surface for them, and none for a non-super platform admin, who cannot reach the module at all.
+
+**What consistent looks like.** A comment table with an author, a timestamp, and a **visibility** dimension — not a JSON list. The visibility column is the load-bearing part: the owner needs to stay free to write bluntly (that is what `triage_note` is for today), while the discussion itself is shared. Retrofitting "who may read this" onto a table that assumed everyone sees everything is the expensive version of this change.
+
+**⚠ Its FIRST decision is TD-200's, and they must be settled together** — what an organisation may see of our deliberation. Deciding "the AI rationale is shared" as a one-off and then deciding it again for comments produces two inconsistent rules. Route through `implementation-planning.md`; this is a model change, not a feature.
+
+---
+
+### [TD-200] The AI's reasoning is invisible to the organisation whose quote it justifies — medium, owner decision pending
+**File(s):** `serializers_admin.OrgRequestOrgSerializer` (allowlist, ~line 874), `app/admin/requests/[id]/page.tsx` (the AI draft sits inside `{isSuper && …}`), `tests/test_org_requests.py` (the org-leak guard)
+**Owner, 2026-07-30:** *"The AI reasoning here is not shown now, which is important for accountability. Why was the quote accepted. What did the AI say that was so convincing?"* — confirmed observed as `org_admin` on request #3, which is the designed behaviour, not a rendering fault.
+
+**Why it is fenced today.** `OrgRequestOrgSerializer` is an allowlist by construction — a plain `Serializer`, every field explicit, zero model passthrough — and its docstring names the failure it exists to prevent: *"the AI's hours estimate leaking to the org before the owner has approved a quote."* An exact-key snapshot pins the set. So opening any of it is a deliberate reversal, not a gap to fill.
+
+**The three fields do NOT deserve the same answer** (analysis 2026-07-30, not yet ruled on):
+- **`ai_draft_note` + `ai_draft_model` — the case for sharing.** This is the justification for the quote (*"adds a new recipient to an existing hook, reusing existing mailer patterns"*). Withholding it makes a price look arbitrary. This is the whole of the accountability gap — **one field**.
+- **`ai_draft_hours` — keep private, and NOT for commercial reasons.** The margin is already disclosed to the org (`quote_margin_pct` renders as *"includes 15% margin"*). The reason is that the estimate is **demonstrably unreliable**: 24h for ~4h on the sponsor-invite request and 8h on #3, both because the model has no codebase context. Publishing an untrustworthy number as the justification for a price makes it the figure the quote must argue against.
+- **`triage_note` — keep private, and it needn't be opened.** The owner already has two shared channels for their own reasoning (the `ask` thread and the quote note) and used the quote note for exactly this on #3. Opening the private note costs the ability to be blunt and buys nothing that is not already available.
+
+**Blocked on:** an owner ruling. Bundle with **TD-199** — a comment stream needs the same visibility rule from its first migration.
