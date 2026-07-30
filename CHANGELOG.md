@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Requests module gains a conversation — 2026-07-30
+
+Three complaints from reviewing one live request. Two were near-trivial, because the data was
+already there and nobody had drawn it.
+
+**The screenshot thumbnails were the full images all along** — signed URLs to the originals,
+cropped to a fixed height. Clicking one now opens it properly, with an open-in-a-new-tab link
+beside it. And a screenshot can now be **pasted** or dragged in, which is how one actually reaches
+a form: Win+Shift+S, then Ctrl+V. A pasted image has no filename, so one is made up for it.
+
+**The AI's model name** was on the record and never shown. The same draft from a fast model and a
+careful one does not carry the same weight, so it is now stated.
+
+**The deliberation section could not deliberate.** Listing every operation the module offers showed
+the thread ran one way: the AI asked, the requester answered, and the owner was copied in on their
+own request. So a judgement about the *shape* of a request — *adding a sponsor directly would skip
+the terms and consent, so build an invite instead* — had nowhere to go. It could be written into a
+private triage note that the requester never sees and the reviewer never reads.
+
+Now the owner can ask, in the same thread, with each question showing whose it is. The requester is
+emailed exactly as before; only the attribution differs. Owner questions do not eat the reviewer's
+question allowance — that cap exists so the machine cannot bury someone, not to ration the owner.
+
+**And the reviewer can now see the screenshots.** It was previously told only how many were
+attached, which on a request that is entirely about a screen is close to useless. Its next run also
+reads the owner's assessment as authoritative, so re-running it now argues with you instead of
+repeating itself.
+
+No migration. 5095 pytest · 1184 jest · i18n parity 4333 ×3. Every new guard bite-checked.
+Two existing tests failed and were **updated deliberately, with the reason recorded in each** —
+one pinned the attachment-count line that counting replaced, and the transition matrix derives its
+cases from the table I extended, so it correctly demanded to be taught the new action.
+
 ## A student can fix their own IC — until we've confirmed it — 2026-07-29
 
 It began as one student with one wrong digit: birthplace code `11` typed against a card reading

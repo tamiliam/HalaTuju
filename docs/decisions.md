@@ -6674,3 +6674,36 @@ Accepted because the likeliest thing needing undoing is our code, not a student'
 **Revisit if:** anything ever locks a profile that has no application — the endpoint is addressed
 by application and could not reach it. Noted at the endpoint and on the model field rather than
 filed as debt, because nothing is owed while both lock routes require an application.
+
+## One clarification thread, authored — Requests, 2026-07-30
+**Decision:** owner questions and AI questions share `OrgRequest.clarifications`, each entry tagged
+`asked_by` ('ai' | 'owner'); absent means 'ai', so pre-existing threads read correctly with no
+backfill. Owner questions are deliberately NOT counted against `MAX_OPEN_QUESTIONS`.
+**Alternatives considered:** two separate threads (owner↔requester kept apart from the AI's
+clarifications); or owner→AI steering only, with no ability to ask the requester.
+**Rationale:** the requester should see ONE conversation — they are answering a question, and
+whose it is is context rather than a different mechanism. It also reuses the storage, the
+notification email and the answer-by-index path unchanged. The cap exists so an eager reviewer
+cannot bury the requester; letting an owner question consume a reviewer slot would mean asking one
+thing by hand silently costs the AI its allowance.
+**Trade-offs:** provenance now depends on rendering `asked_by` — an unrendered author makes an
+owner question indistinguishable from the machine's, so the badge is load-bearing, not decoration.
+**Revisit if:** owner questions ever need a different lifecycle from the AI's (e.g. private drafts,
+or questions that do not notify), at which point they are no longer the same thing.
+
+## The reviewer is sent the screenshots, and the owner's steer — Requests, 2026-07-30
+**Decision:** `contracts._gemini_generate` gained `images=None`; the requests reviewer now sends the
+submitter's screenshots, and the prompt carries `triage_note` as an authoritative steer plus any
+unanswered owner question.
+**Alternatives considered:** staying text-only (the prompt already noted the attachment COUNT, and
+vision was logged as a future item); or a separate image-capable seam for requests only.
+**Rationale:** these requests are frequently ABOUT a screen — "add a link here", with two
+screenshots showing exactly where — so counting them and estimating blind was the weakest part of
+the review. And a re-run that cannot see the owner's reasoning can only re-derive its first answer,
+which made the re-run button close to useless. One seam keeps the mock surface single.
+**Trade-offs:** each run becomes a multimodal call, billable per image; bounded by the existing
+≤5-attachment and `AI_RUN_CAP = 3` caps and metered as `requests_triage`. `triage_note` now reaches
+the model — safe because the whole AI draft is owner-only, and a test asserts the org-facing
+serializer carries neither.
+**Revisit if:** the metered cost of `requests_triage` becomes material, in which case send images
+only on the FIRST run rather than every re-run.
