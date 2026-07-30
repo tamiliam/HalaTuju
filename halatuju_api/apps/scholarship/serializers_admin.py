@@ -1,6 +1,8 @@
 """Admin-facing serializers for the B40 Assistance Programme (Sprint 6a)."""
 from rest_framework import serializers
 
+from apps.courses.utils import tidy_parentage_marker
+
 from .models import (
     FundingNeed, GraduationMessage, InterviewSession, InterviewSlot, ReviewerProfile,
     ScholarshipApplication, SponsorProfile,
@@ -28,10 +30,18 @@ def _full_name(application):
     """The applicant's full legal name, UPPER-CASED for the admin views (students
     type their signature inconsistently — some lowercase). Prefer the declaration
     signature (typed at submit, e.g. 'SHARMILA A/P SANGGAR') over profile.name —
-    the latter is often the Google display name / handle ('Sharmila 1204')."""
+    the latter is often the Google display name / handle ('Sharmila 1204').
+
+    ⚠ THIS READS THE SIGNATURE, SO NORMALISING `profile.name` DOES NOT REACH THIS SURFACE.
+    Application #20 typed 'SHARVANI A/ P KANAGEVELLU'; her canonical name was corrected to the
+    MyKad spelling on 2026-07-30 and the cockpit header still showed the stray space, because
+    the signature wins here by design. The signature is a dated legal record and stays verbatim
+    in the database — so the marker is tidied at DISPLAY time instead, alongside the upper-casing
+    this function already does for the same reason (students type it inconsistently).
+    Marker-only: it cannot alter a letter or the spacing between name words."""
     declared = (getattr(application, 'declaration_name', '') or '').strip()
     name = declared or (getattr(application.profile, 'name', '') if application.profile else '')
-    return name.upper()
+    return tidy_parentage_marker(name.upper())
 
 
 def _verified_email(application):

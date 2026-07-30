@@ -450,6 +450,24 @@ class TestAdminScholarship(TestCase):
         # all-A core (incl. History via the hist->history rename) → high merit
         self.assertGreater(body['merit_score'], 85)
 
+    def test_admin_name_tidies_a_spaced_parentage_marker_in_the_signature(self):
+        """The surface the owner actually reads. Application #20 typed 'SHARVANI A/ P
+        KANAGEVELLU' as her declaration signature; her MyKad reads 'A/P'. Correcting
+        `profile.name` did NOT fix this header, because `_full_name` prefers the signature
+        by design — so the marker is tidied at display time. The stored signature stays
+        verbatim (a dated legal record); only what the admin sees is normalised."""
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(
+            declaration_name='SHARVANI A/ P KANAGEVELLU')
+        self._auth(ADMIN)
+        body = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
+        self.assertEqual(body['name'], 'SHARVANI A/P KANAGEVELLU')
+        # The signature itself is untouched on the payload — it is evidence, not a label.
+        self.assertEqual(body['declaration_name'], 'SHARVANI A/ P KANAGEVELLU')
+        # And the applications LIST, which shares _full_name, agrees with the detail page.
+        rows = self.client.get('/api/v1/admin/scholarship/applications/').json()['applications']
+        row = next(r for r in rows if r['id'] == self.app.id)
+        self.assertEqual(row['name'], 'SHARVANI A/P KANAGEVELLU')
+
     def test_admin_detail_verified_email(self):
         """The admin card shows only a VERIFIED email: a verified contact_email when
         set, else the verified Google login email — never an unverified typed one."""

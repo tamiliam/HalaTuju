@@ -568,6 +568,12 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   name words (tests pin all three). Safe because `/` never occurs inside a Malaysian personal name.
 - **⚠ `declaration_name` IS DELIBERATELY LEFT VERBATIM** — a dated legal signature, not a display
   field. Only `profile.name` was corrected on prod. Do not "finish the job" by rewriting signatures.
+- **⚠ FIXING `profile.name` DOES NOT FIX THE COCKPIT — `serializers_admin._full_name` PREFERS THE
+  SIGNATURE.** The header and the applications list kept showing the space after the canonical name
+  was corrected (owner caught it by screenshot). The marker is therefore ALSO tidied at display time
+  inside `_full_name`, beside the upper-casing it already does. **One field, two readers, opposite
+  precedence** — `profile.name` feeds emails / payments CSV / Vircle relay sheet / partner exports;
+  `_full_name` (signature-first) feeds the admin surfaces. A test pins both.
 - **One row in 143** (swept). Cosmetic, never a verification risk — the matcher strips the marker,
   so every identity check on her record always read the right person.
 - **▶ AT DEPLOY: push, api only** (no web change, no migration). Post-check: app 20's cockpit header

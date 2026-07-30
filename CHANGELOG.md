@@ -25,13 +25,20 @@ name). Nothing normalised it on the way in.
   never legitimately occurs inside a Malaysian personal name, which is what makes it safe — the
   same property `vision._split_glued_markers` already relies on.
 - **The signature is untouched.** `declaration_name` stays `SHARVANI A/ P KANAGEVELLU`: it is a
-  dated legal record, not a display field. Only `profile.name` — what emails, the payments CSV,
-  sponsor profiles and partner exports read — was corrected on production.
+  dated legal record, not a display field. `profile.name` — what emails, the payments CSV, the
+  Vircle relay sheet and partner exports read — was corrected on production.
+- **⚠ AND THAT WAS NOT ENOUGH, WHICH IS THE REAL TRAP HERE.** `serializers_admin._full_name`
+  **prefers the declaration signature over `profile.name`** (deliberately — the profile name is
+  often a Google handle), so the cockpit header and the applications list kept showing the stray
+  space after the canonical name was fixed. The owner saw it and said so. The signature stays
+  verbatim in the database, so the marker is tidied at **display** time in `_full_name`, beside the
+  upper-casing that function already does for exactly the same reason. **One field, two readers,
+  opposite precedence — fixing storage does not fix a surface that prefers a different field.**
 - **One row in 143.** Swept for malformed markers and doubled spaces across every applicant; she
   was the only one. Cosmetic throughout, never a verification risk: the matcher strips the marker,
   so every identity check on her record was always reading the right person.
-- `pytest` **3905** scholarship + **1274** courses/reports (+14) · no migration · the wiring test
-  is bite-proven (unhook the helper from `save()` and it fails).
+- `pytest` **3906** scholarship + **1274** courses/reports (+15) · no migration · both wirings
+  bite-proven (unhook the helper from `save()`, or from `_full_name`, and precisely one test fails).
 
 ## A rejected application no longer holds an award amount — 2026-07-30
 
