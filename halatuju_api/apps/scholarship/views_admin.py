@@ -4221,6 +4221,53 @@ class AdminOrgRequestAskView(_OrgRequestsBase):
         return Response(self._serialize(admin, req))
 
 
+class AdminOrgRequestCommentView(_OrgRequestsBase):
+    """POST <pk>/comments/ {body, visibility?} — post to the DISCUSSION (TD-201).
+
+    The verb the module never had. Until now exactly ONE action reached the requester: `ask` a
+    question. So a conclusion — "here is what we would build, and why" — had to travel as a quote
+    note or not at all, and the owner's judgement about the shape of a request left the system.
+
+    ACTOR: super OR any org_admin of the owning organisation (owner ruling, 2026-07-31). They can
+    already READ the request — requests are org-fenced, and a cross-org pk is a 404 — so this adds
+    no visibility, it lets the people already in the room speak. `_requestee(allow_super=True)` is
+    exactly that rule; the org fence is the request lookup, not a check here.
+
+    ⚠ `visibility='internal'` is SUPER-ONLY and the service refuses it for an org author. Two
+    layers on purpose: a serializer allowlist cannot save you here, because the leak would be a
+    ROW the org may not read rather than a field — see `org_requests.comments_for`.
+
+    WINDOW: until the request is TERMINAL, wider than `OPEN_FOR_SHAPING`. Discussion continues
+    after assignment (the owner's Bugzilla framing); it is asking a NEW QUESTION that still stops
+    at the quote, because a question can re-price and a remark cannot.
+    """
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._requestee(request, pk, allow_super=True)
+        if err:
+            return err
+        from . import org_requests
+        visibility = (request.data.get('visibility') or org_requests.VISIBILITY_SHARED).strip()
+        # An org_admin may not post an internal note. Refused HERE as well as in the service so
+        # the endpoint's contract is readable without following the call.
+        if visibility == org_requests.VISIBILITY_INTERNAL and not admin.is_super:
+            return Response({'error': 'forbidden', 'code': 'forbidden'},
+                            status=status.HTTP_403_FORBIDDEN)
+        author_kind = (org_requests.AUTHOR_OWNER if admin.is_super
+                       else org_requests.AUTHOR_ORG)
+        try:
+            org_requests.post_comment(
+                req, admin, request.data.get('body') or '',
+                author_kind=author_kind, visibility=visibility)
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
 class AdminOrgRequestTriageView(_OrgRequestsBase):
     """POST triage (submitted → triaged). Super only."""
 

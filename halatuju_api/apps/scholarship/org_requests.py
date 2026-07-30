@@ -476,12 +476,13 @@ def modify(req, admin, *, description):
     req.status = 'submitted'
     req.save(update_fields=['description', 'status', 'updated_at'])
     # After the save, so a failure recording history cannot leave the amendment half-applied.
-    # INTERNAL: our record of what changed, not part of the conversation with the requester,
-    # who wrote the new text and can already see it on the request.
+    # SHARED, and authored by the org: `modify` is an org_admin action (`_requestee`), and the
+    # history is a record of what the REQUESTER themselves changed — there is nothing private in
+    # it, and they can already see the new text. (An earlier draft marked this internal, which the
+    # service correctly refused: an org author may not write a platform-internal note.)
     post_comment(req, admin,
                  'Description amended. Previous text:\n\n' + previous,
-                 author_kind=AUTHOR_OWNER if _is_super(admin) else AUTHOR_ORG,
-                 visibility=VISIBILITY_INTERNAL)
+                 author_kind=AUTHOR_ORG, visibility=VISIBILITY_SHARED)
     return req
 
 

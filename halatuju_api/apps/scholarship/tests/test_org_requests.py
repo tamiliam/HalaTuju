@@ -224,9 +224,13 @@ class TestRequesteeResponses(_Base):
         r.refresh_from_db()
         self.assertEqual(r.status, 'submitted')
         self.assertEqual(r.description, 'amended text')
-        hist = [c for c in r.clarifications if c.get('history') == 'description_modified']
+        # TD-201: history is a COMMENT now, not a `history` dict in the JSON list. Shared and
+        # org-authored — it records what the requester themselves changed.
+        hist = [c for c in r.comments.all() if 'Description amended' in c.body]
         self.assertEqual(len(hist), 1)
-        self.assertEqual(hist[0]['previous_description'], old)
+        self.assertIn(old, hist[0].body)
+        self.assertEqual(hist[0].author_kind, svc.AUTHOR_ORG)
+        self.assertEqual(hist[0].visibility, svc.VISIBILITY_SHARED)
 
     def test_withdraw_no_reason_needed(self):
         r = self._quoted()
@@ -248,12 +252,18 @@ class TestRequesteeResponses(_Base):
 
 class TestClarifications(_Base):
     def test_answer_first_unanswered(self):
-        r = self._req(clarifications=[
-            {'question': 'Which page?', 'asked_at': 't', 'answer': None, 'answered_at': None}])
-        svc.answer_clarification(r, 'The dashboard')
+        # TD-201: a question is a comment AWAITING A REPLY; the reply is its own comment and the
+        # question is stamped replied. Two rows where the pairs model had one.
+        r = self._req()
+        svc.post_comment(r, None, 'Which page?', author_kind=svc.AUTHOR_AI, awaiting_reply=True)
+        svc.answer_clarification(r, 'The dashboard', admin=self.org_admin)
         r.refresh_from_db()
-        self.assertEqual(r.clarifications[0]['answer'], 'The dashboard')
-        self.assertTrue(r.clarifications[0]['answered_at'])
+        bodies = [c.body for c in r.comments.all()]
+        self.assertEqual(bodies, ['Which page?', 'The dashboard'])
+        question, reply = list(r.comments.all())
+        self.assertFalse(question.awaiting_reply)
+        self.assertTrue(question.replied_at)
+        self.assertEqual(reply.author_kind, svc.AUTHOR_ORG)
 
     def test_answer_nothing_to_answer(self):
         r = self._req(clarifications=[
@@ -268,17 +278,24 @@ class TestClarifications(_Base):
     # since 'approved' never returns. The owner's rule: answerable until the quote is ACCEPTED.
 
     def _one_open(self, status):
-        return self._req(status=status, clarifications=[
-            {'question': 'Notify on reassignment?', 'asked_at': 't',
-             'answer': None, 'answered_at': None}])
+        # TD-201: an open question is a comment awaiting a reply. Posted while the request is
+        # still 'submitted' (post_comment refuses a terminal one), THEN moved to the status under
+        # test — the fixture must not be the thing that fails.
+        r = self._req(status='submitted')
+        svc.post_comment(r, None, 'Notify on reassignment?',
+                         author_kind=svc.AUTHOR_AI, awaiting_reply=True)
+        r.status = status
+        r.save(update_fields=['status'])
+        return r
 
     def test_answerable_after_the_quote_is_sent(self):
         for status in ('quoted', 'deferred'):
             with self.subTest(status=status):
                 r = self._one_open(status)
-                svc.answer_clarification(r, 'One assignment only.')
+                svc.answer_clarification(r, 'One assignment only.', admin=self.org_admin)
                 r.refresh_from_db()
-                self.assertEqual(r.clarifications[0]['answer'], 'One assignment only.')
+                self.assertIn('One assignment only.', [c.body for c in r.comments.all()])
+                self.assertFalse(svc.open_questions(r), 'the question is now replied')
                 self.assertEqual(r.status, status, 'answering must not move the request')
 
     def test_not_answerable_once_the_quote_is_accepted(self):
@@ -384,7 +401,7 @@ class TestRunAiReview(_Base):
         self.assertIsNone(r.ai_draft_hours)
         self.assertTrue(r.ai_draft_model)
         self.assertEqual(out['new_questions'], ['Which report?'])
-        open_q = [c for c in r.clarifications if not c.get('answer')]
+        open_q = svc.open_questions(r)
         self.assertEqual(len(open_q), 1)
 
     def test_garbage_stored_no_500(self):
@@ -443,7 +460,7 @@ class TestRunAiReview(_Base):
             self.assertTrue(svc.auto_run_ai_review(r))
         r.refresh_from_db()
         # Same question both runs → appended once, not twice.
-        qs = [c for c in r.clarifications if c.get('question')]
+        qs = [c for c in r.comments.all() if c.author_kind == svc.AUTHOR_AI]
         self.assertEqual(len(qs), 1)
         self.assertEqual(r.ai_run_count, 2)
 

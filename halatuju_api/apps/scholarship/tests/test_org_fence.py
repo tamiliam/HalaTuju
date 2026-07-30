@@ -243,6 +243,11 @@ class TestFenceCoverageCompleteness(TestCase):
         # The owner asking the requester a question — super-only via _super_side, which still
         # resolves the request through the org-fenced _org_request_for lookup.
         'AdminOrgRequestAskView': 'requests-org-fenced',
+        # TD-201, the discussion. super OR any org_admin of the OWNING org, via
+        # _requestee(allow_super=True) -> the same org-fenced _org_request_for lookup, so a
+        # cross-org pk is a 404 before any comment is written. The 'internal' visibility is
+        # refused for a non-super at the view AND in the service.
+        'AdminOrgRequestCommentView': 'requests-org-fenced',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',
@@ -393,6 +398,9 @@ class TestOrgFenceStaticGuard(TestCase):
         'ScholarshipApplication.objects', 'Sponsorship.objects',
         'GraduationMessage.objects', 'ApplicantDocument.objects',
         'OrgRequest.objects',
+        # TD-201. A comment is reached ONLY through its org-fenced request (req.comments), never
+        # by a top-level manager query — if one appears in views_admin it needs a pragma saying why.
+        'OrgRequestComment.objects',
     )
 
     def test_raw_admin_queries_are_fenced(self):

@@ -49,12 +49,15 @@ class TestTheOwnerCanAsk(TestCase):
         req = self._req()
         org_requests.ask_question(req, self.owner, 'Would an invite work instead?')
         req.refresh_from_db()
-        self.assertEqual(len(req.clarifications), 1)
-        entry = req.clarifications[0]
-        self.assertEqual(entry['question'], 'Would an invite work instead?')
-        self.assertEqual(org_requests.asked_by(entry), 'owner')
-        self.assertEqual(entry['asked_by_email'], 'owner@x.com')
-        self.assertIsNone(entry['answer'])
+        # TD-201: the question is a COMMENT awaiting a reply. `asked_by_email` is gone — the
+        # author is a real FK now, so the person is resolved rather than copied as a string.
+        self.assertEqual(req.comments.count(), 1)
+        entry = req.comments.first()
+        self.assertEqual(entry.body, 'Would an invite work instead?')
+        self.assertEqual(entry.author_kind, org_requests.AUTHOR_OWNER)
+        self.assertEqual(entry.author_admin, self.owner)
+        self.assertTrue(entry.awaiting_reply)
+        self.assertEqual(entry.visibility, org_requests.VISIBILITY_SHARED)
 
     def test_only_a_super_may_ask(self):
         req = self._req()
@@ -89,9 +92,11 @@ class TestTheOwnerCanAsk(TestCase):
     def test_the_requester_answers_an_owner_question_through_the_existing_path(self):
         req = self._req()
         org_requests.ask_question(req, self.owner, 'Would an invite work instead?')
-        org_requests.answer_clarification(req, 'Yes, an invite is fine.')
+        org_requests.answer_clarification(req, 'Yes, an invite is fine.', admin=self.oa)
         req.refresh_from_db()
-        self.assertEqual(req.clarifications[0]['answer'], 'Yes, an invite is fine.')
+        self.assertEqual([c.body for c in req.comments.all()],
+                         ['Would an invite work instead?', 'Yes, an invite is fine.'])
+        self.assertFalse(org_requests.open_questions(req))
 
 
 class TestOwnerQuestionsDoNotCostTheAiItsBudget(TestCase):
@@ -149,9 +154,12 @@ class TestTheOwnersReasoningReachesTheReviewerAndNotTheOrg(TestCase):
     def test_the_thread_is_attributed_in_the_prompt(self):
         req = self._req()
         org_requests.ask_question(req, self.owner, 'Would an invite work instead?')
-        org_requests.answer_clarification(req, 'Yes.')
+        org_requests.answer_clarification(req, 'Yes.', admin=self.oa)
         prompt = org_requests._build_review_prompt(req)
-        self.assertIn('Q (the owner)', prompt)
+        # TD-201: the prompt now renders the whole thread by SPEAKER rather than as Q/A pairs —
+        # a statement has no question to pair with, so the pair format could not carry one.
+        self.assertIn('the owner: Would an invite work instead?', prompt)
+        self.assertIn('the requester: Yes.', prompt)
 
     def test_the_reviewer_is_NOT_asked_to_price(self):
         """Owner ruling, 2026-07-30: it classifies and asks; it does not estimate.

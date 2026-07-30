@@ -182,7 +182,11 @@ class TestOrgPayloadAllowlist(_Base):
     """
     ORG_KEYS = {
         'id', 'kind', 'title', 'description', 'component', 'urgency', 'steps_to_reproduce',
-        'status', 'clarifications',
+        # 'clarifications' RETIRED 2026-07-31 (TD-201) in favour of 'comments' — a table with an
+        # author and a VISIBILITY, which a JSON list of {question, answer} pairs could not carry.
+        # The org payload gets SHARED comments only; that row filter lives in
+        # org_requests.comments_for, because an allowlist guards FIELDS and this leak would be a ROW.
+        'status', 'comments',
         # ADDED 2026-07-30 (TD-202): the reviewer's reasoning + which model wrote it. Its HOURS
         # stay out — an unreliable number presented as the basis of a price is worse than none.
         'ai_draft_note', 'ai_draft_model', 'ai_draft_at',

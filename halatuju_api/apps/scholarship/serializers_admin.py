@@ -881,6 +881,32 @@ def _serialize_org_request_attachments(org_request):
     return out
 
 
+def _comment_dicts(req, *, viewer_is_org):
+    """The discussion as this viewer may see it (TD-201).
+
+    ⚠ The visibility filter is a ROW filter, and that is why it cannot live in the serializer's
+    field list. An allowlist protects against a FIELD reaching the wrong audience; it does nothing
+    about a row the audience may not read — a serializer naming `body` renders an internal comment
+    just as happily as a shared one. So both serializers call this, and the org one passes
+    ``viewer_is_org=True``.
+
+    `author_name` is the person, resolved for display; the AI has none.
+    """
+    from . import org_requests
+    out = []
+    for c in org_requests.comments_for(req, viewer_is_org=viewer_is_org):
+        out.append({
+            'id': c.id,
+            'author_kind': c.author_kind,
+            'author_name': getattr(c.author_admin, 'name', '') or '',
+            'body': c.body,
+            'visibility': c.visibility,
+            'awaiting_reply': c.awaiting_reply,
+            'created_at': c.created_at,
+        })
+    return out
+
+
 class OrgRequestOrgSerializer(serializers.Serializer):
     """The ORG-FACING view of an OrgRequest (what a submitting org_admin sees).
 
@@ -925,7 +951,10 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     urgency = serializers.CharField()
     steps_to_reproduce = serializers.CharField()
     status = serializers.CharField()
-    clarifications = serializers.JSONField()
+    # TD-201: the discussion, filtered to SHARED. `clarifications` is retired — nothing reads it
+    # after 2026-07-31 (the column survives one sprint so the migrated copy can be verified against
+    # the original on production; its drop is logged as its own follow-up).
+    comments = serializers.SerializerMethodField()
     # The reviewer's REASONING and which model produced it — sent, per TD-202. `ai_draft_hours`
     # stays absent: see the class docstring for why the three fields split three ways.
     ai_draft_note = serializers.CharField()
@@ -948,6 +977,10 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     # Screenshot attachments (Sprint 15.1) — org-SUBMITTED evidence, so org-visible. Adds ONE key
     # to the exact-key snapshot (19 → 20); still no ai_* / triage key.
     attachments = serializers.SerializerMethodField()
+
+    def get_comments(self, obj):
+        # viewer_is_org=True — the ROW filter. An internal comment must never appear here.
+        return _comment_dicts(obj, viewer_is_org=True)
 
     def get_quote_hours(self, obj):
         return str(obj.quote_hours) if obj.quote_hours is not None else None
@@ -975,7 +1008,7 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
     urgency = serializers.CharField()
     steps_to_reproduce = serializers.CharField()
     status = serializers.CharField()
-    clarifications = serializers.JSONField()
+    comments = serializers.SerializerMethodField()   # TD-201: the FULL thread, internal included
     ai_run_count = serializers.IntegerField()
     ai_draft_kind = serializers.CharField()
     ai_draft_lane = serializers.CharField()
@@ -1010,6 +1043,10 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
 
     def get_ai_draft_hours(self, obj):
         return str(obj.ai_draft_hours) if obj.ai_draft_hours is not None else None
+
+    def get_comments(self, obj):
+        # The owner sees the whole thread, internal notes included.
+        return _comment_dicts(obj, viewer_is_org=False)
 
     def get_quote_hours(self, obj):
         return str(obj.quote_hours) if obj.quote_hours is not None else None
