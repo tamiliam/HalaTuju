@@ -101,6 +101,34 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 
 ## Testing
 
+### ⚠ The FRONTEND gate list — all four, before any push that deploys web
+
+```bash
+cd halatuju-web
+npx jest --maxWorkers=2      # --maxWorkers=2 is required: a full run OOMs on 8 GB and reports
+                             # worker contention as test FAILURES (exit 253)
+npx tsc --noEmit             # types. NOTE ~6 pre-existing errors in test files — grep for the
+                             # files you touched; do not read a clean grep as a clean run
+npx next lint                # ⚠ 0 ERRORS REQUIRED (warnings are fine — passing builds carry
+                             # several). NEITHER jest NOR tsc runs ESLint, and `next build` LINTS
+                             # BEFORE IT EMITS: on 2026-07-30 two eslint-disable comments naming a
+                             # rule this config never loads failed the WEB build while the api
+                             # deployed, so production ran new server code behind an unchanged UI
+node scripts/check-i18n.js   # parity across en/ms/ta
+```
+
+**⚠ AND FOR INTERACTIVE BEHAVIOUR, A RENDERED TEST — a source-shape guard is not evidence.**
+This repo has 17 `@testing-library/react` + jsdom tests; `components/admin/CommandPalette.test.tsx`
+is the model and its docblock states the reason. Source-shape guards are right for **structural**
+claims (no bare `disabled`, no hard-coded hex, no surface forgotten). They are blind to anything
+depending on **focus, event propagation, keyboard, drag, mount/unmount or async flush** — a paste
+handler on an unfocused `<div>` satisfied `/onPaste=/` for a day while the feature could not fire at
+all. See `components/OrgRequestAttachments.paste.test.tsx` for the shape: dispatch the event from
+somewhere ELSE on the page, because dispatching at the panel passes under both implementations and
+proves nothing.
+
+### Backend
+
 ```bash
 cd halatuju_api
 
