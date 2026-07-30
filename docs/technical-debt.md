@@ -2264,7 +2264,7 @@ A second org_admin **can** open the request (requests are org-fenced, super glob
 
 ---
 
-### [TD-202] The AI's reasoning is invisible to the organisation whose quote it justifies — medium, owner decision pending
+### ✅ [TD-202 — RESOLVED 2026-07-30] The AI's reasoning is invisible to the organisation whose quote it justifies
 **File(s):** `serializers_admin.OrgRequestOrgSerializer` (allowlist, ~line 874), `app/admin/requests/[id]/page.tsx` (the AI draft sits inside `{isSuper && …}`), `tests/test_org_requests.py` (the org-leak guard)
 **Owner, 2026-07-30:** *"The AI reasoning here is not shown now, which is important for accountability. Why was the quote accepted. What did the AI say that was so convincing?"* — confirmed observed as `org_admin` on request #3, which is the designed behaviour, not a rendering fault.
 
@@ -2275,5 +2275,25 @@ A second org_admin **can** open the request (requests are org-fenced, super glob
 - **`ai_draft_hours` — keep private, and NOT for commercial reasons.** The margin is already disclosed to the org (`quote_margin_pct` renders as *"includes 15% margin"*). The reason is that the estimate is **demonstrably unreliable**: 24h for ~4h on the sponsor-invite request and 8h on #3, both because the model has no codebase context. Publishing an untrustworthy number as the justification for a price makes it the figure the quote must argue against.
 - **`triage_note` — keep private, and it needn't be opened.** The owner already has two shared channels for their own reasoning (the `ask` thread and the quote note) and used the quote note for exactly this on #3. Opening the private note costs the ability to be blunt and buys nothing that is not already available.
 
-**Blocked on:** an owner ruling. Bundle with **TD-201** — a comment stream needs the same visibility rule from its first migration.
+**RESOLVED — the owner ruled on 2026-07-30, and the analysis above was adopted as proposed.**
+`ai_draft_note` + `ai_draft_model` + `ai_draft_at` now reach the org (rendered as *How we read this*
+on the detail page, requester-only — the super keeps the fuller block with kind/lane/hours).
+`ai_draft_hours`, `triaged_kind`, `lane` and `triage_note` remain withheld, each for the distinct
+reason recorded in `OrgRequestOrgSerializer`'s docstring.
+
+**What triggered the ruling:** the owner filed request **#4** as an org_admin and reported the AI had
+not responded. It had — 21 seconds in, with an accurate reading of the bug. The fence, not the
+reviewer, was the silence.
+
+**Accepted knowingly:** `ai_draft_note` is free-form model prose and MAY state an hours figure even
+though `ai_draft_hours` is withheld. Negotiation optics, not correctness — the owner sets the final
+quote. If it becomes a nuisance the cheap fix is a line in the review prompt, not a filter.
+
+**⚠ TD-201 INHERITS THIS RULE.** A comment stream's visibility column must split the same way:
+shared reasoning, private judgement. Do not re-decide it from scratch.
+
+**Three guards objected and were narrowed, never widened** — `test_the_org_NEVER_sees_the_STEER`
+(now scoped to the steer and the hours), the exact-key payload snapshot, and the new
+`test_the_ai_split_is_exact` which states the positive half. Bite-checked by letting the hours
+through: all three fail.
 

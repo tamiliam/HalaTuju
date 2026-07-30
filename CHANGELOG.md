@@ -135,6 +135,30 @@ Two existing tests failed and were **updated deliberately, with the reason recor
 one pinned the attachment-count line that counting replaced, and the transition matrix derives its
 cases from the table I extended, so it correctly demanded to be taught the new action.
 
+## The requester can read why — 2026-07-30
+
+The owner filed request #4 as an org_admin and reported that the AI had not responded. It had —
+**21 seconds after submission**, with an accurate reading of the bug: *"the system is in a
+contradictory state: the verification chips are green… but the stat card shows a red failure"*.
+It was answering into a room the requester was not in.
+
+**The reviewer's reasoning now reaches the organisation**, headed *How we read this*, with the model
+named and a line making clear a person reviews it before any quote. A price whose reasoning is
+invisible looks arbitrary, and the reasoning was already written.
+
+**Its hours estimate does not**, and that is not about commercial secrecy — the margin is already
+withheld and the real quote is sent. The estimate is simply *unreliable*: the model cannot see the
+codebase, so it has priced work at 24 hours that was largely already built. Publishing an
+untrustworthy number as the basis of a price makes it the figure the real quote has to argue
+against. The owner's private triage note stays private for the opposite reason — they need to be
+able to write bluntly, and they already have two channels that do reach the organisation.
+
+One caveat accepted knowingly: the reasoning is free-form, so the reviewer *may* mention an hours
+figure in prose even though the field is withheld. The owner sets the final quote regardless.
+
+Three guards objected to the change and all three were narrowed with the reason written in place —
+never widened, and never deleted.
+
 ## …and there was nowhere to paste INTO — 2026-07-30
 
 Third report on one feature, and the plainest of the three: the handler worked, and there was no

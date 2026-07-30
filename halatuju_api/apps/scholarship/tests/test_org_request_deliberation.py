@@ -153,18 +153,32 @@ class TestTheOwnersReasoningReachesTheReviewerAndNotTheOrg(TestCase):
         prompt = org_requests._build_review_prompt(req)
         self.assertIn('Q (the owner)', prompt)
 
-    def test_the_org_NEVER_sees_the_steer_or_the_ai_draft(self):
-        """The reason the steer is safe to send. `OrgRequestOrgSerializer` is an allowlist with no
-        model passthrough, so it cannot leak by accident — asserted because 'safe by construction'
-        is worth stating rather than assuming."""
+    def test_the_org_NEVER_sees_the_STEER(self):
+        """The reason the steer is safe to send to the reviewer: it cannot come back out.
+
+        ⚠ NARROWED 2026-07-30 (TD-202), and narrowed DELIBERATELY rather than deleted. This
+        originally asserted that NO `ai_draft_*` field reached the org. The owner has since ruled
+        that the reviewer's REASONING is exactly what the org should see — they filed request #4 as
+        an org_admin, saw silence, and the reviewer had answered accurately 21 seconds in.
+
+        What must still never travel is the OWNER'S PRIVATE JUDGEMENT (`triage_note`, and the
+        triaged kind/lane) and the model's HOURS — the first because the owner has to stay free to
+        be blunt, the second because the number is unreliable and would read as the real price.
+        `ai_draft_note` and `ai_draft_model` moving from this list to the allowed one is the whole
+        of the change; `test_the_ai_split_is_exact` in test_org_requests_endpoints.py states the
+        positive half.
+        """
         req = self._req()
-        req.ai_draft_note = 'internal reasoning'
+        req.triage_note = 'the owner being blunt'
+        req.ai_draft_note = 'reasoning the org SHOULD read'
         req.ai_draft_hours = Decimal('4.0')
         req.save()
         keys = set(OrgRequestOrgSerializer(req).data.keys())
-        for leaked in ('triage_note', 'ai_draft_note', 'ai_draft_hours', 'ai_draft_kind',
-                       'ai_draft_lane', 'ai_draft_model', 'triaged_kind'):
-            self.assertNotIn(leaked, keys)
+        for leaked in ('triage_note', 'triaged_kind', 'lane',
+                       'ai_draft_hours', 'ai_draft_kind', 'ai_draft_lane'):
+            self.assertNotIn(leaked, keys, leaked)
+        # And the steer's VALUE is not smuggled through some other field.
+        self.assertNotIn('the owner being blunt', str(OrgRequestOrgSerializer(req).data))
 
 
 @override_settings(GEMINI_API_KEY='k')

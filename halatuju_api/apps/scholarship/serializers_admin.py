@@ -884,15 +884,35 @@ def _serialize_org_request_attachments(org_request):
 class OrgRequestOrgSerializer(serializers.Serializer):
     """The ORG-FACING view of an OrgRequest (what a submitting org_admin sees).
 
-    **Allowlist by construction** — a plain ``Serializer`` with every field explicit and ZERO
-    model passthrough, so the AI DRAFT (``ai_draft_*``) and the owner's private triage
-    (``triaged_kind``/``lane``/``triage_note``) can NEVER reach the org. The org sees only the
-    outcome the owner deliberately sends: the QUOTE (hours + note — **the MARGIN is not sent**,
-    owner 2026-07-30), the schedule/approval stamps, and the clarification thread (the questions
-    the AI/owner chose to flow to them). The
-    single worst failure this class prevents is the AI's hours estimate leaking to the org before
-    the owner has approved a quote — an exact-key snapshot test pins the key set so a new field
-    can't slip in.
+    **Allowlist by construction** — a plain ``Serializer`` with every field explicit and ZERO model
+    passthrough, so nothing reaches the org that is not named here. An exact-key snapshot test pins
+    the set, so a new field cannot slip in and a deliberate change has to be made twice.
+
+    **The AI split (owner ruling, TD-202, 2026-07-30). The three ``ai_draft_*`` fields do NOT
+    deserve the same answer:**
+
+    * ``ai_draft_note`` + ``ai_draft_model`` — **SENT.** This is the reasoning that justifies the
+      quote, and withholding it made a price look arbitrary. The owner found the gap by filing
+      request #4 as an org_admin and seeing silence: the reviewer had in fact answered in 21
+      seconds with an accurate reading of the bug, into a room the requester was not in.
+    * ``ai_draft_hours`` — **WITHHELD**, and NOT for commercial reasons (the margin is already
+      absent and ``quote_hours`` is sent when the owner quotes). The estimate is *demonstrably
+      unreliable*: the model has no codebase context, so it quoted 24h for work that was largely
+      already built and 8h for a change whose mailer already existed. Publishing an untrustworthy
+      number as the justification for a price makes it the figure the real quote must argue against.
+    * ``triaged_kind`` / ``lane`` / ``triage_note`` — **WITHHELD.** The owner's private judgement.
+      They already have two channels that DO reach the org (the ``ask`` thread and the quote note)
+      and used the quote note for exactly this on #3; opening the private note would cost the
+      ability to be blunt and buy nothing.
+
+    ⚠ **``ai_draft_note`` is free-form model prose, so it MAY state an hours figure even though
+    ``ai_draft_hours`` is withheld.** Accepted knowingly: the owner sets the final quote regardless,
+    so this is negotiation optics, not correctness. If it becomes a nuisance, the cheap fix is an
+    instruction in the review prompt telling the reviewer not to state hours in its rationale —
+    not a filter here.
+
+    The org also sees: the QUOTE (hours + note — **the MARGIN is not sent**, owner 2026-07-30), the
+    schedule/approval stamps, and the clarification thread.
 
     Input is an ``OrgRequest``.
     """
@@ -906,6 +926,11 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     steps_to_reproduce = serializers.CharField()
     status = serializers.CharField()
     clarifications = serializers.JSONField()
+    # The reviewer's REASONING and which model produced it — sent, per TD-202. `ai_draft_hours`
+    # stays absent: see the class docstring for why the three fields split three ways.
+    ai_draft_note = serializers.CharField()
+    ai_draft_model = serializers.CharField()
+    ai_draft_at = serializers.DateTimeField()
     quote_hours = serializers.SerializerMethodField()
     # quote_margin_pct is DELIBERATELY ABSENT (owner, 2026-07-30): "do not mention the margin".
     # Removed from the PAYLOAD, not merely hidden in the UI — a field the org must not see is a

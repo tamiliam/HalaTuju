@@ -139,6 +139,24 @@ export default function AdminRequestDetailPage() {
         onChange={setReq}
       />
 
+      {/* The reviewer's READING of the request — shown to the ORG too (TD-202, owner 2026-07-30).
+          The owner filed request #4 as an org_admin and saw silence; the reviewer had in fact
+          answered in 21 seconds, into a room the requester was not in. A quote whose reasoning is
+          invisible looks arbitrary. Its HOURS stay owner-only: the model has no codebase context
+          and has been wrong by a factor of six, so an unreliable number presented as the basis of
+          a price is worse than none. Rendered only for the requester — the super has the fuller
+          version, with kind/lane/hours, in Owner controls below. */}
+      {!isSuper && req.ai_draft_note && (
+        <div className="bg-white rounded-xl border p-5 mb-4">
+          <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.aiReading')}</h2>
+          <p className="text-gray-800 whitespace-pre-wrap">{req.ai_draft_note}</p>
+          <p className="text-xs text-gray-400 mt-2">
+            {t('admin.requests.detail.aiReadingNote')}
+            {req.ai_draft_model ? ` · ${req.ai_draft_model}` : ''}
+          </p>
+        </div>
+      )}
+
       {/* Clarification thread */}
       <div className="bg-white rounded-xl border p-5 mb-4">
         <h2 className="text-sm font-semibold text-gray-500 mb-3">{t('admin.requests.detail.thread')}</h2>

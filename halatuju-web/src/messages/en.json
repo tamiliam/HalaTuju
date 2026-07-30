@@ -4947,6 +4947,8 @@
       "detail": {
         "back": "Back to requests",
         "description": "Description",
+        "aiReading": "How we read this",
+        "aiReadingNote": "An automated first reading, to explain how the request was understood. A person reviews it before any quote.",
         "steps": "Steps to reproduce",
         "thread": "Questions & answers",
         "noQuestions": "No questions yet.",

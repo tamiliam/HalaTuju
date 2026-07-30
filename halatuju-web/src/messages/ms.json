@@ -4947,6 +4947,8 @@
       "detail": {
         "back": "Kembali ke permintaan",
         "description": "Penerangan",
+        "aiReading": "Bagaimana kami memahaminya",
+        "aiReadingNote": "Bacaan pertama secara automatik, untuk menerangkan cara permintaan ini difahami. Seseorang akan menyemaknya sebelum sebarang sebut harga.",
         "steps": "Langkah untuk menghasilkan semula",
         "thread": "Soalan & jawapan",
         "noQuestions": "Belum ada soalan.",

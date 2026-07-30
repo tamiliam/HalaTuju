@@ -173,14 +173,19 @@ class TestDarkByDefault(TestCase):
 
 
 class TestOrgPayloadAllowlist(_Base):
-    """The exact ORG-facing key set — the AI draft + triage must NEVER be in it (the single worst
-    leak). A snapshot, so a new field becomes a deliberate decision, not a quiet widening."""
-    # 20 keys: the 19 (16 original + 3 Bugzilla-style scoping) + `attachments` (Sprint 15.1 —
-    # org-SUBMITTED screenshot evidence, so org-visible). The AI draft (ai_*) + triage still MUST
-    # NOT appear — that is the invariant this snapshot guards.
+    """The exact ORG-facing key set. A snapshot, so a new field becomes a deliberate decision
+    rather than a quiet widening — and so a REMOVAL has to be made twice as well.
+
+    ⚠ The invariant is no longer "no `ai_*` at all". Per TD-202 (owner, 2026-07-30) the reviewer's
+    REASONING is sent and its HOURS are not, so the three `ai_draft_*` fields split three ways;
+    `test_the_ai_split_is_exact` below is the one that states the rule.
+    """
     ORG_KEYS = {
         'id', 'kind', 'title', 'description', 'component', 'urgency', 'steps_to_reproduce',
         'status', 'clarifications',
+        # ADDED 2026-07-30 (TD-202): the reviewer's reasoning + which model wrote it. Its HOURS
+        # stay out — an unreliable number presented as the basis of a price is worse than none.
+        'ai_draft_note', 'ai_draft_model', 'ai_draft_at',
         # 'quote_margin_pct' REMOVED 2026-07-30 (owner: "do not mention the margin"). Dropped from
         # the payload rather than hidden in the UI — this snapshot failing is the allowlist doing
         # its job, and the removal is the deliberate change it asked us to confirm.
@@ -201,13 +206,37 @@ class TestOrgPayloadAllowlist(_Base):
         body = self.client.get(f'{BASE}{self.req_a.id}/').json()
         self.assertEqual(set(body), self.ORG_KEYS)
 
-    def test_no_ai_or_triage_tokens_in_org_payload(self):
-        self.req_a.ai_draft_note = 'secret estimate'
+    def test_the_ai_split_is_exact(self):
+        """TD-202: the reasoning goes to the org, the hours and the owner's triage do not.
+
+        The gap this closed: the owner filed request #4 as an org_admin and saw silence. The
+        reviewer had answered in 21 seconds with an accurate reading of the bug — into a room the
+        requester was not in. So "share the reasoning" is the fix; "share the estimate" is not,
+        because the model has no codebase context and has been wrong by a factor of six.
+        """
+        self.req_a.ai_draft_note = 'reasoning the org SHOULD read'
+        self.req_a.ai_draft_hours = 9
+        self.req_a.ai_draft_kind = 'feature'
+        self.req_a.ai_draft_lane = 'sprint'
+        self.req_a.triaged_kind = 'bug'
+        self.req_a.lane = 'small_change'
         self.req_a.triage_note = 'owner-only note'
         self.req_a.save()
         self._auth('oa-a')
-        blob = str(self.client.get(f'{BASE}{self.req_a.id}/').json())
-        for banned in ('secret estimate', 'owner-only note', 'ai_draft', 'triage'):
+        body = self.client.get(f'{BASE}{self.req_a.id}/').json()
+
+        # SENT — the justification for the price.
+        self.assertEqual(body['ai_draft_note'], 'reasoning the org SHOULD read')
+
+        # WITHHELD — each for its own reason, all three stated in the serializer docstring.
+        for banned in ('ai_draft_hours', 'ai_draft_kind', 'ai_draft_lane',
+                       'triaged_kind', 'lane', 'triage_note'):
+            self.assertNotIn(banned, body, banned)
+
+        # And not smuggled in as a VALUE either — the number and the private note are the two
+        # things whose absence actually matters.
+        blob = str(body)
+        for banned in ('owner-only note', '9.0'):
             self.assertNotIn(banned, blob, banned)
 
     def test_super_sees_owner_payload(self):
