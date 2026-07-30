@@ -13,24 +13,11 @@ import {
   uploadOrgRequestAttachment, deleteOrgRequestAttachment,
   type OrgRequestAttachment, type OrgRequestDetail,
 } from '@/lib/admin-api'
+// Shared with the CREATE form's screenshot block — one home for "which files count and what do we
+// call a pasted one", because these two surfaces cannot share a component (see screenshotInput.ts).
+import { imagesFrom } from '@/lib/screenshotInput'
 
 const MAX_ATTACHMENTS = 5
-
-/**
- * A pasted image has NO filename — the clipboard carries bytes and a mime type, nothing else.
- * Without this the caption reads blank and `original_filename` stores '', so the thumbnail grid
- * becomes unlabelled the moment anyone pastes rather than picks a file.
- */
-function namedForPaste(file: File): File {
-  if (file.name) return file
-  const ext = (file.type.split('/')[1] || 'png').replace('jpeg', 'jpg')
-  return new File([file], `screenshot-${Date.now()}.${ext}`, { type: file.type })
-}
-
-/** Images only. Paste and drop both carry arbitrary content; the server refuses the rest too. */
-function imagesFrom(list: FileList | null | undefined): File[] {
-  return Array.from(list || []).filter((f) => f.type.startsWith('image/')).map(namedForPaste)
-}
 
 export default function OrgRequestAttachments({
   requestId, attachments, editable, token, onChange,

@@ -1,0 +1,111 @@
+/**
+ * Guardrail: a screenshot can be PASTED or DRAGGED into every surface that accepts one.
+ *
+ * Why this test exists. Paste and drag-and-drop shipped on 2026-07-30 into
+ * `components/OrgRequestAttachments.tsx` — the request DETAIL page — and the plan named only that
+ * file. The request CREATE form has its own screenshot block (it stages `File` objects, because
+ * there is no request id to upload against until the request exists) and kept accepting uploads
+ * alone. The owner had to report the same missing feature twice, on the surface where a screenshot
+ * most naturally starts life: you take it, then you describe the bug.
+ *
+ * The mistake was one of SCOPE, not implementation: I searched for the attachments *component*,
+ * found one, and never asked where else a screenshot enters the system. A unit test of the shared
+ * helper would not have caught it — the helper was fine, it simply had one caller. So the assertion
+ * here is deliberately a STATIC SOURCE check over both files: it fails when a surface exists that
+ * takes screenshots and does not accept them the two other ways.
+ *
+ * If a THIRD surface ever accepts screenshots, add it to SURFACES. That is the point.
+ */
+import * as fs from 'fs'
+import * as path from 'path'
+
+import { imagesFrom, namedForPaste } from '@/lib/screenshotInput'
+
+const ROOT = path.join(__dirname, '..', '..')
+
+const SURFACES = [
+  { label: 'request detail (uploads immediately)', file: 'components/OrgRequestAttachments.tsx' },
+  { label: 'request create form (stages files)', file: 'app/admin/requests/page.tsx' },
+]
+
+const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8')
+
+describe('every screenshot surface accepts paste and drop', () => {
+  for (const { label, file } of SURFACES) {
+    describe(label, () => {
+      const src = read(file)
+
+      it('handles paste', () => {
+        expect(src).toMatch(/onPaste=/)
+        expect(src).toMatch(/clipboardData/)
+      })
+
+      it('handles drag-and-drop', () => {
+        expect(src).toMatch(/onDrop=/)
+        expect(src).toMatch(/onDragOver=/)
+        expect(src).toMatch(/dataTransfer/)
+      })
+
+      it('routes through the SHARED filter rather than its own copy', () => {
+        // The duplication is what allowed the two surfaces to drift apart in the first place.
+        expect(src).toContain("from '@/lib/screenshotInput'")
+        expect(src).toMatch(/imagesFrom\(/)
+        // No local re-implementation of "is it an image".
+        expect(src).not.toMatch(/filter\(\(f\) => f\.type\.startsWith\('image\//)
+      })
+
+      it('tells the user the two extra ways in', () => {
+        expect(src).toContain('attachments.pasteHint')
+      })
+    })
+  }
+})
+
+describe('namedForPaste', () => {
+  it('names a clipboard image, which arrives with none', () => {
+    const pasted = new File([new Uint8Array([1, 2, 3])], '', { type: 'image/png' })
+    const named = namedForPaste(pasted)
+    expect(named.name).toMatch(/^screenshot-\d+\.png$/)
+    expect(named.type).toBe('image/png')
+  })
+
+  it('leaves a picked file alone', () => {
+    const picked = new File([new Uint8Array([1])], 'bug.png', { type: 'image/png' })
+    expect(namedForPaste(picked)).toBe(picked)
+  })
+
+  it('normalises jpeg to jpg so the caption reads like a filename', () => {
+    const pasted = new File([new Uint8Array([1])], '', { type: 'image/jpeg' })
+    expect(namedForPaste(pasted).name).toMatch(/\.jpg$/)
+  })
+
+  it('falls back to png when the clipboard gives no usable subtype', () => {
+    const pasted = new File([new Uint8Array([1])], '', { type: 'image/' })
+    expect(namedForPaste(pasted).name).toMatch(/\.png$/)
+  })
+})
+
+describe('imagesFrom', () => {
+  const asList = (files: File[]) => files as unknown as FileList
+
+  it('keeps images and drops everything else — a drop carries anything', () => {
+    const list = asList([
+      new File([new Uint8Array([1])], 'shot.png', { type: 'image/png' }),
+      new File([new Uint8Array([1])], 'notes.pdf', { type: 'application/pdf' }),
+      new File([new Uint8Array([1])], 'data.csv', { type: 'text/csv' }),
+    ])
+    const out = imagesFrom(list)
+    expect(out.map((f) => f.name)).toEqual(['shot.png'])
+  })
+
+  it('names every image it returns', () => {
+    const list = asList([new File([new Uint8Array([1])], '', { type: 'image/png' })])
+    expect(imagesFrom(list)[0].name).not.toBe('')
+  })
+
+  it('is safe on null and empty — paste fires with no files at all', () => {
+    expect(imagesFrom(null)).toEqual([])
+    expect(imagesFrom(undefined)).toEqual([])
+    expect(imagesFrom(asList([]))).toEqual([])
+  })
+})

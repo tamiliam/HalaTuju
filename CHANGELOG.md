@@ -35,6 +35,19 @@ Two existing tests failed and were **updated deliberately, with the reason recor
 one pinned the attachment-count line that counting replaced, and the transition matrix derives its
 cases from the table I extended, so it correctly demanded to be taught the new action.
 
+## Paste a screenshot into the form you are typing — 2026-07-30
+
+Paste and drag-and-drop shipped earlier today onto the request **detail** page, and the **create
+form** — where a screenshot actually starts life, since you take it and then describe the bug —
+kept accepting uploads only. Reported twice before it was found, which is the fair measure of the
+miss.
+
+The two surfaces cannot share a component: the detail page uploads immediately against a request
+id, while the create form has no id yet and stages files until the request exists. What they had no
+business duplicating is *which files count and what a pasted one is called* — that now lives in one
+place, and a guard asserts **every** screenshot surface accepts all three routes in. A third
+surface would have to be added to that list, which is the point.
+
 ## A question you could no longer answer — 2026-07-30
 
 Request #3 was quoted while a clarifying question was still open. Answering had been capped at

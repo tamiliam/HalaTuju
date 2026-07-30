@@ -14,6 +14,7 @@ import {
   REQUEST_STATUSES, statusLabelKey, statusTone, kindLabelKey, hasUnansweredQuestions,
   REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey, requestActionsFor,
 } from '@/lib/requestStatus'
+import { imagesFrom } from '@/lib/screenshotInput'
 
 // The Requests-space landing: a rate-card panel (bugs free · the adjudication rule · features
 // quoted in hours with the owner's approval), a submit form (org_admin), and the org's request
@@ -79,9 +80,27 @@ export default function AdminRequestsPage() {
     if (!list) return
     setWarn('')
     const room = MAX_ATTACHMENTS - files.length
-    const picked = Array.from(list).filter((f) => f.type.startsWith('image/')).slice(0, Math.max(0, room))
-    if (picked.length < list.length) setWarn(t('admin.requests.attachments.limitReached'))
+    // imagesFrom is shared with the detail page: images only, and a pasted file (which arrives
+    // with NO name) gets one, else the caption below and the stored original_filename are blank.
+    const usable = imagesFrom(list)
+    const picked = usable.slice(0, Math.max(0, room))
+    if (picked.length < usable.length || usable.length < list.length) {
+      setWarn(t('admin.requests.attachments.limitReached'))
+    }
     setFiles((prev) => [...prev, ...picked])
+  }
+  // Win+Shift+S then Ctrl+V is how a screenshot actually reaches this form — you take it, then
+  // describe the bug. Scoped to the screenshot block, so pasting into Title or Describe is
+  // unaffected. Drag-and-drop is the same path; both funnel through stageFiles.
+  const [dragging, setDragging] = useState(false)
+  const onPasteFiles = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData?.files
+    if (pasted && pasted.length > 0) { e.preventDefault(); stageFiles(pasted) }
+  }
+  const onDropFiles = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragging(false)
+    stageFiles(e.dataTransfer?.files ?? null)
   }
   const unstage = (idx: number) => setFiles((prev) => prev.filter((_, i) => i !== idx))
 
@@ -211,8 +230,15 @@ export default function AdminRequestsPage() {
             </div>
           )}
 
-          {/* Screenshots (optional) — staged locally, uploaded after the request is created. */}
-          <div>
+          {/* Screenshots (optional) — staged locally, uploaded after the request is created.
+              Paste + drag-and-drop as well as the picker: this is the surface where a screenshot
+              starts life, and it shipped upload-only on 2026-07-30 (see screenshotInput.ts). */}
+          <div
+            onPaste={onPasteFiles}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDropFiles}
+            className={dragging ? 'rounded-lg ring-2 ring-blue-400 ring-offset-2' : undefined}>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.attachments.label')}</label>
             {files.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
@@ -236,7 +262,9 @@ export default function AdminRequestsPage() {
                   onChange={(e) => { stageFiles(e.target.files); e.target.value = '' }} />
               </label>
             )}
-            <p className="text-xs text-gray-400 mt-1">{t('admin.requests.attachments.hint')}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              {t('admin.requests.attachments.hint')} {t('admin.requests.attachments.pasteHint')}
+            </p>
           </div>
 
           {warn && <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-700 p-3 text-sm">{warn}</div>}
