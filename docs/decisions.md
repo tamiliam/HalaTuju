@@ -1,5 +1,79 @@
 # Architectural Decisions — HalaTuju
 
+## The eWallet-ID guard is a BAND on the first typed digit, not a longer typed field — 2026-07-30
+**Decision:** `valid_vircle_id` keeps the 9-digit prefix + 4 typed digits and additionally requires
+the **first typed digit** (position 10 of 13) to sit in `VIRCLE_ID_BAND_MIN`–`MAX`, seeded 5–9.
+
+**Alternatives considered, both measured against all 46 production wallets + the 3 known-bad values:**
+- **Widen the typed field to 5 digits and constrain position 9 to `{7,8,9}`** (the owner's first
+  proposal). **Inert** — position 9 is `7` for every genuine wallet *and* every DuitNow number, so
+  the rule accepted all 49 known values, behaving identically to the rule it replaced. Its real merit
+  was sequence-roll-over headroom, which is a different problem.
+- **`{7,8,9}` on the first TYPED digit.** Would have **refused 39 of the 46** real students — every
+  wallet in the 5xxx and 6xxx blocks.
+- **Accept the whole 18-digit DuitNow number and derive the id from its first 13.** Rejected: it
+  rests on a **single observed sample** of that structure, and a wrong derivation would silently pick
+  a payment destination. Also more typing, against the owner's stated principle.
+- **Confirm each id against Vircle's own records before signing a payment run.** Out of scope on two
+  independent grounds — the owner declined the process change (the student guide is clear and is not
+  changing), and decisions.md 2026-07-21 records that **nothing reports activation back**, so no
+  confirmed-ID set exists. `vircle_activated_at` cannot substitute: on apps 36 and 75 it was stamped
+  by joining the relay sheet on the *wrong* number.
+
+**Rationale:** the band is the only digit that separates the two number families in the data, and it
+catches the actual failure — a student typing the last four digits of an 18-digit DuitNow number.
+It costs no extra keystroke and needs no change to the student guide, both owner constraints.
+
+**Trade-offs:** it cannot catch a typo *within* the band (read `6805`, type `6905`) — no format rule
+can; that is what the echo-back and the held first-time-wallet flag are for. And the band is finite
+(TD-199).
+
+**Revisit if:** Vircle's sequence rolls past the `…17` block (widen via env — see the next entry), or
+Vircle tells us the two number families overlap, at which point no format rule works and the
+first-time-wallet flag becomes the primary defence rather than a backstop.
+
+## A bounded validation rule is acceptable BECAUSE it fails safe — 2026-07-30
+**Decision:** accept that the eWallet-ID band has finite headroom (~55 students at the observed rate)
+rather than seek a rule that never needs revisiting. The bounds live in `settings/base.py` as
+`VIRCLE_ID_BAND_MIN`/`_MAX`, so widening them at roll-over is `--update-env-vars`, **never a deploy**.
+
+**Alternatives considered:** (a) hard-code the band as a literal — rejected, it makes an inevitable,
+foreseeable event into an emergency deploy; (b) refuse to gate on a bounded property at all and rely
+solely on downstream confirmation — rejected, the confirmation set does not exist (previous entry).
+
+**Rationale:** the asymmetry is the whole argument. When the band is exhausted a legitimate new
+number is **REFUSED** — loudly, with the student reporting that the form will not take their ID, and
+a super/org_admin able to correct it in the cockpit. The failure mode we are actually guarding
+against is the opposite: a well-formed wrong number **accepted** and paid to someone else's account,
+which is silent and only surfaced here because a human at Vircle noticed. A guard that fails in the
+recoverable direction is worth having even when it will need maintenance.
+
+**Trade-offs:** somebody must act at roll-over, and if nobody watches the logs the first signal is a
+student complaint. Mitigated by a WARNING whenever an accepted id sits at the top of the band.
+
+**Revisit if:** the refusal ever blocks a student for more than a day (then the watch is not working
+and the alarm needs a louder channel), or Vircle moves to non-sequential allocation.
+
+## A DuitNow-shaped input is NAMED and refused, never guessed at — 2026-07-30
+**Decision:** `vircle_id_error()` classifies a rejected value as `'duitnow'` or `'format'`, and the
+student-facing copy for the former names the Top Up screen and points at Settings. An 18-digit input
+is refused on length; nothing is derived from it.
+
+**Alternatives considered:** (a) one generic "check the number and try again" — rejected, it is
+actively wrong here: the number is fine, the *field* was, and it sends the student back to the same
+place; (b) silently take the first 13 digits of an 18-digit paste — rejected, see the first entry.
+
+**Rationale:** the student typed exactly what was on their screen. A message that implies they made a
+transcription error both misdiagnoses and mildly accuses. Naming the mistake is what actually
+resolves it, and it costs one i18n key.
+
+**Trade-offs:** one more error string per locale to maintain, and the classification is a heuristic —
+a 13-digit out-of-band value is *called* DuitNow when it might be an unusual typo. Acceptable: the
+copy hedges ("if you took them from…") rather than asserting.
+
+**Revisit if:** the band widens far enough that out-of-band no longer implies DuitNow, in which case
+the `'duitnow'` branch should narrow to the 18-digit case only.
+
 ## An org_admin publishes the sponsor terms — including a version they wrote — 2026-07-28
 **Decision (owner):** *"I'll allow Suresh to publish the terms."* Publish opens from **super-only**
 to **super OR org_admin**, with **no same-author check**. A plain `admin` may still author but not

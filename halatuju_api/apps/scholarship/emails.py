@@ -3645,19 +3645,25 @@ def send_vircle_activation_email(rows, csv_text=None):
         for i, r in enumerate(rows, 1))
     body = (
         'Dear Vircle team,\n\n'
-        'The student(s) below have installed the ' + _PROG_EN + ' eWallet and completed their '
-        'account details, but their account(s) are not yet activated on your side. Please activate '
-        'them so we can proceed with disbursement.\n\n'
-        f'Awaiting activation: {n}  (full details in the attached CSV)\n\n'
+        'The student(s) below have installed the ' + _PROG_EN + ' eWallet and given us their '
+        'account details. Our records do not yet show their accounts as active — though some may '
+        'already be active, if the student has messaged you on WhatsApp.\n\n'
+        'For each student listed, please:\n\n'
+        '1. ACTIVATE the account, if it is not already active.\n\n'
+        '2. CONFIRM the eWallet ID we hold is correct — and reply with the correct one if it is '
+        'not. We use this ID in the monthly payment instruction, so a wrong ID means the payment '
+        'goes to the wrong destination. Students supply the ID themselves, and some have sent us '
+        'their DuitNow Transfer number by mistake; we have no way to tell the two apart.\n\n'
+        f'Accounts we cannot yet confirm as active: {n}  (full details in the attached CSV)\n\n'
         f'{listing}\n\n'
-        'Once you activate an account we remove it from this list. This reminder is sent every '
-        '48 hours for any accounts still awaiting activation.\n\n'
+        'Once we know an account is active we remove it from this list. This reminder is sent '
+        'every 48 hours for any account we cannot yet confirm.\n\n'
         'Thank you,\n'
         + _TEAM_EN
     )
     try:
         msg = EmailMessage(
-            subject=(f'' + _PROG_EN + ' — eWallet activation request '
+            subject=(f'' + _PROG_EN + ' — eWallet activation & ID confirmation '
                      f'({n} account{"" if n == 1 else "s"}) — {today:%d %B %Y}'),
             body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient], bcc=bcc)
         msg.attach(f'vircle-activation-{today:%Y-%m-%d}.csv', csv_text, 'text/csv')

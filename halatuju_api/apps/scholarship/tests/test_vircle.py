@@ -479,6 +479,17 @@ class TestPendingActivation(TestCase):
         # csv quotes the ="…" field and doubles the inner quotes → Excel keeps it as text
         self.assertIn('=""8000400175002""', text)
 
+    def test_csv_carries_a_blank_correction_column(self):
+        """Vircle fills this in rather than composing a reply — see activation_csv_text."""
+        from apps.scholarship import vircle
+        text = vircle.activation_csv_text([
+            {'name': 'BOB', 'nric': 'b', 'installed_on': '29/06/2026', 'phone': '+60124',
+             'ewallet': '8000400175002'}])
+        self.assertIn('Correct eWallet ID (if different)', text)
+        # the data row ends with an empty cell for them to complete
+        data_row = [ln for ln in text.splitlines() if 'BOB' in ln][0]
+        self.assertTrue(data_row.endswith(','), data_row)
+
 
 class TestActivationEmail(TestCase):
     ROWS = [{'name': 'BOB', 'nric': 'b', 'installed_on': '29/06/2026', 'phone': '+60124',
@@ -494,9 +505,38 @@ class TestActivationEmail(TestCase):
         msg = mail.outbox[0]
         self.assertEqual(msg.to, ['vircle@example.com'])
         self.assertEqual(msg.bcc, ['ref@example.com'])
-        self.assertIn('activation request', msg.subject.lower())
+        self.assertIn('activation & id confirmation', msg.subject.lower())
         self.assertEqual(len(msg.attachments), 1)                    # the CSV
         self.assertIn('8000400175002', msg.attachments[0][1])
+
+    @override_settings(VIRCLE_ACTIVATION_EMAIL='vircle@example.com')
+    def test_body_asks_vircle_to_confirm_the_id_and_states_why(self):
+        """This email is NOT in the 113-email golden set, so it has no snapshot protection — a
+        2026-07-24 refactor left `{month}` unrendered in a sibling and the goldens stayed green.
+        Assert the ask, the reason, and that NOTHING is left unrendered."""
+        from django.core import mail
+        from apps.scholarship.emails import send_vircle_activation_email
+        mail.outbox = []
+        self.assertTrue(send_vircle_activation_email(self.ROWS))
+        body = mail.outbox[0].body
+        self.assertIn('CONFIRM the eWallet ID we hold is correct', body)
+        self.assertIn('payment instruction', body)            # states the consequence
+        self.assertIn('DuitNow Transfer number', body)        # names the actual mistake
+        self.assertIn('ACTIVATE the account, if it is not already active', body)
+        self.assertNotIn('{', body)                           # no placeholder survived
+        self.assertNotIn('}', body)
+
+    @override_settings(VIRCLE_ACTIVATION_EMAIL='vircle@example.com')
+    def test_body_does_not_assert_the_account_is_inactive(self):
+        """The guide tells students to WhatsApp Vircle themselves, so by the time this sends the
+        account may already be active — we cannot know. Claiming otherwise misleads the reader."""
+        from django.core import mail
+        from apps.scholarship.emails import send_vircle_activation_email
+        mail.outbox = []
+        self.assertTrue(send_vircle_activation_email(self.ROWS))
+        body = mail.outbox[0].body
+        self.assertNotIn('are not yet activated', body)
+        self.assertIn('may', body.split('For each student')[0])   # hedged, not asserted
 
     @override_settings(VIRCLE_ACTIVATION_EMAIL='', VIRCLE_PAYMENTS_EMAIL='gokula@vircle.com')
     def test_recipient_falls_back_to_payments_contact(self):

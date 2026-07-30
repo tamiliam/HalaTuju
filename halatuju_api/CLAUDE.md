@@ -524,10 +524,99 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-30)
 
-**✅ ALL PUSHED AND DEPLOYED 2026-07-30.** The IC lock (backend + the web half that had sat
-undeployed since 29 Jul), the awarded sign-off + override trail, the Requests deliberation, and
-four follow-up fixes from the owner reviewing requests #2/#3 live. **NO migration anywhere in it** —
-production's `django_migrations` reconciled through `0136`, no gaps, `makemigrations --check` clean.
+
+**⚠ TWO WAVES ON 2026-07-30. The FIRST was six commits in one deploy, api + web.** (A SECOND wave followed: `d3b5ddda`, `b78dc356`, `ee8d2de2` — four owner rulings on the Requests module found by reviewing #2/#3 live, plus the screenshot surface the first wave missed. Merged with this branch and pushed after.) Two concurrent sessions
+closed on the same day and merged before the push: `a1552464` (the awarded sign-off + the override
+trail), `f5e81b5d` + `e5a903e2` + `3d4f8d03` (Requests deliberation + its close), and `21d48037` +
+`289f2af1` (the eWallet-ID band + its close). **This one push also releases the IC-lock WEB half**,
+which had sat on `main` undeployed since 29 Jul because a concurrent agent's `git add -A` swept it
+into `70566e55` and that commit's web build was CANCELLED. **NO migration in any of them** —
+production's `django_migrations` reconciled through `0136`, no gaps, verified twice on 30 Jul
+(scholarship 136/136, courses 67/67). Combined at merge: `pytest` **5153** · `jest` **1184**.
+
+**✅ SHIPPED 2026-07-30 — A DUITNOW TRANSFER NUMBER CAN NO LONGER BE SAVED AS AN eWALLET ID.**
+Commits `21d48037` + `289f2af1` (close), branch `feat/vircle-id-validation` merged for the push.
+Brief `docs/plans/2026-07-30-vircle-wallet-id-validation-roadmap.md`; retro
+`docs/retrospective-2026-07-30-vircle-id-band.md`; decisions ×3; lessons ×3; **TD-199**.
+**NO migration.** `pytest` **3893** scholarship + **1260** courses/reports · `jest` **1184** ·
+`tsc` clean.
+- **Why:** Vircle reported two recipients whose stored eWallet ID was their **DuitNow Transfer
+  account number**. A **third nobody reported** (app 75, PRAVIN) was found by the shape of the
+  stored value. All three corrected on prod 2026-07-30; **July's payment had already reached the
+  right accounts** (Vircle caught it by hand), so there was no ledger remediation.
+- **⚠ THE MECHANISM, because every "obvious" fix gets it wrong:** a DuitNow number is **18 digits
+  whose FIRST 13 ARE the eWallet ID** — `800040017680501003` = `8000400176805` + a 5-digit
+  sub-account. The Action Centre asks for the **last 4 digits** and prefixes `800040017`, so a
+  student reading the **Top Up** screen instead of **Settings** types `1003` and produces a
+  perfectly well-formed id. This was never "they supplied a rival identifier"; it is an 18-digit
+  number truncated. **The defence therefore belongs at ENTRY, not in a cross-check.**
+- **`valid_vircle_id` gains the ISSUED BAND** — the first TYPED digit must sit in
+  `VIRCLE_ID_BAND_MIN`–`MAX` (**5–9**, `settings/base.py`). Every genuine wallet on prod is 5–7;
+  the three wrong ones were `1`. **⚠ Do NOT narrow it to {7,8,9}** — that would refuse **39 of the
+  46** real students (tested). **⚠ Do NOT widen the typed field to 5 digits and constrain position
+  9** — that is inert, behaving identically to the old rule on all 49 known values.
+- **⚠ IT FAILS SAFE, and that is why the finite headroom is acceptable.** Wallets span `…175129` →
+  `…177350`: ~48 numbers consumed per student we onboard (the sequence advances with **Vircle's**
+  whole customer base, not ours), so roll-over into `800040018xxxx` is roughly **55 students away —
+  plausibly the next intake**. When it comes, a legitimate number is **REFUSED loudly** (the student
+  tells us), never silently paid elsewhere. Widening is `--update-env-vars`, **not a deploy** —
+  which is the whole reason the bounds are settings and not literals. **TD-199.**
+- **⚠ A FIXTURE CORRECTLY BROKE — do not "fix" it by loosening the rule.** `test_payments.py` built
+  ids as `f'{i:04d}'` (`0000`, `0001`…), now out of band. Changed to an in-band suffix.
+  `test_band_bounds_come_from_settings` is the **bite proof**: widening the band makes a known-bad
+  production value pass.
+- **`AUDIT vircle_id_set`** (old, new, actor). This field decides where money goes and had **no**
+  audit line, unlike its sibling `reporting_date_set` — three prod corrections on 2026-07-30 left no
+  system record, which is how the gap was found.
+- **The student is told WHICH FIELD they read**, never "check the number" — they typed exactly what
+  was on screen. `vircle_id_error` returns `'duitnow'` vs `'format'`; the FE renders `errorDuitnow`.
+  The assembled 13 digits are echoed back as **ONE continuous run** (the way Settings prints them)
+  with a compare-digit-for-digit note — no extra typing, no extra tap.
+- **The 48h activation email now ASKS Vircle to confirm the ID** and states why ("we use this ID in
+  the monthly payment instruction"), and **stops asserting the account is inactive** — the guide
+  tells students to WhatsApp Vircle themselves, so it may already be active. CSV gains a blank
+  **`Correct eWallet ID (if different)`** column. **⚠ This email is NOT in the 113-email golden set**
+  (a 2026-07-24 refactor left `{month}` unrendered in a sibling and the goldens stayed green), so it
+  now has its own test asserting no placeholder survives.
+- **⚠ REACH LIMIT — the activation email is blind to already-activated accounts.**
+  `pending_activation_rows` filters to a blank "Activated On", and Thavasri + Pravin were marked
+  active on 24 Jul, so it would NOT have caught either. **The existing 46 need a ONE-OFF sweep**
+  (owner email, below).
+- **⛔ CONFIRM-AGAINST-VIRCLE IS OUT OF SCOPE ON TWO GROUNDS — do not re-propose.** The owner
+  declined the process change (the guide is clear and is not changing), and decisions.md 2026-07-21
+  records that **nothing reports activation back**, so no confirmed-ID set exists to check against.
+  `vircle_activated_at` is NOT usable as that gate: on apps 36 and 75 it was stamped by joining the
+  relay sheet on the **wrong** number.
+- **▶ AT DEPLOY: push. NO migrate-first** (no migration; ledger verified 136/136 scholarship +
+  67/67 courses against prod at close). Post-check: the Action Centre refuses a `…1710xx` suffix
+  with the DuitNow-specific message and echoes the 13 digits; a cockpit correction writes
+  `AUDIT vircle_id_set`.
+- **▶ OWNER, IN ORDER:** (1) **one-off email asking Vircle to confirm all 46 eWallet IDs on file** —
+  3 wrong in 46 were found by an odd numeric shape, and an in-band wrong id is invisible to any
+  query, so 3 is a floor not a count; (2) confirm **Pravin's `…176929` is activated** (his stamp was
+  set against the wrong number and Vircle confirmed only Thavasri's — the August run is his first
+  payment, and a payment to a non-activated wallet bounces); (3) **create the August run fresh** —
+  none is open (13 cancelled, 3 completed) — and check the three snapshots before Poongulali signs,
+  since `vircle_id_snapshot` freezes at `create_run` and the CSV prefers it over the live record.
+- **▶ HELD, NOT SCHEDULED: the first-time-wallet flag** — warn when a student is paid at a number
+  that has never successfully received a payment, acknowledged before signing. **Advisory only**
+  (decisions.md 2026-07-24: eWallet activation is advisory on payment runs, never a gate). Decide
+  after the sweep returns; if all 46 come back confirmed its marginal value drops.
+- **▶ CARRY:** ms/ta first drafts for `walletIdEcho` / `walletIdCheck` / `errorDuitnow`.
+
+
+**▶ OWNER, IN ORDER**
+1. ~~Push~~ — **done 2026-07-30** (both services; see the combined header above). Confirm both
+   Cloud Builds went SUCCESS for the merge SHA before treating anything below as live.
+2. **Verify on request #2** — paste a screenshot from the clipboard; click a thumbnail for the full
+   image; check the AI draft names its model; ask the requester a question and confirm it renders as
+   yours and emails them; add a triage note, re-run, and confirm the rationale engages with the
+   steer and the screenshots instead of repeating itself.
+3. **Review the amber IC-flag copy** — it shows BOTH values and declines to say which is wrong.
+   Application **94** is currently the only record that renders it.
+4. **Decide TD-198** — an awarded student cannot be declined directly (your ruling), and there is
+   no admin withdrawal route once the award email has gone. **47 applications sit in `awarded`.**
+   It moves money back to a sponsor and retracts a promise, so it is yours to call.
 
 **⚠ THE WEB BUILD FAILED THE FIRST TIME AND ONLY THE API LANDED**, so the owner opened the page and
 correctly reported nothing had changed. Cause: two `eslint-disable` comments naming
@@ -535,6 +624,7 @@ correctly reported nothing had changed. Cause: two `eslint-disable` comments nam
 `next/core-web-vitals`), and `next build` **lints before it emits**. `tsc --noEmit` and `jest` do not
 run ESLint. **`npx next lint` (0 Errors) is now a required gate before any push that deploys web** —
 warnings are fine, the passing builds carry several.
+
 
 **▶ OWNER, STILL OWED**
 1. **Review the amber IC-flag copy** (shows BOTH values, declines to say which is wrong).
@@ -577,6 +667,8 @@ warnings are fine, the passing builds carry several.
   — it dropped #3 to 4.0h and small_change once told — but **it agrees rather than verifies**, so
   the steer being right is load-bearing. `AI_RUN_CAP = 3`; the triage note is written ONCE
   (`triage` accepts `submitted` only), so there is one shot at the steer.
+
+## Superseded — previous Next Sprint (as of 2026-07-30, the IC lock)
 
 ### What shipped in the last three sprints — and the traps inside them
 

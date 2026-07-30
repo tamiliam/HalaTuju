@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## A DuitNow Transfer number can no longer be saved as an eWallet ID — 2026-07-30
+
+Vircle reported two bursary recipients whose stored eWallet ID was actually their **DuitNow
+Transfer account number**. Investigating found a **third nobody had reported** (app 75), and the
+reason none was caught: a DuitNow number is 18 digits whose **first 13 ARE the eWallet ID**
+(`800040017680501003` = `8000400176805` + a 5-digit sub-account), so a student reading the Top Up
+screen types its last four digits into a box that prefixes `800040017` — producing a perfectly
+well-formed id. All three corrected on production; July's payment had already reached the right
+accounts (Vircle caught it by hand).
+
+- **`payments.valid_vircle_id` now checks the issued band** — the first digit the student types
+  must sit in `VIRCLE_ID_BAND_MIN`–`MAX` (5–9). Every genuine wallet on production is 5–7; the
+  three wrong ones were `1`. One function, so both write paths (Action Centre, admin cockpit)
+  cannot drift. **Env-tunable, so widening it when Vircle's sequence rolls past the …17 block is
+  an `--update-env-vars`, not a deploy** — roughly 55 students away at the observed rate. It
+  **fails safe**: a legitimate out-of-band number is refused loudly, never silently misrouted.
+- **`AUDIT vircle_id_set`** (old value, new value, actor) — a field that decides where money goes
+  had no audit line at all, unlike its sibling `reporting_date_set`.
+- **The student is told which FIELD they read**, not "check the number" — they typed exactly what
+  was on screen. New `errorDuitnow` copy names the Top Up screen and points at Settings.
+- **The assembled 13 digits are echoed back** as one continuous run, the way the Vircle Settings
+  page prints them, with an instruction to compare digit for digit. No extra typing, no extra tap.
+- **The 48h activation email now ASKS Vircle to confirm the ID** and says why ("we use this ID in
+  the monthly payment instruction"). It also stops asserting the account is inactive — the guide
+  tells students to WhatsApp Vircle themselves, so it may already be active. The CSV gains a blank
+  **`Correct eWallet ID (if different)`** column so replying is filling a cell.
+
+Brief `docs/plans/2026-07-30-vircle-wallet-id-validation-roadmap.md`. **NO migration.**
+`pytest` 3893 scholarship + 1260 courses/reports · `jest` 1184 · `tsc` clean.
+
 ## The Requests module gains a conversation — 2026-07-30
 
 Three complaints from reviewing one live request. Two were near-trivial, because the data was
