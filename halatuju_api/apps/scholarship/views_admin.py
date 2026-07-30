@@ -4044,16 +4044,18 @@ class AdminOrgRequestCountView(_OrgRequestsBase):
         if self.has_role(admin, 'super'):
             # org-fence: super is global by design for the triage badge.
             return Response({'count': OrgRequest.objects.filter(status='submitted').count()})
-        # org-fence: own org only (org_admin).
+        # TD-201: "needs you" is a quote awaiting a decision, or a question awaiting a reply —
+        # the latter is now a comment row, so it is one subquery instead of walking a JSON list
+        # per request.
+        from django.db.models import Q
+        # org-fence: own org only (org_admin). Kept ADJACENT to the query — the static guard reads
+        # a 200-char window, so an explanation wedged in between silently un-fences it.
         qs = OrgRequest.objects.filter(
             organisation_id=admin.owning_organisation_id,
-        ).exclude(status__in=('done', 'declined')).only('status', 'clarifications')
-        count = 0
-        for r in qs:
-            if r.status == 'quoted' or any(
-                    not c.get('answer') and c.get('question') for c in (r.clarifications or [])):
-                count += 1
-        return Response({'count': count})
+        ).exclude(status__in=('done', 'declined'))
+        return Response({'count': qs.filter(
+            Q(status='quoted') | Q(comments__awaiting_reply=True)
+        ).distinct().count()})
 
 
 class AdminOrgRequestDetailView(_OrgRequestsBase):
