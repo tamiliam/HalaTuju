@@ -128,6 +128,7 @@ from .views_admin import (
     AdminOrgRequestCountView,
     AdminOrgRequestDetailView,
     AdminOrgRequestAnswerView,
+    AdminOrgRequestAskView,
     AdminOrgRequestApproveView,
     AdminOrgRequestDeferView,
     AdminOrgRequestModifyView,
@@ -277,6 +278,9 @@ urlpatterns = [
     path('admin/scholarship/requests/count/', AdminOrgRequestCountView.as_view()),
     path('admin/scholarship/requests/<int:pk>/', AdminOrgRequestDetailView.as_view()),
     path('admin/scholarship/requests/<int:pk>/answer/', AdminOrgRequestAnswerView.as_view()),
+    # The owner asking the requester something — the other half of the clarification
+    # thread, which until 2026-07-30 only the AI could write to. Super only.
+    path('admin/scholarship/requests/<int:pk>/ask/', AdminOrgRequestAskView.as_view()),
     path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
     path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),

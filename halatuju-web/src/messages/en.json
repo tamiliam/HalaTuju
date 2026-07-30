@@ -4914,7 +4914,11 @@
         "uploadFailed": "Couldn’t upload that image. Please try again.",
         "createdButFailed": "Request created, but a screenshot didn’t upload — add it from the request page.",
         "none": "No screenshots.",
-        "image": "Image"
+        "image": "Image",
+        "view": "Click to view",
+        "openTab": "Open in a new tab",
+        "pasteHint": "You can also paste or drag an image in.",
+        "dropHere": "Drop the image here"
       },
       "lane": {
         "small_change": "Small change",
@@ -4952,7 +4956,13 @@
         "quoteValue": "≈{hours} hours · includes {margin}% margin",
         "quoteNote": "Note",
         "declinedReason": "Reason",
-        "scheduledFor": "Scheduled for"
+        "scheduledFor": "Scheduled for",
+        "askedByOwner": "You",
+        "askedByAi": "AI",
+        "askLabel": "Ask the requester something",
+        "askPlaceholder": "e.g. Adding a sponsor directly would skip the terms and consent — would an invite work instead?",
+        "askSend": "Send question",
+        "askHint": "They are emailed, and your question is shown to them as yours. It also steers the next AI review."
       },
       "action": {
         "accept": "Accept quote",
@@ -4987,7 +4997,8 @@
         "declineReason": "Reason",
         "modifyLabel": "Amend your request",
         "declineConfirm": "Decline this request? This cannot be undone.",
-        "withdrawConfirm": "Withdraw this request? This cannot be undone."
+        "withdrawConfirm": "Withdraw this request? This cannot be undone.",
+        "aiDraftModel": "Model"
       },
       "error": {
         "bug_is_free": "A bug report is free — schedule it instead of quoting.",

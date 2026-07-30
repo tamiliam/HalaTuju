@@ -1858,6 +1858,11 @@ export async function voidSponsorCredit(
 export interface OrgRequestClarification {
   question?: string | null
   asked_at?: string | null
+  // WHO asked. Stored from 2026-07-30, when the owner gained the ability to ask; an entry with
+  // no `asked_by` is an AI question, because that is all there was before — so old threads read
+  // correctly with no backfill. Render it: the provenance is the point of one shared thread.
+  asked_by?: 'ai' | 'owner' | null
+  asked_by_email?: string | null
   answer?: string | null
   answered_at?: string | null
   // A modify() history entry carries these instead of question/answer.
@@ -1984,6 +1989,15 @@ export async function answerOrgRequest(
   id: number, data: { answer: string; index?: number }, options?: ApiOptions
 ): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/answer/`, 'POST', data, options)
+}
+/**
+ * The OWNER asks the requester a question — the other half of the clarification thread, which
+ * until 2026-07-30 only the AI could write to. Super-only server-side.
+ */
+export async function askOrgRequest(
+  id: number, data: { question: string }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/ask/`, 'POST', data, options)
 }
 export async function approveOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/approve/`, 'POST', {}, options)

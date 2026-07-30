@@ -4175,6 +4175,44 @@ class AdminOrgRequestDeclineView(_OrgRequestsBase):
         return Response(self._serialize(admin, req))
 
 
+class AdminOrgRequestAskView(_OrgRequestsBase):
+    """POST <pk>/ask/ {question} — the OWNER asks the requester something. Super only.
+
+    Until now the clarification thread ran one way: the AI asked, the requester answered, and the
+    owner watched by email. So a judgement about the SHAPE of a request — "adding a sponsor
+    directly would bypass the terms and consent; would an invite do?" — had nowhere to go, because
+    `triage_note` is private to the owner and the org never sees it.
+
+    Same window as `/answer/` and the AI's own questions (submitted/triaged): a quoted request
+    must not grow new questions, because the quote was priced against what was known when it
+    was sent.
+
+    Emails the requester through the SAME helper the AI's questions use, so a question reads the
+    same to them however it was authored — only the on-screen attribution differs.
+    """
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            question = org_requests.ask_question(req, admin, request.data.get('question') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        try:
+            from . import emails
+            emails.send_org_request_questions_email(req, [question])
+        except Exception:
+            logger.warning('Requests: owner-question notify failed for OrgRequest %s',
+                           req.pk, exc_info=True)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
 class AdminOrgRequestTriageView(_OrgRequestsBase):
     """POST triage (submitted → triaged). Super only."""
 

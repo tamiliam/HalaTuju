@@ -90,6 +90,10 @@ TRANSITIONS = {
     'decline':  (('submitted', 'triaged', 'quoted', 'deferred'),  'declined'),
     'answer':   (('submitted', 'triaged'),                        None),
     'ai_rerun': (('submitted', 'triaged'),                        None),
+    # The owner asking the requester something. Same window as the AI's own questions and the
+    # answer path — a quoted or terminal request must not grow new questions, because the quote
+    # was priced against what was known when it was sent.
+    'ask':      (('submitted', 'triaged'),                        None),
 }
 
 TERMINAL_STATUSES = ('done', 'declined')
@@ -155,8 +159,72 @@ def create_request(organisation, submitted_by, *, kind, title, description,
 
 # ── clarification thread ──────────────────────────────────────────────────────────
 
+# Who authored a clarification. Stored on each entry from 2026-07-30; an entry with NO
+# `asked_by` is an AI question, because that is all there was before — so no backfill is
+# needed and old threads read correctly.
+ASKED_BY_AI = 'ai'
+ASKED_BY_OWNER = 'owner'
+
+
+def asked_by(entry):
+    """The author of a clarification entry, defaulting to the AI for pre-2026-07-30 rows."""
+    return (entry or {}).get('asked_by') or ASKED_BY_AI
+
+
 def _open_questions(req):
     return [c for c in (req.clarifications or []) if not c.get('answer')]
+
+
+def _open_ai_questions(req):
+    """The AI's own unanswered questions — what ``MAX_OPEN_QUESTIONS`` actually caps.
+
+    The cap exists so an eager reviewer cannot bury the requester in questions. It was never
+    meant to stop the OWNER asking something, so an owner question must not consume the AI's
+    room; otherwise asking one thing by hand silently costs the reviewer a slot.
+    """
+    return [c for c in _open_questions(req) if asked_by(c) == ASKED_BY_AI]
+
+
+def ask_question(req, admin, question):
+    """The OWNER asks the requester something (super-only). Returns the appended question text.
+
+    Why this exists: until now the thread flowed one way only — the AI asked,
+    ``answer_clarification`` let the requester reply, and the owner was a bystander on their own
+    request, CC'd by email. So a judgement like *"adding a sponsor directly would bypass the terms
+    and consent — would an invite do?"* had nowhere to go: ``triage_note`` is private and the org
+    never sees it. The org-facing serializer's docstring already described this thread as carrying
+    "the questions the AI/owner chose to flow to them" — the owner half was designed for and never
+    built.
+
+    ONE thread, authored entries (owner decision, 2026-07-30): owner and AI questions share
+    ``clarifications`` and are distinguished by ``asked_by``, so the requester sees a single
+    conversation and the provenance is still on the record. Deliberately NOT counted against
+    ``MAX_OPEN_QUESTIONS`` — see ``_open_ai_questions``.
+
+    The caller emails the requester (``emails.send_org_request_questions_email``), matching how
+    the AI's questions are delivered.
+    """
+    if not _is_super(admin):
+        raise OrgRequestError('forbidden')
+    _check_transition(req, 'ask')
+    question = (question or '').strip()
+    if not question:
+        raise OrgRequestError('question_required')
+    clar = list(req.clarifications or [])
+    # Same dedup as the AI's, on text: asking the identical thing twice is a slip, not an intent.
+    if any((c.get('question') or '').strip().casefold() == question.casefold() for c in clar):
+        raise OrgRequestError('duplicate_question')
+    clar.append({
+        'question': question[:1000],
+        'asked_at': timezone.now().isoformat(),
+        'asked_by': ASKED_BY_OWNER,
+        'asked_by_email': getattr(admin, 'email', '') or '',
+        'answer': None,
+        'answered_at': None,
+    })
+    req.clarifications = clar
+    req.save(update_fields=['clarifications', 'updated_at'])
+    return question[:1000]
 
 
 def answer_clarification(req, answer, *, index=None):
@@ -362,19 +430,56 @@ _LANE_DEFINITIONS = (
 )
 
 
+def _review_images(req):
+    """The submitter's screenshots as ``[(bytes, mime), …]`` for the multimodal review.
+
+    Until 2026-07-30 the reviewer was told only HOW MANY images were attached, never shown them —
+    so on a request that is entirely about a screen ("add a link here", with two screenshots
+    showing exactly where) it was estimating blind. Owner decision: send them.
+
+    Best-effort per image: a blob that will not fetch is skipped rather than failing the review,
+    because a broken attachment must not cost the owner their triage. Bounded by the same ≤5
+    attachment cap the upload path enforces.
+    """
+    from .vision import _fetch_image_bytes
+    out = []
+    try:
+        attachments = list(req.attachments.all()) if req.pk else []
+    except Exception:
+        return out
+    for att in attachments[:MAX_ATTACHMENTS]:
+        data = _fetch_image_bytes(att.storage_path)
+        if data:
+            out.append((data, att.content_type or 'image/png'))
+    return out
+
+
 def _build_review_prompt(req):
-    """The strict-JSON triage prompt: kind/title/description + answered clarifications + the
-    adjudication rule + lane definitions → the reviewer JSON contract."""
+    """The strict-JSON triage prompt: kind/title/description + the clarification thread + the
+    OWNER'S STEER + the adjudication rule + lane definitions → the reviewer JSON contract.
+
+    The steer is the point of the 2026-07-30 change. Before it, a re-run rebuilt its prompt from
+    the same description and the same answered questions, so it could only re-derive the same
+    answer — the owner's actual judgement (``triage_note``) was never an input. Now a re-run
+    reasons WITH the owner.
+
+    ⚠ ``triage_note`` is owner-private and must never reach the org. That is safe here because the
+    whole AI draft is owner-only too (``OrgRequestOrgSerializer`` is an explicit allowlist with no
+    model passthrough) — and a test pins it, because "safe by construction" is worth asserting.
+    """
     answered = [c for c in (req.clarifications or [])
                 if c.get('answer') and c.get('question')]
-    qa = '\n'.join(f'Q: {c["question"]}\nA: {c["answer"]}' for c in answered)
-    # v1 stays text-only — Gemini-vision on the screenshots is a future TD. We only NOTE their
-    # presence so the reviewer knows the submitter attached evidence. Guard the count read: a
-    # brand-new unsaved request has no pk yet (the auto-run fires post-commit, so it does).
-    try:
-        n_attachments = req.attachments.count() if req.pk else 0
-    except Exception:
-        n_attachments = 0
+    # Attribute each exchange: an answer to the OWNER's question carries different weight from an
+    # answer to the reviewer's own, and the reviewer should be able to tell them apart.
+    qa = '\n'.join(
+        f'Q ({"the owner" if asked_by(c) == ASKED_BY_OWNER else "you, earlier"}): {c["question"]}'
+        f'\nA (the requester): {c["answer"]}'
+        for c in answered)
+    # Questions the owner has asked that are still UNANSWERED are steers in themselves — they say
+    # what the owner is worried about, even before a reply lands.
+    pending_owner = [c['question'] for c in _open_questions(req)
+                     if asked_by(c) == ASKED_BY_OWNER and c.get('question')]
+    steer = (req.triage_note or '').strip()
     return (
         'You are the AI reviewer triaging an organisation request for a software team. '
         'Return STRICT JSON ONLY, no prose, shaped as '
@@ -391,10 +496,23 @@ def _build_review_prompt(req):
         + (f'URGENCY (the org\'s own signal): {req.urgency}\n' if req.urgency else '')
         + f'DESCRIPTION:\n{req.description}\n'
         + (f'\nSTEPS TO REPRODUCE:\n{req.steps_to_reproduce}\n' if req.steps_to_reproduce else '')
-        + (f'\nATTACHMENTS: {n_attachments} image(s) attached by the submitter.\n'
-           if n_attachments else '')
-        + (f'\nANSWERED CLARIFICATIONS:\n{qa}\n' if qa else '')
+        + (f'\nCLARIFICATION THREAD:\n{qa}\n' if qa else '')
+        + (f'\nTHE OWNER HAS ASKED, STILL UNANSWERED:\n'
+           + '\n'.join(f'- {q}' for q in pending_owner) + '\n' if pending_owner else '')
+        + (f"\nTHE OWNER'S OWN ASSESSMENT — treat this as authoritative and reason WITH it. If it "
+           f"points at a different shape of solution from the one requested, say so and estimate "
+           f"THAT shape:\n{steer}\n" if steer else '')
+        + ('\nThe images supplied with this prompt are the submitter\'s screenshots. Read them: '
+           'they usually show exactly where in the app the request applies.\n'
+           if _has_attachments(req) else '')
     )
+
+
+def _has_attachments(req):
+    try:
+        return bool(req.pk) and req.attachments.exists()
+    except Exception:
+        return False
 
 
 def _parse_draft(raw):
@@ -472,7 +590,11 @@ def run_ai_review(req):
     try:
         with usage.usage_context(organisation_id=getattr(req, 'organisation_id', None),
                                  source='requests_triage'):
-            raw = contracts._gemini_generate(_build_review_prompt(req), model)
+            # Multimodal from 2026-07-30: the submitter's screenshots go WITH the prompt. Cost is
+            # bounded by the two existing caps — ≤5 attachments × AI_RUN_CAP runs — and the
+            # usage_context above already meters it as `requests_triage`.
+            raw = contracts._gemini_generate(_build_review_prompt(req), model,
+                                             images=_review_images(req))
     except contracts.ContractsError as e:
         # Map the seam's codes to the requests-space vocabulary. 'quiz_ai_unconfigured' (no key)
         # and 'quiz_ai_unavailable' (SDK missing) are the two the seam raises; anything else is
@@ -516,7 +638,9 @@ def _append_questions(req, questions):
     clar = list(req.clarifications or [])
     existing = {(c.get('question') or '').strip().casefold()
                 for c in clar if c.get('question')}
-    room = MAX_OPEN_QUESTIONS - len(_open_questions(req))
+    # Room is measured against the AI's OWN open questions, not the whole thread: an owner
+    # question must not cost the reviewer a slot (see _open_ai_questions).
+    room = MAX_OPEN_QUESTIONS - len(_open_ai_questions(req))
     added = []
     now = timezone.now().isoformat()
     for q in questions:
@@ -525,7 +649,8 @@ def _append_questions(req, questions):
         key = q.strip().casefold()
         if not key or key in existing:
             continue
-        clar.append({'question': q, 'asked_at': now, 'answer': None, 'answered_at': None})
+        clar.append({'question': q, 'asked_at': now, 'asked_by': ASKED_BY_AI,
+                     'answer': None, 'answered_at': None})
         existing.add(key)
         added.append(q)
         room -= 1

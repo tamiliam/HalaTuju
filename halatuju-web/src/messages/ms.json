@@ -4914,7 +4914,11 @@
         "uploadFailed": "Imej itu gagal dimuat naik. Sila cuba lagi.",
         "createdButFailed": "Permintaan dicipta, tetapi satu tangkap skrin gagal dimuat naik — tambahkannya dari halaman permintaan.",
         "none": "Tiada tangkap skrin.",
-        "image": "Imej"
+        "image": "Imej",
+        "view": "Klik untuk lihat",
+        "openTab": "Buka dalam tab baharu",
+        "pasteHint": "Anda juga boleh menampal atau menarik imej ke sini.",
+        "dropHere": "Lepaskan imej di sini"
       },
       "lane": {
         "small_change": "Perubahan kecil",
@@ -4952,7 +4956,13 @@
         "quoteValue": "≈{hours} jam · termasuk margin {margin}%",
         "quoteNote": "Nota",
         "declinedReason": "Sebab",
-        "scheduledFor": "Dijadualkan untuk"
+        "scheduledFor": "Dijadualkan untuk",
+        "askedByOwner": "Anda",
+        "askedByAi": "AI",
+        "askLabel": "Tanya sesuatu kepada pemohon",
+        "askPlaceholder": "cth. Menambah penaja secara terus akan melangkau terma dan persetujuan — bolehkah jemputan digunakan?",
+        "askSend": "Hantar soalan",
+        "askHint": "Mereka akan dimaklumkan melalui e-mel, dan soalan anda ditunjukkan sebagai soalan anda. Ia juga memandu semakan AI seterusnya."
       },
       "action": {
         "accept": "Terima sebut harga",
@@ -4987,7 +4997,8 @@
         "declineReason": "Sebab",
         "modifyLabel": "Pinda permintaan anda",
         "declineConfirm": "Tolak permintaan ini? Tindakan ini tidak boleh dibatalkan.",
-        "withdrawConfirm": "Tarik balik permintaan ini? Tindakan ini tidak boleh dibatalkan."
+        "withdrawConfirm": "Tarik balik permintaan ini? Tindakan ini tidak boleh dibatalkan.",
+        "aiDraftModel": "Model"
       },
       "error": {
         "bug_is_free": "Laporan pepijat adalah percuma — jadualkannya, bukan disebut harga.",

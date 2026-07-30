@@ -428,19 +428,35 @@ def record_vetting(template, *, vetted_by_name, vetted_on, attested_by_email):
 # ─────────────────────────────────────────────────────────────────────────────
 # Quiz generation (Gemini — draft-only, on-demand, single model, no downgrade)
 # ─────────────────────────────────────────────────────────────────────────────
-def _gemini_generate(prompt, model):
+def _gemini_generate(prompt, model, images=None):
     """The single-model Gemini call — the mockable seam (patched in tests, never
     a live call in CI). Owner decision 4: NO downgrade fallback — if the
-    configured model is unconfigured/unavailable/errors, raise; do not degrade."""
+    configured model is unconfigured/unavailable/errors, raise; do not degrade.
+
+    ``images`` is an optional list of ``(bytes, mime_type)`` sent alongside the prompt, added
+    2026-07-30 so the requests reviewer can actually SEE the screenshots a submitter attached
+    (it was previously told only how many there were). **The default keeps every existing caller
+    byte-identical** — contract generation passes no images and takes the same `contents=prompt`
+    path it always did, which a test pins, because this seam is shared and mocked everywhere.
+
+    Note the part ORDER: images first, then the prompt, matching ``vision._call_gemini_json`` —
+    the model attends better to instructions that follow the evidence.
+    """
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key:
         raise ContractsError('quiz_ai_unconfigured')
     try:
         from google import genai
+        from google.genai import types
     except ImportError:
         raise ContractsError('quiz_ai_unavailable')
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(model=model, contents=prompt)
+    if images:
+        contents = [types.Part.from_bytes(data=data, mime_type=mime) for data, mime in images]
+        contents.append(prompt)
+    else:
+        contents = prompt
+    response = client.models.generate_content(model=model, contents=contents)
     from . import usage   # billable Gemini call — best-effort meter
     _it, _ot = usage.gemini_tokens(response)
     usage.record_usage(usage.GEMINI, model=model, input_tokens=_it, output_tokens=_ot)

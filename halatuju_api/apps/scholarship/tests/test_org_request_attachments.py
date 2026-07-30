@@ -247,12 +247,22 @@ class TestFlagOffDark(TestCase):
 
 
 class TestAiPromptNotesAttachments(_Base):
-    def test_prompt_notes_attachment_count(self):
+    def test_prompt_tells_the_reviewer_to_READ_the_screenshots(self):
+        """Updated DELIBERATELY on 2026-07-30, superseding an assertion on 'ATTACHMENTS: N image(s)'.
+
+        The old prompt only COUNTED the screenshots — so on a request that is entirely about a
+        screen ("add a link here", with two screenshots showing exactly where) the reviewer was
+        estimating blind. Owner decision: send the images. Counting them is now pointless, since
+        the reviewer can see how many there are, so the line was replaced by an instruction to
+        read them. `test_the_images_are_passed_to_the_seam` in
+        test_org_request_deliberation.py covers the delivery half.
+        """
         from apps.scholarship import org_requests
         self._attach(self.req_a, self.oa_a)
         self._attach(self.req_a, self.oa_a)
         prompt = org_requests._build_review_prompt(self.req_a)
-        self.assertIn('ATTACHMENTS: 2 image(s)', prompt)
+        self.assertIn('screenshots', prompt)
+        self.assertNotIn('image(s) attached', prompt)
 
     def test_prompt_silent_when_no_attachments(self):
         from apps.scholarship import org_requests

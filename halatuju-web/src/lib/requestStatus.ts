@@ -77,6 +77,7 @@ export type RequestRole = 'super' | 'org_admin'
 export type RequestAction =
   | 'answer' | 'accept' | 'defer' | 'modify' | 'withdraw'       // requestee (org_admin)
   | 'triage' | 'quote' | 'requote' | 'schedule' | 'done' | 'decline' | 'ai_rerun'  // owner (super)
+  | 'ask'                                                        // owner asks the requester
 
 /**
  * Which actions to OFFER, given the caller's role, the request status, the OWNER's triaged kind
@@ -113,6 +114,10 @@ export function requestActionsFor(
   if (status === 'scheduled') out.push('done')
   if (['submitted', 'triaged', 'quoted', 'deferred'].includes(status)) out.push('decline')
   if (status === 'submitted' || status === 'triaged') out.push('ai_rerun')
+  // The owner asking the requester something — same window as the AI's own questions and the
+  // answer path. A quoted request must not grow new questions: the quote was priced against
+  // what was known when it was sent. Mirrors TRANSITIONS['ask'] in org_requests.py.
+  if (status === 'submitted' || status === 'triaged') out.push('ask')
   return out
 }
 

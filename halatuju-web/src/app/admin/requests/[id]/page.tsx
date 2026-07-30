@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import {
-  getOrgRequest, answerOrgRequest, approveOrgRequest, deferOrgRequest, modifyOrgRequest,
+  getOrgRequest, answerOrgRequest, askOrgRequest, approveOrgRequest, deferOrgRequest, modifyOrgRequest,
   declineOrgRequest, triageOrgRequest, quoteOrgRequest, requoteOrgRequest, scheduleOrgRequest,
   doneOrgRequest, aiRerunOrgRequest, type OrgRequestDetail,
 } from '@/lib/admin-api'
@@ -45,6 +45,7 @@ export default function AdminRequestDetailPage() {
 
   // Inputs
   const [answer, setAnswer] = useState('')
+  const [question, setQuestion] = useState('')   // the owner's question to the requester
   const [modifyText, setModifyText] = useState('')
   const [declineReason, setDeclineReason] = useState('')
   const [triageKind, setTriageKind] = useState<'bug' | 'feature'>('feature')
@@ -167,7 +168,20 @@ export default function AdminRequestDetailPage() {
                   <p className="text-gray-400 italic">{t('admin.requests.detail.historyModified')}</p>
                 ) : (
                   <div>
-                    <p className="text-gray-800">{c.question}</p>
+                    {/* WHO asked is the point of one shared thread: an owner's question carries
+                        different weight from the reviewer's, and the requester should be able to
+                        tell whose question they are answering. Absent = the AI, since that is all
+                        there was before 2026-07-30. */}
+                    <p className="flex items-baseline gap-2">
+                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                        (c.asked_by || 'ai') === 'owner'
+                          ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {t((c.asked_by || 'ai') === 'owner'
+                          ? 'admin.requests.detail.askedByOwner'
+                          : 'admin.requests.detail.askedByAi')}
+                      </span>
+                      <span className="text-gray-800">{c.question}</span>
+                    </p>
                     {c.answer ? (
                       <p className="text-gray-600 mt-1 pl-3 border-l-2 border-green-300">{c.answer}</p>
                     ) : (
@@ -192,6 +206,24 @@ export default function AdminRequestDetailPage() {
               className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.answerSend')}
             </button>
+          </div>
+        )}
+
+        {/* Ask box — the OWNER's half of the thread. Until now only the AI could write here, so a
+            judgement about the SHAPE of a request ("would an invite work instead of adding a
+            sponsor directly?") had nowhere to go. */}
+        {isSuper && has('ask') && (
+          <div className="mt-4 border-t pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.detail.askLabel')}</label>
+            <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3}
+              placeholder={t('admin.requests.detail.askPlaceholder')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            <button disabled={busy || !question.trim()}
+              onClick={() => run(async () => { const r = await askOrgRequest(id, { question }, opt); setQuestion(''); return r })}
+              className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              {busy ? t('admin.requests.action.working') : t('admin.requests.detail.askSend')}
+            </button>
+            <p className="mt-1 text-xs text-gray-400">{t('admin.requests.detail.askHint')}</p>
           </div>
         )}
       </div>
@@ -247,7 +279,13 @@ export default function AdminRequestDetailPage() {
                 {req.ai_draft_lane && <p>{t('admin.requests.owner.aiDraftLane')}: {t(laneLabelKey(req.ai_draft_lane))}</p>}
                 {req.ai_draft_hours != null && <p>{t('admin.requests.owner.aiDraftHours')}: {req.ai_draft_hours}</p>}
                 {req.ai_draft_note && <p className="text-gray-600 whitespace-pre-wrap">{req.ai_draft_note}</p>}
-                <p className="text-xs text-gray-400">{t('admin.requests.owner.aiDraftRuns')}: {req.ai_run_count ?? 0}</p>
+                <p className="text-xs text-gray-400">
+                  {/* The model was stored from the day this shipped and never shown. Which model
+                      produced an estimate is part of reading it — the same draft from flash and
+                      from pro does not carry the same weight. */}
+                  {req.ai_draft_model && <>{t('admin.requests.owner.aiDraftModel')}: {req.ai_draft_model} · </>}
+                  {t('admin.requests.owner.aiDraftRuns')}: {req.ai_run_count ?? 0}
+                </p>
               </div>
             ) : (
               <p className="text-sm text-gray-400">{t('admin.requests.owner.aiDraftNone')}</p>

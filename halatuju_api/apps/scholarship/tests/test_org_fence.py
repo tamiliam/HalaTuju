@@ -240,6 +240,9 @@ class TestFenceCoverageCompleteness(TestCase):
         '_OrgRequestsBase': 'base — requests flag/role/org gate + org-fenced request lookup',
         'AdminOrgRequestListView': 'requests-org-fenced', 'AdminOrgRequestCountView': 'requests-org-fenced',
         'AdminOrgRequestDetailView': 'requests-org-fenced', 'AdminOrgRequestAnswerView': 'requests-org-fenced',
+        # The owner asking the requester a question — super-only via _super_side, which still
+        # resolves the request through the org-fenced _org_request_for lookup.
+        'AdminOrgRequestAskView': 'requests-org-fenced',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

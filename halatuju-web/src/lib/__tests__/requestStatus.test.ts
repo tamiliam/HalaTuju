@@ -152,3 +152,42 @@ describe('component tree (Sprint 15.1)', () => {
     })
   })
 })
+
+/**
+ * The owner asking the requester a question (2026-07-30). Until then the clarification thread ran
+ * one way — the AI asked, the requester answered, and the owner watched by email — so a judgement
+ * about the SHAPE of a request had nowhere to go.
+ *
+ * These mirror `TRANSITIONS['ask']` in `org_requests.py`. The server re-gates every action, so a
+ * drift here shows up as a control that renders and then 400s.
+ */
+describe("the owner's 'ask' action", () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { requestActionsFor } = require('../requestStatus')
+
+  it('is offered to the owner while the request is open for triage', () => {
+    for (const status of ['submitted', 'triaged']) {
+      expect(requestActionsFor('super', status, 'feature', false)).toContain('ask')
+    }
+  })
+
+  it('is NOT offered once a quote has been sent, or after a terminal outcome', () => {
+    // The negative half, and the substance: the quote was priced against what was known when it
+    // went out, so the thread must not keep growing behind it.
+    for (const status of ['quoted', 'deferred', 'approved', 'scheduled', 'done', 'declined']) {
+      expect(requestActionsFor('super', status, 'feature', false)).not.toContain('ask')
+    }
+  })
+
+  it('is never offered to the requesting org', () => {
+    // They have `answer`; asking is the owner's side of the same thread.
+    for (const status of ['submitted', 'triaged', 'quoted']) {
+      expect(requestActionsFor('org_admin', status, 'feature', true)).not.toContain('ask')
+    }
+  })
+
+  it('does not disturb the actions that were already there', () => {
+    const owner = requestActionsFor('super', 'submitted', '', false)
+    expect(owner).toEqual(expect.arrayContaining(['triage', 'decline', 'ai_rerun', 'ask']))
+  })
+})

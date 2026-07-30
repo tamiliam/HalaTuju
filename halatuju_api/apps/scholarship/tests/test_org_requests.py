@@ -113,6 +113,10 @@ class TestTransitionMatrix(_Base):
             'decline':  lambda: svc.decline(req, s, by_role='super', reason='r'),
             'answer':   lambda: svc.answer_clarification(req, 'a'),
             'ai_rerun': lambda: svc.run_ai_review(req),
+            # The owner asking the requester something (2026-07-30). Passed a super, since the
+            # super guard fires BEFORE the transition check here and would otherwise mask
+            # bad_transition behind forbidden.
+            'ask':      lambda: svc.ask_question(req, s, 'a question?'),
         }[action]()
 
     def test_refuses_from_invalid_statuses(self):
