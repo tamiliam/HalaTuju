@@ -162,9 +162,6 @@ describe('component tree (Sprint 15.1)', () => {
  * drift here shows up as a control that renders and then 400s.
  */
 describe("the owner's 'ask' action", () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { requestActionsFor } = require('../requestStatus')
-
   it('is offered to the owner while the request is open for triage', () => {
     for (const status of ['submitted', 'triaged']) {
       expect(requestActionsFor('super', status, 'feature', false)).toContain('ask')

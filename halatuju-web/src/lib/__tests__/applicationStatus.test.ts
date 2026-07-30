@@ -27,6 +27,7 @@ import {
   statusTone,
   hasStatusTone,
 } from '@/lib/applicationStatus'
+import { QC_ACCEPTED_STATES, isQcAccepted } from '@/lib/officerCockpit'
 
 const ALL_STATUSES = [...APPLICATION_STATUSES, ...SYNTHETIC_STATUSES]
 const DEFAULT_TONE = 'bg-gray-100 text-gray-600'
@@ -87,9 +88,6 @@ describe('applicationStatus vocabulary', () => {
  * QC attribution. The records where money had already moved.
  */
 describe('isQcAccepted', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { isQcAccepted, QC_ACCEPTED_STATES } = require('../officerCockpit')
-
   it('includes every state after a QC has accepted — awarded above all', () => {
     for (const s of ['recommended', 'awarded', 'active', 'maintenance', 'closed']) {
       expect(isQcAccepted(s)).toBe(true)
