@@ -1411,7 +1411,12 @@ class ResolutionItemResolveView(APIView):
             from . import payments
             vircle_id = ''.join(ch for ch in (request.data.get('vircle_id') or '') if ch.isdigit())
             if not payments.valid_vircle_id(vircle_id):
-                return Response({'error': 'bad_vircle_id'}, status=status.HTTP_400_BAD_REQUEST)
+                # `reason` lets the client name the actual mistake. A student who read the Top Up
+                # screen instead of Settings typed a DuitNow Transfer number — telling them to
+                # "check the number" would be wrong, the number is fine, the FIELD was.
+                return Response({'error': 'bad_vircle_id',
+                                 'reason': payments.vircle_id_error(vircle_id)},
+                                status=status.HTTP_400_BAD_REQUEST)
             item.application.vircle_id = vircle_id
             item.application.save(update_fields=['vircle_id'])
         # Phase 2 (D2): on a typed answer, Cikgu Gopal nudges ONLY when it is TOTALLY

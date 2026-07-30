@@ -665,11 +665,66 @@ def cancel(run, by=''):
 # ── Vircle ID (D9) ────────────────────────────────────────────────────────────
 
 def vircle_id_prefix():
-    return getattr(settings, 'VIRCLE_ID_PREFIX', '8000400175')
+    return getattr(settings, 'VIRCLE_ID_PREFIX', '800040017')
+
+
+def vircle_id_band():
+    """(low, high) — the inclusive range the FIRST digit the student types may take.
+
+    Env-tunable (``VIRCLE_ID_BAND_MIN``/``_MAX``, see settings/base.py for the full reasoning):
+    the band is what separates a real eWallet ID from a **truncated DuitNow Transfer number**,
+    which shares the prefix and the length and is therefore invisible to a length+prefix check.
+    """
+    lo = str(getattr(settings, 'VIRCLE_ID_BAND_MIN', '5'))[:1] or '5'
+    hi = str(getattr(settings, 'VIRCLE_ID_BAND_MAX', '9'))[:1] or '9'
+    return lo, hi
 
 
 def valid_vircle_id(value):
-    """D9: a full 13-digit ID starting with the standard prefix. Shared by the Action-Centre
-    resolve endpoint and the admin PATCH path."""
+    """D9: a full 13-digit ID starting with the standard prefix, whose first TYPED digit sits in
+    the issued band. Shared by the Action-Centre resolve endpoint and the admin PATCH path — one
+    home, so both write paths cannot drift.
+
+    The band check is the half that catches a DuitNow Transfer number truncated to its last four
+    digits (three live cases, 2026-07-29). Do NOT relax it to make a fixture pass: build fixtures
+    with in-band suffixes instead.
+    """
     v = (value or '').strip()
-    return v.isdigit() and len(v) == 13 and v.startswith(vircle_id_prefix())
+    prefix = vircle_id_prefix()
+    if not (v.isdigit() and len(v) == 13 and v.startswith(prefix)):
+        return False
+    if len(prefix) >= 13:            # a prefix that leaves nothing typed: length+prefix is all there is
+        return True
+    lo, hi = vircle_id_band()
+    band = v[len(prefix)]
+    if not (lo <= band <= hi):
+        return False
+    if band == hi:
+        # Approaching the end of the issued block. When Vircle rolls past it every NEW student is
+        # refused until the band widens, so this wants to be seen before that happens, not after.
+        logger.warning(
+            'vircle_id accepted at the TOP of the issued band (digit %s of %s-%s) — '
+            'widen VIRCLE_ID_BAND_MAX before the block is exhausted', band, lo, hi)
+    return True
+
+
+def vircle_id_error(value):
+    """WHICH thing is wrong with a supplied eWallet ID — ``''`` when it is valid.
+
+    ``'duitnow'`` means the value looks like a DuitNow Transfer number (the whole 18-digit thing,
+    or the last four digits of one). That distinction earns its keep in the COPY: the student typed
+    exactly what was on their screen, so "check the number and try again" is both useless and
+    faintly accusing — they need telling WHICH field to read instead. ``'format'`` is everything
+    else (wrong length, non-digits, a different prefix).
+    """
+    v = (value or '').strip()
+    if valid_vircle_id(v):
+        return ''
+    prefix = vircle_id_prefix()
+    if not (v.isdigit() and v.startswith(prefix)):
+        return 'format'
+    # A DuitNow number's first 13 digits ARE the eWallet ID, so it shares the prefix; either the
+    # whole 18 digits, or a 13-digit value whose typed part falls outside the issued band.
+    if len(v) == 18 or len(v) == 13:
+        return 'duitnow'
+    return 'format'

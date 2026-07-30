@@ -278,17 +278,24 @@ def sync_activation_status():
 
 
 def activation_csv_text(rows):
-    """The activation-request CSV — the owner's headers, one line per pending account."""
+    """The activation-request CSV — the owner's headers, one line per pending account.
+
+    The trailing BLANK column is deliberate: it turns "reply with any corrections" into filling a
+    cell, which is the difference between a request that gets actioned and one that gets read. The
+    eWallet ID is student-supplied and three of the first 46 were a DuitNow Transfer number typed
+    into the wrong box — Vircle is the only party who can tell us so.
+    """
     import csv
     import io
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(['Name', 'NRIC', 'Installed Date', 'Phone number', 'eWallet ID'])
+    w.writerow(['Name', 'NRIC', 'Installed Date', 'Phone number', 'eWallet ID',
+                'Correct eWallet ID (if different)'])
     for r in rows:
         # Excel-safe: a bare 13-digit id renders as 8.0004E+12; ="…" keeps it text.
         ewallet = f'="{r["ewallet"]}"' if r.get('ewallet') else ''
         w.writerow([r.get('name', ''), r.get('nric', ''), r.get('installed_on', ''),
-                    r.get('phone', ''), ewallet])
+                    r.get('phone', ''), ewallet, ''])
     return buf.getvalue()
 
 

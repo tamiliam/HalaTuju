@@ -663,8 +663,14 @@ function VircleTask({
       await resolveResolutionItem(
         item.id, `+60${localMobileDigits(mobile)}`, { token }, undefined, VIRCLE_PREFIX + suffix)
       onResolved()
-    } catch {
-      setError(t('scholarship.actionCentre.vircle.error'))
+    } catch (e) {
+      // The server says WHICH mistake this is. A student who read the Top Up screen typed a
+      // DuitNow Transfer number — "check the number and try again" would be wrong (the number is
+      // fine) and would send them back to the same field. Name the right field instead.
+      const reason = (e as { fieldErrors?: { reason?: string } })?.fieldErrors?.reason
+      setError(t(reason === 'duitnow'
+        ? 'scholarship.actionCentre.vircle.errorDuitnow'
+        : 'scholarship.actionCentre.vircle.error'))
       setBusy(false)
     }
   }
@@ -714,6 +720,18 @@ function VircleTask({
               />
             </div>
             <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.vircle.walletIdHint')}</p>
+            {/* Echo the assembled id as ONE continuous 13-digit run — the way the Vircle Settings
+                page prints it. Split across two boxes it is hard to compare, which is how three
+                students saved a DuitNow Transfer number without noticing. Costs no extra typing. */}
+            {suffix.length === 4 && (
+              <div className="mt-2 rounded-lg bg-gray-50 px-3 py-2">
+                <p className="text-sm text-gray-700">
+                  {t('scholarship.actionCentre.vircle.walletIdEcho')}{' '}
+                  <span className="font-semibold tabular-nums tracking-wide">{VIRCLE_PREFIX + suffix}</span>
+                </p>
+                <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.vircle.walletIdCheck')}</p>
+              </div>
+            )}
           </div>
 
           <button

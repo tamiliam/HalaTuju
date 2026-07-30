@@ -364,8 +364,16 @@ class AdminApplicationDetailView(_AdminBase):
             from . import payments
             vid = ''.join(ch for ch in (request.data.get('vircle_id') or '') if ch.isdigit())
             if vid and not payments.valid_vircle_id(vid):
-                return Response({'error': 'bad_vircle_id', 'code': 'bad_vircle_id'},
+                return Response({'error': 'bad_vircle_id', 'code': 'bad_vircle_id',
+                                 'reason': payments.vircle_id_error(vid)},
                                 status=status.HTTP_400_BAD_REQUEST)
+            # This field decides where money goes, and until 2026-07-30 a change here left NO
+            # record of who made it — unlike its sibling `reporting_date_set`. Log BOTH values:
+            # the correction only makes sense against what it replaced.
+            if vid != (app.vircle_id or ''):
+                logger.info('AUDIT vircle_id_set app_id=%s by=%s was=%s now=%s',
+                            app.id, (getattr(admin, 'email', '') or '?'),
+                            (app.vircle_id or '-'), (vid or '-'))
             app.vircle_id = vid
             fields.append('vircle_id')
         if fields:
