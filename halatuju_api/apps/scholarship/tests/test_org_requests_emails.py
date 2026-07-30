@@ -170,7 +170,11 @@ class TestWiring(TestCase):
             r = self.client.post(f'{BASE}{req.id}/ai-rerun/', {}, format='json')
         self.assertEqual(r.status_code, 200)
         req.refresh_from_db()
-        self.assertEqual(req.ai_draft_hours, __import__('decimal').Decimal('6.0'))
+        # SUPERSEDED 2026-07-30: this asserted the re-run STORED the model's hours. It is no
+        # longer asked for them, and a volunteered figure (this fixture still sends one) is
+        # dropped — so the assertion that matters now is that it did NOT land.
+        self.assertIsNone(req.ai_draft_hours)
+        self.assertEqual(req.ai_draft_kind, 'feature')   # the parts it IS asked for still land
         # The clarifying question emailed the submitter directly.
         sub_mail = [m for m in mail.outbox if m.to == ['omar@wi.test']]
         self.assertTrue(sub_mail)

@@ -153,6 +153,31 @@ class TestTheOwnersReasoningReachesTheReviewerAndNotTheOrg(TestCase):
         prompt = org_requests._build_review_prompt(req)
         self.assertIn('Q (the owner)', prompt)
 
+    def test_the_reviewer_is_NOT_asked_to_price(self):
+        """Owner ruling, 2026-07-30: it classifies and asks; it does not estimate.
+
+        The reviewer has no codebase context, so it priced every request as greenfield — 24h for a
+        sponsor invite that `referrals.py` had largely already built, 8h for a notification whose
+        mailer already existed. Classification and lane it gets right. The NUMBER was the one
+        output with nothing behind it, and once shown it became the figure the real quote had to
+        argue against. The estimate is the engineer's now, made from the code and cited.
+
+        Guarded on BOTH sides, because a prompt is prose and easy to re-widen by accident.
+        """
+        req = self._req()
+        prompt = org_requests._build_review_prompt(req)
+        self.assertNotIn('estimated_hours', prompt)
+        self.assertIn('Do NOT estimate hours', prompt)
+
+    def test_volunteered_hours_are_IGNORED_not_stored(self):
+        # A prompt cannot bind a model. If it answers with an estimate anyway, the parser drops it
+        # — otherwise the number returns quietly through a chatty response.
+        draft = org_requests._parse_draft(
+            '{"classification": "feature", "lane": "sprint", "estimated_hours": 40, '
+            '"clarifying_questions": [], "rationale": "r"}')
+        self.assertEqual(draft['kind'], 'feature')
+        self.assertIsNone(draft['hours'])
+
     def test_the_org_NEVER_sees_the_STEER(self):
         """The reason the steer is safe to send to the reviewer: it cannot come back out.
 

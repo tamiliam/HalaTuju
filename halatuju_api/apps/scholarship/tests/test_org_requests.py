@@ -316,14 +316,24 @@ class TestParseDraft(_Base):
         self.assertTrue(d['ok'])
         self.assertEqual(d['kind'], 'feature')
         self.assertEqual(d['lane'], 'sprint')
-        self.assertEqual(d['hours'], Decimal('12.0'))
+        # ⚠ SUPERSEDED 2026-07-30: this asserted the hours were PARSED. The reviewer is no
+        # longer asked for them (it cannot see the codebase and priced greenfield every
+        # time), and a model that volunteers one anyway must be IGNORED — otherwise the
+        # number returns through a chatty response. _GOOD deliberately still CONTAINS
+        # `estimated_hours`, so this is the assertion that proves it is dropped.
+        self.assertIsNone(d['hours'])
         self.assertEqual(d['questions'], ['Which report?'])
 
     def test_fenced(self):
         d = svc._parse_draft(_FENCED)
         self.assertTrue(d['ok'])
         self.assertEqual(d['kind'], 'feature')
-        self.assertEqual(d['hours'], Decimal('12.0'))
+        # ⚠ SUPERSEDED 2026-07-30: this asserted the hours were PARSED. The reviewer is no
+        # longer asked for them (it cannot see the codebase and priced greenfield every
+        # time), and a model that volunteers one anyway must be IGNORED — otherwise the
+        # number returns through a chatty response. _GOOD deliberately still CONTAINS
+        # `estimated_hours`, so this is the assertion that proves it is dropped.
+        self.assertIsNone(d['hours'])
 
     def test_bad_enum_clamped(self):
         d = svc._parse_draft(_BAD_ENUM)
@@ -369,7 +379,9 @@ class TestRunAiReview(_Base):
         r.refresh_from_db()
         self.assertEqual(r.ai_run_count, 1)
         self.assertEqual(r.ai_draft_kind, 'feature')
-        self.assertEqual(r.ai_draft_hours, Decimal('12.0'))
+        # SUPERSEDED 2026-07-30 — see TestParseDraft. The draft records kind, lane,
+        # rationale and questions; the hours column stays untouched by a new run.
+        self.assertIsNone(r.ai_draft_hours)
         self.assertTrue(r.ai_draft_model)
         self.assertEqual(out['new_questions'], ['Which report?'])
         open_q = [c for c in r.clarifications if not c.get('answer')]

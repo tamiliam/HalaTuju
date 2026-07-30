@@ -305,7 +305,10 @@ export default function AdminRequestDetailPage() {
               <div className="text-sm text-gray-700 space-y-0.5">
                 {req.ai_draft_kind && <p>{t('admin.requests.owner.aiDraftKind')}: {t(kindLabelKey(req.ai_draft_kind))}</p>}
                 {req.ai_draft_lane && <p>{t('admin.requests.owner.aiDraftLane')}: {t(laneLabelKey(req.ai_draft_lane))}</p>}
-                {req.ai_draft_hours != null && <p>{t('admin.requests.owner.aiDraftHours')}: {req.ai_draft_hours}</p>}
+                {/* The reviewer is no longer ASKED for hours (owner, 2026-07-30) — it cannot
+                    see the codebase and priced greenfield every time. Historical drafts keep
+                    theirs in the column; showing them would keep a number in play that we
+                    have decided not to trust. The estimate is the engineer's, and cited. */}
                 {req.ai_draft_note && <p className="text-gray-600 whitespace-pre-wrap">{req.ai_draft_note}</p>}
                 <p className="text-xs text-gray-400">
                   {/* The model was stored from the day this shipped and never shown. Which model

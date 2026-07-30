@@ -13,8 +13,9 @@ Two decision authorities live here:
     request isn't in a valid from-status, and ``wrong_role`` as an actor backstop);
   * ``run_ai_review`` — the ONLY AI seam, ``contracts._gemini_generate`` (mocked in tests, never a
     live call in CI). It is best-effort and capped at ``AI_RUN_CAP`` runs; a failure NEVER breaks a
-    user action (the caller wraps it via ``auto_run_ai_review``). The hours estimate stays in
-    ``ai_draft_*`` — owner-gated; the clarifying questions flow to the requestee directly.
+    user action (the caller wraps it via ``auto_run_ai_review``). It classifies and asks; it does
+    NOT estimate hours (owner, 2026-07-30 — it cannot see the codebase, so it priced greenfield
+    every time). Its RATIONALE reaches the org (TD-202); the clarifying questions always did.
 
 The adjudication rule (published verbatim, owner 2026-07-24) that the AI classifies against and the
 owner triages by: *behaviour contradicting the role matrix / manual = bug (free);
@@ -506,10 +507,17 @@ def _build_review_prompt(req):
         'You are the AI reviewer triaging an organisation request for a software team. '
         'Return STRICT JSON ONLY, no prose, shaped as '
         '{"classification": "bug"|"feature", "lane": "small_change"|"sprint", '
-        '"estimated_hours": number|null, "clarifying_questions": [up to 3 short strings], '
-        '"rationale": short string}. '
-        'Estimate the work in HOURS (a whole or half number), or null if you cannot yet. '
-        'Ask a clarifying question ONLY when you genuinely cannot classify or estimate without '
+        '"clarifying_questions": [up to 3 short strings], "rationale": short string}. '
+        # ⚠ DO NOT ASK IT FOR HOURS (owner, 2026-07-30). It cannot see the codebase, so it
+        # prices every request as greenfield: 24h for a sponsor invite largely already built
+        # (referrals.py), 8h for a notification whose mailer already existed. Classification
+        # and lane it gets right; the NUMBER was the one output with nothing behind it, and
+        # once shown it became the figure the real quote had to argue against. The estimate
+        # is now the engineer's, made from the code, and cited.
+        'Do NOT estimate hours or duration, and do not state a number of hours in your '
+        'rationale — you cannot see the codebase, so you cannot know what already exists. '
+        'Classify it, choose the lane, and say what you would need to know. '
+        'Ask a clarifying question ONLY when you genuinely cannot classify without '
         'it; ask none when the request is clear.\n\n'
         + _ADJUDICATION_RULE + '\n' + _LANE_DEFINITIONS + '\n\n'
         f'KIND (as declared): {req.kind}\n'
@@ -570,14 +578,10 @@ def _parse_draft(raw):
     lane = str(data.get('lane', '')).strip().lower()
     out['lane'] = lane if lane in VALID_LANES else ''
 
-    hours = data.get('estimated_hours')
-    if hours is not None:
-        try:
-            h = Decimal(str(hours)).quantize(Decimal('0.1'))
-            if _ZERO < h <= _MAX_HOURS:
-                out['hours'] = h
-        except (InvalidOperation, ValueError, TypeError):
-            pass
+    # `estimated_hours` is NO LONGER REQUESTED (see _build_review_prompt). A model that volunteers
+    # one anyway is IGNORED rather than stored — so the field cannot quietly come back through a
+    # chatty response. The column stays on the model, so historical drafts keep their values and
+    # nothing needs a migration.
 
     questions = data.get('clarifying_questions') or []
     if isinstance(questions, list):

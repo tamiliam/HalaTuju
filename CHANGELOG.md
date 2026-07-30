@@ -135,6 +135,26 @@ Two existing tests failed and were **updated deliberately, with the reason recor
 one pinned the attachment-count line that counting replaced, and the transition matrix derives its
 cases from the table I extended, so it correctly demanded to be taught the new action.
 
+## The reviewer stops quoting — 2026-07-30
+
+It is no longer asked for an estimate. It classifies the request, picks the lane, and says what it
+would need to know.
+
+The reason is narrow and evidenced: **it cannot see the codebase**, so it priced every request as if
+nothing existed. It quoted 24 hours for a sponsor invite whose engine — invite creation, the email,
+the acceptance page, attribution both by link and by address — was already written, and 8 hours for
+a notification whose mailer was one file away. Classification and lane it gets right; the number was
+the one output with nothing behind it, and once shown it became the figure the real quote had to
+argue against.
+
+A prompt cannot bind a model, so a volunteered figure is now **dropped rather than stored** — the
+number cannot come back through a chatty answer. Historical drafts keep theirs in the column;
+nothing needed a migration. Guarded on both sides: the prompt must not ask, and the parser must not
+keep.
+
+The estimate is the engineer's now — made from the code, and citing the files it was read from, so
+you can check it in a minute.
+
 ## The requester can read why — 2026-07-30
 
 The owner filed request #4 as an org_admin and reported that the AI had not responded. It had —
