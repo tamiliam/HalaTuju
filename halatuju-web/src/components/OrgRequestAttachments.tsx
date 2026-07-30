@@ -166,20 +166,31 @@ export default function OrgRequestAttachments({
           ))}
         </div>
       )}
+      {/* ⚠ A VISIBLE BOX, matching the create form. The previous version was a text link plus hint
+          copy promising paste and drag, with the dashed border appearing only DURING a drag — so
+          there was nothing to aim at until you were already dragging over the right few pixels.
+          A drop zone must look like one before the drag starts. */}
       {editable && attachments.length < MAX_ATTACHMENTS && (
         <div className="mt-3">
-          <label className="inline-block text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
-            {busy ? t('admin.requests.attachments.uploading') : `+ ${t('admin.requests.attachments.add')}`}
+          <label
+            className={`flex flex-col items-center justify-center gap-1 w-full rounded-lg border-2 border-dashed px-4 py-6 transition-colors ${
+              busy ? 'opacity-60 cursor-wait' : 'cursor-pointer'
+            } ${
+              dragging
+                ? 'border-primary-400 bg-primary-50 text-primary-700'
+                : 'border-gray-300 bg-gray-50 hover:border-primary-300 hover:bg-primary-50/40 text-gray-500'
+            }`}>
+            <span className="text-sm font-medium text-primary-600">
+              {busy ? t('admin.requests.attachments.uploading') : `+ ${t('admin.requests.attachments.add')}`}
+            </span>
+            <span className="text-xs">
+              {dragging
+                ? t('admin.requests.attachments.dropHere')
+                : t('admin.requests.attachments.dropZone')}
+            </span>
+            <span className="text-[11px] text-gray-400">{t('admin.requests.attachments.hint')}</span>
             <input type="file" accept="image/*" multiple className="hidden" disabled={busy} onChange={onFile} />
           </label>
-          <p className="text-xs text-gray-400 mt-1">
-            {t('admin.requests.attachments.hint')} {t('admin.requests.attachments.pasteHint')}
-          </p>
-          {dragging && (
-            <p className="mt-2 rounded-lg border-2 border-dashed border-primary-300 bg-primary-50 px-3 py-2 text-xs text-primary-700">
-              {t('admin.requests.attachments.dropHere')}
-            </p>
-          )}
         </div>
       )}
       {error && <p className="text-xs text-red-600 mt-2">{error}</p>}

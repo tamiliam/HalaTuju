@@ -254,11 +254,7 @@ export default function AdminRequestsPage() {
           {/* Screenshots (optional) — staged locally, uploaded after the request is created.
               Paste + drag-and-drop as well as the picker: this is the surface where a screenshot
               starts life, and it shipped upload-only on 2026-07-30 (see screenshotInput.ts). */}
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDropFiles}
-            className={dragging ? 'rounded-lg ring-2 ring-blue-400 ring-offset-2' : undefined}>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.attachments.label')}</label>
             {files.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
@@ -275,16 +271,37 @@ export default function AdminRequestsPage() {
                 ))}
               </div>
             )}
+            {/* ⚠ A VISIBLE BOX, not a bare link. Until 2026-07-30 this was a text link and a line
+                of hint copy PROMISING paste and drag — with nothing to aim a drag at (the wrapper
+                collapsed to the height of the link when nothing was staged) and nowhere that
+                looked like a target. The owner asked, fairly, whether a surface had been built at
+                all. A drop zone has to LOOK like one: real height, a dashed edge, and a state
+                change while a file is over it. This is the app's FIRST drop zone — there was no
+                existing pattern to copy. */}
             {files.length < MAX_ATTACHMENTS && (
-              <label className="inline-block text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
-                + {t('admin.requests.attachments.add')}
+              <label
+                onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={onDropFiles}
+                className={`flex flex-col items-center justify-center gap-1 w-full rounded-lg border-2 border-dashed px-4 py-6 cursor-pointer transition-colors ${
+                  dragging
+                    ? 'border-blue-400 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-50/40 text-gray-500'
+                }`}>
+                <span className="text-sm font-medium text-blue-600">
+                  + {t('admin.requests.attachments.add')}
+                </span>
+                <span className="text-xs">{t('admin.requests.attachments.dropZone')}</span>
+                <span className="text-[11px] text-gray-400">
+                  {t('admin.requests.attachments.hint')}
+                </span>
                 <input type="file" accept="image/*" multiple className="hidden"
                   onChange={(e) => { stageFiles(e.target.files); e.target.value = '' }} />
               </label>
             )}
-            <p className="text-xs text-gray-400 mt-1">
-              {t('admin.requests.attachments.hint')} {t('admin.requests.attachments.pasteHint')}
-            </p>
+            {files.length >= MAX_ATTACHMENTS && (
+              <p className="text-xs text-gray-400 mt-1">{t('admin.requests.attachments.hint')}</p>
+            )}
           </div>
 
           {warn && <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-700 p-3 text-sm">{warn}</div>}

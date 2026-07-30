@@ -84,8 +84,22 @@ describe('every screenshot surface accepts paste and drop', () => {
         expect(src).not.toMatch(/filter\(\(f\) => f\.type\.startsWith\('image\//)
       })
 
-      it('tells the user the two extra ways in', () => {
-        expect(src).toContain('attachments.pasteHint')
+      it('offers a VISIBLE drop zone, not just a link and a promise', () => {
+        /*
+         * The third shape of the same mistake. First the handler was missing on one surface; then
+         * it was attached where it could never fire; then it fired but there was nothing on screen
+         * to aim a drag at — a text link plus hint copy saying "you can also paste or drag an image
+         * in", with the wrapper collapsing to the height of the link. The owner asked whether a
+         * surface had been built at all. It had not.
+         *
+         * A drop zone must be a TARGET BEFORE the drag begins: real padding, a dashed edge, and a
+         * state change while a file is over it. Asserting the copy alone is what let a promise
+         * ship without the thing it promised.
+         */
+        expect(src).toMatch(/border-dashed/)          // it looks like a drop target at rest
+        expect(src).toMatch(/py-6/)                   // it has height to aim at
+        expect(src).toContain('attachments.dropZone') // it says what you can do
+        expect(src).toMatch(/dragging\s*\n?\s*\?/)    // and it reacts while a file is over it
       })
     })
   }

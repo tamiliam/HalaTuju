@@ -135,6 +135,22 @@ Two existing tests failed and were **updated deliberately, with the reason recor
 one pinned the attachment-count line that counting replaced, and the transition matrix derives its
 cases from the table I extended, so it correctly demanded to be taught the new action.
 
+## …and there was nowhere to paste INTO — 2026-07-30
+
+Third report on one feature, and the plainest of the three: the handler worked, and there was no
+box. A text link, a line of copy saying you could paste or drag an image in, and — with nothing
+staged yet — a container the height of that link. Nothing to aim a drag at, nothing that looked like
+a target, nothing that changed when you tried.
+
+**Both surfaces now have a real drop zone**: a dashed box with height, saying *paste a screenshot
+here, drag one in, or click to choose*, which highlights while a file is over it and opens the file
+picker when clicked. The two look alike, because they are the same act on two screens.
+
+This is the app's first drag-and-drop surface, so there was no existing pattern to copy — which is
+also why nothing caught the omission. The guard now checks the box is **there and visible at rest**,
+not merely that a handler is bound: describing a capability in hint text is not the capability, and
+shipping the description first turns a missing feature into a broken promise.
+
 ## …and paste could not actually fire — 2026-07-30
 
 Reported a third time on the same feature, and rightly. Paste was wired as `onPaste` on the

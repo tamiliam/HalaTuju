@@ -4921,6 +4921,7 @@
         "view": "Click to view",
         "openTab": "Open in a new tab",
         "pasteHint": "You can also paste or drag an image in.",
+        "dropZone": "Paste a screenshot here, drag one in, or click to choose",
         "dropHere": "Drop the image here"
       },
       "lane": {
