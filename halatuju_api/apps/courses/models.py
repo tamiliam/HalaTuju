@@ -12,6 +12,8 @@ All data lives in Supabase PostgreSQL. Models:
 from django.db import models
 from django.db.models import Q
 
+from .utils import tidy_parentage_marker
+
 
 class FieldTaxonomy(models.Model):
     """
@@ -794,7 +796,7 @@ class StudentProfile(models.Model):
         # declaration signature (`ScholarshipApplication.declaration_name`) stays verbatim
         # as a legal record; `profile.name` is the canonical name everything displays.
         if self.name:
-            self.name = self.name.upper()
+            self.name = tidy_parentage_marker(self.name.upper())
         super().save(*args, **kwargs)
 
     class Meta:

@@ -552,6 +552,27 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-30)
 
+**✅ SHIPPED 2026-07-30 — A TYPED "A/ P" IS TIDIED TO "A/P" AT THE WRITE BOUNDARY.** No migration.
+`pytest` **3905** scholarship + **1274** courses/reports (+14). Lessons ×2.
+- **Why:** app 20's canonical name read `SHARVANI A/ P KANAGEVELLU`; her MyKad (and every document
+  we hold) reads `A/P`. **The space was never OCR'd** — she typed it as her truthfulness-declaration
+  signature on 31 May, and `submit_application` promotes the signature to `profile.name` **verbatim**
+  (deliberate: the About Me field is pre-filled from the Google display name).
+- **⚠ NOTHING FLAGGED IT BECAUSE OF A FIX WE MADE FOR HER.** `vision._NAME_NOISE` tolerates
+  whitespace inside a slash marker and its comment cites **#20** — before it, her name read as a
+  false Name mismatch against her own IC. The tolerance is correct and must stay; it just meant the
+  variant was never corrected. **Tolerating on read ≠ storing one form.**
+- **`courses.utils.tidy_parentage_marker`**, called from `StudentProfile.save()` beside the CAPS
+  normalisation, so it catches every ORM write path including the declaration promote.
+  **⚠ MARKER FIX, NOT A NAME FIX** — cannot alter a letter, reorder tokens or change spacing between
+  name words (tests pin all three). Safe because `/` never occurs inside a Malaysian personal name.
+- **⚠ `declaration_name` IS DELIBERATELY LEFT VERBATIM** — a dated legal signature, not a display
+  field. Only `profile.name` was corrected on prod. Do not "finish the job" by rewriting signatures.
+- **One row in 143** (swept). Cosmetic, never a verification risk — the matcher strips the marker,
+  so every identity check on her record always read the right person.
+- **▶ AT DEPLOY: push, api only** (no web change, no migration). Post-check: app 20's cockpit header
+  and the next partner export read `SHARVANI A/P KANAGEVELLU`.
+
 **✅ SHIPPED 2026-07-30 — A REJECTED APPLICATION NO LONGER HOLDS AN AWARD AMOUNT.** Migration
 **`0137`** (additive, nullable) **APPLIED migrate-first + verified — do not re-run it.** Retro in
 `CHANGELOG.md`; decision ×1; lessons ×4. `pytest` **3905** scholarship + **1260** courses/reports ·

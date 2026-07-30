@@ -4,7 +4,7 @@ import pytest
 from django.core.management import call_command
 from io import StringIO
 
-from apps.courses.utils import proper_case_name
+from apps.courses.utils import proper_case_name, tidy_parentage_marker
 from apps.courses.models import StpmCourse, StpmRequirement
 
 
@@ -102,3 +102,48 @@ class TestProperCaseName:
             'Bacelor Sains Akuakultur dengan Kepujian '
             '(Universiti Putra Malaysia Sarawak)'
         )
+
+
+class TestTidyParentageMarker:
+    """`tidy_parentage_marker` — the WRITE-boundary half of the spaced-marker problem.
+
+    `vision._NAME_NOISE` tolerates 'A/ P' when COMPARING names (added for application #20 so a
+    typed space would stop reading as a false Name mismatch against the student's own IC). That
+    tolerance is why nothing ever flagged #20's stored name — she typed 'SHARVANI A/ P
+    KANAGEVELLU' on the truthfulness declaration, `submit_application` promoted the signature to
+    `profile.name` verbatim, and her MyKad reads 'SHARVANI A/P KANAGEVELLU'.
+    """
+
+    def test_the_real_case(self):
+        assert tidy_parentage_marker('SHARVANI A/ P KANAGEVELLU') == \
+            'SHARVANI A/P KANAGEVELLU'
+
+    @pytest.mark.parametrize('typed', [
+        'PRIYA A/ P MURUGAN', 'PRIYA A / P MURUGAN', 'PRIYA A /P MURUGAN',
+        'PRIYA A/P MURUGAN',
+    ])
+    def test_every_spacing_variant_lands_on_one_form(self, typed):
+        assert tidy_parentage_marker(typed) == 'PRIYA A/P MURUGAN'
+
+    @pytest.mark.parametrize('marker', ['A/L', 'A/P', 'S/O', 'D/O'])
+    def test_all_four_markers(self, marker):
+        spaced = marker.replace('/', '/ ')
+        assert tidy_parentage_marker(f'RAJ {spaced} KUMAR') == f'RAJ {marker} KUMAR'
+
+    def test_idempotent(self):
+        once = tidy_parentage_marker('SHARVANI A/ P KANAGEVELLU')
+        assert tidy_parentage_marker(once) == once
+
+    def test_leaves_a_name_without_a_marker_completely_alone(self):
+        for name in ['TAN WEI MING', 'NUR AISYAH BINTI ABDULLAH', 'SHARVANI KANAGEVELLU', '']:
+            assert tidy_parentage_marker(name) == name
+
+    def test_never_touches_spacing_between_NAME_words(self):
+        # The guard that matters: it is a marker fix, not a name fix. Only whitespace INSIDE
+        # the slash marker moves — the double space between given names survives untouched.
+        assert tidy_parentage_marker('PRIYA  DEVI A/ P MURUGAN') == 'PRIYA  DEVI A/P MURUGAN'
+
+    def test_cannot_eat_a_letter_from_an_adjacent_name(self):
+        # 'A' and 'P' as whole tokens only — a name ENDING in those letters is not a marker.
+        assert tidy_parentage_marker('KALAI A/ P SUPRAMANIAM') == 'KALAI A/P SUPRAMANIAM'
+        assert tidy_parentage_marker('MAYA / P SOMETHING') == 'MAYA / P SOMETHING'

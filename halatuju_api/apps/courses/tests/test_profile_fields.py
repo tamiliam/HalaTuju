@@ -16,6 +16,25 @@ class TestProfileNewFields:
         p.refresh_from_db()
         assert p.nric == '010203-14-1234'
 
+    def test_spaced_parentage_marker_is_tidied_at_the_write_boundary(self):
+        # Application #20, 2026-07-30: the student typed 'SHARVANI A/ P KANAGEVELLU' as her
+        # truthfulness-declaration signature; submit_application promotes the signature to
+        # profile.name VERBATIM, so the stray space became the canonical name behind emails,
+        # the payments CSV and the partner exports. Her MyKad reads 'A/P'. Nothing flagged it
+        # because vision._NAME_NOISE tolerates the spaced marker when COMPARING — a tolerance
+        # added for this very student. Tolerating a variant on read is not storing one form.
+        # ⚠ This asserts the WIRING (save() calls the helper); tidy_parentage_marker's own
+        # behaviour is unit-tested in test_stpm_data_loading.TestTidyParentageMarker.
+        p = StudentProfile.objects.create(supabase_user_id='test-marker-space',
+                                          name='SHARVANI A/ P KANAGEVELLU')
+        p.refresh_from_db()
+        assert p.name == 'SHARVANI A/P KANAGEVELLU'
+        # Every typed variant converges, and spacing BETWEEN name words is untouched.
+        p.name = 'priya  devi a / p murugan'
+        p.save()
+        p.refresh_from_db()
+        assert p.name == 'PRIYA  DEVI A/P MURUGAN'
+
     def test_name_stored_uppercase(self):
         # Owner 2026-07-16: names are normalised to CAPS at the write boundary so every
         # reader shows them consistently.

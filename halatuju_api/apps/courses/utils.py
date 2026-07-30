@@ -6,6 +6,37 @@ Extracted from one-time management commands for reuse in tests and recurring too
 import re
 
 
+# ── Parentage-marker tidy (person names) ─────────────────────────
+
+# A MyKad parentage marker is printed with NO space inside it: "A/P", "A/L", "S/O", "D/O".
+# Students routinely type one anyway ("A/ P", "A / P", "A /P") and the form stores the
+# signature verbatim, so the stray space reaches `StudentProfile.name` — the canonical name
+# the payments CSV, emails, sponsor profiles and partner exports all read.
+#
+# ⚠ THIS IS A MARKER FIX, NOT A NAME FIX. It only ever removes whitespace INSIDE the marker;
+# it cannot touch a single letter of anyone's name, reorder tokens, or alter spacing between
+# name words. A '/' never legitimately occurs inside a Malaysian personal name, which is what
+# makes the rewrite safe — the same property `vision._split_glued_markers` relies on.
+#
+# Why it belongs at the WRITE boundary: `apps.scholarship.vision` already tolerates the spaced
+# forms when COMPARING names (`_NAME_NOISE`), a tolerance added for application #20 precisely
+# so a typed "A/ P" would stop reading as a false Name mismatch against the student's own IC.
+# That was right, and it is why nothing ever flagged the typo — but tolerating a variant on read
+# is not the same as storing one form. This is the missing half. (2026-07-30)
+_SPACED_PARENTAGE_MARKER = re.compile(r'\b([ASD])\s*/\s*([PLO])\b', flags=re.IGNORECASE)
+
+
+def tidy_parentage_marker(name: str) -> str:
+    """Collapse whitespace inside a slash parentage marker: 'A/ P' → 'A/P'. Idempotent.
+
+    Preserves the marker's own letter case, so it composes with any case normalisation
+    applied around it. Returns the input unchanged when there is no slash marker.
+    """
+    if not name or '/' not in name:
+        return name
+    return _SPACED_PARENTAGE_MARKER.sub(r'\1/\2', name)
+
+
 # ── MOHE URL builder ──────────────────────────────────────────────
 
 MOHE_BASE = 'https://online.mohe.gov.my/epanduan/carianNamaProgram'

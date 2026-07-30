@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## A typed "A/ P" is tidied to "A/P" at the write boundary — 2026-07-30
+
+Application 20's canonical name read `SHARVANI A/ P KANAGEVELLU`. Her MyKad reads
+`SHARVANI A/P KANAGEVELLU`, and so did every document we hold — the space was never read off
+anything. She typed it herself as her truthfulness-declaration signature on 31 May, and
+`submit_application` **promotes that signature to `profile.name` verbatim** (deliberately — the
+About Me field is pre-filled from the Google display name, so the signature is the more reliable
+name). Nothing normalised it on the way in.
+
+- **⚠ THE REASON NOTHING FLAGGED IT IS THE FIX WE ALREADY MADE FOR HER.**
+  `vision._NAME_NOISE` tolerates whitespace inside a slash parentage marker, and the comment
+  naming that tolerance cites **#20** — this student. Before it, her typed name left orphan `a`/`p`
+  tokens and produced a false Name mismatch against her own IC. Making the comparison tolerant was
+  correct; it *is* the same name. But **tolerating a variant on read is not the same as storing one
+  form**, and the write side was never done. This is that half.
+- **`courses.utils.tidy_parentage_marker`** collapses whitespace inside `A/P`, `A/L`, `S/O`, `D/O`
+  and is called from `StudentProfile.save()`, beside the existing CAPS normalisation — so it
+  catches every ORM write path, including the declaration promote that let this in.
+- **⚠ IT IS A MARKER FIX, NOT A NAME FIX.** It cannot alter a letter, reorder tokens, or change
+  spacing between name words (a test pins the doubled space between given names surviving). A `/`
+  never legitimately occurs inside a Malaysian personal name, which is what makes it safe — the
+  same property `vision._split_glued_markers` already relies on.
+- **The signature is untouched.** `declaration_name` stays `SHARVANI A/ P KANAGEVELLU`: it is a
+  dated legal record, not a display field. Only `profile.name` — what emails, the payments CSV,
+  sponsor profiles and partner exports read — was corrected on production.
+- **One row in 143.** Swept for malformed markers and doubled spaces across every applicant; she
+  was the only one. Cosmetic throughout, never a verification risk: the matcher strips the marker,
+  so every identity check on her record was always reading the right person.
+- `pytest` **3905** scholarship + **1274** courses/reports (+14) · no migration · the wiring test
+  is bite-proven (unhook the helper from `save()` and it fails).
+
 ## A rejected application no longer holds an award amount — 2026-07-30
 
 Two rejected records were carrying the money that had been proposed for them before they were
