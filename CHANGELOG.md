@@ -65,6 +65,35 @@ Two existing tests failed and were **updated deliberately, with the reason recor
 one pinned the attachment-count line that counting replaced, and the transition matrix derives its
 cases from the table I extended, so it correctly demanded to be taught the new action.
 
+## The awarded sign-off, and a reason nobody could read — 2026-07-30
+
+From one screenshot: #27 and #118 showed different sign-offs on identical data.
+
+**`awarded` had been inserted into the middle of the lifecycle** — `recommended → awarded →
+active → maintenance → closed` — and three conditions in the cockpit listed the states on either
+side of it and not it. So **47 of 143 production records** showed a bare "recommended by …" with
+no tick and no QC attribution: precisely the awarded ones, where money has already moved and you
+most want to know who cleared them. The literals are now one named set, and a test asserts
+`awarded` sits *between* its two neighbours — a set holding both ends and not the middle is the
+defect itself. `QUERYING_LOCKED_STATES` in the same file had it right all along, which is the tell
+that this was staleness and not a decision.
+
+**The QC override left a trail in the table and nowhere a person walks.** `qc_override_by`, `_at`
+and `_reason` have been written since the V5 QC floor shipped, and read by nothing — not the
+serializer, not anywhere in the web app. Demanding a reason buys accountability only if somebody
+can read it. It is now on the payload and rendered in amber, because an exception to a control
+should not look like routine sign-off.
+
+**One lookalike was left alone deliberately.** `awarded` is missing from the reject sets too, two
+conditions away — and there it is *correct*: an awarded student cannot be rejected directly, only
+after a proper withdrawal of the award. That is now pinned by a test, so the next person sweeping
+for "places that forgot `awarded`" cannot quietly make an awarded student rejectable. The
+withdrawal route that ruling implies does not exist once the student has been emailed — logged as
+TD-198 and left as an owner decision, since it moves money back to a sponsor and retracts a
+promise already made.
+
+No migration. 5079 pytest · 1180 jest · i18n parity 4322 ×3. Both fixes bite-checked.
+
 ## A student can fix their own IC — until we've confirmed it — 2026-07-29
 
 It began as one student with one wrong digit: birthplace code `11` typed against a card reading

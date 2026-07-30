@@ -524,11 +524,21 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-30)
 
-**✅ CODE COMPLETE 2026-07-30 — A DUITNOW TRANSFER NUMBER CAN NO LONGER BE SAVED AS AN eWALLET ID.
-NOT PUSHED (owner gates the deploy).** Commit `21d48037`, worktree `.worktrees/vircle-id`, branch
-`feat/vircle-id-validation`. Brief `docs/plans/2026-07-30-vircle-wallet-id-validation-roadmap.md`;
-retro `docs/retrospective-2026-07-30-vircle-id-band.md`; decisions ×3; lessons ×2. **NO migration.**
-`pytest` **3893** scholarship + **1260** courses/reports · `jest` **1184** · `tsc` clean.
+**⚠ SIX COMMITS PUSHED TOGETHER 2026-07-30 — ONE DEPLOY, api + web.** Two concurrent sessions
+closed on the same day and merged before the push: `a1552464` (the awarded sign-off + the override
+trail), `f5e81b5d` + `e5a903e2` + `3d4f8d03` (Requests deliberation + its close), and `21d48037` +
+`289f2af1` (the eWallet-ID band + its close). **This one push also releases the IC-lock WEB half**,
+which had sat on `main` undeployed since 29 Jul because a concurrent agent's `git add -A` swept it
+into `70566e55` and that commit's web build was CANCELLED. **NO migration in any of them** —
+production's `django_migrations` reconciled through `0136`, no gaps, verified twice on 30 Jul
+(scholarship 136/136, courses 67/67). Combined at merge: `pytest` **5153** · `jest` **1184**.
+
+**✅ SHIPPED 2026-07-30 — A DUITNOW TRANSFER NUMBER CAN NO LONGER BE SAVED AS AN eWALLET ID.**
+Commits `21d48037` + `289f2af1` (close), branch `feat/vircle-id-validation` merged for the push.
+Brief `docs/plans/2026-07-30-vircle-wallet-id-validation-roadmap.md`; retro
+`docs/retrospective-2026-07-30-vircle-id-band.md`; decisions ×3; lessons ×3; **TD-199**.
+**NO migration.** `pytest` **3893** scholarship + **1260** courses/reports · `jest` **1184** ·
+`tsc` clean.
 - **Why:** Vircle reported two recipients whose stored eWallet ID was their **DuitNow Transfer
   account number**. A **third nobody reported** (app 75, PRAVIN) was found by the shape of the
   stored value. All three corrected on prod 2026-07-30; **July's payment had already reached the
@@ -593,46 +603,76 @@ retro `docs/retrospective-2026-07-30-vircle-id-band.md`; decisions ×3; lessons 
   after the sweep returns; if all 46 come back confirmed its marginal value drops.
 - **▶ CARRY:** ms/ta first drafts for `walletIdEcho` / `walletIdCheck` / `errorDuitnow`.
 
+
+**▶ OWNER, IN ORDER**
+1. ~~Push~~ — **done 2026-07-30** (both services; see the combined header above). Confirm both
+   Cloud Builds went SUCCESS for the merge SHA before treating anything below as live.
+2. **Verify on request #2** — paste a screenshot from the clipboard; click a thumbnail for the full
+   image; check the AI draft names its model; ask the requester a question and confirm it renders as
+   yours and emails them; add a triage note, re-run, and confirm the rationale engages with the
+   steer and the screenshots instead of repeating itself.
+3. **Review the amber IC-flag copy** — it shows BOTH values and declines to say which is wrong.
+   Application **94** is currently the only record that renders it.
+4. **Decide TD-198** — an awarded student cannot be declined directly (your ruling), and there is
+   no admin withdrawal route once the award email has gone. **47 applications sit in `awarded`.**
+   It moves money back to a sponsor and retracts a promise, so it is yours to call.
+
+**▶ CARRY:** ms/ta first drafts for ~20 `profile.ic*` keys.
+
 ## Superseded — previous Next Sprint (as of 2026-07-30, the IC lock)
 
-**⚠ BACKEND SHIPPED + LIVE, WEB HALF ON `main` BUT NOT DEPLOYED — THE IC LOCK.** Commits
-`2dc44c00`, `e6aafa81`, `c3a2b676` (+ the web half, which a concurrent agent's `git add -A`
-swept into `70566e55`). api live at `halatuju-api-00905-hxf`; web still on the 29 Jul build
-because that commit's web build was CANCELLED. Retro `docs/retrospective-2026-07-29-ic-lock.md`;
-lessons ×5. **NO migration.** `pytest` **5071** · `jest` **1176** · i18n 4321 ×3.
-- **The rule (owner):** an IC locks when the uploaded MyKad is **genuine** AND its number matches
-  what the student typed AND the name matches. Until then the student may correct it on
-  `/profile`. After it, only a **super** may release it (`AdminReleaseNricLockView`, reason
-  mandatory, audited).
-- **⚠ WHY: the padlock was HARD-CODED.** `disabled` was a bare attribute with an unconditional
-  icon; neither read `nric_verified`. 85 of 143 applicants were told their IC was locked when
-  nothing had locked it — and that is why Gopal's "correct it on your Profile page" was a dead
-  end. A **static guard** (`icPadlockGuard.test.ts`) now fails if it goes back to a constant.
-- **⚠ THE PADLOCK KEYS ON `nric_locked`, NEVER ON `identity_verified`.** The latter is broader
-  (also true when the card merely matches) and is **re-derived every read**, so keying on it
-  locks with no genuineness check AND unlocks again when the student deletes the card. For the
-  student who motivated the sprint the wrong flag gives the RIGHT answer, so testing that case
-  would not have caught it. `apps/scholarship/identity.py` is the ONE home for the question.
+### What shipped in the last three sprints — and the traps inside them
+
+**The IC lock** (`docs/retrospective-2026-07-29-ic-lock.md`). An IC locks when the uploaded MyKad is
+**genuine** AND its number matches what the student typed AND the name matches; until then the
+student may correct it on `/profile`; after it, only a **super** may release it
+(`AdminReleaseNricLockView`, reason mandatory, audited).
+- **⚠ THE PADLOCK KEYS ON `nric_locked`, NEVER ON `identity_verified`.** The latter is broader (also
+  true when the card merely matches) and is **re-derived every read**, so keying on it locks with no
+  genuineness check AND unlocks again when the student deletes the card. For the student who
+  motivated the sprint the wrong flag gives the RIGHT answer, so testing that case would not have
+  caught it. `apps/scholarship/identity.py` is the ONE home for the question, and
+  `icPadlockGuard.test.ts` fails if the padlock goes back to being a constant (it was hard-coded —
+  85 of 143 applicants were told their IC was locked when nothing had locked it).
 - **⚠ AN UNSCORED CARD IS NOT GENUINE — do not "fix" this to match the neighbours.** Every other
-  consumer of genuineness fails OPEN on an absent verdict (`income_engine` treats `''` as
-  passing); that is right for a soft signal an officer overrules and wrong for a one-way lock.
+  consumer of genuineness fails OPEN on an absent verdict (`income_engine` treats `''` as passing);
+  right for a soft signal an officer overrules, wrong for a one-way lock.
 - **⚠ The name may differ by whole PARTS, never by SPELLING.** `relationship_name_match` (folds
-  w↔v, doubled letters) is next door and is deliberately kept OFF identity. `nric_close` words
+  w↔v, doubled letters) sits next door and is deliberately kept OFF identity. `nric_close` words
   the nudge as "differs by one digit" and must never widen the lock.
-- **⚠ `confirm:true` is NEVER sent from the profile editor.** It moves a primary key in raw SQL
-  and re-parents saved courses, outcomes, reports and email verifications — an account takeover.
-  It belongs to the sign-in prompt only; a number owned by someone else is a flat refusal here.
-- **⚠ NOTHING LOCKS RETROACTIVELY BY ITSELF.** The lock is taken at the end of an IC READ, so the
-  deploy locked nobody. **`backfill_nric_locks`** (report-only until `--apply`) re-applies the
-  live predicate to reads ALREADY STORED — no API calls, no re-extraction.
-- **PRODUCTION NOW: 58 locked / 85 open, unchanged.** After the sweep: 93 / 50 (39 have no IC on
-  file, 10 need a Re-run first, 1 is a test account).
-- **▶ OWNER, IN ORDER:** (1) `python manage.py backfill_nric_locks` on the live service — **report
-  only**, read it, expect ~35 + #43; (2) `--apply`; (3) cockpit Re-run on apps **5, 22, 44, 55**
-  (unscored cards, one multimodal call each — the 6 rejected ones are not worth scoring), then a
-  second sweep; (4) **review the amber flag copy** — it shows BOTH values and declines to say
-  which is wrong, because our reader splits and glues names (#27, #118); (5) push/deploy the web.
-- **▶ CARRY:** ms/ta first drafts for ~20 new `profile.ic*` keys.
+- **⚠ `confirm:true` is NEVER sent from the profile editor.** It moves a primary key in raw SQL and
+  re-parents saved courses, outcomes, reports and email verifications — an account takeover. It
+  belongs to the sign-in prompt only.
+- **⚠ NOTHING LOCKS RETROACTIVELY BY ITSELF.** The lock is taken at the end of an IC READ, so a
+  deploy locks nobody. **`backfill_nric_locks`** (report-only until `--apply`) re-applies the live
+  predicate to reads ALREADY STORED — no API calls, no re-extraction.
+- **PRODUCTION, MEASURED 30 JUL — mind the grain, it has caused three wrong numbers:**
+  **143 applications → 99 locked / 44 open**; **105 applicants holding a live IC doc → 99 / 6**;
+  **658 profiles with any NRIC → 99 / 559** (most have never applied). Always state which.
+
+**The awarded sign-off** (`docs/retrospective-2026-07-30-awarded-signoff-override-trail.md`).
+`awarded` sits in the MIDDLE of `recommended → awarded → active → maintenance → closed`, and three
+cockpit conditions listed the states either side of it — 47 of 143 records showed a bare
+"recommended by …" with no tick. Now `QC_ACCEPTED_STATES` / `isQcAccepted` in `lib/officerCockpit.ts`.
+- **⚠ `awarded` is ALSO absent from the reject sets, and THERE IT IS CORRECT.** An awarded student
+  cannot be rejected directly — only after a proper withdrawal. `test_reject_status_sets.py` pins
+  this so a sweep for "places that forgot `awarded`" cannot make them rejectable.
+- `qc_override_by/_at/_reason` are now on the payload and rendered in amber. **A stored field with
+  no surface is a defect** — three were found in one week (the padlock, `qc_override_reason`,
+  `ai_draft_model`). Worth a check that diffs model fields against what anything actually reads.
+
+**The Requests deliberation** (`docs/retrospective-2026-07-30-requests-deliberation.md`).
+`clarifications` entries carry `asked_by: 'ai' | 'owner'`, **absent meaning `'ai'`** — no migration,
+existing rows read correctly. Super-only `POST admin/scholarship/requests/<pk>/ask/`.
+- **⚠ THE `asked_by` BADGE IS LOAD-BEARING.** One shared thread means provenance exists *only*
+  because it is rendered. Do not drop the attribution as cosmetic.
+- **⚠ `MAX_OPEN_QUESTIONS` room counts AI questions only.** That cap stops the machine burying a
+  requester; it must not ration the owner. `_open_questions` still counts all of them for display.
+- `contracts._gemini_generate(prompt, model, images=None)` — the default keeps every existing caller
+  byte-identical. The review call is now multimodal (≤5 images × `AI_RUN_CAP = 3`), metered through
+  `usage_context(source='requests_triage')`. **Watch the first live runs for cost.**
+- `triage_note` reaches the AI as a steer and is owner-private; a test pins that the org-facing
+  serializer carries neither it nor `ai_draft_*`.
 
 ## Superseded — previous Next Sprint (as of 2026-07-29)
 
