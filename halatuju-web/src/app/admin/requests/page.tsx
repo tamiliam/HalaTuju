@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
@@ -89,14 +89,35 @@ export default function AdminRequestsPage() {
     }
     setFiles((prev) => [...prev, ...picked])
   }
-  // Win+Shift+S then Ctrl+V is how a screenshot actually reaches this form — you take it, then
-  // describe the bug. Scoped to the screenshot block, so pasting into Title or Describe is
-  // unaffected. Drag-and-drop is the same path; both funnel through stageFiles.
+  /*
+   * Win+Shift+S then Ctrl+V is how a screenshot actually reaches this form — you take it, then you
+   * describe the bug, and the paste lands wherever you happen to be typing.
+   *
+   * ⚠ DOCUMENT-LEVEL, and it must be. The first version put `onPaste` on the screenshot <div>,
+   * which NEVER FIRED: paste is dispatched at the FOCUSED element and bubbles upward, so a paste
+   * made while typing in Title or Describe went nowhere near it, and the div is not focusable
+   * (no tabIndex) so it could never be the target either. The hint text promised paste while
+   * nothing could deliver it.
+   *
+   * Safe to be document-wide: we act ONLY when the clipboard carries FILES. Pasting text into any
+   * field is untouched — no preventDefault, no staging.
+   */
   const [dragging, setDragging] = useState(false)
-  const onPasteFiles = (e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData?.files
-    if (pasted && pasted.length > 0) { e.preventDefault(); stageFiles(pasted) }
-  }
+  const stageRef = useRef<(list: FileList) => void>(() => {})
+  stageRef.current = (list: FileList) => stageFiles(list)
+
+  useEffect(() => {
+    if (!isOrgAdmin) return           // only the submit form accepts screenshots
+    const handler = (e: ClipboardEvent) => {
+      const pasted = e.clipboardData?.files
+      if (!pasted || pasted.length === 0) return
+      if (!Array.from(pasted).some((f) => f.type.startsWith('image/'))) return
+      e.preventDefault()
+      stageRef.current(pasted)
+    }
+    document.addEventListener('paste', handler)
+    return () => document.removeEventListener('paste', handler)
+  }, [isOrgAdmin])
   const onDropFiles = (e: React.DragEvent) => {
     e.preventDefault()
     setDragging(false)
@@ -234,7 +255,6 @@ export default function AdminRequestsPage() {
               Paste + drag-and-drop as well as the picker: this is the surface where a screenshot
               starts life, and it shipped upload-only on 2026-07-30 (see screenshotInput.ts). */}
           <div
-            onPaste={onPasteFiles}
             onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
             onDragLeave={() => setDragging(false)}
             onDrop={onDropFiles}

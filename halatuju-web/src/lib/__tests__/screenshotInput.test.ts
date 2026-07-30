@@ -35,9 +35,39 @@ describe('every screenshot surface accepts paste and drop', () => {
     describe(label, () => {
       const src = read(file)
 
-      it('handles paste', () => {
-        expect(src).toMatch(/onPaste=/)
+      it('handles paste somewhere that can actually RECEIVE it', () => {
+        /*
+         * ⚠ THIS ASSERTION WAS WRONG ONCE, and the wrong version passed.
+         *
+         * It used to be `expect(src).toMatch(/onPaste=/)` — which proved a handler was ATTACHED,
+         * not that it could ever FIRE. Both surfaces put `onPaste` on a plain <div>. A paste event
+         * is dispatched at the FOCUSED element and bubbles UPWARD; an unfocused div with no
+         * tabIndex is never on that path. So paste was dead on both surfaces while this test was
+         * green and the hint text promised the feature. The owner reported it — for the third time
+         * on the same feature.
+         *
+         * A source-shape check cannot know about focus. What it CAN pin is the mechanism we chose
+         * because of it: listen on the document, filter to files, and clean up on unmount.
+         */
+        expect(src).toMatch(/document\.addEventListener\('paste'/)
+        expect(src).toMatch(/document\.removeEventListener\('paste'/)
         expect(src).toMatch(/clipboardData/)
+        // A dead div-level handler must not linger beside the live one, or a paste inside the
+        // panel is handled twice and uploads the same image twice.
+        expect(src).not.toMatch(/onPaste=/)
+      })
+
+      it('leaves a TEXT paste completely alone', () => {
+        // The price of listening document-wide: Ctrl+V into any field must be untouched. So the
+        // handler body must BAIL OUT on a fileless clipboard BEFORE it calls preventDefault.
+        const bodyStart = src.indexOf('(e: ClipboardEvent) => {')
+        expect(bodyStart).toBeGreaterThan(-1)
+        const body = src.slice(bodyStart, src.indexOf("document.addEventListener('paste'", bodyStart))
+
+        const guardAt = body.search(/if \([^)]*(?:!files\.length|length === 0)[^)]*\) return/)
+        const preventAt = body.indexOf('preventDefault')
+        expect(guardAt).toBeGreaterThan(-1)
+        expect(preventAt).toBeGreaterThan(guardAt)
       })
 
       it('handles drag-and-drop', () => {

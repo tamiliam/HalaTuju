@@ -65,6 +65,24 @@ Two existing tests failed and were **updated deliberately, with the reason recor
 one pinned the attachment-count line that counting replaced, and the transition matrix derives its
 cases from the table I extended, so it correctly demanded to be taught the new action.
 
+## …and paste could not actually fire — 2026-07-30
+
+Reported a third time on the same feature, and rightly. Paste was wired as `onPaste` on the
+screenshot **block**, which never ran: a paste event is delivered to whatever has **focus** and
+travels upward from there, so a plain unfocused `<div>` is never on the path — and neither block had
+anything focusable inside it. The hint text promised pasting while nothing could deliver it, which
+is worse than having left the feature out.
+
+Both surfaces now listen for paste on the **page**, which is how you would expect it to work: take
+the screenshot, press Ctrl+V wherever you happen to be typing. That is only safe because the handler
+ignores any clipboard without files, so pasting ordinary text into Title or Describe behaves exactly
+as before. The dead handler is removed rather than left beside the new one, since keeping both would
+attach the same image twice.
+
+The guard has been corrected too. It asserted that a paste handler *existed*, which was true and
+useless; it now pins the mechanism that can actually receive one, and fails if the dead path
+returns.
+
 ## Paste a screenshot into the form you are typing — 2026-07-30
 
 Paste and drag-and-drop shipped earlier today onto the request **detail** page, and the **create

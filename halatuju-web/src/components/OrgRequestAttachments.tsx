@@ -5,7 +5,7 @@
 // non-terminal and the caller may act — an add/remove control. Each add runs the sign → PUT → record
 // chain (admin-api.uploadOrgRequestAttachment); the server re-gates everything (images-only, ≤5,
 // non-terminal, org-fence), so this only decides what to SHOW.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatFileSize } from '@/lib/scholarship'
 import DocViewer, { type ViewerDoc } from '@/components/DocViewer'
@@ -65,15 +65,34 @@ export default function OrgRequestAttachments({
     await upload(files)
   }
 
-  // Win+Shift+S then Ctrl+V — the way a screenshot actually reaches a form. Scoped to this
-  // panel (not the document) so pasting elsewhere on the page is unaffected.
-  const onPaste = async (e: React.ClipboardEvent) => {
+  /*
+   * Win+Shift+S then Ctrl+V — the way a screenshot actually reaches a form.
+   *
+   * ⚠ THIS LISTENS ON THE DOCUMENT, and it must. The first version put `onPaste` on this panel's
+   * <div>, which NEVER FIRED: a paste event is dispatched at the FOCUSED element and bubbles
+   * upward, and a plain div is not focusable (no tabIndex), so nothing ever reached it. The hint
+   * text promised a feature that could not run — worse than not having shipped it. There is no
+   * focusable child here either, so making the panel a tab stop would only trade one dead path
+   * for an undiscoverable one.
+   *
+   * Safe to be document-wide: we act ONLY when the clipboard carries files, so pasting text
+   * anywhere on the page is untouched — no preventDefault, no upload. Attached only while
+   * `editable`, and removed on unmount.
+   */
+  const pasteRef = useRef<(files: File[]) => void>(() => {})
+  pasteRef.current = (files: File[]) => { void upload(files) }
+
+  useEffect(() => {
     if (!editable) return
-    const files = imagesFrom(e.clipboardData?.files)
-    if (!files.length) return
-    e.preventDefault()
-    await upload(files)
-  }
+    const handler = (e: ClipboardEvent) => {
+      const files = imagesFrom(e.clipboardData?.files)
+      if (!files.length) return          // a text paste — leave it entirely alone
+      e.preventDefault()
+      pasteRef.current(files)
+    }
+    document.addEventListener('paste', handler)
+    return () => document.removeEventListener('paste', handler)
+  }, [editable])
 
   const onDrop = async (e: React.DragEvent) => {
     e.preventDefault()
@@ -99,7 +118,6 @@ export default function OrgRequestAttachments({
 
   return (
     <div className="bg-white rounded-xl border p-5 mb-4"
-      onPaste={onPaste}
       onDragOver={(e) => { if (editable) { e.preventDefault(); setDragging(true) } }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}>
