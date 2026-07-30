@@ -88,7 +88,12 @@ TRANSITIONS = {
     'schedule': (('triaged', 'approved'),                         'scheduled'),
     'done':     (('scheduled',),                                  'done'),
     'decline':  (('submitted', 'triaged', 'quoted', 'deferred'),  'declined'),
-    'answer':   (('submitted', 'triaged'),                        None),
+    # ANSWERING stays open until the quote is ACCEPTED (owner, 2026-07-30). Wider than 'ask' on
+    # purpose: a question asked before the quote was priced into it, so replying completes the
+    # record and cannot re-price anything by itself — whereas a NEW question after quoting could.
+    # Closing this at 'triaged' stranded request #3: the quote landed with a question still open,
+    # the answer box unmounted, and the thread read "Answer needed" with nowhere to answer it.
+    'answer':   (('submitted', 'triaged', 'quoted', 'deferred'),  None),
     'ai_rerun': (('submitted', 'triaged'),                        None),
     # The owner asking the requester something. Same window as the AI's own questions and the
     # answer path — a quoted or terminal request must not grow new questions, because the quote
@@ -228,9 +233,10 @@ def ask_question(req, admin, question):
 
 
 def answer_clarification(req, answer, *, index=None):
-    """The submitting org's admin answers a clarifying question (no status transition — allowed at
-    submitted/triaged). ``index`` selects the clarification entry; when omitted, the first
-    UNANSWERED question is answered. Raises ``not_answerable`` if there is nothing to answer.
+    """The submitting org's admin answers a clarifying question (no status transition — allowed
+    until the quote is ACCEPTED, i.e. submitted/triaged/quoted/deferred). ``index`` selects the
+    clarification entry; when omitted, the first UNANSWERED question is answered. Raises
+    ``not_answerable`` if there is nothing to answer.
     AI auto-re-run + owner-notify are the caller's post-commit steps."""
     _check_transition(req, 'answer')
     answer = (answer or '').strip()

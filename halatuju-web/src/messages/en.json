@@ -4948,6 +4948,7 @@
         "noQuestions": "No questions yet.",
         "asked": "Asked",
         "answered": "Answered",
+        "unanswered": "Unanswered",
         "answerLabel": "Your answer",
         "answerPlaceholder": "Type your answer",
         "answerSend": "Send answer",

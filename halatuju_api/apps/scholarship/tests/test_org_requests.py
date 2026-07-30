@@ -262,6 +262,43 @@ class TestClarifications(_Base):
             svc.answer_clarification(r, 'again')
         self.assertEqual(e.exception.code, 'not_answerable')
 
+    # ── the answer window (regression: request #3, 2026-07-30) ────────────────────
+    # A quote went out with a question still open. Answering was capped at 'triaged', so the
+    # box unmounted and the thread showed "Answer needed" with nowhere to answer it — for ever,
+    # since 'approved' never returns. The owner's rule: answerable until the quote is ACCEPTED.
+
+    def _one_open(self, status):
+        return self._req(status=status, clarifications=[
+            {'question': 'Notify on reassignment?', 'asked_at': 't',
+             'answer': None, 'answered_at': None}])
+
+    def test_answerable_after_the_quote_is_sent(self):
+        for status in ('quoted', 'deferred'):
+            with self.subTest(status=status):
+                r = self._one_open(status)
+                svc.answer_clarification(r, 'One assignment only.')
+                r.refresh_from_db()
+                self.assertEqual(r.clarifications[0]['answer'], 'One assignment only.')
+                self.assertEqual(r.status, status, 'answering must not move the request')
+
+    def test_not_answerable_once_the_quote_is_accepted(self):
+        # The window CLOSES at acceptance — the owner's boundary, not an oversight. If this
+        # starts failing, the label logic on the detail page must move with it.
+        for status in ('approved', 'scheduled', 'done', 'declined'):
+            with self.subTest(status=status):
+                r = self._one_open(status)
+                with self.assertRaises(svc.OrgRequestError) as e:
+                    svc.answer_clarification(r, 'too late')
+                self.assertEqual(e.exception.code, 'bad_transition')
+
+    def test_asking_stays_narrower_than_answering(self):
+        # 'ask' must NOT widen with 'answer': a quoted request growing a NEW question would
+        # mean it was priced against something nobody had raised yet.
+        answer_from = set(svc.TRANSITIONS['answer'][0])
+        ask_from = set(svc.TRANSITIONS['ask'][0])
+        self.assertTrue(ask_from < answer_from, 'ask must stay a strict subset of answer')
+        self.assertNotIn('quoted', ask_from)
+
 
 # ── AI reviewer ───────────────────────────────────────────────────────────────
 

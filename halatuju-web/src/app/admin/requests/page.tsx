@@ -12,7 +12,7 @@ import {
 import { formatFileSize } from '@/lib/scholarship'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, kindLabelKey, hasUnansweredQuestions,
-  REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey,
+  REQUEST_COMPONENT_PARENTS, requestSubComponents, componentLabelKey, requestActionsFor,
 } from '@/lib/requestStatus'
 
 // The Requests-space landing: a rate-card panel (bugs free · the adjudication rule · features
@@ -263,7 +263,13 @@ export default function AdminRequestsPage() {
       ) : (
         <div className="space-y-2">
           {requests.map((r) => {
-            const needsAnswer = isOrgAdmin && hasUnansweredQuestions(r.clarifications)
+            // The badge is a call to action, so it must use the same window as the answer box
+            // itself — derived from requestActionsFor, not re-stated here. An unanswered question
+            // on an accepted request is history, and badging the list for ever is noise.
+            const needsAnswer = isOrgAdmin && requestActionsFor(
+              'org_admin', r.status, r.triaged_kind || '',
+              hasUnansweredQuestions(r.clarifications),
+            ).includes('answer')
             return (
               <Link key={r.id} href={`/admin/requests/${r.id}`}
                 className="block bg-white rounded-xl border hover:border-blue-300 hover:bg-blue-50/40 transition-colors p-4">

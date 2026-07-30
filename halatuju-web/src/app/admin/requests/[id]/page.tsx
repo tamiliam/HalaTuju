@@ -182,10 +182,16 @@ export default function AdminRequestDetailPage() {
                       </span>
                       <span className="text-gray-800">{c.question}</span>
                     </p>
+                    {/* "Answer needed" is a DEMAND — only make it where answering is still
+                        possible. Once the quote is accepted the answer box unmounts, and an amber
+                        prompt with no box behind it asks for something the page has taken away
+                        (request #3 sat like that permanently). Then it is simply unanswered. */}
                     {c.answer ? (
                       <p className="text-gray-600 mt-1 pl-3 border-l-2 border-green-300">{c.answer}</p>
-                    ) : (
+                    ) : has('answer') ? (
                       <p className="text-amber-600 text-xs mt-1">{t('admin.requests.list.answerNeeded')}</p>
+                    ) : (
+                      <p className="text-gray-400 text-xs mt-1">{t('admin.requests.detail.unanswered')}</p>
                     )}
                   </div>
                 )}

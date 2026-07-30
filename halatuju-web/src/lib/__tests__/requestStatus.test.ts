@@ -66,10 +66,16 @@ describe('requestStatus vocabulary', () => {
 })
 
 describe('requestActionsFor mirrors the transition matrix', () => {
-  test('org_admin answers only when a question waits (submitted/triaged)', () => {
+  test('org_admin answers only when a question waits (until the quote is accepted)', () => {
     expect(requestActionsFor('org_admin', 'submitted', '', true)).toContain('answer')
     expect(requestActionsFor('org_admin', 'submitted', '', false)).not.toContain('answer')
-    expect(requestActionsFor('org_admin', 'quoted', '', true)).not.toContain('answer')
+    // SUPERSEDED 2026-07-30 (request #3): this line asserted `.not.toContain('answer')` at
+    // 'quoted', which was the cap that stranded a live request — the quote went out with a
+    // question open, the box unmounted, and the thread demanded an answer for ever. The owner's
+    // rule is now "answerable until the quote is ACCEPTED", so 'quoted' offers it and 'approved'
+    // does not. Full window covered in "the requester's 'answer' window" below.
+    expect(requestActionsFor('org_admin', 'quoted', '', true)).toContain('answer')
+    expect(requestActionsFor('org_admin', 'approved', '', true)).not.toContain('answer')
   })
 
   test('org_admin quote responses (accept/defer/modify/withdraw)', () => {
@@ -186,5 +192,46 @@ describe("the owner's 'ask' action", () => {
   it('does not disturb the actions that were already there', () => {
     const owner = requestActionsFor('super', 'submitted', '', false)
     expect(owner).toEqual(expect.arrayContaining(['triage', 'decline', 'ai_rerun', 'ask']))
+  })
+})
+
+/**
+ * The ANSWER window (regression: request #3, 2026-07-30).
+ *
+ * A quote went out with a question still open. Answering was capped at 'triaged', so the box
+ * unmounted while the thread kept rendering "Answer needed" — a demand the page had removed the
+ * means to satisfy, permanently, because 'approved' never returns to an answerable state.
+ *
+ * Mirrors `TRANSITIONS['answer']`. The detail page and the list badge BOTH derive their prompt
+ * from this function, so the label can no longer drift from the box.
+ */
+describe("the requester's 'answer' window", () => {
+  it('stays open until the quote is accepted', () => {
+    for (const status of ['submitted', 'triaged', 'quoted', 'deferred']) {
+      expect(requestActionsFor('org_admin', status, 'feature', true)).toContain('answer')
+    }
+  })
+
+  it('closes once the quote is accepted, and stays closed', () => {
+    for (const status of ['approved', 'scheduled', 'done', 'declined']) {
+      expect(requestActionsFor('org_admin', status, 'feature', true)).not.toContain('answer')
+    }
+  })
+
+  it('is not offered when nothing is actually waiting', () => {
+    for (const status of ['submitted', 'triaged', 'quoted', 'deferred']) {
+      expect(requestActionsFor('org_admin', status, 'feature', false)).not.toContain('answer')
+    }
+  })
+
+  it('is wider than the owner\'s ask window, and that asymmetry is deliberate', () => {
+    // Replying to a question asked BEFORE the quote completes the record; a NEW question after
+    // quoting would mean the price was set against something nobody had raised.
+    const answerable = ['submitted', 'triaged', 'quoted', 'deferred']
+      .filter((s) => requestActionsFor('org_admin', s, 'feature', true).includes('answer'))
+    const askable = ['submitted', 'triaged', 'quoted', 'deferred']
+      .filter((s) => requestActionsFor('super', s, 'feature', false).includes('ask'))
+    expect(answerable.length).toBeGreaterThan(askable.length)
+    expect(askable).not.toContain('quoted')
   })
 })

@@ -99,7 +99,11 @@ export function requestActionsFor(
 ): RequestAction[] {
   const out: RequestAction[] = []
   if (role === 'org_admin') {
-    if (hasUnansweredQuestions && (status === 'submitted' || status === 'triaged')) out.push('answer')
+    // Answering stays open until the quote is ACCEPTED — wider than 'ask' deliberately. A question
+    // asked before the quote was priced into it, so replying completes the record; a NEW question
+    // after quoting could re-price it. Mirrors TRANSITIONS['answer'] in org_requests.py.
+    if (hasUnansweredQuestions
+        && ['submitted', 'triaged', 'quoted', 'deferred'].includes(status)) out.push('answer')
     if (status === 'quoted' || status === 'deferred') out.push('accept')
     if (status === 'quoted') out.push('defer')
     if (status === 'quoted' || status === 'deferred') out.push('modify')

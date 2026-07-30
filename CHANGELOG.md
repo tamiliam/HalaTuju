@@ -35,6 +35,29 @@ Two existing tests failed and were **updated deliberately, with the reason recor
 one pinned the attachment-count line that counting replaced, and the transition matrix derives its
 cases from the table I extended, so it correctly demanded to be taught the new action.
 
+## A question you could no longer answer — 2026-07-30
+
+Request #3 was quoted while a clarifying question was still open. Answering had been capped at
+`triaged`, so the answer box vanished the moment the quote went out — while the thread carried on
+showing **"Answer needed"** in amber, on the detail page and as a badge in the requester's list.
+A demand the page had removed the means to satisfy, and permanently, because an accepted request
+never returns to an answerable state.
+
+Two changes. **Answering now stays open until the quote is accepted** (`submitted`, `triaged`,
+`quoted`, `deferred`) — deliberately wider than *asking*, which stays at `submitted`/`triaged`: a
+question raised before the quote was priced into it, so replying completes the record, whereas a
+new question afterwards would mean the price was set against something nobody had raised. And
+**"Answer needed" now renders only where answering is actually offered**; otherwise the question
+reads simply as *Unanswered*. Both surfaces derive that from `requestActionsFor`, so the label can
+no longer drift from the box.
+
+The owner had in fact answered — in the quote note, because it was the only box left open. Right
+answer, wrong field: the thread still reads unanswered, which is what a closed door does to a
+record.
+
+No migration. Small-change lane; the regression is pinned on both sides, and one existing test
+that asserted the old cap was superseded with the reason written into it.
+
 ## The awarded sign-off, and a reason nobody could read — 2026-07-30
 
 From one screenshot: #27 and #118 showed different sign-offs on identical data.
