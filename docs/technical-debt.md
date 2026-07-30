@@ -342,6 +342,14 @@ these are resolved in follow-up entries — always trust the entry's `✅ RESOLV
 **File(s):** `halatuju-web/src/app/error.tsx`, `loading.tsx`, `not-found.tsx`
 **Resolution:** Three pages added with full i18n (EN/MS/TA via `useT()`), primary brand colour, consistent layout. 7 translation keys added to `errors` section in all message files.
 
+### [TD-198] No admin route out of `awarded` once the student has been emailed
+**File(s):** `apps/scholarship/sponsorship.py` (`cancel_offer`, `_revert_to_pool`), `views_sponsor.SponsorCancelOfferView`
+**What it is:** The owner's ruling (2026-07-30) is that an awarded student **cannot be declined directly** — *"it should only happen after a proper withdrawal of the award."* The gate enforces that correctly. But every route from `awarded` back to `recommended` belongs to somebody else: the **sponsor** cancelling (and only before the award email goes out — after that `cancel_offer` refuses with `already_notified`), the **student** declining, the **offer expiring**, or `hold_pending_award` during the pre-reveal cool-off. **An officer who needs to remove an awarded student after the email has gone has no action available** — they cannot decline (by design) and cannot withdraw (no endpoint). 47 applications currently sit in `awarded`.
+**What consistent looks like:** an admin award-withdrawal that mirrors `cancel_offer` — returns the amount to the sponsor's balance, reverts the application to `recommended`, and tells the student their offer has been withdrawn. From there the existing contractual decline already works.
+**Risk if left:** Low **today** — no case has needed it, and the sponsor can still cancel pre-email. Rises the moment one does, because the prescribed route has no first step and the workaround would be a database edit on money.
+**Dependencies:** **An owner decision, not a bugfix.** This is a new power over money and over something a student has already been told they have: it moves funds back to a sponsor's balance and pulls a promise back. Who may hold it (super only? org_admin?), whether a reason is mandatory, and what the student is told are all product questions. Deliberately NOT built as part of the 2026-07-30 IC-lock/awarded work.
+**Do not conflate with:** the `awarded` omissions in the cockpit sign-off conditions, which were a genuine bug fixed the same day. `awarded`'s absence from the reject sets is CORRECT and pinned by `test_reject_status_sets.py`.
+
 ### [TD-043] Phone/OTP login blocked with "coming soon"
 **File(s):** `halatuju-web/src/app/login/page.tsx`
 **What it is:** Phone number login shows a "coming soon" message. Only Google OAuth works. This limits accessibility for students who don't have Google accounts.

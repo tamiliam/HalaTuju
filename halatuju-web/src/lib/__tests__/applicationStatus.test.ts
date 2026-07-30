@@ -79,3 +79,37 @@ describe('applicationStatus vocabulary', () => {
     expect(offenders).toEqual([])
   })
 })
+
+/**
+ * The `awarded` gap (2026-07-30). `awarded` was inserted in the MIDDLE of the lifecycle by the
+ * post-award sprints, and three inline conditions in the cockpit listed the states either side
+ * of it — so 47 of 143 production records showed a bare "recommended by …" with no tick and no
+ * QC attribution. The records where money had already moved.
+ */
+describe('isQcAccepted', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { isQcAccepted, QC_ACCEPTED_STATES } = require('../officerCockpit')
+
+  it('includes every state after a QC has accepted — awarded above all', () => {
+    for (const s of ['recommended', 'awarded', 'active', 'maintenance', 'closed']) {
+      expect(isQcAccepted(s)).toBe(true)
+    }
+  })
+
+  it('excludes everything before a QC decision, and the ended states', () => {
+    // The negative half matters as much: if this returned true for `interviewed` the sign-off
+    // would claim an acceptance that has not happened.
+    for (const s of ['submitted', 'shortlisted', 'profile_complete', 'interviewing',
+                     'interviewed', 'rejected', 'withdrawn', 'expired', 'reopened']) {
+      expect(isQcAccepted(s)).toBe(false)
+    }
+  })
+
+  it('agrees with the lifecycle order rather than a hand-written list', () => {
+    // `awarded` sits between recommended and active. A set that contains both neighbours and
+    // not the middle is the bug, so assert the contiguity directly.
+    const i = (s: string) => QC_ACCEPTED_STATES.indexOf(s)
+    expect(i('awarded')).toBeGreaterThan(i('recommended'))
+    expect(i('awarded')).toBeLessThan(i('active'))
+  })
+})

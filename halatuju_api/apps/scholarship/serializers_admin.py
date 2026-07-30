@@ -294,6 +294,12 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     verified_by_name = serializers.SerializerMethodField()
     verdict_decided_by_name = serializers.SerializerMethodField()
     recommended_by_name = serializers.SerializerMethodField()
+    # The QC floor override. Written since the V5 gate shipped and, until now, exposed NOWHERE —
+    # not on this payload, not in the web app. The endpoint's own comment says "the override
+    # leaves a trail", and it left one in the table rather than on any trail a person walks.
+    # A reason nobody can read provides no accountability, which is the entire point of
+    # demanding one before a red fact can be accepted.
+    qc_override_by_name = serializers.SerializerMethodField()
     rejected_by_name = serializers.SerializerMethodField()
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
@@ -391,6 +397,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # cockpit header timeline (Submitted·Recommended·Awarded → Awarded·Active·Maintenance).
             'recommended_at', 'recommended_by', 'recommended_by_name',
             'awarded_at', 'active_at', 'maintenance_at',
+            # The QC floor override — who accepted a case over a RED fact, when, and why.
+            'qc_override_by', 'qc_override_by_name', 'qc_override_at', 'qc_override_reason',
+            # The QC floor override — who accepted a case over a RED fact, when, and why.
             # S5: operational maintenance sub-state (on_track/probation/on_hold/ready_to_close)
             'maintenance_substate',
             # Cool-off (#13/#14): a scheduled-but-unrevealed decline / award confirmation +
@@ -515,6 +524,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
 
     def get_recommended_by_name(self, obj):
         return _admin_name_by_email(obj.recommended_by)
+
+    def get_qc_override_by_name(self, obj):
+        return _admin_name_by_email(obj.qc_override_by)
 
     def get_rejected_by_name(self, obj):
         return _admin_name_by_email(obj.rejected_by)

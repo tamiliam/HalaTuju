@@ -942,6 +942,27 @@ type OfficerVerdict = Record<string, string>
 export const LIVE_STATES = ['shortlisted', 'profile_complete', 'interviewing', 'interviewed']
 // States (or a submitted interview) after which querying is closed and Outstanding is read-only.
 export const QUERYING_LOCKED_STATES = ['interviewed', 'recommended', 'awarded', 'active', 'maintenance', 'closed', 'rejected', 'withdrawn', 'expired']
+/**
+ * The states meaning "a QC accepted the recommendation" — so the sign-off, and any override
+ * trail behind it, must be shown.
+ *
+ * A NAMED set rather than a literal at each site, because the literal is exactly how this broke.
+ * `awarded` was inserted in the MIDDLE of the lifecycle (recommended → awarded → active →
+ * maintenance → closed) by the post-award sprints, and three inline conditions listed the states
+ * either side of it. The result: 47 of 143 production records showed a bare "recommended by …"
+ * with no tick and no QC attribution — the AWARDED ones, i.e. the records where money had
+ * already moved and you most want to know who cleared them.
+ *
+ * `QUERYING_LOCKED_STATES` above lists `awarded` correctly, which is the tell: the omission was
+ * staleness, not a decision.
+ */
+export const QC_ACCEPTED_STATES = ['recommended', 'awarded', 'active', 'maintenance', 'closed']
+
+/** True once a QC has accepted the recommendation, whatever has happened since. */
+export function isQcAccepted(status: string): boolean {
+  return QC_ACCEPTED_STATES.includes(status)
+}
+
 // The four facts the officer rules on.
 export const DECISION_FACTS = ['identity', 'academic', 'pathway', 'income'] as const
 

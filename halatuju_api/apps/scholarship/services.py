@@ -1043,6 +1043,18 @@ def admin_reject(application, admin, category, cooloff=None):
         # 'contractual' is a genuinely post-award decline — from the funded states (active/
         # maintenance). 'recommended' stays permitted for back-compat, but the normal way to
         # decline a recommended case is now reopen → 'interviewed' → 'interview'.
+        #
+        # ⚠ 'awarded' IS DELIBERATELY ABSENT — owner ruling, 2026-07-30: "They cannot be rejected
+        # directly. It should only happen after a proper withdrawal of the award." The asymmetry
+        # with active/maintenance is the point: those mean the student ACCEPTED, so a decline
+        # there is a real contractual failure. 'awarded' means the offer is merely OPEN, so the
+        # correct action is withdrawing the offer (sponsorship.cancel_offer / the student
+        # declining / the offer expiring), which returns them to 'recommended' — and a decline
+        # from there is already permitted above.
+        #
+        # Do NOT "fix" this by adding 'awarded'. It sits two conditions away from a genuine
+        # omission of 'awarded' that WAS a bug (the cockpit sign-off, fixed the same day), so it
+        # looks like the same mistake and is not. `test_reject_status_sets.py` pins it.
         if application.status not in ('recommended', 'active', 'maintenance'):
             raise ValueError('bad_status')
     else:

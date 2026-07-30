@@ -923,6 +923,12 @@ export interface AdminScholarshipDetail {
   verified_by_name: string
   verdict_decided_by_name: string
   recommended_by_name: string
+  // The QC floor override: a super accepted this case over a RED fact, with a written reason.
+  // Stored since the V5 gate shipped and surfaced nowhere until 2026-07-30.
+  qc_override_by?: string
+  qc_override_by_name?: string
+  qc_override_at?: string | null
+  qc_override_reason?: string
   rejected_by_name: string
   resolution_items: AdminResolutionItem[]
   /** Recommended assistance amount (RM, Decimal serialised as string) or null. */

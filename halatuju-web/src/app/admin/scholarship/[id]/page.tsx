@@ -74,6 +74,7 @@ import {
   earnerMemberFor,
   viewerKind,
   isClearAccept,
+  isQcAccepted,
   isQueryingLocked,
   isDecisionReady,
   isApproveReady,
@@ -179,6 +180,34 @@ function Field({ label, value, verifiedLabel, note, noteTone = 'amber' }: { labe
         {verifiedLabel && <VerifiedTick label={verifiedLabel} />}
       </dd>
       {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-gray-400' : 'text-amber-600'}`}>{note}</p>}
+    </div>
+  )
+}
+
+/**
+ * The QC floor override — who accepted this case over a RED fact, when, and why.
+ *
+ * The V5 gate refuses a QC-Accept while any of the four facts is red; a super may override with a
+ * written reason. Those three columns have been written since the gate shipped and displayed
+ * NOWHERE — not on this payload, not in this app. A reason nobody can read provides none of the
+ * accountability that demanding one was for. Amber rather than green: this is an exception to a
+ * control, and it should not look like routine sign-off.
+ *
+ * At MODULE scope deliberately (lessons.md, the Administration hub): a component declared inside
+ * the page body is a new type on every keystroke, remounts its subtree and steals focus.
+ */
+function QcOverrideNote({ app, t }: { app: AdminScholarshipDetail; t: (k: string) => string }) {
+  if (!app.qc_override_at && !app.qc_override_reason) return null
+  const who = app.qc_override_by_name || app.qc_override_by || '—'
+  const when = app.qc_override_at ? ` · ${formatDate(app.qc_override_at)}` : ''
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+      <p className="text-xs font-medium text-amber-900">
+        {t('admin.scholarship.qcOverride.title')} {who}{when}
+      </p>
+      {(app.qc_override_reason || '').trim() && (
+        <p className="mt-1 whitespace-pre-line text-xs text-amber-800">{app.qc_override_reason}</p>
+      )}
     </div>
   )
 }
@@ -2549,14 +2578,17 @@ export default function AdminScholarshipDetailPage() {
                 </div>
               </div>
             )}
-            {app.status === 'recommended' ? (
-              <p className="flex items-start gap-1.5 text-sm text-green-700">
-                <span aria-hidden>✓</span>
-                <span>
-                  {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
-                  {hasQc && <>{', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}</>}
-                </span>
-              </p>
+            {isQcAccepted(app.status) ? (
+              <>
+                <p className="flex items-start gap-1.5 text-sm text-green-700">
+                  <span aria-hidden>✓</span>
+                  <span>
+                    {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
+                    {hasQc && <>{', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}</>}
+                  </span>
+                </p>
+                <QcOverrideNote app={app} t={t} />
+              </>
             ) : app.status === 'rejected' ? (
               /* Decision-history trail (rejectionTrail). A decline is a TWO-person decision just
                  like a recommend — the reviewer records it, a QC upholds it — so the record names
@@ -2630,7 +2662,7 @@ export default function AdminScholarshipDetailPage() {
         </div>
 
         {/* Decision actions — pick a REVERSIBLE outcome (Approve / Decline), then Save commits it. */}
-        {(app.status === 'recommended' || app.status === 'active' || app.status === 'maintenance') && !decisionReopened ? (
+        {isQcAccepted(app.status) && !decisionReopened ? (
           /* Committed acceptance → read-only summary. A post-accept decline goes through
              Reopen (→ interviewed → declined as 'interview'); the direct 'contractual'
              decline is reserved for a genuinely post-award (sponsored) case. */
@@ -2642,6 +2674,7 @@ export default function AdminScholarshipDetailPage() {
                 {hasQc && <>{', '}{t('admin.scholarship.qcAcceptedBy')} {qcName}{qcDate}</>}
               </span>
             </p>
+            <QcOverrideNote app={app} t={t} />
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
                 className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
