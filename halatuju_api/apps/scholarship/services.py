@@ -979,15 +979,33 @@ def _record_reject(application, category, by_email, now=None, comments=''):
     """Flip the application to rejected NOW (the decision is immediate) — status + bucket +
     when/who (+ the admin's verbatim reason, bucket 'incomplete'). Does NOT send the student
     email (that may be embargoed; see admin_reject).
-    Snapshots the pre-decline status so cancel_pending_decline can restore it exactly."""
+    Snapshots the pre-decline status AND award_amount so cancel_pending_decline can restore
+    them exactly.
+
+    ⚠ A REJECTED APPLICATION HOLDS NO MONEY, and this is the ONE place that is enforced.
+    `award_amount` was cleared only by the verdict recorder (views_admin.AdminRecordVerdictView,
+    'On DECLINE, clear it'), which is one of THREE ways a case can be declined — so a student
+    accepted, reopened, then declined through the `interview` bucket kept their amount. Two
+    live records did (apps 21 and 71, RM5,000 between them, cleared 2026-07-30). It never
+    misdirected a payment — a rejected student is not in any run — but it silently overstated
+    committed funds to anything that sums the column. Clearing it HERE covers all three paths
+    (admin_reject, org_admin_reject, the legacy release_pending_declines arm) because they all
+    pass through this function; that is the whole reason to fix it here and not at each caller.
+    """
     now = now or timezone.now()
     application.pre_decline_status = application.status
+    # Snapshot BEFORE clearing, and only when there is something to snapshot, so a second
+    # _record_reject on an already-cleared record cannot overwrite a real snapshot with None.
+    if application.award_amount is not None:
+        application.pre_decline_award_amount = application.award_amount
+        application.award_amount = None
     application.status = 'rejected'
     application.rejection_category = category
     application.rejected_at = now
     application.rejected_by = by_email or ''
     application.rejection_comments = comments or ''
-    application.save(update_fields=['pre_decline_status', 'status', 'rejection_category',
+    application.save(update_fields=['pre_decline_status', 'pre_decline_award_amount',
+                                    'award_amount', 'status', 'rejection_category',
                                     'rejected_at', 'rejected_by', 'rejection_comments'])
 
 
@@ -1156,12 +1174,19 @@ def cancel_pending_decline(application):
                     application.id, restore_to)
         application.status = restore_to
         application.pre_decline_status = ''
+        # Give the money back. The reject cleared award_amount; restoring the status without it
+        # would hand back a funded student who is silently unpayable (payments.amount_due caps
+        # at award − paid). Only ever restores FROM the snapshot, so it cannot invent an amount
+        # for a case that never had one.
+        if application.pre_decline_award_amount is not None:
+            application.award_amount = application.pre_decline_award_amount
+            application.pre_decline_award_amount = None
         application.rejection_category = ''
         application.rejected_at = None
         application.rejected_by = ''
         application.rejection_comments = ''
-        fields += ['status', 'pre_decline_status', 'rejection_category', 'rejected_at',
-                   'rejected_by', 'rejection_comments']
+        fields += ['status', 'pre_decline_status', 'award_amount', 'pre_decline_award_amount',
+                   'rejection_category', 'rejected_at', 'rejected_by', 'rejection_comments']
     application.save(update_fields=fields)
     return True
 

@@ -2232,6 +2232,17 @@ checking that the reference resolves, and the difference is invisible until some
 **Do not conflate with:** narrowing the band. `{7,8,9}` on that digit would refuse **39 of the 46** current students — tested, and recorded in the brief.
 ---
 
+### [TD-203] `award_amount` changes are not audited — the field that sets the size of the bursary
+**Status:** Open · logged 2026-07-30 (award-amount clear sprint)
+**File(s):** `apps/scholarship/views_admin.py` (`AdminSetAwardAmountView` ~line 1413, `AdminRecordVerdictView` ~line 2277), `apps/scholarship/services.py` (`_record_reject`, `cancel_pending_decline`)
+**What it is:** four code paths now write `award_amount` — the super-only set-award endpoint, the verdict recorder (apply on accept / clear on decline), the reject choke-point (clear) and cancel-decline (restore) — and **not one of them logs who changed it or what it was before.** This is the field that decides how much money a student is promised.
+**How it surfaced:** app 103 held RM1,000 with no verdict behind it, and there was **no way to tell** whether a super had typed it deliberately via the override or it was residue. Classifying one production row required the owner's own recollection. That is the same gap `AUDIT vircle_id_set` was added to close on 2026-07-30 for the field that decides *where* money goes; this is the field that decides *how much*.
+**What consistent looks like:** an `AUDIT award_amount_set app_id=… by=… was=… now=… via=<override|verdict|reject|cancel>` line at each of the four writers, following the `vircle_id_set` / `reporting_date_set` precedent (log line, not a table — attribution survives admin-account churn and needs no migration).
+**Risk if left:** **Medium.** Nothing is misdirected, but a disputed or anomalous amount cannot be reconstructed, and the reject/cancel paths added today make the field change *more* often without a human touching it — so the next unexplained value will be harder to classify than app 103 was, not easier.
+**Dependencies:** none. No migration, no new surface — four log lines and a test asserting each fires. Small enough to fold into the next scholarship sprint rather than owning one.
+**Do not conflate with:** the snapshot column `pre_decline_award_amount`, which makes a decline *recoverable*, not *attributable*.
+---
+
 ### [TD-201] The Requests thread is a question/answer register, not a discussion — medium, deferred by the owner
 **File(s):** `apps/scholarship/org_requests.py` (`clarifications`, `ask_question`, `answer_clarification`, `TRANSITIONS`), `serializers_admin.OrgRequestOrgSerializer` / `OrgRequestOwnerSerializer`, `app/admin/requests/[id]/page.tsx`
 **Owner, 2026-07-30:** *"my idea of bug report/feature request is informed by bugzilla, where there is open discussion/debate, even after it has been assigned to someone."* Raised alongside the fix that widened the answer window; **explicitly deferred — "4 can wait. It is not urgent, and can be done separately."** Logged so the reasoning is not lost.

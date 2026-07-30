@@ -524,6 +524,45 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-07-30)
 
+**✅ SHIPPED 2026-07-30 — A REJECTED APPLICATION NO LONGER HOLDS AN AWARD AMOUNT.** Migration
+**`0137`** (additive, nullable) **APPLIED migrate-first + verified — do not re-run it.** Retro in
+`CHANGELOG.md`; decision ×1; lessons ×4. `pytest` **3905** scholarship + **1260** courses/reports ·
+`makemigrations --check` clean · **no FE change**, so `next lint` is not a gate for this one.
+- **Why:** two rejected records still carried the money proposed before they were declined — **app
+  21 (RM3,000)** and **app 71 (RM2,000)**, both accepted → reopened → declined via the `interview`
+  bucket — plus **app 103 (RM1,000)** with no verdict behind it. All three cleared on production
+  2026-07-30 (owner-authorised). Nothing was ever mispaid; a rejected student is in no run. It
+  overstated committed funds to anything summing the column.
+- **⚠ THE CAUSE WAS A PROMISE KEPT IN ONE PLACE OUT OF THREE.** `award_amount` was cleared only by
+  the verdict recorder, under the comment *"On DECLINE, clear it"* — locally true, and that is one
+  of THREE decline routes. The clear now lives in **`services._record_reject`**, the choke-point
+  `admin_reject`, `org_admin_reject` and the legacy `release_pending_declines` arm all pass through.
+  **Do not re-scatter it to the callers** — that arrangement is what produced the bug.
+- **⚠ IT SNAPSHOTS THE AMOUNT AND THAT IS LOAD-BEARING, NOT BELT-AND-BRACES.**
+  `pre_decline_award_amount` mirrors `pre_decline_status` (same function, same reason, same restore
+  site). `DECLINE_COOLOFF_DAYS` is **7** in production, so every `admin_reject` is reversible for a
+  week, and a cancelled **contractual** decline restores a FUNDED student *and* reinstates their
+  sponsorship. A plain clear would hand that student back with no amount, and `payments.amount_due`
+  caps at `award − paid` → **silently unpayable**. Both halves are bite-proven (disable the clear →
+  4 tests fail; disable the restore → the cancel test fails).
+- **⚠ A REOPEN IS NOT A DECLINE — it deliberately KEEPS the amount.** **Application 99** sits there
+  right now (accepted 29 Jul, reopened the same day, RM1,000 held pending re-decision) and is the
+  live proof the fix matters: had that reopen ended in a decline pre-fix, she was the next stale
+  row. A test pins the reopen behaviour so nobody "completes" this by clearing it.
+- **⚠ APPLICATION 15 MATCHES THE OBVIOUS SWEEP AND MUST NOT BE TOUCHED.** She is `awarded` with a
+  blank `officer_verdict.overall` (a permitted draft-save), but holds a live sponsorship, 7 payment
+  items (RM1,400 paid) and a disbursement. **Staleness is decided by MONEY ATTACHMENT, not verdict
+  shape** — the pre-flight checks `NOT EXISTS` against sponsorships/payment items/disbursements.
+- **NO BACKFILL and the two cleared amounts do not return.** NULL is the honest value for every
+  pre-0137 row. Production after: **0** rejected/withdrawn/expired rows hold an amount; committed
+  totals are `awarded` 47 = RM101,000 · `recommended` 4 = RM6,000 · `interviewing` 1 = RM1,000.
+- **▶ AT DEPLOY: push. NO migrate-first** (0137 is already applied). Post-check: decline a test case
+  from `interviewing` and confirm the amount clears; cancel it inside the window and confirm the
+  amount comes back.
+- **▶ OWED, NOT BUILT — `award_amount` has NO audit line** (neither the super-only set-award
+  endpoint nor this clear writes one), which is exactly why app 103's RM1,000 could not be
+  attributed and needed the owner's memory. Same treatment `AUDIT vircle_id_set` just received.
+  **TD-203.**
 
 **⚠ TWO WAVES ON 2026-07-30. The FIRST was six commits in one deploy, api + web.** (A SECOND wave followed: `d3b5ddda`, `b78dc356`, `ee8d2de2` — four owner rulings on the Requests module found by reviewing #2/#3 live, plus the screenshot surface the first wave missed. Merged with this branch and pushed after.) Two concurrent sessions
 closed on the same day and merged before the push: `a1552464` (the awarded sign-off + the override

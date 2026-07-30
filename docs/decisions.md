@@ -1,5 +1,36 @@
 # Architectural Decisions — HalaTuju
 
+## Clearing a rejected award_amount belongs at the reject CHOKE-POINT, and must be recoverable — 2026-07-30
+**Decision:** `services._record_reject` clears `award_amount` and snapshots it to
+`pre_decline_award_amount` (migration `0137`); `cancel_pending_decline` restores it.
+
+**Why the choke-point, not the three callers.** `admin_reject`, `org_admin_reject` and the legacy
+`release_pending_declines` arm all flip a case to `rejected` through `_record_reject`. Clearing at
+each caller is the arrangement that produced the bug — the verdict recorder did its half correctly
+for eleven days while the other paths did nothing. One home means a fourth decline route inherits
+the rule instead of forgetting it.
+
+**Why a snapshot rather than a plain clear.** `DECLINE_COOLOFF_DAYS` is **7** in production, so
+every `admin_reject` is reversible for a week, and a cancelled *contractual* decline restores a
+funded student **and** reinstates their sponsorship. A plain clear would return that student with no
+award amount and `payments.amount_due` caps at `award − paid` → they silently stop being payable.
+The clear is only defensible because it is undoable. Mirrors `pre_decline_status` deliberately:
+same function, same reason, same restore site.
+
+**Explicitly NOT decided this way:**
+- **A reopen does not clear the amount.** A reopen re-opens a decision; it is not a decline. App 99
+  holds RM1,000 mid-reopen today, correctly. A test pins it so the fix is not "completed" wrongly.
+- **No backfill, and the two cleared amounts do not come back.** Apps 21 and 71 were declined
+  before the snapshot existed; NULL is the honest value for every pre-0137 row.
+- **App 15 keeps her RM2,000** despite matching the sweep's verdict-shape filter — real money is
+  attached (live sponsorship, 7 payment items, a disbursement). Staleness is decided by money
+  attachment, not by verdict shape.
+
+**Not addressed:** there is still no audit line when `award_amount` changes (the super-only
+set-award endpoint writes none either), so app 103's RM1,000 could not be attributed to anyone —
+which is why the owner's memory was the only way to classify it. Worth the same treatment
+`AUDIT vircle_id_set` just received.
+
 ## The eWallet-ID guard is a BAND on the first typed digit, not a longer typed field — 2026-07-30
 **Decision:** `valid_vircle_id` keeps the 9-digit prefix + 4 typed digits and additionally requires
 the **first typed digit** (position 10 of 13) to sit in `VIRCLE_ID_BAND_MIN`–`MAX`, seeded 5–9.

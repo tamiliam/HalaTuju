@@ -95,6 +95,97 @@ class TestContractualRejectLapsesSponsorship(TestCase):
         self.assertTrue(app.sponsorships.filter(status='active').exists())
 
 
+@override_settings(DECLINE_COOLOFF_DAYS=7)
+class TestRejectClearsAwardAmount(TestCase):
+    """A REJECTED application holds no money — on every reject path, not just the verdict one.
+
+    `award_amount` was cleared only by the verdict recorder, which is one of THREE decline
+    routes. A student accepted, reopened, then declined through the `interview` bucket kept
+    their amount: apps 21 and 71 on production did (RM5,000 between them). Every test here
+    was checked to FAIL with the `_record_reject` clear removed.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='rca', name='B40', year=2026)
+        cls.admin = PartnerAdmin.objects.create(
+            supabase_user_id='rca-admin', role='super', is_super_admin=True,
+            is_active=True, name='A', email='rca@x.com')
+
+    def _app(self, status, amount='3000'):
+        n = StudentProfile.objects.count()
+        p = StudentProfile.objects.create(
+            supabase_user_id=f'rca{n}', name='Zxq', nric=f'00020{n}-10-123{n}',
+            grades={'bm': 'A'}, contact_email='s@x.com')
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status=status, notify_email='s@x.com',
+            award_amount=Decimal(amount) if amount is not None else None)
+
+    def test_interview_bucket_decline_clears_it(self):
+        # Apps 21 and 71 exactly: accepted, reopened to 'interviewing', then declined.
+        app = self._app('interviewing')
+        services.admin_reject(app, self.admin, 'interview')
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'rejected')
+        self.assertIsNone(app.award_amount)
+        self.assertEqual(app.pre_decline_award_amount, Decimal('3000'))   # recoverable
+
+    def test_org_admin_reject_clears_it(self):
+        app = self._app('shortlisted')
+        services.org_admin_reject(app, self.admin, 'Stopped responding')
+        app.refresh_from_db()
+        self.assertIsNone(app.award_amount)
+
+    def test_contractual_decline_clears_it(self):
+        app = self._app('active')
+        services.admin_reject(app, self.admin, 'contractual')
+        app.refresh_from_db()
+        self.assertIsNone(app.award_amount)
+
+    def test_cancelled_decline_gives_the_money_back(self):
+        # The load-bearing one: the clear is only safe because it is reversible. A funded
+        # student restored WITHOUT their amount is silently unpayable (payments.amount_due
+        # caps at award − paid), which would be worse than the stale amount.
+        app = self._app('active')
+        services.admin_reject(app, self.admin, 'contractual')
+        self.assertTrue(services.cancel_pending_decline(app))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'active')
+        self.assertEqual(app.award_amount, Decimal('3000'))
+        self.assertIsNone(app.pre_decline_award_amount)   # snapshot consumed, not left behind
+
+    def test_reject_without_an_amount_invents_nothing(self):
+        app = self._app('interviewing', amount=None)
+        services.admin_reject(app, self.admin, 'interview')
+        app.refresh_from_db()
+        self.assertIsNone(app.award_amount)
+        self.assertIsNone(app.pre_decline_award_amount)
+        self.assertTrue(services.cancel_pending_decline(app))
+        app.refresh_from_db()
+        self.assertIsNone(app.award_amount)               # cancel can't conjure one
+
+    def test_a_second_reject_does_not_destroy_the_snapshot(self):
+        app = self._app('interviewing')
+        services.admin_reject(app, self.admin, 'interview')
+        services._record_reject(app, 'interview', 'again@x.com')   # re-record on a cleared row
+        app.refresh_from_db()
+        self.assertEqual(app.pre_decline_award_amount, Decimal('3000'))
+
+    def test_reopen_deliberately_keeps_the_amount(self):
+        # ⚠ A REOPEN IS NOT A DECLINE — do not "fix" this to clear the amount. Application 99
+        # on production sits exactly here (accepted 29 Jul, reopened the same day): the amount
+        # is held pending the re-decision, and is cleared only if that decision is a decline.
+        from apps.scholarship import reopen
+        app = self._app('recommended')
+        app.officer_verdict = {'overall': 'accept'}
+        app.verdict_decided_at = timezone.now()
+        app.verdict_decided_by = 'rca@x.com'
+        app.save(update_fields=['officer_verdict', 'verdict_decided_at', 'verdict_decided_by'])
+        reopen.reopen_decision(app, by_admin=self.admin, reason='Merit re-check')
+        app.refresh_from_db()
+        self.assertEqual(app.award_amount, Decimal('3000'))
+
+
 class TestAwardOfferEmailStamp(TestCase):
     def _awarded(self):
         cohort = ScholarshipCohort.objects.create(code='ce', name='B40', year=2026)

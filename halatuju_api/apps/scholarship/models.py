@@ -698,6 +698,18 @@ class ScholarshipApplication(models.Model):
         help_text="Status snapshot taken at admin_reject; cancel_pending_decline restores "
                   "to it (blank = legacy row, falls back to 'interviewed')",
     )
+    # The award_amount snapshot, taken in the same breath as pre_decline_status and for the
+    # same reason. A decline CLEARS award_amount (a rejected student holds no money), but
+    # DECLINE_COOLOFF_DAYS is 7 in production, so every admin_reject is reversible for a week —
+    # and a cancelled CONTRACTUAL decline restores a FUNDED student whose sponsorship is
+    # reinstated. Without this snapshot that student would come back with no award amount, and
+    # `payments.amount_due` would clamp their pay to zero (cap = award − paid) silently. So the
+    # clear is only safe BECAUSE it is recoverable. NULL = nothing to restore.
+    pre_decline_award_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="award_amount snapshot taken when a decline cleared it; "
+                  "cancel_pending_decline restores it (NULL = nothing to restore)",
+    )
 
     # ── QC gap-floor override (verification-model V5 #5, owner decision 1) ─────
     # QC-Accept refuses while any verdict fact is red/'gap' (400 verdict_gap_floor); only a

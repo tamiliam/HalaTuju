@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## A rejected application no longer holds an award amount — 2026-07-30
+
+Two rejected records were carrying the money that had been proposed for them before they were
+declined: **app 21 (RM3,000)** and **app 71 (RM2,000)**, both accepted, reopened, then declined
+through the `interview` bucket. A third, **app 103 (RM1,000)**, held an amount with no recorded
+verdict behind it at all. None of it ever misdirected a payment — a rejected student appears in no
+payment run — but it overstated committed funds to anything that sums the column.
+
+- **The cause was a promise kept in one place out of three.** `award_amount` was cleared by the
+  verdict recorder, whose comment reads *"On DECLINE, clear it"* — true where it is written, and
+  the verdict recorder is one of THREE ways a case can be declined. `admin_reject` (interview and
+  contractual buckets) and `org_admin_reject` left the amount untouched.
+- **The clear moved to `services._record_reject`**, the choke-point all three paths already pass
+  through, so a fourth decline route cannot reintroduce it.
+- **⚠ It also SNAPSHOTS the amount (`pre_decline_award_amount`, migration `0137`), because the
+  clear is only safe while it is reversible.** `DECLINE_COOLOFF_DAYS` is 7 in production, so every
+  `admin_reject` can be cancelled for a week — and a cancelled *contractual* decline restores a
+  FUNDED student and reinstates their sponsorship. Clearing without a snapshot would have handed
+  that student back with no award amount, and `payments.amount_due` caps at `award − paid`, so
+  their pay would silently become zero. That would have been a worse bug than the one being fixed.
+- **⚠ A REOPEN IS NOT A DECLINE and deliberately keeps the amount** — application 99 sits exactly
+  there today (accepted 29 July, reopened the same day), holding RM1,000 pending its re-decision.
+  A test pins this so nobody "completes" the fix by clearing it.
+- **Application 15 was deliberately left alone.** She surfaced in the same sweep — `awarded`, with
+  a blank `officer_verdict.overall` — but she has a live sponsorship, 7 payment items and a
+  disbursement against her name. Her amount is correct; the sweep's verdict-shape proxy was what
+  was wrong. **Money attachment, not verdict shape, is what makes an amount stale.**
+- **No backfill.** The column describes declines made after this ships; NULL correctly means
+  "nothing to restore" for all 143 existing rows, including the two just cleared.
+- `pytest` **3905** scholarship + **1260** courses/reports · `makemigrations --check` clean ·
+  migration `0137` applied migrate-first and verified (143 rows, 0 snapshots set).
+
 ## A DuitNow Transfer number can no longer be saved as an eWallet ID — 2026-07-30
 
 Vircle reported two bursary recipients whose stored eWallet ID was actually their **DuitNow
