@@ -2174,6 +2174,72 @@ class OrgRequestAttachment(models.Model):
         return f'OrgRequestAttachment #{self.pk} for OrgRequest #{self.org_request_id}'
 
 
+class OrgRequestComment(models.Model):
+    """One entry in an OrgRequest's DISCUSSION (TD-201, owner 2026-07-31).
+
+    Replaces ``OrgRequest.clarifications`` — a ``JSONField`` list of ``{question, answer}`` PAIRS,
+    which could carry a question and its single reply and nothing else. The owner's model is
+    Bugzilla: *"open discussion/debate, even after it has been assigned to someone"*. A pairs list
+    cannot express a statement, a second voice, or a remark that expects no reply, and the module's
+    one verb reaching the requester was ``ask`` — so a conclusion ("here is what we would build, and
+    why") had to travel as a quote note or not at all.
+
+    **A question is a comment awaiting a reply** (``awaiting_reply``), which is what makes this ONE
+    stream rather than a comment table sitting beside a question table.
+
+    ⚠ **``visibility`` is the load-bearing column and it INHERITS TD-202's ruling** — do not
+    re-decide it per feature. ``shared`` reaches the requesting organisation; ``internal`` never
+    does. The rule settled on 2026-07-30 is *shared reasoning, private judgement*: the reviewer's
+    rationale goes out, the owner's private assessment does not, because the owner has to stay free
+    to write bluntly. Retrofitting "who may read this" onto a table that assumed everyone sees
+    everything is the expensive version of this change, which is why the column exists from the
+    first migration rather than being added when it is first needed.
+
+    ⚠ **The window is WIDER than ``OPEN_FOR_SHAPING``** (owner, 2026-07-31). Answering and attaching
+    close when the quote is accepted, because both change what was priced. A comment does not, and
+    Bugzilla-style discussion explicitly continues after assignment — so commenting stays open until
+    the request is terminal (``done``/``declined``). Two windows, deliberately, each with its reason.
+
+    ``author_kind`` exists because the reviewer has no ``PartnerAdmin`` row; ``author_admin`` is
+    SET_NULL so removing a person never deletes the history they wrote.
+    """
+    AUTHOR_CHOICES = [
+        ('ai', 'AI reviewer'),
+        ('owner', 'Platform owner'),
+        ('org', 'Requesting organisation'),
+    ]
+    VISIBILITY_CHOICES = [
+        ('shared', 'Shared with the organisation'),
+        ('internal', 'Platform-internal only'),
+    ]
+
+    org_request = models.ForeignKey(
+        OrgRequest, on_delete=models.CASCADE, related_name='comments',
+    )
+    author_kind = models.CharField(max_length=10, choices=AUTHOR_CHOICES)
+    # Null for the AI, and for a human whose admin record is later removed.
+    author_admin = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='org_request_comments',
+    )
+    body = models.TextField()
+    visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='shared')
+    # A question is a comment awaiting a reply; a statement is not. Cleared when replied to.
+    awaiting_reply = models.BooleanField(default=False)
+    replied_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'org_request_comments'
+        ordering = ['id']            # flat stream, oldest first — the order it was said in
+        indexes = [
+            models.Index(fields=['org_request', 'id']),
+        ]
+
+    def __str__(self):
+        return f'OrgRequestComment #{self.pk} on OrgRequest #{self.org_request_id}'
+
+
 class ResolutionItem(models.Model):
     """A discrete, independently-resolvable action raised against an application
     (the IBKR model — see docs/scholarship/verification-verdict-plan.md, S3).

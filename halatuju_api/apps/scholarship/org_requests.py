@@ -181,50 +181,119 @@ def create_request(organisation, submitted_by, *, kind, title, description,
 
 # ── clarification thread ──────────────────────────────────────────────────────────
 
-# Who authored a clarification. Stored on each entry from 2026-07-30; an entry with NO
-# `asked_by` is an AI question, because that is all there was before — so no backfill is
-# needed and old threads read correctly.
-ASKED_BY_AI = 'ai'
-ASKED_BY_OWNER = 'owner'
+# ── the discussion (TD-201, owner 2026-07-31) ───────────────────────────────────
+#
+# Replaces the `clarifications` JSONField of {question, answer} PAIRS. A QUESTION IS A COMMENT
+# AWAITING A REPLY — that is what makes this one stream rather than a comment table beside a
+# question table. See models.OrgRequestComment for why `visibility` exists from the first migration.
+AUTHOR_AI = 'ai'
+AUTHOR_OWNER = 'owner'
+AUTHOR_ORG = 'org'
+
+# How each author is introduced to the reviewer in the prompt.
+_SPEAKER = {AUTHOR_OWNER: 'the owner', AUTHOR_ORG: 'the requester',
+            AUTHOR_AI: 'you, earlier'}
+
+VISIBILITY_SHARED = 'shared'
+VISIBILITY_INTERNAL = 'internal'
 
 
-def asked_by(entry):
-    """The author of a clarification entry, defaulting to the AI for pre-2026-07-30 rows."""
-    return (entry or {}).get('asked_by') or ASKED_BY_AI
+def comments_for(req, *, viewer_is_org):
+    """The thread as the viewer may see it, oldest first.
+
+    ⚠ The visibility filter lives HERE, once. The org-facing serializer is an allowlist and cannot
+    leak a field it does not name, but it CAN leak a row — a serializer that names `body` will
+    happily render an internal comment. Filtering at the query is the only place that distinguishes
+    rows rather than columns.
+    """
+    qs = req.comments.all().select_related('author_admin')
+    if viewer_is_org:
+        qs = qs.filter(visibility=VISIBILITY_SHARED)
+    return list(qs)
 
 
-def _open_questions(req):
-    return [c for c in (req.clarifications or []) if not c.get('answer')]
+def can_comment(req):
+    """Commenting stays open until the request is TERMINAL — deliberately WIDER than
+    ``OPEN_FOR_SHAPING`` (owner, 2026-07-31).
+
+    Answering and attaching close when the quote is accepted because both change what was priced.
+    A remark does not, and the owner's model is explicit: *"open discussion/debate, even after it
+    has been assigned to someone."* Two windows, each with its own reason — do not "tidy" them into
+    one. Asking a NEW question is the narrow one (``TRANSITIONS['ask']``): a question can re-price,
+    which is why it still stops when the quote goes out.
+    """
+    return req.status not in TERMINAL_STATUSES
+
+
+def open_questions(req):
+    """Comments still awaiting a reply, in order."""
+    return [c for c in req.comments.all() if c.awaiting_reply]
 
 
 def _open_ai_questions(req):
     """The AI's own unanswered questions — what ``MAX_OPEN_QUESTIONS`` actually caps.
 
-    The cap exists so an eager reviewer cannot bury the requester in questions. It was never
-    meant to stop the OWNER asking something, so an owner question must not consume the AI's
-    room; otherwise asking one thing by hand silently costs the reviewer a slot.
+    The cap exists so an eager reviewer cannot bury the requester. It was never meant to stop the
+    OWNER asking something, so an owner question must not consume the AI's room; otherwise asking
+    one thing by hand silently costs the reviewer a slot.
     """
-    return [c for c in _open_questions(req) if asked_by(c) == ASKED_BY_AI]
+    return [c for c in open_questions(req) if c.author_kind == AUTHOR_AI]
+
+
+def post_comment(req, admin, body, *, author_kind, visibility=VISIBILITY_SHARED,
+                 awaiting_reply=False):
+    """Append one entry to the discussion. The single write path — ``ask_question``, the AI's
+    questions and the requester's replies all land here so authorship, visibility and the window
+    are enforced in one place.
+
+    ⚠ An INTERNAL comment is platform-side only; a caller must never mark an org author internal
+    (there is no org-internal tier — if one is ever wanted it is a third value, not a reuse of
+    this one).
+    """
+    body = (body or '').strip()
+    if not body:
+        raise OrgRequestError('body_required')
+    if author_kind not in {AUTHOR_AI, AUTHOR_OWNER, AUTHOR_ORG}:
+        raise OrgRequestError('bad_author')
+    if visibility not in {VISIBILITY_SHARED, VISIBILITY_INTERNAL}:
+        raise OrgRequestError('bad_visibility')
+    if author_kind == AUTHOR_ORG and visibility == VISIBILITY_INTERNAL:
+        raise OrgRequestError('bad_visibility')
+    if not can_comment(req):
+        raise OrgRequestError('bad_transition')
+    from .models import OrgRequestComment
+    return OrgRequestComment.objects.create(
+        org_request=req,
+        author_kind=author_kind,
+        author_admin=admin if getattr(admin, 'pk', None) else None,
+        body=body[:5000],
+        visibility=visibility,
+        awaiting_reply=awaiting_reply,
+    )
+
+
+def comment(req, admin, body, *, visibility=VISIBILITY_SHARED):
+    """The OWNER posts a STATEMENT — the verb the module never had (super-only).
+
+    Until now exactly one verb reached the requester: ``ask`` a question. So a conclusion — *"here
+    is what we would build, and why"* — had to travel as a quote note or not at all, and the owner's
+    judgement about the SHAPE of a request left the system. A statement expects no reply, so it does
+    not set ``awaiting_reply`` and does not touch the question cap.
+    """
+    if not _is_super(admin):
+        raise OrgRequestError('forbidden')
+    return post_comment(req, admin, body, author_kind=AUTHOR_OWNER, visibility=visibility)
 
 
 def ask_question(req, admin, question):
-    """The OWNER asks the requester something (super-only). Returns the appended question text.
+    """The OWNER asks the requester something (super-only) — a comment that AWAITS A REPLY.
 
-    Why this exists: until now the thread flowed one way only — the AI asked,
-    ``answer_clarification`` let the requester reply, and the owner was a bystander on their own
-    request, CC'd by email. So a judgement like *"adding a sponsor directly would bypass the terms
-    and consent — would an invite do?"* had nowhere to go: ``triage_note`` is private and the org
-    never sees it. The org-facing serializer's docstring already described this thread as carrying
-    "the questions the AI/owner chose to flow to them" — the owner half was designed for and never
-    built.
+    Kept on the NARROW window (``TRANSITIONS['ask']``, submitted/triaged) while plain comments run
+    until terminal: a quoted request must not grow new questions, because the quote was priced
+    against what was known when it was sent. A remark carries no such risk.
 
-    ONE thread, authored entries (owner decision, 2026-07-30): owner and AI questions share
-    ``clarifications`` and are distinguished by ``asked_by``, so the requester sees a single
-    conversation and the provenance is still on the record. Deliberately NOT counted against
-    ``MAX_OPEN_QUESTIONS`` — see ``_open_ai_questions``.
-
-    The caller emails the requester (``emails.send_org_request_questions_email``), matching how
-    the AI's questions are delivered.
+    Deliberately NOT counted against ``MAX_OPEN_QUESTIONS`` — see ``_open_ai_questions``.
+    The caller emails the requester, matching how the AI's questions are delivered.
     """
     if not _is_super(admin):
         raise OrgRequestError('forbidden')
@@ -232,49 +301,39 @@ def ask_question(req, admin, question):
     question = (question or '').strip()
     if not question:
         raise OrgRequestError('question_required')
-    clar = list(req.clarifications or [])
     # Same dedup as the AI's, on text: asking the identical thing twice is a slip, not an intent.
-    if any((c.get('question') or '').strip().casefold() == question.casefold() for c in clar):
+    if any(c.body.strip().casefold() == question.casefold() for c in req.comments.all()):
         raise OrgRequestError('duplicate_question')
-    clar.append({
-        'question': question[:1000],
-        'asked_at': timezone.now().isoformat(),
-        'asked_by': ASKED_BY_OWNER,
-        'asked_by_email': getattr(admin, 'email', '') or '',
-        'answer': None,
-        'answered_at': None,
-    })
-    req.clarifications = clar
-    req.save(update_fields=['clarifications', 'updated_at'])
+    post_comment(req, admin, question[:1000], author_kind=AUTHOR_OWNER,
+                 visibility=VISIBILITY_SHARED, awaiting_reply=True)
     return question[:1000]
 
 
-def answer_clarification(req, answer, *, index=None):
-    """The submitting org's admin answers a clarifying question (no status transition — allowed
-    until the quote is ACCEPTED, i.e. submitted/triaged/quoted/deferred). ``index`` selects the
-    clarification entry; when omitted, the first UNANSWERED question is answered. Raises
-    ``not_answerable`` if there is nothing to answer.
-    AI auto-re-run + owner-notify are the caller's post-commit steps."""
+def answer_clarification(req, answer, *, comment_id=None, admin=None):
+    """The requesting org replies (no status transition — allowed until the quote is ACCEPTED,
+    i.e. submitted/triaged/quoted/deferred).
+
+    The reply is itself a comment, authored by the org; the question it answers is stamped replied.
+    ``comment_id`` selects which open question; omitted, it answers the OLDEST one. Raises
+    ``not_answerable`` when there is nothing awaiting a reply.
+    """
     _check_transition(req, 'answer')
     answer = (answer or '').strip()
     if not answer:
         raise OrgRequestError('answer_required')
-    clar = list(req.clarifications or [])
-    if index is not None:
-        if index < 0 or index >= len(clar) or clar[index].get('answer'):
-            raise OrgRequestError('not_answerable')
-        target = index
+
+    if comment_id is not None:
+        target = req.comments.filter(pk=comment_id, awaiting_reply=True).first()
     else:
-        target = next((i for i, c in enumerate(clar) if not c.get('answer')), None)
-        if target is None:
-            raise OrgRequestError('not_answerable')
-    clar[target] = {
-        **clar[target],
-        'answer': answer[:2000],
-        'answered_at': timezone.now().isoformat(),
-    }
-    req.clarifications = clar
-    req.save(update_fields=['clarifications', 'updated_at'])
+        target = next(iter(open_questions(req)), None)
+    if target is None:
+        raise OrgRequestError('not_answerable')
+
+    post_comment(req, admin, answer[:2000], author_kind=AUTHOR_ORG,
+                 visibility=VISIBILITY_SHARED)
+    target.awaiting_reply = False
+    target.replied_at = timezone.now()
+    target.save(update_fields=['awaiting_reply', 'replied_at'])
     return req
 
 
@@ -405,23 +464,24 @@ def defer(req, admin):
 
 @transaction.atomic
 def modify(req, admin, *, description):
-    """quoted/deferred → submitted (org_admin own org). Amends the description and appends the OLD
-    text to the clarification thread as history, then returns to triage. The AI re-runs (caller's
-    post-commit step)."""
+    """quoted/deferred → submitted (org_admin own org). Amends the description, records the OLD
+    text in the thread as history, then returns to triage. The AI re-runs (caller's post-commit
+    step)."""
     _check_transition(req, 'modify')
     description = (description or '').strip()
     if not description:
         raise OrgRequestError('description_required')
-    clar = list(req.clarifications or [])
-    clar.append({
-        'history': 'description_modified',
-        'previous_description': req.description,
-        'at': timezone.now().isoformat(),
-    })
-    req.clarifications = clar
+    previous = req.description
     req.description = description
     req.status = 'submitted'
-    req.save(update_fields=['clarifications', 'description', 'status', 'updated_at'])
+    req.save(update_fields=['description', 'status', 'updated_at'])
+    # After the save, so a failure recording history cannot leave the amendment half-applied.
+    # INTERNAL: our record of what changed, not part of the conversation with the requester,
+    # who wrote the new text and can already see it on the request.
+    post_comment(req, admin,
+                 'Description amended. Previous text:\n\n' + previous,
+                 author_kind=AUTHOR_OWNER if _is_super(admin) else AUTHOR_ORG,
+                 visibility=VISIBILITY_INTERNAL)
     return req
 
 
@@ -490,18 +550,19 @@ def _build_review_prompt(req):
     whole AI draft is owner-only too (``OrgRequestOrgSerializer`` is an explicit allowlist with no
     model passthrough) — and a test pins it, because "safe by construction" is worth asserting.
     """
-    answered = [c for c in (req.clarifications or [])
-                if c.get('answer') and c.get('question')]
-    # Attribute each exchange: an answer to the OWNER's question carries different weight from an
-    # answer to the reviewer's own, and the reviewer should be able to tell them apart.
+    # The whole discussion, attributed — an answer to the OWNER's question carries different
+    # weight from an answer to the reviewer's own, and a STATEMENT from the owner is a steer in
+    # itself. INTERNAL comments are included deliberately: the reviewer is platform-side, and
+    # the owner's judgement is exactly what a re-run should reason WITH rather than re-derive.
+    # The org-facing serializer is what keeps any of this from reaching the requester.
+    thread = [c for c in req.comments.all() if c.body.strip()]
     qa = '\n'.join(
-        f'Q ({"the owner" if asked_by(c) == ASKED_BY_OWNER else "you, earlier"}): {c["question"]}'
-        f'\nA (the requester): {c["answer"]}'
-        for c in answered)
-    # Questions the owner has asked that are still UNANSWERED are steers in themselves — they say
-    # what the owner is worried about, even before a reply lands.
-    pending_owner = [c['question'] for c in _open_questions(req)
-                     if asked_by(c) == ASKED_BY_OWNER and c.get('question')]
+        f'{_SPEAKER.get(c.author_kind, c.author_kind)}'
+        f'{" (internal)" if c.visibility == VISIBILITY_INTERNAL else ""}: {c.body}'
+        for c in thread)
+    # Questions the owner has asked that are still UNANSWERED say what the owner is worried
+    # about, even before a reply lands.
+    pending_owner = [c.body for c in open_questions(req) if c.author_kind == AUTHOR_OWNER]
     steer = (req.triage_note or '').strip()
     return (
         'You are the AI reviewer triaging an organisation request for a software team. '
@@ -650,38 +711,35 @@ def run_ai_review(req):
         req.ai_draft_note = draft['raw'][:4000]
         fields += ['ai_draft_note']
 
-    new_questions = _append_questions(req, draft['questions'])
-    if new_questions:
-        fields.append('clarifications')
     req.save(update_fields=list(dict.fromkeys(fields)))
+    # AFTER the save: questions are now rows of their own, so they no longer ride along in
+    # `update_fields`. A failure here cannot lose the draft that was just written.
+    new_questions = _append_questions(req, draft['questions'])
     return {'draft': draft, 'new_questions': new_questions}
 
 
 def _append_questions(req, questions):
-    """Append clarifying questions that aren't already in the thread (dedup on text), keeping the
-    open queue within ``MAX_OPEN_QUESTIONS``. Mutates req.clarifications in memory; the caller
-    saves. Returns the list of newly-appended question strings."""
-    clar = list(req.clarifications or [])
-    existing = {(c.get('question') or '').strip().casefold()
-                for c in clar if c.get('question')}
+    """Post the reviewer's clarifying questions as comments awaiting a reply, skipping any already
+    in the thread (dedup on text) and keeping the open queue within ``MAX_OPEN_QUESTIONS``.
+
+    Returns the newly-posted question strings — the caller emails them to the requester.
+    """
+    existing = {c.body.strip().casefold() for c in req.comments.all()}
     # Room is measured against the AI's OWN open questions, not the whole thread: an owner
     # question must not cost the reviewer a slot (see _open_ai_questions).
     room = MAX_OPEN_QUESTIONS - len(_open_ai_questions(req))
     added = []
-    now = timezone.now().isoformat()
     for q in questions:
         if room <= 0:
             break
         key = q.strip().casefold()
         if not key or key in existing:
             continue
-        clar.append({'question': q, 'asked_at': now, 'asked_by': ASKED_BY_AI,
-                     'answer': None, 'answered_at': None})
+        post_comment(req, None, q, author_kind=AUTHOR_AI,
+                     visibility=VISIBILITY_SHARED, awaiting_reply=True)
         existing.add(key)
         added.append(q)
         room -= 1
-    if added:
-        req.clarifications = clar
     return added
 
 
