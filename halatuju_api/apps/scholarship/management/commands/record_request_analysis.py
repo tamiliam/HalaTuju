@@ -209,6 +209,67 @@ def _token_from_supabase(grant, payload, *, stdout):
     return access, (data.get('refresh_token') or '')
 
 
+def _mint_session(stdout):
+    """A session of the command's OWN, minted with the service-role key. No browser, no password.
+
+    Two calls, exactly what following an emailed magic link does: `admin/generate_link` returns a
+    `hashed_token` (service role), and `/verify` exchanges it for a real session (publishable key).
+
+    ⚠ THIS IS THE ONLY ROUTE THAT SURVIVES THIS PROJECT'S SETTINGS, and each alternative failed for
+    a different structural reason, all of them permanent:
+      • the password grant is behind CAPTCHA ("request disallowed (no captcha_token found)"), and a
+        command line cannot produce a captcha token — so `--bootstrap-login` can never work here;
+      • the super account signs in with GOOGLE, so for a long time it had no password at all;
+      • a refresh token copied from the browser dies the moment the browser rotates it ("Already
+        Used") — two clients cannot share one rotation family.
+    Minting sidesteps all three: a fresh, independent session per run, nothing stored, nothing to
+    expire, nothing to rotate out from under it.
+
+    ⚠ IT ADDS NO PRIVILEGE. Anything reachable with the minted session was already reachable with
+    the service-role key directly — that key bypasses row-level security entirely. What it buys is
+    that the write travels through the API's flag, role, org-fence and service-layer gates instead
+    of around them, which is the whole point of TD-206. Be honest about that in any note claiming
+    the laptop holds "no powerful credential": it holds this one, and always did.
+    """
+    url = (_env_value('SUPABASE_URL') or getattr(settings, 'SUPABASE_URL', '')).rstrip('/')
+    service = _env_value('SUPABASE_SERVICE_ROLE_KEY') or getattr(
+        settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
+    anon = _env_value('SUPABASE_ANON_KEY')
+    email = _env_value('HALATUJU_ADMIN_EMAIL')
+    if not (url and service and anon and email):
+        return ''          # not configured for minting — the caller falls through
+
+    import requests as http
+
+    svc = {'apikey': service, 'Authorization': f'Bearer {service}',
+           'Content-Type': 'application/json'}
+    try:
+        gr = http.post(f'{url}/auth/v1/admin/generate_link',
+                       headers=svc, json={'type': 'magiclink', 'email': email}, timeout=30)
+    except Exception as e:      # noqa: BLE001
+        raise CommandError(f'Could not reach Supabase to mint a session: {e}')
+    if gr.status_code != 200:
+        raise CommandError(
+            f'Could not mint a session ({gr.status_code}): {gr.text[:200]}. '
+            f'Is {email} still a user on this project?')
+    hashed = (gr.json() or {}).get('hashed_token') or ''
+    if not hashed:
+        raise CommandError('Supabase returned no hashed_token to exchange.')
+
+    try:
+        vr = http.post(f'{url}/auth/v1/verify',
+                       headers={'apikey': anon, 'Content-Type': 'application/json'},
+                       json={'type': 'magiclink', 'token_hash': hashed}, timeout=30)
+    except Exception as e:      # noqa: BLE001
+        raise CommandError(f'Could not exchange the minted link: {e}')
+    if vr.status_code != 200:
+        raise CommandError(f'The minted link would not exchange ({vr.status_code}): {vr.text[:200]}')
+    access = (vr.json() or {}).get('access_token') or ''
+    if not access:
+        raise CommandError('The exchange returned no access token.')
+    return access
+
+
 def _acquire_token(stdout, *, force_login=False):
     """A short-lived Supabase access token for a SUPER admin.
 
@@ -233,6 +294,12 @@ def _acquire_token(stdout, *, force_login=False):
     token = '' if force_login else (os.environ.get('HALATUJU_ADMIN_TOKEN') or '').strip()
     if token:
         return token
+
+    # The ordinary path: mint a fresh session. Nothing is stored, so nothing can go stale.
+    if not force_login:
+        minted = _mint_session(stdout)
+        if minted:
+            return minted
 
     refresh = '' if force_login else _env_value('HALATUJU_REFRESH_TOKEN')
     if refresh:
@@ -358,7 +425,8 @@ class Command(BaseCommand):
 
         wanted = {'HALATUJU_REFRESH_TOKEN': (data.get('refresh_token') or '').strip(),
                   'SUPABASE_URL': (data.get('supabase_url') or '').strip(),
-                  'SUPABASE_ANON_KEY': (data.get('supabase_anon_key') or '').strip()}
+                  'SUPABASE_ANON_KEY': (data.get('supabase_anon_key') or '').strip(),
+                  'HALATUJU_ADMIN_EMAIL': (data.get('admin_email') or '').strip()}
         values = {k: v for k, v in wanted.items() if v}
         if not values:
             raise CommandError('The bootstrap file carried none of refresh_token / supabase_url / '

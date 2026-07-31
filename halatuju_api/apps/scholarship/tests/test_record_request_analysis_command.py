@@ -276,6 +276,59 @@ class TestStoredRefreshToken(TestCase):
         with a, b, c:
             return cmd._acquire_token(mock.Mock())
 
+    def _minting_env(self):
+        return {'SUPABASE_URL': 'https://x.supabase.co', 'SUPABASE_ANON_KEY': 'sb_publishable_x',
+                'SUPABASE_SERVICE_ROLE_KEY': 'service-key',
+                'HALATUJU_ADMIN_EMAIL': 'tamiliam@gmail.com'}
+
+    def test_a_session_is_MINTED_with_the_service_role_and_nothing_is_stored(self):
+        """The only route that survives this project's settings (2026-08-01).
+
+        The password grant sits behind CAPTCHA and a command line cannot answer one; the super
+        account signs in with Google; and a refresh token copied from a browser dies the moment the
+        browser rotates it. Minting a fresh session per run sidesteps all three, and because
+        nothing is persisted there is nothing to go stale a month from now.
+        """
+        self.env = self._minting_env()
+        a, b, c = self._patched(_FakeResponse(payload={'hashed_token': 'h'}))
+        # generate_link, then verify.
+        posts = [_FakeResponse(payload={'hashed_token': 'h'}),
+                 _FakeResponse(payload={'access_token': 'minted-jwt', 'refresh_token': 'r'})]
+        def _post(url, **kw):
+            self.posts.append((url, kw))
+            return posts.pop(0)
+        with mock.patch.object(cmd, '_env_value', side_effect=lambda k: self.env.get(k, '')),                 mock.patch.object(cmd, '_env_write', side_effect=self.written.append),                 mock.patch.dict('sys.modules', {'requests': mock.Mock(post=_post)}):
+            token = cmd._acquire_token(mock.Mock())
+        self.assertEqual(token, 'minted-jwt')
+        self.assertIn('/auth/v1/admin/generate_link', self.posts[0][0])
+        self.assertIn('/auth/v1/verify', self.posts[1][0])
+        self.assertEqual(self.written, [], 'a minted session is never persisted')
+
+    def test_the_verify_call_does_NOT_use_the_service_role_key(self):
+        # The exchange is the public half, exactly as a browser following the link would do it.
+        # Sending the service key there would put an all-powerful credential on a call that does
+        # not need it.
+        self.env = self._minting_env()
+        posts = [_FakeResponse(payload={'hashed_token': 'h'}),
+                 _FakeResponse(payload={'access_token': 'minted-jwt'})]
+        def _post(url, **kw):
+            self.posts.append((url, kw))
+            return posts.pop(0)
+        with mock.patch.object(cmd, '_env_value', side_effect=lambda k: self.env.get(k, '')),                 mock.patch.object(cmd, '_env_write'),                 mock.patch.dict('sys.modules', {'requests': mock.Mock(post=_post)}):
+            cmd._acquire_token(mock.Mock())
+        self.assertEqual(self.posts[1][1]['headers']['apikey'], 'sb_publishable_x')
+        self.assertNotIn('Authorization', self.posts[1][1]['headers'])
+
+    def test_minting_is_SKIPPED_when_it_is_not_configured(self):
+        # A machine without the service key falls through to the stored refresh token rather than
+        # failing — the older path still works where it is the only one available.
+        self.env = {'SUPABASE_URL': 'https://x.supabase.co', 'SUPABASE_ANON_KEY': 'sb_publishable_x',
+                    'HALATUJU_REFRESH_TOKEN': 'refresh-1'}
+        token = self._acquire(_FakeResponse(payload={'access_token': 'from-refresh',
+                                                     'refresh_token': 'refresh-1'}))
+        self.assertEqual(token, 'from-refresh')
+        self.assertIn('grant_type=refresh_token', self.posts[0][0])
+
     def test_a_stored_refresh_token_mints_an_access_token(self):
         token = self._acquire(_FakeResponse(payload={'access_token': 'fresh-jwt',
                                                      'refresh_token': 'refresh-1'}))
