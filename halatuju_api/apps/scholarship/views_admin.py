@@ -4270,6 +4270,77 @@ class AdminOrgRequestCommentView(_OrgRequestsBase):
         return Response(self._serialize(admin, req))
 
 
+class AdminOrgRequestAnalysisView(_OrgRequestsBase):
+    """POST <pk>/analysis/ {body, estimated_hours?, cited_files[], authored_by?, repo_sha?} —
+    stage the ENGINEER'S ANALYSIS as a DRAFT (TD-204). Super only.
+
+    Posts NOTHING. The draft is invisible to the requesting organisation by construction — no
+    org-facing serializer names `org_request_analyses` — and reaches them only when the owner
+    approves it below. Owner ruling, 2026-07-31: *"you have to do the proper analysis and estimate
+    the workload, and I want you to post as well, with my approval."*
+
+    ⚠ `cited_files` is REQUIRED and non-empty. The estimate must cite its files; that is the only
+    thing separating the engineer's number from the model's, and an analysis citing nothing is
+    exactly what this record exists to prevent.
+    """
+
+    def post(self, request, pk):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        from . import org_requests
+        try:
+            org_requests.record_analysis(
+                req, admin,
+                body=request.data.get('body') or '',
+                estimated_hours=request.data.get('estimated_hours'),
+                cited_files=request.data.get('cited_files') or [],
+                authored_by=request.data.get('authored_by') or '',
+                repo_sha=request.data.get('repo_sha') or '')
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
+class AdminOrgRequestAnalysisApproveView(_OrgRequestsBase):
+    """POST <pk>/analysis/<aid>/approve/ — the owner approves; it enters the thread (TD-204).
+
+    This is the control the whole record hangs on: the engineer stages, the owner approves, and
+    only approval reaches the requester. Same split as `pool.publish_profile_to_pool` — preparing
+    is free, publishing is gated. Super only.
+
+    ⚠ The analysis is reached through `req.analyses`, never the model's top-level manager — the org
+    fence IS the request lookup, so a cross-org id must 404 rather than resolve. (Naming that
+    manager even in prose trips the static fence guard, which scans source text: see
+    test_org_fence.TestOrgFenceStaticGuard.)
+
+    Only the PROSE crosses to the requester. The cited files and the hours stay owner-side; see the
+    model docstring for why neither is secrecy.
+    """
+
+    def post(self, request, pk, aid):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        analysis = req.analyses.filter(pk=aid).first()   # org-fence: scoped to this request
+        if analysis is None:
+            return self._not_found()
+        from . import org_requests
+        try:
+            org_requests.approve_analysis(analysis, admin)
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
 class AdminOrgRequestTriageView(_OrgRequestsBase):
     """POST triage (submitted → triaged). Super only."""
 

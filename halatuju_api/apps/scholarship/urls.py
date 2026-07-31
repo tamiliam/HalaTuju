@@ -130,6 +130,8 @@ from .views_admin import (
     AdminOrgRequestAnswerView,
     AdminOrgRequestAskView,
     AdminOrgRequestCommentView,
+    AdminOrgRequestAnalysisView,
+    AdminOrgRequestAnalysisApproveView,
     AdminOrgRequestApproveView,
     AdminOrgRequestDeferView,
     AdminOrgRequestModifyView,
@@ -285,6 +287,11 @@ urlpatterns = [
     # TD-201: the discussion. super OR any org_admin of the owning org.
     path('admin/scholarship/requests/<int:pk>/comments/',
          AdminOrgRequestCommentView.as_view()),
+    # TD-204: the engineer stages an analysis; the owner approves and it enters the thread.
+    path('admin/scholarship/requests/<int:pk>/analysis/',
+         AdminOrgRequestAnalysisView.as_view()),
+    path('admin/scholarship/requests/<int:pk>/analysis/<int:aid>/approve/',
+         AdminOrgRequestAnalysisApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
     path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),

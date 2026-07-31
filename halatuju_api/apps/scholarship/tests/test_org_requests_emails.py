@@ -143,6 +143,13 @@ class TestWiring(TestCase):
             organisation=self.org, submitted_by=self.oa, kind='feature',
             title='Filters', description='Add filters', status='triaged',
             triaged_kind='feature', lane='sprint')
+        # TD-204: quoting needs an approved analysis behind it. Staged directly through the
+        # service — this case is about the EMAIL wiring, not the evidence rule.
+        from apps.scholarship import org_requests as svc
+        svc.approve_analysis(
+            svc.record_analysis(req, self.super, body='Reuses the existing engine.',
+                                cited_files=['apps/scholarship/org_requests.py']),
+            self.super)
         self._auth('wi-su')
         mail.outbox.clear()
         r = self.client.post(f'{BASE}{req.id}/quote/', {'hours': 12, 'note': 'ok'}, format='json')

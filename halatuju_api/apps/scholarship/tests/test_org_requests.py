@@ -50,6 +50,19 @@ class _Base(TestCase):
             kind=kind, title='X', description='desc', status=status, **kw)
         return r
 
+    def _analysed(self, req):
+        """Give a request the approved analysis a quote now requires (TD-204).
+
+        Quoting refuses with `analysis_required` unless an approved analysis citing at least one
+        file stands behind it — the owner's rule that the estimate must cite its files. These
+        tests are about the quote MECHANICS, so they satisfy the evidence rule and move on; the
+        gate itself is proven in test_org_request_analysis.py.
+        """
+        a = svc.record_analysis(req, self.super, body='Reuses the existing engine.',
+                                estimated_hours='4.0',
+                                cited_files=['apps/scholarship/org_requests.py'])
+        return svc.approve_analysis(a, self.super)
+
 
 class TestCreate(_Base):
     def test_create_ok(self):
@@ -157,6 +170,7 @@ class TestOwnerFlow(_Base):
 
     def test_quote_feature_ok(self):
         r = self._req(kind='feature', status='triaged', triaged_kind='feature', lane='sprint')
+        self._analysed(r)
         svc.quote(r, self.super, hours='8.5', note='estimate')
         r.refresh_from_db()
         self.assertEqual(r.status, 'quoted')
@@ -171,6 +185,7 @@ class TestOwnerFlow(_Base):
 
     def test_quote_bad_hours(self):
         r = self._req(status='triaged', triaged_kind='feature', lane='sprint')
+        self._analysed(r)   # so the refusal we assert is bad_hours, not analysis_required
         for bad in (0, -1, 'abc'):
             r.status = 'triaged'
             with self.assertRaises(svc.OrgRequestError) as e:
@@ -192,6 +207,7 @@ class TestOwnerFlow(_Base):
     def test_full_feature_path_to_done(self):
         r = self._req(kind='feature')
         svc.triage(r, self.super, triaged_kind='feature', lane='sprint')
+        self._analysed(r)
         svc.quote(r, self.super, hours=5)
         svc.approve(r, self.org_admin, by_role='org_admin')
         self.assertEqual(r.status, 'approved')
@@ -205,6 +221,7 @@ class TestRequesteeResponses(_Base):
     def _quoted(self):
         r = self._req(kind='feature')
         svc.triage(r, self.super, triaged_kind='feature', lane='sprint')
+        self._analysed(r)
         svc.quote(r, self.super, hours=5)
         return r
 

@@ -248,6 +248,12 @@ class TestFenceCoverageCompleteness(TestCase):
         # cross-org pk is a 404 before any comment is written. The 'internal' visibility is
         # refused for a non-super at the view AND in the service.
         'AdminOrgRequestCommentView': 'requests-org-fenced',
+        # TD-204, the engineer's analysis. Super-only, and the analysis row is reached through
+        # `req.analyses` — never `OrgRequestAnalysis.objects` — so the org-fenced request lookup
+        # is also the fence on the analysis. This table holds the cited file paths and the hours,
+        # which the requesting organisation must never see; no org-facing serializer names it.
+        'AdminOrgRequestAnalysisView': 'requests-org-fenced+super-only',
+        'AdminOrgRequestAnalysisApproveView': 'requests-org-fenced+super-only',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',
@@ -401,6 +407,10 @@ class TestOrgFenceStaticGuard(TestCase):
         # TD-201. A comment is reached ONLY through its org-fenced request (req.comments), never
         # by a top-level manager query — if one appears in views_admin it needs a pragma saying why.
         'OrgRequestComment.objects',
+        # TD-204. Same rule, and it matters more here: an analysis carries the cited file paths and
+        # the engineer's hours, neither of which the requesting organisation may ever see. Reached
+        # through req.analyses so the request's own fence covers it.
+        'OrgRequestAnalysis.objects',
     )
 
     def test_raw_admin_queries_are_fenced(self):

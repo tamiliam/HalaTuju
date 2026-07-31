@@ -21,6 +21,7 @@ The adjudication rule (published verbatim, owner 2026-07-24) that the AI classif
 owner triages by: *behaviour contradicting the role matrix / manual = bug (free);
 working-as-documented-but-wanted-different = feature (priced)*.
 """
+import hashlib
 import json
 import logging
 import re
@@ -189,10 +190,14 @@ def create_request(organisation, submitted_by, *, kind, title, description,
 AUTHOR_AI = 'ai'
 AUTHOR_OWNER = 'owner'
 AUTHOR_ORG = 'org'
+# The engineer's analysis, posted by `approve_analysis` (TD-204). Distinct from AUTHOR_OWNER
+# because the two carry different authority: the owner decides, the engineer read the code.
+AUTHOR_ENGINEER = 'engineer'
 
-# How each author is introduced to the reviewer in the prompt.
+# How each author is introduced to the reviewer in the prompt. The engineer's entry is what lets a
+# re-run reason WITH the analysis instead of re-deriving it — which is the point of the steer.
 _SPEAKER = {AUTHOR_OWNER: 'the owner', AUTHOR_ORG: 'the requester',
-            AUTHOR_AI: 'you, earlier'}
+            AUTHOR_AI: 'you, earlier', AUTHOR_ENGINEER: 'the engineer'}
 
 VISIBILITY_SHARED = 'shared'
 VISIBILITY_INTERNAL = 'internal'
@@ -255,7 +260,7 @@ def post_comment(req, admin, body, *, author_kind, visibility=VISIBILITY_SHARED,
     body = (body or '').strip()
     if not body:
         raise OrgRequestError('body_required')
-    if author_kind not in {AUTHOR_AI, AUTHOR_OWNER, AUTHOR_ORG}:
+    if author_kind not in {AUTHOR_AI, AUTHOR_OWNER, AUTHOR_ORG, AUTHOR_ENGINEER}:
         raise OrgRequestError('bad_author')
     if visibility not in {VISIBILITY_SHARED, VISIBILITY_INTERNAL}:
         raise OrgRequestError('bad_visibility')
@@ -399,6 +404,167 @@ def _clean_hours(value):
     return h
 
 
+# ── the engineer's analysis (TD-204, owner 2026-07-31) ──────────────────────────
+#
+# Owner: "Gemini's role is only initial analysis. It has no access to the codebase and cannot
+# reliably do much. You have to do the proper analysis and estimate the workload, and I want you to
+# post as well, with my approval."
+#
+# Two actors, deliberately: the engineer STAGES a draft, the owner APPROVES it, and only approval
+# posts anything to the requester. Same split as `pool.publish_profile_to_pool` — preparing is free,
+# publishing is the control.
+
+MAX_CITED_FILES = 40
+_MAX_CITED_PATH = 255
+
+
+def _clean_cited_files(values):
+    """Normalise the citation list: strip, drop blanks, dedupe PRESERVING ORDER, cap.
+
+    Order is preserved because the first file named is usually the one that decides the estimate,
+    and a reader scanning the list is reading the engineer's reasoning order.
+    """
+    if values is None:
+        return []
+    if isinstance(values, (str, bytes)) or not hasattr(values, '__iter__'):
+        raise OrgRequestError('bad_cited_files')
+    out = []
+    for value in values:
+        if not isinstance(value, str):
+            raise OrgRequestError('bad_cited_files')
+        path = value.strip()
+        if not path:
+            continue
+        if len(path) > _MAX_CITED_PATH:
+            raise OrgRequestError('bad_cited_files')
+        if path not in out:
+            out.append(path)
+    if len(out) > MAX_CITED_FILES:
+        raise OrgRequestError('bad_cited_files')
+    return out
+
+
+def _description_sha(req):
+    """sha256 of the description the analysis was written against — the audit trail behind
+    supersession. Stored, never compared automatically; `modify()` supersedes explicitly."""
+    return hashlib.sha256((req.description or '').encode('utf-8')).hexdigest()
+
+
+def record_analysis(req, admin, *, body, estimated_hours=None, cited_files=(),
+                    authored_by='', repo_sha=''):
+    """Stage a DRAFT analysis. Posts NOTHING — approval is the act that reaches the requester.
+
+    ⚠ Deliberately NOT super-gated in the service, while `approve_analysis` is. A draft is invisible
+    to the requesting organisation BY CONSTRUCTION — no org-facing serializer names this table — and
+    has no effect on anything until approved, so staging one is not a privileged act. The ENDPOINT
+    is still `_super_side`; this mirrors `pool.publish_profile_to_pool`, where preparing the profile
+    is ungated and publishing it is the control.
+
+    ⚠ AT LEAST ONE CITED FILE IS REQUIRED, here and again at approval. The standing rule is that the
+    estimate must cite its files — that is the only thing separating the engineer's number from the
+    model's. An analysis citing nothing is the thing this record exists to prevent.
+    """
+    body = (body or '').strip()
+    if not body:
+        raise OrgRequestError('body_required')
+    if not can_comment(req):
+        # Terminal: there is nothing left to analyse, and approval could never post it.
+        raise OrgRequestError('bad_transition')
+    files = _clean_cited_files(cited_files)
+    if not files:
+        raise OrgRequestError('files_required')
+    hours = _clean_hours(estimated_hours) if estimated_hours not in (None, '') else None
+
+    from .models import OrgRequestAnalysis
+    return OrgRequestAnalysis.objects.create(
+        org_request=req,
+        body=body,
+        estimated_hours=hours,
+        cited_files=files,
+        authored_by=(authored_by or '').strip()[:50],
+        repo_sha=(repo_sha or '').strip()[:40],
+        description_sha=_description_sha(req),
+    )
+
+
+@transaction.atomic
+def approve_analysis(analysis, admin):
+    """The OWNER approves an analysis, and it enters the thread as an `engineer` comment (super).
+
+    Atomic on purpose: a failed post must leave NO approved-but-unposted row, or the quote gate
+    would pass on an analysis the requester never received.
+
+    IDEMPOTENT — an already-approved analysis returns unchanged and posts nothing a second time,
+    mirroring `pool.publish_profile_to_pool`.
+
+    ⚠ The posted comment carries `author_admin=None`, exactly as the AI's questions do. Attributing
+    it to the approving owner would print their name beside an "Engineer" badge, which is a lie
+    about who wrote it. Provenance lives on THIS row (`authored_by`, `approved_by`).
+
+    ⚠ Only `body` crosses to the requester. `cited_files` and `estimated_hours` stay here — see the
+    model docstring.
+    """
+    if not _is_super(admin):
+        raise OrgRequestError('forbidden')
+    if analysis.approved_at:
+        return analysis
+    if analysis.superseded_at:
+        raise OrgRequestError('analysis_superseded')
+    if not analysis.cited_files:
+        raise OrgRequestError('files_required')
+
+    req = analysis.org_request
+    posted = post_comment(req, None, analysis.body, author_kind=AUTHOR_ENGINEER,
+                          visibility=VISIBILITY_SHARED)
+    analysis.approved_at = timezone.now()
+    analysis.approved_by = admin if getattr(admin, 'pk', None) else None
+    analysis.posted_comment = posted
+    analysis.save(update_fields=['approved_at', 'approved_by', 'posted_comment', 'updated_at'])
+    return analysis
+
+
+def approved_analysis(req):
+    """The analysis standing behind this request, or None. The ONE home for that question — the
+    quote gate and the owner payload both read it, so they cannot disagree.
+
+    Approved, not superseded, and carrying at least one cited file.
+    """
+    return (req.analyses
+            .filter(approved_at__isnull=False, superseded_at__isnull=True)
+            .exclude(cited_files=[])
+            .order_by('-approved_at', '-id')
+            .first())
+
+
+def _supersede_analyses(req):
+    """The request changed underneath them, so no approved analysis describes it any more.
+
+    Called from `modify()` ONLY. Deliberately not derived by comparing `created_at` to
+    `updated_at`: `updated_at` is `auto_now`, so our own sweeps bump it — this project has already
+    been bitten by exactly that on partner "last activity". Superseding at the one seam that
+    rewrites the description is legible; a timestamp heuristic is not.
+
+    An ANSWER can also change scope, and deliberately does NOT supersede — answers are frequent and
+    that would be a treadmill. The cockpit shows an amber "predates the last comment" note instead.
+    """
+    req.analyses.filter(approved_at__isnull=False, superseded_at__isnull=True).update(
+        superseded_at=timezone.now())
+
+
+def _require_analysis(req):
+    """Refuse to price work nobody has read the code for (owner, 2026-07-31).
+
+    ⚠ Called EXPLICITLY from both `quote()` and `requote()`, in the same position, rather than from
+    the shared `_apply_quote`. `_apply_quote` is a field writer; an evidence policy at that altitude
+    would make the error ORDERING accidental (whether the owner sees `analysis_required` or
+    `bad_hours` would depend on which line it sat above). The duplication is honest — those two
+    functions are already deliberate byte-identical twins — and a test asserting BOTH refuse is the
+    anti-drift device.
+    """
+    if approved_analysis(req) is None:
+        raise OrgRequestError('analysis_required')
+
+
 def _clean_margin(value):
     if value is None or value == '':
         return int(getattr(settings, 'REQUESTS_QUOTE_MARGIN_PCT', 50))
@@ -422,12 +588,18 @@ def _apply_quote(req, hours, margin_pct, note):
 def quote(req, admin, *, hours, margin_pct=None, note=''):
     """triaged → quoted (super). FEATURE only — a bug is free (`bug_is_free`) and skips straight
     to scheduling. Hours > 0; margin defaults from settings. The email to the submitter is the
-    caller's post-commit step."""
+    caller's post-commit step.
+
+    ⚠ Requires an approved analysis citing files (`analysis_required`, TD-204). `bug_is_free` stays
+    ABOVE it: a bug is never quoted at all, so demanding an analysis before saying "schedule it
+    instead" gives a worse message AND implies the rule covers bugs, which it does not.
+    """
     if not _is_super(admin):
         raise OrgRequestError('wrong_role')
     _check_transition(req, 'quote')
     if _effective_kind(req) != 'feature':
         raise OrgRequestError('bug_is_free')
+    _require_analysis(req)
     _apply_quote(req, hours, margin_pct, note)
     req.save(update_fields=[
         'quote_hours', 'quote_margin_pct', 'quote_note', 'quoted_at', 'status', 'updated_at'])
@@ -435,12 +607,18 @@ def quote(req, admin, *, hours, margin_pct=None, note=''):
 
 
 def requote(req, admin, *, hours, margin_pct=None, note=''):
-    """deferred → quoted (super). Re-quote a parked request (feature only, same rules as quote)."""
+    """deferred → quoted (super). Re-quote a parked request (feature only, same rules as quote).
+
+    ⚠ Carries `_require_analysis` in the SAME position as `quote()`. These two are deliberate
+    byte-identical twins; a test asserts both refuse, because a gate on one of two twins is the
+    exact shape of the `award_amount` defect (a rule kept at one caller out of three).
+    """
     if not _is_super(admin):
         raise OrgRequestError('wrong_role')
     _check_transition(req, 'requote')
     if _effective_kind(req) != 'feature':
         raise OrgRequestError('bug_is_free')
+    _require_analysis(req)
     _apply_quote(req, hours, margin_pct, note)
     req.save(update_fields=[
         'quote_hours', 'quote_margin_pct', 'quote_note', 'quoted_at', 'status', 'updated_at'])
@@ -505,6 +683,11 @@ def modify(req, admin, *, description):
     req.description = description
     req.status = 'submitted'
     req.save(update_fields=['description', 'status', 'updated_at'])
+    # ⚠ The description this was written against no longer exists, so no approved analysis
+    # describes this request any more (TD-204). Without this, the quote gate would pass on an
+    # analysis of text nobody can read — silent mispricing, the same class as the `award_amount`
+    # bug. Immediately after the save, so the two facts move together.
+    _supersede_analyses(req)
     # After the save, so a failure recording history cannot leave the amendment half-applied.
     # SHARED, and authored by the org: `modify` is an org_admin action (`_requestee`), and the
     # history is a record of what the REQUESTER themselves changed — there is nothing private in

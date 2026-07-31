@@ -2207,6 +2207,11 @@ class OrgRequestComment(models.Model):
         ('ai', 'AI reviewer'),
         ('owner', 'Platform owner'),
         ('org', 'Requesting organisation'),
+        # The engineer's analysis, posted by OrgRequestAnalysis.approve (TD-204). Distinct from
+        # 'owner' because the two carry different authority: the owner decides, the engineer read
+        # the code. Never written from a request body — the comment endpoint derives author_kind
+        # from the caller's role, so an org_admin cannot forge one.
+        ('engineer', 'Engineer'),
     ]
     VISIBILITY_CHOICES = [
         ('shared', 'Shared with the organisation'),
@@ -2238,6 +2243,100 @@ class OrgRequestComment(models.Model):
 
     def __str__(self):
         return f'OrgRequestComment #{self.pk} on OrgRequest #{self.org_request_id}'
+
+
+class OrgRequestAnalysis(models.Model):
+    """The ENGINEER'S WORKING PAPER behind one comment (TD-204, owner ruling 2026-07-31).
+
+    Owner: *"Gemini's role is only initial analysis. It has no access to the codebase and cannot
+    reliably do much. You have to do the proper analysis and estimate the workload, and I want you
+    to post as well, with my approval."*
+
+    ⚠ **THIS IS NOT A SECOND THREAD.** The prose still travels as an ``OrgRequestComment``
+    (``posted_comment``), so the discussion stays ONE stream and TD-201 is intact. This row holds
+    the EVIDENCE and the APPROVAL LIFECYCLE that a comment cannot carry.
+
+    ⚠ **Why not columns on OrgRequestComment**, since the next tidying pass will want to merge them:
+      * a DRAFT would have to sit at ``visibility='internal'`` and be flipped to ``'shared'`` on
+        approval — re-deciding the one column TD-202 settled and this file forbids re-deciding per
+        feature, and it would be the first mutation of ``visibility`` anywhere in the codebase;
+      * comments are append-only (``ordering = ['id']``, "the order it was said in") with no
+        ``updated_at``, and a draft must be revisable;
+      * ``_comment_dicts`` is shared by BOTH serializers, so ``cited_files`` would sit one line of
+        code from the org payload with only a snapshot test in between.
+
+    ⚠ **``cited_files`` AND ``estimated_hours`` ARE OWNER-ONLY, and no org-facing serializer names
+    this table.** Neither is secrecy:
+      * the requester cannot open ``referrals.py``, so a citation buys them nothing, while the owner
+        can, so it buys him everything — and the paths disclose the internal shape of a MULTI-TENANT
+        platform to one tenant, a surface that grows silently with every analysis;
+      * a second hours figure in front of the requester rebuilds exactly the problem TD-202 removed
+        when the AI stopped pricing — the owner must stay free to quote 6h on a 4h analysis
+        (bundling, goodwill, margin) without visibly contradicting his own engineer.
+    Do not "finish the job" by exposing either. The prose IS shared, and that is the whole of what
+    the requester needs: the reasoning, so a price never looks arbitrary.
+
+    ⚠ **``cited_files`` is the point of the record.** The standing rule in CLAUDE.md is that the
+    estimate must cite its files — 3.5h on request #3 named the mailer and the hook and was
+    checkable in a minute; 24h on the sponsor invite named nothing and was wrong by a factor of six.
+    An approved analysis with an empty list cannot satisfy the quote gate, by construction.
+    """
+
+    org_request = models.ForeignKey(
+        OrgRequest, on_delete=models.CASCADE, related_name='analyses',
+    )
+    # The prose. Shared with the organisation verbatim when approved — write it for them.
+    body = models.TextField()
+    # OWNER-ONLY. See the class docstring before exposing this anywhere.
+    estimated_hours = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True)
+    # OWNER-ONLY. Repo-relative paths, validated to EXIST at record time by the command that
+    # writes them — an unchecked citation is decoration, not evidence.
+    cited_files = models.JSONField(default=list, blank=True)
+    # Who did the reading (e.g. 'claude-opus-5'). Rendered in the cockpit in the same change that
+    # added it — this project has five stored-but-never-surfaced fields already.
+    authored_by = models.CharField(max_length=50, blank=True, default='')
+    # The commit the analysis was read against. An estimate citing files at a SHA three weeks old
+    # has silently rotted, and this is the only thing that can say so.
+    repo_sha = models.CharField(max_length=40, blank=True, default='')
+    # sha256 of the request description at record time — the audit trail behind supersession.
+    description_sha = models.CharField(max_length=64, blank=True, default='')
+
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='approved_org_request_analyses',
+    )
+    # The comment approval posted. SET_NULL so deleting a comment never deletes the working paper.
+    posted_comment = models.ForeignKey(
+        OrgRequestComment, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    # Stamped when the requester MODIFIES the request — the description this was written against no
+    # longer exists, so the analysis can no longer satisfy the quote gate. NOT derived by comparing
+    # timestamps: `updated_at` is auto_now and our own sweeps bump it (a trap this project has
+    # already been bitten by once, on partner "last activity").
+    superseded_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'org_request_analyses'
+        ordering = ['id']
+        indexes = [
+            models.Index(fields=['org_request', 'id']),
+        ]
+        verbose_name_plural = 'org request analyses'
+
+    def __str__(self):
+        return f'OrgRequestAnalysis #{self.pk} on OrgRequest #{self.org_request_id}'
+
+    @property
+    def is_approved(self):
+        return self.approved_at is not None
+
+    @property
+    def is_superseded(self):
+        return self.superseded_at is not None
 
 
 class ResolutionItem(models.Model):

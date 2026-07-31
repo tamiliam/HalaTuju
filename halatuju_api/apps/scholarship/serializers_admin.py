@@ -961,6 +961,13 @@ class OrgRequestOrgSerializer(serializers.Serializer):
     ai_draft_model = serializers.CharField()
     ai_draft_at = serializers.DateTimeField()
     quote_hours = serializers.SerializerMethodField()
+    # `analyses` is DELIBERATELY ABSENT (TD-204, owner 2026-07-31). The engineer's analysis reaches
+    # this organisation as PROSE, through `comments` — that is the reasoning, and TD-202 settled
+    # that reasoning is shared. What stays behind is the CITED FILES (internal shape of a
+    # multi-tenant platform, and unopenable by the requester anyway) and the ENGINEER'S HOURS (a
+    # second figure in front of them recreates exactly what removing the AI's estimate fixed).
+    # Read OrgRequestAnalysis's docstring before adding a counterpart here; the omission is a
+    # decision, not an oversight.
     # quote_margin_pct is DELIBERATELY ABSENT (owner, 2026-07-30): "do not mention the margin".
     # Removed from the PAYLOAD, not merely hidden in the UI — a field the org must not see is a
     # field we must not send, which is the whole point of this allowlist. `quote_hours` is the
@@ -1009,6 +1016,7 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
     steps_to_reproduce = serializers.CharField()
     status = serializers.CharField()
     comments = serializers.SerializerMethodField()   # TD-201: the FULL thread, internal included
+    analyses = serializers.SerializerMethodField()   # TD-204: OWNER-ONLY — files + hours live here
     ai_run_count = serializers.IntegerField()
     ai_draft_kind = serializers.CharField()
     ai_draft_lane = serializers.CharField()
@@ -1047,6 +1055,36 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
     def get_comments(self, obj):
         # The owner sees the whole thread, internal notes included.
         return _comment_dicts(obj, viewer_is_org=False)
+
+    def get_analyses(self, obj):
+        """The engineer's working papers (TD-204) — OWNER-ONLY, newest first.
+
+        ⚠ This is the ONE place `cited_files` and `estimated_hours` are serialised anywhere. The
+        org-facing serializer deliberately has no counterpart: see OrgRequestAnalysis's docstring
+        for why neither is secrecy (a citation the requester cannot open buys them nothing, and a
+        second hours figure recreates the problem TD-202 removed from the AI). If you are adding a
+        matching field to the org payload, read that docstring first — the omission is a decision.
+        """
+        from . import org_requests
+        current = org_requests.approved_analysis(obj)
+        out = []
+        for a in obj.analyses.all().select_related('approved_by').order_by('-id'):
+            out.append({
+                'id': a.id,
+                'body': a.body,
+                'estimated_hours': str(a.estimated_hours) if a.estimated_hours is not None else None,
+                'cited_files': list(a.cited_files or []),
+                'authored_by': a.authored_by,
+                'repo_sha': a.repo_sha,
+                'created_at': a.created_at,
+                'approved_at': a.approved_at,
+                'approved_by_name': (getattr(a.approved_by, 'name', '') or '').strip(),
+                'superseded_at': a.superseded_at,
+                # The one the quote gate reads — so the screen and the gate cannot disagree about
+                # which analysis is standing.
+                'is_current': bool(current and a.id == current.id),
+            })
+        return out
 
     def get_quote_hours(self, obj):
         return str(obj.quote_hours) if obj.quote_hours is not None else None

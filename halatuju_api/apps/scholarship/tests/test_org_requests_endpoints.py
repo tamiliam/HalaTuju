@@ -144,6 +144,7 @@ class TestFlagOff(TestCase):
         posts = [BASE, f'{BASE}{pk}/answer/', f'{BASE}{pk}/approve/', f'{BASE}{pk}/defer/',
                  f'{BASE}{pk}/modify/', f'{BASE}{pk}/decline/', f'{BASE}{pk}/triage/',
                  f'{BASE}{pk}/quote/', f'{BASE}{pk}/requote/', f'{BASE}{pk}/schedule/',
+                 f'{BASE}{pk}/analysis/', f'{BASE}{pk}/analysis/1/approve/',
                  f'{BASE}{pk}/done/', f'{BASE}{pk}/ai-rerun/']
         for uid in ('oa-off', 'sup-off'):
             self._auth(uid)
@@ -272,6 +273,16 @@ class TestHappyPath(_Base):
         self.assertEqual(self.client.post(
             f'{BASE}{pk}/triage/', {'triaged_kind': 'feature', 'lane': 'sprint'},
             format='json').status_code, 200)
+        # TD-204: a quote needs an approved analysis citing files behind it. Staged and
+        # approved over the wire here, so this case also covers the two new endpoints.
+        self.assertEqual(self.client.post(
+            f'{BASE}{pk}/analysis/',
+            {'body': 'Reuses the existing engine.', 'estimated_hours': '4.0',
+             'cited_files': ['apps/scholarship/org_requests.py']},
+            format='json').status_code, 200)
+        aid = self.client.get(f'{BASE}{pk}/').json()['analyses'][0]['id']
+        self.assertEqual(self.client.post(
+            f'{BASE}{pk}/analysis/{aid}/approve/', {}, format='json').status_code, 200)
         self.assertEqual(self.client.post(
             f'{BASE}{pk}/quote/', {'hours': 10, 'note': 'a page'}, format='json').status_code, 200)
         # org_admin accepts
