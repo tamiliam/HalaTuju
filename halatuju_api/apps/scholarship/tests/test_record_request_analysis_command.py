@@ -294,6 +294,20 @@ class TestStoredRefreshToken(TestCase):
             self._acquire(_FakeResponse(400, {}))
         self.assertIn('re-bootstrap', str(e.exception))
 
+    def test_supabases_OWN_reason_survives_the_trip(self):
+        # Learned the hard way, 2026-08-01. The first cut reported "(400). Check the email and
+        # password" and sent the owner looking for a typo in a password that does not exist — the
+        # super account is Google-only, so the password grant could never have worked. A guessed
+        # cause attached to a status code is worse than the bare code: it is confidently wrong.
+        self.env.pop('HALATUJU_REFRESH_TOKEN')
+        a, b, c = self._patched(_FakeResponse(400, {'error_description': 'Invalid login credentials'}))
+        with a, b, c, mock.patch('builtins.input', return_value='x@y.z'), \
+                mock.patch.object(cmd.getpass, 'getpass', return_value='pw'):
+            with self.assertRaises(CommandError) as e:
+                cmd._acquire_token(mock.Mock())
+        self.assertIn('Invalid login credentials', str(e.exception))
+        self.assertIn('GOOGLE', str(e.exception))
+
     def test_bootstrap_stores_the_token_and_DELETES_the_source(self):
         fh = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8')
         json.dump({'refresh_token': 'r-boot', 'supabase_url': 'https://x.supabase.co',

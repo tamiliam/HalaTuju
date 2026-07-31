@@ -185,9 +185,22 @@ def _token_from_supabase(grant, payload, *, stdout):
     except Exception as e:      # noqa: BLE001 — network shapes vary; the message is what matters
         raise CommandError(f'Could not reach Supabase: {e}')
     if resp.status_code != 200:
-        hint = ('The stored refresh token is spent or revoked — sign in again and re-bootstrap.'
-                if grant == 'refresh_token' else 'Check the email and password.')
-        raise CommandError(f'Supabase refused the {grant} grant ({resp.status_code}). {hint}')
+        # ⚠ SURFACE SUPABASE'S OWN REASON. The first cut said only "(400). Check the email and
+        # password", which sent the owner hunting for a typo in a password that does not exist:
+        # the super account is GOOGLE-ONLY (`encrypted_password` is null), so the password grant
+        # can never succeed for it. A status code with a guessed cause attached is worse than a
+        # status code alone, because it is confidently wrong.
+        try:
+            body = resp.json() or {}
+            reason = body.get('error_description') or body.get('msg') or body.get('error') or ''
+        except ValueError:
+            reason = resp.text[:200]
+        hint = ('The stored refresh token is spent or revoked — re-bootstrap.'
+                if grant == 'refresh_token' else
+                'If this account signs in with GOOGLE it has no password to grant, and never '
+                'will: bootstrap a refresh token instead (--bootstrap-file).')
+        raise CommandError(
+            f'Supabase refused the {grant} grant ({resp.status_code}): {reason or "no reason given"}. {hint}')
 
     data = resp.json() or {}
     access = data.get('access_token') or ''
