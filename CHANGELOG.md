@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file.
 
+## An absent STR falls through to the salary assessment (request #4) — 2026-08-01
+
+Application **#106** was `shortlisted` with a red income card sitting beside green document chips.
+Both were right about different questions. The chips judged the DOCUMENTS on file — the father's
+identity card and his payslip, correctly readable and correctly his. The summary card judged the
+DECLARED ROUTE: the family had ticked "we receive STR" and never uploaded an STR letter, so it
+reported that nothing had been proved. The household was being judged on what it *said* rather
+than on what it *supplied*.
+
+- **The spec already said so; only half of it was built.** `str-proof-spec.md` §6 rule 2 has
+  listed the fall-through trigger as *"`rejected` / `wrong_type` / **absent**"* since it was
+  written. `_verdict_income` implemented the first two. An **absent** STR filed
+  `income_proof_missing` as a hard gap and returned red several branches *before* the fall-through
+  it was entitled to.
+- **The two surfaces had disagreed in silence for weeks.** `income_engine.income_established` — the
+  SUBMISSION gate — is route-agnostic and read her salary cluster as satisfied, which is why she
+  could submit at all. The verdict never asked it. One household, two verdicts, no alarm.
+- **The reverse was already fixed in July.** P3 (2026-07-06) taught the salary route to accept a
+  valid STR, precisely so a family would not be punished for ticking the wrong label. The mirror
+  was never written. This closes the seam.
+- **⚠ GATED ON `salary_income_satisfied` — the SAME predicate the submission gate uses.** Not a
+  second copy of "is there salary evidence?"; a divergent second copy is how the two surfaces came
+  to disagree in the first place. It demands a COMPLETE cluster, not merely a document being
+  present, and that is what holds §8's red row for a household with no income evidence at all.
+- **⚠ BLAST RADIUS MEASURED ON PRODUCTION, NOT ESTIMATED — and the gate is the reason it is one.**
+  59 applications on the STR route, **10** with no STR letter, **exactly 1** with income evidence
+  for the check to reach. Five of the other nine have no documents whatsoever. Without the gate all
+  ten would move and nine would stop being asked for the STR they still owe; three tests fail the
+  moment it is removed.
+- **⚠ `any_route=True` on this call only.** A student who declared STR never ticks a salary
+  checkbox, so `income_working_members` is empty and the earners exist only as document tags. The
+  default (salary-route-only) reading finds no members and reports "no earner declared" about a
+  household that documented one. The profile generator keeps the narrow default.
+- **⚠ THE GREEN IS UNCAPPED, DELIBERATELY.** #106's payslip is informal — one wage label, no
+  statutory scaffold, scored `suspect`. It still greens, because `_income_genuineness_docs` caps
+  only the documents a route REQUIRES and the salary route has no fingerprint cap at all. A
+  salary-route household with this identical payslip greens today, so evenness (§8 rule 1) demands
+  the same colour here. The underlying gap — salary evidence carries no genuineness protection on
+  either route — is V5's recorded known limitation #13, owned by the salary-track redesign. Both
+  halves are now pinned by tests so that redesign cannot fix one route and forget the other.
+- **Two docstrings corrected rather than left locally true.** `salary_income_satisfied` said
+  *"Confined to the SUBMISSION GATE … so widening it moves no verdict and no band."* Accurate when
+  written; the confinement is exactly what let the gate and the verdict disagree. It now names both
+  callers and warns that widening it moves a band.
+- No migration, no new reason codes, no i18n, no frontend change. The income fact is recomputed on
+  every read and `sync_resolution_items` runs on cockpit read, so her stale "upload your STR"
+  ticket closes itself — nothing to backfill.
+
+`pytest` **5268** (+10) · 2 guards bitten and restored.
+
 ## The engineer joins the thread (TD-204) — 2026-07-31
 
 Owner: *"Gemini's role is only initial analysis. It has no access to the codebase and cannot
