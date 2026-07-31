@@ -22,10 +22,15 @@ import { ScopeSwitcher } from '@/components/admin/ScopeSwitcher'
  * passes both down, so the sidebar badge and the notification bell read the same values rather
  * than each asking for themselves.
  *
- * The Administration hub still probes for ITSELF, deliberately. It needs the request COUNT for
- * its badge and not merely whether the endpoint answers, so sharing would mean widening this
- * hook — and N3 deletes that page when the hub is split into real routes. Refactoring a file
- * that is about to be removed buys nothing.
+ * Counts travel as ONE `badgeCounts` map keyed by the registry's `badge` field, so a new badge
+ * is a registry entry plus a count — not another prop threaded through Sidebar twice and a
+ * literal comparison at the render site (TD-205).
+ *
+ * ⚠ A previous version of this comment said the Administration hub "still probes for ITSELF"
+ * because it needed the request COUNT. It does not, and by 2026-08-01 it did not call the count
+ * endpoint at all — the count was fetched here and DISCARDED, which is why four bug reports sat
+ * unnoticed for two days. Corrected rather than deleted: the claim looked like justification for
+ * leaving the number unused.
  *
  * Who may see what comes from the registry (lib/navigation.ts), never from a role check
  * written here. It is UX only: the org fence and the endpoint role gates are unchanged.
@@ -78,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       .catch(() => { /* furniture — never block the shell */ })
   }, [token, locale])
 
-  const probes = useNavProbes(token)
+  const { probes, requestsWaiting } = useNavProbes(token)
   const r = effectiveRole(role)
   const groups = useMemo(() => visibleNav({ role: r, probes }), [r, probes])
   const active = activeItem(pathname)
@@ -167,8 +172,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         tone: 'crit',
       })
     }
+    // TD-205. 'warn', not 'crit': a waiting request is work owed, not money or consent stuck —
+    // and a bell where everything shouts is a bell nobody reads. The count comes from the probe
+    // the shell already runs, so this adds no request.
+    if (requestsWaiting > 0) {
+      out.push({
+        key: 'requests',
+        label: t('admin.shell.attn.requests', { count: String(requestsWaiting) }),
+        tone: 'warn',
+      })
+    }
     return out
-  }, [pendingSponsors, t])
+  }, [pendingSponsors, requestsWaiting, t])
+
+  const badgeCounts = useMemo(
+    () => ({ pendingSponsors, requestsWaiting }),
+    [pendingSponsors, requestsWaiting],
+  )
 
   // Only a genuine super sees "Super admin"; an org member shows their organisation; everyone
   // else shows their own role label. A reviewer with no org must not read "Super admin".
@@ -228,7 +248,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Sidebar
               groups={groups}
               activeId={activeId}
-              pendingSponsors={pendingSponsors}
+              badgeCounts={badgeCounts}
               orgName={role?.owning_org_name ?? role?.org_name}
               pinned={pinned}
             />
@@ -248,7 +268,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Sidebar
                 groups={groups}
                 activeId={activeId}
-                pendingSponsors={pendingSponsors}
+                badgeCounts={badgeCounts}
                 orgName={role?.owning_org_name ?? role?.org_name}
                 pinned
                 chords={false}

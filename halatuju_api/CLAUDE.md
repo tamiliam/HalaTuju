@@ -596,8 +596,10 @@ badge. ~2h.
 **▶ OWNER, DATED AND OUTRANKING THE ABOVE:**
 1. **`BILLING_USAGE_ENABLED` — DUE TODAY, 1 AUGUST. Still not flipped.** Env var via
    `--update-env-vars`, not a deploy.
-2. **Confirm 46 eWallet IDs with Vircle before the August payment run**, and check Pravin's
-   `…176929` is activated (his stamp was set against the wrong number).
+2. ~~**Confirm 46 eWallet IDs with Vircle**~~ — **DONE (owner, 2026-08-01).** ⚠ Note for whoever
+   audits the August run: `…176929` does NOT appear in `bank_accounts.account_number` on
+   production, so the eWallet identifiers evidently live outside that table. Pravin's activation
+   could not be verified independently; the item is closed on the owner's word.
 3. **Decide TD-198** — an awarded student cannot be declined directly and there is no admin
    withdrawal route once the award email has gone. **47 sit in `awarded`.**
 4. **Tamil first drafts** — the `admin.requests.owner.analysis*` block plus

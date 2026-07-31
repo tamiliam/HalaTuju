@@ -3093,7 +3093,8 @@
       "attentionNote": "These are counts from across the console, gathered in one place.",
       "account": "Account",
       "attn": {
-        "sponsors": "{count} sponsors awaiting vetting"
+        "sponsors": "{count} sponsors awaiting vetting",
+        "requests": "{count} requests waiting on you"
       },
       "goTo": "Go to {page}",
       "then": "then",

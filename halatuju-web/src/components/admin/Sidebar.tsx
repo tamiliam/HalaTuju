@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useT } from '@/lib/i18n'
 import {
   CHORD_PREFIX,
-  SIDEBAR_SCOPES, type NavScope, type VisibleNavGroup, type VisibleNavItem,
+  SIDEBAR_SCOPES, type BadgeKey, type NavScope, type VisibleNavGroup, type VisibleNavItem,
 } from '@/lib/navigation'
 import { Icon } from '@/components/admin/icons'
 
@@ -130,12 +130,14 @@ function NavRow({ item, active, badge, open, chordHint, onNavigate }: {
 }
 
 export function Sidebar({
-  groups, activeId, pendingSponsors, orgName, programmeName,
+  groups, activeId, badgeCounts, orgName, programmeName,
   pinned = false, chords = true, onNavigate,
 }: {
   groups: VisibleNavGroup[]
   activeId?: string
-  pendingSponsors: number
+  /** Count per badge key. A row looks up its OWN key, so adding a badge is a registry entry and
+   *  a count — not another prop threaded through three components (TD-205). */
+  badgeCounts: Partial<Record<BadgeKey, number>>
   orgName?: string | null
   programmeName?: string
   /** Open and static — either the person pinned it, or this is the mobile drawer, where
@@ -216,7 +218,7 @@ export function Sidebar({
                   key={i.id}
                   item={i}
                   active={activeId === i.id}
-                  badge={i.badge === 'pendingSponsors' ? pendingSponsors : undefined}
+                  badge={i.badge ? badgeCounts[i.badge] : undefined}
                   open={open}
                   chordHint={chords}
                   onNavigate={onNavigate}

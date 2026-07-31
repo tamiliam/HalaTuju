@@ -33,7 +33,7 @@ const renderRail = (role: AdminRoleName = 'org_admin', props = {}) => {
     <Sidebar
       groups={groupsFor(role)}
       activeId="applications"
-      pendingSponsors={3}
+      badgeCounts={{ pendingSponsors: 3 }}
       orgName="BrightPath"
       {...props}
     />,
@@ -111,7 +111,7 @@ describe('what survives the collapse', () => {
   })
 
   it('never renders a badge for a count of zero', () => {
-    const nav = renderRail('org_admin', { pendingSponsors: 0 })
+    const nav = renderRail('org_admin', { badgeCounts: { pendingSponsors: 0 } })
     const sponsors = within(nav).getByText('admin.sponsors.nav').closest('a') as HTMLElement
     expect(within(sponsors).queryByText('0')).toBeNull()
   })

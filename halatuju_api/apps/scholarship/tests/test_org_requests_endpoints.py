@@ -9,6 +9,7 @@ from unittest import mock
 
 import jwt
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
@@ -304,6 +305,71 @@ class TestHappyPath(_Base):
     def test_count_super_global_submitted(self):
         self._auth('sup')
         self.assertEqual(self.client.get(f'{BASE}count/').json()['count'], 2)  # both submitted
+
+    # ── TD-205: the badge also counts a request stuck WAITING FOR AN ANALYSIS ────────────
+    def _count(self):
+        return self.client.get(f'{BASE}count/').json()['count']
+
+    def test_a_triaged_FEATURE_with_no_analysis_still_counts(self):
+        # It cannot be quoted at all until an analysis is approved (`analysis_required`), so it is
+        # stuck by construction — and before TD-205 nothing anywhere said so. Requests #5–#8 sat
+        # unnoticed on production for two days, which is what made this real rather than theoretical.
+        self._auth('sup')
+        self.client.post(f'{BASE}{self.req_a.id}/triage/',
+                         {'triaged_kind': 'feature', 'lane': 'sprint'}, format='json')
+        self.assertEqual(self._count(), 2, 'still waiting on us, just at a later step')
+
+    def test_an_APPROVED_analysis_clears_it(self):
+        self._auth('sup')
+        self.client.post(f'{BASE}{self.req_a.id}/triage/',
+                         {'triaged_kind': 'feature', 'lane': 'sprint'}, format='json')
+        r = self.client.post(f'{BASE}{self.req_a.id}/analysis/',
+                             {'body': 'It reuses the existing engine.',
+                              'cited_files': ['apps/scholarship/org_requests.py']}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._count(), 2, 'a DRAFT is not an answer — still waiting')
+        aid = self.req_a.analyses.get().id
+        self.client.post(f'{BASE}{self.req_a.id}/analysis/{aid}/approve/', {}, format='json')
+        self.assertEqual(self._count(), 1, 'approved and posted — no longer waiting on us')
+
+    def test_a_triaged_BUG_does_NOT_count(self):
+        # A bug is free and schedulable straight from triage, so it waits on a DECISION, not on an
+        # analysis. Counting it would make the badge mean "requests that exist".
+        self._auth('sup')
+        self.client.post(f'{BASE}{self.req_a.id}/triage/',
+                         {'triaged_kind': 'bug', 'lane': 'small_change'}, format='json')
+        self.assertEqual(self._count(), 1)
+
+    def test_a_SUPERSEDED_analysis_does_not_clear_it(self):
+        # `modify()` supersedes: the description the analysis was written against no longer exists,
+        # so the request is waiting on us again and the badge must say so.
+        self._auth('sup')
+        self.client.post(f'{BASE}{self.req_a.id}/triage/',
+                         {'triaged_kind': 'feature', 'lane': 'sprint'}, format='json')
+        self.client.post(f'{BASE}{self.req_a.id}/analysis/',
+                         {'body': 'b', 'cited_files': ['apps/scholarship/org_requests.py']},
+                         format='json')
+        aid = self.req_a.analyses.get().id
+        self.client.post(f'{BASE}{self.req_a.id}/analysis/{aid}/approve/', {}, format='json')
+        self.assertEqual(self._count(), 1)
+        self.req_a.analyses.update(superseded_at=timezone.now())
+        self.assertEqual(self._count(), 2, 'superseded is not approved')
+
+    def test_a_draft_ALONGSIDE_an_approved_one_does_not_resurrect_the_badge(self):
+        # The reason the query is a filtered Count and not `.exclude(analyses__approved_at=...)`:
+        # negating across a multi-valued relation asks "is there a row that fails?", which this
+        # request has. The exclude form counts it and the badge lies about work already done.
+        self._auth('sup')
+        self.client.post(f'{BASE}{self.req_a.id}/triage/',
+                         {'triaged_kind': 'feature', 'lane': 'sprint'}, format='json')
+        for body in ('first', 'second'):
+            self.client.post(f'{BASE}{self.req_a.id}/analysis/',
+                             {'body': body, 'cited_files': ['apps/scholarship/org_requests.py']},
+                             format='json')
+        first = self.req_a.analyses.order_by('id').first()
+        self.client.post(f'{BASE}{self.req_a.id}/analysis/{first.id}/approve/', {}, format='json')
+        self.assertEqual(self.req_a.analyses.count(), 2)
+        self.assertEqual(self._count(), 1, 'one approved is enough, whatever else is lying around')
 
     def test_count_org_admin_scoped(self):
         # org A has one submitted (no attention item yet) → 0; make it quoted → 1.

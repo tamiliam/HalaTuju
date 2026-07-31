@@ -4030,9 +4030,10 @@ class AdminOrgRequestListView(_OrgRequestsBase):
 
 
 class AdminOrgRequestCountView(_OrgRequestsBase):
-    """GET {count} for the nav / Administration-hub badge. Super: global count of SUBMITTED
-    (awaiting triage). org_admin: own org's requests that need THEIR attention — quoted (awaiting
-    accept) OR carrying an unanswered clarifying question. org_admin + super."""
+    """GET {count} for the nav badge. Super: requests waiting on US — SUBMITTED (awaiting triage)
+    OR a triaged FEATURE with no approved analysis (TD-205). org_admin: own org's requests that
+    need THEIR attention — quoted (awaiting accept) OR carrying an unanswered clarifying question.
+    org_admin + super."""
 
     def get(self, request):
         gate = self._flag()
@@ -4041,13 +4042,34 @@ class AdminOrgRequestCountView(_OrgRequestsBase):
         admin, err = self._org_side(request)
         if err:
             return err
+        from django.db.models import Count, Q
         if self.has_role(admin, 'super'):
+            # TD-205: "waiting on us" is BOTH ends of the engineer's involvement. Untriaged is the
+            # obvious half. The other is a triaged FEATURE with no approved analysis — it cannot be
+            # quoted at all (`analysis_required` refuses), so it is stuck BY CONSTRUCTION and
+            # nothing else says so. A triaged BUG is deliberately NOT counted: a bug is free and
+            # schedulable straight from triage, so it waits on a decision, not on an analysis.
+            #
+            # ⚠ A filtered Count, not `.exclude(analyses__approved_at__isnull=False)`. Negating a
+            # condition across a MULTI-VALUED relation asks "is there a row that fails this?", not
+            # "is there no row that passes it" — with two analyses, one approved and one draft, the
+            # exclude form keeps the request and the badge lies. One annotate only (two multi-valued
+            # annotates multiply each other — this project has been bitten by that).
+            #
+            # An approved analysis always carries ≥1 cited file because `approve_analysis` refuses
+            # otherwise, so this agrees with `org_requests.approved_analysis` without re-testing it.
             # org-fence: super is global by design for the triage badge.
-            return Response({'count': OrgRequest.objects.filter(status='submitted').count()})
+            waiting = OrgRequest.objects.annotate(
+                live_analyses=Count('analyses', filter=Q(analyses__approved_at__isnull=False,
+                                                         analyses__superseded_at__isnull=True)),
+            ).filter(
+                Q(status='submitted')
+                | Q(status='triaged', triaged_kind='feature', live_analyses=0)
+            )
+            return Response({'count': waiting.count()})
         # TD-201: "needs you" is a quote awaiting a decision, or a question awaiting a reply —
         # the latter is now a comment row, so it is one subquery instead of walking a JSON list
         # per request.
-        from django.db.models import Q
         # org-fence: own org only (org_admin). Kept ADJACENT to the query — the static guard reads
         # a 200-char window, so an explanation wedged in between silently un-fences it.
         qs = OrgRequest.objects.filter(

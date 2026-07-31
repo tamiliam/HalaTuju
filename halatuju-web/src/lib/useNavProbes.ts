@@ -17,18 +17,29 @@ import { NO_PROBES, type ProbeKey, type ProbeState } from '@/lib/navigation'
  * Any failure, not only a 404, resolves to 'dark'. A probe is a hint about what to show; it
  * must never reveal a feature on a network blip, and it must never block the shell.
  */
-export function useNavProbes(token: string | null | undefined): Record<ProbeKey, ProbeState> {
+export function useNavProbes(token: string | null | undefined): {
+  probes: Record<ProbeKey, ProbeState>
+  requestsWaiting: number
+} {
   const [probes, setProbes] = useState<Record<ProbeKey, ProbeState>>(NO_PROBES)
+  const [requestsWaiting, setRequestsWaiting] = useState(0)
 
   useEffect(() => {
-    if (!token) { setProbes(NO_PROBES); return }
+    if (!token) { setProbes(NO_PROBES); setRequestsWaiting(0); return }
     let live = true
     const set = (key: ProbeKey, state: ProbeState) =>
       setProbes((p) => (live && p[key] !== state ? { ...p, [key]: state } : p))
 
+    // TD-205: this call already asked "how many requests are waiting on us?" and threw the
+    // NUMBER away, keeping only "did it answer?". So four bug reports (#5–#8) sat on production
+    // for two days with the count sitting unread in this promise. The probe still works exactly
+    // as before — the count is simply no longer discarded.
     getOrgRequestCount({ token })
-      .then(() => set('requests', 'live'))
-      .catch(() => set('requests', 'dark'))
+      .then((d) => {
+        set('requests', 'live')
+        if (live) setRequestsWaiting(d.count)
+      })
+      .catch(() => { set('requests', 'dark'); if (live) setRequestsWaiting(0) })
     getBillingUsage({ token })
       .then(() => set('billing', 'live'))
       .catch(() => set('billing', 'dark'))
@@ -36,5 +47,5 @@ export function useNavProbes(token: string | null | undefined): Record<ProbeKey,
     return () => { live = false }
   }, [token])
 
-  return probes
+  return { probes, requestsWaiting }
 }

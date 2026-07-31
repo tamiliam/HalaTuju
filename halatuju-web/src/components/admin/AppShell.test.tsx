@@ -15,6 +15,9 @@ import { AppShell } from './AppShell'
 import type { AdminRoleName } from '@/lib/navigation'
 
 let mockRole: Record<string, unknown> = {}
+// Default null: with no token the shell runs no probes, so the dark-shipped features stay dark.
+// A test that needs a live probe sets this and resets it afterwards.
+let mockToken: string | null = null
 
 const mockPush = jest.fn()
 
@@ -23,7 +26,7 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn() }),
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
-jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ role: mockRole, token: null }) }))
+jest.mock('@/lib/admin-auth-context', () => ({ useAdminAuth: () => ({ role: mockRole, token: mockToken }) }))
 jest.mock('@/lib/admin-supabase', () => ({ adminSignOut: jest.fn() }))
 // No token, so the probe hook resolves to nothing and the badge never fetches — the dark
 // features stay dark, which is the correct default (see canSee).
@@ -31,6 +34,8 @@ jest.mock('@/lib/admin-api', () => ({
   getPendingSponsorCount: jest.fn(() => Promise.resolve({ count: 0 })),
   getOrgRequestCount: jest.fn(() => Promise.reject(new Error('404'))),
   getBillingUsage: jest.fn(() => Promise.reject(new Error('404'))),
+  // Only reached once a test supplies a token; the shell treats a failure as furniture.
+  getAdminScopes: jest.fn(() => Promise.resolve({ organisations: [], programmes: [] })),
 }))
 
 const asRole = (role: AdminRoleName, extra: Record<string, unknown> = {}) => {
@@ -201,5 +206,54 @@ describe('G then a letter jumps', () => {
     fireEvent.keyDown(document, { key: 'g', ctrlKey: true })
     press('t')
     expect(mockPush).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * TD-205. The count endpoint existed, was correct, and was already being called — the shell kept
+ * only "did it answer?" and threw the NUMBER away, so four bug reports sat unnoticed on
+ * production for two days with the count sitting unread in a resolved promise. These tests are
+ * about the number REACHING THE SCREEN; the queryset behind it is pinned in
+ * test_org_requests_endpoints.py.
+ */
+describe('a request waiting on us is visible without going looking', () => {
+  const withRequests = (count: number) => {
+    mockToken = 'test-token'          // no token → no probe → Requests stays dark by design
+    const api = jest.requireMock('@/lib/admin-api')
+    api.getOrgRequestCount.mockResolvedValue({ count })
+    api.getPendingSponsorCount.mockResolvedValue({ count: 0 })
+  }
+
+  afterEach(() => {
+    mockToken = null
+    const api = jest.requireMock('@/lib/admin-api')
+    api.getOrgRequestCount.mockRejectedValue(new Error('404'))
+  })
+
+  it('puts the waiting count on the Requests row', async () => {
+    withRequests(4)                       // requests #5-#8, the real ones
+    asRole('super')
+    render(<AppShell>content</AppShell>)
+    const row = await screen.findByText('admin.requests.nav')
+    const link = row.closest('a') as HTMLElement
+    expect(within(link).getByText('4')).toBeTruthy()
+  })
+
+  it('says nothing when nothing is waiting', async () => {
+    withRequests(0)
+    asRole('super')
+    render(<AppShell>content</AppShell>)
+    const row = await screen.findByText('admin.requests.nav')
+    const link = row.closest('a') as HTMLElement
+    expect(within(link).queryByText('0')).toBeNull()
+  })
+
+  it('keeps the dark-ship probe working — a 404 still hides Requests entirely', async () => {
+    mockToken = 'test-token'
+    const api = jest.requireMock('@/lib/admin-api')
+    api.getOrgRequestCount.mockRejectedValue(new Error('404'))
+    asRole('super')
+    render(<AppShell>content</AppShell>)
+    expect(screen.queryByText('admin.requests.nav')).toBeNull()
   })
 })

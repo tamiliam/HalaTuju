@@ -36,6 +36,16 @@ export const ROLE_NAMES: readonly AdminRoleName[] =
 
 /** Dark-shipped features. One key per probe the shell runs; see `NavGate`. */
 export type ProbeKey = 'requests' | 'billing'
+
+/**
+ * Counts the sidebar may render on an item, and the bell may repeat.
+ *
+ * A UNION rather than a second hardcoded prop (TD-205): the shell used to thread
+ * `pendingSponsors: number` through three components and test `i.badge === 'pendingSponsors'` at
+ * the render site, so a second badge meant a fourth place to remember. The shell now passes one
+ * `Partial<Record<BadgeKey, number>>` and the row looks its own key up.
+ */
+export type BadgeKey = 'pendingSponsors' | 'requestsWaiting'
 /** 'unknown' = not yet loaded, 'dark' = the endpoint 404d (flag off), 'live' = it answered. */
 export type ProbeState = 'unknown' | 'live' | 'dark'
 
@@ -68,7 +78,7 @@ export interface NavItem {
    * dashboard and silently inherit ITS roles — inventing a block the registry never declared.
    */
   exact?: boolean
-  badge?: 'pendingSponsors'
+  badge?: BadgeKey
   /**
    * The second key of the `G`-then-X jump, upper-case, e.g. 'A' → Applications.
    *
@@ -172,7 +182,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         gate: { mode: 'probe', probe: 'billing', dark: 'soon' } },
       { id: 'requests', href: '/admin/requests', labelKey: 'admin.requests.nav', chord: 'Q',
         scope: 'organisation', roles: ['super', 'org_admin'],
-        gate: { mode: 'probe', probe: 'requests', dark: 'hide' } },
+        gate: { mode: 'probe', probe: 'requests', dark: 'hide' },
+        badge: 'requestsWaiting' },
     ],
   },
   {
