@@ -1,5 +1,91 @@
 # Architectural Decisions — HalaTuju
 
+## The analysis is its own table, not columns on the comment — TD-204, 2026-07-31
+**Decision:** `OrgRequestAnalysis` (table `org_request_analyses`) holds the engineer's evidence and
+approval lifecycle; the prose still travels as an `OrgRequestComment` linked by `posted_comment`.
+
+**Alternatives considered:** nullable columns on `OrgRequestComment` (zero new table, zero RLS
+ceremony, and the visibility ROW filter already protects it); a second thread.
+
+**Rationale:** a DRAFT has nowhere to live on a comment that is not a re-decision of `visibility` —
+it would have to sit at `internal` and be flipped to `shared` on approval, which reuses the one
+column TD-202 settled and would be the first mutation of `visibility` anywhere in the codebase.
+Comments are also append-only (`ordering = ['id']`, "the order it was said in") with no
+`updated_at`, and a draft must be revisable. And `_comment_dicts` is shared by BOTH serializers, so
+`cited_files` would sit one line of code from the org payload with only a snapshot test between.
+
+**Trade-offs:** a new table, its own RLS transaction, and a reader who must know the prose and the
+evidence live in two places. Mitigated by the `posted_comment` FK and by saying "this is the working
+paper behind ONE comment" in the model docstring, so the next tidying pass does not merge them.
+
+**Revisit if:** analyses ever need to be a conversation in their own right. They are not one today —
+discussion happens in the thread, which is the point of TD-201.
+
+## The organisation sees the reasoning, never the hours or the files — TD-204, 2026-07-31
+**Decision:** the analysis PROSE is shared with the requesting organisation (as an `engineer`
+comment); `estimated_hours` and `cited_files` are owner-only and no org-facing serializer names the
+table.
+
+**Alternatives considered:** sharing everything (maximum trust); sharing the prose and the hours.
+
+**Rationale:** TD-202 established that *reasoning* is shared — a price whose reasoning is invisible
+looks arbitrary, which the owner discovered by filing a request himself. It does not establish that
+numbers are shared: `ai_draft_hours` was withheld because it was unreliable. Here the reasons are
+different for each field. **Hours:** the owner must stay free to quote 6h on a 4h analysis (bundling,
+goodwill, margin) without visibly contradicting his own engineer — a second figure in front of the
+requester rebuilds precisely the problem removing the AI's estimate fixed. **Files:** asymmetric
+value, not secrecy — the requester cannot open `referrals.py` so a citation buys them nothing, while
+the paths disclose the internal shape of a MULTI-TENANT platform to one tenant, and that surface
+grows with every analysis.
+
+**Trade-offs:** the requester cannot check the estimate against the evidence; they are trusting the
+owner's judgement, as they already do for the quote. Accepted knowingly.
+
+**Revisit if:** a tenant ever asks to audit an estimate. The answer then is probably a redacted file
+COUNT, not the paths.
+
+## The quote gate lives at both twins, not in the shared helper — TD-204, 2026-07-31
+**Decision:** `_require_analysis(req)` is called explicitly from `quote()` and from `requote()`, in
+the same position — after `bug_is_free`, before `_apply_quote`.
+
+**Alternatives considered:** putting it in `_apply_quote`, which both call and which nothing else
+calls; putting it in the two views.
+
+**Rationale:** `_apply_quote` is a field writer — it cleans and assigns. An evidence policy at that
+altitude makes the error ORDERING accidental: whether the owner sees `analysis_required` or
+`bad_hours` would depend on which line it sat above. Made explicit at the caller, that ordering is a
+decision. In the service rather than the views so no shell caller can bypass it. `bug_is_free` stays
+first because a bug is never quoted at all — demanding an analysis before saying "schedule it
+instead" is a worse message and implies the rule covers bugs.
+
+**Trade-offs:** the same line in two functions, which a future refactor will want to merge. Accepted
+because those two are already deliberate byte-identical twins (the codebase blesses this shape —
+`sponsorship.sign_admin_credit` mirrors `payments.sign` on purpose), and a test asserting BOTH refuse
+is the anti-drift device.
+
+**Revisit if:** a third quoting path appears. Then it is a choke-point problem, not a twin problem.
+
+## Only `modify` supersedes an analysis — TD-204, 2026-07-31
+**Decision:** `modify()` stamps `superseded_at` on approved analyses. An ANSWER does not; the cockpit
+shows an amber "predates the last comment" note instead.
+
+**Alternatives considered:** superseding on any new comment; comparing `created_at` to
+`updated_at`.
+
+**Rationale:** `modify` rewrites the description the analysis was written against, so no approved
+analysis describes the request any more — that is a fact, not a judgement, and the gate must refuse.
+An answer *can* change scope but usually does not, and answers are frequent: superseding on each
+would be a treadmill that trains the owner to re-request analyses reflexively. The timestamp
+comparison was rejected outright — `updated_at` is `auto_now`, so our own sweeps bump it, a trap
+this project already hit on partner "last activity".
+
+**Trade-offs:** an answer that genuinely changes scope leaves a stale analysis standing behind the
+gate, mitigated only by a note the owner may ignore. `description_sha` is the audit trail if it ever
+needs proving.
+
+**Revisit if:** a stale analysis ever survives into a quote. The fix then is to supersede on answers
+too and accept the treadmill.
+
 ## The visibility filter is a ROW filter, so it lives in the service — Sprint TD-201, 2026-07-31
 **Decision:** `org_requests.comments_for(req, *, viewer_is_org)` applies the `shared`/`internal`
 filter, and BOTH serializers call it. The filter is not expressed in the serializer field list.

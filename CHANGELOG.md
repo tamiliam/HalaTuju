@@ -2,6 +2,67 @@
 
 All notable changes to this project will be documented in this file.
 
+## The engineer joins the thread (TD-204) — 2026-07-31
+
+Owner: *"Gemini's role is only initial analysis. It has no access to the codebase and cannot
+reliably do much. You have to do the proper analysis and estimate the workload, and I want you to
+post as well, with my approval."*
+
+Until now the most valuable thing said about a request had nowhere to live. The owner opened Claude
+Code, asked for an analysis, and copy-pasted the reply into the thread by hand; the system kept
+`quote_hours` and `quote_note` and **none of the evidence**. That matters because of this project's
+own rule — the estimate must cite its files. 3.5h on request #3 named the mailer and the hook and
+was checkable in a minute; 24h on the sponsor invite named nothing and was wrong six-fold.
+
+- **`OrgRequestAnalysis` is the WORKING PAPER behind one comment.** The prose still travels as an
+  `OrgRequestComment`, so the thread stays one stream and TD-201 is intact; the row holds the
+  evidence and the approval lifecycle a comment cannot carry. Migration **`0140`** (DDL + RLS +
+  the `engineer` author choice), applied migrate-first and verified.
+- **⚠ NOT columns on `OrgRequestComment`, and the reasons are worth keeping:** a draft would have to
+  sit at `visibility='internal'` and be flipped on approval — re-deciding the one column TD-202
+  settled, and the first mutation of `visibility` anywhere in the codebase; comments are
+  append-only with no `updated_at` and a draft must be revisable; `_comment_dicts` is shared by both
+  serializers, so `cited_files` would sit one line from the org payload.
+- **⚠ TWO ACTORS, and the split is the whole control.** The engineer STAGES a draft; the owner
+  APPROVES; only approval posts. Same shape as `pool.publish_profile_to_pool` — preparing is free,
+  publishing is gated. A draft is invisible to the organisation by construction: no org-facing
+  serializer names the table.
+- **⚠ THE ORGANISATION SEES THE PROSE AND NOTHING ELSE.** `cited_files` and `estimated_hours` are
+  OWNER-ONLY. Neither is secrecy: a citation the requester cannot open buys them nothing while the
+  paths disclose the internal shape of a multi-tenant platform, and a second hours figure in front
+  of them recreates exactly what removing the AI's estimate fixed. Asserted against the payload's
+  VALUES, not just its key set — a snapshot cannot catch a path smuggled inside a string.
+- **⚠ THE POSTED COMMENT CARRIES `author_admin=None`,** exactly as the AI's questions do. Stamping
+  the approver's name beside an "Engineer" badge would be a lie about who wrote it; provenance
+  lives on the analysis row.
+- **THE QUOTE NOW STANDS ON EVIDENCE.** `analysis_required` refuses to price without an approved,
+  non-superseded analysis citing at least one file. Called explicitly from BOTH `quote()` and
+  `requote()` — not from the shared `_apply_quote`, which is a field writer where the error
+  ORDERING would become accidental. `bug_is_free` stays first: a bug is never quoted.
+  **Verified before writing a line:** `status = 'quoted'` is written in exactly one place, reached
+  by two functions, called by two views. No third path.
+- **`modify()` SUPERSEDES approved analyses** — it rewrites the description they were written
+  against, and without this the gate would price text nobody can read. Deliberately not a timestamp
+  comparison: `updated_at` is `auto_now` and our own sweeps bump it. An ANSWER does not supersede
+  (answers are frequent; that would be a treadmill) — the cockpit shows an amber note instead.
+- **THE COMMAND EXISTS FOR ITS CITATION GUARD, not for transport.** `record_request_analysis` runs
+  inside the repo, so it verifies every cited path resolves and refuses otherwise, and captures
+  `repo_sha` from git. An unchecked citation is decoration. Reports by default, prints the database
+  it is pointed at, writes through the service layer.
+- **Live on the first two real requests.** #2 (sponsor invite): the AI said 24h and "sprint-sized";
+  the engine is already built and the honest number was **6.5h**. #4 (income card): a genuine
+  contradiction — `income_established` is route-agnostic but its own docstring says *"Confined to
+  the SUBMISSION GATE"* and it has one caller, so the verdict never asks it. **4.0h**, blast radius
+  measured at exactly one live application.
+- **Two live-review fixes the owner caught the same day:** the triage form was hard-coded to
+  Feature/Sprint and now seeds from the AI's reading — the two values decide whether the
+  organisation is CHARGED, so accepting the default silently converted a free bug into a priced
+  feature; and the analysis panel moved ABOVE triage, since it was asking the owner to classify a
+  request before reading the thing that tells them the classification.
+- **Numbers:** `pytest` **5258** (+47) · `jest` **1249** (+15) · `next lint` 0 errors · i18n 4360×3
+  · 19 files. Four guards bite-checked; the org-payload bite failed three tests (the key-set
+  snapshot *and* both value-leak tests), which is the belt-and-braces working.
+
 ## The Requests thread becomes a DISCUSSION (TD-201) — 2026-07-31
 
 Until now exactly ONE verb reached the requester: `ask` a question. So a conclusion — *"here is

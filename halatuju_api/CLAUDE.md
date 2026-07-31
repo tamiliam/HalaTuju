@@ -550,7 +550,79 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-31)
+## Next Sprint (as of 2026-07-31, evening)
+
+**✅ SHIPPED + LIVE 2026-07-31 — TD-204: THE ENGINEER JOINS THE THREAD.** Commits
+`2866bfe4`..`742e5aff`. Retro `docs/retrospective-2026-07-31-engineer-analysis.md`; decisions ×4;
+lessons ×3. **Migration `0140` IS ALREADY APPLIED to production and verified — do NOT re-run it.**
+`pytest` **5258** · `jest` **1249** · `next lint` 0 · i18n 4360×3 · 19 files. Ledger reconciled
+against prod: scholarship **140/140**, courses **67/67**.
+
+- **The division of labour is SETTLED and is not to be re-litigated** (owner, verbatim): *"Gemini's
+  role is only initial analysis. It has no access to the codebase and cannot reliably do much. You
+  have to do the proper analysis and estimate the workload, and I want you to post as well, with my
+  approval."* Gemini classifies + asks on create and **does not price**. Claude reads the CODEBASE,
+  estimates, and CITES ITS FILES. The owner triages and quotes. The requester decides.
+- **`OrgRequestAnalysis` is the WORKING PAPER behind one comment** — not a second thread. The prose
+  travels as an `OrgRequestComment`; the row carries the evidence and the approval lifecycle. See
+  the model docstring for the four reasons it is not columns on the comment; the first is that a
+  draft would have to re-decide `visibility`.
+- **⚠ TWO ACTORS. The engineer STAGES, the owner APPROVES, only approval posts.** A draft is
+  invisible to the organisation by construction — no org-facing serializer names the table.
+- **⚠ THE ORG SEES THE PROSE AND NOTHING ELSE.** `cited_files` + `estimated_hours` are OWNER-ONLY,
+  and neither is secrecy — a citation the requester cannot open buys them nothing, the paths are the
+  internal shape of a multi-tenant platform, and a second hours figure rebuilds what TD-202 removed.
+  Do not "finish the job" by exposing either; the omission is a decision with a test on it.
+- **⚠ `analysis_required` gates BOTH `quote()` AND `requote()`, explicitly** — not in `_apply_quote`
+  (a field writer, where the error ORDERING would be accidental). `bug_is_free` stays FIRST.
+- **⚠ `modify()` supersedes; an ANSWER does not.** Answers are frequent and superseding on each is a
+  treadmill — the cockpit shows an amber note instead. NOT a timestamp comparison (`updated_at` is
+  `auto_now`).
+- **⚠ THE COMMAND EXISTS FOR ITS CITATION GUARD.** `record_request_analysis` runs inside the repo and
+  refuses a path that does not resolve. It is not transport — a form would carry prose equally well.
+- **⚠ THE TRIAGE FORM SEEDS FROM THE AI READING.** It was hard-coded `feature`/`sprint`, which
+  disagreed with the AI on every bug — and those two values decide whether the org is CHARGED.
+- **▶ LIVE STATE:** analysis #1 on request **#2** (6.5h, approved, posted) and #2 on request **#4**
+  (4.0h, approved, posted; **triaged bug / sprint**). Request #2 is now quotable.
+
+**▶ NEXT = FIX REQUEST #4 (the income card), 4.0h, analysis already approved.** A real student is
+waiting: **application #106 is `shortlisted` with a red income card that should be green.**
+- **The finding:** she declared the STR route, never uploaded an STR, and sent her father's IC and
+  salary slip instead. The chips judge the DOCUMENTS (green, correctly); the summary card judges the
+  DECLARED ROUTE (red). **`income_engine.income_established` is route-agnostic and its own docstring
+  says "Confined to the SUBMISSION GATE" — it has exactly ONE caller, `services.py`. The verdict
+  never asks it.** So she could submit but cannot read green.
+- **⚠ IT WAS ALREADY FIXED IN THE OTHER DIRECTION** (P3, 2026-07-06): a valid STR settles income on
+  the SALARY route. The reverse was never done. Make `_verdict_income` fall through to the salary
+  assessment when the STR route holds no usable STR — do not patch her record. Owner's standing
+  rule: fix the SYSTEM, per-case tagging is the cosmetic last step.
+- **⚠ BLAST RADIUS MEASURED, NOT ESTIMATED: exactly ONE live application changes band.** 53
+  households on the STR route, 10 with no STR letter, only #106 has salary evidence to fall through
+  to. Re-verify that against production before AND after — this touches how applications are scored.
+- **No MODEL_VERSION bump** (this is the verdict engine, not a genuineness signature model).
+
+**▶ THEN, both deferred with reasons (do NOT start before the above):**
+- **TD-206 — take the production DB password off the laptop.** The command writes through the ORM,
+  so staging an analysis means exporting live `DB_*`. Done twice this sprint, deleted twice; a
+  manual mitigation. It should POST to the existing super-only endpoint with a short-lived token.
+  **⚠ TRIGGER: do it BEFORE the next analysis is staged.** ~2h. **⚠ The direct Supabase host is
+  IPv6-only and does not resolve from the owner's machine — use the session pooler
+  `aws-1-ap-southeast-1.pooler.supabase.com`, user `postgres.<ref>`.**
+- **TD-205 — nothing SUMMONS the engineer.** Requests **#5–#8** are four bugs sitting untriaged and
+  unnoticed. Extend the existing Requests badge. ~2h. Deferred because the workflow had been used
+  twice when it was raised, and ranking friction from two samples is guesswork.
+
+**▶ OWNER, DATED AND OUTRANKING THE ABOVE:**
+1. **`BILLING_USAGE_ENABLED` flips 1 AUGUST — tomorrow.** Env var via `--update-env-vars`, not a
+   deploy.
+2. **Confirm 46 eWallet IDs with Vircle before the August payment run**, and check Pravin's
+   `…176929` is activated (his stamp was set against the wrong number).
+3. **Decide TD-198** — an awarded student cannot be declined directly and there is no admin
+   withdrawal route once the award email has gone. **47 sit in `awarded`.**
+4. **Tamil first drafts** — the whole `admin.requests.owner.analysis*` block plus
+   `detail.author.engineer`; older `profile.ic*` keys still outstanding.
+
+## Superseded — previous Next Sprint (as of 2026-07-31, TD-201)
 
 **✅ SHIPPED + LIVE 2026-07-31 — TD-201: THE REQUESTS THREAD IS A DISCUSSION.** Commits
 `630bb47e`..`bbd9f9f7`. Retro `docs/retrospective-2026-07-31-requests-discussion.md`; decisions ×4;

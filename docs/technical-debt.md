@@ -2305,3 +2305,49 @@ shared reasoning, private judgement. Do not re-decide it from scratch.
 `test_the_ai_split_is_exact` which states the positive half. Bite-checked by letting the hours
 through: all three fail.
 
+---
+
+### [TD-205] Nothing SUMMONS the engineer — a request can sit unanalysed indefinitely — medium
+**File(s):** `apps/scholarship/views_admin.AdminOrgRequestCountView`, `app/admin/requests/page.tsx`
+**Raised 2026-07-31** while using TD-204 on live requests. The workflow now has a home for the
+engineer's analysis and a gate that requires one — but nothing anywhere tells anyone that a request
+is WAITING for one. The owner learned request #4 existed because we happened to be looking at the
+screen together.
+
+**Evidence it is real, not theoretical:** requests **#5–#8** are four bugs sitting at `submitted`,
+untriaged, filed the same day as #4 and unnoticed since.
+
+**What it looks like fixed.** The Requests badge already counts requests needing attention
+(`Q(status='quoted') | Q(comments__awaiting_reply=True)`); extend it to include a triaged FEATURE
+with no approved analysis, and — more valuable — an untriaged request of any kind. No new model, no
+migration; it is a queryset and a label.
+
+**⚠ Deliberately deferred** (owner, 2026-07-31): the workflow had been used exactly twice when this
+was raised, and ranking friction from two samples is guesswork. Revisit once a handful of real
+requests have gone through, so the ranking is evidence rather than annoyance. ~2h.
+
+---
+
+### [TD-206] `record_request_analysis` reaches the production DATABASE, not the API — medium
+**File(s):** `apps/scholarship/management/commands/record_request_analysis.py`
+**Raised 2026-07-31.** Staging an analysis on production requires exporting the live `DB_*`
+credentials into a shell, because the command writes through the ORM. Done twice during TD-204 and
+deleted twice — which is a MANUAL mitigation, and manual mitigations fail eventually.
+
+**What it looks like fixed.** The command POSTs to the existing super-only endpoint
+(`admin/scholarship/requests/<pk>/analysis/`) with a short-lived token, the way the browser does.
+No database password ever reaches the laptop, and the flag gate, the role gate, the org fence and
+the error funnel all apply for free instead of being bypassed by a direct write.
+
+**⚠ Do NOT "fix" this by writing through Supabase MCP.** That is reachable and it bypasses
+`record_analysis` — the body, citation and window rules — which is the opposite of the intent.
+Every agent write goes through the service layer or through the API in front of it.
+
+**Secondary finding, worth recording:** the direct Supabase host (`db.<ref>.supabase.co`) is
+IPv6-only and does not resolve from the owner's machine; the session pooler
+(`aws-1-ap-southeast-1.pooler.supabase.com`, user `postgres.<ref>`) does. Anyone running a
+management command against production needs the pooler, not the host on the Cloud Run service.
+
+**⚠ Deferred with a TRIGGER** (owner, 2026-07-31): do it before the next analysis is staged, since
+that is the moment the credential exposure repeats. ~2h.
+
