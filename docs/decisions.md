@@ -1,5 +1,23 @@
 # Architectural Decisions — HalaTuju
 
+## A completion report states TOTAL spent vs TOTAL planned — 2026-08-01
+**Decision:** (owner: *"Once complete, post the total number of hours spent vs planned in the
+post-completion report. This should be the way for all post completion reports."*) Every completion
+report sums `estimated_hours` across ALL non-superseded analyses on the request for "planned", and
+the real time across every stint for "spent" — never just the most recent leg. Where a re-scope
+moved the plan, say so in the same sentence.
+**Alternatives considered:** report the current leg only (what request #6's first report did — "two
+hours planned, an hour and a half spent", written before the owner widened the scope to the whole
+console and a further four hours was planned). Rejected: it silently drops earlier effort and
+flatters the number exactly when a request has been hardest to pin down.
+**Rationale:** the owner's standing principle is that a free bug still costs effort and both sides
+should see what the work took. A per-leg figure defeats that on precisely the requests where the
+question matters.
+**Trade-offs:** the totals must be assembled by hand from the analyses; there is no stored
+`actual_hours` column, and adding one was deliberately deferred (see the hours-in-the-prose
+decision). If estimate-vs-actual ever becomes something anyone charts, that column is the fix.
+**Revisit if:** a request accumulates enough analyses that hand-summing becomes error-prone.
+
 ## The engineer's triage is a PREFILL; the owner still presses Run — 2026-08-01
 **Decision:** (owner's six-step loop, step 2b: *"fill up the triage form, pending my running it"*.)
 `OrgRequestAnalysis` gains `proposed_kind` / `proposed_lane`. They prefill the owner's triage form and

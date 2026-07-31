@@ -18,6 +18,12 @@ does not resolve is refused here rather than reaching the owner as evidence.
 It also captures `repo_sha` from git automatically, so an estimate always records the commit it was
 read against — a citation three weeks stale is worth knowing about.
 
+⚠ **A COMPLETION report states TOTAL spent vs TOTAL planned** (owner, 2026-08-01), summed across
+EVERY non-superseded analysis on the request — never just the leg you have in front of you. A
+request that was re-scoped mid-flight (#6: 2h for one module, then 4h more once the owner widened
+it to the whole console) reports six planned, not four, and says why the plan moved. Reporting the
+last leg alone drops earlier effort and flatters the number exactly when the request was hardest.
+
 ## Two modes, and API is the one to use (TD-206, 2026-08-01)
 
 **`--api` (recommended): no database password anywhere.** Posts to the super-only endpoint that
