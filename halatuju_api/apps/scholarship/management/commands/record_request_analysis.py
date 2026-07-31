@@ -106,47 +106,141 @@ def _missing_paths(paths):
     return missing
 
 
+# ── The local credential file (gitignored, repo root) ────────────────────────
+
+_ENV_PATH = os.path.join(_REPO_ROOT, '.env')
+
+
+def _env_value(key):
+    """A value from the process environment, falling back to the gitignored root `.env`.
+
+    Nothing in this project loads that file into Django, so the command reads it itself rather
+    than asking the owner to export three variables before every run.
+    """
+    live = (os.environ.get(key) or '').strip()
+    if live:
+        return live
+    try:
+        with open(_ENV_PATH, encoding='utf-8') as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                name, _, value = line.partition('=')
+                if name.strip() == key:
+                    return value.strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return ''
+
+
+def _env_write(values):
+    """Update-or-append keys in the root `.env`, leaving every other line exactly as it was.
+
+    Rewritten in full because there is no partial-write primitive, so the read-modify-write must
+    preserve comments and ordering or it will quietly eat someone's notes.
+    """
+    try:
+        with open(_ENV_PATH, encoding='utf-8') as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        lines = []
+
+    remaining = dict(values)
+    out = []
+    for line in lines:
+        name = line.partition('=')[0].strip()
+        if name in remaining:
+            out.append(f'{name}={remaining.pop(name)}')
+        else:
+            out.append(line)
+    out.extend(f'{k}={v}' for k, v in remaining.items())
+    with open(_ENV_PATH, 'w', encoding='utf-8') as fh:
+        fh.write('\n'.join(out) + '\n')
+
+
 # ── API transport (TD-206) ───────────────────────────────────────────────────
 
+def _token_from_supabase(grant, payload, *, stdout):
+    """One Supabase token exchange. Returns (access_token, refresh_token).
+
+    ⚠ Supabase ROTATES the refresh token on every use: the reply carries a NEW one and the old
+    one stops working. Failing to persist the new value turns a "set it up once" credential into a
+    single-use one that breaks on the SECOND run, when nobody is watching any more.
+    """
+    url = _env_value('SUPABASE_URL') or getattr(settings, 'SUPABASE_URL', '')
+    anon = _env_value('SUPABASE_ANON_KEY')
+    if not url or not anon:
+        raise CommandError(
+            'SUPABASE_URL and SUPABASE_ANON_KEY (the publishable key) must be in the environment '
+            'or the gitignored root .env. Neither is a secret in the dangerous sense — the '
+            'publishable key ships in the browser bundle — but neither is guessable either.')
+
+    import requests as http
+
+    try:
+        resp = http.post(f'{url.rstrip("/")}/auth/v1/token?grant_type={grant}',
+                         headers={'apikey': anon, 'Content-Type': 'application/json'},
+                         json=payload, timeout=30)
+    except Exception as e:      # noqa: BLE001 — network shapes vary; the message is what matters
+        raise CommandError(f'Could not reach Supabase: {e}')
+    if resp.status_code != 200:
+        hint = ('The stored refresh token is spent or revoked — sign in again and re-bootstrap.'
+                if grant == 'refresh_token' else 'Check the email and password.')
+        raise CommandError(f'Supabase refused the {grant} grant ({resp.status_code}). {hint}')
+
+    data = resp.json() or {}
+    access = data.get('access_token') or ''
+    if not access:
+        raise CommandError('Supabase returned no access token.')
+    return access, (data.get('refresh_token') or '')
+
+
 def _acquire_token(stdout):
-    """A short-lived Supabase access token for a SUPER admin, from the environment or a prompt.
+    """A short-lived Supabase access token for a SUPER admin.
 
-    Order matters: an already-issued token is preferred so the common path stores and types
-    nothing. The login fallback exists so the command is usable without first digging a JWT out of
-    a browser; it reads the password with `getpass` and keeps neither it nor the email.
+    Three sources, in order, and the order is the whole design:
 
-    The token is a bearer credential with a lifetime of about an hour. That expiry IS the security
-    property this replaces a permanent database password with, so never cache it to disk.
+    1. ``HALATUJU_ADMIN_TOKEN`` — an explicit override for a one-off run.
+    2. ``HALATUJU_REFRESH_TOKEN`` — the ordinary path. Mints a fresh access token, so nobody has
+       to fetch one by hand ever again, and immediately stores the ROTATED refresh token.
+    3. An interactive login, which also stores the refresh token so step 2 works next time.
+
+    Access tokens live about an hour and are never written down. The refresh token IS durable, and
+    that is a deliberate, smaller concession than what it replaced: it is scoped to one admin's
+    cockpit role rather than the whole database, it grants nothing that login does not, and
+    "sign out everywhere" revokes it. A `DB_PASSWORD` had none of those properties.
     """
     token = (os.environ.get('HALATUJU_ADMIN_TOKEN') or '').strip()
     if token:
         return token
 
-    url = (getattr(settings, 'SUPABASE_URL', '') or os.environ.get('SUPABASE_URL', '')).rstrip('/')
-    anon = (os.environ.get('SUPABASE_ANON_KEY') or '').strip()
-    if not url or not anon:
+    refresh = _env_value('HALATUJU_REFRESH_TOKEN')
+    if refresh:
+        access, rotated = _token_from_supabase('refresh_token', {'refresh_token': refresh},
+                                               stdout=stdout)
+        if rotated and rotated != refresh:
+            _env_write({'HALATUJU_REFRESH_TOKEN': rotated})
+        return access
+
+    # Refuse BEFORE prompting. Asking for a password we cannot possibly exchange wastes the typing
+    # and, worse, teaches the habit of entering it into a program that then fails.
+    if not (_env_value('SUPABASE_URL') or getattr(settings, 'SUPABASE_URL', '')) \
+            or not _env_value('SUPABASE_ANON_KEY'):
         raise CommandError(
-            'No admin token. Either set HALATUJU_ADMIN_TOKEN to a super admin access token, or set '
-            'SUPABASE_URL + SUPABASE_ANON_KEY (the publishable key) so this command can log in for '
-            'you. Neither is a database password, and neither is stored by this command.')
+            'No credential and nothing to log in with. Set HALATUJU_ADMIN_TOKEN for a one-off run, '
+            'or put SUPABASE_URL + SUPABASE_ANON_KEY (the publishable key) in the gitignored root '
+            '.env — then --bootstrap-file stores a refresh token and this never asks again.')
 
-    import requests as http
-
-    stdout.write('Log in as a SUPER admin (nothing is stored):')
+    stdout.write('No stored credential. Log in as a SUPER admin (the password is not stored):')
     email = input('  email    : ').strip()
     password = getpass.getpass('  password : ')
-    try:
-        resp = http.post(f'{url}/auth/v1/token?grant_type=password',
-                         headers={'apikey': anon, 'Content-Type': 'application/json'},
-                         json={'email': email, 'password': password}, timeout=30)
-    except Exception as e:      # noqa: BLE001 — network shapes vary; the message is what matters
-        raise CommandError(f'Could not reach Supabase to log in: {e}')
-    if resp.status_code != 200:
-        raise CommandError(f'Login refused ({resp.status_code}). Check the email and password.')
-    token = (resp.json() or {}).get('access_token') or ''
-    if not token:
-        raise CommandError('Supabase returned no access token.')
-    return token
+    access, rotated = _token_from_supabase('password', {'email': email, 'password': password},
+                                           stdout=stdout)
+    if rotated:
+        _env_write({'HALATUJU_REFRESH_TOKEN': rotated})
+        stdout.write('Stored the refresh token in .env - this was the last manual login.')
+    return access
 
 
 def _api_call(method, api_url, path, token, *, payload=None):
@@ -188,8 +282,13 @@ class Command(BaseCommand):
     help = "Stage the engineer's analysis on an org request as a draft. Report by default."
 
     def add_arguments(self, parser):
-        parser.add_argument('--file', required=True,
+        parser.add_argument('--file', required=False,
                             help='Path to the JSON payload (see the module docstring).')
+        parser.add_argument('--bootstrap-file', default='',
+                            help='One-time: a JSON file holding {refresh_token, supabase_url?, '
+                                 'supabase_anon_key?}. Moves them into the gitignored .env and '
+                                 'DELETES the source file. Never pass a credential on the command '
+                                 'line - shell history keeps it.')
         parser.add_argument('--apply', action='store_true',
                             help='Write the draft. Without it, report only.')
         parser.add_argument('--api', action='store_true',
@@ -198,7 +297,43 @@ class Command(BaseCommand):
         parser.add_argument('--api-url', default='',
                             help=f'API base URL. Default: $HALATUJU_API_URL or {_DEFAULT_API}')
 
+    def _bootstrap(self, path):
+        """Move a refresh token (and optionally the Supabase URL / publishable key) into `.env`.
+
+        A FILE rather than an argument because a credential on a command line is a credential in
+        shell history, and the source is deleted afterwards so the copy does not outlive the move.
+        """
+        try:
+            with open(path, encoding='utf-8') as fh:
+                data = json.load(fh)
+        except (OSError, ValueError) as e:
+            raise CommandError(f'Could not read the bootstrap file: {e}')
+
+        wanted = {'HALATUJU_REFRESH_TOKEN': (data.get('refresh_token') or '').strip(),
+                  'SUPABASE_URL': (data.get('supabase_url') or '').strip(),
+                  'SUPABASE_ANON_KEY': (data.get('supabase_anon_key') or '').strip()}
+        values = {k: v for k, v in wanted.items() if v}
+        if 'HALATUJU_REFRESH_TOKEN' not in values:
+            raise CommandError('The bootstrap file must carry a non-empty "refresh_token".')
+
+        _env_write(values)
+        try:
+            os.unlink(path)
+        except OSError:
+            self.stdout.write(self.style.WARNING(
+                f'Stored, but could not delete {path} - remove it by hand, it holds a credential.'))
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Stored {", ".join(sorted(values))} in {_ENV_PATH} (gitignored).'))
+        self.stdout.write('Future runs mint their own short-lived token. No more manual fetching.')
+
     def handle(self, *args, **options):
+        if options['bootstrap_file']:
+            self._bootstrap(options['bootstrap_file'])
+            return
+        if not options['file']:
+            raise CommandError('--file is required (or --bootstrap-file for the one-time setup).')
+
         apply = options['apply']
         use_api = options['api']
         api_url = (options['api_url'] or os.environ.get('HALATUJU_API_URL') or _DEFAULT_API)

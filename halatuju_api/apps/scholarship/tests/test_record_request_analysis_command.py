@@ -14,6 +14,7 @@ from django.core.management.base import CommandError
 from django.test import TestCase
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
+from apps.scholarship.management.commands import record_request_analysis as cmd
 from apps.scholarship.models import OrgRequest
 
 # A real file in this repo, and a shape that will never exist.
@@ -226,7 +227,87 @@ class TestApiMode(TestCase):
 
     def test_no_token_and_no_login_config_is_a_clean_refusal(self):
         os.environ.pop('HALATUJU_ADMIN_TOKEN', None)
-        with mock.patch.dict(os.environ, {'SUPABASE_ANON_KEY': ''}, clear=False):
+        with mock.patch.object(cmd, '_env_value', return_value=''):
             with self.assertRaises(CommandError) as e:
                 call_command('record_request_analysis', file=self._payload(), api=True, apply=True)
-        self.assertIn('HALATUJU_ADMIN_TOKEN', str(e.exception))
+        self.assertIn('SUPABASE_URL', str(e.exception))
+
+
+class TestStoredRefreshToken(TestCase):
+    """TD-206 follow-up (2026-08-01) — the owner fetches a token by hand exactly ONCE.
+
+    An access token dies in about an hour, which made the first cut a "do this again every
+    session" chore. A stored refresh token mints them instead. It IS durable, and that is the
+    deliberate, smaller concession: scoped to one admin's cockpit role rather than the whole
+    database, granting nothing that logging in does not, and revoked by "sign out everywhere".
+    """
+
+    def setUp(self):
+        os.environ.pop('HALATUJU_ADMIN_TOKEN', None)
+        self.env = {'SUPABASE_URL': 'https://x.supabase.co', 'SUPABASE_ANON_KEY': 'sb_publishable_x',
+                    'HALATUJU_REFRESH_TOKEN': 'refresh-1'}
+        self.written = []
+        self.posts = []
+
+    def _patched(self, post_response):
+        def _post(url, **kw):
+            self.posts.append((url, kw))
+            return post_response
+        return (
+            mock.patch.object(cmd, '_env_value', side_effect=lambda k: self.env.get(k, '')),
+            mock.patch.object(cmd, '_env_write', side_effect=self.written.append),
+            mock.patch.dict('sys.modules', {'requests': mock.Mock(post=_post)}),
+        )
+
+    def _acquire(self, post_response):
+        a, b, c = self._patched(post_response)
+        with a, b, c:
+            return cmd._acquire_token(mock.Mock())
+
+    def test_a_stored_refresh_token_mints_an_access_token(self):
+        token = self._acquire(_FakeResponse(payload={'access_token': 'fresh-jwt',
+                                                     'refresh_token': 'refresh-1'}))
+        self.assertEqual(token, 'fresh-jwt')
+        self.assertIn('grant_type=refresh_token', self.posts[0][0])
+
+    def test_the_ROTATED_refresh_token_is_persisted(self):
+        # Supabase rotates on every use: the reply carries a new token and the old one stops
+        # working. Not storing it turns a set-up-once credential into a single-use one that breaks
+        # on the SECOND run, when nobody is watching. This is the test that catches that.
+        self._acquire(_FakeResponse(payload={'access_token': 'fresh-jwt',
+                                             'refresh_token': 'refresh-2'}))
+        self.assertEqual(self.written, [{'HALATUJU_REFRESH_TOKEN': 'refresh-2'}])
+
+    def test_an_unchanged_refresh_token_is_not_rewritten(self):
+        self._acquire(_FakeResponse(payload={'access_token': 'fresh-jwt',
+                                             'refresh_token': 'refresh-1'}))
+        self.assertEqual(self.written, [])
+
+    def test_an_explicit_env_token_still_wins_and_touches_nothing(self):
+        os.environ['HALATUJU_ADMIN_TOKEN'] = 'override'
+        self.addCleanup(os.environ.pop, 'HALATUJU_ADMIN_TOKEN', None)
+        self.assertEqual(self._acquire(_FakeResponse()), 'override')
+        self.assertEqual(self.posts, [], 'no exchange when a token was handed in')
+
+    def test_a_spent_refresh_token_says_what_to_do(self):
+        with self.assertRaises(CommandError) as e:
+            self._acquire(_FakeResponse(400, {}))
+        self.assertIn('re-bootstrap', str(e.exception))
+
+    def test_bootstrap_stores_the_token_and_DELETES_the_source(self):
+        fh = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8')
+        json.dump({'refresh_token': 'r-boot', 'supabase_url': 'https://x.supabase.co',
+                   'supabase_anon_key': 'sb_publishable_x'}, fh)
+        fh.close()
+        with mock.patch.object(cmd, '_env_write', side_effect=self.written.append):
+            call_command('record_request_analysis', bootstrap_file=fh.name)
+        self.assertEqual(self.written[0]['HALATUJU_REFRESH_TOKEN'], 'r-boot')
+        self.assertFalse(os.path.exists(fh.name), 'the copy must not outlive the move')
+
+    def test_bootstrap_without_a_refresh_token_is_refused(self):
+        fh = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8')
+        json.dump({'supabase_url': 'https://x.supabase.co'}, fh)
+        fh.close()
+        self.addCleanup(lambda: os.path.exists(fh.name) and os.unlink(fh.name))
+        with self.assertRaises(CommandError):
+            call_command('record_request_analysis', bootstrap_file=fh.name)
