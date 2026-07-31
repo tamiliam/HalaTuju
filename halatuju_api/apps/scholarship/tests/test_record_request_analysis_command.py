@@ -329,6 +329,17 @@ class TestStoredRefreshToken(TestCase):
             call_command('record_request_analysis', bootstrap_file=fh.name)
         self.assertEqual(sorted(self.written[0]), ['SUPABASE_ANON_KEY', 'SUPABASE_URL'])
 
+    def test_a_RAW_token_file_is_accepted_so_it_need_never_be_read_aloud(self):
+        # The credential goes browser -> text file -> .env without passing through a chat, a
+        # command line or anyone's eyes. Every one of those leaves a copy that outlives the move.
+        fh = tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False, encoding='utf-8')
+        fh.write('  a-raw-refresh-token\n')
+        fh.close()
+        with mock.patch.object(cmd, '_env_write', side_effect=self.written.append):
+            call_command('record_request_analysis', bootstrap_file=fh.name)
+        self.assertEqual(self.written[0], {'HALATUJU_REFRESH_TOKEN': 'a-raw-refresh-token'})
+        self.assertFalse(os.path.exists(fh.name))
+
     def test_an_empty_bootstrap_file_is_refused(self):
         fh = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8')
         json.dump({}, fh)

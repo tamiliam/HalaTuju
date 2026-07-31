@@ -322,9 +322,22 @@ class Command(BaseCommand):
         """
         try:
             with open(path, encoding='utf-8') as fh:
-                data = json.load(fh)
-        except (OSError, ValueError) as e:
+                raw = fh.read().strip()
+        except OSError as e:
             raise CommandError(f'Could not read the bootstrap file: {e}')
+
+        # Either a JSON object or a file holding NOTHING BUT the refresh token. The raw form
+        # exists so a credential can go straight from the browser into a text file and then into
+        # `.env` without ever being read aloud, pasted into a chat, or typed on a command line —
+        # every one of which leaves a copy somewhere that outlives the move.
+        try:
+            data = json.loads(raw)
+            if not isinstance(data, dict):
+                raise ValueError
+        except ValueError:
+            if not raw:
+                raise CommandError('The bootstrap file is empty.')
+            data = {'refresh_token': raw}
 
         wanted = {'HALATUJU_REFRESH_TOKEN': (data.get('refresh_token') or '').strip(),
                   'SUPABASE_URL': (data.get('supabase_url') or '').strip(),
