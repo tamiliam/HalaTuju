@@ -209,8 +209,14 @@ def _token_from_supabase(grant, payload, *, stdout):
     return access, (data.get('refresh_token') or '')
 
 
-def _acquire_token(stdout):
+def _acquire_token(stdout, *, force_login=False):
     """A short-lived Supabase access token for a SUPER admin.
+
+    ⚠ ``force_login`` skips BOTH stored credentials and goes straight to the password grant. It
+    exists because the ordinary order is a trap for the one command that has to repair things: a
+    SPENT refresh token would be tried first, fail with "Already Used", and the bootstrap that was
+    meant to replace it would never reach the prompt. The recovery path must not depend on the
+    thing it is recovering from.
 
     Three sources, in order, and the order is the whole design:
 
@@ -224,11 +230,11 @@ def _acquire_token(stdout):
     cockpit role rather than the whole database, it grants nothing that login does not, and
     "sign out everywhere" revokes it. A `DB_PASSWORD` had none of those properties.
     """
-    token = (os.environ.get('HALATUJU_ADMIN_TOKEN') or '').strip()
+    token = '' if force_login else (os.environ.get('HALATUJU_ADMIN_TOKEN') or '').strip()
     if token:
         return token
 
-    refresh = _env_value('HALATUJU_REFRESH_TOKEN')
+    refresh = '' if force_login else _env_value('HALATUJU_REFRESH_TOKEN')
     if refresh:
         access, rotated = _token_from_supabase('refresh_token', {'refresh_token': refresh},
                                                stdout=stdout)
@@ -378,7 +384,7 @@ class Command(BaseCommand):
             # two clients in one rotation family: the moment this command minted a token the
             # browser's copy would be spent, and the owner would find themselves signed out of the
             # cockpit by their own tooling.
-            _acquire_token(self.stdout)
+            _acquire_token(self.stdout, force_login=True)
             self.stdout.write(self.style.SUCCESS('Logged in and stored a refresh token.'))
             self.stdout.write('Your browser session is untouched. This will not ask again.')
             return

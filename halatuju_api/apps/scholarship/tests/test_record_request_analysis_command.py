@@ -360,6 +360,17 @@ class TestStoredRefreshToken(TestCase):
         with self.assertRaises(CommandError):
             call_command('record_request_analysis', bootstrap_file=fh.name)
 
+    def test_bootstrap_login_IGNORES_a_spent_refresh_token(self):
+        # The trap this exists to avoid: the ordinary order tries the stored refresh token first,
+        # so a SPENT one fails with "Already Used" and the bootstrap meant to REPLACE it never
+        # reaches the prompt. A recovery path must not depend on the thing it recovers from.
+        a, b, c = self._patched(_FakeResponse(payload={'access_token': 'a', 'refresh_token': 'r'}))
+        self.env['HALATUJU_REFRESH_TOKEN'] = 'spent-token'
+        with a, b, c, mock.patch('builtins.input', return_value='x@y.z'),                 mock.patch.object(cmd.getpass, 'getpass', return_value='pw'):
+            call_command('record_request_analysis', bootstrap_login=True)
+        self.assertIn('grant_type=password', self.posts[0][0])
+        self.assertEqual(len(self.posts), 1, 'it must not have tried the spent token at all')
+
     def test_bootstrap_login_creates_its_OWN_session_not_the_browsers(self):
         # The reason this exists rather than "paste your browser's refresh token": Supabase rotates
         # within a session family, so a shared token means the first client to refresh signs the
