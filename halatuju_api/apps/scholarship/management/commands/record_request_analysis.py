@@ -285,10 +285,14 @@ class Command(BaseCommand):
         parser.add_argument('--file', required=False,
                             help='Path to the JSON payload (see the module docstring).')
         parser.add_argument('--bootstrap-file', default='',
-                            help='One-time: a JSON file holding {refresh_token, supabase_url?, '
-                                 'supabase_anon_key?}. Moves them into the gitignored .env and '
-                                 'DELETES the source file. Never pass a credential on the command '
-                                 'line - shell history keeps it.')
+                            help='One-time: a JSON file holding {supabase_url?, '
+                                 'supabase_anon_key?, refresh_token?}. Moves them into the '
+                                 'gitignored .env and DELETES the source file. Never pass a '
+                                 'credential on the command line - shell history keeps it.')
+        parser.add_argument('--bootstrap-login', action='store_true',
+                            help='One-time: log in and store a refresh token, so no access token '
+                                 'is ever fetched by hand again. Creates its OWN session - it will '
+                                 'not disturb the one your browser is using.')
         parser.add_argument('--apply', action='store_true',
                             help='Write the draft. Without it, report only.')
         parser.add_argument('--api', action='store_true',
@@ -313,8 +317,9 @@ class Command(BaseCommand):
                   'SUPABASE_URL': (data.get('supabase_url') or '').strip(),
                   'SUPABASE_ANON_KEY': (data.get('supabase_anon_key') or '').strip()}
         values = {k: v for k, v in wanted.items() if v}
-        if 'HALATUJU_REFRESH_TOKEN' not in values:
-            raise CommandError('The bootstrap file must carry a non-empty "refresh_token".')
+        if not values:
+            raise CommandError('The bootstrap file carried none of refresh_token / supabase_url / '
+                               'supabase_anon_key.')
 
         _env_write(values)
         try:
@@ -330,6 +335,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['bootstrap_file']:
             self._bootstrap(options['bootstrap_file'])
+            return
+        if options['bootstrap_login']:
+            # A FRESH session, deliberately. Reusing the refresh token out of a browser would put
+            # two clients in one rotation family: the moment this command minted a token the
+            # browser's copy would be spent, and the owner would find themselves signed out of the
+            # cockpit by their own tooling.
+            _acquire_token(self.stdout)
+            self.stdout.write(self.style.SUCCESS('Logged in and stored a refresh token.'))
+            self.stdout.write('Your browser session is untouched. This will not ask again.')
             return
         if not options['file']:
             raise CommandError('--file is required (or --bootstrap-file for the one-time setup).')

@@ -304,10 +304,33 @@ class TestStoredRefreshToken(TestCase):
         self.assertEqual(self.written[0]['HALATUJU_REFRESH_TOKEN'], 'r-boot')
         self.assertFalse(os.path.exists(fh.name), 'the copy must not outlive the move')
 
-    def test_bootstrap_without_a_refresh_token_is_refused(self):
+    def test_bootstrap_can_carry_the_config_alone(self):
+        # The two-step setup: the config goes in first (neither value is a real secret), then the
+        # owner logs in ONCE to mint a refresh token of the command's own.
         fh = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8')
-        json.dump({'supabase_url': 'https://x.supabase.co'}, fh)
+        json.dump({'supabase_url': 'https://x.supabase.co',
+                   'supabase_anon_key': 'sb_publishable_x'}, fh)
+        fh.close()
+        with mock.patch.object(cmd, '_env_write', side_effect=self.written.append):
+            call_command('record_request_analysis', bootstrap_file=fh.name)
+        self.assertEqual(sorted(self.written[0]), ['SUPABASE_ANON_KEY', 'SUPABASE_URL'])
+
+    def test_an_empty_bootstrap_file_is_refused(self):
+        fh = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8')
+        json.dump({}, fh)
         fh.close()
         self.addCleanup(lambda: os.path.exists(fh.name) and os.unlink(fh.name))
         with self.assertRaises(CommandError):
             call_command('record_request_analysis', bootstrap_file=fh.name)
+
+    def test_bootstrap_login_creates_its_OWN_session_not_the_browsers(self):
+        # The reason this exists rather than "paste your browser's refresh token": Supabase rotates
+        # within a session family, so a shared token means the first client to refresh signs the
+        # other one out. The owner would be logged out of the cockpit by their own tooling.
+        a, b, c = self._patched(_FakeResponse(payload={'access_token': 'a', 'refresh_token': 'r-new'}))
+        self.env.pop('HALATUJU_REFRESH_TOKEN')
+        with a, b, c, mock.patch('builtins.input', return_value='tamiliam@gmail.com'), \
+                mock.patch.object(cmd.getpass, 'getpass', return_value='pw'):
+            call_command('record_request_analysis', bootstrap_login=True)
+        self.assertIn('grant_type=password', self.posts[0][0])
+        self.assertEqual(self.written, [{'HALATUJU_REFRESH_TOKEN': 'r-new'}])
