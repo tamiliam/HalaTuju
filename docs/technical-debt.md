@@ -2445,3 +2445,38 @@ contact from a cold domain is the classic cause.
 **Note:** these are the SUPABASE AUTH emails, which use Supabase's own SMTP configuration in the
 dashboard — NOT the Cloud Run `EMAIL_HOST_*` variables. The two are configured separately and a fix
 applied to one does nothing for the other.
+
+### [TD-209] Billing reads "this month" in UTC while the usage data is grouped in Malaysian time — medium
+**Found 2026-08-01**, while running the suite for requests #7/#8. Not caused by that work —
+reproduced on a tree without it.
+
+`AdminBillingUsageView` (`views_admin.py` ~3261) defaults the month with
+`timezone.now().strftime('%Y-%m')`. `timezone.now()` is an aware **UTC** instant, and `strftime`
+formats it without converting, so the string is the UTC month. `usage.available_months()` derives
+its list with `UsageEvent.objects.dates('created_at', 'month')`, which Postgres evaluates under
+`TIME_ZONE = 'Asia/Kuala_Lumpur'`.
+
+**Consequence:** for the eight hours between midnight and 08:00 MYT on the 1st of each month, the
+page defaults to a month the data has already left — an org_admin opening Billing sees last month
+with this month's events invisible until they pick it by hand. Seven tests
+(`test_usage.py`, `test_billing_usage.py`, `test_platform_cost.py`) go red for exactly that window.
+
+**Fix:** `timezone.localtime().strftime('%Y-%m')` at the default, plus a test that pins the two
+computations to the same clock. One line — but it sits on the billing surface that
+`BILLING_USAGE_ENABLED` switched on 2026-08-01, so it is a decision rather than a quiet tidy-up.
+**Status:** open, awaiting the owner's go-ahead.
+
+### [TD-210] A stale profile pathway can still overwrite an offer-confirmed one — low
+**Found 2026-08-01** while fixing requests #7/#8. `copy_pathway` now refuses a BLANK
+`chosen_pathway` / `pre_u_track` / `pre_u_institution` over a populated value, which closes the
+wipe that blanked #119. A **populated but stale** profile value still wins: #43's application reads
+`pismp` (adopted from her genuine PISMP offer under TD-161) while her profile still says `stpm` —
+so a future /profile edit would push the superseded pathway back onto the application.
+
+**Why it is only low:** no production row is currently wrong from it (checked 2026-08-01), and the
+next offer confirm re-corrects the type.
+
+**The real fix is not a wider guard** — it is to refresh the PROFILE from the offer when
+`confirm_pathway` writes, so the durable home stops being stale by construction. That overwrites
+the student's own declaration surface with our reading of her letter, which is a decision the owner
+should make; see the sync decision in `decisions.md` (2026-08-01), option (B).

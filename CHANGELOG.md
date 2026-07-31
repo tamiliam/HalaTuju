@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## A confirmed pathway that is actually complete — requests #7 + #8, 2026-08-01
+
+BrightPath reported the same record twice: a chosen programme that disagreed with everything
+around it, and a chosen programme with pieces missing. **Two reports, one defect** — and the
+diagnosis in the sprint brief turned out to be wrong, which production said plainly before a line
+was changed.
+
+- **⚠ #119's RECORD PROVED THE TIDY-UP HAD RUN.** Her programme is stored as the canonical
+  "Tingkatan Enam" at "Kolej Tingkatan Enam Sri Istana" while her letter shouts
+  "KOLEJ TINGKATAN ENAM SRI ISTANA" — only the pre-U block produces that pair. So her stream and
+  college were filled correctly on 17 July and blank again by the end of the month. **The
+  signature is a WIPE, not a skip**, and the brief had pinned it to the wrong line.
+- **⚠ NEITHER GIRL EVER DECLARED A PATHWAY.** Both profiles read `pathway_certainty='uncertain'`
+  with every pathway field empty. That is the NORMAL state of an uncertain applicant, not an edge
+  case — and both defects below are only reachable from it.
+
+**Fix A — the pathway TYPE is reconciled BEFORE the block that is gated on it.** `confirm_pathway`
+read the student's own declaration to decide "is this pre-university?", skipped the whole
+normalisation when that declaration was empty, then corrected the declaration forty lines later
+from the very letter it had just refused to read. #32 kept her letter's raw
+"Program Matrikulasi (SAINS)" at "KOLEJ MATRIKULASI SELANGOR", no track and no school — and
+`matric` printed beside all three.
+
+**Fix B — a blank profile can no longer erase what the offer letter established.** The two-way
+sync copies the pathway fields between profile and application. The #117 fix guarded exactly one
+of the eight (`chosen_programme`); the offer pipeline writes three more, and the profile is never
+refreshed when it does. So any /profile edit copied its blanks straight over the letter's reading.
+- **⚠ THE GUARD IS EMPTINESS, NOT PROVENANCE.** A non-empty profile value still wins — a student
+  correcting her own stream or school must reach her application. Only a blank is refused, in both
+  directions, because a blank never carries information. **The dangerous direction is the opposite
+  of the bug: a guard that froze the record would strand a student fixing it**, so the test asserts
+  a real edit still lands.
+- **⚠ A POPULATED-BUT-STALE profile value can still overwrite an offer-confirmed pathway** (the
+  #43 shape: her application reads `pismp`, her profile still says `stpm`). No production row is
+  currently wrong from it — recorded as **TD-210**, deliberately not built.
+
+**The repair re-runs the fixed confirm against the letter already on file** — no re-extraction, no
+Vision call — and puts the original `pathway_confirmed_at` back, because the student confirmed on
+the day she confirmed. Only offer-CONFIRMED programmes on a PRE-U pathway are candidates: a poly
+or PISMP record legitimately has no stream and no pre-U school. Idempotent.
+
+**⚠ FILLING A BLANK FIELD CHANGES EVERY READER OF IT.** In July this exact repair turned #48's
+Pathway chip red and docked her band. Pinned here as an invariant across the transition: the chip
+moves `unknown` → `match` and never to a clash, because both values come from the same letter.
+
+**▶ Found in passing, NOT fixed: TD-209 — the billing page computes "this month" in UTC while the
+usage data is grouped in Malaysian time.** Seven tests go red for the eight hours after midnight
+MYT on the 1st; that is today, which is why the suite is not clean. Reproduced on a tree without
+this sprint's changes. One line (`timezone.localtime()`), on a money surface switched on yesterday
+— the owner's call, not a quiet fix.
+
 ## The engineer proposes; the owner still runs it — 2026-08-01 (evening)
 
 Owner, setting the loop out in six steps: *"You then do two things for EACH request: a) analyse and

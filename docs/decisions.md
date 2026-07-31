@@ -1,5 +1,48 @@
 # Architectural Decisions — HalaTuju
 
+## The pathway TYPE is reconciled before anything gated on it — 2026-08-01
+**Decision:** `confirm_pathway` adopts the offer letter's detected pathway type (the TD-161
+reconciliation) as its FIRST act after writing the programme, so the pre-U normalisation that
+follows — stream, school, canonical course name — is gated on the reconciled type rather than on
+the student's own declaration. The inner "standardise the name" gate keeps reading the OFFER's
+detected type, which now only matters for a letter we cannot type at all.
+**Alternatives considered:** (A) Leave the order and gate the pre-U block on
+`is_pre_u(declared) or is_pre_u(offer_type)` — rejected: it makes two sources of the same fact
+answer one question, the shape this project has repeatedly been bitten by, and the block's inner
+branches (`pw == 'stpm'` vs matric) would still be reading the declaration. (B) Gate on the offer
+type alone and leave `chosen_pathway` where it is — rejected: the record would then normalise as
+matric while still reading blank, which is the contradiction BrightPath reported. (C) Fill the
+declaration at apply time so it is never empty — rejected: an uncertain student genuinely has no
+pathway, and inventing one for her is a worse lie than a blank.
+**Rationale:** the block existed to make a confirmed record read like an auto-settled one, and its
+gate read a field the same function was about to correct. An empty `chosen_pathway` is the normal
+state of anyone who applied `pathway_certainty='uncertain'` — both reported records — so the guard
+was skipping precisely the population it was written for.
+**Trade-offs:** a cross-family confirm (#43, STPM→PISMP) now clears the pre-U fields BEFORE the
+block instead of filling them and clearing them after; same end state, one less pointless write.
+**Revisit if:** a third writer of `chosen_pathway` appears — then the reconciliation wants to be
+its own function called by both, not a block inside confirm.
+
+## The two-way pathway sync refuses a BLANK, not a provenance — 2026-08-01
+**Decision:** `copy_pathway` will not copy an EMPTY `chosen_pathway` / `pre_u_track` /
+`pre_u_institution` over a populated destination value, in either direction. A non-empty source
+still wins. `chosen_programme` keeps its stronger provenance guard (`CONFIRMED_CP_SOURCES`).
+**Alternatives considered:** (A) Freeze all three whenever the application's `chosen_programme` is
+offer/officer-confirmed — rejected: it silently drops a student's own correction to her stream or
+school, and silent non-propagation is a worse failure than the one being fixed. (B) Refresh the
+PROFILE from the offer whenever `confirm_pathway` writes, so the profile is never stale — genuinely
+attractive (it removes the asymmetry rather than guarding it) but it overwrites the student's own
+declaration surface with our reading of her letter; a bigger decision than this request, left open.
+(C) Do nothing and repair the two rows — rejected: the wipe recurs on the next /profile edit.
+**Rationale:** the #117 fix identified the exact clobber and guarded one field of eight; the offer
+pipeline writes three more. A blank carries no information, so refusing it can never lose an
+intention — which is what makes emptiness the safe rule where provenance is not.
+**Trade-offs:** a student who deliberately CLEARS her pathway on /profile no longer clears it on
+the application. No UI offers that today. A populated-but-stale profile value can still overwrite
+an offer-confirmed pathway (TD-210) — no production row is currently wrong from it.
+**Revisit if:** the profile gains a real "I don't know yet" clear action, or TD-210 produces a live
+case — then option (B) is the fix, not a wider guard.
+
 ## A completion report states TOTAL spent vs TOTAL planned — 2026-08-01
 **Decision:** (owner: *"Once complete, post the total number of hours spent vs planned in the
 post-completion report. This should be the way for all post completion reports."*) Every completion

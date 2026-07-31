@@ -550,7 +550,46 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-01)
+## Next Sprint (as of 2026-08-01, after requests #7 + #8)
+
+**✅ SHIPPED — REQUESTS #7 + #8, one defect behind two reports.** Commits `fa3465c0`, `4be60e09`.
+Retro `docs/retrospective-2026-08-01-pathway-completeness.md`; decisions ×2; lessons ×4.
+**No migration · 1 deploy · backend only.** 15 new tests; 3 guards bite-checked.
+
+- **⚠ THE PREVIOUS BRIEF'S DIAGNOSIS OF #119 WAS WRONG AND HER ROW PROVED IT IN ONE QUERY.** Her
+  programme is stored as the canonical "Tingkatan Enam" at "Kolej Tingkatan Enam Sri Istana" while
+  her letter shouts "KOLEJ TINGKATAN ENAM SRI ISTANA" — **only the pre-U block produces that
+  pairing, so the block RAN.** The signature was a WIPE, not a skip. A stored value is a
+  fingerprint of the branch that wrote it; that beats any recollection, including a careful one.
+- **⚠ NEITHER STUDENT EVER DECLARED A PATHWAY** (`pathway_certainty='uncertain'`, every pathway
+  field empty). That is the NORMAL state of an uncertain applicant — both defects are only
+  reachable from it, which is why they looked like edge cases and were not.
+- **FIX A — `confirm_pathway` reconciles the pathway TYPE FIRST,** so the pre-U normalisation is
+  gated on the reconciled type, not on the declaration the same function was about to correct.
+- **FIX B — `copy_pathway` refuses a BLANK `chosen_pathway`/`pre_u_track`/`pre_u_institution`.**
+  The #117 fix guarded one field of eight; the offer pipeline writes three more.
+  **⚠ THE GUARD IS EMPTINESS, NOT PROVENANCE — a non-empty profile value still wins,** because
+  freezing the record would strand a student correcting her own stream. The dangerous direction is
+  the opposite of the reported bug.
+- **⚠ TD-210 (recorded, NOT built): a POPULATED-but-stale profile value can still overwrite an
+  offer-confirmed pathway** (#43's shape: app `pismp`, profile `stpm`). No production row is wrong
+  from it today. The real fix is to refresh the PROFILE on confirm — a bigger decision, left open.
+- **`repair_confirmed_pathway`** re-runs the fixed confirm against the offer already on file (no
+  re-extraction) and **restores the original `pathway_confirmed_at`**. Only offer-CONFIRMED
+  programmes on a PRE-U pathway are candidates. Registered as cron job `repair-confirmed-pathway`;
+  scope with `PATHWAY_REPAIR_APP_IDS`. Idempotent.
+
+**⚠ TD-209 (FOUND TODAY, NOT FIXED — the owner's call): the billing page computes "this month" in
+UTC while usage data is grouped in Malaysian time.** `views_admin.py` ~3261 uses
+`timezone.now().strftime('%Y-%m')`; `usage.available_months()` groups under
+`TIME_ZONE='Asia/Kuala_Lumpur'`. For the eight hours after midnight MYT on the 1st they disagree —
+**7 tests are red for exactly that reason today, reproduced on a tree without this sprint's
+changes.** One line (`timezone.localtime()`), on a money surface switched on yesterday.
+
+**▶ NEXT = REQUEST #3** — email the student when a partner organisation is assigned. `scheduled`,
+quoted **3.5h and ACCEPTED**; it is a PAID feature, so it is the first thing that bills.
+
+## Superseded — previous Next Sprint (as of 2026-08-01, morning)
 
 **✅ SHIPPED + LIVE 2026-08-01 — REQUEST #4's INCOME CARD, and TD-206.** Commits
 `dadbf89d`..`6a938fc6`. Retro `docs/retrospective-2026-08-01-income-card-and-td206.md`; decisions ×4;
