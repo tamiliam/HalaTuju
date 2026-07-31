@@ -27,8 +27,12 @@ export const btnGhost =
  * fields this editor can alter are included — plus position, which `map` preserves, so a move,
  * indent or delete counts too.
  */
-export function clauseFingerprint(list: readonly Record<string, unknown>[]): string {
-  return JSON.stringify((list || []).map((c) => [
+// ⚠ Takes `unknown[]`, not `Record<string, unknown>[]`. An INTERFACE (ContractClauseData) has no
+// index signature, so it is not assignable to a Record parameter — a mismatch `next lint` and jest
+// both pass over and only the production build catches. Widening here rather than casting at each
+// call site keeps the two editors' code honest about what they hold.
+export function clauseFingerprint(list: readonly unknown[]): string {
+  return JSON.stringify((list || []).map((raw) => (raw || {}) as Record<string, unknown>).map((c) => [
     c.level ?? 0,
     c.heading_en ?? '', c.heading_ms ?? '', c.heading_ta ?? '',
     c.body_en ?? '', c.body_ms ?? '', c.body_ta ?? '',
