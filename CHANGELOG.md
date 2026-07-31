@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## The engineer proposes; the owner still runs it — 2026-08-01 (evening)
+
+Owner, setting the loop out in six steps: *"You then do two things for EACH request: a) analyse and
+post an analysis pending my approval, and b) fill up the triage form, pending my running it."*
+(a) existed. (b) did not — triage was a single action that took effect the moment it was pressed.
+
+- **⚠ `proposed_kind` / `proposed_lane` PREFILL THE FORM AND APPLY NOTHING.** `triage()` remains the
+  only writer of the request's own kind and lane, and only a super may call it. That split is the
+  point: these two values decide whether the organisation is **charged**, so the last hand on them
+  must be human. Migration **`0141`**, applied migrate-first and verified (ledger 141/141).
+- **⚠ THE ENGINEER'S READING BEATS THE AI'S, AND THE FORM SAYS WHOSE IT TOOK.** Gemini classifies
+  from the description; the engineer has read the code. Neither is authoritative — but an
+  unattributed default is exactly how this form came to offer "Feature / Sprint" for every bug, one
+  press from charging for free work. The attribution line disappears the moment a control is touched.
+- **⚠ BLANK IS "NO OPINION", NOT AGREEMENT.** A proposal-less analysis leaves the AI's reading
+  alone rather than wiping it. An unrecognised value is dropped rather than stored — a proposal that
+  cannot be spelled in the form's own vocabulary would prefill something the form then refuses.
+
+**The engineer may also leave an INTERNAL note.** Authorship was derived from the caller, so a note
+the ENGINEER wrote arrived stamped as the OWNER — it is the owner's token making the call. TD-204
+refused that trade for approved analyses (*"attributing it to the approver is a lie about who wrote
+it"*), and the same objection applies to a note the owner did not write.
+- **⚠ INTERNAL ONLY, AND THE PAIRING IS THE CONTROL.** Engineer prose that reaches the requester
+  still has exactly one route — stage an analysis, the owner approves. A shared engineer comment is
+  refused (`engineer_must_be_internal`); the guard was bitten to prove it.
+- **⚠ `author_admin=None`,** as approved analyses already do. `_comment_dicts` exposes
+  `author_name`, so keeping the calling admin would print the OWNER'S NAME beside an "Engineer"
+  badge — the same lie in a second field, and the one a reader would actually see.
+
+**The credential problem is finally solved, and every alternative was a structural dead end.**
+`record_request_analysis` now mints its own Supabase session with the service-role key
+(`admin/generate_link` → `/verify`), so nothing is stored and nothing can go stale.
+- The **password grant is behind CAPTCHA** — a command line cannot answer one, so `--bootstrap-login`
+  can never work on this project.
+- The super account signs in with **Google** and had no password at all.
+- A refresh token copied from the browser dies the moment the browser rotates it (*"Already Used"*)
+  — two clients cannot share one rotation family. It broke on first use.
+- **⚠ HONEST CORRECTION TO TD-206's HEADLINE.** "No database password on the laptop" was true but
+  weaker than it sounded: `SUPABASE_SERVICE_ROLE_KEY` was already in that same file and bypasses RLS
+  entirely. Minting adds **no** privilege — anything the session can do, that key could already do
+  directly. What it legitimately buys is that writes travel **through** the API's flag, role,
+  org-fence and service-layer gates instead of around them.
+- **⚠ `--bootstrap-login` now IGNORES stored credentials.** The ordinary order tried the spent
+  refresh token first and failed before reaching the prompt: a recovery path must not depend on the
+  thing it is recovering from.
+
+**Two production defects found on the way, both recorded:** password reset is broken for every
+admin who has already onboarded (**TD-207**), and platform mail lands in Gmail's Spam (**TD-208**).
+
+`pytest` **5310** · `jest` **1258** · `next lint` 0 · i18n 4363×3 · migration `0141` · 2 deploys ·
+2 guards bitten.
+
 ## TD-205 — a request waiting on us is visible without going looking — 2026-08-01
 
 TD-205 was raised as "the badge needs a wider queryset". It needed that, slightly. **The real

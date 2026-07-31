@@ -1,5 +1,70 @@
 # Architectural Decisions — HalaTuju
 
+## The engineer's triage is a PREFILL; the owner still presses Run — 2026-08-01
+**Decision:** (owner's six-step loop, step 2b: *"fill up the triage form, pending my running it"*.)
+`OrgRequestAnalysis` gains `proposed_kind` / `proposed_lane`. They prefill the owner's triage form and
+apply nothing — `triage()` remains the only writer of the request's own `triaged_kind`/`lane`, and it
+is still super-only. Where a proposal exists it BEATS the AI draft, and the form states whose reading
+seeded it.
+**Alternatives considered:** (a) let an approved analysis apply its triage automatically — rejected:
+these two values decide whether the organisation is CHARGED, and approval is a judgement about
+PROSE, not an instruction to the pricing engine. (b) A separate staged-triage record — rejected: the
+analysis is already per-request, already owner-approved, and its panel already sits directly above
+the triage form; a second record would need its own lifecycle for no gain. (c) Let the AI keep
+precedence — rejected: Gemini classifies from the description, the engineer has read the code. (d)
+Prefill silently, as the AI draft already did — rejected, and this is the important one: an
+unattributed default is exactly how the form came to offer 'feature'/'sprint' for every bug, one
+press away from charging for free work.
+**Rationale:** the owner asked for a proposal, not a delegation. Prefilling is the strongest form of
+advice that leaves the decision untouched.
+**Trade-offs:** a third opinion now reaches one screen. Mitigated by attribution rather than by
+hiding one of them. Blank means "no opinion" and deliberately does NOT overwrite the AI's reading —
+so "the engineer said nothing" cannot masquerade as agreement.
+**Revisit if:** a fourth source of classification appears (then the form needs a source picker rather
+than a precedence rule), or the owner starts overriding the engineer's proposal often enough that
+the precedence is wrong.
+
+## The engineer may speak directly ONLY where the organisation cannot hear — 2026-08-01
+**Decision:** a super may post a comment as `author_kind='engineer'`, but **only** with
+`visibility='internal'`; a shared engineer comment is refused (`engineer_must_be_internal`). The row
+carries `author_admin=None`. The rule lives at the ENDPOINT, not in `post_comment`.
+**Alternatives considered:** (a) let the note post as the OWNER, since it is the owner's token —
+rejected: TD-204 already refused that for approved analyses ("attributing it to the approver is a lie
+about who wrote it"), and `_comment_dicts` exposes `author_name`, so it would print the owner's name
+beside an Engineer badge. (b) Allow engineer + shared and rely on judgement — rejected: that is a
+side door around the one gate this module has, and a gate maintained by good behaviour is not a gate.
+(c) Enforce "engineer implies internal" in the service — rejected because `approve_analysis`
+legitimately posts engineer + shared through the same function; the service would break the one path
+the rule exists to protect. What the endpoint enforces is the HTTP contract (who may claim to be
+whom); the domain rule (engineer + shared happens only on approval) stays in the service.
+**Rationale:** an internal note is owner-visible by construction — the visibility filter is a ROW
+filter — so there is nothing for an approval step to protect. Approval exists to guard the requester.
+**Trade-offs:** two places now know about engineer authorship. Accepted, and each states why.
+**Revisit if:** a second non-human author appears (the rule generalises to "any synthetic author is
+internal unless a gated flow published it").
+
+## The command MINTS its own Supabase session — 2026-08-01
+**Decision:** `record_request_analysis --api` obtains its token by minting a session with the
+service-role key (`admin/generate_link` → `/verify`). Nothing is stored; a fresh session per run.
+**Alternatives considered, all of which FAILED for structural reasons rather than bad luck:**
+(a) password grant via `--bootstrap-login` — **blocked by CAPTCHA** on this project; a command line
+cannot produce a captcha token, so this can never work here. (b) The super account's own password —
+it signs in with **Google** and had none; adding one did not help because of (a). (c) A refresh token
+copied from the browser — **dies on the browser's next rotation** ("Already Used"), because two
+clients cannot share one rotation family. It broke on first use and may have signed the owner out.
+(d) A pasted access token per run — works forever, and was rejected only as the fallback because it
+puts a console ritual in front of every session, which is how a workflow gets abandoned.
+**Rationale:** minting needs no browser, no password and no stored secret, so there is nothing to
+expire, rotate or go stale.
+**⚠ Trade-off, stated rather than buried:** this makes `SUPABASE_SERVICE_ROLE_KEY` the durable
+credential on the laptop. It was ALREADY there and bypasses RLS entirely, so minting adds no
+privilege — anything the minted session can do, that key could already do directly. TD-206's headline
+("no database password on the laptop") was therefore true but weaker than it sounded, and the
+honest benefit is that writes now travel THROUGH the API's flag, role, org-fence and service-layer
+gates instead of around them.
+**Revisit if:** the service-role key is ever removed from local development (then the pasted-token
+fallback becomes the only route), or Supabase offers scoped machine tokens for admin APIs.
+
 ## The engineer badge counts UNTRIAGED plus AWAITING-ANALYSIS features, never triaged bugs — TD-205, 2026-08-01
 **Decision:** the super badge counts `status='submitted'` (any kind) **plus** `status='triaged'` with
 `triaged_kind='feature'` and no approved, non-superseded analysis. A triaged BUG is excluded. Counts

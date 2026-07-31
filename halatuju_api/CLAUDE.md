@@ -607,9 +607,42 @@ Ledger reconciled against prod: scholarship **140/140**, courses **67/67**.
   *chained* `.exclude(a).exclude(b)`. **If a comment says "X, not Y, because Y would break", make
   Y break first.**
 
-**▶ NEXT: no engineering item is queued.** The Requests board is the source — #5–#8 are triaged-
-ready bugs and now actually visible. Take them in the order the badge shows, or pick from the
-owner list below.
+**✅ ALSO SHIPPED 2026-08-01 (evening) — THE ENGINEER PROPOSES A TRIAGE; the credential is solved.**
+Commits `aa06b54b`..`42a93e6f`. Migration **`0141`** applied migrate-first + verified (141/141).
+`pytest` **5310** · `jest` **1258** · i18n 4363×3.
+- **⚠ `proposed_kind`/`proposed_lane` PREFILL THE FORM AND APPLY NOTHING.** `triage()` is still the
+  only writer of the request's kind/lane and still super-only. These two values decide whether the
+  org is CHARGED — the last hand on them must be human. **The ENGINEER'S proposal beats the AI's,
+  and the form says whose reading it took.** Blank = no opinion, NOT agreement (it must not wipe
+  the AI's reading); an unrecognised value is dropped, never stored.
+- **⚠ THE ENGINEER MAY POST DIRECTLY ONLY WHEN `internal`.** A shared engineer comment is refused
+  (`engineer_must_be_internal`) — approval remains the one route to the requester. `author_admin` is
+  None, else `author_name` prints the OWNER'S name beside an "Engineer" badge. The rule sits at the
+  ENDPOINT because `approve_analysis` legitimately posts engineer+shared through the same service.
+- **⚠ THE COMMAND MINTS ITS OWN SESSION** (`admin/generate_link` → `/verify`, service-role key).
+  Nothing stored, nothing to rotate. **Every alternative is structurally closed on this project:
+  the password grant is behind CAPTCHA; the super account is GOOGLE-only; a browser's refresh token
+  dies on the browser's next rotation.** Do not re-attempt them.
+- **⚠ HONEST CAVEAT: `SUPABASE_SERVICE_ROLE_KEY` was ALWAYS in the local `.env` and bypasses RLS.**
+  Minting adds no privilege. TD-206's "no database password on the laptop" is true but weaker than
+  it sounds — the real benefit is that writes go THROUGH the API's gates, not around them.
+- **▶ LIVE:** request **#5** analysed (0.5h, 3 files), triaged **feature / small_change**, **quoted
+  0.5h**, with the engineer's triage reasoning posted as an internal note. Waiting on BrightPath.
+
+**▶ NEXT: no engineering item is queued.** The Requests board is the source — **#6–#8** are
+untriaged bugs and now actually visible. **⚠ #5's quote prices only two of the three shapes I
+offered; the link-to-the-run version is ~1.5h and would need a REQUOTE** — worth saying in the
+thread before they accept.
+
+**▶ TWO PRODUCTION DEFECTS FOUND TODAY, both recorded and neither fixed:**
+- **TD-207 (high) — password reset is BROKEN for every admin who has already onboarded.** The mail
+  sends, the link works, the session is valid, and the page then refuses: its only route is an
+  endpoint gated on `must_change_password`, set at INVITE time and cleared the moment someone sets a
+  password. Reviewers and org_admins are in the same trap. **⚠ Do NOT fix it by flipping the flag
+  per person — that is the workaround used on the owner's own account today.**
+- **TD-208 (medium) — platform mail lands in Gmail's Spam.** Brevo reports `delivered`, which is
+  true and useless. Same sender carries reviewer/admin invites, so someone who never checks Spam
+  never onboards and nothing reports it.
 
 **▶ OWNER, DATED AND OUTRANKING THE ABOVE:**
 1. **`BILLING_USAGE_ENABLED` — DUE TODAY, 1 AUGUST. Still not flipped.** Env var via

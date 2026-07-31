@@ -164,3 +164,78 @@ quoted at all and was therefore stuck invisibly.
 - **Tamil first drafts** for the `admin.requests.owner.analysis*` block and `detail.author.engineer`.
 - **The salary-track redesign owns the genuineness gap** (V5 known limitation #13) — salary evidence
   carries no fingerprint cap on either route. Pinned by tests on both sides.
+
+---
+
+# Addendum 2 — the engineer proposes; and the credential, finally
+
+## What Was Built
+
+The owner set the loop out in six steps and asked whether we were aligned. Five steps existed; one
+did not. **(2b) "fill up the triage form, pending my running it"** is now `proposed_kind` /
+`proposed_lane` on the analysis — a recommendation that prefills the owner's form and applies
+nothing. Migration `0141`, applied migrate-first.
+
+Alongside it, two smaller pieces the same conversation forced: the engineer can leave an **internal
+note** (owner-visible only), and `record_request_analysis` now **mints its own Supabase session**,
+which ends a day of credential failures.
+
+## What Went Well
+
+- **Asking "are we aligned?" against the code, not from memory.** Checking the six steps one by one
+  found that (2b) did not exist AND that the owner's list was missing a step the system insists on:
+  a feature must be quoted and accepted before it can be scheduled. Both were cheaper to say than to
+  discover later.
+- **The precedence question was raised before building, not after.** A third opinion on one screen
+  is the shape that nearly turned a free bug into a priced feature last sprint; naming it as a
+  decision (engineer beats AI, and the form says whose reading it took) made it a design choice
+  rather than an accident.
+- **The credential ended up honest.** Minting works, and the note now records that it adds no
+  privilege because the service-role key was always there. Claiming the laptop had been cleaned
+  would have been the comfortable version and the false one.
+
+## What Went Wrong
+
+**7. I chose a fallback I had already documented as broken.**
+- *Symptom:* the stored refresh token failed on first use — `Invalid Refresh Token: Already Used` —
+  and may have signed the owner out of the cockpit.
+- *Root cause:* when the password grant failed, I fell back to copying the BROWSER'S refresh token,
+  having written hours earlier that `--bootstrap-login` must open its own session because two
+  clients cannot share one rotation family. I even warned the owner it might sign them out, and
+  proceeded anyway.
+- *System change:* recorded as a lesson — **a documented failure mode is not a risk you get to
+  accept quietly; it is a route already known to be closed.** The fix (minting) needs no browser at
+  all.
+
+**8. Three separate diagnoses, each of which needed evidence I nearly guessed at instead.**
+- The reset mail "not arriving" was **delivered** (Brevo confirmed) — it was in Spam.
+- The set-password page failing was not Supabase but **our own endpoint**, gated on an invite flag.
+- The password grant failing was **CAPTCHA**, not a wrong password.
+- *What made each one quick:* the error text was read rather than assumed, which is only true
+  because this morning's lesson forced the command to print the server's own words. The habit paid
+  for itself the same day it was written.
+
+**9. I wrote bad Tamil into a locale file.**
+- *Symptom:* `பெறியை பெக்குநர்` — not words.
+- *Root cause:* generating a translation rather than composing one, in a language the owner is an
+  expert in and where the project has a style guide.
+- *System change:* corrected in place. The standing rule stands — Tamil strings are drafted for the
+  owner's eye, and a plausible-looking string is worse than an obviously missing one.
+
+## Design Decisions
+
+Logged: the proposed triage as a prefill with the engineer winning precedence; the engineer's
+internal note restricted to `internal` with `author_admin=None`; and session-minting as the
+transport, with the service-role caveat stated rather than buried.
+
+## Numbers
+
+| | |
+|---|---|
+| pytest | **5310** |
+| jest | **1258** |
+| `next lint` / i18n | 0 errors · 4363 × 3 |
+| Migration | `0141`, applied migrate-first, verified (141/141) |
+| Deploys | 2 |
+| Guards bitten | 2 (engineer-shared refused; AI-beats-engineer precedence) |
+| Live | request #5 analysed, triaged feature/small-change, quoted 0.5h |
