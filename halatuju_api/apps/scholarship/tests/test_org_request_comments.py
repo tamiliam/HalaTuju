@@ -177,6 +177,71 @@ class TestTheWindow(_Base):
         self.assertEqual(e.exception.code, 'bad_transition')
 
 
+class TestAnOrgCommentSettlesTheQuestion(_Base):
+    """The requester speaking settles what stood before it — whichever box they used.
+
+    The defect this pins (owner, request #3, 2026-07-31): answering closes at acceptance and
+    commenting runs to the end, so past acceptance the comment box is the ONLY box. Clearing
+    `awaiting_reply` solely in `answer_clarification` left the question reading "Unanswered"
+    directly above its own answer, permanently, and kept the owner's badge lit on a request nobody
+    was waiting on.
+    """
+
+    def _asked(self, req):
+        return org_requests.post_comment(req, None, 'Which report?', author_kind=org_requests.AUTHOR_AI,
+                                         awaiting_reply=True)
+
+    def test_a_comment_past_the_answer_window_still_settles_it(self):
+        # `approved` is past acceptance — no reply box exists, so this is the whole point.
+        req = self._req(status='approved')
+        q = self._asked(req)
+        self.assertFalse(org_requests.can_attach(req.status), 'precondition: past the shaping window')
+        org_requests.post_comment(req, self.oa, 'The monthly one.', author_kind=org_requests.AUTHOR_ORG)
+        q.refresh_from_db()
+        self.assertFalse(q.awaiting_reply)
+        self.assertTrue(q.replied_at, 'settled questions are stamped, like an explicit answer')
+        self.assertEqual(org_requests.open_questions(req), [])
+
+    def test_it_settles_EVERY_question_standing_before_it(self):
+        # The flag is a claim about who owes whom. Once the requester has replied it is false for
+        # all of them; leaving some open would be arbitrary.
+        req = self._req()
+        first, second = self._asked(req), self._asked(req)
+        org_requests.post_comment(req, self.oa, 'Both of those: the monthly one.',
+                                  author_kind=org_requests.AUTHOR_ORG)
+        first.refresh_from_db(); second.refresh_from_db()
+        self.assertFalse(first.awaiting_reply)
+        self.assertFalse(second.awaiting_reply)
+
+    def test_a_question_asked_AFTER_the_comment_is_untouched(self):
+        # Ordering is the whole rule — a later question is genuinely still outstanding.
+        req = self._req()
+        org_requests.post_comment(req, self.oa, 'early remark', author_kind=org_requests.AUTHOR_ORG)
+        later = self._asked(req)
+        later.refresh_from_db()
+        self.assertTrue(later.awaiting_reply)
+        self.assertEqual(len(org_requests.open_questions(req)), 1)
+
+    def test_the_OWNER_speaking_settles_nothing(self):
+        # We are still waiting on the requester; the owner adding to their own question does not
+        # discharge it. Only the org can.
+        req = self._req()
+        q = self._asked(req)
+        org_requests.comment(req, self.super, 'To be clear, I mean the monthly one.')
+        q.refresh_from_db()
+        self.assertTrue(q.awaiting_reply)
+
+    def test_the_owner_badge_clears_with_it(self):
+        # The lived consequence: the Requests badge counts awaiting_reply, so a question that could
+        # never settle kept the badge lit for ever.
+        req = self._req(status='approved')
+        self._asked(req)
+        self._auth('cm-oa')
+        self.client.post(f'{BASE}{req.id}/comments/', {'body': 'answered here'}, format='json')
+        self.assertEqual(
+            OrgRequest.objects.filter(comments__awaiting_reply=True).count(), 0)
+
+
 class TestTheStatementVerb(_Base):
     """`comment` is the verb the module never had — the reason TD-201 exists."""
 

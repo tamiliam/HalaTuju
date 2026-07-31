@@ -249,6 +249,8 @@ def post_comment(req, admin, body, *, author_kind, visibility=VISIBILITY_SHARED,
     ⚠ An INTERNAL comment is platform-side only; a caller must never mark an org author internal
     (there is no org-internal tier — if one is ever wanted it is a third value, not a reuse of
     this one).
+
+    ⚠ AN ORG COMMENT SETTLES THE QUESTIONS BEFORE IT — see ``_settle_open_questions``.
     """
     body = (body or '').strip()
     if not body:
@@ -262,7 +264,7 @@ def post_comment(req, admin, body, *, author_kind, visibility=VISIBILITY_SHARED,
     if not can_comment(req):
         raise OrgRequestError('bad_transition')
     from .models import OrgRequestComment
-    return OrgRequestComment.objects.create(
+    posted = OrgRequestComment.objects.create(
         org_request=req,
         author_kind=author_kind,
         author_admin=admin if getattr(admin, 'pk', None) else None,
@@ -270,6 +272,34 @@ def post_comment(req, admin, body, *, author_kind, visibility=VISIBILITY_SHARED,
         visibility=visibility,
         awaiting_reply=awaiting_reply,
     )
+    if author_kind == AUTHOR_ORG:
+        _settle_open_questions(req, before=posted)
+    return posted
+
+
+def _settle_open_questions(req, *, before):
+    """The requester has spoken, so we are no longer waiting on them (owner, 2026-07-31).
+
+    ``awaiting_reply`` means exactly one thing: **the ball is in the requester's court**. It drives
+    the owner's Requests badge, the reviewer's question budget and the "Answer needed" prompt. So
+    the moment the requester says anything, every question standing before it is settled — whether
+    they used the reply box or the comment box.
+
+    ⚠ THIS IS THE FIX FOR A DEAD END THE TWO-BOX DESIGN CREATED. Answering closes at acceptance
+    while commenting runs to the end, so on an approved request the reply box is gone and the
+    comment box is all that is left. Clearing the flag ONLY in ``answer_clarification`` therefore
+    meant a question answered after acceptance read "Unanswered" for ever, directly above its own
+    answer, and the owner's badge stayed lit on a request nobody was waiting on. Request #3 did
+    exactly that. Two boxes are a detail of WHEN you may speak; they must never decide WHETHER
+    speaking counts as an answer.
+
+    Settles ALL preceding open questions, not just the oldest: the flag is a claim about who owes
+    whom, and once the requester has replied that claim is false for every one of them. If a remark
+    turns out not to answer something the owner reads the thread and asks again — an early clear is
+    visible and recoverable, a permanent one is neither.
+    """
+    req.comments.filter(awaiting_reply=True, id__lt=before.id).update(
+        awaiting_reply=False, replied_at=timezone.now())
 
 
 def comment(req, admin, body, *, visibility=VISIBILITY_SHARED):
