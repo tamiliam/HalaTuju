@@ -194,7 +194,19 @@ cases). Required behaviour:
    - salary clearly **over** the B40 line → 🔴 **Fail** (advisory — the officer still places the final
      verdict; not an auto-reject, circumstances may apply);
    - **no usable salary docs** → 🟡 **Unsure** (can't confirm B40, a human looks — *not* a blue read
-     off incidental earner-IC greens).
+     off incidental earner-IC greens) — **when an STR was uploaded and failed.** With **no STR at
+     all** and no salary docs either there is *no income evidence whatsoever*, which is §8's 🔴 row
+     ("no usable income evidence at all"); it stays red and keeps asking for the STR. §8 governs.
+
+   **Implementation note (2026-08-01).** "absent" sat in this list from the start but was never
+   built: `_verdict_income` implemented the fall-through for `rejected`/`wrong_type` only, and an
+   absent STR filed `income_proof_missing` as a hard gap and returned red before reaching it. So a
+   family that declared STR and then supplied a properly documented earner was banded on their
+   DECLARATION rather than their EVIDENCE — while `income_engine.income_established`, the
+   submission gate, read the same household as satisfied and let them submit (#106). The absent
+   case now delegates to `_verdict_income_salary`, gated on `salary_income_satisfied` — the *same*
+   predicate the gate uses, so the two surfaces cannot drift apart again. The reverse direction was
+   already done in July (P3: a valid STR settles income on the salary route); this closes the seam.
 3. Else if STR is `unconfirmed` → 🔵 Probable; `stale` → 🟡 Unsure (a real STR, just unpinned/old),
    with the §4 ask; salary route still available.
 

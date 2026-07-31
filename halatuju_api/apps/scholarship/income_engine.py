@@ -196,8 +196,12 @@ def effective_working_members(application, any_route: bool = False) -> list:
     route — needed because income is satisfied by STR **or** salary (owner 2026-07-22), so a
     student who declared the STR route can still have fully documented an earner while never
     touching the salary checkboxes. OPT-IN on purpose: the default keeps the historical
-    salary-route-only behaviour for the verdict engine and the profile generator, so widening the
-    submission gate cannot move a verdict, a band or a generated profile.
+    salary-route-only behaviour, so a caller that does not ask for the wider reading cannot have
+    its answer moved. The PROFILE generator still takes the default. The VERDICT no longer always
+    does: `_verdict_income` passes ``any_route=True`` on the one path where a household has no STR
+    letter at all but a complete salary cluster (2026-08-01, str-proof-spec.md §6 rule 2) — such a
+    student never ticked a salary checkbox, so the default reading would find no members and
+    report "no earner declared" about a household that documented one.
 
     ``working_members`` reads ONLY the persisted ``income_working_members`` list. The income
     wizard pre-ticks earners from the family roster and tags uploaded income docs to them, but
@@ -1132,9 +1136,15 @@ def salary_income_satisfied(application):
     the student) was trapped with her salary evidence never even inspected. Earners are resolved
     with ``any_route=True`` because such a student never touches the salary checkboxes.
 
-    Confined to the SUBMISSION GATE: this and `income_established` are used only by
-    `services.income_doc_blockers` / `document_red_blockers`, never by the verdict or profile
-    engines — so widening it moves no verdict and no band."""
+    NO LONGER confined to the submission gate (2026-08-01). It was — and the sentence that used to
+    stand here said so, adding "so widening it moves no verdict and no band". That confinement was
+    exactly what let the gate and the verdict disagree about one household: the gate accepted #106's
+    salary cluster and let her submit, while `verdict_engine._verdict_income` filed her declared-but-
+    absent STR as a hard gap and painted the same household RED. The verdict now calls this
+    predicate too (str-proof-spec.md §6 rule 2, the ABSENT-STR case), so **widening it MOVES A
+    BAND** — measure the blast radius on production before you touch it. Callers today:
+    `services.income_doc_blockers` / `document_red_blockers` (the gate) and
+    `verdict_engine._verdict_income` (the band)."""
     return any(member_cluster_complete(application, m)
                for m in effective_working_members(application, any_route=True))
 

@@ -356,7 +356,7 @@ def _verdict_income(application):
     The SALARY route delegates to ``_verdict_income_salary`` (multi-earner)."""
     from .income_engine import (father_link, mother_relationship,
                                 guardian_relationship, chain_verified_earner,
-                                student_name_for_link)
+                                student_name_for_link, salary_income_satisfied)
     evidence, gap, review = _utility_context(application), [], []
     present = _present_doc_types(application)
     # IC-aware (#88): prefer the student's verified IC read when the typed name lacks the
@@ -385,6 +385,23 @@ def _verdict_income(application):
     # student must complete the income wizard (and its docs) before we can check anything.
     if not earner or not route:
         return _fact('income', 'gap', evidence, [_item('income_earner_undeclared')])
+
+    # ── Declared STR route, NO STR letter at all → judge what they SUPPLIED (2026-08-01) ──
+    # str-proof-spec.md §6 rule 2 has always said the STR fails and the salary route is evaluated
+    # when the STR is "rejected / wrong_type / ABSENT". Only the first two were implemented: an
+    # absent STR filed `income_proof_missing` as a hard gap and returned RED below, before the §6
+    # fall-through could run. So a family that ticked "STR" and then documented an earner properly
+    # was judged on WHAT THEY DECLARED instead of WHAT THEY SUPPLIED — while `income_established`,
+    # the SUBMISSION gate, read the same household as satisfied and let them through. That
+    # disagreement is the whole defect (#106: father's IC + payslip, submitted fine, then red).
+    #
+    # GATED on a complete cluster, deliberately, and on the SAME predicate the submission gate
+    # uses — one derivation, not a second copy of "is there salary evidence?" (a divergent second
+    # copy is how the two surfaces came to disagree in the first place). The gate is also what
+    # holds §8's 🔴 row: with no STR *and* no salary evidence there is "no usable income evidence
+    # at all", which stays RED and keeps asking for the STR.
+    if str_doc is None and salary_income_satisfied(application):
+        return _verdict_income_salary(application, student_name, present, any_route=True)
 
     # ── Earner IC (the income docs are issued in their name) ──────────────────
     # `members=[earner]` keeps the IC/relationship reason-code copy uniform with the
@@ -532,7 +549,7 @@ def _verdict_income(application):
     return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
 
 
-def _verdict_income_salary(application, student_name, present):
+def _verdict_income_salary(application, student_name, present, any_route=False):
     """Salary (non-STR) route: one or more working household members, each with their
     own IC + (optional) payslip + EPF, tagged via ``household_member``. Relationship to
     the student: father/brother/sister via the SHARED student-IC patronymic (siblings
@@ -545,11 +562,17 @@ def _verdict_income_salary(application, student_name, present):
         (the document DATA checks out; the income AMOUNT/B40 test is a later sprint).
       - **never blocks**: assembled but thin proof (no payslip/EPF = informal) or an
         unprovable relationship (e.g. a Chinese-style name with no patronymic) →
-        'recommend' + `income_unverified_needs_interview`, for the officer to place."""
+        'recommend' + `income_unverified_needs_interview`, for the officer to place.
+
+    ``any_route=True`` is passed by the STR-route caller above when the declared STR route
+    holds NO STR letter and the household nonetheless has a complete salary cluster (§6
+    rule 2). Such a student never touched the salary checkboxes, so
+    ``income_working_members`` is empty and the earners must be reconstructed from the
+    documents they actually tagged — the same reconstruction the submission gate uses."""
     from .income_engine import (effective_working_members, member_relationship_status,
                                 relationship_doc_for, chain_verified_earner,
                                 earner_monthly_income, has_valid_str)
-    members = effective_working_members(application)
+    members = effective_working_members(application, any_route=any_route)
     if not members:
         # No working member declared → no income information yet → red (see STR route).
         return _fact('income', 'gap', _utility_context(application),

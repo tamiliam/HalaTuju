@@ -1414,6 +1414,166 @@ class TestSalaryRouteStrSettle(TestCase):
         self.assertIn('str_verified', _codes(f['evidence']))
 
 
+class TestStrRouteNoStrFallsThroughToSalary(TestCase):
+    """The MIRROR of TestSalaryRouteStrSettle — str-proof-spec.md §6 rule 2, 2026-08-01.
+
+    P3 (2026-07-06) taught the SALARY route to accept a valid STR. The reverse was never built:
+    a household that declared the STR route and never uploaded an STR filed `income_proof_missing`
+    as a hard gap and read RED — even with a fully documented earner on file, and even though
+    `income_engine.income_established` (the SUBMISSION gate) had already accepted the same cluster
+    and let them submit. The card judged the DECLARATION; the gate judged the EVIDENCE. #106 is the
+    live case: father's IC + payslip, submitted fine, then red.
+
+    The fall-through is gated on `salary_income_satisfied` — a COMPLETE cluster, not merely a
+    document being present. That gate is what holds §8's red row ("no usable income evidence at
+    all") for the nine other live STR-route applications with no STR letter and nothing to fall
+    through to, and it is the SAME predicate the submission gate uses, so the two surfaces cannot
+    drift apart again.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='nostr', name='B40', year=2026,
+                                                      income_ceiling=5860, per_capita_ceiling=1584)
+
+    def _app(self, *, name='DIVASHINI A/P MURUGAN', size=4, **kw):
+        """Defaults reproduce #106's production row: route 'str', earner 'father', and
+        `income_working_members` EMPTY — she accepted the wizard prefill and never ticked a salary
+        checkbox, so the earners can only be reconstructed from the documents she tagged."""
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'nostr-{self.id()}', name=name, nric='080115-05-0132',
+            household_size=size)
+        kw.setdefault('income_route', 'str')
+        kw.setdefault('income_earner', 'father')
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=profile, status='shortlisted', **kw)
+
+    def _documented_father(self, app, gross='1,450.00'):
+        _parent_ic(app, 'MURUGAN A/L SUBRAMANIAM', member='father')
+        return _add_doc(app, 'salary_slip', student_verdict='ok', member='father',
+                        fields={'gross_income': gross})
+
+    # ── The defect ────────────────────────────────────────────────────────────
+    def test_106_documented_earner_but_no_str_is_no_longer_red(self):
+        # #106 EXACT: RM1,450 gross across a household of 4 — far under both ceilings — with the
+        # father's IC linking by patronymic and one payslip. The cluster is fully confirmed, so
+        # §8's documented thin-headroom exception gives it the binary green.
+        app = self._app()
+        self._documented_father(app)
+        f = _facts(app)['income']
+        self.assertNotIn('income_proof_missing', _codes(f['unresolved']))
+        self.assertEqual(f['status'], 'verified')
+
+    def test_earners_are_reconstructed_from_doc_tags_not_the_checkbox_list(self):
+        # The `any_route=True` wiring. `income_working_members` is empty on every one of these
+        # applications by construction, so the default (salary-route-only) reading finds NO members
+        # and reports "no earner declared" about a household that documented one. Without the flag
+        # this test fails on income_earner_undeclared.
+        app = self._app()
+        self.assertEqual(app.income_working_members, [])
+        self._documented_father(app)
+        f = _facts(app)['income']
+        self.assertNotIn('income_earner_undeclared', _codes(f['unresolved']))
+        self.assertIn('earner_ic_present', _codes(f['evidence']))
+
+    # ── The gate: what must NOT move (the other nine live applications) ───────
+    def test_no_str_and_no_income_evidence_at_all_stays_red(self):
+        # Five of the ten live no-STR applications have no documents whatsoever. §8's red row
+        # ("no usable income evidence at all") must still hold, still naming the missing STR.
+        app = self._app()
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('income_proof_missing', _codes(f['unresolved']))
+
+    def test_income_doc_present_but_cluster_incomplete_stays_red(self):
+        # The gate is COMPLETENESS, not presence: a payslip with no earner IC to link it to the
+        # student proves nothing, so it must not buy a fall-through.
+        app = self._app()
+        _add_doc(app, 'salary_slip', student_verdict='ok', member='father',
+                 fields={'gross_income': '1,450.00'})
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('income_proof_missing', _codes(f['unresolved']))
+
+    def test_unrelated_earner_ic_does_not_open_the_fall_through(self):
+        # The IC reads, but its name carries no patronymic link to the student → the cluster is not
+        # clean → red, unchanged. (The fraud floor: an unlinked adult's payslip is not this
+        # household's income.)
+        app = self._app(name='AH HOCK')
+        _parent_ic(app, 'TAN AH KOW', member='father')
+        _add_doc(app, 'salary_slip', student_verdict='ok', member='father',
+                 fields={'gross_income': '1,450.00'})
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'gap')
+
+    # ── Route evenness: the fall-through inherits the salary route's own rules ──
+    def test_over_the_b40_line_is_red_for_the_right_reason(self):
+        # V5 evenness rule 1 (§8): over the line is RED on either route. It must arrive as
+        # `income_above_b40_line` — the household was assessed and failed — never as
+        # `income_proof_missing`, which would claim we never looked.
+        app = self._app(size=2)
+        self._documented_father(app, gross='9,900.00')
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('income_above_b40_line', _codes(f['unresolved']))
+        self.assertNotIn('income_proof_missing', _codes(f['unresolved']))
+
+    def test_suspect_payslip_does_not_cap_the_green_matching_the_salary_route(self):
+        # #106's REAL payslip is informal — 1 wage label, no statutory scaffold, scored 'suspect'
+        # at p=0.5 — and it still greens. That is DELIBERATE and it is the evenness rule, not a
+        # hole this sprint opened: `_income_genuineness_docs` caps only the documents a route
+        # REQUIRES, and the salary route has no fingerprint cap at all ("the required salary slip
+        # isn't fingerprintable"). A salary-route household with this identical payslip greens
+        # today, so a household falling through to the same assessment must band the same colour
+        # (V5 §8 rule 1). The underlying gap — salary evidence carries no genuineness protection on
+        # EITHER route — is V5's recorded known limitation #13, owned by the salary-track redesign.
+        # Pinned here so that redesign changes both routes together and neither is forgotten.
+        app = self._app()
+        slip = self._documented_father(app)
+        slip.vision_fields = dict(slip.vision_fields,
+                                  authenticity={'status': 'suspect', 'probability': 0.5})
+        slip.save(update_fields=['vision_fields'])
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertNotIn('document_not_genuine', _codes(f['unresolved']))
+
+    def test_a_suspect_str_still_caps_when_the_str_is_what_settled_it(self):
+        # The other half of the same rule, so the test above cannot be read as "genuineness never
+        # applies to income": where the STR IS the required proof, a suspect STR still demotes the
+        # green to blue. Untouched by this sprint.
+        app = self._app()
+        self._documented_father(app)
+        str_doc = _add_doc(app, 'str', student_verdict='ok', member='father',
+                           fields={'recipient_name': 'MURUGAN A/L SUBRAMANIAM',
+                                   'status': 'Lulus', 'year': '2026'})
+        str_doc.vision_fields = dict(str_doc.vision_fields,
+                                     authenticity={'status': 'suspect', 'probability': 0.5})
+        str_doc.save(update_fields=['vision_fields'])
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('document_not_genuine', _codes(f['unresolved']))
+
+    # ── No regression on the paths that already worked ───────────────────────
+    def test_a_present_str_still_drives_the_str_logic(self):
+        # An STR that EXISTS is untouched: this one is approved but undated (unconfirmed), which is
+        # the STR route's own blue — reached through the STR branch, not the new fall-through.
+        app = self._app()
+        self._documented_father(app)
+        _add_doc(app, 'str', student_verdict='ok', member='father',
+                 fields={'recipient_name': 'MURUGAN A/L SUBRAMANIAM', 'status': 'Lulus'})
+        f = _facts(app)['income']
+        self.assertIn('str_verified', _codes(f['evidence']))
+
+    def test_wizard_never_walked_is_still_red_before_anything_else(self):
+        # The "nothing declared" red is checked FIRST and must stay first — a household that has
+        # not walked the income wizard has no route to fall through from, whatever is on file.
+        app = self._app(income_route='', income_earner='')
+        self._documented_father(app)
+        f = _facts(app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
+
+
 class TestUnemploymentEvidence(TestCase):
     """Phase 2B — an EPF (all-zeros employer) corroborating an unemployed member surfaces as
     soft income evidence (unemployment_epf_corroborated), on both routes; never a gate."""
