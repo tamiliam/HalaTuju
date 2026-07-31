@@ -18,13 +18,28 @@ does not resolve is refused here rather than reaching the owner as evidence.
 It also captures `repo_sha` from git automatically, so an estimate always records the commit it was
 read against — a citation three weeks stale is worth knowing about.
 
-**Writes through the SERVICE layer** (`org_requests.record_analysis`), never raw ORM, so the body /
-citation / window rules hold identically however the row is created. Standing project rule, which
-extends verbatim to this table: never write to `org_request_analyses` through Supabase MCP.
+## Two modes, and API is the one to use (TD-206, 2026-08-01)
 
-⚠ **The dev database here is SQLite.** Run against production only with the prod `DB_*` exported
-from `gcloud run services describe halatuju-api` — the first line of output is always the database
-being written to, so read it before answering the confirmation.
+**`--api` (recommended): no database password anywhere.** Posts to the super-only endpoint that
+already exists (`POST /admin/scholarship/requests/<id>/analysis/`), authenticated by a SHORT-LIVED
+Supabase access token. Nothing durable is stored: the token is held in memory for the length of one
+command, and if you log in here the password is read with `getpass` and never written down.
+
+Staging used to require exporting live `DB_*` from `gcloud run services describe` onto a laptop. It
+was done twice in one sprint and deleted twice — a MANUAL mitigation, and those fail eventually,
+because the day you forget is indistinguishable from the day you remember. The endpoint was already
+there; only the transport was wrong.
+
+    HALATUJU_ADMIN_TOKEN=<jwt> python manage.py record_request_analysis --file a.json --api --apply
+    python manage.py record_request_analysis --file a.json --api --apply    # prompts to log in
+
+**Direct database (the default, for local development).** Writes through the SERVICE layer
+(`org_requests.record_analysis`), never raw ORM, so the body / citation / window rules hold
+identically however the row is created. Standing project rule, which extends verbatim to this
+table: never write to `org_request_analyses` through Supabase MCP.
+
+⚠ **The dev database here is SQLite.** The first line of output is always the target — the database
+in DB mode, the API host in `--api` mode — so read it before answering for anything.
 
 The payload is JSON so multi-kilobyte prose never goes on a command line:
 
@@ -39,10 +54,12 @@ The payload is JSON so multi-kilobyte prose never goes on a command line:
     python manage.py record_request_analysis --file analysis.json           # report only
     python manage.py record_request_analysis --file analysis.json --apply
 """
+import getpass
 import json
 import os
 import subprocess
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 
@@ -51,6 +68,14 @@ from apps.scholarship.models import OrgRequest
 
 # The repository root — this file is at <root>/halatuju_api/apps/scholarship/management/commands/.
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), *([os.pardir] * 5)))
+
+# The live service. Overridable by --api-url / HALATUJU_API_URL for a staging host or a local
+# runserver; the default is deliberately the real one, because staging an analysis against a
+# database nobody reads is a silent no-op and this command's whole job is to be read.
+_DEFAULT_API = 'https://halatuju-api-l6l7b6xaia-as.a.run.app'
+
+_ANALYSIS_PATH = '/api/v1/admin/scholarship/requests/{rid}/analysis/'
+_DETAIL_PATH = '/api/v1/admin/scholarship/requests/{rid}/'
 
 
 def _repo_sha():
@@ -81,6 +106,84 @@ def _missing_paths(paths):
     return missing
 
 
+# ── API transport (TD-206) ───────────────────────────────────────────────────
+
+def _acquire_token(stdout):
+    """A short-lived Supabase access token for a SUPER admin, from the environment or a prompt.
+
+    Order matters: an already-issued token is preferred so the common path stores and types
+    nothing. The login fallback exists so the command is usable without first digging a JWT out of
+    a browser; it reads the password with `getpass` and keeps neither it nor the email.
+
+    The token is a bearer credential with a lifetime of about an hour. That expiry IS the security
+    property this replaces a permanent database password with, so never cache it to disk.
+    """
+    token = (os.environ.get('HALATUJU_ADMIN_TOKEN') or '').strip()
+    if token:
+        return token
+
+    url = (getattr(settings, 'SUPABASE_URL', '') or os.environ.get('SUPABASE_URL', '')).rstrip('/')
+    anon = (os.environ.get('SUPABASE_ANON_KEY') or '').strip()
+    if not url or not anon:
+        raise CommandError(
+            'No admin token. Either set HALATUJU_ADMIN_TOKEN to a super admin access token, or set '
+            'SUPABASE_URL + SUPABASE_ANON_KEY (the publishable key) so this command can log in for '
+            'you. Neither is a database password, and neither is stored by this command.')
+
+    import requests as http
+
+    stdout.write('Log in as a SUPER admin (nothing is stored):')
+    email = input('  email    : ').strip()
+    password = getpass.getpass('  password : ')
+    try:
+        resp = http.post(f'{url}/auth/v1/token?grant_type=password',
+                         headers={'apikey': anon, 'Content-Type': 'application/json'},
+                         json={'email': email, 'password': password}, timeout=30)
+    except Exception as e:      # noqa: BLE001 — network shapes vary; the message is what matters
+        raise CommandError(f'Could not reach Supabase to log in: {e}')
+    if resp.status_code != 200:
+        raise CommandError(f'Login refused ({resp.status_code}). Check the email and password.')
+    token = (resp.json() or {}).get('access_token') or ''
+    if not token:
+        raise CommandError('Supabase returned no access token.')
+    return token
+
+
+def _api_call(method, api_url, path, token, *, payload=None):
+    """One authenticated call, with the API's own error CODE surfaced rather than a bare status.
+
+    The endpoint answers `analysis_required` / `files_required` / `body_required` and friends; a
+    caller told only "400" would have to go and read the source to learn which rule it broke.
+    """
+    import requests as http
+
+    url = api_url.rstrip('/') + path
+    try:
+        resp = http.request(method, url, headers={'Authorization': f'Bearer {token}'},
+                            json=payload, timeout=60)
+    except Exception as e:      # noqa: BLE001
+        raise CommandError(f'Could not reach the API at {url}: {e}')
+
+    if resp.status_code in (401, 403):
+        raise CommandError(
+            f'The API refused the token ({resp.status_code}). It must belong to an ACTIVE super '
+            'admin, and access tokens expire after about an hour — get a fresh one.')
+    if resp.status_code == 404:
+        raise CommandError(
+            'Not found (404). Either no request with that id, or it belongs to another '
+            'organisation, or REQUESTS_ENABLED is off on this service.')
+    if resp.status_code >= 400:
+        try:
+            code = (resp.json() or {}).get('error') or resp.text[:200]
+        except ValueError:
+            code = resp.text[:200]
+        raise CommandError(f'Refused ({resp.status_code}): {code}')
+    try:
+        return resp.json()
+    except ValueError:
+        return {}
+
+
 class Command(BaseCommand):
     help = "Stage the engineer's analysis on an org request as a draft. Report by default."
 
@@ -89,13 +192,24 @@ class Command(BaseCommand):
                             help='Path to the JSON payload (see the module docstring).')
         parser.add_argument('--apply', action='store_true',
                             help='Write the draft. Without it, report only.')
+        parser.add_argument('--api', action='store_true',
+                            help='Post to the live API instead of writing to the database '
+                                 '(TD-206 — no database password needed).')
+        parser.add_argument('--api-url', default='',
+                            help=f'API base URL. Default: $HALATUJU_API_URL or {_DEFAULT_API}')
 
     def handle(self, *args, **options):
         apply = options['apply']
-        db = connection.settings_dict
+        use_api = options['api']
+        api_url = (options['api_url'] or os.environ.get('HALATUJU_API_URL') or _DEFAULT_API)
+
         # First line, always: this command can be pointed at production, and the local default is
         # SQLite. Read it before trusting anything below.
-        self.stdout.write(f"DB: {db.get('ENGINE')} -> {db.get('HOST') or db.get('NAME')}")
+        if use_api:
+            self.stdout.write(f'API: {api_url}')
+        else:
+            db = connection.settings_dict
+            self.stdout.write(f"DB: {db.get('ENGINE')} -> {db.get('HOST') or db.get('NAME')}")
 
         try:
             with open(options['file'], encoding='utf-8') as fh:
@@ -105,16 +219,15 @@ class Command(BaseCommand):
         if not isinstance(payload, dict):
             raise CommandError('The payload must be a JSON object.')
 
-        req = OrgRequest.objects.filter(pk=payload.get('request_id')).first()
-        if req is None:
-            raise CommandError(f"No org request with id {payload.get('request_id')!r}.")
-
+        rid = payload.get('request_id')
         body = (payload.get('body') or '').strip()
         files = payload.get('cited_files') or []
         if not isinstance(files, list):
             raise CommandError('cited_files must be a list of repo-relative paths.')
 
-        # The guard that makes this a command rather than a form.
+        # The guard that makes this a command rather than a form. It runs in BOTH modes and BEFORE
+        # any network call — the citation check is the reason this exists, so it can never be the
+        # thing that gets skipped because a transport was slow or a token had expired.
         missing = _missing_paths([f for f in files if isinstance(f, str)])
         if missing:
             raise CommandError(
@@ -122,9 +235,23 @@ class Command(BaseCommand):
                 + '\n  '.join(missing))
 
         sha = _repo_sha()
+
+        token = None
+        if use_api:
+            token = _acquire_token(self.stdout)
+            detail = _api_call('GET', api_url, _DETAIL_PATH.format(rid=rid), token)
+            title = detail.get('title') or ''
+            status = detail.get('status') or '?'
+            org_name = detail.get('organisation_name') or '?'
+        else:
+            req = OrgRequest.objects.filter(pk=rid).first()
+            if req is None:
+                raise CommandError(f'No org request with id {rid!r}.')
+            title, status, org_name = req.title, req.status, req.organisation.name
+
         self.stdout.write('')
-        self.stdout.write(f'Request #{req.id} [{req.status}] {req.title}')
-        self.stdout.write(f'  organisation : {req.organisation.name}')
+        self.stdout.write(f'Request #{rid} [{status}] {title}')
+        self.stdout.write(f'  organisation : {org_name}')
         self.stdout.write(f'  hours        : {payload.get("estimated_hours") or "(none)"}   '
                           '(owner-only - the requester never sees this)')
         self.stdout.write(f'  repo sha     : {sha[:12] or "(git unavailable)"}')
@@ -141,19 +268,29 @@ class Command(BaseCommand):
             self.stdout.write('Report only - re-run with --apply to stage this draft.')
             return
 
-        try:
-            analysis = org_requests.record_analysis(
-                req, None,
-                body=body,
-                estimated_hours=payload.get('estimated_hours'),
-                cited_files=files,
-                authored_by=payload.get('authored_by') or '',
-                repo_sha=sha)
-        except org_requests.OrgRequestError as e:
-            raise CommandError(f'Refused: {e.code}')
+        if use_api:
+            _api_call('POST', api_url, _ANALYSIS_PATH.format(rid=rid), token, payload={
+                'body': body,
+                'estimated_hours': payload.get('estimated_hours'),
+                'cited_files': files,
+                'authored_by': payload.get('authored_by') or '',
+                'repo_sha': sha,
+            })
+            staged = 'Staged the analysis'
+        else:
+            try:
+                analysis = org_requests.record_analysis(
+                    req, None,
+                    body=body,
+                    estimated_hours=payload.get('estimated_hours'),
+                    cited_files=files,
+                    authored_by=payload.get('authored_by') or '',
+                    repo_sha=sha)
+            except org_requests.OrgRequestError as e:
+                raise CommandError(f'Refused: {e.code}')
+            staged = f'Staged analysis #{analysis.id}'
 
         self.stdout.write('')
-        self.stdout.write(self.style.SUCCESS(
-            f'Staged analysis #{analysis.id} on request #{req.id} as a DRAFT.'))
+        self.stdout.write(self.style.SUCCESS(f'{staged} on request #{rid} as a DRAFT.'))
         self.stdout.write('Nothing has reached the organisation. '
                           'Approve it in the cockpit to post it.')
