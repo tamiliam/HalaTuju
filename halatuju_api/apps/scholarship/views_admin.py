@@ -4050,11 +4050,17 @@ class AdminOrgRequestCountView(_OrgRequestsBase):
             # nothing else says so. A triaged BUG is deliberately NOT counted: a bug is free and
             # schedulable straight from triage, so it waits on a decision, not on an analysis.
             #
-            # ⚠ A filtered Count, not `.exclude(analyses__approved_at__isnull=False)`. Negating a
-            # condition across a MULTI-VALUED relation asks "is there a row that fails this?", not
-            # "is there no row that passes it" — with two analyses, one approved and one draft, the
-            # exclude form keeps the request and the badge lies. One annotate only (two multi-valued
-            # annotates multiply each other — this project has been bitten by that).
+            # A filtered Count, and one annotate only (two multi-valued annotates multiply each
+            # other — this project has been bitten by that).
+            #
+            # A single `.exclude(analyses__approved_at__isnull=False, analyses__superseded_at__
+            # isnull=True)` is EQUIVALENT here and was measured to be, not assumed: Django compiles
+            # one multi-condition exclude into a single NOT EXISTS with both conditions on the same
+            # joined row, which is exactly "has no approved, live analysis". The multi-valued
+            # negation trap is real but belongs to CHAINED `.exclude(a).exclude(b)`, which asks two
+            # independent questions of two different rows. Count is kept for being explicit about
+            # the zero and for not needing `.distinct()`, NOT because exclude is broken — an
+            # earlier version of this comment claimed it was, and a bite-check disproved it.
             #
             # An approved analysis always carries ≥1 cited file because `approve_analysis` refuses
             # otherwise, so this agrees with `org_requests.approved_analysis` without re-testing it.

@@ -356,9 +356,11 @@ class TestHappyPath(_Base):
         self.assertEqual(self._count(), 2, 'superseded is not approved')
 
     def test_a_draft_ALONGSIDE_an_approved_one_does_not_resurrect_the_badge(self):
-        # The reason the query is a filtered Count and not `.exclude(analyses__approved_at=...)`:
-        # negating across a multi-valued relation asks "is there a row that fails?", which this
-        # request has. The exclude form counts it and the badge lies about work already done.
+        # The shape most likely to break this query later: one approved analysis and one draft on
+        # the same request. Any rewrite that asks "is there an analysis that ISN'T approved?"
+        # instead of "is there no approved one?" counts this request and the badge then lies about
+        # work already done. (A single multi-condition `.exclude()` also passes — that was checked
+        # rather than assumed — but chained `.exclude(a).exclude(b)` would not.)
         self._auth('sup')
         self.client.post(f'{BASE}{self.req_a.id}/triage/',
                          {'triaged_kind': 'feature', 'lane': 'sprint'}, format='json')
