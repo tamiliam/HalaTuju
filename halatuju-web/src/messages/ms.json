@@ -5000,6 +5000,8 @@
         "aiDraftHours": "Anggaran jam",
         "aiDraftNone": "Belum ada draf AI.",
         "aiDraftRuns": "Larian AI digunakan",
+        "triageSeededEngineer": "Diisi daripada bacaan jurutera terhadap kod. Ubah apa-apa sebelum menjalankannya.",
+        "triageSeededAi": "Diisi daripada bacaan AI terhadap penerangan. Ubah apa-apa sebelum menjalankannya.",
         "triageTitle": "Penilaian",
         "triageKind": "Pengelasan",
         "triageLane": "Laluan",

@@ -4361,7 +4361,11 @@ class AdminOrgRequestAnalysisView(_OrgRequestsBase):
                 estimated_hours=request.data.get('estimated_hours'),
                 cited_files=request.data.get('cited_files') or [],
                 authored_by=request.data.get('authored_by') or '',
-                repo_sha=request.data.get('repo_sha') or '')
+                repo_sha=request.data.get('repo_sha') or '',
+                # A PROPOSED triage — prefills the owner's form and applies nothing. The request's
+                # own kind/lane still change only when the owner presses Run.
+                proposed_kind=request.data.get('proposed_kind') or '',
+                proposed_lane=request.data.get('proposed_lane') or '')
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
         req.refresh_from_db()

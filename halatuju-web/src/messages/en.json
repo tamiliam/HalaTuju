@@ -5000,6 +5000,8 @@
         "aiDraftHours": "Estimated hours",
         "aiDraftNone": "No AI draft yet.",
         "aiDraftRuns": "AI runs used",
+        "triageSeededEngineer": "Seeded from the engineer’s reading of the code. Change anything before running it.",
+        "triageSeededAi": "Seeded from the AI’s reading of the description. Change anything before running it.",
         "triageTitle": "Triage",
         "triageKind": "Classification",
         "triageLane": "Lane",

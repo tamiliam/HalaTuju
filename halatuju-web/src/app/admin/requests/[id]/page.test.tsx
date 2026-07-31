@@ -64,6 +64,8 @@ const analysis = (over: Partial<api.OrgRequestAnalysis> = {}): api.OrgRequestAna
   cited_files: ['apps/scholarship/referrals.py'],
   authored_by: 'claude-opus-5',
   repo_sha: 'abcdef0123456789abcdef0123456789abcdef01',
+  proposed_kind: '',
+  proposed_lane: '',
   created_at: '2026-07-31T03:00:00Z',
   approved_at: null,
   approved_by_name: '',
@@ -366,6 +368,62 @@ describe('triage starts from the AI reading, not from the expensive default', ()
     await show({ ...SUBMITTED, ai_draft_kind: '', ai_draft_lane: '' })
     expect(kindSelect().value).toBe('feature')
     expect(laneSelect().value).toBe('sprint')
+  })
+
+  // ── The engineer's proposal (2026-08-01) ───────────────────────────────────────────────
+  // A THIRD opinion now reaches this form. Gemini reads the description; the engineer reads the
+  // code. Neither is authoritative — the owner decides — but the box has to start somewhere, and
+  // an unattributed default is what put 'feature' in front of every bug in the first place.
+
+  it('prefers the ENGINEER proposal over the AI draft', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, ai_draft_kind: 'feature', ai_draft_lane: 'sprint',
+                 analyses: [analysis({ proposed_kind: 'bug', proposed_lane: 'small_change' })] })
+    await waitFor(() => expect(kindSelect().value).toBe('bug'))
+    expect(laneSelect().value).toBe('small_change')
+  })
+
+  it('says WHOSE reading is in the boxes', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, ai_draft_kind: 'feature',
+                 analyses: [analysis({ proposed_kind: 'bug' })] })
+    await waitFor(() => expect(kindSelect().value).toBe('bug'))
+    expect(screen.getByText('admin.requests.owner.triageSeededEngineer')).toBeTruthy()
+    expect(screen.queryByText('admin.requests.owner.triageSeededAi')).toBeNull()
+  })
+
+  it('attributes the AI when that is what seeded it', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, ai_draft_kind: 'bug', analyses: [analysis()] })
+    await waitFor(() => expect(kindSelect().value).toBe('bug'))
+    expect(screen.getByText('admin.requests.owner.triageSeededAi')).toBeTruthy()
+  })
+
+  it('takes the proposal from a DRAFT analysis, not only an approved one', async () => {
+    // A draft the owner is reading right now is exactly when the prefill is wanted — the analysis
+    // panel sits directly above this form.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, ai_draft_kind: 'feature',
+                 analyses: [analysis({ approved_at: null, proposed_kind: 'bug' })] })
+    await waitFor(() => expect(kindSelect().value).toBe('bug'))
+  })
+
+  it('an analysis with NO opinion leaves the AI reading alone', async () => {
+    // Blank is not agreement, and it must not overwrite the reading that does exist.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, ai_draft_kind: 'bug', ai_draft_lane: 'small_change',
+                 analyses: [analysis({ proposed_kind: '', proposed_lane: '' })] })
+    await waitFor(() => expect(kindSelect().value).toBe('bug'))
+    expect(laneSelect().value).toBe('small_change')
+  })
+
+  it('still never clobbers what the owner picked', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, analyses: [analysis({ proposed_kind: 'bug' })] })
+    await waitFor(() => expect(kindSelect().value).toBe('bug'))
+    fireEvent.change(kindSelect(), { target: { value: 'feature' } })
+    expect(kindSelect().value).toBe('feature')
+    expect(screen.queryByText('admin.requests.owner.triageSeededEngineer')).toBeNull()
   })
 })
 

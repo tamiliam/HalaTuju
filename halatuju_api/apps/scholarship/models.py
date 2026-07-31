@@ -2301,6 +2301,23 @@ class OrgRequestAnalysis(models.Model):
     # sha256 of the request description at record time — the audit trail behind supersession.
     description_sha = models.CharField(max_length=64, blank=True, default='')
 
+    # ── The engineer's PROPOSED triage (2026-08-01) ───────────────────────────────────────────
+    # A RECOMMENDATION, never an application. It prefills the owner's triage form and nothing else;
+    # the request's own `triaged_kind` / `lane` change only when the owner presses Run, exactly as
+    # before. That split is the point — these two values decide whether the organisation is
+    # CHARGED (a bug is free, a feature is priced), so the last hand on them must be human.
+    #
+    # ⚠ THIS IS THE THIRD OPINION ON ONE SCREEN. Gemini's `ai_draft_kind`/`ai_draft_lane` already
+    # prefill that form. The engineer's proposal WINS where present — it is the one that read the
+    # codebase — and the form says whose reading it took. An unattributed default is how the form
+    # came to sit on 'feature'/'sprint' for every bug, one press away from charging for free work.
+    #
+    # Blank means "no opinion", which is not the same as agreeing with the AI. Kept as plain
+    # CharFields mirroring `OrgRequest.triaged_kind`/`lane` (same widths, same vocabulary) so the
+    # two cannot drift into different spellings of 'feature'.
+    proposed_kind = models.CharField(max_length=10, blank=True, default='')
+    proposed_lane = models.CharField(max_length=20, blank=True, default='')
+
     approved_at = models.DateTimeField(null=True, blank=True)
     approved_by = models.ForeignKey(
         'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,

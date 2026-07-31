@@ -1076,6 +1076,12 @@ class OrgRequestOwnerSerializer(serializers.Serializer):
                 'cited_files': list(a.cited_files or []),
                 'authored_by': a.authored_by,
                 'repo_sha': a.repo_sha,
+                # The engineer's PROPOSED triage — prefills the owner's form, applies nothing.
+                # OWNER-ONLY like everything else here: what the organisation is told is the prose,
+                # and "we think this one is chargeable" is not a conclusion to hand them before the
+                # owner has ruled on it.
+                'proposed_kind': a.proposed_kind,
+                'proposed_lane': a.proposed_lane,
                 'created_at': a.created_at,
                 'approved_at': a.approved_at,
                 'approved_by_name': (getattr(a.approved_by, 'name', '') or '').strip(),

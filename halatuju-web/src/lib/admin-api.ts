@@ -1910,6 +1910,11 @@ export interface OrgRequestAnalysis {
   cited_files: string[]
   authored_by: string
   repo_sha: string
+  /** The engineer's PROPOSED triage. It prefills the owner's form and applies nothing — the
+   *  request's own kind/lane change only when the owner presses Run. '' means "no opinion",
+   *  which is not the same as agreeing with the AI draft. */
+  proposed_kind: string
+  proposed_lane: string
   created_at: string
   approved_at: string | null
   approved_by_name: string

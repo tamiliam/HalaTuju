@@ -450,8 +450,22 @@ def _description_sha(req):
     return hashlib.sha256((req.description or '').encode('utf-8')).hexdigest()
 
 
+def _clean_proposal(kind, lane):
+    """The engineer's proposed triage, or ('', '') — validated against the SAME vocabularies the
+    triage action uses, so a proposal can never prefill the form with a value the form would then
+    refuse. A blank or unrecognised value is dropped silently: a proposal is advice, and advice
+    that cannot be spelled correctly is simply absent.
+    """
+    from .models import OrgRequest
+    kinds = {k for k, _ in OrgRequest.KIND_CHOICES}
+    lanes = {l for l, _ in OrgRequest.LANE_CHOICES}
+    kind = (kind or '').strip().lower()
+    lane = (lane or '').strip().lower()
+    return (kind if kind in kinds else ''), (lane if lane in lanes else '')
+
+
 def record_analysis(req, admin, *, body, estimated_hours=None, cited_files=(),
-                    authored_by='', repo_sha=''):
+                    authored_by='', repo_sha='', proposed_kind='', proposed_lane=''):
     """Stage a DRAFT analysis. Posts NOTHING — approval is the act that reaches the requester.
 
     ⚠ Deliberately NOT super-gated in the service, while `approve_analysis` is. A draft is invisible
@@ -475,6 +489,8 @@ def record_analysis(req, admin, *, body, estimated_hours=None, cited_files=(),
         raise OrgRequestError('files_required')
     hours = _clean_hours(estimated_hours) if estimated_hours not in (None, '') else None
 
+    p_kind, p_lane = _clean_proposal(proposed_kind, proposed_lane)
+
     from .models import OrgRequestAnalysis
     return OrgRequestAnalysis.objects.create(
         org_request=req,
@@ -484,6 +500,10 @@ def record_analysis(req, admin, *, body, estimated_hours=None, cited_files=(),
         authored_by=(authored_by or '').strip()[:50],
         repo_sha=(repo_sha or '').strip()[:40],
         description_sha=_description_sha(req),
+        # A RECOMMENDATION. Stored here, applied nowhere — `triage()` is still the only thing that
+        # writes the request's own kind and lane, and only an owner may call it.
+        proposed_kind=p_kind,
+        proposed_lane=p_lane,
     )
 
 

@@ -433,3 +433,73 @@ class TestNobodyCanForgeAnEngineerComment(_Base):
                              format='json')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(req.comments.get().author_kind, org_requests.AUTHOR_ORG)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   REQUESTS_ENABLED=True)
+class TestTheProposedTriage(_Base):
+    """2026-08-01 — the engineer PROPOSES a triage; the owner still runs it.
+
+    ⚠ A proposal is stored and applied NOWHERE. `triage()` remains the only writer of the
+    request's own kind and lane, and only a super may call it. That split is the point: these two
+    values decide whether the organisation is CHARGED, so the last hand on them must be human.
+    """
+
+    def test_a_proposal_is_recorded_and_changes_NOTHING_on_the_request(self):
+        req = self._req(status='submitted', triaged_kind='')
+        org_requests.record_analysis(req, None, body='b', cited_files=['README.md'],
+                                     proposed_kind='feature', proposed_lane='small_change')
+        a = req.analyses.get()
+        self.assertEqual((a.proposed_kind, a.proposed_lane), ('feature', 'small_change'))
+        req.refresh_from_db()
+        self.assertEqual(req.triaged_kind, '', 'a proposal must not triage anything')
+        self.assertEqual(req.lane, '')
+        self.assertEqual(req.status, 'submitted')
+
+    def test_APPROVING_it_still_changes_nothing_on_the_request(self):
+        # Approval publishes the PROSE. It is not an instruction to the triage engine.
+        req = self._req(status='submitted', triaged_kind='')
+        a = org_requests.record_analysis(req, None, body='b', cited_files=['README.md'],
+                                         proposed_kind='bug', proposed_lane='small_change')
+        org_requests.approve_analysis(a, self.super)
+        req.refresh_from_db()
+        self.assertEqual(req.triaged_kind, '')
+        self.assertEqual(req.status, 'submitted')
+
+    def test_an_unrecognised_value_is_dropped_not_stored(self):
+        # A proposal that cannot be spelled in the form's own vocabulary would prefill a value the
+        # form then refuses. Advice that cannot be acted on is simply absent.
+        req = self._req()
+        org_requests.record_analysis(req, None, body='b', cited_files=['README.md'],
+                                     proposed_kind='enhancement', proposed_lane='epic')
+        a = req.analyses.get()
+        self.assertEqual((a.proposed_kind, a.proposed_lane), ('', ''))
+
+    def test_no_proposal_is_blank_and_that_is_not_agreement(self):
+        req = self._req()
+        org_requests.record_analysis(req, None, body='b', cited_files=['README.md'])
+        a = req.analyses.get()
+        self.assertEqual((a.proposed_kind, a.proposed_lane), ('', ''))
+
+    def test_the_owner_payload_carries_it_and_the_ORG_payload_does_not(self):
+        # Same rule as hours and citations: the organisation is told the prose. "We think this one
+        # is chargeable" is not a conclusion to hand them before the owner has ruled.
+        req = self._req()
+        org_requests.record_analysis(req, None, body='b', cited_files=['README.md'],
+                                     proposed_kind='feature', proposed_lane='sprint')
+        owner = OrgRequestOwnerSerializer(req).data
+        self.assertEqual(owner['analyses'][0]['proposed_kind'], 'feature')
+        org = OrgRequestOrgSerializer(req).data
+        self.assertNotIn('analyses', org)
+        self.assertNotIn('proposed_kind', str(org))
+
+    def test_the_endpoint_carries_a_proposal_through(self):
+        req = self._req()
+        self._auth('an-su')
+        r = self.client.post(f'{BASE}{req.id}/analysis/',
+                             {'body': 'b', 'cited_files': ['README.md'],
+                              'proposed_kind': 'bug', 'proposed_lane': 'small_change'},
+                             format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        a = req.analyses.get()
+        self.assertEqual((a.proposed_kind, a.proposed_lane), ('bug', 'small_change'))

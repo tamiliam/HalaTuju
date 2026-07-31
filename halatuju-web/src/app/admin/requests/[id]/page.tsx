@@ -95,14 +95,29 @@ export default function AdminRequestDetailPage() {
   // every bug, and the difference between the two values is whether the organisation is CHARGED.
   // The owner still decides — the AI's reading is authoritative about nothing — but the starting
   // position should be the reading in front of them, not the more expensive one.
+  //
+  // ⚠ THERE ARE NOW TWO READINGS, AND THE ENGINEER'S WINS WHERE IT EXISTS. Gemini classifies from
+  // the description alone; the engineer's proposal comes from having read the code. Neither is
+  // authoritative — the owner decides — but the starting position should be the better-informed
+  // one, and `triageSource` below puts the author on screen. A default whose author is invisible
+  // is exactly how this form came to sit on 'feature'/'sprint' for every bug.
+  //
+  // The engineer's proposal is read from the NEWEST analysis carrying one, approved or not: a
+  // draft the owner is reading right now is precisely when the prefill is wanted, and the analysis
+  // panel sits directly above this form.
   const triageTouched = useRef(false)
+  const proposal = req?.analyses?.find((a) => a.proposed_kind || a.proposed_lane)
   const aiKind = req?.ai_draft_kind || ''
   const aiLane = req?.ai_draft_lane || ''
+  const seedKind = proposal?.proposed_kind || aiKind
+  const seedLane = proposal?.proposed_lane || aiLane
+  const triageSource = proposal?.proposed_kind || proposal?.proposed_lane
+    ? 'engineer' : (aiKind || aiLane ? 'ai' : '')
   useEffect(() => {
     if (triageTouched.current) return
-    if (aiKind === 'bug' || aiKind === 'feature') setTriageKind(aiKind)
-    if (aiLane === 'small_change' || aiLane === 'sprint') setTriageLane(aiLane)
-  }, [aiKind, aiLane])
+    if (seedKind === 'bug' || seedKind === 'feature') setTriageKind(seedKind)
+    if (seedLane === 'small_change' || seedLane === 'sprint') setTriageLane(seedLane)
+  }, [seedKind, seedLane])
 
   const run = async (fn: () => Promise<OrgRequestDetail>) => {
     setBusy(true); setError('')
@@ -514,6 +529,16 @@ export default function AdminRequestDetailPage() {
           {has('triage') && (
             <div className="border-t pt-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.requests.owner.triageTitle')}</h3>
+              {/* Say WHOSE reading is sitting in the boxes. These two values decide whether the
+                  organisation is charged, so an unattributed default is a claim with no author —
+                  which is how this form previously offered 'feature' for every bug. */}
+              {!triageTouched.current && triageSource && (
+                <p className="text-xs text-gray-500 mb-2">
+                  {t(triageSource === 'engineer'
+                    ? 'admin.requests.owner.triageSeededEngineer'
+                    : 'admin.requests.owner.triageSeededAi')}
+                </p>
+              )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm">{t('admin.requests.owner.triageKind')}
                   <select value={triageKind}

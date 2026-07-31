@@ -48,6 +48,8 @@ The payload is JSON so multi-kilobyte prose never goes on a command line:
       "estimated_hours": "4.0",          // optional; owner-only, never shown to the requester
       "cited_files": ["apps/scholarship/referrals.py", "..."],
       "authored_by": "claude-opus-5",    // optional
+      "proposed_kind": "feature",        // optional; PREFILLS the owner's triage form, applies nothing
+      "proposed_lane": "small_change",   // optional; same
       "body": "Plain-language reasoning. THIS is what the organisation reads."
     }
 
@@ -514,6 +516,10 @@ class Command(BaseCommand):
         self.stdout.write(f'  organisation : {org_name}')
         self.stdout.write(f'  hours        : {payload.get("estimated_hours") or "(none)"}   '
                           '(owner-only - the requester never sees this)')
+        proposal = ' / '.join(x for x in (payload.get('proposed_kind'),
+                                          payload.get('proposed_lane')) if x)
+        self.stdout.write(f'  proposed     : {proposal or "(no opinion)"}   '
+                          '(prefills the triage form - the owner still presses Run)')
         self.stdout.write(f'  repo sha     : {sha[:12] or "(git unavailable)"}')
         self.stdout.write(f'  cited files  : {len(files)}, all present')
         for path in files:
@@ -535,6 +541,8 @@ class Command(BaseCommand):
                 'cited_files': files,
                 'authored_by': payload.get('authored_by') or '',
                 'repo_sha': sha,
+                'proposed_kind': payload.get('proposed_kind') or '',
+                'proposed_lane': payload.get('proposed_lane') or '',
             })
             staged = 'Staged the analysis'
         else:
