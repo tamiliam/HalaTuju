@@ -550,7 +550,39 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-01, after requests #7 + #8)
+## Next Sprint (as of 2026-08-01, after request #3)
+
+**✅ SHIPPED — REQUEST #3, the first PAID request.** Commits `129da5bd`, `0e8adcee`. Retro
+`docs/retrospective-2026-08-01-student-partner-assigned.md`; decision ×1; lessons ×2.
+**No migration · 2 deploys · backend only.** 11 tests, 2 guards bite-checked.
+**3.5h quoted / 1.4h spent.**
+
+- **The student is emailed when a partner org is assigned** — the org has been told since July, the
+  student was not. `services.notify_student_partner_assigned` off the same
+  `AdminApplicationWitnessView` hook. **A second recipient on one action, not a new workflow.**
+- **⚠ THE COPY NAMES THE ACCESS (owner's call):** may act as witness + can see certain details.
+  That access is the REQUESTER'S OWN reason for insisting on a notification, so the warm-and-vague
+  version would have failed the request's purpose. It asks for nothing — no consent in this flow.
+- **⚠ IT FIRES ON A CHANGE OF ORG TOO.** BrightPath does not intend to reassign at all, but if it
+  happens the student must know who holds their details NOW. Silent on a CLEARED assignment and on
+  re-saving the SAME org. **The ORG's own email is deliberately untouched** (still every save).
+- **⚠ `STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED` DEFAULTS ON, and it is NOT
+  `PARTNER_COMMS_ENABLED`.** Every neighbouring email dark-launches OFF because something outside
+  the code is unresolved; nothing was here. **A paid feature that ships dark is a non-delivery.**
+  Partner comms being dark is about what ORGANISATIONS receive and must never withhold a student's
+  notice — both directions are pinned by a test.
+- **⚠ THE SECOND DEPLOY WAS MINE: the email went out from `interview@halatuju.xyz`.** `_send_html`
+  DEFAULTS `from_email` to the interview alias (its main caller) and stamps interview unsubscribe
+  headers. **The correct call and the wrong call look identical, and the wrong one is shorter.** No
+  test could see it and the golden would have pinned the wrong sender as expected. Found by
+  RENDERING the email and reading it as the student. **Read one rendered instance of anything that
+  leaves the system, metadata included.**
+
+**▶ NEXT = nothing scheduled.** #5 is `quoted` 0.5h waiting on BrightPath (**the clarification is
+still unposted — the quote prices 2 of the 3 shapes**); **#2 is `triaged` feature/sprint with an
+approved 6.5h analysis and NO QUOTE** — it is stuck between triage and a price.
+
+## Superseded — previous Next Sprint (as of 2026-08-01, after requests #7 + #8)
 
 **✅ SHIPPED — REQUESTS #7 + #8, one defect behind two reports.** Commits `fa3465c0`, `4be60e09`.
 Retro `docs/retrospective-2026-08-01-pathway-completeness.md`; decisions ×2; lessons ×4.
