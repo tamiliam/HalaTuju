@@ -2307,7 +2307,19 @@ through: all three fail.
 
 ---
 
-### [TD-205] Nothing SUMMONS the engineer — a request can sit unanalysed indefinitely — medium
+### [TD-205] ✅ RESOLVED 2026-08-01 — Nothing SUMMONS the engineer
+**Resolved by** `565e96e6`, `b7caa5ee`. **⚠ The diagnosis below was half wrong and the correction
+is the useful part.** The queryset did need widening (a triaged FEATURE with no approved analysis).
+But the badge did not exist at all: `useNavProbes` already CALLED the count endpoint on every shell
+mount and **discarded the number**, keeping only "did it answer?" as the dark-ship liveness probe.
+So the count for #5–#8 was fetched, resolved, and thrown away on every page load for two days.
+*Stored but never displayed*, one layer out — **fetched, then never displayed.**
+An AppShell comment claiming the Administration hub "still probes for ITSELF" because it needed the
+COUNT was stale in a way that justified the omission; corrected in place.
+Badge counts now travel as one `Partial<Record<BadgeKey, number>>` so a third badge is a registry
+entry and a count, not a fourth hardcode. A triaged BUG is deliberately not counted.
+
+**File(s):** `apps/scholarship/views_admin.AdminOrgRequestCountView`, `app/admin/requests/page.tsx`
 **File(s):** `apps/scholarship/views_admin.AdminOrgRequestCountView`, `app/admin/requests/page.tsx`
 **Raised 2026-07-31** while using TD-204 on live requests. The workflow now has a home for the
 engineer's analysis and a gate that requires one — but nothing anywhere tells anyone that a request

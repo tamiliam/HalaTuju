@@ -109,6 +109,53 @@ smaller concession than a database password; and hours in the prose rather than 
 | Live verification | #106 `verified`; #22 / #44 / #52 / #140 still `gap` with `income_proof_missing` |
 | Requests closed | **#4** — `done`, with an approved engineer comment carrying 4.0h estimated / 1.3h actual |
 
+---
+
+# Addendum — TD-205, the same day
+
+## What Was Built
+
+The badge that says a request is waiting on us. Requests **#5–#8** now appear on the Requests row and
+in the bell; the query also counts a triaged FEATURE with no approved analysis, which cannot be
+quoted at all and was therefore stuck invisibly.
+
+## What Went Wrong
+
+**5. The feature was 90% built and nobody had noticed it was 0% delivered.**
+- *Symptom:* TD-205 was written as "extend the queryset". The queryset was already right for super.
+- *Root cause:* `useNavProbes` **called the count endpoint and discarded the number**, keeping only
+  "did it answer?" as the dark-ship liveness probe. The endpoint was correct, tested, and firing on
+  every page load; the value reached no pixel. A stale comment two files away claimed the
+  Administration hub needed the COUNT for itself, which made the omission look deliberate — that
+  page had stopped calling the endpoint entirely.
+- *System change:* the lesson is the generalisation — *stored but never displayed* has an outer
+  ring, **fetched but never displayed**, and it hides better because the network tab shows the call.
+  Habit: for an endpoint whose purpose is a number, grep the FIELD name through the client and
+  confirm something renders it.
+
+**6. I bite-checked a claim in my own comment and the claim was false.**
+- *Symptom:* I wrote that a filtered `Count` was necessary because `.exclude()` across a
+  multi-valued relation would miscount. Substituting the `exclude` form to watch a test fail — it
+  passed everything.
+- *Root cause:* I promoted a real war story from an adjacent bug (multi-valued `annotate`s
+  multiplying) into a rule about a different construct. Django compiles a single multi-condition
+  `exclude()` into one `NOT EXISTS` on the same joined row; the trap belongs to *chained* excludes.
+- *Why it matters:* a wrong comment passes every test run, forever, and the next reader inherits it
+  as knowledge. This landed hours after entry #1 above, about confident wrong explanations.
+- *System change:* **if a comment says "X, not Y, because Y would break" — make Y break before
+  writing it.** The comment now states the truth and records that it was corrected.
+
+## Numbers (TD-205)
+
+| | |
+|---|---|
+| pytest | **5292** (+5) |
+| jest | **1252** (+3) |
+| `next lint` | 0 errors |
+| i18n | 4361 × 3 |
+| Migration | none |
+| Guards bitten | 3 — discarding the count fails the badge test; dropping the widened clause fails 3; the third **disproved its own premise** |
+
 ## Carried
 
 - **TD-205 is now the only deferred follow-up.** Nothing summons the engineer; requests **#5–#8**

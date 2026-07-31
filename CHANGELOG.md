@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-205 — a request waiting on us is visible without going looking — 2026-08-01
+
+TD-205 was raised as "the badge needs a wider queryset". It needed that, slightly. **The real
+defect was one line further out: the count endpoint was already correct, already called on every
+shell mount, and the NUMBER WAS THROWN AWAY.** `useNavProbes` kept only *"did it answer?"* — the
+liveness check for the dark-shipped feature — and discarded the count in the same promise. Four bug
+reports (#5–#8) sat on production for two days with their count sitting unread in a resolved
+promise, and the owner learned #4 existed only because we happened to be looking at the screen
+together.
+
+That is this codebase's own named defect class — **stored but never displayed** — one layer further
+out than usual: *fetched*, then never displayed.
+
+- **⚠ AN APPSHELL COMMENT ASSERTED THE ADMINISTRATION HUB "still probes for ITSELF" because it
+  needed the request COUNT.** It does not, and did not call the endpoint at all. Corrected rather
+  than deleted: as written it read as justification for leaving the number unused.
+- **The query widened as well.** A triaged **feature** with no approved analysis cannot be quoted
+  at all (`analysis_required` refuses), so it is stuck by construction and nothing said so. A
+  triaged **bug** is deliberately NOT counted — free and schedulable straight from triage, so it
+  waits on a decision, not on an analysis. Counting it would make the badge mean "requests exist".
+- **Badge counts now travel as ONE map** keyed by the registry's `badge` field. The shell threaded
+  `pendingSponsors` through `Sidebar` twice and compared the literal at the render site, so a second
+  badge would have been a fourth place to remember.
+- **'warn', not 'crit'.** A waiting request is work owed, not money or consent stuck — and a bell
+  where everything shouts is a bell nobody reads.
+- **No new request.** The count comes from the probe the shell already runs.
+
+**A correction worth recording, because it is this week's own lesson landing on its author.** A
+comment here claimed the filtered `Count` was *necessary* because `.exclude()` across a multi-valued
+relation would miscount. Bite-checking that claim **disproved it**: Django compiles a single
+multi-condition `exclude()` into one `NOT EXISTS` with both conditions on the same joined row, which
+is exactly the question being asked. The trap is real but belongs to *chained* `.exclude(a).exclude(b)`.
+The comment now says what is true and says it was corrected. `Count` is kept for being explicit
+about the zero and for not needing `.distinct()` — not because the alternative is broken.
+
+`pytest` **5292** · `jest` **1252** · `next lint` 0 · i18n 4361×3 · no migration · 3 guards bitten
+(one of which corrected the author).
+
 ## TD-206 — staging an analysis no longer needs a database password — 2026-08-01
 
 The trigger recorded at TD-204's close was *"do this BEFORE the next analysis is staged"*, and the

@@ -1,5 +1,23 @@
 # Architectural Decisions — HalaTuju
 
+## The engineer badge counts UNTRIAGED plus AWAITING-ANALYSIS features, never triaged bugs — TD-205, 2026-08-01
+**Decision:** the super badge counts `status='submitted'` (any kind) **plus** `status='triaged'` with
+`triaged_kind='feature'` and no approved, non-superseded analysis. A triaged BUG is excluded. Counts
+travel to the sidebar as one `Partial<Record<BadgeKey, number>>` rather than a per-badge prop.
+**Alternatives considered:** (a) untriaged only — the original TD-205 sketch; rejected because a
+triaged feature with no analysis cannot be quoted at all (`analysis_required` refuses), so it is
+stuck by construction and was exactly as invisible. (b) Count every non-terminal request — rejected:
+a badge that counts "requests that exist" is decoration, and the bell already has one 'crit' entry
+that must keep meaning something. (c) Include triaged bugs — rejected: a bug is free and schedulable
+straight from triage, so it waits on a DECISION, not on the engineer; counting it would put the
+owner's own inbox in a badge that says "waiting on us".
+**Rationale:** the badge answers one question — *is anything stuck on our side?* — and the two states
+where that is true are "nobody has looked" and "nobody can price it yet".
+**Trade-offs:** a triaged bug nobody schedules is still invisible. Accepted: it is the owner's queue,
+it appears in the list, and widening the badge to cover it would blunt the signal.
+**Revisit if:** a scheduled request stalls often enough to need its own signal, or a second person
+starts triaging (then "waiting on us" needs to say on WHOM).
+
 ## The absent-STR fall-through is gated on the SUBMISSION GATE'S OWN predicate — request #4, 2026-08-01
 **Decision:** `_verdict_income` delegates to `_verdict_income_salary(any_route=True)` when the declared
 STR route holds no STR document AND `income_engine.salary_income_satisfied(application)` is true —

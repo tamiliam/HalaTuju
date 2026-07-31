@@ -588,10 +588,28 @@ Ledger reconciled against prod: scholarship **140/140**, courses **67/67**.
   1.3h actual** (owner: *"the bug is free, effort is not"*). Hours travel in the PROSE; the org
   payload is unchanged and still has its value-leak tests.
 
-**▶ NEXT = TD-205, the only deferred follow-up left.** Nothing SUMMONS the engineer: requests
-**#5–#8** are four bugs sitting untriaged and unnoticed, and the workflow has now been exercised
-end-to-end three times, so the friction is real rather than guessed. Extend the existing Requests
-badge. ~2h.
+**✅ TD-205 ALSO SHIPPED 2026-08-01** (`565e96e6`, `b7caa5ee`) — requests #5–#8 are now visible.
+- **⚠ IT WAS NOT A MISSING QUERY. The count was FETCHED AND DISCARDED.** `useNavProbes` called the
+  endpoint on every shell mount and kept only "did it answer?" (the dark-ship liveness probe),
+  throwing `count` away in the same `.then()`. *Stored but never displayed*, one ring out —
+  **fetched, then never displayed** — and it hides better because the network tab shows the call.
+- **⚠ A STALE COMMENT JUSTIFIED THE OMISSION.** AppShell said the Administration hub "still probes
+  for ITSELF" because it needed the COUNT; that page had stopped calling the endpoint entirely.
+  Corrected in place, not deleted.
+- **The query widened too:** a triaged FEATURE with no approved analysis is stuck by construction
+  (`analysis_required` refuses to quote it). **A triaged BUG is deliberately NOT counted** — free
+  and schedulable straight from triage, so it waits on a decision, not on the engineer.
+- **Badge counts travel as ONE `Partial<Record<BadgeKey, number>>`** — a third badge is a registry
+  entry plus a count, not a fourth hardcode.
+- **⚠ I WROTE A FALSE JUSTIFICATION AND THE BITE-CHECK CAUGHT IT.** The comment claimed a filtered
+  `Count` was needed because `.exclude()` would miscount across a multi-valued relation. A single
+  multi-condition `exclude()` is EQUIVALENT (one `NOT EXISTS`, same joined row); the trap is
+  *chained* `.exclude(a).exclude(b)`. **If a comment says "X, not Y, because Y would break", make
+  Y break first.**
+
+**▶ NEXT: no engineering item is queued.** The Requests board is the source — #5–#8 are triaged-
+ready bugs and now actually visible. Take them in the order the badge shows, or pick from the
+owner list below.
 
 **▶ OWNER, DATED AND OUTRANKING THE ABOVE:**
 1. **`BILLING_USAGE_ENABLED` — DUE TODAY, 1 AUGUST. Still not flipped.** Env var via
