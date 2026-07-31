@@ -2381,7 +2381,23 @@ that is the moment the credential exposure repeats. ~2h.
 
 ---
 
-### [TD-207] Password reset is BROKEN for every admin who has already onboarded — high
+### [TD-207] Password reset is BROKEN for every admin who has already onboarded — medium
+**⚠ SEVERITY CORRECTED DOWN from high, 2026-08-01, after actually counting who is affected.** The
+mechanism below is accurate and unchanged: reset cannot work for anyone past onboarding. What was
+wrong was the reach I asserted from it. Only someone who signs in with a PASSWORD would ever click
+"Forgot password", and on this project almost nobody does — **17 of 18 active admins have a Google
+identity**, including 13 of 13 reviewers. Five accounts have a password at all, and four of those
+have Google to fall back on.
+
+**The real exposure is ONE account:** `elanjelian@me.com` (org_admin) has provider `email` and no
+Google identity, so a forgotten password locks it out with no route back. Plus any FUTURE admin
+invited who does not go on to use Google.
+
+The correction is the lesson: I inferred "this hits reviewers, org admins and the owner" from the
+code path and never asked the identity table how those people actually sign in — one query, the
+same one used to diagnose the owner's own account an hour earlier. **A defect's reach is a fact
+about the population, not a corollary of the mechanism.**
+
 **File(s):** `apps/courses/views_admin.py` (the set-password endpoint, ~line 746),
 `halatuju-web/src/app/admin/set-password/page.tsx`
 **Found 2026-08-01**, while trying to give the owner a password so a management command could hold
