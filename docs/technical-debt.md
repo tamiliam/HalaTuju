@@ -2378,3 +2378,54 @@ management command against production needs the pooler, not the host on the Clou
 **⚠ Deferred with a TRIGGER** (owner, 2026-07-31): do it before the next analysis is staged, since
 that is the moment the credential exposure repeats. ~2h.
 
+
+---
+
+### [TD-207] Password reset is BROKEN for every admin who has already onboarded — high
+**File(s):** `apps/courses/views_admin.py` (the set-password endpoint, ~line 746),
+`halatuju-web/src/app/admin/set-password/page.tsx`
+**Found 2026-08-01**, while trying to give the owner a password so a management command could hold
+its own Supabase session.
+
+**The symptom is silent and looks like success right up to the last click.** "Forgot password" sends
+the mail (Brevo confirms `delivered`), the link works, Supabase establishes a valid recovery
+session, the page renders with the email pre-filled — and the submit then fails with
+`not_pending_password_change`.
+
+**Root cause.** The page has exactly ONE route: `adminSetPassword`, which sets the password
+server-side with the service role because the project enforces re-auth on a client-side
+`updateUser({password})` and a reset has no current password to supply. That endpoint is gated on
+`user_metadata.must_change_password` — a flag set when an admin is INVITED with a temp password and
+cleared the moment they set one. So the endpoint serves onboarding, and only onboarding.
+
+**Who this hits:** everyone who has finished onboarding — reviewers, org admins, the owner — i.e.
+the entire population that would ever use "forgot password". It also hits any account created
+through GOOGLE, which never had the flag at all (the case that surfaced it).
+
+**What it looks like fixed.** The endpoint must accept a genuine RECOVERY session as sufficient
+authority, not only a pending invite. Supabase marks it: the recovery JWT carries the session it
+was minted from, and GoTrue's own model is that following a recovery link IS the re-authentication.
+Suggested shape: allow the set when `must_change_password` is true **or** the caller's session came
+from a recovery link, and keep refusing an ordinary logged-in session (which must still go through
+the re-auth flow). Do not simply drop the gate — that would turn any live session into a
+password-change bypass.
+
+**⚠ Do NOT "fix" this by flipping `must_change_password` per person.** That is what was done on
+2026-08-01 to unblock the owner, and it is a manual workaround on a live auth record, not a fix.
+
+### [TD-208] Platform email lands in Gmail's Spam folder — medium
+**Found 2026-08-01.** The owner's own password-reset mail was delivered to Spam. Brevo reports
+`delivered` for both attempts, so this is reputation/authentication, not sending.
+
+**Why it matters more than one inconvenience:** the same sender (`noreply@halatuju.xyz`, via
+Supabase Auth's own Brevo SMTP) carries reviewer invites, admin invites and password resets. A
+recipient who never checks Spam simply never onboards, and nothing in the system reports it —
+Brevo's own answer is "delivered", which is true and useless.
+
+**What to check:** SPF, DKIM and DMARC on `halatuju.xyz` for the Brevo sender, whether the domain is
+authenticated in the Brevo dashboard, and whether the from-address has any sending history. First
+contact from a cold domain is the classic cause.
+
+**Note:** these are the SUPABASE AUTH emails, which use Supabase's own SMTP configuration in the
+dashboard — NOT the Cloud Run `EMAIL_HOST_*` variables. The two are configured separately and a fix
+applied to one does nothing for the other.
