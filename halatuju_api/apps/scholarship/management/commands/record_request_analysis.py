@@ -272,9 +272,20 @@ def _api_call(method, api_url, path, token, *, payload=None):
         raise CommandError(f'Could not reach the API at {url}: {e}')
 
     if resp.status_code in (401, 403):
-        raise CommandError(
-            f'The API refused the token ({resp.status_code}). It must belong to an ACTIVE super '
-            'admin, and access tokens expire after about an hour — get a fresh one.')
+        # ⚠ Print what the API SAID, not what we assume it meant. The first cut answered every
+        # refusal with "tokens expire after about an hour — get a fresh one", and the real answer
+        # was "Admin access required": the token was valid and unexpired, but belonged to an
+        # ANONYMOUS session with no admin row behind it. Second time in one day that a guessed
+        # cause cost more than the bare status would have.
+        try:
+            said = (resp.json() or {}).get('error') or resp.text[:200]
+        except ValueError:
+            said = resp.text[:200]
+        extra = ('401 means the token did not verify — usually expired (they last about an hour).'
+                 if resp.status_code == 401 else
+                 '403 means it verified but carries no super-admin identity. A token copied from a '
+                 'browser can belong to an ANONYMOUS session rather than your signed-in one.')
+        raise CommandError(f'The API refused the token ({resp.status_code}): {said}. {extra}')
     if resp.status_code == 404:
         raise CommandError(
             'Not found (404). Either no request with that id, or it belongs to another '

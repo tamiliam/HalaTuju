@@ -223,7 +223,19 @@ class TestApiMode(TestCase):
         with self._http(_FakeResponse(401)):
             with self.assertRaises(CommandError) as e:
                 call_command('record_request_analysis', file=self._payload(), api=True, apply=True)
-        self.assertIn('expire', str(e.exception))
+        self.assertIn('expired', str(e.exception))
+
+    def test_a_403_repeats_what_the_API_said_and_does_NOT_blame_expiry(self):
+        # Real incident, 2026-08-01. A token minted from a browser-copied refresh token verified
+        # perfectly and was refused "Admin access required" — it belonged to an ANONYMOUS session.
+        # The command answered "tokens expire after about an hour", which is a confident lie that
+        # sends someone to fetch a second token with the identical problem.
+        with self._http(_FakeResponse(403, {'error': 'Admin access required'})):
+            with self.assertRaises(CommandError) as e:
+                call_command('record_request_analysis', file=self._payload(), api=True, apply=True)
+        self.assertIn('Admin access required', str(e.exception))
+        self.assertIn('ANONYMOUS', str(e.exception))
+        self.assertNotIn('expired', str(e.exception))
 
     def test_no_token_and_no_login_config_is_a_clean_refusal(self):
         os.environ.pop('HALATUJU_ADMIN_TOKEN', None)
