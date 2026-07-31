@@ -196,6 +196,50 @@ class TestPathwayProfileLink(TestCase):
         self.assertEqual(app.chosen_pathway, 'stpm')        # frozen
         self.assertEqual(app.pre_u_track, 'sains_sosial')
 
+    def test_blank_profile_pathway_never_erases_the_offer_letters_reading(self):
+        """Request #7 (#119). The offer pipeline writes the pathway type, stream and school onto
+        the APPLICATION; the profile is the student's own declaration and is never refreshed when
+        that happens, so it stays empty for anyone who applied uncertain. A later /profile edit
+        then copied those blanks straight over the letter's reading — her Form-6 stream and college
+        were filled correctly on 17 July and blank again by the end of the month."""
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            chosen_pathway='stpm', pre_u_track='sains_sosial',
+            pre_u_institution='Kolej Tingkatan Enam Sri Istana',
+            chosen_programme={'course_name': 'Tingkatan Enam', 'source': 'offer_letter_confirmed'},
+        )
+        blank = dict(_PATHWAY, chosen_pathway='', pre_u_track='', pre_u_institution='',
+                     pathway_certainty='uncertain')
+        r = self.client.put('/api/v1/profile/', blank, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'stpm')
+        self.assertEqual(app.pre_u_track, 'sains_sosial')
+        self.assertEqual(app.pre_u_institution, 'Kolej Tingkatan Enam Sri Istana')
+        self.assertEqual(app.pathway_certainty, 'uncertain')     # her own answer still flows
+
+    def test_a_real_profile_edit_still_overwrites_the_application(self):
+        """The dangerous direction is the opposite of the bug: a guard that freezes the record
+        strands a student who is correcting it. Only a BLANK is refused."""
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            chosen_pathway='stpm', pre_u_track='sains_sosial', pre_u_institution='SMK Lama')
+        r = self.client.put('/api/v1/profile/', _PATHWAY, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'matric')
+        self.assertEqual(app.pre_u_track, 'sains')
+        self.assertEqual(app.pre_u_institution, 'KM Melaka')
+
+    def test_a_blank_profile_still_fills_a_blank_application(self):
+        """Nothing to protect → the copy is unchanged (and must not start skipping fields)."""
+        prof = StudentProfile.objects.create(supabase_user_id='pw-blank')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=prof, status='submitted', chosen_pathway='')
+        copy_pathway(prof, app)
+        for f in PROFILE_PATHWAY_FIELDS:
+            self.assertEqual(getattr(app, f), getattr(prof, f), f)
+
     def test_get_returns_pathway_fields_from_profile(self):
         prof = StudentProfile.objects.create(supabase_user_id='pw-get', **_PATHWAY)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(prof.supabase_user_id)}')

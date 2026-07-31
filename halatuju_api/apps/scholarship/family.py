@@ -153,6 +153,18 @@ CONFIRMED_CP_SOURCES = frozenset({
 })
 
 
+#: The pathway fields the OFFER / OFFICER pipeline writes onto an APPLICATION as well as the
+#: student — ``confirm_pathway`` and ``autofill_pathway_from_offer`` set all three off the offer
+#: letter. The profile is the student's own declaration and is NOT refreshed when that happens, so
+#: it is routinely empty for a student who applied uncertain — and the two-way sync then copied
+#: those blanks straight over the offer's reading (request #7, 2026-08-01: #119 had her Form-6
+#: stream and college filled correctly on confirm, then blanked by an unrelated /profile edit ten
+#: days later; #32 was blanked FOUR MINUTES BEFORE she confirmed, so the confirm itself read '').
+#: Same clobber the #117 fix caught for ``chosen_programme`` — it guarded one field of eight.
+#: A non-empty profile value still wins: the student may correct their own track or school.
+OFFER_WRITTEN_PATHWAY_FIELDS = ('chosen_pathway', 'pre_u_track', 'pre_u_institution')
+
+
 def _cp_is_populated(cp):
     """True when a chosen_programme dict actually names a programme (course / institution)."""
     return bool(isinstance(cp, dict)
@@ -177,13 +189,22 @@ def _should_overwrite_chosen_programme(src_cp, dst_cp):
 def copy_pathway(src, dst):
     """Copy the pathway fields between a StudentProfile and a ScholarshipApplication (they share
     field names). ``chosen_programme`` is copied through a provenance guard so a student profile
-    edit can't wipe an offer/officer-confirmed programme (#117). Pure — the caller saves dst."""
+    edit can't wipe an offer/officer-confirmed programme (#117), and the three pathway fields the
+    offer pipeline also writes are protected from an EMPTY source for the same reason (request #7).
+    Pure — the caller saves dst.
+
+    Direction-agnostic: it runs profile→application on a /profile edit and application→profile when
+    a new application is created, and "a blank never erases a value" is right in both."""
     for field in PROFILE_PATHWAY_FIELDS:
         if field == 'chosen_programme':
             if _should_overwrite_chosen_programme(getattr(src, 'chosen_programme', None),
                                                   getattr(dst, 'chosen_programme', None)):
                 dst.chosen_programme = getattr(src, 'chosen_programme', None)
             # else: keep dst's populated/confirmed value untouched
+        elif (field in OFFER_WRITTEN_PATHWAY_FIELDS
+                and not (getattr(src, field, '') or '').strip()
+                and (getattr(dst, field, '') or '').strip()):
+            continue        # a blank declaration never erases what the offer letter established
         else:
             setattr(dst, field, getattr(src, field))
 

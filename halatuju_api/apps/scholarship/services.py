@@ -1313,6 +1313,32 @@ def confirm_pathway(application):
             logger.warning('offer-confirm guard recovered reporting_date from a mis-slotted '
                            'institution value (doc %s)', offer.id)
 
+    # TD-161: reconcile the pathway TYPE. confirm_pathway writes the programme but never the type;
+    # a genuine offer of a DIFFERENT type than declared means the student is switching pathway
+    # (#43: STPM → PISMP). Adopt the offer's detected type and drop the now-irrelevant pre-U
+    # stream + school, so the record stops contradicting itself — chosen_pathway had stayed on the
+    # ORIGINAL declaration, misclassifying funding. Same-type confirms are a no-op here.
+    #
+    # THIS RUNS FIRST, before the pre-U normalisation below, because that block is GATED on the
+    # pathway type and must read the reconciled one (request #7, 2026-08-01). It used to sit after,
+    # so a student who never declared a pathway — chosen_pathway '' — had the whole pre-U block
+    # skipped on the stale value, and the type was then corrected 40 lines too late to matter:
+    # #32 kept her offer's raw "Program Matrikulasi (SAINS)" at "KOLEJ MATRIKULASI SELANGOR" with
+    # no track and no school, and read `matric` beside all three. An empty declaration is the
+    # NORMAL case for a student who applies uncertain (`pathway_certainty='uncertain'`).
+    offer_type = op.detect_pathway_type(prog, chk['institution'])
+    ofam = op.pathway_family(offer_type)
+    if ofam and ofam != op.pathway_family(application.chosen_pathway or ''):
+        application.chosen_pathway = offer_type
+        if 'chosen_pathway' not in update_fields:
+            update_fields.append('chosen_pathway')
+        if not op.is_pre_u(offer_type):
+            for _f in ('pre_u_track', 'pre_u_institution'):
+                if (getattr(application, _f) or '').strip():
+                    setattr(application, _f, '')
+                    if _f not in update_fields:
+                        update_fields.append(_f)
+
     # The confirm query promises "we'll update your record to match" — so for an INSTITUTION
     # pathway (matric/STPM), also bring the displayed pre-U fields into line with the confirmed
     # offer. Without this, chosen_programme reflected the offer but `pre_u_institution` /
@@ -1343,9 +1369,11 @@ def confirm_pathway(application):
         # auto-settled one — never the raw "Tingkatan Enam Semester 1" / ALL-CAPS school the offer
         # prints (owner 2026-07-17; #119/#120 vs #103). The whole-doc write above kept the raw text.
         # Gate on the OFFER's own detected type (like autofill), NOT the declared pathway: a pre-U
-        # DECLARED pathway confirmed against a non-pre-U offer (#43: stpm declared, PISMP offer — the
-        # TD-161 mismatch) must keep its real programme name, never be forced to "Tingkatan Enam".
-        if op.is_pre_u(op.detect_pathway_type(prog, chk['institution'])):
+        # pathway confirmed against an offer we could not type (detect returns '' — no keyword we
+        # recognise) must keep its real programme name, never be forced to "Tingkatan Enam". A
+        # CROSS-family offer (#43: stpm declared, PISMP offer) no longer reaches here at all — the
+        # reconciliation above has already moved chosen_pathway off pre-U.
+        if op.is_pre_u(offer_type):
             canon = op.canonical_pre_u_course(pw)
             cp_std = dict(application.chosen_programme) if isinstance(application.chosen_programme, dict) else {}
             if canon:
@@ -1353,24 +1381,6 @@ def confirm_pathway(application):
             if inst:
                 cp_std['institution'] = inst
             application.chosen_programme = cp_std   # chosen_programme already in update_fields
-
-    # TD-161: reconcile the pathway TYPE. confirm_pathway writes the programme but never the type;
-    # a genuine offer of a DIFFERENT type than declared means the student is switching pathway
-    # (#43: STPM → PISMP). Adopt the offer's detected type and drop the now-irrelevant pre-U
-    # stream + school, so the record stops contradicting itself — chosen_pathway had stayed on the
-    # ORIGINAL declaration, misclassifying funding. Same-type confirms are a no-op here.
-    offer_type = op.detect_pathway_type(prog, chk['institution'])
-    ofam = op.pathway_family(offer_type)
-    if ofam and ofam != op.pathway_family(application.chosen_pathway or ''):
-        application.chosen_pathway = offer_type
-        if 'chosen_pathway' not in update_fields:
-            update_fields.append('chosen_pathway')
-        if not op.is_pre_u(offer_type):
-            for _f in ('pre_u_track', 'pre_u_institution'):
-                if (getattr(application, _f) or '').strip():
-                    setattr(application, _f, '')
-                    if _f not in update_fields:
-                        update_fields.append(_f)
 
     # PISMP (owner 2026-07-18): pin the SPECIFIC catalogue course from the offer's stated BIDANG when it
     # resolves to a unique course (a vernacular bidang — Bahasa Tamil → SJKT). Recording the course_id

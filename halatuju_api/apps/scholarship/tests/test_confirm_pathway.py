@@ -193,3 +193,69 @@ class TestConfirmPathwayUpdatesPreU(_Base):
         app.refresh_from_db()
         self.assertEqual(app.pre_u_institution, 'SMK Asal')   # untouched
         self.assertEqual(app.pre_u_track, 'sains_sosial')
+
+
+class TestConfirmWithNothingDeclared(_Base):
+    """Request #7/#8 — the pre-U tidy-up is gated on the pathway TYPE, and the type is reconciled
+    from the offer letter. Those two steps used to run in the wrong order, so a student who never
+    declared a pathway (``chosen_pathway=''`` — the normal state of anyone who applied
+    ``pathway_certainty='uncertain'``) had the whole block skipped against her empty declaration,
+    and the type was then corrected too late to be of any use. She ended up reading `matric` beside
+    a raw ALL-CAPS college, no stream and no school (#32), or the same with `stpm` (#119)."""
+
+    def test_matric_offer_with_nothing_declared_fills_track_school_and_name(self):
+        app = self._app(pathway='', track='', institution='')       # #32: declared nothing
+        self._offer(app, institution='KOLEJ MATRIKULASI SELANGOR',
+                    programme='Program Matrikulasi (SAINS)', stream='SAINS')
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'matric')              # adopted from the letter
+        self.assertEqual(app.pre_u_track, 'sains')                  # was '' — the reported gap
+        self.assertIn('Selangor', app.pre_u_institution)            # was '' — the reported gap
+        # …and the programme reads like an auto-settled one, not like the letter.
+        self.assertEqual(app.chosen_programme['course_name'], 'Program Matrikulasi')
+        self.assertEqual(app.chosen_programme['institution'], app.pre_u_institution)
+        self.assertNotEqual(app.chosen_programme['institution'], 'KOLEJ MATRIKULASI SELANGOR')
+
+    def test_stpm_offer_with_nothing_declared_fills_stream_and_college(self):
+        app = self._app(pathway='', track='', institution='')       # #119: declared nothing
+        self._offer(app, institution='KOLEJ TINGKATAN ENAM SRI ISTANA',
+                    programme='Tingkatan Enam Semester 1', stream='SAINS SOSIAL')
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'stpm')
+        self.assertEqual(app.pre_u_track, 'sains_sosial')
+        self.assertEqual(app.pre_u_institution, 'Kolej Tingkatan Enam Sri Istana')
+        self.assertEqual(app.chosen_programme['course_name'], 'Tingkatan Enam')
+
+    def test_filling_the_blanks_does_not_turn_the_pathway_chip_red(self):
+        """Filling a field that has only ever been blank changes every reader of it — in July
+        exactly this repair flipped #48's Pathway chip to a clash and docked her band. The chip
+        must read the same before and after, because both values come from the same letter."""
+        from apps.scholarship.pathway_engine import student_offer_check
+        app = self._app(pathway='', track='', institution='')
+        offer = self._offer(app, institution='KOLEJ TINGKATAN ENAM SRI ISTANA',
+                            programme='Tingkatan Enam Semester 1', stream='SAINS SOSIAL')
+        self.assertEqual(student_offer_check(offer)['pathway'], 'unknown')   # nothing to compare
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        offer.refresh_from_db()
+        offer.application = app                      # re-read against the now-filled record
+        # 'unknown' → 'match' is the whole point (there is now something to agree with). The
+        # forbidden move is the one that bit #48: blank → red.
+        self.assertEqual(student_offer_check(offer)['pathway'], 'match')
+
+    def test_an_untypeable_offer_leaves_a_declared_pathway_alone(self):
+        """The reconciliation only moves on an offer we can actually type. A letter with no
+        keyword we recognise must not blank or overwrite what the student declared."""
+        app = self._app(pathway='stpm', track='sains_sosial', institution='SMK Asal')
+        self._offer(app, institution='Pusat X', programme='Kursus Persediaan')
+        self.assertTrue(confirm_pathway(app))
+        app.refresh_from_db()
+        self.assertEqual(app.chosen_pathway, 'stpm')     # not moved
+        self.assertEqual(app.pre_u_track, 'sains_sosial')     # not blanked
+        # The SCHOOL does follow the confirmed letter — that is the #117 rule and predates this
+        # change (she confirmed this offer, so its school is the current one).
+        self.assertEqual(app.pre_u_institution, 'Pusat X')
+        # …and an untypeable letter never gets forced into the canonical pre-U name.
+        self.assertEqual(app.chosen_programme['course_name'], 'Kursus Persediaan')
