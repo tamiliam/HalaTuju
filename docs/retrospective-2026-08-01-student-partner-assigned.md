@@ -64,7 +64,7 @@ tests written from the code.
 
 ## Hours
 
-Planned **3.5h** (quoted 30 July, accepted the same day). Spent **1.4h**. The quote assumed a new
+Planned **3.5h** (quoted 30 July, accepted the same day). Spent **1.5h**. The quote assumed a new
 bilingual template and its tests, which is exactly what it was — the saving came from the hook
 already existing and the requester having answered the reassignment question in the thread before
 work started.
