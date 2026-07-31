@@ -319,6 +319,15 @@ AWARD_EMAIL_APP_IDS = os.environ.get('AWARD_EMAIL_APP_IDS', '')
 # ReviewerProfile.share_phone_with_students (default shared).
 STUDENT_ASSIGNMENT_EMAIL_ENABLED = os.environ.get('STUDENT_ASSIGNMENT_EMAIL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Request #3 (2026-08-01): when an administrator assigns a partner organisation to a sourceless
+# student, also tell the STUDENT — the organisation was already told at that moment, and it may
+# witness their bursary contract and see details of their application in order to do it. Requester:
+# "We DO NOT want the student's consent, but a notification is a must." ON by default, because the
+# feature was requested and paid for and shipping it dark would be a non-delivery; the switch
+# exists so it can be stopped without a deploy.
+STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED = os.environ.get(
+    'STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED', 'true').lower() in ('1', 'true', 'yes')
+
 # When a student confirms their profile (shortlisted → profile_complete), send the richer
 # "your application is in — here's what happens next" email (Check-2 review → doc requests →
 # interview with 3 slots → minor needs a guardian). When ON it SUPERSEDES the basic

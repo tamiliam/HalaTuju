@@ -2490,6 +2490,76 @@ def send_student_assigned_reviewer_email(to_email, *, student_name, english_only
     return _send_html(to_email, subject, text_body, html_body)
 
 
+def send_student_partner_assigned_email(to_email, *, student_name, org_name, english_only=False):
+    """Tell the STUDENT that a partner organisation has been assigned to support their
+    application (request #3, 2026-08-01).
+
+    The organisation is already told at the same moment (``partner_notify.notify_partner_assigned``);
+    the student was not, even though that organisation may witness their bursary contract and can
+    see details of their application in order to do it. The requester's words: *"We DO NOT want the
+    student's consent, but a notification is a must."* So this states plainly what the arrangement
+    means and asks nothing — there is no accept, decline or reply.
+
+    HTML primary + plain-text fallback; bilingual (EN + BM) unless ``english_only``. Best-effort →
+    bool; the caller must never let a failure here undo the assignment.
+    """
+    if not to_email or not (org_name or '').strip():
+        return False
+    first = (student_name or '').strip().split(' ')[0]
+    en_name = first or 'there'
+    bm_name = first or 'di sana'
+    org = org_name.strip()
+    subject = f'{org} is now supporting your ' + _PROG_EN + ' application'
+
+    en_intro = (f'We are writing to let you know that {org} has been assigned to support your '
+                'application to the ' + _PROG_EN + ' Programme.')
+    en_what = (f'This means {org} may act as a witness when you sign your bursary contract, and '
+               'that they can see certain details of your application in order to do that. Nothing '
+               'about your application changes, and the decision on your application stays with us.')
+    en_action = ('You do not need to do anything, and there is nothing to reply to. We are simply '
+                 'telling you who else is now involved, because you have a right to know.')
+    en_safety = (f'One note for your peace of mind: we will never ask you for money, a bank '
+                 f'password, or an OTP or PIN, and neither will {org}. If anyone does, it is not '
+                 f'us — please tell us at {_P.email_support}.')
+
+    bm_intro = (f'Kami ingin memaklumkan bahawa {org} telah ditugaskan untuk menyokong permohonan '
+                'anda kepada Program ' + _PROG_MS + '.')
+    bm_what = (f'Ini bermakna {org} boleh bertindak sebagai saksi apabila anda menandatangani '
+               'kontrak bursari anda, dan mereka dapat melihat butiran tertentu permohonan anda '
+               'bagi tujuan itu. Tiada apa-apa pada permohonan anda yang berubah, dan keputusan '
+               'ke atas permohonan anda kekal di tangan kami.')
+    bm_action = ('Anda tidak perlu melakukan apa-apa, dan tiada apa-apa yang perlu dibalas. Kami '
+                 'sekadar memberitahu anda siapa lagi yang kini terlibat, kerana anda berhak tahu.')
+    bm_safety = (f'Satu nota untuk ketenangan anda: kami tidak sekali-kali akan meminta wang, kata '
+                 f'laluan bank, atau OTP atau PIN, dan begitu juga {org}. Jika sesiapa berbuat '
+                 f'demikian, itu bukan kami — sila beritahu kami di {_P.email_support}.')
+
+    def text_block(greeting, intro, what, action, safety, signoff):
+        return f'{greeting}\n\n{intro}\n\n{what}\n\n{action}\n\n{safety}\n\n{signoff}'
+    en_text = text_block(f'Hi {en_name},', en_intro, en_what, en_action, en_safety,
+                         'Warm regards,\n' + _TEAM_EN)
+    bm_text = text_block(f'Salam {bm_name},', bm_intro, bm_what, bm_action, bm_safety,
+                         'Salam hormat,\n' + _TEAM_MS)
+    text_body = en_text if english_only else f'{en_text}\n\n———\n\n{bm_text}'
+
+    def html_block(greeting, intro, what, action, safety, signoff):
+        return (
+            f'<p style="margin:0 0 14px;">{greeting}</p>'
+            f'<p style="margin:0 0 14px;">{intro}</p>'
+            f'<p style="margin:0 0 14px;">{what}</p>'
+            f'<p style="margin:0 0 16px;">{action}</p>'
+            f'<p style="margin:0 0 16px;color:#6b7280;font-size:13px;">{safety}</p>'
+            f'<p style="margin:0;">{signoff}</p>'
+        )
+    en_html = html_block(f'Hi {en_name},', en_intro, en_what, en_action, en_safety,
+                         'Warm regards,<br>' + _TEAM_EN)
+    bm_html = html_block(f'Salam {bm_name},', bm_intro, bm_what, bm_action, bm_safety,
+                         'Salam hormat,<br>' + _TEAM_MS)
+    html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
+
+    return _send_html(to_email, subject, text_body, html_body)
+
+
 def send_profile_complete_student_email(to_email, *, student_name, english_only=False):
     """Sent to the STUDENT when they confirm their profile (shortlisted → profile_complete):
     thanks + congratulates them for completing the stage and submitting documents, then sets

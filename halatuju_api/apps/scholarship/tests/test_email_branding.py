@@ -114,6 +114,9 @@ def _specs():
             reviewer_name='Kalai', reviewer_email='k@x.test', reviewer_phone='012-3456789')
         add(f'profile_complete_student.{suf}', emails.send_profile_complete_student_email,
             to_email='s@x.test', student_name='Aisyah', english_only=eo)
+        add(f'student_partner_assigned.{suf}', emails.send_student_partner_assigned_email,
+            to_email='s@x.test', student_name='Aisyah', english_only=eo,
+            org_name='Kandaswamy Foundation')
         add(f'interview_booked.{suf}', emails.send_interview_booked_email,
             to_email='s@x.test', student_name='Aisyah', reviewer_name='Kalai',
             start=FIXED_START, meeting_url='https://meet.example/abc',

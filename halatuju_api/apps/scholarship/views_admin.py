@@ -1863,6 +1863,7 @@ class AdminApplicationWitnessView(_SourcesBase):
         if 'witness_org' not in request.data:
             return Response({'error': 'witness_org_required', 'code': 'witness_org_required'},
                             status=status.HTTP_400_BAD_REQUEST)
+        previous_org_id = app.witness_org_id
         raw = request.data.get('witness_org')
         if raw in (None, '', 'none'):
             app.witness_org = None
@@ -1884,6 +1885,20 @@ class AdminApplicationWitnessView(_SourcesBase):
         if app.witness_org is not None:
             from . import partner_notify
             partner_notify.notify_partner_assigned(app, app.witness_org)
+        # Request #3 (2026-08-01): tell the STUDENT too. That organisation may witness their
+        # bursary contract and can see details of their application in order to do it, and until
+        # now only the organisation was told. Requester: "We DO NOT want the student's consent, but
+        # a notification is a must." Same best-effort contract as the line above.
+        #
+        # Only on a CHANGE of organisation: re-saving the same one is an administrator tidying a
+        # form, and the student has already been told that fact. (The organisation's own email
+        # deliberately keeps its existing behaviour and fires on every save — narrowing it is a
+        # change to partner comms nobody asked for.) A CLEARED assignment emails nobody: "your
+        # organisation has been removed" is a different message, and one the requester has not
+        # asked for — they do not intend to reassign at all.
+        if app.witness_org is not None and app.witness_org_id != previous_org_id:
+            from . import services as _services
+            _services.notify_student_partner_assigned(app, app.witness_org)
         return Response({
             'id': app.id,
             'witness_org': app.witness_org.code if app.witness_org else None,

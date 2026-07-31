@@ -293,3 +293,120 @@ class TestAssignmentEmail(TestCase):
         row = PartnerEmailLog.objects.get(organisation=self.org, kind='assigned', ok=True)
         self.assertEqual(row.application_id, self.app.id)
         self.assertEqual(row.students, 1)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET, **LIVE)
+class TestTheStudentIsToldToo(TestCase):
+    """Request #3, 2026-08-01. The organisation was told the moment it was assigned; the student
+    was not, even though that organisation may witness their bursary contract and can see details
+    of their application in order to do it. Requester: *"We DO NOT want the student's consent, but
+    a notification is a must."*"""
+
+    @classmethod
+    def setUpTestData(cls):
+        _seed()
+        cls.cohort = ScholarshipCohort.objects.create(code='pm-st', name='PM', year=2026)
+        cls.org = _org('smc', name='Kandaswamy Foundation')
+        cls.other = _org('pptm', name='Persatuan Pendidikan Tamil', email='pptm@example.org')
+        PartnerAdmin.objects.create(
+            supabase_user_id='pm-st-oa', role='org_admin', is_active=True,
+            owning_organisation=cls.org, name='OrgAdmin', email='oa@example.org')
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("pm-st-oa")}')
+        mail.outbox = []
+        self.app = _app(self.cohort, '', 'profile_complete', 7)     # sourceless student
+        self.app.profile.contact_email = 'student@example.com'
+        self.app.profile.save(update_fields=['contact_email'])
+
+    def _assign(self, value):
+        return self.client.patch(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/witness/',
+            {'witness_org': value}, format='json')
+
+    def _student_mail(self):
+        return [m for m in mail.outbox if m.to == ['student@example.com']]
+
+    def test_the_student_is_emailed_and_the_email_names_the_organisation(self):
+        r = self._assign('smc')
+        self.assertEqual(r.status_code, 200)
+        msgs = self._student_mail()
+        self.assertEqual(len(msgs), 1)
+        self.assertIn('Kandaswamy Foundation', msgs[0].subject)
+        self.assertIn('Kandaswamy Foundation', msgs[0].body)
+
+    def test_it_says_plainly_what_the_organisation_can_do_and_see(self):
+        """The owner's call on the copy: name the access rather than only the warm half — it is
+        the requester's own reason for insisting on a notification."""
+        self._assign('smc')
+        body = self._student_mail()[0].body
+        self.assertIn('witness', body)
+        self.assertIn('certain details of your application', body)
+        # …and it asks for nothing: there is no consent in this flow, by design.
+        self.assertIn('do not need to do anything', body)
+
+    def test_it_is_bilingual_by_default(self):
+        self._assign('smc')
+        body = self._student_mail()[0].body
+        self.assertIn('saksi', body)                    # the BM mirror is present
+        self.assertIn('Salam hormat', body)
+
+    def test_a_change_of_organisation_tells_the_student_who_holds_their_details_now(self):
+        self._assign('smc')
+        mail.outbox = []
+        self._assign('pptm')
+        msgs = self._student_mail()
+        self.assertEqual(len(msgs), 1)
+        self.assertIn('Persatuan Pendidikan Tamil', msgs[0].subject)
+
+    def test_re_saving_the_same_organisation_does_not_email_again(self):
+        """An administrator re-saving the form is not news; the student has been told this fact."""
+        self._assign('smc')
+        mail.outbox = []
+        r = self._assign('smc')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self._student_mail(), [])
+
+    def test_clearing_the_assignment_emails_the_student_nothing(self):
+        """"Your organisation has been removed" is a different message, and one nobody asked for."""
+        self._assign('smc')
+        mail.outbox = []
+        r = self._assign(None)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self._student_mail(), [])
+
+    def test_a_student_with_no_address_is_still_assigned(self):
+        self.app.profile.contact_email = ''
+        self.app.profile.save(update_fields=['contact_email'])
+        r = self._assign('smc')
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.witness_org_id, self.org.id)
+        self.assertEqual(self._student_mail(), [])
+
+    def test_a_failure_in_THIS_email_never_undoes_the_assignment(self):
+        """Patched at the student mailer itself, not at something upstream of it — a guard that
+        swallows an error raised before the code under test proves nothing about the guard."""
+        from unittest import mock
+        with mock.patch('apps.scholarship.emails.send_student_partner_assigned_email',
+                        side_effect=RuntimeError('smtp down')):
+            r = self._assign('smc')
+        self.assertEqual(r.status_code, 200, 'the assignment must still succeed')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.witness_org_id, self.org.id)
+
+    @override_settings(STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED=False)
+    def test_the_switch_stops_the_student_email_without_touching_the_org_one(self):
+        r = self._assign('smc')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self._student_mail(), [])
+        self.assertEqual(len([m for m in mail.outbox if 'joined' in m.subject]), 1)
+
+    @override_settings(PARTNER_COMMS_ENABLED=False)
+    def test_the_student_is_told_even_while_partner_comms_are_dark(self):
+        """The two are independent gates. Partner comms being off is about what ORGANISATIONS
+        receive; it must not silently withhold a notification the student is owed."""
+        r = self._assign('smc')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(self._student_mail()), 1)
