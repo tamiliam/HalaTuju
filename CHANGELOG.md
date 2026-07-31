@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Requests thread becomes a DISCUSSION (TD-201) — 2026-07-31
+
+Until now exactly ONE verb reached the requester: `ask` a question. So a conclusion — *"here is
+what we would build, and why"* — had to travel as a quote note or not at all, and the owner's
+judgement about the SHAPE of a request left the system entirely. The owner's framing is Bugzilla:
+*"open discussion/debate, even after it has been assigned to someone."*
+
+- **`OrgRequestComment` replaces `OrgRequest.clarifications`** (a JSONField of `{question, answer}`
+  PAIRS). **A QUESTION IS A COMMENT AWAITING A REPLY** — that is what makes this one stream rather
+  than a comment log beside a question log. Migrations **`0138`** (DDL + RLS) and **`0139`** (data),
+  both applied migrate-first and verified per request; **`clarifications` is NOT cleared and the
+  column is NOT dropped** — keeping the source is the only way to check the copy against the
+  original on production, and the only way back. Nothing reads it. The drop is its own follow-up.
+- **⚠ THE VISIBILITY FILTER IS A ROW FILTER, AND THAT IS WHY IT CANNOT LIVE IN THE SERIALIZER.**
+  `visibility='internal'` is the owner's private judgement. An allowlist serializer protects
+  against a FIELD reaching the wrong audience and does nothing about a ROW that audience may not
+  read — a serializer naming `body` renders an internal comment as happily as a shared one. So the
+  filter lives once, in `org_requests.comments_for`, and is asserted at BOTH the serializer and the
+  endpoint. Breaking it fails two tests.
+- **⚠ THREE WINDOWS THAT LOOK ALIKE AND ARE NOT — do not tidy them into one.** Commenting runs
+  until the request is TERMINAL. Answering and attaching close at ACCEPTANCE, because both change
+  the evidence behind a number already agreed. Asking a NEW question stops at the QUOTE, because a
+  question can re-price and a remark cannot. Each has its own reason recorded beside it, and the UI
+  now makes the difference visible.
+- **⚠ THE REQUESTER SPEAKING SETTLES THE QUESTIONS BEFORE IT** — the fix for a dead end the
+  two-box design created. `awaiting_reply` means one thing: the ball is in the requester's court.
+  Because answering closes at acceptance while commenting runs on, the comment box is the ONLY box
+  on an approved request — and clearing the flag solely in `answer_clarification` meant a question
+  answered after acceptance read "Unanswered" for ever, directly above its own answer, with the
+  owner's badge lit on a request nobody was waiting on. Request #3 did exactly that.
+  `_settle_open_questions` clears every question standing before an org comment. **Two boxes are a
+  detail of WHEN you may speak; they must never decide WHETHER speaking counts as an answer.**
+- **The reviewer reads internal comments too.** It is platform-side; the owner's private judgement
+  is exactly what a re-run should reason WITH. It is the ORG serializer that keeps it from the
+  requester, not the prompt.
+- **`author.owner` is neutral copy, not "You".** The old `askedByOwner` label read *"You"* and was
+  rendered to the requester as well — who would have read the platform's question as their own.
+- **Frontend has a RENDERED test** (`[id]/page.test.tsx`, 17 cases), not a source-shape guard —
+  the lesson from the paste bug earlier this sprint, where `/onPaste=/` went green over dead code.
+- **Five guards bite-checked** — the row filter, the org-internal refusal, the terminal window, the
+  super-only internal checkbox, and the terminal action list — each broken, watched to fail, restored.
+- **Numbers:** `pytest` **5211** · `jest` **1234** · `next lint` 0 errors · 22 files.
+
 ## A typed "A/ P" is tidied to "A/P" at the write boundary — 2026-07-30
 
 Application 20's canonical name read `SHARVANI A/ P KANAGEVELLU`. Her MyKad reads

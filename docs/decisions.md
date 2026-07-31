@@ -1,5 +1,88 @@
 # Architectural Decisions — HalaTuju
 
+## The visibility filter is a ROW filter, so it lives in the service — Sprint TD-201, 2026-07-31
+**Decision:** `org_requests.comments_for(req, *, viewer_is_org)` applies the `shared`/`internal`
+filter, and BOTH serializers call it. The filter is not expressed in the serializer field list.
+
+**Alternatives considered:** filtering in `OrgRequestOrgSerializer` (where the org-facing allowlist
+already lives); a separate `internal_comments` field the org serializer simply omits.
+
+**Rationale:** the allowlist pattern this module already uses protects against a FIELD reaching the
+wrong audience. It does nothing about a ROW that audience may not read — a serializer naming `body`
+renders an internal comment as happily as a shared one. Row-level exclusion has to happen at the
+query. Putting it anywhere else means the protection looks present and is not.
+
+**Trade-offs:** one more thing a new reader of the comments must remember to call. Mitigated by
+asserting it at both the serializer and the endpoint, so bypassing it fails two tests, and by the
+warning block in `comments_for`'s own docstring.
+
+**Revisit if:** a third audience appears (an org-internal tier). That is a THIRD visibility value,
+never a reuse of `internal` — otherwise one word means two different audiences.
+
+## Three windows on a request, deliberately different — Sprint TD-201, 2026-07-31
+**Decision:** commenting runs until TERMINAL; answering and attaching close at ACCEPTANCE; asking a
+NEW question closes at the QUOTE. Three separate rules, each with its reason recorded beside it.
+
+**Alternatives considered:** one window for everything (simplest, and what a tidying pass would
+produce); two windows, folding "ask" in with "comment".
+
+**Rationale:** they are answers to different questions. A screenshot or an answer changes the
+evidence behind a number already agreed, so both stop at acceptance. A NEW question can re-price a
+quote that has already gone out, so it stops earlier still. A remark changes nothing that was
+priced — and the owner's model is explicit: *"open discussion/debate, even after it has been
+assigned to someone."*
+
+**Trade-offs:** three rules to keep in step across backend and frontend, and a UI that shows
+different controls at different stages, which reads as inconsistent until you know why. Accepted:
+each rule carries its reason in the code, and `requestStatus.test.ts` pins the asymmetries directly
+rather than leaving them to be inferred.
+
+**Revisit if:** anyone proposes unifying them. Read this entry first — the shape is a deliberate
+asymmetry, not drift.
+
+## An org comment settles the questions before it — Sprint TD-201, 2026-07-31
+**Decision:** `post_comment` clears `awaiting_reply` (stamping `replied_at`) on every question
+preceding an ORG-authored comment, regardless of which box produced it.
+
+**Alternatives considered:** clearing only via `answer_clarification` (the original design); a
+derived display rule that hides "Unanswered" when an org comment follows, leaving the flag alone;
+clearing only the oldest open question.
+
+**Rationale:** `awaiting_reply` means one thing — the ball is in the requester's court — and it
+drives the owner's badge, the reviewer's question budget and the "Answer needed" prompt. Because
+answering closes at acceptance while commenting runs on, past acceptance the comment box is the
+ONLY box; clearing the flag solely in `answer_clarification` made the flag unclearable by
+construction. Request #3 sat that way in production. A derived display rule would have fixed the
+label and left the badge lit, which is the same defect one layer down.
+
+**Trade-offs:** an org remark that does not actually answer will clear the flag early. Accepted
+knowingly: the owner reads the thread and asks again, so an early clear is visible and recoverable,
+whereas a permanent one is neither. It settles ALL preceding questions rather than the oldest for
+the same reason — the claim "we are waiting on them" is false for every one of them once they have
+spoken.
+
+**Revisit if:** requests routinely carry several open questions at once and early clearing starts
+losing real ones. The fix then is per-question targeting from the UI, not reverting this.
+
+## The data migration keeps its source — Sprint TD-201, 2026-07-31
+**Decision:** `0139` copies `clarifications` into `org_request_comments` and does NOT clear the
+JSONField or drop the column. Dropping it is logged as a separate follow-up.
+
+**Alternatives considered:** clearing in the same migration (the standing "delete replaced code
+immediately" rule); dropping the column in the same sprint.
+
+**Rationale:** dropping the source in the same change that copies it out removes any way to verify
+the copy against the original on production, and any way back. This was live conversation on real
+requests, and the project's standing lesson is that routing live behaviour through new machinery
+switches it off silently — nothing errors, the suite stays green, and the loss surfaces weeks later
+when somebody asks where their conversation went.
+
+**Trade-offs:** a knowingly duplicated source that nothing reads, and a follow-up someone must
+remember. Accepted for one sprint; the retrospective and the migration docstring both name it.
+
+**Revisit if:** it is still there after the next sprint — at that point the verification value has
+been banked and the duplicate is just rot.
+
 ## Clearing a rejected award_amount belongs at the reject CHOKE-POINT, and must be recoverable — 2026-07-30
 **Decision:** `services._record_reject` clears `award_amount` and snapshots it to
 `pre_decline_award_amount` (migration `0137`); `cancel_pending_decline` restores it.

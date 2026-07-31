@@ -2243,7 +2243,15 @@ checking that the reference resolves, and the difference is invisible until some
 **Do not conflate with:** the snapshot column `pre_decline_award_amount`, which makes a decline *recoverable*, not *attributable*.
 ---
 
-### [TD-201] The Requests thread is a question/answer register, not a discussion — medium, deferred by the owner
+### ✅ [TD-201 — RESOLVED 2026-07-31] The Requests thread is a question/answer register, not a discussion
+**Resolved by** commits `630bb47e`..`bbd9f9f7`; retro `docs/retrospective-2026-07-31-requests-discussion.md`; migrations `0138` (DDL+RLS) + `0139` (data), both applied migrate-first and verified per request.
+
+**What shipped against the table below:** `OrgRequestComment` — an author, a timestamp and the `visibility` dimension this entry called the load-bearing part, present **from the first migration** rather than retrofitted. A question is a comment awaiting a reply, so it is one stream. Any org_admin of the owning org may now comment (the "can only watch" row); the owner gained a **statement** verb, not just `ask`. Discussion runs to TERMINAL, not to acceptance — the Bugzilla point. The visibility filter is a ROW filter and lives in `comments_for`, asserted at both the serializer and the endpoint.
+
+**⚠ Two things this did NOT do, deliberately.** `clarifications` is still populated and the column is **not dropped** (keeping the source is how the copy stays checkable and the change stays reversible — nothing reads it; the drop is a small change, owed). And a **non-super platform admin still cannot reach the module** — the actor rule is super OR an org_admin of the owning organisation; widening it was never asked for.
+
+**⚠ Its successor is the sprint after: the ENGINEER joins the thread** (owner, 2026-07-31) — Claude does the codebase-grounded analysis and estimate and posts it **approval-gated**, because the analysis currently has no home and only the number survives. See CLAUDE.md ▶ NEXT SPRINT.
+
 **File(s):** `apps/scholarship/org_requests.py` (`clarifications`, `ask_question`, `answer_clarification`, `TRANSITIONS`), `serializers_admin.OrgRequestOrgSerializer` / `OrgRequestOwnerSerializer`, `app/admin/requests/[id]/page.tsx`
 **Owner, 2026-07-30:** *"my idea of bug report/feature request is informed by bugzilla, where there is open discussion/debate, even after it has been assigned to someone."* Raised alongside the fix that widened the answer window; **explicitly deferred — "4 can wait. It is not urgent, and can be done separately."** Logged so the reasoning is not lost.
 

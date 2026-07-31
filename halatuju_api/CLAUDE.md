@@ -550,7 +550,82 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-30)
+## Next Sprint (as of 2026-07-31)
+
+**✅ SHIPPED + LIVE 2026-07-31 — TD-201: THE REQUESTS THREAD IS A DISCUSSION.** Commits
+`630bb47e`..`bbd9f9f7`. Retro `docs/retrospective-2026-07-31-requests-discussion.md`; decisions ×4;
+lessons ×3. **Migrations `0138` (DDL+RLS) + `0139` (data) ARE ALREADY APPLIED to production and
+verified — do NOT re-run them.** `pytest` **5211** · `jest` **1234** · `next lint` 0 errors ·
+22 files. Ledger reconciled against prod: scholarship **139/139**, courses **67/67**, no gap.
+
+- **Why:** exactly ONE verb reached the requester — `ask` a question. A conclusion ("here is what
+  we would build, and why") had to travel as a quote note or not at all. Owner's framing is
+  Bugzilla: *"open discussion/debate, even after it has been assigned to someone."*
+- **`OrgRequestComment` replaces `clarifications`.** **A QUESTION IS A COMMENT AWAITING A REPLY** —
+  that is what makes it one stream. **⚠ `clarifications` IS STILL POPULATED on requests 2 and 3 and
+  the column is NOT dropped** — deliberately, so the copy stays checkable against the original and
+  the change stays reversible. **Nothing reads it.** Dropping it is a small change, owed.
+- **⚠ THE VISIBILITY FILTER IS A ROW FILTER — it cannot live in the serializer.** An allowlist
+  protects a FIELD; `internal` is a ROW the org may not read, and a serializer naming `body`
+  renders it happily. Filter lives once in `org_requests.comments_for`, asserted at BOTH the
+  serializer and the endpoint. Breaking it fails two tests (bite-proven).
+- **⚠ THREE WINDOWS THAT LOOK ALIKE AND ARE NOT — do not tidy them into one.** Comments →
+  TERMINAL. Answering + attaching → ACCEPTANCE (both change evidence behind an agreed number).
+  A NEW question → the QUOTE (a question can re-price; a remark cannot). `requestStatus.test.ts`
+  pins the asymmetries directly.
+- **⚠ THE REQUESTER SPEAKING SETTLES THE QUESTIONS BEFORE IT** (`_settle_open_questions`). Past
+  acceptance the comment box is the ONLY box, so clearing `awaiting_reply` solely in
+  `answer_clarification` made the flag unclearable BY CONSTRUCTION — request #3 read "Unanswered"
+  above its own answer with the owner's badge lit. **Two boxes are a detail of WHEN you may speak;
+  they must never decide WHETHER speaking counts as an answer.** Settles ALL preceding questions,
+  not the oldest — an early clear is visible and recoverable, a permanent one is neither.
+- **The reviewer prompt reads internal comments too** — it is platform-side; the owner's private
+  judgement is what a re-run should reason WITH. The ORG serializer is what keeps it from the
+  requester, never the prompt.
+- **Frontend carries a RENDERED test** (`admin/requests/[id]/page.test.tsx`, 17 cases). **⚠ This
+  repo has NO `@testing-library/jest-dom`** — house style is `toBeTruthy()`/`toBeNull()`; jest-dom
+  matchers fail at runtime, not at type-check.
+
+**▶ NEXT SPRINT — THE ENGINEER JOINS THE THREAD (owner ruling, 2026-07-31).** The owner's words:
+*"Gemini's role is only initial analysis. It has no access to the codebase and cannot reliably do
+much. You have to do the proper analysis and estimate the workload, and I want you to post as well,
+with my approval."*
+
+- **The division of labour is now settled and is NOT to be re-litigated.** Gemini = classify + ask
+  clarifying questions, on create. **It does not price** (removed 2026-07-30 — it priced greenfield
+  every time, 24h for the sponsor invite whose engine was already in `referrals.py`). **Claude =
+  the real analysis and the estimate, read off the CODEBASE, citing its files.** The owner triages
+  and quotes; the requester decides.
+- **⚠ THE POST IS APPROVAL-GATED, NOT AUTONOMOUS.** Claude drafts; the owner approves; it posts.
+  Build the gate first — an agent that can post before the gate exists is the wrong order.
+- **⚠ DO NOT WRITE TO `org_request_comments` VIA SUPABASE MCP.** It is reachable and it bypasses
+  `post_comment` — authorship, the visibility rule, the terminal window and the org fence. Every
+  agent write goes through the service layer, or it is not a guard.
+- **The gap that matters is NOT "Claude cannot post" — it is that the analysis has NO HOME.** The
+  file citations, the reasoning and the alternatives live in a chat transcript that evaporates;
+  the system stores `quote_hours` and `quote_note` and none of the evidence. Standing rule already
+  in this file: **the estimate must cite its files** — 3.5h on #3 named the mailer and the hook and
+  was checkable in a minute; 24h named nothing and was wrong by a factor of six.
+- **Shape (to be planned, not yet approved in detail):** a fourth `author_kind`; a command that
+  posts an analysis comment carrying its cited files THROUGH the service layer; and a quote form
+  that refuses to price a request with no analysis naming files behind it — the same shape as the
+  reporting-date stop. Run `implementation-planning.md` before coding.
+- **Out of scope for that sprint, and larger:** a queue that TELLS the engineer a request is
+  waiting (nothing summons Claude today — the owner must remember), and any link from an approved
+  request to the sprint that delivers it (`scheduled`/`done` are set by hand).
+
+**▶ OWNER, CARRIED:**
+1. **Tamil first drafts** — `detail.author.*`, `commentLabel`/`Placeholder`/`Send`,
+   `commentInternal`(+Hint), `noComments`, `internalBadge`; plus the older ~20 `profile.ic*` keys.
+2. **Decide TD-198** — an awarded student cannot be declined directly (your ruling) and there is no
+   admin withdrawal route once the award email has gone. **47 sit in `awarded`.**
+3. **BILLING_USAGE_ENABLED flips 1 AUG** (env var, not a deploy). **46 eWallet IDs** to confirm with
+   Vircle before the August run.
+4. **The "UI asserts what nothing checks" cluster has reached FIVE** (hard-coded padlock,
+   `qc_override_reason`, `ai_draft_model`, request #3's Answer-needed, now the Unanswered label).
+   `consolidation-log.md` tracks it. It wants a guardrail, not a sixth fix.
+
+## Superseded — previous Next Sprint (as of 2026-07-30, the reviewer heard)
 
 **✅ SHIPPED 2026-07-30 (wave 3) — THE REVIEWER IS HEARD, AND STOPS QUOTING.** `7aee74dd` (TD-202)
 + `d3592817`. Retro `docs/retrospective-2026-07-30-requests-ai-reasoning.md`; decisions ×2.
