@@ -131,7 +131,7 @@ export default function QuizEditor(
 
       {draft
         ? <button type="button" onClick={save} disabled={saving || !dirty}
-            title={dirty ? undefined : t('admin.contracts.nothingToSave')} className={btnPrimary}>
+            title={dirty ? undefined : t('common.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
         : <p className="text-sm text-gray-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>

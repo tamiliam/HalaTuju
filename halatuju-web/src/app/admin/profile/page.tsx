@@ -47,6 +47,10 @@ export default function AdminProfilePage() {
   // is not a reviewer and must not see (or be asked for) reviewer credentials.
   const isReviewer = role?.role === 'reviewer'
   const [reviewer, setReviewer] = useState<ReviewerProfile | null>(null)
+  // The last SAVED reviewer profile, kept beside the working copy so "is there anything to save?"
+  // has something to compare against (request #6). Without it, `reviewer` is both the baseline and
+  // the draft, and the question cannot be asked at all.
+  const [savedReviewer, setSavedReviewer] = useState<ReviewerProfile | null>(null)
 
   useEffect(() => {
     if (!token) return
@@ -60,12 +64,22 @@ export default function AdminProfilePage() {
 
   useEffect(() => {
     if (!token || !isReviewer) return
-    getReviewerProfile({ token }).then(setReviewer).catch(() => {})
+    getReviewerProfile({ token }).then((d) => { setReviewer(d); setSavedReviewer(d) }).catch(() => {})
   }, [token, isReviewer])
 
   if (!profile) {
     return <div className="mt-8 text-center text-gray-500">{t('common.loading')}</div>
   }
+
+  // Request #6, applied across the console: a Save that would write nothing stays inactive.
+  // ⚠ The dangerous direction is the OPPOSITE of the reported one — a button wrongly disabled
+  // strands real work with no way to keep it — so every field this form can write is compared,
+  // including the reviewer half, and the baseline is refreshed on save.
+  const dirty =
+    name !== (profile.name || '')
+    || contactPerson !== (profile.org_contact_person || '')
+    || orgPhone !== (profile.org_phone || '')
+    || (isReviewer && JSON.stringify(reviewer) !== JSON.stringify(savedReviewer))
 
   const setRev = (patch: Partial<ReviewerProfile>) =>
     setReviewer((prev) => ({ ...(prev ?? blankReviewer()), ...patch }))
@@ -102,6 +116,8 @@ export default function AdminProfilePage() {
       if (isReviewer && reviewer) {
         await updateReviewerProfile(reviewer, { token: token! })
       }
+      setProfile({ ...profile, name, org_contact_person: contactPerson, org_phone: orgPhone })
+      setSavedReviewer(reviewer)
       setMessage({ type: 'success', text: t('admin.profileUpdated') })
       // Onboarding: if this save just completed a gated reviewer's profile, refresh the role flag
       // and send them on to their workspace (the layout guard releases once the flag flips).
@@ -308,7 +324,8 @@ export default function AdminProfilePage() {
           </>
         )}
 
-        <button type="submit" disabled={saving || !name}
+        <button type="submit" disabled={saving || !name || !dirty}
+          title={dirty ? undefined : t('common.nothingToSave')}
           className="w-full sm:w-auto px-8 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
           {saving ? t('admin.saving') : t('common.save')}
         </button>

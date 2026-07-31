@@ -80,6 +80,14 @@ export default function SourcesPage() {
     setBusy(null)
   }
 
+  // Has this row actually been edited? Compared field by field against the source the form was
+  // opened from — the same four fields `updateSource` writes, so the two cannot disagree.
+  const editDirty = (s: SourceItem) =>
+    editForm.name !== s.name
+    || editForm.contact_person !== s.contact_person
+    || editForm.contact_email !== s.contact_email
+    || editForm.phone !== s.phone
+
   const startEdit = (s: SourceItem) => {
     setEditingId(s.id)
     setEditForm({ name: s.name, contact_person: s.contact_person, contact_email: s.contact_email, phone: s.phone })
@@ -246,7 +254,12 @@ export default function SourcesPage() {
                       <span className="text-sm text-gray-700">{t('admin.sources.activeInApply')}</span>
                     </div>
                     <div className="flex items-center gap-3 ml-auto">
-                      <button disabled={busy === s.id || phoneInvalid(editForm.phone)} onClick={() => saveEdit(s.id)}
+                      {/* Request #6: nothing edited, nothing to save. The row IS its own baseline —
+                          `startEdit` copies the source into the form — so the comparison is direct.
+                          The toggle beside it is an ACTION and stays live regardless. */}
+                      <button disabled={busy === s.id || phoneInvalid(editForm.phone)
+                                        || !editDirty(s)} onClick={() => saveEdit(s.id)}
+                        title={editDirty(s) ? undefined : t('common.nothingToSave')}
                         className="px-5 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
                         {busy === s.id ? t('admin.sources.saving') : t('admin.sources.save')}
                       </button>

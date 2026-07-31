@@ -55,7 +55,7 @@ describe('the Save button reflects whether anything changed', () => {
 
   it('says why it is disabled rather than looking broken', () => {
     show()
-    expect(saveBtn().title).toBe('admin.contracts.nothingToSave')
+    expect(saveBtn().title).toBe('common.nothingToSave')
   })
 
   it('wakes up when a clause body is edited', () => {

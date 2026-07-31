@@ -395,7 +395,7 @@ export default function ClauseEditor(
           <button type="button" onClick={add} className={btnGhost}>
             {t('admin.contracts.addClause')}</button>
           <button type="button" onClick={() => persist(clauses)} disabled={saving || !dirty}
-            title={dirty ? undefined : t('admin.contracts.nothingToSave')} className={btnPrimary}>
+            title={dirty ? undefined : t('common.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.saveClauses')}</button>
         </div>
       )}

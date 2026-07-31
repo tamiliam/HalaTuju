@@ -98,3 +98,45 @@ describe('Sources page panels', () => {
     expect(screen.getByDisplayValue('halfway')).toBeTruthy()
   })
 })
+
+/**
+ * Request #6, widened by the owner to the whole console: a Save that would write nothing stays
+ * inactive. ⚠ The dangerous direction is the OPPOSITE of the reported one — a button wrongly
+ * disabled strands real work with no way to keep it — so the WAKING half is tested first and
+ * matters more than the sleeping half.
+ */
+describe('the source Save reflects whether the row was edited', () => {
+  const openEditor = async () => {
+    render(<SourcesPage />)
+    await waitFor(() => expect(screen.getByText('Sekolah Menengah Cheras')).toBeTruthy())
+    fireEvent.click(screen.getByText('admin.sources.edit'))
+    return screen.getByText('admin.sources.save').closest('button') as HTMLButtonElement
+  }
+
+  it('WAKES when a field is genuinely changed', async () => {
+    const btn = await openEditor()
+    fireEvent.change(screen.getByDisplayValue('Aina'), { target: { value: 'Aina binti Rahman' } })
+    expect(btn.disabled).toBe(false)
+  })
+
+  it('starts inactive on a freshly opened row', async () => {
+    const btn = await openEditor()
+    expect(btn.disabled).toBe(true)
+    expect(btn.title).toBe('common.nothingToSave')
+  })
+
+  it('goes back to sleep when the edit is undone', async () => {
+    const btn = await openEditor()
+    const field = screen.getByDisplayValue('Aina')
+    fireEvent.change(field, { target: { value: 'Aina binti Rahman' } })
+    expect(btn.disabled).toBe(false)
+    fireEvent.change(field, { target: { value: 'Aina' } })
+    expect(btn.disabled).toBe(true)
+  })
+
+  it('does not send anything while it is inactive', async () => {
+    const btn = await openEditor()
+    fireEvent.click(btn)
+    expect(mockApi.updateSource).not.toHaveBeenCalled()
+  })
+})
