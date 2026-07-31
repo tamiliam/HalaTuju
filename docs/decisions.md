@@ -1,5 +1,81 @@
 # Architectural Decisions — HalaTuju
 
+## The absent-STR fall-through is gated on the SUBMISSION GATE'S OWN predicate — request #4, 2026-08-01
+**Decision:** `_verdict_income` delegates to `_verdict_income_salary(any_route=True)` when the declared
+STR route holds no STR document AND `income_engine.salary_income_satisfied(application)` is true —
+the *same* function `services.income_doc_blockers` uses to decide whether the student may submit.
+With no STR and no complete cluster, today's red `income_proof_missing` stands.
+**Alternatives considered:** (a) fall through unconditionally — rejected: all TEN live no-STR
+applications move, and the nine with nothing to fall through to would stop being asked for the STR
+they still owe (measured: five have no documents at all). (b) Gate on "is any income document
+present?" — rejected: presence is not proof, and a payslip with no earner IC to link it to the
+student would buy a fall-through it has not earned. (c) Write a fresh "is there salary evidence?"
+predicate inside the verdict — rejected, and this is the important one: a *second* copy of that
+question is exactly how the gate and the verdict came to disagree about #106 in the first place.
+**Rationale:** the gate and the band must answer "has this household proved its income?" identically.
+Sharing one derivation makes divergence structurally impossible rather than merely unlikely, and it
+keeps the blast radius at one application by construction rather than by luck.
+**Trade-offs:** the verdict now depends on a function whose docstring promised it was confined to the
+submission gate — that promise is retracted in the docstring itself, and widening
+`salary_income_satisfied` now moves bands, so it needs a blast-radius measurement before any change.
+**Revisit if:** the salary-track redesign lands (it owns the thin-headroom and genuineness questions
+below), or a third surface starts asking the same question — then the predicate wants its own module.
+
+## The fall-through green is UNCAPPED, because evenness outranks the genuineness gap — request #4, 2026-08-01
+**Decision:** a household falling through from an absent STR to the salary assessment gets the same
+binary green a declared salary-route household would, with **no genuineness cap**, even when its only
+income document is an informal payslip scored `suspect` (#106's is, at p=0.5).
+**Alternatives considered:** cap the fall-through at blue via `_income_genuineness_docs` — i.e. treat
+the payslip as a required document once the verdict stands on it.
+**Rationale:** `_income_genuineness_docs` caps only the documents a route REQUIRES, and the salary
+route has no fingerprint cap at all ("the required salary slip isn't fingerprintable"). A household
+that had *declared* salary with this identical payslip greens today. Capping only the fall-through
+would punish the family for the label they ticked — which is the exact defect this sprint fixed,
+reintroduced one layer down. V5 §8 rule 1: same household economics, same colour, either route.
+**Trade-offs:** a suspect informal payslip can drive a green income tile. That is V5's recorded known
+limitation #13, not something this sprint created — but it now reaches one more household. Both
+halves (uncapped on the fall-through, capped when an STR is the required proof) are pinned by tests
+so the redesign cannot fix one route and forget the other.
+**Revisit if:** the salary-track redesign gives salary evidence a genuineness model — then BOTH routes
+adopt it together, and these two tests are the checklist.
+
+## A stored refresh token is the deliberate, smaller concession — TD-206, 2026-08-01
+**Decision:** `record_request_analysis --api` authenticates with a Supabase access token minted from a
+**refresh token held in the gitignored root `.env`**, rotated and re-persisted on every use. Not a
+database password, and not a fresh hand-fetched access token each session.
+**Alternatives considered:** (a) paste a short-lived access token per run — genuinely more secure, and
+rejected because it made the owner do a browser-console ritual every session, which is the kind of
+friction that ends with the workflow abandoned or the DB password quietly coming back. (b) A dedicated
+service admin account with a password — rejected: another standing privileged identity to manage, for
+a task the owner's own account already authorises. (c) Reuse the browser session's refresh token —
+rejected once understood: Supabase rotates within a session family, so the command minting a token
+would sign the owner out of the cockpit. `--bootstrap-login` opens its OWN session.
+**Rationale:** the durable credential is scoped to one admin's cockpit role rather than the whole
+database, grants nothing that signing in does not, and dies on "sign out everywhere". A `DB_PASSWORD`
+on a laptop had none of those properties, and its mitigation was "remember to delete it".
+**Trade-offs:** a long-lived credential now sits in `.env` — accepted, and materially smaller than what
+it replaced. ⚠ The rotation MUST be persisted or the setup breaks on the second run, days later; that
+line is bite-checked.
+**Revisit if:** Supabase offers scoped machine tokens for admin APIs, or a second person needs to stage
+analyses (then the shared `.env` credential stops being one person's).
+
+## Estimated AND actual hours travel in the PROSE, not in the org payload — request #4, 2026-08-01
+**Decision:** (owner, 2026-08-01: *"While the bug is free, effort is not… it is best to post the
+estimated hours and the actual hours; so both sides know the amount of work that is being done."*) The
+closing analysis names both figures in `body`, which is the only field that crosses to the requester.
+`estimated_hours` stays owner-only and carries the ACTUAL on the closing record, so the pair is
+recoverable as analysis #2 (4.0 estimated) and #3 (1.3 actual).
+**Alternatives considered:** expose `estimated_hours` to `OrgRequestOrgSerializer` — rejected: it
+reverses TD-204's locked decision, and that decision's reasoning (a second hours figure in front of the
+requester at QUOTE time recreates what TD-202 removed) is untouched by wanting effort visible AFTER the
+work. The prose achieves the owner's intent with no schema or serializer change.
+**Rationale:** the requester needs the numbers, not the field. Keeping the org payload closed leaves
+the value-leak tests and the exact-key snapshot intact.
+**Trade-offs:** the pair is prose to the requester and structured only owner-side, so no one can chart
+estimate-vs-actual without reading bodies. Acceptable at this volume; if it becomes a real report, add
+a purpose-built `actual_hours` column rather than widening the existing one.
+**Revisit if:** estimate-vs-actual becomes something anyone measures across requests.
+
 ## The analysis is its own table, not columns on the comment — TD-204, 2026-07-31
 **Decision:** `OrgRequestAnalysis` (table `org_request_analyses`) holds the engineer's evidence and
 approval lifecycle; the prose still travels as an `OrgRequestComment` linked by `posted_comment`.

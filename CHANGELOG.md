@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## TD-206 — staging an analysis no longer needs a database password — 2026-08-01
+
+The trigger recorded at TD-204's close was *"do this BEFORE the next analysis is staged"*, and the
+next analysis was the closing note on request #4. Staging used to mean exporting live `DB_*` from
+`gcloud run services describe` onto a laptop — done twice in one sprint and deleted twice, which is
+a **manual** mitigation, and the day you forget looks exactly like the day you remember.
+
+- **The endpoint already existed.** It shipped with TD-204. Only the transport was wrong, which is
+  why this needed **no deploy and no migration** — a local command change against a live route.
+- **⚠ THE CITATION GUARD RUNS FIRST, IN BOTH MODES, BEFORE ANY NETWORK CALL.** It is the reason
+  this is a command rather than a form; a transport must not be able to reach around it. A test
+  asserts the command has not called out *at all* when a path fails to resolve.
+- **A stored refresh token mints the short-lived ones**, so the owner fetched a credential by hand
+  exactly once. **⚠ SUPABASE ROTATES ON EVERY USE** — the reply carries a new token and the old one
+  dies. Not persisting it would have worked perfectly on the first run and broken on the second,
+  days later, with nobody watching. Bitten to prove the test catches it.
+- **⚠ `--bootstrap-login` creates its OWN session.** Reusing the browser's refresh token puts two
+  clients in one rotation family: the moment the command minted a token, the owner would be signed
+  out of the cockpit by their own tooling.
+- **The credential never passes through a chat, a command line or shell history.** `--bootstrap-file`
+  accepts a raw token file, stores it in the gitignored `.env`, and deletes the source.
+
+**Two failures on the way, and they were the same failure.** The command answered each refusal with
+a *guessed* cause instead of the one it had been handed:
+- *"Check the email and password"* — for an account that **has no password**. The super account is
+  Google-only (`encrypted_password` is null), so the password grant could never have succeeded.
+- *"Tokens expire after about an hour — get a fresh one"* — for a token that was valid and
+  unexpired. The API had said `Admin access required`: it belonged to an **anonymous** session,
+  because the browser snippet took the first storage entry matching `auth-token` and the app keeps
+  several. A second token would have had the identical problem.
+
+Both now repeat the server's own words, with a test each. **A confident wrong explanation is worse
+than the bare status code it replaced** — it doesn't just fail to help, it sends someone in a
+direction that cannot work.
+
+`pytest` **5286** (+16 over the two changes) · 2 further guards bitten and restored.
+
 ## An absent STR falls through to the salary assessment (request #4) — 2026-08-01
 
 Application **#106** was `shortlisted` with a red income card sitting beside green document chips.

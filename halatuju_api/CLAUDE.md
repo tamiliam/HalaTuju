@@ -550,7 +550,60 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-07-31, evening)
+## Next Sprint (as of 2026-08-01)
+
+**✅ SHIPPED + LIVE 2026-08-01 — REQUEST #4's INCOME CARD, and TD-206.** Commits
+`dadbf89d`..`6a938fc6`. Retro `docs/retrospective-2026-08-01-income-card-and-td206.md`; decisions ×4;
+lessons ×5. `pytest` **5287** · **no migration** · **1 deploy** (the engine; TD-206 needed none).
+Ledger reconciled against prod: scholarship **140/140**, courses **67/67**.
+
+- **⚠ THE SPEC HAD IT RIGHT ALL ALONG.** `str-proof-spec.md` §6 rule 2 has always said the salary
+  route is evaluated when the STR is *"rejected / wrong_type / **absent**"*. Only the first two were
+  built. The absent case now delegates to `_verdict_income_salary(any_route=True)`. **This was a
+  half-built specification, not a new feature** — when a spec sentence lists three cases and the
+  code has two branches, that is the sprint.
+- **⚠ THE GATE IS `salary_income_satisfied` — THE SUBMISSION GATE'S OWN PREDICATE, DELIBERATELY.**
+  One derivation cannot disagree with itself, and a *second* copy of "is there salary evidence?" is
+  precisely how the gate and the verdict came to disagree about #106. It also holds §8's red row:
+  no STR **and** no complete cluster stays red. **Removing the gate moves all TEN no-STR
+  applications, not one** — three tests fail the moment it goes.
+- **⚠ `any_route=True` ON THIS CALL ONLY.** An STR-route student never ticks a salary checkbox, so
+  `income_working_members` is empty and the earners exist only as document tags. The profile
+  generator keeps the narrow default.
+- **⚠ THE GREEN IS UNCAPPED AND THAT IS CORRECT.** #106's payslip is informal and scored `suspect`;
+  it still greens, because `_income_genuineness_docs` caps only route-REQUIRED documents and the
+  salary route has no fingerprint cap. Capping only the fall-through would punish the family for
+  the label they ticked — the very defect just fixed. V5 known limitation #13 owns the underlying
+  gap; **both halves are pinned by tests so the salary-track redesign cannot fix one route only.**
+- **⚠ `salary_income_satisfied`'s docstring NO LONGER says "confined to the submission gate".**
+  Widening it now MOVES A BAND. Measure the blast radius on production before touching it.
+- **▶ VERIFIED LIVE, not just in tests:** #106 `verified` 🟢 with nothing unresolved; #22 / #44 /
+  #52 / #140 still `gap` with `income_proof_missing` intact.
+- **▶ TD-206 RESOLVED on its trigger.** `--api` posts to the endpoint that already existed. A
+  refresh token in the gitignored `.env` mints the short-lived ones. **⚠ SUPABASE ROTATES ON EVERY
+  USE — the rotation is persisted; dropping that line works once and fails on the second run.**
+  **⚠ `--bootstrap-login` opens its OWN session** (reusing the browser's signs the owner out).
+  **⚠ The super account is GOOGLE-ONLY — no password grant will ever work for it.**
+- **▶ REQUEST #4 IS `done`,** closed by an approved engineer comment carrying **4.0h estimated /
+  1.3h actual** (owner: *"the bug is free, effort is not"*). Hours travel in the PROSE; the org
+  payload is unchanged and still has its value-leak tests.
+
+**▶ NEXT = TD-205, the only deferred follow-up left.** Nothing SUMMONS the engineer: requests
+**#5–#8** are four bugs sitting untriaged and unnoticed, and the workflow has now been exercised
+end-to-end three times, so the friction is real rather than guessed. Extend the existing Requests
+badge. ~2h.
+
+**▶ OWNER, DATED AND OUTRANKING THE ABOVE:**
+1. **`BILLING_USAGE_ENABLED` — DUE TODAY, 1 AUGUST. Still not flipped.** Env var via
+   `--update-env-vars`, not a deploy.
+2. **Confirm 46 eWallet IDs with Vircle before the August payment run**, and check Pravin's
+   `…176929` is activated (his stamp was set against the wrong number).
+3. **Decide TD-198** — an awarded student cannot be declined directly and there is no admin
+   withdrawal route once the award email has gone. **47 sit in `awarded`.**
+4. **Tamil first drafts** — the `admin.requests.owner.analysis*` block plus
+   `detail.author.engineer`; older `profile.ic*` keys still outstanding.
+
+## Superseded — previous Next Sprint (as of 2026-07-31, evening)
 
 **✅ SHIPPED + LIVE 2026-07-31 — TD-204: THE ENGINEER JOINS THE THREAD.** Commits
 `2866bfe4`..`742e5aff`. Retro `docs/retrospective-2026-07-31-engineer-analysis.md`; decisions ×4;

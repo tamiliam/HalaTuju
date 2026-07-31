@@ -2328,7 +2328,22 @@ requests have gone through, so the ranking is evidence rather than annoyance. ~2
 
 ---
 
-### [TD-206] `record_request_analysis` reaches the production DATABASE, not the API — medium
+### [TD-206] ✅ RESOLVED 2026-08-01 — `record_request_analysis` reached the production DATABASE, not the API
+**Resolved by** `80bc0b3a`..`6a938fc6`, on the trigger, before the next analysis was staged (the
+closing note on request #4). `--api` posts to the endpoint that already existed; **no deploy and no
+migration** were needed, because only the transport was wrong. A refresh token in the gitignored
+`.env` mints the short-lived ones, so the owner fetched a credential by hand exactly once.
+**⚠ Supabase ROTATES the refresh token on every use** — the rotation is persisted, and dropping
+that line was bite-checked (it would have worked on the first run and failed on the second).
+**⚠ `--bootstrap-login` opens its OWN session** rather than reusing the browser's, which would put
+two clients in one rotation family and sign the owner out of the cockpit.
+**Two side-lessons kept in `lessons.md`:** the super account is GOOGLE-ONLY so no password grant
+can ever work for it, and a token copied out of a browser can belong to an ANONYMOUS session (the
+app keeps several `auth-token` entries) — both were diagnosed only after the command stopped
+guessing at causes and started repeating what the server actually said.
+**The secondary finding below is now moot for this command** but stays recorded: it still applies
+to any OTHER management command run against production.
+
 **File(s):** `apps/scholarship/management/commands/record_request_analysis.py`
 **Raised 2026-07-31.** Staging an analysis on production requires exporting the live `DB_*`
 credentials into a shell, because the command writes through the ORM. Done twice during TD-204 and
