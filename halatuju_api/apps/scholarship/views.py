@@ -1935,6 +1935,10 @@ class CronRunView(APIView):
         # already send arrive ON, the six new ones OFF for review; SPONSOR_COMMS_ENABLED
         # gates the lot, so running this changes nothing a sponsor receives.
         'seed-sponsor-emails': 'seed_sponsor_email_templates',
+        # one-off (requests #7/#8): re-settle the pre-U stream/school on applications whose
+        # CONFIRMED offer left them blank. Reads the offer already on file — no re-extraction.
+        # Scope a run with PATHWAY_REPAIR_APP_IDS; idempotent, so a repeat is a no-op.
+        'repair-confirmed-pathway': 'repair_confirmed_pathway',
     }
 
     def post(self, request, job):
