@@ -56,6 +56,9 @@ export default function AdminRequestDetailPage() {
   const [commentInternal, setCommentInternal] = useState(false)   // super-only, off by default
   const [modifyText, setModifyText] = useState('')
   const [declineReason, setDeclineReason] = useState('')
+  // ⚠ These start EMPTY and are seeded from the AI's classification below — they used to be
+  // hard-coded 'feature'/'sprint'. That default contradicted the AI on every bug it read, and
+  // accepting it turns a FREE bug into a PRICED feature with one click (owner, 2026-07-31).
   const [triageKind, setTriageKind] = useState<'bug' | 'feature'>('feature')
   const [triageLane, setTriageLane] = useState<'small_change' | 'sprint'>('sprint')
   const [triageNote, setTriageNote] = useState('')
@@ -86,6 +89,20 @@ export default function AdminRequestDetailPage() {
   useEffect(() => {
     if (!quoteHoursTouched.current && analysisHours) setQuoteHours(analysisHours)
   }, [analysisHours])
+
+  // Seed TRIAGE from the AI's classification — same once-and-never-clobber rule as the hours.
+  // ⚠ The old hard-coded 'feature'/'sprint' default was not neutral: it disagreed with the AI on
+  // every bug, and the difference between the two values is whether the organisation is CHARGED.
+  // The owner still decides — the AI's reading is authoritative about nothing — but the starting
+  // position should be the reading in front of them, not the more expensive one.
+  const triageTouched = useRef(false)
+  const aiKind = req?.ai_draft_kind || ''
+  const aiLane = req?.ai_draft_lane || ''
+  useEffect(() => {
+    if (triageTouched.current) return
+    if (aiKind === 'bug' || aiKind === 'feature') setTriageKind(aiKind)
+    if (aiLane === 'small_change' || aiLane === 'sprint') setTriageLane(aiLane)
+  }, [aiKind, aiLane])
 
   const run = async (fn: () => Promise<OrgRequestDetail>) => {
     setBusy(true); setError('')
@@ -407,40 +424,13 @@ export default function AdminRequestDetailPage() {
             )}
           </div>
 
-          {/* Triage */}
-          {has('triage') && (
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.requests.owner.triageTitle')}</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-sm">{t('admin.requests.owner.triageKind')}
-                  <select value={triageKind} onChange={(e) => setTriageKind(e.target.value as 'bug' | 'feature')}
-                    className="mt-1 w-full border rounded-lg px-3 py-2">
-                    <option value="feature">{t('admin.requests.kind.feature')}</option>
-                    <option value="bug">{t('admin.requests.kind.bug')}</option>
-                  </select>
-                </label>
-                <label className="text-sm">{t('admin.requests.owner.triageLane')}
-                  <select value={triageLane} onChange={(e) => setTriageLane(e.target.value as 'small_change' | 'sprint')}
-                    className="mt-1 w-full border rounded-lg px-3 py-2">
-                    <option value="sprint">{t('admin.requests.lane.sprint')}</option>
-                    <option value="small_change">{t('admin.requests.lane.small_change')}</option>
-                  </select>
-                </label>
-              </div>
-              <textarea value={triageNote} onChange={(e) => setTriageNote(e.target.value)} rows={2}
-                placeholder={t('admin.requests.owner.triageNote')}
-                className="mt-3 w-full px-3 py-2 border border-gray-300 rounded-lg" />
-              <button disabled={busy}
-                onClick={() => run(() => triageOrgRequest(id, { triaged_kind: triageKind, lane: triageLane, note: triageNote }, opt))}
-                className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-                {t('admin.requests.action.triage')}
-              </button>
-            </div>
-          )}
+          {/* The engineer's analysis (TD-204) — ABOVE TRIAGE (owner, 2026-07-31).
 
-          {/* The engineer's analysis (TD-204) — ABOVE the quote form, because it is what the
-              quote now stands on. The gate refuses to price without one, so seeing it first is
-              the order the work actually happens in.
+              It first shipped BELOW the triage form, which asked the owner to CLASSIFY a request
+              before reading the thing that tells them the classification. On request #4 the AI had
+              read it as a bug, the analysis agreed, and the triage form still offered "Feature" —
+              so the two controls disagreed with each other on screen. It is also what the QUOTE
+              stands on (the gate refuses to price without one), so first is right on both counts.
 
               ⚠ Everything in this block is OWNER-ONLY. The whole `analyses` key is absent from
               the org payload; the requester sees only the PROSE, once approved, in the thread. */}
@@ -519,6 +509,39 @@ export default function AdminRequestDetailPage() {
               </ul>
             )}
           </div>
+
+          {/* Triage */}
+          {has('triage') && (
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.requests.owner.triageTitle')}</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm">{t('admin.requests.owner.triageKind')}
+                  <select value={triageKind}
+                    onChange={(e) => { triageTouched.current = true; setTriageKind(e.target.value as 'bug' | 'feature') }}
+                    className="mt-1 w-full border rounded-lg px-3 py-2">
+                    <option value="feature">{t('admin.requests.kind.feature')}</option>
+                    <option value="bug">{t('admin.requests.kind.bug')}</option>
+                  </select>
+                </label>
+                <label className="text-sm">{t('admin.requests.owner.triageLane')}
+                  <select value={triageLane}
+                    onChange={(e) => { triageTouched.current = true; setTriageLane(e.target.value as 'small_change' | 'sprint') }}
+                    className="mt-1 w-full border rounded-lg px-3 py-2">
+                    <option value="sprint">{t('admin.requests.lane.sprint')}</option>
+                    <option value="small_change">{t('admin.requests.lane.small_change')}</option>
+                  </select>
+                </label>
+              </div>
+              <textarea value={triageNote} onChange={(e) => setTriageNote(e.target.value)} rows={2}
+                placeholder={t('admin.requests.owner.triageNote')}
+                className="mt-3 w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              <button disabled={busy}
+                onClick={() => run(() => triageOrgRequest(id, { triaged_kind: triageKind, lane: triageLane, note: triageNote }, opt))}
+                className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                {t('admin.requests.action.triage')}
+              </button>
+            </div>
+          )}
 
           {/* Quote / Re-quote */}
           {(has('quote') || has('requote')) && (

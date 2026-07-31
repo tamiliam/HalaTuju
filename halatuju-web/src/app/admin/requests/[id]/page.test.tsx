@@ -332,6 +332,43 @@ describe("the engineer's analysis panel (TD-204)", () => {
   })
 })
 
+describe('triage starts from the AI reading, not from the expensive default', () => {
+  // Owner, 2026-07-31, on request #4: the AI had classified it a BUG and the triage form still
+  // offered "Feature request / Sprint" — a hard-coded default that disagreed with the reading
+  // directly above it. The two values are not equivalent: a bug is FREE and a feature is PRICED,
+  // so accepting the default silently turns one into the other.
+  const SUBMITTED = { status: 'submitted', triaged_kind: '' }
+  const kindSelect = () => screen.getByLabelText(/triageKind/) as HTMLSelectElement
+  const laneSelect = () => screen.getByLabelText(/triageLane/) as HTMLSelectElement
+
+  it('seeds kind and lane from the AI draft', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, ai_draft_kind: 'bug', ai_draft_lane: 'small_change' })
+    await waitFor(() => expect(kindSelect().value).toBe('bug'))
+    expect(laneSelect().value).toBe('small_change')
+  })
+
+  it('NEVER clobbers a classification the owner picked', async () => {
+    // The owner's judgement is authoritative and the AI's is not; a re-render must not undo them.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, ai_draft_kind: 'bug', ai_draft_lane: 'small_change' })
+    await waitFor(() => expect(kindSelect().value).toBe('bug'))
+    fireEvent.change(kindSelect(), { target: { value: 'feature' } })
+    fireEvent.change(screen.getByPlaceholderText('admin.requests.owner.triageNote'),
+      { target: { value: 'reclassified deliberately' } })
+    expect(kindSelect().value).toBe('feature')
+  })
+
+  it('falls back to feature/sprint when the AI has not read it yet', async () => {
+    // No draft — an un-run request keeps the previous behaviour rather than seeding something
+    // arbitrary. The owner is choosing from scratch, which is the honest state.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...SUBMITTED, ai_draft_kind: '', ai_draft_lane: '' })
+    expect(kindSelect().value).toBe('feature')
+    expect(laneSelect().value).toBe('sprint')
+  })
+})
+
 describe('the quote form stands on the analysis', () => {
   const TRIAGED = { status: 'triaged', triaged_kind: 'feature' }
   const hoursInput = () =>
