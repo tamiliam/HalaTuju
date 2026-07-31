@@ -296,3 +296,98 @@ class TestTheAiQuestionsAreComments(_Base):
         self.assertIsNone(c.author_admin, 'the reviewer has no PartnerAdmin row')
         self.assertTrue(c.awaiting_reply)
         self.assertEqual(c.visibility, org_requests.VISIBILITY_SHARED)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   REQUESTS_ENABLED=True)
+class TestTheEngineerMaySpeakInternally(_Base):
+    """2026-08-01 — the engineer can leave a note the ORGANISATION cannot see.
+
+    Authorship was derived from the caller, so a note the ENGINEER wrote arrived stamped as the
+    OWNER — it is the owner's token making the call. TD-204 already refused that trade for
+    approved analyses ("attributing it to the approver is a lie about who wrote it"), and the
+    same objection applies to a note the owner did not write.
+
+    ⚠ The pairing is the control: engineer prose that REACHES the requester still has exactly one
+    route — stage an analysis, the owner approves. This must never become a side door around it.
+    """
+
+    def test_a_super_may_post_as_the_engineer_when_it_is_internal(self):
+        req = self._req()
+        self._auth('cm-su')
+        r = self.client.post(f'{BASE}{req.id}/comments/',
+                             {'body': 'Reads like a feature to me: the behaviour is correct.',
+                              'visibility': 'internal', 'author': 'engineer'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        c = req.comments.get()
+        self.assertEqual(c.author_kind, org_requests.AUTHOR_ENGINEER)
+        self.assertEqual(c.visibility, org_requests.VISIBILITY_INTERNAL)
+
+    def test_it_carries_NO_admin_so_no_name_is_printed_beside_the_badge(self):
+        # `_comment_dicts` exposes `author_name`. Keeping the calling admin would print the
+        # OWNER'S name next to an "Engineer" badge — the same lie in a second field, and the one
+        # a reader actually sees.
+        req = self._req()
+        self._auth('cm-su')
+        self.client.post(f'{BASE}{req.id}/comments/',
+                         {'body': 'b', 'visibility': 'internal', 'author': 'engineer'},
+                         format='json')
+        self.assertIsNone(req.comments.get().author_admin)
+
+    def test_an_engineer_comment_may_NOT_be_shared(self):
+        # The side door this exists to keep shut. Shared engineer prose goes through approval.
+        req = self._req()
+        self._auth('cm-su')
+        r = self.client.post(f'{BASE}{req.id}/comments/',
+                             {'body': 'b', 'visibility': 'shared', 'author': 'engineer'},
+                             format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'engineer_must_be_internal')
+        self.assertEqual(req.comments.count(), 0)
+
+    def test_omitting_visibility_does_not_smuggle_an_engineer_comment_out(self):
+        # 'shared' is the DEFAULT, so a caller who names the author and forgets the visibility
+        # must be refused rather than quietly published.
+        req = self._req()
+        self._auth('cm-su')
+        r = self.client.post(f'{BASE}{req.id}/comments/',
+                             {'body': 'b', 'author': 'engineer'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(req.comments.count(), 0)
+
+    def test_an_org_admin_cannot_claim_to_be_the_engineer(self):
+        req = self._req()
+        self._auth('cm-oa')
+        r = self.client.post(f'{BASE}{req.id}/comments/',
+                             {'body': 'b', 'visibility': 'internal', 'author': 'engineer'},
+                             format='json')
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(req.comments.count(), 0)
+
+    def test_an_unknown_author_is_refused_rather_than_ignored(self):
+        # Silently falling back to 'owner' would let a typo mislabel the thread for ever.
+        req = self._req()
+        self._auth('cm-su')
+        r = self.client.post(f'{BASE}{req.id}/comments/',
+                             {'body': 'b', 'visibility': 'internal', 'author': 'ai'},
+                             format='json')
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(req.comments.count(), 0)
+
+    def test_the_organisation_never_sees_it(self):
+        req = self._req()
+        self._auth('cm-su')
+        self.client.post(f'{BASE}{req.id}/comments/',
+                         {'body': 'triage: feature, not a bug', 'visibility': 'internal',
+                          'author': 'engineer'}, format='json')
+        self._auth('cm-oa')
+        payload = self.client.get(f'{BASE}{req.id}/').json()
+        self.assertEqual(payload['comments'], [])
+
+    def test_the_default_is_unchanged_a_super_still_speaks_as_the_owner(self):
+        req = self._req()
+        self._auth('cm-su')
+        self.client.post(f'{BASE}{req.id}/comments/', {'body': 'noted'}, format='json')
+        c = req.comments.get()
+        self.assertEqual(c.author_kind, org_requests.AUTHOR_OWNER)
+        self.assertEqual(c.visibility, org_requests.VISIBILITY_SHARED)

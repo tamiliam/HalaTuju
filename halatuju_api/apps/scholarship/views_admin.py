@@ -4288,9 +4288,43 @@ class AdminOrgRequestCommentView(_OrgRequestsBase):
                             status=status.HTTP_403_FORBIDDEN)
         author_kind = (org_requests.AUTHOR_OWNER if admin.is_super
                        else org_requests.AUTHOR_ORG)
+
+        # ⚠ THE ENGINEER MAY SPEAK DIRECTLY, BUT ONLY WHERE THE ORGANISATION CANNOT HEAR IT
+        # (2026-08-01). Authorship is otherwise derived from the caller, which meant a note the
+        # ENGINEER wrote — a triage recommendation, say — arrived stamped as the OWNER, because it
+        # is the owner's token making the call. TD-204 already refused that trade for approved
+        # analyses ("attributing it to the approver is a lie about who wrote it"); the same
+        # objection applies to a note the owner did not write.
+        #
+        # ⚠ INTERNAL ONLY, and the pairing is the whole control. Engineer prose that REACHES the
+        # requester still has exactly one route — stage an analysis, the owner approves — so this
+        # cannot become a side door around that gate. An internal note is owner-visible by
+        # construction (`org_requests.comments_for` filters the ROW), so there is nothing for an
+        # approval step to protect.
+        #
+        # ⚠ THE RULE LIVES HERE, NOT IN `post_comment`, and that is deliberate rather than lazy:
+        # `approve_analysis` legitimately posts engineer + SHARED through the same service, so a
+        # service-level "engineer implies internal" would break the one path this exists to
+        # protect. What is enforced here is the HTTP contract — who may claim to be whom — while
+        # the domain rule (engineer + shared happens only on approval) stays in the service.
+        claimed = (request.data.get('author') or '').strip()
+        if claimed:
+            if not admin.is_super or claimed != org_requests.AUTHOR_ENGINEER:
+                return Response({'error': 'forbidden', 'code': 'forbidden'},
+                                status=status.HTTP_403_FORBIDDEN)
+            if visibility != org_requests.VISIBILITY_INTERNAL:
+                return Response({'error': 'engineer_must_be_internal',
+                                 'code': 'engineer_must_be_internal'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            author_kind = org_requests.AUTHOR_ENGINEER
         try:
             org_requests.post_comment(
-                req, admin, request.data.get('body') or '',
+                # ⚠ `author_admin=None` for the engineer, exactly as `approve_analysis` does.
+                # `_comment_dicts` exposes `author_name`, so passing the calling admin would print
+                # the OWNER'S NAME beside an "Engineer" badge — the same lie in a second field,
+                # and the one a reader would actually see.
+                req, None if author_kind == org_requests.AUTHOR_ENGINEER else admin,
+                request.data.get('body') or '',
                 author_kind=author_kind, visibility=visibility)
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
