@@ -6,7 +6,7 @@ import {
   generateContractQuiz, putContractClauses,
   type ContractTemplateDetail, type ContractClauseData, type ContractQuizPayload,
 } from '@/lib/admin-api'
-import { CLocale, LangTabs, inputCls, btnPrimary, btnGhost } from './shared'
+import { CLocale, LangTabs, inputCls, btnPrimary, btnGhost, clauseFingerprint } from './shared'
 import { clauseNumbers } from '@/lib/clauseNumbering'
 
 // The Quiz tab — for each clause flagged a quiz candidate: "Generate with Gemini" drafts a
@@ -25,6 +25,11 @@ export default function QuizEditor(
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+
+  // Same rule as the clause editor (request #6): the quiz payloads reach the database through the
+  // very same clause PUT, which deletes and recreates every row — so an idle Save here churns the
+  // whole clause list too, not merely the quiz.
+  const dirty = clauseFingerprint(clauses) !== clauseFingerprint(template.clauses)
 
   const qk = `quiz_${lang}` as 'quiz_en' | 'quiz_ms' | 'quiz_ta'
   // Label each candidate with its OUTLINE number (4., 4.1, I.) — the same scheme the Clauses tab
@@ -125,7 +130,8 @@ export default function QuizEditor(
       })}
 
       {draft
-        ? <button type="button" onClick={save} disabled={saving} className={btnPrimary}>
+        ? <button type="button" onClick={save} disabled={saving || !dirty}
+            title={dirty ? undefined : t('admin.contracts.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
         : <p className="text-sm text-gray-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>

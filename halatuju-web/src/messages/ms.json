@@ -5220,6 +5220,7 @@
       "heading": "Tajuk",
       "body": "Kandungan",
       "useForQuiz": "Guna untuk kuiz pemahaman",
+      "nothingToSave": "Tiada apa-apa untuk disimpan — tiada perubahan dibuat",
       "saveClauses": "Simpan klausa",
       "noClauses": "Belum ada klausa. Tambah satu, atau import daripada Word.",
       "importDocx": "Import daripada Word (.docx)",

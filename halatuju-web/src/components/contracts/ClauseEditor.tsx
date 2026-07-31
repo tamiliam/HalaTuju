@@ -7,7 +7,7 @@ import {
   type ContractTemplateDetail, type ContractClauseData,
 } from '@/lib/admin-api'
 import { clauseNumbers, normaliseLevels, canIndent, canOutdent } from '@/lib/clauseNumbering'
-import { CLocale, LangTabs, inputCls, btnPrimary, btnGhost } from './shared'
+import { CLocale, LangTabs, inputCls, btnPrimary, btnGhost, clauseFingerprint } from './shared'
 import Toggle from '@/components/Toggle'
 
 // `_showH` / `_showB` are transient UI flags: force an empty heading/body box open (a field
@@ -109,6 +109,12 @@ export default function ClauseEditor(
 
   const levels = clauses.map((c) => c.level ?? 0)
   const numbers = clauseNumbers(levels)
+
+  // Is there anything to save? (request #6) Compared against the template as last loaded or saved
+  // — `persist` resets `clauses` from the server's reply, so saving returns the button to dead.
+  // ⚠ Not cosmetic: `replace_clauses` deletes and recreates every clause row, so a no-op save
+  // churns the rows and moves the "last changed" time of a document people sign.
+  const dirty = clauseFingerprint(clauses) !== clauseFingerprint(template.clauses)
 
   // Field edits don't touch structure.
   const set = (i: number, k: keyof ContractClauseData, v: unknown) =>
@@ -388,7 +394,8 @@ export default function ClauseEditor(
         <div className="flex gap-3">
           <button type="button" onClick={add} className={btnGhost}>
             {t('admin.contracts.addClause')}</button>
-          <button type="button" onClick={() => persist(clauses)} disabled={saving} className={btnPrimary}>
+          <button type="button" onClick={() => persist(clauses)} disabled={saving || !dirty}
+            title={dirty ? undefined : t('admin.contracts.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.saveClauses')}</button>
         </div>
       )}

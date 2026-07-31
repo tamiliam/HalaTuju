@@ -11,6 +11,32 @@ export const btnPrimary =
 export const btnGhost =
   'px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50'
 
+/**
+ * A stable fingerprint of the clause list, for "is there anything to save?" (request #6).
+ *
+ * ⚠ A NO-OP SAVE IS NOT HARMLESS HERE, which is why the button must actually go dead rather than
+ * merely look calmer. `contracts.replace_clauses` DELETES every clause row and recreates it, so
+ * pressing Save having changed nothing churns the rows and moves the template's "last changed"
+ * time — on a document people sign, and with no field recording who did it. The requester's
+ * instinct ("it may confuse who actually edited the document") was righter than the wording
+ * suggests: there is no author to overwrite, only a timestamp that stops being true.
+ *
+ * Compares by VALUE over a fixed field order rather than by `JSON.stringify` of the objects: a
+ * clause added in the editor is built from a local literal whose key order differs from the
+ * server's, so a whole-object stringify reports "changed" for two identical clauses. Only the
+ * fields this editor can alter are included — plus position, which `map` preserves, so a move,
+ * indent or delete counts too.
+ */
+export function clauseFingerprint(list: readonly Record<string, unknown>[]): string {
+  return JSON.stringify((list || []).map((c) => [
+    c.level ?? 0,
+    c.heading_en ?? '', c.heading_ms ?? '', c.heading_ta ?? '',
+    c.body_en ?? '', c.body_ms ?? '', c.body_ta ?? '',
+    !!c.is_quiz_candidate,
+    c.quiz_en ?? {}, c.quiz_ms ?? {}, c.quiz_ta ?? {},
+  ]))
+}
+
 /** en | ms | ta selector; en is labelled authoritative. */
 export function LangTabs({ value, onChange }: { value: CLocale; onChange: (l: CLocale) => void }) {
   return (
