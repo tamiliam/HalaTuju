@@ -78,6 +78,7 @@ export type RequestAction =
   | 'answer' | 'accept' | 'defer' | 'modify' | 'withdraw'       // requestee (org_admin)
   | 'triage' | 'quote' | 'requote' | 'schedule' | 'done' | 'decline' | 'ai_rerun'  // owner (super)
   | 'ask'                                                        // owner asks the requester
+  | 'comment'                                                    // EITHER side speaks (TD-201)
 
 /**
  * Which actions to OFFER, given the caller's role, the request status, the OWNER's triaged kind
@@ -98,6 +99,10 @@ export function requestActionsFor(
   hasUnansweredQuestions: boolean,
 ): RequestAction[] {
   const out: RequestAction[] = []
+  // Available to BOTH sides and checked before the role split, because the discussion is the one
+  // thing in this module that is not a privilege of one party (TD-201). The server opens it to the
+  // super and to any org_admin of the owning organisation.
+  if (canComment(status)) out.push('comment')
   if (role === 'org_admin') {
     // Answering stays open until the quote is ACCEPTED — wider than 'ask' deliberately. A question
     // asked before the quote was priced into it, so replying completes the record; a NEW question
@@ -180,10 +185,40 @@ export function canAttach(status: string): boolean {
   return (REQUEST_OPEN_FOR_SHAPING as readonly string[]).includes(status)
 }
 
-/** True if the request carries an unanswered clarifying question (a clarification with a
- *  question and no answer). Used by the list badge + the detail answer box. */
+/**
+ * The statuses in which the request is OVER — nothing more is said about it.
+ * Mirrors org_requests.TERMINAL_STATUSES.
+ */
+export const REQUEST_TERMINAL = ['done', 'declined'] as const
+
+/**
+ * Whether the DISCUSSION is still open — until the request is terminal, which is deliberately
+ * WIDER than REQUEST_OPEN_FOR_SHAPING (owner, 2026-07-31).
+ *
+ * Two windows, each with its own reason; do not "tidy" them into one:
+ *   • answering and attaching close when the quote is ACCEPTED, because both change the evidence
+ *     a price was agreed against;
+ *   • a REMARK changes nothing that was priced, and the owner's model is explicit — "open
+ *     discussion/debate, even after it has been assigned to someone";
+ *   • asking a NEW question is the narrowest (see `ask` in requestActionsFor), because a question
+ *     can re-price a quote that has already gone out.
+ *
+ * Mirrors org_requests.can_comment.
+ */
+export function canComment(status: string): boolean {
+  return !(REQUEST_TERMINAL as readonly string[]).includes(status)
+}
+
+/**
+ * True if the request carries a comment still AWAITING A REPLY. Used by the list badge and to
+ * decide whether the reply box appears.
+ *
+ * Reads `awaiting_reply` rather than "a question with no answer": in one stream a reply is its own
+ * comment, so "unanswered" is no longer derivable by looking at a pair. The server owns the flag
+ * and clears it when the reply lands.
+ */
 export function hasUnansweredQuestions(
-  clarifications: Array<{ question?: string | null; answer?: string | null }> | null | undefined,
+  comments: Array<{ awaiting_reply?: boolean }> | null | undefined,
 ): boolean {
-  return (clarifications || []).some((c) => c.question && !c.answer)
+  return (comments || []).some((c) => c.awaiting_reply === true)
 }

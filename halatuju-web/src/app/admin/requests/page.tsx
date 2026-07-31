@@ -333,7 +333,7 @@ export default function AdminRequestsPage() {
             // on an accepted request is history, and badging the list for ever is noise.
             const needsAnswer = isOrgAdmin && requestActionsFor(
               'org_admin', r.status, r.triaged_kind || '',
-              hasUnansweredQuestions(r.clarifications),
+              hasUnansweredQuestions(r.comments),
             ).includes('answer')
             return (
               <Link key={r.id} href={`/admin/requests/${r.id}`}

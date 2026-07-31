@@ -1855,20 +1855,28 @@ export async function voidSponsorCredit(
 // every route 404s while off, which is how the Administration hub card ships dark (the count
 // probe 404s → the card is hidden; no client flag).
 
-export interface OrgRequestClarification {
-  question?: string | null
-  asked_at?: string | null
-  // WHO asked. Stored from 2026-07-30, when the owner gained the ability to ask; an entry with
-  // no `asked_by` is an AI question, because that is all there was before — so old threads read
-  // correctly with no backfill. Render it: the provenance is the point of one shared thread.
-  asked_by?: 'ai' | 'owner' | null
-  asked_by_email?: string | null
-  answer?: string | null
-  answered_at?: string | null
-  // A modify() history entry carries these instead of question/answer.
-  history?: string
-  previous_description?: string
-  at?: string
+/**
+ * One entry in a request's DISCUSSION (TD-201) — the replacement for the `clarifications`
+ * question/answer pairs, which are no longer on either payload.
+ *
+ * A QUESTION IS A COMMENT AWAITING A REPLY (`awaiting_reply`), which is what makes this one
+ * stream rather than a thread of questions with a separate comment log beside it.
+ *
+ * ⚠ `visibility: 'internal'` NEVER reaches an org_admin — the server filters the ROWS out of the
+ * org payload (`org_requests.comments_for`). It appears in this type because the SUPER payload
+ * carries both, and the detail page badges an internal comment so the owner can see at a glance
+ * what the requester cannot. Do not treat its absence client-side as the protection; the
+ * protection is server-side and tested there.
+ */
+export interface OrgRequestComment {
+  id: number
+  // WHO spoke. 'ai' is the reviewer (no PartnerAdmin row, so `author_name` is '').
+  author_kind: 'ai' | 'owner' | 'org'
+  author_name: string
+  body: string
+  visibility: 'shared' | 'internal'
+  awaiting_reply: boolean
+  created_at: string
 }
 
 /** A screenshot attached to a request (Sprint 15.1). download_url is a signed Supabase URL or
@@ -1895,10 +1903,10 @@ export interface OrgRequestDetail {
   urgency: string
   steps_to_reproduce: string
   status: string
-  clarifications: OrgRequestClarification[]
+  // The discussion, oldest first. Filtered to `shared` for an org_admin, server-side.
+  comments: OrgRequestComment[]
   attachments: OrgRequestAttachment[]
   quote_hours: string | null
-  quote_margin_pct: number | null
   quote_note: string
   quoted_at: string | null
   approved_at: string | null
@@ -1910,6 +1918,9 @@ export interface OrgRequestDetail {
   // Owner-only (super payload) — undefined in the org payload by construction.
   organisation_id?: number
   organisation_name?: string
+  // The margin is owner-only (owner, 2026-07-30: "do not mention the margin"). It is off the ORG
+  // serializer entirely, not merely hidden in the UI, so an org payload cannot carry it.
+  quote_margin_pct?: number | null
   ai_run_count?: number
   ai_draft_kind?: string
   ai_draft_lane?: string
@@ -1998,6 +2009,21 @@ export async function askOrgRequest(
   id: number, data: { question: string }, options?: ApiOptions
 ): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/ask/`, 'POST', data, options)
+}
+/**
+ * Post to the DISCUSSION (TD-201) — a STATEMENT, not a question, so it awaits no reply and does
+ * not spend the reviewer's question budget.
+ *
+ * Open to the super AND to any org_admin of the owning organisation: they can already read the
+ * request, so this lets the people already in the room speak rather than only watch.
+ *
+ * `visibility: 'internal'` is SUPER-ONLY — the server answers 403 for anyone else, and an org
+ * author can never be internal at all. Omit it for the ordinary shared case.
+ */
+export async function commentOrgRequest(
+  id: number, data: { body: string; visibility?: 'shared' | 'internal' }, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/comments/`, 'POST', data, options)
 }
 export async function approveOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/approve/`, 'POST', {}, options)

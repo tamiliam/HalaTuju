@@ -8,7 +8,8 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import {
-  getOrgRequest, answerOrgRequest, askOrgRequest, approveOrgRequest, deferOrgRequest, modifyOrgRequest,
+  getOrgRequest, answerOrgRequest, askOrgRequest, commentOrgRequest, approveOrgRequest,
+  deferOrgRequest, modifyOrgRequest,
   declineOrgRequest, triageOrgRequest, quoteOrgRequest, requoteOrgRequest, scheduleOrgRequest,
   doneOrgRequest, aiRerunOrgRequest, type OrgRequestDetail,
 } from '@/lib/admin-api'
@@ -46,6 +47,8 @@ export default function AdminRequestDetailPage() {
   // Inputs
   const [answer, setAnswer] = useState('')
   const [question, setQuestion] = useState('')   // the owner's question to the requester
+  const [commentText, setCommentText] = useState('')      // a statement, from either side
+  const [commentInternal, setCommentInternal] = useState(false)   // super-only, off by default
   const [modifyText, setModifyText] = useState('')
   const [declineReason, setDeclineReason] = useState('')
   const [triageKind, setTriageKind] = useState<'bug' | 'feature'>('feature')
@@ -83,7 +86,7 @@ export default function AdminRequestDetailPage() {
   if (!req) return <p className="text-red-600">{error || t('admin.requests.error.generic')}</p>
 
   const triagedKind = req.triaged_kind || ''
-  const unanswered = hasUnansweredQuestions(req.clarifications)
+  const unanswered = hasUnansweredQuestions(req.comments)
   const actions = requestActionsFor(reqRole, req.status, triagedKind, unanswered)
   const has = (a: RequestAction) => actions.includes(a)
   const opt = { token: token! }
@@ -157,52 +160,60 @@ export default function AdminRequestDetailPage() {
         </div>
       )}
 
-      {/* Clarification thread */}
+      {/* The DISCUSSION (TD-201) — one stream, not a question log. The owner's model is Bugzilla:
+          "open discussion/debate, even after it has been assigned to someone". A question is
+          simply a comment awaiting a reply, which is why they render together and in one order. */}
       <div className="bg-white rounded-xl border p-5 mb-4">
         <h2 className="text-sm font-semibold text-gray-500 mb-3">{t('admin.requests.detail.thread')}</h2>
-        {(req.clarifications || []).filter((c) => c.question || c.history).length === 0 ? (
-          <p className="text-sm text-gray-400">{t('admin.requests.detail.noQuestions')}</p>
+        {(req.comments || []).length === 0 ? (
+          <p className="text-sm text-gray-400">{t('admin.requests.detail.noComments')}</p>
         ) : (
           <ul className="space-y-3">
-            {(req.clarifications || []).map((c, i) => (
-              <li key={i} className="text-sm">
-                {c.history ? (
-                  <p className="text-gray-400 italic">{t('admin.requests.detail.historyModified')}</p>
-                ) : (
-                  <div>
-                    {/* WHO asked is the point of one shared thread: an owner's question carries
-                        different weight from the reviewer's, and the requester should be able to
-                        tell whose question they are answering. Absent = the AI, since that is all
-                        there was before 2026-07-30. */}
-                    <p className="flex items-baseline gap-2">
-                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                        (c.asked_by || 'ai') === 'owner'
-                          ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {t((c.asked_by || 'ai') === 'owner'
-                          ? 'admin.requests.detail.askedByOwner'
-                          : 'admin.requests.detail.askedByAi')}
-                      </span>
-                      <span className="text-gray-800">{c.question}</span>
-                    </p>
-                    {/* "Answer needed" is a DEMAND — only make it where answering is still
-                        possible. Once the quote is accepted the answer box unmounts, and an amber
-                        prompt with no box behind it asks for something the page has taken away
-                        (request #3 sat like that permanently). Then it is simply unanswered. */}
-                    {c.answer ? (
-                      <p className="text-gray-600 mt-1 pl-3 border-l-2 border-green-300">{c.answer}</p>
-                    ) : has('answer') ? (
-                      <p className="text-amber-600 text-xs mt-1">{t('admin.requests.list.answerNeeded')}</p>
-                    ) : (
-                      <p className="text-gray-400 text-xs mt-1">{t('admin.requests.detail.unanswered')}</p>
-                    )}
-                  </div>
+            {(req.comments || []).map((c) => (
+              <li key={c.id}
+                  className={`text-sm rounded-lg p-3 ${
+                    c.visibility === 'internal'
+                      ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50'}`}>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  {/* WHO spoke is the point of one shared thread: the reviewer's reading, the
+                      owner's judgement and the requester's own words carry different weight, and
+                      the requester should be able to tell whose question they are answering. */}
+                  <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                    c.author_kind === 'owner' ? 'bg-blue-50 text-blue-700'
+                      : c.author_kind === 'org' ? 'bg-green-50 text-green-700'
+                      : 'bg-gray-100 text-gray-500'}`}>
+                    {t(`admin.requests.detail.author.${c.author_kind}`)}
+                  </span>
+                  {c.author_name && <span className="text-xs text-gray-500">{c.author_name}</span>}
+                  <span className="text-xs text-gray-400">{formatDate(c.created_at)}</span>
+                  {/* Only ever rendered for the super — the server filters internal ROWS out of
+                      the org payload. Badged so the owner can see at a glance what the requester
+                      is not reading; an unmarked internal note is how something private gets
+                      written as though it were shared. */}
+                  {c.visibility === 'internal' && (
+                    <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-800">
+                      {t('admin.requests.detail.internalBadge')}
+                    </span>
+                  )}
+                </div>
+                <p className="text-gray-800 whitespace-pre-wrap mt-1">{c.body}</p>
+                {/* "Answer needed" is a DEMAND — only make it where answering is still possible.
+                    Once the quote is accepted the reply box unmounts, and an amber prompt with no
+                    box behind it asks for something the page has taken away (request #3 sat like
+                    that permanently). Then it is simply unanswered. */}
+                {c.awaiting_reply && (
+                  has('answer')
+                    ? <p className="text-amber-600 text-xs mt-1">{t('admin.requests.list.answerNeeded')}</p>
+                    : <p className="text-gray-400 text-xs mt-1">{t('admin.requests.detail.unanswered')}</p>
                 )}
               </li>
             ))}
           </ul>
         )}
 
-        {/* Answer box — org_admin, when a question is waiting */}
+        {/* Reply box — org_admin, when a question is waiting. Kept SEPARATE from the comment box
+            below because only this one clears `awaiting_reply`: replying closes a question, and
+            remarking does not. One box would have to guess which was meant. */}
         {has('answer') && (
           <div className="mt-4 border-t pt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.detail.answerLabel')}</label>
@@ -217,9 +228,44 @@ export default function AdminRequestDetailPage() {
           </div>
         )}
 
-        {/* Ask box — the OWNER's half of the thread. Until now only the AI could write here, so a
-            judgement about the SHAPE of a request ("would an invite work instead of adding a
-            sponsor directly?") had nowhere to go. */}
+        {/* Comment box — EITHER side, open until the request is terminal. This is the verb the
+            module never had: until now only the AI could write here, so a conclusion ("here is
+            what we would build, and why") had to travel as a quote note or not at all. */}
+        {has('comment') && (
+          <div className="mt-4 border-t pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.detail.commentLabel')}</label>
+            <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} rows={3}
+              placeholder={t('admin.requests.detail.commentPlaceholder')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            {/* Internal is the owner's alone. The server refuses it for anyone else (403) and an
+                org author can never be internal at all — this checkbox is the convenience, not
+                the control. */}
+            {isSuper && (
+              <label className="flex items-center gap-2 mt-2 text-sm text-gray-700">
+                <input type="checkbox" checked={commentInternal}
+                  onChange={(e) => setCommentInternal(e.target.checked)}
+                  className="rounded border-gray-300" />
+                {t('admin.requests.detail.commentInternal')}
+              </label>
+            )}
+            <button disabled={busy || !commentText.trim()}
+              onClick={() => run(async () => {
+                const r = await commentOrgRequest(
+                  id, { body: commentText, visibility: commentInternal ? 'internal' : 'shared' }, opt)
+                setCommentText(''); setCommentInternal(false); return r
+              })}
+              className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              {busy ? t('admin.requests.action.working') : t('admin.requests.detail.commentSend')}
+            </button>
+            {isSuper && commentInternal && (
+              <p className="mt-1 text-xs text-amber-600">{t('admin.requests.detail.commentInternalHint')}</p>
+            )}
+          </div>
+        )}
+
+        {/* Ask box — a question, which AWAITS A REPLY and therefore stops at the quote while a
+            plain comment runs on. A quoted request must not grow new questions: the quote was
+            priced against what was known when it was sent. */}
         {isSuper && has('ask') && (
           <div className="mt-4 border-t pt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.detail.askLabel')}</label>

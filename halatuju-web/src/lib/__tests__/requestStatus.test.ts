@@ -17,7 +17,7 @@ import ta from '@/messages/ta.json'
 import {
   REQUEST_STATUSES, statusLabelKey, statusTone, hasStatusTone,
   kindLabelKey, laneLabelKey, requestActionsFor, hasUnansweredQuestions,
-  canAttach, REQUEST_OPEN_FOR_SHAPING,
+  canAttach, REQUEST_OPEN_FOR_SHAPING, canComment, REQUEST_TERMINAL,
   REQUEST_COMPONENT_TREE, REQUEST_COMPONENT_PARENTS, REQUEST_COMPONENT_VALUES,
   requestSubComponents, componentLabelKey,
 } from '@/lib/requestStatus'
@@ -81,7 +81,7 @@ describe('requestActionsFor mirrors the transition matrix', () => {
 
   test('org_admin quote responses (accept/defer/modify/withdraw)', () => {
     expect(requestActionsFor('org_admin', 'quoted', 'feature', false).sort())
-      .toEqual(['accept', 'defer', 'modify', 'withdraw'].sort())
+      .toEqual(['accept', 'comment', 'defer', 'modify', 'withdraw'].sort())
     // deferred: accept + modify (+withdraw), no defer
     const d = requestActionsFor('org_admin', 'deferred', 'feature', false)
     expect(d).toEqual(expect.arrayContaining(['accept', 'modify', 'withdraw']))
@@ -106,7 +106,9 @@ describe('requestActionsFor mirrors the transition matrix', () => {
   test('super: requote a deferred, schedule an approved, done a scheduled', () => {
     expect(requestActionsFor('super', 'deferred', 'feature', false)).toContain('requote')
     expect(requestActionsFor('super', 'approved', 'feature', false)).toContain('schedule')
-    expect(requestActionsFor('super', 'scheduled', 'feature', false)).toEqual(['done'])
+    // 'comment' joins every non-terminal status (TD-201) — a scheduled request is still being
+    // discussed even though nothing else can be done to it.
+    expect(requestActionsFor('super', 'scheduled', 'feature', false).sort()).toEqual(['comment', 'done'])
   })
 
   test('terminal statuses offer nothing', () => {
@@ -117,11 +119,71 @@ describe('requestActionsFor mirrors the transition matrix', () => {
 })
 
 describe('hasUnansweredQuestions', () => {
-  test('true only when a question has no answer', () => {
-    expect(hasUnansweredQuestions([{ question: 'Q?', answer: null }])).toBe(true)
-    expect(hasUnansweredQuestions([{ question: 'Q?', answer: 'A' }])).toBe(false)
-    expect(hasUnansweredQuestions([{ history: 'x' }])).toBe(false)
+  // Reads `awaiting_reply` since TD-201. In ONE stream a reply is its own comment, so "unanswered"
+  // stopped being derivable by inspecting a {question, answer} pair — the server owns the flag and
+  // clears it when the reply lands.
+  test('true only when a comment is awaiting a reply', () => {
+    expect(hasUnansweredQuestions([{ awaiting_reply: true }])).toBe(true)
+    expect(hasUnansweredQuestions([{ awaiting_reply: false }])).toBe(false)
+    // A plain remark carries no flag at all — it must not read as an outstanding question, or
+    // every comment would badge the list.
+    expect(hasUnansweredQuestions([{}])).toBe(false)
+    expect(hasUnansweredQuestions([{ awaiting_reply: false }, { awaiting_reply: true }])).toBe(true)
+    expect(hasUnansweredQuestions([])).toBe(false)
     expect(hasUnansweredQuestions(null)).toBe(false)
+    expect(hasUnansweredQuestions(undefined)).toBe(false)
+  })
+})
+
+/**
+ * The DISCUSSION window (TD-201, owner 2026-07-31) — the owner's Bugzilla framing: "open
+ * discussion/debate, even after it has been assigned to someone".
+ *
+ * The point of these tests is the ASYMMETRY between three windows that all look alike and are
+ * not. Mirrors `org_requests.can_comment` / `TRANSITIONS['ask']` / `TRANSITIONS['answer']`.
+ */
+describe("the 'comment' window", () => {
+  it('is open to BOTH sides for every non-terminal status', () => {
+    for (const status of ['submitted', 'triaged', 'quoted', 'approved', 'deferred', 'scheduled']) {
+      expect(canComment(status)).toBe(true)
+      expect(requestActionsFor('super', status, 'feature', false)).toContain('comment')
+      expect(requestActionsFor('org_admin', status, 'feature', false)).toContain('comment')
+    }
+  })
+
+  it('closes only at a terminal outcome', () => {
+    for (const status of REQUEST_TERMINAL) {
+      expect(canComment(status)).toBe(false)
+      expect(requestActionsFor('super', status, 'feature', false)).not.toContain('comment')
+      expect(requestActionsFor('org_admin', status, 'feature', false)).not.toContain('comment')
+    }
+  })
+
+  it('is WIDER than answering and attaching, which close at acceptance', () => {
+    // The distinction the UI makes visible: after the quote is accepted the reply box and the
+    // screenshot control go, and the comment box stays. Both change what was priced; a remark
+    // does not.
+    for (const status of ['approved', 'scheduled']) {
+      expect(canComment(status)).toBe(true)
+      expect(canAttach(status)).toBe(false)
+      expect(requestActionsFor('org_admin', status, 'feature', true)).not.toContain('answer')
+    }
+  })
+
+  it('is WIDER than the owner asking a new question, which stops at the quote', () => {
+    // A question can re-price a quote that has already gone out. A remark cannot, which is the
+    // whole reason these are two windows and not one.
+    for (const status of ['quoted', 'deferred', 'approved', 'scheduled']) {
+      expect(canComment(status)).toBe(true)
+      expect(requestActionsFor('super', status, 'feature', false)).not.toContain('ask')
+    }
+  })
+
+  it('does not disturb the terminal contract — nothing at all is offered', () => {
+    // Guards the ordering of the new push: it runs BEFORE the role split, so a mistake here would
+    // have leaked an action into a done/declined request for both roles at once.
+    expect(requestActionsFor('super', 'done', '', true)).toEqual([])
+    expect(requestActionsFor('org_admin', 'declined', '', true)).toEqual([])
   })
 })
 
