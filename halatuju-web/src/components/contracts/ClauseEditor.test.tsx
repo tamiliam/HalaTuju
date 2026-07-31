@@ -24,6 +24,9 @@ jest.mock('@/lib/admin-api', () => ({
   putContractClauses: (...a: unknown[]) => putContractClauses(...a),
   importContractDocx: jest.fn(),
   updateContractConfig: jest.fn(),
+  putContractSchedule: jest.fn(),
+  // The schedule editor offers a "copy from another template" control; a refusal just hides it.
+  getContractTemplates: jest.fn(() => Promise.resolve({ templates: [] })),
 }))
 
 const clause = (over: Record<string, unknown> = {}) => ({
@@ -93,5 +96,57 @@ describe('the Save button reflects whether anything changed', () => {
     show()
     fireEvent.click(saveBtn())
     expect(putContractClauses).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * The other three Saves in this module. The original report said "in the contracts module, and
+ * PERHAPS ELSEWHERE AS WELL" — I fixed two of four and called it done, and the owner found the
+ * config Save still live on the next screen along. Enumerating the module's save controls takes a
+ * minute; being told twice costs more.
+ */
+import ConfigForm from './ConfigForm'
+import ScheduleEditor from './ScheduleEditor'
+
+const cfgTemplate = (over: Record<string, unknown> = {}) => ({
+  id: 1, status: 'draft', clauses: [], schedule: [],
+  title_en: 'Bursary agreement', title_ms: '', title_ta: '',
+  preamble_en: '', preamble_ms: '', preamble_ta: '',
+  progress_standard_en: '', progress_standard_ms: '', progress_standard_ta: '',
+  counterparty_name: 'Tamil Foundation', counterparty_title: '', counterparty_nric: '',
+  counterparty_address: '', counterparty_notify_emails: ['a@b.test'],
+  parent_role: 'guardian', witness_policy: 'required',
+  ...over,
+}) as unknown as ContractTemplateDetail
+
+describe('the config Save obeys the same rule', () => {
+  const btn = () => screen.getByText('admin.contracts.save').closest('button') as HTMLButtonElement
+
+  it('starts disabled and wakes on a real edit', () => {
+    render(<ConfigForm template={cfgTemplate()} token="t" onChange={jest.fn()} />)
+    expect(btn().disabled).toBe(true)
+    fireEvent.change(screen.getByDisplayValue('Bursary agreement'),
+      { target: { value: 'Bursary agreement v2' } })
+    expect(btn().disabled).toBe(false)
+  })
+
+  it('counts a field that is NOT the title — the check must cover the whole patch', () => {
+    // The failure this guards is silent and one-directional: a field that is editable but absent
+    // from the comparison leaves Save dead on a genuine edit.
+    render(<ConfigForm template={cfgTemplate()} token="t" onChange={jest.fn()} />)
+    fireEvent.change(screen.getByDisplayValue('a@b.test'),
+      { target: { value: 'a@b.test, c@d.test' } })
+    expect(btn().disabled).toBe(false)
+  })
+})
+
+describe('the payment-schedule Save obeys the same rule', () => {
+  it('starts disabled on an untouched schedule', () => {
+    render(<ScheduleEditor template={cfgTemplate({
+      schedule: [{ order: 1, pathway: 'stpm', variant: 'standard', monthly_amount: '250',
+                   paid_offsets: [0, 1, 2], label_en: 'Semester 1' }],
+    })} token="t" onChange={jest.fn()} />)
+    const btn = screen.getByText('admin.contracts.save').closest('button') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
   })
 })

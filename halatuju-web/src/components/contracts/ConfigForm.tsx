@@ -24,19 +24,26 @@ export default function ConfigForm(
   const set = (k: keyof ContractTemplateDetail, v: unknown) => setF((prev) => ({ ...prev, [k]: v }))
   const L = (base: string) => `${base}_${lang}` as keyof ContractTemplateDetail
 
+  // The fields this form can change — ONE list, used both to build the save and to decide whether
+  // there is anything to save (request #6). Two lists would drift, and the failure would be silent
+  // in the worse direction: a field editable but not counted leaves Save dead on a real edit.
+  const patchOf = (x: ContractTemplateDetail) => ({
+    title_en: x.title_en, title_ms: x.title_ms, title_ta: x.title_ta,
+    preamble_en: x.preamble_en, preamble_ms: x.preamble_ms, preamble_ta: x.preamble_ta,
+    progress_standard_en: x.progress_standard_en, progress_standard_ms: x.progress_standard_ms,
+    progress_standard_ta: x.progress_standard_ta,
+    counterparty_name: x.counterparty_name, counterparty_title: x.counterparty_title,
+    counterparty_nric: x.counterparty_nric, counterparty_address: x.counterparty_address,
+    counterparty_notify_emails: x.counterparty_notify_emails,
+    parent_role: x.parent_role, witness_policy: x.witness_policy,
+  })
+
+  const dirty = JSON.stringify(patchOf(f)) !== JSON.stringify(patchOf(template))
+
   const save = async () => {
     setSaving(true); setMsg(null); setErr(null)
     try {
-      const patch = {
-        title_en: f.title_en, title_ms: f.title_ms, title_ta: f.title_ta,
-        preamble_en: f.preamble_en, preamble_ms: f.preamble_ms, preamble_ta: f.preamble_ta,
-        progress_standard_en: f.progress_standard_en, progress_standard_ms: f.progress_standard_ms,
-        progress_standard_ta: f.progress_standard_ta,
-        counterparty_name: f.counterparty_name, counterparty_title: f.counterparty_title,
-        counterparty_nric: f.counterparty_nric, counterparty_address: f.counterparty_address,
-        counterparty_notify_emails: f.counterparty_notify_emails,
-        parent_role: f.parent_role, witness_policy: f.witness_policy,
-      }
+      const patch = patchOf(f)
       const updated = await updateContractConfig(template.id, patch, { token })
       onChange(updated); setF({ ...updated }); setMsg(t('admin.contracts.saved'))
     } catch (e) {
@@ -121,7 +128,8 @@ export default function ConfigForm(
       </div>
 
       {draft
-        ? <button type="button" onClick={save} disabled={saving} className={btnPrimary}>
+        ? <button type="button" onClick={save} disabled={saving || !dirty}
+            title={dirty ? undefined : t('admin.contracts.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
         : <p className="text-sm text-gray-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>

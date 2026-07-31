@@ -62,6 +62,10 @@ export default function ScheduleEditor(
     setRow(i, { paid_offsets: Array.from(set).sort((a, b) => a - b) })
   }
 
+  // Request #6, the fourth Save in this module. Compared against the schedule as last loaded or
+  // saved — `save` resets `rows` from the server's reply, so saving returns the button to dead.
+  const dirty = JSON.stringify(rows) !== JSON.stringify(template.schedule)
+
   const save = async () => {
     setSaving(true); setErr(null); setMsg(null)
     try {
@@ -149,7 +153,8 @@ export default function ScheduleEditor(
       </div>
 
       {draft
-        ? <button type="button" onClick={save} disabled={saving} className={btnPrimary}>
+        ? <button type="button" onClick={save} disabled={saving || !dirty}
+            title={dirty ? undefined : t('admin.contracts.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
         : <p className="text-sm text-gray-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
