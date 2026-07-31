@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
@@ -8,7 +8,8 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import {
-  getOrgRequest, answerOrgRequest, askOrgRequest, commentOrgRequest, approveOrgRequest,
+  getOrgRequest, answerOrgRequest, askOrgRequest, commentOrgRequest,
+  approveOrgRequestAnalysis, approveOrgRequest,
   deferOrgRequest, modifyOrgRequest,
   declineOrgRequest, triageOrgRequest, quoteOrgRequest, requoteOrgRequest, scheduleOrgRequest,
   doneOrgRequest, aiRerunOrgRequest, type OrgRequestDetail,
@@ -24,8 +25,12 @@ import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 // decline / AI re-run). Which controls appear is decided ENTIRELY by requestActionsFor — keep it
 // in step with halatuju_api/apps/scholarship/org_requests.py (the server re-gates each one).
 
+// ⚠ A code ABSENT from this array renders the generic "Something went wrong", which would be
+// useless for a refusal that tells the owner what to do next. The TD-204 codes are here for that
+// reason, and a rendered test asserts `analysis_required` shows its own message.
 const KNOWN_ERR = ['bug_is_free', 'bad_hours', 'reason_required', 'triage_ai_unconfigured',
-  'triage_ai_unavailable', 'ai_limit_reached']
+  'triage_ai_unavailable', 'ai_limit_reached',
+  'analysis_required', 'files_required', 'analysis_superseded', 'bad_cited_files']
 const errText = (t: (k: string) => string, code?: string) =>
   code && KNOWN_ERR.includes(code) ? t(`admin.requests.error.${code}`) : t('admin.requests.error.generic')
 
@@ -71,6 +76,17 @@ export default function AdminRequestDetailPage() {
 
   useEffect(() => { load() }, [load])
 
+  // Seed the quote hours from the approved analysis — ONCE, and never over something typed.
+  // ⚠ Deliberately the OPPOSITE of the income wizard (S14), which needed a RE-SEEDING effect: here
+  // re-seeding is the bug, because the owner routinely quotes a different number from the
+  // engineer's (bundling, goodwill, margin) and a re-render must not undo that. `touched` latches
+  // on the first edit and never unlatches.
+  const quoteHoursTouched = useRef(false)
+  const analysisHours = req?.analyses?.find((a) => a.is_current)?.estimated_hours || ''
+  useEffect(() => {
+    if (!quoteHoursTouched.current && analysisHours) setQuoteHours(analysisHours)
+  }, [analysisHours])
+
   const run = async (fn: () => Promise<OrgRequestDetail>) => {
     setBusy(true); setError('')
     try {
@@ -90,6 +106,22 @@ export default function AdminRequestDetailPage() {
   const actions = requestActionsFor(reqRole, req.status, triagedKind, unanswered)
   const has = (a: RequestAction) => actions.includes(a)
   const opt = { token: token! }
+
+  // TD-204. Absent entirely on an org payload — `|| []` is the org case, not a missing-data case.
+  const analyses = req.analyses || []
+  const currentAnalysis = analyses.find((a) => a.is_current) || null
+  // An ANSWER can change scope without superseding (only `modify` does — answers are frequent and
+  // superseding on each would be a treadmill). So say the analysis predates the last thing said,
+  // and leave the judgement to the owner rather than blocking.
+  const lastComment = (req.comments || [])[(req.comments || []).length - 1]
+  const analysisPredatesLastComment = Boolean(
+    currentAnalysis && lastComment
+    && currentAnalysis.id !== null
+    && new Date(lastComment.created_at) > new Date(currentAnalysis.approved_at || currentAnalysis.created_at)
+    // The analysis posts its OWN comment on approval, which must not count as "something said
+    // since" — compare against the comment it produced, not merely the newest one.
+    && lastComment.author_kind !== 'engineer',
+  )
 
   return (
     <div className="max-w-3xl">
@@ -406,13 +438,96 @@ export default function AdminRequestDetailPage() {
             </div>
           )}
 
+          {/* The engineer's analysis (TD-204) — ABOVE the quote form, because it is what the
+              quote now stands on. The gate refuses to price without one, so seeing it first is
+              the order the work actually happens in.
+
+              ⚠ Everything in this block is OWNER-ONLY. The whole `analyses` key is absent from
+              the org payload; the requester sees only the PROSE, once approved, in the thread. */}
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.requests.owner.analysisTitle')}</h3>
+            {analyses.length === 0 ? (
+              /* Honest empty state: no analysis has been RECORDED. Never phrased as though one
+                 was refused or is missing — every request predating TD-204 has none. */
+              <p className="text-sm text-gray-400">{t('admin.requests.owner.analysisNone')}</p>
+            ) : (
+              <ul className="space-y-3">
+                {analyses.map((a) => (
+                  <li key={a.id} className={`rounded-lg border p-3 text-sm ${
+                    a.is_current ? 'border-green-200 bg-green-50'
+                      : a.superseded_at ? 'border-gray-200 bg-gray-50 opacity-70'
+                      : 'border-amber-200 bg-amber-50'}`}>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      {a.approved_at ? (
+                        a.superseded_at ? (
+                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-gray-200 text-gray-600">
+                            {t('admin.requests.owner.analysisSuperseded')}
+                          </span>
+                        ) : (
+                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-green-100 text-green-800">
+                            {t('admin.requests.owner.analysisApproved')}
+                          </span>
+                        )
+                      ) : (
+                        <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-800">
+                          {t('admin.requests.owner.analysisDraft')}
+                        </span>
+                      )}
+                      {a.estimated_hours && (
+                        <span className="font-semibold text-gray-900">
+                          {t('admin.requests.owner.analysisHoursValue', { hours: a.estimated_hours })}
+                        </span>
+                      )}
+                      {/* Rendered in the same change that stores them — this project has five
+                          stored-but-never-surfaced fields already, and that cluster stops here. */}
+                      {a.authored_by && <span className="text-xs text-gray-500">{a.authored_by}</span>}
+                      {a.repo_sha && (
+                        <span className="text-xs text-gray-400 font-mono">{a.repo_sha.slice(0, 12)}</span>
+                      )}
+                      <span className="text-xs text-gray-400">{formatDate(a.created_at)}</span>
+                    </div>
+                    <p className="text-gray-800 whitespace-pre-wrap mt-2">{a.body}</p>
+                    {a.cited_files.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-medium text-gray-500">{t('admin.requests.owner.analysisFiles')}</p>
+                        <ul className="mt-1 space-y-0.5">
+                          {a.cited_files.map((f) => (
+                            <li key={f} className="text-xs font-mono text-gray-600 break-all">{f}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {a.approved_at && a.approved_by_name && (
+                      <p className="text-xs text-gray-400 mt-2">
+                        {t('admin.requests.owner.analysisApprovedBy', { name: a.approved_by_name })} · {formatDate(a.approved_at)}
+                      </p>
+                    )}
+                    {/* The amber staleness note: an ANSWER can change scope without triggering a
+                        supersede (only `modify` does), so say so rather than block. */}
+                    {a.is_current && analysisPredatesLastComment && (
+                      <p className="text-xs text-amber-700 mt-2">{t('admin.requests.owner.analysisStale')}</p>
+                    )}
+                    {!a.approved_at && !a.superseded_at && (
+                      <button disabled={busy}
+                        onClick={() => { if (confirm(t('admin.requests.owner.analysisApproveConfirm'))) run(() => approveOrgRequestAnalysis(id, a.id, opt)) }}
+                        className="mt-3 px-4 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                        {t('admin.requests.owner.analysisApprove')}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {/* Quote / Re-quote */}
           {(has('quote') || has('requote')) && (
             <div className="border-t pt-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.requests.owner.quoteTitle')}</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm">{t('admin.requests.owner.quoteHours')}
-                  <input type="number" min="0" step="0.5" value={quoteHours} onChange={(e) => setQuoteHours(e.target.value)}
+                  <input type="number" min="0" step="0.5" value={quoteHours}
+                    onChange={(e) => { quoteHoursTouched.current = true; setQuoteHours(e.target.value) }}
                     className="mt-1 w-full border rounded-lg px-3 py-2" />
                 </label>
                 <label className="text-sm">{t('admin.requests.owner.quoteMargin')}

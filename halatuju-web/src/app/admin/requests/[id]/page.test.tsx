@@ -57,6 +57,27 @@ const comment = (over: Partial<api.OrgRequestComment> = {}): api.OrgRequestComme
   ...over,
 })
 
+const analysis = (over: Partial<api.OrgRequestAnalysis> = {}): api.OrgRequestAnalysis => ({
+  id: 1,
+  body: 'It reuses the existing invite engine.',
+  estimated_hours: '4.0',
+  cited_files: ['apps/scholarship/referrals.py'],
+  authored_by: 'claude-opus-5',
+  repo_sha: 'abcdef0123456789abcdef0123456789abcdef01',
+  created_at: '2026-07-31T03:00:00Z',
+  approved_at: null,
+  approved_by_name: '',
+  superseded_at: null,
+  is_current: false,
+  ...over,
+})
+
+const approvedAnalysis = (over: Partial<api.OrgRequestAnalysis> = {}) =>
+  analysis({
+    approved_at: '2026-07-31T04:00:00Z', approved_by_name: 'Ve. Elanjelian',
+    is_current: true, ...over,
+  })
+
 const detail = (over: Partial<api.OrgRequestDetail> = {}): api.OrgRequestDetail => ({
   id: 4,
   kind: 'feature',
@@ -223,6 +244,131 @@ describe('the internal note is the owner’s alone', () => {
     await show()
     const box = screen.getByLabelText('admin.requests.detail.commentInternal') as HTMLInputElement
     expect(box.checked).toBe(false)
+  })
+})
+
+describe("the engineer's analysis panel (TD-204)", () => {
+  it('is OWNER-ONLY — an org_admin never sees the files or the hours', async () => {
+    // Belt and braces on the frontend. The server puts no `analyses` key on an org payload at
+    // all; this asserts the page would not render one even if it arrived.
+    viewerRole = { role: 'org_admin' }
+    await show({ analyses: [approvedAnalysis()] })
+    expect(screen.queryByText('admin.requests.owner.analysisTitle')).toBeNull()
+    expect(screen.queryByText('apps/scholarship/referrals.py')).toBeNull()
+  })
+
+  it('shows the owner the reasoning, the files, who read them and at which commit', async () => {
+    // `authored_by` and `repo_sha` are rendered in the same change that stores them. This project
+    // has already found five stored-but-never-surfaced fields; this is why there is not a sixth.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ analyses: [approvedAnalysis()] })
+    expect(screen.getByText('It reuses the existing invite engine.')).toBeTruthy()
+    expect(screen.getByText('apps/scholarship/referrals.py')).toBeTruthy()
+    expect(screen.getByText('claude-opus-5')).toBeTruthy()
+    expect(screen.getByText('abcdef012345')).toBeTruthy()
+  })
+
+  it('says NO ANALYSIS RECORDED rather than implying one is missing', async () => {
+    // Every request predating TD-204 has none, so the empty state must read as the absence of a
+    // record and never as a finding.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ analyses: [] })
+    expect(screen.getByText('admin.requests.owner.analysisNone')).toBeTruthy()
+  })
+
+  it('offers Approve on a draft', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ analyses: [analysis()] })
+    expect(screen.getByText('admin.requests.owner.analysisApprove')).toBeTruthy()
+  })
+
+  it('offers no Approve on one already approved', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ analyses: [approvedAnalysis()] })
+    expect(screen.queryByText('admin.requests.owner.analysisApprove')).toBeNull()
+  })
+
+  it('approving calls the endpoint with the analysis id', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true)
+    await show({ analyses: [analysis({ id: 77 })] })
+    mockApi.approveOrgRequestAnalysis.mockResolvedValue(detail())
+    fireEvent.click(screen.getByText('admin.requests.owner.analysisApprove'))
+    await waitFor(() => expect(mockApi.approveOrgRequestAnalysis)
+      .toHaveBeenCalledWith(4, 77, { token: 'tok' }))
+    confirmSpy.mockRestore()
+  })
+
+  it('warns when something was said after the analysis was written', async () => {
+    // An answer can change scope without superseding — only `modify` does that — so this is a
+    // note for the owner's judgement, not a block.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({
+      analyses: [approvedAnalysis()],
+      comments: [comment({ id: 9, author_kind: 'org', created_at: '2026-07-31T09:00:00Z',
+                           body: 'Actually we need it on the dashboard too.' })],
+    })
+    expect(screen.getByText('admin.requests.owner.analysisStale')).toBeTruthy()
+  })
+
+  it('does NOT warn when the newest comment is the analysis’s own post', async () => {
+    // Approving posts an engineer comment. If that counted as "something said since", the warning
+    // would fire on every freshly approved analysis and teach the owner to ignore it.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({
+      analyses: [approvedAnalysis()],
+      comments: [comment({ id: 9, author_kind: 'engineer', created_at: '2026-07-31T09:00:00Z',
+                           body: 'It reuses the existing invite engine.' })],
+    })
+    expect(screen.queryByText('admin.requests.owner.analysisStale')).toBeNull()
+  })
+
+  it('renders the engineer badge on the posted comment', async () => {
+    // `author_kind` gained a fourth value; the thread builds its label key FROM that value, so a
+    // missing i18n key prints a raw dotted path to the requester.
+    viewerRole = { role: 'org_admin' }
+    await show({ comments: [comment({ author_kind: 'engineer' })] })
+    expect(screen.getByText('admin.requests.detail.author.engineer')).toBeTruthy()
+  })
+})
+
+describe('the quote form stands on the analysis', () => {
+  const TRIAGED = { status: 'triaged', triaged_kind: 'feature' }
+  const hoursInput = () =>
+    screen.getByLabelText(/quoteHours/) as HTMLInputElement
+
+  it('prefills the hours from the approved analysis', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...TRIAGED, analyses: [approvedAnalysis({ estimated_hours: '4.0' })] })
+    await waitFor(() => expect(hoursInput().value).toBe('4.0'))
+  })
+
+  it('NEVER clobbers a number the owner typed', async () => {
+    // Deliberately the opposite of the income wizard (S14), which needed a RE-seeding effect.
+    // Here re-seeding is the bug: the owner routinely quotes differently from the engineer
+    // (bundling, goodwill, margin) and a re-render must not undo that.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...TRIAGED, analyses: [approvedAnalysis({ estimated_hours: '4.0' })] })
+    await waitFor(() => expect(hoursInput().value).toBe('4.0'))
+    fireEvent.change(hoursInput(), { target: { value: '6' } })
+    // Something else re-renders the page.
+    fireEvent.change(screen.getByPlaceholderText('admin.requests.owner.quoteNote'),
+      { target: { value: 'bundled with the other one' } })
+    expect(hoursInput().value).toBe('6')
+  })
+
+  it('renders analysis_required as ITS OWN message, not the generic one', async () => {
+    // A code absent from KNOWN_ERR renders "Something went wrong", which tells the owner nothing
+    // about what to do next. This assertion is what keeps it in the array.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ ...TRIAGED })
+    mockApi.quoteOrgRequest.mockRejectedValue(
+      Object.assign(new Error('refused'), { code: 'analysis_required' }))
+    fireEvent.change(hoursInput(), { target: { value: '6' } })
+    fireEvent.click(screen.getByText('admin.requests.action.quote'))
+    await waitFor(() =>
+      expect(screen.getByText('admin.requests.error.analysis_required')).toBeTruthy())
+    expect(screen.queryByText('admin.requests.error.generic')).toBeNull()
   })
 })
 

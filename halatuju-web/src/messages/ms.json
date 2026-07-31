@@ -4956,7 +4956,8 @@
         "author": {
           "ai": "Penyemak AI",
           "owner": "HalaTuju",
-          "org": "Pemohon"
+          "org": "Pemohon",
+          "engineer": "Jurutera"
         },
         "internalBadge": "Dalaman",
         "answerLabel": "Jawapan anda",
@@ -5011,7 +5012,18 @@
         "modifyLabel": "Pinda permintaan anda",
         "declineConfirm": "Tolak permintaan ini? Tindakan ini tidak boleh dibatalkan.",
         "withdrawConfirm": "Tarik balik permintaan ini? Tindakan ini tidak boleh dibatalkan.",
-        "aiDraftModel": "Model"
+        "aiDraftModel": "Model",
+        "analysisTitle": "Analisis jurutera",
+        "analysisNone": "Belum ada analisis direkodkan.",
+        "analysisDraft": "Menunggu kelulusan anda",
+        "analysisApproved": "Diluluskan",
+        "analysisSuperseded": "Digantikan",
+        "analysisHoursValue": "{hours} jam",
+        "analysisFiles": "Fail yang dibaca",
+        "analysisApprovedBy": "Diluluskan oleh {name}",
+        "analysisApprove": "Luluskan dan hantar kepada organisasi",
+        "analysisApproveConfirm": "Hantar analisis ini kepada organisasi? Mereka akan melihat penerangan bertulis, tetapi tidak sekali-kali jumlah jam atau fail.",
+        "analysisStale": "Ada perkara baharu dinyatakan pada permintaan ini selepas analisis ini ditulis. Sila semak sama ada ia masih tepat."
       },
       "error": {
         "bug_is_free": "Laporan pepijat adalah percuma — jadualkannya, bukan disebut harga.",
@@ -5020,7 +5032,11 @@
         "triage_ai_unconfigured": "Penyemak AI belum dikonfigurasikan.",
         "triage_ai_unavailable": "Penyemak AI tidak tersedia buat masa ini.",
         "ai_limit_reached": "Penyemak AI telah dijalankan bilangan maksimum kali.",
-        "generic": "Sesuatu tidak kena. Sila cuba lagi."
+        "generic": "Sesuatu tidak kena. Sila cuba lagi.",
+        "analysis_required": "Sebut harga tidak boleh dihantar sehingga analisis yang menamakan fail yang dibacanya diluluskan.",
+        "files_required": "Analisis mesti menamakan sekurang-kurangnya satu fail yang dibacanya.",
+        "analysis_superseded": "Permintaan telah dipinda selepas analisis ini ditulis, jadi ia tidak lagi menggambarkannya.",
+        "bad_cited_files": "Senarai fail tidak dapat dibaca."
       }
     },
     "payments": {

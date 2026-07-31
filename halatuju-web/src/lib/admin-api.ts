@@ -1870,8 +1870,11 @@ export async function voidSponsorCredit(
  */
 export interface OrgRequestComment {
   id: number
-  // WHO spoke. 'ai' is the reviewer (no PartnerAdmin row, so `author_name` is '').
-  author_kind: 'ai' | 'owner' | 'org'
+  // WHO spoke. 'ai' is the reviewer and 'engineer' is the approved analysis (TD-204) — neither has
+  // a PartnerAdmin row, so `author_name` is '' for both.
+  // ⚠ Every value here needs `admin.requests.detail.author.<kind>` in en/ms/ta: the thread renders
+  // that key from the value, so a missing one prints a raw dotted path to the requester.
+  author_kind: 'ai' | 'owner' | 'org' | 'engineer'
   author_name: string
   body: string
   visibility: 'shared' | 'internal'
@@ -1888,6 +1891,31 @@ export interface OrgRequestAttachment {
   size: number
   created_at: string
   download_url: string | null
+}
+
+/**
+ * The engineer's working paper behind one comment (TD-204) — **OWNER-ONLY**.
+ *
+ * ⚠ This never appears on an org_admin's payload. The analysis reaches the requesting organisation
+ * as PROSE, through `comments`, authored `engineer`; the CITED FILES and the ENGINEER'S HOURS stay
+ * owner-side. Neither is secrecy: a citation the requester cannot open buys them nothing while the
+ * paths disclose the internal shape of a multi-tenant platform, and a second hours figure in front
+ * of them recreates what removing the AI's estimate fixed. The field is optional on
+ * `OrgRequestDetail` for exactly that reason — an org payload does not carry it at all.
+ */
+export interface OrgRequestAnalysis {
+  id: number
+  body: string
+  estimated_hours: string | null
+  cited_files: string[]
+  authored_by: string
+  repo_sha: string
+  created_at: string
+  approved_at: string | null
+  approved_by_name: string
+  superseded_at: string | null
+  /** The one the quote gate reads — server-computed, so the screen and the gate cannot disagree. */
+  is_current: boolean
 }
 
 /** The ORG-facing payload (what a submitting org_admin sees) — the allowlist. NEVER carries the
@@ -1921,6 +1949,8 @@ export interface OrgRequestDetail {
   // The margin is owner-only (owner, 2026-07-30: "do not mention the margin"). It is off the ORG
   // serializer entirely, not merely hidden in the UI, so an org payload cannot carry it.
   quote_margin_pct?: number | null
+  // The engineer's analyses, newest first (TD-204). Owner-only — see OrgRequestAnalysis.
+  analyses?: OrgRequestAnalysis[]
   ai_run_count?: number
   ai_draft_kind?: string
   ai_draft_lane?: string
@@ -2024,6 +2054,28 @@ export async function commentOrgRequest(
   id: number, data: { body: string; visibility?: 'shared' | 'internal' }, options?: ApiOptions
 ): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/comments/`, 'POST', data, options)
+}
+/**
+ * Stage the engineer's analysis as a DRAFT (TD-204). Super-only; posts nothing.
+ *
+ * Normally written by the `record_request_analysis` management command, which additionally checks
+ * that every cited path exists in the repo. This client exists so the same thing can be done from
+ * the cockpit — but a citation typed here is NOT existence-checked, which is the command's whole
+ * advantage.
+ */
+export async function recordOrgRequestAnalysis(
+  id: number,
+  data: { body: string; estimated_hours?: string; cited_files: string[]; authored_by?: string },
+  options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/analysis/`, 'POST', data, options)
+}
+/** The owner approves an analysis and it enters the thread as an `engineer` comment. Super-only. */
+export async function approveOrgRequestAnalysis(
+  id: number, analysisId: number, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/analysis/${analysisId}/approve/`,
+                     'POST', {}, options)
 }
 export async function approveOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/approve/`, 'POST', {}, options)
