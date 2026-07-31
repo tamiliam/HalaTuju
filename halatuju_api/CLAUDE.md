@@ -629,10 +629,46 @@ Commits `aa06b54b`..`42a93e6f`. Migration **`0141`** applied migrate-first + ver
 - **▶ LIVE:** request **#5** analysed (0.5h, 3 files), triaged **feature / small_change**, **quoted
   0.5h**, with the engineer's triage reasoning posted as an internal note. Waiting on BrightPath.
 
-**▶ NEXT: no engineering item is queued.** The Requests board is the source — **#6–#8** are
-untriaged bugs and now actually visible. **⚠ #5's quote prices only two of the three shapes I
-offered; the link-to-the-run version is ~1.5h and would need a REQUOTE** — worth saying in the
-thread before they accept.
+**✅ REQUEST #6 DONE 2026-08-01** (`39a82a93`, `ef955780`) — the nothing-to-save rule, console-wide.
+6.0h planned / 3.0h spent. **⚠ OWNER RULING: this is now the PLATFORM STANDARD, not one module's
+behaviour.** Six genuine edit-then-save forms fixed (4 in contracts + source row + admin profile);
+`common.nothingToSave` is the shared key. **⚠ Of 61 save-shaped controls, most are ACTIONS (Send /
+Publish / Deploy / Decline) that MUST stay live, and several are CREATE forms with no baseline —
+do not sweep them.** **⚠ THE DANGEROUS DIRECTION IS THE OPPOSITE OF THE BUG: a Save wrongly
+DISABLED strands real work with no way to keep it.** Every test asserts the button WAKES on a real
+edit, not just that it sleeps.
+
+**▶ NEXT = REQUEST #7 (+#8), both `scheduled`. The investigation is DONE; the fix is not.**
+- **⚠ #7 AND #8 ARE ONE DEFECT.** Fix once, then close both.
+- **THE PATTERN, from production:** a programme settled QUIETLY by the offer reader comes out
+  complete; one the student CONFIRMS can come out thin. #15/#118 (`source=offer_letter_auto`) carry
+  their `pre_u_track`; **#32/#119 (`offer_letter_confirmed`) have BOTH `pre_u_track` AND
+  `pre_u_institution` empty** — that pairing is the signature.
+- **⚠ #119 IS PINNED:** `services.py` ~1324 gates the whole pre-U normalisation block on
+  `op.is_pre_u(application.chosen_pathway)`, and **#119's `chosen_pathway` is `''`**, so the block
+  (track + canonical course name + catalogue institution) never runs. Same shape as the
+  reporting-date lesson: a fact riding as a passenger in a guarded block.
+- **⚠ #32 IS NOT PINNED. Do not guess.** Confirmed **27 July**, TEN DAYS AFTER the fix that should
+  have filled it (`eca624ed`, 17 July). `parse_matric_track("Program Matrikulasi (SAINS)")` DOES
+  return `'sains'`, so the parser is not the cause. Suspect the TD-161 clearing branch at
+  ~1368 (`if not op.is_pre_u(offer_type): clear pre_u_track + pre_u_institution`) — it explains
+  the both-fields-empty signature — but `chosen_pathway` is still `matric`, which that branch would
+  have overwritten. **Reproduce against its real offer document before changing anything.**
+- **⚠ BLAST RADIUS MEASURED: exactly TWO records** (#32, #119). All 56 auto-settled rows are
+  correct. **15 rows have no pathway and 13 are DEGREE students where that is CORRECT** — do not
+  "fix" them.
+- **⚠ THE ALL-CAPS INSTITUTION IS A SEPARATE, SMALLER ISSUE** — auto rows #109/#127 are shouty too,
+  so it is not caused by the skipped block. Deliberately NOT priced in #7.
+- **The blue tick is separate again** and untraced.
+- **`repair_chosen_programme` exists** but only recognises CORRUPTION signatures (junk in slots),
+  not a missing track — it is the natural home for the two-record repair.
+- **⚠ THE PUBLISHED ESTIMATE IS THE SUPERSEDED ONE.** Analysis 6 (5.0h) is approved and posted;
+  the corrected **3.0h** analysis (id 8) is still a DRAFT. Ask the owner to approve it.
+
+**⚠ #5's quote prices only two of the three shapes offered; the link-to-the-run version is ~1.5h
+and would need a REQUOTE** — the owner has a drafted clarification to post before BrightPath
+accepts. **#3 is `scheduled`, quoted 3.5h and ACCEPTED** — student notification when a partner org
+is assigned; it is a paid feature, so it comes after #7.
 
 **▶ TWO PRODUCTION DEFECTS FOUND TODAY, both recorded and neither fixed:**
 - **TD-207 (high) — password reset is BROKEN for every admin who has already onboarded.** The mail
