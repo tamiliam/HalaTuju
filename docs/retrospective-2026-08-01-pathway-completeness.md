@@ -83,5 +83,6 @@ on a money surface switched on yesterday, so it is the owner's call rather than 
 ## Hours
 
 Planned **3.5h** across both requests (#7 at 3.0h — the corrected analysis; #8 at 0.5h).
-Spent **2.6h**. The published 5.0h analysis on #7 was superseded by the 3.0h reading after the
-blast radius was measured at two records rather than a cohort.
+Spent **3.0h** (≈0.8h investigating in the previous session, ≈2.2h building, deploying, repairing
+and documenting in this one). The first reading of #7 estimated 5.0h; that was corrected to 3.0h
+once the blast radius was measured at two records rather than a cohort.
