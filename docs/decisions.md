@@ -1,5 +1,30 @@
 # Architectural Decisions — HalaTuju
 
+## The student's partner-assignment email defaults ON, and is independent of partner comms — 2026-08-01
+**Decision:** `STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED` defaults to **true**, and is checked
+separately from `PARTNER_COMMS_ENABLED`. The email fires on a first assignment and on a genuine
+change of organisation; it is silent when the assignment is cleared and when the same organisation
+is re-saved. The organisation's own email keeps its existing every-save behaviour.
+**Alternatives considered:** (A) Dark-launch OFF like every comparable email here (`STUDENT_ASSIGNMENT_EMAIL_ENABLED`,
+`PARTNER_COMMS_ENABLED`, `SPONSOR_COMMS_ENABLED`) — rejected: those are dark because something
+outside the code is unresolved (reviewer non-objection to sharing contact details; an org_admin
+still writing the wording). Here nothing is pending: the feature was requested, quoted and paid
+for, and a paid feature that ships switched off is a non-delivery dressed as caution. (B) Gate it
+behind `PARTNER_COMMS_ENABLED` for symmetry — rejected: that flag answers "what do ORGANISATIONS
+receive?", and hanging a student's notification off it means turning partner comms dark silently
+withholds something the student is owed. (C) Notify on reassignment as a distinct "you have been
+moved" message — deferred: the requester does not intend to reassign at all, so a second copy
+deck for a case that should not occur is speculative.
+**Rationale:** the two audiences have different reasons to be switched off, so they need different
+switches. The change-of-organisation case is included because the student's interest is in knowing
+who holds their details NOW — the requester's reluctance is about the practice of reassigning, not
+about being told.
+**Trade-offs:** an on-by-default email is one deploy away from reaching real students, so the copy
+carried more review weight than a dark launch would. The clear case sends nothing, which leaves a
+gap if a student is ever un-assigned — accepted, and named rather than silently ignored.
+**Revisit if:** reassignment becomes a real flow (then it wants its own copy), or an un-assignment
+needs its own message.
+
 ## The pathway TYPE is reconciled before anything gated on it — 2026-08-01
 **Decision:** `confirm_pathway` adopts the offer letter's detected pathway type (the TD-161
 reconciliation) as its FIRST act after writing the programme, so the pre-U normalisation that

@@ -346,6 +346,14 @@ class TestTheStudentIsToldToo(TestCase):
         # …and it asks for nothing: there is no consent in this flow, by design.
         self.assertIn('do not need to do anything', body)
 
+    def test_it_comes_from_the_general_sender_not_the_interview_alias(self):
+        """`_send_html` defaults to interview@ (its main caller) and stamps interview unsubscribe
+        headers. Both are wrong on a message that has nothing to do with an interview."""
+        self._assign('smc')
+        msg = self._student_mail()[0]
+        self.assertNotIn('interview@', msg.from_email)
+        self.assertNotIn('interview@', ''.join(msg.reply_to))
+
     def test_it_is_bilingual_by_default(self):
         self._assign('smc')
         body = self._student_mail()[0].body

@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## The student is told who else is involved — request #3, 2026-08-01
+
+The first request anyone paid for. When an administrator assigns a partner organisation to a
+sourceless student, the organisation has been told since July; **the student was not** — even
+though that organisation may witness their bursary contract and can see details of their
+application in order to do it. BrightPath's own framing: *"We DO NOT want the student's consent,
+but a notification is a must."*
+
+- **A new bilingual student email**, HTML with a plain-text fallback, hung off the hook that
+  already tells the organisation. **⚠ IT IS A SECOND RECIPIENT ON ONE ACTION, NOT A NEW WORKFLOW.**
+- **⚠ THE COPY NAMES THE ACCESS, ON THE OWNER'S CALL.** It says the organisation may act as a
+  witness and can see certain details of the application — which is the requester's own reason for
+  insisting on a notification, and the warm-and-vague version would have under-stated it. It asks
+  for nothing: no accept, no decline, nothing to reply to.
+- **⚠ IT FIRES ON A CHANGE OF ORGANISATION TOO.** BrightPath does not intend ever to reassign
+  (*"it raises privacy and confidentiality issues"*), but if it happens the student must know who
+  holds their details now — silence there is the worse failure. Silent on a CLEARED assignment
+  ("your organisation has been removed" is a different message nobody asked for) and on re-saving
+  the SAME organisation, which is an administrator tidying a form.
+- **⚠ THE ORGANISATION'S OWN EMAIL IS UNTOUCHED** and still fires on every save. Narrowing it to
+  match would be a change to partner comms that nobody requested.
+- **⚠ THE SWITCH DEFAULTS ON, DELIBERATELY.** Every comparable email here dark-launches OFF; this
+  one was requested and paid for, so shipping it dark would be a non-delivery. It is
+  **independent of `PARTNER_COMMS_ENABLED`** — that flag governs what ORGANISATIONS receive and
+  must not silently withhold a notification the student is owed. Both directions have a test.
+- **⚠ THE 113-EMAIL GOLDEN CAUGHT THE NEW EMAIL AND WAS UPDATED DELIBERATELY** — 20 lines added,
+  no existing email's bytes changed, which is the property that matters.
+
 ## A confirmed pathway that is actually complete — requests #7 + #8, 2026-08-01
 
 BrightPath reported the same record twice: a chosen programme that disagreed with everything

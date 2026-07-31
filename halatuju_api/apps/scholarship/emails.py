@@ -2557,7 +2557,13 @@ def send_student_partner_assigned_email(to_email, *, student_name, org_name, eng
                          'Salam hormat,<br>' + _TEAM_MS)
     html_body = _html_email_shell(en_html) if english_only else _html_email_shell(en_html, bm_html)
 
-    return _send_html(to_email, subject, text_body, html_body)
+    # General programme email → from info@, reply to support; NOT interview@. `_send_html` defaults
+    # to the interview alias because interview mail is its main caller, and it also stamps
+    # interview unsubscribe headers — both wrong on a message that has nothing to do with an
+    # interview. Caught by reading the rendered output rather than by any test.
+    return _send_html(to_email, subject, text_body, html_body,
+                      from_email=_P.email_from,
+                      reply_to=[_P.email_support])
 
 
 def send_profile_complete_student_email(to_email, *, student_name, english_only=False):
