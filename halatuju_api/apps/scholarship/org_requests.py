@@ -543,6 +543,37 @@ def approve_analysis(analysis, admin):
     return analysis
 
 
+def withdraw_analysis(analysis, admin):
+    """Retire a DRAFT the engineer got wrong, so it can never be approved by mistake (super).
+
+    ⚠ The reason this exists: staging is POST-only and there was no way to correct or retract a
+    draft, so fixing one meant staging a second and leaving the first sitting in the approve list.
+    On 2026-08-01 that produced two near-identical drafts on request #10 — same "Draft" badge, same
+    hours, same cited files, and NO timestamp on screen — and `approve_analysis` has no guard
+    against approving both, so the stale one was one mis-click from reaching the requester as a
+    second engineer comment. The remedy is a retraction, not a sharper pair of eyes.
+
+    It stamps `superseded_at` rather than deleting the row, for two reasons. The guard already
+    exists — `approve_analysis` refuses a superseded analysis — so this is a setter for an
+    enforcement that was written and unreachable. And a withdrawn draft is part of how the estimate
+    was arrived at; the record is a working paper, and destroying the wrong turn would make the
+    thinking less legible, not more.
+
+    ⚠ APPROVED analyses are refused. Once the prose is in the thread the requester has read it, and
+    unsaying it here would leave the comment standing with no record behind it — that is
+    `modify()`'s job (it supersedes approved analyses when the description itself changes).
+    """
+    if not _is_super(admin):
+        raise OrgRequestError('forbidden')
+    if analysis.approved_at:
+        raise OrgRequestError('analysis_approved')
+    if analysis.superseded_at:
+        return analysis                      # idempotent, mirroring approve_analysis
+    analysis.superseded_at = timezone.now()
+    analysis.save(update_fields=['superseded_at', 'updated_at'])
+    return analysis
+
+
 def approved_analysis(req):
     """The analysis standing behind this request, or None. The ONE home for that question — the
     quote gate and the owner payload both read it, so they cannot disagree.

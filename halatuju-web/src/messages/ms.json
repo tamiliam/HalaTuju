@@ -5032,6 +5032,8 @@
         "analysisApprovedBy": "Diluluskan oleh {name}",
         "analysisApprove": "Luluskan dan hantar kepada organisasi",
         "analysisApproveConfirm": "Hantar analisis ini kepada organisasi? Mereka akan melihat penerangan bertulis, tetapi tidak sekali-kali jumlah jam atau fail.",
+        "analysisWithdraw": "Tarik balik draf ini",
+        "analysisWithdrawConfirm": "Tarik balik draf ini? Ia belum sampai kepada organisasi, dan menarik baliknya hanya bermakna ia tidak boleh diluluskan lagi. Ia kekal dalam rekod sebagai draf yang telah digantikan.",
         "analysisStale": "Ada perkara baharu dinyatakan pada permintaan ini selepas analisis ini ditulis. Sila semak sama ada ia masih tepat."
       },
       "error": {
@@ -5045,6 +5047,7 @@
         "analysis_required": "Sebut harga tidak boleh dihantar sehingga analisis yang menamakan fail yang dibacanya diluluskan.",
         "files_required": "Analisis mesti menamakan sekurang-kurangnya satu fail yang dibacanya.",
         "analysis_superseded": "Permintaan telah dipinda selepas analisis ini ditulis, jadi ia tidak lagi menggambarkannya.",
+        "analysis_approved": "Analisis ini telah pun dihantar kepada organisasi, jadi ia tidak boleh ditarik balik. Meminda permintaan itu sendiri yang menggantikan analisis yang telah dihantar.",
         "bad_cited_files": "Senarai fail tidak dapat dibaca."
       }
     },

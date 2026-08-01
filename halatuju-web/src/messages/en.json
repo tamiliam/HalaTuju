@@ -5032,6 +5032,8 @@
         "analysisApprovedBy": "Approved by {name}",
         "analysisApprove": "Approve and post to the organisation",
         "analysisApproveConfirm": "Post this analysis to the organisation? They will see the written explanation, but never the hours or the files.",
+        "analysisWithdraw": "Withdraw this draft",
+        "analysisWithdrawConfirm": "Withdraw this draft? It has not reached the organisation, and withdrawing it only means it can no longer be approved. It stays on the record as a superseded draft.",
         "analysisStale": "Something has been said on this request since this analysis was written. Check it still holds."
       },
       "error": {
@@ -5045,6 +5047,7 @@
         "analysis_required": "You cannot send a quote until an analysis naming the files it read has been approved.",
         "files_required": "An analysis must name at least one file it read.",
         "analysis_superseded": "The request was amended after this analysis was written, so it no longer describes it.",
+        "analysis_approved": "This analysis has already been posted to the organisation, so it cannot be withdrawn. Amending the request itself is what supersedes a posted analysis.",
         "bad_cited_files": "The list of files could not be read."
       }
     },

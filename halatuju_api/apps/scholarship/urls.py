@@ -132,6 +132,7 @@ from .views_admin import (
     AdminOrgRequestCommentView,
     AdminOrgRequestAnalysisView,
     AdminOrgRequestAnalysisApproveView,
+    AdminOrgRequestWithdrawAnalysisView,
     AdminOrgRequestApproveView,
     AdminOrgRequestDeferView,
     AdminOrgRequestModifyView,
@@ -292,6 +293,9 @@ urlpatterns = [
          AdminOrgRequestAnalysisView.as_view()),
     path('admin/scholarship/requests/<int:pk>/analysis/<int:aid>/approve/',
          AdminOrgRequestAnalysisApproveView.as_view()),
+    # ...and retires one it got wrong, so a stale draft can never be approved by mistake.
+    path('admin/scholarship/requests/<int:pk>/analysis/<int:aid>/withdraw/',
+         AdminOrgRequestWithdrawAnalysisView.as_view()),
     path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
     path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),

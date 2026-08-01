@@ -4438,6 +4438,37 @@ class AdminOrgRequestAnalysisApproveView(_OrgRequestsBase):
         return Response(self._serialize(admin, req))
 
 
+class AdminOrgRequestWithdrawAnalysisView(_OrgRequestsBase):
+    """POST <pk>/analysis/<aid>/withdraw/ — retire a DRAFT the engineer got wrong. Super only.
+
+    Staging is POST-only and a draft could not be corrected or retracted, so fixing one meant
+    staging a second and leaving the first in the approve list. Two near-identical drafts render
+    with the same badge, the same hours and the same cited files, and `approve_analysis` does not
+    refuse a second approval — so the stale one could reach the requester as a duplicate comment.
+
+    ⚠ Same org fence as approve: reached through `req.analyses`, never the model's top-level
+    manager, so a cross-org id 404s rather than resolving.
+    """
+
+    def post(self, request, pk, aid):
+        gate = self._flag()
+        if gate:
+            return gate
+        admin, req, err = self._super_side(request, pk)
+        if err:
+            return err
+        analysis = req.analyses.filter(pk=aid).first()   # org-fence: scoped to this request
+        if analysis is None:
+            return self._not_found()
+        from . import org_requests
+        try:
+            org_requests.withdraw_analysis(analysis, admin)
+        except org_requests.OrgRequestError as e:
+            return _org_request_err(e)
+        req.refresh_from_db()
+        return Response(self._serialize(admin, req))
+
+
 class AdminOrgRequestTriageView(_OrgRequestsBase):
     """POST triage (submitted → triaged). Super only."""
 

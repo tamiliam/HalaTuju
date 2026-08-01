@@ -254,6 +254,9 @@ class TestFenceCoverageCompleteness(TestCase):
         # which the requesting organisation must never see; no org-facing serializer names it.
         'AdminOrgRequestAnalysisView': 'requests-org-fenced+super-only',
         'AdminOrgRequestAnalysisApproveView': 'requests-org-fenced+super-only',
+        # Same fence, same reason: retiring a draft reaches it through `req.analyses` too, so a
+        # cross-org analysis id 404s rather than resolving.
+        'AdminOrgRequestWithdrawAnalysisView': 'requests-org-fenced+super-only',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

@@ -4,12 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { formatDate } from '@/lib/formatDate'
+import { formatDate, formatDateTime } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import {
   getOrgRequest, answerOrgRequest, askOrgRequest, commentOrgRequest,
-  approveOrgRequestAnalysis, approveOrgRequest,
+  approveOrgRequestAnalysis, withdrawOrgRequestAnalysis, approveOrgRequest,
   deferOrgRequest, modifyOrgRequest,
   declineOrgRequest, triageOrgRequest, quoteOrgRequest, requoteOrgRequest, scheduleOrgRequest,
   doneOrgRequest, aiRerunOrgRequest, type OrgRequestDetail,
@@ -30,7 +30,8 @@ import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 // reason, and a rendered test asserts `analysis_required` shows its own message.
 const KNOWN_ERR = ['bug_is_free', 'bad_hours', 'reason_required', 'triage_ai_unconfigured',
   'triage_ai_unavailable', 'ai_limit_reached',
-  'analysis_required', 'files_required', 'analysis_superseded', 'bad_cited_files']
+  'analysis_required', 'files_required', 'analysis_superseded', 'bad_cited_files',
+  'analysis_approved']
 const errText = (t: (k: string) => string, code?: string) =>
   code && KNOWN_ERR.includes(code) ? t(`admin.requests.error.${code}`) : t('admin.requests.error.generic')
 
@@ -489,7 +490,9 @@ export default function AdminRequestDetailPage() {
                       {a.repo_sha && (
                         <span className="text-xs text-gray-400 font-mono">{a.repo_sha.slice(0, 12)}</span>
                       )}
-                      <span className="text-xs text-gray-400">{formatDate(a.created_at)}</span>
+                      {/* TIME, not just the date: two drafts staged the same day were otherwise
+                          indistinguishable — same badge, same hours, same cited files. */}
+                      <span className="text-xs text-gray-400">{formatDateTime(a.created_at)}</span>
                     </div>
                     <p className="text-gray-800 whitespace-pre-wrap mt-2">{a.body}</p>
                     {a.cited_files.length > 0 && (
@@ -513,11 +516,21 @@ export default function AdminRequestDetailPage() {
                       <p className="text-xs text-amber-700 mt-2">{t('admin.requests.owner.analysisStale')}</p>
                     )}
                     {!a.approved_at && !a.superseded_at && (
-                      <button disabled={busy}
-                        onClick={() => { if (confirm(t('admin.requests.owner.analysisApproveConfirm'))) run(() => approveOrgRequestAnalysis(id, a.id, opt)) }}
-                        className="mt-3 px-4 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
-                        {t('admin.requests.owner.analysisApprove')}
-                      </button>
+                      <div className="mt-3 flex items-center gap-2">
+                        <button disabled={busy}
+                          onClick={() => { if (confirm(t('admin.requests.owner.analysisApproveConfirm'))) run(() => approveOrgRequestAnalysis(id, a.id, opt)) }}
+                          className="px-4 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                          {t('admin.requests.owner.analysisApprove')}
+                        </button>
+                        {/* Retire a draft the engineer got wrong. Nothing here has reached the
+                            requester, so this is a tidy-up, not an undo — but without it a stale
+                            draft sits in this list one click from being approved as a duplicate. */}
+                        <button disabled={busy}
+                          onClick={() => { if (confirm(t('admin.requests.owner.analysisWithdrawConfirm'))) run(() => withdrawOrgRequestAnalysis(id, a.id, opt)) }}
+                          className="px-4 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50">
+                          {t('admin.requests.owner.analysisWithdraw')}
+                        </button>
+                      </div>
                     )}
                   </li>
                 ))}

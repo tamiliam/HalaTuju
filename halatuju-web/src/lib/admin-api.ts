@@ -2084,6 +2084,13 @@ export async function approveOrgRequestAnalysis(
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/analysis/${analysisId}/approve/`,
                      'POST', {}, options)
 }
+/** Retire a DRAFT analysis the engineer got wrong, so it cannot be approved by mistake. */
+export async function withdrawOrgRequestAnalysis(
+  id: number, analysisId: number, options?: ApiOptions
+): Promise<OrgRequestDetail> {
+  return adminMutate(`/api/v1/admin/scholarship/requests/${id}/analysis/${analysisId}/withdraw/`,
+                     'POST', {}, options)
+}
 export async function approveOrgRequest(id: number, options?: ApiOptions): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/approve/`, 'POST', {}, options)
 }

@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## A staged analysis can be withdrawn, and two drafts can be told apart — 2026-08-01
+
+Found in use, not in review. Correcting a staged draft meant staging a second one, because staging
+is POST-only — and request #10 then carried two drafts that were **identical on screen**: same
+"Draft" badge, same hours, same cited files, and a DATE with no time on the day both were staged.
+The owner asked which was which and could not tell, which is the whole defect.
+
+- **⚠ `approve_analysis` HAS NO GUARD AGAINST APPROVING A SECOND ONE.** It is idempotent per
+  analysis, so the stale draft was one mis-click from reaching BrightPath as a duplicate engineer
+  comment carrying a question they had already answered.
+- **The enforcement already existed and was unreachable.** `approve_analysis` refuses a
+  `superseded_at` analysis — but nothing could set that flag on a DRAFT (`_supersede_analyses`
+  touches approved rows only, from `modify()`). **`withdraw_analysis` is the missing setter**, not
+  a new rule: super-only, refuses an APPROVED analysis (unsaying posted prose is `modify()`'s job),
+  idempotent, and it **stamps rather than deletes** — a withdrawn draft is part of how the estimate
+  was reached, and destroying the wrong turn makes the working paper less legible, not more.
+- **⚠ THE TIMESTAMP WAS SERIALISED, RENDERED, AND STILL USELESS.** `created_at` was on the payload
+  and on the screen — through `formatDate`, which is date-only. A near-miss of the
+  stored-but-never-surfaced cluster: the field was surfaced at the wrong GRANULARITY, which reads
+  as present while answering nothing. New `formatDateTime` (`01/08/2026 19:08`); the analysis rows
+  use it.
+- Both guards **bite-checked**. Removing the approved-guard fails exactly the two tests that name
+  it; removing the super-guard fails the service test while the ENDPOINT test stays green, because
+  `_super_side` refuses independently — two layers, deliberately.
+
+**No migration** (`superseded_at` already exists). Backend + web. 9 tests.
+
 ## A less specific answer is not a contradicting one — request #9, 2026-08-01
 
 BrightPath: PISMP students who had answered every question had **no** Programme or Institution tick,

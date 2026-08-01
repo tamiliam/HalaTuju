@@ -503,3 +503,106 @@ class TestTheProposedTriage(_Base):
         self.assertEqual(r.status_code, 200, r.content)
         a = req.analyses.get()
         self.assertEqual((a.proposed_kind, a.proposed_lane), ('bug', 'small_change'))
+
+
+class TestWithdrawingADraft(_Base):
+    """Retracting a draft the engineer got wrong.
+
+    The gap this closes was found in use, not in review: staging is POST-only, so correcting a
+    draft meant staging a second and leaving the first in the approve list. On 2026-08-01 request
+    #10 carried two near-identical drafts — same badge, same hours, same cited files, and the
+    screen printed a DATE with no time, so the two were indistinguishable on the day they were
+    both staged. `approve_analysis` has no guard against approving a second one, so the stale
+    draft was one mis-click from reaching the requester as a duplicate comment.
+    """
+
+    def test_a_withdrawn_draft_can_never_be_approved(self):
+        # The whole point. `approve_analysis` already refused a superseded analysis; until now
+        # nothing could set that flag on a DRAFT, so the enforcement existed and was unreachable.
+        req = self._req()
+        a = self._draft(req)
+        org_requests.withdraw_analysis(a, self.super)
+        a.refresh_from_db()
+        self.assertIsNotNone(a.superseded_at)
+        with self.assertRaises(org_requests.OrgRequestError) as ctx:
+            org_requests.approve_analysis(a, self.super)
+        self.assertEqual(ctx.exception.code, 'analysis_superseded')
+        self.assertEqual(req.comments.count(), 0)     # nothing reached the organisation
+
+    def test_the_row_SURVIVES_it_is_not_deleted(self):
+        # A withdrawn draft is part of how the estimate was arrived at. Deleting the wrong turn
+        # would make the working paper less legible, not more.
+        req = self._req()
+        a = self._draft(req, body='the first cut, which asked a question already answered')
+        org_requests.withdraw_analysis(a, self.super)
+        self.assertTrue(OrgRequestAnalysis.objects.filter(pk=a.pk).exists())
+        self.assertIn('the first cut', OrgRequestAnalysis.objects.get(pk=a.pk).body)
+
+    def test_an_APPROVED_analysis_is_refused(self):
+        # Once the prose is in the thread the requester has read it; unsaying it here would leave
+        # the comment standing with no record behind it. That is `modify()`'s job.
+        req = self._req()
+        a = self._approved(req)
+        with self.assertRaises(org_requests.OrgRequestError) as ctx:
+            org_requests.withdraw_analysis(a, self.super)
+        self.assertEqual(ctx.exception.code, 'analysis_approved')
+        a.refresh_from_db()
+        self.assertIsNone(a.superseded_at)
+
+    def test_only_a_super_may_withdraw(self):
+        req = self._req()
+        a = self._draft(req)
+        with self.assertRaises(org_requests.OrgRequestError) as ctx:
+            org_requests.withdraw_analysis(a, self.oa)
+        self.assertEqual(ctx.exception.code, 'forbidden')
+        a.refresh_from_db()
+        self.assertIsNone(a.superseded_at)
+
+    def test_withdrawing_twice_is_idempotent(self):
+        req = self._req()
+        a = self._draft(req)
+        org_requests.withdraw_analysis(a, self.super)
+        first = OrgRequestAnalysis.objects.get(pk=a.pk).superseded_at
+        org_requests.withdraw_analysis(a, self.super)
+        self.assertEqual(OrgRequestAnalysis.objects.get(pk=a.pk).superseded_at, first)
+
+    def test_withdrawing_one_draft_leaves_THE_OTHER_approvable(self):
+        # Request #10's exact shape: two drafts, retire the stale one, approve the good one.
+        req = self._req()
+        stale, good = self._draft(req, body='stale'), self._draft(req, body='good')
+        org_requests.withdraw_analysis(stale, self.super)
+        org_requests.approve_analysis(good, self.super)
+        self.assertEqual(req.comments.count(), 1)
+        self.assertEqual(req.comments.get().body, 'good')
+
+    def test_the_ENDPOINT_withdraws_and_is_super_only(self):
+        req = self._req()
+        a = self._draft(req)
+        self._auth('an-oa')                                   # the org_admin who filed it
+        r = self.client.post(f'{BASE}{req.id}/analysis/{a.id}/withdraw/', {}, format='json')
+        self.assertIn(r.status_code, (403, 404))
+        a.refresh_from_db()
+        self.assertIsNone(a.superseded_at)
+        self._auth('an-su')
+        r = self.client.post(f'{BASE}{req.id}/analysis/{a.id}/withdraw/', {}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        a.refresh_from_db()
+        self.assertIsNotNone(a.superseded_at)
+
+    def test_an_analysis_from_ANOTHER_request_is_404(self):
+        # Same org fence as approve: reached through req.analyses, never the top-level manager.
+        mine, theirs = self._req(), self._req()
+        a = self._draft(theirs)
+        self._auth('an-su')
+        r = self.client.post(f'{BASE}{mine.id}/analysis/{a.id}/withdraw/', {}, format='json')
+        self.assertEqual(r.status_code, 404)
+        a.refresh_from_db()
+        self.assertIsNone(a.superseded_at)
+
+    def test_the_endpoint_refuses_an_approved_one_with_the_code_the_UI_renders(self):
+        req = self._req()
+        a = self._approved(req)
+        self._auth('an-su')
+        r = self.client.post(f'{BASE}{req.id}/analysis/{a.id}/withdraw/', {}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('error'), 'analysis_approved')
