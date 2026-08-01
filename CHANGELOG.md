@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## A less specific answer is not a contradicting one — request #9, 2026-08-01
+
+BrightPath: PISMP students who had answered every question had **no** Programme or Institution tick,
+while the one who answered nothing **had** them. They read it as the same family as #7/#8. It is —
+and the cause is the exact inverse of how it looks.
+
+- **⚠ #127 WAS TICKED BECAUSE NOTHING COULD DISAGREE WITH HER.** No catalogue course, and an
+  institution copied straight off her letter — so the check compared the letter with itself and of
+  course agreed. **She was marking her own homework.**
+- **⚠ #107 / #110 / #115 WERE UNTICKED FOR BEING MORE PRECISE.** Their letters name the umbrella
+  ("Program Ijazah Sarjana Muda Perguruan (PISMP)"); their records name the option each was given
+  ("Sejarah Pendidikan Rendah (SK)"). One thing at two levels of detail, sharing no distinctive
+  token → `clash` → pathway `mismatch` → **and the Institution tick vanished with it**, because a
+  tick is never green while the chip is red, even though the institution matched perfectly.
+- **`programme_agreement` is the twin of `institution_agreement`**, same three rules: resolve the
+  letter through the catalogue; a different course is a clash; **an unresolvable one is `unknown`,
+  never a clash.** `offer_is_resolvable` already documented this ambiguity as by-design.
+- **⚠ THE MEASUREMENT CAUGHT A REGRESSION I HAD ALREADY DEPLOYED.** The first cut of the
+  circularity guard changed **72 records, not 4**: a pre-U record's `chosen_programme.institution`
+  is offer-derived too, so it stripped the status from every matric/STPM row and, where the
+  institution was the only agreeing field, **turned green Pathway chips grey.** Narrowed to
+  TERTIARY only, re-measured, pinned by a test. *This is what the before/after was promised for.*
+
+**Measured on live data, old derivation beside new, in one pass (`audit_pathway_ticks`):**
+**22 changed, 82 unchanged, 39 without an offer.** 10 records GAIN a tick they had earned
+(including #48, of the July regression); **7 LOSE one they had not** — the #127 self-verifying
+class, which turns out to be seven records rather than one; 5 have a red chip replaced by "cannot
+tell". **No pre-U record changes.**
+
 ## The billing screen opens on the Malaysian month — TD-209, 2026-08-01 (small-change lane)
 
 Owner: *"The billing should be on Malaysian clock."* It already was, in the two places that decide

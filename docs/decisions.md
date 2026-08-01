@@ -1,5 +1,32 @@
 # Architectural Decisions — HalaTuju
 
+## The catalogue judges the PROGRAMME too, and an offer-derived value cannot verify itself — 2026-08-01
+**Decision:** `offer_pathway.programme_agreement(course_id, offer_programme, offer_institution)`
+mirrors `institution_agreement` on the programme axis: resolve the letter through the catalogue,
+`match` on the same course id, `clash` on a different one, **`unknown` when it does not resolve —
+never a clash.** Its verdict REPLACES the token comparison for a catalogue-linked course.
+Separately, when a record has NO course_id and its `chosen_programme` came from an offer
+(`offer_letter_auto` / `offer_letter_confirmed`), the institution comparison returns `unknown`
+rather than comparing the letter with itself — **for TERTIARY pathways only.**
+**Alternatives considered:** (A) Special-case PISMP (treat the umbrella string as matching any
+PISMP course) — rejected: a string rule that has to grow, and it would not have fixed the asasi and
+university records the audit shows were affected by the same shape. (B) Let `unknown` fall through
+to the token comparison so a token match still greens the chip — rejected: the token clash is
+exactly what has to be overruled, so falling through would restore the bug. It also costs five
+records their green chip (a red replaced by "cannot tell"), which is the honest reading. (C) Apply
+the circularity guard to every record regardless of pathway — **tried, deployed, and reverted**:
+it changed 72 records instead of 4, because a pre-U record's `chosen_programme.institution` is
+offer-derived too while the tick its screen shows is `institution_status`.
+**Rationale:** the July #48 regression established that two names for one institution are not a
+disagreement; the same is true of two names for one programme at different levels of detail. And a
+value copied from a document cannot be evidence about that document.
+**Trade-offs:** for a catalogue-linked course whose letter does not resolve, a chip that was green
+on token overlap now reads "cannot tell" (5 records). Seven records lose an Institution tick they
+were awarding themselves — intended, and the point of the request.
+**Revisit if:** the catalogue gains the campus/bidang data that would let more letters resolve
+(then fewer `unknown`s), or the owner decides the Reporting Date tick should also require a
+cross-check — today it appears whenever the letter carries a date, which is why it survived on #127.
+
 ## The student's notification is a stored template on the Partner emails screen — 2026-08-01
 **Decision:** `student_assigned` is a sixth `PartnerEmailTemplate` kind. Its stored subject/body
 are what actually send, its `enabled` is the only switch, and the settings flag added hours earlier
