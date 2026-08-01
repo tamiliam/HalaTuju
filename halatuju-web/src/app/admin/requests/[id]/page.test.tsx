@@ -301,6 +301,57 @@ describe("the engineer's analysis panel (TD-204)", () => {
     confirmSpy.mockRestore()
   })
 
+  it('offers Withdraw on a draft, beside Approve', async () => {
+    // Shipped 2026-08-01 after two near-identical drafts on request #10 could neither be told
+    // apart nor retracted. RENDERED rather than grepped, per this file's docblock: a regex can
+    // prove the string is in the source; it cannot prove the button reaches the screen.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ analyses: [analysis()] })
+    expect(screen.getByText('admin.requests.owner.analysisWithdraw')).toBeTruthy()
+  })
+
+  it('offers no Withdraw on one already approved', async () => {
+    // The server refuses it too (`analysis_approved`). A button that appears and then 400s would
+    // suggest posted prose can be unsaid, which is `modify()`'s job, not this one's.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ analyses: [approvedAnalysis()] })
+    expect(screen.queryByText('admin.requests.owner.analysisWithdraw')).toBeNull()
+  })
+
+  it('withdrawing calls the endpoint with the analysis id', async () => {
+    viewerRole = { role: 'super', is_super_admin: true }
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true)
+    await show({ analyses: [analysis({ id: 20 })] })
+    mockApi.withdrawOrgRequestAnalysis.mockResolvedValue(detail())
+    fireEvent.click(screen.getByText('admin.requests.owner.analysisWithdraw'))
+    await waitFor(() => expect(mockApi.withdrawOrgRequestAnalysis)
+      .toHaveBeenCalledWith(4, 20, { token: 'tok' }))
+    confirmSpy.mockRestore()
+  })
+
+  it('declining the confirm withdraws NOTHING', async () => {
+    // The one destructive-looking control on this panel. Cancelling must be a no-op.
+    viewerRole = { role: 'super', is_super_admin: true }
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false)
+    await show({ analyses: [analysis({ id: 20 })] })
+    fireEvent.click(screen.getByText('admin.requests.owner.analysisWithdraw'))
+    expect(mockApi.withdrawOrgRequestAnalysis).not.toHaveBeenCalled()
+    confirmSpy.mockRestore()
+  })
+
+  it('two drafts staged the same day render DISTINGUISHABLE times', async () => {
+    // The defect itself: `formatDate` is date-only, so both rows printed 01/08/2026 beside an
+    // identical badge, identical hours and identical files. Nothing on screen separated them.
+    viewerRole = { role: 'super', is_super_admin: true }
+    await show({ analyses: [
+      analysis({ id: 21, created_at: '2026-08-01T11:08:12Z' }),
+      analysis({ id: 20, created_at: '2026-08-01T11:01:22Z' }),
+    ] })
+    const stamps = screen.getAllByText(/01\/08\/2026 \d{2}:\d{2}/).map((n) => n.textContent)
+    expect(stamps).toHaveLength(2)
+    expect(stamps[0]).not.toEqual(stamps[1])
+  })
+
   it('warns when something was said after the analysis was written', async () => {
     // An answer can change scope without superseding — only `modify` does that — so this is a
     // note for the owner's judgement, not a block.
