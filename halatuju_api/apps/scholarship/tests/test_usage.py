@@ -155,7 +155,8 @@ class TestFaultInjection(TestCase):
 class TestAggregation(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.month = timezone.now().strftime('%Y-%m')
+        # LOCALTIME, for the reason in TD-209: these events are grouped in Malaysian time.
+        cls.month = timezone.localtime().strftime('%Y-%m')
         cls.a = PartnerOrganisation.objects.create(code='aa', name='Alpha Org')
         cls.b = PartnerOrganisation.objects.create(code='bb', name='Beta Org')
         cls.app_a = _make_app(cls.a)

@@ -3281,7 +3281,15 @@ class AdminBillingUsageView(_AdminBase):
             return Response({'error': 'bad_month', 'code': 'bad_month'},
                             status=status.HTTP_400_BAD_REQUEST)
         if not month:
-            month = timezone.now().strftime('%Y-%m')
+            # TD-209: LOCALTIME, not now(). `timezone.now()` is an aware UTC instant and
+            # `strftime` prints it WITHOUT converting, so this defaulted to the UTC month while
+            # every other month computation on this screen is Malaysian — `available_months()`
+            # groups with `.dates()` and `monthly_usage` filters on `__year`/`__month`, both of
+            # which Postgres evaluates under TIME_ZONE='Asia/Kuala_Lumpur'. The two therefore
+            # disagreed for the eight hours between Malaysian midnight and 08:00 on the 1st, and
+            # the page opened on a month the data had already left. No figure was ever wrong; the
+            # default was. A test pins the two computations to the same clock.
+            month = timezone.localtime().strftime('%Y-%m')
 
         from . import usage
         if is_super:

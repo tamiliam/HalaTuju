@@ -195,8 +195,10 @@ class TestReconciliation(TestCase):
     def test_reconciliation_reports_the_meters_blind_spot(self):
         """Unattributed events are the figure that says a tenant is being under-charged.
         It belongs on the reconciliation, in the open."""
-        now = timezone.now()
-        month = now.strftime('%Y-%m')
+        # LOCALTIME (TD-209): the UsageEvents below are stamped now and counted in Malaysian
+        # time, so the month this reconciles must be the Malaysian one — otherwise this file
+        # goes red for the eight hours after Malaysian midnight on the 1st.
+        month = timezone.localtime().strftime('%Y-%m')
         PlatformCost.objects.create(
             period_month=month, source='gcp', service='Cloud Vision API',
             sku='Document Text Detection Operations', amount_myr=Decimal('5.89'),

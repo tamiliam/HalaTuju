@@ -29,7 +29,11 @@ def _token(uid):
 class TestBillingUsageEndpoint(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.month = timezone.now().strftime('%Y-%m')
+        # LOCALTIME: the rows below are stamped now and grouped by Postgres under
+        # TIME_ZONE='Asia/Kuala_Lumpur', so the month under test has to be the Malaysian
+        # one. Using now() here encoded the very bug TD-209 was about, and made this file
+        # go red for eight hours on the 1st of every month.
+        cls.month = timezone.localtime().strftime('%Y-%m')
         cls.a = PartnerOrganisation.objects.create(code='aa', name='Alpha Org')
         cls.b = PartnerOrganisation.objects.create(code='bb', name='Beta Org')
 
@@ -170,3 +174,57 @@ class TestBillingUsageEndpoint(TestCase):
         block = data['organisations'][0]
         self.assertEqual(set(block), {'organisation_id', 'organisation', 'is_platform',
                                       'services', 'totals', 'storage_bytes'})
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   BILLING_USAGE_ENABLED=True)
+class TestTheMonthTheScreenOpensOn(TestCase):
+    """TD-209. Three things work out "which month" on this screen, and one of them used a
+    different clock from the other two.
+
+    The data side is Malaysian throughout — `available_months()` groups with `.dates()` and
+    `monthly_usage` filters on `__year`/`__month`, both evaluated by Postgres under
+    `TIME_ZONE='Asia/Kuala_Lumpur'`. The DEFAULT month was formatted straight off
+    `timezone.now()`, which is an aware UTC instant that `strftime` prints without converting.
+
+    For the eight hours between Malaysian midnight and 08:00 on the 1st, the two disagreed and
+    the page opened on a month the data had already left. No figure was ever wrong — the default
+    was. What this pins is that ALL THREE agree, at the exact instant they used to diverge.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='tz', name='Timezone Org')
+        PartnerAdmin.objects.create(supabase_user_id='tz-super', role='admin',
+                                    is_active=True, is_super_admin=True,
+                                    name='Super', email='s@example.org')
+
+    def _payload(self):
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("tz-super")}')
+        return client.get(URL).json()
+
+    def test_the_default_month_is_the_malaysian_one_inside_the_window(self):
+        """02:00 on 1 September in Malaysia is still 31 August by the world clock."""
+        from datetime import UTC, datetime
+        from unittest import mock
+        inside = datetime(2026, 8, 31, 18, 0, tzinfo=UTC)     # = 2026-09-01 02:00 MYT
+        with mock.patch('apps.scholarship.views_admin.timezone.localtime',
+                        return_value=timezone.localtime(inside)):
+            self.assertEqual(self._payload()['month'], '2026-09')
+
+    def test_the_default_month_names_a_month_the_data_can_actually_be_in(self):
+        """The load-bearing one: an event stamped at that instant belongs to the Malaysian
+        month, so the month the screen opens on must be the month that event is counted in."""
+        from datetime import UTC, datetime
+        from unittest import mock
+        inside = datetime(2026, 8, 31, 18, 0, tzinfo=UTC)
+        ev = UsageEvent.objects.create(organisation=self.org, service='email')
+        UsageEvent.objects.filter(pk=ev.pk).update(created_at=inside)
+        with mock.patch('apps.scholarship.views_admin.timezone.localtime',
+                        return_value=timezone.localtime(inside)):
+            data = self._payload()
+        self.assertEqual(data['month'], '2026-09')
+        self.assertIn('2026-09', data['months'])            # the list agrees…
+        block = next(o for o in data['organisations'] if o['organisation_id'] == self.org.id)
+        self.assertEqual(block['totals']['events'], 1)      # …and so does the count
