@@ -182,10 +182,13 @@ _EVERGREEN = (
 
 def _today_str():
     """Today's date as a plain 'DD Month YYYY' string, fed to the prompt so the model reasons about
-    time correctly (it has no innate 'now'). UTC-based (approximate day is all the model needs);
-    Windows-safe (no %-d)."""
+    time correctly (it has no innate 'now'). MALAYSIAN date — `timezone.now()` is an aware UTC
+    instant that `strftime` prints without converting, so a profile drafted after 8pm local time
+    used to be stamped with YESTERDAY. Harmless for the model's purposes, which is why the old
+    comment called UTC good enough; corrected with TD-209 because it is the same one-word mistake
+    and there is no reason to keep an off-by-a-day date in a document. Windows-safe (no %-d)."""
     from django.utils import timezone
-    return timezone.now().strftime('%d %B %Y')
+    return timezone.localtime().strftime('%d %B %Y')
 
 
 PROFILE_PROMPT = """You are writing the profile of a B40 student applying for education \

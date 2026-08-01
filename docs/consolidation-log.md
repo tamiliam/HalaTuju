@@ -24,6 +24,7 @@ _(2026-07-29 — **the sponsor gift-membership fix was logged here and then PROM
 
 _(Not logged here as a small change: the **Check-2 case summary** LLM feature — `verdict_narrative.py` + `AdminVerdictSummaryView` + FE lead paragraph, DARK behind `VERDICT_CASE_SUMMARY_ENABLED`. It's a feature, tracked as STR-proof S4 (dark) in CHANGELOG + halatuju.md + CLAUDE.md Next-Sprint; retro to follow after the owner live-validates the voice and flips the flag.)_
 - 2026-08-01 fix: Last paid shows the date alone — the payment run reference removed from that column only (BrightPath request #5, shape one of three offered and priced; the API still sends `reference` for the link shape they may still choose) (payments — `admin/payments/page.tsx`, new `admin/payments/page.test.tsx` +3, bite-checked; no i18n, no backend change)
+- 2026-08-01 fix: the billing screen opens on the MALAYSIAN month (TD-209 — the data side was already local in both places; only the default was UTC, and the three test fixtures carried the same mistake so they went red instead of catching it) (billing — `views_admin.AdminBillingUsageView`, `profile_engine._today_str`, `test_billing_usage.py` +2 & fixture, `test_usage.py` + `test_platform_cost.py` fixtures; bite-checked)
 
 ## Reviews
 

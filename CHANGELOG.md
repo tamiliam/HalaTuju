@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## The billing screen opens on the Malaysian month — TD-209, 2026-08-01 (small-change lane)
+
+Owner: *"The billing should be on Malaysian clock."* It already was, in the two places that decide
+the figures — `available_months()` groups with `.dates()` and `monthly_usage` filters on
+`__year`/`__month`, both evaluated by Postgres under `TIME_ZONE='Asia/Kuala_Lumpur'`. **Only the
+default month the page opened on was formatted straight off `timezone.now()`**, an aware UTC
+instant that `strftime` prints without converting.
+
+- **⚠ NO FIGURE WAS EVER WRONG — THE DEFAULT WAS.** For the eight hours between Malaysian midnight
+  and 08:00 on the 1st, the page opened on a month the data had already left.
+- **⚠ THE TEST FIXTURES CARRIED THE SAME MISTAKE, WHICH IS WHY THEY WENT RED INSTEAD OF CATCHING
+  IT.** Three files derived their month from `timezone.now()`, agreeing with the bug and
+  disagreeing with the data. **A test that reproduces a defect's own reasoning cannot detect it.**
+- Two new tests pin all three computations at the instant they used to diverge (2026-08-31 18:00
+  UTC = 2026-09-01 02:00 MYT). Bite-checked: reverting the one word fails both.
+- **Same class, also fixed:** generated student profiles were stamped with the UTC date, so one
+  drafted after 8pm local carried yesterday's.
+
 ## "Last paid" shows the date alone — request #5, 2026-08-01 (small-change lane)
 
 The funding summary's Last paid column read `PR-2026-07-26-01 · 26/07/2026`. The column is headed

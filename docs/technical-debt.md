@@ -2446,7 +2446,7 @@ contact from a cold domain is the classic cause.
 dashboard — NOT the Cloud Run `EMAIL_HOST_*` variables. The two are configured separately and a fix
 applied to one does nothing for the other.
 
-### [TD-209] Billing reads "this month" in UTC while the usage data is grouped in Malaysian time — medium
+### [TD-209] ✅ RESOLVED 2026-08-01 — Billing read "this month" in UTC while the usage data is grouped in Malaysian time
 **Found 2026-08-01**, while running the suite for requests #7/#8. Not caused by that work —
 reproduced on a tree without it.
 
@@ -2461,10 +2461,24 @@ page defaults to a month the data has already left — an org_admin opening Bill
 with this month's events invisible until they pick it by hand. Seven tests
 (`test_usage.py`, `test_billing_usage.py`, `test_platform_cost.py`) go red for exactly that window.
 
-**Fix:** `timezone.localtime().strftime('%Y-%m')` at the default, plus a test that pins the two
-computations to the same clock. One line — but it sits on the billing surface that
-`BILLING_USAGE_ENABLED` switched on 2026-08-01, so it is a decision rather than a quiet tidy-up.
-**Status:** open, awaiting the owner's go-ahead.
+**Fixed 2026-08-01** (owner: *"The billing should be on Malaysian clock"*).
+`timezone.localtime().strftime('%Y-%m')` at the default — the data side needed no change, being
+Malaysian already in both places.
+
+**Two tests pin it at the exact instant the three used to diverge** (2026-08-31 18:00 UTC =
+2026-09-01 02:00 MYT): the month the screen opens on is `2026-09`, and an event stamped at that
+instant is counted in it. Bite-checked — reverting the one word fails both.
+
+**⚠ THE TEST FIXTURES CARRIED THE SAME MISTAKE, which is why they went red rather than catching
+it.** `test_billing_usage.py`, `test_usage.py` and `test_platform_cost.py` each derived their
+month from `timezone.now()`, so they agreed with the bug and disagreed with the data. A test that
+reproduces a defect's own reasoning cannot detect it — it only fails, confusingly, in the window.
+All three now use `localtime()`.
+
+**Also corrected, same one-word class:** `profile_engine._today_str` stamped generated profiles
+with the UTC date, so a profile drafted after 8pm local time carried yesterday's. Its comment had
+called UTC "approximate day is all the model needs", which was true and is no longer a reason to
+keep it wrong.
 
 ### [TD-210] A stale profile pathway can still overwrite an offer-confirmed one — low
 **Found 2026-08-01** while fixing requests #7/#8. `copy_pathway` now refuses a BLANK
