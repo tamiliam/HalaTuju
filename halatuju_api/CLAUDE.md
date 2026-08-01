@@ -550,7 +550,36 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-01, after request #3)
+## Next Sprint (as of 2026-08-01, after request #3 — second pass)
+
+**✅ REQUEST #3 IS NOW VISIBLE AND OWNER-OPERATED.** Commit `1376f16f`. Migration **`0142`**
+(choices only — `sqlmigrate` prints NO DDL; the only production step was the ledger row, 142/142).
+**api + web both deployed and confirmed** (`halatuju-web-00776-lzw`). Template row seeded live and
+verified `enabled=true`. `pytest` **5291 — zero failures.** `jest` 1275. **3.5h quoted / 2.8h spent.**
+
+- **⚠ THE OWNER OPENED SOURCES → PARTNER EMAILS AND THE NEW EMAIL WAS NOT THERE.** It was ON,
+  sending, and invisible: no switch, no wording, its only control a settings value. **"A stored
+  field with no surface is a defect" extends to a SWITCH with no surface.**
+- **⚠ I COPIED THE PATTERN FROM THE WRONG NEIGHBOUR.** `emails.py` holds ~30 hard-coded student
+  emails behind settings flags — house style for emails nobody switches. **"Both are student
+  emails" was true and irrelevant; "both are things an owner OPERATES" was the property that
+  mattered.** When a feature can be on or off, name in the plan WHICH SCREEN shows its state.
+- **`student_assigned` is the 6th `PartnerEmailTemplate` kind.** The stored body IS what sends, the
+  switch is the row, and `STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED` is **deleted** — a second
+  invisible control is the original defect again. Seeded ON; a reseed never touches a changed switch.
+- **⚠ `to_student` COMES FROM THE SERVER**, never from the FE kind list, so the label cannot drift.
+  When `PARTNER_COMMS_ENABLED` is off the row says ON SCREEN that it is still sending.
+- **⚠ FLATTENING A BILINGUAL EMAIL ONTO A MONOLINGUAL MECHANISM ANGLICISED HALF OF IT** —
+  `programme_name`/`team_signoff` resolve to EN, so the ms half read "Program BrightPath Bursary"
+  signed by "The BrightPath Bursary Team". Nothing failed; the copy still looked bilingual. Added
+  `programme_name_ms`/`team_signoff_ms`. **List what a shared mechanism ASSUMES about content
+  before moving content onto it.**
+- **⚠ TD-209's 7 FAILURES CLOSED ON THEIR OWN** when the UTC month caught up with the Malaysian
+  one — the diagnosis confirming itself. **The defect is unfixed and returns on 1 September.**
+- **⚠ Tamil copy for the new row is MY FIRST DRAFT** (`emails.toStudent`, `studentUnaffected`,
+  `kind/when/desc.student_assigned`) — owner's eye still owed.
+
+## Superseded — previous Next Sprint (as of 2026-08-01, after request #3, first pass)
 
 **✅ SHIPPED — REQUEST #3, the first PAID request.** Commits `129da5bd`, `0e8adcee`. Retro
 `docs/retrospective-2026-08-01-student-partner-assigned.md`; decision ×1; lessons ×2.

@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## …and the owner can actually see it — request #3, second pass, 2026-08-01
+
+The owner opened Sources → Partner emails and asked where the new email was. **Correct question.**
+It was on, sending, and invisible: no switch on any screen, no wording editor, its only control a
+value in the deployment settings.
+
+- **⚠ I COPIED THE PATTERN FROM THE WRONG NEIGHBOUR.** `emails.py` holds ~30 hard-coded student
+  emails behind settings flags, so "a student email is hard-coded" felt like house style — and it
+  is, for emails nobody has ever needed to switch. This platform has a **surface** for exactly this
+  family. "Both are student emails" was true and irrelevant; **"both are things an owner operates"
+  was the property that mattered.**
+- **The row IS the thing now.** Sixth stored template: the wording the owner edits is what sends,
+  the switch is a stored value, and the settings flag is **deleted** rather than left as a second,
+  invisible control. Seeded **switched on**, so the screen agrees with what production was already
+  doing rather than silently changing it. A reseed never touches a switch the owner has changed.
+- **⚠ IT IS THE ONE ROW WHOSE RECIPIENT IS THE STUDENT.** The card is titled "Partner emails", so
+  the server states `to_student` and the row carries a label — a reader must never infer the
+  recipient from the wording.
+- **⚠ AND WHEN PARTNER COMMS GO DARK, THAT ROW SAYS ON SCREEN THAT IT IS STILL SENDING.** The amber
+  banner would otherwise read as covering a message that has not stopped.
+- **⚠ FLATTENING A BILINGUAL EMAIL ONTO A MONOLINGUAL MECHANISM ANGLICISED HALF OF IT.**
+  `programme_name` / `team_signoff` resolve to English, so the Malay half rendered "Program
+  BrightPath Bursary" signed by "The BrightPath Bursary Team" — nothing failed, the copy still
+  looked bilingual, and only the brand words were wrong in the half whose reader needs it most.
+  `programme_name_ms` / `team_signoff_ms` fix it inside per-organisation branding.
+- Migration **`0142`** alters `choices` only — `sqlmigrate` prints no DDL, so the sole production
+  step was the ledger row (142/142).
+- **The seven TD-209 failures closed on their own** once the UTC month caught up with the Malaysian
+  one. That is the diagnosis confirming itself; the defect is still there for next month.
+
 ## The student is told who else is involved — request #3, 2026-08-01
 
 The first request anyone paid for. When an administrator assigns a partner organisation to a

@@ -1,5 +1,27 @@
 # Architectural Decisions — HalaTuju
 
+## The student's notification is a stored template on the Partner emails screen — 2026-08-01
+**Decision:** `student_assigned` is a sixth `PartnerEmailTemplate` kind. Its stored subject/body
+are what actually send, its `enabled` is the only switch, and the settings flag added hours earlier
+(`STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED`) is deleted. The API reports `to_student` so the screen
+labels the one row a partner never receives, and states on screen that the row keeps sending when
+`PARTNER_COMMS_ENABLED` is off. Seeded switched ON; a reseed never touches a changed switch.
+**Alternatives considered:** (A) Keep the hard-coded bilingual mailer and add a read-only "Wording"
+preview beside a switch — rejected: an editor that cannot edit is worse than none, and a template
+row whose body is not what sends is an active lie the owner would eventually act on. (B) Leave it
+in the settings and tell the owner where the flag is — rejected: it is their platform, and a
+control only an engineer can reach is not a control. (C) Extend the model with `subject_ms`/`body_ms`
+columns so each language is edited separately — rejected for now as a real schema change for a
+gain the one-body form already delivers; revisit if a second bilingual template appears.
+**Rationale:** the owner looked for it on the screen where everything that sends lives, and it was
+not there. The durable fix is not "add a switch somewhere" but making the surface authoritative —
+the row they read IS the behaviour, so the two cannot drift.
+**Trade-offs:** the per-recipient `english_only` nicety is lost (every student gets both languages);
+for this email that is immaterial and arguably better. Flattening also required `programme_name_ms`
+and `team_signoff_ms` tokens, because the partner family assumed one language throughout.
+**Revisit if:** a second bilingual template arrives (then option C), or a student-email family grows
+enough to want its own screen rather than a labelled row on the partner one.
+
 ## The student's partner-assignment email defaults ON, and is independent of partner comms — 2026-08-01
 **Decision:** `STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED` defaults to **true**, and is checked
 separately from `PARTNER_COMMS_ENABLED`. The email fires on a first assignment and on a genuine
