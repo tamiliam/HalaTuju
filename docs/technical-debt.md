@@ -2494,3 +2494,26 @@ next offer confirm re-corrects the type.
 `confirm_pathway` writes, so the durable home stops being stale by construction. That overwrites
 the student's own declaration surface with our reading of her letter, which is a decision the owner
 should make; see the sync decision in `decisions.md` (2026-08-01), option (B).
+
+### [TD-211] The Reporting Date tick has no cross-check — low
+**Found 2026-08-01**, while fixing request #9; raised with the owner rather than decided.
+
+The Programme and Institution ticks both compare a recorded value against the offer letter. The
+**Reporting Date tick does not compare anything**: it appears whenever the letter carries a date,
+because the date shown IS the date read off the letter (`fieldVerification.ts` — `out.reportingDate`
+is set from `pathway_check.reporting_date` alone, with no status).
+
+**Why it is arguably correct:** there is genuinely nothing for it to disagree with. The student does
+not declare a reporting date, so no second source exists to check against.
+
+**Why it was worth raising:** BrightPath noticed it in exactly the right place. On #127 — whose
+programme never resolved and whose institution was verifying itself — the Reporting Date tick was
+the last one standing after request #9 removed the other. A tick that can never fail looks identical
+to a tick that has passed, and the officer cannot tell them apart.
+
+**Options if the owner wants it to mean more:** (a) render it differently from a verified tick (an
+"as printed" marker rather than a green tick); (b) require the date to be consistent with the intake
+year the same letter states, which is a real second signal on the same document; (c) leave it, and
+document that it means "read from the letter", not "verified".
+
+**Status:** open, awaiting the owner's decision.

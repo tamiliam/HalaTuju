@@ -550,7 +550,42 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-01, after request #3 — second pass)
+## Next Sprint (as of 2026-08-01, after request #9)
+
+**✅ SHIPPED — REQUEST #9: A LESS SPECIFIC ANSWER IS NOT A CONTRADICTING ONE.** Commits
+`4d61658a`..`ce3524cd`. Retro `docs/retrospective-2026-08-01-pismp-tick-inversion.md`; decision ×1;
+lessons ×2; **TD-211** raised. **No migration · 2 deploys.** `pytest` **5348**. Ledger vs prod:
+scholarship **142/142**, courses **67/67**. **3.0h estimated / 3.0h spent.**
+
+- **⚠ THE TICK WAS AWARDED FOR HAVING NOTHING ON FILE AND WITHHELD FOR PRECISION.** The tick needs
+  BOTH "the institution agrees" AND "the chip is not red". #107/#110/#115/#80 had the institution
+  agreeing ALL ALONG — the *programme* comparison (umbrella vs the specific option, no shared
+  token) turned the chip red and **suppressed a tick that had already qualified.** #127 had no
+  catalogue course, so her institution was compared with the letter it was COPIED FROM, matched
+  itself, and her chip was never red because there was nothing to disagree with.
+- **`programme_agreement` = the twin of `institution_agreement`** (resolve through the catalogue;
+  a DIFFERENT course clashes; an UNRESOLVABLE one is `unknown`, **never** a clash) and it REPLACES
+  the token comparison for a linked course. Plus: an offer-derived `chosen_programme.institution`
+  cannot verify its own letter — **⚠ TERTIARY ONLY.**
+- **⚠ THE FIRST CUT OF THAT GUARD CHANGED 72 RECORDS INSTEAD OF 4 AND WAS ALREADY DEPLOYED.**
+  "Came from an offer" is ALSO true of every matric/STPM row — request #7 had made
+  `confirm_pathway` write them that way HOURS EARLIER. Every test passed; the tests described the
+  shape I meant, not the predicate I wrote. **When a change alters a DERIVED value, the blast
+  radius is every record satisfying your predicate, not the ones you had in mind.**
+- **⚠ `audit_pathway_ticks` (cron `audit-pathway-ticks`, READ-ONLY) computes the OLD and NEW answer
+  in ONE pass.** Stronger than two runs a deploy apart — drift stops being an explanation. **Reach
+  for this on ANY derived-value change; it is the only reason the regression above never reached
+  the owner.**
+- **Live outcome:** 22 changed / 82 unchanged / 39 no offer. **10 gain an earned tick** (incl. #48),
+  **7 lose a self-awarded one**, 5 red→"cannot tell", **no pre-U record moved.**
+
+**▶ NEXT = REQUEST #10** — a reviewers surface (table + detail, Emails tab, Terms). Analysed at an
+**indicative 16h** and **BLOCKED on an owner ruling: Organisation or Programme?** The nav reserves a
+placeholder at `/admin/programme/reviewers`; the requester asked for Organisation. **⚠ Do not build
+before that is settled** — it decides who can see the page once a second programme exists.
+**#2 remains `triaged` with an approved 6.5h analysis and NO QUOTE**, so it cannot move.
+
+## Superseded — previous Next Sprint (as of 2026-08-01, after request #3 — second pass)
 
 **✅ REQUEST #3 IS NOW VISIBLE AND OWNER-OPERATED.** Commit `1376f16f`. Migration **`0142`**
 (choices only — `sqlmigrate` prints NO DDL; the only production step was the ledger row, 142/142).
