@@ -303,6 +303,44 @@ def institution_agreement(course_id: str, recorded: str, offer_institution: str)
     return 'match' if a == b else 'clash'
 
 
+def programme_agreement(course_id: str, offer_programme: str, offer_institution: str) -> str:
+    """Does the OFFER LETTER's programme contradict the RECORDED catalogue course?
+    ``'match'`` / ``'clash'`` / ``'unknown'`` — judged through the CATALOGUE, not by string overlap.
+
+    The twin of ``institution_agreement``, and it exists for the same reason on the other axis
+    (request #9, 2026-08-01). A PISMP letter states the UMBRELLA programme every teaching student
+    is offered — "Program Ijazah Sarjana Muda Perguruan (PISMP)" — while the record holds the
+    SPECIFIC option that student was given, "Sejarah Pendidikan Rendah (SK)". Those are one thing
+    described at two levels of detail and they share no distinctive token, so the token comparison
+    called it a clash, the pathway read `mismatch`, and BOTH the Programme and the Institution tick
+    were withheld from #107 / #110 / #115 — the records that were RIGHT. Meanwhile #127, whose
+    programme never resolved to a catalogue course at all, had nothing to contradict her and kept
+    her ticks. The tick was being awarded for having nothing on file.
+
+    ``offer_is_resolvable`` already documents this exact ambiguity as by-design: a PISMP offer names
+    the campus but not the aliran, which is why the student is asked to pick their course.
+
+    The rules, in order:
+
+    1. **Nothing to judge with → ``'unknown'``** (no recorded course_id, or the letter printed no
+       programme). The caller falls back to the token comparison, which is right for a free-text
+       declaration: there the two strings are genuinely independent statements.
+    2. **The letter resolves to a UNIQUE catalogue course → compare course ids.** Same id
+       ``'match'``; a different one ``'clash'`` — that is a real disagreement about which
+       programme, and the only case that should ever paint the chip red.
+    3. **The letter does NOT resolve → ``'unknown'``, never a clash.** An umbrella name, or one
+       our catalogue cannot pin, is a LESS SPECIFIC answer — not a contradicting one. Same
+       principle as ``institution_agreement`` rule 3: an unreadable answer is not a wrong one.
+    """
+    if not (course_id or '').strip() or not (offer_programme or '').strip():
+        return 'unknown'
+    match = resolve_catalogue_course(offer_programme, offer_institution)
+    resolved = (match or {}).get('course_id') or ''
+    if not resolved:
+        return 'unknown'                     # umbrella / unpinnable — less specific, not contrary
+    return 'match' if resolved == course_id.strip() else 'clash'
+
+
 def offer_contradicts_course_institution(course_id: str, offer_institution: str) -> bool:
     """True only when the offer letter names a place that is demonstrably NOT any campus of
     ``course_id`` — i.e. the letter and the declared course disagree about WHERE.

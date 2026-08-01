@@ -15,6 +15,7 @@ from apps.scholarship.models import (
     ApplicantDocument, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.offer_parse import parse_govt_offer
+from apps.scholarship.pathway_engine import student_offer_check
 from apps.scholarship.services import autofill_pathway_from_offer
 
 
@@ -581,3 +582,106 @@ class TestPismpBidangResolver(TestCase):
     def test_bidang_blank_or_unknown(self):
         self.assertEqual(op.pismp_courses_for_bidang(''), [])
         self.assertEqual(op.pismp_courses_for_bidang('Nonexistent Field Xyz'), [])
+
+
+class TestPismpUmbrellaIsNotADisagreement(_Base):
+    """Request #9 (BrightPath, 2026-08-01). A PISMP letter names the UMBRELLA programme every
+    teaching student is offered; the record names the SPECIFIC option that student was given.
+    One thing at two levels of detail, sharing no distinctive token — so the token comparison
+    called it a clash, the pathway read `mismatch`, and BOTH the Programme and the Institution
+    tick were withheld from the students whose records were RIGHT (#107, #110, #115), while the
+    one student with nothing on file (#127) kept her ticks because there was nothing to
+    contradict her.
+
+    The real IPG catalogue has 27 campuses per PISMP course and no acronyms, which is why the
+    fixture below uses three near-identical names.
+    """
+
+    def setUp(self):
+        self.kb = Institution.objects.create(
+            institution_id='ipgkb', institution_name='Institut Pendidikan Guru Kampus Kota Bharu',
+            type='IPG', state='Kelantan')
+        self.ipoh = Institution.objects.create(
+            institution_id='ipgip', institution_name='Institut Pendidikan Guru Kampus Ipoh',
+            type='IPG', state='Perak')
+        self.sejarah = Course.objects.create(
+            course_id='50PD016S00P', course='Sejarah Pendidikan Rendah (SK)', level='Ijazah',
+            department='Education', field='Education', field_key=self.ft)
+        self.muzik = Course.objects.create(
+            course_id='50PD099M00P', course='Muzik Pendidikan Rendah (SK)', level='Ijazah',
+            department='Education', field='Education', field_key=self.ft)
+        for c in (self.sejarah, self.muzik):
+            for i in (self.kb, self.ipoh):
+                CourseInstitution.objects.create(course=c, institution=i)
+
+    _UMBRELLA = 'PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)'
+
+    def _pismp_app(self, **over):
+        return self._app(chosen_pathway='pismp', chosen_programme={
+            'course_id': over.pop('course_id', '50PD016S00P'),
+            'course_name': over.pop('course_name', 'Sejarah Pendidikan Rendah (SK)'),
+            'institution': over.pop('institution', self.kb.institution_name),
+            'source': over.pop('source', 'offer_letter_confirmed')}, **over)
+
+    def test_the_umbrella_name_no_longer_reads_as_a_mismatch(self):
+        """#107's exact shape: the letter says PISMP, the record says Sejarah Pendidikan Rendah."""
+        app = self._pismp_app()
+        doc = self._offer(app, self._UMBRELLA, self.kb.institution_name)
+        chk = student_offer_check(doc)
+        self.assertNotEqual(chk['pathway'], 'mismatch')
+
+    def test_and_so_the_institution_tick_survives(self):
+        """The tick was lost as a CONSEQUENCE — a tick is never green while the pathway is a
+        mismatch — so the institution half is the half the officer actually noticed."""
+        app = self._pismp_app()
+        chk = student_offer_check(self._offer(app, self._UMBRELLA, self.kb.institution_name))
+        self.assertEqual(chk['chosen_institution_status'], 'match')
+        self.assertNotEqual(chk['pathway'], 'mismatch')
+
+    def test_a_letter_naming_a_DIFFERENT_catalogue_course_is_still_a_clash(self):
+        """The guard must not blunt a real disagreement: a letter that pins a different course
+        is exactly the case the chip exists for."""
+        app = self._pismp_app()
+        chk = student_offer_check(self._offer(app, 'Muzik Pendidikan Rendah (SK)',
+                                              self.kb.institution_name))
+        self.assertEqual(chk['pathway'], 'mismatch')
+
+    def test_a_free_text_record_still_uses_the_token_comparison(self):
+        """No course_id → no catalogue to ask, and the two strings are genuinely independent
+        statements, so that path is unchanged.
+
+        Note what the token path can and cannot do, because it is the reason the catalogue path
+        earns its keep: "Sejarah Pendidikan Rendah" and "Muzik Pendidikan Rendah" read as a MATCH
+        here, sharing the generic education words while differing in the only word that names the
+        subject. Only a genuinely unrelated programme clashes."""
+        app = self._app(chosen_pathway='pismp', chosen_programme={
+            'course_name': 'Diploma Perakaunan',
+            'institution': self.kb.institution_name, 'source': ''})
+        chk = student_offer_check(self._offer(app, 'Muzik Pendidikan Rendah (SK)',
+                                              self.kb.institution_name))
+        self.assertEqual(chk['pathway'], 'mismatch')
+
+
+class TestAnInstitutionCopiedFromTheLetterCannotVerifyIt(_Base):
+    """Request #9, the other half. #127 had no catalogue course and an institution copied
+    straight off her offer, so the check compared the letter with itself, agreed, and gave her
+    the ONE Institution tick among the PISMP students — the one record nobody had verified."""
+
+    def test_an_offer_derived_institution_no_longer_ticks_itself(self):
+        raw = 'INSTITUT PENDIDIKAN GURU KAMPUS TEMENGGONG IBRAHIM JALAN DATIN HALIMAH 80350 JOHOR'
+        app = self._app(chosen_programme={
+            'course_name': 'Ijazah Sarjana Muda Perguruan (PISMP)',
+            'institution': raw, 'source': 'offer_letter_auto'})
+        chk = student_offer_check(self._offer(app, 'PROGRAM IJAZAH SARJANA MUDA PERGURUAN (PISMP)',
+                                              raw))
+        self.assertEqual(chk['chosen_institution_status'], 'unknown')
+
+    def test_a_students_OWN_declaration_still_counts_as_a_comparison(self):
+        """The guard is about provenance, not about strictness: two independent statements that
+        agree are real evidence, and a student who typed their own institution still gets it."""
+        app = self._app(chosen_programme={
+            'course_name': 'Diploma Perakaunan',
+            'institution': 'Politeknik Seberang Perai', 'source': ''})
+        chk = student_offer_check(self._offer(app, 'DIPLOMA PERAKAUNAN',
+                                              'Politeknik Seberang Perai'))
+        self.assertEqual(chk['chosen_institution_status'], 'match')

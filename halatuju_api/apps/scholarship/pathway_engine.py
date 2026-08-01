@@ -83,7 +83,8 @@ def _field_status(declared: str, offer: str) -> str:
 def offer_pathway_match(declared_programme: str, declared_institution: str,
                         offer_programme: str, offer_institution: str,
                         declared_track: str = '', offer_stream: str = '',
-                        institution_agreement: str = '') -> str:
+                        institution_agreement: str = '',
+                        programme_agreement: str = '') -> str:
     """'match' / 'mismatch' / 'unknown' for an offer vs the declared pathway.
 
     A clash on the institution, the programme, OR the STREAM/TRACK makes it a mismatch (the
@@ -107,10 +108,18 @@ def offer_pathway_match(declared_programme: str, declared_institution: str,
     catalogue — #48, owner 2026-07-25: red Pathway chip, lost Institution tick, a red chip docked off
     the verdict band, and a student asked to confirm a pathway that was already right. The token path
     remains for a FREE-TEXT declaration with no course_id, where there is no catalogue to ask.
+
+    ``programme_agreement`` — the same, for the PROGRAMME axis (request #9, 2026-08-01). A PISMP
+    letter names the umbrella ("Program Ijazah Sarjana Muda Perguruan (PISMP)") while the record
+    names the specific option ("Sejarah Pendidikan Rendah (SK)"): one thing at two levels of
+    detail, sharing no distinctive token, so the token test called it a clash and painted a correct
+    record as a mismatch — which then withheld the Institution tick too, because a tick is never
+    green while the pathway is a mismatch. Passing the catalogue's verdict here REPLACES the token
+    comparison for a catalogue-linked course, exactly as the institution one does.
     """
     from .offer_pathway import parse_stpm_stream
     inst = institution_agreement or _field_status(declared_institution, offer_institution)
-    prog = _field_status(declared_programme, offer_programme)
+    prog = programme_agreement or _field_status(declared_programme, offer_programme)
     dtrack, otrack = parse_stpm_stream(declared_track), parse_stpm_stream(offer_stream)
     track_clash = bool(dtrack and otrack and dtrack != otrack)
     track_match = bool(dtrack and otrack and dtrack == otrack)
@@ -384,14 +393,29 @@ def student_offer_check(doc) -> dict:
     # The institution dimension is resolved through the CATALOGUE whenever the student's pick is a
     # catalogue course, because two spellings of one institution share no distinctive token (#48).
     # '' → the caller falls back to the token comparison (a free-text declaration, no course_id).
-    from .offer_pathway import institution_agreement as op_institution_agreement
+    from .offer_pathway import (institution_agreement as op_institution_agreement,
+                                programme_agreement as op_programme_agreement)
     _cp = getattr(application, 'chosen_programme', None) if application is not None else None
     _cid = (_cp.get('course_id') or '').strip() if isinstance(_cp, dict) else ''
     _stored_inst = (_cp.get('institution') or '').strip() if isinstance(_cp, dict) else ''
-    inst_agreement = op_institution_agreement(_cid, _stored_inst, institution) if _cid else ''
+    # Was the RECORDED institution itself copied off an offer letter? Then comparing it with that
+    # letter is circular — it agrees with itself by construction, and a tick earned that way says
+    # only "we read this once" (request #9: #127 has no course_id, her institution is the letter's
+    # own raw text, and she was the ONLY PISMP student with an Institution tick). The same
+    # circularity break `_declared_pathway` already applies below, on the other field.
+    _cp_source = (_cp.get('source') or '') if isinstance(_cp, dict) else ''
+    _inst_is_the_offers_own = _cp_source in ('offer_letter_auto', 'offer_letter_confirmed')
+    inst_agreement = op_institution_agreement(_cid, _stored_inst, institution) if _cid else (
+        # No catalogue to ask AND the value came from the letter → we cannot verify it at all.
+        'unknown' if _inst_is_the_offers_own else '')
+    # The PROGRAMME dimension gets the same catalogue treatment as the institution (request #9):
+    # a PISMP letter names the umbrella, the record names the specific option, and the two share no
+    # distinctive token — a difference in DETAIL, read as a disagreement. '' → token comparison.
+    prog_agreement = op_programme_agreement(_cid, programme, institution) if _cid else ''
     pathway = offer_pathway_match(decl_prog, decl_inst, programme, institution,
                                   declared_track=decl_track, offer_stream=stream,
-                                  institution_agreement=inst_agreement)
+                                  institution_agreement=inst_agreement,
+                                  programme_agreement=prog_agreement)
 
     intake = (f.get('intake') or '').strip()
     reporting_date = (f.get('reporting_date') or '').strip()   # report/registration = course start
