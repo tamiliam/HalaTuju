@@ -1939,6 +1939,9 @@ class CronRunView(APIView):
         # CONFIRMED offer left them blank. Reads the offer already on file — no re-extraction.
         # Scope a run with PATHWAY_REPAIR_APP_IDS; idempotent, so a repeat is a no-op.
         'repair-confirmed-pathway': 'repair_confirmed_pathway',
+        # READ-ONLY (request #9): the Pathway chip + Institution tick as they read now, beside how
+        # they read before the fix. Writes nothing; safe to run any time.
+        'audit-pathway-ticks': 'audit_pathway_ticks',
     }
 
     def post(self, request, job):
