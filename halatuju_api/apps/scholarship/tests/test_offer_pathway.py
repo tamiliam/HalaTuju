@@ -685,3 +685,19 @@ class TestAnInstitutionCopiedFromTheLetterCannotVerifyIt(_Base):
         chk = student_offer_check(self._offer(app, 'DIPLOMA PERAKAUNAN',
                                               'Politeknik Seberang Perai'))
         self.assertEqual(chk['chosen_institution_status'], 'match')
+
+    def test_a_PRE_U_record_is_left_exactly_as_it_was(self):
+        """The guard is TERTIARY-only, and this is why. A matric/STPM record's
+        `chosen_programme.institution` is offer-derived too — `confirm_pathway` writes it from the
+        letter — but the tick a pre-U student's screen shows is `institution_status`, not this one.
+        Applying the guard to them anyway changed 68 records the request was not about: it stripped
+        this status from every matric and STPM row, and where the institution was the only agreeing
+        field it turned a green Pathway chip grey. Measured on live data before shipping."""
+        school = 'Kolej Matrikulasi Selangor'
+        app = self._app(chosen_pathway='matric', pre_u_institution=school, pre_u_track='sains',
+                        chosen_programme={'course_name': 'Program Matrikulasi',
+                                          'institution': school,
+                                          'source': 'offer_letter_confirmed'})
+        chk = student_offer_check(self._offer(app, 'Program Matrikulasi (SAINS)', school))
+        self.assertEqual(chk['chosen_institution_status'], 'match')
+        self.assertEqual(chk['pathway'], 'match')

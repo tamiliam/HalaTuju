@@ -404,7 +404,18 @@ def student_offer_check(doc) -> dict:
     # own raw text, and she was the ONLY PISMP student with an Institution tick). The same
     # circularity break `_declared_pathway` already applies below, on the other field.
     _cp_source = (_cp.get('source') or '') if isinstance(_cp, dict) else ''
-    _inst_is_the_offers_own = _cp_source in ('offer_letter_auto', 'offer_letter_confirmed')
+    # ⚠ TERTIARY ONLY. A pre-U record's `chosen_programme.institution` is offer-derived too, but
+    # the tick a pre-U student's screen actually shows is `institution_status` (the pre_u_
+    # institution comparison) — this value drives the TERTIARY tick they never see. Applying the
+    # guard to them regardless changed 68 more records than the request was about: it stripped
+    # this status from every matric/STPM row and, where the institution was the only agreeing
+    # field, turned a green Pathway chip grey. Caught by measuring on live data before saying a
+    # word — which is the whole reason that measurement was promised.
+    from .offer_pathway import is_pre_u as op_is_pre_u
+    _declared_type = (getattr(application, 'chosen_pathway', '') or '').strip().lower() \
+        if application is not None else ''
+    _inst_is_the_offers_own = (not op_is_pre_u(_declared_type)
+                               and _cp_source in ('offer_letter_auto', 'offer_letter_confirmed'))
     inst_agreement = op_institution_agreement(_cid, _stored_inst, institution) if _cid else (
         # No catalogue to ask AND the value came from the letter → we cannot verify it at all.
         'unknown' if _inst_is_the_offers_own else '')
