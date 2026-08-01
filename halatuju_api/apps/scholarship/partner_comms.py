@@ -82,6 +82,11 @@ PLACEHOLDERS = {
                 'team_signoff'},
     'assigned': {'org_name', 'contact_person', 'programme_name', 'student_name',
                  'team_signoff'},
+    # The student's own copy of `assigned`. No `contact_person` — that token is the organisation's
+    # named contact and would greet a student by a stranger's name. `support_email` is here because
+    # this email names a NEW party who might plausibly contact them, so it carries the safety line.
+    'student_assigned': {'org_name', 'programme_name', 'student_name', 'team_signoff',
+                         'support_email', 'programme_name_ms', 'team_signoff_ms'},
 }
 
 KINDS = tuple(k for k, _ in PartnerEmailTemplate.KIND_CHOICES)
@@ -146,8 +151,15 @@ def recipient_for(org):
 
 
 def is_enabled(kind):
-    """True when this kind may send: the platform flag AND the template's own switch."""
-    if not getattr(settings, 'PARTNER_COMMS_ENABLED', False):
+    """True when this kind may send.
+
+    A PARTNER kind needs BOTH gates: the platform flag and the template's own switch. A STUDENT
+    kind needs only its own switch (owner, 2026-08-01) — ``PARTNER_COMMS_ENABLED`` answers "what do
+    ORGANISATIONS receive?", and a student's notice that an organisation can see their details must
+    not disappear because the partner feature was taken dark for an unrelated reason.
+    """
+    if (kind not in PartnerEmailTemplate.STUDENT_KINDS
+            and not getattr(settings, 'PARTNER_COMMS_ENABLED', False)):
         return False
     return PartnerEmailTemplate.objects.filter(kind=kind, enabled=True).exists()
 
@@ -430,6 +442,14 @@ def _scalars(context):
         'team_signoff': context.get('team_signoff') or platform.team_signoff('en'),
         'count': context.get('count', ''),
         'student_name': context.get('student_name', ''),
+        'support_email': context.get('support_email') or platform.email_support,
+        # Malay variants of the two brand tokens. A partner email is English throughout, but a
+        # STUDENT email carries both languages in one body, and `programme_name`/`team_signoff`
+        # resolve to English — so the Malay half rendered "Program BrightPath Bursary" signed by
+        # "The BrightPath Bursary Team". Supplying the ms forms as tokens keeps that half inside
+        # per-organisation branding instead of hard-coding a brand literal into the stored copy.
+        'programme_name_ms': context.get('programme_name_ms') or platform.programme_name('ms'),
+        'team_signoff_ms': context.get('team_signoff_ms') or platform.team_signoff('ms'),
     }
 
 

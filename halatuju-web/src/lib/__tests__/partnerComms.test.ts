@@ -17,14 +17,16 @@ const org = (o: Partial<PartnerEmailOrg>): PartnerEmailOrg => ({
 })
 
 const tpl = (t: Partial<PartnerEmailTemplate>): PartnerEmailTemplate => ({
-  kind: 'weekly_summary', enabled: false, subject: 's', body: 'b', placeholders: [],
-  updated_by_email: '', updated_at: null, last_sent_at: null, last_sent_orgs: 0, ...t,
+  kind: 'weekly_summary', enabled: false, to_student: false, subject: 's', body: 'b',
+  placeholders: [], updated_by_email: '', updated_at: null, last_sent_at: null,
+  last_sent_orgs: 0, ...t,
 })
 
 describe('PARTNER_EMAIL_KINDS', () => {
-  it('lists the five emails in card order', () => {
+  it('lists the emails in card order, the student one last', () => {
     expect(PARTNER_EMAIL_KINDS).toEqual([
       'weekly_summary', 'shortlisted_followup', 'awaiting_review', 'awarded', 'assigned',
+      'student_assigned',
     ])
   })
 

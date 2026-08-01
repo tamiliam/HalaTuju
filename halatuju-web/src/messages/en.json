@@ -3187,21 +3187,24 @@
           "shortlisted_followup": "Chase list",
           "awaiting_review": "Awaiting review",
           "awarded": "Awarded",
-          "assigned": "A student joins their list"
+          "assigned": "A student joins their list",
+          "student_assigned": "The student is told"
         },
         "when": {
           "weekly_summary": "Mondays, 8am",
           "shortlisted_followup": "Mondays, 8am",
           "awaiting_review": "within the hour",
           "awarded": "within the hour",
-          "assigned": "immediately"
+          "assigned": "immediately",
+          "student_assigned": "immediately"
         },
         "desc": {
           "weekly_summary": "How the organisation's bursary students are getting on, counted by stage.",
           "shortlisted_followup": "The organisation's students who were shortlisted but have not finished applying, with when they applied and when they were last active.",
           "awaiting_review": "One of the organisation's students has completed everything, and the case is now with the review panel.",
           "awarded": "A funder has committed to one of the organisation's students — news the organisation can share as its own.",
-          "assigned": "A student who named no organisation has been placed with this one, and now counts among its bursary students."
+          "assigned": "A student who named no organisation has been placed with this one, and now counts among its bursary students.",
+          "student_assigned": "The student is told which organisation has been placed with them, that it may act as a witness to their bursary contract, and that it can see certain details of their application. It asks them for nothing."
         },
         "note": {
           "weekly_summary": "Counts only — no student is named.",
@@ -3214,7 +3217,9 @@
           "unknownPlaceholder": "This email cannot fill in: {list}. Remove it, or use one of the details listed below the box.",
           "conduitPhrasing": "Please reword: {list}. A partner organisation runs this bursary alongside us, so the students are the organisation's — not the reader's, and not ones they merely referred.",
           "required": "A subject and a body are both needed."
-        }
+        },
+        "toStudent": "to the student",
+        "studentUnaffected": "Still sending — the switch above governs what organisations receive, and this one tells a student who can see their own details."
       },
       "witness": {
         "title": "Witness organisation",

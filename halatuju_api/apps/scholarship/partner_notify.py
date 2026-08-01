@@ -279,3 +279,44 @@ def notify_partner_assigned(application, org):
         logger.warning('partner_comms: assigned email failed for app=%s org=%s',
                        getattr(application, 'id', None), getattr(org, 'id', None), exc_info=True)
         return False
+
+
+def notify_student_assigned(application, org):
+    """Tell the STUDENT that a partner organisation has been placed with them (request #3).
+
+    The other half of ``notify_partner_assigned``, sent at the same moment to the other party. It
+    goes through the same stored-template machinery — so the owner switches it on and edits its
+    wording on the same screen as the five organisation emails, and the row they read IS what
+    sends. The screen labels its recipient, because it is the one entry there that a partner
+    never receives.
+
+    ⚠ The recipient check is the STUDENT's address, so ``qualifying_partners()`` is deliberately
+    NOT consulted: an organisation with no contact email of its own must still not stop the
+    student being told. Fully best-effort — an email problem must never fail the assignment.
+    """
+    if org is None or application is None:
+        return False
+    try:
+        if not partner_comms.is_enabled('student_assigned'):
+            return False
+        template = _template('student_assigned')
+        if template is None:
+            return False
+        profile = getattr(application, 'profile', None)
+        to_email = (getattr(application, 'notify_email', '')
+                    or getattr(profile, 'contact_email', '') or '')
+        if not to_email:
+            return _skip(org, 'student_assigned', 'no_student_address')
+        first = ((getattr(profile, 'name', '') or '').strip().split(' ') or [''])[0]
+        subject, text_body, html_body = partner_comms.render(
+            'student_assigned', template,
+            {'org_name': org.name, 'student_name': first or 'there'})
+        ok = send_partner_email(to_email, subject=subject, text_body=text_body,
+                                html_body=html_body)
+        _log(org, 'student_assigned', ok=bool(ok), note='' if ok else 'send_failed',
+             recipients=[to_email], subject=subject, students=1, application=application)
+        return bool(ok)
+    except Exception:  # noqa: BLE001 — never break the assignment
+        logger.warning('partner_comms: student assigned email failed for app=%s org=%s',
+                       getattr(application, 'id', None), getattr(org, 'id', None), exc_info=True)
+        return False

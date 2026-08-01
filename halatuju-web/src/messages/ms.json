@@ -3187,21 +3187,24 @@
           "shortlisted_followup": "Senarai susulan",
           "awaiting_review": "Menunggu semakan",
           "awarded": "Dianugerahkan",
-          "assigned": "Pelajar menyertai senarai mereka"
+          "assigned": "Pelajar menyertai senarai mereka",
+          "student_assigned": "Pelajar dimaklumkan"
         },
         "when": {
           "weekly_summary": "Setiap Isnin, 8 pagi",
           "shortlisted_followup": "Setiap Isnin, 8 pagi",
           "awaiting_review": "dalam sejam",
           "awarded": "dalam sejam",
-          "assigned": "serta-merta"
+          "assigned": "serta-merta",
+          "student_assigned": "serta-merta"
         },
         "desc": {
           "weekly_summary": "Bagaimana pelajar bursari organisasi itu berkembang, dikira mengikut peringkat.",
           "shortlisted_followup": "Pelajar organisasi itu yang disenarai pendek tetapi belum menyelesaikan permohonan, dengan tarikh mereka memohon dan tarikh aktiviti terakhir.",
           "awaiting_review": "Seorang pelajar organisasi itu telah melengkapkan semuanya, dan kesnya kini bersama panel semakan.",
           "awarded": "Seorang penaja telah komited kepada pelajar organisasi itu — berita yang boleh dikongsi organisasi itu sebagai miliknya.",
-          "assigned": "Seorang pelajar yang tidak menamakan organisasi telah diletakkan dengan organisasi ini, dan kini dikira sebagai pelajar bursarinya."
+          "assigned": "Seorang pelajar yang tidak menamakan organisasi telah diletakkan dengan organisasi ini, dan kini dikira sebagai pelajar bursarinya.",
+          "student_assigned": "Pelajar dimaklumkan organisasi mana yang telah diletakkan bersama mereka, bahawa organisasi itu boleh bertindak sebagai saksi kontrak bursari mereka, dan bahawa ia dapat melihat butiran tertentu permohonan mereka. Tiada apa-apa diminta daripada mereka."
         },
         "note": {
           "weekly_summary": "Kiraan sahaja — tiada pelajar dinamakan.",
@@ -3214,7 +3217,9 @@
           "unknownPlaceholder": "E-mel ini tidak boleh mengisi: {list}. Buangkannya, atau gunakan salah satu butiran yang disenaraikan di bawah kotak.",
           "conduitPhrasing": "Sila ubah kata-kata: {list}. Organisasi rakan menjalankan bursari ini bersama kami, jadi pelajar itu milik organisasi — bukan milik pembaca, dan bukan sekadar orang yang mereka rujuk.",
           "required": "Subjek dan isi kedua-duanya diperlukan."
-        }
+        },
+        "toStudent": "kepada pelajar",
+        "studentUnaffected": "Masih dihantar — suis di atas mengawal apa yang diterima oleh organisasi, manakala e-mel ini memberitahu pelajar siapa yang dapat melihat butiran mereka sendiri."
       },
       "witness": {
         "title": "Organisasi saksi",

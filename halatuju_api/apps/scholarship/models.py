@@ -3375,7 +3375,18 @@ class PartnerEmailTemplate(models.Model):
         ('awaiting_review', 'Awaiting review'),
         ('awarded', 'Awarded'),
         ('assigned', 'A student joins their list'),
+        # Request #3 (2026-08-01). The ONE row here whose recipient is the STUDENT, not the
+        # organisation — it is the other half of `assigned`, sent at the same moment. It lives on
+        # this screen because that is where the owner looks for anything that sends, and every
+        # surface must say who receives it. ⚠ It is NOT silenced by PARTNER_COMMS_ENABLED (owner,
+        # 2026-08-01): that flag answers "what do ORGANISATIONS receive?", and a student's notice
+        # about access to their own details must not disappear with it.
+        ('student_assigned', 'The student is told'),
     ]
+
+    #: Kinds whose recipient is the STUDENT. Everything else on this screen goes to the partner
+    #: organisation, so the distinction has to be data rather than something a reader remembers.
+    STUDENT_KINDS = frozenset({'student_assigned'})
     kind = models.CharField(max_length=32, choices=KIND_CHOICES, unique=True)
     enabled = models.BooleanField(default=False)
     subject = models.CharField(max_length=255)

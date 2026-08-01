@@ -1420,38 +1420,6 @@ def confirm_pathway(application):
     return True
 
 
-def notify_student_partner_assigned(application, org):
-    """Tell the STUDENT that a partner organisation has been assigned to support them (request #3).
-
-    The organisation is told at the same moment by ``partner_notify.notify_partner_assigned``; this
-    is the second recipient on that one action, not a new workflow. The requester's rule is that we
-    do NOT seek the student's consent but a notification is a must — so this asks nothing and there
-    is nothing to reply to.
-
-    Fully best-effort, like every other email hung off an administrator's action: an email problem
-    must never undo an assignment that has already been saved. Returns True only on a real send.
-    """
-    from django.conf import settings as _settings
-    if org is None or application is None:
-        return False
-    if not getattr(_settings, 'STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED', False):
-        return False
-    try:
-        from .emails import english_only_email, send_student_partner_assigned_email
-        profile = getattr(application, 'profile', None)
-        to_email = (application.notify_email or getattr(profile, 'contact_email', '') or '')
-        return bool(send_student_partner_assigned_email(
-            to_email,
-            student_name=getattr(profile, 'name', '') if profile else '',
-            org_name=getattr(org, 'name', '') or '',
-            english_only=english_only_email(application),
-        ))
-    except Exception:  # noqa: BLE001 — never break the assignment
-        logger.warning('student partner-assigned email failed for app=%s org=%s',
-                       getattr(application, 'id', None), getattr(org, 'id', None), exc_info=True)
-        return False
-
-
 def sync_reporting_date_from_offer(application, offer=None):
     """Copy the offer letter's reporting date into ``ScholarshipApplication.reporting_date``.
 

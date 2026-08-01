@@ -9,13 +9,20 @@
  */
 import type { PartnerEmailOrg, PartnerEmailTemplate } from './admin-api'
 
-/** The five emails, in the order the card lists them. Mirrors `partner_comms.KINDS`. */
+/**
+ * The emails, in the order the card lists them. Mirrors `partner_comms.KINDS`.
+ *
+ * `student_assigned` is last and is the ONE entry whose recipient is the student, not the
+ * organisation — it is the other half of `assigned`, sent at the same moment. The card labels its
+ * recipient from the server's `to_student`, never from this list, so the two cannot drift.
+ */
 export const PARTNER_EMAIL_KINDS = [
   'weekly_summary',
   'shortlisted_followup',
   'awaiting_review',
   'awarded',
   'assigned',
+  'student_assigned',
 ] as const
 
 export type PartnerEmailKind = (typeof PARTNER_EMAIL_KINDS)[number]

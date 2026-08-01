@@ -354,11 +354,17 @@ class TestTheStudentIsToldToo(TestCase):
         self.assertNotIn('interview@', msg.from_email)
         self.assertNotIn('interview@', ''.join(msg.reply_to))
 
-    def test_it_is_bilingual_by_default(self):
+    def test_it_is_bilingual_and_the_malay_half_is_actually_in_malay(self):
+        """Flattening a bilingual email into one template body is where this quietly goes wrong:
+        `programme_name` and `team_signoff` resolve to ENGLISH, so the Malay half rendered
+        "Program BrightPath Bursary" signed by "The BrightPath Bursary Team" until the ms tokens
+        existed. Both halves must read as their own language."""
         self._assign('smc')
         body = self._student_mail()[0].body
-        self.assertIn('saksi', body)                    # the BM mirror is present
-        self.assertIn('Salam hormat', body)
+        self.assertIn('saksi', body)                                  # the BM mirror is present
+        self.assertIn('Program Bursari BrightPath', body)             # ms programme name
+        self.assertIn('Pasukan Program Bursari BrightPath', body)     # ms sign-off
+        self.assertIn('The BrightPath Bursary Team', body)            # …and the en one survives
 
     def test_a_change_of_organisation_tells_the_student_who_holds_their_details_now(self):
         self._assign('smc')
@@ -397,19 +403,30 @@ class TestTheStudentIsToldToo(TestCase):
         """Patched at the student mailer itself, not at something upstream of it — a guard that
         swallows an error raised before the code under test proves nothing about the guard."""
         from unittest import mock
-        with mock.patch('apps.scholarship.emails.send_student_partner_assigned_email',
+        with mock.patch('apps.scholarship.partner_notify.send_partner_email',
                         side_effect=RuntimeError('smtp down')):
             r = self._assign('smc')
         self.assertEqual(r.status_code, 200, 'the assignment must still succeed')
         self.app.refresh_from_db()
         self.assertEqual(self.app.witness_org_id, self.org.id)
 
-    @override_settings(STUDENT_PARTNER_ASSIGNED_EMAIL_ENABLED=False)
     def test_the_switch_stops_the_student_email_without_touching_the_org_one(self):
+        """The switch is the row on the Sources screen — a stored value the owner can see and
+        change, not a deployment setting only an engineer knows about."""
+        PartnerEmailTemplate.objects.filter(kind='student_assigned').update(enabled=False)
         r = self._assign('smc')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(self._student_mail(), [])
         self.assertEqual(len([m for m in mail.outbox if 'joined' in m.subject]), 1)
+
+    def test_the_wording_the_owner_edits_is_the_wording_that_sends(self):
+        """The row would be a lie otherwise: an editor whose text never reaches anyone."""
+        PartnerEmailTemplate.objects.filter(kind='student_assigned').update(
+            subject='A note about {org_name}', body='Hi {student_name},\n\nEdited copy.')
+        self._assign('smc')
+        msg = self._student_mail()[0]
+        self.assertEqual(msg.subject, 'A note about Kandaswamy Foundation')
+        self.assertIn('Edited copy.', msg.body)
 
     @override_settings(PARTNER_COMMS_ENABLED=False)
     def test_the_student_is_told_even_while_partner_comms_are_dark(self):

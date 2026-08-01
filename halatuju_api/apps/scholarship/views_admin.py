@@ -1603,9 +1603,15 @@ def _partner_email_dict(tpl, last=None):
     """One partner-email template as the admin screen sees it: the wording, its switch, the
     placeholders it may use, and when it last went out."""
     from . import partner_comms
+    from .models import PartnerEmailTemplate
     return {
         'kind': tpl.kind,
         'enabled': bool(tpl.enabled),
+        # Who receives it. Every row on this screen but one goes to the partner ORGANISATION, and
+        # the exception (request #3) goes to the STUDENT — a difference the screen must state
+        # rather than leave a reader to infer from the wording. It also explains why the platform
+        # partner-comms switch does not silence that row.
+        'to_student': tpl.kind in PartnerEmailTemplate.STUDENT_KINDS,
         'subject': tpl.subject,
         'body': tpl.body,
         'placeholders': sorted(partner_comms.PLACEHOLDERS.get(tpl.kind, set())),
@@ -1888,7 +1894,9 @@ class AdminApplicationWitnessView(_SourcesBase):
         # Request #3 (2026-08-01): tell the STUDENT too. That organisation may witness their
         # bursary contract and can see details of their application in order to do it, and until
         # now only the organisation was told. Requester: "We DO NOT want the student's consent, but
-        # a notification is a must." Same best-effort contract as the line above.
+        # a notification is a must." Same best-effort contract as the line above, and the same
+        # stored template — the owner switches it and edits its wording on the Sources screen
+        # beside the five organisation emails, with its recipient labelled there.
         #
         # Only on a CHANGE of organisation: re-saving the same one is an administrator tidying a
         # form, and the student has already been told that fact. (The organisation's own email
@@ -1897,8 +1905,8 @@ class AdminApplicationWitnessView(_SourcesBase):
         # organisation has been removed" is a different message, and one the requester has not
         # asked for — they do not intend to reassign at all.
         if app.witness_org is not None and app.witness_org_id != previous_org_id:
-            from . import services as _services
-            _services.notify_student_partner_assigned(app, app.witness_org)
+            from . import partner_notify
+            partner_notify.notify_student_assigned(app, app.witness_org)
         return Response({
             'id': app.id,
             'witness_org': app.witness_org.code if app.witness_org else None,

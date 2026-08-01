@@ -114,10 +114,26 @@ export default function PartnerEmailsCard({ token, t }: {
                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500 whitespace-nowrap">
                       {t(`admin.sources.emails.when.${tpl.kind}`)}
                     </span>
+                    {/* Every other row on this card goes to the partner ORGANISATION. The one
+                        that goes to the STUDENT has to say so here — the card is titled "Partner
+                        emails", so a reader would otherwise reasonably assume the partner gets it. */}
+                    {tpl.to_student && (
+                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 whitespace-nowrap">
+                        {t('admin.sources.emails.toStudent')}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 text-sm text-gray-500">
                     {t(`admin.sources.emails.desc.${tpl.kind}`)}
                   </p>
+                  {/* The amber banner above says partner emails are switched off platform-wide.
+                      That is true of every row except this one, and leaving it unsaid would mean
+                      the banner reads as covering a message that is in fact still sending. */}
+                  {tpl.to_student && !data.comms_enabled && (
+                    <p className="mt-1 text-xs text-amber-700">
+                      {t('admin.sources.emails.studentUnaffected')}
+                    </p>
+                  )}
                   <p className="mt-1 text-xs text-gray-400">
                     {tpl.last_sent_at
                       ? t('admin.sources.emails.lastSent', {

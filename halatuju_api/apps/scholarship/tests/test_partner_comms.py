@@ -285,14 +285,28 @@ class TestSeededTemplates(TestCase):
         from django.core.management import call_command
         call_command('seed_partner_email_templates', verbosity=0)
 
-    def test_seeds_all_five_kinds_disabled(self):
-        self.assertEqual(PartnerEmailTemplate.objects.count(), 5)
-        self.assertEqual(PartnerEmailTemplate.objects.filter(enabled=True).count(), 0)
+    def test_seeds_every_kind_and_only_the_paid_one_arrives_switched_on(self):
+        """Derived from KINDS, not a literal count — a hand-written number silently stops
+        covering the newest kind while its name goes on promising otherwise."""
+        self.assertEqual(PartnerEmailTemplate.objects.count(), len(partner_comms.KINDS))
+        on = set(PartnerEmailTemplate.objects.filter(enabled=True)
+                 .values_list('kind', flat=True))
+        # Everything an ORGANISATION receives is dark until its wording is agreed; the student's
+        # notice was requested, quoted and paid for, so it arrives live (request #3).
+        self.assertEqual(on, {'student_assigned'})
 
     def test_idempotent(self):
         from django.core.management import call_command
         call_command('seed_partner_email_templates', verbosity=0)
-        self.assertEqual(PartnerEmailTemplate.objects.count(), 5)
+        self.assertEqual(PartnerEmailTemplate.objects.count(), len(partner_comms.KINDS))
+
+    def test_a_switch_the_owner_changed_is_never_reset_by_a_reseed(self):
+        """`enabled` is the owner's, not the seed's — including switching the student's OFF."""
+        from django.core.management import call_command
+        PartnerEmailTemplate.objects.filter(kind='student_assigned').update(enabled=False)
+        call_command('seed_partner_email_templates', verbosity=0)
+        self.assertFalse(
+            PartnerEmailTemplate.objects.get(kind='student_assigned').enabled)
 
     def test_every_placeholder_is_one_the_kind_supplies(self):
         for tpl in PartnerEmailTemplate.objects.all():
@@ -346,11 +360,23 @@ class TestPartnerEmailEndpoints(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
-    def test_org_admin_sees_the_five_templates(self):
+    def test_org_admin_sees_every_template(self):
         self._auth('pc-oa')
         body = self.client.get('/api/v1/admin/scholarship/partner-emails/').json()
         self.assertEqual([t['kind'] for t in body['templates']], list(partner_comms.KINDS))
-        self.assertTrue(all(t['enabled'] is False for t in body['templates']))
+        by_kind = {t['kind']: t for t in body['templates']}
+        self.assertTrue(all(t['enabled'] is False for t in body['templates']
+                            if t['kind'] != 'student_assigned'))
+        self.assertTrue(by_kind['student_assigned']['enabled'])
+
+    def test_the_payload_says_which_row_goes_to_the_student(self):
+        """The screen is titled "Partner emails" and every other row goes to an organisation, so
+        the recipient cannot be left for a reader to infer from the wording."""
+        self._auth('pc-oa')
+        body = self.client.get('/api/v1/admin/scholarship/partner-emails/').json()
+        by_kind = {t['kind']: t for t in body['templates']}
+        self.assertTrue(by_kind['student_assigned']['to_student'])
+        self.assertFalse(by_kind['assigned']['to_student'])
 
     def test_payload_states_who_qualifies(self):
         _org('noaddress')

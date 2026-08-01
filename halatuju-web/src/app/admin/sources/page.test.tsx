@@ -140,3 +140,46 @@ describe('the source Save reflects whether the row was edited', () => {
     expect(mockApi.updateSource).not.toHaveBeenCalled()
   })
 })
+
+
+/**
+ * Request #3. The card is titled "Partner emails" and every row but one goes to an organisation.
+ * The exception goes to the STUDENT, so the screen has to say so — and it must not let the
+ * platform-wide "partner emails are off" banner imply that row has stopped too, because it has not.
+ */
+describe('the row that goes to the student, not the partner', () => {
+  const withStudentRow = (comms_enabled: boolean) => ({
+    ...EMAILS,
+    comms_enabled,
+    templates: [
+      { kind: 'assigned', enabled: true, to_student: false, subject: 'S', body: 'B',
+        last_sent_at: null, last_sent_orgs: 0, updated_at: null, updated_by_email: '' },
+      { kind: 'student_assigned', enabled: true, to_student: true, subject: 'S', body: 'B',
+        last_sent_at: null, last_sent_orgs: 0, updated_at: null, updated_by_email: '' },
+    ],
+  }) as unknown as api.PartnerEmailsPayload
+
+  const openEmails = async () => {
+    render(<SourcesPage />)
+    fireEvent.click(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }))
+    await screen.findByText('admin.sources.emails.kind.student_assigned')
+  }
+
+  it('labels its recipient, and only that row', async () => {
+    mockApi.getPartnerEmails.mockResolvedValue(withStudentRow(true))
+    await openEmails()
+    expect(screen.getAllByText('admin.sources.emails.toStudent')).toHaveLength(1)
+  })
+
+  it('says it is STILL SENDING when partner emails are off platform-wide', async () => {
+    mockApi.getPartnerEmails.mockResolvedValue(withStudentRow(false))
+    await openEmails()
+    expect(screen.getByText('admin.sources.emails.studentUnaffected')).toBeTruthy()
+  })
+
+  it('says nothing of the sort while partner emails are on — there is nothing to explain', async () => {
+    mockApi.getPartnerEmails.mockResolvedValue(withStudentRow(true))
+    await openEmails()
+    expect(screen.queryByText('admin.sources.emails.studentUnaffected')).toBeNull()
+  })
+})

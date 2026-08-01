@@ -377,6 +377,8 @@ export async function updateSource(
 export interface PartnerEmailTemplate {
   kind: string
   enabled: boolean
+  /** True for the one email on this screen the STUDENT receives, not the partner organisation. */
+  to_student: boolean
   subject: string
   body: string
   placeholders: string[]

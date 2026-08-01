@@ -1,4 +1,8 @@
-"""Seed the five partner-email templates (2026-07-26).
+"""Seed the partner-email templates (2026-07-26; a sixth added 2026-08-01).
+
+Five go to the partner ORGANISATION. The sixth, `student_assigned`, goes to the STUDENT — it is
+the other half of `assigned`, sent at the same moment, and it lives here so the owner switches it
+and edits its wording on the same screen as the rest. It is the only kind seeded switched ON.
 
 Idempotent: creates a missing kind, leaves an existing row's wording ALONE (an org_admin may have
 edited it) unless `--reset` is passed. Never flips `enabled` — that is the owner's switch.
@@ -97,11 +101,65 @@ SEEDS = {
             '{team_signoff}'
         ),
     },
+    # The STUDENT's copy of the same moment (request #3, 2026-08-01). Bilingual in one body, EN
+    # above MS, the way every student email here is written — the reader may not read English.
+    # ⚠ The second paragraph is the point of the whole request: it says what the organisation may
+    # DO and what it can SEE. The requester insisted on a notification precisely because of that
+    # access, so a rewrite that drops it would leave the email sending and the request unmet.
+    'student_assigned': {
+        'subject': '{org_name} is now supporting your {programme_name} application',
+        'body': (
+            'Hi {student_name},\n'
+            '\n'
+            'We are writing to let you know that {org_name} has been assigned to support your '
+            'application to the {programme_name} Programme.\n'
+            '\n'
+            'This means {org_name} may act as a witness when you sign your bursary contract, and '
+            'that they can see certain details of your application in order to do that. Nothing '
+            'about your application changes, and the decision on your application stays with us.\n'
+            '\n'
+            'You do not need to do anything, and there is nothing to reply to. We are simply '
+            'telling you who else is now involved, because you have a right to know.\n'
+            '\n'
+            'One note for your peace of mind: we will never ask you for money, a bank password, '
+            'or an OTP or PIN, and neither will {org_name}. If anyone does, it is not us — please '
+            'tell us at {support_email}.\n'
+            '\n'
+            '{team_signoff}\n'
+            '\n'
+            '———\n'
+            '\n'
+            'Salam {student_name},\n'
+            '\n'
+            'Kami ingin memaklumkan bahawa {org_name} telah ditugaskan untuk menyokong permohonan '
+            'anda kepada Program {programme_name_ms}.\n'
+            '\n'
+            'Ini bermakna {org_name} boleh bertindak sebagai saksi apabila anda menandatangani '
+            'kontrak bursari anda, dan mereka dapat melihat butiran tertentu permohonan anda bagi '
+            'tujuan itu. Tiada apa-apa pada permohonan anda yang berubah, dan keputusan ke atas '
+            'permohonan anda kekal di tangan kami.\n'
+            '\n'
+            'Anda tidak perlu melakukan apa-apa, dan tiada apa-apa yang perlu dibalas. Kami '
+            'sekadar memberitahu anda siapa lagi yang kini terlibat, kerana anda berhak tahu.\n'
+            '\n'
+            'Satu nota untuk ketenangan anda: kami tidak sekali-kali akan meminta wang, kata '
+            'laluan bank, atau OTP atau PIN, dan begitu juga {org_name}. Jika sesiapa berbuat '
+            'demikian, itu bukan kami — sila beritahu kami di {support_email}.\n'
+            '\n'
+            '{team_signoff_ms}'
+        ),
+    },
 }
+
+#: Kinds seeded switched ON. Everything else arrives OFF so wording can be agreed while the
+#: feature is dark — but this one was requested, quoted and paid for (request #3), and a paid
+#: notification that arrives switched off is a non-delivery. Seeding it ON also makes the screen
+#: agree with what production is already doing rather than silently changing behaviour.
+SEEDED_ON = frozenset({'student_assigned'})
 
 
 class Command(BaseCommand):
-    help = 'Seed the five partner-email templates (idempotent; --reset overwrites the wording).'
+    help = 'Seed the partner-email templates (idempotent; --reset overwrites the wording).'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -128,7 +186,7 @@ class Command(BaseCommand):
             tpl = PartnerEmailTemplate.objects.filter(kind=kind).first()
             if tpl is None:
                 PartnerEmailTemplate.objects.create(
-                    kind=kind, enabled=False,
+                    kind=kind, enabled=kind in SEEDED_ON,
                     subject=seed['subject'], body=seed['body'],
                 )
                 created += 1
