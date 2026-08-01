@@ -23,6 +23,7 @@ _(2026-07-29 — **the sponsor gift-membership fix was logged here and then PROM
 > **Pattern watch for the next review — this is the FOURTH "the UI asserts something nothing checks" in a week**, after the hard-coded `/profile` padlock, `qc_override_reason` stored and never rendered, and `ai_draft_model` likewise. This one inverts it: the page stated a *requirement* ("Answer needed") without checking the requirement could be met. If a fifth appears, the cluster is asking for a guardrail, not another fix — candidate: a lint/test that a call-to-action label may only render where the corresponding action is offered.
 
 _(Not logged here as a small change: the **Check-2 case summary** LLM feature — `verdict_narrative.py` + `AdminVerdictSummaryView` + FE lead paragraph, DARK behind `VERDICT_CASE_SUMMARY_ENABLED`. It's a feature, tracked as STR-proof S4 (dark) in CHANGELOG + halatuju.md + CLAUDE.md Next-Sprint; retro to follow after the owner live-validates the voice and flips the flag.)_
+- 2026-08-01 fix: Last paid shows the date alone — the payment run reference removed from that column only (BrightPath request #5, shape one of three offered and priced; the API still sends `reference` for the link shape they may still choose) (payments — `admin/payments/page.tsx`, new `admin/payments/page.test.tsx` +3, bite-checked; no i18n, no backend change)
 
 ## Reviews
 

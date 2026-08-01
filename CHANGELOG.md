@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## "Last paid" shows the date alone — request #5, 2026-08-01 (small-change lane)
+
+The funding summary's Last paid column read `PR-2026-07-26-01 · 26/07/2026`. The column is headed
+with a question about **when**, and the run reference answered a different one while earning very
+little beside it — it is not clickable, and reconciling a particular run means opening the payment
+runs list anyway. The requester asked for the date alone; three shapes were offered and priced, the
+clarification was posted before they accepted, and this is shape one — **their own words: "the date
+alone should be sufficient".**
+
+- **⚠ THE API STILL SENDS `reference`, DELIBERATELY.** It costs nothing, its payload shape is
+  pinned by a backend test, and making it a **link** to its run is the shape the requester may still
+  choose — that one was quoted separately at ~1.5h because the screen is told what the run is
+  called but not which one it is.
+- Display only: the reference is never used in a calculation, so no figure on that screen moves.
+- The page had **no test file at all**; it has one now, pinning both halves — the date is still
+  there, and the reference cannot creep back beside it. Bite-checked.
+
 ## …and the owner can actually see it — request #3, second pass, 2026-08-01
 
 The owner opened Sources → Partner emails and asked where the new email was. **Correct question.**
