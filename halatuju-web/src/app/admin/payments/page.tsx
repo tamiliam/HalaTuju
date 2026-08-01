@@ -198,8 +198,14 @@ export default function PaymentsLandingPage() {
                     <td className="px-4 py-3 text-gray-700 tabular-nums">RM {rm(r.paid_to_date)}</td>
                     <td className="px-4 py-3 font-medium text-gray-900 tabular-nums">RM {rm(r.remaining)}</td>
                     <td className="px-4 py-3 text-gray-500 tabular-nums">{r.vircle_id || '—'}</td>
+                    {/* Request #5 (BrightPath, 2026-08-01): the date ALONE. The column is headed
+                        with a question about WHEN, and the run reference beside it answered a
+                        different question while earning very little — it is not clickable, and
+                        reconciling a particular run means opening the payment runs list anyway.
+                        The API still sends `reference`: it costs nothing, and making it a LINK to
+                        its run is the shape the requester may still choose (quoted separately). */}
                     <td className="px-4 py-3 text-gray-600">
-                      {r.last_run ? `${r.last_run.reference} · ${formatDate(r.last_run.payment_date)}` : '—'}
+                      {r.last_run ? formatDate(r.last_run.payment_date) : '—'}
                     </td>
                   </tr>
                 ))}
