@@ -31,7 +31,7 @@ import OrgRequestAttachments from '@/components/OrgRequestAttachments'
 const KNOWN_ERR = ['bug_is_free', 'bad_hours', 'reason_required', 'triage_ai_unconfigured',
   'triage_ai_unavailable', 'ai_limit_reached',
   'analysis_required', 'files_required', 'analysis_superseded', 'bad_cited_files',
-  'analysis_approved']
+  'analysis_approved', 'body_too_long']
 const errText = (t: (k: string) => string, code?: string) =>
   code && KNOWN_ERR.includes(code) ? t(`admin.requests.error.${code}`) : t('admin.requests.error.generic')
 

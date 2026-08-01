@@ -5046,6 +5046,7 @@
         "generic": "Sesuatu tidak kena. Sila cuba lagi.",
         "analysis_required": "Sebut harga tidak boleh dihantar sehingga analisis yang menamakan fail yang dibacanya diluluskan.",
         "files_required": "Analisis mesti menamakan sekurang-kurangnya satu fail yang dibacanya.",
+        "body_too_long": "Ini terlalu panjang untuk dihantar sebagai satu komen. Pendekkannya, atau pecahkannya kepada dua — ia tidak akan dipotong untuk anda.",
         "analysis_superseded": "Permintaan telah dipinda selepas analisis ini ditulis, jadi ia tidak lagi menggambarkannya.",
         "analysis_approved": "Analisis ini telah pun dihantar kepada organisasi, jadi ia tidak boleh ditarik balik. Meminda permintaan itu sendiri yang menggantikan analisis yang telah dihantar.",
         "bad_cited_files": "Senarai fail tidak dapat dibaca."

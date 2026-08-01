@@ -5046,6 +5046,7 @@
         "generic": "Something went wrong. Please try again.",
         "analysis_required": "You cannot send a quote until an analysis naming the files it read has been approved.",
         "files_required": "An analysis must name at least one file it read.",
+        "body_too_long": "This is too long to post as one comment. Shorten it, or split it in two — it will not be cut down for you.",
         "analysis_superseded": "The request was amended after this analysis was written, so it no longer describes it.",
         "analysis_approved": "This analysis has already been posted to the organisation, so it cannot be withdrawn. Amending the request itself is what supersedes a posted analysis.",
         "bad_cited_files": "The list of files could not be read."

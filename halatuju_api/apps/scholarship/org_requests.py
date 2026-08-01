@@ -105,6 +105,22 @@ TRANSITIONS = {
 
 TERMINAL_STATUSES = ('done', 'declined')
 
+# The longest a discussion comment may be. `OrgRequestComment.body` is a TextField, so this is a
+# sanity ceiling on what a person can type, never a storage limit.
+#
+# ⚠ IT REFUSES; IT DOES NOT TRUNCATE, and that is the whole point of it existing as a named
+# constant. `post_comment` used to write `body[:5000]` — an unexplained slice, no validation, no
+# error. On 2026-08-01 an engineer's analysis of 7,015 characters was approved and the requesting
+# organisation received **5,000 of them**, ending mid-word, missing a correction we had gone out of
+# our way to make and the entire effort breakdown. Nothing failed, nothing logged, and the record
+# on our side still held the full text — so the two sides of the same conversation disagreed and
+# only the requester could see it.
+#
+# The number is generous because the constraint is human, not technical; what matters is that
+# crossing it is an ERROR the author sees while writing, not a silent edit at approval time — two
+# steps and one actor away from whoever wrote the words.
+COMMENT_MAX_CHARS = 20000
+
 # The statuses in which a request is still BEING SHAPED — evidence and clarification may still
 # change what it is and what it should cost. Acceptance is the boundary (owner, 2026-07-30): a
 # screenshot added after the quote is accepted would change the evidence behind an agreed number.
@@ -260,6 +276,8 @@ def post_comment(req, admin, body, *, author_kind, visibility=VISIBILITY_SHARED,
     body = (body or '').strip()
     if not body:
         raise OrgRequestError('body_required')
+    if len(body) > COMMENT_MAX_CHARS:
+        raise OrgRequestError('body_too_long')
     if author_kind not in {AUTHOR_AI, AUTHOR_OWNER, AUTHOR_ORG, AUTHOR_ENGINEER}:
         raise OrgRequestError('bad_author')
     if visibility not in {VISIBILITY_SHARED, VISIBILITY_INTERNAL}:
@@ -273,7 +291,7 @@ def post_comment(req, admin, body, *, author_kind, visibility=VISIBILITY_SHARED,
         org_request=req,
         author_kind=author_kind,
         author_admin=admin if getattr(admin, 'pk', None) else None,
-        body=body[:5000],
+        body=body,
         visibility=visibility,
         awaiting_reply=awaiting_reply,
     )
@@ -481,6 +499,12 @@ def record_analysis(req, admin, *, body, estimated_hours=None, cited_files=(),
     body = (body or '').strip()
     if not body:
         raise OrgRequestError('body_required')
+    # ⚠ Checked HERE as well as in `post_comment`, deliberately. A draft is written now and posted
+    # later by somebody else; discovering at approval that the prose will not fit is discovering it
+    # in front of the owner, with the author gone. An analysis that cannot post INTACT is refused
+    # while it is still being written.
+    if len(body) > COMMENT_MAX_CHARS:
+        raise OrgRequestError('body_too_long')
     if not can_comment(req):
         # Terminal: there is nothing left to analyse, and approval could never post it.
         raise OrgRequestError('bad_transition')

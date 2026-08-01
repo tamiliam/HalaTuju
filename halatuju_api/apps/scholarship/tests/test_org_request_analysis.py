@@ -606,3 +606,54 @@ class TestWithdrawingADraft(_Base):
         r = self.client.post(f'{BASE}{req.id}/analysis/{a.id}/withdraw/', {}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json().get('error'), 'analysis_approved')
+
+
+class TestAnAnalysisIsNeverSILENTLYCUT(_Base):
+    """A comment is refused when it is too long. It is never truncated.
+
+    2026-08-01, found by the requester and not by us: `post_comment` wrote `body[:5000]`, so a
+    7,015-character analysis was approved and BrightPath received 5,000 characters ending
+    mid-word — missing a correction we had gone out of our way to make, and the whole effort
+    breakdown. Our copy kept the full text, so the two sides of one conversation disagreed and
+    only the side we could not see was wrong.
+    """
+
+    def test_a_long_body_is_REFUSED_at_staging_not_cut(self):
+        req = self._req()
+        with self.assertRaises(org_requests.OrgRequestError) as ctx:
+            self._draft(req, body='x' * (org_requests.COMMENT_MAX_CHARS + 1))
+        self.assertEqual(ctx.exception.code, 'body_too_long')
+        self.assertEqual(req.analyses.count(), 0)
+
+    def test_a_long_comment_is_REFUSED_at_posting_not_cut(self):
+        req = self._req()
+        with self.assertRaises(org_requests.OrgRequestError) as ctx:
+            org_requests.post_comment(req, self.super, 'y' * (org_requests.COMMENT_MAX_CHARS + 1),
+                                      author_kind=org_requests.AUTHOR_OWNER)
+        self.assertEqual(ctx.exception.code, 'body_too_long')
+        self.assertEqual(req.comments.count(), 0)
+
+    def test_an_APPROVED_analysis_reaches_the_requester_WHOLE(self):
+        # The regression itself, at the length that broke it. Asserted on the posted comment,
+        # because the analysis row was never the thing that was wrong.
+        req = self._req()
+        body = 'A' * 7015
+        a = self._approved(req, body=body)
+        posted = req.comments.get()
+        self.assertEqual(len(posted.body), 7015)
+        self.assertEqual(posted.body, a.body)
+
+    def test_the_boundary_itself_posts_whole(self):
+        req = self._req()
+        body = 'B' * org_requests.COMMENT_MAX_CHARS
+        self._approved(req, body=body)
+        self.assertEqual(len(req.comments.get().body), org_requests.COMMENT_MAX_CHARS)
+
+    def test_the_endpoint_refuses_with_the_code_the_UI_renders(self):
+        req = self._req()
+        self._auth('an-su')
+        r = self.client.post(f'{BASE}{req.id}/analysis/',
+                             {'body': 'z' * (org_requests.COMMENT_MAX_CHARS + 1),
+                              'cited_files': ['README.md']}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('error'), 'body_too_long')
