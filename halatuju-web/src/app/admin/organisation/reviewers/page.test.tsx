@@ -143,6 +143,9 @@ describe('the Emails tab', () => {
       templates: TEMPLATES, organisations: [], qualifying_count: 0,
       partner_count: 0, comms_enabled: true,
     } as unknown as api.PartnerEmailsPayload)
+    // The tab also lists the seven emails nobody can edit. Its own request, so the auto-mock
+    // must answer it or the card throws on mount.
+    mockApi.getReviewerSystemEmails.mockResolvedValue({ emails: [] })
   })
 
   it('opens on the reviewers list, not the emails — the list is what the page is for', async () => {

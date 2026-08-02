@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## A read-only email preview renders through the SENDER'S OWN builder — 2026-08-03
+**Decision:** the seven code-owned reviewer emails are shown on `Organisation → Reviewers → Emails`
+by splitting each sender in `emails.py` into a `build_*` returning `(subject, body)` and a thin
+sender that posts it, then rendering the builders with sample particulars
+(`reviewer_system_emails.py`). `test_the_preview_IS_the_email` sends all seven for real and compares
+the delivered subject and body against what the endpoint served, character for character.
+**Alternatives considered:** (A) Write the seven bodies as i18n copy on the front end — rejected: it
+is a second copy of prose that lives in Python, correct the day it is written and silently wrong
+after the next edit, with nobody positioned to notice. That failure mode is worse than showing
+nothing, because the screen's entire purpose is to be trusted about what we send. (B) A backend
+catalogue of hand-written strings with a test asserting they match the senders — rejected: it needs
+the builders to compare against anyway, so it is the same refactor plus a duplicate. (C) Capture the
+real messages through Django's locmem backend at request time — rejected: sending mail to render a
+screen, and it would meter and log seven phantom emails per page load.
+**Rationale:** one copy of the prose is the only arrangement in which the preview cannot be wrong.
+**Trade-offs:** seven senders gained a layer of indirection, and a new one must be split the same
+way to appear here. The catalogue's `SYSTEM_EMAILS` list is where that omission surfaces.
+
+## The seven system emails are deliberately NOT `PartnerEmailTemplate` rows — 2026-08-03
+**Decision:** they are served by their own endpoint with no row, no switch, no editor and no Edit
+affordance. A rendered test counts the toggles and Edit links across the whole tab, so restoring
+either fails loudly.
+**Alternatives considered:** (A) Adopt them as template rows seeded read-only — rejected: a row
+implies an editor behind it, and "you may look but not touch" is a worse promise than "this one is
+ours". It would also have to explain why five rows are editable and seven are not, on a screen whose
+job is to make exactly that distinction obvious. (B) Adopt them as editable templates too —
+rejected on content: one carries a temporary password and one is an escalation reaching the
+organisation's admins; both say something operational that a wording edit could quietly break, and
+neither is copy BrightPath has asked to own.
+**Rationale:** the owner's stated reason was awareness, not control — *"their existence and content
+are known to the org_admin. If not specified, they'll exist in the background without anyone paying
+attention to them until something breaks."*
+**Trade-offs:** changing one of the seven still needs us. The section says so and invites the ask.
+
 ## The catalogue judges the PROGRAMME too, and an offer-derived value cannot verify itself — 2026-08-01
 **Decision:** `offer_pathway.programme_agreement(course_id, offer_programme, offer_institution)`
 mirrors `institution_agreement` on the programme axis: resolve the letter through the catalogue,

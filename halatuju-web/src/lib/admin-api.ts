@@ -628,6 +628,29 @@ export async function getReviewerEmails(options?: ApiOptions) {
     '/api/v1/admin/scholarship/partner-emails/?family=reviewer', options)
 }
 
+/** One of the reviewer emails nobody can edit, rendered by the code that sends it. */
+export type ReviewerSystemEmail = {
+  key: string
+  subject: string
+  body: string
+  sensitive: boolean
+  wider_audience: boolean
+}
+
+/**
+ * The SEVEN reviewer emails that are ours to maintain — shown so that at least they are known.
+ *
+ * Owner ruling, 2026-08-02: left off the screen they "exist in the background without anyone
+ * paying attention to them until something breaks". Deliberately NOT a `PartnerEmailTemplate`:
+ * there is no row, no switch and no editor behind any of it, and being code-owned prose is the
+ * fact the section exists to state. The subject and body come from the senders' own builders, so
+ * this cannot show wording we do not actually send.
+ */
+export async function getReviewerSystemEmails(options?: ApiOptions) {
+  return adminFetch<{ emails: ReviewerSystemEmail[] }>(
+    '/api/v1/admin/reviewers/system-emails/', options)
+}
+
 export async function updatePartnerEmail(
   kind: string,
   data: Partial<{ enabled: boolean; subject: string; body: string }>,

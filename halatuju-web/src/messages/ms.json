@@ -3192,7 +3192,7 @@
       },
       "emails": {
         "title": "Apa yang diberitahu kepada penilai",
-        "subtitle": "Lima e-mel yang diterima oleh penilai anda. Sunting kata-katanya, atau matikan salah satu.",
+        "subtitle": "Lima e-mel yang diterima oleh penilai anda dan boleh anda ubah. Tujuh e-mel yang kami selenggara disenaraikan di bawahnya.",
         "liveNote": "Kelima-limanya sedang dihantar hari ini. Mematikannya benar-benar menghentikannya — tiada apa-apa dihantar sebagai gantinya.",
         "loadError": "E-mel ini tidak dapat dimuatkan.",
         "edit": "Sunting kata-kata",
@@ -3211,6 +3211,33 @@
           "qc_rejected": "Apabila kes mereka ditutup oleh QC. Tiada apa-apa diperlukan daripada mereka.",
           "verdict_due_soon": "Dua hari sebelum keputusan perlu diberikan.",
           "verdict_overdue": "Sebaik sahaja tarikh akhir berlalu."
+        },
+        "system": {
+          "title": "E-mel yang kami selenggara",
+          "subtitle": "Tujuh e-mel ini ditulis di dalam kod kami, jadi ia tidak boleh disunting atau dimatikan di sini. Ia disenaraikan supaya anda tahu ia wujud dan apa yang tertulis di dalamnya — jika satu perlu diubah, beritahu kami.",
+          "subjectLabel": "Subjek:",
+          "show": "Papar teks",
+          "hide": "Sembunyikan teks",
+          "sensitive": "Membawa kata laluan sementara penilai baharu.",
+          "widerAudience": "Turut dihantar kepada pentadbir organisasi anda.",
+          "kind": {
+            "partner_welcome": "Menyertai pasukan",
+            "interview_booked": "Pemohon menempah masa",
+            "interview_reminder": "Temu duga semakin hampir",
+            "interview_cancelled": "Pemohon membatalkan",
+            "alternatives_requested": "Pemohon perlukan masa lain",
+            "student_message": "Mesej daripada pemohon",
+            "verdict_escalation": "Keputusan sudah jauh lewat"
+          },
+          "when": {
+            "partner_welcome": "Apabila seseorang ditambah sebagai penilai, membawa apa yang diperlukan untuk log masuk buat kali pertama.",
+            "interview_booked": "Apabila pelajar memilih salah satu masa yang dicadangkan oleh penilai.",
+            "interview_reminder": "Sehari sebelum temu duga, dan sekali lagi kira-kira sejam sebelumnya.",
+            "interview_cancelled": "Apabila pelajar membatalkan temu duga yang ditempah, dengan sebab yang diberikannya.",
+            "alternatives_requested": "Apabila tiada satu pun masa yang dicadangkan sesuai untuk pelajar.",
+            "student_message": "Setiap kali pelajar menulis kepada penilai tentang temu duganya.",
+            "verdict_escalation": "Apabila keputusan melepasi tarikh akhirnya tanpa apa-apa direkodkan."
+          }
         }
       },
       "tabReviewers": "Penilai",

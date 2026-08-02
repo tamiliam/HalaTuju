@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## The seven reviewer emails nobody can edit are now at least READABLE - request #10, 2026-08-03
+
+The owed half of the email line in #10's approved analysis, which priced "the four editable emails,
+and honest treatment of the other six". The editable five shipped on 2 August; the list of the ones
+we maintain did not. **No migration; one api + one web deploy.**
+
+Owner's ruling on what "honest treatment" meant, verbatim in substance: show them **READ-ONLY**, so
+*"their existence and content are known to the org_admin. If not specified, they'll exist in the
+background without anyone paying attention to them until something breaks."* So the Emails tab now
+carries a second section listing all seven with their real subject and, on request, their real body.
+
+- **THE PREVIEW CANNOT DRIFT FROM THE MAIL, and that is the whole design.** Each of the seven
+  senders in `emails.py` was split into a `build_*` returning `(subject, body)` plus a sender that
+  posts it; `reviewer_system_emails.py` renders through the SAME builders with sample particulars.
+  A second copy of the prose kept in step by hand would be true the day it was written and quietly
+  false after the next edit - worse than showing nothing, because nobody would be checking.
+  `test_the_preview_IS_the_email` sends all seven for real and compares the delivered subject and
+  body against what the endpoint served, character for character. Bite-checked.
+- **NO switch and NO Edit, and they are the statement rather than an omission.** Deliberately not
+  routed through `PartnerEmailTemplate`: being code-owned prose is the fact the section exists to
+  state, and a row would imply an editor behind it. A rendered test counts the toggles and Edit
+  links on the whole tab, so a later "for consistency" tidy fails loudly.
+- **The two facts an org_admin cannot infer are labelled.** `partner_welcome` carries a new
+  reviewer's temporary password (the sample renders dots, never a real one), and
+  `verdict_escalation` also reaches the organisation's own admins.
+- **The sample interview time is a FIXED instant**, not `now()`. A preview whose text changes
+  between two reads of the same screen reads as unreliable, and the screen is comparing wording.
+- `GET admin/reviewers/system-emails/` - same audience as the rest of the Reviewers surface,
+  classified in `test_org_fence.py` as carrying no organisation data to narrow. Its own request on
+  the front end, failing silently: a reference list must never take down the five controls somebody
+  came to the tab to operate.
+- The five's subtitle stopped claiming to be the whole story. 21 new i18n leaves x3 (**ms/ta are
+  first drafts**). `pytest` **5442** - `jest` **1372** - `next lint` 0 errors - i18n **4483x3**.
+
 ## Pause, the reviewer emails, and five fixes off the owner's screen — request #10, sprint 2, 2026-08-02
 
 The second half of #10, plus the live-review round that followed it. **Two migrations, both applied

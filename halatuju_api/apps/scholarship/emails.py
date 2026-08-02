@@ -2337,24 +2337,13 @@ _PARTNER_ROLE_LABELS = {
 }
 
 
-def send_partner_welcome_email(to_email, name, role, temp_password=None, google=False):
-    """Onboard a new partner admin / reviewer. English-only (internal staff), like every other
-    admin-facing email here.
+def build_partner_welcome_email(to_email, name, role, temp_password=None, google=False):
+    """The wording of the welcome email → ``(subject, body)``.
 
-    Replaces the Supabase "Invite user" email (2026-07-12). That one carried a magic link that
-    EXPIRED IN 24 HOURS and, once expired, could not be re-sent by any route — an invitee who
-    missed the window was stuck. This email carries no token: the account already exists when it is
-    sent, so re-sending is always safe. The temp password itself now expires after 7 days (owner
-    2026-07-14), but that is never a dead-end — Forgot-password (self-serve, any time) or a Resend
-    re-issues it. The Google / already-registered variants get no password at all.
-
-    ``temp_password`` is None when the person already had a HalaTuju account (they sign in with
-    the credentials they already have). It is the ONLY copy of that password — it is not stored,
-    logged, or returned to the caller — so a send failure must be surfaced, not swallowed; the
-    bool return is what the view reports as ``emailed``.
+    Split out of the sender so the console's read-only system-email list renders THIS text rather
+    than a second copy of it. A preview that can drift from the mail is worse than no preview —
+    the whole point of showing these is that an org_admin knows what actually goes out.
     """
-    if not to_email:
-        return False
     who = name or 'there'
     role_label = _PARTNER_ROLE_LABELS.get(role, 'a team member')
     frontend = _P.frontend_url
@@ -2388,9 +2377,31 @@ def send_partner_welcome_email(to_email, name, role, temp_password=None, google=
         f'Any trouble at all, just reply to this email.\n\n'
         f'Warm regards,\nThe HalaTuju Team'
     )
+    return 'Your HalaTuju partner access', body
+
+
+def send_partner_welcome_email(to_email, name, role, temp_password=None, google=False):
+    """Onboard a new partner admin / reviewer. English-only (internal staff), like every other
+    admin-facing email here.
+
+    Replaces the Supabase "Invite user" email (2026-07-12). That one carried a magic link that
+    EXPIRED IN 24 HOURS and, once expired, could not be re-sent by any route — an invitee who
+    missed the window was stuck. This email carries no token: the account already exists when it is
+    sent, so re-sending is always safe. The temp password itself now expires after 7 days (owner
+    2026-07-14), but that is never a dead-end — Forgot-password (self-serve, any time) or a Resend
+    re-issues it. The Google / already-registered variants get no password at all.
+
+    ``temp_password`` is None when the person already had a HalaTuju account (they sign in with
+    the credentials they already have). It is the ONLY copy of that password — it is not stored,
+    logged, or returned to the caller — so a send failure must be surfaced, not swallowed; the
+    bool return is what the view reports as ``emailed``.
+    """
+    if not to_email:
+        return False
+    subject, body = build_partner_welcome_email(to_email, name, role, temp_password, google)
     try:
         EmailMessage(
-            subject='Your HalaTuju partner access',
+            subject=subject,
             body=body,
             from_email=_P.email_from,
             to=[to_email],
@@ -3413,15 +3424,10 @@ def _send_plain(to_email, subject, body):
         return False
 
 
-def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_name, start,
-                                         meeting_url='', ref='', duration_min=None,
-                                         calendar_invite_sent=False):
-    """Reviewer notice that a student booked one of their proposed times. Plain EN.
-
-    Calendar: when the Google Meet/Calendar integration is on, both parties are added to one
-    auto-created event (calendar_invite_sent=True) — so we DON'T offer a manual 'add to
-    calendar' link (it would double-book). When it's off, no event exists, so we include an
-    'Add to your calendar' Google link so the reviewer always ends up with the time held."""
+def build_reviewer_interview_booked_email(*, reviewer_name, applicant_name, start,
+                                          meeting_url='', ref='', duration_min=None,
+                                          calendar_invite_sent=False):
+    """The wording → ``(subject, body)``. See `build_partner_welcome_email` for why this is split."""
     applicant = applicant_name or 'An applicant'
     details = [f'When: {_fmt_myt(start)}']
     if meeting_url:
@@ -3443,15 +3449,28 @@ def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_n
         f'{_reviewer_dashboard_cta()}\n\n'
         f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, _reviewer_subject('Interview booked', ref), body)
+    return _reviewer_subject('Interview booked', ref), body
 
 
-def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant_name, start,
-                                           meeting_url='', when='1day', ref='', verdict_due=''):
-    """Reviewer reminder (1 day / 1 hour before). Plain EN. A nudge only — no calendar link,
-    since the time was added when it was booked. ``verdict_due`` (a date string) adds a heads-up
-    that the verdict for this applicant is due by then — the interview and verdict are different
-    clocks, so a reviewer juggling cases sees both (TD-131)."""
+def send_reviewer_interview_booked_email(to_email, *, reviewer_name, applicant_name, start,
+                                         meeting_url='', ref='', duration_min=None,
+                                         calendar_invite_sent=False):
+    """Reviewer notice that a student booked one of their proposed times. Plain EN.
+
+    Calendar: when the Google Meet/Calendar integration is on, both parties are added to one
+    auto-created event (calendar_invite_sent=True) — so we DON'T offer a manual 'add to
+    calendar' link (it would double-book). When it's off, no event exists, so we include an
+    'Add to your calendar' Google link so the reviewer always ends up with the time held."""
+    subject, body = build_reviewer_interview_booked_email(
+        reviewer_name=reviewer_name, applicant_name=applicant_name, start=start,
+        meeting_url=meeting_url, ref=ref, duration_min=duration_min,
+        calendar_invite_sent=calendar_invite_sent)
+    return _send_plain(to_email, subject, body)
+
+
+def build_reviewer_interview_reminder_email(*, reviewer_name, applicant_name, start,
+                                            meeting_url='', when='1day', ref='', verdict_due=''):
+    """The wording → ``(subject, body)``."""
     soon = 'tomorrow' if when == '1day' else 'in about an hour'
     details = [f'When: {_fmt_myt(start)}']
     if meeting_url:
@@ -3468,13 +3487,24 @@ def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant
     )
     base = ('Reminder: your interview is tomorrow' if when == '1day'
             else 'Reminder: your interview is in 1 hour')
-    return _send_plain(to_email, _reviewer_subject(base, ref), body)
+    return _reviewer_subject(base, ref), body
 
 
-def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, applicant_name,
-                                               note='', ref=''):
-    """Reviewer notice that the student said none of the proposed times work and wants other
-    options. Routes the request to the right person (vs a reply lost in a shared inbox). Plain EN."""
+def send_reviewer_interview_reminder_email(to_email, *, reviewer_name, applicant_name, start,
+                                           meeting_url='', when='1day', ref='', verdict_due=''):
+    """Reviewer reminder (1 day / 1 hour before). Plain EN. A nudge only — no calendar link,
+    since the time was added when it was booked. ``verdict_due`` (a date string) adds a heads-up
+    that the verdict for this applicant is due by then — the interview and verdict are different
+    clocks, so a reviewer juggling cases sees both (TD-131)."""
+    subject, body = build_reviewer_interview_reminder_email(
+        reviewer_name=reviewer_name, applicant_name=applicant_name, start=start,
+        meeting_url=meeting_url, when=when, ref=ref, verdict_due=verdict_due)
+    return _send_plain(to_email, subject, body)
+
+
+def build_reviewer_alternatives_requested_email(*, reviewer_name, applicant_name,
+                                                note='', ref=''):
+    """The wording → ``(subject, body)``."""
     note_block = f'\nWhat they said:\n  "{note}"\n' if note else ''
     body = (
         f'Dear {reviewer_name or "there"},\n\n'
@@ -3486,15 +3516,21 @@ def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, appli
         f'{_reviewer_dashboard_cta()}\n\n'
         f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, _reviewer_subject('Applicant needs different interview times', ref), body)
+    return _reviewer_subject('Applicant needs different interview times', ref), body
 
 
-def send_reviewer_student_message_email(to_email, *, reviewer_name, applicant_name,
-                                        message, ref='', interview_start=None):
-    """Reviewer notice that the student sent them a message (the always-open channel —
-    fires in any interview state, INCLUDING inside the reschedule cutoff, e.g. "I'm
-    running late" an hour before the call). Plain EN; the booked interview time is
-    included when known so the reviewer can judge urgency from the email alone."""
+def send_reviewer_alternatives_requested_email(to_email, *, reviewer_name, applicant_name,
+                                               note='', ref=''):
+    """Reviewer notice that the student said none of the proposed times work and wants other
+    options. Routes the request to the right person (vs a reply lost in a shared inbox). Plain EN."""
+    subject, body = build_reviewer_alternatives_requested_email(
+        reviewer_name=reviewer_name, applicant_name=applicant_name, note=note, ref=ref)
+    return _send_plain(to_email, subject, body)
+
+
+def build_reviewer_student_message_email(*, reviewer_name, applicant_name,
+                                         message, ref='', interview_start=None):
+    """The wording → ``(subject, body)``."""
     when_line = ''
     if interview_start is not None:
         when_line = f'Their interview is booked for {_fmt_myt(interview_start)}.\n\n'
@@ -3508,11 +3544,23 @@ def send_reviewer_student_message_email(to_email, *, reviewer_name, applicant_na
         f'{_reviewer_dashboard_cta()}\n\n'
         f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, _reviewer_subject('Message from applicant', ref), body)
+    return _reviewer_subject('Message from applicant', ref), body
 
 
-def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name, ref='', reason=''):
-    """Reviewer notice that a student cancelled. Plain EN. Includes the student's reason if given."""
+def send_reviewer_student_message_email(to_email, *, reviewer_name, applicant_name,
+                                        message, ref='', interview_start=None):
+    """Reviewer notice that the student sent them a message (the always-open channel —
+    fires in any interview state, INCLUDING inside the reschedule cutoff, e.g. "I'm
+    running late" an hour before the call). Plain EN; the booked interview time is
+    included when known so the reviewer can judge urgency from the email alone."""
+    subject, body = build_reviewer_student_message_email(
+        reviewer_name=reviewer_name, applicant_name=applicant_name, message=message,
+        ref=ref, interview_start=interview_start)
+    return _send_plain(to_email, subject, body)
+
+
+def build_reviewer_interview_cancelled_email(*, reviewer_name, applicant_name, ref='', reason=''):
+    """The wording → ``(subject, body)``."""
     reason_line = f'Reason they gave: "{reason.strip()}"\n\n' if (reason or '').strip() else ''
     body = (
         f'Dear {reviewer_name or "there"},\n\n'
@@ -3523,7 +3571,14 @@ def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applican
         f'{_reviewer_dashboard_cta()}\n\n'
         f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, _reviewer_subject('Applicant cancelled their interview', ref), body)
+    return _reviewer_subject('Applicant cancelled their interview', ref), body
+
+
+def send_reviewer_interview_cancelled_email(to_email, *, reviewer_name, applicant_name, ref='', reason=''):
+    """Reviewer notice that a student cancelled. Plain EN. Includes the student's reason if given."""
+    subject, body = build_reviewer_interview_cancelled_email(
+        reviewer_name=reviewer_name, applicant_name=applicant_name, ref=ref, reason=reason)
+    return _send_plain(to_email, subject, body)
 
 
 def send_reviewer_verdict_due_email(to_email, *, reviewer_name, applicant_name, ref='',
@@ -3558,11 +3613,8 @@ def send_reviewer_verdict_due_email(to_email, *, reviewer_name, applicant_name, 
     return _send_plain(to_email, _reviewer_subject(base, ref), body)
 
 
-def send_verdict_escalation_email(to_email, *, applicant_name, ref='', reviewer_name='',
-                                  due_by=''):
-    """TD-131: escalate an overdue verdict — a verdict is well past the SLA with none recorded.
-    Sent to the ORGANISATION's admin(s) and the assigned reviewer (NOT platform super-admins — a
-    super is not an operator inside a tenant org). Recipient-neutral wording. Plain EN."""
+def build_verdict_escalation_email(*, applicant_name, ref='', reviewer_name='', due_by=''):
+    """The wording → ``(subject, body)``."""
     who = reviewer_name or 'the assigned reviewer'
     body = (
         f'Hi,\n\n'
@@ -3576,7 +3628,17 @@ def send_verdict_escalation_email(to_email, *, applicant_name, ref='', reviewer_
         f'{_reviewer_dashboard_cta()}\n\n'
         f'{_REVIEWER_SIGNOFF}'
     )
-    return _send_plain(to_email, _reviewer_subject('Overdue verdict needs attention', ref), body)
+    return _reviewer_subject('Overdue verdict needs attention', ref), body
+
+
+def send_verdict_escalation_email(to_email, *, applicant_name, ref='', reviewer_name='',
+                                  due_by=''):
+    """TD-131: escalate an overdue verdict — a verdict is well past the SLA with none recorded.
+    Sent to the ORGANISATION's admin(s) and the assigned reviewer (NOT platform super-admins — a
+    super is not an operator inside a tenant org). Recipient-neutral wording. Plain EN."""
+    subject, body = build_verdict_escalation_email(
+        applicant_name=applicant_name, ref=ref, reviewer_name=reviewer_name, due_by=due_by)
+    return _send_plain(to_email, subject, body)
 
 
 def _run_month_label(run):

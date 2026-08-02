@@ -2402,6 +2402,31 @@ class AdminReviewerPauseView(_ReviewersBase):
                          'paused_at': target.paused_at})
 
 
+class AdminReviewerSystemEmailsView(_ReviewersBase):
+    """GET admin/reviewers/system-emails/ — the reviewer emails nobody can edit, rendered in full.
+
+    Owner ruling, 2026-08-02: *"their existence and content are known to the org_admin. If not
+    specified, they'll exist in the background without anyone paying attention to them until
+    something breaks."* So the Emails tab shows the editable five AND these seven, and the
+    difference between the two lists is stated rather than left to be discovered.
+
+    ⚠ **THE BODIES COME FROM THE SENDERS' OWN BUILDERS**, not from a copy of the prose kept here or
+    on the front end — see `reviewer_system_emails`. Read-only by construction: there is no PATCH,
+    no switch and no template row behind any of it.
+
+    Carries NO organisation data — the same seven strings for every tenant — so the fence has
+    nothing to narrow. It is gated to the reviewers-surface audience anyway, because a screen about
+    our own volunteers belongs to the people who run them.
+    """
+
+    def get(self, request):
+        admin, org_id, err = self._side(request)
+        if err:
+            return err
+        from . import reviewer_system_emails
+        return Response({'emails': reviewer_system_emails.rendered()})
+
+
 class AdminRequestInfoView(_AdminBase):
     """POST .../<pk>/request-info/ — the admin asks the student for more
     documentation. Records a note on the application + emails the student. Does

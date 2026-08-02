@@ -567,25 +567,28 @@ a deploy that adds a kind, never before: it seeds what the RUNNING code knows ab
 first silently skips the new rows and looks like it worked. The warning now sits at the registry
 line in `views.py`.
 
-**▶ ⚠ FIRST JOB — A QUOTED ITEM WAS NOT DELIVERED, AND THE OWNER HAS RULED ON IT (2026-08-02).**
-The approved analysis (id 23) priced the email work as *"the four editable emails, **and honest
-treatment of the other six** — 3 hours"*, meaning: list the reviewer emails we maintain but nobody
-can edit, on the same screen, *"so the page tells the truth about what is and is not editable"*. The
-editable five shipped; **that list did not**. It is owed, not new scope.
+**▶ ✅ THE OWED QUOTED ITEM IS SHIPPED (2026-08-03) — the seven system emails are READ-ONLY on the
+screen.** Analysis id 23 priced *"the four editable emails, and honest treatment of the other six"*;
+the editable five shipped on 2 Aug and the list did not. It does now. **No migration.**
 
-**Owner's ruling, verbatim in substance:** show them **READ-ONLY**, so *"their existence and content
-are known to the org_admin. If not specified, they'll exist in the background without anyone paying
-attention to them until something breaks."* → **render the actual subject and body**, not just a
-name. No switch, no Edit affordance; marked plainly as ours to maintain.
-
-The seven currently invisible on `Organisation → Reviewers → Emails` (all in `emails.py`):
-`send_partner_welcome_email` (**carries a new reviewer's temporary password**),
-`send_reviewer_interview_booked_email`, `send_reviewer_interview_reminder_email`,
-`send_reviewer_interview_cancelled_email`, `send_reviewer_alternatives_requested_email`,
-`send_reviewer_student_message_email`, `send_verdict_escalation_email` (goes to org admins **and**
-the reviewer). Under an hour; no migration; one web deploy. Extend
-`components/reviewers/ReviewerEmailsCard.tsx` with a second, non-interactive section — do NOT route
-them through `PartnerEmailTemplate`, they are code-owned prose and that is the point being stated.
+- **⚠ THE PREVIEW RENDERS THROUGH THE SENDER'S OWN BUILDER.** Each of the seven senders in
+  `emails.py` is split into a `build_*` returning `(subject, body)` + a thin sender;
+  `reviewer_system_emails.py` renders those builders with sample particulars. **Do not "simplify"
+  this into front-end copy or a hand-kept string table** — a second copy of the prose is right on
+  the day it is written and silently wrong after the next edit. `test_the_preview_IS_the_email`
+  sends all seven for real and compares them character for character; bite-checked. Adding an
+  eighth means splitting it the same way and adding it to `SYSTEM_EMAILS`.
+- **⚠ NO switch and NO Edit is the STATEMENT, not an omission** — and deliberately NOT a
+  `PartnerEmailTemplate` row, since a row implies an editor. A rendered test counts the toggles and
+  Edit links on the tab, so a later tidy "for consistency" fails loudly. Both decisions are in
+  `docs/decisions.md` with their rejected alternatives.
+- `partner_welcome` is labelled as carrying a temporary password (the sample renders dots);
+  `verdict_escalation` is labelled as also reaching the organisation's admins. The sample interview
+  time is a **fixed instant**, never `now()`.
+- `GET admin/reviewers/system-emails/` — reviewers-surface audience; classified in
+  `test_org_fence.py` as carrying no organisation data. Its own front-end request, failing
+  **silently**: a reference list must never take down the five controls somebody came to operate.
+- **⚠ ms/ta for the 21 new leaves are MY first drafts** — owner's eye still owed.
 
 **▶ THEN, STILL OWED ON #10 — it is `scheduled`, NOT `done`:**
 1. **Walk pause end-to-end** on a real reviewer: still on every list → cannot be newly assigned →
