@@ -85,8 +85,16 @@ export default function ReviewerEmailsCard({ token, t }: {
       <ul className="divide-y divide-gray-100">
         {ordered.map((tpl) => (
           <li key={tpl.kind} className="px-4 sm:px-5 py-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
+            {/* Switch on the LEFT, then the name, with Edit trailing — the same shape as the
+                sponsor and partner email cards. Owner review, 2026-08-02: the console should have
+                one way of doing this, and this card was the odd one out. */}
+            <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+              <div className="pt-0.5 shrink-0">
+                <Toggle on={tpl.enabled} disabled={busyKind === tpl.kind}
+                  label={t(`admin.reviewers.emails.kind.${tpl.kind}`)}
+                  onClick={() => { void toggle(tpl) }} />
+              </div>
+              <div className="min-w-0 flex-1">
                 <p className="font-medium text-gray-900">
                   {t(`admin.reviewers.emails.kind.${tpl.kind}`)}
                 </p>
@@ -99,15 +107,10 @@ export default function ReviewerEmailsCard({ token, t }: {
                     : t('admin.reviewers.emails.neverSent')}
                 </p>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <button type="button" onClick={() => setOpenKind(openKind === tpl.kind ? null : tpl.kind)}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">
-                  {t(openKind === tpl.kind ? 'common.cancel' : 'admin.reviewers.emails.edit')}
-                </button>
-                <Toggle on={tpl.enabled} disabled={busyKind === tpl.kind}
-                  label={t(`admin.reviewers.emails.kind.${tpl.kind}`)}
-                  onClick={() => { void toggle(tpl) }} />
-              </div>
+              <button type="button" onClick={() => setOpenKind(openKind === tpl.kind ? null : tpl.kind)}
+                className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline shrink-0">
+                {t(openKind === tpl.kind ? 'common.cancel' : 'admin.reviewers.emails.edit')}
+              </button>
             </div>
             {openKind === tpl.kind && (
               <div className="mt-4">

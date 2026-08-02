@@ -29,7 +29,7 @@ const mockApi = api as jest.Mocked<typeof api>
 const DETAIL = {
   id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
   languages: ['ta', 'en'], open_now: 3, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
-  decided_by_other: 2, progressed: 9, declined: 3,
+  recommended: 6, declined: 0, rejected_after_review: 2, awaiting_qc: 0,
   created_at: '2026-03-01T00:00:00Z',
   qualification: 'MSc', university: 'Universiti Malaya', graduation_year: 2014,
   field_of_study: 'Physics',
@@ -52,7 +52,7 @@ beforeEach(() => {
 const loaded = async (over: Partial<api.AdminReviewerDetail> = {}) => {
   mockApi.getReviewerDetail.mockResolvedValue({ ...DETAIL, ...over } as api.AdminReviewerDetail)
   render(<AdminReviewerDetailPage />)
-  await waitFor(() => expect(screen.getByText('admin.reviewers.detail.workload')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('admin.reviewers.detail.outcomes')).toBeTruthy())
 }
 
 describe('the reopens block — the reason this page exists', () => {
@@ -76,9 +76,10 @@ describe('the reopens block — the reason this page exists', () => {
 })
 
 describe('the PII ruling, rendered', () => {
-  it('shows the phone AND says it is staff-only when consent was withheld', async () => {
+  it('shows the phone WITH its country code, and says it is staff-only', async () => {
+    // Stored as the local part only; +60 is added at read time (see `displayPhone`).
     await loaded()
-    expect(screen.getByText('012-3456789')).toBeTruthy()
+    expect(screen.getByText(/\+60 12-3456789/)).toBeTruthy()
     expect(screen.getByText('admin.reviewers.detail.phone_staff_only')).toBeTruthy()
     expect(screen.queryByText('admin.reviewers.detail.phone_shared')).toBeNull()
   })
@@ -99,17 +100,25 @@ describe('the PII ruling, rendered', () => {
 })
 
 describe('the outcome bar', () => {
-  it('states cases decided by somebody else separately, not inside the bar', async () => {
+  it('names all four bands, with their counts beside them', async () => {
     await loaded()
-    expect(screen.getByText('admin.reviewers.detail.decidedByOther')).toBeTruthy()
-    // The counts sit beside their labels: 9 progressed + 3 declined = the 12 completed, and the
-    // 2 decided by somebody else are named separately rather than folded in.
-    expect(screen.getByText(/detail\.progressed/).textContent).toContain('9')
-    expect(screen.getByText(/detail\.declined/).textContent).toContain('3')
+    expect(screen.getByText(/detail\.recommended/).textContent).toContain('6')
+    expect(screen.getByText(/detail\.declined/).textContent).toContain('0')
+    expect(screen.getByText(/detail\.rejectedAfterReview/).textContent).toContain('2')
+    expect(screen.getByText(/detail\.awaitingQc/).textContent).toContain('0')
+  })
+
+  it('no longer excludes a case somebody else decided, nor footnotes it', async () => {
+    // ⚠ Reversed by the owner, 2026-08-02: the excluded case was one the reviewer had genuinely
+    // interviewed and written up. The footnote pointed at something nobody could act on.
+    await loaded()
+    expect(document.body.innerHTML).not.toMatch(/decidedByOther/)
   })
 
   it('draws no bar at all when nothing was decided', async () => {
-    await loaded({ progressed: 0, declined: 0, completed: 0, decided_by_other: 0 })
+    await loaded({
+      recommended: 0, declined: 0, rejected_after_review: 0, awaiting_qc: 0, completed: 0,
+    })
     expect(screen.getByText('admin.reviewers.detail.noOutcomes')).toBeTruthy()
   })
 })
@@ -127,7 +136,7 @@ describe('the honest empty states', () => {
   })
 
   it('says nothing has ever been assigned when that is the case', async () => {
-    await loaded({ open_now: 0, completed: 0, decided_by_other: 0 })
+    await loaded({ open_now: 0, completed: 0 })
     expect(screen.getByText('admin.reviewers.detail.noHistory')).toBeTruthy()
   })
 })
@@ -170,7 +179,7 @@ describe('pause, on somebody else\'s behalf', () => {
     // the second to super + org_admin only, and the endpoint re-gates regardless.
     viewerRole = { role: 'admin' }
     await loaded()
-    expect(screen.getByText('admin.reviewers.detail.workload')).toBeTruthy()
+    expect(screen.getByText('Kavitha Raman')).toBeTruthy()
     expect(screen.queryByText('admin.reviewers.detail.pause')).toBeNull()
   })
 
@@ -194,7 +203,7 @@ describe('the role gate and failure', () => {
     render(<AdminReviewerDetailPage />)
     await waitFor(() =>
       expect(screen.getByText('admin.reviewers.detail.loadFailed')).toBeTruthy())
-    expect(screen.queryByText('admin.reviewers.detail.workload')).toBeNull()
+    expect(screen.queryByText('admin.reviewers.detail.outcomes')).toBeNull()
   })
 
   it('links back to the list it came from', async () => {

@@ -2597,10 +2597,18 @@ export interface AdminReviewerReopen {
  * See `docs/scholarship/role-matrix.md`.
  */
 export interface AdminReviewerDetail extends AdminReviewer {
-  /** Verdicts on cases assigned to them that SOMEBODY ELSE recorded — not on their record. */
-  decided_by_other: number
-  progressed: number
+  /**
+   * The four outcome bands. They PARTITION the decided cases, so they always sum to `completed`
+   * and the bar can never disagree with the figure above it.
+   *
+   * ⚠ `declined` is a rejection THEY recorded; `rejected_after_review` is one somebody else
+   * recorded on a case they reviewed. Colouring the two alike accuses a reviewer of a decision
+   * they did not make.
+   */
+  recommended: number
   declined: number
+  rejected_after_review: number
+  awaiting_qc: number
   created_at: string
   qualification: string
   university: string

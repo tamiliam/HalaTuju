@@ -51,26 +51,64 @@ export function isFree(r: AdminReviewer): boolean {
  * number separately, in words, because silently dropping it would make the bar disagree with the
  * caseload beside it.
  */
+export type OutcomeKey = 'recommended' | 'declined' | 'rejectedAfterReview' | 'awaitingQc'
+
 export interface OutcomeSegment {
-  key: 'progressed' | 'declined'
+  key: OutcomeKey
   count: number
   /** Percentage of DECIDED cases, rounded — for the bar's width only, never displayed alone. */
   pct: number
 }
 
+/**
+ * The four bands, in the order a case travels.
+ *
+ * ⚠ **`declined` AND `rejectedAfterReview` ARE NOT ONE BAND.** A reviewer who recommended a student
+ * who was then rejected by QC, an org_admin or a super declined nobody, and a screen that colours
+ * the two alike accuses them of a decision they did not make. Owner's ruling, 2026-08-02.
+ *
+ * ⚠ **`awaitingQc` exists so the bar RECONCILES with the Completed figure above it.** Without it
+ * production showed Yuvarajan at Completed 6 over a bar totalling 5 — two of his decided cases were
+ * sitting with QC and appeared nowhere. The server guarantees the four partition the decided cases.
+ *
+ * Zero-count bands are kept, not filtered: the legend states all four every time, so the reader
+ * learns the vocabulary instead of wondering why a colour vanished.
+ */
 export function outcomeSegments(d: AdminReviewerDetail): OutcomeSegment[] {
-  const total = d.progressed + d.declined
-  if (total === 0) return []
-  const pct = (n: number) => Math.round((n / total) * 100)
-  return [
-    { key: 'progressed', count: d.progressed, pct: pct(d.progressed) },
-    { key: 'declined', count: d.declined, pct: pct(d.declined) },
+  const counts: Array<[OutcomeKey, number]> = [
+    ['recommended', d.recommended],
+    ['declined', d.declined],
+    ['rejectedAfterReview', d.rejected_after_review],
+    ['awaitingQc', d.awaiting_qc],
   ]
+  const total = counts.reduce((n, [, c]) => n + c, 0)
+  if (total === 0) return []
+  return counts.map(([key, count]) => ({
+    key, count, pct: Math.round((count / total) * 100),
+  }))
 }
 
 /** True when there is nothing to draw a history from — the page shows an honest empty state. */
 export function hasNoHistory(d: AdminReviewerDetail): boolean {
-  return d.completed === 0 && d.open_now === 0 && d.decided_by_other === 0
+  return d.completed === 0 && d.open_now === 0
+}
+
+/**
+ * A reviewer's phone as it should be READ, with its country code.
+ *
+ * ⚠ The number is STORED without one. `/admin/profile` renders `+60` as fixed chrome beside the
+ * input and saves only the local part, so all fourteen reviewers' rows read like `12-624 5544`.
+ * Prefixing here is display-only and deliberate — rewriting the stored values would break the
+ * editor's contract with every reviewer who has already filled it in.
+ *
+ * An already-international number is left exactly as typed: somebody who entered `+65…` meant it.
+ */
+export function displayPhone(phone: string): string {
+  const value = (phone || '').trim()
+  if (!value) return ''
+  if (value.startsWith('+')) return value
+  // A leading 0 is the domestic form of the same number; +60 replaces it.
+  return `+60 ${value.replace(/^0/, '')}`
 }
 
 /**

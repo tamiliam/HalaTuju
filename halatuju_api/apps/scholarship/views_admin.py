@@ -2157,6 +2157,11 @@ _REVIEW_FLUENCY = ('conversational', 'fluent')
 #: `ASSIGNABLE_STATUSES` is where a review is actually outstanding.
 _REVIEWER_OPEN_STATUSES = ('profile_complete', 'interviewing')
 
+#: A decided case that went FORWARD. `recommended` is the reviewer's own verdict; the rest are the
+#: stages a recommended student passes through afterwards, and a case that reached them was
+#: recommended on the way.
+_REVIEWER_PROGRESSED_STATUSES = ('recommended', 'awarded', 'active', 'maintenance', 'closed')
+
 
 def _reviewer_languages(admin):
     rp = getattr(admin, 'reviewer_profile', None)
@@ -2188,9 +2193,19 @@ def _reviewer_workloads(admins, *, organisation_id=None):
     `test_sponsor_detail.test_money_and_students_do_not_inflate_each_other`). Grouping a few hundred
     rows in Python cannot fan out at all, so the class of bug is absent rather than guarded against.
 
-    ⚠ A decision counts for the reviewer only when THEY recorded it. An org_admin or qc may record a
-    verdict on a case assigned to somebody else (3 of BrightPath's 65 today), and attributing that to
-    the assignee would put another person's judgement on their record.
+    ⚠ **EVERY DECIDED CASE ASSIGNED TO THEM COUNTS — including one somebody else recorded the
+    verdict on** (owner, 2026-08-02). The first cut excluded those, reasoning that another person's
+    judgement should not land on a volunteer's record. That was wrong, and production said so:
+    application #13 was assigned to Balan, HE interviewed the student and submitted his findings,
+    and only the final verdict click was the owner's. Excluding it erased a case he genuinely
+    reviewed and left a footnote nobody could act on. Who pressed the button is an attribution
+    detail for the audit trail; the OUTCOME belongs on the record of whoever did the review — which
+    is exactly why `rejected_after_review` is a band of its own and not folded into `declined`.
+
+    ⚠ The four outcome bands **partition** the decided cases, so they always sum to `completed`.
+    Before `awaiting_qc` existed the bar quietly fell short of the figure printed above it. If a new
+    status ever escapes all four, `test_the_bands_account_for_every_decided_case` fails rather than
+    the screen silently under-reporting.
     """
     ids = [a.id for a in admins]
     if not ids:
@@ -2200,24 +2215,35 @@ def _reviewer_workloads(admins, *, organisation_id=None):
         # org-fence: the caller is a non-super, so only their own tenant's applications count.
         rows = rows.filter(owning_organisation_id=organisation_id)
     by_email = {a.id: (a.email or '').strip().lower() for a in admins}
-    out = {i: {'open_now': 0, 'completed': 0, 'progressed': 0, 'declined': 0,
-               'decided_by_other': 0, '_days': []} for i in ids}
-    for aid, status, assigned_at, decided_at, decided_by, bucket in rows.values_list(
-            'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at',
-            'verdict_decided_by', 'rejection_category'):
+    out = {i: {'open_now': 0, 'completed': 0, 'recommended': 0, 'declined': 0,
+               'rejected_after_review': 0, 'awaiting_qc': 0, 'unaccounted': 0, '_days': []}
+           for i in ids}
+    for aid, status, assigned_at, decided_at, rejected_by in rows.values_list(
+            'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at', 'rejected_by'):
         slot = out[aid]
         if decided_at is None:
             if status in _REVIEWER_OPEN_STATUSES:
                 slot['open_now'] += 1
             continue
-        if (decided_by or '').strip().lower() != by_email[aid]:
-            slot['decided_by_other'] += 1
-            continue
         slot['completed'] += 1
-        if status == 'rejected':
-            slot['declined'] += 1
-        elif status in ('recommended', 'awarded', 'active', 'maintenance', 'closed'):
-            slot['progressed'] += 1
+        if status in _REVIEWER_PROGRESSED_STATUSES:
+            slot['recommended'] += 1
+        elif status == 'rejected':
+            # ⚠ WHO rejected it is the whole distinction. They declined it themselves (amber), or
+            # they reviewed it and somebody else — QC, an org_admin, a super — rejected it (red).
+            # A blank `rejected_by` is attributed to THEM: the reviewer is the default decider, and
+            # the alternative would quietly inflate the red band on a missing audit field. No
+            # production row is blank today, so this branch is a guard, not a behaviour.
+            if (rejected_by or '').strip().lower() in ('', by_email[aid]):
+                slot['declined'] += 1
+            else:
+                slot['rejected_after_review'] += 1
+        elif status == 'interviewed':
+            slot['awaiting_qc'] += 1
+        else:
+            # A decided case in none of the bands above. Counted so the arithmetic still closes and
+            # a test can see it; today this is always 0.
+            slot['unaccounted'] += 1
         if assigned_at:
             slot['_days'].append((decided_at - assigned_at).total_seconds() / 86400.0)
     for slot in out.values():
@@ -2313,9 +2339,12 @@ class AdminReviewerDetailView(_ReviewersBase):
         from . import reopen as reopen_service
         payload = _reviewer_dict(target, work)
         payload.update({
-            'decided_by_other': work['decided_by_other'],
-            'progressed': work['progressed'],
+            # The four outcome bands. They partition the decided cases, so they sum to `completed`
+            # — the bar and the figure above it can never disagree.
+            'recommended': work['recommended'],
             'declined': work['declined'],
+            'rejected_after_review': work['rejected_after_review'],
+            'awaiting_qc': work['awaiting_qc'],
             'created_at': target.created_at,
             'qualification': getattr(rp, 'highest_qualification', '') or '',
             'university': getattr(rp, 'university', '') or '',

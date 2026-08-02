@@ -156,16 +156,71 @@ class TestTheFigures(_Base):
         self.assertEqual(row['open_now'], 2)
         self.assertEqual(row['completed'], 2)
 
-    def test_a_verdict_recorded_by_SOMEBODY_ELSE_is_not_theirs(self):
-        # The claim in the docstring, asserted directly: an org_admin recording on their case must
-        # not land on the reviewer's record.
+    def test_a_case_SOMEBODY_ELSE_recorded_the_verdict_on_still_counts(self):
+        # ⚠ REVERSED 2026-08-02, and production is why. The first cut excluded these, to keep another
+        # person's judgement off a volunteer's record. But application #13 was assigned to Balan, HE
+        # interviewed the student and submitted his findings, and only the final click was the
+        # owner's — excluding it erased a case he genuinely reviewed. The review is his; who pressed
+        # the button belongs in the audit trail.
         self._app(reviewer=self.reviewer, status='recommended', decided_days_ago=3,
                   decided_by='dina@rv.test')
         self._auth('rv-oa')
         row = next(x for x in self.client.get(LIST).json()['reviewers'] if x['name'] == 'Anand')
-        self.assertEqual(row['completed'], 0)
+        self.assertEqual(row['completed'], 1)
         d = self.client.get(f'{LIST}{self.reviewer.id}/').json()
-        self.assertEqual(d['decided_by_other'], 1)
+        self.assertEqual(d['recommended'], 1)
+        self.assertNotIn('decided_by_other', d)   # the exclusion, and its dead-end footnote, are gone
+
+    def test_DECLINED_is_theirs_and_REJECTED_is_somebody_else_overruling_them(self):
+        # The distinction the owner asked for, and the reason the two are not one amber band: a
+        # reviewer who recommended a student who was then rejected declined nobody.
+        mine = self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=5,
+                         nric_seed='31')
+        mine.rejected_by = self.reviewer.email
+        mine.save(update_fields=['rejected_by'])
+        theirs = self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=4,
+                           nric_seed='32')
+        theirs.rejected_by = self.oa.email
+        theirs.save(update_fields=['rejected_by'])
+        self._auth('rv-oa')
+        d = self.client.get(f'{LIST}{self.reviewer.id}/').json()
+        self.assertEqual(d['declined'], 1)
+        self.assertEqual(d['rejected_after_review'], 1)
+
+    def test_a_rejection_with_NO_recorded_rejector_is_attributed_to_THEM(self):
+        # The reviewer is the default decider, and the alternative would quietly inflate the red
+        # band whenever an audit field is missing. No production row is blank today.
+        app = self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=3,
+                        nric_seed='33')
+        app.rejected_by = ''
+        app.save(update_fields=['rejected_by'])
+        self._auth('rv-oa')
+        d = self.client.get(f'{LIST}{self.reviewer.id}/').json()
+        self.assertEqual(d['declined'], 1)
+        self.assertEqual(d['rejected_after_review'], 0)
+
+    def test_a_case_sitting_with_QC_is_its_OWN_band(self):
+        # Without it the bar falls short of the Completed figure printed directly above it — which
+        # is what production did: Yuvarajan read Completed 6 over a bar totalling 5.
+        self._app(reviewer=self.reviewer, status='interviewed', decided_days_ago=1, nric_seed='34')
+        self._auth('rv-oa')
+        d = self.client.get(f'{LIST}{self.reviewer.id}/').json()
+        self.assertEqual(d['awaiting_qc'], 1)
+
+    def test_the_bands_account_for_every_decided_case(self):
+        # ⚠ THE ARITHMETIC GUARD. The four bands must PARTITION the decided cases, so the bar can
+        # never disagree with the number above it. A new status that escapes all four fails here
+        # instead of silently shrinking the bar.
+        self._app(reviewer=self.reviewer, status='awarded', decided_days_ago=9, nric_seed='41')
+        self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=8, nric_seed='42')
+        self._app(reviewer=self.reviewer, status='interviewed', decided_days_ago=7, nric_seed='43')
+        self._app(reviewer=self.reviewer, status='profile_complete', nric_seed='44')  # still open
+        self._auth('rv-oa')
+        d = self.client.get(f'{LIST}{self.reviewer.id}/').json()
+        self.assertEqual(
+            d['recommended'] + d['declined'] + d['rejected_after_review'] + d['awaiting_qc'],
+            d['completed'])
+        self.assertEqual(d['open_now'], 1)
 
     def test_turnaround_is_a_MEDIAN_and_is_None_when_nothing_is_decided(self):
         self._auth('rv-oa')
