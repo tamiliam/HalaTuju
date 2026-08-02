@@ -550,7 +550,81 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-01, after request #9)
+## Next Sprint (as of 2026-08-02) — REQUEST #10 IS BUILT AND UNPUSHED
+
+**⚠ SIX COMMITS SIT ON LOCAL `main`, UNPUSHED, BY THE OWNER'S DECISION** (`04489c4e`..`112e8281`).
+The whole of request #10 — the reviewers surface, pause, and the five reviewer emails — is code
+complete with every gate green. The owner chose to hold it and ship both sprints as **ONE deploy**
+rather than two. `pytest` **5427** · `jest` **1359** · `tsc` clean · `next lint` **0 errors** ·
+i18n **4462×3** · `makemigrations --check` clean · `next build` OK (both new routes present).
+
+**▶ BEFORE THE PUSH, IN THIS ORDER — the push is the deploy:**
+1. **MIGRATE-FIRST, two migrations.** `courses/0068_reviewer_paused_at` (additive nullable column —
+   real DDL) and `scholarship/0143_reviewer_email_kinds` (**choices only; `sqlmigrate` prints NO
+   DDL — the only production step is the ledger row**). ⚠ **RECORD BOTH `django_migrations` ROWS.**
+   `makemigrations --check` is structurally blind to production's ledger — that is exactly how
+   `0135` ended up with its tables live and its row missing. Then diff `showmigrations` against prod.
+2. **Run `seed_partner_email_templates` ONCE** so the five reviewer rows exist. ⚠ Until they do,
+   the four senders fall back to their built-in bodies — mail still goes out, which is the designed
+   safe direction, but the owner's switches are not yet real.
+3. **Walk pause end-to-end** on a test reviewer: still on every list → cannot be newly assigned →
+   can still propose interview times on a case already theirs → un-pauses from their own profile.
+4. Push, then **confirm BOTH Cloud Builds SUCCESS for the SHA** before calling anything live.
+
+**▶ WHAT SHIPPED, and the decisions inside it that must not be "tidied":**
+- **`/admin/organisation/reviewers`** — table + detail. **NO corrections column** (17 of 65
+  decisions carry a reopen and several were OUR defects; a bare number beside a volunteer's name
+  reads as a competence score — the reopens live on the detail page WITH their reasons). **NO
+  programmes column** (owner: with one programme it could only say one thing). Both absences have
+  a rendered test.
+- **⚠ EVERY FIGURE IS COUNTED IN ITS OWN QUERY, JOINED IN PYTHON.** Two `annotate()` counts over two
+  multi-valued relations multiply each other; `Sum(distinct=True)` is the wrong cure. Turnaround is
+  a **median**, and `null` is its own answer — six reviewers have decided nothing, so nulls sink in
+  BOTH sort directions or "fastest" crowns somebody who has never decided a case.
+- **⚠ A decision counts for a reviewer ONLY when THEY recorded it** (3 of 65 were recorded by
+  somebody else). Verified against production: 65 decisions, 9 open, 17 reopens across 8 reviewers,
+  medians **2.0–10.1 days** (an earlier "2.5–10.3" note was mine and wrong).
+- **⚠ PII: phone yes, home address NEVER** — recorded in `docs/scholarship/role-matrix.md` and the
+  `ReviewerProfileSerializer` docstring; not serialised, and the page draws named fields only.
+- **⚠ PAUSE IS `PartnerAdmin.paused_at`, NOT `is_active`.** Revoke blocks the admin lookup, so a
+  paused reviewer built on that flag could never sign in to un-pause themselves. It refuses in
+  **`services._can_review` ONLY** — deliberately NOT `scheduling._can_review`, which gates writes on
+  cases already held; copying it there strands every in-flight interview. The two look like mirrors
+  and this is the one place they legitimately differ. Both directions are bite-checked.
+- **⚠ A PAUSED REVIEWER IS FLAGGED, NEVER FILTERED OUT** of any list. The cockpit unions the current
+  assignee in from `assignable-admins`, so dropping anybody reproduces bug **#66** ("Unassigned"
+  when it is nothing of the sort). The option renders **disabled**; the CURRENT assignee is never
+  disabled or the select cannot show its own state. Rules live in the pure `assignOptions`.
+- **⚠ THE FIVE REVIEWER EMAILS SEED SWITCHED ON**, reproducing the wording that went out yesterday.
+  Adopting live mail into a switchable template and seeding it OFF is how a feature ships as
+  silence. **The fallback keys on THE ROW BEING MISSING, not on the switch** — the approved plan
+  said `PARTNER_COMMS_ENABLED`, but that flag is already `1` in production, so it would have been
+  inert AND would have left the old sender mailing after the owner ticked a template off. Three
+  states: missing → built-in body; off → **stop**; on → the row governs.
+- **⚠ `qc_comments` IS A STRUCTURAL BLOCK, NOT A SCALAR** — a QC who types `{ref}` must not have it
+  substituted. And **every structural token a kind declares is now filled whether the caller
+  supplied it or not**; without that, `{qc_comments}` reached an inbox literally (found by the
+  pre-existing "no placeholder survives" test, which is why it walks every kind with a thin context).
+- **Reviewer emails are OFF the Sources screen** (`?family=reviewer`); a test asserts the two lists
+  partition the whole set so no row can fall out of both and become uneditable.
+- **Fixed in passing:** `admin.sources.emails.note.student_assigned` had been rendering as a **raw
+  dotted key** in all three locales since 1 August; the copy is written for all six kinds AND the
+  editor now renders nothing rather than a key on a miss. (Fifth member of the "the UI asserts what
+  nothing checks" cluster.) **TD-212** raised: `PartnerEmailTemplate` no longer describes three of
+  its four audiences — deliberately NOT renamed in the same diff as adopting live mail.
+
+**▶ COMMERCIAL, OWED AT COMPLETION:** the accepted quote was **15h including 2h for programme
+assignment**. The owner deferred that column, so **#10 lands at ~13h** — say so to BrightPath rather
+than absorbing it silently.
+
+**▶ STILL BLOCKED ON THE OWNER:** **request #2** — triaged feature/sprint, approved 6.5h analysis,
+**no price**. The only request stuck between triage and a quote.
+
+**▶ THE 8 GB BOX IS BEING UPGRADED (2026-08-02).** One `test_award_rule` failure under full-suite
+load did NOT reproduce on a clean re-run — contention, not code. After the RAM upgrade that class of
+false failure should stop; do not chase one without re-running alone first.
+
+## Superseded — previous Next Sprint (as of 2026-08-01, after request #9)
 
 **✅ SHIPPED — REQUEST #9: A LESS SPECIFIC ANSWER IS NOT A CONTRADICTING ONE.** Commits
 `4d61658a`..`ce3524cd`. Retro `docs/retrospective-2026-08-01-pismp-tick-inversion.md`; decision ×1;
