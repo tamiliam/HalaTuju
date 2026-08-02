@@ -567,7 +567,27 @@ a deploy that adds a kind, never before: it seeds what the RUNNING code knows ab
 first silently skips the new rows and looks like it worked. The warning now sits at the registry
 line in `views.py`.
 
-**▶ STILL OWED ON #10 — it is `scheduled`, NOT `done`:**
+**▶ ⚠ FIRST JOB — A QUOTED ITEM WAS NOT DELIVERED, AND THE OWNER HAS RULED ON IT (2026-08-02).**
+The approved analysis (id 23) priced the email work as *"the four editable emails, **and honest
+treatment of the other six** — 3 hours"*, meaning: list the reviewer emails we maintain but nobody
+can edit, on the same screen, *"so the page tells the truth about what is and is not editable"*. The
+editable five shipped; **that list did not**. It is owed, not new scope.
+
+**Owner's ruling, verbatim in substance:** show them **READ-ONLY**, so *"their existence and content
+are known to the org_admin. If not specified, they'll exist in the background without anyone paying
+attention to them until something breaks."* → **render the actual subject and body**, not just a
+name. No switch, no Edit affordance; marked plainly as ours to maintain.
+
+The seven currently invisible on `Organisation → Reviewers → Emails` (all in `emails.py`):
+`send_partner_welcome_email` (**carries a new reviewer's temporary password**),
+`send_reviewer_interview_booked_email`, `send_reviewer_interview_reminder_email`,
+`send_reviewer_interview_cancelled_email`, `send_reviewer_alternatives_requested_email`,
+`send_reviewer_student_message_email`, `send_verdict_escalation_email` (goes to org admins **and**
+the reviewer). Under an hour; no migration; one web deploy. Extend
+`components/reviewers/ReviewerEmailsCard.tsx` with a second, non-interactive section — do NOT route
+them through `PartnerEmailTemplate`, they are code-owned prose and that is the point being stated.
+
+**▶ THEN, STILL OWED ON #10 — it is `scheduled`, NOT `done`:**
 1. **Walk pause end-to-end** on a real reviewer: still on every list → cannot be newly assigned →
    can still propose interview times on a case already theirs → un-pauses from their own profile.
    Exhaustively unit-tested and bite-checked, never yet seen in a browser.
