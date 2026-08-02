@@ -321,6 +321,28 @@ export default function AdminProfilePage() {
                 </div>
               </div>
             </div>
+
+            {/* Taking part — the reviewer's own pause switch.
+                ⚠ It is deliberately NOT phrased as leaving, and it is not a revoke: the account,
+                the cases already theirs, and the sign-in all stay exactly as they are. A volunteer
+                who has to justify stepping back tends to disappear instead, which is worse for
+                everyone; this is the non-pejorative way out and back. Request #10, 2026-08-02. */}
+            <div className={card}>
+              <h2 className="font-semibold flex items-center gap-2">
+                <span aria-hidden>⏸</span>{t('admin.reviewer.takingPartTitle')}
+              </h2>
+              <p className="text-sm text-gray-500 -mt-2 italic">
+                {t('admin.reviewer.takingPartSubtitle')}
+              </p>
+              <label className="flex items-start gap-2 text-sm text-gray-700">
+                <input type="checkbox" className="mt-0.5" checked={reviewer?.paused ?? false}
+                  onChange={(e) => setRev({ paused: e.target.checked })} />
+                <span>{t('admin.reviewer.pauseLabel')}</span>
+              </label>
+              {reviewer?.paused && (
+                <p className="text-sm text-amber-700">{t('admin.reviewer.pausedNote')}</p>
+              )}
+            </div>
           </>
         )}
 
@@ -357,5 +379,6 @@ function blankReviewer(): ReviewerProfile {
     street_address: '', postcode: '', city: '', state: '',
     english_fluency: '', bm_fluency: '', tamil_fluency: '',
     share_phone_with_students: true,
+    paused: false,
   }
 }

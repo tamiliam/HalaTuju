@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
-import { getReviewerDetail, type AdminReviewerDetail } from '@/lib/admin-api'
+import { getReviewerDetail, setReviewerPaused, type AdminReviewerDetail } from '@/lib/admin-api'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   credentialLines, hasNoHistory, orderedLanguages, outcomeSegments, phoneState, turnaroundBand,
@@ -70,6 +70,12 @@ export default function AdminReviewerDetailPage() {
 
   const [detail, setDetail] = useState<AdminReviewerDetail | null>(null)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [pauseError, setPauseError] = useState('')
+  // Changing who gets work is staff management, so this is NARROWER than reading the page: an
+  // `admin` or `finance` may look, only super/org_admin may act. The endpoint re-gates anyway.
+  const viewerRole = effectiveRole(role)
+  const mayPause = viewerRole === 'super' || viewerRole === 'org_admin'
 
   const load = useCallback(() => {
     if (!token || !id) return
@@ -107,6 +113,37 @@ export default function AdminReviewerDetailPage() {
           {t('admin.reviewers.detail.joined', { date: formatDate(detail.created_at) })}
         </p>
       </div>
+
+      {/* Taking part — pause on somebody's behalf. A volunteer who has gone quiet cannot always
+          press their own switch, and a control with no way back is a one-way conversation, so the
+          same button un-pauses. It sits ABOVE the figures because it changes what happens next. */}
+      {mayPause && (
+        <Block title={t('admin.reviewers.detail.takingPart')}
+          note={t(`admin.reviewers.detail.pauseNote${detail.paused ? 'Paused' : 'Active'}`)}>
+          <div className="px-4 sm:px-5 py-4 flex flex-wrap items-center gap-3">
+            <button type="button" disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                setPauseError('')
+                try {
+                  const r = await setReviewerPaused(detail.id, !detail.paused, { token: token! })
+                  // Patch just this pair — nothing else on the record moves, so a full re-fetch
+                  // would only make the page flicker.
+                  setDetail({ ...detail, paused: r.paused, paused_at: r.paused_at })
+                } catch {
+                  setPauseError(t('admin.reviewers.detail.pauseFailed'))
+                } finally {
+                  setBusy(false)
+                }
+              }}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${
+                detail.paused ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
+              {t(`admin.reviewers.detail.${detail.paused ? 'unpause' : 'pause'}`)}
+            </button>
+            {pauseError && <span className="text-sm text-red-600">{pauseError}</span>}
+          </div>
+        </Block>
+      )}
 
       <Block title={t('admin.reviewers.detail.workload')}
         note={hasNoHistory(detail) ? t('admin.reviewers.detail.noHistory') : undefined}>

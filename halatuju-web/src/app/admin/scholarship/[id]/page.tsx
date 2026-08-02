@@ -86,6 +86,7 @@ import {
   showsWitnessCard,
   showsPostSubmissionCards,
   rejectionTrail,
+  assignOptions,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
@@ -3048,11 +3049,17 @@ export default function AdminScholarshipDetailPage() {
                 non-super (org_admin) delegates only to their own org's reviewers (the assign endpoint
                 rejects anything else as bad_assignee). The CURRENT assignee always renders so a later
                 role change never hides them (#66: assigned as qc → promoted to org_admin → was
-                showing "Unassigned"). Role suffixed so a senior assignee is distinguishable. */}
-            {admins.filter((a) => a.id === app.assigned_to_id || isSuper || a.role === 'reviewer')
+                showing "Unassigned"). Role suffixed so a senior assignee is distinguishable.
+                ⚠ A PAUSED reviewer is DISABLED here, not removed — for the same #66 reason, and
+                because a name that simply vanishes leaves the reader guessing. The label says why.
+                The person already holding the case is never disabled: pause stops NEW work, and
+                disabling the current value would make the select unable to show its own state.
+                Both rules live in the pure `assignOptions`, where they are tested. */}
+            {assignOptions(admins, { isSuper, currentAssigneeId: app.assigned_to_id })
               .map((a) => (
-                <option key={a.id} value={a.id}>
+                <option key={a.id} value={a.id} disabled={a.disabled}>
                   {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
+                  {a.disabled ? ` — ${t('admin.reviewers.status.paused')}` : ''}
                 </option>
               ))}
           </select>

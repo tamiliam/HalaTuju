@@ -573,10 +573,59 @@ def _can_review(admin):
     selective WRITE access: a view-all 'admin' or the senior 'qc' role sees every application
     read-only but can only ACT on those assigned to them (2026-07). The 'qc' role can ALSO review
     its assigned cases (a senior QC who reviews + oversees); its own reviewed cases are then QC'd
-    by someone else (the self-QC guard in _require_qc). A 'partner' (org rep) cannot be assigned."""
+    by someone else (the self-QC guard in _require_qc). A 'partner' (org rep) cannot be assigned.
+
+    ⚠ **PAUSED people are refused HERE and nowhere else** (request #10, 2026-08-02). Pause means
+    "no NEW work", so it belongs on the one gate that hands work out. It must NOT be copied into
+    `scheduling._can_review`: that gates writes on cases somebody is ALREADY holding, and a paused
+    reviewer has to be able to finish the interviews they started (owner's ruling). The two
+    functions look like mirrors and this is the one place they legitimately differ — which is
+    exactly why it is written down in both."""
     if admin is None or not getattr(admin, 'is_active', False):
         return False
+    if getattr(admin, 'paused_at', None) is not None:
+        return False
     return bool(getattr(admin, 'is_super_admin', False)) or admin.role in REVIEW_ROLES
+
+
+class PauseError(Exception):
+    """Raised with a stable .code the view surfaces (e.g. 'not_reviewable')."""
+    def __init__(self, code):
+        self.code = code
+        super().__init__(code)
+
+
+def set_paused(admin, paused, *, now=None):
+    """Step a reviewer back from NEW work, or bring them back. Returns the admin row.
+
+    ONE setter for both routes — the reviewer's own profile and an org_admin acting for them —
+    because "pause" that means two slightly different things depending on who pressed it is how
+    the two drift. Idempotent: pausing an already-paused person keeps the ORIGINAL timestamp, so
+    a stray second click cannot rewrite when they stepped back.
+
+    ⚠ It does NOT touch `is_active`, and nothing here is allowed to start doing so. Pause and
+    revoke are different answers to different questions; see the field docstring on `PartnerAdmin`.
+
+    ⚠ Pause is only meaningful for somebody who can be ASSIGNED work. Pausing a `finance` admin or
+    a referral `partner` would set a flag that changes nothing and shows a "Paused" pill on a
+    person who was never in the queue — a control that lies. Refused as 'not_reviewable'.
+    """
+    if admin is None:
+        raise PauseError('not_found')
+    if not getattr(admin, 'is_active', False):
+        # A revoked account has no work coming either way; pausing it would imply it might.
+        raise PauseError('not_active')
+    is_target = (bool(getattr(admin, 'is_super_admin', False))
+                 or getattr(admin, 'role', '') in REVIEW_ROLES)
+    if not is_target:
+        raise PauseError('not_reviewable')
+
+    want = bool(paused)
+    if want == (admin.paused_at is not None):
+        return admin                       # idempotent — keep the original stamp
+    admin.paused_at = (now or timezone.now()) if want else None
+    admin.save(update_fields=['paused_at'])
+    return admin
 
 
 # Unassigning must not orphan a case whose reviewer has already done the work. Once

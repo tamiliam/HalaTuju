@@ -122,7 +122,7 @@ class TestTheTable(_Base):
         row = self.client.get(LIST).json()['reviewers'][0]
         self.assertEqual(set(row), {
             'id', 'name', 'email', 'role', 'languages',
-            'open_now', 'completed', 'turnaround_days', 'paused'})
+            'open_now', 'completed', 'turnaround_days', 'paused', 'paused_at'})
 
     def test_there_is_NO_programmes_key(self):
         # Owner, 2026-08-02: with one programme the column could only say one thing. It comes back

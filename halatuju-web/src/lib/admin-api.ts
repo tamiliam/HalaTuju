@@ -288,6 +288,15 @@ export interface ReviewerProfile {
   bm_fluency: LangFluency
   tamil_fluency: LangFluency
   share_phone_with_students: boolean
+  /**
+   * Whether this reviewer has stepped back from NEW work.
+   *
+   * ⚠ Stored on `PartnerAdmin`, NOT on the profile row — assignment reads the admin record, and a
+   * second copy here would be a second truth to drift. It rides on this payload because one screen
+   * owns "how I take part". `paused_at` is read-only; PATCH `paused` to change it.
+   */
+  paused: boolean
+  paused_at?: string | null
 }
 
 export type LangFluency = '' | 'conversational' | 'fluent'
@@ -1172,10 +1181,27 @@ export async function requestMoreInfo(id: number, note: string, options?: ApiOpt
  *  independent of is_active/role) — the list filter's "Past reviewers" group. */
 export async function getAssignableAdmins(options?: ApiOptions) {
   return adminFetch<{
-    admins: Array<{ id: number; name: string; email: string; role: string; languages: string[]; corrections: number }>
+    /** ⚠ A PAUSED reviewer is in this list, flagged — never filtered out. The cockpit unions the
+     *  current assignee in from here, so dropping anybody makes their case read "Unassigned"
+     *  (bug #66). The option renders DISABLED with "Paused" as the reason. */
+    admins: Array<{
+      id: number; name: string; email: string; role: string
+      languages: string[]; corrections: number; paused: boolean
+    }>
     past_assignees?: Array<{ id: number; name: string }>
   }>(
     `/api/v1/admin/scholarship/assignable-admins/`, options)
+}
+
+/**
+ * Step a reviewer back from NEW work, or bring them back — the admin's route (super/org_admin).
+ *
+ * The reviewer's own route is a `paused` field on their profile PATCH. Both go through one service,
+ * so "paused" cannot mean two things depending on who pressed it.
+ */
+export async function setReviewerPaused(id: number, paused: boolean, options?: ApiOptions) {
+  return adminMutate<{ id: number; paused: boolean; paused_at: string | null }>(
+    `/api/v1/admin/reviewers/${id}/pause/`, 'POST', { paused }, options)
 }
 
 /** Reverse a recorded decision (super-only): holds the sponsor profile from the pool
@@ -2535,8 +2561,9 @@ export interface AdminReviewer {
   completed: number
   /** MEDIAN days from assignment to verdict. `null` = no completed review, NOT zero. */
   turnaround_days: number | null
-  /** Constant `false` until Sprint 2 gives pause its own state. */
+  /** Stepped back from NEW work. Never a revoke — see `PartnerAdmin.paused_at`. */
   paused: boolean
+  paused_at: string | null
 }
 
 /** One reopened decision, with the reason recorded at the time it was reopened. */

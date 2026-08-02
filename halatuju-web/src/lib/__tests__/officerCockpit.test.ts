@@ -1,4 +1,5 @@
 import {
+  assignOptions,
   factTileTone,
   groupDocumentsByFact,
   aiSuggestionFor,
@@ -1292,5 +1293,50 @@ describe('rejectionTrail — a decline names the reviewer AND the QC', () => {
   it('falls back to the email, then an em dash, when no name is resolved', () => {
     expect(rejectionTrail(rejected({ rejected_by_name: '' }))[0].name).toBe('suresh@example.com')
     expect(rejectionTrail(rejected({ rejected_by_name: '', rejected_by: '' }))[0].name).toBe('—')
+  })
+})
+
+// ── assignOptions — the assignee picker (request #10, pause) ──────────────────
+describe('assignOptions', () => {
+  const A = (over: Partial<{ id: number; name: string; role: string; paused: boolean }> = {}) =>
+    ({ id: 1, name: 'Anand', role: 'reviewer', paused: false, ...over })
+
+  it('offers a non-super only their own organisation\'s reviewers', () => {
+    const rows = [A({ id: 1 }), A({ id: 2, role: 'qc' }), A({ id: 3, role: 'org_admin' })]
+    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: null }).map((o) => o.id))
+      .toEqual([1])
+  })
+
+  it('offers a super everybody who can be assigned', () => {
+    const rows = [A({ id: 1 }), A({ id: 2, role: 'qc' }), A({ id: 3, role: 'org_admin' })]
+    expect(assignOptions(rows, { isSuper: true, currentAssigneeId: null }).map((o) => o.id))
+      .toEqual([1, 2, 3])
+  })
+
+  it('always keeps the CURRENT assignee, whatever their role became', () => {
+    // #66: assigned as qc → promoted to org_admin → the case read "Unassigned".
+    const rows = [A({ id: 1 }), A({ id: 9, role: 'org_admin' })]
+    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: 9 }).map((o) => o.id))
+      .toEqual([1, 9])
+  })
+
+  it('DISABLES a paused reviewer rather than dropping them', () => {
+    // Dropping reproduces #66 and leaves the reader guessing where a name went.
+    const rows = [A({ id: 1 }), A({ id: 2, name: 'Kavitha', paused: true })]
+    const out = assignOptions(rows, { isSuper: false, currentAssigneeId: null })
+    expect(out.map((o) => o.id)).toEqual([1, 2])
+    expect(out.map((o) => o.disabled)).toEqual([false, true])
+  })
+
+  it('never disables the person already holding the case, even paused', () => {
+    // A <select> whose current value is disabled cannot show its own state — and pause stops NEW
+    // work, it does not confiscate a case already theirs.
+    const rows = [A({ id: 2, paused: true })]
+    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: 2 })[0].disabled).toBe(false)
+  })
+
+  it('treats a payload with no `paused` field as not paused', () => {
+    const rows = [{ id: 1, name: 'Anand', role: 'reviewer' }]
+    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: null })[0].disabled).toBe(false)
   })
 })

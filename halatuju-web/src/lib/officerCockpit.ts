@@ -1277,3 +1277,43 @@ export function rejectionTrail(app: DecisionTrailInput): DecisionTrailStep[] {
   })
   return steps
 }
+
+// ── the assignment dropdown ───────────────────────────────────────────────────
+
+/** One option in the assignee picker, already decided: shown, and whether it may be chosen. */
+export interface AssignOption {
+  id: number
+  name: string
+  role: string
+  /** True when the option renders greyed with "Paused" appended. */
+  disabled: boolean
+}
+
+/**
+ * Which assignable staff the picker offers, and which are choosable (#10, 2026-08-02).
+ *
+ * Two rules that look like tidy-up candidates and are not:
+ *
+ * ⚠ **A PAUSED reviewer is DISABLED, never removed.** The current assignee is unioned in from this
+ * same list, so dropping anybody makes their case read "Unassigned" (bug #66); and a name that
+ * simply vanishes leaves the reader guessing where it went. The label says why instead.
+ *
+ * ⚠ **THE CURRENT ASSIGNEE IS NEVER DISABLED**, even when paused. Pause stops NEW work — it does
+ * not confiscate a case already theirs — and a `<select>` whose current value is disabled cannot
+ * show its own state.
+ *
+ * Who is offered at all mirrors the server's `bad_assignee` rule: a super may pick any review-
+ * capable person, a non-super delegates only to their own organisation's reviewers.
+ */
+export function assignOptions<T extends { id: number; name: string; role: string; paused?: boolean }>(
+  admins: T[], { isSuper, currentAssigneeId }: { isSuper: boolean; currentAssigneeId: number | null },
+): AssignOption[] {
+  return admins
+    .filter((a) => a.id === currentAssigneeId || isSuper || a.role === 'reviewer')
+    .map((a) => ({
+      id: a.id,
+      name: a.name,
+      role: a.role,
+      disabled: !!a.paused && a.id !== currentAssigneeId,
+    }))
+}

@@ -135,6 +135,7 @@ from .views_admin import (
     AdminOrgRequestWithdrawAnalysisView,
     AdminReviewerListView,
     AdminReviewerDetailView,
+    AdminReviewerPauseView,
     AdminOrgRequestApproveView,
     AdminOrgRequestDeferView,
     AdminOrgRequestModifyView,
@@ -301,6 +302,7 @@ urlpatterns = [
     # Request #10 — Organisation → Reviewers. Staff invites; this is where you look at somebody.
     path('admin/reviewers/', AdminReviewerListView.as_view()),
     path('admin/reviewers/<int:pk>/', AdminReviewerDetailView.as_view()),
+    path('admin/reviewers/<int:pk>/pause/', AdminReviewerPauseView.as_view()),
     path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
     path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),

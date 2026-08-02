@@ -53,8 +53,8 @@ from .serializers_admin import (
     SponsorProfileSerializer,
 )
 from .services import (
-    AssignmentError, admin_reject, application_completeness, assign_reviewer,
-    cancel_pending_decline, org_admin_reject, set_reporting_date_by_officer,
+    AssignmentError, PauseError, admin_reject, application_completeness, assign_reviewer,
+    cancel_pending_decline, org_admin_reject, set_paused, set_reporting_date_by_officer,
     submit_interview,
 )
 from . import sponsorship as sponsorship_service
@@ -2123,9 +2123,15 @@ class AdminAssignableAdminsView(_AdminBase):
                 .filter(id__in=assigned_apps.values_list('assigned_to_id', flat=True).distinct())
                 .order_by('name'))
 
+        # ⚠ A PAUSED reviewer is FLAGGED, never filtered out (request #10, 2026-08-02). The cockpit
+        # unions the current assignee in from this very list, so dropping anybody reproduces bug
+        # #66 — the case reads as "Unassigned" when it is nothing of the sort. The dropdown renders
+        # them disabled with "Paused" as the reason, which also answers the reader's next question
+        # instead of leaving a name mysteriously absent.
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
              'role': 'super' if a.is_super else a.role, 'languages': langs(a),
+             'paused': a.paused_at is not None,
              'corrections': corrections.get(a.id, 0)}
             for a in admins
         ], 'past_assignees': [{'id': p.id, 'name': p.name} for p in past]})
@@ -2221,9 +2227,8 @@ def _reviewer_dict(admin, work):
         'open_now': work['open_now'],
         'completed': work['completed'],
         'turnaround_days': work['turnaround_days'],
-        # Constant until Sprint 2 gives pause its own state. Kept in the payload from the start so
-        # that sprint changes DATA, not the shape of this screen.
-        'paused': False,
+        'paused': admin.paused_at is not None,
+        'paused_at': admin.paused_at,
         # ⚠ NO `programmes` KEY, and that is a decision (owner, 2026-08-02): with one programme
         # every reviewer serves it, so the column could only ever say one thing. It returns when a
         # second programme exists — until then everyone is on the BrightPath Bursary by default.
@@ -2316,6 +2321,38 @@ class AdminReviewerDetailView(_ReviewersBase):
             ],
         })
         return Response(payload)
+
+
+class AdminReviewerPauseView(_ReviewersBase):
+    """POST admin/reviewers/<pk>/pause/ {paused: bool} — step somebody back, or bring them back.
+
+    The complement of the reviewer's own switch on their profile. It exists because a volunteer who
+    has gone quiet cannot always press it themselves, and because a control with no way back is a
+    one-way conversation — un-pause is the same endpoint with `false`.
+
+    ⚠ **NARROWER than reading this surface.** `admin` and `finance` may look at the reviewers list;
+    changing who gets work is staff management, which the role matrix gives to super + org_admin
+    only. The list gate would have admitted all four, so this re-gates rather than inheriting.
+    """
+
+    def post(self, request, pk):
+        admin, org_id, err = self._side(request)
+        if err:
+            return err
+        if not (admin.is_super or self.has_role(admin, 'org_admin')):
+            return self._deny_role()
+        # org-fence: `_reviewers` is already narrowed, so a cross-org id 404s rather than resolving.
+        target = self._reviewers(org_id).filter(pk=pk).first()
+        if target is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            set_paused(target, request.data.get('paused'))
+        except PauseError as e:
+            return Response({'error': e.code, 'code': e.code},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response({'id': target.id,
+                         'paused': target.paused_at is not None,
+                         'paused_at': target.paused_at})
 
 
 class AdminRequestInfoView(_AdminBase):
@@ -2942,22 +2979,45 @@ class ReviewerProfileView(_AdminBase):
     sensitive PII (phone/address) lives in its own table and is exposed by no other
     serializer."""
 
+    def _payload(self, profile, admin):
+        """The profile, plus the pause state — which lives on `PartnerAdmin`, not here.
+
+        ⚠ `paused` is deliberately NOT a `ReviewerProfile` column. Pause governs assignment, and
+        assignment reads `PartnerAdmin`; a second copy on the profile row would be a second truth
+        to drift. It rides along on this payload because ONE screen owns "how I take part", and
+        splitting it across two calls would be an implementation detail leaking into the UI.
+        """
+        data = dict(ReviewerProfileSerializer(profile).data)
+        data['paused'] = admin.paused_at is not None
+        data['paused_at'] = admin.paused_at
+        return data
+
     def get(self, request):
         admin, err = self._require_reviewer(request)
         if err:
             return err
         profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
-        return Response(ReviewerProfileSerializer(profile).data)
+        return Response(self._payload(profile, admin))
 
     def patch(self, request):
         admin, err = self._require_reviewer(request)
         if err:
             return err
         profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
-        serializer = ReviewerProfileSerializer(profile, data=request.data, partial=True)
+        # Split off `paused` before the serializer sees it — it belongs to a different model, and
+        # an unknown key would otherwise be silently ignored, leaving the reviewer pressing a
+        # switch that does nothing.
+        body = {k: v for k, v in request.data.items() if k not in ('paused', 'paused_at')}
+        serializer = ReviewerProfileSerializer(profile, data=body, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        if 'paused' in request.data:
+            try:
+                set_paused(admin, request.data.get('paused'))
+            except PauseError as e:
+                return Response({'error': e.code, 'code': e.code},
+                                status=status.HTTP_400_BAD_REQUEST)
+        return Response(self._payload(profile, admin))
 
 
 class AdminGraduationMessageListView(_AdminBase):

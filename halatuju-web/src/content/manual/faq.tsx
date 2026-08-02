@@ -69,7 +69,25 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>Will my phone number be shared with students?</>,
       a: <>Your number may be shared with the students assigned to you, so they know to expect your call. It&rsquo;s
-        on by default — you can <strong>opt out anytime</strong> on your Profile.</>,
+        on by default — you can <strong>opt out anytime</strong> on your Profile. Your <strong>home address is
+        never shown to anyone</strong>, including the programme lead.</>,
+    },
+    {
+      q: <>I need a break. How do I stop being given new students?</>,
+      a: <>On <strong>My profile</strong>, in the <strong>Taking part</strong> card, tick <strong>Pause new
+        cases</strong>. Nobody new will be assigned to you until you untick it. You don&rsquo;t need permission
+        and nobody is judging — this is unpaid work and life happens.</>,
+    },
+    {
+      q: <>If I pause, do I lose my account or the students I already have?</>,
+      a: <>No. Pausing is <strong>not</strong> leaving: you keep your account, you can still sign in, and
+        <strong> any interview already yours stays yours</strong> — please finish those, or tell the programme
+        lead if you can&rsquo;t. Only <em>new</em> assignments stop.</>,
+    },
+    {
+      q: <>Can somebody pause me without asking?</>,
+      a: <>Your organisation admin can, and it is meant kindly — usually when someone has gone quiet and cases are
+        waiting. It takes nothing away from you, and the same switch brings you back whenever you want.</>,
     },
     {
       q: <>What is the &ldquo;Student profile (draft)&rdquo;?</>,

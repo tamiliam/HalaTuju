@@ -8,6 +8,7 @@ const full: ReviewerProfile = {
   street_address: '', postcode: '', city: '', state: '',
   english_fluency: 'fluent', bm_fluency: '', tamil_fluency: '',
   share_phone_with_students: true,
+  paused: false,
 }
 
 describe('adminLanding', () => {

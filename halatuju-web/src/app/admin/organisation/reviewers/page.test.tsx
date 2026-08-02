@@ -28,11 +28,11 @@ const mockApi = api as jest.Mocked<typeof api>
 const REVIEWERS = [
   {
     id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
-    languages: ['ta', 'en'], open_now: 3, completed: 12, turnaround_days: 4.5, paused: false,
+    languages: ['ta', 'en'], open_now: 3, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
   },
   {
     id: 6, name: 'Hafiz Rahman', email: 'hafiz@example.org', role: 'qc',
-    languages: [], open_now: 0, completed: 0, turnaround_days: null, paused: false,
+    languages: [], open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
   },
 ] as unknown as api.AdminReviewer[]
 

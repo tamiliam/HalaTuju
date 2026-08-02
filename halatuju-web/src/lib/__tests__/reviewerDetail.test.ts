@@ -13,7 +13,7 @@ import {
 
 const R = (over: Partial<AdminReviewer> = {}): AdminReviewer => ({
   id: 1, name: 'Aisha', email: 'a@example.org', role: 'reviewer', languages: ['en'],
-  open_now: 0, completed: 0, turnaround_days: null, paused: false, ...over,
+  open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null, ...over,
 })
 
 const D = (over: Partial<AdminReviewerDetail> = {}): AdminReviewerDetail => ({

@@ -110,5 +110,20 @@ export const roleReviewer: ManualChapter = {
       alt: 'The Decision card with the four facts, amount slider and buttons',
       float: true,
     },
+    {
+      anchor: 'reviewer-pause',
+      title: 'Taking a break',
+      body: (
+        <>Life happens, and this is unpaid work. On <strong>My profile</strong> there is a
+        <strong> Taking part</strong> card: tick <strong>Pause new cases</strong> and nobody new will be assigned
+        to you. Untick it whenever you&rsquo;re ready and you go straight back into the rota — there is no
+        application, and nobody has to approve it.
+          <span className="mt-2 block rounded-lg border border-blue-200 bg-blue-50 p-3">Pausing is <strong>not
+          </strong> leaving. You keep your account, you can still sign in, and <strong>any interview already
+          yours stays yours</strong> — please do finish those, or tell the programme lead if you can&rsquo;t.
+          If you have gone quiet, your organisation admin can pause you on your behalf; the same switch brings
+          you back.</span></>
+      ),
+    },
   ],
 }

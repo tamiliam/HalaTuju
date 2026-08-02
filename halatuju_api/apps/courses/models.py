@@ -574,6 +574,28 @@ class PartnerAdmin(models.Model):
         help_text='super / admin / partner / reviewer. Backfilled from is_super_admin.',
     )
     is_active = models.BooleanField(default=True)
+    # ⚠ READ THIS BEFORE REACHING FOR `is_active` TO MEAN "step back for a while".
+    #
+    # `is_active=False` is REVOKED — the account is gone. `get_admin` (courses/views_admin.py)
+    # filters on it, so an inactive admin cannot even sign in; it also drops them from
+    # notification sets, disarms the finance check and feeds the last-org-admin guard.
+    #
+    # `paused_at` is PAUSED — a volunteer taking a breather, and the whole point is that they
+    # keep their account: they sign in, finish the interviews already theirs, and un-pause
+    # themselves. It blocks ONE thing, NEW assignment (`services._can_review`), and deliberately
+    # not `scheduling._can_review`, because a paused reviewer must still be able to propose times
+    # for a case they are already holding.
+    #
+    # Two flags that nearly mean the same thing WILL be confused (lessons.md, IC lock 2026-07-29),
+    # so the difference is named here rather than left to be inferred, and
+    # `test_reviewer_pause.py` asserts pause ≠ revoke on each behaviour that separates them.
+    # NULL = participating. Request #10, 2026-08-02.
+    paused_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When this reviewer stepped back. NULL = participating. Blocks NEW assignment '
+                  'only — never sign-in, and never work already theirs. NOT a revoke: that is '
+                  'is_active.',
+    )
     name = models.CharField(max_length=200)
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -585,6 +607,11 @@ class PartnerAdmin(models.Model):
     def is_super(self):
         """True for a super admin via either the new role or the legacy flag."""
         return self.role == 'super' or self.is_super_admin
+
+    @property
+    def is_paused(self):
+        """True when this person has stepped back from NEW work. Never means revoked."""
+        return self.paused_at is not None
 
     def __str__(self):
         org_name = self.org.name if self.org else 'Super Admin'

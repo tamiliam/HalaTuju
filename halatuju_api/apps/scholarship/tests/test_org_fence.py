@@ -263,6 +263,7 @@ class TestFenceCoverageCompleteness(TestCase):
         '_ReviewersBase': 'base — reviewers role gate + owning_organisation narrowing',
         'AdminReviewerListView': 'list-fenced',
         'AdminReviewerDetailView': 'list-fenced',
+        'AdminReviewerPauseView': 'list-fenced+org_admin-only',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

@@ -7,7 +7,7 @@
  * by the reviewer — several of BrightPath's were caused by our own defects — so the reason
  * recorded at the time must appear with every entry, and a bare total must not appear at all.
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AdminReviewerDetailPage from './page'
 import * as api from '@/lib/admin-api'
 
@@ -28,7 +28,7 @@ const mockApi = api as jest.Mocked<typeof api>
 
 const DETAIL = {
   id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
-  languages: ['ta', 'en'], open_now: 3, completed: 12, turnaround_days: 4.5, paused: false,
+  languages: ['ta', 'en'], open_now: 3, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
   decided_by_other: 2, progressed: 9, declined: 3,
   created_at: '2026-03-01T00:00:00Z',
   qualification: 'MSc', university: 'Universiti Malaya', graduation_year: 2014,
@@ -129,6 +129,55 @@ describe('the honest empty states', () => {
   it('says nothing has ever been assigned when that is the case', async () => {
     await loaded({ open_now: 0, completed: 0, decided_by_other: 0 })
     expect(screen.getByText('admin.reviewers.detail.noHistory')).toBeTruthy()
+  })
+})
+
+describe('pause, on somebody else\'s behalf', () => {
+  it('offers to pause an active reviewer, and says what pausing does NOT take away', async () => {
+    await loaded()
+    expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
+    expect(screen.getByText('admin.reviewers.detail.pauseNoteActive')).toBeTruthy()
+  })
+
+  it('offers the way BACK for a paused one — never a one-way conversation', async () => {
+    await loaded({ paused: true, paused_at: '2026-07-30T00:00:00Z' })
+    expect(screen.getByText('admin.reviewers.detail.unpause')).toBeTruthy()
+    expect(screen.getByText('admin.reviewers.detail.pauseNotePaused')).toBeTruthy()
+    expect(screen.queryByText('admin.reviewers.detail.pause')).toBeNull()
+  })
+
+  it('sends the change and flips the control without re-fetching the record', async () => {
+    mockApi.setReviewerPaused.mockResolvedValue({
+      id: 5, paused: true, paused_at: '2026-08-02T00:00:00Z',
+    })
+    await loaded()
+    fireEvent.click(screen.getByText('admin.reviewers.detail.pause'))
+    await waitFor(() => expect(screen.getByText('admin.reviewers.detail.unpause')).toBeTruthy())
+    expect(mockApi.setReviewerPaused).toHaveBeenCalledWith(5, true, { token: 'tok' })
+    expect(mockApi.getReviewerDetail).toHaveBeenCalledTimes(1)   // no reload — nothing else moved
+  })
+
+  it('says so when the change fails, and leaves the control where it was', async () => {
+    mockApi.setReviewerPaused.mockRejectedValue(new Error('boom'))
+    await loaded()
+    fireEvent.click(screen.getByText('admin.reviewers.detail.pause'))
+    await waitFor(() => expect(screen.getByText('admin.reviewers.detail.pauseFailed')).toBeTruthy())
+    expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
+  })
+
+  it('shows a plain `admin` the record but NOT the control', async () => {
+    // Reading the surface and deciding who gets work are different powers; the role matrix gives
+    // the second to super + org_admin only, and the endpoint re-gates regardless.
+    viewerRole = { role: 'admin' }
+    await loaded()
+    expect(screen.getByText('admin.reviewers.detail.workload')).toBeTruthy()
+    expect(screen.queryByText('admin.reviewers.detail.pause')).toBeNull()
+  })
+
+  it('shows a super the control', async () => {
+    viewerRole = { role: 'reviewer', is_super_admin: true }
+    await loaded()
+    expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
   })
 })
 

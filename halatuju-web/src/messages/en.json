@@ -3182,7 +3182,13 @@
         "reopensNote": "A reopened decision is not by itself a mistake by this reviewer — several were caused by faults in the platform. The reason recorded at the time is shown with each one, and there is deliberately no total.",
         "noReopens": "None of this reviewer's decisions has been reopened.",
         "application": "Application #{id}",
-        "reopenedBy": "Reopened by {by} on {date}"
+        "reopenedBy": "Reopened by {by} on {date}",
+        "takingPart": "Taking part",
+        "pause": "Pause new cases",
+        "unpause": "Bring them back",
+        "pauseNoteActive": "Pausing stops NEW cases only. They keep their account, and any interview already theirs stays with them.",
+        "pauseNotePaused": "This reviewer is paused, so they are not being given new cases. Everything else — their account, their sign-in, the cases already theirs — is untouched.",
+        "pauseFailed": "That could not be changed. Please try again."
       }
     },
     "sources": {
@@ -4765,7 +4771,11 @@
       "fluencyNone": "Not really",
       "fluencyConversational": "Conversational",
       "fluencyFluent": "Fluent",
-      "sharePhone": "Share my phone number with students assigned to me, so they know to expect my call."
+      "sharePhone": "Share my phone number with students assigned to me, so they know to expect my call.",
+      "takingPartTitle": "Taking part",
+      "takingPartSubtitle": "Step back for a while without giving up your place.",
+      "pauseLabel": "Pause new cases for now — don't assign me anyone new.",
+      "pausedNote": "You are paused. You keep your account and any interviews already yours; you simply won't be given anyone new until you untick this."
     },
     "inviteAs": "Invite as",
     "inviteHeading": {

@@ -3182,7 +3182,13 @@
         "reopensNote": "Keputusan yang dibuka semula bukan bermakna penilai ini tersilap — beberapa daripadanya berpunca daripada kesilapan platform. Sebab yang direkodkan pada masa itu dipaparkan bersama setiap satu, dan sengaja tiada jumlah keseluruhan.",
         "noReopens": "Tiada keputusan penilai ini yang dibuka semula.",
         "application": "Permohonan #{id}",
-        "reopenedBy": "Dibuka semula oleh {by} pada {date}"
+        "reopenedBy": "Dibuka semula oleh {by} pada {date}",
+        "takingPart": "Penyertaan",
+        "pause": "Jeda kes baharu",
+        "unpause": "Kembalikan mereka",
+        "pauseNoteActive": "Jeda menghentikan kes BAHARU sahaja. Akaun mereka kekal, dan temu duga yang sudah menjadi tanggungjawab mereka tetap bersama mereka.",
+        "pauseNotePaused": "Penilai ini sedang dijeda, jadi mereka tidak diberi kes baharu. Segala yang lain — akaun, log masuk, kes yang sudah menjadi tanggungjawab mereka — tidak tersentuh.",
+        "pauseFailed": "Perubahan itu tidak dapat dilakukan. Sila cuba lagi."
       }
     },
     "sources": {
@@ -4765,7 +4771,11 @@
       "fluencyNone": "Tidak",
       "fluencyConversational": "Boleh berbual",
       "fluencyFluent": "Fasih",
-      "sharePhone": "Kongsi nombor telefon saya dengan pelajar yang ditugaskan kepada saya, supaya mereka tahu untuk menjangka panggilan saya."
+      "sharePhone": "Kongsi nombor telefon saya dengan pelajar yang ditugaskan kepada saya, supaya mereka tahu untuk menjangka panggilan saya.",
+      "takingPartTitle": "Penyertaan",
+      "takingPartSubtitle": "Berehat seketika tanpa melepaskan tempat anda.",
+      "pauseLabel": "Jeda kes baharu buat masa ini — jangan tugaskan sesiapa yang baharu kepada saya.",
+      "pausedNote": "Anda sedang dijeda. Akaun anda kekal, begitu juga temu duga yang sudah menjadi tanggungjawab anda; anda cuma tidak akan diberi kes baharu sehingga anda menyahtanda ini."
     },
     "inviteAs": "Jemput sebagai",
     "inviteHeading": {
