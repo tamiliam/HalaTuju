@@ -728,7 +728,18 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
     """A reviewer's own credentials + contact details (F6). Narrow + self-scoped:
     only the six editable fields are writable; the FK is never exposed or accepted.
     Sensitive staff PII (phone/address) lives only here, never in any outward
-    (student/sponsor) serializer."""
+    (student/sponsor) serializer.
+
+    ⚠ **One inward widening, and it is PARTIAL** (owner, 2026-08-02, request #10). The reviewers
+    surface (`AdminReviewerDetailView`) shows an org_admin the credentials, the languages and the
+    PHONE of their own organisation's reviewers — the person handing out cases needs to reach
+    them. It does **not** serialise the ADDRESS fields, and must not start to: assigning a case
+    is no reason to read where somebody lives. `share_phone_with_students` travels with the phone
+    so the screen can say which number a student may be given; showing a withheld number without
+    that caveat would defeat the consent this organisation asked the reviewer for.
+
+    Recorded in `docs/scholarship/role-matrix.md`; a test in `test_reviewers_surface.py` asserts
+    the address cannot appear in that payload. Widen it only by owner decision, doc first."""
 
     class Meta:
         model = ReviewerProfile

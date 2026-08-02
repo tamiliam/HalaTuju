@@ -3111,6 +3111,7 @@
       "staff": "Kakitangan",
       "programmeOverview": "Gambaran keseluruhan",
       "reviewers": "Penilai",
+      "reviewerScoping": "Skop penilai",
       "years": "Tahun kemasukan",
       "fund": "Dana",
       "rules": "Peraturan",
@@ -3120,6 +3121,68 @@
         "organisation": "Organisasi",
         "programme": "Program",
         "utility": "Akaun"
+      }
+    },
+    "reviewers": {
+      "title": "Penilai",
+      "desc": "Mereka yang menilai permohonan organisasi ini — apa yang sedang dipegang, dan bagaimana kes mereka berakhir.",
+      "loadFailed": "Senarai penilai tidak dapat dimuatkan.",
+      "empty": "Belum ada penilai. Jemput seorang melalui Kakitangan.",
+      "colName": "Penilai",
+      "colRole": "Peranan",
+      "colLanguages": "Bahasa",
+      "colOpen": "Sedang dipegang",
+      "colCompleted": "Selesai",
+      "colTurnaround": "Tempoh",
+      "colStatus": "Status",
+      "days": "{days} hari",
+      "noTurnaround": "Belum ada penilaian",
+      "turnaroundHint": "Bilangan hari lazim dari penugasan hingga keputusan (kes pertengahan, bukan purata).",
+      "noTurnaroundHint": "Belum ada penilaian selesai — tiada apa untuk diukur.",
+      "footnote": "Setiap angka mengira hanya keputusan yang direkodkan sendiri oleh orang ini, bagi permohonan organisasi ini.",
+      "role": {
+        "super": "Pentadbir utama",
+        "qc": "Semakan kualiti",
+        "reviewer": "Penilai"
+      },
+      "lang": {
+        "en": "Inggeris",
+        "ms": "Bahasa Melayu",
+        "ta": "Tamil"
+      },
+      "status": {
+        "active": "Aktif",
+        "paused": "Dijeda"
+      },
+      "detail": {
+        "back": "Semua penilai",
+        "loadFailed": "Penilai ini tidak dapat dimuatkan.",
+        "joined": "Menyertai {date}",
+        "workload": "Beban kerja",
+        "noHistory": "Belum ada kes ditugaskan kepada penilai ini.",
+        "outcomes": "Keputusan",
+        "noOutcomes": "Belum ada keputusan direkodkan.",
+        "progressed": "Diteruskan",
+        "declined": "Ditolak",
+        "decidedByOther": "{count} kes yang ditugaskan kepada penilai ini telah diputuskan oleh orang lain, jadi ia tidak dikira di sini.",
+        "credentials": "Kelayakan",
+        "noCredentials": "Penilai ini belum mengisi profil mereka.",
+        "qualification": "Kelayakan tertinggi",
+        "university": "Universiti",
+        "graduationYear": "Tamat pengajian",
+        "fieldOfStudy": "Bidang pengajian",
+        "contact": "Hubungan",
+        "email": "E-mel",
+        "phone": "Telefon",
+        "phoneNone": "Tidak diberikan",
+        "phone_shared": "nombor ini boleh diberikan kepada pelajar",
+        "phone_staff_only": "kakitangan sahaja — penilai belum bersetuju untuk berkongsi dengan pelajar",
+        "contactNote": "Alamat rumah penilai tidak pernah dipaparkan di sini.",
+        "reopens": "Keputusan yang dibuka semula",
+        "reopensNote": "Keputusan yang dibuka semula bukan bermakna penilai ini tersilap — beberapa daripadanya berpunca daripada kesilapan platform. Sebab yang direkodkan pada masa itu dipaparkan bersama setiap satu, dan sengaja tiada jumlah keseluruhan.",
+        "noReopens": "Tiada keputusan penilai ini yang dibuka semula.",
+        "application": "Permohonan #{id}",
+        "reopenedBy": "Dibuka semula oleh {by} pada {date}"
       }
     },
     "sources": {

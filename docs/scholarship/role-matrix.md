@@ -137,6 +137,46 @@ signer must type their own name, matched against `PartnerAdmin.name`.
   usage (Gemini / Vision / GCP / Supabase / Twilio / change requests at cost + 15–30%) and needs a
   billing-sources investigation that has not happened. The Administration card stays disabled.
 
+## Reviewers surface (Organisation → Reviewers) — access
+
+`/admin/organisation/reviewers` and `/admin/organisation/reviewers/[id]`
+(`AdminReviewerListView` / `AdminReviewerDetailView`, request #10, 2026-08-02). Staff invites and
+revokes; this is where you look at somebody — what they carry, how long a case sits with them, and
+how their cases ended.
+
+**Access: super + `org_admin` + `admin` + `finance`** — the same set as the organisation's other
+staff-facing screens, because Staff already shows all four who the reviewers are. `qc` and
+`reviewer` are refused: a volunteer has no business reading a colleague's caseload and turnaround.
+
+**Org-fenced** (`list-fenced` in `test_org_fence.py`). A `PartnerAdmin` carries
+`owning_organisation`, so a non-super sees only their own tenant's people — and every FIGURE is
+fenced too, counted over that tenant's applications alone. A cross-org id answers **404, never
+403**: a 403 would confirm that another tenant's staff member exists.
+
+**PII — a deliberate, PARTIAL widening (owner, 2026-08-02).** `ReviewerProfile` is a self-scoped
+record; its serializer's docstring says so. This surface widens it, and the ruling is:
+
+| Field | Shown to super / org_admin / admin / finance | Why |
+|---|---|---|
+| name, email | yes | already on Staff |
+| phone | **yes** | the person assigning work needs to reach the reviewer |
+| `share_phone_with_students` | yes | it is a consent state, and the assigner must not defeat it |
+| qualification, university, graduation year, field of study | yes | it is why they were accepted as a reviewer |
+| **home address** | **NEVER** | it exists for nothing on this screen; assigning a case is not a reason to read where somebody lives |
+
+The address is not merely hidden in the template — it is **not serialised**, and a test asserts it
+cannot appear in the payload. Widen this cell only by owner decision, recorded here first.
+
+**No corrections figure on the table, by decision (2026-08-02).** 17 of BrightPath's 65 decisions
+carry a reopen and several were caused by our own defects, not the reviewer's judgement. A bare
+number beside a volunteer's name reads as a competence score to whoever hands out the next case, so
+the reopens appear on the DETAIL page only, each with the reason recorded at the time.
+
+**No programmes column, by decision (owner, 2026-08-02).** With one programme every reviewer serves
+it, so the column could only ever say one thing; everyone is on the BrightPath Bursary by default.
+It returns when a second programme exists — see the revisit clause in `decisions.md` (2026-07-26),
+which names the membership table this would need.
+
 ## Sponsor emails (what a donor hears) — access
 
 Nine editable emails behind the **Emails** badge on `/admin/sponsors`

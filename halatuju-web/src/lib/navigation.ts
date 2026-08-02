@@ -167,6 +167,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.staff', chord: 'T',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, match: ['/admin/invite'] },
+      // Sibling of Staff, and deliberately next to it: Staff invites and revokes, Reviewers is
+      // where you LOOK at somebody. Same four roles, because Staff already shows all four who the
+      // reviewers are. Organisation scope, not programme — a `PartnerAdmin` belongs to a tenant and
+      // has no programme field at all (request #10, 2026-08-02).
+      { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
+        chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
+        gate: { mode: 'always' } },
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
@@ -202,7 +209,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         gate: { mode: 'always' } },
       // Reserved slots the programme-layer roadmap owes: reviewer assignment/scoping, the intake
       // years beneath the gift, the fund, and the rules that currently live on the cohort.
-      { id: 'reviewers', href: '/admin/programme/reviewers', labelKey: 'admin.nav.reviewers',
+      // ⚠ RENAMED, not repurposed (2026-08-02). This slot is SCOPING — binding a reviewer to one
+      // programme — which is a different page from the Organisation → Reviewers directory that now
+      // exists. It kept the label "Reviewers" until that directory shipped, at which point the
+      // sidebar said Reviewers twice. The slot itself is untouched and stays reserved: scoping is
+      // meaningless while there is one programme (owner, 2026-08-02).
+      { id: 'reviewerScoping', href: '/admin/programme/reviewers',
+        labelKey: 'admin.nav.reviewerScoping',
         scope: 'programme', roles: ['super', 'org_admin'],
         gate: { mode: 'always' }, placeholder: true },
       { id: 'years', href: '/admin/programme/years', labelKey: 'admin.nav.years',

@@ -2513,3 +2513,69 @@ export async function getAdminScopes(
 ): Promise<AdminScopes> {
   return adminFetch(`/api/v1/admin/scholarship/scopes/?lang=${encodeURIComponent(lang)}`, options)
 }
+
+// ── Reviewers (Organisation → Reviewers, request #10, 2026-08-02) ─────────────
+
+/**
+ * One row of the reviewers table.
+ *
+ * Every figure is org-fenced and computed server-side; nothing here is re-derived on the client.
+ * There is deliberately **no `programmes`** field (with one programme the column could only ever
+ * say one thing) and **no corrections count** — reopens live on the detail page, with their
+ * reasons, because a bare number beside a volunteer's name reads as a competence score.
+ */
+export interface AdminReviewer {
+  id: number
+  name: string
+  email: string
+  role: string
+  /** Fluency codes the reviewer can actually interview in — 'conversational' or better. */
+  languages: string[]
+  open_now: number
+  completed: number
+  /** MEDIAN days from assignment to verdict. `null` = no completed review, NOT zero. */
+  turnaround_days: number | null
+  /** Constant `false` until Sprint 2 gives pause its own state. */
+  paused: boolean
+}
+
+/** One reopened decision, with the reason recorded at the time it was reopened. */
+export interface AdminReviewerReopen {
+  id: number
+  application_id: number
+  reason: string
+  reopened_by: string
+  at: string
+}
+
+/**
+ * One reviewer, whole.
+ *
+ * The contact block is a deliberate, PARTIAL widening of a self-scoped profile: phone yes, **home
+ * address never** — it is not serialised at all, and a backend test asserts it cannot appear.
+ * See `docs/scholarship/role-matrix.md`.
+ */
+export interface AdminReviewerDetail extends AdminReviewer {
+  /** Verdicts on cases assigned to them that SOMEBODY ELSE recorded — not on their record. */
+  decided_by_other: number
+  progressed: number
+  declined: number
+  created_at: string
+  qualification: string
+  university: string
+  graduation_year: number | null
+  field_of_study: string
+  phone: string
+  share_phone_with_students: boolean
+  reopens: AdminReviewerReopen[]
+}
+
+export async function listReviewers(options?: ApiOptions): Promise<{ reviewers: AdminReviewer[] }> {
+  return adminFetch('/api/v1/admin/reviewers/', options)
+}
+
+export async function getReviewerDetail(
+  id: number, options?: ApiOptions,
+): Promise<AdminReviewerDetail> {
+  return adminFetch(`/api/v1/admin/reviewers/${id}/`, options)
+}

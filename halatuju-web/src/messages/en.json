@@ -3111,6 +3111,7 @@
       "staff": "Staff",
       "programmeOverview": "Overview",
       "reviewers": "Reviewers",
+      "reviewerScoping": "Reviewer scoping",
       "years": "Intake years",
       "fund": "Fund",
       "rules": "Rules",
@@ -3120,6 +3121,68 @@
         "organisation": "Organisation",
         "programme": "Programme",
         "utility": "Account"
+      }
+    },
+    "reviewers": {
+      "title": "Reviewers",
+      "desc": "The people who review this organisation's applications — what they are carrying, and how their cases ended.",
+      "loadFailed": "The reviewers could not be loaded.",
+      "empty": "No reviewers yet. Invite one from Staff.",
+      "colName": "Reviewer",
+      "colRole": "Role",
+      "colLanguages": "Languages",
+      "colOpen": "Open now",
+      "colCompleted": "Completed",
+      "colTurnaround": "Turnaround",
+      "colStatus": "Status",
+      "days": "{days} days",
+      "noTurnaround": "No reviews yet",
+      "turnaroundHint": "Typical days from assignment to verdict (the middle case, not the average).",
+      "noTurnaroundHint": "No completed review yet — nothing to measure.",
+      "footnote": "Every figure counts only decisions this person recorded themselves, on this organisation's applications.",
+      "role": {
+        "super": "Superadmin",
+        "qc": "Quality check",
+        "reviewer": "Reviewer"
+      },
+      "lang": {
+        "en": "English",
+        "ms": "Malay",
+        "ta": "Tamil"
+      },
+      "status": {
+        "active": "Active",
+        "paused": "Paused"
+      },
+      "detail": {
+        "back": "All reviewers",
+        "loadFailed": "This reviewer could not be loaded.",
+        "joined": "Joined {date}",
+        "workload": "Workload",
+        "noHistory": "No cases have been assigned to this reviewer yet.",
+        "outcomes": "Outcomes",
+        "noOutcomes": "No decisions recorded yet.",
+        "progressed": "Progressed",
+        "declined": "Declined",
+        "decidedByOther": "{count} case(s) assigned to this reviewer were decided by somebody else, so they are not counted here.",
+        "credentials": "Credentials",
+        "noCredentials": "This reviewer has not filled in their profile yet.",
+        "qualification": "Highest qualification",
+        "university": "University",
+        "graduationYear": "Graduated",
+        "fieldOfStudy": "Field of study",
+        "contact": "Contact",
+        "email": "Email",
+        "phone": "Phone",
+        "phoneNone": "Not given",
+        "phone_shared": "students may be given this number",
+        "phone_staff_only": "staff only — the reviewer has not agreed to share it with students",
+        "contactNote": "A reviewer's home address is never shown here.",
+        "reopens": "Reopened decisions",
+        "reopensNote": "A reopened decision is not by itself a mistake by this reviewer — several were caused by faults in the platform. The reason recorded at the time is shown with each one, and there is deliberately no total.",
+        "noReopens": "None of this reviewer's decisions has been reopened.",
+        "application": "Application #{id}",
+        "reopenedBy": "Reopened by {by} on {date}"
       }
     },
     "sources": {

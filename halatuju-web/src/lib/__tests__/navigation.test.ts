@@ -61,22 +61,24 @@ describe('visibleNav per role', () => {
   const EXPECTED: Record<AdminRoleName, string[]> = {
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'staff', 'sponsors', 'payments', 'contracts', 'sources', 'billing',
-      'programmeOverview', 'applications', 'reviewers', 'years', 'fund', 'rules',
+      'administration', 'staff', 'reviewers', 'sponsors', 'payments', 'contracts', 'sources',
+      'billing',
+      'programmeOverview', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
     org_admin: [
-      'administration', 'staff', 'sponsors', 'payments', 'contracts', 'sources', 'billing',
-      'programmeOverview', 'applications', 'reviewers', 'years', 'fund', 'rules',
+      'administration', 'staff', 'reviewers', 'sponsors', 'payments', 'contracts', 'sources',
+      'billing',
+      'programmeOverview', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'staff', 'sponsors', 'payments', 'sources',
+      'administration', 'staff', 'reviewers', 'sponsors', 'payments', 'sources',
       'programmeOverview', 'applications',
       'profile', 'guide', 'faq',
     ],
     finance: [
-      'administration', 'staff', 'sponsors', 'payments',
+      'administration', 'staff', 'reviewers', 'sponsors', 'payments',
       'fund',
       'profile', 'guide', 'faq',
     ],
@@ -295,6 +297,25 @@ describe('visibleNav groups', () => {
   it('the sidebar renders three scopes; utility belongs to the account and help menus', () => {
     expect(SIDEBAR_SCOPES).toEqual(['platform', 'organisation', 'programme'])
     expect(SIDEBAR_SCOPES).not.toContain('utility')
+  })
+
+  // Request #10 shipped Organisation → Reviewers while Programme still reserved a slot called
+  // "Reviewers" for per-programme SCOPING. Two rows with one name is not a naming quibble: one is
+  // live and one renders disabled with a "Soon" pill, so the reader concludes the feature is
+  // half-broken. The rename is the fix; this is the guard that keeps any future pair apart.
+  it('no two menu rows carry the same label', () => {
+    const keys = NAV_ITEMS.map((i) => i.labelKey)
+    expect(keys.filter((k, i) => keys.indexOf(k) !== i)).toEqual([])
+  })
+
+  it('separates the reviewer DIRECTORY from the reserved reviewer-SCOPING slot', () => {
+    const dir = NAV_ITEMS.find((i) => i.id === 'reviewers')!
+    const scoping = NAV_ITEMS.find((i) => i.id === 'reviewerScoping')!
+    expect(dir.href).toBe('/admin/organisation/reviewers')
+    expect(dir.scope).toBe('organisation')
+    expect(dir.placeholder).toBeFalsy()
+    expect(scoping.href).toBe('/admin/programme/reviewers')
+    expect(scoping.placeholder).toBe(true)
   })
 
   it('marks reserved slots so the sidebar can disable them', () => {
