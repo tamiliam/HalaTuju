@@ -87,6 +87,25 @@ PLACEHOLDERS = {
     # this email names a NEW party who might plausibly contact them, so it carries the safety line.
     'student_assigned': {'org_name', 'programme_name', 'student_name', 'team_signoff',
                          'support_email', 'programme_name_ms', 'team_signoff_ms'},
+    # ── the five reviewer emails (request #10, 2026-08-02) ────────────────────────
+    # English only — these go to our own volunteers, so no `*_ms` twins. `ref` is the Scholar-code
+    # the reviewer triages by; `dashboard_link` is the one CTA every reviewer email shares.
+    'reviewer_assigned': {'reviewer_name', 'ref', 'programme', 'review_by', 'dashboard_link',
+                          'team_signoff'},
+    # ⚠ `qc_comments` is FREE-FORM STAFF PROSE and is therefore a STRUCTURAL BLOCK, not a scalar.
+    # A scalar is substituted into the body, so a QC who happens to type `{ref}` in their comments
+    # would have it filled in on the next pass — substitution-order injection. A block is placed
+    # after every scalar is resolved, so whatever the QC wrote arrives verbatim.
+    'qc_returned': {'reviewer_name', 'ref', 'applicant_name', 'qc_comments', 'dashboard_link',
+                    'team_signoff'},
+    'qc_rejected': {'reviewer_name', 'ref', 'applicant_name', 'qc_comments', 'dashboard_link',
+                    'team_signoff'},
+    # The old single `verdict_due` email split in two: the engine has no conditionals, and the
+    # overdue branch changes both the subject and the opening sentence, so one body cannot say both.
+    'verdict_due_soon': {'reviewer_name', 'ref', 'applicant_name', 'due_by', 'dashboard_link',
+                         'team_signoff'},
+    'verdict_overdue': {'reviewer_name', 'ref', 'applicant_name', 'due_by', 'dashboard_link',
+                        'team_signoff'},
 }
 
 KINDS = tuple(k for k, _ in PartnerEmailTemplate.KIND_CHOICES)
@@ -158,10 +177,25 @@ def is_enabled(kind):
     ORGANISATIONS receive?", and a student's notice that an organisation can see their details must
     not disappear because the partner feature was taken dark for an unrelated reason.
     """
-    if (kind not in PartnerEmailTemplate.STUDENT_KINDS
-            and not getattr(settings, 'PARTNER_COMMS_ENABLED', False)):
+    exempt = PartnerEmailTemplate.STUDENT_KINDS | PartnerEmailTemplate.REVIEWER_KINDS
+    if kind not in exempt and not getattr(settings, 'PARTNER_COMMS_ENABLED', False):
         return False
     return PartnerEmailTemplate.objects.filter(kind=kind, enabled=True).exists()
+
+
+def template_state(kind):
+    """`'missing'` / `'off'` / `'on'` — what the stored row says about this kind.
+
+    ⚠ THE THREE STATES ARE NOT TWO. A caller that only asks "is it enabled?" cannot tell a template
+    the owner switched OFF from a template that was never seeded, and for the five REVIEWER kinds
+    those must behave in opposite directions: `off` means STOP (they are live emails, and a switch
+    that does not stop them is a lie the screen tells), while `missing` means fall back to the
+    hard-coded sender so a seeding slip cannot silence working mail. See `emails._reviewer_render`.
+    """
+    tpl = PartnerEmailTemplate.objects.filter(kind=kind).only('enabled').first()
+    if tpl is None:
+        return 'missing'
+    return 'on' if (tpl.enabled and is_enabled(kind)) else 'off'
 
 
 # ── attribution + counts ──────────────────────────────────────────────────────
@@ -418,6 +452,13 @@ def _chase_blocks(rows, today=None):
 def _list_blocks(names):
     """A plain student list as `(html, text)` — the shared bulleted-list block."""
     return email_templates.list_blocks(names)
+#: Tokens rendered as a BLOCK (a table, a list, or free prose) rather than substituted as a scalar.
+#: `render` guarantees every one a kind declares is filled, so none can survive into an inbox.
+STRUCTURAL_TOKENS = frozenset({
+    'counts_table', 'student_table', 'student_list', 'qc_comments',
+})
+
+
 def _blocks_for(context):
     """`{token: (html, text)}` for the structural tokens this context supplies."""
     out = {}
@@ -427,7 +468,28 @@ def _blocks_for(context):
         out['student_table'] = _chase_blocks(context['rows'], context.get('today'))
     if 'names' in context:
         out['student_list'] = _list_blocks(context['names'])
+    if 'qc_comments' in context:
+        out['qc_comments'] = _prose_blocks(context['qc_comments'])
     return out
+
+
+def _prose_blocks(text):
+    """Free-form staff prose as `(html, text)` — paragraphs preserved, everything escaped.
+
+    ⚠ A BLOCK, NOT A SCALAR, and that is the security half of the decision. A scalar is substituted
+    into the body before the next pass, so a QC who typed a `{token}` in their comments would have
+    it resolved as if the template had asked for it. A block is placed after substitution finishes,
+    so what the QC wrote reaches the reviewer exactly as written and nothing inside it is read as
+    an instruction.
+    """
+    body = (text or '').strip()
+    if not body:
+        return ('', '')
+    paras = [p.strip() for p in body.split('\n\n') if p.strip()]
+    html = ''.join(
+        f'<p style="margin:0 0 12px;">{html_escape(p).replace(chr(10), "<br>")}</p>'
+        for p in paras)
+    return (html, body)
 
 
 def _scalars(context):
@@ -450,6 +512,16 @@ def _scalars(context):
         # per-organisation branding instead of hard-coding a brand literal into the stored copy.
         'programme_name_ms': context.get('programme_name_ms') or platform.programme_name('ms'),
         'team_signoff_ms': context.get('team_signoff_ms') or platform.team_signoff('ms'),
+        # ── reviewer tokens (request #10). English only — internal staff mail. ──
+        # `reviewer_name` falls back to "there" the way the hard-coded senders always have: a
+        # reviewer with no name on file must still get a greeting, not "Dear ,".
+        'reviewer_name': (context.get('reviewer_name') or '').strip() or 'there',
+        'ref': context.get('ref') or '—',
+        'applicant_name': context.get('applicant_name') or '—',
+        'programme': context.get('programme') or '',
+        'review_by': context.get('review_by') or '',
+        'due_by': context.get('due_by') or '',
+        'dashboard_link': context.get('dashboard_link') or '',
     }
 
 
@@ -463,5 +535,15 @@ def render(kind, template, context):
     flattening — live in `email_templates.render`, shared with the sponsor family. What stays
     HERE is the partner vocabulary: which scalars and which tables this family supplies.
     """
+    # ⚠ EVERY structural token this kind DECLARES gets a block, even when the caller supplied no
+    # data for it. Without this, a caller that omits one leaves `{qc_comments}` sitting literally
+    # in a reviewer's inbox — the exact failure the placeholder allowlist exists to prevent, and
+    # one that no exception reports. Found by the existing "no placeholder survives" test the day
+    # the first block-valued token was added, which is the whole reason that test walks EVERY kind
+    # with a deliberately thin context.
+    blocks = _blocks_for(context)
+    for token in PLACEHOLDERS.get(kind, ()):
+        if token in STRUCTURAL_TOKENS:
+            blocks.setdefault(token, ('', ''))
     return email_templates.render(
-        template.subject, template.body, _scalars(context), _blocks_for(context))
+        template.subject, template.body, _scalars(context), blocks)

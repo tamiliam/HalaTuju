@@ -3189,7 +3189,33 @@
         "pauseNoteActive": "Pausing stops NEW cases only. They keep their account, and any interview already theirs stays with them.",
         "pauseNotePaused": "This reviewer is paused, so they are not being given new cases. Everything else — their account, their sign-in, the cases already theirs — is untouched.",
         "pauseFailed": "That could not be changed. Please try again."
-      }
+      },
+      "emails": {
+        "title": "What reviewers are told",
+        "subtitle": "The five emails your reviewers receive. Edit the wording, or switch one off.",
+        "liveNote": "All five are sending today. Switching one off really does stop it — nothing goes in its place.",
+        "loadError": "These emails could not be loaded.",
+        "edit": "Edit wording",
+        "lastSent": "Last sent {date}",
+        "neverSent": "Not sent yet",
+        "kind": {
+          "reviewer_assigned": "A case is assigned",
+          "qc_returned": "Quality control returns a case",
+          "qc_rejected": "Quality control rejects a case",
+          "verdict_due_soon": "A verdict is due soon",
+          "verdict_overdue": "A verdict is overdue"
+        },
+        "when": {
+          "reviewer_assigned": "The moment somebody is given a new applicant to review.",
+          "qc_returned": "When their case comes back for revision, carrying what QC asked them to address.",
+          "qc_rejected": "When their case is closed by QC. Nothing is needed from them.",
+          "verdict_due_soon": "Two days before the verdict is due.",
+          "verdict_overdue": "Once the due date has passed."
+        }
+      },
+      "tabReviewers": "Reviewers",
+      "tabEmails": "Emails",
+      "tabsAria": "Reviewers panels"
     },
     "sources": {
       "nav": "Sources",
@@ -3280,7 +3306,13 @@
           "shortlisted_followup": "Last activity is the date of the student's most recent document upload. The whole list travels in the email.",
           "awaiting_review": "Swept hourly — students completing close together share one email.",
           "awarded": "Held until the award has settled, so a reversed award never reaches an organisation.",
-          "assigned": "Sent immediately, the moment an administrator makes the assignment."
+          "assigned": "Sent immediately, the moment an administrator makes the assignment.",
+          "student_assigned": "Sent to the student at the same moment as the organisation’s copy.",
+          "reviewer_assigned": "Sent to the reviewer the moment a case is assigned to them.",
+          "qc_returned": "Sent when quality control hands a case back for revision.",
+          "qc_rejected": "Sent when quality control rejects a case outright. For their records only.",
+          "verdict_due_soon": "Sent two days before the verdict is due.",
+          "verdict_overdue": "Sent once the verdict is past its due date."
         },
         "error": {
           "unknownPlaceholder": "This email cannot fill in: {list}. Remove it, or use one of the details listed below the box.",

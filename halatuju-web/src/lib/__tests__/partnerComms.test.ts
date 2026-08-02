@@ -17,7 +17,7 @@ const org = (o: Partial<PartnerEmailOrg>): PartnerEmailOrg => ({
 })
 
 const tpl = (t: Partial<PartnerEmailTemplate>): PartnerEmailTemplate => ({
-  kind: 'weekly_summary', enabled: false, to_student: false, subject: 's', body: 'b',
+  kind: 'weekly_summary', enabled: false, to_student: false, to_reviewer: false, subject: 's', body: 'b',
   placeholders: [], updated_by_email: '', updated_at: null, last_sent_at: null,
   last_sent_orgs: 0, ...t,
 })

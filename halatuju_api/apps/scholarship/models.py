@@ -3382,11 +3382,31 @@ class PartnerEmailTemplate(models.Model):
         # 2026-08-01): that flag answers "what do ORGANISATIONS receive?", and a student's notice
         # about access to their own details must not disappear with it.
         ('student_assigned', 'The student is told'),
+        # Request #10 (2026-08-02). Five emails our REVIEWERS already receive, moved out of
+        # hard-coded prose so the organisation can edit what its own volunteers are told. They are
+        # edited on the Reviewers screen, not Sources — a reviewer is not a referral partner — but
+        # they live in this table because the machinery (a stored body, one switch, a send log) is
+        # the same, and a third family would be three copies of it. ⚠ The MODEL NAME is now wrong
+        # for three of its four audiences; TD-212 tracks the rename.
+        ('reviewer_assigned', 'A case is assigned to a reviewer'),
+        ('qc_returned', 'QC returns a case for revision'),
+        ('qc_rejected', 'QC rejects a case'),
+        ('verdict_due_soon', 'A verdict is due soon'),
+        ('verdict_overdue', 'A verdict is overdue'),
     ]
 
     #: Kinds whose recipient is the STUDENT. Everything else on this screen goes to the partner
     #: organisation, so the distinction has to be data rather than something a reader remembers.
     STUDENT_KINDS = frozenset({'student_assigned'})
+
+    #: Kinds whose recipient is one of OUR REVIEWERS — internal staff mail, English-only, edited on
+    #: Organisation → Reviewers. Like `STUDENT_KINDS` they are exempt from `PARTNER_COMMS_ENABLED`:
+    #: that flag answers "what do ORGANISATIONS receive?", and taking partner comms dark must never
+    #: silently stop the mail that tells a volunteer they have been given a case.
+    REVIEWER_KINDS = frozenset({
+        'reviewer_assigned', 'qc_returned', 'qc_rejected',
+        'verdict_due_soon', 'verdict_overdue',
+    })
     kind = models.CharField(max_length=32, choices=KIND_CHOICES, unique=True)
     enabled = models.BooleanField(default=False)
     subject = models.CharField(max_length=255)

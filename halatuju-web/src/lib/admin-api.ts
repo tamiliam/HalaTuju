@@ -388,6 +388,8 @@ export interface PartnerEmailTemplate {
   enabled: boolean
   /** True for the one email on this screen the STUDENT receives, not the partner organisation. */
   to_student: boolean
+  /** True for the five our own REVIEWERS receive. Server-computed, so the label cannot drift. */
+  to_reviewer: boolean
   subject: string
   body: string
   placeholders: string[]
@@ -612,6 +614,18 @@ export async function previewSponsorTerms(
 
 export async function getPartnerEmails(options?: ApiOptions) {
   return adminFetch<PartnerEmailsPayload>('/api/v1/admin/scholarship/partner-emails/', options)
+}
+
+/**
+ * The five emails OUR REVIEWERS receive — the same endpoint, asked for by family.
+ *
+ * They are edited on Organisation -> Reviewers, not Sources: a reviewer is not a referral partner,
+ * and a template about our own volunteers filed under "Partner emails" would be shelved where
+ * nobody looking for it would look. The default (unfiltered) call deliberately excludes them.
+ */
+export async function getReviewerEmails(options?: ApiOptions) {
+  return adminFetch<PartnerEmailsPayload>(
+    '/api/v1/admin/scholarship/partner-emails/?family=reviewer', options)
 }
 
 export async function updatePartnerEmail(

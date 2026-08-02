@@ -129,6 +129,53 @@ describe('sorting', () => {
   })
 })
 
+describe('the Emails tab', () => {
+  const TEMPLATES = [
+    {
+      kind: 'reviewer_assigned', enabled: true, to_student: false, to_reviewer: true,
+      subject: 's', body: 'b', placeholders: ['ref'], updated_by_email: '',
+      updated_at: null, last_sent_at: null, last_sent_orgs: 0,
+    },
+  ] as unknown as api.PartnerEmailTemplate[]
+
+  beforeEach(() => {
+    mockApi.getReviewerEmails.mockResolvedValue({
+      templates: TEMPLATES, organisations: [], qualifying_count: 0,
+      partner_count: 0, comms_enabled: true,
+    } as unknown as api.PartnerEmailsPayload)
+  })
+
+  it('opens on the reviewers list, not the emails — the list is what the page is for', async () => {
+    await loaded()
+    expect(screen.queryByText('admin.reviewers.emails.title')).toBeNull()
+  })
+
+  it('reveals the five emails on the second click, and warns they are LIVE', async () => {
+    await loaded()
+    fireEvent.click(screen.getByText('admin.reviewers.tabEmails'))
+    await waitFor(() => expect(screen.getByText('admin.reviewers.emails.title')).toBeTruthy())
+    // The one thing a reader must not get wrong: switching one off really does stop it.
+    expect(screen.getByText('admin.reviewers.emails.liveNote')).toBeTruthy()
+    expect(mockApi.getReviewerEmails).toHaveBeenCalled()
+  })
+
+  it('asks the server for the REVIEWER family, never the partner list', async () => {
+    // The Sources screen is "Partner emails"; a template about our own volunteers filed there
+    // would be shelved where nobody looking for it would look.
+    await loaded()
+    fireEvent.click(screen.getByText('admin.reviewers.tabEmails'))
+    await waitFor(() => expect(mockApi.getReviewerEmails).toHaveBeenCalled())
+    expect(mockApi.getPartnerEmails).not.toHaveBeenCalled()
+  })
+
+  it('does not offer the tab to finance, which may READ the reviewers list', async () => {
+    // Deciding what every volunteer is told is editorial, not financial.
+    viewerRole = { role: 'finance' }
+    await loaded()
+    expect(screen.queryByText('admin.reviewers.tabEmails')).toBeNull()
+  })
+})
+
 describe('the role gate', () => {
   it('refuses a reviewer rather than showing them their colleagues\' caseloads', async () => {
     viewerRole = { role: 'reviewer' }

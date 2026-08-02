@@ -27,6 +27,24 @@ export const PARTNER_EMAIL_KINDS = [
 
 export type PartnerEmailKind = (typeof PARTNER_EMAIL_KINDS)[number]
 
+/**
+ * The five emails our own REVIEWERS receive (request #10), in the order the screen lists them.
+ *
+ * Deliberately a SEPARATE list from `PARTNER_EMAIL_KINDS` rather than a flag on one: the two are
+ * shown on different screens to different readers, and a single list filtered at each render is
+ * how a reviewer template ends up on the partner page by accident. The order is the order they
+ * happen to a case -- assigned, then whatever QC decides, then the two nudges.
+ */
+export const REVIEWER_EMAIL_KINDS = [
+  'reviewer_assigned',
+  'qc_returned',
+  'qc_rejected',
+  'verdict_due_soon',
+  'verdict_overdue',
+] as const
+
+export type ReviewerEmailKind = (typeof REVIEWER_EMAIL_KINDS)[number]
+
 /** i18n key suffix per kind — one home, so a rename can't half-land. */
 export function kindKey(kind: string): string {
   return `admin.sources.emails.kind.${kind}`

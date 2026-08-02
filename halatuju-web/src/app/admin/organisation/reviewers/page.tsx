@@ -14,6 +14,7 @@ import {
 import { PAGE_SIZE_OPTIONS, nextSort, sortIndicator } from '@/lib/tableView'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { Pagination } from '@/components/Pagination'
+import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
 
 // The reviewers directory (request #10). Staff invites and revokes; this is where you LOOK at
 // somebody before handing them the next case. Sorted by open caseload on arrival, because that is
@@ -57,6 +58,14 @@ export default function AdminReviewersList() {
   const { t } = useT()
   // UX only — the endpoint is the fence. This just avoids rendering a table that would 403.
   const mayView = canAccess('/admin/organisation/reviewers', effectiveRole(role))
+  // Two panels, the same pill idiom the Sponsors and Sources screens use, so the console has one
+  // way of doing this. Reviewers is the default: the list is what the page is for, and editing
+  // what volunteers are told is a deliberate second click.
+  const [panel, setPanel] = useState<'reviewers' | 'emails'>('reviewers')
+  // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
+  // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
+  // endpoint is the authority; this only avoids offering a 403.
+  const mayEditEmails = ['super', 'org_admin', 'admin'].includes(effectiveRole(role))
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -89,6 +98,29 @@ export default function AdminReviewersList() {
       <h1 className="text-xl sm:text-2xl font-bold">{t('admin.reviewers.title')}</h1>
       <p className="text-sm text-gray-500 mt-1 mb-4">{t('admin.reviewers.desc')}</p>
 
+      {mayEditEmails && (
+        <div role="tablist" aria-label={t('admin.reviewers.tabsAria')}
+          className="flex items-center gap-2 mb-6">
+          {(['reviewers', 'emails'] as const).map((key) => {
+            const on = panel === key
+            return (
+              <button key={key} type="button" role="tab" aria-selected={on}
+                onClick={() => setPanel(key)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                  on ? 'border-blue-600 bg-blue-600 text-white'
+                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
+                {t(key === 'emails' ? 'admin.reviewers.tabEmails' : 'admin.reviewers.tabReviewers')}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Mounted only while its tab is selected, so each reveal re-reads the templates and an
+          emails hiccup can never take the reviewers table down with it. */}
+      {panel === 'emails' && mayEditEmails && <ReviewerEmailsCard token={token} t={t} />}
+
+      {panel === 'reviewers' && (<>
       {error && <div className="text-red-600 mb-3">{error}</div>}
       {/* ⚠ `error` is tested BEFORE the empty check, and that is not a style choice. A failed
           fetch also leaves the list empty, so the other order prints "No reviewers yet — invite
@@ -187,6 +219,7 @@ export default function AdminReviewersList() {
         </div>
       )}
       <p className="text-xs text-gray-500 mt-4 max-w-3xl">{t('admin.reviewers.footnote')}</p>
+      </>)}
     </div>
   )
 }

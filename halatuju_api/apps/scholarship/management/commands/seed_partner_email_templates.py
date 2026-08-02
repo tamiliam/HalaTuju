@@ -149,13 +149,119 @@ SEEDS = {
             '{team_signoff_ms}'
         ),
     },
+    # ── the five reviewer emails (request #10, 2026-08-02) ────────────────────────
+    #
+    # ⚠ THESE FIVE ARE LIVE MAIL, AND THIS COPY REPRODUCES WHAT WENT OUT YESTERDAY. They are
+    # seeded ON. Adopting a live email into a switchable template and seeding it OFF is how a
+    # feature ships as silence — a tidy panel of switches all correctly reading "off", and
+    # reviewers simply never hearing from us again (lessons.md, sponsor S3, 2026-07-28). Reword
+    # them freely afterwards; do not reword them HERE without comparing against `emails.py`,
+    # because the seed is the wording an organisation inherits.
+    #
+    # English only: the recipients are our own volunteers, so there is no Malay half.
+    'reviewer_assigned': {
+        'subject': 'New applicant assigned to you — {ref}',
+        'body': (
+            'Dear {reviewer_name},\n'
+            '\n'
+            'A new applicant has been assigned to you for review.\n'
+            '\n'
+            'Reference: {ref}\n'
+            'Programme: {programme}\n'
+            'Please review by: {review_by}\n'
+            '\n'
+            'Everything you need — profile, documents, and the verification checks — is in your '
+            'reviewer dashboard:\n'
+            '\n'
+            '{dashboard_link}\n'
+            '\n'
+            'Can’t take this one? Just reply and we’ll reassign it.\n'
+            '\n'
+            '{team_signoff}'
+        ),
+    },
+    'qc_returned': {
+        'subject': 'Case returned by QC — action needed — {ref}',
+        'body': (
+            'Dear {reviewer_name},\n'
+            '\n'
+            'Quality control has returned one of your cases for revision.\n'
+            '\n'
+            'Reference: {ref}\n'
+            'Applicant: {applicant_name}\n'
+            '\n'
+            'What to address:\n'
+            '\n'
+            '{qc_comments}\n'
+            '\n'
+            'Please review the points above, update your findings and verdict, and resubmit. '
+            'Everything you need is in your reviewer dashboard:\n'
+            '\n'
+            '{dashboard_link}\n'
+            '\n'
+            '{team_signoff}'
+        ),
+    },
+    'qc_rejected': {
+        'subject': 'Case rejected by QC — {ref}',
+        'body': (
+            'Dear {reviewer_name},\n'
+            '\n'
+            'After quality control review, one of your cases has been rejected. No further action '
+            'is needed from you — this note is for your records.\n'
+            '\n'
+            'Reference: {ref}\n'
+            'Applicant: {applicant_name}\n'
+            '\n'
+            'QC reason:\n'
+            '\n'
+            '{qc_comments}\n'
+            '\n'
+            'You can see the case in your reviewer dashboard:\n'
+            '\n'
+            '{dashboard_link}\n'
+            '\n'
+            '{team_signoff}'
+        ),
+    },
+    # The old single `verdict_due` sender split in two. The engine has no conditionals, and the
+    # overdue branch changes BOTH the subject and the opening sentence — one stored body cannot
+    # say "due soon" and "overdue", so pretending it could would mean one of them reads wrongly.
+    'verdict_due_soon': {
+        'subject': 'Verdict due soon — {ref}',
+        'body': (
+            'Dear {reviewer_name},\n'
+            '\n'
+            'Your verdict for {applicant_name} is due soon — by {due_by}.\n'
+            '\n'
+            'Please open their record, complete your review, and record your verdict.\n'
+            '\n'
+            '{dashboard_link}\n'
+            '\n'
+            '{team_signoff}'
+        ),
+    },
+    'verdict_overdue': {
+        'subject': 'Verdict overdue — {ref}',
+        'body': (
+            'Dear {reviewer_name},\n'
+            '\n'
+            'Your verdict for {applicant_name} is overdue — it was due {due_by}.\n'
+            '\n'
+            'Please open their record, complete your review, and record your verdict.\n'
+            '\n'
+            '{dashboard_link}\n'
+            '\n'
+            '{team_signoff}'
+        ),
+    },
 }
 
 #: Kinds seeded switched ON. Everything else arrives OFF so wording can be agreed while the
 #: feature is dark — but this one was requested, quoted and paid for (request #3), and a paid
 #: notification that arrives switched off is a non-delivery. Seeding it ON also makes the screen
 #: agree with what production is already doing rather than silently changing behaviour.
-SEEDED_ON = frozenset({'student_assigned'})
+SEEDED_ON = frozenset({'student_assigned'}) | PartnerEmailTemplate.REVIEWER_KINDS
 
 
 class Command(BaseCommand):

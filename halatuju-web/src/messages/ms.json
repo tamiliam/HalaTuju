@@ -3189,7 +3189,33 @@
         "pauseNoteActive": "Jeda menghentikan kes BAHARU sahaja. Akaun mereka kekal, dan temu duga yang sudah menjadi tanggungjawab mereka tetap bersama mereka.",
         "pauseNotePaused": "Penilai ini sedang dijeda, jadi mereka tidak diberi kes baharu. Segala yang lain — akaun, log masuk, kes yang sudah menjadi tanggungjawab mereka — tidak tersentuh.",
         "pauseFailed": "Perubahan itu tidak dapat dilakukan. Sila cuba lagi."
-      }
+      },
+      "emails": {
+        "title": "Apa yang diberitahu kepada penilai",
+        "subtitle": "Lima e-mel yang diterima oleh penilai anda. Sunting kata-katanya, atau matikan salah satu.",
+        "liveNote": "Kelima-limanya sedang dihantar hari ini. Mematikannya benar-benar menghentikannya — tiada apa-apa dihantar sebagai gantinya.",
+        "loadError": "E-mel ini tidak dapat dimuatkan.",
+        "edit": "Sunting kata-kata",
+        "lastSent": "Dihantar kali terakhir {date}",
+        "neverSent": "Belum dihantar",
+        "kind": {
+          "reviewer_assigned": "Sesuatu kes ditugaskan",
+          "qc_returned": "Semakan kualiti mengembalikan sesuatu kes",
+          "qc_rejected": "Semakan kualiti menolak sesuatu kes",
+          "verdict_due_soon": "Keputusan perlu diberikan tidak lama lagi",
+          "verdict_overdue": "Keputusan sudah lewat"
+        },
+        "when": {
+          "reviewer_assigned": "Sebaik sahaja seseorang diberi pemohon baharu untuk dinilai.",
+          "qc_returned": "Apabila kes mereka dikembalikan untuk disemak semula, membawa perkara yang diminta oleh QC.",
+          "qc_rejected": "Apabila kes mereka ditutup oleh QC. Tiada apa-apa diperlukan daripada mereka.",
+          "verdict_due_soon": "Dua hari sebelum keputusan perlu diberikan.",
+          "verdict_overdue": "Sebaik sahaja tarikh akhir berlalu."
+        }
+      },
+      "tabReviewers": "Penilai",
+      "tabEmails": "E-mel",
+      "tabsAria": "Panel penilai"
     },
     "sources": {
       "nav": "Sumber",
@@ -3280,7 +3306,13 @@
           "shortlisted_followup": "Aktiviti terakhir ialah tarikh muat naik dokumen terbaharu pelajar itu. Seluruh senarai dihantar dalam e-mel.",
           "awaiting_review": "Disemak setiap jam — pelajar yang selesai berdekatan berkongsi satu e-mel.",
           "awarded": "Ditahan sehingga anugerah itu tetap, supaya anugerah yang ditarik balik tidak pernah sampai kepada organisasi.",
-          "assigned": "Dihantar serta-merta, sebaik sahaja pentadbir membuat penempatan."
+          "assigned": "Dihantar serta-merta, sebaik sahaja pentadbir membuat penempatan.",
+          "student_assigned": "Dihantar kepada pelajar pada saat yang sama dengan salinan organisasi.",
+          "reviewer_assigned": "Dihantar kepada penilai sebaik sahaja sesuatu kes ditugaskan kepada mereka.",
+          "qc_returned": "Dihantar apabila semakan kualiti mengembalikan sesuatu kes untuk disemak semula.",
+          "qc_rejected": "Dihantar apabila semakan kualiti menolak sesuatu kes terus. Untuk rekod mereka sahaja.",
+          "verdict_due_soon": "Dihantar dua hari sebelum keputusan perlu diberikan.",
+          "verdict_overdue": "Dihantar apabila keputusan sudah melepasi tarikh akhirnya."
         },
         "error": {
           "unknownPlaceholder": "E-mel ini tidak boleh mengisi: {list}. Buangkannya, atau gunakan salah satu butiran yang disenaraikan di bawah kotak.",

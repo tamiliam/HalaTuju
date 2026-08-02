@@ -293,7 +293,29 @@ class TestSeededTemplates(TestCase):
                  .values_list('kind', flat=True))
         # Everything an ORGANISATION receives is dark until its wording is agreed; the student's
         # notice was requested, quoted and paid for, so it arrives live (request #3).
-        self.assertEqual(on, {'student_assigned'})
+        # ⚠ THE FIVE REVIEWER EMAILS ARRIVE LIVE TOO, and that is not a convenience — they are
+        # already sending today from hard-coded prose. Seeding an ADOPTED email OFF is how a
+        # feature ships as silence: a tidy panel of switches all correctly reading "off", and
+        # reviewers simply never hearing from us again (request #10, 2026-08-02).
+        self.assertEqual(on, {'student_assigned'} | set(PartnerEmailTemplate.REVIEWER_KINDS))
+
+    def test_the_reviewer_seeds_reproduce_what_already_goes_out(self):
+        """Spot-check the adopted wording against the hard-coded senders it replaces.
+
+        Not a byte comparison — the stored body is a template and the old one was an f-string — but
+        the load-bearing sentences must survive, because from this deploy the row is what sends.
+        """
+        by_kind = {t.kind: t.body for t in PartnerEmailTemplate.objects.all()}
+        self.assertIn('A new applicant has been assigned to you for review.',
+                      by_kind['reviewer_assigned'])
+        self.assertIn('Quality control has returned one of your cases for revision.',
+                      by_kind['qc_returned'])
+        self.assertIn('No further action', by_kind['qc_rejected'])
+        self.assertIn('due soon', by_kind['verdict_due_soon'])
+        self.assertIn('overdue', by_kind['verdict_overdue'])
+        # The QC's own words travel as a BLOCK in both QC emails — never as a scalar.
+        for kind in ('qc_returned', 'qc_rejected'):
+            self.assertIn('{qc_comments}', by_kind[kind])
 
     def test_idempotent(self):
         from django.core.management import call_command
@@ -328,10 +350,24 @@ class TestSeededTemplates(TestCase):
         self.assertIn('{org_name}’s achievement', tpl.body)
 
     def test_no_email_points_at_a_partner_console(self):
-        """None exists for the bursary, so every email must stand alone."""
-        for tpl in PartnerEmailTemplate.objects.all():
+        """None exists for the bursary, so every PARTNER email must stand alone.
+
+        ⚠ Scoped to the partner + student rows on purpose. A REVIEWER has a console — it is where
+        they do the work — so pointing them at it is the correct thing to do, and applying this
+        guard to those five would forbid the one link they need. The rule was always about a
+        surface that does not exist for the reader, not about the word.
+        """
+        for tpl in PartnerEmailTemplate.objects.exclude(
+                kind__in=PartnerEmailTemplate.REVIEWER_KINDS):
             for word in ('partner console', 'log in', 'dashboard'):
                 self.assertNotIn(word, tpl.body.lower(), f'{tpl.kind} links somewhere that is not built')
+
+    def test_every_reviewer_email_DOES_point_at_the_reviewer_dashboard(self):
+        # The other half of the rule above: the five reviewer emails exist to get somebody back to
+        # a case, so a body with no way in would be a dead end.
+        for tpl in PartnerEmailTemplate.objects.filter(
+                kind__in=PartnerEmailTemplate.REVIEWER_KINDS):
+            self.assertIn('{dashboard_link}', tpl.body, tpl.kind)
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -360,14 +396,39 @@ class TestPartnerEmailEndpoints(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
-    def test_org_admin_sees_every_template(self):
+    def test_org_admin_sees_every_PARTNER_template_and_no_reviewer_one(self):
+        # ⚠ The Sources screen is "Partner emails". A template about OUR OWN VOLUNTEERS filed there
+        # would be shelved where nobody looking for it would look — they live on Organisation →
+        # Reviewers instead, and the default (unfiltered) response must not carry them.
         self._auth('pc-oa')
         body = self.client.get('/api/v1/admin/scholarship/partner-emails/').json()
-        self.assertEqual([t['kind'] for t in body['templates']], list(partner_comms.KINDS))
+        expected = [k for k in partner_comms.KINDS
+                    if k not in PartnerEmailTemplate.REVIEWER_KINDS]
+        self.assertEqual([t['kind'] for t in body['templates']], expected)
         by_kind = {t['kind']: t for t in body['templates']}
         self.assertTrue(all(t['enabled'] is False for t in body['templates']
                             if t['kind'] != 'student_assigned'))
         self.assertTrue(by_kind['student_assigned']['enabled'])
+
+    def test_the_reviewer_family_is_asked_for_by_name(self):
+        self._auth('pc-oa')
+        body = self.client.get(
+            '/api/v1/admin/scholarship/partner-emails/?family=reviewer').json()
+        self.assertEqual([t['kind'] for t in body['templates']],
+                         [k for k in partner_comms.KINDS
+                          if k in PartnerEmailTemplate.REVIEWER_KINDS])
+        # The audience label comes from the SERVER, so the screen cannot mislabel who gets it.
+        self.assertTrue(all(t['to_reviewer'] for t in body['templates']))
+        self.assertTrue(all(not t['to_student'] for t in body['templates']))
+
+    def test_the_two_families_partition_the_screen_with_nothing_lost(self):
+        # A row that fell out of BOTH lists would be a template nobody could ever edit.
+        self._auth('pc-oa')
+        a = self.client.get('/api/v1/admin/scholarship/partner-emails/').json()['templates']
+        b = self.client.get(
+            '/api/v1/admin/scholarship/partner-emails/?family=reviewer').json()['templates']
+        self.assertEqual(sorted([t['kind'] for t in a] + [t['kind'] for t in b]),
+                         sorted(partner_comms.KINDS))
 
     def test_the_payload_says_which_row_goes_to_the_student(self):
         """The screen is titled "Partner emails" and every other row goes to an organisation, so

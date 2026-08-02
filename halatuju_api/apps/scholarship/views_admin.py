@@ -1612,6 +1612,10 @@ def _partner_email_dict(tpl, last=None):
         # rather than leave a reader to infer from the wording. It also explains why the platform
         # partner-comms switch does not silence that row.
         'to_student': tpl.kind in PartnerEmailTemplate.STUDENT_KINDS,
+        # Request #10: a third audience. Our own volunteers, edited on Organisation → Reviewers.
+        # Like `to_student` this comes from the SERVER, never from the front end's kind list, so
+        # the "who gets this" label cannot drift from the rule that decides who actually does.
+        'to_reviewer': tpl.kind in PartnerEmailTemplate.REVIEWER_KINDS,
         'subject': tpl.subject,
         'body': tpl.body,
         'placeholders': sorted(partner_comms.PLACEHOLDERS.get(tpl.kind, set())),
@@ -1645,9 +1649,17 @@ class AdminPartnerEmailsView(_SourcesBase):
                     .values('kind').annotate(sent_at=Max('sent_at'), orgs=Count('organisation',
                                                                                 distinct=True))):
             last[row['kind']] = row
+        # ⚠ `?family=reviewer` splits this list in two, and the Sources screen must pass NOTHING
+        # (the default) so the five reviewer emails stay OFF it. A reviewer is not a referral
+        # partner, and a template about our own volunteers sitting under "Partner emails" would be
+        # filed where nobody looking for it would look. One endpoint, two audiences, one filter —
+        # a second endpoint would be a second copy of the fence.
+        want_reviewer = (request.GET.get('family') or '').strip() == 'reviewer'
+        reviewer_kinds = PartnerEmailTemplate.REVIEWER_KINDS
         templates = [
             _partner_email_dict(by_kind[k], last.get(k))
-            for k in partner_comms.KINDS if k in by_kind
+            for k in partner_comms.KINDS
+            if k in by_kind and ((k in reviewer_kinds) == want_reviewer)
         ]
         qualifying = {o.id for o in partner_comms.qualifying_partners()}
         counts = _source_application_counts()

@@ -125,7 +125,18 @@ export default function TemplateEditor<T extends EditableTemplate>({
             {t(`${prefix}.previewLabel`)}
           </p>
           <Preview subject={subject} body={body} />
-          <p className="text-xs text-gray-400">{t(`${prefix}.note.${template.kind}`)}</p>
+          {/* ⚠ `t()` returns the KEY on a miss, so an unwritten note used to render the literal
+              string "admin.sources.emails.note.student_assigned" to the owner — live, in three
+              locales, for a day. This is the fourth member of the "the UI asserts what nothing
+              checks" cluster; the copy keys are the fix, and this is the guard that stops the next
+              missing one being visible at all. A note is optional; a dotted key never helps. */}
+          {(() => {
+            const key = `${prefix}.note.${template.kind}`
+            const note = t(key)
+            return note && note !== key
+              ? <p className="text-xs text-gray-400">{note}</p>
+              : null
+          })()}
         </div>
       </div>
 

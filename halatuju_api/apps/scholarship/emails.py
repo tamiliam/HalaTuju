@@ -2250,14 +2250,67 @@ def _reviewer_subject(base, ref):
     return f'{base} — {ref}' if ref else base
 
 
+#: What `_reviewer_render` decided. `SENT` and `STOPPED` both mean the caller is done.
+_REVIEWER_SENT = 'sent'
+_REVIEWER_STOPPED = 'stopped'
+_REVIEWER_LEGACY = 'legacy'
+
+
+def _reviewer_render(kind, to_email, context):
+    """Send one of the five reviewer emails FROM ITS STORED TEMPLATE, if there is one.
+
+    Returns `_REVIEWER_SENT` (the row governed and we sent), `_REVIEWER_STOPPED` (the row exists
+    and is switched OFF — send nothing), or `_REVIEWER_LEGACY` (no row: the caller falls through
+    to its hard-coded body below).
+
+    ⚠ **THE FALLBACK KEYS ON "NO ROW", NOT ON THE SWITCH, AND THAT IS THE WHOLE DESIGN.** These
+    five are live emails today. Keying the fallback on `enabled` would mean an owner who ticks one
+    OFF still has the old sender mailing behind their back — the switch would be a lie the screen
+    tells (lessons.md, sponsor S3). Keying it on the row's EXISTENCE gives two honest worlds: with
+    the rows seeded the templates govern completely, and if a seeding step is ever missed the mail
+    still goes out rather than silently stopping.
+
+    ⚠ **A RENDER FAILURE FALLS BACK, IT NEVER BLOCKS.** Everything here is best-effort mail on the
+    side of an assignment or a QC decision; a template a human edited into an unrenderable state
+    must not take the working sender down with it.
+    """
+    if not to_email:
+        return _REVIEWER_STOPPED
+    try:
+        from . import partner_comms
+        from .models import PartnerEmailTemplate as _T
+        state = partner_comms.template_state(kind)
+        if state == 'missing':
+            return _REVIEWER_LEGACY
+        if state == 'off':
+            return _REVIEWER_STOPPED
+        tpl = _T.objects.filter(kind=kind).first()
+        ctx = dict(context)
+        ctx.setdefault('dashboard_link', _reviewer_dashboard_cta())
+        subject, text_body, html_body = partner_comms.render(kind, tpl, ctx)
+    except Exception:
+        logger.warning('Reviewer template render failed for %s; using the built-in body',
+                       kind, exc_info=True)
+        return _REVIEWER_LEGACY
+    # ⚠ The SENDER stays `interview@` with the interview unsubscribe headers, the same envelope
+    # these five have always used. `_send_html` defaults to it; naming it is cheaper than the
+    # request-#3 trap in reverse, where the wrong alias looked identical at the call site.
+    _send_html(to_email, subject, html_body, text_body)
+    return _REVIEWER_SENT
+
+
 def send_reviewer_assigned_email(to_email, reviewer_name, *, ref='', programme='', review_by=''):
     """F7: notify a reviewer that an applicant has been assigned to them. English-only
     (reviewers are internal staff). Sent on each (re)assignment — never re-sent for an
     unchanged assignee, because assign_reviewer short-circuits a no-op before this fires.
     From the monitored interview@ alias so 'reply to reassign' actually reaches a person.
     Best-effort — swallows send failures so a mail hiccup never breaks the assignment."""
-    if not to_email:
-        return False
+    outcome = _reviewer_render('reviewer_assigned', to_email, {
+        'reviewer_name': reviewer_name, 'ref': ref, 'programme': programme,
+        'review_by': review_by,
+    })
+    if outcome is not _REVIEWER_LEGACY:
+        return outcome is _REVIEWER_SENT
     reviewer = reviewer_name or 'there'
     details = [f'Reference: {ref or "—"}', f'Programme: {programme or "—"}']
     if review_by:
@@ -2353,8 +2406,12 @@ def send_qc_returned_email(to_email, reviewer_name, *, ref='', applicant_name=''
     """QC (2026-07): notify a reviewer that quality control has RETURNED their case for revision,
     carrying the QC's comments (what was missing / the gaps). English-only (internal staff), from
     the monitored interview@ alias. Best-effort — a mail hiccup never breaks the QC action."""
-    if not to_email:
-        return False
+    outcome = _reviewer_render('qc_returned', to_email, {
+        'reviewer_name': reviewer_name, 'ref': ref, 'applicant_name': applicant_name,
+        'qc_comments': qc_comments,
+    })
+    if outcome is not _REVIEWER_LEGACY:
+        return outcome is _REVIEWER_SENT
     reviewer = reviewer_name or 'there'
     details = [f'Reference: {ref or "—"}', f'Applicant: {applicant_name or "—"}']
     body = (
@@ -2374,8 +2431,12 @@ def send_qc_rejected_email(to_email, reviewer_name, *, ref='', applicant_name=''
     """QC (2026-07): notify a reviewer that quality control has REJECTED one of their cases outright
     (not returned for revision — the case is closed). Carries the QC's reason. English-only (internal
     staff), from the monitored interview@ alias. Best-effort — a mail hiccup never breaks the action."""
-    if not to_email:
-        return False
+    outcome = _reviewer_render('qc_rejected', to_email, {
+        'reviewer_name': reviewer_name, 'ref': ref, 'applicant_name': applicant_name,
+        'qc_comments': qc_comments,
+    })
+    if outcome is not _REVIEWER_LEGACY:
+        return outcome is _REVIEWER_SENT
     reviewer = reviewer_name or 'there'
     details = [f'Reference: {ref or "—"}', f'Applicant: {applicant_name or "—"}']
     body = (
@@ -3469,6 +3530,15 @@ def send_reviewer_verdict_due_email(to_email, *, reviewer_name, applicant_name, 
                                     due_by='', overdue=False):
     """TD-131: nudge the assigned reviewer that a verdict is due soon / now overdue. Plain EN,
     consistent reviewer style (Dear / dashboard CTA / {ref} subject / BrightPath Bursary Team)."""
+    # ⚠ ONE SENDER, TWO KINDS. The stored bodies have no conditionals, and the overdue branch
+    # changes the subject AND the opening sentence — so the split lives here, at the only place
+    # that knows which of the two this is.
+    outcome = _reviewer_render('verdict_overdue' if overdue else 'verdict_due_soon', to_email, {
+        'reviewer_name': reviewer_name, 'ref': ref, 'applicant_name': applicant_name,
+        'due_by': due_by,
+    })
+    if outcome is not _REVIEWER_LEGACY:
+        return outcome is _REVIEWER_SENT
     applicant = applicant_name or 'an applicant'
     if overdue:
         lead = (f'Your verdict for {applicant} is overdue'

@@ -2517,3 +2517,34 @@ year the same letter states, which is a real second signal on the same document;
 document that it means "read from the letter", not "verified".
 
 **Status:** open, awaiting the owner's decision.
+
+---
+
+### [TD-212] `PartnerEmailTemplate` no longer describes what it holds — low
+
+**Found:** 2026-08-02, request #10.
+
+The table was five emails to a referral ORGANISATION. It now holds four audiences: the five partner
+emails, one to a STUDENT (request #3, 2026-08-01), and five to OUR OWN REVIEWERS (request #10). The
+class name, the table name (`partner_email_templates`), the log (`partner_email_log`) and the module
+(`partner_comms.py`) all still say "partner". A reader looking for "why does my reviewer get this
+email" has no reason to open a file named for partner organisations.
+
+**Why it was not renamed in the sprint that caused it:** a rename touches a model, two tables, a
+service module, a management command, three admin endpoints, the front-end api client and every
+test that names them — for zero behavioural change, in the middle of a sprint that adopts LIVE mail
+into that machinery. Doing both at once would mean a mail regression and a rename are impossible to
+tell apart in the diff.
+
+**The mitigation that is in place:** the model docstring and `KIND_CHOICES` say plainly that the
+name is wrong and name the three audiences; `STUDENT_KINDS` and `REVIEWER_KINDS` make the
+distinction data rather than something a reader has to remember; and `to_student` / `to_reviewer`
+come from the server so no screen can mislabel a recipient.
+
+**Shape of the fix:** rename to `EmailTemplate` / `EmailLog` under expand-contract (`db_table` stays
+put — renaming the tables buys nothing and costs a migration on live rows), rename `partner_comms`
+to `comms`, and leave the partner-specific vocabulary (`qualifying_partners`, the chase table) where
+it is. Trigger: the next time a fourth family is added, or any sprint that already has to touch
+`partner_comms.py` broadly.
+
+**Status:** open, low. Cosmetic; nothing behaves wrongly because of it.
