@@ -590,13 +590,22 @@ the editable five shipped on 2 Aug and the list did not. It does now. **No migra
   **silently**: a reference list must never take down the five controls somebody came to operate.
 - **⚠ ms/ta for the 21 new leaves are MY first drafts** — owner's eye still owed.
 
-**▶ THEN, STILL OWED ON #10 — it is `scheduled`, NOT `done`:**
-1. **Walk pause end-to-end** on a real reviewer: still on every list → cannot be newly assigned →
-   can still propose interview times on a case already theirs → un-pauses from their own profile.
-   Exhaustively unit-tested and bite-checked, never yet seen in a browser.
-2. **Stage the completion report** as an engineer analysis for the owner to approve. It must state
-   TOTAL spent against TOTAL planned across every analysis on #10 and name the re-scope out loud
-   (**15h quoted including 2h for programme assignment → deferred by the owner → ~13h**). Then `done`.
+**▶ ✅ REQUEST #10 IS `done` (2026-08-03).** Analysis **24** approved by the owner and posted to
+BrightPath as comment 33: **11.5h spent against 13h commissioned, from a 15h quote** (16h
+indicative → 15h quoted → the owner deferred the 2h programme-assignment column). Live on
+`halatuju-api-00938-pfc` / `halatuju-web-00784-t7h`.
+
+**▶ ⚠ THE PAUSE WALK-THROUGH WAS RUN ON PRODUCTION AND FOUND A DEFECT — do not skip this step on a
+feature like this again.** Owner-authorised, on reviewer **Vanitha Mohan (admin id 7)**, driven
+through the live API with a minted super session; her row came back byte-identical to the baseline.
+Every claim held — still listed, still OFFERED in the assign dropdown (flagged, never dropped, so
+bug #66 does not return), new work refused, the case already hers untouched, un-paused cleanly.
+**But the refusal said `not_reviewer`** — *"You can only assign to a reviewer"* — about somebody who
+IS one and had stepped back. `_can_review` folds three facts into one False and the guard reported
+the first. Now `reviewer_paused`; **revoked deliberately still reads `not_reviewer`** (a revoked
+account has nothing to come back to, so "start again from your profile" is the wrong advice).
+**⚠ EVERY TEST ASSERTED *THAT* IT REFUSED; NONE READ *WHAT IT SAID*.** Third instance on this
+request of a stored value reported as the answer to a different question.
 
 **▶ OWNER-FLAGGED, NOT BUILT — `paused_by`.** `paused_at` records WHEN somebody was paused, not WHO
 paused them, so the screen reads identically whether a reviewer stepped back themselves or an
