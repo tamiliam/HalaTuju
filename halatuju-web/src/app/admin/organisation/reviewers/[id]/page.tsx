@@ -140,7 +140,44 @@ export default function AdminReviewerDetailPage() {
               </span>
               <span aria-hidden>·</span>
               <span>{t('admin.reviewers.detail.joined', { date: formatDate(detail.created_at) })}</span>
+              {/* ⚠ The pause control sits WITH THE STATUS PILL, because the status is the thing it
+                  changes — not in a card, and not in a bordered band of its own. It is one verb.
+                  (Owner review, 2026-08-02: "It need not be in its box.") */}
+              {mayPause && (<>
+                <span aria-hidden>·</span>
+                <button type="button" disabled={busy}
+                  onClick={async () => {
+                    setBusy(true)
+                    setPauseError('')
+                    try {
+                      const r = await setReviewerPaused(detail.id, !detail.paused, { token: token! })
+                      // Patch just this pair — nothing else on the record moves, so a full
+                      // re-fetch would only make the page flicker.
+                      setDetail({ ...detail, paused: r.paused, paused_at: r.paused_at })
+                    } catch {
+                      setPauseError(t('admin.reviewers.detail.pauseFailed'))
+                    } finally {
+                      setBusy(false)
+                    }
+                  }}
+                  // The reassurance an org_admin needs BEFORE they click — that this is not a
+                  // revoke — rides on the control itself. The label already scopes it ("Pause NEW
+                  // cases"); this says what it leaves alone.
+                  title={t(`admin.reviewers.detail.pauseNote${detail.paused ? 'Paused' : 'Active'}`)}
+                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline disabled:opacity-50">
+                  {t(`admin.reviewers.detail.${detail.paused ? 'unpause' : 'pause'}`)}
+                </button>
+              </>)}
             </p>
+            {/* The note earns its line only when it is telling you something you did not choose:
+                that a PAUSED reviewer keeps their account and their in-flight interviews. For an
+                active one it would be a standing explanation of a link nobody has pressed. */}
+            {mayPause && detail.paused && (
+              <p className="text-xs text-amber-700 mt-1.5 max-w-2xl">
+                {t('admin.reviewers.detail.pauseNotePaused')}
+              </p>
+            )}
+            {pauseError && <p className="text-sm text-red-600 mt-1.5">{pauseError}</p>}
           </div>
           <div className="flex gap-6 sm:gap-8">
             <Figure label={t('admin.reviewers.colOpen')} value={String(detail.open_now)} />
@@ -155,37 +192,6 @@ export default function AdminReviewerDetailPage() {
           </div>
         </div>
 
-        {/* Pause on somebody's behalf — a volunteer who has gone quiet cannot always press their
-            own switch, and a control with no way back is a one-way conversation, so the same
-            button un-pauses. It rides in this strip rather than owning a card: it is one control
-            and one sentence. */}
-        {mayPause && (
-          <div className="mt-4 pt-4 border-t flex flex-wrap items-center gap-x-4 gap-y-2">
-            <button type="button" disabled={busy}
-              onClick={async () => {
-                setBusy(true)
-                setPauseError('')
-                try {
-                  const r = await setReviewerPaused(detail.id, !detail.paused, { token: token! })
-                  // Patch just this pair — nothing else on the record moves, so a full re-fetch
-                  // would only make the page flicker.
-                  setDetail({ ...detail, paused: r.paused, paused_at: r.paused_at })
-                } catch {
-                  setPauseError(t('admin.reviewers.detail.pauseFailed'))
-                } finally {
-                  setBusy(false)
-                }
-              }}
-              className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold text-white disabled:opacity-50 ${
-                detail.paused ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
-              {t(`admin.reviewers.detail.${detail.paused ? 'unpause' : 'pause'}`)}
-            </button>
-            <span className="text-xs text-gray-500 max-w-2xl">
-              {t(`admin.reviewers.detail.pauseNote${detail.paused ? 'Paused' : 'Active'}`)}
-            </span>
-            {pauseError && <span className="text-sm text-red-600">{pauseError}</span>}
-          </div>
-        )}
       </section>
 
       {/* ── 2. Outcomes | About, side by side ───────────────────────────────────────── */}

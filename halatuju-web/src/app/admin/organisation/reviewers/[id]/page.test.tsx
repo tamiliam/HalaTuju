@@ -142,10 +142,19 @@ describe('the honest empty states', () => {
 })
 
 describe('pause, on somebody else\'s behalf', () => {
-  it('offers to pause an active reviewer, and says what pausing does NOT take away', async () => {
+  it('offers the control WITHOUT a standing explanation taking up a line', async () => {
+    // Owner review, 2026-08-02: the control does not need a box, and for an ACTIVE reviewer the
+    // note was a paragraph explaining a link nobody had pressed. The reassurance that this is not
+    // a revoke rides on the control itself instead.
     await loaded()
-    expect(screen.getByText('admin.reviewers.detail.pause')).toBeTruthy()
-    expect(screen.getByText('admin.reviewers.detail.pauseNoteActive')).toBeTruthy()
+    const button = screen.getByText('admin.reviewers.detail.pause')
+    expect(button.getAttribute('title')).toBe('admin.reviewers.detail.pauseNoteActive')
+    expect(screen.queryByText('admin.reviewers.detail.pauseNoteActive')).toBeNull()
+  })
+
+  it('DOES spell it out once somebody is paused — that is when it tells you something', async () => {
+    await loaded({ paused: true, paused_at: '2026-07-30T00:00:00Z' })
+    expect(screen.getByText('admin.reviewers.detail.pauseNotePaused')).toBeTruthy()
   })
 
   it('offers the way BACK for a paused one — never a one-way conversation', async () => {
