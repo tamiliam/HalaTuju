@@ -2218,8 +2218,8 @@ def _reviewer_workloads(admins, *, organisation_id=None):
     out = {i: {'open_now': 0, 'completed': 0, 'recommended': 0, 'declined': 0,
                'rejected_after_review': 0, 'awaiting_qc': 0, 'unaccounted': 0, '_days': []}
            for i in ids}
-    for aid, status, assigned_at, decided_at, rejected_by in rows.values_list(
-            'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at', 'rejected_by'):
+    for aid, status, assigned_at, decided_at, verdict in rows.values_list(
+            'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at', 'officer_verdict'):
         slot = out[aid]
         if decided_at is None:
             if status in _REVIEWER_OPEN_STATUSES:
@@ -2229,15 +2229,21 @@ def _reviewer_workloads(admins, *, organisation_id=None):
         if status in _REVIEWER_PROGRESSED_STATUSES:
             slot['recommended'] += 1
         elif status == 'rejected':
-            # ⚠ WHO rejected it is the whole distinction. They declined it themselves (amber), or
-            # they reviewed it and somebody else — QC, an org_admin, a super — rejected it (red).
-            # A blank `rejected_by` is attributed to THEM: the reviewer is the default decider, and
-            # the alternative would quietly inflate the red band on a missing audit field. No
-            # production row is blank today, so this branch is a guard, not a behaviour.
-            if (rejected_by or '').strip().lower() in ('', by_email[aid]):
-                slot['declined'] += 1
-            else:
+            # ⚠ THE SPLIT READS THE RECORDED VERDICT, NOT `rejected_by`. Keying on who stamped the
+            # rejection is WRONG and shipped wrong on 2026-08-02: a reviewer's decline always routes
+            # through QC, and QC ACCEPTING that decline stamps `rejected_by` with the QC's name. So
+            # "the rejector is not the reviewer" is the ORDINARY path for a decline, not the rare
+            # one — it mislabelled 6 of BrightPath's 13 rejections, telling five volunteers they had
+            # been overruled when they had simply declined a student and been agreed with.
+            #
+            # An overturn is the case where the reviewer said ACCEPT and the student was rejected
+            # anyway. That claim needs positive evidence, so anything else — a decline, a blank
+            # verdict, a draft — counts as their own decline rather than an accusation.
+            # (`officerCockpit.rejectionTrail` already read it this way; this now agrees with it.)
+            if (verdict or {}).get('overall') == 'accept':
                 slot['rejected_after_review'] += 1
+            else:
+                slot['declined'] += 1
         elif status == 'interviewed':
             slot['awaiting_qc'] += 1
         else:

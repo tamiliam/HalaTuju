@@ -10,9 +10,16 @@ Three claims carry the weight here, and each is asserted from more than one angl
    builder groups ONE query in Python instead, so the class of bug is absent rather than guarded;
    `test_two_relations_do_not_inflate_each_other` is what would catch a regression to `annotate()`.
 
-2. **A decision counts for the reviewer only when THEY recorded it.** An org_admin or qc may record
-   a verdict on somebody else's case (3 of BrightPath's 65 today). Attributing that to the assignee
-   would put another person's judgement on a volunteer's record.
+2. **A rejection is only an OVERTURN when the reviewer's own verdict said accept.** Both halves of
+   this were got wrong before the owner read a real record, and both mistakes had the same shape —
+   reading a stored field as if it answered a question about a person:
+     - excluding cases whose verdict somebody else recorded erased work a reviewer had genuinely
+       done (app #13: assigned to Balan, HE interviewed and wrote it up, the owner clicked);
+     - keying the decline/overturn split on `rejected_by` inverted the common case, because a
+       reviewer's decline ALWAYS routes through QC and QC accepting it stamps the QC's name. That
+       mislabelled 6 of 13 rejections, telling five volunteers they had been overruled.
+   The split now reads `officer_verdict.overall`, and red — an accusation that somebody overruled
+   this person — requires positive evidence rather than an absence.
 
 3. **The home address never leaves `ReviewerProfile`.** Showing an org_admin a volunteer's phone is
    a deliberate widening for assignment; their home address is not, and the payload's exact key set
@@ -171,32 +178,50 @@ class TestTheFigures(_Base):
         self.assertEqual(d['recommended'], 1)
         self.assertNotIn('decided_by_other', d)   # the exclusion, and its dead-end footnote, are gone
 
-    def test_DECLINED_is_theirs_and_REJECTED_is_somebody_else_overruling_them(self):
-        # The distinction the owner asked for, and the reason the two are not one amber band: a
-        # reviewer who recommended a student who was then rejected declined nobody.
-        mine = self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=5,
-                         nric_seed='31')
-        mine.rejected_by = self.reviewer.email
-        mine.save(update_fields=['rejected_by'])
-        theirs = self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=4,
-                           nric_seed='32')
-        theirs.rejected_by = self.oa.email
-        theirs.save(update_fields=['rejected_by'])
+    def test_a_QC_ACCEPTING_a_decline_is_still_the_REVIEWERS_decline(self):
+        # ⚠ THE BUG THAT SHIPPED, 2026-08-02. Keying the split on `rejected_by` looked right and was
+        # backwards: a reviewer's decline ALWAYS routes through QC, and QC accepting it stamps
+        # `rejected_by` with the QC's name. So a rejector who is not the reviewer is the ORDINARY
+        # case. It mislabelled 6 of BrightPath's 13 rejections — telling five volunteers they had
+        # been overruled when they had declined a student and been agreed with. Vanitha's #56 is
+        # this exact shape, and the owner spotted it by reading her record.
+        app = self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=5,
+                        nric_seed='31')
+        app.rejected_by = self.oa.email                       # QC/org_admin upheld it
+        app.officer_verdict = {'overall': 'decline'}          # ...but the REVIEWER declined
+        app.save(update_fields=['rejected_by', 'officer_verdict'])
+        # Bite the guard: reading `rejected_by` instead of the verdict flips this to red.
         self._auth('rv-oa')
         d = self.client.get(f'{LIST}{self.reviewer.id}/').json()
         self.assertEqual(d['declined'], 1)
-        self.assertEqual(d['rejected_after_review'], 1)
+        self.assertEqual(d['rejected_after_review'], 0)
 
-    def test_a_rejection_with_NO_recorded_rejector_is_attributed_to_THEM(self):
-        # The reviewer is the default decider, and the alternative would quietly inflate the red
-        # band whenever an audit field is missing. No production row is blank today.
-        app = self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=3,
-                        nric_seed='33')
-        app.rejected_by = ''
-        app.save(update_fields=['rejected_by'])
+    def test_an_OVERTURN_is_a_recommend_that_was_rejected_anyway(self):
+        # The only shape that earns the red band: the reviewer said ACCEPT and the student was
+        # rejected regardless. Balan's #71 and Kalaiyarasi's #21 are the only two on production.
+        app = self._app(reviewer=self.reviewer, status='rejected', decided_days_ago=4,
+                        nric_seed='32')
+        app.rejected_by = self.oa.email
+        app.officer_verdict = {'overall': 'accept'}
+        app.save(update_fields=['rejected_by', 'officer_verdict'])
         self._auth('rv-oa')
         d = self.client.get(f'{LIST}{self.reviewer.id}/').json()
-        self.assertEqual(d['declined'], 1)
+        self.assertEqual(d['rejected_after_review'], 1)
+        self.assertEqual(d['declined'], 0)
+
+    def test_an_UNRECORDED_verdict_is_never_called_an_overturn(self):
+        # Red is an accusation — that somebody overruled this reviewer — so it needs positive
+        # evidence. A blank or draft verdict falls to their own decline rather than to a claim
+        # the data does not support.
+        for seed, verdict in (('33', {}), ('34', {'overall': ''})):
+            app = self._app(reviewer=self.reviewer2, status='rejected', decided_days_ago=3,
+                            nric_seed=seed)
+            app.rejected_by = self.oa.email
+            app.officer_verdict = verdict
+            app.save(update_fields=['rejected_by', 'officer_verdict'])
+        self._auth('rv-oa')
+        d = self.client.get(f'{LIST}{self.reviewer2.id}/').json()
+        self.assertEqual(d['declined'], 2)
         self.assertEqual(d['rejected_after_review'], 0)
 
     def test_a_case_sitting_with_QC_is_its_OWN_band(self):
