@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## Organisation → Reviewers — request #10, sprint 1, 2026-08-02
+
+Thirteen volunteers had reviewed 65 applications between them and the console had no page about
+any of them. Staff invites and revokes; nothing showed who they were, what they were carrying, how
+long a case sat with them, or what became of what they decided. All of it was already stored.
+
+- **What the table shows:** name, role, the languages they can actually interview in, open now,
+  completed, turnaround, status. What it does NOT show is the design: **no corrections column** —
+  17 of the 65 decisions carry a reopen and several were caused by OUR defects, so a bare number
+  beside a volunteer's name would read as a competence score — and **no programmes column** (owner,
+  2026-08-02: with one programme it could only ever say one thing). Both absences have a rendered
+  test, because a column dropped by decision comes back the moment somebody adds it "for
+  completeness".
+- **The reopens appear once, on the detail page, each with the reason recorded at the time.** The
+  number and the reason never travel apart. That is what distinguishes "the merit band was misread"
+  from "our pathway engine was wrong that week".
+- **⚠ EVERY FIGURE IS COUNTED IN ITS OWN QUERY AND JOINED IN PYTHON.** Two `annotate()` counts over
+  two multi-valued relations multiply each other and `Sum(distinct=True)` is the wrong cure — the
+  precedent is `views_admin.py:1036`. Grouping a few hundred rows in Python cannot fan out at all,
+  so the class of bug is absent rather than guarded against.
+- **⚠ A DECISION COUNTS FOR A REVIEWER ONLY WHEN THEY RECORDED IT.** Three of the 65 were recorded
+  by somebody else on a case assigned to the reviewer; attributing those would put another person's
+  judgement on their record. The detail page states them separately, in words.
+- **Turnaround is a MEDIAN, and `null` is its own answer.** With single-digit caseloads one slow
+  case drags a mean somewhere no real turnaround sits; and six reviewers have decided nothing, so
+  "no reviews yet" and "instant" must not render the same. Nulls stay at the bottom whichever way
+  the column is pointed — otherwise "sort by fastest" crowns whoever has never decided a case.
+- **PII: phone yes, home address NEVER.** A deliberate, partial widening of a self-scoped profile,
+  recorded in `role-matrix.md` and in the serializer docstring. The backend does not serialise the
+  address; the page draws named fields only, so a backend slip could not leak one through the
+  screen. Both halves tested. The phone carries its consent state, so an admin is told whether a
+  student may be given the number.
+- **A failed fetch no longer says "No reviewers yet — invite one."** It told an org_admin they had
+  nobody when the truth was that we could not ask. Found by the test that now pins it.
+- **The sidebar said Reviewers twice.** Programme reserved a slot of that name for per-programme
+  SCOPING, a different page; live beside greyed-with-a-Soon-pill reads as a half-broken feature. The
+  slot is renamed to *Reviewer scoping* and is otherwise untouched — still reserved, because scoping
+  is meaningless while there is one programme. A new test forbids any two menu rows sharing a label.
+- **Cross-org is 404, never 403** — a 403 would confirm that another tenant's staff member exists.
+  Both views classified in `test_org_fence.py`; all three new guards bite-checked.
+- **Verified against production, and one figure was mine.** Re-derived every aggregate from the
+  database: 65 decisions (3 by somebody else), 9 open, 17 reopens across 8 reviewers with no blank
+  reason. The turnaround spread is 2.0–10.1 days, not the 2.5–10.3 I had quoted.
+
+**No schema change.** Backend + web, en/ms/ta. 80 tests.
+
+
 ## A staged analysis can be withdrawn, and two drafts can be told apart — 2026-08-01
 
 Found in use, not in review. Correcting a staged draft meant staging a second one, because staging
