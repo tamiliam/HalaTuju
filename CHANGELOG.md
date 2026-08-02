@@ -2,6 +2,88 @@
 
 All notable changes to this project will be documented in this file.
 
+## Pause, the reviewer emails, and five fixes off the owner's screen — request #10, sprint 2, 2026-08-02
+
+The second half of #10, plus the live-review round that followed it. **Two migrations, both applied
+migrate-first** (`courses/0068` a nullable column; `scholarship/0143` choices-only, so the ledger row
+was the entire production step). Two deploys — `469858f` then `1f4f8d6a`.
+
+### Pause — a volunteer can step back without giving up their place
+
+- **`PartnerAdmin.paused_at`, NOT `is_active`.** Revoking blocks the admin lookup entirely, so a
+  paused reviewer built on that flag could never have signed in to un-pause themselves. The field
+  docstring says so where somebody would reach for the wrong one.
+- **⚠ IT REFUSES IN `services._can_review` AND NOWHERE ELSE.** Deliberately not copied into
+  `scheduling._can_review`, which gates writes on cases somebody is already holding — copying it
+  there strands every in-flight interview the moment a volunteer steps back. The two functions look
+  like mirrors; this is the one place they legitimately differ, and both say so. Bite-checked in
+  both directions.
+- **⚠ A PAUSED REVIEWER IS FLAGGED, NEVER FILTERED OUT.** The cockpit unions the current assignee in
+  from `assignable-admins`, so dropping anybody reproduces bug **#66** — the case reads "Unassigned"
+  when it is nothing of the sort. The option renders disabled; the person already holding a case is
+  never disabled, or the select cannot show its own state.
+- Both routes (their own profile, an org_admin acting for them) go through **one setter**, so pause
+  cannot mean two things depending on who pressed it. Idempotent — a second click keeps the original
+  timestamp. Refused for anyone never assigned work: a "Paused" pill on a finance admin is a control
+  that changes nothing.
+- Reviewer Guide + FAQ updated in the same commit, leading with what pause does **not** take away.
+
+### The five reviewer emails become editable templates
+
+`reviewer_assigned`, `qc_returned`, `qc_rejected`, and the old `verdict_due` **split in two** —
+the engine has no conditionals and the overdue branch changes both subject and opening sentence, so
+one stored body could not say both without one of them reading wrongly.
+
+- **⚠ ALL FIVE SEED SWITCHED ON**, reproducing the wording that went out yesterday. Adopting live
+  mail into a switchable template and seeding it off is how a feature ships as silence.
+- **⚠ THE FALLBACK KEYS ON THE ROW BEING MISSING, NOT ON THE SWITCH.** The plan said to key it on
+  `PARTNER_COMMS_ENABLED`; that flag is already `1` in production, so it would have been inert AND
+  would have left the old sender mailing after the owner ticked a template off — the switch would
+  have been a lie the screen told. Three honest states: missing → built-in body, off → **stop**,
+  on → the row governs.
+- **⚠ `qc_comments` IS A STRUCTURAL BLOCK, NOT A SCALAR** — a QC who types `{ref}` must not have it
+  substituted. And **every structural token a kind declares is now filled whether the caller
+  supplied it or not**; without that, `{qc_comments}` reached an inbox literally. Caught by the
+  pre-existing "no placeholder survives" test, which is why that test walks every kind with a
+  deliberately thin context.
+- Reviewer kinds are exempt from `PARTNER_COMMS_ENABLED` for the same reason the student's notice
+  is: that flag answers what ORGANISATIONS receive.
+- Edited on **Organisation → Reviewers**, and absent from the Sources screen (`?family=reviewer`). A
+  test asserts the two lists partition the whole set, so no row can fall out of both and become
+  uneditable.
+- Fixed in passing: `admin.sources.emails.note.student_assigned` had been rendering as a **raw
+  dotted key** in all three locales since 1 August. The copy is written for all six kinds, and the
+  editor now renders nothing rather than a key on a miss. **TD-212** raised for the model name,
+  which no longer describes three of its four audiences.
+
+### Five fixes off the owner's live review
+
+- **The outcome bar was saying something false.** Balan's "Declined: 1" was application #71 — he
+  recorded a *recommend* and Suresh rejected it. Five decisions across five reviewers were
+  mislabelled that way. Three bands now: recommended, declined by them, **rejected after review**.
+- **⚠ THE "DECIDED BY SOMEBODY ELSE" EXCLUSION WAS WRONG AND IS GONE.** Those cases were being
+  dropped from a reviewer's record on the reasoning that another person's judgement should not land
+  on a volunteer. Production disagreed: application #13 was assigned to Balan, **he interviewed the
+  student and submitted his findings**, and only the final click was the owner's. Excluding it
+  erased a case he genuinely reviewed and left a footnote nobody could act on. The review is theirs;
+  who pressed the button belongs in the audit trail.
+- **A fourth band, `awaiting_qc`**, because without it the bar did not add up to the Completed figure
+  printed directly above it — Yuvarajan read Completed 6 over a bar of 5. The four bands now
+  **partition** the decided cases, and a test fails if a new status escapes all four rather than the
+  bar silently shrinking. Moved on production: Balan 7→8, Kaneswaran 5→6, Balaji 3→4 completed, with
+  turnaround rising correspondingly (5.0→5.5, 5.7→7.1, 9.0→10.6 days).
+- **Four cards became three** on the detail page — Credentials and Contact merged into one *About*
+  column, the figures moved up beside the name, and pause moved to a link beside the status pill it
+  flips. Design approved as an artifact before any page code.
+- **The phone shows `+60`.** It was never missing: it is stored without one, because `/admin/profile`
+  keeps the prefix as fixed chrome beside the input. Display-only — rewriting the stored values would
+  break the editor's contract with all fourteen reviewers who have filled it in.
+- The email switch moved **left**, matching Sponsors.
+
+**Production reconciled after:** every reviewer's four bands sum to their Completed figure, nothing
+unaccounted. Migration ledger `courses` 1–68 and `scholarship` 1–143, both contiguous, no gaps.
+
+
 ## Organisation → Reviewers — request #10, sprint 1, 2026-08-02
 
 Thirteen volunteers had reviewed 65 applications between them and the console had no page about

@@ -7325,3 +7325,95 @@ minute, which the model's never could.
 
 **Revisit if:** request volume grows enough that a first-pass number has real triage value, at which
 point (c) — a component capability inventory in the prompt — is the option to reach for.
+
+## Pause is `paused_at`, not `is_active` — request #10, 2026-08-02
+
+**Decision:** A reviewer stepping back from new work is a new nullable `PartnerAdmin.paused_at`. It
+refuses in `services._can_review` only, and is deliberately absent from `scheduling._can_review`.
+
+**Alternatives considered:** Reuse `is_active` (no migration); a `status` enum replacing both.
+
+**Rationale:** `get_admin` filters on `is_active`, so a paused reviewer built on that flag could
+never sign in to un-pause themselves — the self-service the requester asked for would be impossible
+by construction. It also drops them from notification sets, disarms the finance check and feeds the
+last-org-admin guard. Two flags that nearly mean the same thing will be confused, so the difference
+is written on the field and asserted per behaviour.
+
+**Trade-offs:** A second flag to reason about. Accepted, because the alternative is a semantic
+overload on a field that already carries four unrelated consequences.
+
+**Revisit if:** a third participation state appears (e.g. "on leave until a date"), at which point an
+enum with an effective-from date beats two booleans.
+
+## A paused reviewer is flagged, never filtered — request #10, 2026-08-02
+
+**Decision:** Every list keeps a paused reviewer and marks them; the assignment dropdown renders the
+option **disabled** with "Paused" as the reason, and never disables the CURRENT assignee.
+
+**Alternatives considered:** Filter them out of the assignable list.
+
+**Rationale:** The cockpit unions the current assignee in from `assignable-admins`; dropping anybody
+reproduces bug #66, where a case reads "Unassigned" when it is nothing of the sort. A name that
+simply vanishes also leaves the reader guessing. Disabling the current value would make the select
+unable to display its own state.
+
+**Trade-offs:** A longer dropdown.
+
+**Revisit if:** the reviewer roll grows enough that disabled options crowd the list — then group them
+under a "Paused" optgroup rather than removing them.
+
+## The reviewer-email fallback keys on a MISSING ROW, not on the platform flag — request #10, 2026-08-02
+
+**Decision:** The five adopted reviewer emails fall back to their hard-coded bodies when **no
+template row exists**. A row that exists and is switched OFF sends nothing.
+
+**Alternatives considered:** The approved plan's design — keep the legacy senders behind
+`PARTNER_COMMS_ENABLED`, mirroring the sponsor S3 pattern.
+
+**Rationale:** That flag is already `1` in production, so the fallback would have been inert; and
+worse, it would have left the old sender mailing after the owner ticked a template off, making the
+switch a lie the screen tells. Keying on the row's existence gives three honest states — missing
+degrades to today's behaviour, off means stop, on means the row governs.
+
+**Trade-offs:** A seeding step that never runs leaves the owner's switches inoperative while mail
+keeps flowing. Chosen deliberately: silent mail is recoverable, silent SILENCE is not.
+
+**Revisit if:** a future family is genuinely new (nothing sending yet), where a dark launch behind a
+platform flag is the correct pattern again.
+
+## The outcome bands partition the decided cases — request #10, 2026-08-02
+
+**Decision:** A reviewer's record covers **every decided case assigned to them**, split four ways:
+recommended, declined by them, rejected after review, awaiting QC. The earlier exclusion of cases
+whose verdict somebody else recorded is removed.
+
+**Alternatives considered:** Count only verdicts the reviewer recorded (the first implementation);
+count all, but fold overturned recommendations into "declined".
+
+**Rationale:** Production showed the exclusion erasing real work — application #13 was assigned to
+Balan, who interviewed the student and submitted findings; only the final click was the owner's.
+Who pressed the button belongs in the audit trail, not in whether the case appears. Folding the
+overturned ones into "declined" would accuse a reviewer of a decision they did not make, which is
+why red is its own band. `awaiting_qc` exists so the parts sum to the whole.
+
+**Trade-offs:** A reviewer's page now reflects outcomes they did not personally decide. Mitigated by
+the band names, which say who decided what.
+
+**Revisit if:** a case can be reassigned mid-review, at which point "assigned to them" stops being a
+good proxy for "reviewed by them" and the interview record becomes the better join.
+
+## The reviewers surface widens PII partially — request #10, 2026-08-02
+
+**Decision:** An org_admin sees a reviewer's phone (with its consent state) and credentials, and
+**never** their home address. The address is not serialised at all.
+
+**Alternatives considered:** Show the whole `ReviewerProfile`; show nothing beyond name and email.
+
+**Rationale:** The person handing out cases needs to reach the reviewer, so the phone earns its
+place; assigning a case is no reason to read where somebody lives. Hiding the address only in the
+template would leave it one careless render away from exposure.
+
+**Trade-offs:** A second place that must be checked whenever `ReviewerProfile` grows a field.
+
+**Revisit if:** the owner needs the address for a specific operational reason — then record that
+reason here first, per the role matrix's own rule.

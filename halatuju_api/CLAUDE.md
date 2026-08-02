@@ -550,35 +550,43 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-02) — REQUEST #10 IS BUILT AND UNPUSHED
+## Next Sprint (as of 2026-08-02, after request #10)
 
-**⚠ SIX COMMITS SIT ON LOCAL `main`, UNPUSHED, BY THE OWNER'S DECISION** (`04489c4e`..`112e8281`).
-The whole of request #10 — the reviewers surface, pause, and the five reviewer emails — is code
-complete with every gate green. The owner chose to hold it and ship both sprints as **ONE deploy**
-rather than two. `pytest` **5427** · `jest` **1359** · `tsc` clean · `next lint` **0 errors** ·
-i18n **4462×3** · `makemigrations --check` clean · `next build` OK (both new routes present).
+**✅ SHIPPED + LIVE — REQUEST #10: ORGANISATION → REVIEWERS, PAUSE, AND THE FIVE REVIEWER EMAILS.**
+Commits `04489c4e`..`1f4f8d6a`. Retro `docs/retrospective-2026-08-02-reviewers-surface.md`;
+decisions ×5; lessons ×3; **TD-212** raised. **Two deploys.** `pytest` **5427** · `jest` **1367** ·
+`tsc` clean · `next lint` **0** · i18n **4462×3**.
 
-**▶ ✅ STEP 1 IS DONE — MIGRATE-FIRST APPLIED 2026-08-02, DO NOT RE-RUN IT.**
-`courses/0068_reviewer_paused_at` (`ALTER TABLE partner_admins ADD COLUMN paused_at timestamptz
-NULL`) and `scholarship/0143_reviewer_email_kinds` (**choices only — `sqlmigrate` prints a no-op;
-the ledger row was the whole production step**) are both applied AND both `django_migrations` rows
-recorded. Reconciled against prod: **courses 68/68, scholarship 143/143**, column present, 0 rows
-paused, 20 active admins. (`makemigrations --check` is structurally blind to production's ledger —
-that is how `0135` ended up with its tables live and its row missing.)
+**⚠ MIGRATIONS `courses/0068` + `scholarship/0143` ARE ALREADY APPLIED — DO NOT RE-RUN.** Both
+migrate-first with their ledger rows recorded. Reconciled at close: **courses 1–68, scholarship
+1–143, contiguous, zero gaps**, both tops matching the newest file. `0143` is choices-only
+(`sqlmigrate` prints a no-op — the ledger row WAS the production step).
 
-**▶ THE REMAINING ORDER — and note step 2 is AFTER the deploy, not before:**
-2. **Push, then confirm BOTH Cloud Builds SUCCESS for the SHA** before calling anything live.
-3. **Then run the `seed-partner-emails` cron job ONCE** (`CronRunView`, `views.py` ~1931).
-   ⚠ **IT MUST COME AFTER THE DEPLOY.** The command seeds what the RUNNING code knows about, and
-   the live service has never heard of the five reviewer kinds — running it first would silently
-   skip them and look like it worked. Until the rows land, the four senders fall back to their
-   built-in bodies, so mail keeps going out (the designed safe direction) and only the owner's
-   switches are not yet real.
-4. **Walk pause end-to-end** on a real reviewer: still on every list → cannot be newly assigned →
+**⚠ THE `seed-partner-emails` CRON JOB HAS BEEN RUN** (created=5, kept=6). It must always run AFTER
+a deploy that adds a kind, never before: it seeds what the RUNNING code knows about, so seeding
+first silently skips the new rows and looks like it worked. The warning now sits at the registry
+line in `views.py`.
+
+**▶ STILL OWED ON #10 — it is `scheduled`, NOT `done`:**
+1. **Walk pause end-to-end** on a real reviewer: still on every list → cannot be newly assigned →
    can still propose interview times on a case already theirs → un-pauses from their own profile.
-5. **Stage the completion report** as an engineer analysis for the owner to approve — it must state
-   TOTAL spent against TOTAL planned across every analysis on #10, and name the re-scope out loud
-   (**15h quoted including 2h for programme assignment → deferred → ~13h**). Then `done`.
+   Exhaustively unit-tested and bite-checked, never yet seen in a browser.
+2. **Stage the completion report** as an engineer analysis for the owner to approve. It must state
+   TOTAL spent against TOTAL planned across every analysis on #10 and name the re-scope out loud
+   (**15h quoted including 2h for programme assignment → deferred by the owner → ~13h**). Then `done`.
+
+**▶ OWNER-FLAGGED, NOT BUILT — `paused_by`.** `paused_at` records WHEN somebody was paused, not WHO
+paused them, so the screen reads identically whether a reviewer stepped back themselves or an
+org_admin did it for them. The harm is concrete: a volunteer pauses for exam season, an admin sees
+"Paused", assumes it was an admin action, and clicks *Bring them back* — undoing the one thing pause
+exists to protect. Fix is a nullable column + the setter + the payload; under an hour. Raised with
+the owner 2026-08-02, awaiting their word.
+
+**▶ ALSO OWED (owner):** Divya Adinarayanan's reviewer phone reads `24-525 089`, which is not a
+valid Malaysian mobile — hers to correct on her own profile.
+
+**▶ #2 IS THE ONLY REQUEST BLOCKED ON THE OWNER:** `triaged` feature/sprint, analysis approved at
+6.5h, **`quote_hours` still NULL**. Stuck between triage and a price.
 
 **▶ WHAT SHIPPED, and the decisions inside it that must not be "tidied":**
 - **`/admin/organisation/reviewers`** — table + detail. **NO corrections column** (17 of 65
