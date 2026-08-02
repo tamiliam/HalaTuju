@@ -137,10 +137,37 @@ class TestPauseIsNotRevoke(_Base):
 
 class TestPauseStopsNewWorkOnly(_Base):
     def test_a_paused_reviewer_cannot_be_ASSIGNED(self):
+        # ⚠ AND THE REASON GIVEN IS THE TRUE ONE. Until 2026-08-03 this refusal came back as
+        # `not_reviewer` — "You can only assign to a reviewer" — about somebody who IS a reviewer
+        # and has simply stepped back. Found by walking pause end-to-end on production, not by any
+        # test: every test asserted THAT it refused, none read what it said. The dropdown disables
+        # a paused option, so this is reached from a page loaded BEFORE the pause, which is exactly
+        # when a wrong reason sends an org_admin looking for a problem that does not exist.
         self._pause(self.reviewer)
         app = self._app(seed='02')
         with self.assertRaises(services.AssignmentError) as ctx:
             services.assign_reviewer(app, reviewer=self.reviewer, by_admin=self.oa)
+        self.assertEqual(str(ctx.exception), 'reviewer_paused')
+
+    def test_a_REVOKED_account_still_reads_not_reviewer_even_if_also_paused(self):
+        # Revoked is the bigger fact. Someone paused and then revoked has no account to come back
+        # to, so "they have paused themselves, they can start again" would be the wrong advice.
+        self._pause(self.reviewer)
+        self.reviewer.is_active = False
+        self.reviewer.save(update_fields=['is_active'])
+        app = self._app(seed='07')
+        with self.assertRaises(services.AssignmentError) as ctx:
+            services.assign_reviewer(app, reviewer=self.reviewer, by_admin=self.oa)
+        self.assertEqual(str(ctx.exception), 'not_reviewer')
+
+    def test_someone_who_never_could_review_still_reads_not_reviewer(self):
+        # The plain case the message was written for, unchanged. `finance` is the right subject:
+        # it has no B40 scope at all, whereas org_admin and admin ARE valid assignment targets
+        # (assignment is what grants them selective write access) — a first draft of this test
+        # used org_admin and got `not_ready`, which is the readiness gate, not this one.
+        app = self._app(seed='08')
+        with self.assertRaises(services.AssignmentError) as ctx:
+            services.assign_reviewer(app, reviewer=self.finance, by_admin=self.oa)
         self.assertEqual(str(ctx.exception), 'not_reviewer')
 
     def test_they_KEEP_the_case_they_were_already_holding(self):

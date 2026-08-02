@@ -148,8 +148,8 @@ export default function AdminScholarshipList() {
       })
     } catch (e) {
       const code = e instanceof Error ? e.message : ''
-      const known = ['not_ready', 'not_reviewer', 'bad_assignee', 'not_assignable',
-                     'findings_submitted']
+      const known = ['not_ready', 'not_reviewer', 'reviewer_paused', 'bad_assignee',
+                     'not_assignable', 'findings_submitted']
       setAssignNote((n) => ({ ...n, [appId]: known.includes(code)
         ? t(`admin.scholarship.assign.error.${code}`)
         : t('admin.scholarship.assignError') }))

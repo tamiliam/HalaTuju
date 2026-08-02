@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Pause said the wrong thing when it refused - request #10, 2026-08-03
+
+Found by walking pause end-to-end on the live service against a real reviewer (owner-authorised),
+which is the whole reason that step exists. **No migration; one api + one web deploy.**
+
+- **A paused reviewer was refused with `not_reviewer`**, which the console renders as *"You can only
+  assign to a reviewer."* about somebody who **is** one and has simply stepped back. `_can_review`
+  folds three separate facts into one False, and the assignment guard reported the first of them.
+  Now `reviewer_paused`, with copy that says what actually happened and how to undo it.
+- **Every test asserted THAT it refused; none read WHAT IT SAID.** That is the gap the walk-through
+  closed, and it is the second time on this request that a stored value was reported as though it
+  answered a different question. Bite-checked.
+- **Revoked still reads `not_reviewer` even when also paused** - a revoked account has nothing to
+  come back to, so "they can start again from their profile" would be the wrong advice. Pinned.
+- The refusal is reached from a page that loaded BEFORE somebody was paused (the dropdown disables
+  a paused option), which is precisely when a wrong reason sends an admin hunting a phantom.
+- `pytest` **5444** - `jest` **1372** - `next lint` 0 errors - i18n **4484x3**.
+
 ## The seven reviewer emails nobody can edit are now at least READABLE - request #10, 2026-08-03
 
 The owed half of the email line in #10's approved analysis, which priced "the four editable emails,

@@ -3790,7 +3790,8 @@
           "not_reviewer": "You can only assign to a reviewer.",
           "bad_assignee": "That admin is no longer active.",
           "findings_submitted": "The interview findings are already in — reopen the decision first if you need to change the reviewer.",
-          "not_assignable": "A reviewer can only be assigned while the application is being reviewed (Completed or Interviewing). It's either not ready yet, or the review is already over."
+          "not_assignable": "A reviewer can only be assigned while the application is being reviewed (Completed or Interviewing). It's either not ready yet, or the review is already over.",
+          "reviewer_paused": "They have paused themselves, so no new cases can be given to them. They can start again from their own profile, or you can bring them back on the Reviewers page."
         }
       },
       "requestInfoError": "Could not send the request.",

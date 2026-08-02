@@ -679,7 +679,16 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     now = now or timezone.now()
 
     if reviewer is not None and not _can_review(reviewer):
-        raise AssignmentError('not_reviewer')
+        # ⚠ SAY WHICH REFUSAL. `_can_review` folds three different facts into one False, and
+        # telling an org_admin that a paused volunteer "is not a reviewer" is simply untrue — she
+        # is one, she has stepped back. Found by walking pause end-to-end on production
+        # (2026-08-03); the dropdown disables a paused option, so this is reached from a page that
+        # loaded BEFORE somebody was paused, which is precisely when a wrong reason misleads most.
+        # Revoked is checked first: a revoked account is a bigger fact than a pause on top of it.
+        raise AssignmentError(
+            'not_reviewer' if not getattr(reviewer, 'is_active', False)
+            else 'reviewer_paused' if getattr(reviewer, 'paused_at', None) is not None
+            else 'not_reviewer')
 
     current = application.assigned_to
     if (current.id if current else None) == (reviewer.id if reviewer else None):
