@@ -180,3 +180,24 @@ def reviewer_correction_count(admin):
         return 0
     return DecisionReopen.objects.filter(
         resulted_in_change=True, reviewer=admin).count()
+
+
+def reviewer_reopens(admin, *, organisation_id=None):
+    """One reviewer's corrections AS ROWS — newest first — with the reason recorded at the time.
+
+    ⚠ The count alone is not a fair thing to show. 17 of BrightPath's 65 decisions carry a reopen and
+    several were caused by OUR OWN defects, not by the reviewer's judgement; a bare number beside a
+    volunteer's name reads as a competence score to whoever hands out the next case. The reason is
+    what distinguishes "the merit band was misread" from "our pathway engine was wrong that week", so
+    the reasons travel WITH the number and the reviewers table deliberately carries neither.
+
+    ⚠ `organisation_id` FENCES the read. `reviewer_correction_counts()` is deliberately unfenced (it
+    feeds the assignment dropdown, which is already fenced by its own queryset); this one is read by
+    a per-reviewer surface an org_admin opens, so it must not reach across tenants.
+    """
+    if admin is None:
+        return []
+    qs = DecisionReopen.objects.filter(resulted_in_change=True, reviewer=admin)
+    if organisation_id is not None:
+        qs = qs.filter(application__owning_organisation_id=organisation_id)
+    return list(qs.select_related('application').order_by('-id'))

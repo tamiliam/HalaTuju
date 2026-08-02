@@ -257,6 +257,12 @@ class TestFenceCoverageCompleteness(TestCase):
         # Same fence, same reason: retiring a draft reaches it through `req.analyses` too, so a
         # cross-org analysis id 404s rather than resolving.
         'AdminOrgRequestWithdrawAnalysisView': 'requests-org-fenced+super-only',
+        # Request #10 — the reviewers surface. A PartnerAdmin carries `owning_organisation`, so both
+        # views narrow on it directly; the detail resolves THROUGH the narrowed list, so a cross-org
+        # id 404s. Their workload figures are fenced on the application's owner too.
+        '_ReviewersBase': 'base — reviewers role gate + owning_organisation narrowing',
+        'AdminReviewerListView': 'list-fenced',
+        'AdminReviewerDetailView': 'list-fenced',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

@@ -2131,6 +2131,193 @@ class AdminAssignableAdminsView(_AdminBase):
         ], 'past_assignees': [{'id': p.id, 'name': p.name} for p in past]})
 
 
+#: Which languages count as "can review in this" — conversational or better. Mirrors
+#: `AdminAssignableAdminsView.langs`; both read `ReviewerProfile`, so keep them in step.
+_REVIEW_FLUENCY = ('conversational', 'fluent')
+
+#: An application still waiting for this reviewer's verdict. Narrower than "not decided":
+#: `ASSIGNABLE_STATUSES` is where a review is actually outstanding.
+_REVIEWER_OPEN_STATUSES = ('profile_complete', 'interviewing')
+
+
+def _reviewer_languages(admin):
+    rp = getattr(admin, 'reviewer_profile', None)
+    if rp is None:
+        return []
+    return [code for code, lvl in (('en', rp.english_fluency),
+                                   ('ms', rp.bm_fluency),
+                                   ('ta', rp.tamil_fluency)) if lvl in _REVIEW_FLUENCY]
+
+
+def _median_days(values):
+    """Median, not mean — with 13 reviewers and single-digit caseloads one slow case drags a mean
+    somewhere no real turnaround sits. Returns None for an empty list rather than 0, because
+    "no reviews yet" and "instant" must not render the same."""
+    if not values:
+        return None
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    if len(ordered) % 2:
+        return round(ordered[mid], 1)
+    return round((ordered[mid - 1] + ordered[mid]) / 2, 1)
+
+
+def _reviewer_workloads(admins, *, organisation_id=None):
+    """`{admin_id: {...figures}}` for every reviewer, in ONE query, grouped in Python.
+
+    ⚠ NOT `annotate()`. Two counts over two multi-valued relations multiply each other, and
+    `Sum(distinct=True)` — the reflex cure — is wrong for a sum (see `AdminSponsorListView` and
+    `test_sponsor_detail.test_money_and_students_do_not_inflate_each_other`). Grouping a few hundred
+    rows in Python cannot fan out at all, so the class of bug is absent rather than guarded against.
+
+    ⚠ A decision counts for the reviewer only when THEY recorded it. An org_admin or qc may record a
+    verdict on a case assigned to somebody else (3 of BrightPath's 65 today), and attributing that to
+    the assignee would put another person's judgement on their record.
+    """
+    ids = [a.id for a in admins]
+    if not ids:
+        return {}
+    rows = ScholarshipApplication.objects.filter(assigned_to_id__in=ids)
+    if organisation_id is not None:
+        # org-fence: the caller is a non-super, so only their own tenant's applications count.
+        rows = rows.filter(owning_organisation_id=organisation_id)
+    by_email = {a.id: (a.email or '').strip().lower() for a in admins}
+    out = {i: {'open_now': 0, 'completed': 0, 'progressed': 0, 'declined': 0,
+               'decided_by_other': 0, '_days': []} for i in ids}
+    for aid, status, assigned_at, decided_at, decided_by, bucket in rows.values_list(
+            'assigned_to_id', 'status', 'assigned_at', 'verdict_decided_at',
+            'verdict_decided_by', 'rejection_category'):
+        slot = out[aid]
+        if decided_at is None:
+            if status in _REVIEWER_OPEN_STATUSES:
+                slot['open_now'] += 1
+            continue
+        if (decided_by or '').strip().lower() != by_email[aid]:
+            slot['decided_by_other'] += 1
+            continue
+        slot['completed'] += 1
+        if status == 'rejected':
+            slot['declined'] += 1
+        elif status in ('recommended', 'awarded', 'active', 'maintenance', 'closed'):
+            slot['progressed'] += 1
+        if assigned_at:
+            slot['_days'].append((decided_at - assigned_at).total_seconds() / 86400.0)
+    for slot in out.values():
+        slot['turnaround_days'] = _median_days(slot.pop('_days'))
+    return out
+
+
+def _reviewer_dict(admin, work):
+    """One row of the reviewers table. Allowlist — an exact-key-set test pins it.
+
+    ⚠ NO corrections figure here, by decision (2026-08-02). See `reopen.reviewer_reopens`.
+    """
+    return {
+        'id': admin.id,
+        'name': admin.name,
+        'email': admin.email,
+        'role': 'super' if admin.is_super else admin.role,
+        'languages': _reviewer_languages(admin),
+        'open_now': work['open_now'],
+        'completed': work['completed'],
+        'turnaround_days': work['turnaround_days'],
+        # Constant until Sprint 2 gives pause its own state. Kept in the payload from the start so
+        # that sprint changes DATA, not the shape of this screen.
+        'paused': False,
+        # ⚠ NO `programmes` KEY, and that is a decision (owner, 2026-08-02): with one programme
+        # every reviewer serves it, so the column could only ever say one thing. It returns when a
+        # second programme exists — until then everyone is on the BrightPath Bursary by default.
+        # Do not add it back "for completeness"; a column with one possible value is furniture.
+    }
+
+
+class _ReviewersBase(_AdminBase):
+    """Shared gate + fence for the reviewers surface (Organisation → Reviewers).
+
+    Same role set as the organisation's other staff-facing screens. **List-fenced**: a `PartnerAdmin`
+    carries `owning_organisation`, so a non-super sees only their own organisation's people.
+    """
+
+    def _side(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, None, self._deny()
+        if not (admin.is_super or admin.role in ('org_admin', 'admin', 'finance')):
+            return None, None, self._deny_role()
+        org_id = None if self.has_role(admin, 'super') else admin.owning_organisation_id
+        return admin, org_id, None
+
+    def _reviewers(self, org_id):
+        from django.db.models import Q
+        # org-fence: narrowed by owning_organisation for a non-super (org_id set by `_side`).
+        qs = (PartnerAdmin.objects.filter(is_active=True)
+              .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'qc']))
+              .select_related('reviewer_profile').order_by('name'))
+        if org_id is not None:
+            qs = qs.filter(owning_organisation_id=org_id, is_super_admin=False)
+        return qs
+
+
+class AdminReviewerListView(_ReviewersBase):
+    """GET admin/reviewers/ — the people who review this organisation's applications.
+
+    Request #10. Staff (`/admin/organisation/staff`) invites and revokes; this is where you look at
+    somebody: what they carry, how long cases sit with them, and how their cases ended.
+    """
+
+    def get(self, request):
+        admin, org_id, err = self._side(request)
+        if err:
+            return err
+        rows = list(self._reviewers(org_id))
+        work = _reviewer_workloads(rows, organisation_id=org_id)
+        return Response({'reviewers': [_reviewer_dict(r, work[r.id]) for r in rows]})
+
+
+class AdminReviewerDetailView(_ReviewersBase):
+    """GET admin/reviewers/<pk>/ — one reviewer, whole.
+
+    ⚠ The contact block is a deliberate PII WIDENING and is deliberately PARTIAL. `ReviewerProfile`
+    also holds a home address; an org_admin assigning work has no reason to read it, so it is not
+    serialised here. Recorded in `docs/scholarship/role-matrix.md`.
+    """
+
+    def get(self, request, pk):
+        admin, org_id, err = self._side(request)
+        if err:
+            return err
+        # org-fence: `_reviewers` is already narrowed, so a cross-org id 404s rather than resolving.
+        # ⚠ 404, never 403 — a 403 would confirm that another tenant's staff member exists.
+        target = self._reviewers(org_id).filter(pk=pk).first()
+        if target is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        work = _reviewer_workloads([target], organisation_id=org_id)[target.id]
+        rp = getattr(target, 'reviewer_profile', None)
+        from . import reopen as reopen_service
+        payload = _reviewer_dict(target, work)
+        payload.update({
+            'decided_by_other': work['decided_by_other'],
+            'progressed': work['progressed'],
+            'declined': work['declined'],
+            'created_at': target.created_at,
+            'qualification': getattr(rp, 'highest_qualification', '') or '',
+            'university': getattr(rp, 'university', '') or '',
+            'graduation_year': getattr(rp, 'graduation_year', None),
+            'field_of_study': getattr(rp, 'field_of_study', '') or '',
+            'phone': getattr(rp, 'phone', '') or '',
+            'share_phone_with_students': bool(getattr(rp, 'share_phone_with_students', False)),
+            'reopens': [
+                {'id': r.id,
+                 'application_id': r.application_id,
+                 'reason': r.reason,
+                 'reopened_by': r.reopened_by,
+                 'at': r.closed_at or r.created_at}
+                for r in reopen_service.reviewer_reopens(target, organisation_id=org_id)
+            ],
+        })
+        return Response(payload)
+
+
 class AdminRequestInfoView(_AdminBase):
     """POST .../<pk>/request-info/ — the admin asks the student for more
     documentation. Records a note on the application + emails the student. Does
