@@ -1928,7 +1928,10 @@ class CronRunView(APIView):
         'reprocess-ic-vision': 'reprocess_unread_ic',  # frequent (~15 min): self-heal IC/parent_ic stuck unprocessed (silent upload OCR failures → false 'service unavailable' consent block)
         'backfill-anon-blurbs': 'backfill_anon_blurbs',  # one-off (billable): card blurb for published profiles missing one
         'backfill-reporting-dates': 'backfill_reporting_dates',  # one-off: normalise offer reporting dates into the column (S3)
-        'seed-partner-emails': 'seed_partner_email_templates',  # one-off/idempotent: create the five partner-email templates (all OFF)
+        # One-off/idempotent. ELEVEN kinds now, not five: 5 partner + `student_assigned` (#3) +
+        # 5 reviewer (#10). ⚠ RUN IT AFTER A DEPLOY THAT ADDS A KIND, never before — it seeds what
+        # the RUNNING code knows about, so an earlier run silently skips the new rows.
+        'seed-partner-emails': 'seed_partner_email_templates',
         'partner-digests': 'send_partner_digests',  # weekly (Mon 08:00 MYT): partner stage summary + chase list
         'partner-milestones': 'send_partner_milestones',  # hourly: awaiting-review + awarded, batched per organisation
         # one-off/idempotent (S3): create the nine sponsor-email templates. The three that

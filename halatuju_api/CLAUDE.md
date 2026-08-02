@@ -558,18 +558,27 @@ complete with every gate green. The owner chose to hold it and ship both sprints
 rather than two. `pytest` **5427** · `jest` **1359** · `tsc` clean · `next lint` **0 errors** ·
 i18n **4462×3** · `makemigrations --check` clean · `next build` OK (both new routes present).
 
-**▶ BEFORE THE PUSH, IN THIS ORDER — the push is the deploy:**
-1. **MIGRATE-FIRST, two migrations.** `courses/0068_reviewer_paused_at` (additive nullable column —
-   real DDL) and `scholarship/0143_reviewer_email_kinds` (**choices only; `sqlmigrate` prints NO
-   DDL — the only production step is the ledger row**). ⚠ **RECORD BOTH `django_migrations` ROWS.**
-   `makemigrations --check` is structurally blind to production's ledger — that is exactly how
-   `0135` ended up with its tables live and its row missing. Then diff `showmigrations` against prod.
-2. **Run `seed_partner_email_templates` ONCE** so the five reviewer rows exist. ⚠ Until they do,
-   the four senders fall back to their built-in bodies — mail still goes out, which is the designed
-   safe direction, but the owner's switches are not yet real.
-3. **Walk pause end-to-end** on a test reviewer: still on every list → cannot be newly assigned →
+**▶ ✅ STEP 1 IS DONE — MIGRATE-FIRST APPLIED 2026-08-02, DO NOT RE-RUN IT.**
+`courses/0068_reviewer_paused_at` (`ALTER TABLE partner_admins ADD COLUMN paused_at timestamptz
+NULL`) and `scholarship/0143_reviewer_email_kinds` (**choices only — `sqlmigrate` prints a no-op;
+the ledger row was the whole production step**) are both applied AND both `django_migrations` rows
+recorded. Reconciled against prod: **courses 68/68, scholarship 143/143**, column present, 0 rows
+paused, 20 active admins. (`makemigrations --check` is structurally blind to production's ledger —
+that is how `0135` ended up with its tables live and its row missing.)
+
+**▶ THE REMAINING ORDER — and note step 2 is AFTER the deploy, not before:**
+2. **Push, then confirm BOTH Cloud Builds SUCCESS for the SHA** before calling anything live.
+3. **Then run the `seed-partner-emails` cron job ONCE** (`CronRunView`, `views.py` ~1931).
+   ⚠ **IT MUST COME AFTER THE DEPLOY.** The command seeds what the RUNNING code knows about, and
+   the live service has never heard of the five reviewer kinds — running it first would silently
+   skip them and look like it worked. Until the rows land, the four senders fall back to their
+   built-in bodies, so mail keeps going out (the designed safe direction) and only the owner's
+   switches are not yet real.
+4. **Walk pause end-to-end** on a real reviewer: still on every list → cannot be newly assigned →
    can still propose interview times on a case already theirs → un-pauses from their own profile.
-4. Push, then **confirm BOTH Cloud Builds SUCCESS for the SHA** before calling anything live.
+5. **Stage the completion report** as an engineer analysis for the owner to approve — it must state
+   TOTAL spent against TOTAL planned across every analysis on #10, and name the re-scope out loud
+   (**15h quoted including 2h for programme assignment → deferred → ~13h**). Then `done`.
 
 **▶ WHAT SHIPPED, and the decisions inside it that must not be "tidied":**
 - **`/admin/organisation/reviewers`** — table + detail. **NO corrections column** (17 of 65
