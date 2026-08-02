@@ -37,9 +37,10 @@ describe('turnaroundBand', () => {
   })
 
   it('does not fire on any turnaround production has today', () => {
-    // The real spread on 2026-08-02 is 2.5–10.3 days. A guard that stays quiet on current data is
-    // working, not missing — this pins that it would speak up if the spread moved.
-    for (const d of [2.5, 4.1, 6.8, 10.3]) expect(turnaroundBand(d)).toBe('measured')
+    // Verified against production on 2026-08-02: the eleven reviewers who have decided anything
+    // have medians of 2.0 to 10.1 days. A guard that stays quiet on current data is working, not
+    // missing — this pins that it would speak up if the spread moved.
+    for (const d of [2.0, 4.2, 5.7, 8.7, 10.1]) expect(turnaroundBand(d)).toBe('measured')
   })
 })
 
