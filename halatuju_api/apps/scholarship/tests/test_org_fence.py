@@ -268,6 +268,10 @@ class TestFenceCoverageCompleteness(TestCase):
         # there is no organisation data in it to narrow — so it is exempt on content, not on
         # oversight. The role gate is inherited from `_ReviewersBase` all the same.
         'AdminReviewerSystemEmailsView': 'no-org-data (static system copy) + reviewers role gate',
+        # Invitations. ⚠ Fenced on `Invitation.organisation` and NOT through `PartnerAdmin`: a
+        # sponsor invitation has no staff row to fence through (it creates no account), so
+        # fencing through the invitee would silently drop that whole kind.
+        'AdminInvitationsView': 'invitation-org-fenced',
         'AdminOrgRequestApproveView': 'requests-org-fenced', 'AdminOrgRequestDeferView': 'requests-org-fenced',
         'AdminOrgRequestModifyView': 'requests-org-fenced', 'AdminOrgRequestDeclineView': 'requests-org-fenced',
         'AdminOrgRequestTriageView': 'requests-org-fenced+super-only',

@@ -1,14 +1,13 @@
 /**
  * @jest-environment jsdom
  *
- * Organisation → Invitations, rendered.
+ * Organisation → Invitations, rendered. Owner's four-kind shape, 2026-08-03.
  *
- * The page exists because the old one structurally could not answer its own question: an
- * invitation was not a record, so a person invited five minutes ago and a colleague of a year both
- * read "Active". These tests pin the three things that fixes.
+ * The claims that matter here are mostly about ABSENCE, which a source-shape guard cannot see:
+ * org_admin is listed but not offered; a sponsor row has no Revoke; Source offers no invite form.
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import OrganisationStaffPage from './page'
+import OrganisationInvitationsPage from './page'
 import * as api from '@/lib/admin-api'
 
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
@@ -19,108 +18,142 @@ jest.mock('@/lib/admin-auth-context', () => ({
 jest.mock('@/lib/admin-api')
 const mockApi = api as jest.Mocked<typeof api>
 
-const inv = (over: Partial<NonNullable<api.AdminItem['invitation']>> = {}) => ({
-  status: 'invited' as const, sent_at: '2026-08-01T00:00:00Z', send_count: 1,
-  last_send_ok: true, last_send_error: '', expires_at: null, credential_issued: true, ...over,
+const row = (over: Partial<api.InvitationRow>): api.InvitationRow => ({
+  id: 1, name: 'Someone', email: 's@example.org', role: 'admin', status: 'accepted',
+  sent_at: '2026-07-21T00:00:00Z', send_count: 1, last_send_ok: true, last_send_error: '',
+  accepted_at: '2026-07-22T00:00:00Z', admin_id: 10, is_active: true, paused: false, ...over,
 })
 
-const row = (over: Partial<api.AdminItem>): api.AdminItem => ({
-  id: 1, name: 'Someone', email: 's@example.org', is_super_admin: false, role: 'reviewer',
-  is_active: true, org_name: null, created_at: '2026-01-01T00:00:00Z',
-  invitation: null, ...over,
-} as api.AdminItem)
+const WAITING = { admins: 1, reviewers: 0, source: 0, sponsors: 2 }
 
-const ROWS: api.AdminItem[] = [
-  row({ id: 1, name: 'Arrived Reviewer', role: 'reviewer',
-        last_seen_at: new Date().toISOString(), invitation: inv({ status: 'accepted' }) }),
-  row({ id: 2, name: 'Quality Person', role: 'qc',
-        last_seen_at: new Date().toISOString(), invitation: inv({ status: 'accepted' }) }),
-  row({ id: 3, name: 'Money Person', role: 'finance',
-        last_seen_at: new Date().toISOString(), invitation: inv({ status: 'accepted' }) }),
-  row({ id: 4, name: 'Lapsed Person', role: 'admin',
-        invitation: inv({ status: 'expired', credential_issued: true }) }),
-  row({ id: 5, name: 'Silent Person', role: 'reviewer',
-        invitation: inv({ status: 'no_reply', credential_issued: false }) }),
-]
+const payloadFor = (kind: api.InvitationKind): api.InvitationsPayload => {
+  if (kind === 'admins') {
+    return {
+      kind, waiting: WAITING, invitable_roles: ['admin', 'finance'],
+      invitations: [
+        row({ id: 1, name: 'Yeoh Liew Se', role: 'admin', status: 'no_reply',
+              accepted_at: null, admin_id: 10 }),
+        row({ id: 2, name: 'Suresh', role: 'org_admin', status: 'accepted', admin_id: 11 }),
+      ],
+    }
+  }
+  if (kind === 'sponsors') {
+    return {
+      kind, waiting: WAITING, invitable_roles: [],
+      invitations: [row({ id: 3, name: 'Donor', role: '', status: 'invited',
+                          accepted_at: null, admin_id: null, is_active: null })],
+    }
+  }
+  return { kind, waiting: WAITING, invitable_roles: kind === 'reviewers' ? ['reviewer', 'qc'] : [],
+           invitations: [] }
+}
 
 beforeEach(() => {
   jest.clearAllMocks()
   viewerRole = { role: 'org_admin' }
-  mockApi.getAdmins.mockResolvedValue({ admins: ROWS })
+  mockApi.getInvitations.mockImplementation(async (kind) => payloadFor(kind))
+  // `useStaffAdmin` still owns invite/resend/revoke, and loads the staff list on mount; the
+  // auto-mock must answer it or the hook throws before anything renders.
+  mockApi.getAdmins.mockResolvedValue({ admins: [] })
+  mockApi.getReviewerEmails.mockResolvedValue(
+    { templates: [] } as unknown as api.PartnerEmailsPayload)
+  mockApi.getReviewerSystemEmails.mockResolvedValue({ emails: [] })
 })
 
 const loaded = async () => {
-  render(<OrganisationStaffPage />)
-  await waitFor(() => expect(screen.getByText('Arrived Reviewer')).toBeTruthy())
+  render(<OrganisationInvitationsPage />)
+  await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
 }
 
-describe('the invitations still waiting', () => {
-  it('leads with them, above the people', async () => {
+const pick = async (kind: string) => {
+  fireEvent.click(screen.getByText(`admin.invitations.kind.${kind}`).closest('button')!)
+  await waitFor(() => expect(mockApi.getInvitations).toHaveBeenCalledWith(kind, expect.anything()))
+}
+
+describe('the four kinds', () => {
+  it('offers all four', async () => {
     await loaded()
-    expect(screen.getByText('admin.invitations.outstandingHeading')).toBeTruthy()
-    expect(screen.getByText('Lapsed Person')).toBeTruthy()
-    expect(screen.getByText('Silent Person')).toBeTruthy()
+    for (const k of ['admins', 'reviewers', 'source', 'sponsors']) {
+      // getAllBy: the SELECTED kind appears twice — on its button and as the table's heading.
+      expect(screen.getAllByText(`admin.invitations.kind.${k}`).length).toBeGreaterThan(0)
+    }
   })
 
-  it('⚠ tells a lapsed password apart from somebody who simply never came', async () => {
-    // The whole point. "Expired" means re-send; "no reply" means nothing was ever issued, so
-    // saying "expired" would send an org_admin hunting a credential that never existed.
+  it('⚠ shows the waiting count for kinds NOT on screen', async () => {
+    // Only one table is visible, so without this an invitation waiting elsewhere is invisible —
+    // the exact failure the page exists to end.
     await loaded()
-    expect(screen.getByText('admin.invitations.status.expired')).toBeTruthy()
-    expect(screen.getByText('admin.invitations.status.no_reply')).toBeTruthy()
+    const sponsors = screen.getByText('admin.invitations.kind.sponsors').closest('button')!
+    expect(within(sponsors).getByText('2')).toBeTruthy()
   })
 
-  it('shows what happened to the email — the owner\'s third ask', async () => {
+  it('shows one kind at a time', async () => {
     await loaded()
-    expect(screen.getAllByText('admin.invitations.send.sent').length).toBeGreaterThan(0)
-  })
-
-  it('says so plainly when there is nothing outstanding', async () => {
-    mockApi.getAdmins.mockResolvedValue({ admins: [ROWS[0]] })
-    render(<OrganisationStaffPage />)
-    await waitFor(() => expect(screen.getByText('admin.invitations.noneOutstanding')).toBeTruthy())
-  })
-
-  it('shows a waiting person ONCE, at the top, and not again in the roster', async () => {
-    // Listing them in both places would put one person on screen twice and inflate the category
-    // counts with people who have never signed in.
-    await loaded()
-    const table = screen.getByText('admin.invitations.sentHeader').closest('table') as HTMLElement
-    expect(within(table).getByText('Lapsed Person')).toBeTruthy()
-    expect(within(table).queryByText('Arrived Reviewer')).toBeNull()
-    expect(screen.getAllByText('Lapsed Person')).toHaveLength(1)
+    expect(screen.getByText('Yeoh Liew Se')).toBeTruthy()
+    await pick('sponsors')
+    await waitFor(() => expect(screen.queryByText('Yeoh Liew Se')).toBeNull())
+    expect(screen.getByText('Donor')).toBeTruthy()
   })
 })
 
-describe('the two categories', () => {
-  it('groups reviewers and admins separately', async () => {
+describe('listed is not the same as invitable', () => {
+  it('lists an organisation admin in the Admins table', async () => {
     await loaded()
-    expect(screen.getByText('admin.invitations.category.reviewers')).toBeTruthy()
-    expect(screen.getByText('admin.invitations.category.admins')).toBeTruthy()
+    expect(screen.getByText('Suresh')).toBeTruthy()
   })
 
-  it('files QC with the reviewers and finance with the admins', async () => {
+  it('⚠ never OFFERS organisation admin in the selector', async () => {
+    // Appointing one is a platform act a super performs. Offering it here would let an org_admin
+    // appoint their own successor.
+    //
+    // Asserted as the EXACT set rather than by querying for an org_admin label: no such label
+    // exists, and naming one in a test conjures a key the i18n hygiene guard then demands — which
+    // is how a phantom string gets added to satisfy a test rather than a screen.
     await loaded()
-    // Each category renders as one section: a heading and its table inside a single wrapper.
-    const section = (cat: string) =>
-      screen.getByText(`admin.invitations.category.${cat}`).closest('div') as HTMLElement
-    expect(within(section('reviewers')).getByText('Quality Person')).toBeTruthy()
-    expect(within(section('reviewers')).queryByText('Money Person')).toBeNull()
-    expect(within(section('admins')).getByText('Money Person')).toBeTruthy()
+    const chips = Array.from(document.querySelectorAll('button'))
+      .map((b) => b.textContent || '')
+      .filter((s) => s.startsWith('admin.administration.staffRole.'))
+    expect(chips).toEqual([
+      'admin.administration.staffRole.admin',
+      'admin.administration.staffRole.finance',
+    ])
   })
 })
 
-describe('who may act', () => {
-  it('offers the invite form to an org_admin', async () => {
+describe('what each kind can do', () => {
+  it('offers Resend to somebody still waiting, and Revoke to somebody who arrived', async () => {
     await loaded()
-    expect(screen.getByText('admin.sendInvite')).toBeTruthy()
+    expect(screen.getByText('admin.resend')).toBeTruthy()
+    expect(screen.getByText('admin.revoke')).toBeTruthy()
   })
 
-  it('shows finance the page read-only, with no invite form', async () => {
-    // Deciding who joins is staff management, not finance's business (role matrix).
+  it('⚠ offers NO revoke on a sponsor invitation, which has no account behind it', async () => {
+    await loaded()
+    await pick('sponsors')
+    await waitFor(() => expect(screen.getByText('Donor')).toBeTruthy())
+    expect(screen.queryByText('admin.revoke')).toBeNull()
+  })
+
+  it('says Source is coming soon and offers no way to invite one', async () => {
+    await loaded()
+    await pick('source')
+    await waitFor(() =>
+      expect(screen.getAllByText('admin.invitations.sourceComingSoon').length).toBeGreaterThan(0))
+    expect(screen.queryByText('admin.sendInvite')).toBeNull()
+  })
+})
+
+describe('the page shell', () => {
+  it('carries the Invitations and Emails tabs', async () => {
+    await loaded()
+    expect(screen.getByText('admin.invitations.tab.invitations')).toBeTruthy()
+    expect(screen.getByText('admin.invitations.tab.emails')).toBeTruthy()
+  })
+
+  it('shows finance the page with no invite form', async () => {
     viewerRole = { role: 'finance' }
-    render(<OrganisationStaffPage />)
-    await waitFor(() => expect(screen.getByText('Arrived Reviewer')).toBeTruthy())
+    render(<OrganisationInvitationsPage />)
+    await waitFor(() => expect(screen.getByText('Yeoh Liew Se')).toBeTruthy())
     expect(screen.queryByText('admin.sendInvite')).toBeNull()
     expect(screen.getByText('admin.administration.viewOnlyNote')).toBeTruthy()
   })

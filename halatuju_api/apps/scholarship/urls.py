@@ -137,6 +137,7 @@ from .views_admin import (
     AdminReviewerDetailView,
     AdminReviewerPauseView,
     AdminReviewerSystemEmailsView,
+    AdminInvitationsView,
     AdminOrgRequestApproveView,
     AdminOrgRequestDeferView,
     AdminOrgRequestModifyView,
@@ -307,6 +308,8 @@ urlpatterns = [
     # The seven reviewer emails nobody can edit, shown so at least everybody can read them.
     # Order-safe wherever it sits: `<int:pk>` cannot match 'system-emails'.
     path('admin/reviewers/system-emails/', AdminReviewerSystemEmailsView.as_view()),
+    # Organisation -> Invitations: who has been asked to join, in four kinds.
+    path('admin/invitations/', AdminInvitationsView.as_view()),
     path('admin/scholarship/requests/<int:pk>/approve/', AdminOrgRequestApproveView.as_view()),
     path('admin/scholarship/requests/<int:pk>/defer/', AdminOrgRequestDeferView.as_view()),
     path('admin/scholarship/requests/<int:pk>/modify/', AdminOrgRequestModifyView.as_view()),

@@ -3857,3 +3857,48 @@ def send_payment_run_email(run):
         logger.warning('Failed to send the Vircle payment email for run %s',
                        run.reference, exc_info=True)
         return False
+
+
+def build_sponsor_invitation_email(*, org_name='', note='', code='', invited_by=''):
+    """The wording of an ADMIN-EXTENDED sponsor invitation → ``(subject, body)``.
+
+    ⚠ **DISTINCT FROM `send_sponsor_referral_invite`, WHICH IS SPONSOR-TO-SPONSOR.** That one is a
+    peer saying "come and join me" and is sent from the sponsor's own account page; this one is the
+    organisation itself asking. The owner keeps them apart deliberately: the peer route is not shown
+    on the admin Invitations page at all.
+
+    ⚠ **IT CREATES NOTHING, AND THE WORDING MUST NOT IMPLY OTHERWISE.** The link goes to the
+    ordinary public registration, where they give consent, sign the terms and are then vetted —
+    exactly as a sponsor who arrived by any other route. An invitation is a prompt, never a way
+    around any of that (owner's constraint: "invite, but nothing is skipped").
+    """
+    who = org_name or _PROG_EN
+    link = f'{_P.frontend_url}/sponsor?ref={code}' if code else f'{_P.frontend_url}/sponsor'
+    note_block = f'\nThey added a note for you:\n  "{note.strip()}"\n' if (note or '').strip() else ''
+    body = (
+        f'Hello,\n\n'
+        f'{invited_by or who} has invited you to become a sponsor of {who}.\n'
+        f'{note_block}\n'
+        f'Sponsors here support one student through their studies. You can read how it works, and '
+        f'sign up, here:\n{link}\n\n'
+        f'There is nothing to pay to register, and you choose whether to go ahead after you have '
+        f'seen how it works.\n\n'
+        f'Thanks,\n{_P.team_signoff("en")}'
+    )
+    return f'An invitation to sponsor a student with {who}', body
+
+
+def send_sponsor_invitation_email(to_email, *, org_name='', note='', code='', invited_by=''):
+    """Best-effort send of the above. Returns (ok, error) so the invitation can record BOTH —
+    a bounce is usually the whole explanation for an invitation nobody acted on."""
+    if not to_email:
+        return False, 'no address'
+    subject, body = build_sponsor_invitation_email(
+        org_name=org_name, note=note, code=code, invited_by=invited_by)
+    try:
+        EmailMessage(subject=subject, body=body, from_email=_P.email_from,
+                     to=[to_email], reply_to=[_P.email_support]).send()
+        return True, ''
+    except Exception as e:      # noqa: BLE001
+        logger.warning('Failed to send sponsor invitation to %s', to_email, exc_info=True)
+        return False, str(e)[:300]

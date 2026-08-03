@@ -5452,11 +5452,6 @@
     "invitations": {
       "title": "Jemputan",
       "subtitle": "Siapa yang telah dijemput menyertai organisasi ini, dan siapa yang sudah ada.",
-      "outstandingHeading": "Menunggu jawapan",
-      "noneOutstanding": "Tiada yang tertunggak — semua yang dijemput telah log masuk.",
-      "sentHeader": "Dihantar",
-      "emailHeader": "E-mel",
-      "resentTimes": "· dihantar semula {n}×",
       "send": {
         "sent": "Sampai",
         "failed": "Gagal",
@@ -5469,10 +5464,20 @@
         "accepted": "Telah log masuk",
         "revoked": "Dibatalkan"
       },
-      "category": {
+      "tabsAria": "Jemputan atau e-mel",
+      "tab": {
+        "invitations": "Jemputan",
+        "emails": "E-mel"
+      },
+      "kind": {
+        "admins": "Pentadbir",
         "reviewers": "Penilai",
-        "admins": "Pentadbir"
-      }
+        "source": "Sumber",
+        "sponsors": "Penaja"
+      },
+      "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
+      "sourceComingSoon": "Akan datang. Rakan sumber menerima e-mel kami hari ini; mereka akan dapat log masuk dan melihat pelajar mereka sendiri apabila ia siap.",
+      "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)"
     }
   }
 }

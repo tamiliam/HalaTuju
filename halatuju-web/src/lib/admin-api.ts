@@ -202,6 +202,53 @@ export async function getAdmins(options?: ApiOptions) {
   return adminFetch<{ admins: AdminItem[] }>('/api/v1/admin/admins/', options)
 }
 
+// ── Invitations (Organisation → Invitations) ─────────────────────────────────
+
+/** The four kinds the page is organised by. `source` is reserved and empty today. */
+export type InvitationKind = 'admins' | 'reviewers' | 'source' | 'sponsors'
+
+export interface InvitationRow {
+  id: number
+  name: string
+  email: string
+  role: string
+  status: 'invited' | 'expired' | 'no_reply' | 'accepted' | 'revoked'
+  sent_at: string | null
+  send_count: number
+  /** Tri-state: true sent, false a real failure, **null not recorded** (every backfilled row). */
+  last_send_ok: boolean | null
+  last_send_error: string
+  accepted_at: string | null
+  /** The staff account behind this invitation. **Null for a sponsor**, which creates none. */
+  admin_id: number | null
+  is_active: boolean | null
+  paused: boolean | null
+}
+
+export interface InvitationsPayload {
+  kind: InvitationKind
+  invitations: InvitationRow[]
+  /** Unanswered count for EVERY kind, not just the one on screen — only one table is visible at a
+   *  time, so a waiting invitation elsewhere would otherwise be invisible. */
+  waiting: Record<InvitationKind, number>
+  /** Roles this caller may grant in this kind. ⚠ NOT the roles LISTED: `org_admin` appears in the
+   *  admins table but is appointed at platform level by a super, never from here. */
+  invitable_roles: string[]
+}
+
+export async function getInvitations(kind: InvitationKind, options?: ApiOptions) {
+  return adminFetch<InvitationsPayload>(`/api/v1/admin/invitations/?kind=${kind}`, options)
+}
+
+/** Invite a SPONSOR. Creates no account: the link goes to the ordinary public registration, where
+ *  they consent, sign the terms and are vetted exactly as anybody else. */
+export async function inviteSponsor(
+  data: { email: string; name?: string; note?: string }, options?: ApiOptions,
+) {
+  return adminMutate<{ id: number; emailed: boolean }>(
+    '/api/v1/admin/invitations/', 'POST', { audience: 'sponsor', ...data }, options)
+}
+
 export async function revokeAdmin(adminId: number, action: 'revoke' | 'restore', options?: ApiOptions) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`

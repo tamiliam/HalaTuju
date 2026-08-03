@@ -82,9 +82,33 @@ def _attribute_referral(data, sponsor):
     try:
         ref = (data.get('ref') or '').strip()
         if ref and referral_service.attribute_referral(ref, sponsor):
+            _close_admin_invitation(sponsor)
             return
         referral_service.attribute_referral_by_email(sponsor)
     except Exception:   # noqa: BLE001 — bookkeeping must not break the caller
+        pass
+    _close_admin_invitation(sponsor)
+
+
+def _close_admin_invitation(sponsor):
+    """Close an ADMIN-EXTENDED sponsor invitation this registration answers.
+
+    Separate from the peer-to-peer `SponsorReferral` above and deliberately so: they are two
+    different asks (a fellow sponsor saying "join me" vs the organisation itself inviting), the
+    owner keeps them apart on the console, and one closing must not depend on the other having run.
+
+    ⚠ Matched on EMAIL, because an admin invitation deliberately creates no account and carries no
+    credential — the address is the only thread between the asking and the arriving. Acceptance
+    here means "they registered", NOT "they were approved": vetting stays exactly where it was.
+    """
+    try:
+        from django.utils import timezone as _tz
+        from .models import Invitation
+        Invitation.objects.filter(
+            audience='sponsor', email__iexact=(sponsor.email or '').strip(),
+            accepted_at__isnull=True, revoked_at__isnull=True,
+        ).update(accepted_at=_tz.now(), sponsor=sponsor)
+    except Exception:   # noqa: BLE001 — never costs somebody their registration
         pass
 
 

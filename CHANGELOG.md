@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## Invitations, in four kinds - 2026-08-03 (second pass)
+
+The owner reshaped the page after seeing it. **No migration** - the record shipped this morning
+already carried what this needed.
+
+- **Four kinds, one table at a time**: Admins, Reviewers, Source, Sponsors. The separate
+  "waiting for an answer" table is gone; somebody unanswered sits in their own kind with the status
+  carrying its date - **"No reply yet (21/07/2026)"**. A status without a date is a fact you cannot
+  act on.
+- **⚠ THE WAITING COUNT ON EACH BUTTON IS LOAD-BEARING.** Only one table is visible, so an
+  unanswered invitation under a kind you are not looking at would be invisible - the exact failure
+  the page exists to end.
+- **⚠ INVITABLE HERE IS NOT THE SAME AS LISTED HERE.** `org_admin` appears in the Admins table (an
+  organisation admin is an admin) but is never offered in the selector: appointing one is a platform
+  act a super performs. The server sends `invitable_roles`; the page keeps no copy.
+- **Sponsor invitations, admin-extended only.** ⚠ **NOTHING IS SKIPPED** - no account is created;
+  the email links to the ordinary public registration where they consent, sign the terms and are
+  vetted like anybody else. Closes itself when a sponsor account appears for that address.
+  The peer-to-peer route is deliberately absent from this page.
+- **Source is "coming soon"** and offers no invite form: no Source Partner has ever been invited,
+  and the role does not exist yet.
+- Every table paginates, reusing the components built for the sponsor tables.
+- **A test of mine conjured a phantom i18n key** - asserting org_admin's absence by querying for a
+  label that correctly does not exist. The hygiene guard caught it; the assertion now names the
+  exact set instead.
+
+`GET/POST admin/invitations/` - **fenced on `Invitation.organisation`, NOT through `PartnerAdmin`**,
+because a sponsor invitation has no staff row to fence through and fencing via the invitee would
+silently drop that whole kind. Classified in `test_org_fence.py`.
+
+`pytest` **5493** - `jest` **1411** - `next lint` 0 errors - i18n **4505x3** - build clean.
+
 ## An invitation is a thing now, and the page is called Invitations - 2026-08-03
 
 **Migration `scholarship/0144` APPLIED migrate-first with RLS + one `service_role` policy and its

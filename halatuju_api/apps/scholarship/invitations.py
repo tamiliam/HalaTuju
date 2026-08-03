@@ -38,6 +38,77 @@ def _new_code():
     return secrets.token_urlsafe(9)
 
 
+# ── the four kinds the Invitations page is organised by ──────────────────────────
+# Owner's shape, 2026-08-03. A KIND is what sort of person you are asking to join; the ROLE is the
+# specialisation within it. Reviewers and Admins are both `staff` audiences and differ only by role,
+# which is why the page needs this map rather than reading `audience` alone.
+#
+# ⚠ **INVITABLE HERE ≠ LISTED HERE, and the difference is deliberate.** `org_admin` is LISTED under
+# Admins — an organisation admin is an admin — but is NOT invitable from this page: appointing one
+# is a platform act performed by a super (`_ORG_ADMIN_MANAGEABLE_ROLES` has never included it).
+# Reading one list as the other would either hide organisation admins from the roster or offer an
+# org_admin the power to appoint their own successor.
+KIND_ADMINS = 'admins'
+KIND_REVIEWERS = 'reviewers'
+KIND_SOURCE = 'source'
+KIND_SPONSORS = 'sponsors'
+KINDS = (KIND_ADMINS, KIND_REVIEWERS, KIND_SOURCE, KIND_SPONSORS)
+
+#: kind → the audience its invitations carry.
+KIND_AUDIENCE = {
+    KIND_ADMINS: 'staff',
+    KIND_REVIEWERS: 'staff',
+    KIND_SOURCE: 'source_partner',
+    KIND_SPONSORS: 'sponsor',
+}
+
+#: kind → the roles LISTED under it (staff kinds only).
+KIND_ROLES = {
+    KIND_ADMINS: ('admin', 'finance', 'org_admin'),
+    KIND_REVIEWERS: ('reviewer', 'qc'),
+}
+
+#: kind → the roles INVITABLE from this page. Note `org_admin`'s absence; see above.
+KIND_INVITABLE_ROLES = {
+    KIND_ADMINS: ('admin', 'finance'),
+    KIND_REVIEWERS: ('reviewer', 'qc'),
+}
+
+
+def kind_of(inv):
+    """Which of the four tables this invitation belongs on."""
+    audience = inv.audience
+    if audience == 'sponsor':
+        return KIND_SPONSORS
+    if audience == 'source_partner':
+        return KIND_SOURCE
+    return KIND_REVIEWERS if inv.role in KIND_ROLES[KIND_REVIEWERS] else KIND_ADMINS
+
+
+def for_kind(qs, kind):
+    """Narrow a queryset to one kind."""
+    audience = KIND_AUDIENCE.get(kind)
+    if audience is None:
+        return qs.none()
+    qs = qs.filter(audience=audience)
+    roles = KIND_ROLES.get(kind)
+    return qs.filter(role__in=roles) if roles else qs
+
+
+def waiting_counts(qs, now=None):
+    """`{kind: n}` of invitations still unanswered, for the badge on each button.
+
+    ⚠ It exists because only ONE table is on screen at a time (owner's shape), so an invitation
+    waiting under a kind you are not looking at would otherwise be invisible — which is the exact
+    thing this page was built to stop. Counted in Python off one query rather than four `COUNT`s.
+    """
+    now = now or timezone.now()
+    out = {k: 0 for k in KINDS}
+    for inv in qs.filter(accepted_at__isnull=True, revoked_at__isnull=True):
+        out[kind_of(inv)] += 1
+    return out
+
+
 # ── the derived status ───────────────────────────────────────────────────────────
 #: What an INVITATION is doing. `no_reply` is deliberately not `expired` — see below.
 INVITED = 'invited'

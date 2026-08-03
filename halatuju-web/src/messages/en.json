@@ -5452,11 +5452,6 @@
     "invitations": {
       "title": "Invitations",
       "subtitle": "Who has been asked to join this organisation, and who is here now.",
-      "outstandingHeading": "Waiting for an answer",
-      "noneOutstanding": "Nothing outstanding — everyone invited has signed in.",
-      "sentHeader": "Sent",
-      "emailHeader": "Email",
-      "resentTimes": "· resent {n}×",
       "send": {
         "sent": "Delivered",
         "failed": "Failed",
@@ -5469,10 +5464,20 @@
         "accepted": "Signed in",
         "revoked": "Cancelled"
       },
-      "category": {
+      "tabsAria": "Invitations or emails",
+      "tab": {
+        "invitations": "Invitations",
+        "emails": "Emails"
+      },
+      "kind": {
+        "admins": "Admins",
         "reviewers": "Reviewers",
-        "admins": "Admins"
-      }
+        "source": "Source",
+        "sponsors": "Sponsors"
+      },
+      "noneInKind": "Nobody has been invited in this group yet.",
+      "sourceComingSoon": "Coming soon. Source partners receive our emails today; they will be able to sign in and see their own students once that is built.",
+      "notePlaceholder": "A short note to include (optional)"
     }
   }
 }
