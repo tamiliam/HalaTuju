@@ -24,6 +24,12 @@ already blurs it (`partner_comms` says "partner" for organisations `/admin/sourc
 "sources", while the `partner` ROLE means neither).
 **Rationale:** owner's words, 2026-08-03: *"There are two types of partners. Keep them separate.
 Referral Partners (Platform level) and Source Partners (Org level)."*
+**⚠ AND NO SOURCE PARTNER HAS EVER BEEN INVITED TO ANYTHING** (owner, same day): *"We recently got
+their emails and updated the sources page, but they have not been invited to the platform. They are
+passive recipients of emails for now."* The five contact addresses on file are an emailing list, not
+accounts. So a Source Partner console is a cold start — there is nothing to migrate, the first
+invitation is itself part of the feature, and **until one exists the emails are their only channel**,
+so no information may be moved out of an email into a console nobody can reach.
 **Trade-offs:** the existing machinery keeps its older, blurrier names — renaming `partner_comms`,
 `PartnerEmailTemplate` and the `partner` role is a sweep across live email and live access control,
 and must not ride along in the sprint that builds on them. New code uses the two names; the old
