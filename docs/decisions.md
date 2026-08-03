@@ -1,5 +1,34 @@
 # Architectural Decisions — HalaTuju
 
+## "Partner" means two different things, and they are named apart — 2026-08-03
+**Decision:** the platform keeps **two** distinct partner relationships and they never share a role,
+a login, a scope or a screen:
+
+| | **Referral Partner** (PLATFORM) | **Source Partner** (ORGANISATION) |
+|---|---|---|
+| Product | the HalaTuju course selector | an organisation's bursary |
+| Role | the existing `partner` | a new `source_partner` (to be built) |
+| Scope | that org's course-selector students, by the `referred_by_org` FK | that org's bursary applicants, by the referral CHIP |
+| Anchor | `PartnerAdmin.org` | `PartnerAdmin.org`, but a separate role and separate endpoints |
+
+**⚠ ONE ORGANISATION CAN HOLD BOTH RELATIONSHIPS AT ONCE, AND CUMIG DOES** — two Referral Partner
+logins (both Sivamani Rajagopal, `owning_organisation` NULL) *and* 13 bursary applications as a
+Source Partner. So the same human may end up with a login in each world. That is not a duplicate to
+be tidied away; it is two relationships with one organisation.
+**Alternatives considered:** (A) Widen the existing `partner` role to reach bursary applicants —
+rejected twice by the owner, and it would silently hand two live course-selector accounts a
+disclosure they were never attached for (the correction of 2026-07-26). (B) Treat "source" and
+"referral" as synonyms, since `partner_organisations` holds both in one table with no flag —
+rejected: the table being shared is exactly why the *relationship* has to be named, and the code
+already blurs it (`partner_comms` says "partner" for organisations `/admin/sources` calls
+"sources", while the `partner` ROLE means neither).
+**Rationale:** owner's words, 2026-08-03: *"There are two types of partners. Keep them separate.
+Referral Partners (Platform level) and Source Partners (Org level)."*
+**Trade-offs:** the existing machinery keeps its older, blurrier names — renaming `partner_comms`,
+`PartnerEmailTemplate` and the `partner` role is a sweep across live email and live access control,
+and must not ride along in the sprint that builds on them. New code uses the two names; the old
+names are corrected on their own schedule.
+
 ## A read-only email preview renders through the SENDER'S OWN builder — 2026-08-03
 **Decision:** the seven code-owned reviewer emails are shown on `Organisation → Reviewers → Emails`
 by splitting each sender in `emails.py` into a `build_*` returning `(subject, body)` and a thin
