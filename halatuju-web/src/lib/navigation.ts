@@ -164,7 +164,11 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'administration', href: '/admin/organisation', labelKey: 'admin.orgPage.nav', chord: 'V',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, exact: true, match: ['/admin/administration'] },
-      { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.staff', chord: 'T',
+      // Renamed "Staff" → "Invitations" on 2026-08-03: reviewers moved to their own page in
+      // request #10, and what is left is the asking. The ROUTE is unchanged deliberately — every
+      // bookmark, the `/admin/invite` redirect and the highlight rules keep working; only the
+      // label and the page moved.
+      { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.invitations', chord: 'T',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, match: ['/admin/invite'] },
       // Sibling of Staff, and deliberately next to it: Staff invites and revokes, Reviewers is

@@ -3121,7 +3121,8 @@
         "organisation": "Organisasi",
         "programme": "Program",
         "utility": "Akaun"
-      }
+      },
+      "invitations": "Jemputan"
     },
     "reviewers": {
       "title": "Penilai",
@@ -5446,6 +5447,31 @@
         "consent": "Persetujuan",
         "justification": "Sebab memerlukan bantuan",
         "anything_else": "Apa-apa lagi"
+      }
+    },
+    "invitations": {
+      "title": "Jemputan",
+      "subtitle": "Siapa yang telah dijemput menyertai organisasi ini, dan siapa yang sudah ada.",
+      "outstandingHeading": "Menunggu jawapan",
+      "noneOutstanding": "Tiada yang tertunggak — semua yang dijemput telah log masuk.",
+      "sentHeader": "Dihantar",
+      "emailHeader": "E-mel",
+      "resentTimes": "· dihantar semula {n}×",
+      "send": {
+        "sent": "Sampai",
+        "failed": "Gagal",
+        "notRecorded": "Tiada rekod"
+      },
+      "status": {
+        "invited": "Menunggu",
+        "expired": "Kata laluan tamat tempoh",
+        "no_reply": "Belum ada jawapan",
+        "accepted": "Telah log masuk",
+        "revoked": "Dibatalkan"
+      },
+      "category": {
+        "reviewers": "Penilai",
+        "admins": "Pentadbir"
       }
     }
   }

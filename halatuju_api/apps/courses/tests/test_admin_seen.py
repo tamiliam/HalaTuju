@@ -144,3 +144,59 @@ class TestThePayload(TestCase):
         # invent a date, and must not omit the key, or the front end cannot tell the two apart.
         self.assertIsNone(rows['norecord@example.org']['first_seen_at'])
         self.assertIn('last_seen_at', rows['norecord@example.org'])
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheInvitationOnTheStaffList(TestCase):
+    """The staff payload carries how far each person's invitation got.
+
+    This is the whole point of the record: before it, the three states below were one word.
+    """
+
+    def setUp(self):
+        self.super = PartnerAdmin.objects.create(
+            supabase_user_id='inv-su', is_super_admin=True, role='super', is_active=True,
+            name='Super', email='su-inv@example.org')
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("inv-su")}')
+
+    def _rows(self):
+        return {a['email']: a for a in self.client.get('/api/v1/admin/admins/').json()['admins']}
+
+    def test_it_tells_the_three_states_apart(self):
+        from datetime import timedelta
+        from apps.scholarship import invitations
+
+        arrived = PartnerAdmin.objects.create(
+            supabase_user_id='inv-a', role='reviewer', is_active=True, name='Arrived',
+            email='arrived@example.org', first_seen_at=timezone.now())
+        lapsed = PartnerAdmin.objects.create(
+            supabase_user_id='inv-l', role='reviewer', is_active=True, name='Lapsed',
+            email='lapsed@example.org')
+        silent = PartnerAdmin.objects.create(
+            supabase_user_id='inv-s', role='reviewer', is_active=True, name='Silent',
+            email='silent@example.org')
+
+        invitations.create_or_refresh(audience='staff', email=arrived.email,
+                                      partner_admin=arrived, credential_issued=True)
+        invitations.accept_for_admin(arrived)
+        past = timezone.now() - timedelta(days=30)
+        for who, issued in ((lapsed, True), (silent, False)):
+            inv = invitations.create_or_refresh(audience='staff', email=who.email,
+                                                partner_admin=who, credential_issued=issued)
+            inv.expires_at = past
+            inv.save(update_fields=['expires_at'])
+
+        rows = self._rows()
+        self.assertEqual(rows['arrived@example.org']['invitation']['status'], 'accepted')
+        # A password was issued and has lapsed — a Resend is genuinely required.
+        self.assertEqual(rows['lapsed@example.org']['invitation']['status'], 'expired')
+        # ⚠ Nothing was ever issued, so nothing expired. Calling this "expired" would send an
+        # org_admin hunting for a credential that never existed.
+        self.assertEqual(rows['silent@example.org']['invitation']['status'], 'no_reply')
+
+    def test_somebody_with_no_invitation_on_record_reports_none_rather_than_a_guess(self):
+        PartnerAdmin.objects.create(
+            supabase_user_id='inv-old', role='reviewer', is_active=True, name='Predates',
+            email='predates@example.org')
+        self.assertIsNone(self._rows()['predates@example.org']['invitation'])

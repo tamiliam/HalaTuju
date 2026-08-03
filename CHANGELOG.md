@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## An invitation is a thing now, and the page is called Invitations - 2026-08-03
+
+**Migration `scholarship/0144` APPLIED migrate-first with RLS + one `service_role` policy and its
+ledger row - do not re-run it.** Production reads 144 of 144.
+
+Owner: *"the 'Staff' page is now exclusive for invite only. Maybe it should be renamed to
+Invitations. Also cover invitations that are not acted on and expired."* It could not do that,
+because an invitation was a side effect of creating a `PartnerAdmin` rather than a record.
+
+- **`Invitation`, its own table**, not columns on `PartnerAdmin`. Three audiences that do not share
+  a lifecycle - `staff` (the account exists first, so accepting means signing in), `sponsor`
+  (**nothing is created**, they still register and consent and are vetted) and `source_partner`.
+- **⚠ `no_reply` IS NOT `expired`, and it is the sharpest thing here.** A Google or
+  already-registered invitee is never issued a password, so nothing of theirs CAN lapse - they
+  simply have not come. `credential_issued` records which branch the invite took, at the one moment
+  it is known. On production this is not hypothetical: **Yeoh Liew Se has no Supabase account at
+  all** and the old page called them "Active".
+- **The send record answers the third ask.** `send_count`, `last_sent_at`, `last_send_ok`,
+  `last_send_error` - a bounce is usually the whole explanation for silence, and it used to become
+  a banner that vanished on reload. **`last_send_ok` is TRI-STATE**: null is "not recorded" (every
+  backfilled row), never a failure.
+- **Status is DERIVED, never stored** (`invitations.status_of`). A stored "expired" is only true
+  while a cron keeps it true - exactly how `temp_password_expired` already fails.
+- **The write path shipped BEFORE the backfill**, and the backfill names it: a backfill without one
+  is a bug with a delay on it (migration `0123`, 29 July). Acceptance rides Sprint 1's
+  first-arrival rowcount, so it fires once and cannot re-accept a revoked invitation.
+- **PII purge from day one**, staff exempt (their address is on their own row anyway). A retention
+  rule added later has already failed everyone it should have covered.
+- **The page**: waiting-for-an-answer first, then the people in the owner's two categories -
+  reviewers (reviewer, qc) and admins (admin, org_admin, finance). A waiting person appears ONCE,
+  at the top, so the category counts are not inflated with people who never signed in. A test
+  asserts EVERY staff role has a category, so a new role cannot fall out of both sections.
+- The route is unchanged - only the label and the page moved, so bookmarks and the `/admin/invite`
+  redirect keep working. 19 new i18n leaves x3 (**ms/ta are first drafts**).
+
+`pytest` **5475** - `jest` **1410** - `next lint` 0 errors - i18n **4502x3** - build clean.
+
 ## The console can finally say whether an invited person ever turned up - invitations sprint 1, 2026-08-03
 
 **Migration `courses/0069` (two nullable columns) APPLIED migrate-first with its ledger row - do

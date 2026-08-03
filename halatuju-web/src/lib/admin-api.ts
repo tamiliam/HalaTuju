@@ -181,6 +181,21 @@ export interface AdminItem {
    *  two screens showing the same people can no longer disagree about it. */
   paused?: boolean
   paused_at?: string | null
+  /** NULL means NOT RECORDED, never "never signed in" — everyone predating 2026-08-03 is empty. */
+  first_seen_at?: string | null
+  last_seen_at?: string | null
+  /** The invitation behind this person. Null when they predate the record. */
+  invitation?: {
+    /** Decided by the server (`invitations.status_of`); never re-derived on this side. */
+    status: 'invited' | 'expired' | 'no_reply' | 'accepted' | 'revoked'
+    sent_at: string | null
+    send_count: number
+    /** Tri-state: true sent, false a real failure, **null not recorded** (every backfilled row). */
+    last_send_ok: boolean | null
+    last_send_error: string
+    expires_at: string | null
+    credential_issued: boolean
+  } | null
 }
 
 export async function getAdmins(options?: ApiOptions) {

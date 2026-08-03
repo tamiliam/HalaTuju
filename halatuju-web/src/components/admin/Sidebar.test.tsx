@@ -83,11 +83,11 @@ describe('what survives the collapse', () => {
   it('keeps every label in the DOM so it can FADE rather than pop', () => {
     const nav = renderRail()
     // Present while collapsed...
-    const label = within(nav).getByText('admin.nav.staff')
+    const label = within(nav).getByText('admin.nav.invitations')
     expect(label.className).toContain('opacity-0')
     // ...and revealed, not mounted, on open.
     fireEvent.mouseEnter(nav)
-    expect(within(nav).getByText('admin.nav.staff').className).toContain('opacity-100')
+    expect(within(nav).getByText('admin.nav.invitations').className).toContain('opacity-100')
   })
 
   it('keeps the group heading readable to a screen reader at both widths', () => {
@@ -120,22 +120,22 @@ describe('what survives the collapse', () => {
 describe('the Go-to chip', () => {
   it('names the destination and shows its chord', () => {
     const nav = renderRail()
-    const staff = within(nav).getByText('admin.nav.staff').closest('a') as HTMLElement
+    const staff = within(nav).getByText('admin.nav.invitations').closest('a') as HTMLElement
     const chip = within(staff).getByText(/admin.shell.goTo/)
-    expect(chip.textContent).toContain('admin.nav.staff')
+    expect(chip.textContent).toContain('admin.nav.invitations')
     expect(within(chip).getByText('T')).toBeTruthy()
     expect(within(chip).getByText('g')).toBeTruthy()
   })
 
   it('drops the chord where nothing is listening for it (the mobile drawer)', () => {
     const nav = renderRail('org_admin', { chords: false, pinned: true })
-    const staff = within(nav).getByText('admin.nav.staff').closest('a') as HTMLElement
+    const staff = within(nav).getByText('admin.nav.invitations').closest('a') as HTMLElement
     expect(within(staff).getByText(/admin.shell.goTo/).querySelector('kbd')).toBeNull()
   })
 
   it('is hidden from assistive tech — the link already carries its own name', () => {
     const nav = renderRail()
-    const staff = within(nav).getByText('admin.nav.staff').closest('a') as HTMLElement
+    const staff = within(nav).getByText('admin.nav.invitations').closest('a') as HTMLElement
     expect(within(staff).getByText(/admin.shell.goTo/).getAttribute('aria-hidden')).toBe('true')
   })
 

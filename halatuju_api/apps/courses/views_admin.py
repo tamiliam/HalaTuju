@@ -195,6 +195,77 @@ class PartnerAdminMixin:
         return None, None, admin
 
 
+def _invitations_for(admins):
+    """`{partner_admin_id: Invitation}` for a page of staff, in ONE query.
+
+    Two multi-valued relations counted in one queryset multiply each other, and an invitation is
+    multi-valued per admin (a superseded grant leaves its history behind). So this is fetched
+    separately and joined in Python — the same discipline `_reviewer_workloads` documents.
+    """
+    try:
+        from apps.scholarship.models import Invitation
+        out = {}
+        for inv in (Invitation.objects.filter(audience='staff', partner_admin__in=admins)
+                    .order_by('partner_admin_id', '-created_at')):
+            out.setdefault(inv.partner_admin_id, inv)   # newest per admin wins
+        return out
+    except Exception:   # noqa: BLE001 — the staff table must render without it
+        logger.warning('Could not load invitations for the staff list', exc_info=True)
+        return {}
+
+
+def _invitation_dict(inv):
+    """What the screen is told about one invitation. Allowlist; None when there is no record."""
+    if inv is None:
+        return None
+    from apps.scholarship import invitations
+    return {
+        'status': invitations.status_of(inv),
+        'sent_at': inv.last_sent_at.isoformat() if inv.last_sent_at else None,
+        'send_count': inv.send_count,
+        # ⚠ Tri-state on purpose. NULL is "not recorded" — every backfilled row is NULL, because
+        # whether a historic email arrived is unknowable. False is a real failure we watched happen.
+        'last_send_ok': inv.last_send_ok,
+        'last_send_error': inv.last_send_error,
+        'expires_at': inv.expires_at.isoformat() if inv.expires_at else None,
+        'credential_issued': inv.credential_issued,
+    }
+
+
+def _record_invitation(created_admin, role, organisation, request, *, credential_issued):
+    """Write the `Invitation` row for a staff invite that has just been provisioned.
+
+    ⚠ **BEST-EFFORT, ALWAYS.** The account exists and the email is about to go; failing the invite
+    because we could not file our own paperwork would be the tail wagging the dog. Returns None on
+    failure, and the callers below tolerate that.
+
+    Imported inside the function: `courses` must not import `scholarship` at module scope (the
+    dependency runs the other way), which is the same discipline `AdminRoleView` already follows
+    for `reviewer_profile_complete`.
+    """
+    try:
+        from apps.scholarship import invitations
+        return invitations.create_or_refresh(
+            audience='staff', email=created_admin.email, name=created_admin.name, role=role,
+            organisation=organisation, partner_admin=created_admin,
+            invited_by=getattr(request, '_inviting_admin', None),
+            credential_issued=credential_issued)
+    except Exception:   # noqa: BLE001
+        logger.warning('Could not record the invitation for %s', created_admin.email, exc_info=True)
+        return None
+
+
+def _record_invitation_send(inv, ok, error=''):
+    """Remember whether the invitation email actually went. See `Invitation`'s send-record block."""
+    if inv is None:
+        return
+    try:
+        from apps.scholarship import invitations
+        invitations.record_send(inv, ok, error)
+    except Exception:   # noqa: BLE001
+        pass
+
+
 def _touch_seen(admin):
     """Record that this person opened the console. Returns True the FIRST time only.
 
@@ -248,7 +319,15 @@ class AdminRoleView(PartnerAdminMixin, APIView):
         admin = self.get_admin(request)
         if not admin:
             return Response({'is_admin': False})
-        _touch_seen(admin)
+        # ⚠ THE RETURN VALUE IS THE ACCEPTANCE. `_touch_seen` reports True on the FIRST arrival
+        # only — a conditional UPDATE whose rowcount is 1 exactly once in the row's life — so an
+        # invitation is closed at the one moment it can be, and cannot be re-accepted later.
+        if _touch_seen(admin):
+            try:
+                from apps.scholarship import invitations
+                invitations.accept_for_admin(admin)
+            except Exception:   # noqa: BLE001 — bookkeeping never blocks a sign-in
+                logger.warning('Could not close the invitation for %s', admin.email, exc_info=True)
         # reviewer_profile_complete: gates the reviewer's first-login landing (they stay on
         # /admin/profile until their compulsory fields are filled). True for every non-reviewer.
         from apps.scholarship.reviewer_onboarding import reviewer_profile_complete
@@ -637,12 +716,19 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         # send the no-password "sign in with Google" email. No Supabase account is created here — it
         # materialises when they first sign in with Google.
         if is_google_email(email):
-            PartnerAdmin.objects.create(
+            created = PartnerAdmin.objects.create(
                 email=email, name=name, org=org, role=role,
                 owning_organisation=owning_org,
                 supabase_user_id=None, is_super_admin=(role == 'super'),
             )
+            # ⚠ `credential_issued=False`: a Google invitee is never given a password, so nothing of
+            # theirs can EXPIRE. The screen must say "no reply", not "expired", or an org_admin goes
+            # hunting for a password that never existed. This is the one moment we know which
+            # branch was taken.
+            inv = _record_invitation(created, role, owning_org or org, request,
+                                     credential_issued=False)
             emailed = send_partner_welcome_email(email, name, role, temp_password=None, google=True)
+            _record_invitation_send(inv, emailed)
             message = f'{name} added — they sign in with Google ({email}).'
             if not emailed:
                 message = f'{name} was added, but the email could not be sent. Use Resend to try again.'
@@ -661,7 +747,7 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if err:
             return Response({'error': 'Failed to create the partner account'}, status=502)
 
-        PartnerAdmin.objects.create(
+        created = PartnerAdmin.objects.create(
             email=email,
             name=name,
             org=org,
@@ -676,11 +762,18 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             is_super_admin=(role == 'super'),
         )
 
+        # ⚠ `credential_issued` is FALSE on the already-registered branch — that person keeps the
+        # login they already had and is sent no password, so like a Google invitee they can go
+        # unanswered but cannot expire.
+        inv = _record_invitation(created, role, owning_org or org, request,
+                                 credential_issued=not already_registered)
+
         # The email is the ONLY carrier of the temp password, so a failed send strands the
         # invitee — report it instead of swallowing it, and the UI tells the owner to Resend.
         emailed = send_partner_welcome_email(
             email, name, role, temp_password=None if already_registered else temp_password,
         )
+        _record_invitation_send(inv, emailed)
 
         message = (
             f'{name} already has an account — access granted. They can sign in as they always do.'
@@ -740,9 +833,18 @@ class AdminResendView(PartnerAdminMixin, APIView):
                 logger.error('Supabase password rotation failed: %s %s', resp.status_code, resp.text)
                 return Response({'error': 'Failed to reset the password'}, status=502)
 
+        # ⚠ A RE-SEND REFRESHES THE INVITATION, IT DOES NOT START A NEW ONE. `create_or_refresh`
+        # finds the open row and moves ONE clock — the same clock the temp-password TTL just reset
+        # above. Two clocks would let this screen say "still valid" about a password the login gate
+        # already refuses. `credential_issued` reflects what THIS send did: a target with no UID is
+        # sent no password, so it stays false and the screen says "no reply" rather than "expired".
+        inv = _record_invitation(target, target.role, target.owning_organisation, request,
+                                 credential_issued=bool(temp_password))
+
         emailed = send_partner_welcome_email(
             target.email, target.name, target.role, temp_password=temp_password,
         )
+        _record_invitation_send(inv, emailed, 'send failed')
         if not emailed:
             return Response({'error': 'Failed to send the email', 'emailed': False}, status=502)
         return Response({
@@ -842,6 +944,8 @@ class AdminListView(PartnerAdminMixin, APIView):
                 role__in=_ORG_ADMIN_MANAGEABLE_ROLES,
                 is_super_admin=False,
             )
+        admins = list(admins)
+        invites = _invitations_for(admins)
         data = []
         for a in admins:
             data.append({
@@ -871,6 +975,10 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # having ignored their invitation.
                 'first_seen_at': a.first_seen_at.isoformat() if a.first_seen_at else None,
                 'last_seen_at': a.last_seen_at.isoformat() if a.last_seen_at else None,
+                # The invitation behind this person, and how far it got. Computed server-side so
+                # the screen renders a word rather than re-deriving the rule — the same split
+                # `_reviewer_dict` / `reviewerTable.ts` uses.
+                'invitation': _invitation_dict(invites.get(a.id)),
             })
         return Response({'admins': data})
 

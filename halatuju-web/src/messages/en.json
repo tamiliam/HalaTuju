@@ -3121,7 +3121,8 @@
         "organisation": "Organisation",
         "programme": "Programme",
         "utility": "Account"
-      }
+      },
+      "invitations": "Invitations"
     },
     "reviewers": {
       "title": "Reviewers",
@@ -5446,6 +5447,31 @@
         "consent": "Consent",
         "justification": "Why they need support",
         "anything_else": "Anything else"
+      }
+    },
+    "invitations": {
+      "title": "Invitations",
+      "subtitle": "Who has been asked to join this organisation, and who is here now.",
+      "outstandingHeading": "Waiting for an answer",
+      "noneOutstanding": "Nothing outstanding — everyone invited has signed in.",
+      "sentHeader": "Sent",
+      "emailHeader": "Email",
+      "resentTimes": "· resent {n}×",
+      "send": {
+        "sent": "Delivered",
+        "failed": "Failed",
+        "notRecorded": "Not recorded"
+      },
+      "status": {
+        "invited": "Waiting",
+        "expired": "Password expired",
+        "no_reply": "No reply yet",
+        "accepted": "Signed in",
+        "revoked": "Cancelled"
+      },
+      "category": {
+        "reviewers": "Reviewers",
+        "admins": "Admins"
       }
     }
   }

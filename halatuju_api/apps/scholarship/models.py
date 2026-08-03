@@ -3846,3 +3846,116 @@ class ProgrammeApplicationItem(models.Model):
 
     def __str__(self):
         return f'programme={self.programme_id} {self.item_id}={self.state}'
+
+
+class Invitation(models.Model):
+    """Somebody was asked to join, and this is the record of the asking.
+
+    ⚠ **BEFORE THIS TABLE, AN INVITATION WAS NOT A THING** — it was a side effect of creating a
+    `PartnerAdmin`. So the staff screen could not tell an invitation nobody acted on from a
+    colleague of a year (both read "Active"), the expiry sweep wrote its verdict only into Supabase
+    `user_metadata` where nothing reads it back, and no invite email was ever logged. Every one of
+    those is the same missing noun.
+
+    **It addresses three audiences and they do not share a lifecycle**, which is why this is its own
+    table rather than more columns on `PartnerAdmin`:
+
+    - `staff` — the account already exists when the invitation is sent (invite provisions it), so
+      accepting means SIGNING IN for the first time. Detected by `first_seen_at`.
+    - `sponsor` — **nothing is created, and that is the point.** A sponsor invitation is a prompt
+      with a link to the ordinary public registration; they still consent, sign the terms and are
+      vetted. Owner's constraint: an invitation must never be a way around any of that.
+    - `source_partner` — an ORGANISATION-level bursary referrer. ⚠ NOT the platform-level
+      `partner` role, which is the HalaTuju course selector's **Referral Partner** and a different
+      relationship entirely; one organisation can hold both (CUMIG does). See docs/decisions.md,
+      2026-08-03.
+
+    ⚠ **STATUS IS DERIVED, NEVER STORED** (`invitations.status_of`). A stored "expired" is only true
+    while a cron keeps it true, and a cron that stops makes the screen lie — which is precisely how
+    `temp_password_expired` already fails today. The only thing written by a sweep here is
+    `pii_purged_at`, which records that we scrubbed the data, not that the invitation lapsed.
+
+    ⚠ **`credential_issued` DISSOLVES THE GOOGLE BLIND SPOT.** Three invite branches produce three
+    different truths — a fresh non-Google address gets a password, a Google address gets none (the
+    account materialises on first Google sign-in), an already-registered address gets none — and
+    afterwards they look identical. So "expired" is meaningful for the first and meaningless for the
+    other two: nothing of theirs has expired, they simply have not come. Written at the one moment
+    it is known, in the view that took the branch.
+    """
+    AUDIENCE_CHOICES = [
+        ('staff', 'Staff'),
+        ('sponsor', 'Sponsor'),
+        ('source_partner', 'Source partner'),
+    ]
+
+    audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default='staff')
+    email = models.EmailField(blank=True, default='')          # cleared on PII purge
+    name = models.CharField(max_length=200, blank=True, default='')   # cleared on PII purge
+    #: The role a staff invitation grants. Blank for the other audiences, which grant no role.
+    role = models.CharField(max_length=20, blank=True, default='')
+    #: The tenant for `staff`; the referring organisation for `source_partner`.
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='invitations',
+    )
+    invited_by = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='invitations_sent',
+    )
+    #: Opaque, non-guessable — the same shape `SponsorReferral` uses for its link.
+    code = models.CharField(max_length=32, unique=True, db_index=True)
+
+    #: The account a staff invitation provisioned. Present from the moment of invite, because for
+    #: staff the row IS created up front — which is exactly why acceptance cannot be inferred from
+    #: its existence and needs `first_seen_at`.
+    partner_admin = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='invitations',
+    )
+    #: The account a SPONSOR invitation eventually became. Null until they register themselves.
+    sponsor = models.ForeignKey(
+        'Sponsor', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+
+    expires_at = models.DateTimeField(null=True, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    pii_purged_at = models.DateTimeField(null=True, blank=True)
+    #: Set when a genuinely DIFFERENT grant replaces this one (a new role, a new organisation).
+    #: A plain re-send is not a supersede — it bumps the counters below and moves one clock.
+    superseded_by = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+
+    # ── the send record ──────────────────────────────────────────────────────────
+    # "Invitations send email, but that is not shown to anyone" (owner, 2026-08-03). Until now
+    # `send_partner_welcome_email` returned a bare bool that became a banner and vanished on reload,
+    # so a bounced invitation was indistinguishable from a delivered one nobody had acted on.
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    send_count = models.PositiveSmallIntegerField(default=0)
+    last_send_ok = models.BooleanField(null=True, blank=True)
+    last_send_error = models.CharField(max_length=300, blank=True, default='')
+
+    #: Whether a temporary password was actually issued — see the class docstring.
+    credential_issued = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'invitations'
+        ordering = ['-created_at']
+        constraints = [
+            # ⚠ ONE OPEN INVITATION PER (audience, email). A second invite to somebody already
+            # invited must find the existing row, not start a rival one — otherwise the screen
+            # shows two rows for one person and neither is wrong. Partial, so the history of
+            # accepted and revoked invitations is unlimited.
+            models.UniqueConstraint(
+                fields=['audience', 'email'],
+                condition=models.Q(accepted_at__isnull=True, revoked_at__isnull=True),
+                name='uniq_open_invitation_per_audience_email',
+            ),
+        ]
+
+    def __str__(self):
+        return f'Invitation {self.audience}:{self.email or "(purged)"} [{self.code}]'

@@ -23,3 +23,33 @@ export function referralPartners(admins: AdminItem[]): AdminItem[] {
 export function tenantAdmins(admins: AdminItem[]): AdminItem[] {
   return admins.filter((a) => a.role === 'org_admin' && !a.is_super_admin)
 }
+
+// ── the owner's two categories (2026-08-03) ──────────────────────────────────
+// "There are two categories of people here: reviewers and admins. QC is a reviewer as well. And
+// finance is also an admin. But their roles and permissions may differ." So the page groups by
+// WHAT SOMEONE IS, and the differing permissions stay where they already live — this map is
+// presentation, never a permission rule, and there is deliberately no server mirror of it.
+export type StaffCategory = 'reviewers' | 'admins'
+
+const CATEGORY: Record<string, StaffCategory> = {
+  reviewer: 'reviewers',
+  qc: 'reviewers',
+  admin: 'admins',
+  org_admin: 'admins',
+  finance: 'admins',
+}
+
+/** Which of the two groups a role belongs to. Null only for a role outside the staff table. */
+export function categoryOf(role: string): StaffCategory | null {
+  return CATEGORY[role] ?? null
+}
+
+/** The staff rows, split into the owner's two categories, each keeping the incoming order. */
+export function byCategory(admins: AdminItem[]): Record<StaffCategory, AdminItem[]> {
+  const out: Record<StaffCategory, AdminItem[]> = { reviewers: [], admins: [] }
+  for (const a of programmeStaff(admins)) {
+    const c = categoryOf(a.role)
+    if (c) out[c].push(a)
+  }
+  return out
+}
