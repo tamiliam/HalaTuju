@@ -195,13 +195,60 @@ class PartnerAdminMixin:
         return None, None, admin
 
 
+def _touch_seen(admin):
+    """Record that this person opened the console. Returns True the FIRST time only.
+
+    The analogue of `views_sponsor._touch_last_seen`, which has been doing this for sponsors since
+    July while staff had nothing at all — the reason an invitation that was never acted on has been
+    indistinguishable from a colleague of a year.
+
+    Two writes, because they answer two questions:
+
+    - **`first_seen_at` is a single conditional UPDATE**, filtered on the column still being NULL.
+      That makes it atomic and idempotent, and the rowcount is `1` exactly once in the row's life —
+      no second query needed, and it cannot double-fire under concurrent requests. **That rowcount
+      is the invitation-acceptance hook**, which is why this returns a bool.
+    - **`last_seen_at` is throttled**, because "are they still with us?" is measured in days and an
+      UPDATE on every console request buys no extra information.
+
+    `.update()` not `.save()`: never touches another field, cannot race with a concurrent write,
+    and a visit does not read as an edit to the account.
+
+    Best-effort throughout — nobody's console breaks because we could not record that they used it.
+    """
+    from datetime import timedelta
+    first = False
+    try:
+        now = timezone.now()
+        if admin.first_seen_at is None:
+            first = bool(PartnerAdmin.objects.filter(pk=admin.pk, first_seen_at__isnull=True)
+                         .update(first_seen_at=now))
+            if first:
+                admin.first_seen_at = now
+        hours = getattr(settings, 'ADMIN_SEEN_THROTTLE_HOURS', 24)
+        if admin.last_seen_at and (now - admin.last_seen_at) < timedelta(hours=hours):
+            return first
+        PartnerAdmin.objects.filter(pk=admin.pk).update(last_seen_at=now)
+        admin.last_seen_at = now
+    except Exception:   # noqa: BLE001 — telemetry must never break the caller
+        pass
+    return first
+
+
 class AdminRoleView(PartnerAdminMixin, APIView):
-    """GET /api/v1/admin/role/ - Check if user has admin access."""
+    """GET /api/v1/admin/role/ - Check if user has admin access.
+
+    ⚠ Also where a staff sign-in is RECORDED. This is the console's `SponsorMeView`: the admin auth
+    context calls it once per session for every admin, so it means "a person opened the console" —
+    which is the question. `PartnerAdminMixin.get_admin` runs on every admin request instead, so
+    stamping there would count a replayed token against any endpoint as a visit.
+    """
 
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return Response({'is_admin': False})
+        _touch_seen(admin)
         # reviewer_profile_complete: gates the reviewer's first-login landing (they stay on
         # /admin/profile until their compulsory fields are filled). True for every non-reviewer.
         from apps.scholarship.reviewer_onboarding import reviewer_profile_complete
@@ -818,6 +865,12 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # the column exists, one reader renders it, the other never asked. 2026-08-03.
                 'paused': a.paused_at is not None,
                 'paused_at': a.paused_at.isoformat() if a.paused_at else None,
+                # ⚠ NULL is NOT RECORDED, never "never signed in". Both columns start empty for
+                # everybody who was already here, and the Supabase backfill is best-effort, so a
+                # screen that renders these must say "not recorded" rather than accuse somebody of
+                # having ignored their invitation.
+                'first_seen_at': a.first_seen_at.isoformat() if a.first_seen_at else None,
+                'last_seen_at': a.last_seen_at.isoformat() if a.last_seen_at else None,
             })
         return Response({'admins': data})
 

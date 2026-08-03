@@ -366,6 +366,11 @@ AWARD_COOLOFF_DAYS = float(os.environ.get('AWARD_COOLOFF_DAYS', '0'))
 # every portal request would be an UPDATE on a read path for no extra information.
 SPONSOR_SEEN_THROTTLE_HOURS = float(os.environ.get('SPONSOR_SEEN_THROTTLE_HOURS', '24'))
 
+# The same for STAFF (PartnerAdmin.last_seen_at), stamped by AdminRoleView. Staff had no sign-in
+# record at all until 2026-08-03, which is why an invitation nobody acted on looked identical to a
+# colleague of a year. Same reasoning, same default.
+ADMIN_SEEN_THROTTLE_HOURS = float(os.environ.get('ADMIN_SEEN_THROTTLE_HOURS', '24'))
+
 # Interview scheduling: the assigned reviewer proposes a few times, the student books
 # one in-app, and we send confirmations + reminders. OFF by default — the whole surface
 # (admin propose-card + student booking panel + endpoints) is dark until flipped on.

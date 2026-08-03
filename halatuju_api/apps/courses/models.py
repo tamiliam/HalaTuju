@@ -600,6 +600,29 @@ class PartnerAdmin(models.Model):
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # ⚠ UNTIL 2026-08-03 THIS SYSTEM COULD NOT SAY WHETHER AN INVITED PERSON EVER TURNED UP.
+    # There was no last_login, no accepted_at, nothing — so somebody invited five minutes ago and a
+    # colleague of a year both read "Active" on the staff table. These two fields answer the two
+    # different questions that were being asked of one missing fact.
+    #
+    # ⚠ `supabase_user_id` IS NOT THE SIGNAL, and it looks like one. It is written at INVITE time
+    # for a non-Google address (the account is provisioned then), and stays NULL for a Google or
+    # already-registered invitee until `get_admin` backfills it. So it records how somebody was
+    # provisioned, not whether they came. Do not reach for it again.
+    #
+    # NULL is "NOT RECORDED", never "never signed in" — both columns start empty for everybody who
+    # was already here, and the backfill from Supabase is best-effort. Any screen must say so.
+    first_seen_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='First time this person opened the console. Set once, never updated — it is what '
+                  'closes their invitation. NULL means not recorded, not "never came".',
+    )
+    last_seen_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Most recent console session, throttled to about once a day. Answers "are they '
+                  'still with us?". NULL means not recorded.',
+    )
+
     class Meta:
         db_table = 'partner_admins'
 

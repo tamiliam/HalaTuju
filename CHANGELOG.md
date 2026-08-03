@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## The console can finally say whether an invited person ever turned up - invitations sprint 1, 2026-08-03
+
+**Migration `courses/0069` (two nullable columns) APPLIED migrate-first with its ledger row - do
+not re-run it.** Production reads 69 of 69.
+
+Staff had no sign-in record of any kind. No `last_login`, no `accepted_at` - so an invitation nobody
+acted on and a colleague of a year were the same row to every reader, and the staff table could not
+honestly tell them apart. Sponsors have had `last_seen_at` since July; staff simply never got it.
+
+- **`first_seen_at` and `last_seen_at` on `PartnerAdmin`**, stamped by `AdminRoleView` - the
+  console's `SponsorMeView`, called once per session by every admin. Deliberately NOT
+  `PartnerAdminMixin.get_admin`, which runs on every request: that would count a replayed token
+  against any endpoint as a visit, and the question is whether a PERSON opened the console.
+- **⚠ `supabase_user_id` IS NOT THE SIGNAL and it looks like one.** It is written at INVITE time for
+  a non-Google address and stays NULL for a Google invitee until first sign-in - it records how
+  somebody was provisioned, not whether they came. Written into the model docstring so nobody
+  reaches for it again.
+- **⚠ `first_seen_at` is a conditional UPDATE filtered on the column still being NULL**, so the
+  rowcount is 1 exactly once in the row's life. That rowcount is what will close an invitation next
+  sprint, and a second `True` would re-accept one already settled.
+  - **The first version of that test passed with the guard removed.** The cheap in-memory check
+    caught the sequential case, so nothing exercised the race the conditional exists for - found by
+    biting it. `test_TWO_CALLERS_RACING_still_produce_exactly_one_first_arrival` drives two
+    independent instances that both believe they are first; it fails when bitten.
+- `.update()` not `.save()`, so a visit never reads as an edit and cannot clobber a concurrent
+  write - asserted by renaming the row underneath a stale instance. Throttled to a day
+  (`ADMIN_SEEN_THROTTLE_HOURS`). Every failure swallowed; fault-injected.
+- **⚠ NULL IS "NOT RECORDED", NEVER "NEVER SIGNED IN".** Both columns start empty for everyone
+  already here. `backfill_admin_seen` seeds them from Supabase's `last_sign_in_at` so day one is not
+  a screen of false alarms - a COMMAND, never a migration, because it makes one HTTP call per admin.
+  It seeds both columns from one fact, which makes `first_seen_at` a floor rather than a date, and
+  it says so.
+
+`pytest` **5456** - `jest` 1384 - `makemigrations --check` clean.
+
 ## Three things that were quietly not working - invitations roadmap, sprint 0, 2026-08-03
 
 Found while investigating the Staff page ahead of turning it into Invitations. None of the three is
