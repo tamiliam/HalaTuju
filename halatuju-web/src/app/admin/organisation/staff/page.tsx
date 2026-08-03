@@ -13,6 +13,7 @@ import {
   MessageBanner, PageHeader, inputCls, useStaffAdmin,
 } from '@/components/admin/StaffAdmin'
 import InvitationsTable from '@/components/admin/InvitationsTable'
+import PanelTabs from '@/components/admin/PanelTabs'
 import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
 
 const KINDS: InvitationKind[] = ['admins', 'reviewers', 'source', 'sponsors']
@@ -102,22 +103,12 @@ export default function OrganisationInvitationsPage() {
     <div className="max-w-4xl">
       <PageHeader title={t('admin.invitations.title')} subtitle={t('admin.invitations.subtitle')} />
 
-      {/* Tabs first, mirroring Organisation → Reviewers, so the console has one shape. */}
-      <div role="tablist" aria-label={t('admin.invitations.tabsAria')}
-        className="mb-6 flex items-center gap-2">
-        {(['invitations', 'emails'] as const).map((key) => {
-          const on = panel === key
-          return (
-            <button key={key} type="button" role="tab" aria-selected={on}
-              onClick={() => setPanel(key)}
-              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                on ? 'border-blue-600 bg-blue-600 text-white'
-                   : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
-              {t(`admin.invitations.tab.${key}`)}
-            </button>
-          )
-        })}
-      </div>
+      {/* The same bar every organisation surface wears — one component, so they cannot drift. */}
+      <PanelTabs ariaLabelKey="admin.invitations.tabsAria" active={panel} onSelect={setPanel}
+        tabs={[
+          { key: 'invitations', labelKey: 'admin.invitations.tab.invitations' },
+          { key: 'emails', labelKey: 'admin.invitations.tab.emails' },
+        ]} />
 
       <MessageBanner message={message} />
 

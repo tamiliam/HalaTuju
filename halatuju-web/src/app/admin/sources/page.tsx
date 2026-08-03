@@ -6,6 +6,7 @@ import {
   getSources, createSource, updateSource, type SourceItem,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import PanelTabs from '@/components/admin/PanelTabs'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatPhone, isValidPhone } from '@/lib/scholarship'
 import PartnerEmailsCard from '@/components/sources/PartnerEmailsCard'
@@ -33,11 +34,16 @@ const phoneInvalid = (v: string) => v.trim() !== '' && !isValidPhone(v)
 type EditForm = { name: string; contact_person: string; contact_email: string; phone: string }
 
 /** The two panels. `orgs` is the default — the registry is what the page is for. */
-const PANELS = ['orgs', 'emails'] as const
+const PANELS = ['orgs', 'emails', 'terms'] as const
 type Panel = (typeof PANELS)[number]
+// Owner, 2026-08-04: Reviewers, Sponsors and Sources all wear the same three tabs, and one with
+// nothing behind it is shown DISABLED rather than hidden — so the surfaces look alike and a
+// not-yet-built panel reads as coming rather than as absent.
+const TERMS_READY = false   // no source-partner terms document exists yet
 const panelLabel: Record<Panel, string> = {
   orgs: 'admin.sources.tabOrganisations',
   emails: 'admin.sources.tabEmails',
+  terms: 'admin.sources.tabTerms',
 }
 
 export default function SourcesPage() {
@@ -135,20 +141,10 @@ export default function SourcesPage() {
         )}
       </div>
 
-      <div role="tablist" aria-label={t('admin.sources.tabsAria')} className="flex items-center gap-2 mb-6">
-        {PANELS.map((key) => {
-          const on = panel === key
-          return (
-            <button key={key} type="button" role="tab" aria-selected={on}
-              onClick={() => setPanel(key)}
-              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                on ? 'border-blue-600 bg-blue-600 text-white'
-                   : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
-              {t(panelLabel[key])}
-            </button>
-          )
-        })}
-      </div>
+      <PanelTabs ariaLabelKey="admin.sources.tabsAria" active={panel} onSelect={setPanel}
+        tabs={PANELS.map((key) => ({
+          key, labelKey: panelLabel[key], disabled: key === 'terms' && !TERMS_READY,
+        }))} />
 
       {message && (
         <div className={`rounded-lg p-4 mb-6 ${

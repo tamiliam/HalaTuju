@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import PanelTabs from '@/components/admin/PanelTabs'
 import { seenBand } from '@/lib/sponsorDetail'
 import { listSponsors, reviewSponsor, type AdminSponsor } from '@/lib/admin-api'
 import { effectiveRole } from '@/lib/navigation'
@@ -148,20 +149,8 @@ export default function AdminSponsorsList() {
       <p className="text-sm text-gray-500 mt-1 mb-4">{t('admin.sponsors.desc')}</p>
 
       {mayEditEmails && (
-        <div role="tablist" aria-label={t('admin.sponsors.tabsAria')} className="flex items-center gap-2 mb-6">
-          {PANELS.map((key) => {
-            const on = panel === key
-            return (
-              <button key={key} type="button" role="tab" aria-selected={on}
-                onClick={() => setPanel(key)}
-                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                  on ? 'border-blue-600 bg-blue-600 text-white'
-                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
-                {t(panelLabel[key])}
-              </button>
-            )
-          })}
-        </div>
+        <PanelTabs ariaLabelKey="admin.sponsors.tabsAria" active={panel} onSelect={setPanel}
+          tabs={PANELS.map((key) => ({ key, labelKey: panelLabel[key] }))} />
       )}
 
       {/* Mounted only while its badge is selected, so each reveal re-reads the templates and an

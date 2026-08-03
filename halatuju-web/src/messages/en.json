@@ -3243,14 +3243,15 @@
       },
       "tabReviewers": "Reviewers",
       "tabEmails": "Emails",
-      "tabsAria": "Reviewers panels"
+      "tabsAria": "Reviewers panels",
+      "tabTerms": "Terms"
     },
     "sources": {
       "nav": "Sources",
       "title": "Sources",
       "subtitle": "Referral organisations — the partners who refer students to the programme.",
       "tabOrganisations": "Organisations",
-      "tabEmails": "Partner emails",
+      "tabEmails": "Emails",
       "tabsAria": "Sources panels",
       "add": "Add source",
       "addTitle": "Add a source",
@@ -3363,7 +3364,8 @@
         "assigning": "Saving…",
         "assigned": "Witness organisation updated.",
         "label": "Witness"
-      }
+      },
+      "tabTerms": "Terms"
     },
     "sponsors": {
       "nav": "Sponsors",
@@ -5478,6 +5480,7 @@
       "noneInKind": "Nobody has been invited in this group yet.",
       "sourceComingSoon": "Coming soon. Source partners receive our emails today; they will be able to sign in and see their own students once that is built.",
       "notePlaceholder": "A short note to include (optional)"
-    }
+    },
+    "soon": "Soon"
   }
 }

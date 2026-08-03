@@ -3243,14 +3243,15 @@
       },
       "tabReviewers": "Penilai",
       "tabEmails": "E-mel",
-      "tabsAria": "Panel penilai"
+      "tabsAria": "Panel penilai",
+      "tabTerms": "Terma"
     },
     "sources": {
       "nav": "Sumber",
       "title": "Sumber",
       "subtitle": "Organisasi rujukan — rakan kongsi yang merujuk pelajar ke program.",
       "tabOrganisations": "Organisasi",
-      "tabEmails": "E-mel rakan kongsi",
+      "tabEmails": "E-mel",
       "tabsAria": "Panel sumber",
       "add": "Tambah sumber",
       "addTitle": "Tambah sumber",
@@ -3363,7 +3364,8 @@
         "assigning": "Menyimpan…",
         "assigned": "Organisasi saksi dikemas kini.",
         "label": "Saksi"
-      }
+      },
+      "tabTerms": "Terma"
     },
     "sponsors": {
       "nav": "Penaja",
@@ -5478,6 +5480,7 @@
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
       "sourceComingSoon": "Akan datang. Rakan sumber menerima e-mel kami hari ini; mereka akan dapat log masuk dan melihat pelajar mereka sendiri apabila ia siap.",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)"
-    }
+    },
+    "soon": "Akan datang"
   }
 }

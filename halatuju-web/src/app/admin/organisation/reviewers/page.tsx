@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import PanelTabs from '@/components/admin/PanelTabs'
 import { listReviewers, type AdminReviewer } from '@/lib/admin-api'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { isFree, orderedLanguages, turnaroundBand } from '@/lib/reviewerDetail'
@@ -99,21 +100,15 @@ export default function AdminReviewersList() {
       <p className="text-sm text-gray-500 mt-1 mb-4">{t('admin.reviewers.desc')}</p>
 
       {mayEditEmails && (
-        <div role="tablist" aria-label={t('admin.reviewers.tabsAria')}
-          className="flex items-center gap-2 mb-6">
-          {(['reviewers', 'emails'] as const).map((key) => {
-            const on = panel === key
-            return (
-              <button key={key} type="button" role="tab" aria-selected={on}
-                onClick={() => setPanel(key)}
-                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                  on ? 'border-blue-600 bg-blue-600 text-white'
-                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
-                {t(key === 'emails' ? 'admin.reviewers.tabEmails' : 'admin.reviewers.tabReviewers')}
-              </button>
-            )
-          })}
-        </div>
+        <PanelTabs ariaLabelKey="admin.reviewers.tabsAria" active={panel}
+          onSelect={(k) => setPanel(k as 'reviewers' | 'emails')}
+          tabs={[
+            { key: 'reviewers', labelKey: 'admin.reviewers.tabReviewers' },
+            { key: 'emails', labelKey: 'admin.reviewers.tabEmails' },
+            // Reviewers sign nothing today. Shown disabled so the three surfaces look alike and
+            // the panel reads as coming rather than as missing (owner, 2026-08-04).
+            { key: 'terms', labelKey: 'admin.reviewers.tabTerms', disabled: true },
+          ]} />
       )}
 
       {/* Mounted only while its tab is selected, so each reveal re-reads the templates and an

@@ -61,19 +61,19 @@ describe('visibleNav per role', () => {
   const EXPECTED: Record<AdminRoleName, string[]> = {
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'staff', 'reviewers', 'sponsors', 'payments', 'contracts', 'sources',
+      'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'contracts',
       'billing',
       'programmeOverview', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
     org_admin: [
-      'administration', 'staff', 'reviewers', 'sponsors', 'payments', 'contracts', 'sources',
+      'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'contracts',
       'billing',
       'programmeOverview', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'staff', 'reviewers', 'sponsors', 'payments', 'sources',
+      'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
       'programmeOverview', 'applications',
       'profile', 'guide', 'faq',
     ],
