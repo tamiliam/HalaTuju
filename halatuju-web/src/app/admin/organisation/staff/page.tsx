@@ -14,7 +14,7 @@ import {
 } from '@/components/admin/StaffAdmin'
 import InvitationsTable from '@/components/admin/InvitationsTable'
 import PanelTabs from '@/components/admin/PanelTabs'
-import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
+import InvitationEmailsCard from '@/components/admin/InvitationEmailsCard'
 
 const KINDS: InvitationKind[] = ['admins', 'reviewers', 'source', 'sponsors']
 
@@ -112,7 +112,7 @@ export default function OrganisationInvitationsPage() {
 
       <MessageBanner message={message} />
 
-      {panel === 'emails' && <ReviewerEmailsCard token={token} t={t} />}
+      {panel === 'emails' && <InvitationEmailsCard token={token} t={t} />}
 
       {panel === 'invitations' && (<>
         <div className="mb-6 rounded-xl border bg-white p-6 shadow-sm">

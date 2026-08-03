@@ -694,6 +694,18 @@ export async function getReviewerEmails(options?: ApiOptions) {
     '/api/v1/admin/scholarship/partner-emails/?family=reviewer', options)
 }
 
+/**
+ * The TWO invitation emails, edited on Organisation -> Invitations.
+ *
+ * A third family alongside partner and reviewer. They are deliberately off the Sources screen for
+ * the same reason the reviewer ones are: an email about joining this organisation is not a partner
+ * email, and filing it there shelves it where nobody looking for it would look.
+ */
+export async function getInvitationEmails(options?: ApiOptions) {
+  return adminFetch<PartnerEmailsPayload>(
+    '/api/v1/admin/scholarship/partner-emails/?family=invite', options)
+}
+
 /** One of the reviewer emails nobody can edit, rendered by the code that sends it. */
 export type ReviewerSystemEmail = {
   key: string

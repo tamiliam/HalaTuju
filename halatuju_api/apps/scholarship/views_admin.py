@@ -1654,12 +1654,21 @@ class AdminPartnerEmailsView(_SourcesBase):
         # partner, and a template about our own volunteers sitting under "Partner emails" would be
         # filed where nobody looking for it would look. One endpoint, two audiences, one filter —
         # a second endpoint would be a second copy of the fence.
-        want_reviewer = (request.GET.get('family') or '').strip() == 'reviewer'
-        reviewer_kinds = PartnerEmailTemplate.REVIEWER_KINDS
+        # THREE families now, and the default is "everything that is not one of the others" —
+        # so a NEW family cannot leak onto the Sources screen by forgetting to exclude it. That is
+        # exactly what happened when the invitation kinds were added: the reviewer filter was a
+        # two-way split, and the two new kinds silently landed in the partner list.
+        family = (request.GET.get('family') or '').strip()
+        families = {
+            'reviewer': PartnerEmailTemplate.REVIEWER_KINDS,
+            'invite': PartnerEmailTemplate.INVITE_KINDS,
+        }
+        named = set().union(*families.values())
+        wanted = families.get(family)
         templates = [
             _partner_email_dict(by_kind[k], last.get(k))
             for k in partner_comms.KINDS
-            if k in by_kind and ((k in reviewer_kinds) == want_reviewer)
+            if k in by_kind and (k in wanted if wanted is not None else k not in named)
         ]
         qualifying = {o.id for o in partner_comms.qualifying_partners()}
         counts = _source_application_counts()
@@ -1723,6 +1732,17 @@ class AdminPartnerEmailDetailView(_SourcesBase):
             if banned:
                 return Response({'error': 'conduit_phrasing', 'code': 'conduit_phrasing',
                                  'phrases': list(banned)},
+                                status=status.HTTP_400_BAD_REQUEST)
+            # ⚠ THE OPPOSITE-DIRECTION CHECK, and nothing did it before. The guard above refuses a
+            # token the kind does not SUPPLY; this refuses a body that has dropped one it REQUIRES.
+            # Without it a staff invitation could be saved with `{access}` deleted, and everybody
+            # invited afterwards would get a warm letter containing no way to sign in — with
+            # nothing to report it, because the send succeeds and the account exists.
+            missing = partner_comms.missing_required_placeholders(kind, subject, body)
+            if missing:
+                return Response({'error': 'missing_required_placeholder',
+                                 'code': 'missing_required_placeholder',
+                                 'placeholders': list(missing)},
                                 status=status.HTTP_400_BAD_REQUEST)
 
         fields = []

@@ -255,13 +255,66 @@ SEEDS = {
             '{team_signoff}'
         ),
     },
+    # ── the two invitation emails (2026-08-04) ────────────────────────────────────
+    #
+    # WORD-FOR-WORD what `emails.build_partner_welcome_email` and
+    # `build_sponsor_invitation_email` already send, so seeding changes nothing anybody receives.
+    #
+    # ⚠ `{access}` IS A STRUCTURAL BLOCK carrying the temporary password and the three shapes it
+    # takes (a fresh password / Google / already-registered). It is OURS; the letter around it is
+    # the organisation's. The save guard refuses a body that has dropped it, because an invitation
+    # without it is a warm letter containing no way to sign in — and nothing would report that.
+    'invite_staff': {
+        'subject': 'Your HalaTuju partner access',
+        'body': (
+            'Dear {name},\n'
+            '\n'
+            'You have been added to HalaTuju as {role_label}.\n'
+            '\n'
+            'Sign in here:\n'
+            '{login_link}\n'
+            '\n'
+            '{access}\n'
+            '\n'
+            'Any trouble at all, just reply to this email.\n'
+            '\n'
+            'Warm regards,\n'
+            'The HalaTuju Team'
+        ),
+    },
+    # `{note}` is the inviter's own words and is a block for the same reason `qc_comments` is:
+    # a note that happens to contain a token must arrive verbatim, not be substituted.
+    'invite_sponsor': {
+        'subject': 'An invitation to sponsor a student with {org_name}',
+        'body': (
+            'Hello,\n'
+            '\n'
+            '{invited_by} has invited you to become a sponsor of {org_name}.\n'
+            '\n'
+            '{note}\n'
+            '\n'
+            'Sponsors here support one student through their studies. You can read how it works, '
+            'and sign up, here:\n'
+            '{link}\n'
+            '\n'
+            'There is nothing to pay to register, and you choose whether to go ahead after you '
+            'have seen how it works.\n'
+            '\n'
+            'Thanks,\n'
+            '{team_signoff}'
+        ),
+    },
 }
 
 #: Kinds seeded switched ON. Everything else arrives OFF so wording can be agreed while the
 #: feature is dark — but this one was requested, quoted and paid for (request #3), and a paid
 #: notification that arrives switched off is a non-delivery. Seeding it ON also makes the screen
 #: agree with what production is already doing rather than silently changing behaviour.
-SEEDED_ON = frozenset({'student_assigned'}) | PartnerEmailTemplate.REVIEWER_KINDS
+#: The invitation kinds are seeded ON for tidiness, but their switch is NEVER READ — see
+#: `emails._invite_render`, and the note in `PartnerEmailTemplate.KIND_CHOICES` for why an
+#: invitation that can be switched off is an invitation nobody receives.
+SEEDED_ON = (frozenset({'student_assigned'}) | PartnerEmailTemplate.REVIEWER_KINDS
+             | PartnerEmailTemplate.INVITE_KINDS)
 
 
 class Command(BaseCommand):

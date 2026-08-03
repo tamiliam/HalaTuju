@@ -55,9 +55,8 @@ beforeEach(() => {
   // `useStaffAdmin` still owns invite/resend/revoke, and loads the staff list on mount; the
   // auto-mock must answer it or the hook throws before anything renders.
   mockApi.getAdmins.mockResolvedValue({ admins: [] })
-  mockApi.getReviewerEmails.mockResolvedValue(
+  mockApi.getInvitationEmails.mockResolvedValue(
     { templates: [] } as unknown as api.PartnerEmailsPayload)
-  mockApi.getReviewerSystemEmails.mockResolvedValue({ emails: [] })
 })
 
 const loaded = async () => {

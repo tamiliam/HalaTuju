@@ -5479,7 +5479,22 @@
       },
       "noneInKind": "Nobody has been invited in this group yet.",
       "sourceComingSoon": "Coming soon. Source partners receive our emails today; they will be able to sign in and see their own students once that is built.",
-      "notePlaceholder": "A short note to include (optional)"
+      "notePlaceholder": "A short note to include (optional)",
+      "emails": {
+        "title": "What people are told when you invite them",
+        "subtitle": "The wording of the two invitation emails. Edit them freely.",
+        "alwaysSends": "These always send. There is no switch, because an invitation that sends no email is an invitation nobody receives.",
+        "accessLocked": "The sign-in paragraph — including the temporary password — is added by us and cannot be edited. It changes depending on how the person signs in.",
+        "loadError": "These emails could not be loaded.",
+        "kind": {
+          "invite_staff": "Joining the team",
+          "invite_sponsor": "Inviting a sponsor"
+        },
+        "when": {
+          "invite_staff": "Sent when you add somebody as a reviewer, QC, admin or finance — and again whenever you press Resend.",
+          "invite_sponsor": "Sent when you invite somebody to become a sponsor. It links them to the ordinary sign-up, where they still give consent and are vetted."
+        }
+      }
     },
     "soon": "Soon"
   }

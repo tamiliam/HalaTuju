@@ -106,6 +106,30 @@ PLACEHOLDERS = {
                          'team_signoff'},
     'verdict_overdue': {'reviewer_name', 'ref', 'applicant_name', 'due_by', 'dashboard_link',
                         'team_signoff'},
+    # ── the two invitation emails (2026-08-04) ────────────────────────────────────
+    # ⚠ `access` IS A STRUCTURAL BLOCK AND IT IS WHY THIS IS SAFE TO MAKE EDITABLE. The staff
+    # invitation carries a TEMPORARY PASSWORD, and it has three shapes — a fresh account gets a
+    # password, a Google address gets sign-in-with-Google wording and no password, an
+    # already-registered address is told to sign in as they always do. None of that can be
+    # expressed by editing prose, and none of it should be: a reworded password instruction is a
+    # person locked out. So the surrounding letter is the organisation's and the access paragraph
+    # is ours, injected whole after every scalar is resolved.
+    'invite_staff': {'name', 'role_label', 'login_link', 'access', 'team_signoff'},
+    # `note` is the inviter's own free-form line, so it is a BLOCK for the same reason
+    # `qc_comments` is: a note containing `{link}` must arrive verbatim, not be substituted.
+    'invite_sponsor': {'name', 'org_name', 'invited_by', 'note', 'link', 'team_signoff'},
+}
+
+#: Tokens a kind CANNOT be saved without.
+#:
+#: ⚠ The ordinary guard refuses placeholders a kind does not SUPPLY; this one refuses a body that
+#: has dropped a placeholder it REQUIRES — the opposite direction, and nothing checked it before.
+#: Without it an editor could save a staff invitation with `{access}` deleted, and every person
+#: invited afterwards would receive a warm letter containing no way to sign in. Nothing would
+#: report it: the send succeeds, the account exists, and they simply never arrive.
+REQUIRED_PLACEHOLDERS = {
+    'invite_staff': {'access', 'login_link'},
+    'invite_sponsor': {'link'},
 }
 
 KINDS = tuple(k for k, _ in PartnerEmailTemplate.KIND_CHOICES)
@@ -120,6 +144,18 @@ def unknown_placeholders(kind, *parts):
     """Placeholder tokens in `parts` that this kind does not supply — sorted, so an error
     message is stable. Empty tuple means the template is safe to save."""
     return email_templates.unknown_placeholders(PLACEHOLDERS.get(kind, set()), *parts)
+
+
+def missing_required_placeholders(kind, *parts):
+    """Tokens this kind REQUIRES that the given subject/body have dropped. See
+    `REQUIRED_PLACEHOLDERS` for why the opposite-direction check exists."""
+    required = REQUIRED_PLACEHOLDERS.get(kind)
+    if not required:
+        return ()
+    present = set()
+    for part in parts:
+        present |= set(_TOKEN_RE.findall(part or ''))
+    return tuple(sorted(required - present))
 # ── the voice guard ───────────────────────────────────────────────────────────
 
 # Owner ruling, 2026-07-26: a partner organisation co-owns this bursary and may market it as
@@ -177,7 +213,8 @@ def is_enabled(kind):
     ORGANISATIONS receive?", and a student's notice that an organisation can see their details must
     not disappear because the partner feature was taken dark for an unrelated reason.
     """
-    exempt = PartnerEmailTemplate.STUDENT_KINDS | PartnerEmailTemplate.REVIEWER_KINDS
+    exempt = (PartnerEmailTemplate.STUDENT_KINDS | PartnerEmailTemplate.REVIEWER_KINDS
+              | PartnerEmailTemplate.INVITE_KINDS)
     if kind not in exempt and not getattr(settings, 'PARTNER_COMMS_ENABLED', False):
         return False
     return PartnerEmailTemplate.objects.filter(kind=kind, enabled=True).exists()
@@ -456,6 +493,9 @@ def _list_blocks(names):
 #: `render` guarantees every one a kind declares is filled, so none can survive into an inbox.
 STRUCTURAL_TOKENS = frozenset({
     'counts_table', 'student_table', 'student_list', 'qc_comments',
+    # See the invitation placeholders above: `access` carries the password (and its three shapes),
+    # `note` carries the inviter's own words. Both must arrive verbatim.
+    'access', 'note',
 })
 
 
@@ -470,6 +510,12 @@ def _blocks_for(context):
         out['student_list'] = _list_blocks(context['names'])
     if 'qc_comments' in context:
         out['qc_comments'] = _prose_blocks(context['qc_comments'])
+    # The invitation blocks. `access` is the password / Google / existing-account paragraph and is
+    # ours whatever the surrounding letter says; `note` is the inviter's own words.
+    if 'access' in context:
+        out['access'] = _prose_blocks(context['access'])
+    if 'note' in context:
+        out['note'] = _prose_blocks(context['note'])
     return out
 
 
@@ -522,6 +568,13 @@ def _scalars(context):
         'review_by': context.get('review_by') or '',
         'due_by': context.get('due_by') or '',
         'dashboard_link': context.get('dashboard_link') or '',
+        # -- invitation tokens (2026-08-04). `access` and `note` are BLOCKS, not scalars,
+        # and are deliberately absent from this map: see STRUCTURAL_TOKENS. --
+        'name': (context.get('name') or '').strip() or 'there',
+        'role_label': context.get('role_label') or '',
+        'login_link': context.get('login_link') or '',
+        'invited_by': context.get('invited_by') or '',
+        'link': context.get('link') or '',
     }
 
 

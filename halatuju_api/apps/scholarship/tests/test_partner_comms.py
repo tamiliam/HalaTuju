@@ -297,7 +297,11 @@ class TestSeededTemplates(TestCase):
         # already sending today from hard-coded prose. Seeding an ADOPTED email OFF is how a
         # feature ships as silence: a tidy panel of switches all correctly reading "off", and
         # reviewers simply never hearing from us again (request #10, 2026-08-02).
-        self.assertEqual(on, {'student_assigned'} | set(PartnerEmailTemplate.REVIEWER_KINDS))
+        # The two INVITATION kinds are seeded on too (2026-08-04) - though their switch is never
+        # read: see `emails._invite_render`. An invitation that can be silenced is an invitation
+        # nobody receives.
+        self.assertEqual(on, ({'student_assigned'} | set(PartnerEmailTemplate.REVIEWER_KINDS)
+                              | set(PartnerEmailTemplate.INVITE_KINDS)))
 
     def test_the_reviewer_seeds_reproduce_what_already_goes_out(self):
         """Spot-check the adopted wording against the hard-coded senders it replaces.
@@ -402,8 +406,11 @@ class TestPartnerEmailEndpoints(TestCase):
         # Reviewers instead, and the default (unfiltered) response must not carry them.
         self._auth('pc-oa')
         body = self.client.get('/api/v1/admin/scholarship/partner-emails/').json()
+        # ⚠ The invitation kinds must stay off this screen too — they are edited on
+        # Organisation → Invitations, for the same reason the reviewer ones live on Reviewers.
         expected = [k for k in partner_comms.KINDS
-                    if k not in PartnerEmailTemplate.REVIEWER_KINDS]
+                    if k not in PartnerEmailTemplate.REVIEWER_KINDS
+                    and k not in PartnerEmailTemplate.INVITE_KINDS]
         self.assertEqual([t['kind'] for t in body['templates']], expected)
         by_kind = {t['kind']: t for t in body['templates']}
         self.assertTrue(all(t['enabled'] is False for t in body['templates']
@@ -421,14 +428,22 @@ class TestPartnerEmailEndpoints(TestCase):
         self.assertTrue(all(t['to_reviewer'] for t in body['templates']))
         self.assertTrue(all(not t['to_student'] for t in body['templates']))
 
-    def test_the_two_families_partition_the_screen_with_nothing_lost(self):
-        # A row that fell out of BOTH lists would be a template nobody could ever edit.
+    def test_the_families_partition_the_screen_with_nothing_lost(self):
+        """A row that fell out of EVERY list would be a template nobody could ever edit.
+
+        ⚠ It became three families on 2026-08-04 and this test is why that was safe: adding the two
+        invitation kinds without extending the filter put them on the Sources screen, and this
+        assertion is what said so. The default family is now "everything not claimed by a named
+        one", so a FOURTH family cannot leak the same way — but it still has to be listed here.
+        """
         self._auth('pc-oa')
-        a = self.client.get('/api/v1/admin/scholarship/partner-emails/').json()['templates']
-        b = self.client.get(
-            '/api/v1/admin/scholarship/partner-emails/?family=reviewer').json()['templates']
-        self.assertEqual(sorted([t['kind'] for t in a] + [t['kind'] for t in b]),
-                         sorted(partner_comms.KINDS))
+        seen = []
+        for query in ('', '?family=reviewer', '?family=invite'):
+            seen += [t['kind'] for t in self.client.get(
+                f'/api/v1/admin/scholarship/partner-emails/{query}').json()['templates']]
+        self.assertEqual(sorted(seen), sorted(partner_comms.KINDS))
+        # And no kind appears in two of them.
+        self.assertEqual(len(seen), len(set(seen)))
 
     def test_the_payload_says_which_row_goes_to_the_student(self):
         """The screen is titled "Partner emails" and every other row goes to an organisation, so

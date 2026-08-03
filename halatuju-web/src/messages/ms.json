@@ -5479,7 +5479,22 @@
       },
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
       "sourceComingSoon": "Akan datang. Rakan sumber menerima e-mel kami hari ini; mereka akan dapat log masuk dan melihat pelajar mereka sendiri apabila ia siap.",
-      "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)"
+      "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
+      "emails": {
+        "title": "Apa yang diberitahu apabila anda menjemput seseorang",
+        "subtitle": "Kata-kata bagi dua e-mel jemputan. Suntinglah dengan bebas.",
+        "alwaysSends": "E-mel ini sentiasa dihantar. Tiada suis, kerana jemputan yang tidak menghantar e-mel ialah jemputan yang tidak diterima sesiapa.",
+        "accessLocked": "Perenggan log masuk — termasuk kata laluan sementara — ditambah oleh kami dan tidak boleh disunting. Ia berubah mengikut cara orang itu log masuk.",
+        "loadError": "E-mel ini tidak dapat dimuatkan.",
+        "kind": {
+          "invite_staff": "Menyertai pasukan",
+          "invite_sponsor": "Menjemput penaja"
+        },
+        "when": {
+          "invite_staff": "Dihantar apabila anda menambah seseorang sebagai penilai, QC, pentadbir atau kewangan — dan setiap kali anda menekan Hantar Semula.",
+          "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penaja. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring."
+        }
+      }
     },
     "soon": "Akan datang"
   }

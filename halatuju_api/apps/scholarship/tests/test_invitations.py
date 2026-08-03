@@ -379,3 +379,99 @@ class TestInvitingASponsor(TestCase):
             owning_organisation=self.org, name='Ravi', email='ravi@sp.test')
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("sp-ad")}')
         self.assertEqual(self._invite().status_code, 403)
+
+
+class TestTheInvitationEmailsAreEditable(TestCase):
+    """Owner, 2026-08-04: the invitation emails should be properly editable.
+
+    Two safety rules make that safe, and both are asserted here:
+
+    1. **The access paragraph is OURS.** It carries the temporary password and takes three shapes
+       prose cannot express. It is a structural block injected whole, so no edit can reword it, and
+       the save guard refuses a body that has dropped it — an invitation without it is a warm letter
+       containing no way to sign in, and nothing would report that.
+
+    2. **There is no switch.** `_invite_render` never asks whether the template is enabled. A
+       reviewer email that is switched off must STOP; an invitation that is switched off would mean
+       "Send invite" creates the account, issues the password and tells nobody.
+    """
+
+    def setUp(self):
+        from apps.scholarship.models import PartnerEmailTemplate
+        self.T = PartnerEmailTemplate
+
+    def _seed(self):
+        from django.core.management import call_command
+        import io as _io
+        call_command('seed_partner_email_templates', stdout=_io.StringIO())
+
+    def test_the_seed_is_byte_identical_to_what_already_sends(self):
+        # Adopting live mail into a template must change nothing anybody receives. Compare the
+        # built-in body against the seeded one BEFORE any editing.
+        from apps.scholarship import emails
+        before_subject, before_body = emails.build_partner_welcome_email(
+            'x@example.org', 'Priya', 'reviewer', temp_password='Kx7m-Pq4t-Rd92')
+        self._seed()
+        after_subject, after_body = emails.build_partner_welcome_email(
+            'x@example.org', 'Priya', 'reviewer', temp_password='Kx7m-Pq4t-Rd92')
+        self.assertEqual(after_subject, before_subject)
+        self.assertEqual(after_body, before_body)
+
+    def test_an_edit_changes_the_letter_but_never_the_access_paragraph(self):
+        from apps.scholarship import emails
+        self._seed()
+        tpl = self.T.objects.get(kind='invite_staff')
+        tpl.body = 'Welcome aboard {name}!\n\n{login_link}\n\n{access}\n\n{team_signoff}'
+        tpl.save(update_fields=['body'])
+        _s, body = emails.build_partner_welcome_email(
+            'x@example.org', 'Priya', 'reviewer', temp_password='Kx7m-Pq4t-Rd92')
+        self.assertIn('Welcome aboard Priya!', body)          # their words
+        self.assertIn('Kx7m-Pq4t-Rd92', body)                 # ⚠ ours, and still there
+        self.assertIn('valid for 7 days', body)
+
+    def test_the_access_block_adapts_to_a_GOOGLE_invitee_with_no_password(self):
+        from apps.scholarship import emails
+        self._seed()
+        _s, body = emails.build_partner_welcome_email(
+            'someone@gmail.com', 'Priya', 'reviewer', temp_password=None, google=True)
+        self.assertIn('Sign in with Google', body)
+        self.assertNotIn('temporary password', body)
+
+    def test_a_template_edited_into_nonsense_falls_back_rather_than_stranding_anybody(self):
+        from apps.scholarship import emails
+        self._seed()
+        tpl = self.T.objects.get(kind='invite_staff')
+        # A body the renderer cannot resolve. The invitation must still go.
+        tpl.body = '{this_token_does_not_exist}'
+        tpl.save(update_fields=['body'])
+        _s, body = emails.build_partner_welcome_email(
+            'x@example.org', 'Priya', 'reviewer', temp_password='Kx7m-Pq4t-Rd92')
+        self.assertIn('Kx7m-Pq4t-Rd92', body)
+
+    def test_SWITCHING_IT_OFF_DOES_NOT_SILENCE_IT(self):
+        # ⚠ The deliberate difference from every other template kind. Off would mean the account is
+        # created, the password issued, and nobody told — with nothing to report the silence.
+        from apps.scholarship import emails
+        self._seed()
+        self.T.objects.filter(kind='invite_staff').update(enabled=False)
+        _s, body = emails.build_partner_welcome_email(
+            'x@example.org', 'Priya', 'reviewer', temp_password='Kx7m-Pq4t-Rd92')
+        self.assertIn('Kx7m-Pq4t-Rd92', body)
+        self.assertIn('Priya', body)
+
+    def test_the_save_guard_refuses_a_body_that_has_lost_the_access_block(self):
+        from apps.scholarship import partner_comms
+        missing = partner_comms.missing_required_placeholders(
+            'invite_staff', 'A subject', 'Dear {name}, welcome. {team_signoff}')
+        self.assertIn('access', missing)
+        self.assertIn('login_link', missing)
+
+    def test_the_save_guard_passes_a_body_that_keeps_it(self):
+        from apps.scholarship import partner_comms
+        self.assertEqual(partner_comms.missing_required_placeholders(
+            'invite_staff', 'S', 'Hi {name} {login_link} {access} {team_signoff}'), ())
+
+    def test_a_kind_with_no_required_tokens_is_unaffected(self):
+        from apps.scholarship import partner_comms
+        self.assertEqual(
+            partner_comms.missing_required_placeholders('weekly_summary', 'S', 'B'), ())

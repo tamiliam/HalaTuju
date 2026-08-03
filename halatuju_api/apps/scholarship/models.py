@@ -3393,6 +3393,15 @@ class PartnerEmailTemplate(models.Model):
         ('qc_rejected', 'QC rejects a case'),
         ('verdict_due_soon', 'A verdict is due soon'),
         ('verdict_overdue', 'A verdict is overdue'),
+        # 2026-08-04. The two INVITATION emails, made editable on the owner's instruction. Edited on
+        # Organisation → Invitations.
+        #
+        # ⚠ THESE TWO HAVE NO SWITCH, and that is a deliberate departure from every other row here.
+        # An invitation email that can be turned off means pressing "Send invite" creates the
+        # account, issues the password and tells nobody — a silence nothing reports. Wording is the
+        # organisation's; whether an invitation is delivered at all is not a setting.
+        ('invite_staff', 'Joining the team'),
+        ('invite_sponsor', 'Inviting a sponsor'),
     ]
 
     #: Kinds whose recipient is the STUDENT. Everything else on this screen goes to the partner
@@ -3407,6 +3416,11 @@ class PartnerEmailTemplate(models.Model):
         'reviewer_assigned', 'qc_returned', 'qc_rejected',
         'verdict_due_soon', 'verdict_overdue',
     })
+    #: The two invitation kinds. Exempt from `PARTNER_COMMS_ENABLED` for the same reason as the
+    #: reviewer kinds, and additionally exempt from their OWN `enabled` flag — see the note in
+    #: KIND_CHOICES. `emails._invite_render` never asks whether they are switched on.
+    INVITE_KINDS = frozenset({'invite_staff', 'invite_sponsor'})
+
     kind = models.CharField(max_length=32, choices=KIND_CHOICES, unique=True)
     enabled = models.BooleanField(default=False)
     subject = models.CharField(max_length=255)

@@ -2348,6 +2348,66 @@ _PARTNER_ROLE_LABELS = {
 }
 
 
+def _invite_render(kind, context, must_contain=()):
+    """The stored wording for an invitation kind → `(subject, body)`, or None to use the built-in.
+
+    ⚠ **IT NEVER ASKS WHETHER THE TEMPLATE IS SWITCHED ON**, and that is the whole difference from
+    `_reviewer_render`. For a reviewer email, `off` must mean STOP — they are live notifications and
+    a switch that does not stop them is a lie the screen tells. An INVITATION is not a notification:
+    switching it off would mean "Send invite" creates the account, issues the password and tells
+    nobody, with nothing to report the silence. So the row supplies WORDING only. The console shows
+    no toggle for these two kinds; this function is the reason that is safe.
+
+    ⚠ **A RENDER FAILURE FALLS BACK, IT NEVER BLOCKS.** A template edited into an unrenderable state
+    must not take invitations down with it — the built-in body below is always there.
+    """
+    try:
+        from . import partner_comms
+        from .models import PartnerEmailTemplate as _T
+        tpl = _T.objects.filter(kind=kind).first()
+        if tpl is None:
+            return None
+        subject, text_body, _html = partner_comms.render(kind, tpl, dict(context))
+        # ⚠ SEND-TIME BACKSTOP, and it is not redundant with the save guard. The save guard refuses
+        # a body missing a required token, which covers every edit made through the console. This
+        # covers a row that got there any other way — a data fix, a restore, a future importer —
+        # and it checks the RENDERED OUTPUT rather than the template, because an unresolvable token
+        # does not raise: it simply leaves nothing behind, and the letter goes out looking fine
+        # while containing no way to sign in. Fall back to the built-in body instead.
+        for needle in must_contain:
+            if needle and needle not in text_body:
+                logger.warning('Invitation template %s rendered without required content; '
+                               'using the built-in body', kind)
+                return None
+        return subject, text_body
+    except Exception:
+        logger.warning('Invitation template render failed for %s; using the built-in body',
+                       kind, exc_info=True)
+        return None
+
+
+def _welcome_access_block(to_email, temp_password, google):
+    """The sign-in paragraph — OURS, whatever the surrounding letter says.
+
+    Three shapes that prose cannot express and an editor must not be able to reword: a fresh account
+    gets a password, a Google address gets sign-in-with-Google and no password at all, an
+    already-registered address is told to sign in as they always do. A reworded password
+    instruction is a person locked out.
+    """
+    if google:
+        return (f'Just click "Sign in with Google" and use this email address ({to_email}) — '
+                f'there is no password to set up. Your access is waiting for you.')
+    if temp_password:
+        return (f'Your temporary password (valid for 7 days) is:\n\n'
+                f'    {temp_password}\n\n'
+                f"You'll be asked to choose your own password the first time you use it.\n\n"
+                f'If it expires before you sign in, or you lose it, you can set a new one yourself '
+                f'at any time with "Forgot password" on the sign-in page — or ask whoever added '
+                f'you to re-send your details.')
+    return ('You already have a HalaTuju account, so simply sign in the way you normally do '
+            '— with Google, or with your existing password. Your new access is waiting for you.')
+
+
 def build_partner_welcome_email(to_email, name, role, temp_password=None, google=False):
     """The wording of the welcome email → ``(subject, body)``.
 
@@ -2359,26 +2419,18 @@ def build_partner_welcome_email(to_email, name, role, temp_password=None, google
     role_label = _PARTNER_ROLE_LABELS.get(role, 'a team member')
     frontend = _P.frontend_url
     link = f'{frontend}/admin/login'
+    # ⚠ ONE home for the access paragraph, shared with the editable template's `{access}` block —
+    # so the wording an organisation cannot edit is also the wording the built-in body uses, and
+    # the two can never say different things about how to sign in.
+    access = _welcome_access_block(to_email, temp_password, google)
 
-    if google:
-        access = (
-            f'Just click "Sign in with Google" and use this email address ({to_email}) — '
-            f'there is no password to set up. Your access is waiting for you.'
-        )
-    elif temp_password:
-        access = (
-            f'Your temporary password (valid for 7 days) is:\n\n'
-            f'    {temp_password}\n\n'
-            f"You'll be asked to choose your own password the first time you use it.\n\n"
-            f'If it expires before you sign in, or you lose it, you can set a new one yourself at '
-            f'any time with "Forgot password" on the sign-in page — or ask whoever added you to '
-            f're-send your details.'
-        )
-    else:
-        access = (
-            f'You already have a HalaTuju account, so simply sign in the way you normally do '
-            f'— with Google, or with your existing password. Your new access is waiting for you.'
-        )
+    # The organisation's own wording, if they have edited it. `{access}` is injected whole.
+    stored = _invite_render('invite_staff', {
+        'name': who, 'role_label': role_label, 'login_link': link, 'access': access,
+        'team_signoff': _P.team_signoff('en'),
+    }, must_contain=(access, link))
+    if stored:
+        return stored
 
     body = (
         f'Dear {who},\n\n'
@@ -3875,6 +3927,14 @@ def build_sponsor_invitation_email(*, org_name='', note='', code='', invited_by=
     who = org_name or _PROG_EN
     link = f'{_P.frontend_url}/sponsor?ref={code}' if code else f'{_P.frontend_url}/sponsor'
     note_block = f'\nThey added a note for you:\n  "{note.strip()}"\n' if (note or '').strip() else ''
+
+    stored = _invite_render('invite_sponsor', {
+        'name': '', 'org_name': who, 'invited_by': invited_by or who, 'link': link,
+        'note': (note or '').strip(), 'team_signoff': _P.team_signoff('en'),
+    }, must_contain=(link,))
+    if stored:
+        return stored
+
     body = (
         f'Hello,\n\n'
         f'{invited_by or who} has invited you to become a sponsor of {who}.\n'
