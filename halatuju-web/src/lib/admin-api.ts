@@ -177,6 +177,10 @@ export interface AdminItem {
   owning_org_id?: number | null
   owning_org_name?: string | null
   created_at: string
+  /** A reviewer who has stepped back. Serialised here as well as on the Reviewers table, so the
+   *  two screens showing the same people can no longer disagree about it. */
+  paused?: boolean
+  paused_at?: string | null
 }
 
 export async function getAdmins(options?: ApiOptions) {

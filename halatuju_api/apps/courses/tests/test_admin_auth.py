@@ -276,6 +276,29 @@ class AdminInviteRoleTest(TestCase):
         self.assertEqual(roles['v@example.com'], 'admin')
         self.assertEqual(roles['super@halatuju.com'], 'super')
 
+    def test_admin_list_reports_who_has_paused(self):
+        """⚠ The Staff table and the Reviewers table show the same people.
+
+        Until 2026-08-03 only `AdminReviewerListView` serialised `paused_at`, so a reviewer who had
+        stepped back read "Paused" on one screen and "Active" on the other. The column existed and
+        one of its two readers had simply never asked for it.
+        """
+        from django.utils import timezone
+        PartnerAdmin.objects.create(
+            supabase_user_id='p-uid', role='reviewer', is_active=True,
+            name='Paused One', email='paused@example.com', paused_at=timezone.now(),
+        )
+        PartnerAdmin.objects.create(
+            supabase_user_id='w-uid', role='reviewer', is_active=True,
+            name='Working One', email='working@example.com',
+        )
+        rows = {a['email']: a for a in self.client.get('/api/v1/admin/admins/').json()['admins']}
+        self.assertTrue(rows['paused@example.com']['paused'])
+        self.assertIsNotNone(rows['paused@example.com']['paused_at'])
+        # And the ordinary case stays ordinary — a flag that is always true says nothing.
+        self.assertFalse(rows['working@example.com']['paused'])
+        self.assertIsNone(rows['working@example.com']['paused_at'])
+
     @override_settings(SUPABASE_URL='https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY='k')
     def test_super_invites_org_admin_creates_tenant(self):
         # A super may install an organisation admin, creating its tenant org (add-tenant).

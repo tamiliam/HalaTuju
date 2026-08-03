@@ -811,6 +811,13 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'owning_org_id': a.owning_organisation_id,
                 'owning_org_name': a.owning_organisation.name if a.owning_organisation else None,
                 'created_at': a.created_at.isoformat(),
+                # ⚠ Pause is serialised by `AdminReviewerListView._reviewer_dict` and was NOT here,
+                # so the Staff table and the Reviewers table showed the same people and disagreed
+                # about who had stepped back — a reviewer reading "Active" on one screen and
+                # "Paused" on the other. Same shape as the stored-field-with-no-surface cluster:
+                # the column exists, one reader renders it, the other never asked. 2026-08-03.
+                'paused': a.paused_at is not None,
+                'paused_at': a.paused_at.isoformat() if a.paused_at else None,
             })
         return Response({'admins': data})
 

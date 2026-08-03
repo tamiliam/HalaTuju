@@ -726,3 +726,36 @@ class TestSigningReminders(TestCase):
         out = bursary.send_signing_reminders()
         self.assertEqual(out['witness'], 1)
         self.assertIn('partner@cumig.org', [m.to[0] for m in self.mail.outbox])
+
+
+class TestWitnessEmailSendsThemSomewhereReal(TestCase):
+    """The witness nudge must not tell a referral organisation to do something impossible.
+
+    It used to read "Please log in to the partner console" over a button pointing at
+    `/admin/scholarship/<id>` -- a page no referral-org login can load, because `_b40_scope`
+    returns 'none' for the `partner` role. So the one bursary action such an organisation is
+    actually authorised to take was introduced by an instruction that dead-ends.
+
+    Found while mapping who has a login and who does not (2026-08-03). Restore the button in the
+    same change that gives them somewhere to land, and this test should be updated then -- not
+    before.
+    """
+
+    def test_it_does_not_send_them_to_a_console_that_does_not_exist(self):
+        from django.core import mail
+        from apps.scholarship import emails
+
+        mail.outbox = []
+        emails.send_witness_pending_email(
+            'partner@example.org', contact_person='Mr Raja', applicant_name='Kavitha',
+            org_name='Sri Murugan Centre',
+            link='https://halatuju.xyz/admin/scholarship/129')
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        whole = (msg.subject + msg.body + ''.join(b for b, _ in msg.alternatives)).lower()
+        for impossible in ('partner console', 'log in', 'sign in'):
+            self.assertNotIn(impossible, whole)
+        # And the cockpit URL must not travel either -- a bare link is an invitation to click it.
+        self.assertNotIn('/admin/scholarship', whole)
+        # What it DOES say: reply, which is a thing they can do today.
+        self.assertIn('reply to this email', msg.body.lower())

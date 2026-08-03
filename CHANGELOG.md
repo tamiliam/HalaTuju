@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Three things that were quietly not working - invitations roadmap, sprint 0, 2026-08-03
+
+Found while investigating the Staff page ahead of turning it into Invitations. None of the three is
+the feature being built; all three are live faults the investigation walked into. **No migration.**
+
+- **A sponsor invite code was never captured.** `KEY_SPONSOR_REF` had a reader in
+  `SponsorDetailsForm`, and a cleaner, and **no writer anywhere in the codebase** - so
+  `referrals.attribute_referral(code, ...)` could not fire from the live UI at all and every
+  attribution fell through to the email fallback. That is why five of eight invitees once still
+  read "Invited" after joining. `useReferral` now writes it, keyed on the path.
+  - **⚠ VERBATIM, NEVER LOWER-CASED.** A sponsor code is `secrets.token_urlsafe(9)` and
+    case-sensitive; the lower-casing that is correct for a partner code silently invalidates it,
+    and a wrong code fails exactly like no code.
+  - **And it must not land in the student key**, or a sponsor's invite code becomes their "how did
+    you hear about us" the day they apply as a student.
+  - **The register page dropped it too** on the branch where a session comes back immediately -
+    two registration paths, one of them forgetting.
+  - ⚠ A source-shape guard would have passed throughout: the key was imported, read and cleared.
+    Only running the hook shows it. Rendered test, bite-checked.
+- **The Staff table and the Reviewers table disagreed about who had stepped back.** `paused_at` was
+  serialised by one of its two readers. Now on both, and RENDERED here rather than merely added to
+  the payload - adding a field nothing draws would have been the sixth member of the
+  stored-field-with-no-surface cluster, in the same change that cites it. **Revoked beats paused**:
+  a revoked account cannot be brought back by un-pausing.
+- **The witness email told referral organisations to "log in to the partner console".** There is no
+  such console, and the button pointed at `/admin/scholarship/<id>`, which `_b40_scope` refuses to
+  the `partner` role. It now asks them to reply, which is a thing they can do. The email is dark
+  (`BURSARY_AGREEMENT_ENABLED` unset on the running service, checked - not read off a default), so
+  nothing was in flight. **Exactly one entry moved in the 113-email golden set**, which is the
+  guard proving the blast radius.
+
+`pytest` **5446** - `jest` **1384** - `next lint` 0 errors - i18n 4484x3 - no new i18n keys.
+
 ## Pause said the wrong thing when it refused - request #10, 2026-08-03
 
 Found by walking pause end-to-end on the live service against a real reviewer (owner-authorised),

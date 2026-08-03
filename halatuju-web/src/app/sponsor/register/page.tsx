@@ -9,7 +9,7 @@ import { sponsorSignUpWithPassword, sponsorSignInWithGoogle } from '@/lib/sponso
 import { registerSponsor } from '@/lib/api'
 import { checkPassword, SPONSOR_SOURCES, formatIntlPhone, isValidIntlPhone, toStoredPhone } from '@/lib/sponsorAuth'
 import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, flagOf } from '@/lib/countries'
-import { KEY_SPONSOR_PENDING } from '@/lib/storage'
+import { KEY_SPONSOR_PENDING, KEY_SPONSOR_REF } from '@/lib/storage'
 
 const EMAIL_RE = /\S+@\S+\.\S+/
 
@@ -59,11 +59,21 @@ export default function SponsorRegisterPage() {
     if (data.session) {
       // Email confirmation disabled → we have a session; create the pending account now.
       try {
+        // ⚠ The invite code has to travel HERE TOO. `SponsorDetailsForm` sends it on the
+        // confirm-your-email path; this branch registers directly and used to drop it, so an
+        // invited sponsor who got a session straight away was never attributed to whoever
+        // invited them. Two registration paths, one of them forgetting — 2026-08-03.
+        let ref = ''
+        try { ref = sessionStorage.getItem(KEY_SPONSOR_REF) || '' } catch { /* ignore */ }
         await registerSponsor(
-          { name: name.trim(), phone: toStoredPhone(dial, phone), source, consent: true },
+          { name: name.trim(), phone: toStoredPhone(dial, phone), source, consent: true,
+            ...(ref ? { ref } : {}) },
           { token: data.session.access_token },
         )
-        try { sessionStorage.removeItem(KEY_SPONSOR_PENDING) } catch { /* ignore */ }
+        try {
+          sessionStorage.removeItem(KEY_SPONSOR_PENDING)
+          sessionStorage.removeItem(KEY_SPONSOR_REF)
+        } catch { /* ignore */ }
         router.push('/sponsor')
         return
       } catch {

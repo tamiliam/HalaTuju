@@ -93,10 +93,19 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                   {t(`admin.role.${a.role}`)}
                 </span>
               </td>
+              {/* Revoked beats paused: a revoked account cannot be brought back by un-pausing,
+                  so showing "Paused" over it would name the smaller of two facts. Pause is
+                  rendered HERE as well as on the Reviewers table because both screens list the
+                  same people, and until 2026-08-03 they disagreed — one said Active while the
+                  other said Paused. */}
               <td className="px-4 py-3">
                 <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${
-                  a.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                  {a.is_active ? t('admin.active') : t('admin.revoked')}
+                  !a.is_active ? 'bg-red-100 text-red-600'
+                    : a.paused ? 'bg-amber-100 text-amber-700'
+                    : 'bg-green-100 text-green-700'}`}>
+                  {!a.is_active ? t('admin.revoked')
+                    : a.paused ? t('admin.reviewers.status.paused')
+                    : t('admin.active')}
                 </span>
               </td>
               {canAct && (

@@ -1198,7 +1198,18 @@ def send_witness_pending_email(to_email, *, contact_person='', applicant_name=''
                                org_name='', link=''):
     """Internal (English) nudge to the referring partner organisation: a bursary agreement
     for a student they referred is awaiting their WITNESS signature. Best-effort. The donor
-    is never named; the partner already knows the student (they referred them)."""
+    is never named; the partner already knows the student (they referred them).
+
+    ⚠ **IT USED TO SAY "log in to the partner console", AND THERE IS NO SUCH CONSOLE.** The button
+    pointed at `bursary._cockpit_link` → `/admin/scholarship/<id>`, a page no referral-org login can
+    load: `_b40_scope` returns `'none'` for the `partner` role, so they would have been told to do
+    something impossible and then bounced. Corrected 2026-08-03 to ask them to reply, which is a
+    thing they can actually do.
+
+    ``link`` is still accepted — every caller passes it and the argument is the natural home for the
+    address once a source-organisation console exists — but it is deliberately NOT rendered. Restore
+    the button in the same change that gives them somewhere to land, not before.
+    """
     if not to_email:
         return False
     greeting = f'Dear {contact_person},' if contact_person else 'Hello,'
@@ -1208,7 +1219,8 @@ def send_witness_pending_email(to_email, *, contact_person='', applicant_name=''
         f"A {_PROG_EN} agreement for {applicant_name or 'a student you referred'} is "
         f"ready for your organisation's witness signature. The student and their parent/guardian "
         f"have signed; you are recorded as the witnessing partner.\n\n"
-        f"Please log in to the partner console to review and add your witness signature:\n{link}\n\n"
+        f"Just reply to this email and we will send you everything you need to add your "
+        f"signature.\n\n"
         f"Thank you,\n{_TEAM_EN}"
     )
     html = _html_email_shell(
@@ -1217,9 +1229,8 @@ def send_witness_pending_email(to_email, *, contact_person='', applicant_name=''
         f'your organisation’s <strong>witness signature</strong>. The student and their '
         f'parent or guardian have signed; you are recorded as the witnessing partner'
         f'{(" for " + org_name) if org_name else ""}.</p>'
-        f'<p style="margin:0 0 18px;">Please log in to the partner console to review and add '
-        f'your witness signature.</p>'
-        f'<p style="margin:0 0 6px;">{_email_button(link, "Open the partner console")}</p>'
+        f'<p style="margin:0 0 18px;">Just reply to this email and we will send you everything '
+        f'you need to add your signature.</p>'
         f'<p style="margin:18px 0 0;">Thank you,<br><strong>{_TEAM_EN}</strong></p>'
     )
     return _send_html(
