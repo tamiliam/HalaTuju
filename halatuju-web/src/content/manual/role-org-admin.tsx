@@ -22,7 +22,7 @@ export const roleOrgAdmin: ManualChapter = {
       anchor: 'org-admin-team',
       title: 'Your team',
       body: (
-        <>Open <strong>Staff</strong> from the menu to build your
+        <>Open <strong>Invitations</strong> from the menu to build your
         team. You can invite three programme roles into your organisation:
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li><strong>Reviewer</strong> — works the applicants you assign them.</li>
@@ -35,7 +35,7 @@ export const roleOrgAdmin: ManualChapter = {
           admin, so your organisation is never left without one.</span></>
       ),
       img: '/manual/org-admin-team.png',
-      alt: 'The Staff table with invite and revoke controls (placeholder)',
+      alt: 'The Invitations page with invite and revoke controls (placeholder)',
     },
     {
       anchor: 'org-admin-assigning',
@@ -132,7 +132,7 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>The menu — the strip of icons on the left, which opens when you point at it — groups everything
         by what it belongs to. Your organisation&rsquo;s group holds
-        <strong> Overview</strong>, <strong>Staff</strong>, <strong>Sponsors</strong>, <strong>Payments</strong>,
+        <strong> Overview</strong>, <strong>Invitations</strong>, <strong>Sponsors</strong>, <strong>Payments</strong>,
         <strong> Contracts</strong>, <strong>Sources</strong> and <strong>Billing &amp; usage</strong> (marked
         <em> soon</em> until metering is switched on). Below it sits your programme&rsquo;s own group, with the
         applications. Platform-only tools — adding organisations or referral partners — never appear for you;
@@ -162,7 +162,7 @@ export const roleOrgAdmin: ManualChapter = {
         match that account&rsquo;s name exactly. If your organisation has a <strong>finance admin</strong>, there
         is a middle step: the run must be <em>checked</em> by finance before you can countersign, and until then
         you&rsquo;ll see &ldquo;waiting for the finance check&rdquo;. You can appoint one yourself from
-        <strong> Staff</strong>, inviting them as <strong>Finance</strong>; the moment their account is active the step applies, including
+        <strong> Invitations</strong>, inviting them as <strong>Finance</strong>; the moment their account is active the step applies, including
         to a run already sitting in front of you. If you have no finance admin, the chain is just the two
         signatures. <strong>Editing a run after any signature returns it to draft and clears every signature
         collected so far</strong> — deliberately, so nobody signs one list and a different one goes out.</>

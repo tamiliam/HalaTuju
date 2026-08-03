@@ -13,7 +13,7 @@ export const roleAdminGeneral: ManualChapter = {
       title: 'Your remit',
       body: (
         <>As a <strong>general admin</strong> you can <strong>read</strong> everything in your organisation — all
-        applications, the Sponsors list, the Staff page — without acting on any of it. No verdicts,
+        applications, the Sponsors list, the Invitations page — without acting on any of it. No verdicts,
         no assignments, no staff changes. There is <strong>one exception, and it is money in</strong>: you are the
         person who <em>prepares</em> it. See <em>Money: you prepare, someone else approves</em> below.</>
       ),
@@ -23,7 +23,7 @@ export const roleAdminGeneral: ManualChapter = {
       title: 'What you can see',
       body: (
         <>Your organisation&rsquo;s <strong>B40 Applications</strong> (all of them, to read), the
-        <strong> Sponsors</strong> list, and the <strong>Staff</strong> page&rsquo;s organisation staff
+        <strong> Sponsors</strong> list, and the <strong>Invitations</strong> page&rsquo;s organisation staff
         table. You won&rsquo;t see another organisation&rsquo;s data, and you won&rsquo;t see the platform-only
         tools.</>
       ),

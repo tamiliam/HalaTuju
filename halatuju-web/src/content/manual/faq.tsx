@@ -225,7 +225,7 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>Can I appoint a finance admin myself?</>,
-      a: <>Yes. <strong>Staff</strong> in the menu, then invite them as <strong>Finance</strong>. The moment their account is active, the
+      a: <>Yes. <strong>Invitations</strong> in the menu, then invite them as <strong>Finance</strong>. The moment their account is active, the
         finance check becomes part of your payment chain &mdash; including for a run that is already waiting for
         your countersignature.</>,
     },
@@ -260,7 +260,7 @@ export const FAQ: Record<Audience, QA[]> = {
     {
       q: <>Why can&rsquo;t I click anything on a case?</>,
       a: <>On cases and staff your role is <strong>read-only</strong>: you see everything in your organisation
-        (applications, the Sponsors list, the Staff page) but the buttons that change those
+        (applications, the Sponsors list, the Invitations page) but the buttons that change those
         aren&rsquo;t shown to you. Ask your organisation admin. <strong>Money is the exception</strong> — you
         prepare payment runs and record wallet credits, and someone else countersigns them.</>,
     },

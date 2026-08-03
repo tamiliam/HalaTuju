@@ -550,7 +550,54 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-02, after request #10)
+## Next Sprint (as of 2026-08-03, after the invitations arc)
+
+**✅ SHIPPED + LIVE — AN INVITATION IS A RECORD, AND THE PAGE IS CALLED INVITATIONS.** Three
+deploys in one day (`ef3462b0`, `91d2e5c7`, `84b77141`). Retro
+`docs/retrospective-2026-08-03-invitations.md`; decisions x1; lessons x2; **TD-213 + TD-214** raised.
+Live on `halatuju-api-00941-cdz` / `halatuju-web-00786-hpw`. `pytest` **5475** - `jest` **1410** -
+i18n **4502x3**.
+
+**⚠ MIGRATIONS `courses/0069` + `scholarship/0144` ARE ALREADY APPLIED - DO NOT RE-RUN.** Both
+migrate-first with ledger rows; `invitations` has RLS on with one `service_role` policy. Reconciled
+against production at close: **courses 69/69, scholarship 144/144, no gaps.**
+
+**⚠ TWO KINDS OF PARTNER, AND THEY ARE NOT THE SAME THING** (owner, 2026-08-03; docs/decisions.md).
+**Referral Partner = PLATFORM** (the existing `partner` role, HalaTuju's course selector, 2 live
+accounts both at CUMIG). **Source Partner = ORGANISATION** (a bursary referrer; **no login exists**).
+One organisation can be both, and CUMIG is. Use both names in all new code; do NOT widen `partner`.
+
+**⚠ NO SOURCE PARTNER HAS EVER BEEN INVITED.** Owner: *"They are passive recipients of emails for
+now."* The 5 contact addresses on file are an emailing list, not accounts - so the console is a
+**cold start**, the first invitation is part of the feature, and **until a login exists the emails
+are their only channel**: nothing may move out of an email into a console nobody can reach.
+
+**▶ WHAT SHIPPED, and the decisions inside it that must not be "tidied":**
+- **⚠ `no_reply` IS NOT `expired`.** A Google or already-registered invitee is issued no password,
+  so nothing of theirs can lapse. On production this is the COMMON case: **17 of 18 staff were
+  invited on Google addresses**, so "expired" will almost never appear. `credential_issued` records
+  which branch the invite took, at the one moment it is known.
+- **⚠ STATUS IS DERIVED, NEVER STORED** (`invitations.status_of`). A stored "expired" is true only
+  while a cron keeps it true - exactly how `temp_password_expired` already fails.
+- **⚠ `last_send_ok` IS TRI-STATE.** Null is "not recorded" (every backfilled row), NEVER a failure.
+  The same rule governs `first_seen_at`: NULL is "not recorded", never "never signed in".
+- **⚠ `supabase_user_id` IS NOT A SIGN-IN SIGNAL** - it is written at invite time on the non-Google
+  path. `first_seen_at` is, and its conditional UPDATE's rowcount is what CLOSES an invitation.
+- **⚠ A WAITING PERSON APPEARS ONCE, at the top only.** Listing them in the roster too inflates the
+  category counts with people who have never signed in. Rendered test asserts one occurrence.
+- The route `/admin/organisation/staff` is UNCHANGED - only the label and page moved, so bookmarks
+  and the `/admin/invite` redirect keep working.
+- **Owner ruled: do NOT invite Yeoh Liew Se** (`liewse@gmail.com`, admin, no Supabase account, the
+  one outstanding invitation on the board). It stands as an accurate record, not a task.
+
+**▶ NEXT = SPONSOR INVITATIONS**, then the **Source Partner console**. Plan in
+`.claude/plans/` was deleted at close; the shape is in the retro + decisions. Owner still to settle:
+the `source_partner` role name, the dormancy threshold (90 days assumed), `paused_by`, quote #2, and
+Divya Adinarayanan's phone number.
+
+**▶ ms/ta for the 19 new `admin.invitations.*` leaves are MY first drafts** - owner's eye owed.
+
+## Superseded — previous Next Sprint (as of 2026-08-02, after request #10)
 
 **✅ SHIPPED + LIVE — REQUEST #10: ORGANISATION → REVIEWERS, PAUSE, AND THE FIVE REVIEWER EMAILS.**
 Commits `04489c4e`..`1f4f8d6a`. Retro `docs/retrospective-2026-08-02-reviewers-surface.md`;

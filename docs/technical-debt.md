@@ -2548,3 +2548,38 @@ it is. Trigger: the next time a fourth family is added, or any sprint that alrea
 `partner_comms.py` broadly.
 
 **Status:** open, low. Cosmetic; nothing behaves wrongly because of it.
+
+### [TD-213] The invite emails are not visible on the Invitations page — low
+
+**Status:** Open · raised 2026-08-03 (invitations sprint)
+
+The Invitations page shows WHETHER an invite email went and whether it bounced, but not WHAT it
+said. The owner's ruling on the reviewer emails two days earlier applies by the same reasoning:
+*"their existence and content are known to the org_admin. If not specified, they'll exist in the
+background without anyone paying attention to them until something breaks."*
+
+Partly mitigated already: `send_partner_welcome_email` is entry 1 of `SYSTEM_EMAILS`
+(`reviewer_system_emails.py`) and renders read-only on Organisation → Reviewers → Emails, flagged as
+carrying a temporary password. So the wording IS visible — just on a different page from the one
+where invitations are managed.
+
+**⚠ Do NOT fix by promoting the invite emails into `PartnerEmailTemplate`.** They carry a temporary
+password; an editable template invites an org_admin to delete `{temp_password}` from a live,
+password-bearing email. Read-only rendering only, reusing `AdminReviewerSystemEmailsView`.
+
+**Trigger:** if somebody asks "what does the invitation actually say?" while looking at this page.
+
+### [TD-214] The Invitations page cannot cancel an unanswered invitation — low
+
+**Status:** Open · raised 2026-08-03 (invitations sprint)
+
+`Invitation.revoked_at` and `invitations.revoke()` exist and are tested, but no endpoint or control
+reaches them. Today an invitation sent by mistake is cancelled by revoking the whole `PartnerAdmin`
+account, which is a bigger act and leaves the invitation reading "waiting" forever.
+
+Deliberately not built this sprint: the page's job was to make the invitation legible, and revoking
+is a new verb on live access control that wants its own change. **⚠ This is a stored field with no
+surface — the cluster this project has now hit six times — so it is recorded rather than left to be
+rediscovered.**
+
+**Trigger:** the first invitation sent to the wrong address.
