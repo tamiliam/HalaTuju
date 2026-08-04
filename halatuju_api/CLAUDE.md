@@ -550,7 +550,60 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-03, after the invitations arc)
+## Next Sprint (as of 2026-08-04, after the invitation emails)
+
+**✅ SHIPPED + LIVE — FOUR INVITATION EMAILS, ONE HOME, AND A DONOR PITCH.** Commits `087e72d0` +
+`6c0a3998`. Retro `docs/retrospective-2026-08-04-four-invitation-emails.md`; decisions ×5;
+lessons ×4. **Two deploys** (both api; the second was backend-only so web correctly skipped).
+`pytest` **5530** · `jest` **1417** · `next lint` **0** · i18n **4520×3**.
+
+**⚠ MIGRATION `scholarship/0146` IS ALREADY APPLIED — DO NOT RE-RUN.** Choices plus a data rename
+(`invite_staff` → `invite_reviewer`); `sqlmigrate` prints no DDL, so the production step was the
+UPDATE and the ledger row. Reconciled at close: **scholarship 146/146.**
+
+**▶ FOUR INVITATION LETTERS, ONE PER TABLE:** `invite_admin`, `invite_reviewer`, `invite_source`,
+`invite_sponsor`.
+- **⚠ WHICH LETTER A STAFF INVITE READS IS DERIVED FROM `invitations.KIND_ROLES`** — the same map
+  that groups the page's tables. finance → the admin letter, qc → the reviewer letter. **Do not
+  replace this with a hand-written map**: it would be correct the day it was typed and silently
+  wrong after the first regrouping, writing to somebody as one thing while listing them as another.
+- **⚠ `partner` AND `super` READ NO STORED TEMPLATE.** Platform-level accounts on a different
+  product relationship; otherwise an org_admin editing "the admin invitation" changes what a
+  platform account is told. **`org_admin` is deliberately NOT excluded** — they belong to the org.
+- **Admin and reviewer are seeded IDENTICALLY** and that is correct: the split is structural, and
+  its value is that the organisation can now make them differ.
+- **⚠ `invite_source` IS WORDING ONLY — NOTHING SENDS IT.** No Source Partner has a login and the
+  page offers no way to invite one. It describes the console that comes next, which is exactly why
+  it must not be wired before that console exists. `test_NOTHING_SENDS_IT` asserts the absence of a
+  sender so adding one is deliberate; the Emails tab says so on screen.
+
+**⚠ THE SEED KEEPS AN EXISTING ROW — SO A REWRITTEN BUILT-IN REACHES NOBODY BY ITSELF.** This cost a
+deploy on 2026-08-04: the sponsor letter was rewritten, the build went green, the seed printed
+`kept`, and the OLD wording was still live. **A bare `--reset` is DESTRUCTIVE on production — six
+rows carry real human edits** (five the owner's, one `elanjelian@me.com`'s). Push a rewrite through
+by NAMING the kinds: `--reset --kind <kind>` locally, or `PARTNER_EMAIL_RESET_KINDS` on the service
+(the cron endpoint passes no arguments). **Set it, run the job, then UNSET it.**
+
+**⚠ THE TAX BAN IS NO LONGER A PER-FAMILY RULE.** `email_templates.UNIVERSAL_BANNED` holds the
+tax-relief and urgency phrases and BOTH families fold it in. The old per-family split assumed a
+family's audience matches its table — false the moment the organisation's sponsor invitation became
+a `PartnerEmailTemplate`, leaving the platform's one donor pitch as the only surface not refusing
+"tax deductible". HalaTuju holds **no LHDN s44(6) approval**.
+
+**⚠ THE SPONSOR LETTER KEEPS THE NOMINATION CLAUSE** (decisions.md 2026-07-28): *tell us who you
+would like your gift to help; we follow your choice wherever we can, and the final decision on each
+award rests with the programme.* Directive framing would make this a conduit passing earmarked money
+to a named beneficiary. It invites a **donor of the organisation**, never "a sponsor of" it.
+
+**▶ NEXT = THE SOURCE PARTNER CONSOLE** — their landing page and what they see on sign-up. The
+invitation letter is already written and waiting for it.
+
+**▶ OWNER, OUTSTANDING:** ms/ta first drafts for the six new invitation labels (especially
+நன்கொடையாளர் for "donor"); whether the donor pitch should be trilingual like the peer-to-peer
+letter; quote on request #2; `paused_by`; the `source_partner` role name; the dormancy threshold
+(90 days assumed); Divya Adinarayanan's phone number.
+
+## Superseded — previous Next Sprint (as of 2026-08-03, after the invitations arc)
 
 **✅ SHIPPED + LIVE — AN INVITATION IS A RECORD, AND THE PAGE IS CALLED INVITATIONS.** Three
 deploys in one day (`ef3462b0`, `91d2e5c7`, `84b77141`). Retro

@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## The seed can push a rewritten letter through, without flattening the rest - 2026-08-04
+
+Follow-up the same day, and the reason the pitch above did not go live on its first deploy.
+
+- **"Keeps an existing row" is right, and it is also a one-way valve.** The seed never overwrites
+  wording an org_admin may have edited - so rewriting a built-in body reaches nobody once the row
+  exists. The sponsor letter was rewritten, the deploy went green, the seed printed `kept`, and the
+  OLD wording was still what would send. Every signal read as success.
+- **A bare `--reset` was not available as a fix**: six production rows carry real human edits (five
+  the owner's, one `elanjelian@me.com`'s) and it would have flattened all six.
+- **The reset is now scopeable** - `--kind` (repeatable) for manual runs, and
+  `PARTNER_EMAIL_RESET_KINDS` on the deployed service, since the cron endpoint passes no command
+  arguments. Same shape as `AWARD_EMAIL_APP_IDS` and the platform's other one-off scopes. A bare
+  `--reset` still means everything; an unrecognised kind writes nothing rather than silently
+  skipping the row it was meant to fix; the run prints which kinds it will overwrite first.
+- **⚠ Set the variable, run the job, then UNSET it.** While it is set, every deploy's seed run
+  rewrites those kinds - which would undo an owner edit made in between.
+
+`pytest` **5530**. Backend only - no migration, no web change. Scoping bite-checked.
+
 ## Four invitation emails, one home, and a donor pitch - 2026-08-04
 
 Owner's three asks off the live screen. **Migration `0146`** - choices plus a data rename; no DDL
