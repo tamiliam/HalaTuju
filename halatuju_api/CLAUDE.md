@@ -595,6 +595,26 @@ would like your gift to help; we follow your choice wherever we can, and the fin
 award rests with the programme.* Directive framing would make this a conduit passing earmarked money
 to a named beneficiary. It invites a **donor of the organisation**, never "a sponsor of" it.
 
+**⚠ THREE NAMES, THREE LEVELS, AND COPY MUST NOT SWAP THEM** (owner, 2026-08-04): **HalaTuju** is
+the PLATFORM, **BrightPath** the ORGANISATION, the **BrightPath Bursary** the PROGRAMME. The joining
+letter used to say "added to HalaTuju" — naming the software rather than the body somebody joined —
+and signed off as the platform. All three now resolve from branding (`org_short_name`,
+`programme_name`, `team_signoff`), **never literals**, so a second tenant inherits its own names.
+**⚠ `{org_name}` means "the organisation this letter concerns" and DIFFERS BY KIND** — BrightPath in
+the staff/sponsor invitations, the SOURCE organisation in the source one.
+
+**▶ THE READ-ONLY REVIEWER EMAILS SHOW THE SHAPE, WITH AN EXAMPLE BESIDE IT.** `HT-0000` read as a
+real reference; it is `{ref}` now. **Both renders come from the SAME builder** — the tokens are
+simply what is passed as particulars — so the anti-drift proof is intact and
+`test_the_preview_IS_the_email` compares a real send against the SAMPLE render.
+`emails._fmt_myt` has a str passthrough for exactly this; do not "tidy" it away.
+
+**⚠ THE PARTNER-CONSOLE GUARD FOLLOWS THE READER, NOT THE TABLE.** It excludes the reviewer kinds
+and the two staff invitations (their readers have a console). **`invite_source` is deliberately
+still inside it** — it describes a console that does not exist, and what keeps it safe is that
+nothing sends it. A test asserts that exclusion stays put; move it only in the change that wires a
+sender.
+
 **▶ NEXT = THE SOURCE PARTNER CONSOLE** — their landing page and what they see on sign-up. The
 invitation letter is already written and waiting for it.
 

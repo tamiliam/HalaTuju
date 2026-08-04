@@ -319,6 +319,10 @@ AWARD_EMAIL_APP_IDS = os.environ.get('AWARD_EMAIL_APP_IDS', '')
 # through, scoped, from the cron endpoint (which passes no command arguments). Six rows on
 # production carry real human edits, so a blanket `--reset` is destructive; always name the kinds.
 # ⚠ SET IT, RUN THE JOB, THEN UNSET IT — while set, every deploy's seed run rewrites those kinds.
+# ⚠ MORE THAN ONE KIND NEEDS gcloud's CUSTOM DELIMITER, because a comma is also how gcloud
+# separates variables from each other:
+#     --update-env-vars "^@^PARTNER_EMAIL_RESET_KINDS=invite_admin,invite_reviewer"
+# Without the `^@^` it fails with a bare usage message that says nothing about the comma.
 PARTNER_EMAIL_RESET_KINDS = os.environ.get('PARTNER_EMAIL_RESET_KINDS', '')
 
 # F7: when a reviewer is assigned, also email the STUDENT an advance notice (who will
