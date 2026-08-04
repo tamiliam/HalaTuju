@@ -77,13 +77,29 @@ class TestTheList(_Base):
             self.assertTrue(row['subject'].strip(), row['key'])
             self.assertGreater(len(row['body'].strip()), 200, row['key'])
 
-    def test_no_placeholder_survives(self):
-        # The sibling guard on the editable five. A `{ref}` reaching this screen would read as a
-        # defect in the email itself to anybody looking at it.
+    def test_no_placeholder_survives_IN_THE_WORKED_EXAMPLE(self):
+        # The sibling guard on the editable five, now aimed at the SAMPLE render. A leftover `{ref}`
+        # THERE is a real defect — the example is meant to look like a delivered email. The other
+        # render carries tokens on purpose, so asserting over both would forbid the feature.
         for row in self._rows():
             for token in ('{', '}'):
-                self.assertNotIn(token, row['subject'], row['key'])
-                self.assertNotIn(token, row['body'], row['key'])
+                self.assertNotIn(token, row['sample_subject'], row['key'])
+                self.assertNotIn(token, row['sample_body'], row['key'])
+
+    def test_THE_SHAPE_NAMES_ITS_DETAILS_INSTEAD_OF_INVENTING_THEM(self):
+        # ⚠ The owner's complaint, 2026-08-04: "What is HT-0000?" — a made-up reference read as a
+        # real one. Every email here carries at least one token now, and none of them shows the
+        # sample reference in the shape render.
+        for row in self._rows():
+            self.assertIn('{', row['body'], row['key'])
+            self.assertNotIn('HT-0000', row['body'], row['key'])
+
+    def test_the_two_renders_are_the_SAME_LETTER(self):
+        # Both come from one builder, so they must agree on structure — same number of paragraphs.
+        # If they ever diverge, the example has stopped illustrating the shape beside it.
+        for row in self._rows():
+            self.assertEqual(len(row['body'].split('\n\n')),
+                             len(row['sample_body'].split('\n\n')), row['key'])
 
     def test_NO_EMAIL_LEFT_IN_THIS_LIST_CARRIES_A_CREDENTIAL(self):
         # The credential-carrying letter left with `partner_welcome` (2026-08-04), so today nothing
@@ -143,8 +159,10 @@ class TestItCannotDriftFromTheMail(_Base):
             send()
             self.assertEqual(len(mail.outbox), 1, f'{key} did not send')
             msg = mail.outbox[0]
-            self.assertEqual(msg.subject, rows[key]['subject'], key)
-            self.assertEqual(msg.body, rows[key]['body'], key)
+            # ⚠ Compared against the SAMPLE render, which is the one built from real particulars.
+            # The other render carries tokens by design and could never equal a delivered message.
+            self.assertEqual(msg.subject, rows[key]['sample_subject'], key)
+            self.assertEqual(msg.body, rows[key]['sample_body'], key)
 
 
 class TestTheGate(_Base):

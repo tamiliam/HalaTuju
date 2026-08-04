@@ -30,16 +30,23 @@ const TEMPLATES = [
 
 const SYSTEM: api.ReviewerSystemEmail[] = [
   {
-    key: 'partner_welcome',
-    subject: 'Your HalaTuju partner access',
-    body: 'Dear Reviewer,\n\nYou have been added to HalaTuju as a reviewer.',
+    key: 'interview_booked',
+    subject: 'Interview booked — {ref}',
+    body: 'Dear {reviewer_name},\n\n{applicant_name} has booked {interview_time}.',
+    sample_subject: 'Interview booked — HT-0000',
+    sample_body: 'Dear Reviewer,\n\nthe applicant has booked Tue, 15 Sep 2026, 6:30 PM (MYT).',
+    // Kept true so the FE's `sensitive` branch stays covered. No LIVE email carries a credential
+    // any more — the joining letter left this list on 2026-08-04, which is asserted server-side in
+    // test_reviewer_system_emails.py. This fixture proves the badge still renders when one does.
     sensitive: true,
     wider_audience: false,
   },
   {
     key: 'verdict_escalation',
-    subject: 'Overdue verdict needs attention — HT-0000',
-    body: 'Hi,\n\nA B40 verdict is overdue and has been escalated.',
+    subject: 'Overdue verdict needs attention — {ref}',
+    body: 'Hi,\n\nA B40 verdict for {applicant_name} is overdue.',
+    sample_subject: 'Overdue verdict needs attention — HT-0000',
+    sample_body: 'Hi,\n\nA B40 verdict for the applicant is overdue.',
     sensitive: false,
     wider_audience: true,
   },
@@ -58,21 +65,32 @@ const loaded = async () => {
     expect(screen.getByText('admin.reviewers.emails.system.title')).toBeTruthy())
 }
 
-describe('the seven we maintain', () => {
+describe('the ones we maintain', () => {
   it('names each one and shows the subject without being asked', async () => {
     await loaded()
-    expect(screen.getByText('admin.reviewers.emails.system.kind.partner_welcome')).toBeTruthy()
+    expect(screen.getByText('admin.reviewers.emails.system.kind.interview_booked')).toBeTruthy()
     // The subject is the line a person recognises an email by, so it is never behind a click.
-    expect(screen.getByText('Your HalaTuju partner access')).toBeTruthy()
-    expect(screen.getByText('Overdue verdict needs attention — HT-0000')).toBeTruthy()
+    expect(screen.getByText('Interview booked — {ref}')).toBeTruthy()
+    expect(screen.getByText('Overdue verdict needs attention — {ref}')).toBeTruthy()
   })
 
   it('shows the actual body on request — the whole point of listing them', async () => {
     await loaded()
-    expect(screen.queryByText(/You have been added to HalaTuju/)).toBeNull()
+    expect(screen.queryByText(/has booked/)).toBeNull()
     fireEvent.click(screen.getAllByText('admin.reviewers.emails.system.show')[0])
-    expect(screen.getByText(/You have been added to HalaTuju/)).toBeTruthy()
+    expect(screen.getAllByText(/has booked/).length).toBe(2)   // shape + example
   })
+
+  it('⚠ shows the SHAPE and a worked example together, not a sample alone', async () => {
+    // Owner, 2026-08-04: "What is HT-0000?" — a made-up reference read as a real one. The shape
+    // names its details; the example shows one filled in. Both, or the complaint returns.
+    await loaded()
+    fireEvent.click(screen.getAllByText('admin.reviewers.emails.system.show')[0])
+    expect(screen.getByText('admin.reviewers.emails.system.shapeLabel')).toBeTruthy()
+    expect(screen.getByText('admin.reviewers.emails.system.exampleLabel')).toBeTruthy()
+    expect(screen.getByText(/Tue, 15 Sep 2026/)).toBeTruthy()
+  })
+
 
   it('says which one carries a password, and which reaches more than the reviewer', async () => {
     await loaded()

@@ -3219,6 +3219,8 @@
           "subjectLabel": "Subject:",
           "show": "Show wording",
           "hide": "Hide wording",
+          "shapeLabel": "The wording",
+          "exampleLabel": "An example",
           "sensitive": "Carries a new reviewer's temporary password.",
           "widerAudience": "Also goes to your organisation's admins.",
           "kind": {
@@ -5482,9 +5484,8 @@
         "title": "What people are told when you invite them",
         "subtitle": "The wording of the four invitation emails. Edit them freely.",
         "alwaysSends": "These always send. There is no switch, because an invitation that sends no email is an invitation nobody receives.",
-        "accessLocked": "The sign-in paragraph — including the temporary password — is added by us and cannot be edited. It changes depending on how the person signs in.",
+        "accessLocked": "Where a letter hands somebody an account, the sign-in paragraph — including any temporary password — is added by us and cannot be edited. It changes depending on how the person signs in.",
         "loadError": "These emails could not be loaded.",
-        "notSentYet": "Not sent by anything yet — the Source console is still being built.",
         "kind": {
           "invite_admin": "Joining the team — admin",
           "invite_reviewer": "Joining the team — reviewer",

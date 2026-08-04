@@ -353,18 +353,36 @@ class TestSeededTemplates(TestCase):
         self.assertIn('as your own', tpl.body)
         self.assertIn('{org_name}’s achievement', tpl.body)
 
+    #: Kinds whose READER has a console of their own, so naming it is correct rather than a broken
+    #: promise. The guard below is about a surface that does not exist FOR THE READER — never about
+    #: the word — so this list follows the audience, not the table they happen to sit in.
+    #:
+    #: ⚠ `invite_source` is deliberately NOT here. A Source Partner has no login yet; that letter
+    #: describes the console being built and is the one case the rule exists for. What keeps it
+    #: safe is that **nothing sends it** (`test_NOTHING_SENDS_IT` in test_invitations.py) — not its
+    #: choice of words. When the Source console ships, add it here in the same change that wires a
+    #: sender, and not before.
+    CONSOLE_AUDIENCE_KINDS = (
+        set(PartnerEmailTemplate.REVIEWER_KINDS) | {'invite_admin', 'invite_reviewer'}
+    )
+
     def test_no_email_points_at_a_partner_console(self):
         """None exists for the bursary, so every PARTNER email must stand alone.
 
-        ⚠ Scoped to the partner + student rows on purpose. A REVIEWER has a console — it is where
-        they do the work — so pointing them at it is the correct thing to do, and applying this
-        guard to those five would forbid the one link they need. The rule was always about a
-        surface that does not exist for the reader, not about the word.
+        ⚠ Scoped to the readers who have NO console. A reviewer has one — it is where they do the
+        work — and since 2026-08-04 so do the admin and reviewer joining letters, whose whole
+        subject is the access they have just been given. Applying this guard to them would forbid
+        the one thing those letters exist to say.
         """
-        for tpl in PartnerEmailTemplate.objects.exclude(
-                kind__in=PartnerEmailTemplate.REVIEWER_KINDS):
+        for tpl in PartnerEmailTemplate.objects.exclude(kind__in=self.CONSOLE_AUDIENCE_KINDS):
             for word in ('partner console', 'log in', 'dashboard'):
                 self.assertNotIn(word, tpl.body.lower(), f'{tpl.kind} links somewhere that is not built')
+
+    def test_THE_SOURCE_LETTER_IS_STILL_INSIDE_THE_GUARD(self):
+        # ⚠ It describes a console that does not exist. Excluding it "for consistency" with the
+        # other invitations is the mistake this asserts against — its safety is that nothing sends
+        # it, and the day that changes the exclusion must be a deliberate edit.
+        self.assertNotIn('invite_source', self.CONSOLE_AUDIENCE_KINDS)
 
     def test_every_reviewer_email_DOES_point_at_the_reviewer_dashboard(self):
         # The other half of the rule above: the five reviewer emails exist to get somebody back to

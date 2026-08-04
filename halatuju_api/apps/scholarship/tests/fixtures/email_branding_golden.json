@@ -541,23 +541,23 @@
   },
   "partner_welcome.google": {
     "attachments": [],
-    "body": "Dear Kalai,\n\nYou have been added to HalaTuju as a reviewer.\n\nSign in here:\nhttp://localhost:3000/admin/login\n\nJust click \"Sign in with Google\" and use this email address (r@x.test) — there is no password to set up. Your access is waiting for you.\n\nAny trouble at all, just reply to this email.\n\nWarm regards,\nThe HalaTuju Team",
+    "body": "Dear Kalai,\n\nYou have been added to BrightPath as a reviewer.\n\nSign in here:\nhttp://localhost:3000/admin/login\n\nJust click \"Sign in with Google\" and use this email address (r@x.test) — there is no password to set up. Your access is waiting for you.\n\nOnce you are in, you will see the applicants assigned to you. For each one you read their application and the documents they have uploaded, meet them for a short interview, and record what you find. The system proposes interview times and emails the student, so you are not chasing anybody.\n\nThere is a guide and a set of frequently asked questions in the dashboard, under Guide and FAQ. They cover what to look for, how to record a verdict, and what happens after you do.\n\nIf a case is not one you can take — you know the family, or the timing does not work — just reply and we will reassign it. That is a normal thing to do.\n\nAny trouble at all, just reply to this email.\n\nWarm regards,\nThe BrightPath Bursary Team",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
     "reply_to": [
       "help@halatuju.xyz"
     ],
-    "subject": "Your HalaTuju partner access"
+    "subject": "Your access to BrightPath"
   },
   "partner_welcome.pw": {
     "attachments": [],
-    "body": "Dear Kalai,\n\nYou have been added to HalaTuju as a reviewer.\n\nSign in here:\nhttp://localhost:3000/admin/login\n\nYour temporary password (valid for 7 days) is:\n\n    Temp1234\n\nYou'll be asked to choose your own password the first time you use it.\n\nIf it expires before you sign in, or you lose it, you can set a new one yourself at any time with \"Forgot password\" on the sign-in page — or ask whoever added you to re-send your details.\n\nAny trouble at all, just reply to this email.\n\nWarm regards,\nThe HalaTuju Team",
+    "body": "Dear Kalai,\n\nYou have been added to BrightPath as a reviewer.\n\nSign in here:\nhttp://localhost:3000/admin/login\n\nYour temporary password (valid for 7 days) is:\n\n    Temp1234\n\nYou'll be asked to choose your own password the first time you use it.\n\nIf it expires before you sign in, or you lose it, you can set a new one yourself at any time with \"Forgot password\" on the sign-in page — or ask whoever added you to re-send your details.\n\nOnce you are in, you will see the applicants assigned to you. For each one you read their application and the documents they have uploaded, meet them for a short interview, and record what you find. The system proposes interview times and emails the student, so you are not chasing anybody.\n\nThere is a guide and a set of frequently asked questions in the dashboard, under Guide and FAQ. They cover what to look for, how to record a verdict, and what happens after you do.\n\nIf a case is not one you can take — you know the family, or the timing does not work — just reply and we will reassign it. That is a normal thing to do.\n\nAny trouble at all, just reply to this email.\n\nWarm regards,\nThe BrightPath Bursary Team",
     "from_email": "HalaTuju <noreply@halatuju.xyz>",
     "html": "",
     "reply_to": [
       "help@halatuju.xyz"
     ],
-    "subject": "Your HalaTuju partner access"
+    "subject": "Your access to BrightPath"
   },
   "pass.en": {
     "attachments": [],

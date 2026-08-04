@@ -2435,17 +2435,51 @@ def _welcome_access_block(to_email, temp_password, google):
             '— with Google, or with your existing password. Your new access is waiting for you.')
 
 
+#: What a REVIEWER is told after the sign-in block. Owner, 2026-08-04: the one-paragraph letter was
+#: too brief for somebody being handed unfamiliar work. It says what reviewing actually involves,
+#: where the guidance lives, and — the part volunteers most need permission for — that handing a
+#: case back is ordinary.
+_REVIEWER_WELCOME_BODY = (
+    'Once you are in, you will see the applicants assigned to you. For each one you read their '
+    'application and the documents they have uploaded, meet them for a short interview, and record '
+    'what you find. The system proposes interview times and emails the student, so you are not '
+    'chasing anybody.\n\n'
+    'There is a guide and a set of frequently asked questions in the dashboard, under Guide and '
+    'FAQ. They cover what to look for, how to record a verdict, and what happens after you do.\n\n'
+    'If a case is not one you can take — you know the family, or the timing does not work — just '
+    'reply and we will reassign it. That is a normal thing to do.'
+)
+
+#: The same for an ADMIN. Deliberately shorter: an admin's work is not one repeated task, so the
+#: honest thing is to say what the console holds and that their role decides what they may change.
+_ADMIN_WELCOME_BODY = (
+    'The console is where {org}’s bursary work happens: applications and where each one has '
+    'got to, the students being supported, and the people who help run it. What you can see and '
+    'change depends on your role, so some areas may be read-only for you.\n\n'
+    'There is a guide and a set of frequently asked questions in the dashboard, under Guide and '
+    'FAQ.'
+)
+
+
 def build_partner_welcome_email(to_email, name, role, temp_password=None, google=False):
     """The wording of the welcome email → ``(subject, body)``.
 
     Split out of the sender so the console's read-only system-email list renders THIS text rather
     than a second copy of it. A preview that can drift from the mail is worse than no preview —
     the whole point of showing these is that an org_admin knows what actually goes out.
+
+    ⚠ **THREE NAMES, THREE LEVELS, AND THEY ARE NOT INTERCHANGEABLE** (owner, 2026-08-04):
+    **HalaTuju** is the PLATFORM (the software they sign in to), **BrightPath** is the
+    ORGANISATION they are joining, and the **BrightPath Bursary** is the PROGRAMME the work is
+    about. This letter previously said "added to HalaTuju", which named the software instead of the
+    body they now belong to. Take the org from `branding.org_short_name` and the programme from
+    `programme_name` — never a literal.
     """
     who = name or 'there'
     role_label = _PARTNER_ROLE_LABELS.get(role, 'a team member')
     frontend = _P.frontend_url
     link = f'{frontend}/admin/login'
+    org = _P.org_short_name
     # ⚠ ONE home for the access paragraph, shared with the editable template's `{access}` block —
     # so the wording an organisation cannot edit is also the wording the built-in body uses, and
     # the two can never say different things about how to sign in.
@@ -2457,20 +2491,30 @@ def build_partner_welcome_email(to_email, name, role, temp_password=None, google
     template_kind = _invite_kind_for_role(role)
     stored = _invite_render(template_kind, {
         'name': who, 'role_label': role_label, 'login_link': link, 'access': access,
+        'org_name': org, 'programme_name': _P.programme_name('en'),
         'team_signoff': _P.team_signoff('en'),
     }, must_contain=(access, link)) if template_kind else None
     if stored:
         return stored
 
+    # The built-in body varies by the SAME kind that chooses the template, so the fallback a person
+    # receives is the one written for their audience — not a generic letter that happens to be
+    # shorter. `partner`/`super` (no kind) keep the plain paragraph: they are platform-level, and
+    # neither the reviewer's workflow nor the admin's console description is true of them.
+    detail = {
+        'invite_reviewer': _REVIEWER_WELCOME_BODY,
+        'invite_admin': _ADMIN_WELCOME_BODY.replace('{org}', org),
+    }.get(template_kind, '')
     body = (
         f'Dear {who},\n\n'
-        f'You have been added to HalaTuju as {role_label}.\n\n'
+        f'You have been added to {org} as {role_label}.\n\n'
         f'Sign in here:\n{link}\n\n'
         f'{access}\n\n'
-        f'Any trouble at all, just reply to this email.\n\n'
-        f'Warm regards,\nThe HalaTuju Team'
+        + (f'{detail}\n\n' if detail else '')
+        + f'Any trouble at all, just reply to this email.\n\n'
+        f'Warm regards,\n{_P.team_signoff("en")}'
     )
-    return 'Your HalaTuju partner access', body
+    return f'Your access to {org}', body
 
 
 def send_partner_welcome_email(to_email, name, role, temp_password=None, google=False):
@@ -2893,7 +2937,17 @@ def _fmt_myt_time(dt):
 
 
 def _fmt_myt(dt):
-    """Format a tz-aware datetime in Malaysia time, e.g. 'Mon, 23 Jun 2026, 8:00 PM (MYT)'."""
+    """Format a tz-aware datetime in Malaysia time, e.g. 'Mon, 23 Jun 2026, 8:00 PM (MYT)'.
+
+    ⚠ An already-formatted STRING passes through untouched. That exists for one caller — the
+    read-only email catalogue, which renders each letter twice through this same builder: once with
+    real particulars and once with `{interview_time}` in their place, so a reader sees the SHAPE of
+    the email rather than a made-up date they might mistake for a real booking. Without the
+    passthrough the token render would raise on the format spec, and the catalogue would have to
+    keep its own copy of the prose — which is the one thing it exists to avoid.
+    """
+    if isinstance(dt, str):
+        return dt
     if dt is None:
         return ''
     try:

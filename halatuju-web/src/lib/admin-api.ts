@@ -709,8 +709,12 @@ export async function getInvitationEmails(options?: ApiOptions) {
 /** One of the reviewer emails nobody can edit, rendered by the code that sends it. */
 export type ReviewerSystemEmail = {
   key: string
+  /** The SHAPE — the letter with `{ref}`, `{interview_time}` and friends left as names. */
   subject: string
   body: string
+  /** The same letter with real particulars filled in. Both come from one builder server-side. */
+  sample_subject: string
+  sample_body: string
   sensitive: boolean
   wider_audience: boolean
 }

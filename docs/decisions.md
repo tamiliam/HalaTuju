@@ -1,5 +1,52 @@
 # Architectural Decisions — HalaTuju
 
+## Three names, three levels: HalaTuju / BrightPath / BrightPath Bursary — 2026-08-04
+**Decision (owner):** **HalaTuju** is the PLATFORM (the software people sign in to), **BrightPath**
+is the ORGANISATION, and the **BrightPath Bursary** is the PROGRAMME. They are not interchangeable
+and copy must not swap them.
+
+**What was wrong.** The joining letter opened *"You have been added to HalaTuju as an
+administrator"* — naming the software instead of the body somebody had just joined — and signed off
+"The HalaTuju Team" on a letter about an organisation's own work. Both now resolve from branding:
+the org from `org_short_name`, the programme from `programme_name`, the sign-off from
+`team_signoff`. **Never a literal**, so a second tenant inherits its own names.
+
+**⚠ `{org_name}` MEANS "THE ORGANISATION THIS LETTER CONCERNS", AND THAT DIFFERS BY KIND.** In the
+staff and sponsor invitations it is BrightPath; in the source invitation it is the SOURCE
+organisation being written to. That is coherent but easy to misread, so each kind's placeholder
+list says which. **Revisit if:** a letter ever needs both at once — it would need a second token,
+not a re-pointing of this one.
+
+## The read-only email catalogue shows the SHAPE, with an example beside it — 2026-08-04
+**Decision (owner):** each code-owned reviewer email renders twice — once with `{ref}`,
+`{applicant_name}`, `{interview_time}` in place of particulars, once with a worked sample — and the
+screen shows the shape first with the example alongside.
+
+**Why.** The list previously showed only a sample, so a reader met `HT-0000` and a September date
+with no way to tell which parts were real. Owner: *"What is HT-0000? … Would it be possible to
+replace sample values with variables?"*
+
+**⚠ THE ANTI-DRIFT GUARANTEE IS UNTOUCHED, AND THAT IS THE WHOLE TRICK.** Both renders go through
+the SAME `emails.build_*` function the sender calls — the tokens are simply what we pass as the
+particulars. Nothing here keeps a second copy of the prose, which is the one thing this module
+exists to avoid. `emails._fmt_myt` gained a str passthrough for exactly one caller so a token can
+survive the date formatter; `test_the_preview_IS_the_email` now compares a real send against the
+SAMPLE render, so the proof still holds end to end.
+
+**Alternatives considered:** (a) tokens only — rejected, an example is genuinely useful for judging
+tone; (b) a legend of token meanings under the sample — rejected, it is a third thing to keep in
+sync with the prose.
+
+## A caveat is stated once, not per row — 2026-08-04
+**Decision (owner):** the Invitations Emails tab states the locked-sign-in-paragraph rule once, in
+the card header, worded to scope itself (*"where a letter hands somebody an account…"*). The
+duplicate "not sent yet" line under the source row is deleted — its own description already says so.
+
+**Why.** The note repeated on three of four rows and the source row said the same thing twice. A
+caveat repeated down a list stops being read, and the reader starts skimming exactly the text that
+was worth reading. Owner: *"Some of the explanatory texts are repeating."*
+
+
 ## One invitation letter per group, and `KIND_ROLES` decides which — 2026-08-04
 **Decision (owner):** four editable invitation templates — `invite_admin`, `invite_reviewer`,
 `invite_source`, `invite_sponsor` — one per table on Organisation → Invitations. The single

@@ -118,8 +118,15 @@ PLACEHOLDERS = {
     # Admin and reviewer are separate kinds with an IDENTICAL token set. That is deliberate: they
     # are the same mechanism addressed to two audiences, and the whole point of splitting them is
     # that the two can now say different things.
-    'invite_admin': {'name', 'role_label', 'login_link', 'access', 'team_signoff'},
-    'invite_reviewer': {'name', 'role_label', 'login_link', 'access', 'team_signoff'},
+    # ⚠ `org_name` here is the ORGANISATION BEING JOINED (BrightPath), not a referral partner —
+    # this token means "the organisation this letter concerns", which differs by kind: the source
+    # invitation's `org_name` is the SOURCE organisation being written to. Three levels, three
+    # names (owner, 2026-08-04): HalaTuju is the platform, BrightPath the organisation, the
+    # BrightPath Bursary the programme. `{login_link}` is the platform; do not name it in prose.
+    'invite_admin': {'name', 'role_label', 'login_link', 'access', 'org_name', 'programme_name',
+                     'team_signoff'},
+    'invite_reviewer': {'name', 'role_label', 'login_link', 'access', 'org_name',
+                        'programme_name', 'team_signoff'},
     # The source organisation's own access. `contact_person` (their named contact) rather than
     # `name`, matching every other letter this table sends to an ORGANISATION — and `org_name`,
     # because the letter is addressed to a body, not a person.

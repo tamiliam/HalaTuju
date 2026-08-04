@@ -297,39 +297,59 @@ SEEDS = {
     # are what "changes nothing anybody receives" means here. The split buys the ORGANISATION the
     # ability to make them differ — it is not a claim that they already do.
     'invite_admin': {
-        'subject': 'Your HalaTuju partner access',
+        'subject': 'Your access to {org_name}',
         'body': (
             'Dear {name},\n'
             '\n'
-            'You have been added to HalaTuju as {role_label}.\n'
+            'You have been added to {org_name} as {role_label}.\n'
             '\n'
             'Sign in here:\n'
             '{login_link}\n'
             '\n'
             '{access}\n'
             '\n'
+            'The console is where {org_name}\u2019s bursary work happens: applications and where '
+            'each one has got to, the students being supported, and the people who help run it. '
+            'What you can see and change depends on your role, so some areas may be read-only '
+            'for you.\n'
+            '\n'
+            'There is a guide and a set of frequently asked questions in the dashboard, under '
+            'Guide and FAQ.\n'
+            '\n'
             'Any trouble at all, just reply to this email.\n'
             '\n'
             'Warm regards,\n'
-            'The HalaTuju Team'
+            '{team_signoff}'
         ),
     },
     'invite_reviewer': {
-        'subject': 'Your HalaTuju partner access',
+        'subject': 'Your access to {org_name}',
         'body': (
             'Dear {name},\n'
             '\n'
-            'You have been added to HalaTuju as {role_label}.\n'
+            'You have been added to {org_name} as {role_label}.\n'
             '\n'
             'Sign in here:\n'
             '{login_link}\n'
             '\n'
             '{access}\n'
             '\n'
+            'Once you are in, you will see the applicants assigned to you. For each one you read '
+            'their application and the documents they have uploaded, meet them for a short '
+            'interview, and record what you find. The system proposes interview times and emails '
+            'the student, so you are not chasing anybody.\n'
+            '\n'
+            'There is a guide and a set of frequently asked questions in the dashboard, under '
+            'Guide and FAQ. They cover what to look for, how to record a verdict, and what '
+            'happens after you do.\n'
+            '\n'
+            'If a case is not one you can take \u2014 you know the family, or the timing does '
+            'not work \u2014 just reply and we will reassign it. That is a normal thing to do.\n'
+            '\n'
             'Any trouble at all, just reply to this email.\n'
             '\n'
             'Warm regards,\n'
-            'The HalaTuju Team'
+            '{team_signoff}'
         ),
     },
     # ⚠ NOTHING SENDS THIS YET — no Source Partner has a login and the page offers no way to invite

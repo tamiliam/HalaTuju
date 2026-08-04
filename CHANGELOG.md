@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## Three owner corrections to the invitation emails - 2026-08-04
+
+**No migration.** api + web.
+
+- **The read-only reviewer emails show the SHAPE, not a made-up sample.** `HT-0000` and a September
+  date read as real particulars; they are now `{ref}` and `{interview_time}`, with a worked example
+  beside them. **Both renders come from the same builder the sender uses**, so the preview still
+  cannot drift from the mail — the tokens are just what we pass as particulars.
+- **The explanatory notes stop repeating.** The locked-sign-in caveat appeared on three of four
+  rows and the source row said it was unsent twice. Both are stated once, in the card header,
+  worded to scope themselves.
+- **The admin and reviewer joining letters say something useful.** They were one paragraph because
+  a single template served both audiences. The reviewer letter now describes what reviewing
+  involves, points at the Guide and FAQ, and says plainly that handing a case back is normal; the
+  admin letter says what the console holds and that their role decides what they may change.
+- **⚠ THREE NAMES, THREE LEVELS** (owner): **HalaTuju** is the platform, **BrightPath** the
+  organisation, the **BrightPath Bursary** the programme. The letter said "added to HalaTuju",
+  naming the software instead of the body somebody had joined, and signed off as the platform. Both
+  now resolve from branding rather than literals, so a second tenant inherits its own names.
+
+`pytest` **5533** - `jest` **1418** - `next lint` **0 errors** - i18n **4521x3** - `tsc` clean.
+Two of the 113 email goldens changed, both deliberately, and the diff was read before accepting.
+
 ## The seed can push a rewritten letter through, without flattening the rest - 2026-08-04
 
 Follow-up the same day, and the reason the pitch above did not go live on its first deploy.

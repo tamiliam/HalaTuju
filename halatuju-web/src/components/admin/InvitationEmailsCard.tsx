@@ -26,16 +26,6 @@ import PartnerTemplateEditor from '@/components/sources/PartnerTemplateEditor'
  * with Google / you already have an account). The editor refuses a save that has dropped it, and
  * the sender falls back to the built-in letter if a stored body somehow renders without it.
  */
-/**
- * The kinds whose letter carries the `{access}` paragraph — everything except the sponsor one,
- * which invites a stranger to register rather than handing an account to somebody.
- *
- * A SET rather than `kind !== 'invite_sponsor'`: the negative form silently adds the warning to
- * every future kind, and the next one added here is as likely to be another outward invitation as
- * another account handover.
- */
-const CARRIES_ACCESS = new Set(['invite_admin', 'invite_reviewer', 'invite_source'])
-
 export default function InvitationEmailsCard({ token, t }: {
   token: string | null
   t: (key: string, params?: Record<string, string>) => string
@@ -67,9 +57,14 @@ export default function InvitationEmailsCard({ token, t }: {
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
           {t('admin.invitations.emails.subtitle')}
         </p>
-        {/* The one thing a reader must not get wrong. */}
+        {/* The two things a reader must not get wrong, said once each. `accessLocked` scopes
+            itself ("where a letter hands somebody an account") rather than being repeated on the
+            three rows it happens to apply to. */}
         <p className="mt-2 max-w-3xl text-sm text-amber-700">
           {t('admin.invitations.emails.alwaysSends')}
+        </p>
+        <p className="mt-1.5 max-w-3xl text-sm text-amber-700">
+          {t('admin.invitations.emails.accessLocked')}
         </p>
       </div>
 
@@ -84,16 +79,11 @@ export default function InvitationEmailsCard({ token, t }: {
                 <p className="mt-0.5 text-sm text-gray-500">
                   {t(`admin.invitations.emails.when.${tpl.kind}`)}
                 </p>
-                {CARRIES_ACCESS.has(tpl.kind) && (
-                  <p className="mt-1.5 text-xs text-amber-700">
-                    {t('admin.invitations.emails.accessLocked')}
-                  </p>
-                )}
-                {tpl.kind === 'invite_source' && (
-                  <p className="mt-1.5 text-xs text-gray-500">
-                    {t('admin.invitations.emails.notSentYet')}
-                  </p>
-                )}
+                {/* ⚠ NOTHING PER-ROW BEYOND ITS OWN NAME AND WHEN IT SENDS (owner, 2026-08-04).
+                    The locked-access note used to repeat on three of the four rows, and the source
+                    row said it was unsent twice over — once in its description and once in a note
+                    of its own. Both facts are now stated ONCE, in the header. A caveat repeated
+                    down a list stops being read. */}
               </div>
               <button type="button"
                 onClick={() => setOpenKind(openKind === tpl.kind ? null : tpl.kind)}

@@ -66,32 +66,22 @@ describe('the four letters', () => {
   })
 })
 
-describe('what each row admits about itself', () => {
-  it('warns that the sign-in paragraph is locked on the three account letters', async () => {
+describe('the caveats are stated once, not per row', () => {
+  it('⚠ shows the locked-access note ONCE, in the header', async () => {
+    // Owner, 2026-08-04: it repeated on three of the four rows. A caveat repeated down a list
+    // stops being read, and it was never true of the sponsor letter anyway.
     await loaded()
-    for (const kind of ['invite_admin', 'invite_reviewer', 'invite_source']) {
-      expect(
-        within(rowFor(kind)).getByText('admin.invitations.emails.accessLocked'),
-      ).toBeTruthy()
-    }
+    expect(screen.getAllByText('admin.invitations.emails.accessLocked').length).toBe(1)
   })
 
-  it('⚠ does NOT warn about locked access on the sponsor letter', async () => {
-    // It hands nobody an account — it links a stranger to the ordinary sign-up. The warning there
-    // would describe a password that does not exist.
+  it('⚠ does NOT repeat that the source letter is unsent', async () => {
+    // Its description already says so. The second line was mine and was pure duplication.
     await loaded()
-    expect(
-      within(rowFor('invite_sponsor')).queryByText('admin.invitations.emails.accessLocked'),
-    ).toBeNull()
+    expect(screen.queryByText('admin.invitations.emails.notSentYet')).toBeNull()
   })
 
-  it('⚠ admits that ONLY the source letter is not sent by anything yet', async () => {
+  it('still says plainly that these always send', async () => {
     await loaded()
-    expect(within(rowFor('invite_source')).getByText(
-      'admin.invitations.emails.notSentYet')).toBeTruthy()
-    for (const kind of ['invite_admin', 'invite_reviewer', 'invite_sponsor']) {
-      expect(within(rowFor(kind)).queryByText(
-        'admin.invitations.emails.notSentYet')).toBeNull()
-    }
+    expect(screen.getByText('admin.invitations.emails.alwaysSends')).toBeTruthy()
   })
 })

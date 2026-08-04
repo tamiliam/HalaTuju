@@ -3219,6 +3219,8 @@
           "subjectLabel": "Subjek:",
           "show": "Papar teks",
           "hide": "Sembunyikan teks",
+          "shapeLabel": "Teks surat",
+          "exampleLabel": "Contoh",
           "sensitive": "Membawa kata laluan sementara penilai baharu.",
           "widerAudience": "Turut dihantar kepada pentadbir organisasi anda.",
           "kind": {
@@ -5482,9 +5484,8 @@
         "title": "Apa yang diberitahu apabila anda menjemput seseorang",
         "subtitle": "Teks empat e-mel jemputan. Suntinglah dengan bebas.",
         "alwaysSends": "E-mel ini sentiasa dihantar. Tiada suis, kerana jemputan yang tidak menghantar e-mel ialah jemputan yang tidak diterima sesiapa.",
-        "accessLocked": "Perenggan log masuk — termasuk kata laluan sementara — ditambah oleh kami dan tidak boleh disunting. Ia berubah mengikut cara orang itu log masuk.",
+        "accessLocked": "Apabila sesuatu surat memberikan akaun kepada seseorang, perenggan log masuk — termasuk sebarang kata laluan sementara — ditambah oleh kami dan tidak boleh disunting. Ia berubah mengikut cara orang itu log masuk.",
         "loadError": "E-mel ini tidak dapat dimuatkan.",
-        "notSentYet": "Belum dihantar oleh apa-apa lagi — konsol Sumber masih dalam pembinaan.",
         "kind": {
           "invite_admin": "Menyertai pasukan — pentadbir",
           "invite_reviewer": "Menyertai pasukan — penilai",

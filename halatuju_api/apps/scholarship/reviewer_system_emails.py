@@ -9,14 +9,21 @@ wording edit could quietly break.
 under Organisation → Invitations; see the note on `SYSTEM_EMAILS`.
 
 ⚠ THE POINT OF THIS MODULE IS THAT THE PREVIEW CANNOT DRIFT FROM THE MAIL. Each entry renders
-through the SAME ``emails.build_*`` function the sender calls, with sample particulars. A second
-copy of the prose, kept "in sync" by hand, would be worse than showing nothing: it would tell an
-org_admin something true today and false after the next edit. If you change one of these emails,
-this list changes with it, because there is only one copy.
+through the SAME ``emails.build_*`` function the sender calls. A second copy of the prose, kept
+"in sync" by hand, would be worse than showing nothing: it would tell an org_admin something true
+today and false after the next edit. If you change one of these emails, this list changes with it,
+because there is only one copy.
 
-The values below are sample particulars — a made-up applicant, a made-up reference. `SAMPLE_START`
-is a fixed instant rather than "now" so the rendered text is stable between reads (a preview that
-changes every minute reads as unreliable, and the screen is comparing wording, not clocks).
+⚠ **EACH ONE IS RENDERED TWICE — the SHAPE and an EXAMPLE** (owner, 2026-08-04). The list used to
+show only worked samples, so a reader met `HT-0000` and a September date with no way to tell which
+parts were real and which were filled in per send. Now the primary render substitutes `{ref}`,
+`{applicant_name}`, `{interview_time}` and friends, and the sample sits beside it. **Both go
+through the same builder**, so the anti-drift guarantee is untouched — the tokens are simply what
+we pass as the particulars.
+
+The sample values are a made-up applicant and reference. `SAMPLE_START` is a fixed instant rather
+than "now" so the rendered text is stable between reads (a preview that changes every minute reads
+as unreliable, and the screen is comparing wording, not clocks).
 """
 
 import datetime
@@ -26,48 +33,72 @@ from . import emails
 #: A fixed sample interview time. Deliberately NOT `timezone.now()` — see the module docstring.
 SAMPLE_START = datetime.datetime(2026, 9, 15, 10, 30, tzinfo=datetime.timezone.utc)
 
-_SAMPLE_REVIEWER = 'Reviewer'
-_SAMPLE_APPLICANT = 'the applicant'
-_SAMPLE_REF = 'HT-0000'
+#: The worked example: what one real send looks like.
+SAMPLE = {
+    'reviewer_name': 'Reviewer',
+    'applicant_name': 'the applicant',
+    'ref': 'HT-0000',
+    'start': SAMPLE_START,
+    'meeting_url': 'https://meet.google.com/…',
+    'verdict_due': '25/09/2026',
+    'cancel_reason': 'Something came up at home.',
+    'alternatives_note': 'I have class at both of those times.',
+    'student_message': 'I am running about ten minutes late.',
+}
+
+#: The SHAPE: the same fields, each carrying its own name.
+#:
+#: ⚠ `start` is a STRING here and reaches `emails._fmt_myt`, which passes an already-formatted
+#: value through untouched. That one line in the formatter exists for this and nothing else — see
+#: its docstring. Without it the token render would raise on the format spec and this catalogue
+#: would need its own copy of the prose, which is the single thing it exists to avoid.
+TOKENS = {
+    'reviewer_name': '{reviewer_name}',
+    'applicant_name': '{applicant_name}',
+    'ref': '{ref}',
+    'start': '{interview_time}',
+    'meeting_url': '{meeting_link}',
+    'verdict_due': '{verdict_due}',
+    'cancel_reason': '{reason_they_gave}',
+    'alternatives_note': '{note_they_wrote}',
+    'student_message': '{their_message}',
+}
 
 
-def _booked():
+def _booked(v):
     return emails.build_reviewer_interview_booked_email(
-        reviewer_name=_SAMPLE_REVIEWER, applicant_name=_SAMPLE_APPLICANT, start=SAMPLE_START,
-        meeting_url='https://meet.google.com/…', ref=_SAMPLE_REF, duration_min=30,
-        calendar_invite_sent=True)
+        reviewer_name=v['reviewer_name'], applicant_name=v['applicant_name'], start=v['start'],
+        meeting_url=v['meeting_url'], ref=v['ref'], duration_min=30, calendar_invite_sent=True)
 
 
-def _reminder():
+def _reminder(v):
     return emails.build_reviewer_interview_reminder_email(
-        reviewer_name=_SAMPLE_REVIEWER, applicant_name=_SAMPLE_APPLICANT, start=SAMPLE_START,
-        meeting_url='https://meet.google.com/…', when='1day', ref=_SAMPLE_REF,
-        verdict_due='25/09/2026')
+        reviewer_name=v['reviewer_name'], applicant_name=v['applicant_name'], start=v['start'],
+        meeting_url=v['meeting_url'], when='1day', ref=v['ref'], verdict_due=v['verdict_due'])
 
 
-def _cancelled():
+def _cancelled(v):
     return emails.build_reviewer_interview_cancelled_email(
-        reviewer_name=_SAMPLE_REVIEWER, applicant_name=_SAMPLE_APPLICANT, ref=_SAMPLE_REF,
-        reason='Something came up at home.')
+        reviewer_name=v['reviewer_name'], applicant_name=v['applicant_name'], ref=v['ref'],
+        reason=v['cancel_reason'])
 
 
-def _alternatives():
+def _alternatives(v):
     return emails.build_reviewer_alternatives_requested_email(
-        reviewer_name=_SAMPLE_REVIEWER, applicant_name=_SAMPLE_APPLICANT, ref=_SAMPLE_REF,
-        note='I have class at both of those times.')
+        reviewer_name=v['reviewer_name'], applicant_name=v['applicant_name'], ref=v['ref'],
+        note=v['alternatives_note'])
 
 
-def _student_message():
+def _student_message(v):
     return emails.build_reviewer_student_message_email(
-        reviewer_name=_SAMPLE_REVIEWER, applicant_name=_SAMPLE_APPLICANT,
-        message='I am running about ten minutes late.', ref=_SAMPLE_REF,
-        interview_start=SAMPLE_START)
+        reviewer_name=v['reviewer_name'], applicant_name=v['applicant_name'],
+        message=v['student_message'], ref=v['ref'], interview_start=v['start'])
 
 
-def _escalation():
+def _escalation(v):
     return emails.build_verdict_escalation_email(
-        applicant_name=_SAMPLE_APPLICANT, ref=_SAMPLE_REF, reviewer_name=_SAMPLE_REVIEWER,
-        due_by='25/09/2026')
+        applicant_name=v['applicant_name'], ref=v['ref'], reviewer_name=v['reviewer_name'],
+        due_by=v['verdict_due'])
 
 
 #: ``(key, builder)`` in the order the screen reads them: the interview in sequence, then the one
@@ -100,7 +131,10 @@ WIDER_AUDIENCE_KEYS = frozenset({'verdict_escalation'})
 
 
 def rendered():
-    """Every system reviewer email as ``{key, subject, body, sensitive, wider_audience}``.
+    """Every system reviewer email, as the SHAPE plus a worked example.
+
+    ``{key, subject, body, sample_subject, sample_body, sensitive, wider_audience}`` — `subject`
+    and `body` carry the tokens, so a reader sees which parts are filled in per send.
 
     A builder that raises is skipped rather than taking the screen down with it — this is a
     reference list, and half a list beats an error page on a working Emails tab.
@@ -108,13 +142,16 @@ def rendered():
     out = []
     for key, build in SYSTEM_EMAILS:
         try:
-            subject, body = build()
+            subject, body = build(TOKENS)
+            sample_subject, sample_body = build(SAMPLE)
         except Exception:  # pragma: no cover - defensive; a builder has no reason to raise
             continue
         out.append({
             'key': key,
             'subject': subject,
             'body': body,
+            'sample_subject': sample_subject,
+            'sample_body': sample_body,
             'sensitive': key in SENSITIVE_KEYS,
             'wider_audience': key in WIDER_AUDIENCE_KEYS,
         })

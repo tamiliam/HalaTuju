@@ -185,9 +185,29 @@ export default function ReviewerEmailsCard({ token, t }: {
                       : 'admin.reviewers.emails.system.show')}
                   </button>
                 </div>
+                {/* ⚠ TWO RENDERS, SIDE BY SIDE (owner, 2026-08-04). The list used to show only a
+                    worked sample, so a reader met "HT-0000" and a September date with no way to
+                    tell which parts were real. The shape leads; the example sits beside it on a
+                    wide screen and beneath it on a narrow one. Both come from the SAME server-side
+                    builder — this is not a front-end reconstruction of either. */}
                 {openSystem === row.key && (
-                  <pre className="mt-3 whitespace-pre-wrap break-words rounded-lg border bg-white
-                                  p-3 text-sm text-gray-700 font-sans">{row.body}</pre>
+                  <div className="mt-3 grid gap-4 lg:grid-cols-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-1.5">
+                        {t('admin.reviewers.emails.system.shapeLabel')}
+                      </p>
+                      <pre className="whitespace-pre-wrap break-words rounded-lg border bg-white
+                                      p-3 text-sm text-gray-700 font-sans">{row.body}</pre>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-1.5">
+                        {t('admin.reviewers.emails.system.exampleLabel')}
+                      </p>
+                      <pre className="whitespace-pre-wrap break-words rounded-lg border
+                                      border-gray-200 bg-gray-100 p-3 text-sm text-gray-600
+                                      font-sans">{row.sample_body}</pre>
+                    </div>
+                  </div>
                 )}
               </li>
             ))}
