@@ -5477,6 +5477,12 @@
         "source": "Sumber",
         "sponsors": "Penaja"
       },
+      "kindOne": {
+        "admins": "Pentadbir",
+        "reviewers": "Penilai",
+        "source": "Sumber",
+        "sponsors": "Penaja"
+      },
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
       "sourceComingSoon": "Akan datang. Rakan sumber menerima e-mel kami hari ini; mereka akan dapat log masuk dan melihat pelajar mereka sendiri apabila ia siap.",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",

@@ -107,10 +107,16 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
           </tbody>
         </table>
       </div>
+      {/* ⚠ The padding belongs HERE, not inside `Pagination` — it is the table's inset, and the
+          component is dropped onto surfaces with different insets (the sponsors page uses the same
+          wrapper). Rendered bare it sat flush against the card edge, out of line with the `px-4`
+          cells above it and with nothing beneath the border. */}
       {paged.visible && (
-        <Pagination page={paged.page} totalPages={paged.totalPages} total={rows.length}
-          pageSize={paged.pageSize} onPageChange={paged.setPage}
-          pageSizeOptions={[10, 25, 50]} onPageSizeChange={paged.setPageSize} />
+        <div className="px-4 pb-4">
+          <Pagination page={paged.page} totalPages={paged.totalPages} total={rows.length}
+            pageSize={paged.pageSize} onPageChange={paged.setPage}
+            pageSizeOptions={[10, 25, 50]} onPageSizeChange={paged.setPageSize} />
+        </div>
       )}
     </div>
   )

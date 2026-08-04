@@ -5477,6 +5477,12 @@
         "source": "Source",
         "sponsors": "Sponsors"
       },
+      "kindOne": {
+        "admins": "Admin",
+        "reviewers": "Reviewer",
+        "source": "Source",
+        "sponsors": "Sponsor"
+      },
       "noneInKind": "Nobody has been invited in this group yet.",
       "sourceComingSoon": "Coming soon. Source partners receive our emails today; they will be able to sign in and see their own students once that is built.",
       "notePlaceholder": "A short note to include (optional)",

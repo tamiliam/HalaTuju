@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## Two corrections off the Invitations screen - 2026-08-04
+
+Web only. No migration, no backend change.
+
+- **"Invite as" reads in the singular** - Admin, Reviewer, Source, Sponsor. A NEW key
+  (`admin.invitations.kindOne.*`) rather than a reworded one: the plural still heads the table
+  below, where it sits above a list of people, so one label cannot be right in both places. A test
+  asserts both forms render, because the tempting tidy-up is to collapse them back onto one key.
+- **The pagination sits inside the table's inset again.** It was rendered bare inside the card, so
+  it ran flush to the edge - out of line with the `px-4` cells above it and with nothing beneath
+  the divider. Wrapped in `px-4 pb-4`, matching the sponsors table, which had it right. ⚠ The
+  padding belongs to the CALLER, not to `Pagination`: the component is dropped onto surfaces with
+  different insets.
+
+`jest` **1419** - `next lint` **0 errors** - i18n **4525x3**.
+
 ## Three owner corrections to the invitation emails - 2026-08-04
 
 **No migration.** api + web.

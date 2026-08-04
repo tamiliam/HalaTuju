@@ -125,7 +125,10 @@ export default function OrganisationInvitationsPage() {
                   className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     kind === k ? 'border-primary-600 bg-primary-600 text-white'
                                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
-                  {t(`admin.invitations.kind.${k}`)}
+                  {/* ⚠ SINGULAR here, PLURAL on the table heading below (owner, 2026-08-04). The
+                      sentence being completed is "Invite as … Admin"; the heading sits above a
+                      list of them. One key cannot be right in both places, so there are two. */}
+                  {t(`admin.invitations.kindOne.${k}`)}
                   {/* The waiting badge — see the ⚠ in the docblock. */}
                   {n > 0 && (
                     <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] ${

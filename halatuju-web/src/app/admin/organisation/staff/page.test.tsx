@@ -65,7 +65,7 @@ const loaded = async () => {
 }
 
 const pick = async (kind: string) => {
-  fireEvent.click(screen.getByText(`admin.invitations.kind.${kind}`).closest('button')!)
+  fireEvent.click(screen.getByText(`admin.invitations.kindOne.${kind}`).closest('button')!)
   await waitFor(() => expect(mockApi.getInvitations).toHaveBeenCalledWith(kind, expect.anything()))
 }
 
@@ -73,16 +73,23 @@ describe('the four kinds', () => {
   it('offers all four', async () => {
     await loaded()
     for (const k of ['admins', 'reviewers', 'source', 'sponsors']) {
-      // getAllBy: the SELECTED kind appears twice — on its button and as the table's heading.
-      expect(screen.getAllByText(`admin.invitations.kind.${k}`).length).toBeGreaterThan(0)
+      expect(screen.getByText(`admin.invitations.kindOne.${k}`)).toBeTruthy()
     }
+  })
+
+  it('⚠ names the BUTTON in the singular and the TABLE in the plural', async () => {
+    // Owner, 2026-08-04. The button completes "Invite as … Admin"; the heading sits above a list.
+    // Asserted together because the temptation is to collapse them back onto one key.
+    await loaded()
+    expect(screen.getByText('admin.invitations.kindOne.admins')).toBeTruthy()
+    expect(screen.getByText('admin.invitations.kind.admins')).toBeTruthy()
   })
 
   it('⚠ shows the waiting count for kinds NOT on screen', async () => {
     // Only one table is visible, so without this an invitation waiting elsewhere is invisible —
     // the exact failure the page exists to end.
     await loaded()
-    const sponsors = screen.getByText('admin.invitations.kind.sponsors').closest('button')!
+    const sponsors = screen.getByText('admin.invitations.kindOne.sponsors').closest('button')!
     expect(within(sponsors).getByText('2')).toBeTruthy()
   })
 
