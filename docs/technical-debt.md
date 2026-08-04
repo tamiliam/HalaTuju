@@ -2524,7 +2524,7 @@ document that it means "read from the letter", not "verified".
 
 **Found:** 2026-08-02, request #10.
 
-The table was five emails to a referral ORGANISATION. It now holds four audiences: the five partner
+The table was five emails to a referral ORGANISATION. It now holds FIVE audiences (a fifth arrived 2026-08-04: four invitation letters to people being asked to join): the five partner
 emails, one to a STUDENT (request #3, 2026-08-01), and five to OUR OWN REVIEWERS (request #10). The
 class name, the table name (`partner_email_templates`), the log (`partner_email_log`) and the module
 (`partner_comms.py`) all still say "partner". A reader looking for "why does my reviewer get this
@@ -2541,6 +2541,8 @@ name is wrong and name the three audiences; `STUDENT_KINDS` and `REVIEWER_KINDS`
 distinction data rather than something a reader has to remember; and `to_student` / `to_reviewer`
 come from the server so no screen can mislabel a recipient.
 
+**⚠ THE TRIGGER HAS NOW FIRED ONCE AND WAS NOT TAKEN.** This entry says "the next time a fourth family is added"; the invitation family arrived on 2026-08-04 and the rename was again deferred, because that sprint was adopting live mail into the machinery and a rename would have made a mail regression indistinguishable from a rename in the diff — the same reason as the first time. Recorded so the deferral is a decision with a count against it rather than a habit.
+
 **Shape of the fix:** rename to `EmailTemplate` / `EmailLog` under expand-contract (`db_table` stays
 put — renaming the tables buys nothing and costs a migration on live rows), rename `partner_comms`
 to `comms`, and leave the partner-specific vocabulary (`qualifying_partners`, the chase table) where
@@ -2549,9 +2551,20 @@ it is. Trigger: the next time a fourth family is added, or any sprint that alrea
 
 **Status:** open, low. Cosmetic; nothing behaves wrongly because of it.
 
-### [TD-213] The invite emails are not visible on the Invitations page — low
+### [TD-213] The invite emails are not visible on the Invitations page — RESOLVED
 
-**Status:** Open · raised 2026-08-03 (invitations sprint)
+**Status:** ✅ Resolved 2026-08-04 (commits `9210bc97`, `087e72d0`) · raised 2026-08-03
+
+**⚠ RESOLVED THE WAY THIS ENTRY SAID NOT TO, ON THE OWNER'S INSTRUCTION — and the objection was
+answered rather than ignored.** The entry below forbade promoting these into `PartnerEmailTemplate`
+because an editable template "invites an org_admin to delete `{temp_password}` from a live,
+password-bearing email". That risk is real and it is what the design now defends against: the
+sign-in paragraph is a STRUCTURAL `{access}` block injected whole and unreachable from the editor;
+the save guard refuses a body that has dropped it; and a send-time backstop falls back to the
+built-in letter if a stored body somehow renders without it. So the wording is editable and the
+credential is not. Four letters now live on the page itself, one per group.
+
+Kept below as written, because the reasoning is still the reason those three guards exist.
 
 The Invitations page shows WHETHER an invite email went and whether it bounced, but not WHAT it
 said. The owner's ruling on the reviewer emails two days earlier applies by the same reasoning:
@@ -2583,3 +2596,30 @@ surface — the cluster this project has now hit six times — so it is recorded
 rediscovered.**
 
 **Trigger:** the first invitation sent to the wrong address.
+
+### [TD-215] The organisation's donor pitch is English-only — low
+
+**Status:** Open · raised 2026-08-04 (invitation emails)
+
+`invite_sponsor` is the organisation asking a stranger to become a donor. It is the most
+persuasion-dependent letter on the platform and it exists in English only, while the
+sponsor-to-sponsor letter it sits beside (`emails.send_sponsor_referral_invite`) has always been
+trilingual en/ms/ta.
+
+**Why it is English-only:** it inherited the `PartnerEmailTemplate` machinery, whose every previous
+row was English throughout — partner progress reports to an organisation's named contact, and
+reviewer mail to our own volunteers. One stored body, one language, is a correct assumption for
+those and a poor one for a cold pitch to an individual.
+
+**⚠ The mechanism has already been extended once for exactly this**: `student_assigned` is bilingual
+in a single body (EN above MS) using `programme_name_ms` / `team_signoff_ms`, because flattening a
+bilingual email onto a monolingual mechanism silently anglicised half of it. That is the pattern to
+copy — brand tokens need their `_ms` (and `_ta`) twins or the translated half renders English brand
+words.
+
+**Not a regression** — the letter it replaced was English-only too. Recorded because the rewrite
+raised what the letter is being asked to do, and a persuasive email in a language the reader does
+not prefer is the case where it matters most.
+
+**Trigger:** the owner's decision (raised with them 2026-08-04, undecided), or the first donor
+invited who would rather read Malay or Tamil.
