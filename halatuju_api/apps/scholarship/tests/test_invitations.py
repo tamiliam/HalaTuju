@@ -693,3 +693,74 @@ class TestTheDonorPitchIsGuardedAgainstATaxClaim(TestCase):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, partner_comms.BANNED_PHRASES)
                 self.assertIn(phrase, sponsor_comms.BANNED_PHRASES)
+
+
+class TestARewrittenBuiltInCanBePushedThroughSafely(TestCase):
+    """⚠ THE SEED KEEPS AN EXISTING ROW — SO A REWRITTEN BUILT-IN REACHES NOBODY BY ITSELF.
+
+    Found in production on 2026-08-04: the sponsor letter was rewritten as a donor pitch, the deploy
+    went green, the seed reported success — and the OLD wording was still what would send, because
+    the row already existed and "kept" is the correct default (an org_admin may have edited it).
+
+    A blanket `--reset` is not the answer: six rows on production carry real human edits. So the
+    reset is scopeable, and these tests pin both halves — the named kind IS rewritten, and every
+    other row is left exactly as it was.
+    """
+
+    def setUp(self):
+        from apps.scholarship.models import PartnerEmailTemplate
+        self.T = PartnerEmailTemplate
+        self._seed()
+
+    def _seed(self, **kwargs):
+        from django.core.management import call_command
+        import io as _io
+        out = _io.StringIO()
+        call_command('seed_partner_email_templates', stdout=out, **kwargs)
+        return out.getvalue()
+
+    def _edit(self, kind, body):
+        self.T.objects.filter(kind=kind).update(body=body, updated_by_email='owner@example.org')
+
+    def test_a_plain_run_KEEPS_a_rewritten_builtin_out_of_production(self):
+        # The defect itself, pinned. Not a bug to fix — the reason the scoped reset has to exist.
+        self._edit('invite_sponsor', 'THE OLD WORDING')
+        self._seed()
+        self.assertEqual(self.T.objects.get(kind='invite_sponsor').body, 'THE OLD WORDING')
+
+    def test_a_scoped_reset_rewrites_only_the_kind_it_names(self):
+        self._edit('invite_sponsor', 'THE OLD WORDING')
+        self._edit('weekly_summary', 'AN OWNER EDIT')
+        self._seed(reset=True, kind=['invite_sponsor'])
+        self.assertIn('donor of', self.T.objects.get(kind='invite_sponsor').body)
+        self.assertEqual(self.T.objects.get(kind='weekly_summary').body, 'AN OWNER EDIT')
+
+    def test_THE_ENV_SCOPE_IS_HOW_THE_CRON_DOES_IT(self):
+        # ⚠ `CronRunView` calls `call_command(name, stdout=…)` and passes nothing else, so without
+        # this the scoped reset would be unreachable on the deployed service — which is the only
+        # place it matters.
+        from django.test import override_settings
+        self._edit('invite_sponsor', 'THE OLD WORDING')
+        self._edit('awarded', 'AN OWNER EDIT')
+        with override_settings(PARTNER_EMAIL_RESET_KINDS='invite_sponsor'):
+            self._seed()
+        self.assertIn('donor of', self.T.objects.get(kind='invite_sponsor').body)
+        self.assertEqual(self.T.objects.get(kind='awarded').body, 'AN OWNER EDIT')
+
+    def test_a_bare_reset_still_rewrites_everything(self):
+        # Unchanged behaviour — the flag did not quietly become narrower.
+        self._edit('weekly_summary', 'AN OWNER EDIT')
+        self._seed(reset=True)
+        self.assertNotEqual(self.T.objects.get(kind='weekly_summary').body, 'AN OWNER EDIT')
+
+    def test_an_unknown_kind_writes_NOTHING_rather_than_silently_doing_less(self):
+        # A typo'd kind on a production one-off must not read as "done" while having skipped the row
+        # it was meant to fix.
+        self._edit('invite_sponsor', 'THE OLD WORDING')
+        out = self._seed(reset=True, kind=['invite_sponsr'])
+        self.assertEqual(self.T.objects.get(kind='invite_sponsor').body, 'THE OLD WORDING')
+        self.assertNotIn('reset', out)
+
+    def test_the_run_says_out_loud_which_kinds_it_will_overwrite(self):
+        out = self._seed(reset=True, kind=['invite_sponsor'])
+        self.assertIn('resetting wording for: invite_sponsor', out)

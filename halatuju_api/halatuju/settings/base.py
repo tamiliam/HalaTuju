@@ -313,6 +313,14 @@ except (TypeError, ValueError):
     AWARD_OFFER_EMAIL_COOLOFF_HOURS = 24
 AWARD_EMAIL_APP_IDS = os.environ.get('AWARD_EMAIL_APP_IDS', '')
 
+# Comma-separated `PartnerEmailTemplate` kinds whose STORED wording the seed command may overwrite.
+# ⚠ The seed keeps an existing row by design (an org_admin may have edited it) — which also means a
+# rewritten built-in never reaches production on its own. This is how a specific rewrite is pushed
+# through, scoped, from the cron endpoint (which passes no command arguments). Six rows on
+# production carry real human edits, so a blanket `--reset` is destructive; always name the kinds.
+# ⚠ SET IT, RUN THE JOB, THEN UNSET IT — while set, every deploy's seed run rewrites those kinds.
+PARTNER_EMAIL_RESET_KINDS = os.environ.get('PARTNER_EMAIL_RESET_KINDS', '')
+
 # F7: when a reviewer is assigned, also email the STUDENT an advance notice (who will
 # contact them + the interviewer's name/phone/email). OFF by default — switch on only after
 # reviewers have given non-objection to sharing their contact. Per-reviewer opt-out lives on

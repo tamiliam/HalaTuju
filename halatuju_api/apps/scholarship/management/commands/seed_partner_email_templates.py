@@ -5,7 +5,17 @@ the other half of `assigned`, sent at the same moment, and it lives here so the 
 and edits its wording on the same screen as the rest. It is the only kind seeded switched ON.
 
 Idempotent: creates a missing kind, leaves an existing row's wording ALONE (an org_admin may have
-edited it) unless `--reset` is passed. Never flips `enabled` — that is the owner's switch.
+edited it) unless a reset is asked for. Never flips `enabled` — that is the owner's switch.
+
+⚠ **"LEAVES IT ALONE" CUTS BOTH WAYS, AND IT BIT ON 2026-08-04.** It also means REWRITING A BUILT-IN
+BODY HERE CHANGES NOTHING ANYBODY RECEIVES once the row exists — the stored row wins, the deploy is
+green, and the seed prints `kept`. The sponsor letter was rewritten into a donor pitch and the old
+wording stayed live until it was pushed through deliberately.
+
+To push a rewrite through, name the kinds: `--reset --kind invite_sponsor`, or on the deployed
+service (where the cron endpoint passes no arguments) set `PARTNER_EMAIL_RESET_KINDS`. **Never a
+bare `--reset` on production — six rows there carry real human edits and it would flatten all of
+them.**
 
 THE VOICE IS A REQUIREMENT, NOT A DRAFT (owner, 2026-07-26): a referral organisation co-owns this
 bursary and may market it as its own, so the students are the ORGANISATION's — never "the students
@@ -14,10 +24,27 @@ email; the reader is a representative, not the owner). Every possessive names th
 `partner_comms.banned_phrases` refuses a save that breaks either rule, and a test asserts these
 seeds pass it.
 """
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.scholarship import partner_comms
 from apps.scholarship.models import PartnerEmailTemplate
+
+
+def _env_reset_kinds():
+    """Kinds whose stored wording this run may overwrite, from `PARTNER_EMAIL_RESET_KINDS`.
+
+    ⚠ **THIS EXISTS BECAUSE THE CRON ENDPOINT CANNOT PASS ARGUMENTS** — `CronRunView` calls
+    `call_command(name, stdout=…)` and nothing else — and because a rewritten built-in otherwise
+    never reaches a production row (the seed keeps what is already there, by design). Same shape as
+    every other one-off scope on this platform: `AWARD_EMAIL_APP_IDS`, `SIGN_INVITE_APP_IDS`,
+    `PATHWAY_REPAIR_APP_IDS`.
+
+    ⚠ **SET IT, RUN IT, THEN UNSET IT.** While it is set, every deploy's seed run rewrites those
+    kinds — which would silently undo an org_admin's edit made in between. Comma-separated.
+    """
+    raw = getattr(settings, 'PARTNER_EMAIL_RESET_KINDS', '') or ''
+    return [k.strip() for k in raw.split(',') if k.strip()]
 
 SEEDS = {
     'weekly_summary': {
@@ -402,7 +429,18 @@ SEEDED_ON = (frozenset({'student_assigned'}) | PartnerEmailTemplate.REVIEWER_KIN
 
 
 class Command(BaseCommand):
-    help = 'Seed the partner-email templates (idempotent; --reset overwrites the wording).'
+    """⚠ **A REWRITTEN BUILT-IN DOES NOT REACH PRODUCTION BY ITSELF** (found the hard way,
+    2026-08-04). "Kept" is the right default — an org_admin may have edited the wording, and a
+    deploy must never silently overwrite it — but it also means changing a body in `SEEDS` changes
+    nothing anybody receives on a system where the row already exists. The stored row wins.
+
+    That is what `--kind` is for. `--reset` alone rewrites EVERY template, which on this production
+    is destructive: six rows carry real human edits. Scope the reset to the kinds you actually
+    rewrote and the owner's wording survives.
+    """
+
+    help = ('Seed the partner-email templates (idempotent). --reset overwrites the wording; '
+            'scope it with --kind so other templates keep their edits.')
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -410,11 +448,35 @@ class Command(BaseCommand):
             help='Overwrite an existing template’s subject/body with the seed wording. '
                  'Never touches its enabled switch.',
         )
+        parser.add_argument(
+            '--kind', action='append', default=None, metavar='KIND',
+            help='Limit the run to this kind (repeatable). ⚠ Use it with --reset: a bare --reset '
+                 'rewrites every template, including any an org_admin has edited by hand.',
+        )
 
     def handle(self, *args, **options):
-        reset = options['reset']
+        only = options.get('kind') or None
+        env_reset = _env_reset_kinds()
+        names = set(partner_comms.KINDS)
+        unknown_kinds = sorted((set(only or ()) | set(env_reset)) - names)
+        if unknown_kinds:
+            self.stderr.write(f'unknown kind(s) {unknown_kinds} — nothing was written')
+            return
+
+        # Which kinds may have their stored wording OVERWRITTEN. `--reset` alone still means
+        # everything (unchanged behaviour); `--kind` narrows it; the env var is how the cron
+        # endpoint scopes it, since `call_command` there takes no arguments.
+        if options['reset']:
+            reset_kinds = set(only) if only else set(names)
+        else:
+            reset_kinds = set(env_reset)
+        if reset_kinds:
+            self.stdout.write(f'resetting wording for: {", ".join(sorted(reset_kinds))}')
+
         created = updated = kept = 0
         for kind in partner_comms.KINDS:
+            if only and kind not in only:
+                continue
             seed = SEEDS[kind]
             # Fail loudly here rather than shipping a template the API would then refuse to save.
             unknown = partner_comms.unknown_placeholders(kind, seed['subject'], seed['body'])
@@ -434,7 +496,7 @@ class Command(BaseCommand):
                 )
                 created += 1
                 self.stdout.write(f'created  {kind}')
-            elif reset:
+            elif kind in reset_kinds:
                 tpl.subject = seed['subject']
                 tpl.body = seed['body']
                 tpl.save(update_fields=['subject', 'body', 'updated_at'])
