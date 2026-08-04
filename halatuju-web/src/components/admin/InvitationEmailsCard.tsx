@@ -8,7 +8,12 @@ import {
 import PartnerTemplateEditor from '@/components/sources/PartnerTemplateEditor'
 
 /**
- * The Emails tab on Organisation → Invitations: the two invitation emails, editable.
+ * The Emails tab on Organisation → Invitations: the four invitation emails, editable.
+ *
+ * One per group on the page — admin, reviewer, source, sponsor — since 2026-08-04. Which letter a
+ * staff invite actually reads is decided SERVER-SIDE from the same role map that groups the tables
+ * (`emails._invite_kind_for_role`); nothing here picks it, so this list cannot disagree with what
+ * sends.
  *
  * ⚠ **NO SWITCH, AND THAT IS THE ONE DIFFERENCE FROM EVERY OTHER EMAIL CARD.** Owner's decision,
  * 2026-08-04. Turning an invitation email off would mean pressing "Send invite" still creates the
@@ -21,6 +26,16 @@ import PartnerTemplateEditor from '@/components/sources/PartnerTemplateEditor'
  * with Google / you already have an account). The editor refuses a save that has dropped it, and
  * the sender falls back to the built-in letter if a stored body somehow renders without it.
  */
+/**
+ * The kinds whose letter carries the `{access}` paragraph — everything except the sponsor one,
+ * which invites a stranger to register rather than handing an account to somebody.
+ *
+ * A SET rather than `kind !== 'invite_sponsor'`: the negative form silently adds the warning to
+ * every future kind, and the next one added here is as likely to be another outward invitation as
+ * another account handover.
+ */
+const CARRIES_ACCESS = new Set(['invite_admin', 'invite_reviewer', 'invite_source'])
+
 export default function InvitationEmailsCard({ token, t }: {
   token: string | null
   t: (key: string, params?: Record<string, string>) => string
@@ -69,9 +84,14 @@ export default function InvitationEmailsCard({ token, t }: {
                 <p className="mt-0.5 text-sm text-gray-500">
                   {t(`admin.invitations.emails.when.${tpl.kind}`)}
                 </p>
-                {tpl.kind === 'invite_staff' && (
+                {CARRIES_ACCESS.has(tpl.kind) && (
                   <p className="mt-1.5 text-xs text-amber-700">
                     {t('admin.invitations.emails.accessLocked')}
+                  </p>
+                )}
+                {tpl.kind === 'invite_source' && (
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    {t('admin.invitations.emails.notSentYet')}
                   </p>
                 )}
               </div>

@@ -1,5 +1,98 @@
 # Architectural Decisions — HalaTuju
 
+## One invitation letter per group, and `KIND_ROLES` decides which — 2026-08-04
+**Decision (owner):** four editable invitation templates — `invite_admin`, `invite_reviewer`,
+`invite_source`, `invite_sponsor` — one per table on Organisation → Invitations. The single
+`invite_staff` template that addressed admins and reviewers together is renamed to
+`invite_reviewer` (migration `0146`, data rename).
+
+**Which letter a staff invite reads is derived from `invitations.KIND_ROLES`,** the same map that
+decides which table a person is LISTED in. So `finance` receives the admin letter and `qc` the
+reviewer letter, because that is where each of them sits on the page.
+
+**Why not a map of its own in `emails.py`.** A second hand-written mapping is correct on the day it
+is typed and wrong after the first regrouping — and the failure is silent and personal: somebody is
+written to as one thing while listed as another. Reading the page's own map means the two cannot
+disagree. `test_the_grouping_is_READ_from_KIND_ROLES_not_hand_written_here` asserts the two
+specialisations a hand-written map forgets.
+
+**⚠ `partner` and `super` read NO stored template.** A Referral Partner is a platform-level account
+on a different product relationship (see the 2026-08-03 entry) and a super belongs to no single
+organisation. If they fell through to the admin template, an org_admin editing "the admin
+invitation" would silently change what a platform-level account is told. `org_admin` is
+deliberately NOT excluded — they are listed under Admins because they belong to the organisation,
+even though appointing one is a super's act.
+
+**Trade-offs:** admin and reviewer are seeded with identical wording, so on day one the split buys
+nothing visible. Accepted: seeding them identically is what "changes nothing anybody receives"
+means, and the value is the organisation's ability to make them differ afterwards.
+
+## The tax ban is not a per-family voice rule — it moved to a shared list — 2026-08-04
+**Decision:** `email_templates.UNIVERSAL_BANNED` holds the tax-relief and urgency phrases, and both
+`partner_comms.BANNED_PHRASES` and `sponsor_comms.BANNED_PHRASES` fold it in. Audience-specific
+rules — conduit phrasing for a partner, student-ownership for a donor — stay in the family lists.
+
+**Why.** The old arrangement ("each family owns its own list") assumed a family's audience matches
+its table. That stopped being true when the organisation's SPONSOR INVITATION became a
+`PartnerEmailTemplate`: a donor pitch validated by the partner list, which never banned a tax claim.
+The single most likely place on the platform for *"your gift is tax deductible"* was the one surface
+not checking for it. HalaTuju holds **no LHDN s44(6) approval**, so that sentence is a false
+statement about the reader's own tax position — per the 2026-07-28 entry, the only sentence on these
+surfaces that can cost the reader money rather than merely read badly.
+
+Rewriting the letter INTO a pitch is what made this urgent: the guard gap existed before, but a
+pitch is where somebody reaches for a tax line.
+
+**Alternatives considered:** (a) add the phrases to `partner_comms` only — rejected, it leaves two
+copies of the same rule to drift; (b) validate `invite_sponsor` against `sponsor_comms` — rejected,
+a per-row guard exception is a rule nobody will find. **Trade-offs:** the partner family now also
+refuses a legitimate sentence containing "tax relief"; accepted for the same reason it was accepted
+for sponsors — the refusal names the phrase, so rewording is obvious.
+**Revisit if:** s44(6) approval is granted.
+
+## The joining email has ONE home — 2026-08-04
+**Decision (owner):** `partner_welcome` is removed from the Reviewers read-only system-email list.
+It became editable under Organisation → Invitations on 2026-08-03, and appearing in both places is
+worse than either alone — an org_admin reading the read-only list would conclude the wording was
+fixed. The Reviewers list is now six emails, not seven.
+
+**Trade-offs:** a reviewer-facing preview of the joining letter is no longer on the Reviewers
+screen. If it is ever wanted back, link to the Invitations tab rather than rendering a second copy.
+`SENSITIVE_KEYS` is kept though now empty — it is the mechanism, not the list, and the next
+credential-carrying email needs somewhere to be flagged from.
+
+## The organisation's sponsor invitation is a DONOR pitch — 2026-08-04
+**Decision (owner):** this letter invites the reader to become **a donor of the organisation** who
+then sponsors deserving students — *"They do not become the sponsor of the org."* It pitches the
+concept (bright students, no way to pay) rather than merely linking to sign-up, and it stays
+distinct from the sponsor-to-sponsor letter, which is a peer saying "come and join me".
+
+**It keeps the nomination clause.** Per the 2026-07-28 entry a sponsor NOMINATES and the programme
+AWARDS, so the copy reads *"tell us who you would like your gift to help; we follow your choice
+wherever we can, and the final decision on each award rests with the programme."* Directive framing
+would make this a conduit passing earmarked money to a named beneficiary — a different legal animal
+from a charity receiving a completed gift — and would undercut both reallocation and AutoSponsor.
+The owner's "donor of the organisation" framing is *closer* to that ruling than the wording it
+replaces ("become a sponsor of {org_name}").
+
+**Also decided:** replies go to the sponsor alias rather than general support. A pitch invites a
+reply, and somebody weighing up whether to give should reach the people who answer for the
+programme, not the queue that helps students with applications. The old value was inherited, never
+chosen.
+
+## A source-partner invitation exists in wording only — 2026-08-04
+**Decision (owner):** `invite_source` is written and seeded now, but **nothing sends it**. No Source
+Partner has a login and the Invitations page offers no way to invite one; the console is the next
+piece of work. The letter is written for that console — *sign in and follow the students your
+organisation referred*.
+
+**Why settle wording ahead of the screen:** the owner asked for the shape first. **Why it must not
+be wired early:** it describes a console nobody can reach, and the standing rule is that nothing may
+move out of an email into a console that does not exist. `test_NOTHING_SENDS_IT` asserts the absence
+of a sender so that adding one is a deliberate act, and the Emails tab says on screen that this row
+is not sent by anything yet.
+
+
 ## "Partner" means two different things, and they are named apart — 2026-08-03
 **Decision:** the platform keeps **two** distinct partner relationships and they never share a role,
 a login, a scope or a screen:

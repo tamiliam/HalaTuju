@@ -106,18 +106,29 @@ PLACEHOLDERS = {
                          'team_signoff'},
     'verdict_overdue': {'reviewer_name', 'ref', 'applicant_name', 'due_by', 'dashboard_link',
                         'team_signoff'},
-    # ── the two invitation emails (2026-08-04) ────────────────────────────────────
-    # ⚠ `access` IS A STRUCTURAL BLOCK AND IT IS WHY THIS IS SAFE TO MAKE EDITABLE. The staff
+    # ── the four invitation emails, one per group on the page (2026-08-04) ────────
+    # ⚠ `access` IS A STRUCTURAL BLOCK AND IT IS WHY THESE ARE SAFE TO MAKE EDITABLE. A staff
     # invitation carries a TEMPORARY PASSWORD, and it has three shapes — a fresh account gets a
     # password, a Google address gets sign-in-with-Google wording and no password, an
     # already-registered address is told to sign in as they always do. None of that can be
     # expressed by editing prose, and none of it should be: a reworded password instruction is a
     # person locked out. So the surrounding letter is the organisation's and the access paragraph
     # is ours, injected whole after every scalar is resolved.
-    'invite_staff': {'name', 'role_label', 'login_link', 'access', 'team_signoff'},
+    #
+    # Admin and reviewer are separate kinds with an IDENTICAL token set. That is deliberate: they
+    # are the same mechanism addressed to two audiences, and the whole point of splitting them is
+    # that the two can now say different things.
+    'invite_admin': {'name', 'role_label', 'login_link', 'access', 'team_signoff'},
+    'invite_reviewer': {'name', 'role_label', 'login_link', 'access', 'team_signoff'},
+    # The source organisation's own access. `contact_person` (their named contact) rather than
+    # `name`, matching every other letter this table sends to an ORGANISATION — and `org_name`,
+    # because the letter is addressed to a body, not a person.
+    'invite_source': {'org_name', 'contact_person', 'programme_name', 'login_link', 'access',
+                      'team_signoff'},
     # `note` is the inviter's own free-form line, so it is a BLOCK for the same reason
     # `qc_comments` is: a note containing `{link}` must arrive verbatim, not be substituted.
-    'invite_sponsor': {'name', 'org_name', 'invited_by', 'note', 'link', 'team_signoff'},
+    'invite_sponsor': {'name', 'org_name', 'programme_name', 'invited_by', 'note', 'link',
+                       'team_signoff'},
 }
 
 #: Tokens a kind CANNOT be saved without.
@@ -128,7 +139,9 @@ PLACEHOLDERS = {
 #: invited afterwards would receive a warm letter containing no way to sign in. Nothing would
 #: report it: the send succeeds, the account exists, and they simply never arrive.
 REQUIRED_PLACEHOLDERS = {
-    'invite_staff': {'access', 'login_link'},
+    'invite_admin': {'access', 'login_link'},
+    'invite_reviewer': {'access', 'login_link'},
+    'invite_source': {'access', 'login_link'},
     'invite_sponsor': {'link'},
 }
 
@@ -162,7 +175,12 @@ def missing_required_placeholders(kind, *parts):
 # its own; its students are the ORGANISATION's, not the reader's. These phrasings all cast the
 # partner as a conduit or hand the students to the individual reading the email, so they are
 # refused on save. A copy rule that lives only in a reviewer's head gets edited away later.
-BANNED_PHRASES = (
+#
+# ⚠ `UNIVERSAL_BANNED` is folded in, and for this family it is load-bearing rather than tidy. This
+# table now holds the organisation's SPONSOR INVITATION — a donor pitch — so the tax claim the
+# sponsor family has always refused is reachable here too, and until 2026-08-04 nothing checked for
+# it on this side. See `email_templates.UNIVERSAL_BANNED`.
+BANNED_PHRASES = email_templates.UNIVERSAL_BANNED + (
     'students you send',
     'students you refer',
     'your referral',

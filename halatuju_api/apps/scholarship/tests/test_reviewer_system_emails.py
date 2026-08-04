@@ -57,10 +57,18 @@ class _Base(TestCase):
 
 
 class TestTheList(_Base):
-    def test_all_seven_are_listed(self):
+    def test_all_six_are_listed(self):
         keys = [x['key'] for x in self._rows()]
         self.assertEqual(keys, [k for k, _ in sysmail.SYSTEM_EMAILS])
-        self.assertEqual(len(keys), 7)
+        self.assertEqual(len(keys), 6)
+
+    def test_THE_JOINING_EMAIL_IS_NOT_HERE_ANY_MORE(self):
+        # ⚠ Owner, 2026-08-04: it became editable under Organisation → Invitations, so listing it
+        # here as well showed one letter in two places — read-only in this list, editable in the
+        # other. That is worse than either alone: an org_admin reading THIS list would conclude the
+        # wording was fixed. Asserted as an ABSENCE because nothing else can see a duplicate, and
+        # because restoring it would look like a harmless addition.
+        self.assertNotIn('partner_welcome', [x['key'] for x in self._rows()])
 
     def test_every_one_carries_a_subject_and_a_body(self):
         # The owner asked for CONTENT, not a list of names. A row with an empty body would satisfy
@@ -77,13 +85,14 @@ class TestTheList(_Base):
                 self.assertNotIn(token, row['subject'], row['key'])
                 self.assertNotIn(token, row['body'], row['key'])
 
-    def test_the_welcome_sample_never_shows_a_real_password(self):
-        # It is the one email here that carries a credential. The preview must state THAT it does
-        # without ever being a place a password could appear.
-        row = next(x for x in self._rows() if x['key'] == 'partner_welcome')
-        self.assertIn('temporary password', row['body'])
-        self.assertIn('••••••••', row['body'])
-        self.assertTrue(row['sensitive'])
+    def test_NO_EMAIL_LEFT_IN_THIS_LIST_CARRIES_A_CREDENTIAL(self):
+        # The credential-carrying letter left with `partner_welcome` (2026-08-04), so today nothing
+        # here is sensitive — and this asserts the PROPERTY rather than the empty list, so an
+        # eighth email that does carry one fails until it is flagged. The `sensitive` mechanism is
+        # deliberately kept for that case; see `SENSITIVE_KEYS`.
+        for row in self._rows():
+            self.assertNotIn('temporary password', row['body'], row['key'])
+            self.assertFalse(row['sensitive'], row['key'])
 
     def test_the_escalation_is_flagged_as_reaching_more_than_the_reviewer(self):
         # It also goes to the organisation's own admins. Exactly the kind of fact that stays
@@ -102,9 +111,8 @@ class TestItCannotDriftFromTheMail(_Base):
         # Each sender called with the SAME sample particulars the catalogue renders, then the
         # delivered message compared against what the screen served.
         senders = [
-            ('partner_welcome', lambda: emails_mod.send_partner_welcome_email(
-                'reviewer@example.com', 'Reviewer', 'reviewer',
-                temp_password='••••••••', google=False)),
+            # `partner_welcome` left this list on 2026-08-04 — it is editable under Invitations
+            # now, and its own byte-identity proof lives in `test_invitations.py`.
             ('interview_booked', lambda: emails_mod.send_reviewer_interview_booked_email(
                 to, reviewer_name='Reviewer', applicant_name='the applicant',
                 start=sysmail.SAMPLE_START, meeting_url='https://meet.google.com/…',

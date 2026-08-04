@@ -2341,11 +2341,38 @@ def send_reviewer_assigned_email(to_email, reviewer_name, *, ref='', programme='
 
 _PARTNER_ROLE_LABELS = {
     'admin': 'an administrator',
+    'finance': 'a finance administrator',
+    'org_admin': 'an organisation administrator',
     'partner': 'a partner organisation representative',
     'reviewer': 'a reviewer',
     'qc': 'a quality-control reviewer',
     'super': 'a super administrator',
 }
+
+
+def _invite_kind_for_role(role):
+    """Which stored invitation template addresses this role, or None to use the built-in wording.
+
+    ⚠ **IT READS `invitations.KIND_ROLES` RATHER THAN A MAP OF ITS OWN.** That is the same map that
+    decides which of the four tables a person is LISTED in on the Invitations page, so the letter
+    somebody receives and the table they appear in cannot disagree — finance is written to as an
+    admin and qc as a reviewer because that is where each of them sits. A second hand-written map
+    here would be correct on the day it was typed and wrong after the first regrouping.
+
+    ⚠ **None FOR `partner` AND `super`, DELIBERATELY.** A Referral Partner is a PLATFORM-level
+    account on a different product relationship (decisions.md, 2026-08-03) and a super is not any
+    one organisation's; neither is invited from this page. If they fell through to the admin
+    template, an org_admin editing "the admin invitation" would silently change what a
+    platform-level account is told. `org_admin` is NOT in that exclusion: they are listed under
+    Admins because an organisation admin belongs to the organisation, even though appointing one
+    is a super's act.
+    """
+    from . import invitations
+    for kind, template_kind in ((invitations.KIND_ADMINS, 'invite_admin'),
+                                (invitations.KIND_REVIEWERS, 'invite_reviewer')):
+        if role in invitations.KIND_ROLES.get(kind, ()):
+            return template_kind
+    return None
 
 
 def _invite_render(kind, context, must_contain=()):
@@ -2425,10 +2452,13 @@ def build_partner_welcome_email(to_email, name, role, temp_password=None, google
     access = _welcome_access_block(to_email, temp_password, google)
 
     # The organisation's own wording, if they have edited it. `{access}` is injected whole.
-    stored = _invite_render('invite_staff', {
+    # A role this page never invites (`partner`, `super`) reads no stored template at all — see
+    # `_invite_kind_for_role`.
+    template_kind = _invite_kind_for_role(role)
+    stored = _invite_render(template_kind, {
         'name': who, 'role_label': role_label, 'login_link': link, 'access': access,
         'team_signoff': _P.team_signoff('en'),
-    }, must_contain=(access, link))
+    }, must_contain=(access, link)) if template_kind else None
     if stored:
         return stored
 
@@ -3937,15 +3967,66 @@ def build_sponsor_invitation_email(*, org_name='', note='', code='', invited_by=
 
     body = (
         f'Hello,\n\n'
-        f'{invited_by or who} has invited you to become a sponsor of {who}.\n'
+        f'{invited_by or who} has invited you to become a donor of {who}.\n'
         f'{note_block}\n'
-        f'Sponsors here support one student through their studies. You can read how it works, and '
-        f'sign up, here:\n{link}\n\n'
-        f'There is nothing to pay to register, and you choose whether to go ahead after you have '
-        f'seen how it works.\n\n'
+        f'Every year, students finish school with the results to go further and no way to pay for '
+        f'it. A place is offered, the family works out what it would cost, and the place goes '
+        f'unclaimed. Closing that gap is what {who} is for.\n\n'
+        f'A donor gives to the {_PROG_EN}, and that gift puts a student through their studies — '
+        f'the fees, and the ordinary costs of living away from home that quietly decide whether '
+        f'somebody can stay. You can see the students waiting for support and tell us who you '
+        f'would like your gift to help; we follow your choice wherever we can, and the final '
+        f'decision on each award rests with the programme.\n\n'
+        f'You can read how it works, and register, here:\n{link}\n\n'
+        f'Registering costs nothing and commits you to nothing. You will be asked to agree to our '
+        f'terms and confirm a few details, and we get to know you a little before anything goes '
+        f'ahead — the same for everybody, however they reach us.\n\n'
         f'Thanks,\n{_P.team_signoff("en")}'
     )
-    return f'An invitation to sponsor a student with {who}', body
+    return f'An invitation to become a donor of {who}', body
+
+
+def build_source_invitation_email(*, org_name='', contact_person='', login_link='', access=''):
+    """The wording of a SOURCE PARTNER's invitation to the console → ``(subject, body)``.
+
+    ⚠ **NOTHING SENDS THIS YET, AND THAT IS THE POINT OF IT EXISTING.** No Source Partner has a
+    login and the Invitations page offers no way to invite one; the console is the next piece of
+    work. The owner asked for the wording now so it is settled before the screen is built
+    (2026-08-04). It is written for the console it will announce — *sign in and follow the students
+    your organisation referred* — which is the whole reason it must not go out before that console
+    does. `docs/decisions.md` records the standing rule: nothing may move out of an email into a
+    console nobody can reach.
+
+    A builder rather than seed-only prose so the eventual sender inherits a fallback body the way
+    every other invitation has one, and so a test can assert the seed matches it word for word.
+
+    ⚠ **A SOURCE PARTNER IS AN ORGANISATION-LEVEL BURSARY REFERRER, NEVER A REFERRAL PARTNER.**
+    Those are separate relationships and the owner has ruled they stay named apart — do not widen
+    this letter to cover the platform `partner` role.
+    """
+    org = org_name or 'your organisation'
+    who = contact_person or 'there'
+    stored = _invite_render('invite_source', {
+        'org_name': org, 'contact_person': who, 'login_link': login_link, 'access': access,
+        'team_signoff': _P.team_signoff('en'),
+    }, must_contain=(access, login_link))
+    if stored:
+        return stored
+
+    body = (
+        f'Dear {who},\n\n'
+        f'{org} has been referring students to the {_PROG_EN}, and until now the only word you '
+        f'have had on how they are getting on is the summaries we email across.\n\n'
+        f'We would like to give {org} its own access, so your team can look at any time — who has '
+        f'applied, who is still finishing their application, and who has been awarded a bursary.\n\n'
+        f'Sign in here:\n{login_link}\n\n'
+        f'{access}\n\n'
+        f'Nothing about how {org} refers students changes, and the summary emails carry on as '
+        f'before.\n\n'
+        f'Any trouble at all, just reply to this email.\n\n'
+        f'Warm regards,\n{_P.team_signoff("en")}'
+    )
+    return f'Access to the {_PROG_EN} for {org}', body
 
 
 def send_sponsor_invitation_email(to_email, *, org_name='', note='', code='', invited_by=''):
@@ -3956,8 +4037,14 @@ def send_sponsor_invitation_email(to_email, *, org_name='', note='', code='', in
     subject, body = build_sponsor_invitation_email(
         org_name=org_name, note=note, code=code, invited_by=invited_by)
     try:
+        # ⚠ Replies go to the SPONSOR alias, not general support — matching the peer-to-peer
+        # invitation, which is the other letter a prospective donor might have received. Chosen
+        # deliberately, 2026-08-04: a pitch invites a reply, and somebody weighing up whether to
+        # give should reach the people who can answer for the programme rather than the queue that
+        # helps students with their applications. (`_P.email_support` was inherited here, never
+        # decided — the same shape as the interview-alias default that mis-sent request #3's mail.)
         EmailMessage(subject=subject, body=body, from_email=_P.email_from,
-                     to=[to_email], reply_to=[_P.email_support]).send()
+                     to=[to_email], reply_to=[_P.sponsor_reply_to]).send()
         return True, ''
     except Exception as e:      # noqa: BLE001
         logger.warning('Failed to send sponsor invitation to %s', to_email, exc_info=True)

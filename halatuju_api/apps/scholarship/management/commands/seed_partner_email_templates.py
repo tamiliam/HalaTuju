@@ -255,16 +255,21 @@ SEEDS = {
             '{team_signoff}'
         ),
     },
-    # ── the two invitation emails (2026-08-04) ────────────────────────────────────
+    # ── the four invitation emails, one per group on the page (2026-08-04) ────────
     #
-    # WORD-FOR-WORD what `emails.build_partner_welcome_email` and
-    # `build_sponsor_invitation_email` already send, so seeding changes nothing anybody receives.
+    # WORD-FOR-WORD what the matching `emails.build_*` function already sends, so seeding changes
+    # nothing anybody receives. `test_the_seed_is_byte_identical_to_what_already_sends` holds this.
     #
     # ⚠ `{access}` IS A STRUCTURAL BLOCK carrying the temporary password and the three shapes it
     # takes (a fresh password / Google / already-registered). It is OURS; the letter around it is
     # the organisation's. The save guard refuses a body that has dropped it, because an invitation
     # without it is a warm letter containing no way to sign in — and nothing would report that.
-    'invite_staff': {
+    #
+    # ⚠ ADMIN AND REVIEWER ARE SEEDED IDENTICALLY, ON PURPOSE. They were one template until today
+    # and `{role_label}` already made the one letter read correctly for both, so identical seeds
+    # are what "changes nothing anybody receives" means here. The split buys the ORGANISATION the
+    # ability to make them differ — it is not a claim that they already do.
+    'invite_admin': {
         'subject': 'Your HalaTuju partner access',
         'body': (
             'Dear {name},\n'
@@ -282,23 +287,102 @@ SEEDS = {
             'The HalaTuju Team'
         ),
     },
+    'invite_reviewer': {
+        'subject': 'Your HalaTuju partner access',
+        'body': (
+            'Dear {name},\n'
+            '\n'
+            'You have been added to HalaTuju as {role_label}.\n'
+            '\n'
+            'Sign in here:\n'
+            '{login_link}\n'
+            '\n'
+            '{access}\n'
+            '\n'
+            'Any trouble at all, just reply to this email.\n'
+            '\n'
+            'Warm regards,\n'
+            'The HalaTuju Team'
+        ),
+    },
+    # ⚠ NOTHING SENDS THIS YET — no Source Partner has a login and the page offers no way to invite
+    # one. It is wording agreed ahead of the Source console (owner, 2026-08-04), and it describes
+    # that console, so it must not be wired to a sender before the console exists.
+    'invite_source': {
+        'subject': 'Access to the {programme_name} for {org_name}',
+        'body': (
+            'Dear {contact_person},\n'
+            '\n'
+            '{org_name} has been referring students to the {programme_name}, and until now the '
+            'only word you have had on how they are getting on is the summaries we email across.\n'
+            '\n'
+            'We would like to give {org_name} its own access, so your team can look at any time — '
+            'who has applied, who is still finishing their application, and who has been awarded '
+            'a bursary.\n'
+            '\n'
+            'Sign in here:\n'
+            '{login_link}\n'
+            '\n'
+            '{access}\n'
+            '\n'
+            'Nothing about how {org_name} refers students changes, and the summary emails carry '
+            'on as before.\n'
+            '\n'
+            'Any trouble at all, just reply to this email.\n'
+            '\n'
+            'Warm regards,\n'
+            '{team_signoff}'
+        ),
+    },
     # `{note}` is the inviter's own words and is a block for the same reason `qc_comments` is:
     # a note that happens to contain a token must arrive verbatim, not be substituted.
+    #
+    # ⚠ THIS IS THE ORGANISATION PITCHING, NOT A PEER (owner, 2026-08-04). The sponsor-to-sponsor
+    # letter — `emails.send_sponsor_referral_invite`, sent from a sponsor's own account page — says
+    # "a friend is already doing this, come and join them" and is deliberately NOT shown on the
+    # admin Invitations page. This one is the organisation asking a stranger, so it has to make the
+    # case: what the gap is, what a gift does about it, and what happens next.
+    #
+    # ⚠ THE READER IS INVITED TO BECOME A **DONOR OF THE ORGANISATION**, NOT "a sponsor of" it, and
+    # never a person who buys a particular student. Two settled rules meet in this paragraph:
+    #   * owner, 2026-08-04 — *"They are invited to become a donor of the organisation so they could
+    #     sponsor deserving students. They do not become the sponsor of the org."*
+    #   * decisions.md, 2026-07-28 — a sponsor NOMINATES and the programme AWARDS. Directive
+    #     framing ("your money goes to the student you pick") would make this a conduit passing
+    #     earmarked money to a named beneficiary, which is a different legal animal from a charity
+    #     receiving a completed gift, and it would undercut both reallocation and AutoSponsor.
+    # Hence "tell us who you would like your gift to help; we follow your choice wherever we can,
+    # and the final decision on each award rests with the programme" — keep all three clauses.
+    #
+    # ⚠ NO TAX CLAIM, EVER. HalaTuju holds no LHDN s44(6) approval, so "tax deductible" here is a
+    # false statement about the reader's own tax position — the one sentence available on this
+    # surface that can cost them money. `partner_comms.banned_phrases` now refuses it on save
+    # (it did not until 2026-08-04, which is precisely why this letter was a risk).
     'invite_sponsor': {
-        'subject': 'An invitation to sponsor a student with {org_name}',
+        'subject': 'An invitation to become a donor of {org_name}',
         'body': (
             'Hello,\n'
             '\n'
-            '{invited_by} has invited you to become a sponsor of {org_name}.\n'
+            '{invited_by} has invited you to become a donor of {org_name}.\n'
             '\n'
             '{note}\n'
             '\n'
-            'Sponsors here support one student through their studies. You can read how it works, '
-            'and sign up, here:\n'
+            'Every year, students finish school with the results to go further and no way to pay '
+            'for it. A place is offered, the family works out what it would cost, and the place '
+            'goes unclaimed. Closing that gap is what {org_name} is for.\n'
+            '\n'
+            'A donor gives to the {programme_name}, and that gift puts a student through their '
+            'studies — the fees, and the ordinary costs of living away from home that quietly '
+            'decide whether somebody can stay. You can see the students waiting for support and '
+            'tell us who you would like your gift to help; we follow your choice wherever we can, '
+            'and the final decision on each award rests with the programme.\n'
+            '\n'
+            'You can read how it works, and register, here:\n'
             '{link}\n'
             '\n'
-            'There is nothing to pay to register, and you choose whether to go ahead after you '
-            'have seen how it works.\n'
+            'Registering costs nothing and commits you to nothing. You will be asked to agree to '
+            'our terms and confirm a few details, and we get to know you a little before anything '
+            'goes ahead — the same for everybody, however they reach us.\n'
             '\n'
             'Thanks,\n'
             '{team_signoff}'

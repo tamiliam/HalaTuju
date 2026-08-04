@@ -3215,14 +3215,13 @@
         },
         "system": {
           "title": "E-mel yang kami selenggara",
-          "subtitle": "Tujuh e-mel ini ditulis di dalam kod kami, jadi ia tidak boleh disunting atau dimatikan di sini. Ia disenaraikan supaya anda tahu ia wujud dan apa yang tertulis di dalamnya — jika satu perlu diubah, beritahu kami.",
+          "subtitle": "Enam e-mel ini ditulis di dalam kod kami, jadi ia tidak boleh disunting atau dimatikan di sini. Ia disenaraikan supaya anda tahu ia wujud dan apa yang tertulis di dalamnya — jika satu perlu diubah, beritahu kami.",
           "subjectLabel": "Subjek:",
           "show": "Papar teks",
           "hide": "Sembunyikan teks",
           "sensitive": "Membawa kata laluan sementara penilai baharu.",
           "widerAudience": "Turut dihantar kepada pentadbir organisasi anda.",
           "kind": {
-            "partner_welcome": "Menyertai pasukan",
             "interview_booked": "Pemohon menempah masa",
             "interview_reminder": "Temu duga semakin hampir",
             "interview_cancelled": "Pemohon membatalkan",
@@ -3231,7 +3230,6 @@
             "verdict_escalation": "Keputusan sudah jauh lewat"
           },
           "when": {
-            "partner_welcome": "Apabila seseorang ditambah sebagai penilai, membawa apa yang diperlukan untuk log masuk buat kali pertama.",
             "interview_booked": "Apabila pelajar memilih salah satu masa yang dicadangkan oleh penilai.",
             "interview_reminder": "Sehari sebelum temu duga, dan sekali lagi kira-kira sejam sebelumnya.",
             "interview_cancelled": "Apabila pelajar membatalkan temu duga yang ditempah, dengan sebab yang diberikannya.",
@@ -5482,17 +5480,22 @@
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
       "emails": {
         "title": "Apa yang diberitahu apabila anda menjemput seseorang",
-        "subtitle": "Kata-kata bagi dua e-mel jemputan. Suntinglah dengan bebas.",
+        "subtitle": "Teks empat e-mel jemputan. Suntinglah dengan bebas.",
         "alwaysSends": "E-mel ini sentiasa dihantar. Tiada suis, kerana jemputan yang tidak menghantar e-mel ialah jemputan yang tidak diterima sesiapa.",
         "accessLocked": "Perenggan log masuk — termasuk kata laluan sementara — ditambah oleh kami dan tidak boleh disunting. Ia berubah mengikut cara orang itu log masuk.",
         "loadError": "E-mel ini tidak dapat dimuatkan.",
+        "notSentYet": "Belum dihantar oleh apa-apa lagi — konsol Sumber masih dalam pembinaan.",
         "kind": {
-          "invite_staff": "Menyertai pasukan",
-          "invite_sponsor": "Menjemput penaja"
+          "invite_admin": "Menyertai pasukan — pentadbir",
+          "invite_reviewer": "Menyertai pasukan — penilai",
+          "invite_source": "Menjemput organisasi sumber",
+          "invite_sponsor": "Menjemput penderma"
         },
         "when": {
-          "invite_staff": "Dihantar apabila anda menambah seseorang sebagai penilai, QC, pentadbir atau kewangan — dan setiap kali anda menekan Hantar Semula.",
-          "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penaja. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring."
+          "invite_admin": "Dihantar apabila anda menambah seseorang sebagai pentadbir atau kewangan — dan setiap kali anda menekan Hantar Semula.",
+          "invite_reviewer": "Dihantar apabila anda menambah seseorang sebagai penilai atau QC — dan setiap kali anda menekan Hantar Semula.",
+          "invite_source": "Belum dihantar. Ini ialah teks yang akan diterima oleh organisasi sumber apabila mereka boleh log masuk dan mengikuti pelajar mereka sendiri.",
+          "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penderma. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring."
         }
       }
     },

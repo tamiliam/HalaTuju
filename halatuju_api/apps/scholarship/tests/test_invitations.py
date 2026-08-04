@@ -420,7 +420,7 @@ class TestTheInvitationEmailsAreEditable(TestCase):
     def test_an_edit_changes_the_letter_but_never_the_access_paragraph(self):
         from apps.scholarship import emails
         self._seed()
-        tpl = self.T.objects.get(kind='invite_staff')
+        tpl = self.T.objects.get(kind='invite_reviewer')
         tpl.body = 'Welcome aboard {name}!\n\n{login_link}\n\n{access}\n\n{team_signoff}'
         tpl.save(update_fields=['body'])
         _s, body = emails.build_partner_welcome_email(
@@ -440,7 +440,7 @@ class TestTheInvitationEmailsAreEditable(TestCase):
     def test_a_template_edited_into_nonsense_falls_back_rather_than_stranding_anybody(self):
         from apps.scholarship import emails
         self._seed()
-        tpl = self.T.objects.get(kind='invite_staff')
+        tpl = self.T.objects.get(kind='invite_reviewer')
         # A body the renderer cannot resolve. The invitation must still go.
         tpl.body = '{this_token_does_not_exist}'
         tpl.save(update_fields=['body'])
@@ -453,7 +453,7 @@ class TestTheInvitationEmailsAreEditable(TestCase):
         # created, the password issued, and nobody told — with nothing to report the silence.
         from apps.scholarship import emails
         self._seed()
-        self.T.objects.filter(kind='invite_staff').update(enabled=False)
+        self.T.objects.filter(kind='invite_reviewer').update(enabled=False)
         _s, body = emails.build_partner_welcome_email(
             'x@example.org', 'Priya', 'reviewer', temp_password='Kx7m-Pq4t-Rd92')
         self.assertIn('Kx7m-Pq4t-Rd92', body)
@@ -462,16 +462,234 @@ class TestTheInvitationEmailsAreEditable(TestCase):
     def test_the_save_guard_refuses_a_body_that_has_lost_the_access_block(self):
         from apps.scholarship import partner_comms
         missing = partner_comms.missing_required_placeholders(
-            'invite_staff', 'A subject', 'Dear {name}, welcome. {team_signoff}')
+            'invite_reviewer', 'A subject', 'Dear {name}, welcome. {team_signoff}')
         self.assertIn('access', missing)
         self.assertIn('login_link', missing)
 
     def test_the_save_guard_passes_a_body_that_keeps_it(self):
         from apps.scholarship import partner_comms
         self.assertEqual(partner_comms.missing_required_placeholders(
-            'invite_staff', 'S', 'Hi {name} {login_link} {access} {team_signoff}'), ())
+            'invite_reviewer', 'S', 'Hi {name} {login_link} {access} {team_signoff}'), ())
 
     def test_a_kind_with_no_required_tokens_is_unaffected(self):
         from apps.scholarship import partner_comms
         self.assertEqual(
             partner_comms.missing_required_placeholders('weekly_summary', 'S', 'B'), ())
+
+
+class TestOneInvitationLetterPerGroup(TestCase):
+    """Four kinds, one per table on the Invitations page (owner, 2026-08-04).
+
+    The claims worth guarding are about SEPARATION — that editing one letter does not move
+    another, and that a role this page never invites reads none of them. A source-shape guard
+    cannot see either.
+    """
+
+    def setUp(self):
+        from apps.scholarship.models import PartnerEmailTemplate
+        self.T = PartnerEmailTemplate
+        from django.core.management import call_command
+        import io as _io
+        call_command('seed_partner_email_templates', stdout=_io.StringIO())
+
+    def _welcome(self, role):
+        from apps.scholarship import emails
+        return emails.build_partner_welcome_email(
+            'x@example.org', 'Priya', role, temp_password='Kx7m-Pq4t-Rd92')
+
+    def _rewrite(self, kind, marker):
+        tpl = self.T.objects.get(kind=kind)
+        tpl.body = marker + '\n\n{login_link}\n\n{access}\n\n{team_signoff}'
+        tpl.save(update_fields=['body'])
+
+    def test_an_admin_reads_the_admin_letter_and_a_reviewer_the_reviewer_one(self):
+        self._rewrite('invite_admin', 'ADMIN WORDING')
+        self._rewrite('invite_reviewer', 'REVIEWER WORDING')
+        self.assertIn('ADMIN WORDING', self._welcome('admin')[1])
+        self.assertIn('REVIEWER WORDING', self._welcome('reviewer')[1])
+
+    def test_EDITING_ONE_DOES_NOT_MOVE_THE_OTHER(self):
+        # The entire point of the split. Before today both roles shared one row, so this is the
+        # assertion that would have failed yesterday and must never fail again.
+        self._rewrite('invite_admin', 'ADMIN WORDING')
+        self.assertNotIn('ADMIN WORDING', self._welcome('reviewer')[1])
+
+    def test_the_grouping_is_READ_from_KIND_ROLES_not_hand_written_here(self):
+        # ⚠ finance sits under Admins and qc under Reviewers on the page. If the email ever stops
+        # reading `invitations.KIND_ROLES`, somebody is written to as one thing while listed as
+        # another — so assert the two SPECIALISATIONS, which are exactly the roles a hand-written
+        # map forgets.
+        self._rewrite('invite_admin', 'ADMIN WORDING')
+        self._rewrite('invite_reviewer', 'REVIEWER WORDING')
+        self.assertIn('ADMIN WORDING', self._welcome('finance')[1])
+        self.assertIn('REVIEWER WORDING', self._welcome('qc')[1])
+
+    def test_an_organisation_admin_reads_the_admin_letter(self):
+        # Listed under Admins even though appointing one is a super's act — they belong to the
+        # organisation, so the organisation's wording is right for them.
+        self._rewrite('invite_admin', 'ADMIN WORDING')
+        self.assertIn('ADMIN WORDING', self._welcome('org_admin')[1])
+
+    def test_A_REFERRAL_PARTNER_READS_NO_STORED_TEMPLATE(self):
+        # ⚠ A platform-level account on a different product relationship (decisions.md 2026-08-03).
+        # If it fell through to the admin template, an org_admin editing "the admin invitation"
+        # would silently change what a platform account is told.
+        self._rewrite('invite_admin', 'ADMIN WORDING')
+        body = self._welcome('partner')[1]
+        self.assertNotIn('ADMIN WORDING', body)
+        self.assertIn('Kx7m-Pq4t-Rd92', body)          # still invited, on the built-in wording
+
+    def test_a_super_reads_no_stored_template_either(self):
+        self._rewrite('invite_admin', 'ADMIN WORDING')
+        self.assertNotIn('ADMIN WORDING', self._welcome('super')[1])
+
+    def test_the_seed_is_byte_identical_to_what_already_sends_for_both_staff_letters(self):
+        # Splitting one template into two must change nothing anybody receives.
+        from apps.scholarship import emails
+        for role in ('admin', 'reviewer'):
+            with self.subTest(role=role):
+                self.T.objects.all().delete()
+                before = emails.build_partner_welcome_email(
+                    'x@example.org', 'Priya', role, temp_password='Kx7m-Pq4t-Rd92')
+                from django.core.management import call_command
+                import io as _io
+                call_command('seed_partner_email_templates', stdout=_io.StringIO())
+                after = emails.build_partner_welcome_email(
+                    'x@example.org', 'Priya', role, temp_password='Kx7m-Pq4t-Rd92')
+                self.assertEqual(after, before)
+
+
+class TestTheSourceInvitationIsWrittenButNotWired(TestCase):
+    """Wording agreed ahead of the Source console (owner, 2026-08-04)."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        import io as _io
+        call_command('seed_partner_email_templates', stdout=_io.StringIO())
+
+    def test_the_seed_is_byte_identical_to_the_builder(self):
+        from apps.scholarship import emails
+        from apps.scholarship.models import PartnerEmailTemplate
+        stored = emails.build_source_invitation_email(
+            org_name='Sri Murugan Centre', contact_person='Devi',
+            login_link='https://example.org/admin/login', access='ACCESS PARAGRAPH')
+        PartnerEmailTemplate.objects.filter(kind='invite_source').delete()
+        builtin = emails.build_source_invitation_email(
+            org_name='Sri Murugan Centre', contact_person='Devi',
+            login_link='https://example.org/admin/login', access='ACCESS PARAGRAPH')
+        self.assertEqual(stored, builtin)
+
+    def test_it_carries_the_access_paragraph_and_the_link(self):
+        from apps.scholarship import emails
+        _s, body = emails.build_source_invitation_email(
+            org_name='Sri Murugan Centre', contact_person='Devi',
+            login_link='https://example.org/admin/login', access='ACCESS PARAGRAPH')
+        self.assertIn('ACCESS PARAGRAPH', body)
+        self.assertIn('https://example.org/admin/login', body)
+
+    def test_the_save_guard_refuses_a_body_that_has_dropped_the_way_in(self):
+        from apps.scholarship import partner_comms
+        missing = partner_comms.missing_required_placeholders(
+            'invite_source', 'S', 'Dear {contact_person}, hello. {team_signoff}')
+        self.assertIn('access', missing)
+        self.assertIn('login_link', missing)
+
+    def test_NOTHING_SENDS_IT(self):
+        # ⚠ The letter describes a console that does not exist. If a sender is ever added, this
+        # test should fail and be replaced deliberately — not deleted in passing.
+        from apps.scholarship import emails
+        self.assertFalse(hasattr(emails, 'send_source_invitation_email'))
+
+
+class TestTheSponsorInvitationIsTheORGANISATIONPitching(TestCase):
+    """Owner, 2026-08-04: this letter is the organisation asking, not a peer.
+
+    *"They are invited to become a donor of the organisation so they could sponsor deserving
+    students. They do not become the sponsor of the org."*
+    """
+
+    def _pitch(self):
+        from apps.scholarship import emails
+        return emails.build_sponsor_invitation_email(
+            org_name='BrightPath', invited_by='Suresh', code='abc123')
+
+    def test_it_invites_them_to_become_a_DONOR_not_a_sponsor_OF_the_organisation(self):
+        subject, body = self._pitch()
+        self.assertIn('donor of BrightPath', body)
+        self.assertIn('donor of BrightPath', subject)
+        # ⚠ The exact phrasing the owner corrected. Asserted as ABSENCE because the wrong version
+        # reads perfectly well and nothing else would catch its return.
+        self.assertNotIn('sponsor of BrightPath', body)
+        self.assertNotIn('sponsor of BrightPath', subject)
+
+    def test_it_makes_the_case_rather_than_just_linking(self):
+        # A pitch that omits the pitch is the failure mode here — it would still render, still
+        # link, and still read like a competent email.
+        _s, body = self._pitch()
+        self.assertIn('no way to pay for it', body)
+        self.assertIn('the place goes unclaimed', body)
+
+    def test_IT_KEEPS_THE_NOMINATION_CLAUSE(self):
+        # ⚠ decisions.md 2026-07-28: a sponsor NOMINATES and the programme AWARDS. Directive
+        # framing would make this a conduit passing earmarked money to a named beneficiary, which
+        # undercuts both reallocation and AutoSponsor. All three clauses stay together.
+        _s, body = self._pitch()
+        self.assertIn('who you would like your gift to help', body)
+        self.assertIn('we follow your choice wherever we can', body)
+        self.assertIn('final decision on each award rests with the programme', body)
+
+    def test_it_says_registering_skips_nothing(self):
+        _s, body = self._pitch()
+        self.assertIn('agree to our terms', body)
+        self.assertIn('the same for everybody', body)
+
+    def test_the_pitch_passes_its_own_voice_guard(self):
+        from apps.scholarship import partner_comms
+        subject, body = self._pitch()
+        self.assertEqual(partner_comms.banned_phrases(subject, body), ())
+
+
+class TestTheDonorPitchIsGuardedAgainstATaxClaim(TestCase):
+    """⚠ THE GAP THIS SPRINT CLOSED, 2026-08-04.
+
+    The tax ban lived in `sponsor_comms`; the organisation's sponsor invitation is a
+    `PartnerEmailTemplate`, so it was validated by `partner_comms`, which never banned it. The one
+    surface on the platform that is explicitly a donor pitch was the one not checking for the one
+    sentence that can cost the reader money. HalaTuju holds no LHDN s44(6) approval.
+    """
+
+    def test_a_tax_claim_is_refused_on_the_PARTNER_family(self):
+        from apps.scholarship import partner_comms
+        found = partner_comms.banned_phrases(
+            'An invitation', 'Your gift is tax deductible. {link}')
+        self.assertIn('tax deductible', found)
+
+    def test_every_tax_wording_is_refused_not_just_the_common_one(self):
+        from apps.scholarship import partner_comms
+        for phrase in ('tax-deductible', 'tax exempt', 'tax-exempt', 'tax relief'):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, partner_comms.banned_phrases('S', f'We are {phrase}.'))
+
+    def test_urgency_copy_is_refused_too(self):
+        from apps.scholarship import partner_comms
+        self.assertIn('act now', partner_comms.banned_phrases('S', 'Act now to help. {link}'))
+
+    def test_the_SPONSOR_family_still_refuses_everything_it_always_did(self):
+        # The tax entries MOVED to the shared list; nothing that family refused may have been lost.
+        from apps.scholarship import sponsor_comms
+        self.assertIn('tax deductible', sponsor_comms.banned_phrases('S', 'tax deductible'))
+        self.assertIn('your student', sponsor_comms.banned_phrases('S', 'your student'))
+        self.assertIn('limited time', sponsor_comms.banned_phrases('S', 'limited time'))
+
+    def test_the_partner_family_still_refuses_its_own_conduit_phrasings(self):
+        from apps.scholarship import partner_comms
+        self.assertIn('students you send',
+                     partner_comms.banned_phrases('S', 'the students you send us'))
+
+    def test_BOTH_FAMILIES_SHARE_ONE_LIST_so_they_cannot_drift_again(self):
+        # The bite: point either family's list away from `UNIVERSAL_BANNED` and this fails.
+        from apps.scholarship import email_templates, partner_comms, sponsor_comms
+        for phrase in email_templates.UNIVERSAL_BANNED:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, partner_comms.BANNED_PHRASES)
+                self.assertIn(phrase, sponsor_comms.BANNED_PHRASES)

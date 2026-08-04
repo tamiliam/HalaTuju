@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## Four invitation emails, one home, and a donor pitch - 2026-08-04
+
+Owner's three asks off the live screen. **Migration `0146`** - choices plus a data rename; no DDL
+(`sqlmigrate` prints none), so the production step was the UPDATE and the ledger row.
+
+- **One invitation letter per group**: `invite_admin`, `invite_reviewer` (renamed from
+  `invite_staff`), `invite_source`, `invite_sponsor`. Which letter a staff invite reads is derived
+  from `invitations.KIND_ROLES` - the same map that groups the page's tables - so finance is
+  written to as an admin and QC as a reviewer, and the letter can never disagree with the table
+  somebody sits in. Admin and reviewer are seeded IDENTICALLY: the split is a shape change, and the
+  value is that the organisation can now make them differ.
+- **A Referral Partner or super invite reads no stored template.** Platform-level accounts on a
+  different product relationship; otherwise an org_admin editing "the admin invitation" would
+  silently change what they are told. `org_admin` is not excluded - they belong to the organisation.
+- **The joining email now has ONE home.** `partner_welcome` is off the Reviewers read-only list
+  (six there now, not seven). Editable under Invitations, read-only under Reviewers, was worse than
+  either alone.
+- **The sponsor invitation is the organisation PITCHING**, not a peer. It invites the reader to
+  become **a donor of the organisation** who then sponsors deserving students - never "a sponsor of"
+  it - and keeps the nomination clause the 2026-07-28 ruling requires: *we follow your choice
+  wherever we can, and the final decision on each award rests with the programme*. Replies now go to
+  the sponsor alias, chosen rather than inherited.
+- **A guard gap closed in the same change.** The tax-relief ban lived in `sponsor_comms`; this
+  letter is a `PartnerEmailTemplate`, so it was validated by `partner_comms`, which never banned it
+  - the platform's one donor pitch was the one surface not checking for the one sentence that can
+  cost the reader money. Tax and urgency phrases moved to `email_templates.UNIVERSAL_BANNED`, folded
+  into both families.
+- **`invite_source` is wording only - nothing sends it.** No Source Partner has a login and the page
+  offers no way to invite one; it is written for the console that comes next, and the Emails tab
+  says so on screen. A test asserts no sender exists, so adding one is deliberate.
+
+`pytest` **5524** - `jest` **1417** - `next lint` **0 errors** - i18n **4520x3** - `tsc` clean -
+`makemigrations --check` clean. Three guards bite-checked; all four letters rendered and read end to
+end, metadata included.
+
 ## Invitations, in four kinds - 2026-08-03 (second pass)
 
 The owner reshaped the page after seeing it. **No migration** - the record shipped this morning

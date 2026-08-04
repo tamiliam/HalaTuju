@@ -46,12 +46,35 @@ def unknown_placeholders(allowed, *parts):
     return tuple(sorted(found - set(allowed or ())))
 
 
+#: Phrases NO email in ANY family may carry, whatever its audience.
+#:
+#: ⚠ THIS EXISTS BECAUSE "each family owns its own list" LEFT A HOLE, 2026-08-04. The rule read
+#: sensibly — the wrong voice for a partner organisation is not the wrong voice for a donor — and
+#: it silently assumed each family's audience matches its table. It stopped being true the moment
+#: an organisation's SPONSOR INVITATION became a `PartnerEmailTemplate`: a donor pitch, validated by
+#: the partner list, which never banned a tax claim. The single most likely place on the platform
+#: for "your gift is tax deductible" was the one surface not checking for it.
+#:
+#: So the split is now by WHAT THE RULE PROTECTS, not by which table the row sits in:
+#:   * TAX — HalaTuju holds no LHDN s44(6) approval. A tax claim is a false statement about
+#:     someone's own tax position, and the only sentence on any of these surfaces that can cost the
+#:     reader money rather than merely read badly. False to a donor, a partner and a reviewer alike.
+#:   * URGENCY — consent covers transactional mail; pressure copy turns it into marketing. That
+#:     boundary does not move with the audience either.
+#: Voice rules that genuinely DO depend on the audience — conduit phrasing for a partner,
+#: student-ownership for a donor — stay in the family lists where they belong.
+UNIVERSAL_BANNED = (
+    'tax deductible', 'tax-deductible', 'tax exempt', 'tax-exempt', 'tax relief',
+    'act now', 'limited time', 'last chance', "don't miss",
+)
+
+
 def banned_phrases(banned, *parts):
     """Phrases from `banned` present in `parts`, sorted and case-insensitively matched.
 
     A copy rule that lives only in a reviewer's head gets edited away later; this makes the rule
-    refuse the save. Each family owns its own list — what counts as the wrong voice for a partner
-    organisation is not what counts as the wrong voice for a donor.
+    refuse the save. A family's list is its own audience-specific voice rules PLUS
+    `UNIVERSAL_BANNED` — see that constant for why the purely per-family arrangement failed.
     """
     haystack = ' '.join(p or '' for p in parts).lower()
     return tuple(sorted({p for p in (banned or ()) if p in haystack}))

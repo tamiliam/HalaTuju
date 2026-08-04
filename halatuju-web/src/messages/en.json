@@ -3215,14 +3215,13 @@
         },
         "system": {
           "title": "Emails we maintain",
-          "subtitle": "These seven are written into our code, so they cannot be edited or switched off here. They are listed so you know they exist and what they say — if one ever needs to change, ask us.",
+          "subtitle": "These six are written into our code, so they cannot be edited or switched off here. They are listed so you know they exist and what they say — if one ever needs to change, ask us.",
           "subjectLabel": "Subject:",
           "show": "Show wording",
           "hide": "Hide wording",
           "sensitive": "Carries a new reviewer's temporary password.",
           "widerAudience": "Also goes to your organisation's admins.",
           "kind": {
-            "partner_welcome": "Joining the team",
             "interview_booked": "An applicant books a time",
             "interview_reminder": "The interview is coming up",
             "interview_cancelled": "An applicant cancels",
@@ -3231,7 +3230,6 @@
             "verdict_escalation": "A verdict is badly overdue"
           },
           "when": {
-            "partner_welcome": "When somebody is added as a reviewer, carrying what they need to sign in for the first time.",
             "interview_booked": "When a student picks one of the times the reviewer proposed.",
             "interview_reminder": "A day before the interview, and again about an hour before.",
             "interview_cancelled": "When a student cancels a booked interview, with the reason they gave.",
@@ -5482,17 +5480,22 @@
       "notePlaceholder": "A short note to include (optional)",
       "emails": {
         "title": "What people are told when you invite them",
-        "subtitle": "The wording of the two invitation emails. Edit them freely.",
+        "subtitle": "The wording of the four invitation emails. Edit them freely.",
         "alwaysSends": "These always send. There is no switch, because an invitation that sends no email is an invitation nobody receives.",
         "accessLocked": "The sign-in paragraph — including the temporary password — is added by us and cannot be edited. It changes depending on how the person signs in.",
         "loadError": "These emails could not be loaded.",
+        "notSentYet": "Not sent by anything yet — the Source console is still being built.",
         "kind": {
-          "invite_staff": "Joining the team",
-          "invite_sponsor": "Inviting a sponsor"
+          "invite_admin": "Joining the team — admin",
+          "invite_reviewer": "Joining the team — reviewer",
+          "invite_source": "Inviting a source organisation",
+          "invite_sponsor": "Inviting a donor"
         },
         "when": {
-          "invite_staff": "Sent when you add somebody as a reviewer, QC, admin or finance — and again whenever you press Resend.",
-          "invite_sponsor": "Sent when you invite somebody to become a sponsor. It links them to the ordinary sign-up, where they still give consent and are vetted."
+          "invite_admin": "Sent when you add somebody as an admin or finance — and again whenever you press Resend.",
+          "invite_reviewer": "Sent when you add somebody as a reviewer or QC — and again whenever you press Resend.",
+          "invite_source": "Not sent yet. This is the wording a source organisation will receive once they can sign in and follow their own students.",
+          "invite_sponsor": "Sent when you invite somebody to become a donor. It links them to the ordinary sign-up, where they still give consent and are vetted."
         }
       }
     },

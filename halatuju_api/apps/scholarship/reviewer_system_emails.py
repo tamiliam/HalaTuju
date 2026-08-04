@@ -1,9 +1,12 @@
 """The reviewer emails NOBODY can edit — rendered, so at least everybody can READ them.
 
 Request #10 gave BrightPath five reviewer emails they own: wording they can change, switches they
-can turn off. These seven are the rest. They are code-owned prose, and that is deliberate — one
-carries a temporary password, one goes to organisation admins as well as the reviewer, and all of
-them say something operational that a wording edit could quietly break.
+can turn off. These six are the rest. They are code-owned prose, and that is deliberate — one goes
+to organisation admins as well as the reviewer, and all of them say something operational that a
+wording edit could quietly break.
+
+⚠ **SIX, NOT SEVEN, SINCE 2026-08-04.** The joining email left this list when it became editable
+under Organisation → Invitations; see the note on `SYSTEM_EMAILS`.
 
 ⚠ THE POINT OF THIS MODULE IS THAT THE PREVIEW CANNOT DRIFT FROM THE MAIL. Each entry renders
 through the SAME ``emails.build_*`` function the sender calls, with sample particulars. A second
@@ -26,12 +29,6 @@ SAMPLE_START = datetime.datetime(2026, 9, 15, 10, 30, tzinfo=datetime.timezone.u
 _SAMPLE_REVIEWER = 'Reviewer'
 _SAMPLE_APPLICANT = 'the applicant'
 _SAMPLE_REF = 'HT-0000'
-
-
-def _welcome():
-    return emails.build_partner_welcome_email(
-        'reviewer@example.com', _SAMPLE_REVIEWER, 'reviewer',
-        temp_password='••••••••', google=False)
 
 
 def _booked():
@@ -73,10 +70,16 @@ def _escalation():
         due_by='25/09/2026')
 
 
-#: ``(key, builder)`` in the order the screen reads them: joining, then the interview in sequence,
-#: then the one that is not about an interview at all.
+#: ``(key, builder)`` in the order the screen reads them: the interview in sequence, then the one
+#: that is not about an interview at all.
+#:
+#: ⚠ `partner_welcome` WAS THE FIRST ENTRY AND WAS REMOVED ON 2026-08-04 (owner). The joining email
+#: became editable under Organisation → Invitations the day before, so it was appearing in two
+#: places at once — read-only here, editable there — which is worse than either alone: an org_admin
+#: reading this list would conclude the wording was fixed. Invitations own it now. **Do not restore
+#: it here**; if a reviewer-facing preview of the joining letter is ever wanted again, link to the
+#: Invitations tab rather than rendering a second copy.
 SYSTEM_EMAILS = (
-    ('partner_welcome', _welcome),
     ('interview_booked', _booked),
     ('interview_reminder', _reminder),
     ('interview_cancelled', _cancelled),
@@ -85,9 +88,11 @@ SYSTEM_EMAILS = (
     ('verdict_escalation', _escalation),
 )
 
-#: Keys whose email carries something an org_admin should notice. `partner_welcome` carries a new
-#: reviewer's temporary password — the sample shows dots, never a real one.
-SENSITIVE_KEYS = frozenset({'partner_welcome'})
+#: Keys whose email carries something an org_admin should notice — a temporary password, say. EMPTY
+#: since `partner_welcome` left (2026-08-04), and kept rather than deleted because it is the
+#: mechanism, not the list: the next code-owned email carrying a credential needs a home to be
+#: flagged from, and rebuilding this later is how one ships unflagged.
+SENSITIVE_KEYS = frozenset()
 
 #: Keys that reach somebody besides the reviewer. The escalation also goes to the organisation's
 #: own admins, which is exactly the sort of fact that is invisible until it surprises somebody.

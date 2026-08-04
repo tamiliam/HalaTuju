@@ -81,10 +81,13 @@ NO_NAME_GREETING = 'there'
 #   * URGENCY — consent taken at registration covers transactional account mail. Pressure copy
 #     turns that mail into marketing, which is exactly the boundary `low_balance` and
 #     `annual_statement` were deferred over.
-BANNED_PHRASES = (
-    'tax deductible', 'tax-deductible', 'tax exempt', 'tax-exempt', 'tax relief',
+#
+# The tax and urgency entries moved to `email_templates.UNIVERSAL_BANNED` on 2026-08-04 and are
+# folded back in here unchanged — nothing this family refuses has changed. They moved because they
+# were needed by the partner family too, once an organisation's sponsor invitation started living
+# in that table; keeping a second copy here is how the two would drift.
+BANNED_PHRASES = email_templates.UNIVERSAL_BANNED + (
     'your student', 'your students', 'your child', 'your children',
-    'act now', 'limited time', 'last chance', 'don\'t miss',
 )
 
 
