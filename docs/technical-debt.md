@@ -2626,8 +2626,23 @@ invited who would rather read Malay or Tamil.
 
 ### [TD-216] The interviewer label is stamped by the first click, not by the person who interviewed — medium
 
-**Status:** Open · raised 2026-08-13 · **IN-HOUSE, NOT BILLABLE** (owner, 2026-08-13: *"This is not
-what the request is about. This is a separate item… Let's fix this inhouse."*)
+**Status:** ✅ RESOLVED 2026-08-13 (commit `01cb0c77`) · **IN-HOUSE, NOT BILLABLE** (owner,
+2026-08-13: *"This is not what the request is about. This is a separate item… Let's fix this
+inhouse."*)
+
+**⚠ AS SHIPPED, ONE BULLET BELOW WAS OVERRULED — read this before "correcting" the code to match the
+spec.** The bullet marked *"the trigger is a change to the FINDINGS content, never the conclusion"*
+was written before anyone counted. The screen has **one** free-text box carrying both the findings
+and the conclusion (its own placeholder says so), so keying on the per-item lines alone leaves
+**31 of 83** submitted interviews with no interviewer at all — every reviewer who writes everything
+in the main box. The owner chose the wider reading on 2026-08-13 knowing the trade: somebody who
+rewrites only the conclusion does take the credit, because nothing in the stored data distinguishes
+that from rewriting the findings. **Splitting the box into two fields is the real fix for that half
+and is deferred.** Everything else below shipped as written; the deletion exclusion is bite-checked.
+
+**Data done:** sessions 71, 72, 74 (applications 43, 133, 136) had `interviewer_id` set to NULL. The
+rows were **kept, not deleted** — an empty draft renders nothing on any surface, and removing them
+would have resurrected three deliberately-deleted agenda questions.
 
 Found while investigating org request #13, which turned out NOT to be caused by this — the two are
 unrelated and were deliberately separated. Do not fold this back into that request.

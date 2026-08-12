@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## An interview is credited to whoever wrote it - 2026-08-13
+
+**No migration.** api + web. TD-216, in-house.
+
+- **A tidy-up click no longer opens an interview in your name.** `InterviewSession.interviewer` was
+  stamped when the row was created, and clearing an AI-generated agenda question creates the row
+  (correctly - a delete must survive a reload, so it writes the whole session). Three students
+  carried an empty interview attributed that way. The harm was never the empty rows: a reviewer
+  typing findings into one afterwards had the work filed under the earlier clicker's name, with
+  nothing on screen to show it.
+- **`_is_authoring()` decides whether a save added interview CONTENT.** A deletion is never
+  authorship - that is the origin of the bug and is excluded by name, because a plain "did the
+  findings change?" test would still stamp the deleter. Bite-checked: remove the exclusion and
+  exactly the three tests that name it fail.
+- **⚠ Content is the per-item findings AND the main note.** One box carries findings and conclusion
+  together, so keying on the per-item lines alone would leave **31 of 83** submitted interviews
+  with no interviewer at all. Owner's call, knowing the trade; splitting the box is deferred.
+- **The credit moves to whoever writes, every time** - one field, overwritten, an earlier
+  contributor's name expunged (owner's ruling). Re-saving or submitting without writing keeps the
+  existing name, so A interviews, B submits, and the record still reads A.
+- **The cockpit says who** ("Interviewed by ...") and **clears its interview state when the
+  application id changes** - the nav-arrow window where one student's typed text sat in state while
+  the next student loaded.
+- **Data:** sessions 71, 72, 74 had `interviewer_id` set to NULL. Rows kept, not deleted - deleting
+  them would have resurrected three deliberately-deleted agenda questions.
+
+`pytest` **4258** - `jest` **1419** - `next lint` **0 errors** - i18n **4526x3**.
+
 ## Two corrections off the Invitations screen - 2026-08-04
 
 Web only. No migration, no backend change.
