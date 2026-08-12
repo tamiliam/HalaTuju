@@ -465,6 +465,13 @@ export default function AdminScholarshipDetailPage() {
 
   useEffect(() => {
     if (!token || !id) return
+    // ⚠ CLEAR THE INTERVIEW BOXES BEFORE FETCHING THE NEXT STUDENT (TD-216). The prev/next arrows
+    // move between applicants WITHOUT remounting this page, so without this the previous student's
+    // typed findings stay in state until their replacement arrives — and a save in that window
+    // writes one student's interview onto another's record. The load below refills them.
+    setFindings({})
+    setRubric({})
+    setNote('')
     getScholarshipApplication(id, { token })
       .then((d) => {
         setApp(d)
@@ -1971,6 +1978,15 @@ export default function AdminScholarshipDetailPage() {
                       <p className="whitespace-pre-line text-sm text-gray-800">{note}</p>
                     </div>
                   </div>
+                )}
+                {/* ⚠ WHO conducted it, not only when it was sent (TD-216). The name has always
+                    been on the payload and was rendered nowhere, so an interview credited to the
+                    wrong person looked exactly like one credited to the right person. */}
+                {app.interview_session?.interviewer_name && (
+                  <p className="text-[11px] text-gray-400">
+                    {t('admin.scholarship.interview.interviewedBy')}{' '}
+                    {app.interview_session.interviewer_name}
+                  </p>
                 )}
                 {app.interview_session?.submitted_at && (
                   <p className="text-[11px] text-gray-400">

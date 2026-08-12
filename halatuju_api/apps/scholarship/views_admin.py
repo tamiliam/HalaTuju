@@ -862,6 +862,42 @@ def interview_agenda_full(application):
     return agenda
 
 
+def _is_authoring(old_findings, new_findings, old_note, new_note):
+    """Did this save ADD INTERVIEW CONTENT, as opposed to housekeeping? (TD-216, owner 2026-08-13)
+
+    This decides who the interview is credited to. Before it existed, the credit went to whoever
+    caused the session row to exist — and clearing an AI agenda question causes that, because a
+    delete is a decision and must survive a reload, so it writes the whole session. Three students
+    ended up with an interview attributed to somebody who had only tidied their agenda; a reviewer
+    typing findings into one of those afterwards would have had the work recorded under that other
+    name, silently.
+
+    ⚠ **CONTENT IS THE PER-ITEM FINDINGS *AND* THE MAIN NOTE, DELIBERATELY.** The owner's rule was
+    "whoever writes or edits the findings", and the screen has one free-text box that carries both
+    the findings and the conclusion (its own placeholder says so). Keying on the per-item lines
+    alone would leave **31 of 83** submitted interviews with no interviewer at all — the reviewers
+    who write everything in the main box. Owner chose this reading on 2026-08-13 knowing the
+    trade: somebody who rewrites only the conclusion does take the credit, because nothing in the
+    data can distinguish that from rewriting the findings. Splitting the box is the fix for that
+    and was deferred.
+
+    ⚠ **A DELETION IS NEVER AUTHORSHIP**, however much of the findings dict it changes. That is the
+    whole origin of the bug and is checked explicitly — a plain "did the findings change?" test
+    would still stamp the person who cleared a question.
+    """
+    if (new_note or '').strip() != (old_note or '').strip():
+        return True
+    old = old_findings if isinstance(old_findings, dict) else {}
+    for code, value in (new_findings or {}).items():
+        if not isinstance(value, dict):
+            continue
+        if value.get('verdict') == 'deleted':
+            continue
+        if old.get(code) != value:
+            return True
+    return False
+
+
 def _validate_findings(findings):
     """Validate a findings dict: each value must have a valid verdict + a rationale
     within length. Returns an error string or None."""
@@ -914,13 +950,22 @@ class AdminInterviewView(_AdminBase):
             session = app.interview_sessions.filter(status='submitted').order_by('-submitted_at').first()
             if session is not None:
                 session.status = 'draft'
+        note = request.data.get('overall_note', '') or ''
         if session is None:
-            session = InterviewSession(application=app, interviewer=admin,
-                                       started_at=timezone.now())
+            # ⚠ NO interviewer here. The row must exist for a DELETE to persist, but causing a row
+            # to exist is not conducting an interview — see `_is_authoring` and TD-216.
+            session = InterviewSession(application=app, started_at=timezone.now())
+        # Decided BEFORE the new values are written over the old ones.
+        authored = _is_authoring(session.findings, findings, session.overall_note, note)
         session.findings = findings
         session.rubric = request.data.get('rubric', {}) or {}
-        session.overall_note = request.data.get('overall_note', '') or ''
-        if session.interviewer_id is None:
+        session.overall_note = note
+        if authored:
+            # ⚠ THE CREDIT MOVES TO WHOEVER WROTE THE CONTENT, EVERY TIME (owner, 2026-08-13).
+            # One field, overwritten — an earlier contributor's name is expunged, which the owner
+            # considered and accepted. Somebody who only re-saves, or only submits, keeps the
+            # existing name: that is the case this exists to protect (A interviews, B submits →
+            # the record must still read A).
             session.interviewer = admin
         session.save()
         # A draft save does NOT advance the funnel. 'interviewing' means the interview

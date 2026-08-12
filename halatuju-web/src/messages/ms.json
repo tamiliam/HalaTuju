@@ -3867,6 +3867,7 @@
         "findingsLabel": "Penemuan",
         "answerLabel": "Penemuan penyemak",
         "submittedOn": "Dihantar pada",
+        "interviewedBy": "Ditemu duga oleh",
         "reopenError": "Tidak dapat membuka semula temu duga.",
         "verdict": {
           "resolved": "Selesai"

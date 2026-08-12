@@ -529,3 +529,59 @@ class TestStickyProfileCompleteRevert(PhaseCBase):
         app.refresh_from_db()
         self.assertEqual(app.status, 'shortlisted')
         self.assertIsNone(app.profile_completed_at)
+
+
+class TestWhoTheInterviewIsCreditedTo(TestCase):
+    """TD-216 — the interviewer is whoever WROTE the interview, not whoever touched the row first.
+
+    Before this, the credit went to whoever caused the session to exist. Clearing an AI agenda
+    question causes that (a delete must survive a reload, so it writes the whole session), which
+    left three students with an interview attributed to somebody who had only tidied their agenda.
+    """
+
+    def _authoring(self, old_f, new_f, old_n='', new_n=''):
+        from apps.scholarship.views_admin import _is_authoring
+        return _is_authoring(old_f, new_f, old_n, new_n)
+
+    # ── what does NOT count ────────────────────────────────────────────────────
+    def test_DELETING_AN_AGENDA_QUESTION_IS_NOT_INTERVIEWING(self):
+        # ⚠ The whole origin of the bug. A plain "did the findings change?" test would pass here
+        # and re-credit the person who cleared the question — which is what went wrong.
+        self.assertFalse(self._authoring({}, {'device_in_funding': {'verdict': 'deleted',
+                                                                    'rationale': ''}}))
+
+    def test_deleting_a_second_question_later_is_still_not_interviewing(self):
+        old = {'a': {'verdict': 'resolved', 'rationale': 'seen'}}
+        new = dict(old, b={'verdict': 'deleted', 'rationale': ''})
+        self.assertFalse(self._authoring(old, new))
+
+    def test_re_saving_the_same_content_credits_nobody_new(self):
+        # ⚠ THE CASE THE OWNER ASKED TO PROTECT: A writes, B opens and saves without changing
+        # anything (or submits). The record must still read A.
+        same = {'a': {'verdict': 'resolved', 'rationale': 'seen'}}
+        self.assertFalse(self._authoring(same, dict(same), 'the note', 'the note'))
+
+    def test_whitespace_only_note_change_is_not_authoring(self):
+        self.assertFalse(self._authoring({}, {}, 'the note', '  the note  '))
+
+    # ── what DOES count ───────────────────────────────────────────────────────
+    def test_writing_the_main_note_is_interviewing(self):
+        # ⚠ 31 of 83 real interviews have NO per-item findings — everything is in this box. Key
+        # attribution on the per-item lines alone and a third of interviews have no interviewer.
+        self.assertTrue(self._authoring({}, {}, '', 'I met the student and she explained...'))
+
+    def test_editing_the_main_note_is_interviewing(self):
+        self.assertTrue(self._authoring({}, {}, 'first pass', 'first pass, corrected'))
+
+    def test_writing_a_finding_is_interviewing(self):
+        self.assertTrue(self._authoring({}, {'a': {'verdict': 'resolved', 'rationale': 'asked'}}))
+
+    def test_changing_a_rationale_is_interviewing(self):
+        old = {'a': {'verdict': 'resolved', 'rationale': 'asked'}}
+        new = {'a': {'verdict': 'resolved', 'rationale': 'asked, and she showed the letter'}}
+        self.assertTrue(self._authoring(old, new))
+
+    def test_restoring_a_deleted_question_and_answering_it_is_interviewing(self):
+        old = {'a': {'verdict': 'deleted', 'rationale': ''}}
+        new = {'a': {'verdict': 'still_unclear', 'rationale': 'she could not say'}}
+        self.assertTrue(self._authoring(old, new))

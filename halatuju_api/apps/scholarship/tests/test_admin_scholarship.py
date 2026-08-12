@@ -818,3 +818,94 @@ class TestAdminScholarship(TestCase):
         self._auth(STUDENT)
         r = self.client.post(self._rerun_vision_url(ic.id))
         self.assertEqual(r.status_code, 403)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestTheInterviewIsCreditedThroughTheENDPOINT(TestCase):
+    """TD-216 end to end — the unit test proves the rule, this proves it is WIRED.
+
+    Walks the exact sequence that produced the live defect: a super clears an agenda question,
+    a reviewer then writes the interview, and somebody else submits it.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.courses.models import PartnerOrganisation
+        cls.org = PartnerOrganisation.objects.create(code='td216', name='TD216 Org')
+        cls.super = PartnerAdmin.objects.create(
+            supabase_user_id='td216-super', is_super_admin=True, role='super', is_active=True,
+            name='The Owner', email='owner@example.com')
+        cls.reviewer = PartnerAdmin.objects.create(
+            supabase_user_id='td216-rev', role='reviewer', is_active=True,
+            owning_organisation=cls.org, name='The Reviewer', email='rev@example.com')
+        cls.cohort = ScholarshipCohort.objects.create(
+            code='td216-c', name='B40', year=2026, owning_organisation=cls.org)
+        cls.profile = StudentProfile.objects.create(
+            supabase_user_id='td216-stud', name='A Student', grades={}, household_income=1000)
+        cls.app = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.profile, status='profile_complete',
+            assigned_to=cls.reviewer)
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+
+    def _save(self, uid, **payload):
+        self._auth(uid)
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/interview/',
+            payload, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        return r.json()
+
+    def _session(self):
+        from apps.scholarship.models import InterviewSession
+        return InterviewSession.objects.get(application=self.app)
+
+    def test_THE_WHOLE_SEQUENCE_THAT_BROKE(self):
+        # 1. The owner clears an AI agenda question. The row must exist so the delete survives a
+        #    reload — but nobody has interviewed anybody.
+        self._save('td216-super',
+                   findings={'device_in_funding': {'verdict': 'deleted', 'rationale': ''}},
+                   rubric={}, overall_note='')
+        self.assertIsNone(self._session().interviewer_id,
+                          'clearing an agenda question must not claim the interview')
+
+        # 2. The assigned reviewer writes it up. The credit is theirs.
+        self._save('td216-rev',
+                   findings={'device_in_funding': {'verdict': 'deleted', 'rationale': ''}},
+                   rubric={}, overall_note='I met her and she explained the situation.')
+        self.assertEqual(self._session().interviewer_id, self.reviewer.id)
+
+        # 3. Somebody else opens it and saves without changing a word. It stays the reviewer's.
+        #    ⚠ This is the case the owner asked for by name.
+        self._save('td216-super',
+                   findings={'device_in_funding': {'verdict': 'deleted', 'rationale': ''}},
+                   rubric={}, overall_note='I met her and she explained the situation.')
+        self.assertEqual(self._session().interviewer_id, self.reviewer.id,
+                         're-saving somebody else\'s interview must not take the credit')
+
+        # 4. And submitting it does not take the credit either.
+        self._auth('td216-super')
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/interview/submit/')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._session().interviewer_id, self.reviewer.id)
+
+    def test_a_later_rewrite_DOES_take_the_credit(self):
+        # The owner's accepted trade: one field, overwritten, earlier name expunged.
+        self._save('td216-rev', findings={}, rubric={}, overall_note='First account.')
+        self.assertEqual(self._session().interviewer_id, self.reviewer.id)
+        self._save('td216-super', findings={}, rubric={}, overall_note='Rewritten account.')
+        self.assertEqual(self._session().interviewer_id, self.super.id)
+
+    def test_the_name_reaches_the_screen(self):
+        # It was on the payload and rendered nowhere, which is why a wrong name looked like a
+        # right one. The endpoint must keep serving it.
+        self._save('td216-rev', findings={}, rubric={}, overall_note='An account.')
+        self._auth('td216-super')
+        body = self.client.get(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/interview/').json()
+        self.assertEqual(body['session']['interviewer_name'], 'The Reviewer')

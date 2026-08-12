@@ -3867,6 +3867,7 @@
         "findingsLabel": "Findings",
         "answerLabel": "Reviewer's finding",
         "submittedOn": "Submitted on",
+        "interviewedBy": "Interviewed by",
         "reopenError": "Could not reopen the interview.",
         "verdict": {
           "resolved": "Resolved"
