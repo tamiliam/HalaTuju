@@ -2623,3 +2623,55 @@ not prefer is the case where it matters most.
 
 **Trigger:** the owner's decision (raised with them 2026-08-04, undecided), or the first donor
 invited who would rather read Malay or Tamil.
+
+### [TD-216] The interviewer label is stamped by the first click, not by the person who interviewed — medium
+
+**Status:** Open · raised 2026-08-13 · **IN-HOUSE, NOT BILLABLE** (owner, 2026-08-13: *"This is not
+what the request is about. This is a separate item… Let's fix this inhouse."*)
+
+Found while investigating org request #13, which turned out NOT to be caused by this — the two are
+unrelated and were deliberately separated. Do not fold this back into that request.
+
+**What is wrong.** `InterviewSession.interviewer` is set once, when the session row is first
+created, and only ever filled in later if it is empty (`views_admin.py`, the draft-save and submit
+paths). Whoever causes the row to exist owns it permanently.
+
+Deleting an AI-generated agenda question causes the row to exist. The delete handler persists
+immediately — correctly, since a delete is a decision that must survive a reload — but it does so by
+writing the WHOLE session, which stamps the clicker as the interviewer. Three students carry an
+empty session created this way in mid-July (applications 43, 133, 136), each holding nothing but
+`device_in_funding` flipped to `deleted`.
+
+The consequence is not the empty rows; it is that a reviewer who later types findings into one of
+them has their work recorded under the earlier clicker's name, with nothing on screen to show it.
+`interviewer_name` IS on the serializer and IS in the front-end type — and is rendered nowhere.
+
+**⚠ Generating AI questions is NOT affected** and needs no change: gaps live on
+`ScholarshipApplication.interview_gaps`, never on the session. Verified 2026-08-13.
+
+**The rule to implement (owner, 2026-08-13 — settled, do not re-derive):**
+
+* The interviewer is **whoever last made a real change to the FINDINGS**. Not the submitter, not the
+  currently-assigned reviewer.
+* **A single field, overwritten.** The owner considered and explicitly accepted that an earlier
+  contributor's name is expunged when a later one edits the findings: *"A's contribution could be
+  essentially expunged. I am OK with that."* A contributor LIST was discussed and rejected as
+  over-complicated — it would also be a schema change.
+* **⚠ THE TRIGGER IS A CHANGE TO THE FINDINGS CONTENT, NEVER THE ACT OF SAVING.** One payload
+  carries findings + rubric + conclusion together, so "rewrite the name on save" would credit
+  somebody who only edited the conclusion. That is exactly the case the owner wants protected:
+  reviewer A interviews, B rewrites the conclusion and submits → the record must read A interviewed,
+  B recommended.
+* **Deleting a question must be excluded by name.** A delete DOES change the findings (it flips an
+  item to `deleted`), so a plain change-detector would still stamp the deleter.
+* Show the interviewer, and when, on the Interview Stage — the field already reaches the browser.
+
+**Also in scope while in this area:** the prev/next arrows between students reuse the page, so for a
+moment while the next student loads the previous student's typed text is still in state; saving in
+that window would write it to the wrong student. No evidence it has happened; it is a real way for
+good work to land on the wrong file.
+
+**Data:** clear the three empty sessions so those students read as not started. Minutes, no deploy,
+independent of the code fix.
+
+**Estimate:** ~3.0h including tests, plus minutes for the data clearing.
