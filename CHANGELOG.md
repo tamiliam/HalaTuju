@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## "No profile found" stops being said to students who have one - 2026-08-13
+
+**No migration.** Web only. Org request #11.
+
+- **The symptom:** a shortlisted Form 6 applicant signing in as a student was shown *No profile
+  found. Please complete the onboarding.* — the one instruction that could not help him, because
+  he had completed it. Reported as intermittent, "about one in three attempts".
+- **The dashboard decided whether a profile existed by reading THIS BROWSER's localStorage, once,
+  on mount.** Two ways that lied: the cache is written by AuthProvider only after `getProfile`
+  returns, so a mount-only read runs before it can be populated; and a student who declared STPM
+  but has not sat it has no STPM grades, CGPA or MUET band to assemble, so that branch could never
+  produce anything.
+- **⚠ `exam_type` answers two different questions in this codebase** - "which exam's results do I
+  hold?" (onboarding, dashboard) and "which pathway am I entering?" (the bursary application). For
+  a Form 6 entrant those genuinely disagree. The onboarding guard, which reads the SERVER, saw his
+  SPM grades and correctly declined to send him back to onboarding - so the server said onboarded,
+  the cache said nothing, and the page believed the cache.
+- **`resolveCachedResults` is now the one home for "what does this browser hold".** An incomplete
+  STPM set falls back to the SPM grades the student does hold; only with nothing to fall back to
+  does it say so, and it then asks for the missing RESULTS, never for onboarding already done.
+- **`useCachedResults(authProfile)` re-reads when the server profile lands.** Safe because these
+  screens display results and never edit them. Same mount-only read fixed on `/pathway/stpm`.
+- The dashboard now DERIVES its five cache-fed values instead of holding them in state - one
+  effect feeding five `useState`s is what let the page keep an answer the cache had contradicted.
+- **Measured on production: 2 of 35 STPM profiles** were in that state, both holding SPM grades.
+  Their stored data is untouched - `exam_type='stpm'` is their real intention.
+- **⚠ ms/ta for the three new `dashboard.stpmResults*` keys are MY first drafts** - owner's eye owed.
+
+`jest` **1434** - `next lint` **0 errors** - i18n **4529x3** - `tsc` unchanged against baseline.
+
 ## An interview is credited to whoever wrote it - 2026-08-13
 
 **No migration.** api + web. TD-216, in-house.
