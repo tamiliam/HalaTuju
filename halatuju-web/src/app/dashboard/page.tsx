@@ -26,9 +26,10 @@ import ScholarshipBanner from '@/components/ScholarshipBanner'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 import { useToast } from '@/components/Toast'
-import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUIZ_SIGNALS, COURSE_PAGE_SIZE } from '@/lib/storage'
+import { KEY_RESUME_ACTION, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUIZ_SIGNALS, COURSE_PAGE_SIZE } from '@/lib/storage'
 import type { StpmResultFraming } from '@/lib/api'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
+import { useCachedResults } from '@/hooks/useCachedResults'
 
 function getMeritLevel(studentMerit: number, courseMerit: number | null | undefined): 'high' | 'fair' | 'low' | 'none' {
   if (courseMerit === null || courseMerit === undefined) return 'none'
@@ -49,11 +50,22 @@ export default function DashboardPage() {
   const { t } = useT()
   const router = useRouter()
   const { ready: onboarded, loading: guardLoading, needsNric } = useOnboardingGuard()
-  const { isAuthenticated, token, showAuthGate } = useAuth()
+  // `authProfile` is the SERVER's profile (AuthProvider). Named apart from the local `profile`
+  // below, which is what this browser has cached — the two disagreeing is what request #11 was.
+  const { isAuthenticated, token, showAuthGate, profile: authProfile } = useAuth()
   const { savedIds, toggleSave: handleSaveOrGate } = useSavedCourses()
   const { showToast } = useToast()
-  const [profile, setProfile] = useState<StudentProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  // What THIS BROWSER holds, re-read when the server profile lands. Derived, not copied into
+  // state: five useStates fed by one effect is what let the page hold an answer the cache had
+  // already contradicted. See `useCachedResults` and `resolveCachedResults`.
+  const { results: cached, ready: cacheReady } = useCachedResults(authProfile)
+  const profile: StudentProfile | null =
+    cached.view === 'stpm' || cached.view === 'spm' ? cached.profile : null
+  const stpmData = cached.view === 'stpm' ? cached.stpm : null
+  const examType: 'spm' | 'stpm' = cached.view === 'stpm' ? 'stpm' : 'spm'
+  // Declared STPM, results not entered yet, nothing to fall back on. NOT the same as "no profile".
+  const stpmPending = cached.view === 'stpm_pending'
+  const isLoading = !cacheReady
   const [filter, setFilter] = useState<string>('all')
   const [displayCount, setDisplayCount] = useState(COURSE_PAGE_SIZE)
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
@@ -61,81 +73,17 @@ export default function DashboardPage() {
   const [reportError, setReportError] = useState(false)
   const [existingReportId, setExistingReportId] = useState<number | null>(null)
   const [reportGenerated, setReportGenerated] = useState(false)
-  const [examType, setExamType] = useState<'spm' | 'stpm'>('spm')
-  const [stpmData, setStpmData] = useState<{
-    stpmGrades: Record<string, string>
-    cgpa: number
-    muetBand: number
-    spmGrades: Record<string, string>
-  } | null>(null)
   const [stpmResults, setStpmResults] = useState<StpmRankedCourse[] | null>(null)
   const [stpmFraming, setStpmFraming] = useState<StpmResultFraming | null>(null)
 
-  // Load profile from localStorage on mount
+  // The two cached values that are NOT results — read on the same signal, for the same reason.
   useEffect(() => {
-    const examTypeStr = localStorage.getItem(KEY_EXAM_TYPE) || 'spm'
-    setExamType(examTypeStr as 'spm' | 'stpm')
-
-    if (examTypeStr === 'stpm') {
-      // Load STPM-specific data
-      const stpmGradesStr = localStorage.getItem(KEY_STPM_GRADES)
-      const stpmCgpaStr = localStorage.getItem(KEY_STPM_CGPA)
-      const muetBandStr = localStorage.getItem(KEY_MUET_BAND)
-      const spmPrereqStr = localStorage.getItem(KEY_SPM_PREREQ)
-      const profileData = localStorage.getItem(KEY_PROFILE)
-
-      if (stpmGradesStr && stpmCgpaStr && muetBandStr) {
-        const parsedProfile = profileData ? JSON.parse(profileData) : {}
-        setProfile({
-          grades: {},
-          gender: parsedProfile.gender || 'male',
-          nationality: parsedProfile.nationality || 'malaysian',
-          colorblind: !!parsedProfile.colorblind,
-          disability: !!parsedProfile.disability,
-        })
-        setStpmData({
-          stpmGrades: JSON.parse(stpmGradesStr),
-          cgpa: parseFloat(stpmCgpaStr),
-          muetBand: parseInt(muetBandStr),
-          spmGrades: spmPrereqStr ? JSON.parse(spmPrereqStr) : {},
-        })
-      }
-      setIsLoading(false)
-    } else {
-      // Existing SPM logic
-      const grades = localStorage.getItem(KEY_GRADES)
-      const profileData = localStorage.getItem(KEY_PROFILE)
-
-      if (grades && profileData) {
-        const parsedGrades = JSON.parse(grades)
-        const parsedProfile = JSON.parse(profileData)
-        const savedMerit = localStorage.getItem(KEY_MERIT)
-        // TD-063: carry the student's explicit stream picks into the eligibility
-        // check so merit uses them; absent → backend falls back to the heuristic.
-        const aliranStr = localStorage.getItem(KEY_ALIRAN)
-        const streamSubjects = aliranStr ? JSON.parse(aliranStr) : undefined
-
-        setProfile({
-          grades: parsedGrades,
-          gender: parsedProfile.gender,
-          nationality: parsedProfile.nationality,
-          colorblind: !!parsedProfile.colorblind,
-          disability: !!parsedProfile.disability,
-          coq_score: parsedProfile.coqScore ?? 5.0,
-          ...(streamSubjects && streamSubjects.length && { stream_subjects: streamSubjects }),
-          ...(savedMerit && { student_merit: parseFloat(savedMerit) }),
-        })
-      }
-
-      const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
-      if (signals) {
-        setQuizSignals(JSON.parse(signals))
-      }
-
-      setReportGenerated(localStorage.getItem(KEY_REPORT_GENERATED) === 'true')
-      setIsLoading(false)
+    const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
+    if (signals) {
+      try { setQuizSignals(JSON.parse(signals)) } catch { /* malformed — ignore */ }
     }
-  }, [])
+    setReportGenerated(localStorage.getItem(KEY_REPORT_GENERATED) === 'true')
+  }, [authProfile])
 
   // Check STPM eligibility when stpmData is available
   useEffect(() => {
@@ -340,17 +288,22 @@ export default function DashboardPage() {
   }
 
   if (!profile) {
+    // ⚠ TWO DIFFERENT THINGS, and telling them apart is the whole of request #11. A student who
+    // declared STPM and has not entered those results HAS onboarded — the guard above just proved
+    // it, or they would have been redirected — so "complete the onboarding" is the one instruction
+    // that cannot help them. Ask for the results that are actually missing.
+    const pending = stpmPending || onboarded
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            {t('dashboard.noProfile')}
+            {t(pending ? 'dashboard.stpmResultsPending' : 'dashboard.noProfile')}
           </h1>
           <p className="text-gray-600 mb-6">
-            {t('dashboard.noProfileDesc')}
+            {t(pending ? 'dashboard.stpmResultsPendingDesc' : 'dashboard.noProfileDesc')}
           </p>
-          <Link href="/onboarding/exam-type" className="btn-primary">
-            {t('dashboard.startOnboarding')}
+          <Link href={pending ? '/onboarding/stpm-grades' : '/onboarding/exam-type'} className="btn-primary">
+            {t(pending ? 'dashboard.addStpmResults' : 'dashboard.startOnboarding')}
           </Link>
         </div>
       </div>
@@ -374,11 +327,13 @@ export default function DashboardPage() {
                 <p className="text-gray-500">{t('common.loading')}</p>
               </div>
             ) : !stpmData ? (
+              // Unreachable while `examType === 'stpm'` implies a resolved STPM cache — kept as a
+              // backstop, but asking for the RESULTS, never for onboarding they have done.
               <div className="text-center py-12">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('dashboard.noProfile')}</h2>
-                <p className="text-gray-500 mb-4">{t('dashboard.noProfileDesc')}</p>
-                <Link href="/onboarding/exam-type" className="btn-primary">
-                  {t('dashboard.startOnboarding')}
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('dashboard.stpmResultsPending')}</h2>
+                <p className="text-gray-500 mb-4">{t('dashboard.stpmResultsPendingDesc')}</p>
+                <Link href="/onboarding/stpm-grades" className="btn-primary">
+                  {t('dashboard.addStpmResults')}
                 </Link>
               </div>
             ) : stpmResults === null ? (

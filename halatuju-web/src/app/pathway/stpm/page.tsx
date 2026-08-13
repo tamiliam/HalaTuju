@@ -9,6 +9,7 @@ import { useT } from '@/lib/i18n'
 import { calculatePathways, type PathwayResult } from '@/lib/api'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
+import { useAuth } from '@/lib/auth-context'
 
 const PAGE_SIZE = 50
 
@@ -54,6 +55,8 @@ function StpmContent() {
   const { t } = useT()
   const searchParams = useSearchParams()
   const streamParam = searchParams.get('stream') as StreamId | null
+  // The SERVER's profile — used only as the signal that the cache has been written. See below.
+  const { profile: authProfile } = useAuth()
 
   const [profile, setProfile] = useState<{
     grades: Record<string, string>
@@ -64,22 +67,27 @@ function StpmContent() {
   const [ppdFilter, setPpdFilter] = useState('')
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
 
-  // Load profile from localStorage
+  // ⚠ RE-READ WHEN THE SERVER PROFILE LANDS, never mount-only — the cache is written by
+  // AuthProvider after `getProfile` resolves, so a mount-only read misses it on the first view
+  // after any sign-in and this page then claims there is no profile. Same fault as the dashboard's
+  // (org request #11, 2026-08-13); the read itself stays SPM-only, which is correct here.
   useEffect(() => {
     const gradesStr = localStorage.getItem(KEY_GRADES)
     const profileStr = localStorage.getItem(KEY_PROFILE)
 
     if (gradesStr && profileStr) {
-      const grades = JSON.parse(gradesStr)
-      const parsed = JSON.parse(profileStr)
-      setProfile({
-        grades,
-        coqScore: parsed.coqScore ?? 5.0,
-      })
+      try {
+        const grades = JSON.parse(gradesStr)
+        const parsed = JSON.parse(profileStr)
+        setProfile({
+          grades,
+          coqScore: parsed.coqScore ?? 5.0,
+        })
+      } catch { /* malformed — treat as absent */ }
     }
 
     setIsLoading(false)
-  }, [])
+  }, [authProfile])
 
   // Run pathway engine via API
   const [stpmResults, setStpmResults] = useState<PathwayResult[]>([])
