@@ -85,6 +85,8 @@ import {
   showsReviewerAssignedCard,
   showsWitnessCard,
   showsPostSubmissionCards,
+  showsInterviewStage,
+  showsDecisionCards,
   rejectionTrail,
   assignOptions,
   type FactStatus,
@@ -1880,8 +1882,12 @@ export default function AdminScholarshipDetailPage() {
       )}
 
       {/* Phase C: interview capture */}
-      {/* Hidden at shortlisted (pre-submission): Interview Stage — no interview can exist pre-submission. */}
-      {showsPostSubmissionCards(app.status) && (
+      {/* Hidden at shortlisted (pre-submission): no interview can exist pre-submission.
+          Hidden on a CLOSED case that never held one: the controls here (gap suggestion — a
+          billable call — Save draft, Submit findings) would write into a file nobody can act on. */}
+      {showsInterviewStage({
+        status: app.status, decisionReopened, hasInterviewSession: !!app.interview_session,
+      }) && (
       <div id="interview-section" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -2355,8 +2361,9 @@ export default function AdminScholarshipDetailPage() {
       {/* ── Rate AI verification — the officer's Pass/Fail over the AI's four-fact read +
            the AI's suggested verdict. Split out of the old Decision card (2026-07-04) into its
            own topmost box. Both modes: buttons while deciding, badges once recorded. ───────── */}
-      {/* Hidden at shortlisted (pre-submission): Rate AI Prediction — its rating can only be saved with the verdict. */}
-      {showsPostSubmissionCards(app.status) && (
+      {/* Hidden at shortlisted (pre-submission): its rating can only be saved with the verdict.
+          Hidden on a CLOSED case with no verdict, for the same reason at the other end. */}
+      {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.recordVerdict.rateTitle')}</h2>
         <div className="space-y-2">
@@ -2525,8 +2532,11 @@ export default function AdminScholarshipDetailPage() {
       {/* ── Decision — audit the four facts (records the verdict) → verify identity →
            accept. The audit→accept gate is preserved (accept stays gated on a complete
            profile + every checklist box). ──────────────────────────────────────────── */}
-      {/* Hidden at shortlisted (pre-submission): Recommendation — Approve/Decline need a submitted interview. */}
-      {showsPostSubmissionCards(app.status) && (
+      {/* Hidden at shortlisted (pre-submission): Approve/Decline need a submitted interview.
+          Hidden on a CLOSED case with no verdict — there is no decision left to record, and the
+          justification box invited writing one. WITH a verdict it stays: that is the frozen
+          decision trail (21 rejected records on 2026-08-18), which must not disappear. */}
+      {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.decision.title')}</h2>

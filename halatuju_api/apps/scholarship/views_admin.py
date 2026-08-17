@@ -54,8 +54,8 @@ from .serializers_admin import (
 )
 from .services import (
     AssignmentError, PauseError, admin_reject, application_completeness, assign_reviewer,
-    cancel_pending_decline, org_admin_reject, set_paused, set_reporting_date_by_officer,
-    submit_interview,
+    cancel_pending_decline, org_admin_reject, review_writes_closed, set_paused,
+    set_reporting_date_by_officer, submit_interview,
 )
 from . import sponsorship as sponsorship_service
 from .sponsorship import hold_pending_award
@@ -206,6 +206,32 @@ class _AdminBase(PartnerAdminMixin, APIView):
             return None, None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         if not self._can_review_app(admin, app):
             return None, None, self._deny_role()
+        return app, admin, None
+
+    def _require_open_case(self, request, pk):
+        """Auth prologue for a REVIEW-track write (interview capture, gap suggestion, verdict).
+
+        `_require_app_write` plus one thing it deliberately does not check: whether there is
+        still a review to write into. It has no status gate at all, so on a case that expired
+        or was rejected before anyone reviewed it, every one of these endpoints answered 200 —
+        `record-verdict` would have stamped a verdict AND an award amount onto a rejected file
+        (the same defect the 2026-07-30 sprint fixed, reached through a different door), and
+        `suggest-gaps` would have spent a Gemini call on it.
+
+        ⚠ ADD A NEW REVIEW-TRACK WRITE HERE, NOT TO `_require_app_write`. The two are separate
+        because the majority of per-application writes are legitimate on a closed case
+        (cancelling a decline, correcting a reporting date, re-running a document read); making
+        the status gate universal would break them. See `services.review_writes_closed` for why
+        a REOPENED case is open however terminal its status reads.
+        """
+        app, admin, err = self._require_app_write(request, pk)
+        if err:
+            return None, None, err
+        if review_writes_closed(app):
+            return None, None, Response(
+                {'error': 'This case is closed — there is no review left to record.',
+                 'code': 'case_closed', 'status': app.status},
+                status=status.HTTP_400_BAD_REQUEST)
         return app, admin, None
 
     def _require_qc(self, request, pk):
@@ -759,7 +785,7 @@ class AdminSuggestGapsView(_AdminBase):
     (not repeating the existing ones) and appends; otherwise it replaces with a
     fresh set of 3. Reviewer-gated (billable)."""
     def post(self, request, pk):
-        app, admin, err = self._require_app_write(request, pk)
+        app, admin, err = self._require_open_case(request, pk)
         if err:
             return err
         from .gap_engine import generate_interview_gaps
@@ -935,7 +961,7 @@ class AdminInterviewView(_AdminBase):
         return Response({'session': data, 'agenda': _interview_agenda(app)})
 
     def post(self, request, pk):
-        app, admin, err = self._require_app_write(request, pk)
+        app, admin, err = self._require_open_case(request, pk)
         if err:
             return err
         findings = request.data.get('findings', {}) or {}
@@ -981,7 +1007,7 @@ class AdminInterviewSubmitView(_AdminBase):
     """POST .../<pk>/interview/submit/ — finalise the draft session and advance the
     application → interviewed. Reviewer/super only."""
     def post(self, request, pk):
-        app, admin, err = self._require_app_write(request, pk)
+        app, admin, err = self._require_open_case(request, pk)
         if err:
             return err
         session = app.interview_sessions.filter(status='draft').first()
@@ -1007,7 +1033,7 @@ class AdminInterviewReopenView(_AdminBase):
     Only valid BEFORE a decision is recorded — once decided, use the Decision panel's
     Reopen (super-only, holds the profile from the pool)."""
     def post(self, request, pk):
-        app, admin, err = self._require_app_write(request, pk)
+        app, admin, err = self._require_open_case(request, pk)
         if err:
             return err
         if app.verdict_decided_at is not None:
@@ -2723,7 +2749,7 @@ class AdminRecordVerdictView(_AdminBase):
     refine to produce the final profile in the same action (reusing AdminFinaliseProfileView's
     preconditions; never duplicates the engine). Reviewer/super only."""
     def post(self, request, pk):
-        app, admin, err = self._require_app_write(request, pk)
+        app, admin, err = self._require_open_case(request, pk)
         if err:
             return err
 

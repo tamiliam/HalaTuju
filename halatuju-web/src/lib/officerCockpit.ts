@@ -1015,6 +1015,81 @@ export function showsPostSubmissionCards(status: string | null | undefined): boo
   return !isPreSubmissionStage(status)
 }
 
+// ── The other end of the lifecycle: a CLOSED case (2026-08-18) ───────────────
+
+/**
+ * The terminal off-ramps — the review is over and nothing further can be decided.
+ *
+ * The SAME three statuses `REVIEWER_CARD_HIDDEN_FROM` and `QUERYING_LOCKED_STATES` already
+ * treat as the end of the line. Deliberately NOT `closed`: that is the successful end of a
+ * FUNDED lifecycle, and every closed case carries a recorded verdict, so it keeps its
+ * decision record through the `decisionRecorded` arm below rather than through this list.
+ */
+export const CASE_CLOSED_STATES = new Set<string>(['rejected', 'withdrawn', 'expired'])
+
+/**
+ * Is this case off the review track for good?
+ *
+ * ⚠ THE REOPEN ARM IS LOAD-BEARING, NOT DEFENSIVE. `reopen.reopen_decision` walks most
+ * statuses back toward the reviewer, but `rejected` is NOT in its mapping — a super who
+ * reopens a rejected decision leaves the case sitting at `rejected` with
+ * `decision_reopened_at` set, and is then expected to re-record the verdict. Keying on
+ * status alone would hide the very panel that reopen exists to reach, and the backend guard
+ * that mirrors this would refuse the write. See `services.review_writes_closed`.
+ */
+export function isCaseClosed(
+  opts: { status: string | null | undefined; decisionReopened?: boolean | null },
+): boolean {
+  if (opts.decisionReopened) return false
+  return CASE_CLOSED_STATES.has(opts.status || '')
+}
+
+/**
+ * Show the Interview Stage box?
+ *
+ * The pre-submission half is `showsPostSubmissionCards` (no interview can exist before Step 2
+ * is submitted). The closed half is its mirror: on a case that expired or was rejected before
+ * anyone reviewed it, this box offered a live "Suggest interview questions" (a billable Gemini
+ * call), Save draft and Submit findings on a file nobody can act on — 44 production records on
+ * 2026-08-18, none of which had ever held an interview.
+ *
+ * A closed case that DOES hold a session keeps the box: it is then a record of an interview
+ * that really happened, and the box already renders read-only once the session is submitted.
+ * Hiding a record is a different mistake from hiding a dead control.
+ */
+export function showsInterviewStage(
+  opts: {
+    status: string | null | undefined
+    decisionReopened?: boolean | null
+    hasInterviewSession?: boolean | null
+  },
+): boolean {
+  if (!showsPostSubmissionCards(opts.status)) return false
+  if (!isCaseClosed(opts)) return true
+  return !!opts.hasInterviewSession
+}
+
+/**
+ * Show the Rate AI Prediction and Recommendation cards?
+ *
+ * Same shape, different record: what makes these worth keeping on a closed case is a RECORDED
+ * VERDICT, not an interview. With one they show the frozen decision trail ("Declined by … ·
+ * date") — that is the audit trail and must survive. Without one they offered live Pass/Fail
+ * buttons, an editable justification and an Approve that would have stamped a verdict, and an
+ * award amount, onto a rejected file.
+ */
+export function showsDecisionCards(
+  opts: {
+    status: string | null | undefined
+    decisionReopened?: boolean | null
+    decisionRecorded?: boolean | null
+  },
+): boolean {
+  if (!showsPostSubmissionCards(opts.status)) return false
+  if (!isCaseClosed(opts)) return true
+  return !!opts.decisionRecorded
+}
+
 // ── Header lifecycle timeline ─────────────────────────────────────────────────
 
 /** One chip in the cockpit header timeline. `labelKey` is the suffix under

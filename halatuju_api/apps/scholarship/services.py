@@ -1032,6 +1032,33 @@ INTERVIEW_REJECT_FROM = ('shortlisted', 'profile_complete', 'interviewing', 'int
 # Reject card at these statuses (lessons.md: offer-set and accept-set are one unit of change).
 ORG_REJECT_FROM = ('shortlisted',)
 
+# The terminal off-ramps: the review is over and no further REVIEW write may land on the case.
+# The same three statuses QUERYING_LOCKED_STATUSES already closes querying at.
+#
+# Deliberately NOT 'closed' — that is the successful end of a FUNDED lifecycle, and its writes
+# (disbursement, closure) belong to other endpoints with their own gates. This set governs the
+# review track only: the interview capture and the four-fact verdict.
+CASE_CLOSED_STATES = ('rejected', 'withdrawn', 'expired')
+
+
+def review_writes_closed(application):
+    """True when the interview/verdict endpoints must refuse this application.
+
+    ⚠ **A REOPENED DECISION IS STILL OPEN, whatever the status says.** `reopen.reopen_decision`
+    walks most statuses back toward the reviewer, but `rejected` is NOT in its mapping — a super
+    who reopens a rejected decision leaves the case AT 'rejected' with `decision_reopened_at`
+    set, and is then expected to re-record the verdict. Keying on status alone would refuse the
+    one write that reopen exists to permit. `officerCockpit.isCaseClosed` mirrors this exactly,
+    so the cockpit cannot offer a control this refuses (lessons.md 2026-07-16: the offer-set and
+    the accept-set are one unit of change).
+
+    This is a REVIEW-track gate, not a general write gate: cancelling a pending decline,
+    correcting a reporting date or re-running a document read are all still legitimate on a
+    closed case and go through their own endpoints.
+    """
+    return (application.status in CASE_CLOSED_STATES
+            and application.decision_reopened_at is None)
+
 
 def _record_reject(application, category, by_email, now=None, comments=''):
     """Flip the application to rejected NOW (the decision is immediate) — status + bucket +
