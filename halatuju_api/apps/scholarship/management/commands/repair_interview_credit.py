@@ -119,7 +119,7 @@ class Command(BaseCommand):
                               f'({target.name}, by {reason})')
             if apply_:
                 session.interviewer = target
-                session.save()
+                session.save(update_fields=['interviewer'])
                 logger.info('AUDIT interview_credit_repair session=%s app=%s old=%s new=%s '
                             'basis=%s', session.pk, app.id, held_by, target.email, reason)
             recredited += 1

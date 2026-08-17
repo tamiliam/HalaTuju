@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## 25 interviews are credited to the reviewer who conducted them - 2026-08-18
+
+**No migration.** Backend only, one new management command; the data pass is DONE on production.
+
+- **The report:** application #137's cockpit read *"Interviewed by Ve. Elanjelian"* beside a
+  decline recorded by Suresh Thirugnanam. The owner holds TWO accounts of that name
+  (`tamiliam@gmail.com` super, `elanjelian@me.com` org_admin), so the screen could not say which —
+  and the answer was neither: **Suresh wrote the findings.** He submitted the session at 15:46:04,
+  recorded a `verdict_reason` byte-identical to the interview note 32s later, and declined 14s
+  after that. All on 15 July. The credited session row was created **13 July**, and its only
+  finding is `{"device_in_funding": {"verdict": "deleted"}}` — one click clearing an agenda item.
+- **The cause is the bug TD-216 fixed on 2026-08-13** (`01cb0c77`), one ring wider than it looked.
+  Pre-fix, `AdminInterviewDraftView` stamped `interviewer` at ROW CREATION and thereafter only
+  `if session.interviewer_id is None` — so **whoever touched a draft first owned the credit for
+  good**, and the reviewer who wrote the findings days later could not take it back. The July
+  triage sweep opened case after case as super and deleted one agenda item apiece.
+- **⚠ IT WAS NEVER ONE RECORD. 29 submitted interviews were credited to an owner account; 25 were
+  wrong.** Nothing computes off the field (`interviews_conducted` has no readers; the reviewers
+  surface counts decisions by `verdict_decided_by`), so no figure, band or payment was ever wrong —
+  only the line a reviewer reads over their own work. TD-216 is not retroactive.
+- **`repair_interview_credit`** (report-only; `--apply`) re-credits to the **assigned reviewer,
+  falling back to the verdict-recorder**. **⚠ THAT ORDER IS THE WHOLE REPAIR.** On #13 the reviewer
+  interviewed and the OWNER recorded the verdict — keying on the verdict would have re-credited the
+  owner, the defect wearing a different hat. The owner caught that one by memory ("I didn't
+  interview 13") against my own list; the fallback exists only for #137, where nobody was assigned.
+- **⚠ THE FENCE IS THE CURRENT HOLDER, NOT THE DIVERGENCE.** Interviewer ≠ verdict-recorder is
+  legitimate (apps 12 and 51: a reviewer interviewed, the owner decided) and rewriting on
+  divergence alone would have destroyed those credits. Only rows held by the two sweep accounts are
+  in scope. Both rules are bite-proven — reverse the precedence and #13's test fails; widen the
+  fence and app 12's does.
+- `updated_at` is deliberately not bumped (`update_fields`): correcting a credit is not an edit of
+  the interview, and a moved timestamp would misreport when the findings were last written.
+- **Production, verified after:** 25 re-credited, **4 already correct** (#31/#67/#84/#87 — the
+  owner's own, confirmed by him), 0 skipped; a second run reports 0. #137 reads Suresh, #13 reads
+  Balan, and #137's `updated_at` still reads 15:46:04. One `AUDIT interview_credit_repair` line per
+  change — `award_amount`'s missing audit line (TD-203) is the lesson being applied.
+- **⚠ NOT DEPLOYED, and it does not need to be** — the command is a one-off already run against
+  production; nothing in the request path changed. 12 tests.
+
 ## "No profile found" stops being said to students who have one - 2026-08-13
 
 **No migration.** Web only. Org request #11.
