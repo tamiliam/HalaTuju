@@ -978,6 +978,30 @@ export function isQueryingLocked(status: string, interviewStatus?: string): bool
   return QUERYING_LOCKED_STATES.includes(status) || interviewStatus === 'submitted'
 }
 
+/**
+ * WHY querying is locked — because the boolean above folds two independent reasons together
+ * and the caller has to put one of them on screen.
+ *
+ * ⚠ THE COPY USED TO HARD-CODE "the interview is concluded", which is a statement about a thing
+ * that never happened on 44 production records: an application rejected at `shortlisted` or
+ * expired is locked by its STATUS, with no interview anywhere in its history. Second instance of
+ * the same shape as `_can_review` reporting `not_reviewer` about a paused reviewer (lessons.md
+ * 2026-08-03) — when a predicate collapses several reasons into one boolean, the caller that
+ * renders it will state the wrong one. Return the reason instead of re-deriving it at the call
+ * site, so there is one place to be right.
+ *
+ * A genuinely submitted interview names itself; everything else is simply a case that is no
+ * longer under review (which reads true for a rejection, an expiry AND a funded student).
+ */
+export type QueryingLockReason = 'interview' | 'closed'
+
+export function queryingLockReason(
+  status: string, interviewStatus?: string,
+): QueryingLockReason | null {
+  if (!isQueryingLocked(status, interviewStatus)) return null
+  return interviewStatus === 'submitted' ? 'interview' : 'closed'
+}
+
 /** Approve/Decline activate only once the interview is submitted, all four facts are pass/fail, and a reason is written. */
 export function isDecisionReady(interviewStatus: string | undefined, officerVerdict: OfficerVerdict, reason: string): boolean {
   return interviewStatus === 'submitted'
@@ -1088,6 +1112,52 @@ export function showsDecisionCards(
   if (!showsPostSubmissionCards(opts.status)) return false
   if (!isCaseClosed(opts)) return true
   return !!opts.decisionRecorded
+}
+
+/**
+ * Show the system-generated Student profile card?
+ *
+ * ⚠ EMPTY, THIS CARD IS THREE FALSE SENTENCES. On a closed case with no profile it titles itself
+ * "(draft)" when no draft exists, promises the draft "will be replaced with an updated final
+ * version when you save your verdict" — a verdict the endpoint now refuses — and explains that
+ * the profile "is generated automatically when the application is handed over for review", a
+ * handoff that will never happen. Its Output-language selector is worse: the only consumer of
+ * that value is the `record-verdict` call, so on a closed case it is a live control wired to
+ * nothing. 49 production records on 2026-08-18.
+ *
+ * FULL, it is a record and stays: the 16 rejected applications carrying a final profile already
+ * render the correct title and hint ("generated from the interview findings and your verdict").
+ */
+export function showsGeneratedProfileCard(
+  opts: {
+    status: string | null | undefined
+    decisionReopened?: boolean | null
+    hasProfile?: boolean | null
+  },
+): boolean {
+  if (!showsPostSubmissionCards(opts.status)) return false
+  if (!isCaseClosed(opts)) return true
+  return !!opts.hasProfile
+}
+
+/**
+ * Show the Check 2 — Outstanding box?
+ *
+ * Empty on a closed case it asserts "Nothing outstanding — all student tasks are clear", which
+ * reads as an achievement. 43 of the 44 closed-with-no-record applications have never had a
+ * single resolution item raised against them — nothing was outstanding because nothing was ever
+ * asked, and one of them was rejected over the college named on their offer letter. Same rule as
+ * the cards above: with items it is the record of what was asked and stays (22 records).
+ */
+export function showsCheck2Box(
+  opts: {
+    status: string | null | undefined
+    decisionReopened?: boolean | null
+    hasItems?: boolean | null
+  },
+): boolean {
+  if (!isCaseClosed(opts)) return true
+  return !!opts.hasItems
 }
 
 // ── Header lifecycle timeline ─────────────────────────────────────────────────

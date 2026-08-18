@@ -4474,6 +4474,7 @@
         "questionLabel": "Soalan",
         "uploadLabel": "Muat naik",
         "locked": "Pertanyaan ditutup — temu duga telah selesai. Ini kini rekod baca-sahaja.",
+        "lockedClosed": "Pertanyaan ditutup — permohonan ini tidak lagi dalam semakan. Ini kini rekod baca-sahaja.",
         "itemOne": "perkara",
         "itemMany": "perkara",
         "overflow": "{n} lagi soalan beratur — akan ditanya secara automatik sebaik yang semasa dijawab atau dikecualikan.",

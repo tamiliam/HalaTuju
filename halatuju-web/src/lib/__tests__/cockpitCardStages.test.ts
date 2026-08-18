@@ -7,7 +7,10 @@
  */
 import {
   isCaseClosed,
+  queryingLockReason,
+  showsCheck2Box,
   showsDecisionCards,
+  showsGeneratedProfileCard,
   showsInterviewStage,
   showsReportingDateBox,
   showsReviewerAssignedCard,
@@ -212,5 +215,91 @@ describe('the closed-case gates', () => {
   it('treats a missing status as open rather than throwing', () => {
     expect(showsInterviewStage({ status: null, hasInterviewSession: false })).toBe(true)
     expect(showsDecisionCards({ status: undefined, decisionRecorded: false })).toBe(true)
+  })
+
+  describe('showsGeneratedProfileCard', () => {
+    it('is hidden on a closed case holding no profile', () => {
+      // Empty, the card claims a draft that does not exist, promises a final version at a
+      // verdict that cannot be recorded, and offers a language selector wired to that call.
+      for (const status of ['rejected', 'withdrawn', 'expired']) {
+        expect(showsGeneratedProfileCard({ status, hasProfile: false })).toBe(false)
+      }
+    })
+
+    it('KEEPS a closed case that holds one — the profile is a record', () => {
+      for (const status of ['rejected', 'withdrawn', 'expired']) {
+        expect(showsGeneratedProfileCard({ status, hasProfile: true })).toBe(true)
+      }
+    })
+
+    it('is shown at every live stage past submission, profile or not', () => {
+      for (const status of LIVE.filter((s) => s !== 'shortlisted')) {
+        expect(showsGeneratedProfileCard({ status, hasProfile: false })).toBe(true)
+      }
+    })
+
+    it('stays hidden at shortlisted', () => {
+      expect(showsGeneratedProfileCard({ status: 'shortlisted', hasProfile: true })).toBe(false)
+    })
+  })
+
+  describe('showsCheck2Box', () => {
+    it('is hidden on a closed case with nothing in it', () => {
+      for (const status of ['rejected', 'withdrawn', 'expired']) {
+        expect(showsCheck2Box({ status, hasItems: false })).toBe(false)
+      }
+    })
+
+    it('KEEPS a closed case that holds items — that is the record of what was asked', () => {
+      for (const status of ['rejected', 'withdrawn', 'expired']) {
+        expect(showsCheck2Box({ status, hasItems: true })).toBe(true)
+      }
+    })
+
+    it('is shown at EVERY live stage, empty included — unlike the other cards', () => {
+      // Deliberately not gated on showsPostSubmissionCards: at `shortlisted` an empty Check 2
+      // is the working surface for chasing a student, and hiding it would break the one stage
+      // the box exists for. The negative half that proves this gate is about closure only.
+      for (const status of LIVE) {
+        expect(showsCheck2Box({ status, hasItems: false })).toBe(true)
+      }
+    })
+  })
+})
+
+/**
+ * WHY querying is locked. `isQueryingLocked` folds two independent reasons into one boolean and
+ * the copy used to hard-code the interview one, on 44 records that never held an interview.
+ */
+describe('queryingLockReason', () => {
+  it('is null while querying is open', () => {
+    expect(queryingLockReason('shortlisted')).toBeNull()
+    expect(queryingLockReason('profile_complete')).toBeNull()
+    expect(queryingLockReason('interviewing')).toBeNull()
+  })
+
+  it('names the INTERVIEW when one was actually submitted', () => {
+    expect(queryingLockReason('interviewing', 'submitted')).toBe('interview')
+    // 83 production records reach a locked status with a submitted session; their copy is
+    // unchanged by this fix.
+    for (const status of ['interviewed', 'recommended', 'awarded', 'rejected']) {
+      expect(queryingLockReason(status, 'submitted')).toBe('interview')
+    }
+  })
+
+  it('names CLOSURE on a terminal case that never held an interview', () => {
+    for (const status of ['rejected', 'withdrawn', 'expired']) {
+      expect(queryingLockReason(status)).toBe('closed')
+      expect(queryingLockReason(status, 'draft')).toBe('closed')
+    }
+  })
+
+  it('never claims an interview on a status-only lock', () => {
+    // The defect in one line: every locked status with no submitted session must NOT say
+    // "the interview is concluded".
+    for (const status of ['interviewed', 'recommended', 'awarded', 'active', 'maintenance',
+      'closed', 'rejected', 'withdrawn', 'expired']) {
+      expect(queryingLockReason(status)).not.toBe('interview')
+    }
   })
 })

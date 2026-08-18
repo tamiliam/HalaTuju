@@ -4474,6 +4474,7 @@
         "questionLabel": "Question",
         "uploadLabel": "Upload",
         "locked": "Querying closed — the interview is concluded. This is now a read-only record.",
+        "lockedClosed": "Querying closed — this application is no longer under review. This is now a read-only record.",
         "itemOne": "item",
         "itemMany": "items",
         "overflow": "{n} more question(s) queued — asked automatically once the current ones are answered or waived.",

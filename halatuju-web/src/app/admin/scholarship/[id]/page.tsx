@@ -87,6 +87,9 @@ import {
   showsPostSubmissionCards,
   showsInterviewStage,
   showsDecisionCards,
+  showsGeneratedProfileCard,
+  showsCheck2Box,
+  queryingLockReason,
   rejectionTrail,
   assignOptions,
   type FactStatus,
@@ -951,6 +954,7 @@ export default function AdminScholarshipDetailPage() {
   // Ask again / request a document) closes and Outstanding becomes a read-only record.
   // A reopen re-opens it (the backend querying_locked mirrors this).
   const queryingLocked = isQueryingLocked(app.status, app.interview_session?.status) && !decisionReopened
+  const lockReason = queryingLockReason(app.status, app.interview_session?.status)
   // #7: Approve/Decline activate only once the reviewer has (1) submitted interview
   // findings, (2) pressed Pass/Fail on all four facts, and (3) written a conclusion.
   // (Approve's actual accept is still backend-gated on a complete profile + identity.)
@@ -1508,8 +1512,14 @@ export default function AdminScholarshipDetailPage() {
       </div>
 
       {/* ── Student profile (system-generated: draft at handoff → final at verdict) ── */}
-      {/* Hidden at shortlisted (pre-submission): Final profile — only generated at the verdict. */}
-      {showsPostSubmissionCards(app.status) && (
+      {/* Hidden at shortlisted (pre-submission): only generated at the verdict.
+          Hidden on a CLOSED case holding no profile: empty, every line of this card describes a
+          future that cannot happen, and its language selector feeds a call that is now refused. */}
+      {showsGeneratedProfileCard({
+        status: app.status,
+        decisionReopened,
+        hasProfile: !!(profile?.final_markdown || profile?.current_markdown),
+      }) && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight text-gray-900">
@@ -1639,7 +1649,12 @@ export default function AdminScholarshipDetailPage() {
       })()}
 
       {/* ── Check 2 — Outstanding: student-facing tasks only (queries + doc requests).
-           Interview flags + AI gaps now live in the Interview Stage box below. ─────── */}
+           Interview flags + AI gaps now live in the Interview Stage box below.
+           Hidden on a CLOSED case with nothing in it — "all student tasks are clear" reads as an
+           achievement, and on 43 records nothing was ever asked of the student at all. ─────── */}
+      {showsCheck2Box({
+        status: app.status, decisionReopened, hasItems: (app.resolution_items?.length ?? 0) > 0,
+      }) && (
       <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -1655,9 +1670,13 @@ export default function AdminScholarshipDetailPage() {
             ) : null
           })()}
         </div>
-        {queryingLocked && (
+        {/* The REASON, not just the fact: this line used to assert "the interview is concluded"
+            on cases that never held one (the lock also fires on a terminal status). */}
+        {queryingLocked && lockReason && (
           <p className="rounded-md bg-gray-100 px-3 py-2 text-xs text-gray-500">
-            {t('admin.scholarship.outstanding.locked')}
+            {t(lockReason === 'interview'
+              ? 'admin.scholarship.outstanding.locked'
+              : 'admin.scholarship.outstanding.lockedClosed')}
           </p>
         )}
         {/* V3 (#7): a higher-priority query crowded out by the clarify cap stays visible here,
@@ -1830,6 +1849,7 @@ export default function AdminScholarshipDetailPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
            stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}
