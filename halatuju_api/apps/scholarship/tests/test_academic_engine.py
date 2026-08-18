@@ -32,6 +32,24 @@ class TestExamYearAnchor(SimpleTestCase):
     def test_certificate_foot_year(self):
         self.assertEqual(_spm_exam_year('LAYAK DIANUGERAHI ... PEPERIKSAAN TAHUN 2024'), '2024')
 
+    def test_certificate_foot_year_survives_a_clipped_left_edge(self):
+        # #140 KIIRTHESWARY: the certificate was scanned with its left edge trimmed, so every line
+        # starting furthest left lost a character or two — 'PEPERIKSAAN' printed as 'PERIKSAAN'.
+        # The page states the year plainly; only the anchor's leading 'PE' was missing.
+        clipped = ('SIJIL PELAJARAN MALAYSIA ... JMLAH MATA PELAJARAN SEBELAS '
+                   'PERIKSAAN TAHUN 2023 011308272')
+        self.assertEqual(_spm_exam_year(clipped), '2023')
+
+    def test_clip_tolerance_does_not_loosen_the_label_anchor(self):
+        # The year must still FOLLOW the label. A bare 'PERIKSAAN' elsewhere on the page, or a stray
+        # year with no label, reads blank — the clip tolerance widens the word, never the anchor.
+        self.assertEqual(_spm_exam_year('PERIKSAAN 2023'), '')
+        self.assertEqual(_spm_exam_year('DICETAK 12/04/2026 PERIKSAAN AWAM'), '')
+
+    def test_unclipped_certificate_reads_identically_after_the_tolerance(self):
+        # The whole blast radius: wherever the full word already read, the answer is unchanged.
+        self.assertEqual(_spm_exam_year('LAYAK DIANUGERAHI ... PEPERIKSAAN TAHUN 2025'), '2025')
+
     def test_no_anchored_year_returns_blank(self):
         # A stray date with no exam label → no year (better no chip than the wrong one).
         self.assertEqual(_spm_exam_year('printed 12/04/2026 07:25'), '')

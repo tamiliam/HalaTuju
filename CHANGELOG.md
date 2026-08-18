@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## The exam-year anchor survives a clipped scan - 2026-08-18
+
+BrightPath request #12, part one. NO migration. api only, one line + four tests.
+
+- **The certificate states the year plainly and we read blank.** #140 KIIRTHESWARY's SPM
+  certificate was scanned with its left edge trimmed, so one or two characters are missing from
+  every line that starts furthest left: `JUMLAH` prints as `JMLAH`, `UJIAN` as `JIAN`, `TAHAP` as
+  `AHAP` — and `PEPERIKSAAN TAHUN 2023` as **`PERIKSAAN TAHUN 2023`**. The foot anchor required the
+  literal `PEPERIKSAAN`, so it missed by two characters and her year read blank. She sat SPM in
+  **2023**, three years before this intake, and has been invisible for it.
+- **⚠ THE ANCHOR IS WIDENED, THE ANCHORING IS NOT.** `PERIKSAAN\s+TAHUN\s+(20\d{2})` still requires
+  the year to follow the label, so it cannot drift back to grabbing the first `20xx` on the page —
+  the fault that once read a download timestamp as an exam year (#8, 2026-07-10). Two tests pin
+  that: a bare `PERIKSAAN 2023` and a stray print date both still read blank.
+- **Blast radius is one direction only.** Wherever the full word already read, `PERIKSAAN` matches
+  the identical text at the identical position and returns the identical year — the tolerance can
+  only FILL a blank, never change an existing reading. Pinned by its own test. Bite-checked:
+  restore the full word and the clipped case fails.
+- **Only one document on file was affected.** Every other results slip already carries its year;
+  three more (#108, #132, #136) recovered on the owner's re-run once the `exam_type` gate stopped
+  skipping the SPM parser for STPM-declared students. **Takes effect on re-read** — #140's
+  certificate needs one cockpit Re-run.
+- **⚠ NOTED, NOT FIXED: the same crop breaks the under-read guard.** `_declared_subject_count`
+  anchors on `JUMLAH MATA PELAJARAN`, which prints as `JMLAH`, so the check comparing what we
+  extracted against the count the certificate declares silently did not run on her document. It
+  happened not to matter (all eleven subjects read), but a clipped certificate currently loses that
+  safety net without saying so. Deliberately left for its own change: loosening it could start
+  REJECTING documents that pass today, and that owes a measurement first.
+
 ## The results step names no exam, and a completed set is recorded as one - 2026-08-18
 
 **Migration `courses/0070` (additive) IS ALREADY APPLIED to production — do NOT re-run it.**

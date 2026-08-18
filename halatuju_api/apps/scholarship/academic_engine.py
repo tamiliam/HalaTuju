@@ -337,7 +337,13 @@ def _slip_name(rows):
 # label; return '' rather than a wrong year (better no chip than a lie).
 _EXAM_YEAR_ANCHORS = (
     r'PELAJARAN\s+MALAYSIA\s+TAHUN\s+(20\d{2})',   # "SIJIL PELAJARAN MALAYSIA TAHUN 2025" (slip+cert)
-    r'PEPERIKSAAN\s+TAHUN\s+(20\d{2})',            # certificate foot
+    # Certificate foot. Deliberately 'PERIKSAAN', NOT the full 'PEPERIKSAAN': a certificate is often
+    # scanned with its left edge clipped, which eats one or two characters off every line that starts
+    # furthest left — #140 KIIRTHESWARY prints 'JMLAH MATA PELAJARAN', 'JIAN LISAN', 'AHAP KESELURUHAN'
+    # and 'PERIKSAAN TAHUN 2023', so the full word never matched and her year read blank while the
+    # page states it plainly. This still ANCHORS to the label (the year must follow TAHUN), so it
+    # cannot drift back to grabbing a stray 20xx; it only tolerates a clipped prefix.
+    r'PERIKSAAN\s+TAHUN\s+(20\d{2})',              # certificate foot (clip-tolerant)
     r'KEPUTUSAN\s+SPM\s+(20\d{2})',                # header "Slip Keputusan SPM 2025"
 )
 
