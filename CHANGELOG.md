@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## A closed case takes no more review writes - 2026-08-18
+
+**No migration.** api + web. 6 files.
+
+- **The report:** two cockpits, from the owner. Application **#97** expired and **#113** was
+  rejected by an org admin — both before either reached Awaiting review — and both still showed a
+  live **Interview Stage** (Save draft, Submit interview findings, a "Suggest interview questions"
+  button) and a live **Recommendation** box with an editable justification, above a note reading
+  *"Only a shortlisted application can be verified & accepted."*
+- **The cause is one predicate that only ever knew about ONE end of the lifecycle.**
+  `officerCockpit.showsPostSubmissionCards` is `status !== 'shortlisted'`. It was written on
+  2026-07-22 to hide five cards that can do nothing PRE-submission; nothing was ever written for
+  the other end, so every terminal off-ramp fell through to "show the full review UI". The system
+  already knew these statuses were terminal — `QUERYING_LOCKED_STATES` and
+  `REVIEWER_CARD_HIDDEN_FROM` both list all three, which is why Check 2 correctly read
+  *"Querying closed"* two boxes higher on the same screen.
+- **⚠ IT WAS NOT COSMETIC. `_require_app_write` HAS NO STATUS GATE**, so every control behind
+  those cards worked. `record-verdict` would have stamped `verdict_decided_at`, `officer_verdict`
+  and — on accept — an **`award_amount`** onto a rejected file; `verify-accept` does refuse on
+  status, but it runs SECOND, by which point the writes have landed. That is the defect the
+  2026-07-30 sprint fixed from the decline side, reached through a door nobody had closed.
+  `suggest-gaps` would have spent a billable Gemini call, and the interview endpoints would have
+  created and submitted a real session.
+- **Nothing had been written yet.** Zero interview sessions and zero `award_amount` across all 65
+  terminal records — live exposure, not an incident.
+- **The rule is "hide what can never be written; keep what is a record"**, in one home per side
+  (`services.review_writes_closed` / `officerCockpit.isCaseClosed`), pinned identical by a
+  source-parsing guard so the offer-set and the accept-set cannot drift. A closed case that holds
+  a **submitted interview** keeps the Interview Stage (already read-only); one that holds a
+  **recorded verdict** keeps Rate AI Prediction and Recommendation — that is the frozen
+  *"Declined by … · date"* trail on 21 rejected records and must not disappear.
+- **⚠ A REOPENED CASE IS OPEN, HOWEVER TERMINAL ITS STATUS READS.** `reopen.reopen_decision` walks
+  most statuses back toward the reviewer but does **not** remap `rejected` — a super who reopens a
+  rejected decision leaves the case AT `rejected` with `decision_reopened_at` set, and is expected
+  to re-record the verdict. A status-only gate would have hidden the very panel reopen exists to
+  reach and refused the write behind it. No production case is reopened today, so this arm is
+  protection for a path the tests exercise and the data does not.
+- **⚠ `closed` IS DELIBERATELY NOT IN THE SET** — it is the successful end of a FUNDED lifecycle,
+  its writes belong to the disbursement and closure endpoints, and every closed case carries a
+  verdict so it keeps its cards through the record arm anyway. A sweep for "statuses that mean the
+  end" will want to add it; a test refuses.
+- **Estimated need & the generated Final profile stay visible** (owner) — both are read-only.
+- **Blast radius measured on production, not estimated: exactly 44 of 143 applications change**
+  (24 `expired` + 20 `rejected` with no verdict, none of which has ever held an interview). The
+  21 rejected-with-verdict, 58 awarded, 4 recommended, 3 interviewing, 4 profile_complete and 9
+  shortlisted records are all byte-identical before and after.
+- Five guards bite-checked. `pytest` **4282** scholarship + **1287** courses/reports ·
+  `jest` **1447** / 96 suites · `next lint` **0 errors** · i18n **4529×3** ·
+  `makemigrations --check` clean.
+- **▶ AT DEPLOY: push. No migrate-first, no env vars, no i18n.** Post-check: open #97 and #113 —
+  no Interview Stage, no Rate AI, no Recommendation, Estimated need still there — then open a
+  rejected record that carries a verdict and confirm its decline trail is intact.
+- **▶ OWED: the browser pass.** Verified by pure-function tests, endpoint tests and a production
+  classification query; **not** click-tested, because TD-182 still breaks admin Google sign-in on
+  localhost.
+
 ## 25 interviews are credited to the reviewer who conducted them - 2026-08-18
 
 **No migration.** Backend only, one new management command; the data pass is DONE on production.

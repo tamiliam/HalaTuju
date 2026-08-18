@@ -550,7 +550,47 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-04, after the invitation emails)
+## Next Sprint (as of 2026-08-18, after the closed-case cockpit)
+
+**✅ SHIPPED — A CLOSED CASE TAKES NO MORE REVIEW WRITES.** Commit `26fa0346`. CHANGELOG
+2026-08-18; decision ×1; lessons ×3. **NO migration · api + web · 6 files.** `pytest` **4282**
+scholarship + **1287** courses/reports · `jest` **1447** / 96 suites · `next lint` **0** ·
+i18n **4529×3** · `makemigrations --check` clean. Five guards bite-checked.
+
+- **Why:** the owner opened #97 (`expired`) and #113 (org-rejected) and found a live Interview
+  Stage and Recommendation box above a note saying only a shortlisted application can be accepted.
+- **⚠ THE STAGE GATE ONLY EVER KNEW ONE END OF THE LIFECYCLE.**
+  `officerCockpit.showsPostSubmissionCards` is `status !== 'shortlisted'`. Nothing was ever written
+  for the terminal off-ramps, so they fell through to "show everything" — while
+  `QUERYING_LOCKED_STATES` two functions away already listed all three.
+- **⚠ IT WAS NOT COSMETIC: `_require_app_write` HAS NO STATUS GATE.** `record-verdict` runs BEFORE
+  `verify-accept` in the Approve path, so it would have stamped a verdict and an **`award_amount`**
+  onto a rejected file and the gate on the second call would have protected nothing.
+  **For any multi-call action the effective gate is the gate on the FIRST call that writes.**
+- **The rule: hide what can never be written, KEEP what is a record.** One home per side
+  (`services.review_writes_closed` / `officerCockpit.isCaseClosed`), pinned identical by a
+  source-parsing guard. A closed case with a submitted interview keeps the Interview Stage; one
+  with a recorded verdict keeps Rate AI + Recommendation (**21 rejected records** whose decline
+  trail lives there). Estimated need + Final profile stay visible (owner) — both read-only.
+- **⚠ A REOPENED CASE IS OPEN whatever its status reads.** `reopen_decision` does NOT remap
+  `rejected`, so a reopened rejection sits at `rejected` and must still be re-decidable. No
+  production case is reopened today — the arm is tested, not exercised.
+- **⚠ `closed` IS DELIBERATELY NOT IN THE SET** (successful end of a FUNDED lifecycle; its writes
+  belong to disbursement/closure). A test refuses the sweep that would add it.
+- **Blast radius measured on production: exactly 44 of 143** (24 expired + 20 rejected, no verdict,
+  no session, none of which has ever held an interview). Everything else byte-identical.
+- **▶ AT DEPLOY: push. No migrate-first, no env vars, no i18n.** Post-check #97 + #113, then a
+  rejected record WITH a verdict to confirm its trail survives.
+- **▶ OWED: the browser pass** — pure-function + endpoint tests + a production classification
+  query, but **not click-tested**, because **TD-182** still breaks admin Google sign-in on
+  localhost. Third sprint to close without one.
+
+**Also in this push:** `repair_interview_credit` (commit `f08ce1e9`) — the TD-216 one-off repair
+command, left uncommitted by an earlier session; 12 tests pass, report-only until `--apply`.
+
+**▶ NEXT = unchanged from below: the Source Partner console.** Owner items below still stand.
+
+## Superseded — previous Next Sprint (as of 2026-08-04, after the invitation emails)
 
 **✅ SHIPPED + LIVE — FOUR INVITATION EMAILS, ONE HOME, AND A DONOR PITCH.** Commits `087e72d0` +
 `6c0a3998`. Retro `docs/retrospective-2026-08-04-four-invitation-emails.md`; decisions ×5;

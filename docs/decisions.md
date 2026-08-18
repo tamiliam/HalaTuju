@@ -1,5 +1,39 @@
 # Architectural Decisions — HalaTuju
 
+## A closed case keeps its RECORDS and loses its CONTROLS — 2026-08-18
+**Decision:** on the terminal off-ramps (`rejected`, `withdrawn`, `expired`) the cockpit hides the
+Interview Stage unless the case holds an interview session, and hides Rate AI Prediction +
+Recommendation unless it holds a recorded verdict. The five review-track endpoints behind them
+(`suggest-gaps`, `interview`, `interview/submit`, `interview/reopen`, `record-verdict`) refuse with
+`case_closed`. A REOPENED case is treated as open whatever its status reads. `Estimated need` and
+the generated `Final profile` stay visible (owner) — both are read-only.
+
+**Alternatives considered:** (a) Hide all four cards on a terminal status — rejected by the owner
+for Estimated need, and rejected on its own terms for Recommendation: 21 production records are
+rejected WITH a verdict, and that card is where their decline trail lives, so a status-only rule
+would have deleted the audit trail from the screen. (b) Disable the controls instead of hiding
+them — rejected for the same reason as the 2026-07-23 decision this extends: a disabled card still
+eats the screen and invites clicking. (c) Hide the cards and leave the endpoints alone — rejected:
+a hidden control is not a gate, and `record-verdict` writes an award amount. (d) Add the status
+check to `_require_app_write` itself — rejected: most per-application writes are legitimate on a
+closed case (cancelling a decline, correcting a reporting date, re-running a document read), so a
+universal gate would break them; the new prologue is separate and named for the review track.
+
+**Rationale:** the existing gate (`showsPostSubmissionCards`) knew only the pre-submission end of
+the lifecycle, so a case that ended before review showed the whole review UI over an endpoint set
+with no status gate at all. The principle is the 2026-07-23 one pointed the other way — cards with
+no possible use at a stage are hidden — with one addition the earlier decision did not need: at
+this end of the lifecycle a card may be a RECORD rather than a control, and a record must survive.
+
+**Trade-offs:** a reviewer can no longer open a closed file and pre-write interview notes against a
+possible future reopen — intended, since the endpoint would refuse to save them. And the rule now
+reads two facts off the payload (`interview_session`, `verdict_decided_at`) rather than status
+alone, which is more to keep in step; the mirror between the TypeScript and Python sets is pinned
+by a source-parsing test for exactly that reason.
+
+**Revisit if:** the lifecycle gains a terminal status, or `reopen_decision` starts remapping
+`rejected` (at which point the reopen arm could key on status again).
+
 ## Three names, three levels: HalaTuju / BrightPath / BrightPath Bursary — 2026-08-04
 **Decision (owner):** **HalaTuju** is the PLATFORM (the software people sign in to), **BrightPath**
 is the ORGANISATION, and the **BrightPath Bursary** is the PROGRAMME. They are not interchangeable
