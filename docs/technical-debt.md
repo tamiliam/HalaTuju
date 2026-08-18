@@ -2690,3 +2690,40 @@ good work to land on the wrong file.
 independent of the code fix.
 
 **Estimate:** ~3.0h including tests, plus minutes for the data clearing.
+
+---
+
+### [TD-217] A clipped certificate scan silently loses the under-read guard — low
+
+**Status:** Open · raised 2026-08-18 (BrightPath #12 part one) · **not billable** (found while
+fixing the exam-year anchor; the owner has not been asked to pay for it)
+
+`academic_engine._declared_subject_count` reads the total the certificate PRINTS about itself
+("JUMLAH MATA PELAJARAN : SEBELAS" = 11) and `parse_spm_slip` discards a positional parse that
+recovered fewer rows than that — the guard against a two-column slip being half-read and
+mis-paired (#66/doc912).
+
+It anchors on the literal `JUMLAH MATA PELAJARAN`. Application **#140**'s certificate was scanned
+with its left edge trimmed, so that line prints **`JMLAH MATA PELAJARAN SEBELAS`** — the same one-
+or two-character clip that defeated the exam-year anchor on the line below it. The anchor missed,
+`_declared_subject_count` returned None, and **the under-read check did not run at all**, silently.
+
+On her document it did not matter — all eleven subjects read correctly. The debt is that a clipped
+certificate currently loses its safety net **without saying so**, so the next one that IS under-read
+has nothing to catch it.
+
+**⚠ WHY IT WAS NOT FIXED ALONGSIDE THE EXAM-YEAR ANCHOR, which is a two-character change of the
+same kind.** The two failures look identical and their blast radii are opposites:
+
+* The exam-year tolerance can only **fill a blank** — wherever the full word already read, the
+  looser pattern matches the same text at the same position. Nothing existing can change.
+* This one can only **reject more**. Restoring the guard means documents that parse today start
+  being discarded to Gemini when their recovered row-count falls short of a newly-readable declared
+  total. That is the correct behaviour, but it changes live reads on an unmeasured population.
+
+So it owes a measurement first: how many live slips carry a clipped `J*MLAH` line, and for each,
+whether the recovered count would still clear the declared total. Cheap to run against the stored
+`_debug_rows`; do that before touching the anchor.
+
+**Fix:** loosen to a clip-tolerant anchor (the same shape as `PERIKSAAN\s+TAHUN`), after the
+measurement. ~0.5h including the sweep.

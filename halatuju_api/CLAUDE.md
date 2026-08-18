@@ -550,7 +550,61 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-18, after the exam-type overload)
+## Next Sprint (as of 2026-08-18, after BrightPath #12 — the SPM exam year)
+
+**✅ SHIPPED + LIVE — REQUEST #12 IS COMPLETE, BOTH HALVES.** Commits `8f8bf17d`, `0ab1e964`,
+`809538f4`, `7174972c`; both builds SUCCESS on `9e80030`; live on `halatuju-api-00956-hhv` /
+`halatuju-web-00799-kwz`, smoke-tested. Retro `docs/retrospective-2026-08-18-spm-exam-year.md`;
+decisions ×3; lessons ×3; **TD-217** raised. **NO MIGRATION.** `pytest` **4326** scholarship +
+**1295** courses/reports · `jest` **1465** / 96 · `next lint` **0** · i18n **4534×3**. Ledger vs
+production: courses **70/70**, scholarship **146/146**, no gaps.
+
+**▶ ~3.0h SPENT AGAINST 6.0h QUOTED — DO NOT RE-QUOTE.** Owner 2026-08-18: *"You don't have to
+requote. The work turned out be smaller is good. It'll be stated in the close out report and that
+would be the official cost."* The second half collapsed because the first half removed the
+population it was priced for.
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ THE ANCHOR IS WIDENED; THE ANCHORING IS NOT.** `PERIKSAAN\s+TAHUN\s+(20\d{2})` (not the full
+  `PEPERIKSAAN`) — #140's certificate was scanned with its left edge trimmed, so every line
+  starting furthest left lost a character or two: `JMLAH`, `JIAN`, `AHAP`, `PERIKSAAN`. The year
+  must still FOLLOW `TAHUN`, so this cannot drift back to grabbing the first `20xx` on the page —
+  the fault that once read a download timestamp as an exam year (#8). **Blast radius is one
+  direction: it can only FILL A BLANK, never change an existing reading.**
+- **The merit score carries the year** — `94.7 (SPM 2023)`, tinted only when off. **⚠ NEVER FOR AN
+  STPM STUDENT** (their merit is not from SPM — the #132 misattribution shape), **never from a
+  superseded slip**, always shown when readable so its ABSENCE also means something.
+- **⚠ THE YEAR IS ONLY REPORTED WHEN THE EXAM IS ACTUALLY SPM** (`_is_spm_exam`). `exam` is free
+  text from the Gemini path, so #77's matriculation letter in the results-slip slot was announcing
+  **SPM 2026** — a year nobody has sat SPM. Measured on production: exactly 2 live documents change
+  (#77 and #131's STPM slip), both currently stating something false.
+- **`spm_year_unknown`** — a Check-2 clarify, NOT a form question (owner: *"in the rare case where
+  the year couldn't be read"*). **Four cases deliberately do not ask** — no slip / not read yet /
+  not an SPM document / year already readable — each with its reason at `spm_exam_year_unknown` and
+  its own test. **CAPPED, unlike `reporting_date_unknown`** (crowding out here is temporary).
+
+**▶ OWNER, OUTSTANDING:**
+1. **RE-RUN #140's results slip in the cockpit** (KIIRTHESWARY, doc 2306) so her certificate reads
+   **SPM 2023**. The fix reads at EXTRACTION time, not display time — until the Re-run her merit
+   score renders bare. ⚠ Never re-extract from a local checkout (no Storage → destroys
+   `vision_fields`).
+2. **ms/ta for `spm_year_unknown`** (Action-Centre title + desc, and the officer verdict line) are
+   my first drafts.
+3. **The completion report for #12** is owed to BrightPath — state ~3.0h against 6.0h quoted, and
+   that the second half shrank because the first removed its population.
+4. **A Consolidation Review is DUE** — `wat_lint` reports the small-change backlog past threshold.
+
+**▶ NEXT = BRIGHTPATH #16, #17, #18** — analyses staged as DRAFTS (ids 34, 35, 36), awaiting the
+owner's approval in the cockpit. **#17 is the one to move first**: the invite note is an `<input>`
+inside a `<form>`, so Enter **sends a half-written invitation to a donor**.
+
+**⚠ ALSO STILL TRUE: #14 AND #15 ARE `done`, WHICH STRANDS BOTH COMPLETION REPORTS.** `done` is
+terminal and `post_comment` refuses a terminal request, so analyses 37 and 39 cannot be approved —
+approving them raises `bad_transition`. There is no un-done transition. Either leave them closed
+with the reports unsent, or add the one thing the module lacks: a completion note on a
+just-closed request. Owner's call.
+
+## Superseded — previous Next Sprint (as of 2026-08-18, after the exam-type overload)
 
 **✅ SHIPPED — SIX CHANGES, ONE ROOT CAUSE UNDER THREE OF THEM.** Retro
 `docs/retrospective-2026-08-18-exam-type-and-requests.md`; decisions ×2; lessons ×4.

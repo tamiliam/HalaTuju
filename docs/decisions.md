@@ -7684,3 +7684,78 @@ reason here first, per the role matrix's own rule.
 **Trade-offs:** a silently dropped value is harder to debug than a 400; accepted because the failure mode is "the display falls back to the declaration", which is the pre-existing behaviour.
 
 **Revisit if:** a legitimate caller needs to record a completion for results stored elsewhere.
+
+## The exam year qualifies the merit score, not a banner — BrightPath #12, 2026-08-18
+
+**Decision:** The SPM exam year renders inside the cockpit's Academic card as part of the merit
+score — `94.7 (SPM 2023)` — with only the year tinted, and only when it is off the expected
+sitting. It is shown ALWAYS when readable, never for an STPM student, and never from a superseded
+slip.
+
+**Alternatives considered:** (a) an always-visible amber banner under the four verification tiles,
+modelled on the existing course-switch note — my first proposal; (b) an evidence/unresolved item on
+the Academic verdict fact; (c) showing the year only when it is off-year.
+
+**Rationale:** (b) is structurally invisible for exactly the students it must catch — a green fact
+hides its detail block, and every off-year student on the current cohort has an otherwise-clean
+academic record. Between (a) and the merit score, the owner's call, and the better argument: the
+merit score is COMPUTED from the SPM grades, so the year those grades were sat is a property of
+that number rather than a separate fact about the case. `94.7` and `94.7 (SPM 2023)` are not the
+same claim. A banner announces something *about* a number; a qualifier states what the number *is*.
+Against (c): a qualifier that appears only on unusual cases reads as an alarm and never teaches the
+reviewer what ordinary looks like — shown always, its ABSENCE also means something (we could not
+read the year).
+
+**Trade-offs:** less prominent than a banner. Accepted: the reviewer reads the Academic card as a
+matter of course, and prominence was never the failure — the year was in the Documents drawer,
+which has to be opened. This buys attachment, not volume. The STPM exclusion means an STPM student
+shows no year anywhere on that card; correct (their merit is not from SPM) but it does mean the
+signal has no home for them, which is fine while the request is about SPM.
+
+**Revisit if:** a second qualifier wants the same slot (two parentheticals on one number would be
+worse than a small dedicated line), or reviewers report missing it in practice.
+
+## The SPM-year clarify is CAPPED, unlike its neighbour — BrightPath #12, 2026-08-18
+
+**Decision:** `spm_year_unknown` counts against `MAX_CLARIFY` (3). `reporting_date_unknown`, the
+adjacent "we read the document, one field would not come off it" ask, is carved OUT of that cap;
+this one is not.
+
+**Alternatives considered:** exempting it too, by symmetry with its neighbour and because it fires
+almost never.
+
+**Rationale:** the carve-out exists to prevent PERMANENT loss — the reporting date is a
+sponsor-profile input of equal standing to the income story, and being crowded out could cost it
+outright. That argument does not hold here: a clarify skipped for want of a slot is not discarded,
+it is simply not created yet, and `sync_check2_queries` raises it on the next run once the student
+answers something else and frees a slot. Crowding out is therefore temporary. A second exemption
+would begin hollowing out a cap whose whole purpose is that the student is not the reviewer and a
+long list suppresses responses.
+
+**Trade-offs:** on a case already carrying three open clarifies, this question waits. Acceptable —
+it fires for nobody on the current cohort, and the wait ends as soon as anything else is answered.
+
+**Revisit if:** a real case is observed where the question was still unraised at the point querying
+locked (the Completed stage ends), i.e. the delay became a permanent loss after all.
+
+## The student's SPM-year answer stays read text, not a stored field — BrightPath #12, 2026-08-18
+
+**Decision:** the clarify answer is free text on the resolution item, visible where the reviewer
+reads it. No column, no comparison against the slip, no rendering on the merit score.
+
+**Alternatives considered:** a `spm_year_declared` field on the application, compared with the
+slip's year and surfaced as a mismatch — which is what the approved analysis described and priced.
+
+**Rationale:** the population is zero. After the anchor fix every slip on the 2026 cohort carries
+its year, so the field would be built, tested and maintained against no live case. The analysis's
+second justification — a declared figure to check the slip against — is also weaker here than
+elsewhere: unlike income, where declaration and document are genuinely independent sources, the
+slip is authoritative for its own exam year and we now read it reliably. A second reading of a fact
+we already hold buys little.
+
+**Trade-offs:** if a real unreadable-year case arrives, the answer is prose a human must read
+rather than a value the merit score can display. Accepted; adding the field later is small and
+would then be built against a real example instead of an imagined one.
+
+**Revisit if:** more than one or two live cases accumulate, or a reviewer asks for the answer to
+appear beside the score.
