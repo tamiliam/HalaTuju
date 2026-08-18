@@ -37,6 +37,8 @@ BASE = '/api/v1/admin/scholarship/requests/'
 # A real path from this repo — the command validates existence, and a test citing a fictional file
 # would drift from what production actually stores.
 A_REAL_FILE = 'apps/scholarship/org_requests.py'
+#: The same file as the repo's root sees it — what the command's citation guard checks against.
+A_REAL_FILE_FROM_REPO_ROOT = 'halatuju_api/apps/scholarship/org_requests.py'
 
 
 def _token(uid):
@@ -657,3 +659,55 @@ class TestAnAnalysisIsNeverSILENTLYCUT(_Base):
                               'cited_files': ['README.md']}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json().get('error'), 'body_too_long')
+
+
+class TestTheCommandCarriesTheProposal(_Base):
+    """The DB path of `record_request_analysis` — the DEFAULT mode, and the one that had no test.
+
+    ⚠ THIS IS THE THIRD PLACE THE SAME SHAPE HAS BITTEN. The service is tested, the endpoint is
+    tested, and the third caller — the command's database branch — was tested nowhere, so it
+    quietly dropped `proposed_kind` / `proposed_lane` from 2026-08-01 until 2026-08-18 while its
+    own dry-run report printed them back as though they had been carried. Five analyses were staged
+    against production in that state. A report that describes a value the write then discards is
+    worse than no report, because it is checked and passes.
+    """
+
+    def _stage(self, req, **extra):
+        import json
+        import os
+        import tempfile
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        # ⚠ The COMMAND resolves citations from the REPO ROOT, not from the Django project —
+        # it is the only caller that checks them against the working tree at all.
+        payload = {'request_id': req.id, 'body': 'It reuses the existing invite engine.',
+                   'cited_files': [A_REAL_FILE_FROM_REPO_ROOT], **extra}
+        fh = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8')
+        try:
+            json.dump(payload, fh)
+            fh.close()
+            call_command('record_request_analysis', '--file', fh.name, '--apply',
+                         stdout=StringIO(), stderr=StringIO())
+        finally:
+            os.unlink(fh.name)
+        return req.analyses.get()
+
+    def test_the_command_stages_the_proposal_it_reports(self):
+        req = self._req()
+        a = self._stage(req, proposed_kind='bug', proposed_lane='small_change')
+        self.assertEqual((a.proposed_kind, a.proposed_lane), ('bug', 'small_change'))
+
+    def test_no_proposal_stages_blank_and_still_works(self):
+        # Blank means "no opinion", never agreement with the AI — the same rule the service holds.
+        req = self._req()
+        a = self._stage(req)
+        self.assertEqual((a.proposed_kind, a.proposed_lane), ('', ''))
+        self.assertEqual(a.cited_files, [A_REAL_FILE_FROM_REPO_ROOT])
+
+    def test_an_unrecognised_proposal_is_still_dropped_through_the_command(self):
+        # The command must not become a way round the service's own vocabulary check.
+        req = self._req()
+        a = self._stage(req, proposed_kind='enhancement', proposed_lane='epic')
+        self.assertEqual((a.proposed_kind, a.proposed_lane), ('', ''))

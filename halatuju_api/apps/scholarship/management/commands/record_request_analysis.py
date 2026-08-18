@@ -559,7 +559,15 @@ class Command(BaseCommand):
                     estimated_hours=payload.get('estimated_hours'),
                     cited_files=files,
                     authored_by=payload.get('authored_by') or '',
-                    repo_sha=sha)
+                    repo_sha=sha,
+                    # ⚠ THE PROPOSAL TRAVELS ON BOTH PATHS OR ON NEITHER. Omitted here until
+                    # 2026-08-18, so every analysis staged against a database — the DEFAULT mode —
+                    # silently lost its proposed triage while the dry-run report printed it back
+                    # as though it had been carried. The owner's triage form then seeded from the
+                    # AI's reading instead of the engineer's, on the two values that decide whether
+                    # the organisation is CHARGED.
+                    proposed_kind=payload.get('proposed_kind') or '',
+                    proposed_lane=payload.get('proposed_lane') or '')
             except org_requests.OrgRequestError as e:
                 raise CommandError(f'Refused: {e.code}')
             staged = f'Staged analysis #{analysis.id}'
