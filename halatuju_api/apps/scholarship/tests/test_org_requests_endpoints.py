@@ -387,3 +387,108 @@ class TestHappyPath(_Base):
         r = self.client.post(f'{BASE}{self.req_a.id}/ai-rerun/', {}, format='json')
         self.assertEqual(r.status_code, 503)
         self.assertEqual(r.json()['code'], 'triage_ai_unconfigured')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   REQUESTS_ENABLED=True)
+class TestAnsweringThroughTheEndpoint(_Base):
+    """BrightPath request #15 — answering, sent the way a person sends it.
+
+    ⚠ THIS FILE ALREADY TESTED THE `/answer/` ROUTE AND STILL MISSED AN 18-DAY OUTAGE. It listed
+    the URL in the dark-ship 404 sweep and in the role fence, so the route was 'covered' — but
+    nothing ever POSTed a real answer with the flag on and the right role. The service had its own
+    tests and passed them; the view called it with a parameter the service had dropped on
+    2026-07-31 (`index`, renamed to `comment_id`), so every real answer raised TypeError and 500-ed
+    while every test stayed green. **A gap between two well-tested halves is invisible to tests of
+    either half.**
+
+    So these cases deliberately go through the URL, as an org_admin, with the flag on, and assert
+    what came out the far end — not merely that the door was locked to the wrong people.
+    """
+
+    def _ask(self, req, body='Which dashboard?'):
+        from apps.scholarship import org_requests
+        return org_requests.post_comment(
+            req, None, body, author_kind=org_requests.AUTHOR_AI, awaiting_reply=True)
+
+    def test_an_answer_SAVES(self):
+        # The whole bug in one assertion: it used to 500 here.
+        self._ask(self.req_a)
+        self._auth('oa-a')
+        r = self.client.post(f'{BASE}{self.req_a.id}/answer/',
+                             {'answer': 'The monthly one.'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertIn('The monthly one.', [c.body for c in self.req_a.comments.all()])
+
+    def test_the_answer_is_ATTRIBUTED_to_whoever_sent_it(self):
+        # `admin` was not passed either, so a saved answer would have been authored by nobody —
+        # a second defect hiding behind the first, and invisible until the first was fixed.
+        self._ask(self.req_a)
+        self._auth('oa-a')
+        self.client.post(f'{BASE}{self.req_a.id}/answer/', {'answer': 'Mine.'}, format='json')
+        saved = self.req_a.comments.get(body='Mine.')
+        self.assertEqual(saved.author_admin, self.oa_a)
+        self.assertEqual(saved.author_kind, 'org')
+
+    def test_it_SETTLES_the_question_it_answered(self):
+        q = self._ask(self.req_a)
+        self._auth('oa-a')
+        self.client.post(f'{BASE}{self.req_a.id}/answer/', {'answer': 'Done.'}, format='json')
+        q.refresh_from_db()
+        self.assertFalse(q.awaiting_reply)
+        self.assertIsNotNone(q.replied_at)
+
+    def test_naming_a_question_stamps_THAT_one_and_the_reply_still_settles_the_rest(self):
+        """⚠ `comment_id` CHOOSES WHAT THE ANSWER IS AGAINST — it does NOT ration what closes.
+
+        Both rules are deliberate and they meet here. `answer_clarification` stamps the question
+        you named; `_settle_open_questions` then clears every question standing before your reply,
+        because `awaiting_reply` means "the ball is in the requester's court" and once they have
+        spoken that is false for all of them (owner, 2026-07-31).
+
+        So passing `comment_id` does not leave older questions hanging, and a reader should not
+        expect it to. It is recorded here because the natural assumption is the opposite, and a
+        future change that "fixed" one of these two rules would silently break the other.
+        """
+        first = self._ask(self.req_a, 'First question?')
+        third = self._ask(self.req_a, 'Third question?')
+        self._auth('oa-a')
+        r = self.client.post(f'{BASE}{self.req_a.id}/answer/',
+                             {'answer': 'Answering the third.', 'comment_id': third.id},
+                             format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        first.refresh_from_db()
+        third.refresh_from_db()
+        self.assertFalse(third.awaiting_reply, 'the named question is settled')
+        self.assertFalse(first.awaiting_reply,
+                         'and so is the earlier one — the requester has spoken')
+
+    def test_no_named_question_still_answers_the_oldest(self):
+        # The frontend's single reply box sends no id, which is the common case and must keep
+        # working exactly as it reads: the oldest open question is the one being answered.
+        first = self._ask(self.req_a, 'First question?')
+        self._ask(self.req_a, 'Second question?')
+        self._auth('oa-a')
+        r = self.client.post(f'{BASE}{self.req_a.id}/answer/', {'answer': 'Any.'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        first.refresh_from_db()
+        self.assertFalse(first.awaiting_reply)
+
+    def test_a_nonsense_comment_id_is_REFUSED_not_a_500(self):
+        # It must not fall through to the oldest either: answering a different question than the
+        # one named, while reporting success, is worse than refusing.
+        first = self._ask(self.req_a, 'First question?')
+        self._auth('oa-a')
+        r = self.client.post(f'{BASE}{self.req_a.id}/answer/',
+                             {'answer': 'x', 'comment_id': 'not-an-id'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('error'), 'not_answerable')
+        first.refresh_from_db()
+        self.assertTrue(first.awaiting_reply)
+
+    def test_answering_with_nothing_open_is_refused(self):
+        self._auth('oa-a')
+        r = self.client.post(f'{BASE}{self.req_a.id}/answer/',
+                             {'answer': 'nobody asked'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('error'), 'not_answerable')

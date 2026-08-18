@@ -375,10 +375,18 @@ def answer_clarification(req, answer, *, comment_id=None, admin=None):
     if not answer:
         raise OrgRequestError('answer_required')
 
-    if comment_id is not None:
-        target = req.comments.filter(pk=comment_id, awaiting_reply=True).first()
-    else:
+    if comment_id in (None, ''):
         target = next(iter(open_questions(req)), None)
+    else:
+        # Coerced HERE rather than at the view, so a shell caller gets the same answer as an HTTP
+        # one. A value that is not an id cannot name a question, so it is `not_answerable` — never
+        # a 500, and never a silent fall-through to the oldest, which would answer the wrong
+        # question while reporting success.
+        try:
+            comment_id = int(comment_id)
+        except (TypeError, ValueError):
+            raise OrgRequestError('not_answerable')
+        target = req.comments.filter(pk=comment_id, awaiting_reply=True).first()
     if target is None:
         raise OrgRequestError('not_answerable')
 

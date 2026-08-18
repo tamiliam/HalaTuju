@@ -4672,9 +4672,15 @@ class AdminOrgRequestAnswerView(_OrgRequestsBase):
             return err
         from . import org_requests
         try:
+            # ⚠ `comment_id` AND `admin`, and both were missing. This call still passed `index=`
+            # — the parameter the service dropped on 2026-07-31 when clarifications became
+            # comments — so EVERY answer raised TypeError before the service was reached, and the
+            # `except OrgRequestError` below could not see it. Answering was 500-ing for every
+            # organisation on every request for eighteen days (BrightPath request #15).
             req = org_requests.answer_clarification(
                 req, request.data.get('answer') or '',
-                index=request.data.get('index'))
+                comment_id=request.data.get('comment_id'),
+                admin=admin)
         except org_requests.OrgRequestError as e:
             return _org_request_err(e)
         # Best-effort: notify the owner + re-run the AI reviewer on the new answer.

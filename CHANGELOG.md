@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Answering a question in a request works again - 2026-08-18
+
+**No migration.** BrightPath request #15, triaged a bug and free. api + web.
+
+- **Answering had been 500-ing for EVERY organisation on EVERY request since 31 July** — eighteen
+  days. Not intermittent, not one page. The requester worked around it by pasting answers into the
+  comment box and told us so; that is how it was found.
+- **The cause is a signature the two halves stopped sharing.** TD-201 (`630bb47e`, 31 Jul) rebuilt
+  clarifications as `OrgRequestComment` rows and renamed `answer_clarification`'s selector
+  `index=` → `comment_id=`. The view was not updated, so it kept passing `index=` — a `TypeError`
+  raised **before** the service was reached, which the `except OrgRequestError` around it could not
+  catch.
+- **⚠ THE ROUTE WAS ALREADY 'COVERED' BY TWO TESTS AND THAT IS THE LESSON.** `/answer/` appears in
+  the dark-ship 404 sweep and in the role fence; the service has its own direct tests. Nothing ever
+  POSTed a real answer through the URL with the flag on and the right role. **A gap between two
+  well-tested halves is invisible to tests of either half.** Seven new endpoint tests do exactly
+  that; all seven fail against the old call (bite-checked).
+- **A second defect was hiding behind the first:** `admin` was not passed either, so a saved answer
+  would have been authored by nobody. Only observable once the first was fixed.
+- **⚠ `comment_id` CHOOSES WHAT THE ANSWER IS AGAINST; IT DOES NOT RATION WHAT CLOSES.** The
+  requester speaking settles every question standing before their reply (`_settle_open_questions`,
+  owner 2026-07-31), so naming one never leaves the others hanging. The natural assumption is the
+  opposite, so it has a test with the reasoning on it. **Deliberately NO per-question chooser was
+  built** — it would offer a distinction the server does not make.
+- A non-numeric `comment_id` is `not_answerable` (400), never a 500 and never a silent fall-through
+  to the oldest — answering a different question than the one named while reporting success is
+  worse than refusing. Coerced in the service so a shell caller gets the same answer as HTTP.
+- **⚠ CORRECTION OWED TO THE REQUESTER:** the posted analysis says the reply "attaches to the oldest
+  rather than the one you chose". There is no chooser in the UI and never was, and the settle rule
+  makes the distinction unobservable — that sentence overstates it. The 500 and the missing
+  attribution are the real defects.
+- `pytest` **4292** scholarship · `jest` **1458** · `next lint` **0** · i18n **4530×3** · `tsc` no
+  new errors.
+
 ## A closed case stops describing a future it cannot have - 2026-08-18
 
 **Small-change lane.** No migration. Web only, 6 files, 1 new i18n key ×3. Follow-up to the

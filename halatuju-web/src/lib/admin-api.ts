@@ -2178,8 +2178,19 @@ export async function createOrgRequest(
 }
 
 // Requestee (org_admin) actions
+/**
+ * Reply to an open question. `comment_id` names WHICH question the answer is against; omitted —
+ * which is what the single reply box sends — it is the oldest open one.
+ *
+ * ⚠ It does NOT ration what closes. The requester speaking settles every question standing before
+ * their reply, by design, so naming one never leaves the others hanging. Do not build a per-question
+ * chooser on the promise that it would; it would offer a distinction the server does not make.
+ *
+ * ⚠ The dead `index` parameter lived here until 2026-08-18. The server renamed it `comment_id` on
+ * 2026-07-31 and nothing on either side was updated, so every answer 500-ed for eighteen days.
+ */
 export async function answerOrgRequest(
-  id: number, data: { answer: string; index?: number }, options?: ApiOptions
+  id: number, data: { answer: string; comment_id?: number }, options?: ApiOptions
 ): Promise<OrgRequestDetail> {
   return adminMutate(`/api/v1/admin/scholarship/requests/${id}/answer/`, 'POST', data, options)
 }
