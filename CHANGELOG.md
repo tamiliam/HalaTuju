@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## A closed case stops describing a future it cannot have - 2026-08-18
+
+**Small-change lane.** No migration. Web only, 6 files, 1 new i18n key ×3. Follow-up to the
+closed-case sprint below — same predicate family, applied to the read-only boxes the owner spotted
+on #113 afterwards.
+
+- **The empty Student profile card was three false sentences:** a title reading **"(draft)"** with
+  no draft in existence, a promise that it "will be replaced with an updated final version when
+  you save your verdict" (a verdict the endpoint now refuses), and a note that the profile "is
+  generated automatically when the application is handed over for review" — a handoff that will
+  never happen. Its **Output language** selector feeds only the `record-verdict` call, so on a
+  closed case it was a live control wired to nothing. Hidden on **49** records; **kept on the 16**
+  that hold a real profile, where the title and hint were already correct.
+- **The empty Check 2 box asserted "Nothing outstanding — all student tasks are clear"** on **43**
+  applications that never had a single resolution item raised against them. Nothing was
+  outstanding because nothing was ever asked — and #113 was rejected over the college named on
+  their offer letter, not over anything they failed to do. Hidden when closed and empty; **kept on
+  the 22** that hold items, which is the record of what was asked.
+- **⚠ THE LOCK LINE CLAIMED "the interview is concluded" ON 44 RECORDS THAT NEVER HELD ONE.**
+  `isQueryingLocked` folds two independent reasons — a terminal status **or** a submitted
+  interview — into one boolean, and the copy hard-coded whichever one the author had in mind.
+  **Second instance of the shape recorded on 2026-08-03**, where `_can_review` folded three facts
+  and a paused reviewer was told `not_reviewer`. `queryingLockReason` returns the reason now.
+  The 83 records with a genuinely submitted session keep their existing copy unchanged; exactly
+  **one** live record renders the new string today.
+- Three guards bite-checked. `jest` **1458** / 96 suites · `next lint` **0** · i18n **4530×3** ·
+  `tsc` clean on every touched file. No backend change, so the api rebuild is a no-op.
+- **▶ ms/ta for `outstanding.lockedClosed` are MY first drafts** — owner's eye owed.
+- **▶ CONSOLIDATION REVIEW IS DUE** — `wat_lint` now reports 11 pending small changes (> 10).
+
 ## A closed case takes no more review writes - 2026-08-18
 
 **No migration.** api + web. 6 files.
