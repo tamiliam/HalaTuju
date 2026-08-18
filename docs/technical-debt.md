@@ -2727,3 +2727,64 @@ whether the recovered count would still clear the declared total. Cheap to run a
 
 **Fix:** loosen to a clip-tolerant anchor (the same shape as `PERIKSAAN\s+TAHUN`), after the
 measurement. ~0.5h including the sweep.
+
+---
+
+### [TD-218] `exam_type` answers two questions and six surfaces read it — high
+
+**Status:** Open · promoted at the 2026-08-19 Consolidation Review · **fifth instance** · a SPRINT,
+not another point fix
+
+`StudentProfile.exam_type` answers *"which results do I hold?"* AND *"which exam am I heading
+for?"*. It moves on a card tap at "Choose Your Exam" and needs **no results behind it**, so a Form
+Six student who taps STPM to explore is declared STPM with nothing there.
+
+**Five instances, each patched where it showed:** request #11's "No profile found"; the dashboard
+fault behind it; #14's admin tag; #14's apply step; and the `results_exam_type` work itself
+(2026-08-18), which added the second field the split needs but converted only the admin readers.
+A sixth surfaced immediately afterwards inside BrightPath #12 — three students' SPM exam year was
+never read because the SPM parser was skipped for anyone *declaring* STPM.
+
+**The standing rule, recorded before this one and now due:** a fifth is a rename, not a fix.
+
+**Scope.** Six readers, and each is correct to read one of the two questions for its own purpose —
+`shortlisting`, `pool`, `income_engine`, `vision`, the student payload, and the admin serializers
+(already converted). Give each the accessor it actually means; leave nothing reading the ambiguous
+name. `results_exam_type` already exists and is written on completion, so the data side is half
+built — this is the read side plus the rename.
+
+**⚠ It touches ranking and eligibility, so it is not a mechanical sweep.** `held_qualification`'s
+rule — **absence is conclusive, presence proves nothing**, because the course guide shares this
+profile and lets anyone type STPM grades — must survive the rename intact.
+
+**Estimate:** ~4h with the blast radius measured per reader before any is switched.
+
+---
+
+### [TD-219] Nothing tests the seam between a view and the service it calls — high
+
+**Status:** Open · promoted at the 2026-08-19 Consolidation Review · **two instances in one day**
+
+On 2026-08-18 two defects landed with the same shape, both in the Requests module:
+
+* `record_request_analysis`'s **database path silently dropped** the engineer's proposed triage
+  while the dry-run printed it correctly.
+* `AdminOrgRequestAnswerView` kept passing `index=` after TD-201 renamed the parameter
+  `comment_id=`, so **every answer, for every organisation, on every request, raised `TypeError`
+  before reaching the service and 500-ed — for eighteen days.**
+
+In both, the service had tests and the endpoint had **auth** tests, and the call between them had
+none. **A gap between two well-tested halves is invisible to tests of either half**, and the
+existing house guards ("is it rendered?", "does it refuse?") are structurally blind to it.
+
+**The fix is not another test — it is a rule with a check behind it:** every view that calls a
+service function has at least one test exercising it end to end, with the feature flag on and the
+right role. Mechanisable by diffing view call-sites against the URLs appearing in endpoint tests,
+in the same style as the existing org-fence static guard and `icPadlockGuard.test.ts` — both of
+which already fail CI on a source pattern rather than on behaviour.
+
+**Why a sprint and not a checklist line:** the value is entirely in the check being mechanical.
+Written as a convention it becomes exactly the class of fix TD-218's neighbour rail now forbids —
+correctness depending on every future author remembering.
+
+**Estimate:** ~3h for the guard plus the backfill of missing seam tests it reports.

@@ -4,62 +4,85 @@ Tracks one-off small-lane changes between full sprints. Every ~10 pending entrie
 Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
-_(cleared at the 2026-07-23 review — counter reset; the 13 reviewed entries are listed in that review)_
 
-- 2026-07-25 fix: cockpit rejected record shows the reviewer + QC decline trail; witness-org card settles once assigned (officer cockpit — `page.tsx`, `officerCockpit.ts` + test, en/ms/ta)
-- 2026-07-26 fix: billing dark-ship narrowed to org_admin — super sees the usage screen before the 1 Aug flip (owner decision; reverses the Sprint-13a 'dark for everyone' position — `views_admin.AdminBillingUsageView`, `test_billing_usage.py` +3, decisions.md; no FE change, the screen probes the endpoint)
-_(2026-07-29 — **the sponsor gift-membership fix was logged here and then PROMOTED to a sprint**, so it is not counted in this queue. I misclassified it: it carried a migration and touched money and visibility gating, which `wat_lint` flagged and I overrode. A concurrent agent reviewing the commits made the better case — the rule says money or visibility is a sprint, and there was a lesson in it the small lane has nowhere to put. Retro `retrospective-2026-07-29-sponsor-gift-membership.md`; 4 entries in `lessons.md`. The `0135` ledger-row gap found while applying `0136` is folded into that retro rather than logged separately. **Guardrail owed and not built: a `showmigrations`-vs-production comparison at sprint close** — `makemigrations --check` cannot see the production ledger, which is the one thing migrate-first gets wrong. It belongs in `sprint-close.md`, not in that sprint.)_
-- 2026-07-26 fix: income document cards get the same tidy file row as every other doc — stale `MULTI_INSTANCE_UPLOADS` mirrored a backend rule retired 2026-06-05 (student Documents tab — `ScholarshipDocuments.tsx`, `scholarship.ts` + new `docFileLayout.test.ts`, en/ms/ta)
-- 2026-07-30 fix: a question left open at quote time became permanently unanswerable while the thread kept demanding an answer — window widened to acceptance, label made honest (requests — `org_requests.TRANSITIONS`, `requestStatus.ts`, both request pages, `test_org_requests.py` +3, `requestStatus.test.ts` +4 & 1 superseded, en/ms/ta)
-
-- 2026-07-30 fix: evidence closes when the quote is ACCEPTED (not merely at a terminal status), the quote moves below the deliberation, and the MARGIN is no longer sent to the organisation (requests — `org_requests.OPEN_FOR_SHAPING`/`can_attach`, 3 attachment guards in `views_admin`, `OrgRequestOrgSerializer`, `emails.send_org_request_quote_email`, `requestStatus.ts`, detail page, en/ms/ta; 3 guards updated deliberately)
-
-- 2026-07-30 fix: paste could not fire at all (onPaste on an unfocused div), then had no visible surface to aim at — document-level listener + a real dashed drop zone on both surfaces (requests — `screenshotInput.ts`, `OrgRequestAttachments.tsx`, create form, new `OrgRequestAttachments.paste.test.tsx` rendering + dispatching, en/ms/ta)
-
-> **⚠ THIS ONE WAS REPORTED THREE TIMES BEFORE IT WAS RIGHT**, and the three rounds are the same mistake at different depths: shipped to one of two surfaces; attached where it could never fire; firing with nothing on screen to aim at. Each check I wrote matched the PREVIOUS failure exactly and no further. **If a fourth input-affordance bug appears, the guardrail is not another test — it is that interactive UI does not ship without being rendered and used first.** The rendered-test gate and the four-command frontend gate list are now in `CLAUDE.md`; this entry exists so the next review can see whether they held.
-
-> **⚠ LANE HONESTY: that entry is 15 files, against the lane's ~5.** It stayed in the small lane because it carries no migration, no new model and no new surface — three owner directives given in one sitting, each individually tiny. But the file count is the lane's proxy for blast radius, and I exceeded it rather than splitting or promoting. Flagging rather than quietly passing: if the next review finds more entries like this, the proxy needs to be file-count-OR-directive-count, or batched directives need their own lane.
-
-> **Pattern watch for the next review — this is the FOURTH "the UI asserts something nothing checks" in a week**, after the hard-coded `/profile` padlock, `qc_override_reason` stored and never rendered, and `ai_draft_model` likewise. This one inverts it: the page stated a *requirement* ("Answer needed") without checking the requirement could be met. If a fifth appears, the cluster is asking for a guardrail, not another fix — candidate: a lint/test that a call-to-action label may only render where the corresponding action is offered.
-
-_(Not logged here as a small change: the **Check-2 case summary** LLM feature — `verdict_narrative.py` + `AdminVerdictSummaryView` + FE lead paragraph, DARK behind `VERDICT_CASE_SUMMARY_ENABLED`. It's a feature, tracked as STR-proof S4 (dark) in CHANGELOG + halatuju.md + CLAUDE.md Next-Sprint; retro to follow after the owner live-validates the voice and flips the flag.)_
-- 2026-08-01 fix: Last paid shows the date alone — the payment run reference removed from that column only (BrightPath request #5, shape one of three offered and priced; the API still sends `reference` for the link shape they may still choose) (payments — `admin/payments/page.tsx`, new `admin/payments/page.test.tsx` +3, bite-checked; no i18n, no backend change)
-- 2026-08-01 fix: the billing screen opens on the MALAYSIAN month (TD-209 — the data side was already local in both places; only the default was UTC, and the three test fixtures carried the same mistake so they went red instead of catching it) (billing — `views_admin.AdminBillingUsageView`, `profile_engine._today_str`, `test_billing_usage.py` +2 & fixture, `test_usage.py` + `test_platform_cost.py` fixtures; bite-checked)
-
-- 2026-08-01 fix: a staged analysis draft can be WITHDRAWN, and two drafts staged the same day can be told apart — staging was POST-only, so correcting a draft left the stale one in the approve list, and `approve_analysis` does not refuse a second approval (requests — `org_requests.withdraw_analysis`, `views_admin.AdminOrgRequestWithdrawAnalysisView` + route, new `formatDateTime`, detail page + `admin-api.ts`, `test_org_request_analysis.py` +9, both guards bite-checked, en/ms/ta; no schema change — `superseded_at` already existed)
-
-> **Pattern watch — this is a NEAR-MISS of the "stored but never surfaced" cluster, at a new depth.** The four prior instances were fields stored and never rendered (the hard-coded padlock, `qc_override_reason`, `ai_draft_model`, request #3's Answer-needed). Here `created_at` **was** serialised and **was** rendered — through a date-only formatter, on a list where several rows share a day. Surfaced at the wrong GRANULARITY reads as present while answering nothing, and no "is it rendered?" check catches it. If a sixth appears, the guardrail question is no longer "is the field on screen" but "does what is on screen let the reader make the decision the screen exists for".
-
-- 2026-08-18 fix: 25 submitted interviews re-credited to the reviewer who conducted them — pre-TD-216 the credit was stamped at draft-row CREATION, so the July triage sweep claimed every case it opened (scholarship — new `repair_interview_credit` command + `test_repair_interview_credit.py` ×12, production data pass DONE, no deploy)
-
-> **Pattern watch — the FIX shipped, the RECORD it had already corrupted did not.** TD-216 (13 Aug) fixed the interviewer-credit rule and stopped there; five days later the owner opened a cockpit and found the old wrong name still on 29 rows. The forward fix and the backward repair are two changes and only the first is prompted by the bug report. Candidate rule for the lane: **when a fix changes how a STORED value is derived, say in the same change how many existing rows carry the old derivation and whether they are being repaired** — the repo already has the tool shape for it (`audit_pathway_ticks` computes old-and-new in one pass). This is the second instance: `award_amount`'s clear (30 Jul) also fixed the writer and left two stale rows for a human to notice.
-
-> **Also worth the next review's attention: this is the second time in two days that a tool I use to reach the owner's surfaces had no inverse.** The engineer can stage but not retract; before this, the partner-email switch could be set but not seen (request #3). Both shipped as one-way doors and both were found by the owner using them, not by me writing them. Candidate rule for the lane: when adding an action that writes to a surface somebody else reads, name its inverse in the same change or record why there isn't one.
-- 2026-08-18 fix: a closed case stops describing a future it cannot have — the empty Student profile card (a "(draft)" that does not exist, a final version promised at a verdict now refused), the empty Check 2 box ("all student tasks are clear" where no task was ever raised), and a lock line claiming "the interview is concluded" on 44 records that never held one (officer cockpit — `officerCockpit.ts` +`showsGeneratedProfileCard`/`showsCheck2Box`/`queryingLockReason`, `page.tsx` 3 sites, `cockpitCardStages.test.ts` +11, en/ms/ta ×1 key; **follow-up to the same-day sprint that fixed the three live-control cards — same predicate family, third application**)
-- 2026-08-18 fix: answering a question in a request works again — the view kept passing `index=` after TD-201 renamed it `comment_id=`, so every answer raised TypeError *before* the service and 500-ed for every org on every request for 18 days; `admin` was unpassed too, so a saved answer would have been authored by nobody (requests — `views_admin.AdminOrgRequestAnswerView`, `org_requests.answer_clarification` coercion, `admin-api.ts` dead `index` type, `test_org_requests_endpoints.py` +7 all bite-checked; BrightPath #15, triaged bug/free)
-
-> **⚠ Pattern watch — SECOND instance in one day of "the third caller is tested nowhere", both in this module.** The analysis command's database path silently dropped the engineer's proposed triage; this dropped every answer. In both, the service had tests and the endpoint had *auth* tests, and the actual call between them had none. The existing "is it rendered?" and "does it refuse?" checks are structurally blind to it: **a gap between two well-tested halves is invisible to tests of either half.** Candidate guardrail for the next review, and it is not another test — it is a rule that **every view calling a service function must have one test that exercises it end to end with the flag on and the right role**, which could be mechanised by diffing view call-sites against endpoint-test URLs. Third instance makes it a sprint.
-
-> **⚠ Also worth the next review: the fix corrected a claim we had already POSTED to the customer.** The analysis said the reply "attaches to the oldest rather than the one you chose"; there is no chooser in the UI and the settle rule makes the distinction unobservable. Written before the code was read that closely. Candidate rule: **an analysis that will be posted verbatim states only what has been read, and separates "I have confirmed" from "I expect".**
-- 2026-08-18 fix: a student is tagged by the results we HOLD, not the exam declared at sign-up — a Form Six student read STPM with no STPM results and was ranked on a CGPA that does not exist, so she carried no merit figure and fell out of the ordering entirely (scholarship — `serializers_admin.held_qualification` + both `qualification` fields + `_application_merit_score`, new READ-ONLY `audit_held_qualification`, `test_held_qualification.py` ×11, both directions bite-checked; production: 1 live record moves; BrightPath #14)
-
-> **⚠ Pattern watch — THIRD instance of `exam_type` answering two questions at once**, after request #11's "No profile found" and the dashboard fault behind it. Each was patched where it showed; this one was settled at the source for the admin surface only, because the other five readers (`shortlisting`, `pool`, `income_engine`, `vision`, the student payload) are each correct to read the declared value for their own purpose. **A fourth instance is not another point fix — it is a rename**: the field should say which question it answers, and the surfaces that want the other one should have their own accessor. Candidate for the next review.
-
-_(2026-08-18 — **the exam-type fix is a SPRINT, not a small change, and is NOT counted in this queue.** It carries migration `courses/0070` and a new model field, which `wat_lint` flags under `small-change-lane.md` step 1 — the same misclassification as the 2026-07-29 gift-membership entry, caught by the linter this time before the close rather than by a reviewer after it. Closed as a sprint: retro `docs/retrospective-2026-08-18-exam-type-and-requests.md`, decisions ×2, lessons ×4.)_
-
-> **⚠ Pattern watch — FOURTH instance of `exam_type` answering two questions.** Request #11's "No profile found", the dashboard behind it, #14's admin tag, #14's apply step. Three were patched where they showed; this one added the second field the split actually needs. **A fifth is a rename, not a fix** — six surfaces read `exam_type` and each wants one of the two questions; give each the accessor it means. That is a sprint, and the next review should say so rather than absorbing a fifth patch.
-- 2026-08-18 fix: six senders bill the tenant instead of the platform — 125 August emails sat on the "Platform (shared base)" row, all of them bursary work; attribution is opt-in per call site so every sender added since the 2026-07-26 pass began life org-NULL (billing — `services.py` ×4, `nudge.py`, `sponsorship.py`, `send_award_offer_emails.py`, `billing/page.tsx` storage label, `test_usage_attribution.py` +6, en/ms/ta ×1 key)
-
-> **Pattern watch — THIRD instance of "the fix was complete for the cases that existed 
-> when it was written".** The interview credit (TD-216) corrected the rule and left 25 rows 
-> carrying the old one; `award_amount`'s clear fixed the writer and left two stale rows; this 
-> one wrapped the four senders that were firing and left the next eight to be born wrong. 
-> The first two were about ROWS already written, this one is about CALL SITES not yet written — 
-> which is worse, because it regenerates. **Candidate guardrail: when a fix depends on every 
-> caller doing something, the fix is not the callers, it is making the omission impossible or 
-> loud.** Named and deliberately not built in this change; owed.
+_(cleared at the 2026-08-19 review — counter reset; the 14 reviewed entries are listed in that review)_
 
 ## Reviews
+
+### 2026-08-19 — Consolidation review (14 small changes, 25 Jul → 18 Aug)
+
+**Reflect.** Fourteen entries over three and a half weeks, and they are not evenly spread. **Five
+are the Requests module** (three on 30 Jul, one on 1 Aug, one on 18 Aug); **three are billing**
+(the dark-ship narrowing, the Malaysian-month default, the six senders billing the platform); the
+remaining six are one-offs across the officer cockpit, the student Documents tab, payments and the
+interview-credit repair. Two entries in the window were correctly refused by the lane and closed as
+sprints instead (the sponsor gift-membership, and the exam-type overload — the second caught by
+`wat_lint` before the close rather than by a reviewer after it, which is the linter doing its job).
+
+Most were genuine fixes. Three were symptoms: the interview-credit repair (the rule had been fixed
+five days earlier and the corrupted rows left behind), the billing attribution (four senders wrapped
+in July, the next eight born wrong), and the Requests answer 500 (a rename completed in the service
+and the endpoint and not between them).
+
+**Cohere — three clusters, and one of them is now a sprint.**
+
+**1. The Requests module (5 entries) — NOT promoted, and the reason is the interesting finding.**
+Five patches to one surface in three weeks reads like a redesign asking to be a sprint. It is not.
+The three on 30 Jul were a UI-affordance failure reported three times before it was right, and the
+guardrail that answered it — the rendered-test gate plus the four-command frontend gate list, both
+landed in `CLAUDE.md` — **held**: no further UI-affordance bug has appeared in this module since.
+What appeared instead was a *backend* seam failure (the 18 Aug answer 500). **The guardrail worked
+and the failure moved next door.** That is worth recording as a success rather than promoting the
+module wholesale, and it points the next guardrail at the seam rather than the surface.
+
+**2. "The fix was complete for the cases that existed when it was written" — now FOUR instances,
+and the class regenerates.** The interview credit corrected the rule and left 25 rows carrying the
+old one; `award_amount`'s clear fixed the writer and left two stale rows; the billing attribution
+wrapped the four senders then firing and left the next eight to be born wrong; and — not previously
+counted, because it closed as a sprint — **the SPM exam-year anchor (BrightPath #12) was complete
+for the certificates that existed and broke on a differently-cropped scan.** The first two are about
+rows already written; the last two are about cases not yet written, which is worse, because nothing
+stops them arriving. Guardrail below.
+
+**3. "The UI asserts what nothing checks" — five instances plus a near-miss, and it has stopped
+being the same bug.** The hard-coded padlock, `qc_override_reason`, `ai_draft_model` and request
+#3's "Answer needed" were all *field stored, never rendered*. The near-miss (a staged draft's
+`created_at` rendered date-only on a list where several rows share a day) was *rendered at the wrong
+granularity*. The class has drifted from "is it on screen" to "does what is on screen let the reader
+decide". That is no longer mechanisable as one check, and a sixth point fix would not converge.
+**Deliberately NOT given a guardrail this round** — it is recorded as a live watch, and the next
+instance should be read for which of the two it is before anything is built.
+
+**Promoted:**
+- **TD-218 — `exam_type` answers two questions and six surfaces read it.** Now the FIFTH instance
+  (#11's "No profile found", the dashboard behind it, #14's admin tag, #14's apply step, and the
+  `results_exam_type` work itself). The standing note said a fifth is a rename, not a fix. It is a
+  sprint and it is now written down as one.
+- **TD-219 — nothing tests the seam between a view and the service it calls.** Two instances in one
+  day on 18 Aug (the analysis command's dropped triage; every answer 500-ing for 18 days), both with
+  a well-tested service, auth-tested endpoint, and nothing exercising the call between them. A gap
+  between two well-tested halves is invisible to tests of either half. The mechanisable form —
+  diffing view call-sites against endpoint-test URLs — is a sprint, not a checklist line.
+
+**Anticipate — the guardrail landed this round.** Cluster 2 is the one that regenerates, so it is
+the one that got prevention rather than another fix. Two rails added to `small-change-lane.md` Part
+A, where every future small change has to read them:
+
+- **A fix that changes how a STORED value is derived must state how many existing rows carry the old
+  derivation, and whether they are being repaired.** The repo already has the tool shape for it —
+  `audit_pathway_ticks` computes the old and the new answer in one pass over real data.
+- **A fix whose correctness depends on every FUTURE caller remembering something is a convention,
+  not a fix.** Name in the change how the omission is made impossible or loud, or say why it cannot
+  be. This is the half that regenerates, and it is the one the 18 Aug billing entry named and
+  deliberately did not build.
+
+**Lane honesty carried forward.** One entry in this window was 15 files against the lane's ~5 cap
+(the 30 Jul evidence/margin/quote change — three owner directives in one sitting, each individually
+tiny). It carried no migration, model or new surface, so it stayed. That is now the second window in
+which the file-count proxy has been exceeded by batched directives rather than by scope. **If it
+happens again, the proxy needs to become file-count-OR-directive-count** — flagged, not yet changed,
+because two instances is thin evidence for a rule change.
+
 
 ### 2026-07-23 — Consolidation review (13 small changes, 1 Jul → 23 Jul)
 
