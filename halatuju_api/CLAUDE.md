@@ -550,7 +550,68 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-18, after the closed-case cockpit)
+## Next Sprint (as of 2026-08-18, after the exam-type overload)
+
+**✅ SHIPPED — SIX CHANGES, ONE ROOT CAUSE UNDER THREE OF THEM.** Retro
+`docs/retrospective-2026-08-18-exam-type-and-requests.md`; decisions ×2; lessons ×4.
+`pytest` **5601** (scholarship+courses+reports) · `jest` **1458** / 96 suites · `next lint` **0** ·
+i18n **4530×3**. Ledger reconciled against production: **courses 70/70, scholarship 146/146**,
+no gaps. Seven guards bite-checked.
+
+**⚠ MIGRATION `courses/0070` IS ALREADY APPLIED — DO NOT RE-RUN.** Additive
+(`results_exam_type varchar(10) NOT NULL DEFAULT ''`), applied migrate-first with its ledger row.
+The DDL was HAND-WRITTEN: `sqlmigrate` renders SQLite here and prints a whole table rebuild.
+
+**⚠ `exam_type` ANSWERS TWO QUESTIONS AND CANNOT ANSWER BOTH** — *"which results do I hold?"* and
+*"which exam am I heading for?"*. It moves on a card tap at "Choose Your Exam" and needs NO results
+behind it, so a Form Six student who taps STPM to explore is declared STPM with nothing there. This
+has now misled us FOUR times (request #11's "No profile found", the dashboard behind it, #14's tag,
+#14's apply step). **A fifth is not another point fix — it is a rename**, with each of the six
+readers given the accessor it actually wants.
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`results_exam_type`** records which results were last COMPLETED. Only the two results editors
+  write it, only on completion. **Blank = never recorded**, and readers fall back to the
+  declaration — exactly what those rows read before.
+- **⚠ THE GUARANTEE IS SERVER-SIDE.** `ProfileUpdateSerializer.validate` drops a marker not backed
+  by results on file. This field exists BECAUSE `exam_type` had no such check; keeping the new one
+  in the browser only would repeat the mistake. It DROPS rather than rejects — a display refinement
+  must not fail a student's whole profile sync.
+- **⚠ THE SPM EDITOR NEVER WROTE THE EXAM TYPE; THE STPM ONE ALWAYS DID.** So completing SPM
+  results could not correct a wrong declaration — she would do the right thing, completely, and
+  stay broken. Both now assert at completion.
+- **⚠ `held_qualification` RELIES ON ABSENCE, NEVER PRESENCE.** The course guide shares this
+  profile and lets anyone type STPM grades; #15 carries a 4.0 CGPA she never sat. Absence is
+  conclusive, presence proves nothing. The wide "latest results we hold" rule moves 3 live records
+  and would re-label an AWARDED student — measured, not estimated.
+- **⚠ THE INTERVIEW-CREDIT FENCE IS THE CURRENT HOLDER, NOT THE DIVERGENCE.** Interviewer ≠
+  verdict-recorder is legitimate (apps 12, 51). 25 records re-credited on production.
+
+**▶ NOT RUN — `backfill_results_exam_type`.** Report-only until `--apply`. Measured: fills
+**605 spm / 19 stpm**, leaves **35 blank** (hold both sets, order unknowable), and changes exactly
+**one** profile's displayed answer — which has **no bursary application**. Applicant-facing audit
+unchanged (`audit_held_qualification`: 1 change, #106).
+
+**▶ NEXT = BRIGHTPATH #16, #17, #18** — analyses staged as DRAFTS (ids 34, 35, 36), awaiting the
+owner's approval in the cockpit. #17 is the one to move first: the invite note is an `<input>`
+inside a `<form>`, so Enter **sends a half-written invitation to a donor**. #16 needs an owner
+ruling (remove the dead Resend, or build a real one); #18 needs one too (25/page on two pages, or
+console-wide).
+
+**▶ OWNER, OUTSTANDING:**
+1. **Request #14 is `approved` at 2.0h as a FEATURE.** The classification cannot be changed in the
+   product once accepted (`triage` takes `submitted` only; `modify` is an org_admin action that
+   rewrites the description and supersedes the analysis). Decide whether to bill it — my analysis
+   argues the merit-score half is a defect. A mis-triage having no inverse is worth a TD.
+2. **Correct the record on #15's posted analysis** if you wish — it says the reply attaches to the
+   oldest "rather than the one you chose"; there is no chooser and the settle rule makes the
+   distinction unobservable.
+3. **`/profile` and the dashboard "edit profile" are OUT OF SCOPE and still misaligned** — both of
+   `/profile`'s edit buttons jump straight to the SPM editor, so a student there has no route to
+   the STPM one.
+4. ms/ta for the two changed apply strings are MY drafts — your eye owed.
+
+## Superseded — previous Next Sprint (as of 2026-08-18, the closed-case cockpit)
 
 **✅ SHIPPED — A CLOSED CASE TAKES NO MORE REVIEW WRITES.** Commit `26fa0346`. CHANGELOG
 2026-08-18; decision ×1; lessons ×3. **NO migration · api + web · 6 files.** `pytest` **4282**

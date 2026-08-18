@@ -7660,3 +7660,27 @@ template would leave it one careless render away from exposure.
 
 **Revisit if:** the owner needs the address for a specific operational reason — then record that
 reason here first, per the role matrix's own rule.
+
+## `results_exam_type` is a SECOND field, not a rename of `exam_type` — 2026-08-18
+
+**Decision:** record which exam's results were last COMPLETED in a new `StudentProfile.results_exam_type`, leaving `exam_type` untouched as the student's declaration of which exam they are heading for. Readers that want "which results do I hold?" prefer the new field and fall back to the old one when it is blank.
+
+**Alternatives considered:** (a) Rename/repurpose `exam_type` so it means "results held" — rejected: six surfaces read it for the OTHER question and each is correct to (`shortlisting` decides who is shortlisted, `pool` sets the sponsor-facing band, `income_engine` gates the semester-result ask, `vision` picks the slip parser, the student payload, the course guide's own explorer). A rename would re-band live applicants. (b) Infer it from the results on file — that is what `held_qualification` does today, and it cannot resolve a profile holding BOTH sets, because there is no record of the order. (c) Timestamp each result set (`spm_results_at`, `stpm_results_at`) — more faithful, but two columns and a migration to answer a question one column answers, and the ordering is only ever needed as "which was last".
+
+**Rationale:** the field's whole value is that a SELECTION cannot set it. Both results editors refuse to continue until their form is complete, so writing it at completion makes it a fact about results rather than intent — which is precisely what `exam_type` could never be. Blank means never recorded, so every pre-column row keeps reading exactly as it did.
+
+**Trade-offs:** two fields that a careless reader will confuse, mitigated by the model docstring stating which question each answers. The backfill deliberately leaves 35 profiles blank (they hold both sets and the order is unknowable), so those rows keep showing the declaration until the student next completes a form.
+
+**Revisit if:** a surface needs to know *when* each set was completed rather than which was last — then the two timestamps become the right shape and this field derives from them.
+
+## The client cannot be the only keeper of an invariant it exists to replace — 2026-08-18
+
+**Decision:** `ProfileUpdateSerializer.validate` drops a `results_exam_type` not backed by results on file (payload merged with the stored row), rather than trusting the browser to send it only on completion.
+
+**Alternatives considered:** trust the client, since only the two results editors write the marker — rejected on the grounds that this field exists BECAUSE `exam_type` had no server-side check, and reproducing that shape in the replacement would be the same mistake with a new name. Rejecting the request outright was also considered and refused: the marker is a display refinement, and failing a student's whole profile sync over it trades a display fault for a data-loss one.
+
+**Rationale:** a promise kept only in the client is not a guarantee. The check is cheap, sits at the one serializer both the PUT and the sync pass through, and makes the invariant true however the value arrives — including from a shell.
+
+**Trade-offs:** a silently dropped value is harder to debug than a 400; accepted because the failure mode is "the display falls back to the declaration", which is the pre-existing behaviour.
+
+**Revisit if:** a legitimate caller needs to record a completion for results stored elsewhere.

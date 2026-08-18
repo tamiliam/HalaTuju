@@ -45,6 +45,10 @@ _(Not logged here as a small change: the **Check-2 case summary** LLM feature �
 
 > **⚠ Pattern watch — THIRD instance of `exam_type` answering two questions at once**, after request #11's "No profile found" and the dashboard fault behind it. Each was patched where it showed; this one was settled at the source for the admin surface only, because the other five readers (`shortlisting`, `pool`, `income_engine`, `vision`, the student payload) are each correct to read the declared value for their own purpose. **A fourth instance is not another point fix — it is a rename**: the field should say which question it answers, and the surfaces that want the other one should have their own accessor. Candidate for the next review.
 
+_(2026-08-18 — **the exam-type fix is a SPRINT, not a small change, and is NOT counted in this queue.** It carries migration `courses/0070` and a new model field, which `wat_lint` flags under `small-change-lane.md` step 1 — the same misclassification as the 2026-07-29 gift-membership entry, caught by the linter this time before the close rather than by a reviewer after it. Closed as a sprint: retro `docs/retrospective-2026-08-18-exam-type-and-requests.md`, decisions ×2, lessons ×4.)_
+
+> **⚠ Pattern watch — FOURTH instance of `exam_type` answering two questions.** Request #11's "No profile found", the dashboard behind it, #14's admin tag, #14's apply step. Three were patched where they showed; this one added the second field the split actually needs. **A fifth is a rename, not a fix** — six surfaces read `exam_type` and each wants one of the two questions; give each the accessor it means. That is a sprint, and the next review should say so rather than absorbing a fifth patch.
+
 ## Reviews
 
 ### 2026-07-23 — Consolidation review (13 small changes, 1 Jul → 23 Jul)
