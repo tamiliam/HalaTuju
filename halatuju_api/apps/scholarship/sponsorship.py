@@ -16,6 +16,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from . import pool
+from . import usage as _usage
 
 logger = logging.getLogger(__name__)
 from .emails import (send_award_confirmed_email, send_award_offer_email,
@@ -556,9 +557,11 @@ def release_award_offer_emails(now=None):
         app = sp.application
         name = getattr(app.profile, 'name', '') if app.profile else ''
         if bursary_on:
-            ok = send_award_offer_sign_email(
-                to_email=app.notify_email, applicant_name=name,
-                lang=getattr(app, 'locale', '') or 'en')
+            # Bill the tenant — an unwrapped send meters org-NULL (see emails._meter_email).
+            with _usage.usage_context(application=app):
+                ok = send_award_offer_sign_email(
+                    to_email=app.notify_email, applicant_name=name,
+                    lang=getattr(app, 'locale', '') or 'en')
             if not ok:
                 continue   # stamp only on success (see below); retry next run
             sp.offer_emailed_at = now
@@ -566,9 +569,11 @@ def release_award_offer_emails(now=None):
             sent += 1
             continue   # NO Vircle task on the contract-mode path — it's raised at execution
         from .vircle import can_register
-        ok = send_award_offer_email(
-            to_email=app.notify_email, applicant_name=name, lang=getattr(app, 'locale', '') or 'en',
-            guardian_note=not can_register(app))
+        with _usage.usage_context(application=app):
+            ok = send_award_offer_email(
+                to_email=app.notify_email, applicant_name=name,
+                lang=getattr(app, 'locale', '') or 'en',
+                guardian_note=not can_register(app))
         if not ok:
             # Stamp ONLY on success. This query filters offer_emailed_at__isnull=True, so stamping
             # a FAILED send would permanently suppress that student's award email — they'd simply

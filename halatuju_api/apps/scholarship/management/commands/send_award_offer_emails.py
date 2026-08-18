@@ -44,9 +44,12 @@ class Command(BaseCommand):
                 continue
             name = getattr(app.profile, 'name', '') if app.profile else ''
             from apps.scholarship.vircle import can_register
-            ok = send_award_offer_email(
-                to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en',
-                guardian_note=not can_register(app))
+            from apps.scholarship import usage as _usage
+            # Bill the tenant — an unwrapped send meters org-NULL (emails._meter_email).
+            with _usage.usage_context(application=app):
+                ok = send_award_offer_email(
+                    to_email=app.notify_email, applicant_name=name, lang=app.locale or 'en',
+                    guardian_note=not can_register(app))
             if ok:
                 # Stamp the award as emailed so the cool-off cron never re-sends it (idempotent
                 # across the manual force-send and the scheduled release). Code-health S3 #7:

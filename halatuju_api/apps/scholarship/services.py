@@ -437,6 +437,7 @@ def send_application_reminders(now=None):
     ``last_reminder_at`` (when the final reminder actually went out), never on raw
     elapsed days, so no application is closed without having received the warning."""
     from .emails import send_reminder_email, send_application_closed_email
+    from . import usage as _usage
     now = now or timezone.now()
     final_stage = len(REMINDER_THRESHOLDS_DAYS)             # 4
     reminded = closed = 0
@@ -454,13 +455,17 @@ def send_application_reminders(now=None):
             app.status = 'expired'
             app.expired_at = now
             app.save(update_fields=['status', 'expired_at'])
-            send_application_closed_email(**common)
+            # Bill the tenant: without this the send meters org-NULL and lands under the
+            # billing screen's "Platform (shared base)". See the note on _meter_email.
+            with _usage.usage_context(application=app):
+                send_application_closed_email(**common)
             closed += 1
             continue
         # Otherwise, send the next stage if its day-threshold is crossed (one per run).
         next_stage = app.reminder_stage + 1                # 1..4
         if next_stage <= final_stage and _elapsed_days_local(now, app.reminder_anchor_at) >= REMINDER_THRESHOLDS_DAYS[next_stage - 1]:
-            send_reminder_email(stage=next_stage, **common)
+            with _usage.usage_context(application=app):
+                send_reminder_email(stage=next_stage, **common)
             app.reminder_stage = next_stage
             app.last_reminder_at = now
             app.save(update_fields=['reminder_stage', 'last_reminder_at'])
@@ -676,6 +681,7 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     Returns the application.
     """
     from .models import AssignmentEvent
+    from . import usage as _usage
     now = now or timezone.now()
 
     if reviewer is not None and not _can_review(reviewer):
@@ -751,13 +757,14 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
         from .pool import pool_ref
         review_days = getattr(_settings, 'REVIEW_SLA_DAYS', 7)
         review_by = ((application.assigned_at or now) + timedelta(days=review_days)).date()
-        send_reviewer_assigned_email(
-            to_email=reviewer.email,
-            reviewer_name=getattr(reviewer, 'name', ''),
-            ref=pool_ref(application.id),
-            programme=getattr(application.cohort, 'name', '') if application.cohort else '',
-            review_by=review_by.strftime('%d %b %Y'),
-        )
+        with _usage.usage_context(application=application):
+            send_reviewer_assigned_email(
+                to_email=reviewer.email,
+                reviewer_name=getattr(reviewer, 'name', ''),
+                ref=pool_ref(application.id),
+                programme=getattr(application.cohort, 'name', '') if application.cohort else '',
+                review_by=review_by.strftime('%d %b %Y'),
+            )
 
     # F7: advance notice to the STUDENT — who will interview them + how, so they expect the
     # call and pick up. Gated by STUDENT_ASSIGNMENT_EMAIL_ENABLED (OFF until reviewers give
@@ -770,12 +777,13 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
             profile = application.profile
             student_email = (application.notify_email
                              or getattr(profile, 'contact_email', '') or '')
-            send_student_assigned_reviewer_email(
-                student_email,
-                student_name=getattr(profile, 'name', '') if profile else '',
-                reviewer_name=getattr(reviewer, 'name', ''),
-                english_only=english_only_email(application),
-            )
+            with _usage.usage_context(application=application):
+                send_student_assigned_reviewer_email(
+                    student_email,
+                    student_name=getattr(profile, 'name', '') if profile else '',
+                    reviewer_name=getattr(reviewer, 'name', ''),
+                    english_only=english_only_email(application),
+                )
 
     # Check-2 → Reviewer handoff: auto-draft the sponsor profile so the reviewer lands on
     # a ready profile to orient from (the owner's design). Fires only on the FIRST

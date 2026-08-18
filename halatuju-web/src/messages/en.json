@@ -4973,6 +4973,7 @@
       "platform": "Platform (shared base)",
       "platformBadge": "Super only",
       "platformSub": "Shared work not billed to any single organisation — course-selector reports and operational mail — kept for reconciliation.",
+      "storageAllNote": "whole bucket, including the organisations below",
       "noUsage": "No usage recorded for this month.",
       "paused": "Paused",
       "freeNote": "Not metered (free services):",

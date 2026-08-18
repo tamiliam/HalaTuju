@@ -64,7 +64,11 @@ function OrgCard({ block, t }: { block: BillingOrgBlock; t: (k: string) => strin
         <Tile label={t('admin.billing.service.vision_ocr')} value={formatCount(vision?.events ?? 0)} />
         <Tile label={t('admin.billing.service.email')} value={formatCount(email?.quantity ?? 0)} />
         <Tile label={t('admin.billing.service.whatsapp')} value={formatCount(whatsapp?.quantity ?? 0)} />
-        <Tile label={t('admin.billing.service.storage')} value={formatBytes(block.storage_bytes)} />
+        {/* ⚠ On the PLATFORM block this is the WHOLE bucket, organisations included — every
+            other figure in that block is exclusive (work billed to nobody), so without this
+            note the page reads as if the two storage lines add up. They are the same bytes. */}
+        <Tile label={t('admin.billing.service.storage')} value={formatBytes(block.storage_bytes)}
+          sub={block.is_platform ? t('admin.billing.storageAllNote') : undefined} />
       </div>
 
       {/* Breakdown table */}
@@ -92,7 +96,12 @@ function OrgCard({ block, t }: { block: BillingOrgBlock; t: (k: string) => strin
             ))}
             {/* Document storage — a live snapshot, not a metered call. */}
             <tr className="border-b last:border-0 bg-gray-50/50">
-              <td className="px-4 py-2 text-gray-900">{t('admin.billing.service.storage')}</td>
+              <td className="px-4 py-2 text-gray-900">
+                {t('admin.billing.service.storage')}
+                {block.is_platform && (
+                  <span className="text-gray-500"> — {t('admin.billing.storageAllNote')}</span>
+                )}
+              </td>
               <td className="px-4 py-2 text-right text-gray-700" colSpan={3}>{formatBytes(block.storage_bytes)}</td>
             </tr>
             {/* Paused services — shown greyed so the reader knows they exist and cost nothing now. */}

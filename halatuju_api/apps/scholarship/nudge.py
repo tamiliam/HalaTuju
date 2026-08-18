@@ -95,10 +95,13 @@ def send_nudge(application, *, manual, now=None):
     if manual and not nudge_state(application, now=now)['available']:
         return False
     from .emails import english_only_email, send_application_nudge_email
+    from . import usage as _usage
     name = getattr(application.profile, 'name', '') if application.profile else ''
-    sent = send_application_nudge_email(
-        application.notify_email, student_name=name,
-        english_only=english_only_email(application))
+    # Bill the tenant — an unwrapped send meters org-NULL (see emails._meter_email).
+    with _usage.usage_context(application=application):
+        sent = send_application_nudge_email(
+            application.notify_email, student_name=name,
+            english_only=english_only_email(application))
     if sent:
         application.nudge_sent_at = now
         application.save(update_fields=['nudge_sent_at'])
