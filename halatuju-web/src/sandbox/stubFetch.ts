@@ -33,9 +33,28 @@ const ROUTES: Record<string, Handler> = {
   '/api/v1/scholarship/intake/': () => ({ open: true, cohort_name: sandboxApplication.cohort_name }),
 }
 
+/**
+ * Per-surface answers, layered OVER `ROUTES` for the surface currently mounted.
+ *
+ * One surface needs a DIFFERENT answer from the same endpoint: the apply form redirects away the
+ * moment `/scholarship/applications/` returns one, because a returning applicant has nothing to
+ * fill in. The Documents surface needs that same endpoint to return one. Both are correct; they
+ * are different screens.
+ *
+ * Set during the surface page's RENDER, before its children mount and fetch — the same timing
+ * `installStubFetch` itself relies on. Replaced wholesale on every surface change so one screen's
+ * fixtures can never leak into the next.
+ */
+let overrides: Record<string, Handler> = {}
+
+export function setSurfaceRoutes(routes?: Record<string, Handler>): void {
+  overrides = routes ?? {}
+}
+
 function payloadFor(pathname: string): unknown | undefined {
-  const key = Object.keys(ROUTES).find((route) => pathname.endsWith(route))
-  return key ? ROUTES[key]() : undefined
+  const table = { ...ROUTES, ...overrides }
+  const key = Object.keys(table).find((route) => pathname.endsWith(route))
+  return key ? table[key]() : undefined
 }
 
 function jsonResponse(body: unknown, status = 200): Response {

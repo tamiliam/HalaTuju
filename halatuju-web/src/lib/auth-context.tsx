@@ -39,7 +39,19 @@ interface AuthContextValue {
   hideAuthGate: () => void
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null)
+/**
+ * Exported for ONE reason: the design sandbox mounts real signed-in screens without an identity.
+ *
+ * `AuthProvider` mints an anonymous Supabase user on mount, which a sandbox must never do — it
+ * would create real auth rows for a design review — so the sandbox supplies this context directly
+ * with a synthetic value instead. That is the sandbox's own rule applied rather than dodged: *if a
+ * surface cannot be mounted without re-implementing part of it, make it mountable*. The same
+ * accommodation `sponsor-portal-context` already makes.
+ *
+ * ⚠ NOT a second way to be logged in. Nothing in the app may provide this context — `AuthProvider`
+ * is the only writer, and `useAuth` is the only reader. Use `useAuth()`.
+ */
+export const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)

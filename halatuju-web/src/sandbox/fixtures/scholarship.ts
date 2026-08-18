@@ -261,3 +261,60 @@ export const sandboxConsentBlocked: ConsentStatus = {
   ...sandboxConsent,
   blockers: ['results_slip_missing', 'income_proof_missing'],
 }
+
+// ── The apply form's "My Results" step (BrightPath request #14) ──────────────────────────────
+//
+// The step DISPLAYS results; it never collects them. Which of its two states a student lands in
+// is decided by `profileAcademicSummary`, and that reads ONLY where the declared exam points:
+//
+//     hasData = examType === 'stpm' ? stpmCgpa != null : (grades && keys > 0)
+//
+// So the three profiles below are not three designs. They are the same screen answering the same
+// question about three students, and the third is the one worth looking at.
+
+/** Sat SPM, results on file. The ordinary case: a count of A's, and an offer to correct them. */
+export const sandboxProfileSpm = {
+  name: 'Nurul Contoh binti Teladan',
+  school: 'SMK Contoh',
+  exam_type: 'spm' as const,
+  gender: 'female' as const,
+  nationality: 'malaysian' as const,
+  grades: {
+    bm: 'A', eng: 'A+', math: 'A', hist: 'A-', moral: 'A',
+    sci: 'A+', b_tamil: 'A', ekonomi: 'B+', poa: 'B', lit_tamil: 'A+',
+  },
+  coq_score: 7.15,
+  stpm_grades: {},
+  preferred_state: 'Selangor',
+}
+
+/** Sat STPM, CGPA on file. The other ordinary case — the step shows the PNGK instead. */
+export const sandboxProfileStpm = {
+  ...sandboxProfileSpm,
+  name: 'Aiman Contoh bin Teladan',
+  gender: 'male' as const,
+  exam_type: 'stpm' as const,
+  stpm_grades: { PA: 'A', MATH_T: 'A-', PHYSICS: 'A', CHEMISTRY: 'A-' },
+  stpm_cgpa: 3.75,
+  muet_band: 4,
+}
+
+/**
+ * ⚠ THE ONE TO LOOK AT. A Form Six student: she sat SPM, holds ten SPM grades, and is sitting
+ * STPM now — so at "Choose Your Exam" she answered STPM, meaning the exam she is heading FOR.
+ *
+ * She has no STPM results because she has not sat them. `hasData` therefore looks for a CGPA,
+ * finds none, and the step tells her **"We don't have your results yet"** — with her ten grades in
+ * the database the whole time. The button it offers her goes back to "Choose Your Exam", the
+ * screen that produced the declaration, so picking STPM again returns her to an STPM grades form
+ * she has nothing to put in. One live applicant is in this state today.
+ */
+export const sandboxProfileFormSix = {
+  ...sandboxProfileSpm,
+  name: 'Kavitha Contoh a/p Teladan',
+  exam_type: 'stpm' as const,
+  // No stpm_grades, no stpm_cgpa, no muet_band — nothing has been sat yet.
+}
+
+/** No application yet, so the apply form renders instead of redirecting a returning applicant. */
+export const sandboxNoApplications = { total_count: 0, applications: [] }

@@ -13,9 +13,14 @@
  */
 import type { ReactNode } from 'react'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
+import ScholarshipApplyPage from '@/app/scholarship/apply/page'
 import SponsorStudentsPage from '@/app/sponsor/(portal)/students/page'
+import { AuthContext } from '@/lib/auth-context'
 import { SponsorPortalContext } from '@/lib/sponsor-portal-context'
-import { sandboxApplication, sandboxApplicationLeanProgramme } from './fixtures/scholarship'
+import {
+  sandboxApplication, sandboxApplicationLeanProgramme, sandboxNoApplications,
+  sandboxProfileFormSix, sandboxProfileSpm, sandboxProfileStpm,
+} from './fixtures/scholarship'
 import { sandboxPool } from './fixtures/sponsor'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
@@ -26,6 +31,11 @@ export interface Surface {
   /** What a designer is looking at, and which state it is in — states are chosen, not accidental. */
   note: string
   render: () => ReactNode
+  /**
+   * Endpoint answers for THIS surface only, layered over the shared ones. Needed where two
+   * screens want different answers from the same endpoint — see `setSurfaceRoutes`.
+   */
+  routes?: Record<string, () => unknown>
 }
 
 export const SURFACES: Surface[] = [
@@ -49,6 +59,51 @@ export const SURFACES: Surface[] = [
       + 'Layer 0 buys. Style both: a tenant will land on each.',
     render: () => (
       <ScholarshipDocuments token={SANDBOX_TOKEN} app={sandboxApplicationLeanProgramme} />
+    ),
+  },
+  {
+    slug: 'apply-results',
+    title: 'Apply — My Results (sat SPM)',
+    note:
+      'Step 3 of the application form, for a student whose SPM results are on file. The step '
+      + 'DISPLAYS results and offers to correct them; it never collects them — the only place '
+      + 'they are entered is the course-guide onboarding, which writes the same profile. Click '
+      + '“My Results” in the step rail.',
+    routes: { '/api/v1/scholarship/applications/': () => sandboxNoApplications },
+    render: () => (
+      <WithAuth profile={sandboxProfileSpm}>
+        <ScholarshipApplyPage />
+      </WithAuth>
+    ),
+  },
+  {
+    slug: 'apply-results-stpm',
+    title: 'Apply — My Results (sat STPM)',
+    note:
+      'The same step for a student who has sat STPM: the count of A’s is replaced by the PNGK. '
+      + 'Same component, same code path — the branch is `exam_type`.',
+    routes: { '/api/v1/scholarship/applications/': () => sandboxNoApplications },
+    render: () => (
+      <WithAuth profile={sandboxProfileStpm}>
+        <ScholarshipApplyPage />
+      </WithAuth>
+    ),
+  },
+  {
+    slug: 'apply-results-form-six',
+    title: 'Apply — My Results (Form Six: the defect)',
+    note:
+      'A Form Six student: ten SPM grades on file, sitting STPM now, so she answered “STPM” at '
+      + '“Choose Your Exam” — the exam she is heading FOR. The step looks only where the declared '
+      + 'exam points, finds no CGPA, and tells her WE DO NOT HAVE HER RESULTS while they sit in '
+      + 'the database. The button it offers goes back to the screen that produced the '
+      + 'declaration. One live applicant is in this state. Compare it against the first surface: '
+      + 'same student data, one field different.',
+    routes: { '/api/v1/scholarship/applications/': () => sandboxNoApplications },
+    render: () => (
+      <WithAuth profile={sandboxProfileFormSix}>
+        <ScholarshipApplyPage />
+      </WithAuth>
     ),
   },
   {
@@ -77,6 +132,24 @@ export const SURFACES: Surface[] = [
  * Only the fields this page reads are filled. Casting a partial value is deliberate: filling
  * fourteen unrelated fields with nulls would suggest they are part of what this surface shows.
  */
+/**
+ * The signed-in student screens read their identity from `useAuth`, so the sandbox supplies that
+ * context with a synthetic value. `AuthProvider` is deliberately NOT used: it mints an anonymous
+ * Supabase user on mount, and a design review must not create real auth rows.
+ *
+ * Only the four fields these screens read are filled — `status`, `profile`, `token`, and the auth
+ * gate they never open. Casting a partial value is the same deliberate choice made below.
+ */
+function WithAuth({ profile, children }: { profile: unknown; children: ReactNode }) {
+  return (
+    <AuthContext.Provider
+      value={{ status: 'ready', profile, token: SANDBOX_TOKEN, showAuthGate: () => {} } as never}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
 function WithSponsorPortal({ children }: { children: ReactNode }) {
   return (
     <SponsorPortalContext.Provider value={{ pool: sandboxPool } as never}>

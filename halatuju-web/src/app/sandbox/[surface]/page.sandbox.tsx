@@ -3,9 +3,15 @@
 /** Mounts one real surface. A mount point — see the rule in `layout.sandbox.tsx`. */
 import Link from 'next/link'
 import { surfaceBySlug } from '@/sandbox/surfaces'
+import { setSurfaceRoutes } from '@/sandbox/stubFetch'
 
 export default function SandboxSurfacePage({ params }: { params: { surface: string } }) {
   const surface = surfaceBySlug(params.surface)
+
+  // During RENDER, not in an effect: the mounted screen fetches on mount, and this component's
+  // effect would run after its children's. Set unconditionally so leaving a surface with
+  // overrides clears them rather than carrying them into the next one.
+  setSurfaceRoutes(surface?.routes)
 
   if (!surface) {
     return (
