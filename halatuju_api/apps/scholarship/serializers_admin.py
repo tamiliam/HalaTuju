@@ -161,15 +161,68 @@ class SponsorProfileSerializer(serializers.ModelSerializer):
         ]
 
 
+def _has_stpm_results(p):
+    """⚠ TRUSTWORTHY IN ONE DIRECTION ONLY — read `held_qualification` before using it elsewhere.
+
+    FALSE is conclusive: with no STPM grades and no CGPA on file there is nothing to hold.
+    TRUE is not. This profile is SHARED with the HalaTuju course guide, where anyone may type
+    STPM grades to explore STPM programmes, so the data can describe a hypothetical rather than a
+    result. Application #15 carries a 4.0 CGPA and five STPM subjects and sat none of them — she
+    took SPM in 2025 and is on a matriculation course (owner, 2026-08-18).
+    """
+    return bool(p.stpm_grades or {}) or p.stpm_cgpa is not None
+
+
+def held_qualification(p):
+    """Which qualification we hold RESULTS for — NOT which pathway the student is entering by
+    (BrightPath request #14).
+
+    ``profile.exam_type`` answers two different questions in this codebase: *"which results do I
+    hold?"* (onboarding, the dashboard) and *"which exam am I heading for?"* (sign-up, the bursary
+    application). For a Form Six student sitting STPM now, those genuinely disagree — she holds SPM
+    results and no STPM ones — and the single field can only carry one answer. The declared one
+    wins, which is how application #106 came to be labelled STPM with no STPM results behind it,
+    and (worse) ranked on an STPM CGPA that does not exist, so she carried no merit figure at all.
+
+    ⚠ IT RELIES ON ABSENCE, NEVER ON PRESENCE, and that asymmetry is the whole safety of it.
+    Absent STPM data is conclusive — there is nothing to hold. PRESENT STPM data proves nothing,
+    because this profile is shared with the course guide and anyone may type STPM grades there to
+    explore programmes. Application #15 carries a 4.0 CGPA and five STPM subjects and sat none of
+    them: she took SPM in 2025 and is on a MATRICULATION course (owner, 2026-08-18). So the
+    tempting 'latest results we hold' rule would have re-labelled a matriculation student as STPM
+    and re-based her merit onto a CGPA she never sat — on an AWARDED record. Measured before
+    writing this: the wide rule moves 3 live records, the narrow one moves exactly 1.
+
+    ⚠ NOT A GATE, AND MUST NOT BECOME ONE. `shortlisting` (who is shortlisted), `pool` (the
+    sponsor-facing band), `income_engine` (the semester-result gap) and `vision` (which slip parser
+    runs) all read `exam_type` for their own reasons and are correct to. This answers a display
+    question for the admin surface only. Widening it re-bands live applicants.
+
+    Self-correcting: the day her STPM results land, this returns 'stpm' again with nobody
+    remembering to change anything.
+    """
+    if not p:
+        return ''
+    declared = (getattr(p, 'exam_type', '') or '').strip().lower()
+    if declared == 'stpm' and not _has_stpm_results(p) and (p.grades or {}):
+        return 'spm'
+    return declared
+
+
 def _application_merit_score(obj):
     """The course-guide merit (0-100) used for ranking — a single number rolling up grades
     + co-curriculum. SPM: computed academic+CoQ merit. STPM: the PNGK (CGPA) is the merit
     indicator. None if there's nothing to score. Derived LIVE from the persisted
-    grades/CoQ/stream — there is no stored merit column (the inputs are the source of truth)."""
+    grades/CoQ/stream — there is no stored merit column (the inputs are the source of truth).
+
+    ⚠ Keyed on `held_qualification`, NOT the declared `exam_type`. Ranking a student by results
+    she does not have produces None, and a blank merit is not a low score — it is absence from the
+    ordering altogether, which is how #106 became unsortable and uncomparable while looking fine.
+    """
     p = obj.profile
     if not p:
         return None
-    if p.exam_type == 'stpm':
+    if held_qualification(p) == 'stpm':
         return p.stpm_cgpa
     grades = dict(p.grades or {})
     if not grades:
@@ -190,7 +243,9 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     cohort_code = serializers.CharField(source='cohort.code', read_only=True)
     # Academic data is read live from the canonical profile, not the application.
-    qualification = serializers.CharField(source='profile.exam_type', read_only=True)
+    # The qualification we hold RESULTS for, not the one declared at sign-up — see
+    # `held_qualification`. A Form Six student holds SPM results and reads SPM.
+    qualification = serializers.SerializerMethodField()
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
     spm_a_count = serializers.SerializerMethodField()
     # Source (the referring org, chosen at apply) + the course-guide merit, for the list table.
@@ -233,6 +288,9 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     def get_name(self, obj):
         return _full_name(obj)
 
+    def get_qualification(self, obj):
+        return held_qualification(obj.profile)
+
     def get_merit_score(self, obj):
         return _application_merit_score(obj)
 
@@ -248,7 +306,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     nric = serializers.CharField(source='profile.nric', read_only=True)
     nric_verified = serializers.BooleanField(source='profile.nric_verified', read_only=True)
     # Academic + financial data is read live from the canonical profile.
-    qualification = serializers.CharField(source='profile.exam_type', read_only=True)
+    # The qualification we hold RESULTS for, not the one declared at sign-up — see
+    # `held_qualification`. A Form Six student holds SPM results and reads SPM.
+    qualification = serializers.SerializerMethodField()
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
     household_income = serializers.IntegerField(source='profile.household_income', read_only=True)
     household_size = serializers.IntegerField(source='profile.household_size', read_only=True)
@@ -557,6 +617,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades
         return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
+
+    def get_qualification(self, obj):
+        return held_qualification(obj.profile)
 
     def get_merit_score(self, obj):
         return _application_merit_score(obj)

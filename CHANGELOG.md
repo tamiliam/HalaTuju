@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## A student is tagged by the results we hold, not the exam she declared - 2026-08-18
+
+**No migration. Backend only** — nothing changed in the web app; the console renders what the API
+sends. BrightPath request #14.
+
+- **The report was a label; the cost was invisible.** A Form Six student sitting STPM now was
+  tagged STPM, holding SPM results and no STPM ones. The same field also decides where the ranking
+  score is taken from, so she was ranked on an STPM CGPA that does not exist, came out **blank**,
+  and **dropped out of the ordering altogether** — unsortable, uncomparable, and looking fine.
+- **⚠ `exam_type` ANSWERS TWO DIFFERENT QUESTIONS AND THIS IS THE THIRD TIME IT HAS MISLED US** —
+  *"which results do I hold?"* (onboarding, dashboard) and *"which exam am I heading for?"*
+  (sign-up, the application). For a Form Six entrant those genuinely disagree. It caused request
+  #11's "No profile found", the dashboard fault behind it, and now this. Settled at the source
+  this time: `held_qualification` derives it from the results actually on file.
+- **⚠ IT RELIES ON ABSENCE, NEVER ON PRESENCE — that asymmetry is the whole safety of it.** No STPM
+  data on file is conclusive: there is nothing to hold. STPM data PRESENT proves nothing, because
+  **this profile is shared with the course guide**, where anyone may type STPM grades to explore
+  programmes. **Application #15 carries a 4.0 CGPA and five STPM subjects and sat none of them** —
+  she took SPM in 2025 and is on a **matriculation** course (owner, 2026-08-18). So the tempting
+  "latest results we hold" rule would have re-labelled a matriculation student as STPM and re-based
+  her merit onto a CGPA she never sat, **on an AWARDED record**. Measured before writing it: the
+  wide rule moves **3** live records, the narrow one moves **1**. Both directions are bite-proven —
+  disable the rule and 4 tests fail; widen it and #15's does.
+- **⚠ A CORRECTION WORTH KEEPING: I first justified the narrow rule by treating #15's STPM data as
+  REAL** — arguing only that re-labelling an awarded record was out of scope. The owner corrected
+  it. The decision was right and the reason was wrong, which is worse than it sounds: the reason is
+  what the next person reads. **Exploration data on a shared profile is indistinguishable from a
+  result at the database level**, and nothing on the record says which it is.
+- **⚠ IT IS NOT A GATE AND MUST NOT BECOME ONE.** `shortlisting` (who is shortlisted), `pool` (the
+  sponsor-facing band), `income_engine` (the semester-result gap) and `vision` (which slip parser
+  runs) all read `exam_type` for their own good reasons and are untouched. Widening this re-bands
+  live applicants. The docstring says so and a test pins that the stored field is never rewritten.
+- **`audit_held_qualification`** (READ-ONLY, no `--apply` — nothing is stored, so the deploy IS the
+  change) computes the OLD and NEW answer in ONE pass, per the standing rule for derived values.
+  **Production: 1 live application changes** (#106, as promised in the analysis), 77 unchanged;
+  including ended records, 2 (#94 is `expired`, read by nothing).
+- **Knock-on, all beneficial and needing no web change:** the detail page branches on
+  `qualification`, so #106's Academic block now renders her SPM grades under an SPM heading instead
+  of an empty STPM one, drops the empty MUET row, and enables the verified tick against her slip.
+  Her pathway link is unaffected — it reads `chosen_pathway`, not this.
+- Self-correcting: the day her STPM results land it reads `stpm` again, with nobody remembering.
+- `pytest` **4303** scholarship (+11). No FE change, so the web gates are not this change's to run.
+
 ## Answering a question in a request works again - 2026-08-18
 
 **No migration.** BrightPath request #15, triaged a bug and free. api + web.
