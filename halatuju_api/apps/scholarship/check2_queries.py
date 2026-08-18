@@ -61,6 +61,11 @@ CLARIFY_SPECS = {
     # does he draw a pension / benefit, and roughly how much? One clarify covers all such members; the
     # proof (a *_pension_proof_missing doc request) follows only on an explicit "yes".
     'pension_amount_unknown': {'fact': 'income'},
+    # #12 (owner 2026-08-18) — a READ results slip whose exam YEAR we could not anchor. The rest
+    # of that request reads the paper; this is the one case the paper cannot settle, so we ask.
+    # Rare by design: after the anchor fix every slip on the current cohort carries its year, so
+    # this fires for nobody today and exists for the next intake's cropped scan.
+    'spm_year_unknown': {'fact': 'academic'},
     # S3 — the offer letter carries no readable reporting/registration date → ask when (and
     # where) the student must report. One-line, non-sensitive, pathway-fact.
     'reporting_date_unknown': {'fact': 'pathway'},
@@ -160,6 +165,12 @@ _CLARIFY_ORDER = [
     'other_scholarships_followup',
     'course_unspecified', 'sibling_level_unknown', 'sibling_tertiary_funding',
     'sibling_school_detail',
+    # The two "we read the document, one field would not come off it" asks, side by side.
+    # ⚠ spm_year_unknown is CAPPED, unlike its neighbour. Being crowded out is temporary — a
+    # clarify is only skipped while the slots are full, and it is raised on the next sync once the
+    # student answers something else — so the permanent-loss argument that carves out
+    # reporting_date_unknown does not apply, and a second exemption would hollow out the cap.
+    'spm_year_unknown',
     'reporting_date_unknown',
     'device_status_unknown', 'transport_cost_unknown',
     'utility_holder_unknown', 'utility_address_mismatch',
@@ -195,7 +206,10 @@ def _gap_sets(application):
         utility_bill_recheck, high_utility_expense_context,
     )
     from .pathway_engine import offer_reporting_date_unknown
+    from .academic_engine import spm_exam_year_unknown
     gaps = {g['code'] for g in completeness_gaps(application)}
+    if spm_exam_year_unknown(application):          # read slip, no anchorable exam year (#12)
+        gaps.add('spm_year_unknown')
     # Utility-bill consistency (whose bill / address differs) — same helpers the officer flags use.
     if utility_holder_unknown(application):
         gaps.add('utility_holder_unknown')

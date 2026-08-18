@@ -2178,6 +2178,10 @@
           "title": "Ceritakan tentang pendapatan tidak formal keluarga anda",
           "desc": "Anda menyatakan bahawa {members} anda melakukan kerja sendiri atau tidak formal — {jobs}. Lebih kurang berapa pendapatan mereka sebulan? Adakah mereka menerima slip gaji, atau menyumbang kepada KWSP (EPF)?"
         },
+        "spm_year_unknown": {
+          "title": "Tahun berapakah anda mengambil SPM?",
+          "desc": "Kami tidak dapat membaca tahun yang tercetak pada slip keputusan anda. Tahun berapakah anda mengambil SPM?"
+        },
         "reporting_date_unknown": {
           "title": "Bila anda perlu melapor diri ke institusi anda?",
           "desc": "Surat tawaran anda tidak menyatakan tarikh lapor diri / pendaftaran yang jelas. Bila (tarikh) dan di mana anda perlu melapor diri untuk memulakan pengajian?"
@@ -4307,6 +4311,7 @@
           "sibling_tertiary_funding": "Adik-beradik dalam pengajian lanjutan — pelajar ditanya institusi + kursus (atau di mana mereka bekerja) dan cara pembiayaan / pendapatan mereka.",
           "sibling_school_detail": "Adik-beradik masih bersekolah — pelajar ditanya sekolah mana dan darjah/tingkatan berapa.",
           "informal_income_detail": "Seorang pekerja tidak formal / bekerja sendiri tiada slip gaji atau KWSP dalam fail — pelajar ditanya sama ada mereka menerimanya dan, jika tidak, lebih kurang pendapatan sebulan (tiada permintaan dokumen buntu dibangkitkan).",
+          "spm_year_unknown": "Slip keputusan tiada tahun peperiksaan yang boleh dibaca — pelajar ditanya tahun mereka mengambil SPM.",
           "reporting_date_unknown": "Surat tawaran tiada tarikh lapor diri yang jelas — pelajar ditanya bila dan di mana mereka melapor diri.",
           "declared_income_evidence_missing": "Pendapatan tidak formal yang diisytiharkan tiada slip gaji dan tiada STR yang sah — pelajar diminta memuat naik dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti).",
           "unemployment_detail_unknown": "Seorang ahli isi rumah menganggur — pelajar ditanya mengapa dan lebih kurang sejak bila.",

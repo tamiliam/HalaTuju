@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## Asking the student the SPM year, only when the slip cannot say - 2026-08-18
+
+BrightPath request #12, part two. NO migration. api + web (i18n only).
+
+- **⚠ THE SHAPE CHANGED, AND THE REASON IS THAT PART ONE REMOVED THE POPULATION.** The approved
+  analysis priced a new question on the application form, asked of every applicant, on the strength
+  of *four* students whose slip had no readable year. Three recovered on the owner's re-run and the
+  fourth on the anchor fix, so **every slip on the 2026 cohort now carries its year.** A form
+  question would put a field in front of ~110 applicants to catch a case that currently has none.
+- **So it is a Check-2 clarify instead** (owner: *"in the rare case where the year couldn't be
+  read"*) — `spm_year_unknown`, raised from the gap, answered in the Action Centre, auto-resolving
+  when a re-read anchors the year. Registry + gap + copy ×3 + tests; no form change, no new column.
+- **⚠ FOUR CASES DELIBERATELY DO NOT ASK**, each documented at `spm_exam_year_unknown`: no slip
+  (its own, louder gap — asking about a year before the document exists puts the second question
+  first); **not read yet** (extraction deferred under the doc-assist cap — asking would report OUR
+  backlog to the student as a fault of theirs); **not an SPM document** (#77's matriculation letter
+  — that is not the question that record needs, and asking implies we accepted the upload); and the
+  year already readable. Each has its own test.
+- **⚠ IT IS CAPPED, unlike its neighbour `reporting_date_unknown`.** Being crowded out is only
+  temporary — a clarify skipped for want of a slot is raised on the next sync once the student
+  answers something else — so the permanent-loss argument that earned that carve-out does not apply
+  here, and a second exemption would hollow out `MAX_CLARIFY`.
+- **⚠ IT CAN ONLY REACH A STUDENT STILL IN THE WINDOW.** Auto-raised queries fire during the
+  Completed stage only. A slip that turns out unreadable after the interview is a phone call, not a
+  query — that limit is inherent to Check 2 and is not worked around here.
+- **The answer is read text, not a stored field.** With no live instances, a column plus a
+  comparison against the slip would be machinery built on speculation; it can be added the day a
+  real case argues for it.
+- **⚠ ms/ta are MY first drafts** — owner's eye owed.
+
 ## The merit score says which year's SPM produced it - 2026-08-18
 
 BrightPath request #12, part one (display half). NO migration. web only.

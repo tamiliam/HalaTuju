@@ -798,3 +798,62 @@ class TestClarifyRegistryIntegrity(TestCase):
         from apps.scholarship.check2_queries import _CLARIFY_ORDER
         self.assertEqual(len(_CLARIFY_ORDER), len(set(_CLARIFY_ORDER)),
                          'a duplicate in _CLARIFY_ORDER skews the MAX_CLARIFY priority walk.')
+
+
+class TestSpmYearUnknown(_Base):
+    """#12 — the ONE thing reading the results slip cannot settle: which year it was sat, when the
+    year itself is unreadable. Everything else in that request reads the paper; this asks."""
+
+    def _slip(self, exam, verdict='ok'):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type='results_slip', storage_path='x/slip',
+            vision_fields={'student_verdict': verdict,
+                           'fields': {'exam': exam, 'results': [], 'candidate_name': 'Priya Devi'}})
+
+    def test_asks_when_a_read_spm_slip_carries_no_year(self):
+        from apps.scholarship.academic_engine import spm_exam_year_unknown
+        self._slip('SIJIL PELAJARAN MALAYSIA')          # read fine, no anchorable year
+        self.assertTrue(spm_exam_year_unknown(self.app))
+        sync_check2_queries(self.app)
+        self.assertIn('spm_year_unknown', self._codes())
+
+    def test_silent_when_the_year_reads(self):
+        from apps.scholarship.academic_engine import spm_exam_year_unknown
+        self._slip('SIJIL PELAJARAN MALAYSIA TAHUN 2023')
+        self.assertFalse(spm_exam_year_unknown(self.app))
+        sync_check2_queries(self.app)
+        self.assertNotIn('spm_year_unknown', self._codes())
+
+    def test_silent_when_there_is_no_slip_at_all(self):
+        # A missing results slip is its own, louder gap — asking about its year puts the second
+        # question first.
+        from apps.scholarship.academic_engine import spm_exam_year_unknown
+        self.assertFalse(spm_exam_year_unknown(self.app))
+
+    def test_silent_when_the_slip_has_not_been_read_yet(self):
+        # Extraction deferred/skipped under the doc-assist cap. The slip may state its year
+        # perfectly; asking would report OUR backlog to the student as a fault of theirs.
+        from apps.scholarship.academic_engine import spm_exam_year_unknown
+        self._slip('', verdict='review_manually')
+        self.assertFalse(spm_exam_year_unknown(self.app))
+
+    def test_silent_when_the_document_is_not_an_spm_result(self):
+        # Application #77's real shape: a matriculation OFFER LETTER in the results-slip slot.
+        # "Which year did you sit SPM?" is not that record's question, and asking it would imply
+        # we accepted the upload. The genuineness fingerprint owns this case.
+        from apps.scholarship.academic_engine import spm_exam_year_unknown
+        self._slip('PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN SESI 2026/2027')
+        self.assertFalse(spm_exam_year_unknown(self.app))
+
+    def test_the_query_clears_itself_once_the_year_is_known(self):
+        # Housekeeping runs at every stage: once a re-read anchors the year, the open ask resolves.
+        self._slip('SIJIL PELAJARAN MALAYSIA')
+        sync_check2_queries(self.app)
+        item = self.app.resolution_items.get(code='spm_year_unknown')
+        self.assertEqual(item.status, 'open')
+        doc = self.app.documents.get(doc_type='results_slip')
+        doc.vision_fields['fields']['exam'] = 'SIJIL PELAJARAN MALAYSIA TAHUN 2023'
+        doc.save(update_fields=['vision_fields'])
+        sync_check2_queries(self.app)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')

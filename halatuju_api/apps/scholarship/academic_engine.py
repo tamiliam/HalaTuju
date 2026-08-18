@@ -647,6 +647,44 @@ def _slip_name_status(doc) -> str:
     return 'pending'
 
 
+def spm_exam_year_unknown(application) -> bool:
+    """True when a READ results slip is on file but we cannot tell which year the SPM was sat —
+    the one case reading the document can never settle, so the student has to be asked.
+
+    BrightPath request #12. One applicant in four on the 2026 intake did not sit SPM the year
+    before it, which the reviewer needs to know; the year is read off the slip, and a scan can be
+    poor or cropped. **Everything else in this feature reads the paper — this is the fallback for
+    when the paper cannot be read.**
+
+    ⚠ FOUR CASES DELIBERATELY DO NOT ASK, because in each the question would be the wrong one:
+      - **no slip at all** — a missing results slip is its own, louder gap; asking about a year
+        before the document exists puts the second question first.
+      - **not read yet** — extraction deferred or skipped under the doc-assist cap. The slip may
+        state its year perfectly and simply not have been looked at; asking would be us reporting
+        our own backlog to the student as a fault of theirs.
+      - **not an SPM document** — a matriculation letter in the results-slip slot (application #77)
+        is already flagged as the wrong document. "Which year did you sit SPM?" is not the question
+        that record needs, and asking it implies we accepted the upload.
+      - **the year IS readable** — nothing to ask.
+
+    Returns True only in the genuine gap: a real, read SPM slip that carries no year we could
+    anchor. On the current cohort that is nobody, which is the point — this is the safety net for
+    the next intake, not a fix for a live shortfall.
+    """
+    from .verdict_engine import _latest_doc
+    slip = _latest_doc(application, 'results_slip')
+    if slip is None:
+        return False
+    vf = slip.vision_fields if isinstance(getattr(slip, 'vision_fields', None), dict) else {}
+    sv = vf.get('student_verdict')
+    if not sv or sv == 'review_manually':          # not extracted yet → a different gap
+        return False
+    fields = vf.get('fields') if isinstance(vf.get('fields'), dict) else {}
+    if not _is_spm_exam((fields or {}).get('exam') or ''):
+        return False                               # wrong document — the genuineness chip owns it
+    return not (student_slip_check(slip) or {}).get('exam_year')
+
+
 def student_slip_check(doc) -> dict:
     """The clinical three-check read of ONE results slip against the student's own
     profile — the single source the serializer (for the FE checklist) and the help

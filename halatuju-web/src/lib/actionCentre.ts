@@ -178,6 +178,9 @@ export const KNOWN_CODES = [
   'pension_amount_unknown',
   'father_pension_proof_missing',
   'mother_pension_proof_missing',
+  // #12 — the results slip carries no readable exam YEAR → ask which year they sat SPM (clarify).
+  // The rest of that request reads the slip; this is the one case the slip cannot settle.
+  'spm_year_unknown',
   // S3 — offer carries no readable reporting date → ask when/where to report (clarify).
   'reporting_date_unknown',
   // Phase 2A — a declared informal income needs a flexible supporting doc (kind='doc').

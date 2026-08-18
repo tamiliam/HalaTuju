@@ -2178,6 +2178,10 @@
           "title": "Tell us about your family's informal income",
           "desc": "You have stated that your {members} does self-employed or informal work — {jobs}. Roughly how much do they earn a month? Do they get a payslip, or contribute to EPF (KWSP)?"
         },
+        "spm_year_unknown": {
+          "title": "Which year did you sit SPM?",
+          "desc": "We couldn't read the year printed on your results slip. Which year did you sit SPM?"
+        },
         "reporting_date_unknown": {
           "title": "When do you report to your institution?",
           "desc": "Your offer letter doesn't state a clear reporting / registration date. When (the date) and where do you need to report to start your studies?"
@@ -4307,6 +4311,7 @@
           "sibling_tertiary_funding": "Sibling in further study — the student has been asked which institution + course (or where they work) and how it's funded / what they earn.",
           "sibling_school_detail": "Sibling still in school — the student has been asked which school and what standard/form.",
           "informal_income_detail": "An informal / self-employed earner has no payslip or EPF on file — the student has been asked whether they get one and, if not, roughly what they earn a month (no dead-end doc request raised).",
+          "spm_year_unknown": "The results slip carries no readable exam year — the student has been asked which year they sat SPM.",
           "reporting_date_unknown": "Offer letter has no clear reporting date — the student has been asked when and where they report.",
           "declared_income_evidence_missing": "A declared informal income has no payslip and no valid STR — the student has been asked to upload a supporting document (employer/wage letter, bank statements, or a community letter).",
           "unemployment_detail_unknown": "A household member is unemployed — the student has been asked why and roughly since when.",
