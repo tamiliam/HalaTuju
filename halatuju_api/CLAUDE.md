@@ -594,9 +594,39 @@ population it was priced for.
    that the second half shrank because the first removed its population.
 4. **A Consolidation Review is DUE** — `wat_lint` reports the small-change backlog past threshold.
 
-**▶ NEXT = BRIGHTPATH #16, #17, #18** — analyses staged as DRAFTS (ids 34, 35, 36), awaiting the
-owner's approval in the cockpit. **#17 is the one to move first**: the invite note is an `<input>`
-inside a `<form>`, so Enter **sends a half-written invitation to a donor**.
+**✅ #12 IS `done` AND ITS REPORT IS WITH BRIGHTPATH** (analysis 40 → comment 63, approved
+2026-08-18 22:19, then closed). **#140's slip was re-run and now reads `SIJIL PELAJARAN MALAYSIA
+TAHUN 2023`** — her merit score shows `94.7 (SPM 2023)` in amber.
+
+**✅ CONSOLIDATION REVIEW DONE 2026-08-19** (14 small changes, 25 Jul → 18 Aug; `wat_lint` clean,
+and it was ONE entry from the hard stop at 15). Written up under `## Reviews` in
+`docs/consolidation-log.md`.
+- **⚠ THE REQUESTS MODULE WAS 5 OF 14 AND WAS DELIBERATELY *NOT* PROMOTED.** The guardrail from the
+  last round (rendered tests + the four-command frontend gate) **held** — no further UI-affordance
+  bug appeared there; the failure moved to the view/service seam instead. Do not re-promote it on
+  entry count alone; read the review first.
+- **The class that regenerates got the prevention.** *"Complete for the cases that existed when it
+  was written"* is now FOUR instances — interview credit (25 rows), `award_amount` (2 rows), billing
+  attribution (8 future senders), and **#12's own exam-year anchor**. Two rails added to
+  `small-change-lane.md` Part A: state the row count when a stored derivation changes, and make the
+  omission loud when correctness depends on every future caller.
+- **⚠ "The UI asserts what nothing checks" was deliberately given NO guardrail.** It has drifted
+  from *"is it on screen"* to *"does what is on screen let the reader decide"* — the five instances
+  no longer share a check. Recorded as a live watch; read the next instance before building.
+
+**▶ NEXT — THREE CANDIDATES, OWNER PICKS:**
+1. **BRIGHTPATH #16, #17, #18** — analyses staged as DRAFTS (ids 34, 35, 36), awaiting approval in
+   the cockpit. **#17 first**: the invite note is an `<input>` inside a `<form>`, so Enter **sends a
+   half-written invitation to a donor**. This is the only one with a live customer waiting.
+2. **TD-218 — the `exam_type` rename** (~4h). FIFTH instance; the standing rule has said since the
+   third that a fifth is a rename, not a patch. Six readers, each wanting one of the two questions;
+   `results_exam_type` already exists so the data half is built. **⚠ Touches ranking and
+   eligibility — not a mechanical sweep, and `held_qualification`'s absence-is-conclusive rule must
+   survive it.**
+3. **TD-219 — the view/service seam guard** (~3h). Two instances in one day, both with a
+   well-tested service, an auth-tested endpoint, and nothing exercising the call between them.
+   A sprint rather than a checklist line **because the value is entirely in the check being
+   mechanical** — as a convention it would be exactly what the new rail forbids.
 
 **⚠ ALSO STILL TRUE: #14 AND #15 ARE `done`, WHICH STRANDS BOTH COMPLETION REPORTS.** `done` is
 terminal and `post_comment` refuses a terminal request, so analyses 37 and 39 cannot be approved —
