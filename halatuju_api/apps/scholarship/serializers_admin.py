@@ -203,6 +203,13 @@ def held_qualification(p):
     """
     if not p:
         return ''
+    # ⚠ THE RECORDED COMPLETION WINS WHEN THERE IS ONE. `results_exam_type` moves only when a
+    # results form is COMPLETED, so it answers this question directly instead of inferring it.
+    # Blank means never recorded — every row predates the column — and the inference below is
+    # what those rows had before, so nothing moves for them.
+    recorded = (getattr(p, 'results_exam_type', '') or '').strip().lower()
+    if recorded:
+        return recorded
     declared = (getattr(p, 'exam_type', '') or '').strip().lower()
     if declared == 'stpm' and not _has_stpm_results(p) and (p.grades or {}):
         return 'spm'

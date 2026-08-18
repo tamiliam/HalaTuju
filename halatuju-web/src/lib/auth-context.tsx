@@ -14,7 +14,7 @@ import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | 'apply' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
@@ -229,6 +229,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (profile.exam_type) {
       localStorage.setItem(KEY_EXAM_TYPE, profile.exam_type)
+    }
+    if (profile.results_exam_type) {
+      // Restored for the same reason as its siblings: without it, a browser that has never
+      // completed a results form would sync a BLANK over a recorded completion.
+      localStorage.setItem(KEY_RESULTS_EXAM_TYPE, profile.results_exam_type)
     }
   }, [profile])
 

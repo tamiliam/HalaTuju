@@ -487,7 +487,15 @@ export interface AcademicSummary {
 }
 
 export function profileAcademicSummary(profile?: StudentProfile | null): AcademicSummary {
-  const examType: Qualification = profile?.exam_type === 'stpm' ? 'stpm' : 'spm'
+  // ⚠ WHICH RESULTS WE HOLD, not which exam was selected. `results_exam_type` moves only when
+  // a results form is COMPLETED; `exam_type` moves on a card tap and needs nothing behind it,
+  // which is how a Form Six student holding ten SPM grades was told we had none. Blank means
+  // never recorded (every row predates the column), so we fall back to the declaration —
+  // which is exactly what these rows read before.
+  const recorded = profile?.results_exam_type
+  const examType: Qualification = recorded
+    ? (recorded === 'stpm' ? 'stpm' : 'spm')
+    : (profile?.exam_type === 'stpm' ? 'stpm' : 'spm')
   const grades = profile?.grades
   const aCount = countAGrades(grades)
   const aPlusCount = grades

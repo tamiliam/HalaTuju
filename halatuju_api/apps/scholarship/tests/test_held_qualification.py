@@ -111,3 +111,49 @@ class TestHeldQualification(TestCase):
         held_qualification(app.profile)
         app.profile.refresh_from_db()
         self.assertEqual(app.profile.exam_type, 'stpm')
+
+
+class TestRecordedCompletionWins(TestCase):
+    """`results_exam_type` — which results were last COMPLETED, not which exam was selected.
+
+    The field exists because `exam_type` cannot answer this: it moves on a card tap and needs no
+    results behind it. So the reader prefers the recorded completion, and only infers when there
+    is none — which is every row that predates the column, and is what those rows read before.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='rq', name='B40', year=2026)
+
+    _n = 0
+
+    def _app(self, **fields):
+        type(self)._n += 1
+        p = StudentProfile.objects.create(
+            supabase_user_id=f'rq-{self._n}', name='A Student', **fields)
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='shortlisted')
+
+    def test_the_recorded_completion_overrides_the_declaration(self):
+        # She completed SPM; the declaration says STPM because she tapped the card.
+        app = self._app(exam_type='stpm', grades=SPM, stpm_grades={}, stpm_cgpa=None,
+                        results_exam_type='spm')
+        self.assertEqual(held_qualification(app.profile), 'spm')
+        self.assertIsNotNone(_application_merit_score(app))
+
+    def test_it_wins_even_when_BOTH_sets_are_on_file(self):
+        """⚠ The case the inference cannot decide. A profile holding both sets has no record of
+        the order, so the fallback shows the declaration; a recorded completion settles it."""
+        app = self._app(exam_type='spm', grades=SPM, stpm_grades=STPM, stpm_cgpa=4.0,
+                        results_exam_type='stpm')
+        self.assertEqual(held_qualification(app.profile), 'stpm')
+        self.assertEqual(_application_merit_score(app), 4.0)
+
+    def test_blank_falls_back_to_exactly_what_the_row_read_before(self):
+        # Every pre-column row is blank, so the fallback must be behaviour-preserving.
+        legacy = self._app(exam_type='stpm', grades=SPM, stpm_grades=STPM, stpm_cgpa=3.7,
+                           results_exam_type='')
+        self.assertEqual(held_qualification(legacy.profile), 'stpm')
+        form_six = self._app(exam_type='stpm', grades=SPM, stpm_grades={}, stpm_cgpa=None,
+                             results_exam_type='')
+        self.assertEqual(held_qualification(form_six.profile), 'spm')

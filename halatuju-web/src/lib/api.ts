@@ -89,6 +89,9 @@ export interface StudentProfile {
   phone_verify_enabled?: boolean   // student phone-verify control live? (paused by default — cost)
   whatsapp_opt_in?: boolean
   exam_type?: 'spm' | 'stpm'
+  /** Which exam's results were last COMPLETED — '' when never recorded. Not the same
+   *  question as `exam_type`, which a card tap sets with no results behind it. */
+  results_exam_type?: '' | 'spm' | 'stpm'
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number
@@ -623,6 +626,8 @@ export interface SyncProfileData {
   nric?: string
   referral_source?: string
   exam_type?: string
+  /** Set by a results editor on COMPLETION only; the server drops it if unbacked. */
+  results_exam_type?: string
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number

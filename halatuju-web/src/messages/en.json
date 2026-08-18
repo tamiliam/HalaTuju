@@ -976,7 +976,7 @@
       "section": {
         "personal": "About Me",
         "family": "My Family",
-        "results": "My SPM / STPM Results",
+        "results": "My results",
         "resultsSpm": "My SPM Results",
         "resultsStpm": "My STPM Results",
         "plans": "My Plans",
@@ -999,7 +999,7 @@
       "resultsWrong": "Results wrong? Edit them",
       "noResultsTitle": "We don't have your results yet",
       "noResultsBody": "Add your SPM or STPM results so we can assess your application.",
-      "noResultsCta": "Add my results",
+      "noResultsCta": "Select exam type and add my results",
       "signedInAs": "Signed in as",
       "usingProfile": "Using your HalaTuju profile",
       "step": "Step",

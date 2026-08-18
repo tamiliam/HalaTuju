@@ -36,6 +36,12 @@ export const KEY_REPORT_GENERATED = 'halatuju_report_generated'
 
 /** Exam type: 'spm' | 'stpm' */
 export const KEY_EXAM_TYPE = 'halatuju_exam_type'
+/**
+ * Which exam's results were last COMPLETED — distinct from KEY_EXAM_TYPE, which is set by
+ * merely SELECTING an exam and needs no results behind it. Written by the two results
+ * editors when their form is finished, and synced to `profile.results_exam_type`.
+ */
+export const KEY_RESULTS_EXAM_TYPE = 'halatuju_results_exam_type'
 
 /** STPM grades object: Record<string, string> */
 export const KEY_STPM_GRADES = 'halatuju_stpm_grades'

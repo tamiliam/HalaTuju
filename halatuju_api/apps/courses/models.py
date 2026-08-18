@@ -795,6 +795,25 @@ class StudentProfile(models.Model):
         choices=[('spm', 'SPM'), ('stpm', 'STPM')],
         default='spm',
     )
+    # ⚠ WHICH EXAM'S RESULTS WERE LAST *COMPLETED* — not which exam was last SELECTED.
+    #
+    # `exam_type` above answers two different questions and cannot answer both: "which exam am I
+    # heading for?" (the course guide's, and the only one a Form Six student can answer 'STPM' to
+    # honestly) and "which results do I hold?" (the bursary's). Selecting an exam sets it; entering
+    # results is not required. So a Form Six student who taps STPM to explore programmes ends up
+    # declared STPM with no STPM results, and every surface reading it for the SECOND question is
+    # then wrong — the apply form tells her we have no results while ten SPM grades sit on file.
+    #
+    # This field only ever moves when a results form is COMPLETED (both editors refuse to continue
+    # until they are), so it cannot be set by a selection alone. Blank means "never recorded" —
+    # every row predates this column — and readers fall back to `exam_type`, which is what they
+    # used before. It is NEVER a claim that the student sat the exam: the course guide lets anyone
+    # type STPM grades to explore, and nothing on the record distinguishes that from a result.
+    results_exam_type = models.CharField(
+        max_length=10, blank=True, default='',
+        choices=[('spm', 'SPM'), ('stpm', 'STPM')],
+        help_text="Which exam's results were last COMPLETED. Blank = never recorded.",
+    )
     stpm_grades = models.JSONField(
         default=dict, blank=True,
         help_text="STPM grades: {'PA': 'A', 'MATH_T': 'B+', ...}"

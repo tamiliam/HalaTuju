@@ -125,11 +125,13 @@ export default function ScholarshipApplyPage() {
   // Context for the Plans step: SPM leavers get the eligible-pathway dropdown;
   // STPM students get the degree branch (P5), so the pathway requirement is skipped.
   const examType: 'spm' | 'stpm' = profile?.exam_type === 'stpm' ? 'stpm' : 'spm'
-  // The Results step title names the actual exam the student sat — "My SPM Results"
-  // or "My STPM Results" — instead of the generic "My SPM / STPM Results". Other
-  // steps map to their key unchanged.
-  const sectionKey = (k: string) =>
-    k === 'results' ? (examType === 'stpm' ? 'resultsStpm' : 'resultsSpm') : k
+  // ⚠ THE RESULTS STEP NAMES NO EXAM. It used to read "My SPM Results" / "My STPM Results" off
+  // the DECLARED exam — which is a claim we cannot back: the declaration moves on a card tap and
+  // needs no results behind it, so a Form Six student holding ten SPM grades was shown "My STPM
+  // Results" above "We don't have your results yet". A fresh student got "My SPM Results" before
+  // choosing anything, because the declaration falls back to spm. Every step now maps to its own
+  // key; the card below names the exam only where it has the results to name it from.
+  const sectionKey = (k: string) => k
 
   // Returning from the My Results → onboarding detour: restore the stashed
   // in-progress edits and land back on the Results tab. Runs once on mount,

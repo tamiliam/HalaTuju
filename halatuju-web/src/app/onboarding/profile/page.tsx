@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import SchoolSelect from '@/components/SchoolSelect'
-import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn, peekOnboardingReturn } from '@/lib/scholarship'
 
 const MALAYSIAN_STATES = [
@@ -128,6 +128,14 @@ export default function ProfileInputPage() {
       // Include STPM data
       const examType = localStorage.getItem(KEY_EXAM_TYPE)
       if (examType) syncPayload.exam_type = examType
+
+      // ⚠ WHICH RESULTS WERE COMPLETED, which is not the same claim as which exam was selected.
+      // Only the two results editors write this, and only when their form is finished — so
+      // reaching this page carries it, and abandoning a selection never does. The server checks
+      // it is backed by results on file and drops it otherwise; this is the honest half of a
+      // guarantee the browser cannot make alone.
+      const resultsExamType = localStorage.getItem(KEY_RESULTS_EXAM_TYPE)
+      if (resultsExamType) syncPayload.results_exam_type = resultsExamType
 
       const stpmGradesStr = localStorage.getItem(KEY_STPM_GRADES)
       if (stpmGradesStr) {

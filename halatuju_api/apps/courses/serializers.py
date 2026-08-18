@@ -287,6 +287,35 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     from malformed input (e.g. string for siblings, invalid JSON for grades).
     """
 
+    def validate(self, attrs):
+        """⚠ `results_exam_type` MUST BE BACKED BY RESULTS, and that is checked HERE — on the
+        server — because the whole value of the field is that it cannot be set by a selection.
+
+        The browser sets it when a results form is completed, and both forms refuse to continue
+        until they are; but a promise kept only in the client is not a guarantee, and this field
+        exists precisely because `exam_type` had no such guarantee. Checked against the payload
+        MERGED with what is already stored, since a partial sync may carry the results, the
+        marker, or both.
+
+        An unbacked value is DROPPED, not rejected: the marker is a refinement, and failing a
+        student's whole profile sync over it would trade a display fault for a data-loss one.
+        """
+        claimed = (attrs.get('results_exam_type') or '').strip().lower()
+        if not claimed:
+            return attrs
+        inst = self.instance
+
+        def _merged(field):
+            return attrs[field] if field in attrs else getattr(inst, field, None)
+
+        if claimed == 'stpm':
+            backed = bool(_merged('stpm_grades') or {}) or _merged('stpm_cgpa') is not None
+        else:
+            backed = bool(_merged('grades') or {})
+        if not backed:
+            attrs.pop('results_exam_type', None)
+        return attrs
+
     class Meta:
         model = StudentProfile
         fields = [
@@ -300,7 +329,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             # but were never readable/writable in tandem with the /profile UI —
             # the page reads/writes household_* (this fixes that latent gap too).
             'household_income', 'household_size',
-            'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
+            'exam_type', 'results_exam_type',
+            'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
             'spm_prereq_grades', 'stream_subjects', 'elective_subjects', 'referral_source',
             'contact_email', 'contact_phone', 'whatsapp_opt_in',
             # Structured family roster (the profile-level home; two-way synced with an

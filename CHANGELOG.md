@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## The results step names no exam, and a completed set is recorded as one - 2026-08-18
+
+**Migration `courses/0070` (additive) IS ALREADY APPLIED to production — do NOT re-run it.**
+BrightPath request #14, states 1 and 4. api + web.
+
+- **⚠ `exam_type` MOVES ON A CARD TAP AND NEEDS NO RESULTS BEHIND IT.** That is the whole fault.
+  Selecting an exam at "Choose Your Exam" writes it; entering results is not required and both
+  editors refuse to continue until complete — so a Form Six student who taps STPM to explore ends
+  up declared STPM with nothing behind it, and every surface reading the field for *"which results
+  do I hold?"* is then wrong.
+- **`StudentProfile.results_exam_type`** records which exam's results were last **COMPLETED**.
+  Written only by the two results editors, on completion. **Blank = never recorded** (every
+  pre-column row), and readers fall back to the declaration — which is exactly what those rows
+  read before, so nothing moves for them.
+- **⚠ THE GUARANTEE IS SERVER-SIDE, NOT A CLIENT PROMISE.** `ProfileUpdateSerializer.validate`
+  refuses to store a marker not backed by results on file (payload MERGED with the stored row).
+  This field exists *because* `exam_type` had no such check; keeping the new one only in the
+  browser would repeat the mistake. It **DROPS** an unbacked value rather than rejecting the
+  request — the marker is a refinement, and failing a student's whole profile sync over it would
+  trade a display fault for a data-loss one. Bite-checked: disable it and 3 tests fail.
+- **⚠ THE SPM EDITOR NEVER WROTE THE EXAM TYPE — THE STPM ONE ALWAYS DID** (`stpm-grades:227`).
+  So completing SPM results could not correct a wrong declaration: a student who had tapped STPM
+  could fill the SPM form in perfectly, save, and still be STPM, because the sync carried the
+  stale value back. **She would do the right thing, completely, and stay broken with nothing on
+  screen to explain it.** Both editors now assert at completion.
+- **The step names no exam.** "My SPM Results" / "My STPM Results" came from the DECLARED exam —
+  a claim we cannot back — so a fresh student read "My SPM Results" before choosing anything (the
+  declaration falls back to `spm`), and a Form Six student read "My STPM Results" above *"We don't
+  have your results yet"*. Now "My results" in the rail and the card, all three locales; the CTA
+  reads "Select exam type and add my results".
+- **⚠ BLAST RADIUS MEASURED BEFORE APPLYING, per the request-#9 rule.** Of 808 profiles the
+  backfill fills **605 spm / 19 stpm**; **35 holding BOTH sets are left blank deliberately** —
+  the field means which was completed *last* and there is no record of the order, so guessing
+  would move a live record on no evidence (#15's shape). Exactly **one** profile's displayed
+  answer changes, and it **has no bursary application**. Applicant-facing: `audit_held_qualification`
+  still reports **1 change (#106), 77 unchanged** — identical to before.
+- **⚠ THE BACKFILL IS NOT RUN.** Report-only until `--apply`; without it every existing row falls
+  back to the declaration, which is today's behaviour.
+- Out of scope by owner instruction: `/profile`'s merit-score route and the dashboard "edit
+  profile". Both of `/profile`'s buttons jump straight to the SPM editor, so a student there still
+  has no route to the STPM one — to align in a later pass.
+- `pytest` **5553** (+22) · `jest` **1458** · `next lint` **0** · i18n **4530×3** · `tsc` no new errors.
+
 ## A student is tagged by the results we hold, not the exam she declared - 2026-08-18
 
 **No migration. Backend only** — nothing changed in the web app; the console renders what the API

@@ -14,7 +14,7 @@ import {
   SPM_ALL_ELECTIVE_SUBJECTS,
   MAX_SPM_ELECTIVES,
 } from '@/lib/subjects'
-import { KEY_STREAM, KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_PROFILE, KEY_MERIT } from '@/lib/storage'
+import { KEY_STREAM, KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_PROFILE, KEY_MERIT, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 
@@ -251,6 +251,13 @@ export default function GradesInputPage() {
       if (meritResult) {
         localStorage.setItem(KEY_MERIT, String(meritResult.finalMerit))
       }
+      // ⚠ ASSERT THE EXAM TYPE AT COMPLETION, exactly as the STPM editor does (stpm-grades:227).
+      // Without this, completing SPM results could not correct a wrong declaration: a student who
+      // had tapped STPM could fill this form in perfectly, save, and still be declared STPM —
+      // the sync would carry the stale value straight back. She would do the right thing,
+      // completely, and stay broken with nothing on screen to explain it.
+      localStorage.setItem(KEY_EXAM_TYPE, 'spm')
+      localStorage.setItem(KEY_RESULTS_EXAM_TYPE, 'spm')
       router.push('/onboarding/profile')
     }
   }

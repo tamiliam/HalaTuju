@@ -976,7 +976,7 @@
       "section": {
         "personal": "Tentang Saya",
         "family": "Keluarga Saya",
-        "results": "Keputusan SPM / STPM Saya",
+        "results": "Keputusan saya",
         "resultsSpm": "Keputusan SPM Saya",
         "resultsStpm": "Keputusan STPM Saya",
         "plans": "Rancangan Saya",
@@ -999,7 +999,7 @@
       "resultsWrong": "Keputusan salah? Edit",
       "noResultsTitle": "Kami belum ada keputusan anda",
       "noResultsBody": "Tambah keputusan SPM atau STPM anda supaya kami boleh menilai permohonan anda.",
-      "noResultsCta": "Tambah keputusan saya",
+      "noResultsCta": "Pilih jenis peperiksaan dan tambah keputusan saya",
       "signedInAs": "Log masuk sebagai",
       "usingProfile": "Menggunakan profil HalaTuju anda",
       "step": "Langkah",
