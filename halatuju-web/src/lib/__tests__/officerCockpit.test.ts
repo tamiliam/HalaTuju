@@ -22,6 +22,7 @@ import {
   isPreSubmissionStage,
   showsPostSubmissionCards,
   rejectionTrail,
+  spmExamYear,
   type TimelineSource,
   type DecisionTrailInput,
 } from '@/lib/officerCockpit'
@@ -226,6 +227,49 @@ const acadCheck = (o: Partial<NonNullable<AdminApplicantDocument['academic_check
   ({ name: 'pending', subjects: 'pending', results: 'pending', candidate_name: '', exam: '', exam_year: '', missing: [], mismatched: [], uncertain: [], slip_count: 1, ...o } as NonNullable<AdminApplicantDocument['academic_check']>)
 const pathCheck = (o: Partial<NonNullable<AdminApplicantDocument['pathway_check']>>) =>
   ({ name: 'match', ic: 'match', candidate_name: '', candidate_nric: '', programme: '', institution: '', issuer: '', offer_date: '', intake: '', address: '', pathway: 'match', declared_programme: '', declared_institution: '', ...o } as NonNullable<AdminApplicantDocument['pathway_check']>)
+
+// ── spmExamYear (the year that qualifies the merit score) ─────────────────────
+
+describe('spmExamYear', () => {
+  const slip = (o: Partial<NonNullable<AdminApplicantDocument['academic_check']>>, rest = {}) =>
+    doc({ doc_type: 'results_slip', academic_check: acadCheck(o), ...rest })
+
+  it('reads the year and its currency off the live results slip', () => {
+    expect(spmExamYear([slip({ exam_year: '2023', exam_year_status: 'off' })]))
+      .toEqual({ year: '2023', status: 'off' })
+  })
+
+  it('reports an expected sitting as current, so the ordinary case still shows a year', () => {
+    expect(spmExamYear([slip({ exam_year: '2025', exam_year_status: 'current' })]))
+      .toEqual({ year: '2025', status: 'current' })
+  })
+
+  it('is null when the slip carries no readable year — a bare merit score is the honest render', () => {
+    expect(spmExamYear([slip({ exam_year: '' })])).toBeNull()
+  })
+
+  it('is null when there is no results slip at all', () => {
+    expect(spmExamYear([doc({ doc_type: 'ic' })])).toBeNull()
+    expect(spmExamYear([])).toBeNull()
+    expect(spmExamYear(undefined)).toBeNull()
+  })
+
+  it('IGNORES a superseded slip — a replaced document must never qualify the score', () => {
+    expect(spmExamYear([slip({ exam_year: '2022' }, { superseded_at: '2026-08-01T00:00:00Z' })]))
+      .toBeNull()
+  })
+
+  it('prefers the live slip when a superseded one sits beside it', () => {
+    expect(spmExamYear([
+      slip({ exam_year: '2022' }, { id: 1, superseded_at: '2026-08-01T00:00:00Z' }),
+      slip({ exam_year: '2025', exam_year_status: 'current' }, { id: 2 }),
+    ])).toEqual({ year: '2025', status: 'current' })
+  })
+
+  it('falls back to no currency when the application has no cohort to compare against', () => {
+    expect(spmExamYear([slip({ exam_year: '2024' })])).toEqual({ year: '2024', status: '' })
+  })
+})
 
 // ── documentPill (rolls up the fact colours) ──────────────────────────────────
 

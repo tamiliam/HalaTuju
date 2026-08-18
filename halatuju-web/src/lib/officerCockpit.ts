@@ -603,6 +603,47 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   return gf ? [gf] : []
 }
 
+// ── The SPM year, on the merit score ─────────────────────────────────────────
+
+export interface SpmExamYear {
+  /** The four-digit year, read off the live results slip. Never blank (null is returned instead). */
+  year: string
+  /** Currency vs the intake: 'current' = the year we expect, 'off' = any other, '' = no cohort. */
+  status: '' | 'current' | 'off'
+}
+
+/**
+ * The SPM year that produced this merit score.
+ *
+ * ⚠ IT QUALIFIES THE MERIT SCORE, WHICH IS WHY IT BELONGS BESIDE IT rather than on a banner of its
+ * own. The score is computed from the SPM grades, so the year those grades were sat is a property
+ * of that number — "94.7" and "94.7 (SPM 2023)" are not the same claim.
+ *
+ * The engine has read this year and judged its currency for months. It surfaced only as a small
+ * tinted chip inside the Documents drawer, fed nothing, and was reliably missed — one applicant in
+ * four on the 2026 intake did not sit SPM the year before it (BrightPath request #12). The signal
+ * was never absent; it was quiet, next to a loud verdict.
+ *
+ * ⚠ THIS FUNCTION DOES NOT KNOW THE QUALIFICATION, AND ITS CALLER MUST. An STPM student's merit
+ * comes from STPM, so attaching an SPM year to it would state something false about where the
+ * number came from — the same misattribution that once put an SPM slip's tick on STPM grades
+ * (#132). The caller decides; this only reports what the slip says.
+ *
+ * Null when there is no live results slip or the slip carries no readable year — the merit score
+ * then renders bare, exactly as it does today, and that silence is honest: it means we could not
+ * read the year, not that the year is unremarkable.
+ */
+export function spmExamYear(documents: AdminApplicantDocument[] | undefined): SpmExamYear | null {
+  const slip = (documents || []).find(
+    (d) => d.doc_type === 'results_slip'
+      && !d.superseded_at
+      && !!(d.academic_check?.exam_year || '').trim(),
+  )
+  const check = slip?.academic_check
+  if (!check) return null
+  return { year: check.exam_year.trim(), status: check.exam_year_status || '' }
+}
+
 // ── Utility-bill key values (at-a-glance, so the reviewer needn't open the document) ─────────
 
 export interface UtilityValue {

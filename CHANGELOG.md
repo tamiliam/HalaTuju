@@ -2,9 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## The merit score says which year's SPM produced it - 2026-08-18
+
+BrightPath request #12, part one (display half). NO migration. web only.
+
+- **The year now qualifies the merit score**, where the reviewer already reads it: `94.7 (SPM 2023)`
+  in the Academic card. **⚠ THE PLACEMENT IS THE POINT, NOT A PREFERENCE.** The score is computed
+  from the SPM grades, so the year those grades were sat is a property of that number — `94.7` and
+  `94.7 (SPM 2023)` are not the same claim. A banner would have sat beside the score saying
+  something about it; this says it *on* it.
+- **⚠ SHOWN ALWAYS, NOT ONLY WHEN ODD** (owner). A qualifier that appears solely on the unusual
+  cases reads as an alarm and never teaches the reviewer what ordinary looks like. Shown always,
+  its ABSENCE also carries meaning: we could not read the year.
+- **Only the year is tinted, and only when off** the expected sitting — reusing the tone the
+  Documents-drawer chip already uses, so the two surfaces cannot disagree about the same fact.
+  Nothing about the verdict, the band or the chip count moves: this is a display of a value the
+  engine has computed for months.
+- **⚠ NOT ATTACHED FOR AN STPM STUDENT.** Their merit comes from STPM, so an SPM year would
+  misstate where the number came from — the same misattribution that once put an SPM slip's tick on
+  STPM grades (#132). `spmExamYear` deliberately does NOT know the qualification; its caller does,
+  and the docstring says so.
+- **⚠ A SUPERSEDED SLIP NEVER QUALIFIES THE SCORE** — a replaced document must not describe the
+  live one. Bite-checked: drop the filter and two tests fail.
+- Null when there is no live slip or no readable year → the score renders bare, exactly as today.
+
 ## The exam-year anchor survives a clipped scan - 2026-08-18
 
-BrightPath request #12, part one. NO migration. api only, one line + four tests.
+BrightPath request #12, part one (engine half). NO migration. api only, one line + four tests.
 
 - **The certificate states the year plainly and we read blank.** #140 KIIRTHESWARY's SPM
   certificate was scanned with its left edge trimmed, so one or two characters are missing from

@@ -92,6 +92,7 @@ import {
   queryingLockReason,
   rejectionTrail,
   assignOptions,
+  spmExamYear,
   type FactStatus,
   type IncomeSlot,
 } from '@/lib/officerCockpit'
@@ -1243,7 +1244,26 @@ export default function AdminScholarshipDetailPage() {
               <Card title={t('admin.scholarship.sec.academic')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                   <Field label={t('admin.scholarship.school')} value={app.school} verifiedLabel={vtip('school')} />
-                  <Field label={t('admin.scholarship.meritScore')} value={app.merit_score} />
+                  {/* The merit score carries the YEAR of the SPM that produced it (request #12).
+                      Always shown when we can read it, never only on the odd ones: a qualifier that
+                      appears solely when something is unusual reads as an alarm, and a reviewer
+                      never learns what the ordinary case looks like. Only the year is tinted, and
+                      only when it is off the expected sitting — the same tone the Documents drawer
+                      chip uses, so the two surfaces cannot disagree. NOT attached for an STPM
+                      student: that merit comes from STPM, so an SPM year would misstate its source. */}
+                  <Field label={t('admin.scholarship.meritScore')} value={(() => {
+                    if (app.merit_score == null) return app.merit_score
+                    const sy = isStpm ? null : spmExamYear(app.documents)
+                    if (!sy) return app.merit_score
+                    return (
+                      <>
+                        {app.merit_score}{' '}
+                        <span className={sy.status === 'off' ? 'text-amber-600' : 'text-gray-500'}>
+                          ({t('admin.scholarship.docsDrawer.examYear', { year: sy.year })})
+                        </span>
+                      </>
+                    )
+                  })()} />
                   {isStpm && <Field label="MUET" value={app.muet_band} />}
                 </dl>
                 <div className="mt-3">
