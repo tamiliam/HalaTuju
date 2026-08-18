@@ -348,6 +348,15 @@ _EXAM_YEAR_ANCHORS = (
 )
 
 
+def _is_spm_exam(exam: str) -> bool:
+    """Does this exam string actually name SPM? Guards the year signal against a document filed in
+    the results-slip slot that is not a results slip (see `student_slip_check`). Deliberately
+    generous about WHICH SPM wording — slip, certificate and header phrasings all qualify — and
+    strict only about it being SPM at all."""
+    up = (exam or '').upper()
+    return 'SIJIL PELAJARAN MALAYSIA' in up or re.search(r'\bSPM\b', up) is not None
+
+
 def _spm_exam_year(text: str) -> str:
     """The SPM exam year, anchored to the exam title / foot label — NEVER a stray date such as the
     download timestamp at the top of a slip. '' when no anchored year is found."""
@@ -653,7 +662,14 @@ def student_slip_check(doc) -> dict:
     f = vf.get('fields', {}) if isinstance(vf.get('fields'), dict) else {}
     candidate_name = (f.get('candidate_name') or '')
     exam = (f.get('exam') or '').strip()              # e.g. "SIJIL PELAJARAN MALAYSIA TAHUN 2025"
-    em = re.search(r'\b(20\d{2})\b', exam)
+    # ⚠ THE YEAR IS ONLY REPORTED WHEN THE EXAM IS ACTUALLY SPM. `exam` is free text from the
+    # Gemini path, so a document filed in the results-slip slot that is NOT a results slip fills it
+    # with its OWN title and a bare year grab then announces that as an SPM year: application #77
+    # holds a KPM matriculation offer letter reading "PROGRAM MATRIKULASI … SESI 2026/2027", which
+    # produced "SPM 2026" — a year in which nobody has sat SPM. The wrong-document case is already
+    # caught and shown by the genuineness fingerprint (`not_results_slip`); this signal must simply
+    # stay silent rather than add a confident, false fact on top of it.
+    em = re.search(r'\b(20\d{2})\b', exam) if _is_spm_exam(exam) else None
     exam_year = em.group(1) if em else ''             # soft data point — surfaced, not gated
     # Currency vs the application's cohort: the expected SPM for an intake-year cohort was sat the
     # YEAR BEFORE (cohort − 1). 'current' → green, 'off' → amber, '' → no signal (no year / no cohort).

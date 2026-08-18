@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase
 
 from apps.scholarship.academic_engine import (
-    _declared_subject_count, _slip_exam, _split_band, _spm_exam_year, compare_academics,
+    _declared_subject_count, _is_spm_exam, _slip_exam, _split_band, _spm_exam_year, compare_academics,
     ensure_exam_year, parse_spm_slip, read_slip, student_slip_check,
 )
 
@@ -50,6 +50,7 @@ class TestExamYearAnchor(SimpleTestCase):
         # The whole blast radius: wherever the full word already read, the answer is unchanged.
         self.assertEqual(_spm_exam_year('LAYAK DIANUGERAHI ... PEPERIKSAAN TAHUN 2025'), '2025')
 
+
     def test_no_anchored_year_returns_blank(self):
         # A stray date with no exam label → no year (better no chip than the wrong one).
         self.assertEqual(_spm_exam_year('printed 12/04/2026 07:25'), '')
@@ -58,6 +59,42 @@ class TestExamYearAnchor(SimpleTestCase):
         # Gemini path: the exam field lost its year → backfill from the OCR, anchored (not 2026).
         self.assertEqual(ensure_exam_year('SIJIL PELAJARAN MALAYSIA', _YESWINDRAN_TOP),
                          'SIJIL PELAJARAN MALAYSIA TAHUN 2025')
+
+
+class TestIsSpmExam(SimpleTestCase):
+    """The guard that keeps the year signal silent on a document that is not a results slip."""
+
+    def test_recognises_the_slip_and_certificate_wordings(self):
+        self.assertTrue(_is_spm_exam('SIJIL PELAJARAN MALAYSIA TAHUN 2025'))
+        self.assertTrue(_is_spm_exam('SIJIL PELAJARAN MALAYSIA'))
+        self.assertTrue(_is_spm_exam('Slip Keputusan SPM 2025'))
+
+    def test_refuses_a_document_that_is_not_an_spm_result(self):
+        # Application #77's real value: a KPM matriculation OFFER LETTER in the results-slip slot.
+        # A bare year grab announced "SPM 2026" — a year nobody has sat SPM in.
+        self.assertFalse(_is_spm_exam('PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN SESI 2026/2027'))
+        self.assertFalse(_is_spm_exam(''))
+
+    def test_spm_must_be_a_whole_word(self):
+        # Guard against a chance substring inside an unrelated code or name.
+        self.assertFalse(_is_spm_exam('PROGRAM SPMK 2026'))
+
+    def test_slip_check_reports_no_year_for_a_non_spm_document(self):
+        # End to end, the shape the guard exists for — the whole point is what the CHECK returns,
+        # not what the predicate says, so assert it there too.
+        doc = _slip_doc(YESWINDRAN_BAND_RESULTS, ELANJELIAN_GRADES,
+                        exam='PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN SESI 2026/2027',
+                        cohort_year=2026)
+        out = student_slip_check(doc)
+        self.assertEqual(out['exam_year'], '')
+        self.assertEqual(out['exam_year_status'], '')   # no year → no currency claim either
+
+    def test_slip_check_still_reports_the_year_for_a_real_slip(self):
+        doc = _slip_doc(YESWINDRAN_BAND_RESULTS, ELANJELIAN_GRADES,
+                        exam='SIJIL PELAJARAN MALAYSIA TAHUN 2023', cohort_year=2026)
+        out = student_slip_check(doc)
+        self.assertEqual(out['exam_year'], '2023')
+        self.assertEqual(out['exam_year_status'], 'off')
 
 
 def _doc(fields):

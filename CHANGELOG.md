@@ -25,6 +25,13 @@ BrightPath request #12, part one (display half). NO migration. web only.
 - **⚠ A SUPERSEDED SLIP NEVER QUALIFIES THE SCORE** — a replaced document must not describe the
   live one. Bite-checked: drop the filter and two tests fail.
 - Null when there is no live slip or no readable year → the score renders bare, exactly as today.
+- **⚠ AND THE SIGNAL STAYS SILENT ON A DOCUMENT THAT IS NOT AN SPM RESULT.** `exam` is free text
+  from the Gemini path, so a document filed in the results-slip slot that is not one fills it with
+  its OWN title — application #77 holds a KPM matriculation offer letter reading *"PROGRAM
+  MATRIKULASI … SESI 2026/2027"*, and a bare year grab announced **SPM 2026**, a year in which
+  nobody has sat SPM. `_is_spm_exam` gates the read. The wrong-document case is already caught and
+  shown by the genuineness fingerprint (`not_results_slip`); the year must not pile a confident
+  false fact on top of it. Bite-checked at the CHECK, not just the predicate.
 
 ## The exam-year anchor survives a clipped scan - 2026-08-18
 
