@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## Six senders bill the tenant instead of the platform - 2026-08-18
+
+**Small-change lane.** No migration. api + web, 9 files.
+
+- **The report:** the Billing & usage screen showed **125 emails** and 7 AI calls on the
+  "Platform (shared base)" row for August. **The 7 AI calls are correct** — all carry
+  `source='report'`, the course-selector counsellor report, which is a HalaTuju product and
+  exactly what that bucket is for. **The 125 emails are not**: 24 application closures, 13
+  completion reminders, 10 award offers, 7 reviewer assignments, 7 student-assignment notices,
+  1 nudge, and the partner (29) + sponsor (33) digests. Every one is bursary work.
+- **⚠ ATTRIBUTION IS OPT-IN PER CALL SITE, WITH NO DEFAULT AND NOTHING CHECKING IT.**
+  `emails._meter_email` derives the SOURCE cleverly — it walks the stack for the nearest
+  `send_*` frame, so no signature changes — but takes the ORGANISATION from whatever
+  `usage_context` happens to be open, and its own docstring says "else NULL — acceptable for
+  v1". So a wrapped sender bills the tenant and an unwrapped one silently does not.
+- **⚠ THE 2026-07-26 NOTE ("fixed at the four seams that fire") WAS TRUE AND IS THE PROBLEM.**
+  It fixed the four senders firing *at that moment*. Ten senders are attributed today because
+  they sit inside those blocks; eight more started firing afterwards and none was wrapped.
+  **Every new sender starts life mis-attributed**, and the only symptom is a line quietly
+  appearing in a bucket labelled "shared platform base" — which reads as a category, not a bug.
+- **Six call sites now open a context** (`services` ×4, `nudge`, `sponsorship`, the award-offer
+  command); all six already had the application in scope.
+- **⚠ THE PARTNER AND SPONSOR DIGESTS (62) ARE DELIBERATELY NOT INCLUDED, and the obvious fix
+  is wrong for both.** `partner_notify` has a `PartnerOrganisation` to hand — but that is the
+  *referral* partner RECEIVING the mail, not the organisation whose work it is; attributing to
+  the recipient would bill CUMIG for BrightPath's students. A `Sponsor` is likewise a
+  platform-level account while the pool it is told about belongs to a programme. Both should
+  resolve to the owning organisation of the applications being reported on — owner's call.
+- **⚠ THE PLATFORM STORAGE FIGURE IS THE WHOLE BUCKET, ORGANISATIONS INCLUDED.** Every other
+  number in that block is exclusive (work billed to nobody), so the page read as 1.1 GB of
+  platform storage beside 1.1 GB of BrightPath's. Production holds 1,355 documents / 1,104 MB
+  and **all of them are BrightPath's** — the same bytes, printed twice. Labelled, not changed.
+- **⚠ THE TESTS CAUGHT A `NameError` IN THE FIRST CUT** — `_usage` is imported per-function in
+  `services.py`, not at module scope, so the first version of this fix would have crashed the
+  daily reminder cron and every reviewer assignment. They drive the real service functions
+  rather than `_meter_email`, which is why: the defect was never in the meter.
+- Guard bite-checked. `pytest` **4326** scholarship · `jest` **1465** / 96 suites ·
+  `next lint` **0** · i18n **4531×3** · `tsc` clean.
+- **▶ ms/ta for `storageAllNote` are MY first drafts** — owner's eye owed.
+- **▶ NOT DONE, AND IT IS THE ONE THAT STOPS THIS RECURRING:** make NULL unacceptable rather
+  than merely undesirable — either `_meter_email` warns when it has no context, or a test walks
+  every `send_*` in `emails.py` and asserts each is reachable only from a wrapped call site.
+  Without it, the ninth sender repeats this exactly.
+
 ## Asking the student the SPM year, only when the slip cannot say - 2026-08-18
 
 BrightPath request #12, part two. NO migration. api + web (i18n only).

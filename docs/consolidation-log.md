@@ -48,6 +48,16 @@ _(Not logged here as a small change: the **Check-2 case summary** LLM feature �
 _(2026-08-18 — **the exam-type fix is a SPRINT, not a small change, and is NOT counted in this queue.** It carries migration `courses/0070` and a new model field, which `wat_lint` flags under `small-change-lane.md` step 1 — the same misclassification as the 2026-07-29 gift-membership entry, caught by the linter this time before the close rather than by a reviewer after it. Closed as a sprint: retro `docs/retrospective-2026-08-18-exam-type-and-requests.md`, decisions ×2, lessons ×4.)_
 
 > **⚠ Pattern watch — FOURTH instance of `exam_type` answering two questions.** Request #11's "No profile found", the dashboard behind it, #14's admin tag, #14's apply step. Three were patched where they showed; this one added the second field the split actually needs. **A fifth is a rename, not a fix** — six surfaces read `exam_type` and each wants one of the two questions; give each the accessor it means. That is a sprint, and the next review should say so rather than absorbing a fifth patch.
+- 2026-08-18 fix: six senders bill the tenant instead of the platform — 125 August emails sat on the "Platform (shared base)" row, all of them bursary work; attribution is opt-in per call site so every sender added since the 2026-07-26 pass began life org-NULL (billing — `services.py` ×4, `nudge.py`, `sponsorship.py`, `send_award_offer_emails.py`, `billing/page.tsx` storage label, `test_usage_attribution.py` +6, en/ms/ta ×1 key)
+
+> **Pattern watch — THIRD instance of "the fix was complete for the cases that existed 
+> when it was written".** The interview credit (TD-216) corrected the rule and left 25 rows 
+> carrying the old one; `award_amount`'s clear fixed the writer and left two stale rows; this 
+> one wrapped the four senders that were firing and left the next eight to be born wrong. 
+> The first two were about ROWS already written, this one is about CALL SITES not yet written — 
+> which is worse, because it regenerates. **Candidate guardrail: when a fix depends on every 
+> caller doing something, the fix is not the callers, it is making the omission impossible or 
+> loud.** Named and deliberately not built in this change; owed.
 
 ## Reviews
 
