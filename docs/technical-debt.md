@@ -8,8 +8,10 @@
 
 ## Executive Summary
 
-**Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). ~42 resolved; ~10 low/medium
-hygiene items still open (see the index below). The register has since grown a running log to **TD-151**.
+**Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
+a running log; as of **2026-08-19** it holds **195 distinct ids through TD-219, of which 109 are open** —
+see the Open Items Index below, which carries the significant ones and a note on how that count was
+reached (a naive parse over-reports by 17).
 
 > **Status is per-entry, not a master count.** Each entry carries its own `✅ RESOLVED` heading or
 > `**Status:**` line — those are authoritative (a single hand-maintained tally rots, as the old "49/52"
@@ -27,86 +29,75 @@ hygiene items still open (see the index below). The register has since grown a r
 
 ---
 
-## Open Items Index (curated, as of 2026-06-29)
+## Open Items Index (curated, regenerated 2026-08-19)
 
-A single at-a-glance view of the **significant** pending TDs. The full detail lives in each entry below;
-the per-entry marker is authoritative. The register uses two formats by era — `### [TD-NNN]` headings for the
-2026-03 audit (TD-001–052) and the recent series (TD-144+), and a running **bullet log** (`- TD-NNN:`) for the
-post-audit work (TD-053–143). Both are searchable by id.
+**109 open of 195 distinct TD ids**, counted mechanically and then corrected by reading — see the
+counting note below before trusting or repeating that number. This list is the **significant**
+pending items, not all 109; the per-entry marker in the body remains authoritative.
 
-**Go-live gates — legal / money (owner + lawyer + payment-gateway action, not just code):**
-- **TD-075** — real payment + disbursement rails (toyyibPay, funding tranches, lapse cron, award/decline
-  emails). The whole sponsorship money-flow is built **dark on mocked money** until these land.
-- **TD-140** — Conditional Bursary Agreement: two Phase-0 gates — (1) lawyer vets the EN/BM clause template,
-  (2) the Foundation entity + signatory are finalised (interim "Suresh") — before `BURSARY_AGREEMENT_ENABLED=1`.
-- **TD-141** — bursary parent/guarantor signs **in-session only**; no separate parent-phone signing link (Phase 2).
-- **TD-142** — the signed agreement *names* a payment schedule (RM500 + 10×RM250) it cannot yet honour;
-  disbursement + suspension are mocked (Phase 3, folds into TD-075).
-- **TD-148** — no officer/admin view of a student's bank details (the payout surface); folds into TD-075.
+### Go-live gates — legal, money, or an owner decision (not just code)
+- **TD-075** — real payment + disbursement rails (toyyibPay, tranches, lapse cron). The whole
+  sponsorship money flow is built **dark on mocked money** until these land. **TD-148** (officer
+  view of a student's bank details) folds into it.
+- **TD-140** — Conditional Bursary Agreement, two Phase-0 gates: a lawyer vets the EN/BM clause
+  template, and the Foundation entity is finalised. Everything else is built and dark.
+  **TD-141** (parent signs in-session only) and **TD-142** (the agreement names a payment schedule
+  it cannot yet honour) ride with it.
+- **TD-192** — **HIGH, and the one that matters.** Sponsor vetting is a *button, not a process*: no
+  NRIC, DOB or address is collected, so we do not know our customers. RM172,000 has been taken from
+  eight people vetted with nothing in front of the reviewer. **Unparks the day a stranger can
+  register** — expected at organisation registration, but if open sign-up comes first, then.
+- **TD-198** — no admin route out of `awarded` once the award email has gone. **47 students sit
+  there.** Moves money back to a sponsor and retracts a promise, so it is the owner's call.
 
-**Sponsor module — ⏸ PARKED as one cluster until the organisation registration comes close (owner, 2026-07-28):**
-Everything still open on the sponsor module is deferred together. **The trigger is the organisation
-registration approaching — not a date, and not a code event.** The reasoning is the owner's and it is sound:
-today's nine sponsors are friends and family who were hand-picked, and every item below is about the moment
-sign-up opens to strangers. That moment arrives with the entity, so the entity is the trigger.
-- **TD-192** — *the one that matters.* Sponsor vetting is a **button, not a process**; no NRIC, DOB, address,
-  identity document, source-of-funds declaration or company registration is collected, and `is_trusted`
-  defaults to `True`. RM172,000 has been received from eight people approved on that basis. **HIGH, and
-  unparked the moment sign-up is no longer invite-only.** Its first gating decision — whether the counterparty
-  is Suresh personally or the new entity — is *answered* by the same registration that triggers it (ties to
-  **TD-152** / **TD-140**).
-- **Sponsor S4** (roadmap) — Approve/Reject record **no reason**; one sponsor has been rejected in production
-  with nothing stored saying why. Reason capture + `{reason}` email token + per-sponsor email log + CSV export.
-  **TD-185** folds in.
-- **TD-196** — nobody has taken the sponsor-terms wizard through a browser (the T3 twin of TD-184).
-- **TD-184** — the credit chain has never been driven end-to-end by a human.
-- **TD-186 residual** — the *registration* PDPA consent is still a bare module constant (the terms half closed
-  under T1–T3).
-- **TD-183** — ~80 sponsor-module ms/ta leaves are first drafts; the 24 sponsor-facing `sponsorPortal.terms.*`
-  keys are the riskiest.
-- **TD-190** — sponsor tables sort and page client-side; move server-side above ~200 rows. Naturally triggered
-  by the same growth.
+### High — engineering, promoted and ready to schedule
+- **TD-218** — `exam_type` answers two questions and six surfaces read it. **Fifth instance**; the
+  standing rule is that a fifth is a rename, not a patch. ~4h. Touches ranking and eligibility.
+- **TD-219** — nothing tests the seam between a view and the service it calls. Two defects in one
+  day slipped through it, one of them 500-ing every answer for eighteen days. ~3h.
+- **TD-114** — a fact can read CERTAIN off documents whose genuineness was never checked.
 
-**⚠ Also parked with the cluster: the sponsor-terms go-live sequence.** `2026-sponsor-1` is authored, validated
-and deployable but remains a **draft**, and `SPONSOR_TERMS_ENABLED` is unset, so no sponsor is asked anything.
-The owner had authorised Suresh to publish; that authorisation stands and publishing remains harmless at any
-time (the platform flag gates independently), but it is **no longer a pending action** — see the go-live
-sequence in the T3 retrospective when this is picked back up.
+### Live defects with a user on the other side
+- **TD-207** — **password reset is broken for every admin who has already onboarded**, reviewers and
+  org_admins included. Do not fix it by flipping the flag per person; that is the workaround already
+  used on the owner's own account.
+- **TD-208** — platform mail lands in Gmail's Spam. Brevo reports `delivered`, which is true and
+  useless. Invitations ride the same sender, so somebody who never checks Spam never onboards.
+- **TD-164** — an embargoed decline masks the student's status to a hardcoded `'interviewed'`
+  instead of their real prior status. Owner parked it; `DECLINE_COOLOFF_DAYS` is **7** in production.
+- **TD-149** — no student path to change a bank account once confirmed. **TD-145** — a wrong *public*
+  university offer goes uncaught when the declared institution is blank. **TD-150** — the course
+  matcher binds the wrong public `course_id` for poly-IT synthetic majors.
 
-**Bursary / scholarship — operational:**
-- **TD-144** — bursary-agreement panel ticks should derive from the real agreement once the feature is live.
-- **TD-145** — a wrong **public**-university offer isn't caught when the declared institution field is blank.
-- **TD-149** — no student path to change a bank account after they've confirmed it.
-- **TD-150** — course matcher binds the wrong public `course_id` (poly-IT synthetic "majors"; private
-  programmes force-matched); #95 sits on a placeholder pending his real specialisation.
-- **TD-151** — document-extraction & income-computation robustness (the recurring mis-read class promoted from
-  the 2026-06-29 consolidation review; a 1-sprint hardening pass).
-- **TD-154** — document-slot uniqueness is **sweep-enforced only** (create-first then sweep the stale row per
-  `(application, doc_type, household_member, request_code)`; TD-115), not a DB constraint. Optional hardening
-  (deferred from the income-model plan, 2026-07-02): add a DB `UniqueConstraint` on the slot key + an
-  orphan-`request_code`-doc cleanup. Behaviour is currently sound (no bug) — *low* risk.
+### Two clusters worth seeing as clusters, not as fourteen items
+- **Never verified in a browser — 7 items** (TD-070, TD-092, TD-112, TD-184, TD-188, TD-194,
+  TD-196). Not laziness: **TD-194** is the cause — local console review is still impossible because
+  the CORS/API half of the admin-auth problem was never addressed. Fixing TD-194 is what makes the
+  other six cheap; leaving it means every future console sprint closes unverified, as three in a
+  row already have.
+- **ms/ta copy is a first draft — 8 items** (TD-091, TD-094, TD-097, TD-105, TD-108, TD-132,
+  TD-183, TD-215, plus the new SPM-year question). These accumulate because each sprint adds a few
+  leaves and none is worth a pass on its own. They are worth **one owner sitting**, not eight.
 
-**Admin roles / permissions:**
-- **TD-152** — bursary is a named-personal-donor contract (Suresh, personally) until the org incorporates; novate to
-  the Foundation then (ACCEPTED interim, ties to TD-140).
-- **TD-153** — partner-role least-privilege tidy-ups: (a) UI Delete-student button the backend refuses for partner,
-  (b) a few oversight LIST endpoints readable via direct API by partner/reviewer though the UI hides them. (b) → sprint-lane.
-- **TD-155** — partner Scholarship view (future): org-scoped bursary applicants for a HalaTuju partner (their own
-  referred students, menu hidden when none). Roadmap, not yet built.
+### Parked as a set — the sponsor module (owner, 2026-07-28)
+TD-183, TD-184, TD-185, TD-190, TD-192, TD-196. *"Fold all of this as future work. We'll attend to
+them once the organisation registration comes close."* **The trigger is the registration
+approaching, not a date** — and TD-192 leaves the set early if open sign-up arrives first.
 
-**Original 2026-03 audit — code-hygiene leftovers:**
-- **TD-050** — i18n key mismatch (quiz reads `halatuju_lang`, not `halatuju_locale` → may always load English) — *medium*.
-- **TD-043** — phone/OTP login still "coming soon" (ties to the WhatsApp-OTP plan) — *medium*.
-- **TD-018 / 019 / 020 / 021 / 024 / 041 / 047** — duplicate imports, a duplicate serializer key, inline PISMP
-  dedup, the `course` column name, the `settings/page.tsx` stub, all-or-nothing startup load — *low*.
-- **TD-003** — frontend test coverage (partially resolved) — *low*.
+### Long tail, honestly labelled
+The remaining ~70 are low-severity hygiene, deferred polish and first-draft copy, several dating to
+the 2026-03 audit (TD-018 duplicate import, TD-019 inline `json` import, TD-020 duplicate dict key).
+**Some are probably fixed and never marked.** They are not worth auditing one by one; they are worth
+deleting in a batch the next time somebody is in that file with a reason.
 
-**Long tail (bullet log TD-061–143) — lower priority, verify each entry's own marker:** predominantly
-**Tamil-copy first-drafts** (e.g. TD-091/094/096/097/105/108/132), **UI stubs / not-yet-click-tested surfaces**
-(TD-070/071/076/092/101/112), **doc-recognition edge cases** (TD-143), and small engine/cleanup items. Some of
-these are resolved in follow-up entries — always trust the entry's `✅ RESOLVED` / `Status:` line over this summary.
-
----
+> **⚠ HOW THIS NUMBER WAS REACHED, so the next regeneration does not have to re-derive it.** A naive
+> parse says 126 open, and that is wrong. The register uses two formats by era — `### [TD-NNN]`
+> headings for the 2026-03 audit and the TD-144+ series, a bullet log for TD-053–143 — and in the
+> bullet-log era the resolution marker often sits **inside the entry body**, not on its first line.
+> 41 entries look open on line one and mention RESOLVED further down; **18 of those are genuinely
+> closed and 23 are false positives**, where the marker belongs to the NEXT entry that ran together
+> with it. The curated index above also has to be excluded from the parse, or its pointer bullets
+> are counted a second time as definitions. Read, then count.
 
 ## API Response Format Consistency
 
