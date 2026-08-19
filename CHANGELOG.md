@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## Partner and sponsor mail bills the organisation, not the platform - 2026-08-19
+
+**Small-change lane.** No migration. Backend only, 4 files. Completes the billing-attribution
+pair with the day-before's six senders.
+
+- **⚠ OWNER RULING: SPONSORING IS ORGANISATION WORK.** *"Sponsor is clearly an org level
+  activity… At present, there is very little platform level activity."* **The console had
+  already said so** — `navigation.ts` puts `sponsors` in `scope: 'organisation'` beside Sources,
+  Payments, Contract templates, Billing and Requests, and a sponsor is invited from the
+  organisation's own Invitations page. I had argued the other way from the `Sponsor` TABLE being
+  platform-level, which is true and beside the point: that is about **identity** — one login for
+  a person who may give to several organisations — and was never a statement about whose work
+  the sponsoring is. **Reading a table's scope as its activity's scope** is what left 36 sponsor
+  emails on the platform row.
+- **The owner's second claim, measured:** of **229** org-NULL events all-time, only **17** are
+  genuine platform work (the `gemini/report` course-selector reports). The bucket was **93%
+  mis-attribution**, which is why "shared platform base" was a label doing a lot of concealing.
+- **⚠ NEITHER IS ATTRIBUTED THE OBVIOUS WAY, and the obvious way is wrong in both.**
+  `partner_notify` has a `PartnerOrganisation` right there — but it is the **Source Partner
+  RECEIVING** the digest, not the organisation whose students it reports on; billing the
+  recipient would put BrightPath's costs on a referrer's invoice. A sponsor email bills the
+  organisation running the gift they were **ACCEPTED into**, keyed on the approved
+  `SponsorProgrammeMembership` rather than the account — which is what makes it right for a
+  sponsor of two organisations rather than merely convenient today.
+- **⚠ BOTH REFUSE WHEN THE ANSWER IS NOT SINGLE** (`usage.sole_organisation_id`), and it is
+  written as a refusal rather than a lookup deliberately. A partner digest's fence is
+  **globally scoped by design** (`partner_comms.chip_tally` — the house org's count is the
+  residual across tenants), so from the second organisation one digest can legitimately span
+  two owners; a sponsor can hold two approved memberships. **NULL keeps its original meaning —
+  "no single tenant owns this" — instead of the dumping ground it had drifted into.** Same
+  discipline as `resolve_open_cohort`.
+- **Derived, never a house-org literal** (`HOUSE_ORG_CODE` exists and was not used), per the
+  build-for-tenancy conventions.
+- **The legacy pre-S3 sponsor path is wrapped too** — `send_student_alert` bypasses `deliver`
+  while the platform gate is shut, and 7 `send_sponsor_digest_email` rows sit on the platform
+  row from exactly there.
+- Both derivations bite-checked. `pytest` **4336** scholarship (+10).
+- **▶ STILL OWED, and it is the one that stops this recurring:** nothing yet makes an
+  unattributed sender impossible or loud. Eight senders needed fixing across two days because
+  attribution is opt-in with a silent fallback; the ninth will repeat it.
+
 ## Six senders bill the tenant instead of the platform - 2026-08-18
 
 **Small-change lane.** No migration. api + web, 9 files.

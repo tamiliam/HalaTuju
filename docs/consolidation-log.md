@@ -6,6 +6,7 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 ## Pending
 
 _(cleared at the 2026-08-19 review — counter reset; the 14 reviewed entries are listed in that review)_
+- 2026-08-19 fix: partner and sponsor mail bills the organisation, not the platform — the other 62 of the 125, on the owner's ruling that sponsoring is org work (the nav registry had said so all along); neither attributed to the obvious object, both refuse when the owner is not single (billing — `usage.sole_organisation_id`, `partner_notify._owning_org_id`, `sponsor_notify._sponsor_org_id` + the legacy alert path, `test_usage_attribution.py` +10)
 
 ## Reviews
 
