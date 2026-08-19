@@ -220,3 +220,104 @@ class TestTheSendersFixedOn20260818(TestCase):
         every one of the tests above would look like before the fix."""
         emails._meter_email()
         self.assertIsNone(UsageEvent.objects.get(service='email').organisation_id)
+
+
+class TestSoleOrganisationId(TestCase):
+    """The refusal, on its own. It is written as a refusal and not a lookup on purpose."""
+
+    def test_one_distinct_org_answers(self):
+        self.assertEqual(usage.sole_organisation_id([7, 7, 7]), 7)
+
+    def test_two_distinct_orgs_refuse_rather_than_pick(self):
+        # From the second tenant onward a partner digest can legitimately span two owners.
+        # Guessing would put one tenant's cost on another's invoice.
+        self.assertIsNone(usage.sole_organisation_id([7, 9]))
+
+    def test_nulls_are_ignored_not_counted_as_an_org(self):
+        self.assertEqual(usage.sole_organisation_id([None, 7, None]), 7)
+        self.assertIsNone(usage.sole_organisation_id([None, None]))
+
+    def test_empty_is_none(self):
+        self.assertIsNone(usage.sole_organisation_id([]))
+
+
+class TestPartnerAndSponsorMailBillsTheTenant(TestCase):
+    """The 62 that were deliberately left on the platform row until the owner ruled.
+
+    ⚠ THE OBVIOUS FIX IS WRONG FOR BOTH, which is why they were split from the six senders
+    fixed alongside them. `partner_notify` has a `PartnerOrganisation` right there — but it is
+    the Source Partner RECEIVING the digest, not the organisation whose students it reports on;
+    billing the recipient would put BrightPath's costs on a referrer's invoice. And a `Sponsor`
+    row is platform-level for IDENTITY reasons (one login across organisations), which is not a
+    statement about whose work the sponsoring is — `navigation.ts` has classified `sponsors` as
+    `scope: 'organisation'` all along, and the owner confirmed it 2026-08-19.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.scholarship.models import Programme
+        cls.owner_org = PartnerOrganisation.objects.create(code='bp2', name='BrightPath')
+        cls.referrer = PartnerOrganisation.objects.create(
+            code='cumig', name='CUMIG', is_active=True, contact_email='ref@example.com')
+        cls.programme = Programme.objects.create(
+            organisation=cls.owner_org, code='bp2-flagship', name_en='BrightPath Bursary')
+        cohort = ScholarshipCohort.objects.create(
+            code='cbp2', name='B40', year=2026, owning_organisation=cls.owner_org)
+        # The referral CHIP lives on the PROFILE (partner_comms.CHIP_FIELD =
+        # 'profile__referral_source'), which is what makes these the referrer's students
+        # while the APPLICATION still belongs to the organisation running the programme.
+        prof = StudentProfile.objects.create(supabase_user_id='pa-1', name='Priya',
+                                             referral_source=cls.referrer.code)
+        cls.app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=prof, status='shortlisted',
+            notify_email='stu@example.com')
+
+    def test_a_partner_digest_bills_the_STUDENTS_owner_not_the_recipient(self):
+        from apps.scholarship import partner_notify
+        org_id = partner_notify._owning_org_id(self.referrer)
+        self.assertEqual(org_id, self.owner_org.id)
+        self.assertNotEqual(org_id, self.referrer.id)   # the half that was the danger
+
+    def test_a_milestone_bills_the_named_applications_owner(self):
+        from apps.scholarship import partner_notify
+        self.assertEqual(
+            partner_notify._owning_org_id(self.referrer, self.app), self.owner_org.id)
+
+    def test_a_partner_with_no_students_attributes_to_nobody(self):
+        from apps.scholarship import partner_notify
+        stranger = PartnerOrganisation.objects.create(code='none', name='No Students')
+        self.assertIsNone(partner_notify._owning_org_id(stranger))
+
+    def test_a_sponsor_bills_the_organisation_running_the_gift_they_joined(self):
+        from apps.scholarship import sponsor_notify
+        from apps.scholarship.models import Sponsor, SponsorProgrammeMembership
+        sponsor = Sponsor.objects.create(supabase_user_id='sp-x', name='Giver',
+                                         email='giver@example.com', status='approved')
+        SponsorProgrammeMembership.objects.create(
+            sponsor=sponsor, programme=self.programme, status='approved')
+        self.assertEqual(sponsor_notify._sponsor_org_id(sponsor), self.owner_org.id)
+
+    def test_an_unaccepted_sponsor_attributes_to_nobody(self):
+        """A PENDING membership is not acceptance — and the account being platform-level is
+        exactly the trap this rule exists to avoid falling back into."""
+        from apps.scholarship import sponsor_notify
+        from apps.scholarship.models import Sponsor, SponsorProgrammeMembership
+        sponsor = Sponsor.objects.create(supabase_user_id='sp-y', name='Waiting',
+                                         email='waiting@example.com', status='pending')
+        SponsorProgrammeMembership.objects.create(
+            sponsor=sponsor, programme=self.programme, status='pending')
+        self.assertIsNone(sponsor_notify._sponsor_org_id(sponsor))
+
+    def test_a_sponsor_of_two_organisations_refuses_rather_than_picks(self):
+        from apps.scholarship import sponsor_notify
+        from apps.scholarship.models import (
+            Programme, Sponsor, SponsorProgrammeMembership)
+        other_org = PartnerOrganisation.objects.create(code='inspire', name='Inspire Society')
+        other = Programme.objects.create(organisation=other_org, code='inspire-1',
+                                         name_en='Inspire Bursary')
+        sponsor = Sponsor.objects.create(supabase_user_id='sp-z', name='Both',
+                                         email='both@example.com', status='approved')
+        for prog in (self.programme, other):
+            SponsorProgrammeMembership.objects.create(
+                sponsor=sponsor, programme=prog, status='approved')
+        self.assertIsNone(sponsor_notify._sponsor_org_id(sponsor))

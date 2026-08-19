@@ -27,6 +27,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from . import partner_comms
+from . import usage
 from .emails import send_partner_email
 from .models import PartnerEmailLog, PartnerEmailTemplate
 
@@ -84,6 +85,21 @@ def _skip(org, kind, note, *, once=True):
     return False
 
 
+def _owning_org_id(org, application=None):
+    """Which tenant does this partner email bill to?
+
+    A milestone names one application, so that application's owner answers it. A digest is
+    about the whole set of students attributed to this Source Partner, so the answer is the
+    owner they share — and `sole_organisation_id` returns None rather than picking when they
+    do not share one (possible from the second tenant onward; see its docstring).
+    """
+    if application is not None:
+        return getattr(application, 'owning_organisation_id', None)
+    return usage.sole_organisation_id(
+        partner_comms.partner_applications(org)
+        .values_list('owning_organisation_id', flat=True).distinct())
+
+
 def _deliver(org, kind, template, context, *, students=0, fingerprint='', application=None,
              dry_run=False, out=None):
     """Render → send → log. Returns True only when the email actually went."""
@@ -102,8 +118,13 @@ def _deliver(org, kind, template, context, *, students=0, fingerprint='', applic
             out.write('  ' + text_body.replace('\n', '\n  ') + '\n\n')
         return True
 
-    ok = send_partner_email(recipients[0], subject=subject, text_body=text_body,
-                            html_body=html_body)
+    # Bill the organisation whose STUDENTS this email is about — NOT `org`, which is the
+    # Source Partner RECEIVING it. Attributing to the recipient would put BrightPath's costs
+    # on a referrer's invoice. Derived (never a house-org literal, per the tenancy
+    # conventions) and refused when ambiguous — see usage.sole_organisation_id.
+    with usage.usage_context(organisation_id=_owning_org_id(org, application)):
+        ok = send_partner_email(recipients[0], subject=subject, text_body=text_body,
+                                html_body=html_body)
     _log(org, kind, ok=bool(ok), note='' if ok else 'send_failed', recipients=recipients,
          subject=subject, students=students, fingerprint=fingerprint, application=application)
     return bool(ok)
@@ -311,8 +332,10 @@ def notify_student_assigned(application, org):
         subject, text_body, html_body = partner_comms.render(
             'student_assigned', template,
             {'org_name': org.name, 'student_name': first or 'there'})
-        ok = send_partner_email(to_email, subject=subject, text_body=text_body,
-                                html_body=html_body)
+        # This one goes to the STUDENT about their referrer; it is the programme's work.
+        with usage.usage_context(organisation_id=_owning_org_id(org, application)):
+            ok = send_partner_email(to_email, subject=subject, text_body=text_body,
+                                    html_body=html_body)
         _log(org, 'student_assigned', ok=bool(ok), note='' if ok else 'send_failed',
              recipients=[to_email], subject=subject, students=1, application=application)
         return bool(ok)

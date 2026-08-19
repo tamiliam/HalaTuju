@@ -159,6 +159,32 @@ def _service_row(service, agg):
     }
 
 
+def sole_organisation_id(org_ids):
+    """Exactly ONE distinct real organisation among ``org_ids`` → that id; else None.
+
+    The attribution rule for work that is ABOUT a set of records rather than about one
+    (a partner digest covering many applications; a sponsor who may be accepted into more
+    than one gift). Today every such set resolves to a single organisation, so this reads as
+    "attribute it to BrightPath" — but it is written as a refusal, not a lookup, for the case
+    that is coming:
+
+    ⚠ **A PARTNER DIGEST'S FENCE IS DELIBERATELY GLOBAL** (`partner_comms.chip_tally` —
+    the Sources registry spans tenants and the house org's count is the residual). So the
+    moment a second organisation exists, one digest can legitimately cover applications from
+    two of them, and there is no honest single answer. Guessing would put one tenant's cost on
+    another's invoice, which is worse than the platform row it replaces.
+
+    NULL therefore keeps its original meaning — "no single tenant owns this" — instead of
+    becoming the dumping ground it had drifted into. Same shape as
+    `services.resolve_open_cohort`: refuse when ambiguous rather than pick.
+    """
+    try:
+        distinct = {i for i in org_ids if i is not None}
+        return distinct.pop() if len(distinct) == 1 else None
+    except Exception:  # noqa: BLE001 — attribution is best-effort, never a raise
+        return None
+
+
 def org_storage_bytes(org_id):
     """Live Supabase-storage snapshot for ONE organisation: the sum of the document
     bytes we hold for that org — applicant documents (via the application's

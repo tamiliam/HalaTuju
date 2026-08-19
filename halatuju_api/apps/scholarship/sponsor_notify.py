@@ -16,9 +16,36 @@ wrapped, and the wrap is the point rather than an afterthought.
 import logging
 
 from . import sponsor_comms
+from . import usage
 from .emails import send_sponsor_email
 
 logger = logging.getLogger(__name__)
+
+
+def _sponsor_org_id(sponsor):
+    """Which tenant does a sponsor email bill to? The organisation that runs the gift the
+    sponsor was ACCEPTED into.
+
+    ⚠ A `Sponsor` row is platform-level, and that is about IDENTITY — one login for a person
+    who may give to several organisations — NOT about whose work the sponsoring is. The
+    console has always classified it the other way (`navigation.ts`: `sponsors` is
+    `scope: 'organisation'`, and a sponsor is invited from the organisation's own Invitations
+    page), and the owner confirmed it on 2026-08-19. Reading the table's scope as the
+    activity's scope is what left 36 sponsor emails on the platform row.
+
+    Keyed on the approved MEMBERSHIP rather than the account, because acceptance is per
+    programme (`SponsorProgrammeMembership`) — which is also what makes this answer correct
+    for a sponsor of two organisations rather than merely convenient today. Two memberships
+    → None: see `usage.sole_organisation_id`.
+    """
+    try:
+        from .models import SponsorProgrammeMembership
+        return usage.sole_organisation_id(
+            SponsorProgrammeMembership.objects
+            .filter(sponsor=sponsor, status='approved')
+            .values_list('programme__organisation_id', flat=True).distinct())
+    except Exception:  # noqa: BLE001 — attribution must never break a send
+        return None
 
 
 def deliver(kind, sponsor, context=None, *, to_email=None):
@@ -56,8 +83,9 @@ def deliver(kind, sponsor, context=None, *, to_email=None):
     ok = False
     note = ''
     try:
-        ok = bool(send_sponsor_email(recipient, subject=subject,
-                                     text_body=text_body, html_body=html_body))
+        with usage.usage_context(organisation_id=_sponsor_org_id(sponsor)):
+            ok = bool(send_sponsor_email(recipient, subject=subject,
+                                         text_body=text_body, html_body=html_body))
         if not ok:
             note = 'send_failed'
     except Exception as exc:                       # noqa: BLE001 — logged, never raised on
@@ -178,7 +206,10 @@ def send_student_alert(sponsor, cards, *, weekly=False, lang='en'):
     if not sponsor_comms.comms_enabled():
         from .emails import send_sponsor_digest_email, send_sponsor_new_student_email
         sender = send_sponsor_digest_email if weekly else send_sponsor_new_student_email
-        return bool(sender(sponsor.email, cards, name=sponsor.name))
+        # The legacy pre-S3 path bypasses `deliver`, so it needs the context of its own —
+        # 7 `send_sponsor_digest_email` rows are on the platform row from exactly here.
+        with usage.usage_context(organisation_id=_sponsor_org_id(sponsor)):
+            return bool(sender(sponsor.email, cards, name=sponsor.name))
     return _safe(kind, sponsor, {
         'cards': list(cards),
         'count': len(cards),
