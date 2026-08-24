@@ -557,6 +557,27 @@ def name_contradicts_tag(application, doc):
     return ''
 
 
+def implied_single_member(application):
+    """The household member an UNTAGGED income document can only belong to — the STR route's
+    declared ``income_earner``. '' on the salary route (several members may each hold documents,
+    so an untagged one is genuinely ambiguous) or when no earner has been declared.
+
+    ⚠ ONE DEFINITION, TWO CALLERS, AND THEY MUST NOT DIVERGE. The readers have always assumed it
+    (``_proof_member`` below, and TD-115's "blank-as-earner" leniency). Since BrightPath #20 the
+    upload tag guard WRITES with it as well, because a document the readers treat as the earner's
+    while the SLOT SWEEP treats it as nobody's is exactly the duplicate that outlives its own
+    replacement: application 73's blurry payslip was uploaded untagged, landed in the empty blank
+    slot, won it by default (an empty slot has nothing to lose to), and sat beside the good copy
+    in the live documents for a fortnight.
+
+    Guessing here cannot bury good evidence: a re-tagged doc goes through STAGE → JUDGE → PROMOTE
+    like any other, and an unreadable one is not `usable`, so it can only ever land in Replaced.
+    """
+    if (getattr(application, 'income_route', '') or '').strip() != 'str':
+        return ''
+    return (getattr(application, 'income_earner', '') or '').strip()
+
+
 def _proof_member(doc):
     """The earner a salary slip / EPF belongs to: its own household_member tag (salary
     route), or the application's single income_earner (STR route). '' if no income
@@ -564,10 +585,7 @@ def _proof_member(doc):
     member = (getattr(doc, 'household_member', '') or '').strip()
     if member:
         return member
-    app = doc.application
-    if (getattr(app, 'income_route', '') or '').strip() == 'str':
-        return (getattr(app, 'income_earner', '') or '').strip()
-    return ''
+    return implied_single_member(doc.application)
 
 
 def student_income_proof_check(doc):

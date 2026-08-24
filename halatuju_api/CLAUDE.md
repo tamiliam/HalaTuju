@@ -592,7 +592,57 @@ itself pinned for this purpose (the payload test now asserts `{documents, questi
 
 **▶ AT DEPLOY: push after merging to main. No migrate-first, no env vars, no i18n.**
 Post-check: a student payload carries `requirements.questions`; the wizard renders unchanged
-for BrightPath.
+for BrightPath. **Owner still owes the #20 follow-up** — `backfill_untagged_income_docs` on the
+live service (report, then `--apply`; 5 docs / 2 applications) — see the superseded block below.
+
+## Superseded — previous Next Sprint (as of 2026-08-24, after BrightPath #20 — the rating-gated submit)
+
+**▶ ~~CODE COMPLETE, NOT DEPLOYED~~ — DEPLOYED + LIVE 2026-08-24** (`fa0656b6`, both builds
+SUCCESS; `halatuju-api-00958-qms` / `halatuju-web-00800-j8v` serving 100%; per its author's
+session — owner item 1 below is DONE, items 2–5 stand). `pytest` **4343** scholarship ·
+`jest` **1469** / 96 · `next lint` **0 errors** · `next build` **SUCCESS** · i18n **4536×3**.
+No migration. Retro `docs/retrospective-2026-08-24-rating-gated-submit.md`; decisions ×2; lessons ×6.
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ `isClearAccept` NO LONGER TAKES THE OFFICER VERDICT — DO NOT ADD IT BACK AS A PARAMETER.**
+  The four Pass/Fail marks are the reviewer's scorecard OF THE AI (`audit.py`: *"the 'how good is
+  the AI' signal"*). Gating the submit on them meant an honest *"the AI read this badly"* silently
+  froze the case; application 73 sat at `interviewing` for fourteen days. The signature is the
+  guard — a comment would only be a request. **The red-fact floor was NOT removed:** it is at the
+  QC gate, on the AI's own live `build_verdict`, where it belongs.
+- **`verdictSaveOutcome` is a CLOSED union and every value must have a line on screen.** Adding a
+  value without a message is the bug returning — the whole of #20 was a branch with no message.
+- **⚠ A BLANK `household_member` IS A SLOT, NOT AN ABSENCE — AND IT IS ALWAYS EMPTY.** So anything
+  landing in it wins by default and stays live for ever. The upload guard's new last-resort branch
+  files an unreadable untagged income doc to `implied_single_member` (the STR route's single
+  earner). **STR ROUTE ONLY** — on the salary route several members may each hold documents and a
+  guess would file one earner's payslip under another. One helper, two callers (`_proof_member`
+  reads with it, the guard writes with it); they must never diverge.
+- **`profile_completed_at` in `test_unreadable_blank_income_doc_falls_back_to_the_single_earner` is
+  LOAD-BEARING.** Pre-consent the STR force-tag already stamps every income doc, so without it the
+  test passes with the fix deleted. Verified by mutation.
+
+**▶ OWNER, OUTSTANDING:**
+1. **DEPLOY** — both services. Nothing is live yet.
+2. **RUN `python manage.py backfill_untagged_income_docs`** on the live service (report first, then
+   `--apply`). Expect **5 documents on 2 applications** — #73's blurry payslip → Replaced, #88's
+   four legacy pre-tagging copies → tagged, keeping their slots.
+3. **ms/ta for `decision.notSubmittedIncomplete` / `notSubmittedStatus`** are my first drafts.
+4. **The completion report for #20** is owed to BrightPath — analysis 41 said *no charge*, so state
+   the hours spent and that the quote stands withdrawn.
+5. **Application 73 was advanced to QC BY HAND** (2026-08-24, `verified_by=tamiliam@gmail.com` — not
+   Kaneswaran, who decided the case but never pressed the button). Suresh can QC it now.
+
+**▶ ALSO STILL TRUE, carried from #12:**
+- **#17 (draft 35) IS APPROVED AND POSTED, NOT A DRAFT** — the previous note was stale. Enter in the
+  invite note still sends a half-written invitation to a donor. 0.5h, untriaged. **This is the one
+  open item where a mistake reaches an outsider.**
+- **#16 (draft 34) and #18 (draft 36)** likewise posted, awaiting owner triage.
+- **#14 AND #15 ARE `done`, WHICH STRANDS BOTH COMPLETION REPORTS** — `post_comment` refuses a
+  terminal request, so analyses 37 and 39 cannot be approved. Owner's call.
+- **TD-218** (the `exam_type` rename, ~4h) and **TD-219** (the view/service seam guard, ~3h) remain
+  the two standing technical-debt candidates.
+- **The payslip OCR misread** on #73 (`751206-06-5041` for `751206-08-5941`) is observed, not fixed.
 
 ## Superseded — previous Next Sprint (as of 2026-08-18, after BrightPath #12 — the SPM exam year)
 

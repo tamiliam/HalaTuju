@@ -28,6 +28,53 @@ student the day configuration becomes editable.
 Full pytest suite green (existing tests unmodified bar the one deliberate pin edit) ·
 jest 1470 · `next lint` 0 · i18n 4534×3 (no new keys) · `next build` clean ·
 `makemigrations --check` clean.
+## A rating of the AI no longer decides a student's case - 2026-08-24
+
+**Sprint (BrightPath #20).** No migration. 9 files + one backfill command. Two defects, both
+silent, found from one support request whose title was about something else entirely.
+
+- **⚠ THE REPORTED BUG WAS NOT THE BUG, AND THE REPORTER SAID SO HIMSELF.** #20 was filed as
+  *"Kaneswaran's Reviewer report error"*; the following day Suresh withdrew it — *"no problem
+  with the report !!"* — and described a different thing underneath. **Reading only the title
+  would have shipped a fix to a working feature.**
+- **⚠ THE FOUR PASS/FAIL MARKS ARE A SCORECARD OF THE AI, NOT A JUDGEMENT ON THE STUDENT.**
+  `audit.py` says so in its own docstring — *"the 'how good is the AI' signal"* — and
+  `compute_overrides` reads them against what the AI **asserted**, never against the applicant.
+  `isClearAccept` was gating the submit on three of them. So a reviewer who honestly reported
+  *"our payslip reading was poor"* **froze his own case**, and nothing on screen said so.
+  Application 73 sat at `interviewing` for **fourteen days** after a recorded Accept.
+- **⚠ THE OFFICER VERDICT IS NO LONGER A PARAMETER OF `isClearAccept`.** Not a comment asking
+  future callers to behave — there is now no argument through which a rating can reach the
+  decision. The red-fact floor was never removed: it lives at the QC gate, computed from the
+  AI's **own** live verdict (`build_verdict` → `verdict_gap_floor`). Gating here as well was
+  both wrong and redundant.
+- **Every outcome now has a line.** `verdictSaveOutcome` is a closed union of four names, and
+  the caller renders each one. The whole of #20 was a branch with no message attached, so the
+  cure is a total function rather than one more `else`.
+- **⚠ A BLANK HOUSEHOLD TAG IS NOT "NO SLOT" — IT IS A SLOT OF ITS OWN, AND IT IS ALWAYS
+  EMPTY.** Which means anything landing in it wins by default and stays live for ever. #73
+  carried the same payslip twice, fifty seconds apart: the tagged copy was correctly replaced,
+  the untagged one won the empty blank slot and sat beside the good copy. **The documents we
+  could not read were exactly the ones that lingered** — an unreadable doc yields no name, so
+  the tag guard had nothing to fill the tag with.
+- **The last-resort tag is the rule the READERS already used** (`implied_single_member`, lifted
+  out of `_proof_member`). TD-115's "blank-as-earner" leniency has always assumed it; the
+  upload guard now **writes** with it. One definition, two callers — a doc the readers treat as
+  the earner's while the slot sweep treats it as nobody's is precisely the duplicate that
+  outlives its own replacement. STR route only: on the salary route several members may each
+  hold documents, so an untagged one is genuinely ambiguous and the blank stands.
+- **Guessing cannot bury good evidence.** A re-tagged doc still goes through STAGE → JUDGE →
+  PROMOTE, and an unreadable one is not `usable`, so it can only ever land in Replaced.
+- **`backfill_untagged_income_docs`** repairs what accumulated: **5 documents on 2
+  applications** (#73's payslip; #88's four legacy pre-tagging copies). Report-only by default.
+- **⚠ THE FIRST VERSION OF THE REGRESSION TEST WAS VACUOUS AND A MUTANT CAUGHT IT.** It passed
+  with the fix deleted, because pre-consent the STR force-tag already stamps every income doc —
+  the test was measuring the force-tag. `profile_completed_at` is now load-bearing and says so.
+  Both fixes were mutation-checked; two frontend assertions and one backend assertion fail
+  without their fix.
+- **Application 73 was advanced to QC by hand** (`interviewing` → `interviewed`, 2026-08-24),
+  attributed to the owner's account and **not** to Kaneswaran — he decided the case, he did not
+  press the button, and a false entry in a two-person-control trail is not a convenience.
 
 ## Partner and sponsor mail bills the organisation, not the platform - 2026-08-19
 

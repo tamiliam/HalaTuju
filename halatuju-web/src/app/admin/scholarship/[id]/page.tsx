@@ -74,6 +74,7 @@ import {
   earnerMemberFor,
   viewerKind,
   isClearAccept,
+  verdictSaveOutcome,
   isQcAccepted,
   isQueryingLocked,
   isDecisionReady,
@@ -662,7 +663,7 @@ export default function AdminScholarshipDetailPage() {
       // identity was already verified at the consent gate.
       let finalApp: AdminScholarshipDetail = result
       let accepted = false
-      const clearAccept = isClearAccept(officerVerdict, !!result.completeness?.complete, result.status)
+      const clearAccept = isClearAccept(!!result.completeness?.complete, result.status)
       if (accept && clearAccept) {
         try {
           finalApp = await verifyAcceptApplication(id, {}, { token })
@@ -675,8 +676,23 @@ export default function AdminScholarshipDetailPage() {
       setApp(finalApp)
       setProfile(finalApp.sponsor_profile)
       loadVerdictState(finalApp)
-      if (accepted) {
+      // ⚠ EVERY OUTCOME GETS A LINE — BrightPath #20 was this block staying silent. The reviewer
+      // asked to submit, the submit was skipped, and the screen said nothing, so the case sat for
+      // fourteen days. `verdictSaveOutcome` is a closed set precisely so a new branch cannot be
+      // added without a message. The not-submitted lines come BEFORE `finalise`: "your case did
+      // not move" outranks "the profile was regenerated".
+      const outcome = verdictSaveOutcome({
+        acceptRequested: !!accept,
+        accepted,
+        completenessComplete: !!result.completeness?.complete,
+        status: result.status,
+      })
+      if (outcome === 'accepted') {
         setVerdictMsg(t('admin.scholarship.decision.savedAndAccepted')); setVerdictMsgTone('ok')
+      } else if (outcome === 'not_submitted_incomplete') {
+        setVerdictMsg(t('admin.scholarship.decision.notSubmittedIncomplete')); setVerdictMsgTone('warn')
+      } else if (outcome === 'not_submitted_status') {
+        setVerdictMsg(t('admin.scholarship.decision.notSubmittedStatus')); setVerdictMsgTone('warn')
       } else if (finalise) {
         const fr = result.finalise_result
         if (fr && fr.ok) {

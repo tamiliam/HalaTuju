@@ -4404,6 +4404,8 @@
       "decision": {
         "title": "Cadangan",
         "savedAndAccepted": "Keputusan disimpan — pemohon diterima.",
+        "notSubmittedIncomplete": "Keputusan disimpan, tetapi TIDAK dihantar ke QC — pemohon ini masih mempunyai langkah wajib yang belum selesai.",
+        "notSubmittedStatus": "Keputusan disimpan, tetapi TIDAK dihantar ke QC — kes ini sudah melepasi peringkat yang boleh dihantar.",
         "declineSentToQc": "Penolakan direkodkan — dihantar ke QC untuk pengesahan."
       },
       "recordVerdict": {
