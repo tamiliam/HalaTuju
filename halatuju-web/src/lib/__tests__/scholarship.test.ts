@@ -31,6 +31,11 @@ import {
   DOC_TYPES,
   INCOME_PROOF_TYPES,
   documentRequirement,
+  questionRequirement,
+  asksForQuestion,
+  visibleNextSteps,
+  QUESTION_CODES,
+  STORY_QUESTION_CODES,
   asksForDocument,
   formatFileSize,
   REFERRING_ORG_OPTIONS,
@@ -1189,6 +1194,85 @@ describe('documentRequirement / asksForDocument', () => {
     expect(asksForDocument(reqs, 'ic')).toBe(true)
     expect(asksForDocument(reqs, 'photo')).toBe(true)
     expect(asksForDocument(reqs, 'reference_letter')).toBe(false)
+  })
+})
+
+// ── Layer 0 Sprint 4: question helpers ──────────────────────────────────
+
+describe('questionRequirement / asksForQuestion / visibleNextSteps', () => {
+  // The seeded defaults, as the API returns them (sorted).
+  const reqs = {
+    documents: { required: ['ic'], optional: [] as string[] },
+    questions: {
+      required: ['address', 'aspirations', 'consent', 'daily_life', 'family_roster', 'fears',
+                 'funding', 'plans'],
+      optional: ['anything_else', 'justification'],
+    },
+  }
+
+  it('reports required, optional and off from the payload', () => {
+    expect(questionRequirement(reqs, 'aspirations')).toBe('required')
+    expect(questionRequirement(reqs, 'justification')).toBe('optional')
+    const off = {
+      ...reqs,
+      questions: {
+        required: reqs.questions.required.filter((q) => q !== 'aspirations'),
+        optional: reqs.questions.optional,
+      },
+    }
+    expect(questionRequirement(off, 'aspirations')).toBe('off')
+    // …and its neighbour did not move — without this, "one off" and "all off" look the same.
+    expect(questionRequirement(off, 'plans')).toBe('required')
+  })
+
+  it('treats a MISSING questions block as "we were not told", never as "asks nothing"', () => {
+    // Same boundary as documents (Sprint 3b): a cached pre-Sprint-4 payload has no block, and
+    // blanking the story tab off it would be the 3a failure shape. Everything renders,
+    // nothing asserted compulsory; the server gates.
+    for (const missing of [undefined, null, { documents: reqs.documents }]) {
+      expect(questionRequirement(missing, 'aspirations')).toBe('optional')
+      expect(asksForQuestion(missing, 'aspirations')).toBe(true)
+    }
+  })
+
+  it('keeps every step visible on the defaults', () => {
+    expect(visibleNextSteps(reqs)).toEqual(['quiz', 'story', 'funding', 'documents', 'consent'])
+    // A missing block must also show everything (the degrade-to-optional rule).
+    expect(visibleNextSteps(null)).toEqual(['quiz', 'story', 'funding', 'documents', 'consent'])
+  })
+
+  it('collapses the funding step when the funding questions are off — and only then', () => {
+    const noFunding = {
+      ...reqs,
+      questions: {
+        required: reqs.questions.required.filter((q) => q !== 'funding'),
+        optional: reqs.questions.optional,
+      },
+    }
+    expect(visibleNextSteps(noFunding)).toEqual(['quiz', 'story', 'documents', 'consent'])
+    // Story survives even with every narrative question off: the family roster is core.
+    const noStoryQuestions = {
+      ...reqs,
+      questions: {
+        required: reqs.questions.required.filter((q) => !STORY_QUESTION_CODES.includes(
+          q as typeof STORY_QUESTION_CODES[number])),
+        optional: reqs.questions.optional,
+      },
+    }
+    expect(visibleNextSteps(noStoryQuestions)).toContain('story')
+  })
+
+  it('QUESTION_CODES is the closed vocabulary the catalogue selects from', () => {
+    // A new catalogue question means a deliberate entry here (and a render site), the same
+    // rule as DOC_TYPES — configuration selects from a fixed set, it never invents one.
+    expect(QUESTION_CODES).toEqual([
+      'aspirations', 'plans', 'daily_life', 'fears',
+      'family_roster', 'funding', 'address', 'consent',
+      'justification', 'anything_else',
+    ])
+    for (const q of [...reqs.questions.required, ...reqs.questions.optional]) {
+      expect(QUESTION_CODES).toContain(q)
+    }
   })
 })
 

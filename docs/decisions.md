@@ -7759,3 +7759,35 @@ would then be built against a real example instead of an imagined one.
 
 **Revisit if:** more than one or two live cases accumulate, or a reviewer asks for the answer to
 appear beside the score.
+
+## A question switched to `optional` still accepts an answer; only `required` gates — 2026-08-24
+
+**Decision (Layer 0 Sprint 4):** `application_completeness` gates a story/funding/address part
+only when the catalogue resolves that question `'required'`. `'optional'` renders the field
+without a compulsory marker and never blocks; `'off'` removes it from the payload lists and the
+wizard does not draw it. Rejected alternative: treating `optional` as "gates if the student
+started answering" — a half-filled optional answer must never trap a submission.
+
+**Also settled here:** an item deactivated platform-side (`is_active=False`) drops out of the
+resolved set and stops gating — that is the platform's deliberate withdrawal of a question, NOT
+the "empty catalogue" case, which `requirements.resolve` still answers with the platform
+defaults. The two look alike in code (`asked.get(code)` misses) and are different decisions.
+
+## The apply form's `anything_else` is in the catalogue but not yet governed — 2026-08-24
+
+**Decision:** Sprint 4 governs the Step-4 wizard only. `anything_else` renders on the
+PRE-application apply form, which has no application payload to carry the questions block, so
+governing it needs a public per-programme requirements read that does not exist. It is optional
+and never gates, so an off row changes nothing a student sees today. Deferred to Sprint 5's
+neighbourhood (when the org screen makes overrides real) rather than inventing a public
+endpoint mid-sprint. `justification` is in the catalogue and rendered nowhere (legacy field) —
+same treatment. Recorded in the roadmap's Sprint 4 section so it reads as a decision, not a gap.
+
+## The step list is filtered at render, never stored — 2026-08-24
+
+**Decision (the Layer 2 constraint, applied):** `NEXT_STEP_ORDER` stays a static literal;
+`visibleNextSteps()` FILTERS it per render from the payload. Only `funding` can collapse (its
+tab holds nothing but the funding questions); the story step always survives because the family
+roster is core. Rejected alternative: a per-programme step list on the payload — that is a
+stored layout, which is Layer 2 in disguise and forbidden by the standing constraint in
+`docs/plans/2026-07-28-configuration-layers-roadmap.md`.

@@ -550,7 +550,51 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-18, after BrightPath #12 — the SPM exam year)
+## Next Sprint (as of 2026-08-24, after Layer 0 Sprint 4 — the questions)
+
+**✅ SHIPPED — LAYER 0 SPRINT 4: the catalogue governs the QUESTIONS.** Worktree
+`.worktrees/layer0-sprint4`, branch `feat/layer0-sprint4-questions`. **NO migration.** Retro
+`docs/retrospective-2026-08-24-layer0-questions.md`; decisions ×3; lessons ×3; CHANGELOG
+2026-08-24. Full pytest suite green with existing tests UNMODIFIED bar the ONE edit Sprint 3b
+itself pinned for this purpose (the payload test now asserts `{documents, questions}`) ·
+`jest` **1470** / 96 · `next lint` **0** · i18n **4534×3** (no new keys) · `next build` clean ·
+`makemigrations --check` clean. Both empty-catalogue guards **bite-checked** (each disabled →
+3 tests fail).
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- `application_completeness` gates story/funding/address on `requirements.resolve(app,
+  'question')` — only `'required'` gates. **`consent` + `family_roster` are CORE** (owner's
+  2026-07-28 floor): the resolver floors them at required, and their completeness literals
+  deliberately stay literals with comments saying why.
+- The payload's `requirements` block now carries `questions` beside `documents`. FE helpers
+  `questionRequirement` / `asksForQuestion` / `visibleNextSteps` mirror the document ones —
+  **a missing block degrades to `'optional'`** (draw everything, assert nothing), never `'off'`.
+- **`NEXT_STEP_ORDER` is untouched.** `visibleNextSteps()` filters it at render; only
+  `funding` can collapse. A stored step list is Layer 2 in disguise — do not "improve" this
+  into configuration.
+- **⚠ `anything_else` + `justification` are catalogued but NOT yet governed** (pre-application
+  apply form has no requirements payload; justification renders nowhere). Deliberate —
+  decisions.md 2026-08-24 + the roadmap's Sprint 4 section. Do not read the catalogue rows as
+  proof they are wired.
+- **Production is a behavioural no-op**: 0 programme overrides exist, so every application
+  resolves to the seeded defaults, which reproduce the old literals by construction.
+
+**▶ NEXT (Option A order, owner-approved 2026-08-24): the two owed 3a items, then Sprint 5.**
+1. **The submit-time snapshot — now URGENT, must land BEFORE Sprint 5.** With Sprint 4 live,
+   switching a question ON (off→required) would make a submitted student with a blank answer
+   incomplete and `revert_if_profile_incomplete` would un-submit them. Harmless today ONLY
+   because no UI can change configuration; Sprint 5 IS that UI. (Shape: freeze the resolved
+   requirement sets at submit — `services.build_intake_snapshot` has the pattern.)
+2. **The `check2_queries.py` pass** (income-driven but carries academic/family follow-ups —
+   cannot be gated wholesale on the income switch).
+3. **Sprint 5 — the org_admin screen** (Stitch design approved; TD-197 closed; shell owns the
+   route + tab strip that Layer 1's colour picker later joins).
+
+**▶ AT DEPLOY: push after merging to main. No migrate-first, no env vars, no i18n.**
+Post-check: a student payload carries `requirements.questions`; the wizard renders unchanged
+for BrightPath.
+
+## Superseded — previous Next Sprint (as of 2026-08-18, after BrightPath #12 — the SPM exam year)
 
 **✅ SHIPPED + LIVE — REQUEST #12 IS COMPLETE, BOTH HALVES.** Commits `8f8bf17d`, `0ab1e964`,
 `809538f4`, `7174972c`; both builds SUCCESS on `9e80030`; live on `halatuju-api-00956-hhv` /

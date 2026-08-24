@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 0 Sprint 4 — the catalogue governs the questions - 2026-08-24
+
+**Sprint.** NO migration. api + web. Worktree `.worktrees/layer0-sprint4`.
+Retro `docs/retrospective-2026-08-24-layer0-questions.md`.
+
+A programme can now switch application QUESTIONS on or off, completing what Sprint 3 did for
+documents. `application_completeness` gates the story / funding / address parts on
+`requirements.resolve(app, 'question')` — only a `required` question gates; `consent` and
+`family_roster` stay core (floored at required whatever an organisation writes). The payload's
+`requirements` block carries `questions` beside `documents` (the Sprint 3b pin edited
+deliberately, as it said it should be). The wizard draws a question only if asked, marks `*`
+only if required, collapses the About-you card when all four narrative questions are off, and
+drops the Funding step entirely when `funding` is off — computed from the payload at render;
+`NEXT_STEP_ORDER` stays a static literal. The review page hides unasked questions the same way.
+Sandbox lean-programme fixture now shows the question collapse too.
+
+With **0 programme overrides** in production this deploys as a behavioural no-op for
+BrightPath. Both empty-catalogue guards bite-checked (each disabled → 3 tests fail).
+`anything_else` (pre-application apply form) + `justification` (rendered nowhere) deliberately
+not yet governed — recorded in the roadmap. **Carried, urgent before Sprint 5:** the
+submit-time snapshot, since switching a question ON could otherwise re-gate a submitted
+student the day configuration becomes editable.
+
+Full pytest suite green (existing tests unmodified bar the one deliberate pin edit) ·
+jest 1470 · `next lint` 0 · i18n 4534×3 (no new keys) · `next build` clean ·
+`makemigrations --check` clean.
+
 ## Partner and sponsor mail bills the organisation, not the platform - 2026-08-19
 
 **Small-change lane.** No migration. Backend only, 4 files. Completes the billing-attribution

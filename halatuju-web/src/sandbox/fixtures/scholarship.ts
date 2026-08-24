@@ -51,13 +51,25 @@ const fullRequirements: ApplicationRequirements = {
     optional: ['electricity_bill', 'photo', 'school_leaving_cert', 'statement_of_intent',
                'water_bill'],
   },
+  // Sprint 4: the questions block, seeded defaults — every programme today.
+  questions: {
+    required: ['address', 'aspirations', 'consent', 'daily_life', 'family_roster', 'fears',
+               'funding', 'plans'],
+    optional: ['anything_else', 'justification'],
+  },
 }
 
-/** A leaner programme: identity and results only, no means test, one optional extra. */
+/** A leaner programme: identity and results only, no means test, one optional extra —
+ *  and a slimmer set of questions: two narrative questions off, the funding questions off
+ *  (so the wizard's Funding step disappears entirely — the collapse case a designer must see). */
 const leanRequirements: ApplicationRequirements = {
   documents: {
     required: ['ic', 'results_slip'],
     optional: ['statement_of_intent'],
+  },
+  questions: {
+    required: ['address', 'aspirations', 'consent', 'family_roster', 'plans'],
+    optional: ['anything_else'],
   },
 }
 

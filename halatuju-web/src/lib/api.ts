@@ -1458,7 +1458,12 @@ export interface ApplicationCompleteness {
  */
 export interface ApplicationRequirements {
   documents: { required: string[]; optional: string[] }
-  // Sprint 4 adds `questions` here. Not declared until it exists.
+  // Sprint 4 (2026-08-24): which QUESTIONS this programme asks — the story/funding/address
+  // parts of the Step-4 wizard render from it. Optional for the same reason as the whole
+  // block: a cached pre-Sprint-4 payload has no such key, and `questionRequirement()` in
+  // `lib/scholarship.ts` decides the absent case once ('optional' — draw everything, assert
+  // nothing compulsory). Go through that helper, never read this directly.
+  questions?: { required: string[]; optional: string[] }
 }
 
 export interface ScholarshipApplication {

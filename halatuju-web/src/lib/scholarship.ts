@@ -1206,6 +1206,68 @@ export function asksForDocument(
   return documentRequirement(requirements, docType) !== 'off'
 }
 
+// ── Questions (Layer 0 Sprint 4) ─────────────────────────────────────────
+
+/**
+ * The VOCABULARY of question codes, deliberately a static literal — the same rule as
+ * `DOC_TYPES` above. What a programme ASKS is configuration and arrives on the payload
+ * (`app.requirements.questions`); what a question IS stays a closed set an organisation
+ * selects from and never authors. The four story codes are the backend field names.
+ */
+export const QUESTION_CODES = [
+  'aspirations', 'plans', 'daily_life', 'fears',
+  'family_roster', 'funding', 'address', 'consent',
+  'justification', 'anything_else',
+] as const
+export type QuestionCode = typeof QUESTION_CODES[number]
+
+type RequirementsShape = {
+  documents: { required: string[]; optional: string[] }
+  questions?: { required: string[]; optional: string[] }
+} | null | undefined
+
+/**
+ * How this programme treats one question. Same contract as `documentRequirement`, and the
+ * same absent-case rule (Sprint 3b's boundary): **a missing `questions` block means "we were
+ * not told", never "asks nothing"** — degrade to `'optional'`, so every field renders and
+ * nothing is asserted compulsory. The front end displays; `application_completeness` on the
+ * server is the gate, exactly as for documents.
+ */
+export function questionRequirement(
+  requirements: RequirementsShape,
+  code: string,
+): DocRequirement {
+  const q = requirements?.questions
+  if (!q) return 'optional'
+  if (q.required.includes(code)) return 'required'
+  if (q.optional.includes(code)) return 'optional'
+  return 'off'
+}
+
+/** Is this question asked at all (required OR optional)? Off means: do not draw it. */
+export function asksForQuestion(requirements: RequirementsShape, code: string): boolean {
+  return questionRequirement(requirements, code) !== 'off'
+}
+
+// The four "About you" narrative questions — one Card B textarea each.
+export const STORY_QUESTION_CODES = ['aspirations', 'plans', 'daily_life', 'fears'] as const
+
+/**
+ * The wizard steps THIS programme's configuration leaves visible — `NEXT_STEP_ORDER` (which
+ * stays a static literal; a stored step list is Layer 2 in disguise) minus any step whose
+ * questions are all switched off. COMPUTED at render, never stored, never re-orderable.
+ *
+ * Today only `funding` can collapse (its tab holds nothing but the funding questions). The
+ * story step always survives: the family roster is a core catalogue item no organisation can
+ * switch off, so Card A always has content even with all four narrative questions off.
+ * Quiz, documents and consent are not question-governed here (documents has its own block;
+ * consent is core).
+ */
+export function visibleNextSteps(requirements: RequirementsShape): NextStepKey[] {
+  return NEXT_STEP_ORDER.filter((k) =>
+    k !== 'funding' || asksForQuestion(requirements, 'funding'))
+}
+
 export function formatFileSize(bytes: number): string {
   if (!bytes || bytes < 0) return '0 KB'
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`

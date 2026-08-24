@@ -16,6 +16,10 @@ import {
   isStepComplete,
   setOnboardingReturn,
   showsActionCentre,
+  asksForQuestion,
+  questionRequirement,
+  visibleNextSteps,
+  STORY_QUESTION_CODES,
   type NextStepKey,
   type DetailsFormState,
 } from '@/lib/scholarship'
@@ -202,8 +206,11 @@ export default function ScholarshipNextSteps({
       // what's outstanding — so nobody skips ahead with gaps that would later
       // resurface as reviewer queries.
       if (isStepComplete(tab, updated.completeness)) {
-        const idx = NEXT_STEP_ORDER.indexOf(tab)
-        const next = NEXT_STEP_ORDER[idx + 1]
+        // Advance within the VISIBLE steps — a step this programme switched off
+        // (e.g. funding) must not be the place a save strands the student.
+        const visible = visibleNextSteps(updated.requirements)
+        const idx = visible.indexOf(tab)
+        const next = visible[idx + 1]
         if (next) {
           setTab(next)
           setTimeout(() => {
@@ -252,7 +259,17 @@ export default function ScholarshipNextSteps({
 
   const c = app.completeness
   const confirmed = app.status !== 'shortlisted'  // profile_complete or further along
-  const tabIndex = NEXT_STEP_ORDER.indexOf(tab)
+
+  // Layer 0 Sprint 4: the steps + fields THIS programme's configuration leaves visible —
+  // computed every render from the payload, never stored. `NEXT_STEP_ORDER` itself stays
+  // the full static list. A question is drawn only if asked; its `*` marker only if required.
+  const steps = visibleNextSteps(app.requirements)
+  const asks = (code: string) => asksForQuestion(app.requirements, code)
+  const req = (code: string) => questionRequirement(app.requirements, code) === 'required'
+  // If the current tab is a step this programme switched off (state can hold one after a
+  // config change mid-session), fall back to the first visible step.
+  const shownTab = steps.includes(tab) ? tab : steps[0]
+  const tabIndex = steps.indexOf(shownTab)
 
   // Completeness mapping — every step now has a backend signal (S5). The
   // per-step rule lives in isStepComplete() so the rail ticks and the
@@ -344,14 +361,17 @@ export default function ScholarshipNextSteps({
           </div>
         </div>
 
-        {/* Card A.5 — Where you live (S14). State is read-only from /apply. */}
+        {/* Card A.5 — Where you live (S14). State is read-only from /apply.
+            Layer 0 Sprint 4: drawn only if this programme asks the address question;
+            required markers follow the catalogue (the server gate reads the same answer). */}
+        {asks('address') && (
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
           <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardAddress.title')}</h3>
           <p className="text-xs text-gray-500">{t('scholarship.nextSteps.story.cardAddress.intro')}</p>
 
-          {/* address (street) — required */}
+          {/* address (street) */}
           <div>
-            <FieldLabel required>{t('scholarship.nextSteps.story.cardAddress.street')}</FieldLabel>
+            <FieldLabel required={req('address')}>{t('scholarship.nextSteps.story.cardAddress.street')}</FieldLabel>
             <textarea
               className="input" rows={2}
               maxLength={STORY_TEXT_MAX}
@@ -361,10 +381,10 @@ export default function ScholarshipNextSteps({
             />
           </div>
 
-          {/* postal + city — two-column on wider screens, both required */}
+          {/* postal + city — two-column on wider screens */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <FieldLabel required>{t('scholarship.nextSteps.story.cardAddress.postal')}</FieldLabel>
+              <FieldLabel required={req('address')}>{t('scholarship.nextSteps.story.cardAddress.postal')}</FieldLabel>
               <input
                 type="text"
                 inputMode="numeric"
@@ -376,7 +396,7 @@ export default function ScholarshipNextSteps({
               />
             </div>
             <div>
-              <FieldLabel required>{t('scholarship.nextSteps.story.cardAddress.city')}</FieldLabel>
+              <FieldLabel required={req('address')}>{t('scholarship.nextSteps.story.cardAddress.city')}</FieldLabel>
               <input
                 type="text"
                 className="input"
@@ -397,14 +417,19 @@ export default function ScholarshipNextSteps({
             </div>
           </div>
         </div>
+        )}
 
-        {/* Card B — About you */}
+        {/* Card B — About you. Each narrative question is its own catalogue row; a question
+            switched off is not drawn, and the whole card collapses when none of the four is
+            asked (computed here, never stored). */}
+        {STORY_QUESTION_CODES.some(asks) && (
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
           <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardB.title')}</h3>
 
-          {/* aspirations — required */}
+          {/* aspirations */}
+          {asks('aspirations') && (
           <div>
-            <FieldLabel required>{t('scholarship.nextSteps.story.cardB.aspirations')}</FieldLabel>
+            <FieldLabel required={req('aspirations')}>{t('scholarship.nextSteps.story.cardB.aspirations')}</FieldLabel>
             <textarea
               className="input" rows={3}
               maxLength={STORY_TEXT_MAX}
@@ -421,10 +446,12 @@ export default function ScholarshipNextSteps({
               ]}
             />
           </div>
+          )}
 
-          {/* plans — required */}
+          {/* plans */}
+          {asks('plans') && (
           <div>
-            <FieldLabel required>{t('scholarship.nextSteps.story.cardB.plans')}</FieldLabel>
+            <FieldLabel required={req('plans')}>{t('scholarship.nextSteps.story.cardB.plans')}</FieldLabel>
             <textarea
               className="input" rows={3}
               maxLength={STORY_TEXT_MAX}
@@ -441,10 +468,12 @@ export default function ScholarshipNextSteps({
               ]}
             />
           </div>
+          )}
 
-          {/* daily_life — required (S: compulsory narrative) */}
+          {/* daily_life */}
+          {asks('daily_life') && (
           <div>
-            <FieldLabel required>{t('scholarship.nextSteps.story.cardB.dailyLife')}</FieldLabel>
+            <FieldLabel required={req('daily_life')}>{t('scholarship.nextSteps.story.cardB.dailyLife')}</FieldLabel>
             <textarea
               className="input" rows={3}
               maxLength={STORY_TEXT_MAX}
@@ -461,10 +490,12 @@ export default function ScholarshipNextSteps({
               ]}
             />
           </div>
+          )}
 
-          {/* fears (worries / support needed) — required */}
+          {/* fears (worries / support needed) */}
+          {asks('fears') && (
           <div>
-            <FieldLabel required>{t('scholarship.nextSteps.story.cardB.fears')}</FieldLabel>
+            <FieldLabel required={req('fears')}>{t('scholarship.nextSteps.story.cardB.fears')}</FieldLabel>
             <textarea
               className="input" rows={3}
               maxLength={STORY_TEXT_MAX}
@@ -481,7 +512,9 @@ export default function ScholarshipNextSteps({
               ]}
             />
           </div>
+          )}
         </div>
+        )}
 
         {/* Statement-of-intent note */}
         <p className="text-xs text-gray-500">{t('scholarship.nextSteps.story.soiNote')}</p>
@@ -729,8 +762,8 @@ export default function ScholarshipNextSteps({
         {/* Desktop left rail */}
         <aside className="hidden lg:block">
           <nav className="sticky top-6 space-y-1">
-            {NEXT_STEP_ORDER.map((k, i) => {
-              const active = k === tab
+            {steps.map((k, i) => {
+              const active = k === shownTab
               const done = stepDone[k]
               return (
                 <button key={k} type="button" onClick={() => setTab(k)}
@@ -754,20 +787,20 @@ export default function ScholarshipNextSteps({
         <div>
           {/* Progress bar + step indicator */}
           <div className="mb-1 flex gap-1.5">
-            {NEXT_STEP_ORDER.map((k, i) => (
+            {steps.map((k, i) => (
               <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-gray-200'}`} />
             ))}
           </div>
           <p className="text-xs text-gray-500 mb-4">
-            {t('scholarship.nextSteps.stepOf', { n: String(tabIndex + 1), total: String(NEXT_STEP_ORDER.length) })} · {t(`scholarship.nextSteps.tab.${tab}`)}
+            {t('scholarship.nextSteps.stepOf', { n: String(tabIndex + 1), total: String(steps.length) })} · {t(`scholarship.nextSteps.tab.${shownTab}`)}
           </p>
 
           {/* Active section card */}
           <div id="next-steps-active" className="bg-white border rounded-2xl p-5 shadow-sm scroll-mt-6">
             <h2 className="font-semibold text-gray-900 mb-4">
-              {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${tab}`)}
+              {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${shownTab}`)}
             </h2>
-            {sections[tab]}
+            {sections[shownTab]}
           </div>
         </div>
       </div>
@@ -780,11 +813,11 @@ export default function ScholarshipNextSteps({
 
       {/* Bottom tab bar (mobile only) */}
       <nav className="sticky bottom-0 bg-white border-t flex justify-around py-2 -mx-6 px-2 lg:hidden mt-4">
-        {NEXT_STEP_ORDER.map((k) => (
+        {steps.map((k) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
-            <StepIcon step={k} active={k === tab} />
-            <span className={`text-[10px] ${k === tab ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>
+            <StepIcon step={k} active={k === shownTab} />
+            <span className={`text-[10px] ${k === shownTab ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>
               {t(`scholarship.nextSteps.tab.${k}`)}
             </span>
           </button>

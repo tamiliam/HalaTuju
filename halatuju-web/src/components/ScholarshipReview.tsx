@@ -6,7 +6,7 @@ import {
   type ScholarshipApplication, type StudentProfile,
   type ApplicantDocument, type ConsentStatus,
 } from '@/lib/api'
-import { formatNricDisplay } from '@/lib/scholarship'
+import { formatNricDisplay, asksForQuestion } from '@/lib/scholarship'
 import { SUBJECT_NAMES } from '@/lib/subjects'
 import type { NextStepKey } from '@/lib/scholarship'
 
@@ -149,14 +149,19 @@ export default function ScholarshipReview({
           return app.siblings_studying_count != null ? String(app.siblings_studying_count) : ''
         })()} />
         {app.family_context ? <Field label={s('field.familyContext')} value={app.family_context} /> : null}
-        <Field label={s('field.address')} value={addr} />
-        <Field label={s('field.aspirations')} value={app.aspirations} />
-        <Field label={s('field.studyPlans')} value={app.plans} />
-        <Field label={s('field.dailyLife')} value={app.daily_life} />
-        <Field label={s('field.concerns')} value={app.fears} />
+        {/* Layer 0 Sprint 4: a question this programme does not ask is not read back either —
+            a row reading "—" would imply the student skipped something they were never shown. */}
+        {asksForQuestion(app.requirements, 'address') && <Field label={s('field.address')} value={addr} />}
+        {asksForQuestion(app.requirements, 'aspirations') && <Field label={s('field.aspirations')} value={app.aspirations} />}
+        {asksForQuestion(app.requirements, 'plans') && <Field label={s('field.studyPlans')} value={app.plans} />}
+        {asksForQuestion(app.requirements, 'daily_life') && <Field label={s('field.dailyLife')} value={app.daily_life} />}
+        {asksForQuestion(app.requirements, 'fears') && <Field label={s('field.concerns')} value={app.fears} />}
       </Card>
 
-      {/* 4. Funding — chosen study (read-only) → programme length (bold) → support → note */}
+      {/* 4. Funding — chosen study (read-only) → programme length (bold) → support → note.
+          The whole card goes when the programme switched the funding questions off (its Edit
+          link would target a step the wizard no longer renders). */}
+      {asksForQuestion(app.requirements, 'funding') && (
       <Card title={s('section.funding')} editStep="funding">
         <Field label={s('field.chosenStudy')}
                value={app.pathway_certainty === 'sure' ? plansLabel : (app.uncertainty_note || s('field.stillDeciding'))} />
@@ -175,6 +180,7 @@ export default function ScholarshipReview({
         </div>
         {fn?.funding_note ? <Field label={s('field.fundingNote')} value={fn.funding_note} /> : null}
       </Card>
+      )}
 
       {/* 5. Household income (the income wizard answers). Edit jumps to the income wizard. */}
       <Card title={s('section.income')} editStep="documents" editAnchor="income-wizard">

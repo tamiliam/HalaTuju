@@ -295,6 +295,37 @@ test — adding `questions` is a deliberate edit to `test_the_payload_carries_on
 
 ## Sprint 4 — Questions: the catalogue governs the student application
 
+### ✅ SHIPPED 2026-08-24 (worktree `.worktrees/layer0-sprint4`) — both halves in one sprint
+
+Retro `docs/retrospective-2026-08-24-layer0-questions.md`. **NO migration.** Existing suite
+passed unmodified bar the one edit Sprint 3b itself pinned for this purpose
+(`test_the_payload_carries_only_the_documents_block_for_now` → asserts both blocks).
+Both empty-catalogue guards bite-checked (disabled → 3 tests fail each way).
+
+**What scoping found that this section did not predict:**
+- **The story questions do NOT live on `apply/page.tsx`.** The four narrative questions,
+  funding, and address are all on the Step-4 wizard (`ScholarshipNextSteps.tsx`); the file
+  list below was written before 3b's discovery that the JSX is what governs. `ApplyFormState`
+  / `buildApplicationPayload` needed no change.
+- **`anything_else` (apply form) and `justification` (rendered nowhere) are NOT yet
+  governed.** Both are optional and never gate, so an off row today changes nothing a student
+  sees. The apply form is PRE-application — no application payload exists to carry the
+  questions block — so governing it needs a public per-programme requirements read.
+  **Deliberately deferred to Sprint 5's neighbourhood** (when the org screen makes overrides
+  real); recorded here so it is a decision, not a gap someone discovers.
+- **`FundingNeed.categories` untouched** — which categories exist is vocabulary, not
+  per-programme configuration (the DOC_TYPES rule, again).
+
+**⚠ The step list stayed static.** `NEXT_STEP_ORDER` is untouched; `visibleNextSteps()`
+FILTERS it at render (only `funding` can collapse — story survives because the family roster
+is core). Computed, never stored — the Layer 2 constraint held.
+
+**⚠ Carried forward, now URGENT before Sprint 5:** the **submit-time snapshot**. With Sprint 4
+live, switching a question ON (off→required) would make submitted students with blank answers
+incomplete, and `revert_if_profile_incomplete` would un-submit them. Harmless today ONLY
+because no UI can change configuration yet — Sprint 5 is that UI, so the snapshot must land
+first (it was already a named prerequisite there, with `check2_queries.py`).
+
 **Goal.** A programme configures which questions it asks. One journey for every tenant, different contents.
 
 **Scope.** `services.py` completeness parts (`details_done` 1877, `_family_done` 1941, funding 1886),
