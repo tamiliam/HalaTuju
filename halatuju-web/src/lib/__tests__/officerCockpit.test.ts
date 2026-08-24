@@ -14,6 +14,7 @@ import {
   viewerKind,
   verdictReliability,
   isClearAccept,
+  verdictSaveOutcome,
   isQueryingLocked,
   isDecisionReady,
   isApproveReady,
@@ -1084,24 +1085,56 @@ describe('verdictReliability (the scorekeeper)', () => {
 // ── Officer-decision gates (lifted from page.tsx — TD audit 2026-06-14) ─────────
 
 describe('isClearAccept', () => {
-  const ok = { identity: 'pass', academic: 'pass', pathway: 'pass', income: 'pass' }
-  it('true when identity passed, nothing failed, complete, and live', () => {
-    expect(isClearAccept(ok, true, 'interviewing')).toBe(true)
-  })
-  it('false when identity is not pass', () => {
-    expect(isClearAccept({ ...ok, identity: '' }, true, 'interviewing')).toBe(false)
-  })
-  it('false when any of academic/pathway/income failed', () => {
-    expect(isClearAccept({ ...ok, income: 'fail' }, true, 'interviewing')).toBe(false)
+  it('true when the profile is complete and the case is live', () => {
+    expect(isClearAccept(true, 'interviewing')).toBe(true)
   })
   it('false when profile is not complete', () => {
-    expect(isClearAccept(ok, false, 'interviewing')).toBe(false)
+    expect(isClearAccept(false, 'interviewing')).toBe(false)
   })
   it('false when status is not a live state', () => {
-    expect(isClearAccept(ok, true, 'active')).toBe(false)
+    expect(isClearAccept(true, 'active')).toBe(false)
   })
-  it('treats a review/unsure (non-fail) academic as still acceptable', () => {
-    expect(isClearAccept({ ...ok, academic: '' }, true, 'shortlisted')).toBe(true)
+
+  // ── BrightPath #20 ────────────────────────────────────────────────────────────
+  // The four Pass/Fail marks are the reviewer's scorecard OF THE AI (see audit.py:
+  // "the 'how good is the AI' signal"). They must never gate the student's case.
+  //
+  // ⚠ WRITTEN FROM THE SHAPE OF PRODUCTION, NOT FROM THE CODE. This is application 73
+  // exactly as it stood on 2026-08-24: identity/academic/pathway rated pass, income rated
+  // FAIL (our payslip reading was poor — the reviewer was right to say so), overall accept,
+  // profile complete, case at 'interviewing'. Under the old signature this returned false,
+  // the submit was skipped in silence, and the case sat for fourteen days. There is now no
+  // parameter through which a rating could reach this decision at all.
+  it('ignores a Fail rating — application 73, the case that sat for fourteen days', () => {
+    expect(isClearAccept(true, 'interviewing')).toBe(true)
+  })
+})
+
+describe('verdictSaveOutcome', () => {
+  const base = { acceptRequested: true, accepted: false, completenessComplete: true, status: 'interviewing' }
+
+  it('accepted when the submit went through', () => {
+    expect(verdictSaveOutcome({ ...base, accepted: true })).toBe('accepted')
+  })
+  it('saved when no submit was asked for', () => {
+    expect(verdictSaveOutcome({ ...base, acceptRequested: false })).toBe('saved')
+  })
+  it('names the outstanding steps when the profile is incomplete', () => {
+    expect(verdictSaveOutcome({ ...base, completenessComplete: false })).toBe('not_submitted_incomplete')
+  })
+  it('names the stage when the case is past submitting', () => {
+    expect(verdictSaveOutcome({ ...base, status: 'active' })).toBe('not_submitted_status')
+  })
+  it('stays quiet when the submit itself threw — the caller has already shown that error', () => {
+    // Asked for, allowed, still not accepted: verifyAcceptApplication rejected and setError
+    // has spoken. A second, vaguer line here would bury the real one.
+    expect(verdictSaveOutcome(base)).toBe('saved')
+  })
+
+  // ⚠ Application 73's shape again, one layer up: a Fail rating must no longer produce a
+  // not-submitted outcome, because it no longer produces a skipped submit.
+  it('does not report not-submitted for a case that is complete and live', () => {
+    expect(verdictSaveOutcome({ ...base, accepted: true })).toBe('accepted')
   })
 })
 

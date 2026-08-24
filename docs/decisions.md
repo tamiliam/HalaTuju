@@ -7759,3 +7759,63 @@ would then be built against a real example instead of an imagined one.
 
 **Revisit if:** more than one or two live cases accumulate, or a reviewer asks for the answer to
 appear beside the score.
+
+## The AI scorecard is removed from the submit gate, not merely explained — BrightPath #20, 2026-08-24
+
+**Decision:** `isClearAccept` no longer takes the officer verdict at all. The reviewer's four
+Pass/Fail marks are a rating of the AI (`audit.compute_overrides` — *"the 'how good is the AI'
+signal"*) and now decide nothing about the student's case. The gate is profile-complete plus a live
+status; the backend keeps its own hard gates (completeness, a recorded verdict, NRIC uniqueness),
+and the red-fact floor stays where it belongs, at the QC gate, computed from the AI's own live
+`build_verdict`. A companion closed union, `verdictSaveOutcome`, names every result of a save so no
+branch can be silent.
+
+**Alternatives considered:** (a) keep the gate and add an explanatory message — rejected: it makes
+the freeze visible but leaves a quality rating deciding a student's progress, which is the actual
+fault; (b) keep only `identity === 'pass'` — rejected for the same reason, identity is one of the
+four ratings and is no more a statement about the applicant than the others; (c) leave the officer
+verdict as a parameter and document that it must not be read — rejected, a comment asking a future
+caller to behave is a request and only the signature is a rule.
+
+**Rationale:** the two things had been conflated. `overall` ('accept'/'decline') is the reviewer's
+stance on the student; the four facts are the reviewer auditing the machine. Gating on the latter
+inverted the incentive — an honest "the AI read this badly" cost the applicant a fortnight — and
+was redundant besides, because QC already refuses a case whose AI facts are red and already offers
+a recorded override for it. Removing the parameter makes the old behaviour unexpressible rather
+than merely discouraged.
+
+**Trade-offs:** every save-with-Approve on a complete, live case now submits, including one whose
+reviewer rated identity a Fail. Accepted: the reviewer chose Approve, the identity checklist is
+theirs, and QC is the second pair of eyes by design. The reliability figure is unaffected — the
+marks are still recorded, they simply no longer act.
+
+**Revisit if:** an explicit `officer_verdict.overall` toggle is ever built (TD-083's unbuilt half),
+or QC's floor moves — the two must not both drift.
+
+## An untagged income document is filed by the household's only earner, not left blank — BrightPath #20, 2026-08-24
+
+**Decision:** the upload tag guard gains a third, last-resort branch. When a document's name cannot
+be read and its tag is blank, it is filed to `implied_single_member(application)` — the STR route's
+declared `income_earner`. The helper is extracted from `_proof_member`, so the rule the readers have
+always applied and the rule the writer now applies are one function.
+
+**Alternatives considered:** (a) leave the blank and fix only the display — rejected: the blank is
+not cosmetic, it is a slot, and an always-empty slot means the document wins it and stays live
+beside the copy it should have replaced; (b) extend the fallback to the salary route by picking the
+first working member — rejected, several members may each hold documents there and a wrong guess
+files one earner's payslip under another; (c) add the deferred DB uniqueness constraint — out of
+scope and still deferred (TD-115).
+
+**Rationale:** TD-115 made the upload endpoint authoritative for income-doc tagging and left the
+readers permanently lenient to a blank. The leniency held; the authority had a hole exactly where
+the document was unreadable, which is the case where a duplicate matters most. Filing by the only
+possible owner cannot mis-attribute on the STR route, and cannot bury good evidence anywhere,
+because the re-tagged document still goes through STAGE → JUDGE → PROMOTE and an unreadable one is
+not `usable`.
+
+**Trade-offs:** an unreadable document that genuinely belongs to nobody on the roster is now filed
+under the earner instead of showing in the unassigned catch-all. It lands in Replaced rather than
+live, so the cost is a slightly less honest history in exchange for a correct live slot.
+
+**Revisit if:** the STR route ever admits more than one earner (the single-earner assumption behind
+both this and `_proof_member` breaks together), or the DB constraint lands.

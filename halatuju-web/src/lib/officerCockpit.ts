@@ -1007,11 +1007,54 @@ export function isQcAccepted(status: string): boolean {
 // The four facts the officer rules on.
 export const DECISION_FACTS = ['identity', 'academic', 'pathway', 'income'] as const
 
-/** "Save verdict IS accept": identity passed, nothing failed, profile complete, case still live. */
-export function isClearAccept(officerVerdict: OfficerVerdict, completenessComplete: boolean, status: string): boolean {
-  return officerVerdict.identity === 'pass'
-    && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
-    && !!completenessComplete && LIVE_STATES.includes(status)
+/**
+ * "Save verdict IS accept": the profile is complete and the case is still live.
+ *
+ * ⚠ THE FOUR PASS/FAIL MARKS ARE DELIBERATELY NOT PART OF THIS TEST (BrightPath #20).
+ * They are the reviewer's scorecard OF THE AI — `audit.compute_overrides` reads them against
+ * what the AI *asserted* to produce the reliability figure. They say nothing about the student,
+ * so they must never decide whether the student's case moves. They used to: a Fail on academic,
+ * pathway or income made this return false, the submit was skipped, and NOTHING on screen said
+ * so. Application 73 sat at `interviewing` for fourteen days after a recorded Accept, because
+ * its reviewer honestly reported that our payslip reading was poor.
+ *
+ * The red-fact floor has NOT been removed — it lives at the QC gate, where it belongs, and is
+ * computed from the AI's OWN live verdict (`build_verdict` → `verdict_gap_floor`), never from a
+ * rating of it. Gating here as well was both wrong and redundant.
+ *
+ * ⚠ The officer verdict is NOT a parameter, on purpose: there is no way to pass the ratings back
+ * in. A comment asking a future caller not to is a request; removing the parameter is a rule.
+ */
+export function isClearAccept(completenessComplete: boolean, status: string): boolean {
+  return !!completenessComplete && LIVE_STATES.includes(status)
+}
+
+/**
+ * What a "Save verdict" click actually DID, as one closed set of names.
+ *
+ * ⚠ THIS EXISTS SO THAT NO OUTCOME CAN BE SILENT — the whole of BrightPath #20 was a branch with
+ * no message attached. Every value here must have a line on screen; adding a value without one is
+ * the bug returning. The caller renders it and nothing else decides.
+ */
+export type VerdictSaveOutcome =
+  | 'accepted'                   // recorded AND submitted to QC
+  | 'not_submitted_incomplete'   // asked to submit; the applicant has steps outstanding
+  | 'not_submitted_status'       // asked to submit; the case is past a submittable stage
+  | 'saved'                      // recorded only — no submit was asked for, or one failed loudly
+
+export function verdictSaveOutcome(input: {
+  acceptRequested: boolean
+  accepted: boolean
+  completenessComplete: boolean
+  status: string
+}): VerdictSaveOutcome {
+  if (input.accepted) return 'accepted'
+  if (!input.acceptRequested) return 'saved'
+  if (!input.completenessComplete) return 'not_submitted_incomplete'
+  if (!LIVE_STATES.includes(input.status)) return 'not_submitted_status'
+  // Asked, allowed, and still not accepted: the submit call itself threw. The caller has already
+  // surfaced that error, so this must not overwrite it with a second, vaguer explanation.
+  return 'saved'
 }
 
 /** Querying (raise / Resolve / Ask again / request doc) is closed once the interview is concluded. */

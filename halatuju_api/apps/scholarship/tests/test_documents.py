@@ -371,6 +371,84 @@ class TestDocumentApi(TestCase):
         self.assertEqual(live.count(), 1)
         self.assertEqual(live.first().id, resp.json()['id'])
 
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://s/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_unreadable_blank_income_doc_falls_back_to_the_single_earner(self, mock_vision, _dl):
+        """BrightPath #20 — the LAST-RESORT tag. A blurry income doc arrives with no member AND no
+        readable name, so neither the client nor the name can say whose it is. On the STR route the
+        household admits exactly one earner, so it can only be his.
+
+        ⚠ WRITTEN FROM THE SHAPE OF PRODUCTION. This is application 73 on 2026-08-08: the same
+        payslip uploaded twice fifty seconds apart, once tagged 'father' (correctly replaced) and
+        once untagged. The untagged copy kept its blank tag, and a blank tag is a SLOT OF ITS OWN —
+        permanently empty, so the doc won it by default and sat in the live documents beside the
+        good copy for a fortnight. The count assertion is the regression: TWO live salary slips for
+        one earner is the bug; one is the fix.
+
+        ⚠ `profile_completed_at` IS LOAD-BEARING, not scene-setting. Pre-consent, the STR-route
+        force-tag already stamps every income doc with the earner, so this test would pass with the
+        fallback deleted — it would be measuring the force-tag, not the fix. Application 73 gave
+        consent on 1 August and was uploading on the 8th, which is precisely the window where the
+        force-tag has stopped and nothing had replaced it. Verified by deleting the fallback and
+        watching this fail.
+        """
+        from django.utils import timezone
+        self.app_a.income_route = 'str'
+        self.app_a.income_earner = 'father'
+        self.app_a.father_name = 'RAVI A/L PERIAKARUPPAN'
+        self.app_a.profile_completed_at = timezone.now()          # POST-consent, as #73 was
+        self.app_a.save(update_fields=['income_route', 'income_earner', 'father_name',
+                                       'profile_completed_at'])
+        good = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='salary_slip', household_member='father',
+            storage_path=f'{self.app_a.id}/salary_slip/good')
+
+        def _read(doc):                      # the read succeeds but yields NO name — the blurry scan
+            from django.utils import timezone as _tz
+            doc.vision_name = ''
+            doc.vision_run_at = _tz.now()
+            doc.save(update_fields=['vision_name', 'vision_run_at'])
+        mock_vision.side_effect = _read
+
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'salary_slip',       # NO household_member, and no name to derive one from
+            'storage_path': f'{self.app_a.id}/salary_slip/blurry',
+            'original_filename': 'IMG-blurry.jpg', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201, resp.content)
+        doc = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertEqual(doc.household_member, 'father')   # the only earner it could belong to
+
+        # No blank-tagged live slot survives — that empty slot is what let the duplicate live.
+        self.assertFalse(ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='salary_slip', household_member='',
+            superseded_at__isnull=True).exists())
+        # And the earner has ONE live payslip, not the two application 73 carried.
+        self.assertEqual(ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='salary_slip', household_member='father',
+            superseded_at__isnull=True).count(), 1)
+        good.refresh_from_db()               # whichever won, the other is retained as history
+
+    def test_single_earner_fallback_stays_out_of_the_salary_route(self):
+        """The fallback is deliberately STR-only. On the salary route several members may each hold
+        documents, so an unreadable untagged doc is genuinely ambiguous and the blank must stand —
+        guessing there would file one earner's payslip under another."""
+        from apps.scholarship.income_engine import implied_single_member
+        self.app_a.income_route = 'str'
+        self.app_a.income_earner = 'father'
+        self.app_a.save(update_fields=['income_route', 'income_earner'])
+        self.assertEqual(implied_single_member(self.app_a), 'father')
+
+        self.app_a.income_route = 'salary'
+        self.app_a.save(update_fields=['income_route'])
+        self.assertEqual(implied_single_member(self.app_a), '')
+
+        self.app_a.income_route = 'str'
+        self.app_a.income_earner = ''
+        self.app_a.save(update_fields=['income_route', 'income_earner'])
+        self.assertEqual(implied_single_member(self.app_a), '')
+
     @patch('apps.scholarship.vision.run_field_extraction_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_str_route_force_tag_only_pre_consent(self, _del, _ext):

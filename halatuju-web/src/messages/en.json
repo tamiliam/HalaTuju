@@ -4404,6 +4404,8 @@
       "decision": {
         "title": "Recommendation",
         "savedAndAccepted": "Verdict saved — applicant accepted.",
+        "notSubmittedIncomplete": "Verdict saved, but NOT sent to QC — this applicant still has required steps outstanding.",
+        "notSubmittedStatus": "Verdict saved, but NOT sent to QC — this case is past the stage where it can be submitted.",
         "declineSentToQc": "Decline recorded — sent to QC for confirmation."
       },
       "recordVerdict": {

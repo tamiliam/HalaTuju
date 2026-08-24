@@ -1086,9 +1086,21 @@ class DocumentListCreateView(APIView):
         # the verdict then reads it under the right member. A genuinely-unresolvable name leaves the
         # tag untouched (the cockpit catch-all still shows a blank — never hidden).
         if doc.doc_type in ('parent_ic', 'salary_slip', 'epf', 'str'):
-            from .income_engine import resolved_member_for, name_contradicts_tag
+            from .income_engine import (resolved_member_for, name_contradicts_tag,
+                                        implied_single_member)
             has_tag = bool((doc.household_member or '').strip())
-            derived = name_contradicts_tag(app, doc) if has_tag else resolved_member_for(app, doc)
+            # (c) LAST RESORT, blank tag only — the name could not be read at all, but the household
+            #     admits exactly one candidate (the STR route's declared earner), so the document
+            #     cannot belong to anyone else. BrightPath #20: WITHOUT this, an unreadable untagged
+            #     income doc keeps its blank tag, and a blank tag is a slot of its own — permanently
+            #     empty, so the doc wins it by default and sits in the live documents beside the good
+            #     copy it was meant to replace. The worst-read documents were the ones that lingered.
+            #     Deliberately last: a readable name always decides first, and the salary route (where
+            #     several members may each hold documents) returns '' and leaves the blank alone.
+            #     Safe by construction — the re-tagged doc still goes through STAGE → JUDGE → PROMOTE
+            #     below, and an unreadable doc is not `usable`, so it can only land in Replaced.
+            derived = (name_contradicts_tag(app, doc) if has_tag
+                       else (resolved_member_for(app, doc) or implied_single_member(app)))
             if derived and derived != (doc.household_member or '').strip():
                 doc.household_member = derived
                 doc.save(update_fields=['household_member'])
