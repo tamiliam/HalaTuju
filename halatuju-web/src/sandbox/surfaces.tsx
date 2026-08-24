@@ -13,6 +13,7 @@
  */
 import type { ReactNode } from 'react'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
+import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ScholarshipApplyPage from '@/app/scholarship/apply/page'
 import SponsorStudentsPage from '@/app/sponsor/(portal)/students/page'
 import { AuthContext } from '@/lib/auth-context'
@@ -59,6 +60,35 @@ export const SURFACES: Surface[] = [
       + 'Layer 0 buys. Style both: a tenant will land on each.',
     render: () => (
       <ScholarshipDocuments token={SANDBOX_TOKEN} app={sandboxApplicationLeanProgramme} />
+    ),
+  },
+  {
+    slug: 'application-steps',
+    title: 'Application — the step wizard',
+    note:
+      'The pre-submit Step-4 wizard on the FULL programme: five steps in the rail, every '
+      + 'story question drawn, the Funding step present. Layer 0 Sprint 4 made the questions '
+      + 'configuration-driven; this is the baseline to compare the lean surface against.',
+    render: () => (
+      <ScholarshipNextSteps
+        initialApp={{ ...sandboxApplication, status: 'shortlisted' }}
+        token={SANDBOX_TOKEN}
+      />
+    ),
+  },
+  {
+    slug: 'application-steps-lean',
+    title: 'Application — the step wizard, leaner programme',
+    note:
+      'The SAME student at an organisation that switched questions off: the Funding step is '
+      + 'gone from the rail (four steps — computed at render, never stored), and “Your story” '
+      + 'no longer draws the daily-life or worries questions. Same component reading a '
+      + 'different configuration — nothing about this page is coded differently.',
+    render: () => (
+      <ScholarshipNextSteps
+        initialApp={{ ...sandboxApplicationLeanProgramme, status: 'shortlisted' }}
+        token={SANDBOX_TOKEN}
+      />
     ),
   },
   {
