@@ -2012,21 +2012,37 @@ def application_completeness(application):
     """
     profile = application.profile
     quiz_done = bool(profile and profile.student_signals)
-    # Story narrative: aspirations + plans + daily life + worries/support all
-    # required (the latter two made compulsory per request — they carry the
-    # need-context an interviewer relies on).
-    details_done = bool(
-        application.aspirations.strip() and application.plans.strip()
-        and application.daily_life.strip() and application.fears.strip()
-    )
-    try:
-        fn = application.funding_need
-        # S23: programme_months is now compulsory too (the radio group on the
-        # Funding tab). The exact figure isn't load-bearing; what matters is
-        # the student picked one — otherwise admin can't size the assistance.
-        funding_done = bool(fn.categories) and fn.programme_months is not None
-    except FundingNeed.DoesNotExist:
-        funding_done = False
+    # Layer 0 Sprint 4: WHICH questions this programme asks now comes from the catalogue
+    # (`requirements.py`), exactly as Sprint 3a did for the documents. Only a question resolved
+    # 'required' gates; 'optional' or 'off' makes its part vacuously true (the front end reads
+    # the same resolution off the payload, so an off question is not drawn either). For every
+    # programme today the resolved set reproduces the literals this function used to spell out —
+    # the catalogue defaults are those literals by construction — so nothing moves, and the
+    # existing suite passing unmodified is the evidence. A question resolved 'optional' still
+    # ACCEPTS an answer; it just cannot block. The per-part rules below (which fields, which
+    # FundingNeed columns) stay this function's own — the catalogue only says whether they run.
+    asked = requirements.resolve(application, 'question')
+    # Story narrative: the four "your story" questions, each on its own catalogue row (all
+    # default to required; an organisation may switch any of them off). The question codes ARE
+    # the model field names for these four.
+    story_required = [f for f in ('aspirations', 'plans', 'daily_life', 'fears')
+                      if asked.get(f) == 'required']
+    details_done = all(bool(getattr(application, f).strip()) for f in story_required)
+    if asked.get('funding') != 'required':
+        # The programme does not require the funding questions — the part cannot gate. (An
+        # inactive/removed catalogue item also lands here: deactivating an item is the
+        # platform's deliberate withdrawal of the question, not a missing configuration —
+        # the unconfigured case is already handled inside `requirements.resolve`.)
+        funding_done = True
+    else:
+        try:
+            fn = application.funding_need
+            # S23: programme_months is now compulsory too (the radio group on the
+            # Funding tab). The exact figure isn't load-bearing; what matters is
+            # the student picked one — otherwise admin can't size the assistance.
+            funding_done = bool(fn.categories) and fn.programme_months is not None
+        except FundingNeed.DoesNotExist:
+            funding_done = False
     present = set(application.documents.filter(superseded_at__isnull=True)
                   .values_list('doc_type', flat=True))
     # Gate v2 (2026-06-05): the documents bar is route-aware and STRICT for a not-yet-
@@ -2064,13 +2080,19 @@ def application_completeness(application):
             {'ic', 'results_slip', 'parent_ic'}.issubset(present)
             and bool(present & {'str', 'salary_slip', 'epf'})
         )
+    # `consent` is a CORE catalogue item (a legal requirement, not a programme preference):
+    # `requirements.resolve` floors it at 'required' whatever an organisation writes, so
+    # reading the seam here could only ever return 'required'. The literal stays.
     consent_done = application.consents.filter(is_active=True).exists()
-    address_done = bool(
-        profile
-        and (profile.address or '').strip()
-        and (profile.postal_code or '').strip()
-        and (profile.city or '').strip()
-    )
+    if asked.get('address') != 'required':
+        address_done = True
+    else:
+        address_done = bool(
+            profile
+            and (profile.address or '').strip()
+            and (profile.postal_code or '').strip()
+            and (profile.city or '').strip()
+        )
     guardian_docs_done = _guardian_docs_done(application, profile, present)
     family_done = _family_done(application)
     return {
@@ -2089,7 +2111,11 @@ def application_completeness(application):
 
 
 def _family_done(application):
-    """Redesign 2026-06: the structured family roster is compulsory. Father + mother
+    """`family_roster` is a CORE catalogue item (the family/income block, per the owner's
+    2026-07-28 policy floor) — `requirements.resolve` floors it at 'required', so no
+    organisation can switch it off and this function is unconditionally the gate.
+
+    Redesign 2026-06: the structured family roster is compulsory. Father + mother
     profession set; their name set UNLESS the profession is deceased/no_contact (an
     absent parent can't always be named); and both sibling counts answered (not None,
     so "0" is a deliberate answer). Already-submitted apps are grandfathered (they

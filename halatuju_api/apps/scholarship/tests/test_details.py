@@ -699,13 +699,15 @@ class TestRequirementsOnThePayload(TestCase):
         ProgrammeApplicationItem.objects.update_or_create(
             programme=self.programme, item=item, defaults={'state': state})
 
-    def test_the_payload_carries_only_the_documents_block_for_now(self):
-        # Pinned so Sprint 4 adding 'questions' is a deliberate change to this test rather than a
-        # field that appears one day and nobody notices the front end is ignoring it.
+    def test_the_payload_carries_exactly_the_documents_and_questions_blocks(self):
+        # Sprint 3b pinned this at {'documents'} precisely so that Sprint 4 adding 'questions'
+        # would be a deliberate edit to this test — this is that edit (2026-08-24). Still an
+        # exact-set assertion, so a third block appearing one day is again a loud change.
         self._seed()
         resp = self.client.get(f'/api/v1/scholarship/applications/{self.app.id}/')
-        self.assertEqual(set(resp.json()['requirements']), {'documents'})
+        self.assertEqual(set(resp.json()['requirements']), {'documents', 'questions'})
         self.assertEqual(set(self._documents()), {'required', 'optional'})
+        self.assertEqual(set(resp.json()['requirements']['questions']), {'required', 'optional'})
 
     def test_a_seeded_catalogue_asks_for_what_the_gate_enforces(self):
         # The whole point: what the student is SHOWN is now the same list the submission gate
@@ -760,3 +762,48 @@ class TestRequirementsOnThePayload(TestCase):
         docs = self._documents()
         self.assertEqual(docs['required'], sorted(docs['required']))
         self.assertEqual(docs['optional'], sorted(docs['optional']))
+
+    # ── Sprint 4: the questions block (mirrors the document cases above) ──────
+
+    def _questions(self):
+        resp = self.client.get(f'/api/v1/scholarship/applications/{self.app.id}/')
+        self.assertEqual(resp.status_code, 200)
+        return resp.json()['requirements']['questions']
+
+    def _setq(self, code, state):
+        from apps.scholarship.models import ApplicationItem, ProgrammeApplicationItem
+        item = ApplicationItem.objects.get(kind='question', code=code)
+        ProgrammeApplicationItem.objects.update_or_create(
+            programme=self.programme, item=item, defaults={'state': state})
+
+    def test_the_seeded_question_defaults_reach_the_student(self):
+        self._seed()
+        q = self._questions()
+        self.assertEqual(q['required'],
+                         ['address', 'aspirations', 'consent', 'daily_life',
+                          'family_roster', 'fears', 'funding', 'plans'])
+        self.assertEqual(q['optional'], ['anything_else', 'justification'])
+
+    def test_a_question_switched_off_appears_in_neither_list_and_its_neighbour_stays(self):
+        # Off is absence — the wizard does not draw the field. And the neighbour NOT moving is
+        # what distinguishes "this question went" from "everything went".
+        self._seed()
+        self._setq('aspirations', 'off')
+        q = self._questions()
+        self.assertNotIn('aspirations', q['required'] + q['optional'])
+        self.assertIn('plans', q['required'])
+
+    def test_a_core_question_cannot_be_switched_off_via_the_payload_either(self):
+        self._seed()
+        self._setq('consent', 'off')
+        self.assertIn('consent', self._questions()['required'])
+
+    def test_an_empty_catalogue_beside_a_programme_still_asks_every_question(self):
+        # PRODUCTION'S SHAPE (the 3a rule, question kind): unconfigured means "as today",
+        # never "asks nothing" — an empty answer here would blank the story tab's markers
+        # while the server kept gating.
+        from apps.scholarship.models import ApplicationItem
+        self.assertEqual(ApplicationItem.objects.filter(kind='question').count(), 0)
+        q = self._questions()
+        self.assertIn('aspirations', q['required'])
+        self.assertIn('anything_else', q['optional'])

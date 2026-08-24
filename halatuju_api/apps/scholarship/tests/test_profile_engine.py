@@ -159,6 +159,23 @@ class TestProfilePrompt(TestCase):
         self.assertIn('scholarship applications', prompt)              # help_scholarship=yes
         self.assertIn('financial', prompt)                             # uncertainty reason
 
+    def test_prompt_marks_an_unanswered_question_not_provided_and_says_say_nothing(self):
+        """Layer 0 Sprint 4 audit — absent means absent, not zero (the `_gated_str` shape).
+
+        A question an organisation switches OFF is never answered, so its field arrives blank.
+        The prompt's existing mechanism is what keeps it out of the sponsor profile: a blank
+        renders as the 'not provided' sentinel AND the instruction tells the writer that a
+        'not provided' field means say nothing about it. Pinned here because the questions
+        catalogue now makes blank-by-configuration a normal state, not an edge case — if either
+        half of this mechanism is reworded away, a switched-off question starts reading as a
+        student who ignored the form.
+        """
+        self.app.aspirations = ''
+        self.app.save()
+        prompt = _build_prompt(self.app)
+        self.assertIn("Aspirations (student's words): not provided", prompt)
+        self.assertIn('means say nothing about it', prompt)
+
     def test_prompt_includes_statement_of_intent_text(self):
         """The OCR'd Statement of Intent letter (vision_fields['text']) feeds the draft."""
         ApplicantDocument.objects.create(

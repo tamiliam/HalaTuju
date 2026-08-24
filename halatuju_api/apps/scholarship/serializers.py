@@ -750,7 +750,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
         return application_completeness(obj)
 
     def get_requirements(self, obj):
-        """What THIS programme asks for — `{'documents': {'required': [...], 'optional': [...]}}`.
+        """What THIS programme asks for — `{'documents': {...}, 'questions': {...}}`, each block
+        `{'required': [...], 'optional': [...]}`.
 
         The Documents tab renders from this, so a document an organisation has not asked for is
         not drawn at all, and one it has promoted to required carries the marker. Before Sprint 3b
@@ -764,11 +765,21 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
         income section", which is a membership test, not a re-implementation of the route rules —
         those stay entirely on the server.
 
-        Cheap: `requirements.resolve` is one query, memoised on the instance, and
+        Sprint 4 added `questions`: the story / funding / address parts of the Step-4 wizard
+        render (and mark compulsory) from it, exactly as the Documents tab reads `documents`.
+        A code that appears in neither list is not asked — the front end does not draw it, and
+        `application_completeness` does not gate on it. The codes are a closed vocabulary (the
+        catalogue selects from it; an organisation never authors a question), so the front end
+        may key rendering on them the way `DocType` keys the document cards.
+
+        Cheap: `requirements.resolve` is one query per kind, memoised on the instance, and
         `get_completeness` above has already paid for it on every application.
         """
         from . import requirements
-        return {'documents': requirements.payload_for(obj, 'document')}
+        return {
+            'documents': requirements.payload_for(obj, 'document'),
+            'questions': requirements.payload_for(obj, 'question'),
+        }
 
 
 # ── Documents / referee / consent (Sprint 5a) ────────────────────────────
