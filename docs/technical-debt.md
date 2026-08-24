@@ -9,7 +9,7 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-08-19** it holds **195 distinct ids through TD-219, of which 109 are open** —
+a running log; as of **2026-08-24** it holds **196 distinct ids through TD-220, of which 110 are open** —
 see the Open Items Index below, which carries the significant ones and a note on how that count was
 reached (a naive parse over-reports by 17).
 
@@ -56,6 +56,10 @@ pending items, not all 109; the per-entry marker in the body remains authoritati
 - **TD-219** — nothing tests the seam between a view and the service it calls. Two defects in one
   day slipped through it, one of them 500-ing every answer for eighteen days. ~3h.
 - **TD-114** — a fact can read CERTAIN off documents whose genuineness was never checked.
+- **TD-220** — the document chip shows the same red for "does not match" and "could not be read",
+  so a reviewer cannot tell a misread from a failure. ~1h for the label split. **This is the next
+  instance of the "UI asserts what nothing checks" watch** — read the 2026-08-19 consolidation
+  review before generalising from it.
 
 ### Live defects with a user on the other side
 - **TD-207** — **password reset is broken for every admin who has already onboarded**, reviewers and
@@ -2779,3 +2783,38 @@ Written as a convention it becomes exactly the class of fix TD-218's neighbour r
 correctness depending on every future author remembering.
 
 **Estimate:** ~3h for the guard plus the backfill of missing seam tests it reports.
+
+### [TD-220] The payslip reader misreads IC digits, and the mismatch chip cannot say which — low
+
+**Status:** Open · raised 2026-08-24 (BrightPath #20) · **not billable** (observed while fixing the
+rating-gated submit; the owner has not been asked to pay for it)
+
+On application **#73** the father's payslip extracts `751206-06-5041`. His MyKad and his STR both
+read `751206-08-5941`. Same name, same employer, same birth date — two digits misread off a scanned
+PDF, the state code and one digit of the serial.
+
+The consequence is not the misread itself but what the cockpit does with it. The IC chip on that
+document turns **red**, and red is the same colour it shows for a number we could not read at all.
+The reviewer sees a red chip on a document that visibly *has* an IC printed on it, reasonably
+concludes the reader failed, and marks the AI down — which is exactly what happened here, and under
+the pre-#20 gate that mark then froze his own case for a fortnight.
+
+**Two separable pieces of work, and only the second is cheap:**
+
+1. **Reading fewer digits wrongly** is an extraction-accuracy problem on low-quality scans. No
+   bounded fix; a hint change would need measuring across the corpus, not reasoning about one file.
+2. **Saying WHICH failure it is** is bounded. `mismatch` and `unreadable` are already distinct
+   verdicts internally (`resolution.doc_match_verdict` returns both, and `promotion.should_promote`
+   treats them the same only by coincidence of both being not-usable). The chip collapses them into
+   one red. Splitting the label — "does not match the IC on file" versus "could not be read" — would
+   have told Kaneswaran the machine read the number and disagreed, which is a different and much
+   more actionable statement.
+
+**⚠ THE SECOND ONE IS THE "UI ASSERTS WHAT NOTHING CHECKS" WATCH, in its newer form.** The
+consolidation review of 2026-08-19 recorded that this cluster had drifted from *"is it on screen"*
+to *"does what is on screen let the reader decide"* and deliberately gave it no guardrail, asking
+that the next instance be read before building. **This is that next instance.** Read the review
+before generalising from it.
+
+**Estimate:** ~1h for the label split plus its tests. Piece 1 is unestimated and should not be
+folded in.
