@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## The eWallet ID box takes 5 digits — Vircle rolled past the 4-digit block - 2026-08-27
+
+**Small change (hotfix).** No migration. api + web.
+
+- Vircle's sequence left the `800040017xxxx` block (newest wallet on file `…79897` on 12 Aug;
+  ~50 numbers are consumed per student we onboard because the counter is Vircle's, not ours).
+  A student whose wallet is `800040018xxxx` could not TYPE it into the 4-digit box, and the
+  server would have refused it anyway. Three students (#116, #114, #48) sat with an open
+  Vircle task and no id.
+- `VIRCLE_ID_PREFIX` `800040017` → `80004001` (8 digits); the student types the last **5**.
+  The DuitNow guard (`VIRCLE_ID_BAND_MIN/MAX`) is now **7–9** at position 9: every real wallet
+  (55) has a 7 there, 8 and 9 are ~20,000 numbers of headroom, and a DuitNow number truncated
+  to five digits lands at 0. `ActionCentre.tsx` mirrors the prefix; en/ms/ta hints say "5".
+- The band-top warning now names the real fix (a shorter prefix, which is a deploy) instead of
+  the band env var, which cannot help at a prefix roll-over. It had fired four times unread.
+- **Not changed:** the 55 stored ids (all still valid under the new rule — asserted by test);
+  the owner's slide deck still says "last 4 digits" and needs a note.
+
 ## A rating of the AI no longer decides a student's case - 2026-08-24
 
 **Sprint (BrightPath #20).** No migration. 9 files + one backfill command. Two defects, both

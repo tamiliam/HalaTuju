@@ -73,7 +73,8 @@ def _make_app(cohort, org, *, pathway='matric', award='2000', reporting=None,
         cohort=cohort, profile=prof, owning_organisation=org, status=status,
         chosen_pathway=pathway, award_amount=D(award), reporting_date=reporting,
         maintenance_substate=substate,
-        vircle_id=(payments.vircle_id_prefix() + vircle_suffix) if vircle_suffix else '',
+        # '7' + a 4-digit suffix = 5 typed digits, in band (the prefix is 8 digits since 2026-08-27).
+        vircle_id=(payments.vircle_id_prefix() + '7' + vircle_suffix) if vircle_suffix else '',
     )
     return app
 
@@ -96,11 +97,13 @@ class TestVircleId(TestCase):
     def test_rejects_wrong_prefix(self):
         self.assertFalse(payments.valid_vircle_id('9000400175123'))
 
-    def test_nine_digit_prefix_headroom(self):
-        # Owner 2026-07-17: the fixed prefix is 9 digits (800040017) + 4 typed digits — so an
-        # account numbered past …175999 (e.g. …176xxx) is now valid, but a different 9-prefix isn't.
-        self.assertTrue(payments.valid_vircle_id('8000400176123'))
-        self.assertFalse(payments.valid_vircle_id('8000400169999'))
+    def test_eight_digit_prefix_takes_the_rolled_over_block(self):
+        """2026-08-27: the 9-digit prefix (800040017) ran out — the newest wallet on production
+        was 8000400179897 and three students sat with an open Vircle task and no id, because a
+        4-digit box cannot hold 800040018xxxx. The prefix is now 8 digits + 5 typed."""
+        self.assertTrue(payments.valid_vircle_id('8000400180001'))   # the block that was refused
+        self.assertTrue(payments.valid_vircle_id('8000400179897'))   # the newest real one, still fine
+        self.assertFalse(payments.valid_vircle_id('8000400200001'))  # a different 8-prefix
 
     def test_rejects_non_digits_and_blank(self):
         self.assertFalse(payments.valid_vircle_id('80004001751az'))
@@ -110,13 +113,15 @@ class TestVircleId(TestCase):
     # ── The issued band (incident 2026-07-29) ─────────────────────────────────
     # A Vircle DuitNow Transfer number is 18 digits whose first 13 ARE the eWallet ID:
     #     800040017680501003  =  8000400176805  +  01003
-    # A student reading the Top Up screen types its LAST FOUR digits (1003) into a box that
-    # prefixes 800040017 — producing a well-formed id in the wrong band. Three live cases.
+    # A student reading the Top Up screen types its LAST digits into a box that prefixes the
+    # wallet block — producing a well-formed id in the wrong band. Three live cases under the
+    # old 4-digit box (…171003 / …171009 / …171001). Under the 5-digit box the same mistake
+    # produces …101003 etc. — the band digit is 0 either way.
 
-    def test_rejects_the_three_real_truncated_duitnow_numbers(self):
-        """The exact values found on production apps 36, 27 and 75. These passed the old
-        length+prefix rule; Vircle caught two by hand and the third was found by inspection."""
-        for wrong in ('8000400171003', '8000400171009', '8000400171001'):
+    def test_rejects_a_duitnow_number_truncated_to_five_digits(self):
+        """What a student typing the last FIVE digits of the DuitNow number now produces — the
+        current-form shape of the 2026-07-29 incident."""
+        for wrong in ('8000400101003', '8000400101009', '8000400101001'):
             self.assertFalse(payments.valid_vircle_id(wrong), wrong)
 
     def test_accepts_the_corrected_ids_for_those_same_students(self):
@@ -125,30 +130,36 @@ class TestVircleId(TestCase):
             self.assertTrue(payments.valid_vircle_id(right), right)
 
     def test_accepts_across_the_whole_issued_band(self):
-        """Every genuine wallet on production sits at 5, 6 or 7; 8 and 9 are headroom. A rule
-        narrower than this would have refused 39 of the first 46 real students."""
-        for band in '56789':
-            self.assertTrue(payments.valid_vircle_id(f'800040017{band}123'), band)
+        """Every genuine wallet on production (55 on 2026-08-27) has a 7 at position 9; 8 and 9
+        are headroom (~20,000 numbers)."""
+        for band in '789':
+            self.assertTrue(payments.valid_vircle_id(f'80004001{band}0123'), band)
 
     def test_rejects_below_the_band(self):
-        for band in '01234':
-            self.assertFalse(payments.valid_vircle_id(f'800040017{band}123'), band)
+        for band in '0123456':
+            self.assertFalse(payments.valid_vircle_id(f'80004001{band}0123'), band)
 
     def test_rejects_a_whole_duitnow_number(self):
         """18 digits — refused on length, so the student is told rather than silently truncated
         (we hold ONE sample of that structure; deriving the wallet id from it would be a guess)."""
         self.assertFalse(payments.valid_vircle_id('800040017680501003'))
 
-    @override_settings(VIRCLE_ID_BAND_MIN='1', VIRCLE_ID_BAND_MAX='9')
+    @override_settings(VIRCLE_ID_BAND_MIN='0', VIRCLE_ID_BAND_MAX='9')
     def test_band_bounds_come_from_settings(self):
-        """Widening the band must be an env change, not a deploy — when Vircle's sequence rolls
-        past the …17 block this is the knob. Proven by making a known-bad value pass."""
-        self.assertTrue(payments.valid_vircle_id('8000400171003'))
+        """Widening the band must be an env change, not a deploy. Proven by making a known-bad
+        value pass."""
+        self.assertTrue(payments.valid_vircle_id('8000400101003'))
 
-    @override_settings(VIRCLE_ID_BAND_MIN='5', VIRCLE_ID_BAND_MAX='5')
+    @override_settings(VIRCLE_ID_BAND_MIN='7', VIRCLE_ID_BAND_MAX='7')
     def test_band_max_is_honoured_from_settings(self):
         self.assertTrue(payments.valid_vircle_id('8000400175123'))
-        self.assertFalse(payments.valid_vircle_id('8000400176123'))
+        self.assertFalse(payments.valid_vircle_id('8000400180123'))
+
+    @override_settings(VIRCLE_ID_PREFIX='800040017')
+    def test_the_old_prefix_is_what_locked_the_new_block_out(self):
+        """Regression for the 2026-08-27 lock-out: under the OLD 9-digit prefix a wallet in the
+        …18 block is refused. If this ever passes, the prefix has silently gone back."""
+        self.assertFalse(payments.valid_vircle_id('8000400180001'))
 
 
 @override_settings(BURSARY_AGREEMENT_ENABLED=False)
@@ -651,9 +662,9 @@ class TestBackfillImport(TestCase):
                 app = s['app']
                 w.writerow([
                     i, app.profile.nric,
-                    # In-band suffix (5xxx): the first typed digit must sit in the issued band,
-                    # so a bare f'{i:04d}' (0001…) is correctly REJECTED by valid_vircle_id.
-                    payments.vircle_id_prefix() + f'5{i:03d}',
+                    # In-band suffix (7xxxx): the first typed digit must sit in the issued band,
+                    # so a bare f'{i:05d}' (00001…) is correctly REJECTED by valid_vircle_id.
+                    payments.vircle_id_prefix() + f'7{i:04d}',
                     app.profile.contact_phone, app.profile.name,
                     s['monthly'],
                     s['batch'].strftime('%d/%m/%Y') if s['batch'] else '',
