@@ -111,6 +111,14 @@ signer must type their own name, matched against `PartnerAdmin.name`.
 
 ## Implementation state (2026-07-23)
 
+- **SHIPPED 2026-08-30 (Layer 0 Sprint 5)** — a NEW `org_admin` power: **configure what the
+  programme asks for** (`/admin/programme`, "What we ask for"). `org_admin` + super only; `admin`,
+  `qc`, `finance`, `reviewer`, `partner` are refused, and `admin`/`qc` lost the empty "Overview"
+  nav placeholder that stood in its place. Org-fenced on the programme's organisation (cross-org
+  = 404). Six core items (IC, results slip, offer letter, income proof, family roster, consent) are
+  floored at Required for every role including super. Endpoint
+  `GET/PUT /api/v1/admin/scholarship/programme/configuration/`; tests
+  `apps/scholarship/tests/test_layer0_config_screen.py`.
 - **SHIPPED 2026-07-15** — EVERYTHING in this matrix except the Finance row:
   `docs/plans/2026-07-15-org-admin-powers-v1-brief.md` (single combined brief — org-admin
   + qc org-wide write, QC recorder guard, assignment delegation, sponsor-vetting migration to

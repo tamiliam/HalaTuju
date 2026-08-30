@@ -7879,3 +7879,27 @@ an unclassified code. **Alternative considered:** gate the whole file on `income
 3a shorthand) — rejected because the file carries academic and family asks too. **Note:**
 `income_proof` is CORE, so an organisation cannot switch it off; the income asks fall silent only
 if the platform deactivates the aggregate. The test says so rather than pretending otherwise.
+
+## The programme-configuration write is all-or-nothing, and the screen's Save is a computed diff — Layer 0 Sprint 5, 2026-08-30
+
+**Decision:** `PUT /admin/scholarship/programme/configuration/` validates every row (known item,
+known state, core floor) before writing any, refuses the whole request on one bad row (`400
+core_item` naming it), and writes only rows whose state changed — each audited. The screen sends
+only the rows that differ from the server copy (`programmeConfig.changes`), so Save is disabled
+when nothing differs and a "save" that changes nothing cannot happen. **Alternatives considered:**
+(a) per-row PATCH — 19 requests for one decision and a half-applied form if one fails; (b) PUT
+the whole list every time — simpler client, but every save would re-stamp `updated_by_email` on
+untouched rows and drown the audit line in no-ops. **Rationale:** an organisation's form must be
+consistent at every instant a student reads it; partial application is the one outcome worse than
+refusal. **Trade-offs:** the client carries a diff; the endpoint cannot say "3 of 4 applied".
+**Revisit if:** the catalogue grows past a screenful and rows get their own history view.
+
+## The org screen reads the SAME live rule as the seam — `requirements.programme_states` — Layer 0 Sprint 5, 2026-08-30
+
+**Decision:** the empty-catalogue guard and the core floor were extracted from `resolve()` into
+`programme_states(programme, kind)`, and the endpoint's GET reads it rather than joining the
+tables itself. **Alternative considered:** a straight ORM read in the view (the "obvious" query).
+**Rationale:** the screen is the first place a human sees the rule; if it and the gate could
+disagree, Layer 0 would have re-created the two-descriptions drift it exists to remove. One
+function, two readers. **Revisit if:** never for the floor; if per-organisation defaults arrive,
+they go in this function, not in the view.

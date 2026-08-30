@@ -356,6 +356,17 @@ them, completes, and the generated sponsor profile doesn't mention them — audi
 
 ## Sprint 5 — The screen Suresh's team actually touches
 
+### ✅ SHIPPED 2026-08-30 (worktree `.worktrees/layer0-sprint5`) — **LAYER 0 IS COMPLETE**
+
+Retro `docs/retrospective-2026-08-30-layer0-config-screen.md`. No migration. What landed:
+`AdminProgrammeConfigurationView` (org-fenced GET/PUT, core floor, all-or-nothing, audited,
+`FENCED_OR_EXEMPT` row), `requirements.programme_states` (the one live rule), `/admin/programme`
+("What we ask for", documents AND questions as rows — decision 5's "documents only" is superseded
+by Sprint 4), `NAV_GROUPS` row `programmeConfig` replacing the `programmeOverview` placeholder
+(super + org_admin), i18n en/ms/ta, rendered tests, sandbox surfaces `programme-config` /
+`programme-config-lean`. Built to the design below with its three corrections. **The Layer 1
+colours tab (A2) still joins this route later** — no tab strip was built for a single tab.
+
 ### ✅ DESIGN OF RECORD, APPROVED BY THE OWNER 2026-07-29
 
 <https://stitch.withgoogle.com/preview/10844973747787673276?node-id=65b95d25a7584957a5242534a246240d>

@@ -2818,3 +2818,25 @@ before generalising from it.
 
 **Estimate:** ~1h for the label split plus its tests. Piece 1 is unestimated and should not be
 folded in.
+
+### [TD-221] `tsc --noEmit` fails on main with 24 pre-existing errors, so the "tsc gate" gates nothing — low
+
+**Found:** Layer 0 Sprint 5 (2026-08-30), running the four web gates in a fresh worktree.
+
+**What:** `npx tsc --noEmit` in `halatuju-web` reports 24 errors — identical on `main` and on the
+sprint branch — all in older test files: `Set`/iterator spreads that need `downlevelIteration` or
+an ES2015+ target (`orgReject`, `placeholder-parity`, `soft-evidence-drift`), loose
+`as Record<string, unknown>` casts (`scholarship.test.ts`), and fixture literals that no longer
+match `AdminApplicantDocument` / the freshness union (`officerCockpit.test.ts`). App code is
+clean; `next build` type-checks it and passes.
+
+**Why it matters:** the sprint workflows name `tsc` as a gate. A gate that is always red is read
+as noise, so a NEW type error in a test file would go unnoticed. The real gate today is `next
+build`, which does not type-check tests at all.
+
+**Fix:** either exclude `**/__tests__/**` and `*.test.ts(x)` from the `tsc` project (and say so in
+the gate list), or fix the 24 in one pass (mostly `Array.from(set)` and typed fixtures) and make
+`tsc --noEmit` a CI step so it stays green. Prefer the second — the fixtures being wrong is the
+kind of drift the sandbox fixtures were typed to catch.
+
+**Estimate:** ~1.5h.

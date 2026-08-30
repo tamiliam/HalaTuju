@@ -550,7 +550,38 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-30, after the Check-2 pass — LAYER 0 SPRINT 5 IS UNBLOCKED)
+## Next Sprint (as of 2026-08-30, after Layer 0 Sprint 5 — LAYER 0 IS COMPLETE)
+
+**✅ SHIPPED — LAYER 0 SPRINT 5, "What we ask for".** Branch `feat/layer0-sprint5-screen`. **NO
+migration.** Backend 4 files + 1 test file; web 13. Retro
+`docs/retrospective-2026-08-30-layer0-config-screen.md`. +11 pytest (5677), +8 jest (1482).
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`GET/PUT /api/v1/admin/scholarship/programme/configuration/`** — `org_admin` + super, fenced on
+  `Programme.organisation_id` (cross-org = 404, never 403). PUT is ALL-OR-NOTHING and floors core
+  items (`400 core_item`). Super names `?programme=` when the org has >1. Every write audited
+  (`AUDIT programme_item_set`). Its `FENCED_OR_EXEMPT` row is `programme-config-org-fenced`.
+- **`requirements.programme_states`** is the ONE live rule both the endpoint and `resolve()` read.
+  Do not re-implement the empty-catalogue guard or the core floor in the view.
+- **The catalogue is not a fence.** `/admin/programme`'s `mayView` only avoids a 403 render.
+- **Save is a computed diff** (`programmeConfig.changes`); the outcome union is closed
+  (`idle|saved|core|error`) and every value has a line on screen.
+- **The page loader depends on the token + gate only — never on `t`** (re-fired fetch wiped drafts).
+- Nav: `programmeConfig` (chord W) REPLACED the `programmeOverview` placeholder; admin/qc lost it.
+- `AdminAuthContext` is exported for the sandbox harness ONLY.
+
+**▶ AT DEPLOY: push main (api AND web build). No migrate-first, no env vars.** i18n ms/ta are
+first drafts for the owner to read. Post-check: sign in as the BrightPath org_admin
+(elanjelian@me.com — NOT the super account), open Programme → "What we ask for", confirm 19 rows
+and the live count; change nothing.
+
+**▶ NEXT = LAYER 1 THEMES, F2a onward** (`docs/plans/2026-07-29-layer1-themes-roadmap.md`) — the
+owner chose "finish Layer 0 first, themes after" (Option A, 2026-08-30). The colours tab (A2)
+joins `/admin/programme` — that is when the tab strip is built, not before. Run `sprint-start.md`.
+Tech debt to log: `tsc --noEmit` has 24 pre-existing errors in old test files (main and branch
+alike) — the real type gate is `next build`.
+
+## Superseded — previous Next Sprint (as of 2026-08-30, after the Check-2 pass)
 
 **✅ SHIPPED — THE CHECK-2 PASS (the second and last item 3a deferred).** Branch
 `feat/layer0-check2-pass`. **NO migration.** Backend only, 2 files. Retro

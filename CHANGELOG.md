@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 0 Sprint 5 — "What we ask for": the org_admin configures the programme - 2026-08-30
+
+**Sprint.** No migration. Backend 4 files, web 13 files. **LAYER 0 IS COMPLETE** (Sprints 1–5 +
+both 3a deferrals). Retro `docs/retrospective-2026-08-30-layer0-config-screen.md`.
+
+### Added
+- **`GET/PUT /api/v1/admin/scholarship/programme/configuration/`**
+  (`AdminProgrammeConfigurationView`, `views_admin.py`) — `org_admin` + super. Returns the whole
+  catalogue (19 items: 9 documents, 10 questions) with the programme's chosen state per row, the
+  programme, and a REAL count of applicants in flight (`status='shortlisted'`). PUT is
+  all-or-nothing: every row validated before any write; a core item switched off is refused
+  (`400 core_item`, naming the item); an unknown item is `404`; a cross-org programme is `404`
+  never `403`; super must name `?programme=` when the org has more than one (`400
+  programme_required` with the codes). Every changed row writes `ProgrammeApplicationItem`
+  (`updated_by_email`) and an `AUDIT programme_item_set` line; a no-change PUT writes nothing.
+  `FENCED_OR_EXEMPT` row added. +11 tests (`test_layer0_config_screen.py`), bite-checked (core
+  refusal + org filter disabled → 9 fail).
+- **`requirements.programme_states(programme, kind)`** — the live-catalogue rule extracted from
+  `resolve()` (empty-catalogue guard + core floor) so the endpoint and the seam read ONE rule.
+- **`/admin/programme` — "What we ask for"** (`src/app/admin/programme/page.tsx`). The Stitch
+  design of record (content column only): Documents and Questions cards, a three-state segmented
+  control per row (Don't ask / Optional / Required), locked core rows visible with a muted
+  "Always required" reason read from the item's own `is_core`, the household-income row tinted
+  with an accent edge and a note that it is a whole section, the amber live-applicant warning
+  ABOVE the controls naming the counted number, and a footer with the tally sentence, Discard and
+  Save. **Save is a computed diff** — asleep with nothing changed (`common.nothingToSave`), sends
+  only the changed rows, re-reads after. Every save outcome has a line on screen: saved, the
+  core-item refusal by the item's name, or a generic failure. `NAV_GROUPS` row `programmeConfig`
+  (chord W, scope `programme`, roles super + org_admin) replaces the `programmeOverview`
+  placeholder; admin and qc lose the empty slot. `src/lib/programmeConfig.ts` (pure: ordering,
+  diff, allowed states, tally); `getProgrammeConfiguration` / `saveProgrammeConfiguration` in
+  `admin-api.ts`. i18n `admin.programme.config.*` en/ms/ta (ms/ta first drafts). +7 rendered
+  tests (`page.test.tsx`); nav role snapshot updated.
+- **Sandbox surfaces `programme-config` and `programme-config-lean`** (`WithAdminAuth` harness;
+  `AdminAuthContext` exported for the sandbox only). Reviewed in the browser 2026-08-30.
+
+### Fixed
+- The page's loader depended on the translator handle, which re-fired the fetch every render and
+  silently re-read the server copy over an unsaved draft. Found by the rendered test; the loader
+  now depends on the token and the role gate only.
+- A stale `2026-08-24` date in an `api.ts` comment (Sprint 4 shipped 2026-08-30).
+
 ## Layer 0 — a Check-2 ask is governed by the item it chases - 2026-08-30
 
 **Small sprint (the second and last item 3a deferred).** No migration. Backend only, 2 files.
