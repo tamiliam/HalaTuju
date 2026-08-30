@@ -181,6 +181,85 @@ _CLARIFY_ORDER = [
 # most material (design §4).
 MAX_CLARIFY = 3
 
+# ── Layer 0 (2026-08-30): a Check-2 ask is governed by the catalogue item it chases ──
+#
+# Sprint 3a moved the document GATES onto the catalogue and deferred this file on purpose: it is
+# income-driven but also carries academic and family follow-ups, so gating it wholesale on the
+# `income_proof` switch would have silenced asks that have nothing to do with income. The right
+# grain is PER CODE: each ask names the catalogue item (document or question) whose absence makes
+# the ask meaningless for this programme — a payslip request when the programme runs no means
+# test, a water-bill re-upload when it collects no bills. `_gap_sets` filters both sets through
+# this map at the end, ONCE, so `sync_check2_queries` never raises a governed ask the programme
+# does not make, and auto-resolves an open one (an item no longer in the set is closed by the
+# existing housekeeping — no new branch).
+#
+# Reads through `requirements.asks_for`, which for a submitted application is the FROZEN copy —
+# so a configuration change after Submit changes nothing here either.
+#
+# `None` = deliberately UNGOVERNED: the ask follows a per-STUDENT rule the catalogue does not
+# express (a continuing student's semester result; the pathway/offer facts, which are core; the
+# apply-form scholarships question, which is not catalogued). The completeness test insists every
+# code is classified one way or the other, so a new ask cannot slip in unclassified.
+_INCOME = (('document', 'income_proof'),)
+_BILLS = (('document', 'water_bill'), ('document', 'electricity_bill'))   # either bill asked
+_FAMILY = (('question', 'family_roster'),)
+_FUNDING = (('question', 'funding'),)
+GOVERNED_BY = {
+    # clarifies
+    'course_unspecified': None,                  # pathway — core, per-student
+    'sibling_level_unknown': _FAMILY,
+    'device_status_unknown': _FUNDING,
+    'transport_cost_unknown': _FUNDING,
+    'utility_holder_unknown': _BILLS,
+    'utility_address_mismatch': _BILLS,
+    'father_status_unknown': _FAMILY,
+    'mother_status_unknown': _FAMILY,
+    'sibling_tertiary_funding': _FAMILY,
+    'sibling_school_detail': _FAMILY,
+    'informal_income_detail': _INCOME,
+    'pension_amount_unknown': _INCOME,
+    'spm_year_unknown': None,                    # results slip — core, per-student
+    'reporting_date_unknown': None,              # offer letter — core, per-student
+    'unemployment_detail_unknown': _FAMILY,
+    'deceased_parent_detail': _FAMILY,
+    'informal_work_detail': _INCOME,
+    'household_roster_undercount': _FAMILY,
+    'other_scholarships_followup': None,         # apply-form question, not catalogued
+    'high_utility_expense': _BILLS,
+    'high_utility_expense_str': _BILLS,
+    # doc requests
+    'father_income_proof_missing': _INCOME,
+    'mother_income_proof_missing': _INCOME,
+    'guardian_income_proof_missing': _INCOME,
+    'brother_income_proof_missing': _INCOME,
+    'sister_income_proof_missing': _INCOME,
+    'father_pension_proof_missing': _INCOME,
+    'mother_pension_proof_missing': _INCOME,
+    'income_doc_stale': _INCOME,
+    'declared_income_evidence_missing': _INCOME,
+    'father_epf_missing': _INCOME,
+    'mother_epf_missing': _INCOME,
+    'guardian_epf_missing': _INCOME,
+    'brother_epf_missing': _INCOME,
+    'sister_epf_missing': _INCOME,
+    'unemployment_epf_missing': _INCOME,         # deprecated code, still auto-resolves
+    'epf_statement_missing': _INCOME,            # deprecated code, still auto-resolves
+    'school_leaving_cert_missing': (('document', 'school_leaving_cert'),),
+    'semester_result_missing': None,             # continuing-student rule, not a catalogue card
+    'water_bill_recheck': (('document', 'water_bill'),),
+    'electricity_bill_recheck': (('document', 'electricity_bill'),),
+    'utility_bill_missing': _BILLS,              # deprecated code, still auto-resolves
+}
+
+
+def _asked(application, code):
+    """Does this programme ask for the thing `code` chases? Ungoverned → always True."""
+    governors = GOVERNED_BY.get(code)
+    if not governors:
+        return True
+    from . import requirements
+    return any(requirements.asks_for(application, kind, item) for kind, item in governors)
+
 
 def _gap_sets(application):
     """The current STEP-1 completeness gap set + the per-member proof-wanted set — the shared,
@@ -295,6 +374,10 @@ def _gap_sets(application):
         proof_wanted.add('water_bill_recheck')
     if 'electricity_bill' in recheck:
         proof_wanted.add('electricity_bill_recheck')
+    # Layer 0: drop every ask whose governing catalogue item this programme does not make. Done
+    # here, once, so the sync's create / re-open / auto-resolve branches all see the same truth.
+    gaps = {c for c in gaps if _asked(application, c)}
+    proof_wanted = {c for c in proof_wanted if _asked(application, c)}
     return gaps, proof_wanted
 
 
