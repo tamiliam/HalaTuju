@@ -7819,7 +7819,7 @@ live, so the cost is a slightly less honest history in exchange for a correct li
 
 **Revisit if:** the STR route ever admits more than one earner (the single-earner assumption behind
 both this and `_proof_member` breaks together), or the DB constraint lands.
-## A question switched to `optional` still accepts an answer; only `required` gates — 2026-08-24
+## A question switched to `optional` still accepts an answer; only `required` gates — 2026-08-30
 
 **Decision (Layer 0 Sprint 4):** `application_completeness` gates a story/funding/address part
 only when the catalogue resolves that question `'required'`. `'optional'` renders the field
@@ -7832,7 +7832,7 @@ resolved set and stops gating — that is the platform's deliberate withdrawal o
 the "empty catalogue" case, which `requirements.resolve` still answers with the platform
 defaults. The two look alike in code (`asked.get(code)` misses) and are different decisions.
 
-## The apply form's `anything_else` is in the catalogue but not yet governed — 2026-08-24
+## The apply form's `anything_else` is in the catalogue but not yet governed — 2026-08-30
 
 **Decision:** Sprint 4 governs the Step-4 wizard only. `anything_else` renders on the
 PRE-application apply form, which has no application payload to carry the questions block, so
@@ -7842,7 +7842,7 @@ neighbourhood (when the org screen makes overrides real) rather than inventing a
 endpoint mid-sprint. `justification` is in the catalogue and rendered nowhere (legacy field) —
 same treatment. Recorded in the roadmap's Sprint 4 section so it reads as a decision, not a gap.
 
-## The step list is filtered at render, never stored — 2026-08-24
+## The step list is filtered at render, never stored — 2026-08-30
 
 **Decision (the Layer 2 constraint, applied):** `NEXT_STEP_ORDER` stays a static literal;
 `visibleNextSteps()` FILTERS it per render from the payload. Only `funding` can collapse (its

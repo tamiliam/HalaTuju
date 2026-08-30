@@ -2,10 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## Layer 0 Sprint 4 — the catalogue governs the questions - 2026-08-24
+## Layer 0 Sprint 4 — the catalogue governs the questions - 2026-08-30
 
 **Sprint.** NO migration. api + web. Worktree `.worktrees/layer0-sprint4`.
-Retro `docs/retrospective-2026-08-24-layer0-questions.md`.
+Retro `docs/retrospective-2026-08-30-layer0-questions.md`.
 
 A programme can now switch application QUESTIONS on or off, completing what Sprint 3 did for
 documents. `application_completeness` gates the story / funding / address parts on

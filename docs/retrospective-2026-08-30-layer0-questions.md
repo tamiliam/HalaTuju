@@ -1,4 +1,4 @@
-# Retrospective — Layer 0 Sprint 4: the catalogue governs the questions (2026-08-24)
+# Retrospective — Layer 0 Sprint 4: the catalogue governs the questions (2026-08-30)
 
 ## What shipped
 

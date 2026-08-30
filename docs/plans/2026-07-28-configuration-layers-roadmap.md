@@ -295,9 +295,9 @@ test — adding `questions` is a deliberate edit to `test_the_payload_carries_on
 
 ## Sprint 4 — Questions: the catalogue governs the student application
 
-### ✅ SHIPPED 2026-08-24 (worktree `.worktrees/layer0-sprint4`) — both halves in one sprint
+### ✅ SHIPPED 2026-08-30 (worktree `.worktrees/layer0-sprint4`) — both halves in one sprint
 
-Retro `docs/retrospective-2026-08-24-layer0-questions.md`. **NO migration.** Existing suite
+Retro `docs/retrospective-2026-08-30-layer0-questions.md`. **NO migration.** Existing suite
 passed unmodified bar the one edit Sprint 3b itself pinned for this purpose
 (`test_the_payload_carries_only_the_documents_block_for_now` → asserts both blocks).
 Both empty-catalogue guards bite-checked (disabled → 3 tests fail each way).
