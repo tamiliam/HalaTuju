@@ -7850,3 +7850,22 @@ tab holds nothing but the funding questions); the story step always survives bec
 roster is core. Rejected alternative: a per-programme step list on the payload — that is a
 stored layout, which is Layer 2 in disguise and forbidden by the standing constraint in
 `docs/plans/2026-07-28-configuration-layers-roadmap.md`.
+
+## The requirement set is frozen at SUBMIT, not at start — 2026-08-30
+
+**Decision (owner, 2026-08-30):** `confirm_profile` freezes what the programme asked for at the
+Step-4 Submit. A student still filling in follows the live configuration and sees a question an
+organisation adds mid-way; only Submit fixes their version. **Alternative considered:** freeze
+when the student first opens the wizard (the owner's first instinct — "a student who starts with
+1.0.0.1 completes 1.0.0.1"). Rejected because a student would then submit an out-of-date form,
+and because it is a second freeze point with its own thaw rules. **Trade-off:** a change made
+while a student is halfway through reaches them; that is the intended behaviour.
+
+## `requirements_snapshot` is its own column, not a key inside `intake_snapshot` — 2026-08-30
+
+**Decision:** a dedicated nullable JSON column. `intake_snapshot` is written at the APPLY
+submit — an earlier moment — and is documented as immutable from then; adding a key to it at the
+Step-4 Submit would make "immutable" a lie by construction. A column with one writer
+(`requirements.freeze`), one clearer (the revert) and one reader (`resolve`) is honest and
+greppable. **Revisit if:** a third freeze point appears; then a small `snapshots` table with a
+`kind` beats a third column.

@@ -4,7 +4,7 @@ Layer 0 of the configuration roadmap (`docs/plans/2026-07-28-configuration-layer
 
 **Status.** Sprint 2 landed this module inert (nothing called it), Sprint 3a moved the backend
 DOCUMENT gates onto it, Sprint 3b put the resolved document sets on the application payload
-so the front end renders what it is told, and Sprint 4 (2026-08-24) did both halves for the
+so the front end renders what it is told, and Sprint 4 (2026-08-30) did both halves for the
 QUESTIONS: `application_completeness` gates the story/funding/address parts on the resolved
 question set, and the payload's `requirements` block carries `questions` beside `documents`.
 The staging was deliberate: landing the seam and the switchover together would

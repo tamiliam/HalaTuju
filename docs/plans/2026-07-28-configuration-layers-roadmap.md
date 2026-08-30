@@ -320,11 +320,14 @@ Both empty-catalogue guards bite-checked (disabled → 3 tests fail each way).
 FILTERS it at render (only `funding` can collapse — story survives because the family roster
 is core). Computed, never stored — the Layer 2 constraint held.
 
-**⚠ Carried forward, now URGENT before Sprint 5:** the **submit-time snapshot**. With Sprint 4
-live, switching a question ON (off→required) would make submitted students with blank answers
-incomplete, and `revert_if_profile_incomplete` would un-submit them. Harmless today ONLY
-because no UI can change configuration yet — Sprint 5 is that UI, so the snapshot must land
-first (it was already a named prerequisite there, with `check2_queries.py`).
+**✅ The submit-time snapshot SHIPPED 2026-08-30** (same day, branch
+`feat/layer0-submit-snapshot`; migration `0147`; retro
+`docs/retrospective-2026-08-30-layer0-submit-snapshot.md`). `confirm_profile` freezes the
+resolved sets onto `requirements_snapshot`; `requirements.resolve` reads the frozen copy first,
+so every consumer inherits it; a revert thaws. **Owner ruled: freeze at Submit, not at start.**
+Rows submitted before the column are frozen by `backfill_requirements_snapshots` on the live
+service (owner step after the deploy). Of the two items 3a deferred, only the
+**`check2_queries.py` pass** remains before Sprint 5.
 
 **Goal.** A programme configures which questions it asks. One journey for every tenant, different contents.
 

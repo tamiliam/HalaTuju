@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 0 — what the programme asked for is frozen at Submit - 2026-08-30
+
+**Sprint (the owed 3a item, brought forward).** Migration **`scholarship/0147`** (additive,
+nullable `requirements_snapshot` jsonb — migrate-first). Backend only, 7 files.
+
+A student who presses Submit now keeps the form they submitted against. `confirm_profile`
+freezes the resolved document + question sets onto `requirements_snapshot` in the same save as
+the status flip; `requirements.resolve` reads the frozen copy first, so every consumer (the
+completeness gate, the payload, the verdict facts, the ticket queue) inherits the freeze without
+knowing it exists. An organisation switching a question ON after a student submitted can no
+longer make their form "incomplete" — `revert_if_profile_incomplete` reads the frozen set, so it
+cannot un-submit them. A revert to `shortlisted` (the student's own edit) thaws it: back in the
+wizard they follow the current form and are re-frozen at their next Submit. Owner's ruling,
+2026-08-30: **freeze at Submit, not at start** — a student halfway through gets the newest form.
+
+`backfill_requirements_snapshots` (report / `--apply`; cron job
+`backfill-requirements-snapshots`, write gated by `REQUIREMENTS_SNAPSHOT_APPLY=1`) freezes the
+~92 rows submitted before the column existed; today's zero-override state means every one
+freezes to the seeded defaults. Bite-checked: with the frozen read disabled the scenario test
+fails. +9 tests.
+
 ## Layer 0 Sprint 4 — the catalogue governs the questions - 2026-08-30
 
 **Sprint.** NO migration. api + web. Worktree `.worktrees/layer0-sprint4`.

@@ -550,7 +550,33 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-24, after Layer 0 Sprint 4 — the questions)
+## Next Sprint (as of 2026-08-30, after the submit-time snapshot)
+
+**✅ SHIPPED — THE SUBMIT-TIME SNAPSHOT (the first of 3a's two owed items).** Branch
+`feat/layer0-submit-snapshot` off `main a3fc89cf`. **Migration `scholarship/0147`** (additive,
+nullable `requirements_snapshot` jsonb) — **MIGRATE-FIRST on production, hand-written DDL in the
+migration docstring.** Retro `docs/retrospective-2026-08-30-layer0-submit-snapshot.md`; decisions
+×2; lesson ×1. Backend only. +9 tests; bite-checked (frozen read disabled → 2 tests fail).
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`requirements.resolve` reads `requirements_snapshot` FIRST.** That single read is why the
+  gate, the payload, the verdict facts and the ticket queue all honour the freeze with no edits.
+  Do not "optimise" a consumer to read the catalogue directly.
+- **`confirm_profile` freezes in the SAME save as the status flip** — never split them.
+- **A revert THAWS** (`revert_if_profile_incomplete` clears the snapshot). Only the student's own
+  edit can revert, because the completeness check itself reads the frozen copy.
+- **Owner ruled 2026-08-30: freeze at Submit, not at start.** A student halfway through gets the
+  newest form.
+
+**▶ AT DEPLOY, IN ORDER:** (1) apply `0147` migrate-first via Supabase MCP (DDL in the migration
+docstring) + record the ledger row; (2) push; (3) on the live service run the cron job
+`backfill-requirements-snapshots` — report first (no env var), read it (expect ~92 rows, ONE
+shape), then set `REQUIREMENTS_SNAPSHOT_APPLY=1`, run again, UNSET it. Until (3) runs, rows
+submitted before today still follow the live configuration — harmless while 0 overrides exist.
+
+**▶ NEXT (Option A): the `check2_queries.py` pass, then Sprint 5 (the org_admin screen).**
+
+## Superseded — previous Next Sprint (as of 2026-08-30, after Layer 0 Sprint 4 — the questions)
 
 **✅ SHIPPED — LAYER 0 SPRINT 4: the catalogue governs the QUESTIONS.** Worktree
 `.worktrees/layer0-sprint4`, branch `feat/layer0-sprint4-questions`. **NO migration.** Retro

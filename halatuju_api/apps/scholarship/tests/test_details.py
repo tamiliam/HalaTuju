@@ -701,7 +701,7 @@ class TestRequirementsOnThePayload(TestCase):
 
     def test_the_payload_carries_exactly_the_documents_and_questions_blocks(self):
         # Sprint 3b pinned this at {'documents'} precisely so that Sprint 4 adding 'questions'
-        # would be a deliberate edit to this test — this is that edit (2026-08-24). Still an
+        # would be a deliberate edit to this test — this is that edit (2026-08-30). Still an
         # exact-set assertion, so a third block appearing one day is again a loud change.
         self._seed()
         resp = self.client.get(f'/api/v1/scholarship/applications/{self.app.id}/')
