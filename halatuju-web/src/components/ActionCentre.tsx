@@ -648,11 +648,14 @@ function VircleTask({
 }) {
   const { t } = useT()
   const [mobile, setMobile] = useState(() => formatMyMobile(contactPhone))
-  const [suffix, setSuffix] = useState('')   // D9 (owner 2026-07-17): the student types the final 4 digits
+  const [suffix, setSuffix] = useState('')   // D9: the student types the final 5 digits (was 4 until 2026-08-27)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const VIRCLE_PREFIX = '800040017'   // 9-digit fixed prefix; must match settings VIRCLE_ID_PREFIX
-  const suffixOk = /^\d{4}$/.test(suffix)
+  // 8-digit fixed prefix; must match settings VIRCLE_ID_PREFIX. Shortened from 9 on 2026-08-27:
+  // Vircle's sequence rolled past 800040017xxxx and a 4-digit box could not take the new numbers.
+  const VIRCLE_PREFIX = '80004001'
+  const SUFFIX_LEN = 13 - VIRCLE_PREFIX.length
+  const suffixOk = new RegExp(`^\\d{${SUFFIX_LEN}}$`).test(suffix)
   const valid = isValidMyMobile(mobile) && suffixOk
 
   const onConfirmDone = async () => {
@@ -710,12 +713,12 @@ function VircleTask({
               <span className="rounded-lg bg-gray-100 px-3 py-2 text-sm tabular-nums text-gray-600">{VIRCLE_PREFIX}</span>
               <input
                 id="vircle-id"
-                className="input w-24 tabular-nums"
+                className="input w-28 tabular-nums"
                 inputMode="numeric"
-                maxLength={4}
-                placeholder="1234"
+                maxLength={SUFFIX_LEN}
+                placeholder="79897"
                 value={suffix}
-                onChange={(e) => setSuffix(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                onChange={(e) => setSuffix(e.target.value.replace(/\D/g, '').slice(0, SUFFIX_LEN))}
                 disabled={busy}
               />
             </div>
@@ -723,7 +726,7 @@ function VircleTask({
             {/* Echo the assembled id as ONE continuous 13-digit run — the way the Vircle Settings
                 page prints it. Split across two boxes it is hard to compare, which is how three
                 students saved a DuitNow Transfer number without noticing. Costs no extra typing. */}
-            {suffix.length === 4 && (
+            {suffix.length === SUFFIX_LEN && (
               <div className="mt-2 rounded-lg bg-gray-50 px-3 py-2">
                 <p className="text-sm text-gray-700">
                   {t('scholarship.actionCentre.vircle.walletIdEcho')}{' '}

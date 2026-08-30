@@ -226,11 +226,18 @@ VIRCLE_SHEET_ID = os.environ.get('VIRCLE_SHEET_ID', '')
 # Explicit scope for the setup-email send (owner lists the application IDs; billable, one per id).
 VIRCLE_EMAIL_APP_IDS = os.environ.get('VIRCLE_EMAIL_APP_IDS', '')
 # Payments module (D9): the standard Vircle account-ID prefix. Vircle issues running numbers,
-# so all current accounts share this prefix and the student types only the final 4 digits.
+# so all current accounts share this prefix and the student types only the final 5 digits.
 # The admin PATCH path is the escape hatch meanwhile. A module constant lives in payments.py;
 # this is the tunable.
-VIRCLE_ID_PREFIX = os.environ.get('VIRCLE_ID_PREFIX', '800040017')   # 9 digits (owner 2026-07-17: student types the last 4 — more headroom than the 10-digit prefix)
-# The inclusive range the FIRST digit the student types may take (position 10 of 13).
+#
+# HISTORY OF THE PREFIX LENGTH — it has rolled over twice, so read this before "tidying" it:
+#   10 digits (8000400175, 3 typed) → 9 digits (800040017, 4 typed; owner 2026-07-17)
+#   → 8 digits (80004001, 5 typed; 2026-08-27). Vircle's sequence advances with THEIR whole
+#   customer base (~50 numbers per student we onboard); the …17 block went from …7350 to …9897
+#   between 30 Jul and 12 Aug and three students then sat with an open Vircle task and no id.
+#   A student whose wallet is 800040018xxxx could not even TYPE it into a 4-digit box.
+VIRCLE_ID_PREFIX = os.environ.get('VIRCLE_ID_PREFIX', '80004001')   # 8 digits — the student types the last 5
+# The inclusive range the FIRST digit the student types may take (position 9 of 13).
 #
 # WHY THIS EXISTS (incident 2026-07-29, brief docs/plans/2026-07-30-vircle-wallet-id-validation-roadmap.md):
 # a Vircle **DuitNow Transfer account number** is 18 digits whose first 13 ARE the eWallet ID,
@@ -240,12 +247,16 @@ VIRCLE_ID_PREFIX = os.environ.get('VIRCLE_ID_PREFIX', '800040017')   # 9 digits 
 # wallets were wrong exactly this way (…171003 / …171009 / …171001) and the length+prefix check
 # accepted every one; Vircle caught two by hand and the third was found by inspection.
 #
-# Every genuine wallet issued to date sits in 5–7; 8 and 9 are headroom. This FAILS SAFE — when
-# Vircle's sequence exhausts the …17 block a legitimate new number is REFUSED (loudly, the student
-# tells us) rather than silently accepted and paid to the wrong place. At the observed rate
-# (~48 numbers consumed per student we onboard) that is roughly 55 students away, so these are
-# env-tunable: widening the band is an --update-env-vars, never a deploy.
-VIRCLE_ID_BAND_MIN = os.environ.get('VIRCLE_ID_BAND_MIN', '5')
+# With the 8-digit prefix the typed part is 5 digits and its first digit is position 9 of 13.
+# Every genuine wallet issued to date (55 on 2026-08-27, 8000400175129 … 8000400179897) has a
+# 7 there; the next block is 8 (800040018xxxx), then 9. A DuitNow number truncated to its last
+# FIVE digits (…01003) lands at 0. So 7–9 admits every real wallet plus two blocks of headroom
+# (~20,000 numbers ≈ 400 students) and still refuses the truncation. This FAILS SAFE — past the
+# band a legitimate number is REFUSED (loudly, the student tells us) rather than silently paid
+# to the wrong place. Env-tunable: widening the band is an --update-env-vars, never a deploy.
+# When 8000400199999 is reached the PREFIX must shorten again (that IS a deploy: the web form
+# hard-codes the same prefix in ActionCentre.tsx).
+VIRCLE_ID_BAND_MIN = os.environ.get('VIRCLE_ID_BAND_MIN', '7')
 VIRCLE_ID_BAND_MAX = os.environ.get('VIRCLE_ID_BAND_MAX', '9')
 # Payments module (D7): recipient for the "send to Vircle" email at run countersignature (the
 # payment instruction with the run's CSV attached). Owner default 2026-07-16: gokula@vircle.com;

@@ -2304,10 +2304,10 @@
         "stuckPhone": "A very old phone may fail during registration even if it meets the iOS 16 / Android 10 requirement. If it stalls, try again on a newer phone.",
         "stuckSupport": "If you faced any problem, WhatsApp our support at +6016-336 6127.",
         "walletId": "eWallet ID",
-        "walletIdHint": "Enter the last 4 digits of your eWallet ID. To find it: open the Vircle app, tap the gear icon at the top right, then scroll to the bottom of the Settings page.",
+        "walletIdHint": "Enter the last 5 digits of your eWallet ID. To find it: open the Vircle app, tap the gear icon at the top right, then scroll to the bottom of the Settings page.",
         "walletIdEcho": "Your full eWallet ID will be saved as:",
         "walletIdCheck": "Check this matches the 13-digit number at the bottom of your Vircle Settings page, digit for digit.",
-        "errorDuitnow": "Those four digits don't look like the end of an eWallet ID. If you took them from the DuitNow Transfer number on the Top Up screen, that's a different number — your eWallet ID is at the bottom of the Settings page (tap the gear icon at the top right)."
+        "errorDuitnow": "Those five digits don't look like the end of an eWallet ID. If you took them from the DuitNow Transfer number on the Top Up screen, that's a different number — your eWallet ID is at the bottom of the Settings page (tap the gear icon at the top right)."
       },
       "bank": {
         "title": "Add your bank account for payment",
