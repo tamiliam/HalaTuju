@@ -123,41 +123,54 @@ def resolve(application, kind: str) -> dict[str, str]:
     if programme is None:
         out = _platform_defaults(kind)
     else:
-        # ⚠⚠ AN EMPTY CATALOGUE MEANS "NOT CONFIGURED", NEVER "ASKS FOR NOTHING".
-        #
-        # This guard exists because its absence was nearly shipped. Every one of the 143 live
-        # applications carries a programme, and production's catalogue tables were still empty
-        # (seeding was deferred to a later sprint on the grounds that nothing read them). Without
-        # this line the resolved set came back {} for every one of them, `documents_done` became
-        # `set().issubset(present)` — vacuously true — and all 60 students inside the submission
-        # gate could have submitted with no documents at all.
-        #
-        # The full 5018-test suite passed throughout, because no fixture seeds the catalogue: the
-        # tests never exercised the dependency they were supposedly covering. Green meant nothing.
-        #
-        # So: the catalogue is only believed when it has something to say. Falling back costs a
-        # cheap COUNT; getting it wrong opens every gate in the system silently.
-        if not ApplicationItem.objects.filter(kind=kind, is_active=True).exists():
-            return _memoise(application, kind, _platform_defaults(kind))
-        chosen = (ProgrammeApplicationItem.objects
-                  .filter(item_id=OuterRef('pk'), programme_id=programme.pk)
-                  .values('state')[:1])
-        items = (ApplicationItem.objects
-                 .filter(kind=kind, is_active=True)
-                 .annotate(chosen=Subquery(chosen)))
-        out = {}
-        for item in items:
-            if item.chosen is not None:
-                # ⚠ A core item cannot be switched off even by an explicit row. The UI refuses it
-                # and the API will refuse it, but the FLOOR belongs here too — a row written by a
-                # migration, a fixture or a future bulk edit passes through neither.
-                out[item.code] = 'required' if (item.is_core and item.chosen == 'off') else item.chosen
-            elif item.is_core:
-                out[item.code] = 'required'
-            else:
-                out[item.code] = item.default_state
+        out = programme_states(programme, kind)
 
     return _memoise(application, kind, out)
+
+
+def programme_states(programme, kind: str) -> dict[str, str]:
+    """`{code: state}` for every active catalogue item of `kind`, for ONE programme — the live
+    catalogue resolution with no application in hand.
+
+    Sprint 5 extracted this from `resolve` so the configuration screen reads the SAME rule the
+    gates enforce (an explicit row → its state, core-floored; no row → core → required, else the
+    item's default). Two copies of this rule would be the drift the layer exists to remove.
+
+    ⚠⚠ AN EMPTY CATALOGUE MEANS "NOT CONFIGURED", NEVER "ASKS FOR NOTHING".
+
+    This guard exists because its absence was nearly shipped. Every one of the 143 live
+    applications carries a programme, and production's catalogue tables were still empty
+    (seeding was deferred to a later sprint on the grounds that nothing read them). Without
+    this line the resolved set came back {} for every one of them, `documents_done` became
+    `set().issubset(present)` — vacuously true — and all 60 students inside the submission
+    gate could have submitted with no documents at all.
+
+    The full 5018-test suite passed throughout, because no fixture seeds the catalogue: the
+    tests never exercised the dependency they were supposedly covering. Green meant nothing.
+
+    So: the catalogue is only believed when it has something to say. Falling back costs a
+    cheap COUNT; getting it wrong opens every gate in the system silently.
+    """
+    if not ApplicationItem.objects.filter(kind=kind, is_active=True).exists():
+        return _platform_defaults(kind)
+    chosen = (ProgrammeApplicationItem.objects
+              .filter(item_id=OuterRef('pk'), programme_id=programme.pk)
+              .values('state')[:1])
+    items = (ApplicationItem.objects
+             .filter(kind=kind, is_active=True)
+             .annotate(chosen=Subquery(chosen)))
+    out = {}
+    for item in items:
+        if item.chosen is not None:
+            # ⚠ A core item cannot be switched off even by an explicit row. The UI refuses it
+            # and the API refuses it, but the FLOOR belongs here too — a row written by a
+            # migration, a fixture or a future bulk edit passes through neither.
+            out[item.code] = 'required' if (item.is_core and item.chosen == 'off') else item.chosen
+        elif item.is_core:
+            out[item.code] = 'required'
+        else:
+            out[item.code] = item.default_state
+    return out
 
 
 def _memoise(application, kind: str, out: dict[str, str]) -> dict[str, str]:

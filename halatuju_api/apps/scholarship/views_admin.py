@@ -5712,3 +5712,160 @@ class AdminSponsorTermsPreviewView(_SponsorTermsBase):
             'document': sponsor_terms_mod.document(terms, locale),
             'checkpoints': sponsor_terms_mod.quiz_checkpoints(terms, locale),
         })
+
+
+class AdminProgrammeConfigurationView(_AdminBase):
+    """GET/PUT `admin/scholarship/programme/configuration/` — what ONE programme asks for.
+
+    Layer 0 Sprint 5 (2026-08-30): the screen an `org_admin` uses to set, per catalogue item
+    (documents AND questions), one of Off / Optional / Required. It writes
+    `ProgrammeApplicationItem` rows — the same rows `requirements.programme_states` reads — so the
+    gate, the payload, the verdict facts and Check-2 all follow the change with no edits of their
+    own. That single seam is the design; do not teach this view a second copy of the rule.
+
+    ⚠ THE CATALOGUE IS NOT A FENCE. Which items a programme asks for is configuration, never access
+    control. The organisation fence is `_org_scoped` / `_org_allows` (cross-org ⇒ 404), and this
+    view fences the PROGRAMME on `organisation_id` the same way: an org_admin may only ever load
+    or write their own organisation's programme; a super passes `?programme=<code>`. A programme
+    outside the caller's organisation is **404, never 403** — a 403 would confirm the tenant exists
+    (the same reasoning that keeps the org fence on 404).
+
+    Who may write: `super` and `org_admin` only — a plain `admin`/`qc`/`reviewer`/`finance` gets
+    403 `_deny_role`. Configuration decides what every applicant to the programme is asked for;
+    that is the organisation's decision, held by its administrator.
+
+    Refuses to switch a CORE item off (`core_item`, 400) — the owner's 2026-07-28 policy floor.
+    `programme_states` floors a stray row anyway, so this refusal is what the SCREEN reads; the
+    floor underneath is what the data reads. Both are deliberate.
+
+    Every change writes an `AUDIT programme_item_set` line (who, which programme, which item,
+    old → new). Rows already at the requested state are not rewritten and not audited.
+
+    `live_applicants` is COUNTED at request time (never typed in): applications on this programme
+    still inside the submission gate (`shortlisted`). Those are the students a change reaches —
+    a submitted student carries their frozen `requirements_snapshot` and is untouched.
+    """
+
+    ROLES = ('org_admin',)
+
+    def _gate(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not self.has_role(admin, *self.ROLES):
+            return None, self._deny_role()
+        return admin, None
+
+    def _programme_for(self, admin, code):
+        """The one programme this request is about, or an error response.
+
+        Fenced on `organisation_id` — derived from the same `owning_organisation` the org fence
+        uses, so it cannot widen anything. Missing or cross-org → 404 (never 403).
+        """
+        qs = Programme.objects.filter(is_active=True).select_related('organisation')
+        if not self.has_role(admin, 'super'):
+            org_id = admin.owning_organisation_id
+            qs = qs.filter(organisation_id=org_id) if org_id else qs.none()
+        if code:
+            programme = qs.filter(code=code).first()
+            if programme is None:
+                return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+            return programme, None
+        programmes = list(qs.order_by('code')[:2])
+        if not programmes:
+            return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        if len(programmes) > 1:
+            # Never pick silently — the P2b/PF-1 rule. Name the choices so the client can ask.
+            return None, Response(
+                {'error': 'programme_required', 'code': 'programme_required',
+                 'programmes': [p.code for p in qs.order_by('code')]},
+                status=status.HTTP_400_BAD_REQUEST)
+        return programmes[0], None
+
+    def _payload(self, programme):
+        from . import requirements
+        from .models import ApplicationItem
+        states = {
+            'document': requirements.programme_states(programme, 'document'),
+            'question': requirements.programme_states(programme, 'question'),
+        }
+        items = []
+        for item in ApplicationItem.objects.filter(is_active=True).order_by('kind', 'code'):
+            items.append({
+                'kind': item.kind,
+                'code': item.code,
+                'label_key': item.label_key,
+                'is_core': item.is_core,
+                'default_state': item.default_state,
+                'state': states[item.kind].get(item.code, item.default_state),
+            })
+        # org-fence: `programme` was fenced to the caller's organisation in _programme_for.
+        live = ScholarshipApplication.objects.filter(
+            programme=programme, status='shortlisted').count()
+        return {
+            'programme': {'code': programme.code, 'name': programme.name_en,
+                          'organisation': programme.organisation.name},
+            'live_applicants': live,
+            'items': items,
+        }
+
+    def get(self, request):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        programme, err = self._programme_for(
+            admin, (request.query_params.get('programme') or '').strip())
+        if err:
+            return err
+        return Response(self._payload(programme))
+
+    def put(self, request):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        programme, err = self._programme_for(
+            admin, (request.query_params.get('programme') or '').strip())
+        if err:
+            return err
+
+        from .models import ITEM_STATE_CHOICES, ApplicationItem, ProgrammeApplicationItem
+        valid_states = {s for s, _ in ITEM_STATE_CHOICES}
+        changes = request.data.get('items')
+        if not isinstance(changes, list):
+            return Response({'error': 'bad_items', 'code': 'bad_items'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate EVERYTHING before writing ANYTHING — a half-applied save is worse than a
+        # refused one, and the screen renders one refusal, not a list of partial outcomes.
+        resolved = []
+        for entry in changes:
+            kind = (entry or {}).get('kind')
+            code = (entry or {}).get('code')
+            state = (entry or {}).get('state')
+            item = ApplicationItem.objects.filter(kind=kind, code=code, is_active=True).first()
+            if item is None:
+                return Response({'error': 'unknown_item', 'code': 'unknown_item',
+                                 'item': f'{kind}:{code}'}, status=status.HTTP_404_NOT_FOUND)
+            if state not in valid_states:
+                return Response({'error': 'bad_state', 'code': 'bad_state',
+                                 'item': f'{kind}:{code}'}, status=status.HTTP_400_BAD_REQUEST)
+            if item.is_core and state == 'off':
+                return Response({'error': 'core_item', 'code': 'core_item',
+                                 'item': f'{kind}:{code}'}, status=status.HTTP_400_BAD_REQUEST)
+            resolved.append((item, state))
+
+        from . import requirements
+        before = {
+            'document': requirements.programme_states(programme, 'document'),
+            'question': requirements.programme_states(programme, 'question'),
+        }
+        for item, state in resolved:
+            was = before[item.kind].get(item.code, item.default_state)
+            if was == state:
+                continue
+            ProgrammeApplicationItem.objects.update_or_create(
+                programme=programme, item=item,
+                defaults={'state': state, 'updated_by_email': admin.email or ''})
+            logger.info('AUDIT programme_item_set programme=%s item=%s:%s was=%s now=%s by=%s',
+                        programme.code, item.kind, item.code, was, state, admin.email or '')
+        return Response(self._payload(programme))

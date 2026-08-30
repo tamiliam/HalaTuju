@@ -199,6 +199,11 @@ class TestFenceCoverageCompleteness(TestCase):
         # ⚠ The SELECTION it feeds is a display preference — it must never travel as a
         # header/cookie/middleware rewrite, which would relocate the fence into the client.
         'AdminScopeListView': 'nav-scopes-list-fenced',
+        # Layer 0 Sprint 5 — the programme configuration screen. Fenced on the PROGRAMME's
+        # organisation_id (derived from the same owning_organisation the fence uses; cross-org
+        # 404, never 403); super/org_admin only. It writes CONFIGURATION, never access — the
+        # catalogue is not a fence, and the view docstring says so.
+        'AdminProgrammeConfigurationView': 'programme-config-org-fenced',
         # base
         '_BursaryAdminBase': 'base — shared _agreement lookup',
         '_PaymentsBase': 'base — shared payments gate + org-fenced run lookup',
