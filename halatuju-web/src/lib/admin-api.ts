@@ -2735,6 +2735,45 @@ export interface AdminReviewerDetail extends AdminReviewer {
   reopens: AdminReviewerReopen[]
 }
 
+// ── Layer 0 Sprint 5: what the programme asks for ────────────────────────────
+
+export type ProgrammeItemState = 'off' | 'optional' | 'required'
+
+export interface ProgrammeConfigItem {
+  kind: 'document' | 'question'
+  code: string
+  label_key: string
+  is_core: boolean
+  default_state: ProgrammeItemState
+  state: ProgrammeItemState
+}
+
+export interface ProgrammeConfiguration {
+  programme: { code: string; name: string; organisation: string }
+  /** Applications on this programme still inside the submission gate — COUNTED server-side. */
+  live_applicants: number
+  items: ProgrammeConfigItem[]
+}
+
+/** GET the configuration. `programme` is optional for an org_admin (their one programme) and
+ *  required for a super when more than one exists (the server answers `programme_required`). */
+export async function getProgrammeConfiguration(
+  programme?: string, options?: ApiOptions,
+): Promise<ProgrammeConfiguration> {
+  const q = programme ? `?programme=${encodeURIComponent(programme)}` : ''
+  return adminFetch(`/api/v1/admin/scholarship/programme/configuration/${q}`, options)
+}
+
+/** PUT only the rows that changed. The server validates all-or-nothing (a core item switched
+ *  off refuses the WHOLE save with `core_item`) and returns the re-read configuration. */
+export async function saveProgrammeConfiguration(
+  items: Pick<ProgrammeConfigItem, 'kind' | 'code' | 'state'>[],
+  programme?: string, options?: ApiOptions,
+): Promise<ProgrammeConfiguration> {
+  const q = programme ? `?programme=${encodeURIComponent(programme)}` : ''
+  return adminMutate(`/api/v1/admin/scholarship/programme/configuration/${q}`, 'PUT', { items }, options)
+}
+
 export async function listReviewers(options?: ApiOptions): Promise<{ reviewers: AdminReviewer[] }> {
   return adminFetch('/api/v1/admin/reviewers/', options)
 }

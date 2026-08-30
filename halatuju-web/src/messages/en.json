@@ -5451,6 +5451,57 @@
       "uploadNeedsFile": "Choose a .docx file to upload, or pick another option."
     },
     "programme": {
+      "config": {
+        "nav": "What we ask for",
+        "title": "What your programme asks for",
+        "subtitle": "Choose which documents and questions an applicant must provide, which are offered but never block them, and which you don't want at all. Changes apply to new applications straight away; a student who has already submitted keeps the form they submitted.",
+        "liveWarning": "{n} students are part-way through an application right now. Anything you make required will be asked of them too — they'll see it the next time they open their application.",
+        "liveWarningNone": "Nobody is part-way through an application right now, so a change reaches new applicants only.",
+        "sectionDocuments": "Documents",
+        "sectionQuestions": "Questions",
+        "documentsHint": "What an applicant uploads. A locked row is required by the platform for every programme.",
+        "questionsHint": "What the application form asks. A locked row is required by the platform for every programme.",
+        "state": { "off": "Don't ask", "optional": "Optional", "required": "Required" },
+        "alwaysRequired": "Always required",
+        "heavyNote": "Not one upload — the whole household-income section. Switching this off would remove the family's income questions, every earner's payslip and IC, and the utility bills together.",
+        "summary": "Your programme asks for {required} and offers {optional} of {total} items.",
+        "unchanged": "Nothing changed yet.",
+        "changed": "{n} change(s) not yet saved.",
+        "discard": "Discard",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "saved": "Saved.",
+        "errorCore": "{item} is always required and cannot be switched off. Nothing was saved.",
+        "errorGeneric": "Could not save your changes. Nothing was saved — please try again.",
+        "loadError": "Could not load the programme's configuration.",
+        "programmeRequired": "Choose a programme to configure.",
+        "requestLink": "Need a document or question that isn't listed? Ask for it in Requests.",
+        "desc": {
+          "document": {
+            "ic": "Every applicant is checked against their IC — the programme can't run without it.",
+            "results_slip": "The academic record the shortlist is built from.",
+            "offer_letter": "Proof of the place they're going to. A Form Six student uploads their school enrolment letter instead — that's handled for you.",
+            "income_proof": "The household means test: the family's income questions, every earner's payslip and IC, and the utility bills.",
+            "electricity_bill": "Shown inside the income section. Helps confirm where the family lives.",
+            "water_bill": "Shown inside the income section, beside the electricity bill.",
+            "school_leaving_cert": "Surat berhenti sekolah, or a testimonial.",
+            "statement_of_intent": "A letter in the applicant's own words.",
+            "photo": "A photograph of the applicant. Never shown to sponsors."
+          },
+          "question": {
+            "family_roster": "Who is in the household and what each parent does. The means test is built on it.",
+            "address": "Where the family lives — street, postcode and town.",
+            "aspirations": "What the student hopes to become.",
+            "plans": "How they plan to get there.",
+            "daily_life": "A typical day and their responsibilities at home.",
+            "fears": "Worries about the road ahead, and the support they need.",
+            "funding": "How long their course runs and what the support would go towards.",
+            "consent": "Permission to share an anonymised profile with sponsors. A legal requirement.",
+            "justification": "Why assistance is needed, in the student's words.",
+            "anything_else": "Anything else the student wants the programme to know."
+          }
+        }
+      },
       "question": {
         "aspirations": "Aspirations",
         "plans": "Plans after school",

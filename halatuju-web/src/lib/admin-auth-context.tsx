@@ -36,7 +36,9 @@ interface AdminAuthContextValue {
   refreshRole: () => Promise<void>
 }
 
-const AdminAuthContext = createContext<AdminAuthContextValue | null>(null)
+// Exported for the sandbox harness ONLY (src/sandbox), which supplies a canned admin session to
+// render admin pages without Supabase. App code must go through `AdminAuthProvider`.
+export const AdminAuthContext = createContext<AdminAuthContextValue | null>(null)
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 

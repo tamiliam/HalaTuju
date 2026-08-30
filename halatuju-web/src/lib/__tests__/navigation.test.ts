@@ -63,18 +63,21 @@ describe('visibleNav per role', () => {
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
       'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'contracts',
       'billing',
-      'programmeOverview', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
+      'programmeConfig', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
+    // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
+    // an org_admin (+ super) power — configuration, not a fence. admin/qc lose the placeholder
+    // slot they never had a page behind. role-matrix.md updated in the same change.
     org_admin: [
       'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'contracts',
       'billing',
-      'programmeOverview', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
+      'programmeConfig', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
     admin: [
       'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
-      'programmeOverview', 'applications',
+      'applications',
       'profile', 'guide', 'faq',
     ],
     finance: [
@@ -82,7 +85,7 @@ describe('visibleNav per role', () => {
       'fund',
       'profile', 'guide', 'faq',
     ],
-    qc: ['programmeOverview', 'applications', 'profile', 'guide', 'faq'],
+    qc: ['applications', 'profile', 'guide', 'faq'],
     reviewer: ['applications', 'profile', 'guide', 'faq'],
     partner: ['overview', 'students', 'profile'],
   }

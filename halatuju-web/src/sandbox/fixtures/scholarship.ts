@@ -23,6 +23,7 @@ import type {
   FundingNeed,
   ScholarshipApplication,
 } from '@/lib/api'
+import type { ProgrammeConfigItem, ProgrammeConfiguration } from '@/lib/admin-api'
 
 /** Renders in place of any identity number. Deliberately not digit-shaped. */
 export const FAKE_NRIC = 'XXXXXX-XX-XXXX'
@@ -330,3 +331,52 @@ export const sandboxProfileFormSix = {
 
 /** No application yet, so the apply form renders instead of redirecting a returning applicant. */
 export const sandboxNoApplications = { total_count: 0, applications: [] }
+
+// ── "What we ask for" (Layer 0 Sprint 5) ────────────────────────────────────────────────────────
+// The catalogue as the endpoint returns it: 9 documents + 10 questions, the six core rows locked.
+// `state` is the programme's own choice; `default_state` is what a new programme starts with.
+
+const CORE = new Set(['ic', 'results_slip', 'offer_letter', 'income_proof', 'family_roster', 'consent'])
+
+function catalogueItem(
+  kind: ProgrammeConfigItem['kind'], code: string, state: ProgrammeConfigItem['state'],
+): ProgrammeConfigItem {
+  const label_key = kind === 'document' ? `scholarship.docs.type.${code}` : `admin.programme.question.${code}`
+  return { kind, code, label_key, is_core: CORE.has(code), default_state: state, state }
+}
+
+const CATALOGUE: ProgrammeConfigItem[] = [
+  catalogueItem('document', 'ic', 'required'),
+  catalogueItem('document', 'results_slip', 'required'),
+  catalogueItem('document', 'offer_letter', 'required'),
+  catalogueItem('document', 'income_proof', 'required'),
+  catalogueItem('document', 'electricity_bill', 'optional'),
+  catalogueItem('document', 'water_bill', 'optional'),
+  catalogueItem('document', 'school_leaving_cert', 'optional'),
+  catalogueItem('document', 'statement_of_intent', 'off'),
+  catalogueItem('document', 'photo', 'off'),
+  catalogueItem('question', 'family_roster', 'required'),
+  catalogueItem('question', 'address', 'required'),
+  catalogueItem('question', 'aspirations', 'required'),
+  catalogueItem('question', 'plans', 'required'),
+  catalogueItem('question', 'daily_life', 'optional'),
+  catalogueItem('question', 'fears', 'optional'),
+  catalogueItem('question', 'funding', 'required'),
+  catalogueItem('question', 'consent', 'required'),
+  catalogueItem('question', 'justification', 'optional'),
+  catalogueItem('question', 'anything_else', 'off'),
+]
+
+/** A full-strength programme, part-way through a cohort: 41 students still in flight. */
+export const sandboxProgrammeConfiguration: ProgrammeConfiguration = {
+  programme: { code: 'contoh', name: 'Biasiswa Contoh', organisation: 'Yayasan Contoh' },
+  live_applicants: 41,
+  items: CATALOGUE,
+}
+
+/** A leaner programme with nobody in flight: everything not core switched off. */
+export const sandboxProgrammeConfigurationLean: ProgrammeConfiguration = {
+  programme: { code: 'ringkas', name: 'Bantuan Ringkas', organisation: 'Yayasan Contoh' },
+  live_applicants: 0,
+  items: CATALOGUE.map((i) => (i.is_core ? i : { ...i, state: 'off' })),
+}

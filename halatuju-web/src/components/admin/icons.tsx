@@ -29,7 +29,8 @@ const PATHS: Record<string, string> = {
   billing: 'M3 3v18h18M7 16v-5M12 16V8M17 16v-3',
   requests: 'M22 12h-6l-2 3h-4l-2-3H2M5.4 5.5L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.4-6.5A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.8 1.5z',
   // programme
-  programmeOverview: 'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z',
+  // "What we ask for" — a checklist (Layer 0 Sprint 5).
+  programmeConfig: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
   applications: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
   reviewers: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M17 11l2 2 4-4',
   years: 'M3 4h18v18H3zM3 10h18M8 2v4M16 2v4',

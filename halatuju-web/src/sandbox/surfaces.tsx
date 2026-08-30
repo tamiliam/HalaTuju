@@ -16,11 +16,14 @@ import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ScholarshipApplyPage from '@/app/scholarship/apply/page'
 import SponsorStudentsPage from '@/app/sponsor/(portal)/students/page'
+import AdminProgrammeConfigPage from '@/app/admin/programme/page'
 import { AuthContext } from '@/lib/auth-context'
+import { AdminAuthContext } from '@/lib/admin-auth-context'
 import { SponsorPortalContext } from '@/lib/sponsor-portal-context'
 import {
   sandboxApplication, sandboxApplicationLeanProgramme, sandboxNoApplications,
   sandboxProfileFormSix, sandboxProfileSpm, sandboxProfileStpm,
+  sandboxProgrammeConfiguration, sandboxProgrammeConfigurationLean,
 } from './fixtures/scholarship'
 import { sandboxPool } from './fixtures/sponsor'
 
@@ -152,6 +155,40 @@ export const SURFACES: Surface[] = [
       </WithSponsorPortal>
     ),
   },
+  {
+    slug: 'programme-config',
+    title: 'Admin — what we ask for',
+    note:
+      'The org_admin’s Layer 0 screen (Sprint 5): every document and question the platform knows, '
+      + 'with the programme’s choice on each row. Six rows are locked at Required by the platform '
+      + 'and say so in muted text; the household-income row is tinted because it is a whole '
+      + 'section, not one upload. 41 students are in flight, so the amber warning names them. '
+      + 'Save wakes only on a real change. Content column only — the admin shell is not mounted.',
+    routes: {
+      '/api/v1/admin/scholarship/programme/configuration/': () => sandboxProgrammeConfiguration,
+    },
+    render: () => (
+      <WithAdminAuth>
+        <AdminProgrammeConfigPage />
+      </WithAdminAuth>
+    ),
+  },
+  {
+    slug: 'programme-config-lean',
+    title: 'Admin — what we ask for, a leaner programme',
+    note:
+      'The same screen for a programme that switched off everything it could: only the six '
+      + 'locked rows are Required, nobody is in flight, so the warning is the calm one-liner. '
+      + 'Style both — a tenant will land on each.',
+    routes: {
+      '/api/v1/admin/scholarship/programme/configuration/': () => sandboxProgrammeConfigurationLean,
+    },
+    render: () => (
+      <WithAdminAuth>
+        <AdminProgrammeConfigPage />
+      </WithAdminAuth>
+    ),
+  },
 ]
 
 /**
@@ -177,6 +214,29 @@ function WithAuth({ profile, children }: { profile: unknown; children: ReactNode
     >
       {children}
     </AuthContext.Provider>
+  )
+}
+
+/**
+ * Admin screens read their session from `useAdminAuth`. Same rule as `WithAuth`: the provider is
+ * bypassed (it would call the live role endpoint), and only the fields the screen reads are set.
+ * The role is an org_admin — the person "What we ask for" is built for.
+ */
+function WithAdminAuth({ children }: { children: ReactNode }) {
+  return (
+    <AdminAuthContext.Provider
+      value={{
+        session: null, token: SANDBOX_TOKEN, isLoading: false, isAdminAuthenticated: true,
+        role: {
+          is_admin: true, is_super_admin: false, role: 'org_admin', admin_id: 1,
+          org_name: 'Yayasan Contoh', owning_org_id: 1, owning_org_name: 'Yayasan Contoh',
+          admin_name: 'Pentadbir Contoh', reviewer_profile_complete: true,
+        },
+        refreshRole: async () => {},
+      }}
+    >
+      {children}
+    </AdminAuthContext.Provider>
   )
 }
 

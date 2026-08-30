@@ -203,11 +203,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       // The gift itself. `finance` is absent deliberately: it has no B40 scope at all
       // (`_b40_scope` -> 'none'), so an Applications link would only ever 403.
-      // Reserved. The programme is the gift; its own overview lands when the Programme model is
-      // read by the web app (nothing does yet).
-      { id: 'programmeOverview', href: '/admin/programme', labelKey: 'admin.nav.programmeOverview',
-        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc'],
-        gate: { mode: 'always' }, placeholder: true },
+      // Layer 0 Sprint 5 (2026-08-30): the reserved "Overview" slot became the configuration
+      // screen — what the programme ASKS FOR (documents + questions), Off / Optional / Required.
+      // super + org_admin only: the page's endpoint refuses every other role, and a menu row that
+      // opens a 403 is worse than no row. ⚠ Visibility only — the fence is the endpoint.
+      { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
+        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
+        exact: true },
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
         gate: { mode: 'always' } },

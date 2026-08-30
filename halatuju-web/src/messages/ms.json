@@ -5451,6 +5451,57 @@
       "uploadNeedsFile": "Pilih fail .docx untuk dimuat naik, atau pilih pilihan lain."
     },
     "programme": {
+      "config": {
+        "nav": "Apa yang kami minta",
+        "title": "Apa yang program anda minta",
+        "subtitle": "Pilih dokumen dan soalan yang wajib diberikan pemohon, yang ditawarkan tetapi tidak menghalang mereka, dan yang tidak anda mahu langsung. Perubahan berkuat kuasa serta-merta untuk permohonan baharu; pelajar yang sudah menghantar kekal dengan borang yang mereka hantar.",
+        "liveWarning": "{n} pelajar sedang mengisi permohonan sekarang. Apa sahaja yang anda jadikan wajib akan diminta daripada mereka juga — mereka akan melihatnya apabila membuka permohonan mereka semula.",
+        "liveWarningNone": "Tiada sesiapa sedang mengisi permohonan sekarang, jadi perubahan hanya sampai kepada pemohon baharu.",
+        "sectionDocuments": "Dokumen",
+        "sectionQuestions": "Soalan",
+        "documentsHint": "Apa yang dimuat naik pemohon. Baris berkunci diwajibkan oleh platform untuk setiap program.",
+        "questionsHint": "Apa yang ditanya dalam borang permohonan. Baris berkunci diwajibkan oleh platform untuk setiap program.",
+        "state": { "off": "Jangan tanya", "optional": "Pilihan", "required": "Wajib" },
+        "alwaysRequired": "Sentiasa wajib",
+        "heavyNote": "Bukan satu muat naik — keseluruhan bahagian pendapatan isi rumah. Mematikannya akan membuang soalan pendapatan keluarga, slip gaji dan IC setiap pencari nafkah, serta bil utiliti sekaligus.",
+        "summary": "Program anda meminta {required} dan menawarkan {optional} daripada {total} item.",
+        "unchanged": "Belum ada perubahan.",
+        "changed": "{n} perubahan belum disimpan.",
+        "discard": "Buang",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "saved": "Disimpan.",
+        "errorCore": "{item} sentiasa wajib dan tidak boleh dimatikan. Tiada apa-apa disimpan.",
+        "errorGeneric": "Perubahan anda tidak dapat disimpan. Tiada apa-apa disimpan — sila cuba lagi.",
+        "loadError": "Konfigurasi program tidak dapat dimuatkan.",
+        "programmeRequired": "Pilih program untuk dikonfigurasi.",
+        "requestLink": "Perlukan dokumen atau soalan yang tiada dalam senarai? Minta melalui Permintaan.",
+        "desc": {
+          "document": {
+            "ic": "Setiap pemohon disemak terhadap IC mereka — program tidak dapat berjalan tanpanya.",
+            "results_slip": "Rekod akademik yang menjadi asas senarai pendek.",
+            "offer_letter": "Bukti tempat pengajian mereka. Pelajar Tingkatan Enam memuat naik surat pengesahan sekolah — itu diuruskan untuk anda.",
+            "income_proof": "Ujian kemampuan isi rumah: soalan pendapatan keluarga, slip gaji dan IC setiap pencari nafkah, serta bil utiliti.",
+            "electricity_bill": "Dipaparkan dalam bahagian pendapatan. Membantu mengesahkan tempat tinggal keluarga.",
+            "water_bill": "Dipaparkan dalam bahagian pendapatan, di sebelah bil elektrik.",
+            "school_leaving_cert": "Surat berhenti sekolah, atau testimoni.",
+            "statement_of_intent": "Surat dalam kata-kata pemohon sendiri.",
+            "photo": "Gambar pemohon. Tidak pernah dipaparkan kepada penaja."
+          },
+          "question": {
+            "family_roster": "Siapa dalam isi rumah dan pekerjaan setiap ibu bapa. Ujian kemampuan dibina atasnya.",
+            "address": "Tempat tinggal keluarga — jalan, poskod dan bandar.",
+            "aspirations": "Apa yang pelajar ingin capai.",
+            "plans": "Bagaimana mereka merancang untuk mencapainya.",
+            "daily_life": "Hari biasa dan tanggungjawab mereka di rumah.",
+            "fears": "Kebimbangan tentang perjalanan di hadapan, dan sokongan yang mereka perlukan.",
+            "funding": "Tempoh kursus mereka dan kegunaan sokongan.",
+            "consent": "Kebenaran untuk berkongsi profil tanpa nama dengan penaja. Keperluan undang-undang.",
+            "justification": "Mengapa bantuan diperlukan, dalam kata-kata pelajar.",
+            "anything_else": "Apa-apa lagi yang pelajar mahu program ketahui."
+          }
+        }
+      },
       "question": {
         "aspirations": "Cita-cita",
         "plans": "Rancangan selepas sekolah",
