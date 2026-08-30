@@ -1324,9 +1324,14 @@ def confirm_profile(application):
     completeness = application_completeness(application)
     if not completeness['complete']:
         raise IncompleteProfileError(completeness)
+    # Layer 0: freeze what the programme asked for AT THIS MOMENT, before the status flips —
+    # the same resolution the gate above just enforced. From here on a configuration change
+    # cannot re-gate this student (see `requirements.freeze`). Saved in the same statement as
+    # the status so the two can never be observed apart.
+    requirements.freeze(application, save=False)
     application.status = 'profile_complete'
     application.profile_completed_at = timezone.now()
-    application.save(update_fields=['status', 'profile_completed_at'])
+    application.save(update_fields=['status', 'profile_completed_at', 'requirements_snapshot'])
     # Best-effort admin notification (never blocks the confirm).
     name = getattr(application.profile, 'name', '') if application.profile else ''
     send_profile_complete_admin_email(application_id=application.id, applicant_name=name,
@@ -1868,7 +1873,17 @@ def revert_if_profile_incomplete(application):
         return False
     application.status = 'shortlisted'
     application.profile_completed_at = None
-    application.save(update_fields=['status', 'profile_completed_at'])
+    # Back in the wizard: the frozen requirement set goes with the submission it belonged to.
+    # The student now sees and is gated on the CURRENT configuration, and is re-frozen at
+    # their next Submit. (A student can only reach here through their OWN edit — deleting a
+    # compulsory document, blanking a required answer — never through a configuration change,
+    # because the completeness check above read the frozen copy.)
+    application.requirements_snapshot = None
+    try:
+        del application._requirements_memo
+    except AttributeError:
+        pass
+    application.save(update_fields=['status', 'profile_completed_at', 'requirements_snapshot'])
     return True
 
 

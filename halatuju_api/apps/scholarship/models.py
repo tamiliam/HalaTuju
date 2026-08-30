@@ -906,6 +906,18 @@ class ScholarshipApplication(models.Model):
         help_text="Immutable record of what the applicant declared at submit time "
                   "(profile + application fields). Audit evidence, NOT the live source.",
     )
+    # Layer 0 (2026-08-30): what the PROGRAMME asked for, frozen at the Step-4 Submit
+    # (`confirm_profile`). `{'captured_at', 'documents': {code: state}, 'questions': {code: state}}`.
+    # `requirements.resolve` reads this FIRST, so a configuration change made after a student
+    # submitted can never re-gate them (an organisation switching a question ON would otherwise
+    # make a submitted form "incomplete" and `revert_if_profile_incomplete` would un-submit it).
+    # NULL = never frozen: a not-yet-submitted application follows the live configuration, and a
+    # revert to `shortlisted` clears it so the student re-submits against the current form.
+    # Distinct from `intake_snapshot`, which is taken at the APPLY submit, an earlier moment.
+    requirements_snapshot = models.JSONField(
+        null=True, blank=True,
+        help_text="What the programme asked for, frozen at the Step-4 Submit. NULL until then.",
+    )
 
     # ── S5 verdict audit / override capture (Verification-verdict roadmap) ──────
     # When the officer records their verdict in the review cockpit, we snapshot the

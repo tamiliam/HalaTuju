@@ -1957,6 +1957,10 @@ class CronRunView(APIView):
         # READ-ONLY (request #9): the Pathway chip + Institution tick as they read now, beside how
         # they read before the fix. Writes nothing; safe to run any time.
         'audit-pathway-ticks': 'audit_pathway_ticks',
+        # one-off (Layer 0, 2026-08-30): freeze the requirement set on applications submitted
+        # before `requirements_snapshot` existed. Report-only unless REQUIREMENTS_SNAPSHOT_APPLY=1
+        # is set on the service; idempotent, so a repeat is a no-op.
+        'backfill-requirements-snapshots': 'backfill_requirements_snapshots',
     }
 
     def post(self, request, job):

@@ -105,6 +105,20 @@ def resolve(application, kind: str) -> dict[str, str]:
     if memo is not None and kind in memo:
         return memo[kind]
 
+    # ⚠ A SUBMITTED APPLICATION READS ITS FROZEN COPY, NEVER THE LIVE CATALOGUE.
+    #
+    # `confirm_profile` freezes both kinds at the Step-4 Submit (see `freeze`). From then on the
+    # answer to "what does this programme ask of THIS student" is the answer that was true when
+    # they submitted — so an organisation switching a question ON afterwards cannot make a
+    # submitted form incomplete, and `revert_if_profile_incomplete` cannot un-submit it. A
+    # snapshot with no entry for this kind (never written that way; defensive) or no snapshot at
+    # all (not yet submitted, reverted, or a pre-2026-08-30 row awaiting the backfill) falls
+    # through to the live resolution below. The frozen copy is the STORED value, not re-derived
+    # — the same reason the intake snapshot and a published terms version are stored.
+    frozen = getattr(application, 'requirements_snapshot', None)
+    if isinstance(frozen, dict) and isinstance(frozen.get(kind + 's'), dict):
+        return _memoise(application, kind, dict(frozen[kind + 's']))
+
     programme = _programme_of(application)
     if programme is None:
         out = _platform_defaults(kind)
@@ -192,6 +206,52 @@ def asks_for(application, kind: str, code: str) -> bool:
     chased, must not appear as outstanding, and must not produce a verdict fact.
     """
     return resolve(application, kind).get(code, 'off') != 'off'
+
+
+def freeze(application, *, save: bool = True) -> dict:
+    """Freeze the LIVE resolution of both kinds onto `application.requirements_snapshot`.
+
+    Called by `services.confirm_profile` at the Step-4 Submit — the moment the student's form
+    becomes a record rather than a draft. Reads through `resolve`, so what is frozen is exactly
+    what the gate just enforced and the wizard just drew. Deliberately clears the per-instance
+    memo first: a caller may have resolved earlier in the same request against a now-stale
+    catalogue read, and the snapshot must not inherit that.
+
+    Idempotent on an already-frozen application: it returns the existing snapshot untouched
+    (the whole point is that a later call must NOT overwrite the first). Pass `save=False` to
+    build without persisting (the backfill's report mode).
+    """
+    existing = getattr(application, 'requirements_snapshot', None)
+    if isinstance(existing, dict) and existing.get('captured_at'):
+        return existing
+    try:
+        del application._requirements_memo
+    except AttributeError:
+        pass
+    from django.utils import timezone
+    snapshot = {
+        'captured_at': timezone.now().isoformat(),
+        'documents': resolve(application, 'document'),
+        'questions': resolve(application, 'question'),
+    }
+    application.requirements_snapshot = snapshot
+    if save:
+        application.save(update_fields=['requirements_snapshot'])
+    return snapshot
+
+
+def thaw(application) -> None:
+    """Drop the frozen copy — the student is back in the editing wizard (a revert to
+    `shortlisted`), so they must see, and be gated on, the CURRENT configuration and be
+    re-frozen at their next Submit."""
+    if getattr(application, 'requirements_snapshot', None) is None:
+        return
+    application.requirements_snapshot = None
+    try:
+        del application._requirements_memo
+    except AttributeError:
+        pass
+    application.save(update_fields=['requirements_snapshot'])
 
 
 def payload_for(application, kind: str) -> dict[str, list[str]]:
