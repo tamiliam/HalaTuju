@@ -7869,3 +7869,13 @@ Step-4 Submit would make "immutable" a lie by construction. A column with one wr
 (`requirements.freeze`), one clearer (the revert) and one reader (`resolve`) is honest and
 greppable. **Revisit if:** a third freeze point appears; then a small `snapshots` table with a
 `kind` beats a third column.
+
+## Check-2 asks are governed per code, with `None` as an explicit exemption — 2026-08-30
+
+**Decision:** `check2_queries.GOVERNED_BY` maps every Check-2 code to the catalogue item(s) whose
+absence makes the ask meaningless, or `None` for asks that follow a per-student rule (semester
+result, pathway/results facts, the apply-form scholarships question). A completeness test refuses
+an unclassified code. **Alternative considered:** gate the whole file on `income_proof` (the
+3a shorthand) — rejected because the file carries academic and family asks too. **Note:**
+`income_proof` is CORE, so an organisation cannot switch it off; the income asks fall silent only
+if the platform deactivates the aggregate. The test says so rather than pretending otherwise.

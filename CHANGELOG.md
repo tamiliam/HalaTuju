@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 0 — a Check-2 ask is governed by the item it chases - 2026-08-30
+
+**Small sprint (the second and last item 3a deferred).** No migration. Backend only, 2 files.
+
+The automatic follow-up asks (`check2_queries.py`) now respect what a programme asks for — at
+the right grain. Sprint 3a deferred this file because it is income-driven but also carries
+academic and family follow-ups, so gating it wholesale on the income switch would have silenced
+the wrong asks. `GOVERNED_BY` names, per code, the catalogue item whose absence makes the ask
+meaningless (a payslip request → `income_proof`; a water-bill recheck → `water_bill`; the family
+clarifies → `family_roster`; device/transport → `funding`), or `None` for the asks that follow a
+per-student rule the catalogue does not express (semester result, the pathway/results facts, the
+apply-form scholarships question). `_gap_sets` filters through it once, so the sync never raises
+a governed ask the programme does not make and auto-resolves an open one through the existing
+housekeeping. Reads through `requirements.asks_for` — the FROZEN copy for a submitted student.
+A completeness test insists every Check-2 code is classified. Bite-checked (filter disabled → 2
+tests fail). +6 tests. **Layer 0 Sprint 5 is now unblocked.**
+
 ## Layer 0 — what the programme asked for is frozen at Submit - 2026-08-30
 
 **Sprint (the owed 3a item, brought forward).** Migration **`scholarship/0147`** (additive,

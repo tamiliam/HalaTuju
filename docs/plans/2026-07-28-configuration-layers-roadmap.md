@@ -326,8 +326,10 @@ is core). Computed, never stored — the Layer 2 constraint held.
 resolved sets onto `requirements_snapshot`; `requirements.resolve` reads the frozen copy first,
 so every consumer inherits it; a revert thaws. **Owner ruled: freeze at Submit, not at start.**
 Rows submitted before the column are frozen by `backfill_requirements_snapshots` on the live
-service (owner step after the deploy). Of the two items 3a deferred, only the
-**`check2_queries.py` pass** remains before Sprint 5.
+service (owner step after the deploy — DONE, 92 frozen). **✅ The `check2_queries.py` pass
+SHIPPED 2026-08-30 too** (branch `feat/layer0-check2-pass`; `GOVERNED_BY` per code; retro
+`docs/retrospective-2026-08-30-layer0-check2-pass.md`). **Both 3a deferrals are closed — Sprint 5
+is unblocked.**
 
 **Goal.** A programme configures which questions it asks. One journey for every tenant, different contents.
 
@@ -400,13 +402,11 @@ bar is pale blue, which reads as an info panel; a neutral tint reads as a toolba
 and the guard asserts they RESOLVE rather than merely look like keys. This screen is their first
 consumer, so building before that fix would have rendered nineteen raw dotted strings at a tenant.
 
-### Still owed BEFORE this ships (both from 3a, neither started)
+### ✅ Both 3a prerequisites SHIPPED 2026-08-30 — nothing is owed before this ships
 
-- **The `check2_queries.py` pass** — income-driven but also carries academic and family follow-ups,
-  so it cannot be gated wholesale on the income switch.
-- **The submit-time snapshot** — so a change made today never re-gates a student who submitted
-  yesterday. This is the sprint that first makes a configuration change POSSIBLE, so the guard and
-  the capability belong together.
+- **The `check2_queries.py` pass** — per-code `GOVERNED_BY`, not a wholesale income gate.
+- **The submit-time snapshot** — `requirements_snapshot`, frozen at Submit, read first by
+  `resolve`; the 92 already-submitted rows backfilled on the live service.
 
 **Goal.** An `org_admin` ticks what their programme asks for, sees it in the sandbox, and cannot break
 anything.

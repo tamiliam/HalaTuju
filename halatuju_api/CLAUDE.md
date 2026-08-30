@@ -550,7 +550,34 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-30, after the submit-time snapshot)
+## Next Sprint (as of 2026-08-30, after the Check-2 pass — LAYER 0 SPRINT 5 IS UNBLOCKED)
+
+**✅ SHIPPED — THE CHECK-2 PASS (the second and last item 3a deferred).** Branch
+`feat/layer0-check2-pass`. **NO migration.** Backend only, 2 files. Retro
+`docs/retrospective-2026-08-30-layer0-check2-pass.md`; decision ×1. +6 tests; the existing 68 Check-2
+tests unmodified; bite-checked (filter disabled → 2 tests fail).
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`check2_queries.GOVERNED_BY` — per CODE, never a wholesale income gate.** Each ask names the
+  catalogue item whose absence makes it meaningless, or `None` (explicit exemption: a per-student
+  rule the catalogue does not express). A completeness test refuses an unclassified code — adding a
+  Check-2 ask means classifying it.
+- **`_gap_sets` filters ONCE at its end**, so create / re-open / auto-resolve all see one truth. Do
+  not move the check into `sync_check2_queries`'s branches.
+- **`income_proof` is CORE**, so the income asks fall silent only if the PLATFORM deactivates the
+  aggregate (`is_active=False`); an organisation's `off` row is floored. The test says so.
+
+**▶ AT DEPLOY: push (api only). No migrate-first, no env vars, no i18n.** Post-check: a submitted
+student's Action Centre reads unchanged (0 overrides → every governor is asked).
+
+**▶ NEXT = LAYER 0 SPRINT 5 — the org_admin screen.** Both prerequisites are closed. Stitch design
+of record approved 2026-07-29 (content column only — the mock's shell, orange nav and product name
+are NOT to be built); TD-197 closed. It owns the route + `NAV_GROUPS` entry + `_AdminBase` subclass
++ `FENCED_OR_EXEMPT` row, and the tab shell Layer 1's colour picker later joins. Documents AND
+questions as rows in one list (Sprint 4 landed the questions, so the roadmap's "documents only"
+note is superseded — both are enforced now). Run `sprint-start.md`.
+
+## Superseded — previous Next Sprint (as of 2026-08-30, after the submit-time snapshot)
 
 **✅ SHIPPED — THE SUBMIT-TIME SNAPSHOT (the first of 3a's two owed items).** Branch
 `feat/layer0-submit-snapshot` off `main a3fc89cf`. **Migration `scholarship/0147`** (additive,
