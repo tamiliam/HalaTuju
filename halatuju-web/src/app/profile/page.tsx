@@ -42,10 +42,10 @@ const MALAYSIAN_STATES = [
 ]
 
 const STATUS_OPTIONS = [
-  { value: 'interested', label: 'profile.status.interested', color: 'bg-gray-100 text-gray-600' },
-  { value: 'planning', label: 'profile.status.planning', color: 'bg-blue-100 text-blue-700' },
-  { value: 'applied', label: 'profile.status.applied', color: 'bg-amber-100 text-amber-700' },
-  { value: 'got_offer', label: 'profile.status.got_offer', color: 'bg-green-100 text-green-700' },
+  { value: 'interested', label: 'profile.status.interested', color: 'bg-ground-100 text-ground-600' },
+  { value: 'planning', label: 'profile.status.planning', color: 'bg-info-100 text-info-700' },
+  { value: 'applied', label: 'profile.status.applied', color: 'bg-caution-100 text-caution-700' },
+  { value: 'got_offer', label: 'profile.status.got_offer', color: 'bg-positive-100 text-positive-700' },
 ]
 
 type EditingSection = 'identity' | 'contactDetails' | 'contact' | 'family' | 'application' | null
@@ -68,15 +68,15 @@ function countIncomplete(fields: (string | boolean | number | null | undefined)[
 
 function FieldValue({ value, t }: { value: string; t: (key: string) => string }) {
   if (!value) {
-    return <span className="text-sm text-amber-500 italic">{t('profile.notSet')}</span>
+    return <span className="text-sm text-caution-500 italic">{t('profile.notSet')}</span>
   }
-  return <span className="text-sm text-gray-900">{value}</span>
+  return <span className="text-sm text-ground-900">{value}</span>
 }
 
 function FieldLabel({ label, empty }: { label: string; empty: boolean }) {
   return (
-    <span className="text-sm text-gray-500 flex items-center gap-1.5">
-      {empty && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />}
+    <span className="text-sm text-ground-500 flex items-center gap-1.5">
+      {empty && <span className="w-1.5 h-1.5 rounded-full bg-caution-400 inline-block" />}
       {label}
     </span>
   )
@@ -472,7 +472,7 @@ export default function ProfilePage() {
   }
 
   const getStatusColor = (status: string) =>
-    STATUS_OPTIONS.find(s => s.value === status)?.color || 'bg-gray-100 text-gray-600'
+    STATUS_OPTIONS.find(s => s.value === status)?.color || 'bg-ground-100 text-ground-600'
 
   // Incomplete field counts per section
   const identityIncomplete = countIncomplete([name, gender])
@@ -505,8 +505,8 @@ export default function ProfilePage() {
     return (
       <>
         <AppHeader />
-        <main className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-          <p className="text-gray-500">{t('common.loading')}</p>
+        <main className="min-h-screen bg-ground-50 flex items-center justify-center">
+          <p className="text-ground-500">{t('common.loading')}</p>
         </main>
       </>
     )
@@ -515,7 +515,7 @@ export default function ProfilePage() {
   return (
     <>
       <AppHeader />
-      <main className="min-h-screen bg-[#f8fafc]">
+      <main className="min-h-screen bg-ground-50">
         <div className="container mx-auto px-6 py-10 max-w-2xl">
           {nextUrl && (
             <Link href={nextUrl} className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline mb-4">
@@ -524,16 +524,16 @@ export default function ProfilePage() {
           )}
           {/* Page title */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            <h1 className="text-2xl font-bold text-ground-900 mb-1">
               {t('profile.title')}
             </h1>
-            <p className="text-gray-500">
+            <p className="text-ground-500">
               {t('profile.subtitle')}
             </p>
           </div>
 
           {/* Section 1: Personal Details (Identity) */}
-          <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${identityIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
+          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${identityIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -541,9 +541,9 @@ export default function ProfilePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">{t('profile.personalDetails')}</h2>
+                <h2 className="text-lg font-semibold text-ground-900">{t('profile.personalDetails')}</h2>
                 {identityIncomplete > 0 && (
-                  <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-caution-50 text-caution-600 text-xs font-medium rounded-full">
                     {identityIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -558,7 +558,7 @@ export default function ProfilePage() {
             {editingSection === 'identity' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.icMasked')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.icMasked')}</label>
                   <div className="relative">
                     {/* ⚠ Keyed on `nricLocked` (the STORED lock), never on identityVerified.
                         Until 2026-07-29 `disabled` was a bare attribute here, so every student
@@ -576,18 +576,18 @@ export default function ProfilePage() {
                       aria-label={t('profile.icMasked')}
                       className={`w-full px-3 py-2.5 border rounded-lg text-sm font-mono pr-10 ${
                         icEditable
-                          ? 'border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none'
-                          : 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
+                          ? 'border-ground-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none'
+                          : 'border-ground-200 bg-ground-50 text-ground-500 cursor-not-allowed'
                       }`}
                     />
                     {!icEditable && (
-                      <svg className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-4 h-4 text-ground-400 absolute right-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                       </svg>
                     )}
                   </div>
-                  {nricError && <p className="mt-1.5 text-xs text-red-600">{nricError}</p>}
-                  <p className="mt-1.5 text-xs text-gray-500">
+                  {nricError && <p className="mt-1.5 text-xs text-critical-600">{nricError}</p>}
+                  <p className="mt-1.5 text-xs text-ground-500">
                     {icEditable ? t('profile.icEditable') : t('profile.icLockedNote')}
                   </p>
                 </div>
@@ -596,16 +596,16 @@ export default function ProfilePage() {
                     does not say which is wrong: our OCR splits and glues names (apps #27, #118),
                     so blaming the student would sometimes be blaming ourselves. */}
                 {hasIcFlags(icFlagCodes) && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-                    <p className="text-xs font-medium text-amber-900">{t('profile.icFlagTitle')}</p>
+                  <div className="rounded-lg border border-caution-200 bg-caution-50 px-3 py-2.5">
+                    <p className="text-xs font-medium text-caution-900">{t('profile.icFlagTitle')}</p>
                     <ul className="mt-1.5 space-y-1">
                       {icFlags(icFlagCodes).map(code => (
-                        <li key={code} className="text-xs text-amber-800">
+                        <li key={code} className="text-xs text-caution-800">
                           {t(`profile.icFlag.${code}`)}
                         </li>
                       ))}
                     </ul>
-                    <dl className="mt-2 space-y-0.5 text-xs text-amber-900">
+                    <dl className="mt-2 space-y-0.5 text-xs text-caution-900">
                       {icCardNric && (
                         <div className="flex gap-2">
                           <dt className="font-medium">{t('profile.icOnCard')}</dt>
@@ -619,23 +619,23 @@ export default function ProfilePage() {
                         </div>
                       )}
                     </dl>
-                    <p className="mt-2 text-xs text-amber-800">
+                    <p className="mt-2 text-xs text-caution-800">
                       {t(`profile.icFixable.${icFixable}`)}
                     </p>
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.name')} <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.name')} <span className="text-critical-500">*</span></label>
                   <input
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.gender')} <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('onboarding.gender')} <span className="text-critical-500">*</span></label>
                     <div className="flex gap-2">
                       {(['male', 'female'] as const).map(g => (
                         <button
@@ -644,7 +644,7 @@ export default function ProfilePage() {
                           className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                             gender === g
                               ? 'bg-primary-50 border-primary-500 text-primary-700'
-                              : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+                              : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
                           }`}
                         >
                           {t(`onboarding.${g}`)}
@@ -653,7 +653,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.nationality')}</label>
+                    <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('onboarding.nationality')}</label>
                     <div className="flex gap-2">
                       {(['malaysian', 'non_malaysian'] as const).map(n => (
                         <button
@@ -662,7 +662,7 @@ export default function ProfilePage() {
                           className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                             nationality === n
                               ? 'bg-primary-50 border-primary-500 text-primary-700'
-                              : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+                              : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
                           }`}
                         >
                           {n === 'malaysian' ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}
@@ -673,22 +673,22 @@ export default function ProfilePage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.colorBlindness')}</label>
+                    <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.colorBlindness')}</label>
                     <div className="flex gap-2">
-                      <button onClick={() => setColorblind(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${colorblind ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}>{t('profile.yes')}</button>
-                      <button onClick={() => setColorblind(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!colorblind ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}>{t('profile.no')}</button>
+                      <button onClick={() => setColorblind(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${colorblind ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.yes')}</button>
+                      <button onClick={() => setColorblind(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!colorblind ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.no')}</button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.physicalDisability')}</label>
+                    <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.physicalDisability')}</label>
                     <div className="flex gap-2">
-                      <button onClick={() => setDisability(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${disability ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}>{t('profile.yes')}</button>
-                      <button onClick={() => setDisability(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!disability ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'}`}>{t('profile.no')}</button>
+                      <button onClick={() => setDisability(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${disability ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.yes')}</button>
+                      <button onClick={() => setDisability(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!disability ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.no')}</button>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
                   <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
@@ -699,35 +699,35 @@ export default function ProfilePage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-500 flex items-center gap-1.5">
+                  <span className="text-sm text-ground-500 flex items-center gap-1.5">
                     {/* Same correction as the edit panel: the padlock is drawn only when the IC
                         is actually locked, not on every render. */}
                     {!icEditable && (
-                      <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-3.5 h-3.5 text-ground-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                       </svg>
                     )}
                     {t('profile.icMasked')}
                   </span>
-                  <span className="text-sm text-gray-900 font-mono flex items-center gap-1.5">
+                  <span className="text-sm text-ground-900 font-mono flex items-center gap-1.5">
                     {nric ? maskIc(nric) : '—'}
                     {nric && identityVerified && (
-                      <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                      <span className="px-1.5 py-0.5 bg-positive-50 text-positive-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                     )}
                     {/* A quiet marker that something needs their attention, so a student who
                         never opens the edit panel still learns the card disagrees. */}
                     {hasIcFlags(icFlagCodes) && (
-                      <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-medium rounded-full">{t('profile.icNeedsCheck')}</span>
+                      <span className="px-1.5 py-0.5 bg-caution-50 text-caution-700 text-[10px] font-medium rounded-full">{t('profile.icNeedsCheck')}</span>
                     )}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.name')} empty={!name} />
                   {name ? (
-                    <span className="text-sm text-gray-900 flex items-center gap-1.5">
+                    <span className="text-sm text-ground-900 flex items-center gap-1.5">
                       {name}
                       {identityVerified && (
-                        <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                       )}
                     </span>
                   ) : (
@@ -737,29 +737,29 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <FieldLabel label={t('onboarding.gender')} empty={!gender} />
                   {gender ? (
-                    <span className="text-sm text-gray-900">{t(`onboarding.${gender}`)}</span>
+                    <span className="text-sm text-ground-900">{t(`onboarding.${gender}`)}</span>
                   ) : (
                     <FieldValue value="" t={t} />
                   )}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">{t('onboarding.nationality')}</span>
-                  <span className="text-sm text-gray-900">{nationality === 'malaysian' ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}</span>
+                  <span className="text-sm text-ground-500">{t('onboarding.nationality')}</span>
+                  <span className="text-sm text-ground-900">{nationality === 'malaysian' ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">{t('profile.colorBlindness')}</span>
-                  <span className="text-sm text-gray-900">{colorblind ? t('profile.yes') : t('profile.no')}</span>
+                  <span className="text-sm text-ground-500">{t('profile.colorBlindness')}</span>
+                  <span className="text-sm text-ground-900">{colorblind ? t('profile.yes') : t('profile.no')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">{t('profile.physicalDisability')}</span>
-                  <span className="text-sm text-gray-900">{disability ? t('profile.yes') : t('profile.no')}</span>
+                  <span className="text-sm text-ground-500">{t('profile.physicalDisability')}</span>
+                  <span className="text-sm text-ground-900">{disability ? t('profile.yes') : t('profile.no')}</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Section 2: Contact Details (NEW) */}
-          <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${contactDetailsIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
+          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${contactDetailsIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -767,9 +767,9 @@ export default function ProfilePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">{t('profile.contactDetails')}</h2>
+                <h2 className="text-lg font-semibold text-ground-900">{t('profile.contactDetails')}</h2>
                 {contactDetailsIncomplete > 0 && (
-                  <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-caution-50 text-caution-600 text-xs font-medium rounded-full">
                     {contactDetailsIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -784,22 +784,22 @@ export default function ProfilePage() {
             {editingSection === 'contactDetails' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.loginMethod')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.loginMethod')}</label>
                   <input
                     type="text"
                     value={loginMethod || '—'}
                     disabled
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                    className="w-full px-3 py-2.5 border border-ground-200 rounded-lg text-sm bg-ground-50 text-ground-500 cursor-not-allowed"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.contactEmail')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.contactEmail')}</label>
                   <div className="flex gap-2">
                     <input
                       type="email"
                       value={contactEmail}
                       onChange={e => setContactEmail(e.target.value)}
-                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                     />
                     <button
                       onClick={async () => {
@@ -823,10 +823,10 @@ export default function ProfilePage() {
                       {sendingVerification ? '...' : t('profile.verify')}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.emailVerifyNote')}</p>
+                  <p className="text-xs text-ground-400 mt-1">{t('profile.emailVerifyNote')}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.contactPhone')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.contactPhone')}</label>
                   <div className="flex gap-2">
                     <input
                       type="tel"
@@ -837,7 +837,7 @@ export default function ProfilePage() {
                         setVerifyingPhone(false)
                       }}
                       placeholder="012-345 6789"
-                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                     />
                     {phoneVerifyEnabled && (
                     <button
@@ -865,14 +865,14 @@ export default function ProfilePage() {
                     )}
                   </div>
                   {contactPhoneVerified && (
-                    <p className="text-xs text-green-600 mt-1.5 font-medium">✓ {t('profile.phoneVerified')}</p>
+                    <p className="text-xs text-positive-600 mt-1.5 font-medium">✓ {t('profile.phoneVerified')}</p>
                   )}
                   {!phoneVerifyEnabled && !contactPhoneVerified && (
-                    <p className="text-xs text-gray-500 mt-1.5">{t('profile.phoneVerifyPaused')}</p>
+                    <p className="text-xs text-ground-500 mt-1.5">{t('profile.phoneVerifyPaused')}</p>
                   )}
                   {phoneVerifyEnabled && verifyingPhone && !contactPhoneVerified && (
                     <div className="mt-2 space-y-1.5">
-                      <p className="text-xs text-gray-500">{t('profile.phoneCodeSent')}</p>
+                      <p className="text-xs text-ground-500">{t('profile.phoneCodeSent')}</p>
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -880,7 +880,7 @@ export default function ProfilePage() {
                           value={phoneCode}
                           onChange={e => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                           placeholder={t('profile.phoneCodePlaceholder')}
-                          className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm tracking-widest focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                          className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm tracking-widest focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                         />
                         <button
                           onClick={async () => {
@@ -912,18 +912,18 @@ export default function ProfilePage() {
                     </div>
                   )}
                   {phoneVerifyEnabled && (
-                    <p className="text-xs text-gray-400 mt-1.5">{t('profile.phoneVerifyNote')}</p>
+                    <p className="text-xs text-ground-400 mt-1.5">{t('profile.phoneVerifyNote')}</p>
                   )}
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-700">{t('profile.whatsappUpdates')}</span>
-                    <p className="text-xs text-gray-400 mt-0.5">{t('profile.whatsappUpdatesNote')}</p>
+                    <span className="text-sm font-medium text-ground-700">{t('profile.whatsappUpdates')}</span>
+                    <p className="text-xs text-ground-400 mt-0.5">{t('profile.whatsappUpdatesNote')}</p>
                   </div>
                   <Toggle on={whatsappOptIn} onChange={setWhatsappOptIn} label={t('profile.whatsappUpdates')} />
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
                   <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
@@ -934,18 +934,18 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">{t('profile.loginMethod')}</span>
-                  <span className="text-sm text-gray-900">{loginMethod || '—'}</span>
+                  <span className="text-sm text-ground-500">{t('profile.loginMethod')}</span>
+                  <span className="text-sm text-ground-900">{loginMethod || '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.contactEmail')} empty={!contactEmail} />
                   {contactEmail ? (
-                    <span className="text-sm text-gray-900 flex items-center gap-1.5">
+                    <span className="text-sm text-ground-900 flex items-center gap-1.5">
                       {contactEmail}
                       {contactEmailVerified ? (
-                        <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                       ) : (
-                        <span className="text-amber-500 text-xs">{t('profile.notVerified')}</span>
+                        <span className="text-caution-500 text-xs">{t('profile.notVerified')}</span>
                       )}
                     </span>
                   ) : (
@@ -955,12 +955,12 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.contactPhone')} empty={!contactPhone} />
                   {contactPhone ? (
-                    <span className="text-sm text-gray-900 flex items-center gap-1.5">
+                    <span className="text-sm text-ground-900 flex items-center gap-1.5">
                       {contactPhone}
                       {contactPhoneVerified ? (
-                        <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                       ) : (
-                        <span className="text-amber-500 text-xs">{t('profile.notVerified')}</span>
+                        <span className="text-caution-500 text-xs">{t('profile.notVerified')}</span>
                       )}
                     </span>
                   ) : (
@@ -968,15 +968,15 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">{t('profile.whatsappUpdates')}</span>
-                  <span className="text-sm text-gray-900">{whatsappOptIn ? t('profile.whatsappOn') : t('profile.whatsappOff')}</span>
+                  <span className="text-sm text-ground-500">{t('profile.whatsappUpdates')}</span>
+                  <span className="text-sm text-ground-900">{whatsappOptIn ? t('profile.whatsappOn') : t('profile.whatsappOff')}</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Section 3: Contact & Location */}
-          <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${contactIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
+          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${contactIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -985,9 +985,9 @@ export default function ProfilePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">{t('profile.contactLocation')}</h2>
+                <h2 className="text-lg font-semibold text-ground-900">{t('profile.contactLocation')}</h2>
                 {contactIncomplete > 0 && (
-                  <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-caution-50 text-caution-600 text-xs font-medium rounded-full">
                     {contactIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -1002,18 +1002,18 @@ export default function ProfilePage() {
             {editingSection === 'contact' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.street')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.street')}</label>
                   <textarea
                     value={address}
                     onChange={e => setAddress(e.target.value)}
                     placeholder="No. 12, Jalan ABC, Taman XYZ"
                     rows={2}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
+                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.postalCode')}</label>
+                    <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.postalCode')}</label>
                     <input
                       type="text"
                       value={postalCode}
@@ -1030,26 +1030,26 @@ export default function ProfilePage() {
                       }}
                       placeholder="08000"
                       maxLength={5}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.city')}</label>
+                    <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.city')}</label>
                     <input
                       type="text"
                       value={city}
                       onChange={e => setCity(e.target.value)}
                       placeholder="Sungai Petani"
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.state')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('onboarding.state')}</label>
                   <select
                     value={state}
                     onChange={e => setState(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   >
                     <option value="">{t('onboarding.selectState')}</option>
                     {MALAYSIAN_STATES.map(s => (
@@ -1058,7 +1058,7 @@ export default function ProfilePage() {
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
                   <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
@@ -1070,9 +1070,9 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.address')} empty={!address && !postalCode && !city && !state} />
-                  <span className="text-sm text-gray-900 text-right max-w-[60%]">
+                  <span className="text-sm text-ground-900 text-right max-w-[60%]">
                     {[address, [postalCode, city].filter(Boolean).join(' '), state].filter(Boolean).join(', ') || (
-                      <span className="text-amber-500 italic">{t('profile.notSet')}</span>
+                      <span className="text-caution-500 italic">{t('profile.notSet')}</span>
                     )}
                   </span>
                 </div>
@@ -1081,7 +1081,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 4: Family & Background */}
-          <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${familyIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
+          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${familyIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -1089,9 +1089,9 @@ export default function ProfilePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">{t('profile.familyBackground')}</h2>
+                <h2 className="text-lg font-semibold text-ground-900">{t('profile.familyBackground')}</h2>
                 {familyIncomplete > 0 && (
-                  <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-caution-50 text-caution-600 text-xs font-medium rounded-full">
                     {familyIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -1106,7 +1106,7 @@ export default function ProfilePage() {
             {editingSection === 'family' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.householdIncome')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.householdIncome')}</label>
                   <input
                     type="number"
                     min="0"
@@ -1114,30 +1114,30 @@ export default function ProfilePage() {
                     placeholder="2500"
                     value={householdIncome}
                     onChange={e => setHouseholdIncome(e.target.value)}
-                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdIncomeInvalid ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}`}
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdIncomeInvalid ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500' : 'border-ground-300 focus:border-primary-500 focus:ring-primary-500'}`}
                   />
                   {householdIncomeInvalid
-                    ? <p className="text-xs text-red-500 mt-1">{t('profile.invalidHouseholdIncome')}</p>
-                    : <p className="text-xs text-gray-400 mt-1">{t('profile.householdIncomeHelper')}</p>}
+                    ? <p className="text-xs text-critical-500 mt-1">{t('profile.invalidHouseholdIncome')}</p>
+                    : <p className="text-xs text-ground-400 mt-1">{t('profile.householdIncomeHelper')}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.householdSize')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.householdSize')}</label>
                   <input
                     type="number"
                     min="1"
                     max="20"
                     value={householdSize}
                     onChange={e => setHouseholdSize(e.target.value)}
-                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdSizeInvalid ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'}`}
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdSizeInvalid ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500' : 'border-ground-300 focus:border-primary-500 focus:ring-primary-500'}`}
                   />
                   {householdSizeInvalid
-                    ? <p className="text-xs text-red-500 mt-1">{t('profile.invalidHouseholdSize')}</p>
-                    : <p className="text-xs text-gray-400 mt-1">{t('profile.householdSizeHelper')}</p>}
+                    ? <p className="text-xs text-critical-500 mt-1">{t('profile.invalidHouseholdSize')}</p>
+                    : <p className="text-xs text-ground-400 mt-1">{t('profile.householdSizeHelper')}</p>}
                 </div>
                 {/* Structured family roster — the shared editor; while a B40
                     application is open these values stay linked to it. */}
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="text-sm font-medium text-gray-900 mb-3">{t('profile.familyMembers')}</p>
+                <div className="border-t border-ground-100 pt-4">
+                  <p className="text-sm font-medium text-ground-900 mb-3">{t('profile.familyMembers')}</p>
                   <FamilyRosterFields
                     form={family}
                     onUpdate={updateFamily}
@@ -1149,7 +1149,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
                   <button onClick={saveSection} disabled={saving || householdSizeInvalid || householdIncomeInvalid} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
@@ -1167,27 +1167,27 @@ export default function ProfilePage() {
                   <FieldLabel label={t('profile.householdSize')} empty={!householdSize} />
                   <FieldValue value={householdSize} t={t} />
                 </div>
-                <div className="border-t border-gray-100 pt-3 space-y-2">
+                <div className="border-t border-ground-100 pt-3 space-y-2">
                   <div className="flex justify-between gap-3">
-                    <span className="text-sm text-gray-500 shrink-0">{t('scholarship.nextSteps.story.cardA.father')}</span>
-                    <span className="text-sm text-gray-900 text-right">{familySummary('father')}</span>
+                    <span className="text-sm text-ground-500 shrink-0">{t('scholarship.nextSteps.story.cardA.father')}</span>
+                    <span className="text-sm text-ground-900 text-right">{familySummary('father')}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="text-sm text-gray-500 shrink-0">{t('scholarship.nextSteps.story.cardA.mother')}</span>
-                    <span className="text-sm text-gray-900 text-right">{familySummary('mother')}</span>
+                    <span className="text-sm text-ground-500 shrink-0">{t('scholarship.nextSteps.story.cardA.mother')}</span>
+                    <span className="text-sm text-ground-900 text-right">{familySummary('mother')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">{t('profile.siblingsSchoolView')}</span>
-                    <span className="text-sm text-gray-900">{family.siblingsInSchool}</span>
+                    <span className="text-sm text-ground-500">{t('profile.siblingsSchoolView')}</span>
+                    <span className="text-sm text-ground-900">{family.siblingsInSchool}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">{t('profile.siblingsTertiaryView')}</span>
-                    <span className="text-sm text-gray-900">{family.siblingsInTertiary}</span>
+                    <span className="text-sm text-ground-500">{t('profile.siblingsTertiaryView')}</span>
+                    <span className="text-sm text-ground-900">{family.siblingsInTertiary}</span>
                   </div>
                   {family.otherFamilyMembers.length > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">{t('profile.familyOthers')}</span>
-                      <span className="text-sm text-gray-900">{family.otherFamilyMembers.length}</span>
+                      <span className="text-sm text-ground-500">{t('profile.familyOthers')}</span>
+                      <span className="text-sm text-ground-900">{family.otherFamilyMembers.length}</span>
                     </div>
                   )}
                 </div>
@@ -1196,7 +1196,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 5: Application Tracking */}
-          <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${appIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
+          <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${appIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -1204,9 +1204,9 @@ export default function ProfilePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">{t('profile.applicationTracking')}</h2>
+                <h2 className="text-lg font-semibold text-ground-900">{t('profile.applicationTracking')}</h2>
                 {appIncomplete > 0 && (
-                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-xs text-caution-600 bg-caution-50 px-2 py-0.5 rounded-full font-medium">
                     {appIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -1221,13 +1221,13 @@ export default function ProfilePage() {
             {editingSection === 'application' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('profile.school')} <span className="text-gray-400 font-normal">({t('profile.optional')})</span>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">
+                    {t('profile.school')} <span className="text-ground-400 font-normal">({t('profile.optional')})</span>
                   </label>
                   <SchoolSelect value={school} onChange={setSchool} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.angkaGiliran')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.angkaGiliran')}</label>
                   <input
                     type="text"
                     value={angkaGiliran}
@@ -1236,14 +1236,14 @@ export default function ProfilePage() {
                     maxLength={9}
                     className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none font-mono uppercase ${
                       angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran)
-                        ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+                        ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500'
+                        : 'border-ground-300 focus:border-primary-500 focus:ring-primary-500'
                     }`}
                   />
                   {angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran) && (
-                    <p className="text-xs text-red-500 mt-1">{t('profile.angkaGiliranInvalid')}</p>
+                    <p className="text-xs text-critical-500 mt-1">{t('profile.angkaGiliranInvalid')}</p>
                   )}
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.angkaGiliranHelper')}</p>
+                  <p className="text-xs text-ground-400 mt-1">{t('profile.angkaGiliranHelper')}</p>
                 </div>
                 {/* Merit — computed from grades, so "editing" it means the grades editor. Make it
                     the SAME tappable shortcut as the view state (it was an inert span here, which is
@@ -1251,17 +1251,17 @@ export default function ProfilePage() {
                     to the grades page (stashing a return to /profile). */}
                 <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push('/onboarding/grades') }}
                   className="w-full flex justify-between items-center gap-3 text-left group">
-                  <span className="text-sm font-medium text-gray-700">{t('profile.meritScore')}</span>
-                  <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>
+                  <span className="text-sm font-medium text-ground-700">{t('profile.meritScore')}</span>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-ground-900 font-semibold' : 'text-caution-500'} group-hover:text-primary-600`}>
                     {meritScore != null ? meritScore : t('profile.meritTapAdd')}
                   </span>
                 </button>
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="text-sm font-medium text-gray-900 mb-3">{t('profile.pathway')}</p>
+                <div className="border-t border-ground-100 pt-4">
+                  <p className="text-sm font-medium text-ground-900 mb-3">{t('profile.pathway')}</p>
                   <PathwayPicker value={pathwayForm} onChange={updatePathway} profile={profileObj} token={token} />
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
                   <button onClick={saveSection} disabled={saving || (!!angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran))} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
@@ -1274,7 +1274,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.school')} empty={!school} />
                   {school ? (
-                    <span className="text-sm text-gray-900 text-right">{school}</span>
+                    <span className="text-sm text-ground-900 text-right">{school}</span>
                   ) : (
                     <FieldValue value="" t={t} />
                   )}
@@ -1282,7 +1282,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between">
                   <FieldLabel label={t('profile.angkaGiliran')} empty={!angkaGiliran} />
                   {angkaGiliran ? (
-                    <span className="text-sm text-gray-900 font-mono">{angkaGiliran}</span>
+                    <span className="text-sm text-ground-900 font-mono">{angkaGiliran}</span>
                   ) : (
                     <FieldValue value="" t={t} />
                   )}
@@ -1291,8 +1291,8 @@ export default function ProfilePage() {
                     course-guide recommendations). */}
                 <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push('/onboarding/grades') }}
                   className="w-full flex justify-between items-center gap-3 text-left group">
-                  <span className="text-sm text-gray-500">{t('profile.meritScore')}</span>
-                  <span className={`text-sm text-right ${meritScore != null ? 'text-gray-900 font-semibold' : 'text-amber-500'} group-hover:text-primary-600`}>
+                  <span className="text-sm text-ground-500">{t('profile.meritScore')}</span>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-ground-900 font-semibold' : 'text-caution-500'} group-hover:text-primary-600`}>
                     {meritScore != null ? meritScore : t('profile.meritTapAdd')}
                   </span>
                 </button>
@@ -1300,8 +1300,8 @@ export default function ProfilePage() {
                     tap to edit inline. */}
                 <button type="button" onClick={() => startEditing('application')}
                   className="w-full flex justify-between items-center gap-3 text-left group">
-                  <span className="text-sm text-gray-500">{t('profile.pathway')}</span>
-                  <span className={`text-sm text-right ${(pathwayForm.chosenProgramme?.courseName || pathwayForm.chosenPathway) ? 'text-gray-900' : 'text-amber-500'} group-hover:text-primary-600`}>
+                  <span className="text-sm text-ground-500">{t('profile.pathway')}</span>
+                  <span className={`text-sm text-right ${(pathwayForm.chosenProgramme?.courseName || pathwayForm.chosenPathway) ? 'text-ground-900' : 'text-caution-500'} group-hover:text-primary-600`}>
                     {pathwayForm.chosenProgramme?.courseName
                       || (pathwayForm.chosenPathway ? t(`scholarship.apply.plan.pathway.${pathwayForm.chosenPathway}`) : t('profile.pathwayTapAdd'))}
                   </span>
@@ -1311,35 +1311,35 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 6: My Course Interests */}
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5">
+          <div className="bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('profile.courseInterests')}</h2>
+              <h2 className="text-lg font-semibold text-ground-900">{t('profile.courseInterests')}</h2>
               {savedCourses.length > 0 && (
-                <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-medium rounded-full">
+                <span className="px-2 py-0.5 bg-ground-100 text-ground-500 text-xs font-medium rounded-full">
                   {savedCourses.length}
                 </span>
               )}
             </div>
 
             {savedCourses.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">{t('profile.noCourses')}</p>
+              <p className="text-sm text-ground-400 py-4 text-center">{t('profile.noCourses')}</p>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-ground-100">
                 {savedCourses.map(course => (
                   <div key={course.course_id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                     <div className="flex-1 min-w-0">
                       <Link
                         href={`/course/${course.course_id}`}
-                        className="text-sm font-medium text-gray-900 hover:text-primary-600 truncate block"
+                        className="text-sm font-medium text-ground-900 hover:text-primary-600 truncate block"
                       >
                         {course.course}
                       </Link>
-                      <p className="text-xs text-gray-400 truncate">{course.level}</p>
+                      <p className="text-xs text-ground-400 truncate">{course.level}</p>
                     </div>
                     <select
                       value={course.interest_status}
@@ -1352,7 +1352,7 @@ export default function ProfilePage() {
                     </select>
                     <button
                       onClick={() => handleRemoveCourse(course.course_id)}
-                      className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                      className="p-1 text-ground-300 hover:text-critical-500 transition-colors"
                       title="Remove"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

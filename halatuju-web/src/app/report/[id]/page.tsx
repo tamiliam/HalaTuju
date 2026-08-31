@@ -43,10 +43,10 @@ export default function ReportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-ground-50">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
-          <p className="text-gray-600">{t('report.loading')}</p>
+          <p className="text-ground-600">{t('report.loading')}</p>
         </div>
       </div>
     )
@@ -54,9 +54,9 @@ export default function ReportPage() {
 
   if (error || !report) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-ground-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-ground-900 mb-4">
             {error || t('report.notFound')}
           </h1>
           <Link href="/dashboard" className="btn-primary">
@@ -74,7 +74,7 @@ export default function ReportPage() {
   })
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-ground-50">
       {/* Header — hidden in print */}
       <div className="print:hidden">
         <AppHeader />
@@ -93,7 +93,7 @@ export default function ReportPage() {
       {/* Report Content */}
       <div className="container mx-auto px-6 py-8 max-w-3xl">
         {/* Report Header */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 print:border-0 print:p-0 print:mb-4">
+        <div className="bg-ground-0 rounded-xl border border-ground-200 p-6 mb-6 print:border-0 print:p-0 print:mb-4">
           <div className="flex items-center gap-3 mb-4 print:mb-2">
             <BrandLogo
               width={75}
@@ -101,10 +101,10 @@ export default function ReportPage() {
               className="hidden print:block"
             />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 print:text-xl">
+              <h1 className="text-2xl font-bold text-ground-900 print:text-xl">
                 {report.title}
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-ground-500">
                 {formattedDate}
               </p>
             </div>
@@ -112,14 +112,14 @@ export default function ReportPage() {
         </div>
 
         {/* Markdown Report Body */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8 print:border-0 print:p-0">
+        <div className="bg-ground-0 rounded-xl border border-ground-200 p-8 print:border-0 print:p-0">
           <article className="prose prose-gray max-w-none
-            prose-headings:text-gray-900 prose-headings:font-semibold
+            prose-headings:text-ground-900 prose-headings:font-semibold
             prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
             prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
-            prose-p:text-gray-700 prose-p:leading-relaxed
-            prose-li:text-gray-700
-            prose-strong:text-gray-900
+            prose-p:text-ground-700 prose-p:leading-relaxed
+            prose-li:text-ground-700
+            prose-strong:text-ground-900
             print:prose-sm"
           >
             <Markdown>{report.markdown}</Markdown>
@@ -127,7 +127,7 @@ export default function ReportPage() {
         </div>
 
         {/* Footer — print only */}
-        <div className="hidden print:block mt-8 pt-4 border-t text-center text-xs text-gray-400">
+        <div className="hidden print:block mt-8 pt-4 border-t text-center text-xs text-ground-400">
           <p>{t('report.footerText', { date: formattedDate })}</p>
         </div>
       </div>

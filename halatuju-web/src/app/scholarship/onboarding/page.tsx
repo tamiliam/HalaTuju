@@ -21,7 +21,7 @@ const PROGRESS_STEPS = ['award', 'welcome', 'questions', 'finish'] as const
 const WELCOME_CARDS = ['stages', 'checkin', 'anonymous'] as const
 
 const CheckIcon = () => (
-  <svg className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+  <svg className="mt-0.5 h-5 w-5 shrink-0 text-info-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 )
@@ -99,13 +99,13 @@ export default function ScholarshipOnboardingPage() {
   }
 
   if (status === 'loading' || loading) {
-    return wrap(<p className="text-gray-500">{t('scholarship.apply.loading')}</p>)
+    return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>)
   }
 
   if (!app) {
     return wrap(
-      <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
-        <p className="mb-5 text-gray-700">{t('scholarship.onboarding.noApp')}</p>
+      <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+        <p className="mb-5 text-ground-700">{t('scholarship.onboarding.noApp')}</p>
         <Link href="/scholarship/application" className="btn-primary inline-block">
           {t('scholarship.award.empty.cta')}
         </Link>
@@ -123,14 +123,18 @@ export default function ScholarshipOnboardingPage() {
           const active = i <= activeProgressIndex
           return (
             <li key={s} className="flex flex-1 flex-col items-center gap-1">
+              {/* BRAND, corrected by hand after the codemod — a progress step is the product
+                  measuring its own progress, not "information". The shared `ProgressStepper` and
+                  the sponsor landing's step numbers are both already `primary`; leaving this one
+                  a tone would mean a tenant's colour reached two of the three. */}
               <span
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                  active ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+                  active ? 'bg-primary-600 text-white' : 'bg-ground-200 text-ground-500'
                 }`}
               >
                 {i + 1}
               </span>
-              <span className={active ? 'text-blue-700' : 'text-gray-400'}>
+              <span className={active ? 'text-primary-700' : 'text-ground-400'}>
                 {t(`scholarship.onboarding.progress.${s}`)}
               </span>
             </li>
@@ -144,8 +148,8 @@ export default function ScholarshipOnboardingPage() {
   if (step === 'finish') {
     if (notAwarded) {
       return wrap(
-        <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
-          <p className="mb-5 text-gray-700">{t('scholarship.onboarding.finish.notAwarded')}</p>
+        <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+          <p className="mb-5 text-ground-700">{t('scholarship.onboarding.finish.notAwarded')}</p>
           <Link href="/scholarship/award" className="btn-primary inline-block">
             {t('scholarship.onboarding.finish.notAwardedCta')}
           </Link>
@@ -156,7 +160,7 @@ export default function ScholarshipOnboardingPage() {
       return wrap(
         <>
           <ProgressNav />
-          <p className="text-center text-gray-500">{t('scholarship.onboarding.finish.saving')}</p>
+          <p className="text-center text-ground-500">{t('scholarship.onboarding.finish.saving')}</p>
         </>
       )
     }
@@ -164,8 +168,8 @@ export default function ScholarshipOnboardingPage() {
       return wrap(
         <>
           <ProgressNav />
-          <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
-            <p className="mb-5 text-red-600">{submitError}</p>
+          <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+            <p className="mb-5 text-critical-600">{submitError}</p>
             <button
               type="button"
               onClick={() => { setSubmitError(null); setStep('questions') }}
@@ -180,24 +184,24 @@ export default function ScholarshipOnboardingPage() {
     return wrap(
       <>
         <ProgressNav />
-        <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-            <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-positive-100">
+            <svg className="h-8 w-8 text-positive-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.onboarding.finish.title')}</h1>
-          <p className="mx-auto mt-3 max-w-md text-gray-600">{t('scholarship.onboarding.finish.body')}</p>
+          <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.onboarding.finish.title')}</h1>
+          <p className="mx-auto mt-3 max-w-md text-ground-600">{t('scholarship.onboarding.finish.body')}</p>
 
-          <div className="mx-auto mt-6 max-w-sm rounded-xl bg-gray-50 p-5 text-left">
-            <h2 className="mb-3 font-semibold text-gray-900">{t('scholarship.onboarding.finish.whatNext.title')}</h2>
+          <div className="mx-auto mt-6 max-w-sm rounded-xl bg-ground-50 p-5 text-left">
+            <h2 className="mb-3 font-semibold text-ground-900">{t('scholarship.onboarding.finish.whatNext.title')}</h2>
             <ul className="space-y-3">
               {(['email', 'dashboard'] as const).map((row) => (
                 <li key={row} className="flex gap-3">
                   <CheckIcon />
                   <span className="text-sm">
-                    <span className="block font-medium text-gray-900">{t(`scholarship.onboarding.finish.whatNext.${row}.title`)}</span>
-                    <span className="block text-gray-600">{t(`scholarship.onboarding.finish.whatNext.${row}.line`)}</span>
+                    <span className="block font-medium text-ground-900">{t(`scholarship.onboarding.finish.whatNext.${row}.title`)}</span>
+                    <span className="block text-ground-600">{t(`scholarship.onboarding.finish.whatNext.${row}.line`)}</span>
                   </span>
                 </li>
               ))}
@@ -208,7 +212,7 @@ export default function ScholarshipOnboardingPage() {
             {t('scholarship.onboarding.finish.dashboardCta')}
           </Link>
           {/* Anonymous thank-you relay — a later sprint; rendered as coming-soon. */}
-          <p className="mt-3 text-sm text-gray-400">{t('scholarship.onboarding.finish.thankYouSoon')}</p>
+          <p className="mt-3 text-sm text-ground-400">{t('scholarship.onboarding.finish.thankYouSoon')}</p>
         </div>
       </>
     )
@@ -219,13 +223,13 @@ export default function ScholarshipOnboardingPage() {
     return wrap(
       <>
         <ProgressNav />
-        <div className="rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
-          <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.onboarding.questions.heading')}</h1>
+        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm sm:p-8">
+          <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.onboarding.questions.heading')}</h1>
 
           <div className="mt-6 space-y-6">
             {/* Looking forward */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              <label className="mb-1.5 block text-sm font-medium text-ground-700">
                 {t('scholarship.onboarding.questions.lookingForward')}
               </label>
               <textarea
@@ -238,7 +242,7 @@ export default function ScholarshipOnboardingPage() {
 
             {/* Living arrangement */}
             <div>
-              <span className="mb-1.5 block text-sm font-medium text-gray-700">
+              <span className="mb-1.5 block text-sm font-medium text-ground-700">
                 {t('scholarship.onboarding.questions.living')}
               </span>
               <div className="flex gap-3">
@@ -249,8 +253,8 @@ export default function ScholarshipOnboardingPage() {
                     onClick={() => setLiving(opt)}
                     className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
                       living === opt
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        ? 'border-info-600 bg-info-50 text-info-700'
+                        : 'border-ground-300 text-ground-700 hover:bg-ground-50'
                     }`}
                   >
                     {t(`scholarship.onboarding.questions.living_${opt}`)}
@@ -261,7 +265,7 @@ export default function ScholarshipOnboardingPage() {
 
             {/* Mentor */}
             <div>
-              <span className="mb-1.5 block text-sm font-medium text-gray-700">
+              <span className="mb-1.5 block text-sm font-medium text-ground-700">
                 {t('scholarship.onboarding.questions.mentor')}
               </span>
               <div className="flex gap-3">
@@ -272,8 +276,8 @@ export default function ScholarshipOnboardingPage() {
                     onClick={() => setWantsMentor(val)}
                     className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
                       wantsMentor === val
-                        ? 'border-blue-600 bg-blue-50 text-blue-700'
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        ? 'border-info-600 bg-info-50 text-info-700'
+                        : 'border-ground-300 text-ground-700 hover:bg-ground-50'
                     }`}
                   >
                     {t(`scholarship.onboarding.questions.mentor_${key}`)}
@@ -290,7 +294,7 @@ export default function ScholarshipOnboardingPage() {
             <button
               type="button"
               onClick={() => setStep('welcome')}
-              className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50"
             >
               {t('scholarship.onboarding.back')}
             </button>
@@ -304,16 +308,16 @@ export default function ScholarshipOnboardingPage() {
   return wrap(
     <>
       <ProgressNav />
-      <div className="rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.onboarding.welcome.heading')}</h1>
+      <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm sm:p-8">
+        <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.onboarding.welcome.heading')}</h1>
 
         <div className="mt-6 space-y-4">
           {WELCOME_CARDS.map((card) => (
-            <div key={card} className="flex gap-3 rounded-xl bg-gray-50 p-4">
+            <div key={card} className="flex gap-3 rounded-xl bg-ground-50 p-4">
               <CheckIcon />
               <div>
-                <p className="font-semibold text-gray-900">{t(`scholarship.onboarding.welcome.${card}.title`)}</p>
-                <p className="text-sm text-gray-600">{t(`scholarship.onboarding.welcome.${card}.line`)}</p>
+                <p className="font-semibold text-ground-900">{t(`scholarship.onboarding.welcome.${card}.title`)}</p>
+                <p className="text-sm text-ground-600">{t(`scholarship.onboarding.welcome.${card}.line`)}</p>
               </div>
             </div>
           ))}

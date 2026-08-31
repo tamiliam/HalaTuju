@@ -256,27 +256,27 @@ export default function ScholarshipAwardPage() {
   }
 
   if (status === 'loading' || loading) {
-    return wrap(<p className="text-gray-500">{t('scholarship.apply.loading')}</p>)
+    return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>)
   }
 
   // Just signed (or already signed) the bursary agreement → confirmation + the PDF.
   if (justSigned || signed) {
     const pdfUrl = signed?.pdf_url || null
     return wrap(
-      <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-positive-100">
+          <svg className="h-8 w-8 text-positive-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.award.bursary.signed.heading')}</h1>
-        <p className="mx-auto mt-3 max-w-md text-gray-600">{t('scholarship.award.bursary.signed.body')}</p>
+        <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.award.bursary.signed.heading')}</h1>
+        <p className="mx-auto mt-3 max-w-md text-ground-600">{t('scholarship.award.bursary.signed.body')}</p>
         {pdfUrl && (
           <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="btn-primary mt-6 inline-block">
             {t('scholarship.award.bursary.signed.download')}
           </a>
         )}
-        <Link href="/scholarship/application" className="mt-3 block text-sm font-medium text-gray-500 hover:text-gray-700">
+        <Link href="/scholarship/application" className="mt-3 block text-sm font-medium text-ground-500 hover:text-ground-700">
           {t('scholarship.award.empty.cta')}
         </Link>
       </div>
@@ -286,14 +286,14 @@ export default function ScholarshipAwardPage() {
   // Award cool-off: accepted, being finalised — confirmation + onboarding open in a couple of days.
   if (finalising) {
     return wrap(
-      <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-          <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-info-100">
+          <svg className="h-8 w-8 text-info-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.award.finalising.heading')}</h1>
-        <p className="mx-auto mt-3 max-w-md text-gray-600">{t('scholarship.award.finalising.body')}</p>
+        <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.award.finalising.heading')}</h1>
+        <p className="mx-auto mt-3 max-w-md text-ground-600">{t('scholarship.award.finalising.body')}</p>
         <Link href="/scholarship/application" className="btn-primary mt-6 inline-block">
           {t('scholarship.award.empty.cta')}
         </Link>
@@ -304,8 +304,8 @@ export default function ScholarshipAwardPage() {
   // Gentle empty state — no offer waiting.
   if (!offer) {
     return wrap(
-      <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
-        <p className="mb-5 text-gray-700">{t('scholarship.award.empty.body')}</p>
+      <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
+        <p className="mb-5 text-ground-700">{t('scholarship.award.empty.body')}</p>
         <Link href="/scholarship/application" className="btn-primary inline-block">
           {t('scholarship.award.empty.cta')}
         </Link>
@@ -345,31 +345,31 @@ export default function ScholarshipAwardPage() {
     return wrap(
       <form onSubmit={signAndAccept} className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.award.bursary.heading')}</h1>
-          <p className="mt-2 text-gray-600">{t('scholarship.award.bursary.intro')}</p>
+          <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.award.bursary.heading')}</h1>
+          <p className="mt-2 text-ground-600">{t('scholarship.award.bursary.intro')}</p>
         </div>
 
         {/* Particulars summary */}
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-500">
+        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-ground-500">
             {t('scholarship.award.bursary.particulars')}
           </h2>
           <dl className="grid gap-3 sm:grid-cols-2">
             <div>
-              <dt className="text-xs uppercase tracking-wider text-gray-400">{t('scholarship.award.bursary.amount')}</dt>
-              <dd className="text-lg font-bold text-gray-900">RM {formatMoney2dp(preview.award_amount ?? offer.amount)}</dd>
+              <dt className="text-xs uppercase tracking-wider text-ground-400">{t('scholarship.award.bursary.amount')}</dt>
+              <dd className="text-lg font-bold text-ground-900">RM {formatMoney2dp(preview.award_amount ?? offer.amount)}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wider text-gray-400">{t('scholarship.award.bursary.schedule')}</dt>
-              <dd className="text-sm text-gray-800">{preview.payment_schedule || '—'}</dd>
+              <dt className="text-xs uppercase tracking-wider text-ground-400">{t('scholarship.award.bursary.schedule')}</dt>
+              <dd className="text-sm text-ground-800">{preview.payment_schedule || '—'}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wider text-gray-400">{t('scholarship.award.bursary.institution')}</dt>
-              <dd className="text-sm text-gray-800">{preview.institution_name || '—'}</dd>
+              <dt className="text-xs uppercase tracking-wider text-ground-400">{t('scholarship.award.bursary.institution')}</dt>
+              <dd className="text-sm text-ground-800">{preview.institution_name || '—'}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wider text-gray-400">{t('scholarship.award.bursary.course')}</dt>
-              <dd className="text-sm text-gray-800">{preview.course_name || '—'}</dd>
+              <dt className="text-xs uppercase tracking-wider text-ground-400">{t('scholarship.award.bursary.course')}</dt>
+              <dd className="text-sm text-ground-800">{preview.course_name || '—'}</dd>
             </div>
           </dl>
         </div>
@@ -380,23 +380,23 @@ export default function ScholarshipAwardPage() {
             though the HTML is trusted (our own backend, server-side-escaped, inline
             CSS only) there is no XSS path into the app. Constrained + scrollable. */}
         <div>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-ground-500">
             {t('scholarship.award.bursary.documentTitle')}
           </h2>
           <iframe
             title={t('scholarship.award.bursary.documentTitle')}
             sandbox=""
             srcDoc={preview.rendered_html}
-            className="h-[28rem] w-full rounded-2xl border bg-white shadow-inner"
+            className="h-[28rem] w-full rounded-2xl border bg-ground-0 shadow-inner"
           />
         </div>
 
         {error && <InfoBox kind="block">{error}</InfoBox>}
 
         {/* STUDENT signature */}
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900">{t('scholarship.award.bursary.student.title')}</h2>
-          <p className="mt-1 text-sm text-gray-600">{t('scholarship.award.bursary.student.intro')}</p>
+        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-ground-900">{t('scholarship.award.bursary.student.title')}</h2>
+          <p className="mt-1 text-sm text-ground-600">{t('scholarship.award.bursary.student.intro')}</p>
 
           {!isMinor && (
             <div className="mt-4 space-y-4">
@@ -430,14 +430,14 @@ export default function ScholarshipAwardPage() {
               checked={studentAgreed}
               onChange={(e) => setStudentAgreed(e.target.checked)}
             />
-            <span className="text-sm text-gray-800">{t('scholarship.award.bursary.student.agree')}</span>
+            <span className="text-sm text-ground-800">{t('scholarship.award.bursary.student.agree')}</span>
           </label>
         </div>
 
         {/* PARENT / GUARANTOR (surety) — signs in-session, same device */}
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900">{t('scholarship.award.bursary.guarantor.title')}</h2>
-          <p className="mt-1 text-sm text-gray-600">{t('scholarship.award.bursary.guarantor.intro')}</p>
+        <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-ground-900">{t('scholarship.award.bursary.guarantor.title')}</h2>
+          <p className="mt-1 text-sm text-ground-600">{t('scholarship.award.bursary.guarantor.intro')}</p>
 
           <div className="mt-4 space-y-4">
             <div>
@@ -477,16 +477,16 @@ export default function ScholarshipAwardPage() {
 
           {/* Same-session parent verification — a one-time PIN to the parent's phone on
               file (read server-side, never editable here). Required before signing. */}
-          <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <p className="text-sm font-semibold text-gray-800">
+          <div className="mt-5 rounded-xl border border-ground-200 bg-ground-50 p-4">
+            <p className="text-sm font-semibold text-ground-800">
               {t('scholarship.award.bursary.guarantor.pin.title')}
             </p>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-ground-600">
               {t('scholarship.award.bursary.guarantor.pin.intro')}
             </p>
 
             {phoneVerified ? (
-              <p className="mt-3 flex items-center gap-2 text-sm font-medium text-green-700">
+              <p className="mt-3 flex items-center gap-2 text-sm font-medium text-positive-700">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -503,7 +503,7 @@ export default function ScholarshipAwardPage() {
               </button>
             ) : (
               <div className="mt-3 space-y-3">
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-ground-700">
                   {t('scholarship.award.bursary.guarantor.pin.sentTo', { phone: phoneHint })}
                 </p>
                 <div className="flex flex-wrap items-end gap-3">
@@ -531,14 +531,14 @@ export default function ScholarshipAwardPage() {
                   type="button"
                   onClick={sendPin}
                   disabled={pinBusy}
-                  className="text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                  className="text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50"
                 >
                   {t('scholarship.award.bursary.guarantor.pin.resend')}
                 </button>
               </div>
             )}
 
-            {pinError && <p className="mt-2 text-sm text-red-600">{pinError}</p>}
+            {pinError && <p className="mt-2 text-sm text-critical-600">{pinError}</p>}
           </div>
 
           <label className="mt-4 flex items-start gap-3">
@@ -548,12 +548,12 @@ export default function ScholarshipAwardPage() {
               checked={guarantorAgreed}
               onChange={(e) => setGuarantorAgreed(e.target.checked)}
             />
-            <span className="text-sm text-gray-800">{t('scholarship.award.bursary.guarantor.agree')}</span>
+            <span className="text-sm text-ground-800">{t('scholarship.award.bursary.guarantor.agree')}</span>
           </label>
         </div>
 
         {deadline && (
-          <p className="text-sm text-gray-500">{t('scholarship.award.confirmed.acceptBy', { date: deadline })}</p>
+          <p className="text-sm text-ground-500">{t('scholarship.award.confirmed.acceptBy', { date: deadline })}</p>
         )}
 
         <div className="space-y-3">
@@ -564,42 +564,42 @@ export default function ScholarshipAwardPage() {
             type="button"
             onClick={decline}
             disabled={submitting}
-            className="block w-full text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+            className="block w-full text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50"
           >
             {t('scholarship.award.confirmed.decline')}
           </button>
         </div>
 
-        <p className="text-xs text-gray-400">{t('scholarship.award.confirmed.heldNote')}</p>
+        <p className="text-xs text-ground-400">{t('scholarship.award.confirmed.heldNote')}</p>
       </form>
     )
   }
 
   // ── The plain (flag-off) accept/decline page — unchanged ──
   return wrap(
-    <div className="rounded-2xl border bg-white p-8 text-center shadow-sm">
+    <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
       {/* Award badge */}
-      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-        <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-info-100">
+        <svg className="h-8 w-8 text-info-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
         </svg>
       </div>
 
-      <h1 className="text-2xl font-bold text-gray-900">{t('scholarship.award.confirmed.heading')}</h1>
-      <p className="mx-auto mt-3 max-w-md text-gray-600">{t('scholarship.award.confirmed.body')}</p>
+      <h1 className="text-2xl font-bold text-ground-900">{t('scholarship.award.confirmed.heading')}</h1>
+      <p className="mx-auto mt-3 max-w-md text-ground-600">{t('scholarship.award.confirmed.body')}</p>
 
       {/* Amount + deadline */}
-      <div className="mx-auto mt-6 max-w-xs rounded-xl bg-gray-50 p-4">
-        <p className="text-sm text-gray-500">{t('scholarship.award.confirmed.amountLabel')}</p>
-        <p className="text-3xl font-bold text-gray-900">RM {formatMoney2dp(offer.amount)}</p>
+      <div className="mx-auto mt-6 max-w-xs rounded-xl bg-ground-50 p-4">
+        <p className="text-sm text-ground-500">{t('scholarship.award.confirmed.amountLabel')}</p>
+        <p className="text-3xl font-bold text-ground-900">RM {formatMoney2dp(offer.amount)}</p>
         {deadline && (
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-ground-500">
             {t('scholarship.award.confirmed.acceptBy', { date: deadline })}
           </p>
         )}
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-4 text-sm text-critical-600">{error}</p>}
 
       <button
         type="button"
@@ -613,23 +613,23 @@ export default function ScholarshipAwardPage() {
         type="button"
         onClick={decline}
         disabled={submitting}
-        className="mt-3 block w-full text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+        className="mt-3 block w-full text-sm font-medium text-ground-500 hover:text-ground-700 disabled:opacity-50"
       >
         {t('scholarship.award.confirmed.decline')}
       </button>
 
-      <p className="mt-6 text-xs text-gray-400">{t('scholarship.award.confirmed.heldNote')}</p>
+      <p className="mt-6 text-xs text-ground-400">{t('scholarship.award.confirmed.heldNote')}</p>
 
       {/* Guardian modal — minor acceptance (plain flow) */}
       {showGuardian && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form
             onSubmit={handleGuardianSubmit}
-            className="w-full max-w-md space-y-4 rounded-2xl bg-white p-6 text-left shadow-xl"
+            className="w-full max-w-md space-y-4 rounded-2xl bg-ground-0 p-6 text-left shadow-xl"
           >
             <div>
-              <h2 className="text-lg font-bold text-gray-900">{t('scholarship.award.guardian.title')}</h2>
-              <p className="mt-1 text-sm text-gray-600">{t('scholarship.award.guardian.intro')}</p>
+              <h2 className="text-lg font-bold text-ground-900">{t('scholarship.award.guardian.title')}</h2>
+              <p className="mt-1 text-sm text-ground-600">{t('scholarship.award.guardian.intro')}</p>
             </div>
 
             <div>
@@ -670,7 +670,7 @@ export default function ScholarshipAwardPage() {
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-critical-600">{error}</p>}
 
             <div className="flex flex-wrap gap-3 pt-1">
               <button
@@ -684,7 +684,7 @@ export default function ScholarshipAwardPage() {
                 type="button"
                 onClick={() => { setShowGuardian(false); setError(null) }}
                 disabled={submitting}
-                className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50"
               >
                 {t('scholarship.award.guardian.cancel')}
               </button>

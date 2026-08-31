@@ -87,7 +87,7 @@ export default function ScholarshipApplicationPage() {
       <div className="flex min-h-screen flex-col">
         <AppHeader />
         <main className={`container mx-auto w-full flex-1 px-6 py-10 ${isShortlisted ? 'max-w-2xl lg:max-w-4xl' : 'max-w-2xl'}`}>
-          <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('scholarship.application.title')}</h1>
+          <h1 className="mb-6 text-2xl font-bold text-ground-900">{t('scholarship.application.title')}</h1>
           {awardPanel()}
           {bursaryPanel()}
           {children}
@@ -114,12 +114,12 @@ export default function ScholarshipApplicationPage() {
     const fullyExecuted = isFundedStatus(app?.status || '')
     if (signedAgreement && !fullyExecuted) {
       return (
-        <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+        <div className="mb-6 rounded-2xl border border-info-200 bg-info-50 p-5 shadow-sm">
           <div className="flex items-start gap-3">
-            <span className="shrink-0 text-blue-600" aria-hidden>✅</span>
+            <span className="shrink-0 text-info-600" aria-hidden>✅</span>
             <div className="flex-1">
-              <h2 className="font-semibold text-gray-900">{t('scholarship.application.awardPanel.awaitingTitle')}</h2>
-              <p className="mt-1 text-sm text-gray-700">{t('scholarship.application.awardPanel.awaitingBody')}</p>
+              <h2 className="font-semibold text-ground-900">{t('scholarship.application.awardPanel.awaitingTitle')}</h2>
+              <p className="mt-1 text-sm text-ground-700">{t('scholarship.application.awardPanel.awaitingBody')}</p>
             </div>
           </div>
         </div>
@@ -136,12 +136,12 @@ export default function ScholarshipApplicationPage() {
       ? t('scholarship.application.awardPanel.onboardingBody')
       : t('scholarship.application.awardPanel.acceptBody')
     return (
-      <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+      <div className="mb-6 rounded-2xl border border-info-200 bg-info-50 p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <span className="shrink-0 text-blue-600" aria-hidden>🎉</span>
+          <span className="shrink-0 text-info-600" aria-hidden>🎉</span>
           <div className="flex-1">
-            <h2 className="font-semibold text-gray-900">{t('scholarship.application.awardPanel.title')}</h2>
-            <p className="mt-1 text-sm text-gray-700">{body}</p>
+            <h2 className="font-semibold text-ground-900">{t('scholarship.application.awardPanel.title')}</h2>
+            <p className="mt-1 text-sm text-ground-700">{body}</p>
             <Link href={href} className="btn-primary mt-3 inline-block">{cta}</Link>
           </div>
         </div>
@@ -155,12 +155,12 @@ export default function ScholarshipApplicationPage() {
   function bursaryPanel() {
     if (!bursary || !bursary.pdf_url) return null
     return (
-      <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-5 shadow-sm">
+      <div className="mb-6 rounded-2xl border border-positive-200 bg-positive-50 p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <span className="shrink-0 text-green-600" aria-hidden>📄</span>
+          <span className="shrink-0 text-positive-600" aria-hidden>📄</span>
           <div className="flex-1">
-            <h2 className="font-semibold text-gray-900">{t('scholarship.application.bursaryPanel.title')}</h2>
-            <p className="mt-1 text-sm text-gray-700">{t('scholarship.application.bursaryPanel.body')}</p>
+            <h2 className="font-semibold text-ground-900">{t('scholarship.application.bursaryPanel.title')}</h2>
+            <p className="mt-1 text-sm text-ground-700">{t('scholarship.application.bursaryPanel.body')}</p>
             <a
               href={bursary.pdf_url}
               target="_blank"
@@ -183,7 +183,7 @@ export default function ScholarshipApplicationPage() {
     return (
       <>
         {email && commsEmail && (
-          <p className="mt-4 text-sm text-gray-500">
+          <p className="mt-4 text-sm text-ground-500">
             {t('scholarship.application.emailNote', { email: commsEmail })}
           </p>
         )}
@@ -191,7 +191,7 @@ export default function ScholarshipApplicationPage() {
           <Link href="/search" className="btn-primary inline-block">
             {t('scholarship.application.browseCta')}
           </Link>
-          <Link href="/" className="inline-block rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <Link href="/" className="inline-block rounded-xl border border-ground-300 px-4 py-2 text-sm font-medium text-ground-700 hover:bg-ground-50">
             {t('scholarship.application.homeCta')}
           </Link>
         </div>
@@ -200,7 +200,7 @@ export default function ScholarshipApplicationPage() {
   }
 
   if (status === 'loading' || loading) {
-    return wrap(<p className="text-gray-500">{t('scholarship.apply.loading')}</p>)
+    return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>)
   }
 
   // More than one live application and no way yet to say which this screen is about. Showing
@@ -209,11 +209,11 @@ export default function ScholarshipApplicationPage() {
   // than convenient, and it is unreachable while one programme runs.
   if (!app && liveCount > 1) {
     return wrap(
-      <div className="rounded-2xl border bg-white p-6 text-center shadow-sm">
-        <p className="mb-2 font-semibold text-gray-900">
+      <div className="rounded-2xl border bg-ground-0 p-6 text-center shadow-sm">
+        <p className="mb-2 font-semibold text-ground-900">
           {t('scholarship.application.multiple.title')}
         </p>
-        <p className="text-gray-700">
+        <p className="text-ground-700">
           {t('scholarship.application.multiple.body', { count: String(liveCount) })}
         </p>
       </div>
@@ -222,8 +222,8 @@ export default function ScholarshipApplicationPage() {
 
   if (!app) {
     return wrap(
-      <div className="rounded-2xl border bg-white p-6 text-center shadow-sm">
-        <p className="mb-4 text-gray-700">{t('scholarship.application.none')}</p>
+      <div className="rounded-2xl border bg-ground-0 p-6 text-center shadow-sm">
+        <p className="mb-4 text-ground-700">{t('scholarship.application.none')}</p>
         <Link href="/scholarship/apply" className="btn-primary inline-block">
           {t('scholarship.application.applyCta')}
         </Link>
@@ -277,25 +277,25 @@ export default function ScholarshipApplicationPage() {
   // "What happens next" lives HERE (post-submit), where it actually applies.
   return wrap(
     <>
-      <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
-        <h2 className="mb-2 font-semibold text-gray-900">{t('scholarship.application.receivedTitle')}</h2>
-        <p className="text-gray-700">{t('scholarship.application.receivedBody')}</p>
+      <div className="rounded-2xl border border-positive-200 bg-positive-50 p-6">
+        <h2 className="mb-2 font-semibold text-ground-900">{t('scholarship.application.receivedTitle')}</h2>
+        <p className="text-ground-700">{t('scholarship.application.receivedBody')}</p>
       </div>
-      <div className="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
-        <h3 className="mb-3 font-semibold text-gray-900">{t('scholarship.nextSteps.whatNext.title')}</h3>
+      <div className="mt-6 rounded-2xl border bg-ground-0 p-5 shadow-sm">
+        <h3 className="mb-3 font-semibold text-ground-900">{t('scholarship.nextSteps.whatNext.title')}</h3>
         <ol className="space-y-3">
           {['step1', 'step2', 'step3', 'step4'].map((s, i) => (
             <li key={s} className="flex gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-xs font-semibold">
                 {i + 1}
               </span>
-              <span className="text-sm text-gray-700">{t(`scholarship.nextSteps.whatNext.${s}`)}</span>
+              <span className="text-sm text-ground-700">{t(`scholarship.nextSteps.whatNext.${s}`)}</span>
             </li>
           ))}
         </ol>
         <div className="mt-4 flex items-start gap-2 rounded-lg bg-primary-50 p-3">
           <span className="shrink-0 text-primary-600" aria-hidden>✉️</span>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-ground-700">
             {t('scholarship.nextSteps.whatNext.emailNote', {
               email: app.notify_email || t('scholarship.nextSteps.whatNext.yourEmail'),
             })}

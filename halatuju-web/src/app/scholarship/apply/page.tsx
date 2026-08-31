@@ -83,7 +83,7 @@ const ERROR_TAB: Record<string, TabKey> = {
 }
 
 function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {
-  const cls = `w-6 h-6 ${active ? 'text-primary-600' : 'text-gray-400'}`
+  const cls = `w-6 h-6 ${active ? 'text-primary-600' : 'text-ground-400'}`
   const p: Record<TabKey, string> = {
     personal: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
     family: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4 0M19 8a3 3 0 11-6 0 3 3 0 016 0z',
@@ -396,8 +396,8 @@ export default function ScholarshipApplyPage() {
   function wrap(children: React.ReactNode) {
     return (
       <main className="container mx-auto px-6 py-10 max-w-2xl lg:max-w-4xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('scholarship.apply.title')}</h1>
-        <p className="text-gray-600 mb-6">{t('scholarship.apply.intro')}</p>
+        <h1 className="text-2xl font-bold text-ground-900 mb-2">{t('scholarship.apply.title')}</h1>
+        <p className="text-ground-600 mb-6">{t('scholarship.apply.intro')}</p>
         {children}
       </main>
     )
@@ -405,8 +405,8 @@ export default function ScholarshipApplyPage() {
 
   const criteria = (
     <div className="bg-primary-50 rounded-2xl p-5 mb-5">
-      <h2 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">{t('scholarship.apply.criteriaTitle')}</h2>
-      <ul className="space-y-2.5 text-sm text-gray-700">
+      <h2 className="font-semibold text-ground-900 mb-3 text-sm uppercase tracking-wide">{t('scholarship.apply.criteriaTitle')}</h2>
+      <ul className="space-y-2.5 text-sm text-ground-700">
         {['criteria1', 'criteria2', 'criteria3', 'criteria4'].map((k) => (
           <li key={k} className="flex items-start gap-2">
             <svg className="w-5 h-5 text-primary-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -420,7 +420,7 @@ export default function ScholarshipApplyPage() {
   )
 
   if (status === 'loading' || (status === 'ready' && loadingExisting)) {
-    return wrap(<p className="text-gray-500">{t('scholarship.apply.loading')}</p>)
+    return wrap(<p className="text-ground-500">{t('scholarship.apply.loading')}</p>)
   }
 
   // ── Soft sign-in gate (read freely; sign in to apply) ──
@@ -428,13 +428,13 @@ export default function ScholarshipApplyPage() {
     return wrap(
       <>
         {criteria}
-        <div className="bg-white border rounded-2xl p-6 shadow-sm">
-          <p className="text-gray-600 text-sm mb-4">{t('scholarship.apply.gate.readFreely')}</p>
+        <div className="bg-ground-0 border rounded-2xl p-6 shadow-sm">
+          <p className="text-ground-600 text-sm mb-4">{t('scholarship.apply.gate.readFreely')}</p>
           <button onClick={() => showAuthGate('apply')} className="btn-primary w-full flex items-center justify-center gap-2">
             <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1h-9.18v2.92h5.27c-.23 1.46-1.64 4.28-5.27 4.28-3.17 0-5.76-2.62-5.76-5.85s2.59-5.85 5.76-5.85c1.81 0 3.02.77 3.71 1.43l2.53-2.44C16.46 3.6 14.43 2.7 12.17 2.7 6.91 2.7 2.7 6.91 2.7 12.45s4.21 9.75 9.47 9.75c5.47 0 9.09-3.84 9.09-9.26 0-.62-.07-1.1-.16-1.84z"/></svg>
             {t('scholarship.apply.signInButton')}
           </button>
-          <p className="text-xs text-gray-400 mt-3 text-center">{t('scholarship.apply.gate.helper')}</p>
+          <p className="text-xs text-ground-400 mt-3 text-center">{t('scholarship.apply.gate.helper')}</p>
         </div>
       </>
     )
@@ -474,14 +474,14 @@ export default function ScholarshipApplyPage() {
   const sections: Record<TabKey, React.ReactNode> = {
     personal: (
       <div className="space-y-4">
-        <p className="text-xs text-gray-500">{t('scholarship.apply.aboutMeHint')}</p>
+        <p className="text-xs text-ground-500">{t('scholarship.apply.aboutMeHint')}</p>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.name')}>{t('scholarship.apply.field.name')}</FieldLabel>
           <input className="input" maxLength={255} value={form.name} onChange={(e) => update('name', e.target.value)} />
           {/* Mismatch with the declaration signature blocks submit — flag it here too,
               since the About Me name (often a pre-filled handle) is the usual fix. */}
           {declarationNameMismatch(form) && (
-            <p className="mt-1 text-sm text-red-600">{t('scholarship.apply.declaration.mismatch')}</p>
+            <p className="mt-1 text-sm text-critical-600">{t('scholarship.apply.declaration.mismatch')}</p>
           )}
         </div>
         <div>
@@ -491,9 +491,9 @@ export default function ScholarshipApplyPage() {
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.ic')}>{t('scholarship.apply.field.ic')}</FieldLabel>
           {nricLocked ? (
-            <div className="input flex items-center justify-between bg-gray-50 text-gray-600">
+            <div className="input flex items-center justify-between bg-ground-50 text-ground-600">
               <span>{form.nric || '—'}</span>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-positive-600">
                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3 3 6.8-6.8a1 1 0 011.2 0z" clipRule="evenodd"/></svg>
                 {t('scholarship.apply.verified')}
               </span>
@@ -506,9 +506,9 @@ export default function ScholarshipApplyPage() {
         </div>
         <div>
           <FieldLabel>{t('scholarship.apply.field.email')}</FieldLabel>
-          <div className="input flex items-center justify-between bg-gray-50 text-gray-500">
+          <div className="input flex items-center justify-between bg-ground-50 text-ground-500">
             <span className="truncate">{lockedEmail || '—'}</span>
-            <span className="ml-2 shrink-0 text-xs text-gray-400">{t('scholarship.apply.locked')}</span>
+            <span className="ml-2 shrink-0 text-xs text-ground-400">{t('scholarship.apply.locked')}</span>
           </div>
         </div>
         <div>
@@ -556,15 +556,15 @@ export default function ScholarshipApplyPage() {
             onChange={(e) => update('householdIncome', e.target.value.replace(/[^\d]/g, ''))} />
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="flex items-center text-sm text-gray-700">{t('scholarship.apply.strLabel')}<InfoTip text={t('scholarship.apply.tip.str')} /></span>
+          <span className="flex items-center text-sm text-ground-700">{t('scholarship.apply.strLabel')}<InfoTip text={t('scholarship.apply.tip.str')} /></span>
           <Toggle on={form.receivesStr} onChange={(v) => update('receivesStr', v)} label={t('scholarship.apply.strLabel')} />
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="flex items-center text-sm text-gray-700">{t('scholarship.apply.jkmLabel')}<InfoTip text={t('scholarship.apply.tip.jkm')} /></span>
+          <span className="flex items-center text-sm text-ground-700">{t('scholarship.apply.jkmLabel')}<InfoTip text={t('scholarship.apply.tip.jkm')} /></span>
           <Toggle on={form.receivesJkm} onChange={(v) => update('receivesJkm', v)} label={t('scholarship.apply.jkmLabel')} />
         </div>
-        <hr className="border-gray-100" />
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('scholarship.apply.parentHeading')}</p>
+        <hr className="border-ground-100" />
+        <p className="text-xs font-medium uppercase tracking-wide text-ground-400">{t('scholarship.apply.parentHeading')}</p>
         <div>
           <FieldLabel tip={t('scholarship.apply.tip.parentName')}>{t('scholarship.apply.field.parentName')}</FieldLabel>
           <input className="input" maxLength={255} value={form.parentName} onChange={(e) => update('parentName', e.target.value)} />
@@ -594,25 +594,25 @@ export default function ScholarshipApplyPage() {
             {academic.examType === 'stpm' ? (
               <>
                 <p className="text-3xl font-bold text-primary-700">{academic.stpmCgpa?.toFixed(2)}</p>
-                <p className="text-sm text-gray-600 mt-1">{t('scholarship.apply.pngkLabel')}</p>
+                <p className="text-sm text-ground-600 mt-1">{t('scholarship.apply.pngkLabel')}</p>
               </>
             ) : (
               <>
                 <p className="text-3xl font-bold text-primary-700">{academic.aCount} {t('scholarship.apply.aGradesWord')}</p>
                 {academic.aPlusCount > 0 && (
-                  <p className="text-sm text-gray-600 mt-1">{t('scholarship.apply.including')} {academic.aPlusCount} A+</p>
+                  <p className="text-sm text-ground-600 mt-1">{t('scholarship.apply.including')} {academic.aPlusCount} A+</p>
                 )}
               </>
             )}
-            <p className="text-xs text-gray-400 mt-2">{t('scholarship.apply.resultsFromProfile')}</p>
+            <p className="text-xs text-ground-400 mt-2">{t('scholarship.apply.resultsFromProfile')}</p>
             <button type="button" onClick={goEditResults} className="mt-3 inline-block text-sm font-medium text-primary-600 hover:underline">
               {t('scholarship.apply.resultsWrong')}
             </button>
           </div>
         ) : (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
-            <p className="font-medium text-gray-900 mb-1">{t('scholarship.apply.noResultsTitle')}</p>
-            <p className="text-sm text-gray-600 mb-3">{t('scholarship.apply.noResultsBody')}</p>
+          <div className="bg-caution-50 border border-caution-200 rounded-xl p-5 text-center">
+            <p className="font-medium text-ground-900 mb-1">{t('scholarship.apply.noResultsTitle')}</p>
+            <p className="text-sm text-ground-600 mb-3">{t('scholarship.apply.noResultsBody')}</p>
             <button type="button" onClick={goEditResults} className="btn-primary inline-block">{t('scholarship.apply.noResultsCta')}</button>
           </div>
         )}
@@ -628,7 +628,7 @@ export default function ScholarshipApplyPage() {
               const on = form.pathwayCertainty === c
               return (
                 <button key={c} type="button" onClick={() => setCertainty(c)}
-                  className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${on ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}>
+                  className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${on ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-ground-300 text-ground-600 hover:border-ground-400'}`}>
                   {t(`scholarship.apply.plan.${c}`)}
                 </button>
               )
@@ -665,7 +665,7 @@ export default function ScholarshipApplyPage() {
             Everything here is optional — "uncertain" never blocks the application. */}
         {form.pathwayCertainty === 'uncertain' && (
           <div className="space-y-5">
-            <p className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+            <p className="rounded-xl border border-ground-200 bg-ground-50 p-3 text-sm text-ground-600">
               {t('scholarship.apply.plan.uncertainIntro')}
             </p>
             {examType !== 'stpm' ? (
@@ -678,7 +678,7 @@ export default function ScholarshipApplyPage() {
                     const on = form.pathwaysConsidered.includes(key)
                     return (
                       <button key={key} type="button" onClick={() => toggleLeaning(key)}
-                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                         {t(`scholarship.apply.plan.pathway.${key}`)}
                       </button>
                     )
@@ -691,9 +691,9 @@ export default function ScholarshipApplyPage() {
               <div>
                 <FieldLabel tip={t('scholarship.apply.plan.topProgrammesTip')}>{t('scholarship.apply.plan.topProgrammesLabel')}</FieldLabel>
                 {pathwayLoading ? (
-                  <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
+                  <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
                 ) : eligibleCourses.length === 0 ? (
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noProgrammes')}</p>
+                  <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t('scholarship.apply.plan.noProgrammes')}</p>
                 ) : (
                   <div className="space-y-2">
                     {[0, 1, 2].map((i) => {
@@ -702,7 +702,7 @@ export default function ScholarshipApplyPage() {
                       const opts = eligibleCourses.filter((c) => !takenIds.includes(c.course_id))
                       return (
                         <div key={`top-${i}`} className="flex items-center gap-2">
-                          <span className="w-5 shrink-0 text-sm font-medium text-gray-400">{i + 1}.</span>
+                          <span className="w-5 shrink-0 text-sm font-medium text-ground-400">{i + 1}.</span>
                           <div className="min-w-0 flex-1">
                             <ProgrammePicker
                               courses={opts}
@@ -724,7 +724,7 @@ export default function ScholarshipApplyPage() {
                   const on = form.uncertaintyReasons.includes(r)
                   return (
                     <button key={r} type="button" onClick={() => toggleReason(r)}
-                      className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                      className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                       {t(`scholarship.apply.plan.reason.${r}`)}
                     </button>
                   )
@@ -745,9 +745,9 @@ export default function ScholarshipApplyPage() {
               <div>
                 <FieldLabel required tip={t('scholarship.apply.plan.aliranTip')}>{t('scholarship.apply.plan.aliranLabel')}</FieldLabel>
                 {pathwayLoading ? (
-                  <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
+                  <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
                 ) : availableAlirans.length === 0 ? (
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noProgrammes')}</p>
+                  <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t('scholarship.apply.plan.noProgrammes')}</p>
                 ) : (
                   <AliranPicker alirans={availableAlirans} value={pismpAliran} onChange={chooseAliran} />
                 )}
@@ -781,16 +781,16 @@ export default function ScholarshipApplyPage() {
               <div>
                 <FieldLabel required tip={t('scholarship.apply.plan.trackTip')}>{t('scholarship.apply.plan.trackLabel')}</FieldLabel>
                 {pathwayLoading ? (
-                  <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
+                  <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
                 ) : matricTracks.length === 0 ? (
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noTracks')}</p>
+                  <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t('scholarship.apply.plan.noTracks')}</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {matricTracks.map((tr) => {
                       const on = form.preUTrack === tr
                       return (
                         <button key={tr} type="button" onClick={() => setPreUTrack(tr)}
-                          className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                          className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                           {t(`scholarship.apply.plan.track.${tr}`)}
                         </button>
                       )
@@ -820,7 +820,7 @@ export default function ScholarshipApplyPage() {
                     const on = form.preUTrack === s
                     return (
                       <button key={s} type="button" onClick={() => setPreUTrack(s)}
-                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                         {t(`scholarship.apply.plan.stream.${s}`)}
                       </button>
                     )
@@ -863,7 +863,7 @@ export default function ScholarshipApplyPage() {
               const on = form.otherScholarships.includes(opt)
               return (
                 <button key={opt} type="button" onClick={() => toggleScholarship(opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                   {t(`scholarship.apply.scholarship.${opt}`)}
                 </button>
               )
@@ -885,7 +885,7 @@ export default function ScholarshipApplyPage() {
               const on = form.helpUniversity === opt
               return (
                 <button key={opt} type="button" onClick={() => update('helpUniversity', opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                   {t(`scholarship.apply.help.${opt}`)}
                 </button>
               )
@@ -899,7 +899,7 @@ export default function ScholarshipApplyPage() {
               const on = form.helpScholarship === opt
               return (
                 <button key={opt} type="button" onClick={() => update('helpScholarship', opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                   {t(`scholarship.apply.help.${opt}`)}
                 </button>
               )
@@ -913,8 +913,8 @@ export default function ScholarshipApplyPage() {
             onChange={(e) => update('anythingElse', e.target.value)} />
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-gray-700">
-            {t('scholarship.apply.consentLabel')}<span className="ml-0.5 text-red-500" aria-hidden>*</span>
+          <span className="text-sm text-ground-700">
+            {t('scholarship.apply.consentLabel')}<span className="ml-0.5 text-critical-500" aria-hidden>*</span>
           </span>
           <Toggle on={form.consentToContact} onChange={(v) => update('consentToContact', v)} label={t('scholarship.apply.consentLabel')} />
         </div>
@@ -922,9 +922,9 @@ export default function ScholarshipApplyPage() {
         {/* Truthfulness declaration + typed-name signature — the final, weightiest step
             before submit. Typing your IC name + submitting IS the agreement. The signature
             must match the About Me name (declarationNameMismatch) — a hard block on submit. */}
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <h3 className="mb-1 font-semibold text-gray-900">{t('scholarship.apply.declaration.title')}</h3>
-          <p className="text-sm text-gray-700">{t('scholarship.apply.declaration.body')}</p>
+        <div className="rounded-xl border border-caution-200 bg-caution-50 p-4">
+          <h3 className="mb-1 font-semibold text-ground-900">{t('scholarship.apply.declaration.title')}</h3>
+          <p className="text-sm text-ground-700">{t('scholarship.apply.declaration.body')}</p>
           <div className="mt-3">
             <FieldLabel required>{t('scholarship.apply.declaration.signLabel')}</FieldLabel>
             <input
@@ -936,9 +936,9 @@ export default function ScholarshipApplyPage() {
               onChange={(e) => update('declarationName', e.target.value)}
             />
             {declarationNameMismatch(form) && (
-              <p className="mt-1 text-sm text-red-600">{t('scholarship.apply.declaration.mismatch')}</p>
+              <p className="mt-1 text-sm text-critical-600">{t('scholarship.apply.declaration.mismatch')}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">{t('scholarship.apply.declaration.signHelp')}</p>
+            <p className="mt-1 text-xs text-ground-500">{t('scholarship.apply.declaration.signHelp')}</p>
           </div>
         </div>
       </div>
@@ -948,13 +948,13 @@ export default function ScholarshipApplyPage() {
   return wrap(
     <form onSubmit={handleSubmit}>
       {/* Context bar — profile is the source of truth */}
-      <div className="flex items-center gap-3 bg-white border rounded-2xl px-4 py-3 mb-4 shadow-sm">
+      <div className="flex items-center gap-3 bg-ground-0 border rounded-2xl px-4 py-3 mb-4 shadow-sm">
         <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">
           {(profile?.name || '?').trim().charAt(0).toUpperCase()}
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-medium text-gray-900">{t('scholarship.apply.signedInAs')} {profile?.name || ''}</p>
-          <p className="text-xs text-gray-400">{t('scholarship.apply.usingProfile')}</p>
+          <p className="text-sm font-medium text-ground-900">{t('scholarship.apply.signedInAs')} {profile?.name || ''}</p>
+          <p className="text-xs text-ground-400">{t('scholarship.apply.usingProfile')}</p>
         </div>
       </div>
 
@@ -964,20 +964,20 @@ export default function ScholarshipApplyPage() {
         <aside className="hidden lg:block">
           <nav className="sticky top-6 space-y-1">
             <Link href="/scholarship"
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700">
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-ground-500 hover:bg-ground-50 hover:text-ground-700">
               <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
               </svg>
               {t('scholarship.apply.tab.home')}
             </Link>
-            <div className="my-1 border-t border-gray-100" />
+            <div className="my-1 border-t border-ground-100" />
             {TAB_ORDER.map((k, i) => {
               const active = k === tab
               const done = i < tabIndex
               return (
                 <button key={k} type="button" onClick={() => setTab(k)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${active ? 'bg-primary-50 font-medium text-primary-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${active ? 'bg-primary-500 text-white' : done ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'}`}>
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${active ? 'bg-primary-50 font-medium text-primary-700' : 'text-ground-600 hover:bg-ground-50'}`}>
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${active ? 'bg-primary-500 text-white' : done ? 'bg-primary-100 text-primary-700' : 'bg-ground-100 text-ground-400'}`}>
                     {done ? '✓' : i + 1}
                   </span>
                   {t(`scholarship.apply.section.${sectionKey(k)}`)}
@@ -991,29 +991,29 @@ export default function ScholarshipApplyPage() {
           {/* Progress */}
           <div className="mb-1 flex gap-1.5">
             {TAB_ORDER.map((k, i) => (
-              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-gray-200'}`} />
+              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-ground-200'}`} />
             ))}
           </div>
-          <p className="text-xs text-gray-500 mb-4">
+          <p className="text-xs text-ground-500 mb-4">
             {t('scholarship.apply.step')} {tabIndex + 1}/5 · {t(`scholarship.apply.section.${sectionKey(tab)}`)}
           </p>
 
           {/* Active section card */}
-          <div className="bg-white border rounded-2xl p-5 shadow-sm mb-4">
-            <h2 className="font-semibold text-gray-900 mb-3">{tabIndex + 1}. {t(`scholarship.apply.section.${sectionKey(tab)}`)}</h2>
+          <div className="bg-ground-0 border rounded-2xl p-5 shadow-sm mb-4">
+            <h2 className="font-semibold text-ground-900 mb-3">{tabIndex + 1}. {t(`scholarship.apply.section.${sectionKey(tab)}`)}</h2>
             {sections[tab]}
           </div>
 
           {/* Validation / submit error — shown on whichever tab the error sent the user to */}
           {error && (
-            <div role="alert" aria-live="assertive" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
-              <p className="text-sm text-red-600">{error}</p>
+            <div role="alert" aria-live="assertive" className="mb-4 rounded-lg border border-critical-200 bg-critical-50 p-3">
+              <p className="text-sm text-critical-600">{error}</p>
             </div>
           )}
 
           {/* Commit-on-submit: nothing is saved until the application is submitted */}
           {isLast && (
-            <p className="mb-3 text-center text-xs text-gray-400">{t('scholarship.apply.commitNote')}</p>
+            <p className="mb-3 text-center text-xs text-ground-400">{t('scholarship.apply.commitNote')}</p>
           )}
 
           {/* Linear nav */}
@@ -1033,18 +1033,18 @@ export default function ScholarshipApplyPage() {
       </div>
 
       {/* Bottom tab bar (mobile only — replaced by the left rail on desktop) */}
-      <nav className="sticky bottom-0 bg-white border-t flex justify-around py-2 -mx-6 px-2 lg:hidden">
+      <nav className="sticky bottom-0 bg-ground-0 border-t flex justify-around py-2 -mx-6 px-2 lg:hidden">
         <Link href="/scholarship" className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
-          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <svg className="w-6 h-6 text-ground-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
           </svg>
-          <span className="text-[10px] text-gray-400">{t('scholarship.apply.tab.home')}</span>
+          <span className="text-[10px] text-ground-400">{t('scholarship.apply.tab.home')}</span>
         </Link>
         {TAB_ORDER.map((k) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
             <TabIcon tab={k} active={k === tab} />
-            <span className={`text-[10px] ${k === tab ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>
+            <span className={`text-[10px] ${k === tab ? 'text-primary-600 font-medium' : 'text-ground-400'}`}>
               {t(`scholarship.apply.tab.${k}`)}
             </span>
           </button>

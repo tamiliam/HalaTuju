@@ -112,8 +112,8 @@ function FileChip({
   t: (key: string) => string
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50/60 px-3 py-2.5">
-      <span className="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-ground-200 bg-ground-50/60 px-3 py-2.5">
+      <span className="flex min-w-0 items-center gap-2 text-sm text-ground-600">
         <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-primary-500" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M14 3v5h5" />
@@ -126,7 +126,7 @@ function FileChip({
           ) : (
             doc.original_filename || doc.doc_type
           )}
-          {doc.size ? <span className="text-gray-400"> · {formatFileSize(doc.size)}</span> : null}
+          {doc.size ? <span className="text-ground-400"> · {formatFileSize(doc.size)}</span> : null}
         </span>
       </span>
       <span className="flex shrink-0 items-center gap-4">
@@ -134,7 +134,7 @@ function FileChip({
           <UploadTrigger docType={docType} busy={busy} onUpload={onUpload}
             label={busy ? t('scholarship.docs.uploading') : t('scholarship.docs.replace')} />
         )}
-        <button onClick={() => onDelete(doc.id)} className="text-sm text-red-500 hover:underline">
+        <button onClick={() => onDelete(doc.id)} className="text-sm text-critical-500 hover:underline">
           {t('scholarship.docs.remove')}
         </button>
       </span>
@@ -164,11 +164,11 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
 
   const badge = (kind: ICCheckKind) => {
     const cls: Record<ICCheckKind, string> = {
-      match: 'bg-green-50 text-green-700 ring-green-200',
-      partial: 'bg-amber-50 text-amber-700 ring-amber-200',
-      mismatch: 'bg-red-50 text-red-700 ring-red-200',
-      unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
-      none: 'bg-gray-50 text-gray-500 ring-gray-200',
+      match: 'bg-positive-50 text-positive-700 ring-positive-200',
+      partial: 'bg-caution-50 text-caution-700 ring-caution-200',
+      mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
+      unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
+      none: 'bg-ground-50 text-ground-500 ring-ground-200',
     }
     return (
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
@@ -179,8 +179,8 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
 
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-gray-700">
-        <span className="font-medium text-gray-600">{label}: </span>
+      <p className="min-w-0 text-xs text-ground-700">
+        <span className="font-medium text-ground-600">{label}: </span>
         <span className="break-words">{value || '—'}</span>
       </p>
       {right}
@@ -195,25 +195,25 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
 
   return (
     <>
-      <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
         {row(t('scholarship.docs.icCheck.icNo'), formatNric(doc.vision_nric || ''), badge(icVerdictKind(doc.vision_nric_verdict)))}
         {row(t('scholarship.docs.icCheck.name'), doc.vision_name, badge(icVerdictKind(doc.vision_name_verdict)))}
         {doc.vision_address
           ? row(
               t('scholarship.docs.icCheck.address'),
               doc.vision_address,
-              <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+              <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
                 {t('scholarship.docs.icCheck.fromIc')}
               </span>,
             )
           : null}
       </div>
       {suspect && (
-        <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-          <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+        <div className="mt-2 flex items-start gap-2 rounded-xl border border-caution-200 bg-caution-50 px-3 py-2.5">
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
-          <p className="text-xs text-amber-800">{t('scholarship.docs.icCheck.notGenuine')}</p>
+          <p className="text-xs text-caution-800">{t('scholarship.docs.icCheck.notGenuine')}</p>
         </div>
       )}
     </>
@@ -236,9 +236,9 @@ function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string
   // certificate now, voiced by Cikgu Gopal — not on this card.)
   const proofDoc = chk.proof_kind ? t(`scholarship.docs.type.${chk.proof_kind}`) : ''
   const ring: Record<'match' | 'mismatch' | 'none', string> = {
-    match: 'bg-green-50 text-green-700 ring-green-200',
-    mismatch: 'bg-red-50 text-red-700 ring-red-200',
-    none: 'bg-gray-50 text-gray-500 ring-gray-200',
+    match: 'bg-positive-50 text-positive-700 ring-positive-200',
+    mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
+    none: 'bg-ground-50 text-ground-500 ring-ground-200',
   }
   const matchTag = (status?: string) => {
     const kind = status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
@@ -255,14 +255,14 @@ function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string
     )
   }
   const neutralTag = (
-    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+    <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
       {t('scholarship.docs.icCheck.fromTheirIc')}
     </span>
   )
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-gray-700">
-        <span className="font-medium text-gray-600">{label}: </span>
+      <p className="min-w-0 text-xs text-ground-700">
+        <span className="font-medium text-ground-600">{label}: </span>
         <span className="break-words">{value || '—'}</span>
       </p>
       {right}
@@ -270,7 +270,7 @@ function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string
   )
 
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+    <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), formatNric(chk.nric), matchTag(chk.proof_nric_status)) : null}
       {row(t('scholarship.docs.icCheck.name'), chk.name, matchTag(chk.proof_name_status))}
       {chk.address ? row(t('scholarship.docs.icCheck.address'), chk.address, neutralTag) : null}
@@ -288,11 +288,11 @@ function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
   if (!chk) return null
 
   const cls: Record<ICCheckKind, string> = {
-    match: 'bg-green-50 text-green-700 ring-green-200',
-    partial: 'bg-amber-50 text-amber-700 ring-amber-200',
-    mismatch: 'bg-red-50 text-red-700 ring-red-200',
-    unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
-    none: 'bg-gray-50 text-gray-500 ring-gray-200',
+    match: 'bg-positive-50 text-positive-700 ring-positive-200',
+    partial: 'bg-caution-50 text-caution-700 ring-caution-200',
+    mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
+    unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
+    none: 'bg-ground-50 text-ground-500 ring-ground-200',
   }
   // A status pill vs the member's IC. 'no_ref' (that IC not uploaded / not read) is a
   // neutral nudge, never a problem.
@@ -311,14 +311,14 @@ function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
     )
   }
   const fromDoc = (
-    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+    <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
       {t('scholarship.docs.incomeProofCheck.fromDoc')}
     </span>
   )
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-gray-700">
-        <span className="font-medium text-gray-600">{label}: </span>
+      <p className="min-w-0 text-xs text-ground-700">
+        <span className="font-medium text-ground-600">{label}: </span>
         <span className="break-words">{value || '—'}</span>
       </p>
       {right}
@@ -326,7 +326,7 @@ function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
   )
 
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+    <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {row(t('scholarship.docs.incomeProofCheck.name'), chk.name, vsIc(chk.name_status))}
       {chk.nric ? row(t('scholarship.docs.incomeProofCheck.icNo'), formatNric(chk.nric), vsIc(chk.nric_status)) : null}
       {chk.points.map((p) => (
@@ -345,27 +345,27 @@ function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string)
   if (!chk) return null
 
   const cls: Record<ICCheckKind, string> = {
-    match: 'bg-green-50 text-green-700 ring-green-200',
-    partial: 'bg-amber-50 text-amber-700 ring-amber-200',
-    mismatch: 'bg-red-50 text-red-700 ring-red-200',
-    unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
-    none: 'bg-gray-50 text-gray-500 ring-gray-200',
+    match: 'bg-positive-50 text-positive-700 ring-positive-200',
+    partial: 'bg-caution-50 text-caution-700 ring-caution-200',
+    mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
+    unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
+    none: 'bg-ground-50 text-ground-500 ring-ground-200',
   }
   const addrPill =
     chk.address_status === 'found'
       ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls.match}`}>{t('scholarship.docs.utilityCheck.addressOk')}</span>
       : chk.address_status === 'not_found'
         ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls.mismatch}`}>{t('scholarship.docs.utilityCheck.addressMismatch')}</span>
-        : <span className={`shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200`}>{t('scholarship.docs.incomeProofCheck.fromDoc')}</span>
+        : <span className={`shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200`}>{t('scholarship.docs.incomeProofCheck.fromDoc')}</span>
   const fromDoc = (
-    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+    <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
       {t('scholarship.docs.incomeProofCheck.fromDoc')}
     </span>
   )
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-gray-700">
-        <span className="font-medium text-gray-600">{label}: </span>
+      <p className="min-w-0 text-xs text-ground-700">
+        <span className="font-medium text-ground-600">{label}: </span>
         <span className="break-words">{value || '—'}</span>
       </p>
       {right}
@@ -373,7 +373,7 @@ function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string)
   )
 
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+    <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {row(t('scholarship.docs.utilityCheck.address'), chk.address, addrPill)}
       {chk.monthly_bill ? row(t('scholarship.docs.utilityCheck.monthlyBill'), chk.monthly_bill, fromDoc) : null}
       {chk.unpaid_balance ? row(t('scholarship.docs.utilityCheck.unpaidBalance'), chk.unpaid_balance, fromDoc) : null}
@@ -393,11 +393,11 @@ function GenuinenessNote({ doc, t }: { doc: ApplicantDocument; t: (key: string) 
   const s = doc.authenticity?.status
   if (!s || s === 'genuine') return null   // show for any non-genuine canonical status (suspect / not_<type>)
   return (
-    <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-      <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+    <div className="mt-2 flex items-start gap-2 rounded-xl border border-caution-200 bg-caution-50 px-3 py-2.5">
+      <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
       </svg>
-      <p className="text-xs text-amber-800">{t('scholarship.docs.genuineness.note')}</p>
+      <p className="text-xs text-caution-800">{t('scholarship.docs.genuineness.note')}</p>
     </div>
   )
 }
@@ -407,11 +407,11 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
   if (!chk) return null
 
   const cls: Record<ICCheckKind, string> = {
-    match: 'bg-green-50 text-green-700 ring-green-200',
-    partial: 'bg-amber-50 text-amber-700 ring-amber-200',
-    mismatch: 'bg-red-50 text-red-700 ring-red-200',
-    unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
-    none: 'bg-gray-50 text-gray-500 ring-gray-200',
+    match: 'bg-positive-50 text-positive-700 ring-positive-200',
+    partial: 'bg-caution-50 text-caution-700 ring-caution-200',
+    mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
+    unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
+    none: 'bg-ground-50 text-ground-500 ring-ground-200',
   }
   const pill = (kind: ICCheckKind, label: string) => (
     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>{label}</span>
@@ -444,8 +444,8 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
           : pill('none', t('scholarship.docs.strCheck.unknown'))
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-gray-700">
-        <span className="font-medium text-gray-600">{label}: </span>
+      <p className="min-w-0 text-xs text-ground-700">
+        <span className="font-medium text-ground-600">{label}: </span>
         <span className="break-words">{value || '—'}</span>
       </p>
       {right}
@@ -453,7 +453,7 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
   )
 
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+    <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {row(t('scholarship.docs.strCheck.recipient'), chk.name, vsIc(chk.name_status))}
       {chk.nric ? row(t('scholarship.docs.strCheck.icNo'), formatNric(chk.nric), vsIc(chk.nric_status)) : null}
       {row(t('scholarship.docs.strCheck.status'), chk.status, statusPill)}
@@ -465,11 +465,11 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
 // ── Relationship-proof checklists (Check-1 Income): birth cert + guardianship ──
 
 const REL_PILL: Record<ICCheckKind, string> = {
-  match: 'bg-green-50 text-green-700 ring-green-200',
-  partial: 'bg-amber-50 text-amber-700 ring-amber-200',
-  mismatch: 'bg-red-50 text-red-700 ring-red-200',
-  unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
-  none: 'bg-gray-50 text-gray-500 ring-gray-200',
+  match: 'bg-positive-50 text-positive-700 ring-positive-200',
+  partial: 'bg-caution-50 text-caution-700 ring-caution-200',
+  mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
+  unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
+  none: 'bg-ground-50 text-ground-500 ring-ground-200',
 }
 
 function relPill(status: string, t: (k: string) => string): ReactNode {
@@ -490,8 +490,8 @@ function relPill(status: string, t: (k: string) => string): ReactNode {
 function relRow(label: string, value: string, right: ReactNode): ReactNode {
   return (
     <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-gray-700">
-        <span className="font-medium text-gray-600">{label}: </span>
+      <p className="min-w-0 text-xs text-ground-700">
+        <span className="font-medium text-ground-600">{label}: </span>
         <span className="break-words">{value || '—'}</span>
       </p>
       {right}
@@ -505,7 +505,7 @@ function BcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
   const chk = doc.bc_check
   if (!chk) return null
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+    <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {relRow(t('scholarship.docs.relCheck.child'), chk.child_name, relPill(chk.child_status, t))}
       {relRow(t('scholarship.docs.relCheck.mother'),
               [chk.mother_name, chk.mother_nric].filter(Boolean).join(' · '), relPill(chk.mother_status, t))}
@@ -520,7 +520,7 @@ function GuardianshipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: st
   const chk = doc.guardianship_check
   if (!chk) return null
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+    <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {relRow(t('scholarship.docs.relCheck.guardian'),
               [chk.guardian_name, chk.guardian_nric].filter(Boolean).join(' · '), relPill(chk.guardian_status, t))}
       {relRow(t('scholarship.docs.relCheck.ward'), chk.ward_name, relPill(chk.ward_status, t))}
@@ -551,11 +551,11 @@ function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
   const badge = (s: SlipStatus) => {
     const kind = slipBadgeKind(s)
     const cls: Record<ICCheckKind, string> = {
-      match: 'bg-green-50 text-green-700 ring-green-200',
-      partial: 'bg-amber-50 text-amber-700 ring-amber-200',
-      mismatch: 'bg-red-50 text-red-700 ring-red-200',
-      unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
-      none: 'bg-gray-50 text-gray-500 ring-gray-200',
+      match: 'bg-positive-50 text-positive-700 ring-positive-200',
+      partial: 'bg-caution-50 text-caution-700 ring-caution-200',
+      mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
+      unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
+      none: 'bg-ground-50 text-ground-500 ring-ground-200',
     }
     return (
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
@@ -566,8 +566,8 @@ function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
 
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-gray-700">
-        <span className="font-medium text-gray-600">{label}: </span>
+      <p className="min-w-0 text-xs text-ground-700">
+        <span className="font-medium text-ground-600">{label}: </span>
         <span className="break-words">{value || '—'}</span>
       </p>
       {right}
@@ -593,7 +593,7 @@ function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
           : '—'
 
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+    <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {row(t('scholarship.docs.slipCheck.name'), chk.candidate_name, badge(chk.name))}
       {row(
         // Only show the "(entered/total)" count when there's a real subjects mismatch;
@@ -609,7 +609,7 @@ function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
         ? row(
             t('scholarship.docs.slipCheck.exam'),
             chk.exam || chk.exam_year,
-            <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+            <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
               {t('scholarship.docs.slipCheck.fromSlip')}
             </span>,
           )
@@ -640,11 +640,11 @@ function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
   const badge = (s: PathStatus) => {
     const kind = pathBadgeKind(s)
     const cls: Record<ICCheckKind, string> = {
-      match: 'bg-green-50 text-green-700 ring-green-200',
-      partial: 'bg-amber-50 text-amber-700 ring-amber-200',
-      mismatch: 'bg-red-50 text-red-700 ring-red-200',
-      unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
-      none: 'bg-gray-50 text-gray-500 ring-gray-200',
+      match: 'bg-positive-50 text-positive-700 ring-positive-200',
+      partial: 'bg-caution-50 text-caution-700 ring-caution-200',
+      mismatch: 'bg-critical-50 text-critical-700 ring-critical-200',
+      unreadable: 'bg-ground-50 text-ground-600 ring-ground-200',
+      none: 'bg-ground-50 text-ground-500 ring-ground-200',
     }
     return (
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
@@ -653,14 +653,14 @@ function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
     )
   }
   const fromLetter = (
-    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+    <span className="shrink-0 rounded-full bg-ground-50 px-2 py-0.5 text-[10px] text-ground-500 ring-1 ring-ground-200">
       {t('scholarship.docs.pathwayCheck.fromLetter')}
     </span>
   )
   const row = (label: string, value: string, right: ReactNode) => (
     <div className="flex items-start justify-between gap-2 py-1.5">
-      <p className="min-w-0 text-xs text-gray-700">
-        <span className="font-medium text-gray-600">{label}: </span>
+      <p className="min-w-0 text-xs text-ground-700">
+        <span className="font-medium text-ground-600">{label}: </span>
         <span className="break-words">{value || '—'}</span>
       </p>
       {right}
@@ -684,7 +684,7 @@ function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
       : null
 
   return (
-    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+    <div className="mt-2 rounded-xl border border-ground-100 bg-ground-50/60 px-3 divide-y divide-ground-100">
       {row(t('scholarship.docs.pathwayCheck.name'), chk.candidate_name, badge(chk.name))}
       {row(t('scholarship.docs.pathwayCheck.ic'), chk.candidate_nric, badge(chk.ic))}
       {pathRow('programme', chk.programme)}
@@ -693,7 +693,7 @@ function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
       {dataRow('date', chk.offer_date || chk.intake)}
       {dataRow('address', chk.address)}
       {isMismatch && (chk.declared_programme || chk.declared_institution) ? (
-        <p className="py-1.5 text-xs text-amber-700">
+        <p className="py-1.5 text-xs text-caution-700">
           {t('scholarship.docs.pathwayCheck.declaredNote')}{' '}
           <span className="font-medium">
             {[chk.declared_programme, chk.declared_institution].filter(Boolean).join(' · ')}
@@ -726,12 +726,12 @@ function assistTone(verdict: string): 'good' | 'warn' | 'info' {
 
 function SupportingDocChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
   const palette: Record<string, string> = {
-    good: 'bg-green-50 text-green-800 ring-green-200',
-    warn: 'bg-amber-50 text-amber-800 ring-amber-200',
-    info: 'bg-gray-50 text-gray-700 ring-gray-200',
-    'name-missing': 'bg-amber-50 text-amber-800 ring-amber-200',
-    'address-missing': 'bg-amber-50 text-amber-800 ring-amber-200',
-    unreadable: 'bg-gray-50 text-gray-700 ring-gray-200',
+    good: 'bg-positive-50 text-positive-800 ring-positive-200',
+    warn: 'bg-caution-50 text-caution-800 ring-caution-200',
+    info: 'bg-ground-50 text-ground-700 ring-ground-200',
+    'name-missing': 'bg-caution-50 text-caution-800 ring-caution-200',
+    'address-missing': 'bg-caution-50 text-caution-800 ring-caution-200',
+    unreadable: 'bg-ground-50 text-ground-700 ring-ground-200',
   }
   const chip = (tone: string, icon: string, text: string) => (
     <div className="mt-2">
@@ -739,7 +739,7 @@ function SupportingDocChip({ doc, t }: { doc: ApplicantDocument; t: (key: string
         <span aria-hidden>{icon}</span>
         <span>{text}</span>
       </span>
-      <p className="mt-1 text-xs text-gray-400">{t('scholarship.docs.vision.note')}</p>
+      <p className="mt-1 text-xs text-ground-400">{t('scholarship.docs.vision.note')}</p>
     </div>
   )
   // Prefer the Gemini doc-assist verdict when it ran.
@@ -816,16 +816,16 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen)
   const done = tone === 'done'
   return (
-    <div className={`rounded-lg border overflow-hidden ${done ? 'border-green-200' : 'border-dashed border-gray-200'}`}>
+    <div className={`rounded-lg border overflow-hidden ${done ? 'border-positive-200' : 'border-dashed border-ground-200'}`}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 ${
-          done ? (open ? 'bg-green-50' : 'bg-green-50/70') : 'bg-gray-50/60'}`}
+        className={`flex w-full items-center gap-3 px-3 py-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-positive-500 ${
+          done ? (open ? 'bg-positive-50' : 'bg-positive-50/70') : 'bg-ground-50/60'}`}
       >
         <span aria-hidden className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
-          done ? 'bg-green-600 text-white' : 'border border-gray-200 bg-gray-100 text-gray-400'}`}>
+          done ? 'bg-positive-600 text-white' : 'border border-ground-200 bg-ground-100 text-ground-400'}`}>
           {done ? (
             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -837,15 +837,15 @@ function CollapsibleSection({
           )}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium text-gray-800">{title}</span>
-          <span className={`mt-0.5 block text-xs ${done ? 'text-green-700' : 'text-gray-500'}`}>{summary}</span>
+          <span className="block text-sm font-medium text-ground-800">{title}</span>
+          <span className={`mt-0.5 block text-xs ${done ? 'text-positive-700' : 'text-ground-500'}`}>{summary}</span>
         </span>
-        <span className="shrink-0 text-xs font-medium text-gray-400">{open ? hideLabel : openLabel}</span>
-        <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2}>
+        <span className="shrink-0 text-xs font-medium text-ground-400">{open ? hideLabel : openLabel}</span>
+        <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 text-ground-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {open && <div className={`border-t p-3 ${done ? 'border-green-100' : 'border-gray-100'}`}>{children}</div>}
+      {open && <div className={`border-t p-3 ${done ? 'border-positive-100' : 'border-ground-100'}`}>{children}</div>}
     </div>
   )
 }
@@ -909,7 +909,7 @@ function SingleDocCard({
   const title = (
     <>
       {titleOverride ?? t(`scholarship.docs.type.${docType}`)}
-      {required && <span className="text-red-500"> *</span>}
+      {required && <span className="text-critical-500"> *</span>}
     </>
   )
 
@@ -971,32 +971,32 @@ function SingleDocCard({
   // ── Collapsed "done" card: green summary, tap to reveal the detail. ──
   if (done) {
     return (
-      <div className="rounded-lg border border-green-200 overflow-hidden">
+      <div className="rounded-lg border border-positive-200 overflow-hidden">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${open ? 'bg-green-50' : 'bg-green-50/70'} focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500`}
+          className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${open ? 'bg-positive-50' : 'bg-positive-50/70'} focus:outline-none focus-visible:ring-2 focus-visible:ring-positive-500`}
         >
-          <span aria-hidden className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-green-600 text-white">
+          <span aria-hidden className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-positive-600 text-white">
             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-medium text-gray-800">{title}</span>
-            <span className="mt-0.5 block text-xs text-green-700">{t(`scholarship.docs.done.${docType}`)}</span>
+            <span className="block text-sm font-medium text-ground-800">{title}</span>
+            <span className="mt-0.5 block text-xs text-positive-700">{t(`scholarship.docs.done.${docType}`)}</span>
           </span>
-          <span className="shrink-0 text-xs font-medium text-gray-400">
+          <span className="shrink-0 text-xs font-medium text-ground-400">
             {open ? t('scholarship.docs.hide') : t('scholarship.docs.view')}
           </span>
-          <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2}>
+          <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 text-ground-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
           </svg>
         </button>
         {open && (
-          <div className="border-t border-green-100 p-3">
-            <p className="text-xs text-gray-500">{helpOverride ?? t(`scholarship.docs.help.${docType}`)}</p>
+          <div className="border-t border-positive-100 p-3">
+            <p className="text-xs text-ground-500">{helpOverride ?? t(`scholarship.docs.help.${docType}`)}</p>
             {fileBlock}
             {checks}
           </div>
@@ -1009,8 +1009,8 @@ function SingleDocCard({
     <div className="border rounded-lg p-3">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <span className="text-sm font-medium text-gray-800">{title}</span>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <span className="text-sm font-medium text-ground-800">{title}</span>
+          <p className="text-xs text-ground-500 mt-0.5">
             {helpOverride ?? t(`scholarship.docs.help.${docType}`)}
           </p>
         </div>
@@ -1066,10 +1066,10 @@ function IncomeProofCard({
     <div className="border rounded-lg p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
-          <span className="text-sm font-medium text-gray-800">
+          <span className="text-sm font-medium text-ground-800">
             {t('scholarship.docs.income.title')}
           </span>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-ground-500 mt-0.5">
             {t('scholarship.docs.help.income')}
           </p>
           {/* Type selector */}
@@ -1081,7 +1081,7 @@ function IncomeProofCard({
                 className={`text-xs px-2 py-1 rounded border transition-colors ${
                   activeType === dt
                     ? 'bg-primary-600 text-white border-primary-600'
-                    : 'text-gray-600 border-gray-300 hover:border-primary-400'
+                    : 'text-ground-600 border-ground-300 hover:border-primary-400'
                 }`}
               >
                 {t(`scholarship.docs.type.${dt}`)}
@@ -1102,9 +1102,9 @@ function IncomeProofCard({
         <ul className="mt-2 space-y-1">
           {existing.map((d) => (
             <li key={d.id}>
-              <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center justify-between text-sm text-ground-600">
                 <span className="truncate">
-                  <span className="text-gray-400 text-xs mr-1">
+                  <span className="text-ground-400 text-xs mr-1">
                     [{t(`scholarship.docs.type.${d.doc_type}`)}]
                   </span>
                   {d.download_url ? (
@@ -1120,12 +1120,12 @@ function IncomeProofCard({
                     d.original_filename || d.doc_type
                   )}
                   {d.size ? (
-                    <span className="text-gray-400"> · {formatFileSize(d.size)}</span>
+                    <span className="text-ground-400"> · {formatFileSize(d.size)}</span>
                   ) : null}
                 </span>
                 <button
                   onClick={() => onDelete(d.id)}
-                  className="text-red-500 hover:underline ml-2 shrink-0"
+                  className="text-critical-500 hover:underline ml-2 shrink-0"
                 >
                   {t('scholarship.docs.remove')}
                 </button>
@@ -1281,7 +1281,7 @@ function IncomeWizard({
           className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
             selected === o.value
               ? 'bg-primary-600 text-white border-primary-600'
-              : 'text-gray-600 border-gray-300 hover:border-primary-400'
+              : 'text-ground-600 border-ground-300 hover:border-primary-400'
           }`}
         >
           {o.label}
@@ -1292,7 +1292,7 @@ function IncomeWizard({
 
   const Question = ({ label, children }: { label: string; children: ReactNode }) => (
     <div>
-      <p className="text-sm font-medium text-gray-800">{label}</p>
+      <p className="text-sm font-medium text-ground-800">{label}</p>
       {children}
     </div>
   )
@@ -1450,7 +1450,7 @@ function IncomeWizard({
   const body = (
     <div className="space-y-4">
       {/* Encouraging, never-punitive intro (blue = info). */}
-      <div className="rounded-xl bg-blue-50 ring-1 ring-blue-100 p-3 text-sm text-blue-900/90">
+      <div className="rounded-xl bg-info-50 ring-1 ring-info-100 p-3 text-sm text-info-900/90">
         {iq('intro')}
       </div>
 
@@ -1477,7 +1477,7 @@ function IncomeWizard({
                 <button key={m} type="button" onClick={() => toggleMember(m)}
                   className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                     on ? 'bg-primary-600 text-white border-primary-600'
-                       : 'text-gray-600 border-gray-300 hover:border-primary-400'}`}>
+                       : 'text-ground-600 border-ground-300 hover:border-primary-400'}`}>
                   {on ? '✓ ' : ''}{iq(`member.${m}`)}
                 </button>
               )
@@ -1497,11 +1497,11 @@ function IncomeWizard({
               Each card names the earner ("Father's STR document", "Father's IC"), so the box needs no
               header. Green BORDER (no fill) + a "Complete" badge once every compulsory doc is on file.
               Supplementary income evidence (salary slip / EPF / utilities) renders BELOW, outside the box. */}
-          <div className={`rounded-lg border bg-gray-50/60 p-2.5 space-y-2 ${
-            strComplete ? 'border-green-300' : 'border-gray-100'}`}>
+          <div className={`rounded-lg border bg-ground-50/60 p-2.5 space-y-2 ${
+            strComplete ? 'border-positive-300' : 'border-ground-100'}`}>
             {strComplete && (
               <div className="flex justify-end">
-                <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                <span className="inline-flex items-center gap-1 rounded-full border border-positive-200 bg-positive-100 px-2 py-0.5 text-[10px] font-bold text-positive-700">
                   <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20 6 9 17l-5-5" />
                   </svg>
@@ -1563,8 +1563,8 @@ function IncomeWizard({
               <div className="mt-2"><IncomeClusterCoach member={block.member} route="salary" docs={docs} token={token} t={t} lang={lang} /></div>
             )
             return (
-            <div key={block.member} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5 space-y-2">
-              <p className="text-xs font-semibold text-gray-700">{iq(`member.${block.member}`)}</p>
+            <div key={block.member} className="rounded-lg border border-ground-100 bg-ground-50/60 p-2.5 space-y-2">
+              <p className="text-xs font-semibold text-ground-700">{iq(`member.${block.member}`)}</p>
               {block.compulsory.map(({ docType, member }) => (
                 <div key={docKey(docType, member)}>
                   {renderCard(docType, { required: true, member,
@@ -1581,10 +1581,10 @@ function IncomeWizard({
                 const shown = memberIncomeShown(block.member)
                 return (
                 <div className={`rounded-lg border p-2.5 space-y-2 ${
-                  shown ? 'border-green-200 bg-green-50/40' : 'border-dashed border-gray-200 bg-white'}`}>
+                  shown ? 'border-positive-200 bg-positive-50/40' : 'border-dashed border-ground-200 bg-ground-0'}`}>
                   <div className="flex items-start gap-2">
                     <span aria-hidden className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full ${
-                      shown ? 'bg-green-600 text-white' : 'border border-gray-300 text-gray-400'}`}>
+                      shown ? 'bg-positive-600 text-white' : 'border border-ground-300 text-ground-400'}`}>
                       {shown ? (
                         <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                       ) : (
@@ -1592,8 +1592,8 @@ function IncomeWizard({
                       )}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gray-700">{iq('incomeGroupTitle')}</p>
-                      <p className={`text-xs ${shown ? 'text-green-700' : 'text-gray-500'}`}>
+                      <p className="text-xs font-semibold text-ground-700">{iq('incomeGroupTitle')}</p>
+                      <p className={`text-xs ${shown ? 'text-positive-700' : 'text-ground-500'}`}>
                         {shown ? iq('incomeShown') : iq('incomeAnyOne')}
                       </p>
                     </div>
@@ -1620,18 +1620,18 @@ function IncomeWizard({
                   )}
                   {!memberHasProof(block.member) && (openDeclared.has(block.member)
                       || declaredAmount(ans.income_declared, block.member) > 0) && (
-                    <div className="rounded-md bg-blue-50 ring-1 ring-blue-100 p-2.5 space-y-2">
-                      <p className="text-xs text-blue-900/90">{iq('declared.prompt')}</p>
+                    <div className="rounded-md bg-info-50 ring-1 ring-info-100 p-2.5 space-y-2">
+                      <p className="text-xs text-info-900/90">{iq('declared.prompt')}</p>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">RM</span>
+                        <span className="text-xs text-ground-500">RM</span>
                         <input
                           type="number" inputMode="numeric" min={0} step={50}
                           defaultValue={declaredAmount(ans.income_declared, block.member) || ''}
                           placeholder={iq('declared.placeholder')}
                           onBlur={(e) => saveDeclared(block.member, e.target.value)}
-                          className="w-28 text-sm rounded border border-gray-300 px-2 py-1 focus:border-primary-400 focus:outline-none"
+                          className="w-28 text-sm rounded border border-ground-300 px-2 py-1 focus:border-primary-400 focus:outline-none"
                         />
-                        <span className="text-xs text-gray-400">{iq('declared.perMonth')}</span>
+                        <span className="text-xs text-ground-400">{iq('declared.perMonth')}</span>
                       </div>
                       {declaredAmount(ans.income_declared, block.member) > 0 &&
                         renderCard('income_support_doc', { required: false, member: block.member,
@@ -1672,7 +1672,7 @@ function IncomeWizard({
                 </div>
               </CollapsibleSection>
             )}
-            <p className="text-xs text-gray-400">{iq('footer')}</p>
+            <p className="text-xs text-ground-400">{iq('footer')}</p>
           </div>
         )
       })()}
@@ -1797,16 +1797,16 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   // Section header: title + a status pill (compulsory / important / optional) + note.
   type SectionPill = 'compulsory' | 'important' | 'optional'
   const pillClass: Record<SectionPill, string> = {
-    compulsory: 'bg-amber-100 text-amber-800',
-    important: 'bg-blue-100 text-blue-800',
-    optional: 'bg-gray-100 text-gray-600',
+    compulsory: 'bg-caution-100 text-caution-800',
+    important: 'bg-info-100 text-info-800',
+    optional: 'bg-ground-100 text-ground-600',
   }
   // pill null → a bare section title (no badge, no note); the compulsory status is
   // shown on the cards themselves (a red * after the title).
   const sectionHead = (key: string, pill: SectionPill | null, showNote = false) => (
     <div className="mb-2">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-gray-800">
+        <h3 className="text-sm font-semibold text-ground-800">
           {t(`scholarship.docs.section.${key}.title`)}
         </h3>
         {pill && (
@@ -1815,7 +1815,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
           </span>
         )}
       </div>
-      {(pill || showNote) && <p className="text-xs text-gray-500 mt-0.5">{t(`scholarship.docs.section.${key}.note`)}</p>}
+      {(pill || showNote) && <p className="text-xs text-ground-500 mt-0.5">{t(`scholarship.docs.section.${key}.note`)}</p>}
     </div>
   )
 
@@ -1926,7 +1926,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       </section>
       )}
 
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p className="text-critical-600 text-sm">{error}</p>}
     </div>
   )
 }

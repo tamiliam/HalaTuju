@@ -438,40 +438,85 @@ describe('the category family itself', () => {
   })
 })
 
-describe('the unconverted shared components — a ceiling that may only fall', () => {
-  // F2b's half, waiting. This is not a conversion guard: it is a RATCHET. It stops raw colour being
-  // ADDED to a surface a later sprint still has to repaint, and it can only ever be lowered — when
-  // F2b lands, this count goes to zero and the block goes away.
-  //
-  // ⚠ SCOPED TO F2b's OWN FILES — `src/components/*` only, no subdirectories. `components/admin`
-  // belongs to F4 and `components/sponsors` is already done. Ratcheting a directory that no sprint
-  // has scheduled would freeze the colours of a console people are still building features on, and
-  // the next ordinary admin page would fail this test with no sanctioned way to pass it.
-  const rest = walkFiles('src/components')
-    .map((f) => f.split(path.sep).join('/'))
-    .filter((f) => f.split('/').length === 3)   // src/components/X.tsx — top level only
-    .filter((f) => !F2A_FILES.includes(f))
-    .filter((f) => !F2B_FILES.includes(f))
-    .filter((f) => !(f in CATEGORICAL))         // exempt by decision, counted above, not here
+/**
+ * F3's surface — everything a STUDENT sees, plus the three app-level shells.
+ *
+ * A directory walk, not a list: `src/app/scholarship`, `/profile`, `/onboarding`, `/dashboard`,
+ * `/saved`, `/settings`, `/verify-email` and `/report` are converted in full, so the guard should
+ * fail on a NEW page in any of them rather than quietly ignore it — which a hand-list would.
+ * `ScholarshipDocuments.tsx` joins them from `src/components`: it is a student surface that
+ * happens to live with the shared components, and at 288 utilities it was the largest single file
+ * in the product.
+ *
+ * `error` / `loading` / `not-found` are here because they carried the same `bg-[#f8fafc]` page
+ * ground as the student pages and would otherwise have been a white flash in dark mode at the
+ * exact moment something has already gone wrong.
+ */
+const F3_DIRS = [
+  'src/app/scholarship', 'src/app/profile', 'src/app/onboarding', 'src/app/dashboard',
+  'src/app/saved', 'src/app/settings', 'src/app/verify-email', 'src/app/report',
+]
 
-  /**
-   * F2a measured 659 across 25 files. F2b converted 20 of them and the ground of 4 more, so what
-   * is left is `ScholarshipDocuments.tsx` ALONE — 287, and it belongs to F3.
-   * LOWER THIS, NEVER RAISE IT. F3 takes it to zero and this block goes away.
-   */
-  const CEILING = 287
+export const F3_FILES = [
+  ...F3_DIRS.flatMap((d) => walkFiles(d)).map((f) => f.split(path.sep).join('/')),
+  'src/components/ScholarshipDocuments.tsx',
+  'src/app/error.tsx', 'src/app/loading.tsx', 'src/app/not-found.tsx',
+]
 
-  it('is now one file only, so the ceiling means what it says', () => {
-    expect(rest).toEqual(['src/components/ScholarshipDocuments.tsx'])
+assertConverted('the student surfaces (F3)', F3_FILES, 20)
+
+describe('the colour a class scan cannot see, on the student surfaces', () => {
+  // ⚠ THREE SPRINTS, THREE NEW HIDING PLACES. F1 found inline `conic-gradient` hex; F2a found the
+  // stylesheet's own `body` rule and a text control with no background at all; F3 found these two.
+  // Every one of them was invisible to a scan that reads Tailwind class names, and every one of
+  // them would have been a light-mode island in a dark product.
+
+  it('has no ARBITRARY-VALUE colour class — `bg-[#f8fafc]` is a class, not a colour', () => {
+    // The subtlest of the three. `bg-[#f8fafc]` passes any check that looks for `bg-gray-50`,
+    // because it IS a class and it is not on the list. Six pages set their whole page ground this
+    // way, including the error and loading screens.
+    const offenders: string[] = []
+    for (const f of F3_FILES) {
+      for (const m of withoutComments(read(f)).match(/-\[#[0-9a-fA-F]{3,8}\]/g) ?? []) {
+        offenders.push(`${f}: ${m}`)
+      }
+    }
+    expect(offenders).toEqual([])
   })
 
-  it('has not grown', () => {
-    const count = rest.reduce(
-      (n, f) => n + (withoutComments(read(f)).match(new RegExp(RAW, 'g'))?.length ?? 0), 0,
-    )
-    // A failure here is almost never "raise the number". It means new hand-written colour landed on
-    // a surface that is queued for conversion — write it on the tokens instead, the way F2a's and
-    // F2b's files now are. Lower the ceiling when a sprint converts more of the directory.
-    expect(count).toBeLessThanOrEqual(CEILING)
+  it('has no raw hex in an SVG attribute — those are props, not classes', () => {
+    // `stroke="#3b82f6"` is a React prop. No codemod over class names will ever touch it, and it
+    // was a HARDCODED blue: the stream icons never followed a tenant's brand either, even sitting
+    // inside a `bg-primary-500` button. They read `rgb(var(--brand-500))` now.
+    const GOOGLE_LOGO_HEXES = ['#4285F4', '#34A853', '#FBBC05', '#EA4335']
+    const offenders: string[] = []
+    for (const f of F3_FILES) {
+      for (const hex of withoutComments(read(f)).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
+        if (!GOOGLE_LOGO_HEXES.includes(hex.toUpperCase())) offenders.push(`${f}: ${hex}`)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})
+
+describe('the F3 semantic corrections the codemod could not make', () => {
+  it('paints the onboarding progress steps with the BRAND, like every other progress marker', () => {
+    // Fourth sprint running that the codemod called a piece of product furniture "information".
+    // The shared `ProgressStepper` and the sponsor landing's step numbers were already `primary`;
+    // this one would have left a tenant's colour reaching two of the three.
+    const src = read('src/app/scholarship/onboarding/page.tsx')
+    expect(src).toMatch(/bg-primary-600 text-white/)
+    expect(withoutComments(src)).not.toMatch(/bg-info-600/)
+    expect(read('src/components/ProgressStepper.tsx')).toMatch(/bg-primary-500/)
+  })
+
+  it('distinguishes "graduated" from "on track" by WEIGHT, both still positive', () => {
+    // `graduated` was `indigo` — outside the vocabulary — because the set needs two good states a
+    // student can tell apart. A category swatch would have been wrong (it IS a state); a second
+    // tone would have lied about it. Same tone, filled instead of tinted.
+    const src = read('src/app/scholarship/in-programme/page.tsx')
+    expect(src).toMatch(/graduated: 'bg-positive-600 text-white'/)
+    expect(src).toMatch(/on_track: 'bg-positive-100 text-positive-700'/)
+    expect(withoutComments(src)).not.toMatch(/indigo/)
   })
 })

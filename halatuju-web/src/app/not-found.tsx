@@ -7,11 +7,11 @@ export default function NotFound() {
   const { t } = useT()
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] flex items-center justify-center px-6">
+    <main className="min-h-screen bg-ground-50 flex items-center justify-center px-6">
       <div className="text-center max-w-sm">
         <p className="text-6xl font-bold text-primary-500 mb-2">404</p>
-        <h1 className="text-xl font-semibold text-gray-900 mb-2">{t('errors.pageNotFound')}</h1>
-        <p className="text-gray-500 text-sm mb-6">
+        <h1 className="text-xl font-semibold text-ground-900 mb-2">{t('errors.pageNotFound')}</h1>
+        <p className="text-ground-500 text-sm mb-6">
           {t('errors.pageNotFoundDesc')}
         </p>
         <Link

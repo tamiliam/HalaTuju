@@ -21,27 +21,27 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
       <div className="container mx-auto px-6 py-8 max-w-lg space-y-6">
         {/* Language */}
-        <section className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="font-semibold text-gray-900 mb-1">{t('settings.language')}</h2>
-          <p className="text-sm text-gray-500 mb-3">{t('settings.languageDesc')}</p>
+        <section className="bg-ground-0 rounded-xl border border-ground-200 p-5">
+          <h2 className="font-semibold text-ground-900 mb-1">{t('settings.language')}</h2>
+          <p className="text-sm text-ground-500 mb-3">{t('settings.languageDesc')}</p>
           <LanguageSelector />
         </section>
 
         {/* Clear Data */}
-        <section className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="font-semibold text-gray-900 mb-1">{t('settings.clearData')}</h2>
-          <p className="text-sm text-gray-500 mb-3">{t('settings.clearDataDesc')}</p>
+        <section className="bg-ground-0 rounded-xl border border-ground-200 p-5">
+          <h2 className="font-semibold text-ground-900 mb-1">{t('settings.clearData')}</h2>
+          <p className="text-sm text-ground-500 mb-3">{t('settings.clearDataDesc')}</p>
           {cleared ? (
-            <p className="text-sm text-green-600 font-medium">{t('settings.dataCleared')}</p>
+            <p className="text-sm text-positive-600 font-medium">{t('settings.dataCleared')}</p>
           ) : (
             <button
               onClick={handleClearData}
-              className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-critical-600 border border-critical-200 rounded-lg hover:bg-critical-50 transition-colors"
             >
               {t('settings.clearButton')}
             </button>
@@ -49,21 +49,21 @@ export default function SettingsPage() {
         </section>
 
         {/* About */}
-        <section className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="font-semibold text-gray-900 mb-3">{t('settings.aboutTitle')}</h2>
-          <div className="space-y-2 text-sm text-gray-600">
+        <section className="bg-ground-0 rounded-xl border border-ground-200 p-5">
+          <h2 className="font-semibold text-ground-900 mb-3">{t('settings.aboutTitle')}</h2>
+          <div className="space-y-2 text-sm text-ground-600">
             <div className="flex justify-between">
               <span>{t('settings.version')}</span>
-              <span className="font-mono text-gray-900">{VERSION}</span>
+              <span className="font-mono text-ground-900">{VERSION}</span>
             </div>
             <div className="flex justify-between">
               <span>{t('settings.currentLanguage')}</span>
-              <span className="text-gray-900">{LOCALE_LABELS[locale]}</span>
+              <span className="text-ground-900">{LOCALE_LABELS[locale]}</span>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-            <p className="text-xs text-gray-400">{t('settings.builtBy')}</p>
-            <p className="text-xs text-gray-400">{t('common.copyright')}</p>
+          <div className="mt-4 pt-4 border-t border-ground-100 space-y-2">
+            <p className="text-xs text-ground-400">{t('settings.builtBy')}</p>
+            <p className="text-xs text-ground-400">{t('common.copyright')}</p>
           </div>
         </section>
       </div>

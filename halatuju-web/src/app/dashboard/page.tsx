@@ -39,10 +39,10 @@ function getMeritLevel(studentMerit: number, courseMerit: number | null | undefi
 }
 
 const MERIT_STYLES = {
-  high: 'bg-green-100 text-green-800',
-  fair: 'bg-amber-100 text-amber-800',
-  low: 'bg-red-100 text-red-800',
-  none: 'bg-gray-100 text-gray-600',
+  high: 'bg-positive-100 text-positive-800',
+  fair: 'bg-caution-100 text-caution-800',
+  low: 'bg-critical-100 text-critical-800',
+  none: 'bg-ground-100 text-ground-600',
 }
 const MERIT_LABELS = { high: 'High', fair: 'Fair', low: 'Low', none: '—' }
 
@@ -296,10 +296,10 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-ground-900 mb-4">
             {t(pending ? 'dashboard.stpmResultsPending' : 'dashboard.noProfile')}
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-ground-600 mb-6">
             {t(pending ? 'dashboard.stpmResultsPendingDesc' : 'dashboard.noProfileDesc')}
           </p>
           <Link href={pending ? '/onboarding/stpm-grades' : '/onboarding/exam-type'} className="btn-primary">
@@ -311,7 +311,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
       {/* Main Content */}
@@ -324,14 +324,14 @@ export default function DashboardPage() {
           <>
             {isLoading ? (
               <div className="text-center py-12">
-                <p className="text-gray-500">{t('common.loading')}</p>
+                <p className="text-ground-500">{t('common.loading')}</p>
               </div>
             ) : !stpmData ? (
               // Unreachable while `examType === 'stpm'` implies a resolved STPM cache — kept as a
               // backstop, but asking for the RESULTS, never for onboarding they have done.
               <div className="text-center py-12">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('dashboard.stpmResultsPending')}</h2>
-                <p className="text-gray-500 mb-4">{t('dashboard.stpmResultsPendingDesc')}</p>
+                <h2 className="text-xl font-semibold text-ground-900 mb-2">{t('dashboard.stpmResultsPending')}</h2>
+                <p className="text-ground-500 mb-4">{t('dashboard.stpmResultsPendingDesc')}</p>
                 <Link href="/onboarding/stpm-grades" className="btn-primary">
                   {t('dashboard.addStpmResults')}
                 </Link>
@@ -339,12 +339,12 @@ export default function DashboardPage() {
             ) : stpmResults === null ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
-                <p className="text-gray-500">{t('dashboard.checkingEligibility')}</p>
+                <p className="text-ground-500">{t('dashboard.checkingEligibility')}</p>
               </div>
             ) : stpmResults.length === 0 ? (
               <div className="text-center py-12">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('stpm.noResults')}</h2>
-                <p className="text-gray-500 mb-4">{t('stpm.noResultsDesc')}</p>
+                <h2 className="text-xl font-semibold text-ground-900 mb-2">{t('stpm.noResults')}</h2>
+                <p className="text-ground-500 mb-4">{t('stpm.noResultsDesc')}</p>
                 <Link href="/onboarding/stpm-grades" className="btn-primary">
                   {t('dashboard.editProfile')}
                 </Link>
@@ -374,31 +374,31 @@ export default function DashboardPage() {
 
         {/* Compact Dashboard Header */}
         {examType === 'spm' && eligibilityData && (
-          <div className="bg-white rounded-xl border border-gray-200 px-4 sm:px-6 py-4 mb-6">
+          <div className="bg-ground-0 rounded-xl border border-ground-200 px-4 sm:px-6 py-4 mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               {/* Left: headline + chance pills */}
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl font-bold text-ground-900">
                   {t('dashboard.qualifyFor')} <span className="text-primary-500">{eligibilityData.eligible_courses.length}</span> {t('dashboard.qualifyCourses')}
                 </h1>
                 {eligibilityData.insights && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-green-500" />
-                      <span className="text-gray-600">{eligibilityData.insights.merit_summary.high} {t('dashboard.meritHigh')}</span>
+                      <span className="w-2 h-2 rounded-full bg-positive-500" />
+                      <span className="text-ground-600">{eligibilityData.insights.merit_summary.high} {t('dashboard.meritHigh')}</span>
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span className="text-gray-600">{eligibilityData.insights.merit_summary.fair} {t('dashboard.meritFair')}</span>
+                      <span className="w-2 h-2 rounded-full bg-caution-400" />
+                      <span className="text-ground-600">{eligibilityData.insights.merit_summary.fair} {t('dashboard.meritFair')}</span>
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-red-500" />
-                      <span className="text-gray-600">{eligibilityData.insights.merit_summary.low} {t('dashboard.meritLow')}</span>
+                      <span className="w-2 h-2 rounded-full bg-critical-500" />
+                      <span className="text-ground-600">{eligibilityData.insights.merit_summary.low} {t('dashboard.meritLow')}</span>
                     </span>
                     {eligibilityData.insights.merit_summary.no_data > 0 && (
-                      <span className="text-gray-400">&middot; {eligibilityData.insights.merit_summary.no_data} unrated</span>
+                      <span className="text-ground-400">&middot; {eligibilityData.insights.merit_summary.no_data} unrated</span>
                     )}
-                    <Link href="/onboarding/grades" className="text-xs text-gray-400 hover:text-primary-500 underline">
+                    <Link href="/onboarding/grades" className="text-xs text-ground-400 hover:text-primary-500 underline">
                       {t('dashboard.editProfile')}
                     </Link>
                   </div>
@@ -422,7 +422,7 @@ export default function DashboardPage() {
                   </button>
                 )}
                 {quizSignals ? (
-                  <button onClick={handleRetakeQuiz} className="text-sm text-gray-400 hover:text-primary-500 underline whitespace-nowrap">
+                  <button onClick={handleRetakeQuiz} className="text-sm text-ground-400 hover:text-primary-500 underline whitespace-nowrap">
                     {t('dashboard.retakeQuiz')}
                   </button>
                 ) : (
@@ -432,7 +432,7 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
-            {reportError && <p className="text-red-500 text-xs mt-2">{t('dashboard.reportError')}</p>}
+            {reportError && <p className="text-critical-500 text-xs mt-2">{t('dashboard.reportError')}</p>}
           </div>
         )}
 
@@ -452,7 +452,7 @@ export default function DashboardPage() {
         {examType === 'spm' && (eligibilityLoading || rankingLoading) && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
-            <p className="text-gray-600">
+            <p className="text-ground-600">
               {rankingLoading ? t('dashboard.rankingCourses') : t('dashboard.checkingEligibility')}
             </p>
           </div>
@@ -460,8 +460,8 @@ export default function DashboardPage() {
 
         {/* Error State */}
         {examType === 'spm' && error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <p className="text-red-600 mb-4">
+          <div className="bg-critical-50 border border-critical-200 rounded-xl p-6 text-center">
+            <p className="text-critical-600 mb-4">
               {t('dashboard.failedToLoad')}
             </p>
             <button
@@ -625,57 +625,57 @@ function StpmDashboardCards({
   return (
     <div>
       {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 px-6 py-4 mb-6">
+      <div className="bg-ground-0 rounded-xl border border-ground-200 px-6 py-4 mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             {framing && quizSignals ? (
               <>
-                <h1 className="text-xl font-bold text-gray-900">{framing.heading}</h1>
-                <p className="text-sm text-gray-500 mt-0.5">{framing.subtitle}</p>
+                <h1 className="text-xl font-bold text-ground-900">{framing.heading}</h1>
+                <p className="text-sm text-ground-500 mt-0.5">{framing.subtitle}</p>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm">
-                  <span className="text-gray-600">{stpmResults.length} {t('dashboard.qualifyCourses')}</span>
+                  <span className="text-ground-600">{stpmResults.length} {t('dashboard.qualifyCourses')}</span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-gray-600">{highCount} {t('dashboard.meritHigh')}</span>
+                    <span className="w-2 h-2 rounded-full bg-positive-500" />
+                    <span className="text-ground-600">{highCount} {t('dashboard.meritHigh')}</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    <span className="text-gray-600">{fairCount} {t('dashboard.meritFair')}</span>
+                    <span className="w-2 h-2 rounded-full bg-caution-400" />
+                    <span className="text-ground-600">{fairCount} {t('dashboard.meritFair')}</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    <span className="text-gray-600">{lowCount} {t('dashboard.meritLow')}</span>
+                    <span className="w-2 h-2 rounded-full bg-critical-500" />
+                    <span className="text-ground-600">{lowCount} {t('dashboard.meritLow')}</span>
                   </span>
                 </div>
               </>
             ) : (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-xl font-bold text-ground-900">
                   {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> {t('dashboard.qualifyCourses')}
                 </h1>
                 <div className="flex items-center gap-3 text-sm">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-gray-600">{highCount} {t('dashboard.meritHigh')}</span>
+                    <span className="w-2 h-2 rounded-full bg-positive-500" />
+                    <span className="text-ground-600">{highCount} {t('dashboard.meritHigh')}</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    <span className="text-gray-600">{fairCount} {t('dashboard.meritFair')}</span>
+                    <span className="w-2 h-2 rounded-full bg-caution-400" />
+                    <span className="text-ground-600">{fairCount} {t('dashboard.meritFair')}</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    <span className="text-gray-600">{lowCount} {t('dashboard.meritLow')}</span>
+                    <span className="w-2 h-2 rounded-full bg-critical-500" />
+                    <span className="text-ground-600">{lowCount} {t('dashboard.meritLow')}</span>
                   </span>
                 </div>
               </div>
             )}
-            <Link href="/onboarding/stpm-grades" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1 inline-block">
+            <Link href="/onboarding/stpm-grades" className="text-xs text-ground-400 hover:text-primary-500 underline mt-1 inline-block">
               {t('dashboard.editProfile')}
             </Link>
           </div>
           <div className="flex items-center gap-2">
             {quizSignals ? (
-              <button onClick={onQuizCta} className="text-sm text-gray-400 hover:text-primary-500 underline whitespace-nowrap">
+              <button onClick={onQuizCta} className="text-sm text-ground-400 hover:text-primary-500 underline whitespace-nowrap">
                 {t('stpmQuiz.retakeQuiz')}
               </button>
             ) : (
@@ -788,10 +788,10 @@ function RankedResults({
 function LoadingScreen() {
   const { t } = useT()
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-ground-0">
       <div className="text-center">
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
-        <p className="text-gray-600">{t('common.loadingProfile')}</p>
+        <p className="text-ground-600">{t('common.loadingProfile')}</p>
       </div>
     </div>
   )

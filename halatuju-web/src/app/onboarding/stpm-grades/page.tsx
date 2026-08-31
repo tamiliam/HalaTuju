@@ -234,8 +234,8 @@ export default function StpmGradesPage() {
   const allSelected = [...selectedSubjects, electiveSubject].filter(Boolean)
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
-      <div className="bg-white border-b">
+    <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
+      <div className="bg-ground-0 border-b">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
@@ -248,10 +248,10 @@ export default function StpmGradesPage() {
 
       <div className="container mx-auto px-6 py-8 max-w-3xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl font-bold text-ground-900 mb-3">
             {t('onboarding.stpmGradesTitle')}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-ground-600">
             {t('onboarding.stpmGradesSubtitle')}
           </p>
         </div>
@@ -260,7 +260,7 @@ export default function StpmGradesPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
-            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.stpmStream')}</h2>
+            <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.stpmStream')}</h2>
           </div>
           <div className="flex gap-3">
             {(['science', 'arts'] as Stream[]).map(s => (
@@ -270,7 +270,7 @@ export default function StpmGradesPage() {
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
                   stream === s
                     ? 'bg-primary-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                    : 'bg-ground-0 text-ground-700 border border-ground-200 hover:bg-ground-50'
                 }`}
               >
                 {s === 'science' ? t('onboarding.stpmScience') : t('onboarding.stpmArts')}
@@ -284,19 +284,19 @@ export default function StpmGradesPage() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
-              <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.stpmSubjects')}</h2>
+              <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.stpmSubjects')}</h2>
             </div>
-            <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.stpmSubjectsHint')}</p>
+            <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.stpmSubjectsHint')}</p>
 
             <div className="space-y-3">
               {/* PA — compulsory */}
-              <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 shadow-sm p-3">
+              <div className="flex items-center gap-2 bg-ground-0 rounded-xl border border-ground-200 shadow-sm p-3">
                 <div className="flex-1 flex items-center gap-2">
                   <svg className="w-4 h-4 text-primary-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  <span className="font-medium text-gray-900">Pengajian Am</span>
-                  <span className="text-red-500 text-xs">*</span>
+                  <span className="font-medium text-ground-900">Pengajian Am</span>
+                  <span className="text-critical-500 text-xs">*</span>
                 </div>
                 <select
                   value={stpmGrades.PA || ''}
@@ -304,7 +304,7 @@ export default function StpmGradesPage() {
                   className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                     stpmGrades.PA
                       ? 'bg-primary-50 border-primary-200 text-primary-700'
-                      : 'bg-gray-50 border-gray-300 text-gray-500'
+                      : 'bg-ground-50 border-ground-300 text-ground-500'
                   }`}
                 >
                   <option value="">{t('onboarding.stpmGrade')}</option>
@@ -314,11 +314,11 @@ export default function StpmGradesPage() {
 
               {/* 3 stream-specific subject slots */}
               {selectedSubjects.map((subjectId, index) => (
-                <div key={`stream-${index}`} className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-3">
+                <div key={`stream-${index}`} className="flex items-center gap-2 bg-ground-0 rounded-xl border border-ground-200 shadow-sm hover:shadow-md transition-shadow p-3">
                   <select
                     value={subjectId}
                     onChange={(e) => handleSubjectChange(index, e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   >
                     <option value="">{t('onboarding.stpmSelectSubject')}</option>
                     {streamSubjects
@@ -332,7 +332,7 @@ export default function StpmGradesPage() {
                       className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                         stpmGrades[subjectId]
                           ? 'bg-primary-50 border-primary-200 text-primary-700'
-                          : 'bg-gray-50 border-gray-300 text-gray-500'
+                          : 'bg-ground-50 border-ground-300 text-ground-500'
                       }`}
                     >
                       <option value="">{t('onboarding.stpmGrade')}</option>
@@ -341,7 +341,7 @@ export default function StpmGradesPage() {
                   )}
                   <button
                     onClick={() => handleSubjectChange(index, '')}
-                    className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
+                    className="text-ground-400 hover:text-critical-500 p-1 flex-shrink-0"
                     aria-label={t('common.remove')}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -353,11 +353,11 @@ export default function StpmGradesPage() {
 
               {/* Elective slot — click to add */}
               {showElective ? (
-                <div className="flex items-center gap-2 bg-white rounded-xl border border-dashed border-gray-300 hover:shadow-md transition-shadow p-3">
+                <div className="flex items-center gap-2 bg-ground-0 rounded-xl border border-dashed border-ground-300 hover:shadow-md transition-shadow p-3">
                   <select
                     value={electiveSubject}
                     onChange={(e) => handleElectiveChange(e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   >
                     <option value="">{t('onboarding.stpmElective')}</option>
                     {allOptionalSubjects
@@ -371,7 +371,7 @@ export default function StpmGradesPage() {
                       className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                         stpmGrades[electiveSubject]
                           ? 'bg-primary-50 border-primary-200 text-primary-700'
-                          : 'bg-gray-50 border-gray-300 text-gray-500'
+                          : 'bg-ground-50 border-ground-300 text-ground-500'
                       }`}
                     >
                       <option value="">{t('onboarding.stpmGrade')}</option>
@@ -380,7 +380,7 @@ export default function StpmGradesPage() {
                   )}
                   <button
                     onClick={() => { handleElectiveChange(''); setShowElective(false) }}
-                    className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
+                    className="text-ground-400 hover:text-critical-500 p-1 flex-shrink-0"
                     aria-label={t('common.remove')}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -391,7 +391,7 @@ export default function StpmGradesPage() {
               ) : (
                 <button
                   onClick={() => setShowElective(true)}
-                  className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
+                  className="w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
                 >
                   + {t('onboarding.addElective')}
                 </button>
@@ -404,14 +404,14 @@ export default function StpmGradesPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
-            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.muetBand')}</h2>
+            <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.muetBand')}</h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.muetHint')}</p>
+          <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.muetHint')}</p>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <div className="bg-ground-0 rounded-2xl border border-ground-200 shadow-sm p-5">
             {/* MUET band pills */}
             <div className="mb-5">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">MUET</label>
+              <label className="text-sm font-medium text-ground-700 mb-2 block">MUET</label>
               <div className="flex gap-2 flex-wrap">
                 {MUET_BANDS.map(band => (
                   <button
@@ -420,7 +420,7 @@ export default function StpmGradesPage() {
                     className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
                       muetBand === band
                         ? 'bg-primary-500 text-white shadow-md'
-                        : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                        : 'bg-ground-50 text-ground-700 border border-ground-200 hover:bg-ground-100'
                     }`}
                   >
                     {band}
@@ -431,7 +431,7 @@ export default function StpmGradesPage() {
 
             {/* Co-curriculum score */}
             <div className="mb-5">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label className="text-sm font-medium text-ground-700 mb-2 block">
                 {t('onboarding.kokoScore')}
               </label>
               <input
@@ -442,24 +442,24 @@ export default function StpmGradesPage() {
                 value={kokoScore}
                 onChange={(e) => setKokoScore(e.target.value)}
                 placeholder="0.00 – 10.00"
-                className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                className="w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
               />
-              <p className="text-xs text-gray-400 mt-1">{t('onboarding.kokoHint')}</p>
+              <p className="text-xs text-ground-400 mt-1">{t('onboarding.kokoHint')}</p>
             </div>
 
             {/* CGPA display */}
             {academicCgpa > 0 && (
               <div className="border-t pt-4 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-gray-500">{t('onboarding.cgpaLabel')}</div>
-                  <div className="text-xs text-gray-400">{t('onboarding.cgpaFormula')}</div>
+                  <div className="text-xs text-ground-500">{t('onboarding.cgpaLabel')}</div>
+                  <div className="text-xs text-ground-400">{t('onboarding.cgpaFormula')}</div>
                 </div>
                 <div className="text-right">
                   <div className="flex items-baseline gap-1 justify-end">
-                    <span className="text-3xl font-bold text-gray-900">{overallCgpa.toFixed(2)}</span>
-                    <span className="text-sm text-gray-400">/ 4.00</span>
+                    <span className="text-3xl font-bold text-ground-900">{overallCgpa.toFixed(2)}</span>
+                    <span className="text-sm text-ground-400">/ 4.00</span>
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5">{t('onboarding.cgpaAutoCalc')}</div>
+                  <div className="text-xs text-ground-400 mt-0.5">{t('onboarding.cgpaAutoCalc')}</div>
                 </div>
               </div>
             )}
@@ -470,14 +470,14 @@ export default function StpmGradesPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">4</span>
-            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.spmPrerequisites')}</h2>
+            <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.spmPrerequisites')}</h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.spmPrereqHint')}</p>
+          <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.spmPrereqHint')}</p>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <div className="bg-ground-0 rounded-2xl border border-ground-200 shadow-sm p-5">
             {/* A) SPM Stream pills */}
             <div className="mb-4">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('onboarding.spmStream')}</div>
+              <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">{t('onboarding.spmStream')}</div>
               <div className="flex gap-2">
                 {([
                   { id: 'science', key: 'spmSains' },
@@ -490,7 +490,7 @@ export default function StpmGradesPage() {
                     className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
                       spmStream === s.id
                         ? 'bg-primary-500 text-white shadow-sm'
-                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                        : 'bg-ground-0 text-ground-600 border border-ground-200 hover:bg-ground-50'
                     }`}
                   >
                     {t(`onboarding.${s.key}`)}
@@ -501,18 +501,18 @@ export default function StpmGradesPage() {
 
             {/* B) Core subjects — 2-col grid */}
             <div className="mb-4">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('onboarding.spmCompulsory')}</div>
+              <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">{t('onboarding.spmCompulsory')}</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {SPM_PREREQ_COMPULSORY.map(subject => (
                   <div key={subject.id} className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-700 flex-1">{subject.name}</span>
+                    <span className="text-sm font-medium text-ground-700 flex-1">{subject.name}</span>
                     <select
                       value={spmGrades[subject.id] || ''}
                       onChange={(e) => handleSpmGradeChange(subject.id, e.target.value)}
                       className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                         spmGrades[subject.id]
                           ? 'bg-primary-50 border-primary-200 text-primary-700'
-                          : 'bg-gray-50 border-gray-300 text-gray-500'
+                          : 'bg-ground-50 border-ground-300 text-ground-500'
                       }`}
                     >
                       <option value="">{t('onboarding.grade')}</option>
@@ -525,7 +525,7 @@ export default function StpmGradesPage() {
 
             {/* C) Stream subjects — 4 dropdown rows */}
             <div className="mb-4">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">
                 {t('onboarding.spmStreamHint')}
               </div>
               <div className="space-y-2">
@@ -534,7 +534,7 @@ export default function StpmGradesPage() {
                     <select
                       value={subjectId}
                       onChange={(e) => handleSpmAliranChange(index, e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                     >
                       <option value="">{t('onboarding.selectSubject')}</option>
                       {spmStreamPool
@@ -550,7 +550,7 @@ export default function StpmGradesPage() {
                         className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                           spmGrades[subjectId]
                             ? 'bg-primary-50 border-primary-200 text-primary-700'
-                            : 'bg-gray-50 border-gray-300 text-gray-500'
+                            : 'bg-ground-50 border-ground-300 text-ground-500'
                         }`}
                       >
                         <option value="">{t('onboarding.grade')}</option>
@@ -559,7 +559,7 @@ export default function StpmGradesPage() {
                     )}
                     <button
                       onClick={() => handleSpmAliranChange(index, '')}
-                      className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
+                      className="text-ground-400 hover:text-critical-500 p-1 flex-shrink-0"
                       aria-label={t('common.remove')}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -573,14 +573,14 @@ export default function StpmGradesPage() {
 
             {/* D) Electives — 0-2 slots + add button */}
             <div>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('onboarding.spmOptional')}</div>
+              <div className="text-xs font-semibold text-ground-500 uppercase tracking-wide mb-2">{t('onboarding.spmOptional')}</div>
               <div className="space-y-2">
                 {spmElektifSlots.map((subjectId, index) => (
                   <div key={`elektif-${index}`} className="flex items-center gap-2">
                     <select
                       value={subjectId}
                       onChange={(e) => updateSpmElektifSubject(index, e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                     >
                       <option value="">{t('onboarding.selectSubject')}</option>
                       {spmElektifPool
@@ -596,7 +596,7 @@ export default function StpmGradesPage() {
                         className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
                           spmGrades[subjectId]
                             ? 'bg-primary-50 border-primary-200 text-primary-700'
-                            : 'bg-gray-50 border-gray-300 text-gray-500'
+                            : 'bg-ground-50 border-ground-300 text-ground-500'
                         }`}
                       >
                         <option value="">{t('onboarding.grade')}</option>
@@ -605,7 +605,7 @@ export default function StpmGradesPage() {
                     )}
                     <button
                       onClick={() => removeSpmElektifSlot(index)}
-                      className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
+                      className="text-ground-400 hover:text-critical-500 p-1 flex-shrink-0"
                       aria-label={t('common.remove')}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -617,7 +617,7 @@ export default function StpmGradesPage() {
                 {spmElektifSlots.length < 2 && (
                   <button
                     onClick={addSpmElektifSlot}
-                    className="w-full py-2.5 rounded-lg border-2 border-dashed border-gray-300 text-gray-500 hover:border-primary-400 hover:text-primary-600 text-sm transition-all"
+                    className="w-full py-2.5 rounded-lg border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 text-sm transition-all"
                   >
                     {t('onboarding.spmAddElective')}
                   </button>
@@ -629,7 +629,7 @@ export default function StpmGradesPage() {
 
         {/* Navigation */}
         <div className="flex justify-between items-center">
-          <Link href="/onboarding/exam-type" className="px-6 py-3 text-gray-600 hover:text-gray-900">
+          <Link href="/onboarding/exam-type" className="px-6 py-3 text-ground-600 hover:text-ground-900">
             {t('common.back')}
           </Link>
           <button

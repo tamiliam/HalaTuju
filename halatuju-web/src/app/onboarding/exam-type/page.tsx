@@ -22,9 +22,9 @@ export default function ExamTypePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8fafc]">
+    <main className="min-h-screen bg-ground-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-ground-0 border-b border-ground-100">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
@@ -38,10 +38,10 @@ export default function ExamTypePage() {
       {/* Content */}
       <div className="container mx-auto px-6 py-16 max-w-2xl">
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl font-bold text-ground-900 mb-3">
             {t('onboarding.examTypeTitle')}
           </h1>
-          <p className="text-gray-500 text-lg">
+          <p className="text-ground-500 text-lg">
             {t('onboarding.examTypeSubtitle')}
           </p>
         </div>
@@ -50,7 +50,7 @@ export default function ExamTypePage() {
           {/* SPM Card */}
           <button
             onClick={handleSelectSPM}
-            className="group relative overflow-hidden p-8 rounded-xl bg-white border-2 border-primary-100 shadow-sm hover:border-primary-500 hover:shadow-lg transition-all duration-200 text-left"
+            className="group relative overflow-hidden p-8 rounded-xl bg-ground-0 border-2 border-primary-100 shadow-sm hover:border-primary-500 hover:shadow-lg transition-all duration-200 text-left"
           >
             {/* Decorative gradient corner */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary-50 to-transparent rounded-bl-[80px] group-hover:from-primary-100 transition-colors" />
@@ -60,8 +60,8 @@ export default function ExamTypePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-1">SPM</h3>
-              <p className="text-gray-500 text-sm mb-4">{t('onboarding.spmDesc')}</p>
+              <h3 className="text-xl font-semibold text-ground-900 mb-1">SPM</h3>
+              <p className="text-ground-500 text-sm mb-4">{t('onboarding.spmDesc')}</p>
               <span className="inline-flex items-center gap-1.5 text-primary-500 text-sm font-medium group-hover:gap-2.5 transition-all">
                 Get started
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -74,7 +74,7 @@ export default function ExamTypePage() {
           {/* STPM Card */}
           <button
             onClick={handleSelectSTPM}
-            className="group relative overflow-hidden p-8 rounded-xl bg-white border-2 border-primary-100 shadow-sm hover:border-primary-500 hover:shadow-lg transition-all duration-200 text-left"
+            className="group relative overflow-hidden p-8 rounded-xl bg-ground-0 border-2 border-primary-100 shadow-sm hover:border-primary-500 hover:shadow-lg transition-all duration-200 text-left"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary-50 to-transparent rounded-bl-[80px] group-hover:from-primary-100 transition-colors" />
             <div className="relative">
@@ -83,8 +83,8 @@ export default function ExamTypePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-1">STPM</h3>
-              <p className="text-gray-500 text-sm mb-4">{t('onboarding.stpmDesc')}</p>
+              <h3 className="text-xl font-semibold text-ground-900 mb-1">STPM</h3>
+              <p className="text-ground-500 text-sm mb-4">{t('onboarding.stpmDesc')}</p>
               <span className="inline-flex items-center gap-1.5 text-primary-500 text-sm font-medium group-hover:gap-2.5 transition-all">
                 {t('onboarding.stpmGetStarted')}
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -98,7 +98,7 @@ export default function ExamTypePage() {
         <div className="flex justify-start">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-1.5 text-ground-500 hover:text-ground-900 text-sm font-medium transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />

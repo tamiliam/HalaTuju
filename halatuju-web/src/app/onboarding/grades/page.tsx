@@ -26,8 +26,13 @@ const STREAMS = [
 ]
 
 function StreamIcon({ stream, active }: { stream: string; active: boolean }) {
-  const stroke = active ? 'white' : '#3b82f6'
-  const fill = active ? 'rgba(255,255,255,0.3)' : '#bfdbfe'
+  // ⚠ SVG ATTRIBUTES, NOT CLASSES — invisible to every colour scan in the project, which is why
+  // these were still raw hex three sprints into the migration. `#3b82f6`/`#bfdbfe` were also a
+  // HARDCODED blue: this icon never followed a tenant's brand, even though it sits inside a
+  // `bg-primary-500` button. The vars make it do both — follow the tenant, and follow the theme.
+  // White stays literal on the active chip, for the same reason `text-white` does everywhere.
+  const stroke = active ? 'white' : 'rgb(var(--brand-500))'
+  const fill = active ? 'rgba(255,255,255,0.3)' : 'rgb(var(--brand-200))'
   if (stream === 'science') return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 3h6v6l4 8H5l4-8V3z" fill={fill} />
@@ -263,9 +268,9 @@ export default function GradesInputPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
+    <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-ground-0 border-b">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
@@ -279,10 +284,10 @@ export default function GradesInputPage() {
       {/* Content */}
       <div className="container mx-auto px-6 py-8 max-w-3xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl font-bold text-ground-900 mb-3">
             {t('onboarding.gradesTitle')}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-ground-600">
             {t('onboarding.gradesSubtitleNew')}
           </p>
         </div>
@@ -291,7 +296,7 @@ export default function GradesInputPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
-            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.selectStream')}</h2>
+            <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.selectStream')}</h2>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {STREAMS.map((s) => (
@@ -301,7 +306,7 @@ export default function GradesInputPage() {
                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   stream === s.id
                     ? 'bg-primary-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300'
+                    : 'bg-ground-0 text-ground-700 border border-ground-200 shadow-sm hover:shadow-md hover:border-ground-300'
                 }`}
               >
                 <StreamIcon stream={s.id} active={stream === s.id} />
@@ -315,9 +320,9 @@ export default function GradesInputPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
-            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.coreSubjects')}</h2>
+            <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.coreSubjects')}</h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.coreSubjectsCount')}</p>
+          <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.coreSubjectsCount')}</p>
           <div className="space-y-3">
             {SPM_CORE_SUBJECTS.map((subject) => (
               <CoreSubjectGrade
@@ -335,11 +340,11 @@ export default function GradesInputPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-ground-900">
               {t('onboarding.streamSubjects')}
             </h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.pick4Stream')}</p>
+          <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.pick4Stream')}</p>
           <div className="space-y-3">
             {aliranSubjects.map((subjectId, index) => (
               <CompactSubjectRow
@@ -360,9 +365,9 @@ export default function GradesInputPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">4</span>
-            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.electiveSubjects')}</h2>
+            <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.electiveSubjects')}</h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.pickBest2Elective')}</p>
+          <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.pickBest2Elective')}</p>
           <div className="space-y-3">
             {elektifSlots.map((subjectId, index) => (
               <CompactSubjectRow
@@ -379,7 +384,7 @@ export default function GradesInputPage() {
             {elektifSlots.length < MAX_SPM_ELECTIVES && (
               <button
                 onClick={addElektifSlot}
-                className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
+                className="w-full py-3 rounded-xl border-2 border-dashed border-ground-300 text-ground-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
               >
                 + {t('onboarding.addElective')}
               </button>
@@ -391,11 +396,11 @@ export default function GradesInputPage() {
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">5</span>
-            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.coqScore')}</h2>
+            <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.coqScore')}</h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.coqHint')}</p>
+          <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.coqHint')}</p>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <div className="bg-ground-0 rounded-2xl border border-ground-200 shadow-sm p-5">
             <div className="flex items-center gap-6">
               {/* CoQ input — left */}
               <div className="flex-1">
@@ -408,21 +413,21 @@ export default function GradesInputPage() {
                     value={coqInput}
                     onChange={(e) => handleCoqChange(e.target.value)}
                     placeholder="0.00"
-                    className="w-28 px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-center font-medium"
+                    className="w-28 px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-center font-medium"
                   />
-                  <span className="text-sm text-gray-400">/ 10</span>
+                  <span className="text-sm text-ground-400">/ 10</span>
                 </div>
               </div>
 
               {/* Total Merit — right */}
               {meritResult && (
                 <div className="text-right">
-                  <div className="text-xs text-gray-500 mb-1">{t('onboarding.meritTotal')}</div>
+                  <div className="text-xs text-ground-500 mb-1">{t('onboarding.meritTotal')}</div>
                   <div className="flex items-baseline gap-1 justify-end">
-                    <span className="text-3xl font-bold text-gray-900">
+                    <span className="text-3xl font-bold text-ground-900">
                       {meritResult.finalMerit.toFixed(2)}
                     </span>
-                    <span className="text-sm text-gray-400">/ 100</span>
+                    <span className="text-sm text-ground-400">/ 100</span>
                   </div>
                 </div>
               )}
@@ -432,7 +437,7 @@ export default function GradesInputPage() {
 
         {/* Navigation */}
         <div className="flex justify-between items-center">
-          <Link href="/onboarding/exam-type" className="px-6 py-3 text-gray-600 hover:text-gray-900">
+          <Link href="/onboarding/exam-type" className="px-6 py-3 text-ground-600 hover:text-ground-900">
             {t('common.back')}
           </Link>
           <button
@@ -445,7 +450,7 @@ export default function GradesInputPage() {
         </div>
 
         {!coreComplete && (
-          <p className="text-center text-sm text-gray-500 mt-4">
+          <p className="text-center text-sm text-ground-500 mt-4">
             {t('onboarding.enterAllCore')}
           </p>
         )}
@@ -468,21 +473,21 @@ function CoreSubjectGrade({
 }) {
   const { t } = useT()
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-4">
+    <div className="bg-ground-0 rounded-xl border border-ground-200 shadow-sm hover:shadow-md transition-shadow p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           {value ? (
-            <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-positive-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           ) : (
-            <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0" />
+            <div className="w-5 h-5 rounded-full border-2 border-ground-300 flex-shrink-0" />
           )}
-          <span className="font-medium text-gray-900">{label}</span>
-          <span className="text-red-500 text-sm">*</span>
+          <span className="font-medium text-ground-900">{label}</span>
+          <span className="text-critical-500 text-sm">*</span>
         </div>
         {value && (
-          <button onClick={onClear} className="text-gray-400 hover:text-gray-600 p-1" aria-label={t('common.clear')}>
+          <button onClick={onClear} className="text-ground-400 hover:text-ground-600 p-1" aria-label={t('common.clear')}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -498,7 +503,7 @@ function CoreSubjectGrade({
             className={`h-9 rounded-lg text-xs font-medium transition-all ${
               value === grade
                 ? 'bg-primary-500 text-white shadow-md'
-                : 'bg-gray-50 text-gray-700 shadow-sm hover:bg-gray-100 hover:shadow-md border border-gray-100'
+                : 'bg-ground-50 text-ground-700 shadow-sm hover:bg-ground-100 hover:shadow-md border border-ground-100'
             }`}
           >
             {grade}
@@ -532,12 +537,12 @@ function CompactSubjectRow({
   const options = pool.filter((s) => !excludeSet.has(s.id))
 
   return (
-    <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-3">
+    <div className="flex items-center gap-2 bg-ground-0 rounded-xl border border-ground-200 shadow-sm hover:shadow-md transition-shadow p-3">
       {/* Subject dropdown */}
       <select
         value={selectedId}
         onChange={(e) => onSubjectChange(e.target.value)}
-        className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+        className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
       >
         <option value="">{t('onboarding.selectSubject')}</option>
         {options.map((s) => (
@@ -553,7 +558,7 @@ function CompactSubjectRow({
           className={`w-24 flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
             grade
               ? 'bg-primary-50 border-primary-200 text-primary-700'
-              : 'bg-gray-50 border-gray-300 text-gray-500'
+              : 'bg-ground-50 border-ground-300 text-ground-500'
           }`}
         >
           <option value="">{t('onboarding.grade')}</option>
@@ -566,7 +571,7 @@ function CompactSubjectRow({
       {/* Remove button */}
       <button
         onClick={onRemove}
-        className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
+        className="text-ground-400 hover:text-critical-500 p-1 flex-shrink-0"
         aria-label={t('common.remove')}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

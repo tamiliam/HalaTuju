@@ -248,7 +248,7 @@ export default function SavedPage() {
   }, [guardLoading, onboarded, needsNric, showAuthGate, router])
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
       <div className="container mx-auto px-6 py-8">
@@ -260,14 +260,14 @@ export default function SavedPage() {
 
         {!loading && !guardLoading && onboarded && !isAuthenticated && (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">{t('saved.signInPrompt')}</p>
+            <p className="text-ground-600 mb-4">{t('saved.signInPrompt')}</p>
             <Link href="/login" className="btn-primary">{t('saved.signIn')}</Link>
           </div>
         )}
 
         {!loading && isAuthenticated && courses.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">{t('saved.empty')}</p>
+            <p className="text-ground-600 mb-4">{t('saved.empty')}</p>
             <Link href="/dashboard" className="btn-primary">{t('saved.browseCourses')}</Link>
           </div>
         )}
@@ -275,13 +275,13 @@ export default function SavedPage() {
         {!loading && isAuthenticated && courses.length > 0 && !comparing && (
           <>
             {/* SPM / STPM tabs */}
-            <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+            <div className="flex gap-1 mb-6 bg-ground-100 rounded-lg p-1 w-fit">
               <button
                 onClick={() => setActiveTab('SPM')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === 'SPM'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-ground-0 text-ground-900 shadow-sm'
+                    : 'text-ground-500 hover:text-ground-700'
                 }`}
               >
                 SPM ({spmCount})
@@ -290,8 +290,8 @@ export default function SavedPage() {
                 onClick={() => setActiveTab('STPM')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === 'STPM'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-ground-0 text-ground-900 shadow-sm'
+                    : 'text-ground-500 hover:text-ground-700'
                 }`}
               >
                 STPM ({stpmCount})
@@ -301,7 +301,7 @@ export default function SavedPage() {
             {/* Course list */}
             {filteredCourses.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500">
+                <p className="text-ground-500">
                   {activeTab === 'STPM'
                     ? t('saved.noStpm')
                     : t('saved.noSpm')}
@@ -317,8 +317,8 @@ export default function SavedPage() {
                   return (
                     <div
                       key={course.course_id}
-                      className={`bg-white rounded-xl border p-5 transition-colors ${
-                        isSelected ? 'border-primary-400 ring-1 ring-primary-200' : 'border-gray-200'
+                      className={`bg-ground-0 rounded-xl border p-5 transition-colors ${
+                        isSelected ? 'border-primary-400 ring-1 ring-primary-200' : 'border-ground-200'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -331,23 +331,23 @@ export default function SavedPage() {
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleSelect(course.course_id)}
-                            className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                            className="w-4 h-4 rounded border-ground-300 text-primary-500 focus:ring-primary-500"
                           />
                         </label>
 
                         <Link href={detailHref(course)} className="flex-1">
-                          <h3 className="font-semibold text-gray-900">{course.course || course.course_id}</h3>
-                          <p className="text-sm text-gray-500 mt-0.5">
+                          <h3 className="font-semibold text-ground-900">{course.course || course.course_id}</h3>
+                          <p className="text-sm text-ground-500 mt-0.5">
                             {course.institution_name && (
                               <>{course.institution_name} &middot; </>
                             )}
                             {course.level} &middot; {getFieldName(course.field_key)}
                           </p>
-                          <p className="text-xs text-gray-400 mt-0.5 font-mono">{course.course_id}</p>
+                          <p className="text-xs text-ground-400 mt-0.5 font-mono">{course.course_id}</p>
                         </Link>
                         <button
                           onClick={() => handleRemove(course.course_id)}
-                          className="ml-4 p-2 text-gray-400 hover:text-red-500 transition-colors"
+                          className="ml-4 p-2 text-ground-400 hover:text-critical-500 transition-colors"
                           aria-label={t('saved.remove')}
                         >
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -364,7 +364,7 @@ export default function SavedPage() {
                           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
                             isApplied
                               ? 'bg-primary-100 text-primary-700 border border-primary-300'
-                              : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                              : 'border border-ground-300 text-ground-600 hover:bg-ground-50'
                           }`}
                         >
                           {isApplied && (
@@ -379,8 +379,8 @@ export default function SavedPage() {
                           disabled={updatingId === course.course_id}
                           className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
                             hasOffer
-                              ? 'bg-green-100 text-green-700 border border-green-300'
-                              : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                              ? 'bg-positive-100 text-positive-700 border border-positive-300'
+                              : 'border border-ground-300 text-ground-600 hover:bg-ground-50'
                           }`}
                         >
                           {hasOffer && (
@@ -400,7 +400,7 @@ export default function SavedPage() {
             {/* Floating compare bar — desktop only */}
             {selected.size >= 2 && (
               <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-                <div className="bg-gray-900 text-white rounded-full px-6 py-3 shadow-lg flex items-center gap-4">
+                <div className="bg-ground-900 text-white rounded-full px-6 py-3 shadow-lg flex items-center gap-4">
                   <span className="text-sm">{selected.size} kursus dipilih</span>
                   <button
                     onClick={handleCompare}
@@ -410,7 +410,7 @@ export default function SavedPage() {
                   </button>
                   <button
                     onClick={() => setSelected(new Set())}
-                    className="text-gray-400 hover:text-white text-sm"
+                    className="text-ground-400 hover:text-white text-sm"
                   >
                     Batal
                   </button>
@@ -424,7 +424,7 @@ export default function SavedPage() {
         {comparing && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Perbandingan Kursus</h2>
+              <h2 className="text-xl font-bold text-ground-900">Perbandingan Kursus</h2>
               <button
                 onClick={() => { setComparing(false); setSelected(new Set()) }}
                 className="text-sm text-primary-600 hover:text-primary-800 font-medium"
@@ -436,7 +436,7 @@ export default function SavedPage() {
             {compareLoading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
-                <p className="text-gray-500 mt-3">Memuatkan maklumat kursus...</p>
+                <p className="text-ground-500 mt-3">Memuatkan maklumat kursus...</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -444,11 +444,11 @@ export default function SavedPage() {
                   {/* Course name header */}
                   <thead>
                     <tr>
-                      <th className="text-left p-3 bg-gray-50 border border-gray-200 w-32 text-sm font-medium text-gray-500">
+                      <th className="text-left p-3 bg-ground-50 border border-ground-200 w-32 text-sm font-medium text-ground-500">
                         Kursus
                       </th>
                       {compareData.map(c => (
-                        <th key={c.course_id} className="p-3 bg-primary-50 border border-gray-200 text-left min-w-[220px]">
+                        <th key={c.course_id} className="p-3 bg-primary-50 border border-ground-200 text-left min-w-[220px]">
                           <Link
                             href={c.courseType === 'stpm' ? `/stpm/${c.course_id}` : `/course/${c.course_id}`}
                             className="text-sm font-semibold text-primary-700 hover:underline block"
@@ -462,11 +462,11 @@ export default function SavedPage() {
                   <tbody>
                     {rows.map(row => (
                       <tr key={row.key}>
-                        <td className="p-3 bg-gray-50 border border-gray-200 text-sm font-medium text-gray-500">
+                        <td className="p-3 bg-ground-50 border border-ground-200 text-sm font-medium text-ground-500">
                           {row.label}
                         </td>
                         {compareData.map(c => (
-                          <td key={c.course_id} className="p-3 border border-gray-200 text-sm text-gray-900">
+                          <td key={c.course_id} className="p-3 border border-ground-200 text-sm text-ground-900">
                             {String(c[row.key])}
                           </td>
                         ))}
@@ -474,11 +474,11 @@ export default function SavedPage() {
                     ))}
                     {/* Requirements row (list) */}
                     <tr>
-                      <td className="p-3 bg-gray-50 border border-gray-200 text-sm font-medium text-gray-500">
+                      <td className="p-3 bg-ground-50 border border-ground-200 text-sm font-medium text-ground-500">
                         Syarat
                       </td>
                       {compareData.map(c => (
-                        <td key={c.course_id} className="p-3 border border-gray-200 text-sm text-gray-900">
+                        <td key={c.course_id} className="p-3 border border-ground-200 text-sm text-ground-900">
                           <ul className="list-disc list-inside space-y-0.5">
                             {c.requirements.map((r, i) => (
                               <li key={i} className="text-xs">{r}</li>
