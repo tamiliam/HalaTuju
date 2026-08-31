@@ -62,10 +62,10 @@ function NavRow({ item, active, badge, open, chordHint, onNavigate }: {
     return (
       <span
         aria-disabled="true"
-        className="flex h-8 cursor-default items-center gap-2.5 rounded-lg px-2.5 text-sm text-gray-400"
+        className="flex h-8 cursor-default items-center gap-2.5 rounded-lg px-2.5 text-sm text-ground-400"
       >
         {icon}{label}
-        <span className={`shrink-0 rounded border border-gray-200 bg-gray-50 px-1 text-[9px] font-bold uppercase tracking-wide text-gray-400 ${fade(open)}`}>
+        <span className={`shrink-0 rounded border border-ground-200 bg-ground-50 px-1 text-[9px] font-bold uppercase tracking-wide text-ground-400 ${fade(open)}`}>
           {t('admin.nav.soon')}
         </span>
       </span>
@@ -80,11 +80,11 @@ function NavRow({ item, active, badge, open, chordHint, onNavigate }: {
       className={`group/row relative flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors
         ${active
           ? 'bg-primary-50 font-semibold text-primary-800 shadow-[inset_2px_0_0_theme(colors.primary.600)]'
-          : 'text-gray-700 hover:bg-primary-50 hover:text-primary-800'}`}
+          : 'text-ground-700 hover:bg-primary-50 hover:text-primary-800'}`}
     >
       {icon}{label}
       {item.state === 'soon' && (
-        <span className={`shrink-0 rounded bg-amber-50 px-1 text-[9px] font-bold uppercase tracking-wide text-amber-700 ${fade(open)}`}>
+        <span className={`shrink-0 rounded bg-caution-50 px-1 text-[9px] font-bold uppercase tracking-wide text-caution-700 ${fade(open)}`}>
           {t('admin.nav.soon')}
         </span>
       )}
@@ -95,10 +95,10 @@ function NavRow({ item, active, badge, open, chordHint, onNavigate }: {
             <span
               aria-hidden
               data-badge="dot"
-              className="absolute left-[26px] top-1.5 h-[7px] w-[7px] rounded-full border-[1.5px] border-white bg-red-600"
+              className="absolute left-[26px] top-1.5 h-[7px] w-[7px] rounded-full border-[1.5px] border-white bg-critical-600"
             />
           )}
-          <span className={`ml-auto inline-flex h-[17px] min-w-[17px] shrink-0 items-center justify-center rounded-full bg-red-600 px-1 text-[9.5px] font-bold leading-none text-white ${fade(open)}`}>
+          <span className={`ml-auto inline-flex h-[17px] min-w-[17px] shrink-0 items-center justify-center rounded-full bg-critical-600 px-1 text-[9.5px] font-bold leading-none text-white ${fade(open)}`}>
             {badge}
           </span>
         </>
@@ -112,16 +112,16 @@ function NavRow({ item, active, badge, open, chordHint, onNavigate }: {
       */}
       <span
         aria-hidden
-        className="pointer-events-none absolute left-full top-1/2 z-30 ml-2.5 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-lg bg-gray-900 px-2 py-1 text-[11.5px] font-normal text-gray-50 shadow-lg group-hover/row:flex group-focus-visible/row:flex"
+        className="pointer-events-none absolute left-full top-1/2 z-30 ml-2.5 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap rounded-lg bg-ground-900 px-2 py-1 text-[11.5px] font-normal text-ground-50 shadow-lg group-hover/row:flex group-focus-visible/row:flex"
       >
         {t('admin.shell.goTo', { page: t(item.labelKey) })}
         {chordHint && item.chord && (
           <>
-            <kbd className="rounded bg-white/20 px-1 py-px font-mono text-[9.5px] uppercase">
+            <kbd className="rounded bg-ground-0/20 px-1 py-px font-mono text-[9.5px] uppercase">
               {CHORD_PREFIX}
             </kbd>
             <span className="text-[9.5px] opacity-60">{t('admin.shell.then')}</span>
-            <kbd className="rounded bg-white/20 px-1 py-px font-mono text-[9.5px]">{item.chord}</kbd>
+            <kbd className="rounded bg-ground-0/20 px-1 py-px font-mono text-[9.5px]">{item.chord}</kbd>
           </>
         )}
       </span>
@@ -185,7 +185,7 @@ export function Sidebar({
        * menu, super's, is 19 rows), and if that ever changes the chip has to move into a portal
        * rather than the overflow being tightened here.
        */
-      className={`flex h-full flex-col gap-1 border-r border-gray-200 bg-white p-2 transition-[width] duration-150 ease-out
+      className={`flex h-full flex-col gap-1 border-r border-ground-200 bg-ground-0 p-2 transition-[width] duration-150 ease-out
         ${open && !pinned ? 'shadow-[6px_0_24px_rgba(0,0,0,0.10)]' : ''}`}
       style={{ width: open ? 216 : 48 }}
     >
@@ -201,13 +201,13 @@ export function Sidebar({
             {gi > 0 && (
               <div
                 aria-hidden
-                className={`mx-1.5 my-1.5 h-px bg-gray-200 transition-opacity duration-100 ${open ? 'opacity-0' : 'opacity-100'}`}
+                className={`mx-1.5 my-1.5 h-px bg-ground-200 transition-opacity duration-100 ${open ? 'opacity-0' : 'opacity-100'}`}
               />
             )}
-            <p className={`flex h-5 items-center gap-2 px-2 text-[10.5px] font-bold uppercase tracking-wider text-gray-400 ${fade(open)}`}>
+            <p className={`flex h-5 items-center gap-2 px-2 text-[10.5px] font-bold uppercase tracking-wider text-ground-400 ${fade(open)}`}>
               <span className="min-w-0 truncate">{name}</span>
               {tag && (
-                <span className="shrink-0 rounded border border-gray-200 px-1 text-[8.5px] font-semibold uppercase tracking-wide">
+                <span className="shrink-0 rounded border border-ground-200 px-1 text-[8.5px] font-semibold uppercase tracking-wide">
                   {tag}
                 </span>
               )}

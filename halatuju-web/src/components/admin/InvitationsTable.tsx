@@ -29,7 +29,7 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed bg-white p-6 text-center text-sm text-gray-500">
+      <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500">
         {t('admin.invitations.noneInKind')}
       </div>
     )
@@ -44,13 +44,13 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg border bg-ground-0 shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
-          <thead className="border-b bg-gray-50">
+          <thead className="border-b bg-ground-50">
             <tr>
               {['nameHeader', 'emailHeader', 'roleHeader', 'statusHeader', 'actionHeader'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left font-medium text-gray-600">
+                <th key={h} className="px-4 py-3 text-left font-medium text-ground-600">
                   {t(`admin.${h}`)}
                 </th>
               ))}
@@ -61,21 +61,21 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
               const waiting = r.status === 'invited' || r.status === 'expired' || r.status === 'no_reply'
               return (
                 <tr key={r.id}>
-                  <td className="px-4 py-3 font-medium text-gray-900">{r.name || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{r.email}</td>
+                  <td className="px-4 py-3 font-medium text-ground-900">{r.name || '—'}</td>
+                  <td className="px-4 py-3 text-ground-500">{r.email}</td>
                   <td className="px-4 py-3">
                     {r.role ? t(`admin.role.${r.role}`) : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${
-                      r.status === 'expired' ? 'bg-amber-100 text-amber-700'
-                        : r.status === 'revoked' ? 'bg-red-100 text-red-600'
-                        : waiting ? 'bg-blue-100 text-blue-700'
-                        : 'bg-green-100 text-green-700'}`}>
+                      r.status === 'expired' ? 'bg-caution-100 text-caution-700'
+                        : r.status === 'revoked' ? 'bg-critical-100 text-critical-600'
+                        : waiting ? 'bg-info-100 text-info-700'
+                        : 'bg-positive-100 text-positive-700'}`}>
                       {statusText(r)}
                     </span>
                     {r.last_send_ok === false && (
-                      <div className="mt-1 max-w-[18rem] break-words text-xs text-red-500">
+                      <div className="mt-1 max-w-[18rem] break-words text-xs text-critical-500">
                         {t('admin.invitations.send.failed')}
                         {r.last_send_error ? ` — ${r.last_send_error}` : ''}
                       </div>
@@ -94,7 +94,7 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
                             there is nothing to revoke — the control is absent, not disabled. */}
                         {!waiting && r.admin_id && onRevoke && (
                           <button disabled={busyId === r.id} onClick={() => onRevoke(r)}
-                            className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50">
+                            className="text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
                             {t(r.is_active === false ? 'admin.restore' : 'admin.revoke')}
                           </button>
                         )}

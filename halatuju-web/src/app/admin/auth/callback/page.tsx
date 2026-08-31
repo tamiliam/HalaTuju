@@ -115,11 +115,11 @@ export default function AdminAuthCallbackPage() {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-critical-600 mb-4">{error}</p>
           {detail && (
-            <p className="mb-4 font-mono text-xs text-gray-400">{detail}</p>
+            <p className="mb-4 font-mono text-xs text-ground-400">{detail}</p>
           )}
-          <a href="/admin/login" className="text-blue-600 hover:underline">
+          <a href="/admin/login" className="text-info-600 hover:underline">
             {t('login.backToLogin')}
           </a>
         </div>
@@ -129,7 +129,7 @@ export default function AdminAuthCallbackPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-600">{t('login.completingSignIn')}</p>
+      <p className="text-ground-600">{t('login.completingSignIn')}</p>
     </main>
   )
 }

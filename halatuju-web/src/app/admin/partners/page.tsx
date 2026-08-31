@@ -34,7 +34,7 @@ export default function ReferralPartnersPage() {
   const [newName, setNewName] = useState('')
   const [newCode, setNewCode] = useState('')
 
-  if (role && !mayView) return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
+  if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,7 +51,7 @@ export default function ReferralPartnersPage() {
       <PageHeader title={t('admin.nav.referralPartners')} subtitle={t('admin.partners.sub')} />
       <MessageBanner message={message} />
 
-      <form onSubmit={submit} className="mb-6 space-y-4 rounded-xl border bg-white p-6 shadow-sm">
+      <form onSubmit={submit} className="mb-6 space-y-4 rounded-xl border bg-ground-0 p-6 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
           <input className={inputCls} placeholder={t('admin.name')} value={name}
             onChange={(e) => setName(e.target.value)} required />

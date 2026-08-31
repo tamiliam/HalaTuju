@@ -73,33 +73,33 @@ export default function AdminSetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center">
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
-          <span className="text-lg font-bold text-blue-600">Partner</span>
+          <span className="text-lg font-bold text-info-600">Partner</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-          <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('admin.setPasswordTitle')}</h1>
-          <p className="text-gray-600 text-center mb-8">{t('admin.setPasswordSubtitle')}</p>
+        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
+          <h1 className="text-2xl font-bold text-ground-900 text-center mb-2">{t('admin.setPasswordTitle')}</h1>
+          <p className="text-ground-600 text-center mb-8">{t('admin.setPasswordSubtitle')}</p>
 
           {checking ? (
-            <p className="text-center text-gray-500">{t('login.completingSignIn')}</p>
+            <p className="text-center text-ground-500">{t('login.completingSignIn')}</p>
           ) : !ready ? (
             <div className="text-center">
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-amber-700 text-sm">{t('admin.setPasswordNoLink')}</p>
+              <div className="bg-caution-50 border border-caution-200 rounded-lg p-4 mb-6">
+                <p className="text-caution-700 text-sm">{t('admin.setPasswordNoLink')}</p>
               </div>
-              <a href="/admin/login" className="text-blue-600 hover:underline text-sm">
+              <a href="/admin/login" className="text-info-600 hover:underline text-sm">
                 {t('login.backToLogin')}
               </a>
             </div>
           ) : (
             <>
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <p className="text-red-600 text-sm">{error}</p>
+                <div className="bg-critical-50 border border-critical-200 rounded-lg p-4 mb-6">
+                  <p className="text-critical-600 text-sm">{error}</p>
                 </div>
               )}
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -108,41 +108,41 @@ export default function AdminSetPasswordPage() {
                     shows the reviewer whose account they're setting up. Read-only. */}
                 {email && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.emailLabel')}</label>
+                    <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.emailLabel')}</label>
                     <input
                       type="text" value={email} readOnly name="username" autoComplete="username"
                       aria-label={t('admin.emailLabel')}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+                      className="w-full px-3 py-2 border border-ground-200 rounded-lg bg-ground-50 text-ground-700"
                     />
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.newPassword')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.newPassword')}</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('admin.newPasswordHint')}
                     autoComplete="new-password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.confirmPassword')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.confirmPassword')}</label>
                   <input
                     type="password"
                     value={password2}
                     onChange={(e) => setPassword2(e.target.value)}
                     autoComplete="new-password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                     required
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading || !password || !password2}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
                 >
                   {loading ? t('admin.settingPassword') : t('admin.setPasswordCta')}
                 </button>

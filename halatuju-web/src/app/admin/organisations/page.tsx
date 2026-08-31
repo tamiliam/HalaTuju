@@ -30,7 +30,7 @@ export default function OrganisationsPage() {
   const [adminName, setAdminName] = useState('')
   const [adminEmail, setAdminEmail] = useState('')
 
-  if (role && !mayView) return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
+  if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,8 +46,8 @@ export default function OrganisationsPage() {
       <PageHeader title={t('admin.nav.organisations')} subtitle={t('admin.organisations.sub')} />
       <MessageBanner message={message} />
 
-      <form onSubmit={submit} className="mb-6 space-y-4 rounded-xl border bg-white p-6 shadow-sm">
-        <p className="text-sm text-gray-500">{t('admin.administration.addTenantHelp')}</p>
+      <form onSubmit={submit} className="mb-6 space-y-4 rounded-xl border bg-ground-0 p-6 shadow-sm">
+        <p className="text-sm text-ground-500">{t('admin.administration.addTenantHelp')}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <input className={inputCls} placeholder={t('admin.administration.tenantName')} value={name}
             onChange={(e) => setName(e.target.value)} required />

@@ -43,7 +43,7 @@ export default function InvitationEmailsCard({ token, t }: {
 
   if (!data) {
     return error ? (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">{error}</div>
+      <div className="rounded-lg border border-critical-200 bg-critical-50 p-4 text-sm text-critical-600">{error}</div>
     ) : null
   }
 
@@ -51,32 +51,32 @@ export default function InvitationEmailsCard({ token, t }: {
     setData({ ...data, templates: data.templates.map((x) => (x.kind === updated.kind ? updated : x)) })
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border bg-ground-0 shadow-sm">
       <div className="border-b px-4 py-4 sm:px-5">
-        <h2 className="font-semibold text-gray-900">{t('admin.invitations.emails.title')}</h2>
-        <p className="mt-1 max-w-3xl text-sm text-gray-500">
+        <h2 className="font-semibold text-ground-900">{t('admin.invitations.emails.title')}</h2>
+        <p className="mt-1 max-w-3xl text-sm text-ground-500">
           {t('admin.invitations.emails.subtitle')}
         </p>
         {/* The two things a reader must not get wrong, said once each. `accessLocked` scopes
             itself ("where a letter hands somebody an account") rather than being repeated on the
             three rows it happens to apply to. */}
-        <p className="mt-2 max-w-3xl text-sm text-amber-700">
+        <p className="mt-2 max-w-3xl text-sm text-caution-700">
           {t('admin.invitations.emails.alwaysSends')}
         </p>
-        <p className="mt-1.5 max-w-3xl text-sm text-amber-700">
+        <p className="mt-1.5 max-w-3xl text-sm text-caution-700">
           {t('admin.invitations.emails.accessLocked')}
         </p>
       </div>
 
-      <ul className="divide-y divide-gray-100">
+      <ul className="divide-y divide-ground-100">
         {data.templates.map((tpl) => (
           <li key={tpl.kind} className="px-4 py-4 sm:px-5">
             <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-ground-900">
                   {t(`admin.invitations.emails.kind.${tpl.kind}`)}
                 </p>
-                <p className="mt-0.5 text-sm text-gray-500">
+                <p className="mt-0.5 text-sm text-ground-500">
                   {t(`admin.invitations.emails.when.${tpl.kind}`)}
                 </p>
                 {/* ⚠ NOTHING PER-ROW BEYOND ITS OWN NAME AND WHEN IT SENDS (owner, 2026-08-04).
@@ -87,7 +87,7 @@ export default function InvitationEmailsCard({ token, t }: {
               </div>
               <button type="button"
                 onClick={() => setOpenKind(openKind === tpl.kind ? null : tpl.kind)}
-                className="shrink-0 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">
+                className="shrink-0 text-sm font-medium text-info-600 hover:text-info-700 hover:underline">
                 {t(openKind === tpl.kind ? 'common.cancel' : 'admin.reviewers.emails.edit')}
               </button>
             </div>

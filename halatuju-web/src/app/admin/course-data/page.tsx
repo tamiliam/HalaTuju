@@ -43,8 +43,8 @@ export default function CourseDataDashboard() {
       .finally(() => setChecking(false))
   }
 
-  if (error) return <div className="text-red-600 mt-8 text-center">{error}</div>
-  if (!data) return <div className="mt-8 text-center text-gray-500">{t('common.loading')}</div>
+  if (error) return <div className="text-critical-600 mt-8 text-center">{error}</div>
+  if (!data) return <div className="mt-8 text-center text-ground-500">{t('common.loading')}</div>
 
   const { statuses, coverage } = data
 
@@ -99,18 +99,18 @@ export default function CourseDataDashboard() {
       <details key={g.kind} className="border rounded-lg" open={openFirst && gi === 0}>
         <summary className="cursor-pointer px-4 py-2 text-sm font-medium flex justify-between items-center">
           <span>{t(`admin.courseData.reason.${g.kind}`)}</span>
-          <span className="text-gray-500">{g.items.length}</span>
+          <span className="text-ground-500">{g.items.length}</span>
         </summary>
         <ul className="divide-y border-t">
           {g.items.map((f, i) => (
             <li key={i} className="px-4 py-2">
-              <p className="text-sm text-gray-800">
+              <p className="text-sm text-ground-800">
                 {f.institutions.join(', ') || dash}
-                {f.refs > 1 && <span className="text-gray-400"> · {f.refs} {t('admin.courseData.rows')}</span>}
+                {f.refs > 1 && <span className="text-ground-400"> · {f.refs} {t('admin.courseData.rows')}</span>}
               </p>
               <a href={f.url.startsWith('http') ? f.url : `https://${f.url}`}
                  target="_blank" rel="noopener noreferrer"
-                 className="text-xs text-blue-600 hover:underline break-all">
+                 className="text-xs text-info-600 hover:underline break-all">
                 {f.url}{f.detail ? ` (${f.detail})` : ''}
               </a>
             </li>
@@ -124,17 +124,17 @@ export default function CourseDataDashboard() {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1">{t('admin.courseData.title')}</h1>
-          <p className="text-sm text-gray-500">{t('admin.courseData.subtitle')}</p>
+          <p className="text-sm text-ground-500">{t('admin.courseData.subtitle')}</p>
         </div>
         <div className="text-right shrink-0">
           <button
             onClick={runCheck}
             disabled={checking}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60 whitespace-nowrap"
+            className="px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-60 whitespace-nowrap"
           >
             {checking ? t('admin.courseData.checking') : t('admin.courseData.runCheck')}
           </button>
-          <p className="text-[11px] text-gray-400 mt-1 max-w-[14rem]">{t('admin.courseData.runCheckHint')}</p>
+          <p className="text-[11px] text-ground-400 mt-1 max-w-[14rem]">{t('admin.courseData.runCheckHint')}</p>
         </div>
       </div>
 
@@ -145,22 +145,22 @@ export default function CourseDataDashboard() {
           const s = statuses[key]
           const when = fmtDate(s?.last_run_at ?? null)
           return (
-            <div key={key} className="bg-white rounded-lg p-5 shadow-sm border">
+            <div key={key} className="bg-ground-0 rounded-lg p-5 shadow-sm border">
               <div className="flex items-center justify-between mb-2">
-                <p className="font-medium text-gray-800">{t(`admin.courseData.src.${key}`)}</p>
+                <p className="font-medium text-ground-800">{t(`admin.courseData.src.${key}`)}</p>
                 <span
-                  className={`inline-block w-2.5 h-2.5 rounded-full ${when ? 'bg-green-500' : 'bg-gray-300'}`}
+                  className={`inline-block w-2.5 h-2.5 rounded-full ${when ? 'bg-positive-500' : 'bg-ground-300'}`}
                   aria-hidden
                 />
               </div>
-              <p className="text-2xl font-bold text-blue-600">{count}</p>
-              <p className="text-xs text-gray-400">{t('admin.courseData.courses')}</p>
-              <p className="text-xs mt-2 text-gray-500">
+              <p className="text-2xl font-bold text-info-600">{count}</p>
+              <p className="text-xs text-ground-400">{t('admin.courseData.courses')}</p>
+              <p className="text-xs mt-2 text-ground-500">
                 {when
                   ? `${t('admin.courseData.lastRun')}: ${when}`
                   : t('admin.courseData.notRunYet')}
               </p>
-              <p className="text-[11px] mt-2 text-gray-400 font-mono break-words">
+              <p className="text-[11px] mt-2 text-ground-400 font-mono break-words">
                 {t('admin.courseData.refreshVia')}: {cmd}
               </p>
             </div>
@@ -170,11 +170,11 @@ export default function CourseDataDashboard() {
 
       {/* Coverage + side cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg p-6 shadow-sm border lg:col-span-2">
+        <div className="bg-ground-0 rounded-lg p-6 shadow-sm border lg:col-span-2">
           <h2 className="font-semibold mb-3">{t('admin.courseData.coverage')}</h2>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500 border-b">
+              <tr className="text-left text-ground-500 border-b">
                 <th className="py-2 font-medium">{t('admin.courseData.source')}</th>
                 <th className="py-2 font-medium text-right">{t('admin.courseData.have')}</th>
                 <th className="py-2 font-medium text-right">{t('admin.courseData.available')}</th>
@@ -185,88 +185,88 @@ export default function CourseDataDashboard() {
               <tr>
                 <td className="py-2">{t('admin.courseData.src.epanduan_stpm')}</td>
                 <td className="py-2 text-right">{coverage.stpm_active} / {coverage.stpm_total}</td>
-                <td className="py-2 text-right text-gray-400">{dash}</td>
-                <td className="py-2 text-right text-gray-400">{dash}</td>
+                <td className="py-2 text-right text-ground-400">{dash}</td>
+                <td className="py-2 text-right text-ground-400">{dash}</td>
               </tr>
               <tr>
                 <td className="py-2">{t('admin.courseData.src.epanduan_spm')}</td>
                 <td className="py-2 text-right">{coverage.spm_total}</td>
-                <td className="py-2 text-right text-gray-400">{dash}</td>
-                <td className="py-2 text-right text-gray-400">{dash}</td>
+                <td className="py-2 text-right text-ground-400">{dash}</td>
+                <td className="py-2 text-right text-ground-400">{dash}</td>
               </tr>
               <tr>
                 <td className="py-2">{t('admin.courseData.src.uptvet')}</td>
                 <td className="py-2 text-right">{coverage.tvet_have}</td>
                 <td className="py-2 text-right">{coverage.uptvet_available ?? dash}</td>
-                <td className={`py-2 text-right ${coverage.uptvet_gap ? 'text-amber-600 font-medium' : 'text-gray-400'}`}>
+                <td className={`py-2 text-right ${coverage.uptvet_gap ? 'text-caution-600 font-medium' : 'text-ground-400'}`}>
                   {coverage.uptvet_gap ?? dash}
                 </td>
               </tr>
               <tr>
                 <td className="py-2">{t('admin.courseData.src.emasco')}</td>
                 <td className="py-2 text-right">{coverage.emasco_total}</td>
-                <td className="py-2 text-right text-gray-400">{dash}</td>
-                <td className="py-2 text-right text-gray-400">{dash}</td>
+                <td className="py-2 text-right text-ground-400">{dash}</td>
+                <td className="py-2 text-right text-ground-400">{dash}</td>
               </tr>
             </tbody>
           </table>
           {coverage.uptvet_available == null && (
-            <p className="text-xs text-gray-400 mt-3">{t('admin.courseData.uptvetHint')}</p>
+            <p className="text-xs text-ground-400 mt-3">{t('admin.courseData.uptvetHint')}</p>
           )}
         </div>
 
         <div className="space-y-4">
           {/* Link health */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="bg-ground-0 rounded-lg p-6 shadow-sm border">
             <h2 className="font-semibold mb-1">{t('admin.courseData.linkHealth')}</h2>
             {linkHealth ? (
               <>
-                <p className="text-xs text-gray-400 mb-3">
+                <p className="text-xs text-ground-400 mb-3">
                   {t('admin.courseData.lastRun')}: {fmtDate(linkHealth.last_run_at)}
                 </p>
                 <ul className="text-sm space-y-1">
-                  <li className="flex justify-between"><span>{t('admin.courseData.alive')}</span><span className="text-green-600">{linkHealth.summary.alive ?? dash}</span></li>
-                  <li className="flex justify-between"><span>{t('admin.courseData.broken')}</span><span className={brokenCount > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}>{brokenCount}</span></li>
-                  <li className="flex justify-between"><span>{t('admin.courseData.accessBlocked')}</span><span className={gatedCount > 0 ? 'text-amber-600' : 'text-gray-400'}>{gatedCount}</span></li>
-                  <li className="flex justify-between"><span>{t('admin.courseData.couldntVerify')}</span><span className="text-gray-500">{unverifiedCount}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.alive')}</span><span className="text-positive-600">{linkHealth.summary.alive ?? dash}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.broken')}</span><span className={brokenCount > 0 ? 'text-critical-600 font-medium' : 'text-ground-400'}>{brokenCount}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.accessBlocked')}</span><span className={gatedCount > 0 ? 'text-caution-600' : 'text-ground-400'}>{gatedCount}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.couldntVerify')}</span><span className="text-ground-500">{unverifiedCount}</span></li>
                   {Number(linkHealth.summary.insecure) > 0 && (
-                    <li className="flex justify-between text-gray-400"><span>{t('admin.courseData.insecure')}</span><span>{linkHealth.summary.insecure}</span></li>
+                    <li className="flex justify-between text-ground-400"><span>{t('admin.courseData.insecure')}</span><span>{linkHealth.summary.insecure}</span></li>
                   )}
                 </ul>
               </>
             ) : (
-              <p className="text-sm text-gray-400">{t('admin.courseData.notRunYet')}</p>
+              <p className="text-sm text-ground-400">{t('admin.courseData.notRunYet')}</p>
             )}
-            <p className="text-[11px] mt-3 text-gray-400 font-mono">{t('admin.courseData.refreshVia')}: validate_course_urls</p>
+            <p className="text-[11px] mt-3 text-ground-400 font-mono">{t('admin.courseData.refreshVia')}: validate_course_urls</p>
           </div>
 
           {/* Audit */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="bg-ground-0 rounded-lg p-6 shadow-sm border">
             <h2 className="font-semibold mb-1">{t('admin.courseData.audit')}</h2>
             {audit ? (
-              <p className="text-xs text-gray-400">{t('admin.courseData.lastRun')}: {fmtDate(audit.last_run_at)}</p>
+              <p className="text-xs text-ground-400">{t('admin.courseData.lastRun')}: {fmtDate(audit.last_run_at)}</p>
             ) : (
-              <p className="text-sm text-gray-400">{t('admin.courseData.notRunYet')}</p>
+              <p className="text-sm text-ground-400">{t('admin.courseData.notRunYet')}</p>
             )}
-            <p className="text-[11px] mt-3 text-gray-400 font-mono">{t('admin.courseData.refreshVia')}: audit_data</p>
+            <p className="text-[11px] mt-3 text-ground-400 font-mono">{t('admin.courseData.refreshVia')}: audit_data</p>
           </div>
         </div>
       </div>
 
       {/* Problem links — split into BROKEN (actionable) and COULDN'T-VERIFY (slow/blocked, likely alive) */}
       {failures.length > 0 && (
-        <div className="bg-white rounded-lg p-6 shadow-sm border mb-8">
+        <div className="bg-ground-0 rounded-lg p-6 shadow-sm border mb-8">
           <div className="flex items-center justify-between mb-1">
             <h2 className="font-semibold">{t('admin.courseData.problemLinks')}</h2>
-            <button onClick={downloadCsv} className="text-sm text-blue-600 hover:underline">
+            <button onClick={downloadCsv} className="text-sm text-info-600 hover:underline">
               {t('admin.courseData.downloadCsv')}
             </button>
           </div>
-          <p className="text-xs text-gray-400 mb-4">{t('admin.courseData.problemLinksHint')}</p>
+          <p className="text-xs text-ground-400 mb-4">{t('admin.courseData.problemLinksHint')}</p>
 
           {brokenGroups.length > 0 && (
             <div className="mb-5">
-              <h3 className="text-sm font-semibold text-red-600 mb-2">
+              <h3 className="text-sm font-semibold text-critical-600 mb-2">
                 {t('admin.courseData.brokenHeader')} ({brokenCount})
               </h3>
               <div className="space-y-3">{renderGroups(brokenGroups, true)}</div>
@@ -275,27 +275,27 @@ export default function CourseDataDashboard() {
 
           {gatedGroups.length > 0 && (
             <div className="mb-5">
-              <h3 className="text-sm font-semibold text-amber-600 mb-1">
+              <h3 className="text-sm font-semibold text-caution-600 mb-1">
                 {t('admin.courseData.gatedHeader')} ({gatedCount})
               </h3>
-              <p className="text-xs text-gray-400 mb-2">{t('admin.courseData.gatedHint')}</p>
+              <p className="text-xs text-ground-400 mb-2">{t('admin.courseData.gatedHint')}</p>
               <div className="space-y-3">{renderGroups(gatedGroups, brokenGroups.length === 0)}</div>
             </div>
           )}
 
           {unverifiedGroups.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 mb-1">
+              <h3 className="text-sm font-semibold text-ground-500 mb-1">
                 {t('admin.courseData.unverifiedHeader')} ({unverifiedCount})
               </h3>
-              <p className="text-xs text-gray-400 mb-2">{t('admin.courseData.unverifiedHint')}</p>
+              <p className="text-xs text-ground-400 mb-2">{t('admin.courseData.unverifiedHint')}</p>
               <div className="space-y-3">{renderGroups(unverifiedGroups, false)}</div>
             </div>
           )}
         </div>
       )}
 
-      <p className="text-xs text-gray-400">{t('admin.courseData.readOnlyNote')}</p>
+      <p className="text-xs text-ground-400">{t('admin.courseData.readOnlyNote')}</p>
     </div>
   )
 }

@@ -200,7 +200,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const hrefOf = (id: string) => utility?.items.find((i) => i.id === id)?.href
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-ground-50">
       <Topbar
         orgName={role?.owning_org_name ?? role?.org_name}
         programmeName={undefined}
@@ -258,13 +258,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         {mobileNav && (
           <div className="fixed inset-0 z-40 lg:hidden">
             <div
-              className="absolute inset-0 bg-gray-900/40"
+              className="absolute inset-0 bg-ground-900/40"
               onClick={() => setMobileNav(false)}
               aria-hidden
             />
             {/* The drawer is always open and never chorded: there is no hover on a phone and
                 no keyboard to press G on. Same component, different truth about the device. */}
-            <div className="absolute inset-y-0 left-0 w-64 overflow-y-auto bg-white shadow-xl">
+            <div className="absolute inset-y-0 left-0 w-64 overflow-y-auto bg-ground-0 shadow-xl">
               <Sidebar
                 groups={groups}
                 activeId={activeId}

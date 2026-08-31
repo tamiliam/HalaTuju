@@ -95,34 +95,34 @@ export default function SponsorTermsEditorPage() {
     } catch (e) { fail(e) } finally { setBusy(false) }
   }
 
-  if (notFound) return <p className="text-red-600">{t('admin.sponsors.terms.error.not_found')}</p>
-  if (!terms) return <p className="text-gray-400">{t('common.loading')}</p>
+  if (notFound) return <p className="text-critical-600">{t('admin.sponsors.terms.error.not_found')}</p>
+  if (!terms) return <p className="text-ground-400">{t('common.loading')}</p>
 
   const editable = isEditable(terms)
 
   return (
     <div className="max-w-5xl font-plex">
       <button type="button" onClick={() => router.push('/admin/sponsors?panel=terms')}
-        className="text-sm text-blue-600 hover:text-blue-800">
+        className="text-sm text-info-600 hover:text-info-800">
         {t('admin.sponsors.terms.backToList')}
       </button>
 
       <div className="flex items-center gap-3 mt-2 mb-1">
-        <h1 className="text-2xl font-bold text-gray-900">{terms.version}</h1>
+        <h1 className="text-2xl font-bold text-ground-900">{terms.version}</h1>
         <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${
           STATUS_TONE[terms.status] || STATUS_TONE.archived}`}>
           {t(`admin.sponsors.terms.status.${terms.status}`)}
         </span>
       </div>
 
-      {error && <p className="text-sm text-red-600 my-2">{error}</p>}
+      {error && <p className="text-sm text-critical-600 my-2">{error}</p>}
 
-      <div className="border-b border-gray-200 mb-6 flex gap-1 overflow-x-auto">
+      <div className="border-b border-ground-200 mb-6 flex gap-1 overflow-x-auto">
         {TABS.map((tb) => (
           <button key={tb} type="button" role="tab" aria-selected={tab === tb}
             onClick={() => setTab(tb)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-              tab === tb ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
+              tab === tb ? 'border-info-600 text-info-600' : 'border-transparent text-ground-500 hover:text-ground-800'}`}>
             {t(`admin.sponsors.terms.tab.${tb}`)}
           </button>
         ))}

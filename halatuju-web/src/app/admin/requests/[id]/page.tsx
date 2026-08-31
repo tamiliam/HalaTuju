@@ -131,8 +131,8 @@ export default function AdminRequestDetailPage() {
     }
   }
 
-  if (loading) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
-  if (!req) return <p className="text-red-600">{error || t('admin.requests.error.generic')}</p>
+  if (loading) return <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
+  if (!req) return <p className="text-critical-600">{error || t('admin.requests.error.generic')}</p>
 
   const triagedKind = req.triaged_kind || ''
   const unanswered = hasUnansweredQuestions(req.comments)
@@ -158,18 +158,18 @@ export default function AdminRequestDetailPage() {
 
   return (
     <div className="max-w-3xl">
-      <Link href="/admin/requests" className="text-sm text-blue-600 hover:text-blue-800">← {t('admin.requests.detail.back')}</Link>
+      <Link href="/admin/requests" className="text-sm text-info-600 hover:text-info-800">← {t('admin.requests.detail.back')}</Link>
 
       <div className="flex items-start justify-between gap-3 mt-3 mb-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">{req.title}</h1>
-          <div className="text-xs text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
-            <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{t(kindLabelKey(req.kind))}</span>
+          <h1 className="text-2xl font-bold text-ground-900">{req.title}</h1>
+          <div className="text-xs text-ground-500 mt-1 flex items-center gap-2 flex-wrap">
+            <span className="px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(req.kind))}</span>
             {req.component && (
-              <span className="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{t(`admin.requests.component.${req.component}`)}</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-category-2-surface text-category-2-ink">{t(`admin.requests.component.${req.component}`)}</span>
             )}
             {req.urgency && (
-              <span className="px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700">{t(`admin.requests.urgency.${req.urgency}`)}</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-caution-50 text-caution-700">{t(`admin.requests.urgency.${req.urgency}`)}</span>
             )}
             {isSuper && req.organisation_name && <span>{req.organisation_name}</span>}
             <span>{t('admin.requests.list.submittedBy', { name: req.submitted_by_name })}</span>
@@ -181,19 +181,19 @@ export default function AdminRequestDetailPage() {
         </span>
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 border border-red-200 text-red-600 p-3 mb-4">{error}</div>}
+      {error && <div className="rounded-lg bg-critical-50 border border-critical-200 text-critical-600 p-3 mb-4">{error}</div>}
 
       {/* Description */}
-      <div className="bg-white rounded-xl border p-5 mb-4">
-        <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.description')}</h2>
-        <p className="text-gray-800 whitespace-pre-wrap">{req.description}</p>
+      <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+        <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.detail.description')}</h2>
+        <p className="text-ground-800 whitespace-pre-wrap">{req.description}</p>
       </div>
 
       {/* Steps to reproduce (bug scoping) */}
       {req.steps_to_reproduce && (
-        <div className="bg-white rounded-xl border p-5 mb-4">
-          <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.steps')}</h2>
-          <p className="text-gray-800 whitespace-pre-wrap">{req.steps_to_reproduce}</p>
+        <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+          <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.detail.steps')}</h2>
+          <p className="text-ground-800 whitespace-pre-wrap">{req.steps_to_reproduce}</p>
         </div>
       )}
 
@@ -215,10 +215,10 @@ export default function AdminRequestDetailPage() {
           a price is worse than none. Rendered only for the requester — the super has the fuller
           version, with kind/lane/hours, in Owner controls below. */}
       {!isSuper && req.ai_draft_note && (
-        <div className="bg-white rounded-xl border p-5 mb-4">
-          <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.aiReading')}</h2>
-          <p className="text-gray-800 whitespace-pre-wrap">{req.ai_draft_note}</p>
-          <p className="text-xs text-gray-400 mt-2">
+        <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+          <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.detail.aiReading')}</h2>
+          <p className="text-ground-800 whitespace-pre-wrap">{req.ai_draft_note}</p>
+          <p className="text-xs text-ground-400 mt-2">
             {t('admin.requests.detail.aiReadingNote')}
             {req.ai_draft_model ? ` · ${req.ai_draft_model}` : ''}
           </p>
@@ -228,48 +228,48 @@ export default function AdminRequestDetailPage() {
       {/* The DISCUSSION (TD-201) — one stream, not a question log. The owner's model is Bugzilla:
           "open discussion/debate, even after it has been assigned to someone". A question is
           simply a comment awaiting a reply, which is why they render together and in one order. */}
-      <div className="bg-white rounded-xl border p-5 mb-4">
-        <h2 className="text-sm font-semibold text-gray-500 mb-3">{t('admin.requests.detail.thread')}</h2>
+      <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+        <h2 className="text-sm font-semibold text-ground-500 mb-3">{t('admin.requests.detail.thread')}</h2>
         {(req.comments || []).length === 0 ? (
-          <p className="text-sm text-gray-400">{t('admin.requests.detail.noComments')}</p>
+          <p className="text-sm text-ground-400">{t('admin.requests.detail.noComments')}</p>
         ) : (
           <ul className="space-y-3">
             {(req.comments || []).map((c) => (
               <li key={c.id}
                   className={`text-sm rounded-lg p-3 ${
                     c.visibility === 'internal'
-                      ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50'}`}>
+                      ? 'bg-caution-50 border border-caution-200' : 'bg-ground-50'}`}>
                 <div className="flex items-baseline gap-2 flex-wrap">
                   {/* WHO spoke is the point of one shared thread: the reviewer's reading, the
                       owner's judgement and the requester's own words carry different weight, and
                       the requester should be able to tell whose question they are answering. */}
                   <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                    c.author_kind === 'owner' ? 'bg-blue-50 text-blue-700'
-                      : c.author_kind === 'org' ? 'bg-green-50 text-green-700'
-                      : 'bg-gray-100 text-gray-500'}`}>
+                    c.author_kind === 'owner' ? 'bg-info-50 text-info-700'
+                      : c.author_kind === 'org' ? 'bg-positive-50 text-positive-700'
+                      : 'bg-ground-100 text-ground-500'}`}>
                     {t(`admin.requests.detail.author.${c.author_kind}`)}
                   </span>
-                  {c.author_name && <span className="text-xs text-gray-500">{c.author_name}</span>}
-                  <span className="text-xs text-gray-400">{formatDate(c.created_at)}</span>
+                  {c.author_name && <span className="text-xs text-ground-500">{c.author_name}</span>}
+                  <span className="text-xs text-ground-400">{formatDate(c.created_at)}</span>
                   {/* Only ever rendered for the super — the server filters internal ROWS out of
                       the org payload. Badged so the owner can see at a glance what the requester
                       is not reading; an unmarked internal note is how something private gets
                       written as though it were shared. */}
                   {c.visibility === 'internal' && (
-                    <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-800">
+                    <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-caution-100 text-caution-800">
                       {t('admin.requests.detail.internalBadge')}
                     </span>
                   )}
                 </div>
-                <p className="text-gray-800 whitespace-pre-wrap mt-1">{c.body}</p>
+                <p className="text-ground-800 whitespace-pre-wrap mt-1">{c.body}</p>
                 {/* "Answer needed" is a DEMAND — only make it where answering is still possible.
                     Once the quote is accepted the reply box unmounts, and an amber prompt with no
                     box behind it asks for something the page has taken away (request #3 sat like
                     that permanently). Then it is simply unanswered. */}
                 {c.awaiting_reply && (
                   has('answer')
-                    ? <p className="text-amber-600 text-xs mt-1">{t('admin.requests.list.answerNeeded')}</p>
-                    : <p className="text-gray-400 text-xs mt-1">{t('admin.requests.detail.unanswered')}</p>
+                    ? <p className="text-caution-600 text-xs mt-1">{t('admin.requests.list.answerNeeded')}</p>
+                    : <p className="text-ground-400 text-xs mt-1">{t('admin.requests.detail.unanswered')}</p>
                 )}
               </li>
             ))}
@@ -281,13 +281,13 @@ export default function AdminRequestDetailPage() {
             remarking does not. One box would have to guess which was meant. */}
         {has('answer') && (
           <div className="mt-4 border-t pt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.detail.answerLabel')}</label>
+            <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.detail.answerLabel')}</label>
             <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={3}
               placeholder={t('admin.requests.detail.answerPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
             <button disabled={busy || !answer.trim()}
               onClick={() => run(async () => { const r = await answerOrgRequest(id, { answer }, opt); setAnswer(''); return r })}
-              className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.answerSend')}
             </button>
           </div>
@@ -298,18 +298,18 @@ export default function AdminRequestDetailPage() {
             what we would build, and why") had to travel as a quote note or not at all. */}
         {has('comment') && (
           <div className="mt-4 border-t pt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.detail.commentLabel')}</label>
+            <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.detail.commentLabel')}</label>
             <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} rows={3}
               placeholder={t('admin.requests.detail.commentPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
             {/* Internal is the owner's alone. The server refuses it for anyone else (403) and an
                 org author can never be internal at all — this checkbox is the convenience, not
                 the control. */}
             {isSuper && (
-              <label className="flex items-center gap-2 mt-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 mt-2 text-sm text-ground-700">
                 <input type="checkbox" checked={commentInternal}
                   onChange={(e) => setCommentInternal(e.target.checked)}
-                  className="rounded border-gray-300" />
+                  className="rounded border-ground-300" />
                 {t('admin.requests.detail.commentInternal')}
               </label>
             )}
@@ -319,11 +319,11 @@ export default function AdminRequestDetailPage() {
                   id, { body: commentText, visibility: commentInternal ? 'internal' : 'shared' }, opt)
                 setCommentText(''); setCommentInternal(false); return r
               })}
-              className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.commentSend')}
             </button>
             {isSuper && commentInternal && (
-              <p className="mt-1 text-xs text-amber-600">{t('admin.requests.detail.commentInternalHint')}</p>
+              <p className="mt-1 text-xs text-caution-600">{t('admin.requests.detail.commentInternalHint')}</p>
             )}
           </div>
         )}
@@ -333,16 +333,16 @@ export default function AdminRequestDetailPage() {
             priced against what was known when it was sent. */}
         {isSuper && has('ask') && (
           <div className="mt-4 border-t pt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.detail.askLabel')}</label>
+            <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.detail.askLabel')}</label>
             <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={3}
               placeholder={t('admin.requests.detail.askPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
             <button disabled={busy || !question.trim()}
               onClick={() => run(async () => { const r = await askOrgRequest(id, { question }, opt); setQuestion(''); return r })}
-              className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.askSend')}
             </button>
-            <p className="mt-1 text-xs text-gray-400">{t('admin.requests.detail.askHint')}</p>
+            <p className="mt-1 text-xs text-ground-400">{t('admin.requests.detail.askHint')}</p>
           </div>
         )}
       </div>
@@ -350,55 +350,55 @@ export default function AdminRequestDetailPage() {
       {/* Quote (org-facing) — deliberately BELOW the thread (owner, 2026-07-30): the quote is the
           CONCLUSION, so the deliberation that produced it should be read first. */}
       {req.quote_hours != null && (
-        <div className="bg-white rounded-xl border p-5 mb-4">
-          <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.detail.quote')}</h2>
-          <p className="text-lg font-semibold text-gray-900">
+        <div className="bg-ground-0 rounded-xl border p-5 mb-4">
+          <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.detail.quote')}</h2>
+          <p className="text-lg font-semibold text-ground-900">
             {/* Hours only — the margin is not shown to the organisation and is no longer on the
                 org-facing payload at all (owner, 2026-07-30). */}
             {t('admin.requests.detail.quoteValue', { hours: req.quote_hours })}
           </p>
-          {req.quote_note && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{req.quote_note}</p>}
+          {req.quote_note && <p className="text-sm text-ground-600 mt-1 whitespace-pre-wrap">{req.quote_note}</p>}
           {req.scheduled_for && (
-            <p className="text-sm text-gray-500 mt-2">{t('admin.requests.detail.scheduledFor')}: {formatDate(req.scheduled_for)}</p>
+            <p className="text-sm text-ground-500 mt-2">{t('admin.requests.detail.scheduledFor')}: {formatDate(req.scheduled_for)}</p>
           )}
           {req.status === 'declined' && req.decline_reason && (
-            <p className="text-sm text-red-600 mt-2">{t('admin.requests.detail.declinedReason')}: {req.decline_reason}</p>
+            <p className="text-sm text-critical-600 mt-2">{t('admin.requests.detail.declinedReason')}: {req.decline_reason}</p>
           )}
         </div>
       )}
 
       {/* Requestee actions (org_admin) */}
       {(has('accept') || has('defer') || has('modify') || has('withdraw')) && (
-        <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
+        <div className="bg-ground-0 rounded-xl border p-5 mb-4 space-y-3">
           <div className="flex flex-wrap gap-2">
             {has('accept') && (
               <button disabled={busy} onClick={() => run(() => approveOrgRequest(id, opt))}
-                className="px-4 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                className="px-4 bg-positive-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-positive-700 disabled:opacity-50">
                 {t('admin.requests.action.accept')}
               </button>
             )}
             {has('defer') && (
               <button disabled={busy} onClick={() => run(() => deferOrgRequest(id, opt))}
-                className="px-4 bg-amber-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-50">
+                className="px-4 bg-caution-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-caution-600 disabled:opacity-50">
                 {t('admin.requests.action.defer')}
               </button>
             )}
             {has('withdraw') && (
               <button disabled={busy}
                 onClick={() => { if (confirm(t('admin.requests.owner.withdrawConfirm'))) run(() => declineOrgRequest(id, {}, opt)) }}
-                className="px-4 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
+                className="px-4 bg-critical-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-critical-700 disabled:opacity-50">
                 {t('admin.requests.action.withdraw')}
               </button>
             )}
           </div>
           {has('modify') && (
             <div className="border-t pt-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.owner.modifyLabel')}</label>
+              <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.owner.modifyLabel')}</label>
               <textarea value={modifyText} onChange={(e) => setModifyText(e.target.value)} rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
               <button disabled={busy || !modifyText.trim()}
                 onClick={() => run(async () => { const r = await modifyOrgRequest(id, { description: modifyText }, opt); setModifyText(''); return r })}
-                className="mt-2 px-4 bg-gray-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50">
+                className="mt-2 px-4 bg-ground-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-ground-800 disabled:opacity-50">
                 {t('admin.requests.action.modify')}
               </button>
             </div>
@@ -408,20 +408,20 @@ export default function AdminRequestDetailPage() {
 
       {/* Owner controls (super) */}
       {isSuper && (
-        <div className="bg-white rounded-xl border p-5 space-y-4">
+        <div className="bg-ground-0 rounded-xl border p-5 space-y-4">
           {/* AI draft */}
           <div>
-            <h2 className="text-sm font-semibold text-gray-500 mb-1">{t('admin.requests.owner.aiDraft')}</h2>
+            <h2 className="text-sm font-semibold text-ground-500 mb-1">{t('admin.requests.owner.aiDraft')}</h2>
             {req.ai_draft_at ? (
-              <div className="text-sm text-gray-700 space-y-0.5">
+              <div className="text-sm text-ground-700 space-y-0.5">
                 {req.ai_draft_kind && <p>{t('admin.requests.owner.aiDraftKind')}: {t(kindLabelKey(req.ai_draft_kind))}</p>}
                 {req.ai_draft_lane && <p>{t('admin.requests.owner.aiDraftLane')}: {t(laneLabelKey(req.ai_draft_lane))}</p>}
                 {/* The reviewer is no longer ASKED for hours (owner, 2026-07-30) — it cannot
                     see the codebase and priced greenfield every time. Historical drafts keep
                     theirs in the column; showing them would keep a number in play that we
                     have decided not to trust. The estimate is the engineer's, and cited. */}
-                {req.ai_draft_note && <p className="text-gray-600 whitespace-pre-wrap">{req.ai_draft_note}</p>}
-                <p className="text-xs text-gray-400">
+                {req.ai_draft_note && <p className="text-ground-600 whitespace-pre-wrap">{req.ai_draft_note}</p>}
+                <p className="text-xs text-ground-400">
                   {/* The model was stored from the day this shipped and never shown. Which model
                       produced an estimate is part of reading it — the same draft from flash and
                       from pro does not carry the same weight. */}
@@ -430,11 +430,11 @@ export default function AdminRequestDetailPage() {
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-gray-400">{t('admin.requests.owner.aiDraftNone')}</p>
+              <p className="text-sm text-ground-400">{t('admin.requests.owner.aiDraftNone')}</p>
             )}
             {has('ai_rerun') && (
               <button disabled={busy} onClick={() => run(() => aiRerunOrgRequest(id, opt))}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50">
+                className="mt-2 text-xs text-info-600 hover:text-info-800 disabled:opacity-50">
                 {t('admin.requests.action.aiRerun')}
               </button>
             )}
@@ -451,75 +451,75 @@ export default function AdminRequestDetailPage() {
               ⚠ Everything in this block is OWNER-ONLY. The whole `analyses` key is absent from
               the org payload; the requester sees only the PROSE, once approved, in the thread. */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.requests.owner.analysisTitle')}</h3>
+            <h3 className="text-sm font-semibold text-ground-700 mb-2">{t('admin.requests.owner.analysisTitle')}</h3>
             {analyses.length === 0 ? (
               /* Honest empty state: no analysis has been RECORDED. Never phrased as though one
                  was refused or is missing — every request predating TD-204 has none. */
-              <p className="text-sm text-gray-400">{t('admin.requests.owner.analysisNone')}</p>
+              <p className="text-sm text-ground-400">{t('admin.requests.owner.analysisNone')}</p>
             ) : (
               <ul className="space-y-3">
                 {analyses.map((a) => (
                   <li key={a.id} className={`rounded-lg border p-3 text-sm ${
-                    a.is_current ? 'border-green-200 bg-green-50'
-                      : a.superseded_at ? 'border-gray-200 bg-gray-50 opacity-70'
-                      : 'border-amber-200 bg-amber-50'}`}>
+                    a.is_current ? 'border-positive-200 bg-positive-50'
+                      : a.superseded_at ? 'border-ground-200 bg-ground-50 opacity-70'
+                      : 'border-caution-200 bg-caution-50'}`}>
                     <div className="flex items-baseline gap-2 flex-wrap">
                       {a.approved_at ? (
                         a.superseded_at ? (
-                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-gray-200 text-gray-600">
+                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-ground-200 text-ground-600">
                             {t('admin.requests.owner.analysisSuperseded')}
                           </span>
                         ) : (
-                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-green-100 text-green-800">
+                          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-positive-100 text-positive-800">
                             {t('admin.requests.owner.analysisApproved')}
                           </span>
                         )
                       ) : (
-                        <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-800">
+                        <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-caution-100 text-caution-800">
                           {t('admin.requests.owner.analysisDraft')}
                         </span>
                       )}
                       {a.estimated_hours && (
-                        <span className="font-semibold text-gray-900">
+                        <span className="font-semibold text-ground-900">
                           {t('admin.requests.owner.analysisHoursValue', { hours: a.estimated_hours })}
                         </span>
                       )}
                       {/* Rendered in the same change that stores them — this project has five
                           stored-but-never-surfaced fields already, and that cluster stops here. */}
-                      {a.authored_by && <span className="text-xs text-gray-500">{a.authored_by}</span>}
+                      {a.authored_by && <span className="text-xs text-ground-500">{a.authored_by}</span>}
                       {a.repo_sha && (
-                        <span className="text-xs text-gray-400 font-mono">{a.repo_sha.slice(0, 12)}</span>
+                        <span className="text-xs text-ground-400 font-mono">{a.repo_sha.slice(0, 12)}</span>
                       )}
                       {/* TIME, not just the date: two drafts staged the same day were otherwise
                           indistinguishable — same badge, same hours, same cited files. */}
-                      <span className="text-xs text-gray-400">{formatDateTime(a.created_at)}</span>
+                      <span className="text-xs text-ground-400">{formatDateTime(a.created_at)}</span>
                     </div>
-                    <p className="text-gray-800 whitespace-pre-wrap mt-2">{a.body}</p>
+                    <p className="text-ground-800 whitespace-pre-wrap mt-2">{a.body}</p>
                     {a.cited_files.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-xs font-medium text-gray-500">{t('admin.requests.owner.analysisFiles')}</p>
+                        <p className="text-xs font-medium text-ground-500">{t('admin.requests.owner.analysisFiles')}</p>
                         <ul className="mt-1 space-y-0.5">
                           {a.cited_files.map((f) => (
-                            <li key={f} className="text-xs font-mono text-gray-600 break-all">{f}</li>
+                            <li key={f} className="text-xs font-mono text-ground-600 break-all">{f}</li>
                           ))}
                         </ul>
                       </div>
                     )}
                     {a.approved_at && a.approved_by_name && (
-                      <p className="text-xs text-gray-400 mt-2">
+                      <p className="text-xs text-ground-400 mt-2">
                         {t('admin.requests.owner.analysisApprovedBy', { name: a.approved_by_name })} · {formatDate(a.approved_at)}
                       </p>
                     )}
                     {/* The amber staleness note: an ANSWER can change scope without triggering a
                         supersede (only `modify` does), so say so rather than block. */}
                     {a.is_current && analysisPredatesLastComment && (
-                      <p className="text-xs text-amber-700 mt-2">{t('admin.requests.owner.analysisStale')}</p>
+                      <p className="text-xs text-caution-700 mt-2">{t('admin.requests.owner.analysisStale')}</p>
                     )}
                     {!a.approved_at && !a.superseded_at && (
                       <div className="mt-3 flex items-center gap-2">
                         <button disabled={busy}
                           onClick={() => { if (confirm(t('admin.requests.owner.analysisApproveConfirm'))) run(() => approveOrgRequestAnalysis(id, a.id, opt)) }}
-                          className="px-4 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                          className="px-4 bg-positive-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-positive-700 disabled:opacity-50">
                           {t('admin.requests.owner.analysisApprove')}
                         </button>
                         {/* Retire a draft the engineer got wrong. Nothing here has reached the
@@ -527,7 +527,7 @@ export default function AdminRequestDetailPage() {
                             draft sits in this list one click from being approved as a duplicate. */}
                         <button disabled={busy}
                           onClick={() => { if (confirm(t('admin.requests.owner.analysisWithdrawConfirm'))) run(() => withdrawOrgRequestAnalysis(id, a.id, opt)) }}
-                          className="px-4 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50">
+                          className="px-4 border border-ground-300 text-ground-700 py-2 rounded-lg text-sm font-medium hover:bg-ground-50 disabled:opacity-50">
                           {t('admin.requests.owner.analysisWithdraw')}
                         </button>
                       </div>
@@ -541,12 +541,12 @@ export default function AdminRequestDetailPage() {
           {/* Triage */}
           {has('triage') && (
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.requests.owner.triageTitle')}</h3>
+              <h3 className="text-sm font-semibold text-ground-700 mb-2">{t('admin.requests.owner.triageTitle')}</h3>
               {/* Say WHOSE reading is sitting in the boxes. These two values decide whether the
                   organisation is charged, so an unattributed default is a claim with no author —
                   which is how this form previously offered 'feature' for every bug. */}
               {!triageTouched.current && triageSource && (
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs text-ground-500 mb-2">
                   {t(triageSource === 'engineer'
                     ? 'admin.requests.owner.triageSeededEngineer'
                     : 'admin.requests.owner.triageSeededAi')}
@@ -572,10 +572,10 @@ export default function AdminRequestDetailPage() {
               </div>
               <textarea value={triageNote} onChange={(e) => setTriageNote(e.target.value)} rows={2}
                 placeholder={t('admin.requests.owner.triageNote')}
-                className="mt-3 w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                className="mt-3 w-full px-3 py-2 border border-ground-300 rounded-lg" />
               <button disabled={busy}
                 onClick={() => run(() => triageOrgRequest(id, { triaged_kind: triageKind, lane: triageLane, note: triageNote }, opt))}
-                className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
                 {t('admin.requests.action.triage')}
               </button>
             </div>
@@ -584,7 +584,7 @@ export default function AdminRequestDetailPage() {
           {/* Quote / Re-quote */}
           {(has('quote') || has('requote')) && (
             <div className="border-t pt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('admin.requests.owner.quoteTitle')}</h3>
+              <h3 className="text-sm font-semibold text-ground-700 mb-2">{t('admin.requests.owner.quoteTitle')}</h3>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm">{t('admin.requests.owner.quoteHours')}
                   <input type="number" min="0" step="0.5" value={quoteHours}
@@ -598,13 +598,13 @@ export default function AdminRequestDetailPage() {
               </div>
               <textarea value={quoteNote} onChange={(e) => setQuoteNote(e.target.value)} rows={2}
                 placeholder={t('admin.requests.owner.quoteNote')}
-                className="mt-3 w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                className="mt-3 w-full px-3 py-2 border border-ground-300 rounded-lg" />
               <button disabled={busy || !quoteHours.trim()}
                 onClick={() => {
                   const data = { hours: Number(quoteHours), margin_pct: Number(quoteMargin), note: quoteNote }
                   run(() => (has('requote') ? requoteOrgRequest(id, data, opt) : quoteOrgRequest(id, data, opt)))
                 }}
-                className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
                 {has('requote') ? t('admin.requests.action.requote') : t('admin.requests.action.quote')}
               </button>
             </div>
@@ -613,13 +613,13 @@ export default function AdminRequestDetailPage() {
           {/* Schedule */}
           {has('schedule') && (
             <div className="border-t pt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.owner.scheduleDate')}</label>
+              <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.owner.scheduleDate')}</label>
               <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)}
                 className="border rounded-lg px-3 py-2 text-sm" />
               <div>
                 <button disabled={busy}
                   onClick={() => run(() => scheduleOrgRequest(id, scheduleDate ? { scheduled_for: scheduleDate } : {}, opt))}
-                  className="mt-2 px-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                  className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
                   {t('admin.requests.action.schedule')}
                 </button>
               </div>
@@ -630,7 +630,7 @@ export default function AdminRequestDetailPage() {
           {has('done') && (
             <div className="border-t pt-4">
               <button disabled={busy} onClick={() => run(() => doneOrgRequest(id, opt))}
-                className="px-4 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                className="px-4 bg-positive-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-positive-700 disabled:opacity-50">
                 {t('admin.requests.action.done')}
               </button>
             </div>
@@ -639,12 +639,12 @@ export default function AdminRequestDetailPage() {
           {/* Decline */}
           {has('decline') && (
             <div className="border-t pt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.owner.declineReason')}</label>
+              <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.owner.declineReason')}</label>
               <textarea value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                className="w-full px-3 py-2 border border-ground-300 rounded-lg" />
               <button disabled={busy || !declineReason.trim()}
                 onClick={() => { if (confirm(t('admin.requests.owner.declineConfirm'))) run(() => declineOrgRequest(id, { reason: declineReason }, opt)) }}
-                className="mt-2 px-4 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
+                className="mt-2 px-4 bg-critical-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-critical-700 disabled:opacity-50">
                 {t('admin.requests.action.decline')}
               </button>
             </div>
@@ -654,7 +654,7 @@ export default function AdminRequestDetailPage() {
 
       {/* A terminal request with a router push target — keep the back nav obvious */}
       {(req.status === 'done' || req.status === 'declined') && (
-        <button onClick={() => router.push('/admin/requests')} className="mt-4 text-sm text-blue-600 hover:text-blue-800">
+        <button onClick={() => router.push('/admin/requests')} className="mt-4 text-sm text-info-600 hover:text-info-800">
           ← {t('admin.requests.detail.back')}
         </button>
       )}

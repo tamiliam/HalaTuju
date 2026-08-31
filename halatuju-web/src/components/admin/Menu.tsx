@@ -27,13 +27,13 @@ export function MenuItem({ icon, children, sub, onClick, href, danger }: {
 }) {
   const cls = `flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors
     ${danger
-      ? 'text-red-600 hover:bg-red-50'
-      : 'text-gray-700 hover:bg-primary-50 hover:text-primary-800'}`
+      ? 'text-critical-600 hover:bg-critical-50'
+      : 'text-ground-700 hover:bg-primary-50 hover:text-primary-800'}`
   const inner = (
     <>
       {icon && <span aria-hidden className="shrink-0 text-base leading-none">{icon}</span>}
       <span className="min-w-0 flex-1 truncate">{children}</span>
-      {sub && <span className="shrink-0 text-xs text-gray-400">{sub}</span>}
+      {sub && <span className="shrink-0 text-xs text-ground-400">{sub}</span>}
     </>
   )
   if (href) {
@@ -49,14 +49,14 @@ export function MenuItem({ icon, children, sub, onClick, href, danger }: {
 /** A labelled divider inside a menu. */
 export function MenuHeading({ children }: { children: ReactNode }) {
   return (
-    <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+    <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-ground-400">
       {children}
     </p>
   )
 }
 
 export function MenuSeparator() {
-  return <div className="my-1 h-px bg-gray-100" role="separator" />
+  return <div className="my-1 h-px bg-ground-100" role="separator" />
 }
 
 export function Menu({ label, trigger, children, align = 'right', width = 'w-60' }: {
@@ -126,7 +126,7 @@ export function Menu({ label, trigger, children, align = 'right', width = 'w-60'
             setTimeout(() => move(e.key === 'ArrowDown' ? 1 : -1), 0)
           }
         }}
-        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-700 aria-expanded:bg-primary-50 aria-expanded:text-primary-700"
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-ground-500 transition-colors hover:bg-primary-50 hover:text-primary-700 aria-expanded:bg-primary-50 aria-expanded:text-primary-700"
       >
         {trigger}
       </button>
@@ -142,7 +142,7 @@ export function Menu({ label, trigger, children, align = 'right', width = 'w-60'
             if (e.key === 'ArrowUp') { e.preventDefault(); move(-1) }
           }}
           onClick={() => setOpen(false)}
-          className={`absolute z-40 mt-1.5 ${width} rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg
+          className={`absolute z-40 mt-1.5 ${width} rounded-xl border border-ground-200 bg-ground-0 p-1.5 shadow-lg
             ${align === 'right' ? 'right-0' : 'left-0'}`}
         >
           {children}

@@ -30,7 +30,7 @@ const UNI_OPTIONS = COMMON_UNIVERSITIES.map((u) => ({
   name: u.name, hint: u.hint, keywords: (u.aliases ?? []).join(' '),
 }))
 
-const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
 export default function AdminProfilePage() {
   const { token, role, refreshRole } = useAdminAuth()
@@ -68,7 +68,7 @@ export default function AdminProfilePage() {
   }, [token, isReviewer])
 
   if (!profile) {
-    return <div className="mt-8 text-center text-gray-500">{t('common.loading')}</div>
+    return <div className="mt-8 text-center text-ground-500">{t('common.loading')}</div>
   }
 
   // Request #6, applied across the console: a Save that would write nothing stays inactive.
@@ -132,23 +132,23 @@ export default function AdminProfilePage() {
     setSaving(false)
   }
 
-  const card = 'bg-white rounded-xl p-6 shadow-sm border space-y-4'
-  const labelCls = 'block text-sm text-gray-600 mb-1'
-  const req = <span className="text-red-500" aria-hidden> *</span>  // compulsory-field marker
+  const card = 'bg-ground-0 rounded-xl p-6 shadow-sm border space-y-4'
+  const labelCls = 'block text-sm text-ground-600 mb-1'
+  const req = <span className="text-critical-500" aria-hidden> *</span>  // compulsory-field marker
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('admin.profileTitle')}</h1>
+      <h1 className="text-2xl font-bold text-ground-900 mb-1">{t('admin.profileTitle')}</h1>
 
       {gated && (
-        <div className={`rounded-lg p-4 mt-4 border ${missing.length ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
-          <p className={`text-sm font-medium ${missing.length ? 'text-amber-900' : 'text-green-800'}`}>
+        <div className={`rounded-lg p-4 mt-4 border ${missing.length ? 'bg-caution-50 border-caution-200' : 'bg-positive-50 border-positive-200'}`}>
+          <p className={`text-sm font-medium ${missing.length ? 'text-caution-900' : 'text-positive-800'}`}>
             {missing.length ? t('admin.reviewer.onboarding.title') : t('admin.reviewer.onboarding.allSet')}
           </p>
           {missing.length > 0 && (
             <>
-              <p className="text-sm text-amber-800 mt-1">{t('admin.reviewer.onboarding.intro')}</p>
-              <ul className="mt-1 list-disc ml-5 text-sm text-amber-800">
+              <p className="text-sm text-caution-800 mt-1">{t('admin.reviewer.onboarding.intro')}</p>
+              <ul className="mt-1 list-disc ml-5 text-sm text-caution-800">
                 {missing.map((f) => <li key={f}>{MISSING_LABEL[f]}</li>)}
               </ul>
             </>
@@ -157,7 +157,7 @@ export default function AdminProfilePage() {
       )}
 
       {message && (
-        <div className={`rounded-lg p-4 my-6 ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-600'}`}>
+        <div className={`rounded-lg p-4 my-6 ${message.type === 'success' ? 'bg-positive-50 border border-positive-200 text-positive-700' : 'bg-critical-50 border border-critical-200 text-critical-600'}`}>
           {message.text}
         </div>
       )}
@@ -173,7 +173,7 @@ export default function AdminProfilePage() {
             </div>
             <div>
               <label className={labelCls}>{t('admin.emailLabel')}</label>
-              <p className="text-sm text-gray-800 px-3 py-2 bg-gray-50 rounded-lg truncate">{profile.email}</p>
+              <p className="text-sm text-ground-800 px-3 py-2 bg-ground-50 rounded-lg truncate">{profile.email}</p>
             </div>
           </div>
         </div>
@@ -200,7 +200,7 @@ export default function AdminProfilePage() {
           <>
             <div className={card}>
               <h2 className="font-semibold">{t('admin.reviewer.title')}</h2>
-              <p className="text-sm text-gray-500 -mt-2">{t('admin.reviewer.subtitle')}</p>
+              <p className="text-sm text-ground-500 -mt-2">{t('admin.reviewer.subtitle')}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={labelCls}>{t('admin.reviewer.highestQualification')}{req}</label>
@@ -249,7 +249,7 @@ export default function AdminProfilePage() {
 
             <div className={card}>
               <h2 className="font-semibold">{t('admin.reviewer.langTitle')}{req}</h2>
-              <p className="text-sm text-gray-500 -mt-2">{t('admin.reviewer.langSubtitle')} {t('admin.reviewer.onboarding.langHint')}</p>
+              <p className="text-sm text-ground-500 -mt-2">{t('admin.reviewer.langSubtitle')} {t('admin.reviewer.onboarding.langHint')}</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
                   <label className={labelCls}>{t('admin.reviewer.langEnglish')}</label>
@@ -285,14 +285,14 @@ export default function AdminProfilePage() {
               <h2 className="font-semibold flex items-center gap-2">
                 <span aria-hidden>🔒</span>{t('admin.reviewer.contactTitle')}
               </h2>
-              <p className="text-sm text-gray-500 -mt-2 italic">{t('admin.reviewer.contactSubtitle')}</p>
+              <p className="text-sm text-ground-500 -mt-2 italic">{t('admin.reviewer.contactSubtitle')}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={labelCls}>{t('admin.reviewer.phone')}{req}</label>
                   <PhoneField value={reviewer?.phone ?? ''} onChange={(v) => setRev({ phone: v })} />
                 </div>
               </div>
-              <label className="flex items-start gap-2 text-sm text-gray-700">
+              <label className="flex items-start gap-2 text-sm text-ground-700">
                 <input type="checkbox" className="mt-0.5"
                   checked={reviewer?.share_phone_with_students ?? true}
                   onChange={(e) => setRev({ share_phone_with_students: e.target.checked })} />
@@ -331,16 +331,16 @@ export default function AdminProfilePage() {
               <h2 className="font-semibold flex items-center gap-2">
                 <span aria-hidden>⏸</span>{t('admin.reviewer.takingPartTitle')}
               </h2>
-              <p className="text-sm text-gray-500 -mt-2 italic">
+              <p className="text-sm text-ground-500 -mt-2 italic">
                 {t('admin.reviewer.takingPartSubtitle')}
               </p>
-              <label className="flex items-start gap-2 text-sm text-gray-700">
+              <label className="flex items-start gap-2 text-sm text-ground-700">
                 <input type="checkbox" className="mt-0.5" checked={reviewer?.paused ?? false}
                   onChange={(e) => setRev({ paused: e.target.checked })} />
                 <span>{t('admin.reviewer.pauseLabel')}</span>
               </label>
               {reviewer?.paused && (
-                <p className="text-sm text-amber-700">{t('admin.reviewer.pausedNote')}</p>
+                <p className="text-sm text-caution-700">{t('admin.reviewer.pausedNote')}</p>
               )}
             </div>
           </>
@@ -348,7 +348,7 @@ export default function AdminProfilePage() {
 
         <button type="submit" disabled={saving || !name || !dirty}
           title={dirty ? undefined : t('common.nothingToSave')}
-          className="w-full sm:w-auto px-8 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
+          className="w-full sm:w-auto px-8 bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50">
           {saving ? t('admin.saving') : t('common.save')}
         </button>
       </form>
@@ -360,13 +360,13 @@ export default function AdminProfilePage() {
 function PhoneField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div className="flex items-stretch">
-      <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-sm text-gray-500">+60</span>
+      <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-ground-300 bg-ground-50 text-sm text-ground-500">+60</span>
       <input
         type="tel" inputMode="numeric"
         value={formatMyMobile(value)}
         onChange={(e) => onChange(formatMyMobile(e.target.value))}
         placeholder="12-345 6789"
-        className="w-full px-3 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="w-full px-3 py-2 border border-ground-300 rounded-r-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
       />
     </div>
   )

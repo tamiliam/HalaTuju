@@ -36,7 +36,7 @@ function StateControl({ item, value, onChange, t }: {
   const allowed = allowedStates(item)
   return (
     <div role="radiogroup" aria-label={t(item.label_key)}
-      className="inline-flex rounded-lg bg-gray-100 p-0.5" data-item={itemKey(item)}>
+      className="inline-flex rounded-lg bg-ground-100 p-0.5" data-item={itemKey(item)}>
       {ITEM_STATES.map((s) => {
         const selected = value === s
         const enabled = allowed.includes(s)
@@ -46,8 +46,8 @@ function StateControl({ item, value, onChange, t }: {
             disabled={!enabled}
             onClick={() => enabled && onChange(s)}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              selected ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
-                : enabled ? 'text-gray-500 hover:text-gray-800' : 'text-gray-300 cursor-not-allowed'}`}>
+              selected ? 'bg-ground-0 text-ground-900 shadow-sm ring-1 ring-ground-200'
+                : enabled ? 'text-ground-500 hover:text-ground-800' : 'text-ground-300 cursor-not-allowed'}`}>
             {t(`admin.programme.config.state.${s}`)}
           </button>
         )
@@ -68,12 +68,12 @@ function ItemRow({ item, value, onChange, t }: {
       heavy ? 'bg-primary-50/60 border-l-4 border-primary-500' : ''}`}
       data-testid={`row-${itemKey(item)}`}>
       <div className="min-w-0">
-        <p className="font-medium text-gray-900">{t(item.label_key)}</p>
-        <p className="mt-0.5 text-sm text-gray-500">
+        <p className="font-medium text-ground-900">{t(item.label_key)}</p>
+        <p className="mt-0.5 text-sm text-ground-500">
           {t(`admin.programme.config.desc.${item.kind}.${item.code}`)}
         </p>
         {heavy && (
-          <p className="mt-1 text-xs text-gray-600">{t('admin.programme.config.heavyNote')}</p>
+          <p className="mt-1 text-xs text-ground-600">{t('admin.programme.config.heavyNote')}</p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-3">
@@ -81,7 +81,7 @@ function ItemRow({ item, value, onChange, t }: {
             case — the mock's caps-blue badge competed with the brand actions. Read from the
             item's own core flag, never a constant. */}
         {item.is_core && (
-          <span className="text-xs text-gray-500" data-testid="always-required">
+          <span className="text-xs text-ground-500" data-testid="always-required">
             {t('admin.programme.config.alwaysRequired')}
           </span>
         )}
@@ -178,20 +178,20 @@ export default function AdminProgrammeConfigPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-semibold text-gray-900">{t('admin.programme.config.title')}</h1>
-      <p className="mt-1 text-sm text-gray-600">{t('admin.programme.config.subtitle')}</p>
+      <h1 className="text-2xl font-semibold text-ground-900">{t('admin.programme.config.title')}</h1>
+      <p className="mt-1 text-sm text-ground-600">{t('admin.programme.config.subtitle')}</p>
 
       {loadError && (
         <div className="mt-4"><InfoBox kind="block">{t('admin.programme.config.loadError')}</InfoBox></div>
       )}
 
       {programmeChoices && (
-        <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
-          <p className="text-sm font-medium text-gray-800">{t('admin.programme.config.programmeRequired')}</p>
+        <div className="mt-4 rounded-xl border border-ground-200 bg-ground-0 p-4">
+          <p className="text-sm font-medium text-ground-800">{t('admin.programme.config.programmeRequired')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {programmeChoices.map((code) => (
               <button key={code} type="button" onClick={() => setProgramme(code)}
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">
+                className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm hover:bg-ground-50">
                 {code}
               </button>
             ))}
@@ -215,15 +215,15 @@ export default function AdminProgrammeConfigPage() {
             { key: 'documents', rows: docs, title: 'sectionDocuments', hint: 'documentsHint' },
             { key: 'questions', rows: qs, title: 'sectionQuestions', hint: 'questionsHint' },
           ].map(({ key, rows, title, hint }) => (
-            <section key={key} className="mt-6 rounded-2xl border border-gray-200 bg-white shadow-sm"
+            <section key={key} className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 shadow-sm"
               aria-labelledby={`section-${key}`}>
-              <div className="border-b border-gray-100 px-5 py-4">
-                <h2 id={`section-${key}`} className="text-lg font-semibold text-gray-900">
+              <div className="border-b border-ground-100 px-5 py-4">
+                <h2 id={`section-${key}`} className="text-lg font-semibold text-ground-900">
                   {t(`admin.programme.config.${title}`)}
                 </h2>
-                <p className="text-sm text-gray-500">{t(`admin.programme.config.${hint}`)}</p>
+                <p className="text-sm text-ground-500">{t(`admin.programme.config.${hint}`)}</p>
               </div>
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-ground-100">
                 {rows.map((item) => (
                   <ItemRow key={itemKey(item)} item={item}
                     value={draft[itemKey(item)] ?? item.state}
@@ -233,15 +233,15 @@ export default function AdminProgrammeConfigPage() {
             </section>
           ))}
 
-          <p className="mt-4 text-xs text-gray-500">
+          <p className="mt-4 text-xs text-ground-500">
             <Link href="/admin/requests" className="underline hover:no-underline">
               {t('admin.programme.config.requestLink')}
             </Link>
           </p>
 
           {/* Footer toolbar — a neutral tint (the mock's pale blue read as an info panel). */}
-          <div className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-5 py-3">
-            <div className="text-sm text-gray-700">
+          <div className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ground-200 bg-ground-50 px-5 py-3">
+            <div className="text-sm text-ground-700">
               <p>
                 {t('admin.programme.config.summary', {
                   required: String(tDocs.required + tQs.required),
@@ -249,7 +249,7 @@ export default function AdminProgrammeConfigPage() {
                   total: String(all),
                 })}
               </p>
-              <p className="text-xs text-gray-500" data-testid="save-outcome">
+              <p className="text-xs text-ground-500" data-testid="save-outcome">
                 {outcome.kind === 'saved' ? t('admin.programme.config.saved')
                   : outcome.kind === 'core' ? t('admin.programme.config.errorCore', { item: outcome.item })
                     : outcome.kind === 'error' ? t('admin.programme.config.errorGeneric')
@@ -259,7 +259,7 @@ export default function AdminProgrammeConfigPage() {
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={discard} disabled={nothingToSave || saving}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 disabled:opacity-50">
+                className="rounded-lg border border-ground-300 bg-ground-0 px-4 py-2 text-sm font-medium text-ground-700 disabled:opacity-50">
                 {t('admin.programme.config.discard')}
               </button>
               <button type="button" onClick={save} disabled={nothingToSave || saving}

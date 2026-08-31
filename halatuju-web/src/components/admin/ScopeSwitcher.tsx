@@ -42,7 +42,7 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel }: {
 }) {
   // Nothing to switch between: render the name, not a control that suggests otherwise.
   if (options.length <= 1) {
-    return <span className="truncate font-medium text-gray-800">{label}</span>
+    return <span className="truncate font-medium text-ground-800">{label}</span>
   }
 
   return (
@@ -50,8 +50,8 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel }: {
       label={ariaLabel}
       trigger={
         <>
-          <span className="max-w-[16ch] truncate font-medium text-gray-800">{label}</span>
-          <Icon name="chevron" size={13} className="shrink-0 text-gray-400" />
+          <span className="max-w-[16ch] truncate font-medium text-ground-800">{label}</span>
+          <Icon name="chevron" size={13} className="shrink-0 text-ground-400" />
         </>
       }
     >
@@ -82,7 +82,7 @@ export function ScopeSwitcher({
   scope?: NavScope
 }) {
   const { t } = useT()
-  const sep = <span aria-hidden className="shrink-0 text-gray-300">/</span>
+  const sep = <span aria-hidden className="shrink-0 text-ground-300">/</span>
 
   /*
    * The breadcrumb says WHERE YOU ARE, not what exists (owner, 2026-07-28). A platform page is

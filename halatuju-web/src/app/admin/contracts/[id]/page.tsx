@@ -17,10 +17,10 @@ const TABS = ['config', 'clauses', 'quiz', 'schedule', 'preview', 'deploy'] as c
 type Tab = typeof TABS[number]
 
 const STATUS_TONE: Record<ContractStatus, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  pending_deployment: 'bg-amber-100 text-amber-700',
-  active: 'bg-green-100 text-green-700',
-  archived: 'bg-slate-100 text-slate-500',
+  draft: 'bg-ground-100 text-ground-600',
+  pending_deployment: 'bg-caution-100 text-caution-700',
+  active: 'bg-positive-100 text-positive-700',
+  archived: 'bg-ground-100 text-ground-500',
 }
 
 export default function ContractEditorPage() {
@@ -48,29 +48,29 @@ export default function ContractEditorPage() {
       .then(setTpl).catch(() => setNotFound(true)).finally(() => setLoading(false))
   }, [token, templateId])
 
-  if (loading) return <p className="text-gray-400">{t('admin.contracts.loading')}</p>
-  if (notFound || !tpl) return <p className="text-red-600">{t('admin.contracts.actionFailed')}</p>
+  if (loading) return <p className="text-ground-400">{t('admin.contracts.loading')}</p>
+  if (notFound || !tpl) return <p className="text-critical-600">{t('admin.contracts.actionFailed')}</p>
 
   const shared = { template: tpl, token: token!, onChange: setTpl }
 
   return (
     <div className="max-w-5xl font-plex">
       <button type="button" onClick={() => router.push('/admin/contracts')}
-        className="text-sm text-blue-600 hover:text-blue-800">{t('admin.contracts.backToList')}</button>
+        className="text-sm text-info-600 hover:text-info-800">{t('admin.contracts.backToList')}</button>
 
       <div className="flex items-center gap-3 mt-2 mb-1">
-        <h1 className="text-2xl font-bold text-gray-900">{tpl.version}</h1>
+        <h1 className="text-2xl font-bold text-ground-900">{tpl.version}</h1>
         <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${STATUS_TONE[tpl.status]}`}>
           {t(`admin.contracts.status.${tpl.status}`)}
         </span>
-        <span className="text-xs text-gray-400 uppercase">{tpl.organisation}</span>
+        <span className="text-xs text-ground-400 uppercase">{tpl.organisation}</span>
       </div>
 
-      <div className="border-b border-gray-200 mb-6 flex gap-1 overflow-x-auto">
+      <div className="border-b border-ground-200 mb-6 flex gap-1 overflow-x-auto">
         {TABS.map((tb) => (
           <button key={tb} type="button" onClick={() => setTab(tb)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-              tab === tb ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
+              tab === tb ? 'border-info-600 text-info-600' : 'border-transparent text-ground-500 hover:text-ground-800'}`}>
             {t(`admin.contracts.tab.${tb}`)}
           </button>
         ))}

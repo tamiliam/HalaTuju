@@ -154,14 +154,14 @@ export default function InterviewScheduleCard({
   }
 
   return (
-    <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
-      <h2 className="text-base font-semibold tracking-tight text-gray-900">
+    <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 p-5">
+      <h2 className="text-base font-semibold tracking-tight text-ground-900">
         {t('admin.scholarship.interview.schedule.title')}
       </h2>
       {/* The subheader is shown only while proposing, and adapts to first-time vs revising.
           In the locked/booked/cancelled states the in-card copy carries the message. */}
       {((schedule.status !== 'booked' && schedule.status !== 'cancelled') || rescheduling) && editing && (
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-ground-500">
           {t(rescheduling
             ? 'admin.scholarship.interview.schedule.rescheduleIntro'
             : proposedSlots.length > 0
@@ -171,31 +171,31 @@ export default function InterviewScheduleCard({
       )}
 
       {schedule.status === 'booked' && schedule.start && !rescheduling && (
-        <div className="mt-3 rounded-xl border border-green-200 bg-green-50/50 p-3 text-sm">
-          <div className="font-medium text-gray-900">
+        <div className="mt-3 rounded-xl border border-positive-200 bg-positive-50/50 p-3 text-sm">
+          <div className="font-medium text-ground-900">
             {t('admin.scholarship.interview.schedule.booked')}: {formatMyt(schedule.start)}
           </div>
           {schedule.meeting_url
             ? <a href={schedule.meeting_url} target="_blank" rel="noreferrer"
-                 className="mt-2 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                 className="mt-2 inline-block rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
                 {t('admin.scholarship.interview.schedule.meetLink')}
               </a>
-            : <span className="mt-1 block text-xs text-gray-500">
+            : <span className="mt-1 block text-xs text-ground-500">
                 {t('admin.scholarship.interview.schedule.noLink')}
               </span>}
           {/* Emergency reschedule: move the time (releases the booking, student re-picks). No
               reviewer self-cancel — an emergency reschedules; a true hand-off is an admin reassign. */}
-          <div className="mt-3 border-t border-green-200/70 pt-2">
+          <div className="mt-3 border-t border-positive-200/70 pt-2">
             {confirmingReschedule ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
-                <p className="text-gray-800">{t('admin.scholarship.interview.schedule.rescheduleConfirm')}</p>
+              <div className="rounded-lg border border-caution-200 bg-caution-50 p-2.5">
+                <p className="text-ground-800">{t('admin.scholarship.interview.schedule.rescheduleConfirm')}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <button type="button" onClick={startReschedule}
-                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700">
+                    className="rounded-lg bg-caution-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-caution-700">
                     {t('admin.scholarship.interview.schedule.rescheduleYes')}
                   </button>
                   <button type="button" onClick={() => setConfirmingReschedule(false)}
-                    className="text-sm text-gray-600 hover:text-gray-800">
+                    className="text-sm text-ground-600 hover:text-ground-800">
                     {t('admin.scholarship.interview.schedule.rescheduleKeep')}
                   </button>
                 </div>
@@ -203,7 +203,7 @@ export default function InterviewScheduleCard({
             ) : (
               <div className="text-right">
                 <button type="button" onClick={() => setConfirmingReschedule(true)}
-                  className="text-xs text-blue-600 hover:underline">
+                  className="text-xs text-info-600 hover:underline">
                   {t('admin.scholarship.interview.schedule.reschedule')}
                 </button>
               </div>
@@ -213,7 +213,7 @@ export default function InterviewScheduleCard({
       )}
 
       {schedule.status === 'cancelled' && (
-        <div className="mt-3 text-sm text-amber-700">
+        <div className="mt-3 text-sm text-caution-700">
           <p>{t('admin.scholarship.interview.schedule.cancelledNote')}</p>
           {schedule.cancel_reason && (
             <p className="mt-1">
@@ -231,7 +231,7 @@ export default function InterviewScheduleCard({
         <div className="mt-4">
           {/* The student said none of these work — prompt the reviewer to propose alternatives. */}
           {schedule.alternatives_requested && (
-            <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="mb-3 rounded-lg border border-caution-300 bg-caution-50 p-3 text-sm text-caution-900">
               <div className="font-medium">{t('admin.scholarship.interview.schedule.altRequestedTitle')}</div>
               {schedule.alternatives_note && (
                 <p className="mt-1 italic">“{schedule.alternatives_note}”</p>
@@ -239,23 +239,23 @@ export default function InterviewScheduleCard({
               <p className="mt-1 text-xs">{t('admin.scholarship.interview.schedule.altRequestedHint')}</p>
             </div>
           )}
-          <div className="text-sm font-semibold text-gray-900">
+          <div className="text-sm font-semibold text-ground-900">
             {t('admin.scholarship.interview.schedule.proposedHeading')}
           </div>
-          <p className="mt-0.5 text-xs text-gray-500">
+          <p className="mt-0.5 text-xs text-ground-500">
             {t('admin.scholarship.interview.schedule.awaitingChoice')}
           </p>
           <ul className="mt-3 space-y-2">
             {proposedSlots.map((s) => (
               <li key={s.id}
-                className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                className="flex items-center gap-2 rounded-lg border border-ground-200 px-3 py-2 text-sm text-ground-800">
+                <span className="h-1.5 w-1.5 rounded-full bg-positive-500" />
                 {formatMyt(s.start)}
               </li>
             ))}
           </ul>
           <button type="button" onClick={startEdit}
-            className="mt-4 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            className="mt-4 rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-50">
             {t('admin.scholarship.interview.schedule.proposeAlternative')}
           </button>
         </div>
@@ -269,16 +269,16 @@ export default function InterviewScheduleCard({
             {/* Left: month calendar */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-900">{monthTitle}</span>
+                <span className="text-sm font-semibold text-ground-900">{monthTitle}</span>
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={() => shiftMonth(-1)} disabled={atCurrentMonth}
                     aria-label="previous month"
-                    className="rounded-md px-2.5 py-1 text-2xl leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-30">‹</button>
+                    className="rounded-md px-2.5 py-1 text-2xl leading-none text-ground-600 hover:bg-ground-100 disabled:opacity-30">‹</button>
                   <button type="button" onClick={() => shiftMonth(1)} aria-label="next month"
-                    className="rounded-md px-2.5 py-1 text-2xl leading-none text-gray-600 hover:bg-gray-100">›</button>
+                    className="rounded-md px-2.5 py-1 text-2xl leading-none text-ground-600 hover:bg-ground-100">›</button>
                 </div>
               </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase text-gray-400">
+              <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase text-ground-400">
                 {WEEKDAY_SEEDS.map((d, i) => (
                   <div key={i}>{new Intl.DateTimeFormat(il, { weekday: 'short' }).format(d).slice(0, 3)}</div>
                 ))}
@@ -296,14 +296,14 @@ export default function InterviewScheduleCard({
                       className={
                         'relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm transition ' +
                         (isSel
-                          ? 'bg-blue-600 font-semibold text-white'
+                          ? 'bg-primary-600 font-semibold text-white'
                           : tooEarly
-                            ? 'text-gray-300'
-                            : 'text-gray-800 hover:bg-blue-50')
+                            ? 'text-ground-300'
+                            : 'text-ground-800 hover:bg-info-50')
                       }>
                       {day}
                       {hasPick && !isSel && (
-                        <span className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-500" />
+                        <span className="absolute bottom-1 h-1 w-1 rounded-full bg-info-500" />
                       )}
                     </button>
                   )
@@ -312,13 +312,13 @@ export default function InterviewScheduleCard({
             </div>
 
             {/* Right: time pills for the selected day */}
-            <div className="md:border-l md:border-gray-100 md:pl-5">
-              <div className="text-sm font-semibold text-gray-900">{dateHeading}</div>
-              <p className="text-[11px] text-gray-400">
+            <div className="md:border-l md:border-ground-100 md:pl-5">
+              <div className="text-sm font-semibold text-ground-900">{dateHeading}</div>
+              <p className="text-[11px] text-ground-400">
                 {t('admin.scholarship.interview.schedule.availableTimes')}
               </p>
               {slots.length === 0 ? (
-                <p className="mt-2 text-sm italic text-gray-400">
+                <p className="mt-2 text-sm italic text-ground-400">
                   {t('admin.scholarship.interview.schedule.noneToday')}
                 </p>
               ) : (
@@ -334,14 +334,14 @@ export default function InterviewScheduleCard({
                         className={
                           'flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ' +
                           (isSel
-                            ? 'border-blue-600 bg-blue-600 text-white'
+                            ? 'border-info-600 bg-primary-600 text-white'
                             : isBusy
-                              ? 'border-gray-200 bg-gray-50 text-gray-400 line-through'
+                              ? 'border-ground-200 bg-ground-50 text-ground-400 line-through'
                               : atMax
-                                ? 'border-gray-200 text-gray-300'
-                                : 'border-gray-200 text-gray-800 hover:border-blue-500 hover:bg-blue-50')
+                                ? 'border-ground-200 text-ground-300'
+                                : 'border-ground-200 text-ground-800 hover:border-info-500 hover:bg-info-50')
                         }>
-                        <span className={'h-1.5 w-1.5 rounded-full ' + (isSel ? 'bg-white' : 'bg-green-500')} />
+                        <span className={'h-1.5 w-1.5 rounded-full ' + (isSel ? 'bg-ground-0' : 'bg-positive-500')} />
                         {slotLabel12h(s.label)}
                       </button>
                     )
@@ -352,19 +352,19 @@ export default function InterviewScheduleCard({
           </div>
 
           {/* Selected summary (can span days) + submit. Exactly 3 required. */}
-          <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
-            <div className="text-xs font-medium text-gray-700">
+          <div className="mt-4 space-y-3 border-t border-ground-100 pt-4">
+            <div className="text-xs font-medium text-ground-700">
               {t('admin.scholarship.interview.schedule.selectedCount')
                 .replace('{n}', String(selected.length)).replace('{max}', String(REQUIRED_PROPOSALS))}
             </div>
             {selected.length > 0 && (
               <ul className="space-y-1">
                 {[...selected].sort().map((v) => (
-                  <li key={v} className="flex items-center justify-between gap-3 text-sm text-gray-800">
+                  <li key={v} className="flex items-center justify-between gap-3 text-sm text-ground-800">
                     <span>{formatMyt(v)}</span>
                     <button type="button" onClick={() => toggle(v)}
                       aria-label={t('admin.scholarship.interview.schedule.removeSlot')}
-                      className="text-gray-400 hover:text-red-600">
+                      className="text-ground-400 hover:text-critical-600">
                       <TrashIcon />
                     </button>
                   </li>
@@ -373,22 +373,22 @@ export default function InterviewScheduleCard({
             )}
             <div className="flex items-center gap-3">
               <button type="button" onClick={propose} disabled={busy || !ready}
-                className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
                 {t('admin.scholarship.interview.schedule.propose')}
               </button>
               {(proposedSlots.length > 0 || rescheduling) && (
                 <button type="button" onClick={cancelEdit} disabled={busy}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm text-ground-600 hover:bg-ground-50 disabled:opacity-50">
                   {t('admin.scholarship.interview.schedule.cancelEdit')}
                 </button>
               )}
               {!ready && (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-ground-500">
                   {t('admin.scholarship.interview.schedule.pickThree')}
                 </span>
               )}
             </div>
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-xs text-critical-600">{error}</p>}
           </div>
         </>
       )}
@@ -396,15 +396,15 @@ export default function InterviewScheduleCard({
       {/* Messages from the student (the always-open channel — can arrive in any state,
           incl. inside the reschedule cutoff, e.g. "I'm running late"). Newest last. */}
       {(schedule.messages?.length ?? 0) > 0 && (
-        <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50/60 p-3">
-          <div className="text-sm font-semibold text-gray-900">
+        <div className="mt-4 rounded-lg border border-info-200 bg-info-50/60 p-3">
+          <div className="text-sm font-semibold text-ground-900">
             {t('admin.scholarship.interview.schedule.messagesHeading')}
           </div>
           <ul className="mt-2 space-y-2">
             {schedule.messages!.map((m, i) => (
-              <li key={i} className="text-sm text-gray-800">
+              <li key={i} className="text-sm text-ground-800">
                 <span className="italic">“{m.text}”</span>
-                <span className="ml-2 text-xs text-gray-500">{formatMyt(m.created_at)}</span>
+                <span className="ml-2 text-xs text-ground-500">{formatMyt(m.created_at)}</span>
               </li>
             ))}
           </ul>

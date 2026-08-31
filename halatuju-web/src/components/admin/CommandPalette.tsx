@@ -55,14 +55,14 @@ export function CommandPalette({ groups, open, onClose }: {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-gray-900/40 px-4 pt-[12vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-ground-900/40 px-4 pt-[12vh]"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={t('admin.shell.search')}
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-ground-200 bg-ground-0 shadow-2xl"
         onKeyDown={(e) => {
           if (e.key === 'Escape') { e.preventDefault(); onClose() }
           if (e.key === 'ArrowDown') {
@@ -79,21 +79,21 @@ export function CommandPalette({ groups, open, onClose }: {
           }
         }}
       >
-        <div className="flex items-center gap-2.5 border-b border-gray-100 px-4 py-3">
-          <Icon name="search" size={16} className="text-gray-400" />
+        <div className="flex items-center gap-2.5 border-b border-ground-100 px-4 py-3">
+          <Icon name="search" size={16} className="text-ground-400" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('admin.shell.searchPlaceholder')}
             aria-label={t('admin.shell.search')}
-            className="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-gray-900 outline-none placeholder:text-gray-400"
+            className="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-ground-900 outline-none placeholder:text-ground-400"
           />
         </div>
 
         <div className="max-h-72 overflow-y-auto p-1.5">
           {results.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-gray-400">
+            <p className="px-3 py-6 text-center text-sm text-ground-400">
               {t('admin.shell.searchNothing')}
             </p>
           ) : (
@@ -105,10 +105,10 @@ export function CommandPalette({ groups, open, onClose }: {
                 onClick={() => go(item.href)}
                 aria-current={i === cursor ? 'true' : undefined}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors
-                  ${i === cursor ? 'bg-primary-50 text-primary-800' : 'text-gray-700'}`}
+                  ${i === cursor ? 'bg-primary-50 text-primary-800' : 'text-ground-700'}`}
               >
                 <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
-                <span className="shrink-0 text-[11px] text-gray-400">
+                <span className="shrink-0 text-[11px] text-ground-400">
                   {t(`admin.nav.group.${item.scope}`)}
                 </span>
               </button>
@@ -116,7 +116,7 @@ export function CommandPalette({ groups, open, onClose }: {
           )}
         </div>
 
-        <p className="border-t border-gray-100 bg-gray-50 px-4 py-2 text-[11px] text-gray-400">
+        <p className="border-t border-ground-100 bg-ground-50 px-4 py-2 text-[11px] text-ground-400">
           {t('admin.shell.searchScopeNote')}
         </p>
       </div>

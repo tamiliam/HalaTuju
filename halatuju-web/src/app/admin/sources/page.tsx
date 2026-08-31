@@ -24,8 +24,8 @@ import { Toggle } from '@/components/sources/shared'
 // stacked until then, which put a five-row switchboard between the admin and the table they
 // came for. Only one panel is mounted at a time — the emails card fetches on first reveal.
 
-const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
-const inputBad = 'w-full px-3 py-2 border border-red-400 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500'
+const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
+const inputBad = 'w-full px-3 py-2 border border-critical-400 rounded-lg focus:ring-2 focus:ring-critical-500 focus:border-critical-500'
 const slugify = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '')
 // Phone is optional; when present it must be a valid Malaysian number. Display + input both
 // run through the platform's shared formatPhone/isValidPhone (same helpers the apply form uses).
@@ -67,7 +67,7 @@ export default function SourcesPage() {
   useEffect(() => { load() }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (role && !canManage) {
-    return <p className="text-red-600">{t('admin.sources.superRequired')}</p>
+    return <p className="text-critical-600">{t('admin.sources.superRequired')}</p>
   }
 
   const errText = (err: unknown) => {
@@ -129,13 +129,13 @@ export default function SourcesPage() {
     <div className="max-w-5xl font-plex">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('admin.sources.title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('admin.sources.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-ground-900">{t('admin.sources.title')}</h1>
+          <p className="text-sm text-ground-500 mt-1">{t('admin.sources.subtitle')}</p>
         </div>
         {/* Adding belongs to the registry — on the emails panel the button would do nothing visible. */}
         {panel === 'orgs' && (
           <button type="button" onClick={() => setAdding((v) => !v)}
-            className="shrink-0 px-4 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700">
+            className="shrink-0 px-4 bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700">
             + {t('admin.sources.add')}
           </button>
         )}
@@ -148,49 +148,49 @@ export default function SourcesPage() {
 
       {message && (
         <div className={`rounded-lg p-4 mb-6 ${
-          message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700'
-          : 'bg-red-50 border border-red-200 text-red-600'}`}>{message.text}</div>
+          message.type === 'success' ? 'bg-positive-50 border border-positive-200 text-positive-700'
+          : 'bg-critical-50 border border-critical-200 text-critical-600'}`}>{message.text}</div>
       )}
 
       {panel === 'orgs' && adding && (
-        <form onSubmit={submitAdd} className="bg-white rounded-xl border shadow-sm p-6 space-y-4 mb-6">
-          <h2 className="font-semibold text-gray-900">{t('admin.sources.addTitle')}</h2>
+        <form onSubmit={submitAdd} className="bg-ground-0 rounded-xl border shadow-sm p-6 space-y-4 mb-6">
+          <h2 className="font-semibold text-ground-900">{t('admin.sources.addTitle')}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.code')}</span>
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.code')}</span>
               <input className={inputCls} value={addForm.code}
                 onChange={(e) => setAddForm({ ...addForm, code: slugify(e.target.value) })} required />
-              <span className="block text-xs text-gray-400 mt-1">{t('admin.sources.codeHelp')}</span>
+              <span className="block text-xs text-ground-400 mt-1">{t('admin.sources.codeHelp')}</span>
             </label>
             <label className="block">
-              <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.name')}</span>
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.name')}</span>
               <input className={inputCls} value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })} required />
             </label>
             <label className="block">
-              <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.contactPerson')}</span>
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.contactPerson')}</span>
               <input className={inputCls} value={addForm.contact_person} onChange={(e) => setAddForm({ ...addForm, contact_person: e.target.value })} />
             </label>
             <label className="block">
-              <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.email')}</span>
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.email')}</span>
               <input className={inputCls} type="email" value={addForm.contact_email} onChange={(e) => setAddForm({ ...addForm, contact_email: e.target.value })} />
             </label>
             <label className="block">
-              <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.phone')}</span>
+              <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.phone')}</span>
               <input className={phoneInvalid(addForm.phone) ? inputBad : inputCls} inputMode="tel"
                 value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: formatPhone(e.target.value) })} />
-              {phoneInvalid(addForm.phone) && <span className="block text-xs text-red-500 mt-1">{t('profile.invalidPhone')}</span>}
+              {phoneInvalid(addForm.phone) && <span className="block text-xs text-critical-500 mt-1">{t('profile.invalidPhone')}</span>}
             </label>
             <div className="flex items-center gap-3 pt-6">
               <Toggle on={addForm.show_in_apply} onClick={() => setAddForm({ ...addForm, show_in_apply: !addForm.show_in_apply })} label={t('admin.sources.activeInApply')} />
-              <span className="text-sm text-gray-700">{t('admin.sources.activeInApply')}</span>
+              <span className="text-sm text-ground-700">{t('admin.sources.activeInApply')}</span>
             </div>
           </div>
-          <p className="text-xs text-gray-400">{t('admin.sources.activeHelp')}</p>
+          <p className="text-xs text-ground-400">{t('admin.sources.activeHelp')}</p>
           <div className="flex items-center gap-3">
-            <button type="submit" disabled={busy === 'new'} className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
+            <button type="submit" disabled={busy === 'new'} className="px-6 bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
               {busy === 'new' ? t('admin.sources.saving') : t('admin.sources.create')}
             </button>
-            <button type="button" onClick={() => setAdding(false)} className="text-sm text-gray-500 hover:text-gray-700">{t('admin.sources.cancel')}</button>
+            <button type="button" onClick={() => setAdding(false)} className="text-sm text-ground-500 hover:text-ground-700">{t('admin.sources.cancel')}</button>
           </div>
         </form>
       )}
@@ -203,16 +203,16 @@ export default function SourcesPage() {
       {/* The registry is HIDDEN rather than unmounted: a half-finished inline edit survives a trip
           to the emails badge and back. The plain `hidden` attribute (not a Tailwind class) is
           deliberate — it takes the table out of the accessibility tree as well as the layout. */}
-      <div hidden={panel !== 'orgs'} className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+      <div hidden={panel !== 'orgs'} className="bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
         <table className="w-full text-sm min-w-[820px]">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-ground-50 border-b">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.sources.colOrganisation')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.sources.colContactPerson')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.sources.colEmail')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.sources.colPhone')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.sources.colActive')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.sources.colStudents')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colOrganisation')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colContactPerson')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colEmail')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colPhone')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colActive')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colStudents')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -221,33 +221,33 @@ export default function SourcesPage() {
               // Inline edit expands into a single full-width labelled panel (spanning all
               // columns) rather than cramming inputs into narrow cells — no truncated text,
               // no row-height misalignment. Mirrors the Add-a-source form layout.
-              <tr key={s.id} className="bg-blue-50/40">
+              <tr key={s.id} className="bg-info-50/40">
                 <td colSpan={7} className="px-4 py-5">
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <label className="block">
-                      <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.name')}</span>
+                      <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.name')}</span>
                       <input className={inputCls} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-                      <span className="block text-xs text-gray-400 mt-1">{s.code}</span>
+                      <span className="block text-xs text-ground-400 mt-1">{s.code}</span>
                     </label>
                     <label className="block">
-                      <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.contactPerson')}</span>
+                      <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.contactPerson')}</span>
                       <input className={inputCls} value={editForm.contact_person} onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })} />
                     </label>
                     <label className="block">
-                      <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.email')}</span>
+                      <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.email')}</span>
                       <input className={inputCls} type="email" value={editForm.contact_email} onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })} />
                     </label>
                     <label className="block">
-                      <span className="block text-sm text-gray-600 mb-1">{t('admin.sources.phone')}</span>
+                      <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.phone')}</span>
                       <input className={phoneInvalid(editForm.phone) ? inputBad : inputCls} inputMode="tel"
                         value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: formatPhone(e.target.value) })} />
-                      {phoneInvalid(editForm.phone) && <span className="block text-xs text-red-500 mt-1">{t('profile.invalidPhone')}</span>}
+                      {phoneInvalid(editForm.phone) && <span className="block text-xs text-critical-500 mt-1">{t('profile.invalidPhone')}</span>}
                     </label>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4">
                     <div className="flex items-center gap-3">
                       <Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} />
-                      <span className="text-sm text-gray-700">{t('admin.sources.activeInApply')}</span>
+                      <span className="text-sm text-ground-700">{t('admin.sources.activeInApply')}</span>
                     </div>
                     <div className="flex items-center gap-3 ml-auto">
                       {/* Request #6: nothing edited, nothing to save. The row IS its own baseline —
@@ -256,10 +256,10 @@ export default function SourcesPage() {
                       <button disabled={busy === s.id || phoneInvalid(editForm.phone)
                                         || !editDirty(s)} onClick={() => saveEdit(s.id)}
                         title={editDirty(s) ? undefined : t('common.nothingToSave')}
-                        className="px-5 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                        className="px-5 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
                         {busy === s.id ? t('admin.sources.saving') : t('admin.sources.save')}
                       </button>
-                      <button onClick={() => setEditingId(null)} className="text-sm text-gray-500 hover:text-gray-700">{t('admin.sources.cancel')}</button>
+                      <button onClick={() => setEditingId(null)} className="text-sm text-ground-500 hover:text-ground-700">{t('admin.sources.cancel')}</button>
                     </div>
                   </div>
                 </td>
@@ -267,23 +267,23 @@ export default function SourcesPage() {
             ) : (
               <tr key={s.id}>
                 <td className="px-4 py-3">
-                  <span className="font-semibold text-gray-900">{s.name}</span>
-                  <span className="block text-xs text-gray-400">{s.code}</span>
+                  <span className="font-semibold text-ground-900">{s.name}</span>
+                  <span className="block text-xs text-ground-400">{s.code}</span>
                 </td>
-                <td className="px-4 py-3 text-gray-600">{s.contact_person || t('admin.sources.empty')}</td>
-                <td className="px-4 py-3 text-gray-500">{s.contact_email || t('admin.sources.empty')}</td>
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{s.phone ? formatPhone(s.phone) : t('admin.sources.empty')}</td>
+                <td className="px-4 py-3 text-ground-600">{s.contact_person || t('admin.sources.empty')}</td>
+                <td className="px-4 py-3 text-ground-500">{s.contact_email || t('admin.sources.empty')}</td>
+                <td className="px-4 py-3 text-ground-500 whitespace-nowrap">{s.phone ? formatPhone(s.phone) : t('admin.sources.empty')}</td>
                 <td className="px-4 py-3"><Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} /></td>
                 <td className="px-4 py-3">
-                  <span className="inline-block min-w-[1.75rem] text-center px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{s.student_count ?? 0}</span>
+                  <span className="inline-block min-w-[1.75rem] text-center px-2 py-0.5 text-xs rounded-full bg-ground-100 text-ground-600">{s.student_count ?? 0}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => startEdit(s)} className="text-xs font-medium text-blue-600 hover:text-blue-800">{t('admin.sources.edit')}</button>
+                  <button onClick={() => startEdit(s)} className="text-xs font-medium text-info-600 hover:text-info-800">{t('admin.sources.edit')}</button>
                 </td>
               </tr>
             ))}
             {sources.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">{t('admin.sources.noSources')}</td></tr>
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-ground-400">{t('admin.sources.noSources')}</td></tr>
             )}
           </tbody>
         </table>

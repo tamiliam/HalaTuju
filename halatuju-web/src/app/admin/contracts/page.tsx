@@ -16,13 +16,13 @@ import {
 // New-version supports Start-blank or Copy-from an existing version.
 
 const STATUS_TONE: Record<ContractStatus, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  pending_deployment: 'bg-amber-100 text-amber-700',
-  active: 'bg-green-100 text-green-700',
-  archived: 'bg-slate-100 text-slate-500',
+  draft: 'bg-ground-100 text-ground-600',
+  pending_deployment: 'bg-caution-100 text-caution-700',
+  active: 'bg-positive-100 text-positive-700',
+  archived: 'bg-ground-100 text-ground-500',
 }
 
-const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
 export default function ContractsListPage() {
   const { token, role } = useAdminAuth()
@@ -58,7 +58,7 @@ export default function ContractsListPage() {
   const knownOrgs = Array.from(new Set(templates.map((tm) => tm.organisation))).filter(Boolean).sort()
 
   if (role && !allowed) {
-    return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
+    return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   }
 
   const submitNew = async (e: React.FormEvent) => {
@@ -107,19 +107,19 @@ export default function ContractsListPage() {
     <div className="max-w-5xl font-plex">
       <div className="flex items-start justify-between gap-4 mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('admin.contracts.title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('admin.contracts.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-ground-900">{t('admin.contracts.title')}</h1>
+          <p className="text-sm text-ground-500 mt-1">{t('admin.contracts.subtitle')}</p>
         </div>
         <button type="button" onClick={() => setShowNew((s) => !s)}
-          className="shrink-0 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+          className="shrink-0 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700">
           {t('admin.contracts.newVersion')}
         </button>
       </div>
 
-      {error && <div className="rounded-lg p-3 my-4 bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
+      {error && <div className="rounded-lg p-3 my-4 bg-critical-50 border border-critical-200 text-critical-600 text-sm">{error}</div>}
 
       {showNew && (
-        <form onSubmit={submitNew} className="mt-4 mb-6 bg-white rounded-xl border shadow-sm p-6 space-y-4">
+        <form onSubmit={submitNew} className="mt-4 mb-6 bg-ground-0 rounded-xl border shadow-sm p-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <input className={inputCls} placeholder={t('admin.contracts.versionPlaceholder')}
               value={version} onChange={(e) => setVersion(e.target.value)} required maxLength={50} />
@@ -149,61 +149,61 @@ export default function ContractsListPage() {
             ) : (
               // An org_admin has exactly one organisation (the server always uses their own),
               // so show it prefilled + fixed rather than an empty box to fill in.
-              <input className={`${inputCls} bg-gray-50 text-gray-500`} disabled
+              <input className={`${inputCls} bg-ground-50 text-ground-500`} disabled
                 value={role?.owning_org_name || ''} title="Your organisation" />
             )}
           </div>
           {source === 'upload' && (
-            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
-              <input type="file" accept=".docx" className="text-sm text-gray-700"
+            <div className="rounded-lg border border-dashed border-ground-300 bg-ground-50 p-3">
+              <input type="file" accept=".docx" className="text-sm text-ground-700"
                 onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              <p className="text-xs text-gray-400 mt-1">{t('admin.contracts.uploadDocHint')}</p>
+              <p className="text-xs text-ground-400 mt-1">{t('admin.contracts.uploadDocHint')}</p>
             </div>
           )}
           <div className="flex gap-3">
             <button type="submit" disabled={creating}
-              className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
+              className="px-6 bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
               {creating ? t('admin.contracts.creating') : t('admin.contracts.create')}
             </button>
             <button type="button" onClick={() => setShowNew(false)}
-              className="px-6 py-2.5 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50">
+              className="px-6 py-2.5 rounded-lg font-medium border border-ground-300 text-ground-700 hover:bg-ground-50">
               {t('admin.contracts.cancel')}
             </button>
           </div>
         </form>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border overflow-x-auto mt-4">
+      <div className="bg-ground-0 rounded-lg shadow-sm border overflow-x-auto mt-4">
         <table className="w-full text-sm min-w-[640px]">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-ground-50 border-b">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.contracts.colVersion')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.contracts.colStatus')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.contracts.colLanguages')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.contracts.colVetted')}</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.contracts.colUpdated')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colVersion')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colStatus')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colLanguages')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colVetted')}</th>
+              <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colUpdated')}</th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {templates.map((tm) => (
-              <tr key={tm.id} className="hover:bg-blue-50/40 cursor-pointer"
+              <tr key={tm.id} className="hover:bg-info-50/40 cursor-pointer"
                 onClick={() => router.push(`/admin/contracts/${tm.id}`)}>
-                <td className="px-4 py-3 font-medium text-gray-900">{tm.version}</td>
+                <td className="px-4 py-3 font-medium text-ground-900">{tm.version}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${STATUS_TONE[tm.status]}`}>
                     {t(`admin.contracts.status.${tm.status}`)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500 uppercase">{tm.languages_available.join(' · ')}</td>
-                <td className="px-4 py-3 text-gray-500">{tm.vetted_by_name || '—'}</td>
-                <td className="px-4 py-3 text-gray-500">{new Date(tm.updated_at).toLocaleDateString('en-GB')}</td>
+                <td className="px-4 py-3 text-ground-500 uppercase">{tm.languages_available.join(' · ')}</td>
+                <td className="px-4 py-3 text-ground-500">{tm.vetted_by_name || '—'}</td>
+                <td className="px-4 py-3 text-ground-500">{new Date(tm.updated_at).toLocaleDateString('en-GB')}</td>
               </tr>
             ))}
             {!loading && templates.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">{t('admin.contracts.noTemplates')}</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-ground-400">{t('admin.contracts.noTemplates')}</td></tr>
             )}
             {loading && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">{t('admin.contracts.loading')}</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-ground-400">{t('admin.contracts.loading')}</td></tr>
             )}
           </tbody>
         </table>

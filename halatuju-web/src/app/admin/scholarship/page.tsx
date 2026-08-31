@@ -19,9 +19,9 @@ import { REFERRING_ORG_OPTIONS, referralAcronym } from '@/lib/scholarship'
 import { APPLICATION_STATUSES, statusLabelKey, statusTone, displayStatus } from '@/lib/applicationStatus'
 
 const bucketBadge = (b: string) =>
-  b === 'A' ? 'bg-green-100 text-green-700'
-    : b === 'B' ? 'bg-amber-100 text-amber-700'
-      : 'bg-gray-100 text-gray-500'
+  b === 'A' ? 'bg-positive-100 text-positive-700'
+    : b === 'B' ? 'bg-caution-100 text-caution-700'
+      : 'bg-ground-100 text-ground-500'
 
 // ── Reviewer language matching (assignment dropdown) ───────────────────────────
 // The "Prefers …" note shows only for a SPECIFIC preferred call language (en/ms/ta — 'mixed'/''
@@ -178,7 +178,7 @@ export default function AdminScholarshipList() {
   return (
     <div>
       <h1 className="text-xl sm:text-2xl font-bold">{t('admin.scholarship.title')}</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-4">
+      <p className="text-sm text-ground-500 mt-1 mb-4">
         {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
       </p>
 
@@ -186,7 +186,7 @@ export default function AdminScholarshipList() {
 
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="relative flex-1 min-w-[180px] sm:flex-none sm:w-64">
-          <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4 text-ground-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
           </svg>
           <input
@@ -194,7 +194,7 @@ export default function AdminScholarshipList() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('admin.searchPlaceholder')}
-            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-ground-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
         <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)}
@@ -238,66 +238,66 @@ export default function AdminScholarshipList() {
         )}
       </div>
 
-      {error && <div className="text-red-600">{error}</div>}
+      {error && <div className="text-critical-600">{error}</div>}
       {loading && !data ? (
-        <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
+        <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
       ) : apps.length === 0 ? (
-        <div className="text-center text-gray-500 mt-8">{t('admin.scholarship.empty')}</div>
+        <div className="text-center text-ground-500 mt-8">{t('admin.scholarship.empty')}</div>
       ) : (
         <>
-        <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+        <div className="bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50/80 border-b">
+            <thead className="bg-ground-50/80 border-b">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   <button type="button" onClick={() => toggleSort('name')}
-                    className="uppercase tracking-wider hover:text-gray-900">
+                    className="uppercase tracking-wider hover:text-ground-900">
                     {t('admin.scholarship.name')}{sortArrow('name')}
                   </button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   <button type="button" onClick={() => toggleSort('source')}
-                    className="uppercase tracking-wider hover:text-gray-900">
+                    className="uppercase tracking-wider hover:text-ground-900">
                     {t('admin.scholarship.source')}{sortArrow('source')}
                   </button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.bucket')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.qualShort')}</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">{t('admin.scholarship.bucket')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">{t('admin.scholarship.qualShort')}</th>
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   <button type="button" onClick={() => toggleSort('merit')}
-                    className="uppercase tracking-wider hover:text-gray-900">
+                    className="uppercase tracking-wider hover:text-ground-900">
                     {t('admin.scholarship.merit')}{sortArrow('merit')}
                   </button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   <button type="button" onClick={() => toggleSort('status')}
-                    className="uppercase tracking-wider hover:text-gray-900">
+                    className="uppercase tracking-wider hover:text-ground-900">
                     {t('admin.scholarship.status')}{sortArrow('status')}
                   </button>
                 </th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   <button type="button" onClick={() => toggleSort('submitted')}
-                    className="uppercase tracking-wider hover:text-gray-900">
+                    className="uppercase tracking-wider hover:text-ground-900">
                     {t('admin.scholarship.submitted')}{sortArrow('submitted')}
                   </button>
                 </th>
-                {canAssign && <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
+                {canAssign && <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">{t('admin.scholarship.assigned')}</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-ground-100">
               {apps.map((a) => (
-                <tr key={a.id} className="hover:bg-blue-50/40 transition-colors">
+                <tr key={a.id} className="hover:bg-info-50/40 transition-colors">
                   <td className="px-4 py-3 border-l-[3px] border-l-blue-500">
-                    <Link href={`/admin/scholarship/${a.id}`} className="text-blue-600 font-medium hover:underline">
+                    <Link href={`/admin/scholarship/${a.id}`} className="text-info-600 font-medium hover:underline">
                       {a.name || '—'}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-600" title={a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : ''}>{referralAcronym(a.referral_source) || '—'}</td>
+                  <td className="px-4 py-3 text-ground-600" title={a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : ''}>{referralAcronym(a.referral_source) || '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${bucketBadge(a.bucket)}`}>{a.bucket || '—'}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{a.qualification?.toUpperCase()}</td>
-                  <td className="px-4 py-3 text-gray-700 tabular-nums">{a.merit_score ?? '—'}</td>
+                  <td className="px-4 py-3 text-ground-600">{a.qualification?.toUpperCase()}</td>
+                  <td className="px-4 py-3 text-ground-700 tabular-nums">{a.merit_score ?? '—'}</td>
                   <td className="px-4 py-3">
                     {(() => {
                       // A super-reopened decision shows "Reopened", overriding the stored accepted/rejected.
@@ -305,11 +305,11 @@ export default function AdminScholarshipList() {
                       return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${statusTone(s)}`}>{t(statusLabelKey(s))}</span>
                     })()}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{formatDate(a.submitted_at)}</td>
+                  <td className="px-4 py-3 text-ground-500">{formatDate(a.submitted_at)}</td>
                   {canAssign && (
                     <td className="px-4 py-3">
                       {SPECIFIC_CALL_LANGS.has(a.call_language) && (
-                        <p className="mb-1 text-[11px] text-gray-500">
+                        <p className="mb-1 text-[11px] text-ground-500">
                           {t('admin.scholarship.prefersLang', { lang: t(`scholarship.apply.callLang.${a.call_language}`) })}
                         </p>
                       )}
@@ -330,7 +330,7 @@ export default function AdminScholarshipList() {
                           : (a.assigned_to_id == null && a.ready_for_assignment === false)
                             ? t('admin.scholarship.assign.error.not_ready')
                             : undefined}
-                        className="border rounded-lg px-2 py-1 text-sm bg-white max-w-[220px] disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        className="border rounded-lg px-2 py-1 text-sm bg-ground-0 max-w-[220px] disabled:bg-ground-100 disabled:text-ground-400 disabled:cursor-not-allowed"
                       >
                         <option value="">{t('admin.scholarship.unassigned')}</option>
                         {/* keep the current assignee selectable even if not in the reviewer list */}
@@ -350,7 +350,7 @@ export default function AdminScholarshipList() {
                           </option>
                         ))}
                       </select>
-                      {assignNote[a.id] && <p className="text-xs text-red-500 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
+                      {assignNote[a.id] && <p className="text-xs text-critical-500 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
                     </td>
                   )}
                 </tr>

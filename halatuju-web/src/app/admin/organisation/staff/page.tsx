@@ -77,7 +77,7 @@ export default function OrganisationInvitationsPage() {
 
   useEffect(() => { void load() }, [load])
 
-  if (role && !mayView) return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
+  if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -115,8 +115,8 @@ export default function OrganisationInvitationsPage() {
       {panel === 'emails' && <InvitationEmailsCard token={token} t={t} />}
 
       {panel === 'invitations' && (<>
-        <div className="mb-6 rounded-xl border bg-white p-6 shadow-sm">
-          <p className="mb-2 text-sm font-semibold text-gray-900">{t('admin.inviteAs')}</p>
+        <div className="mb-6 rounded-xl border bg-ground-0 p-6 shadow-sm">
+          <p className="mb-2 text-sm font-semibold text-ground-900">{t('admin.inviteAs')}</p>
           <div className="grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-4">
             {KINDS.map((k) => {
               const n = waiting?.[k] ?? 0
@@ -124,7 +124,7 @@ export default function OrganisationInvitationsPage() {
                 <button key={k} type="button" onClick={() => setKind(k)}
                   className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     kind === k ? 'border-primary-600 bg-primary-600 text-white'
-                               : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
+                               : 'border-ground-300 bg-ground-0 text-ground-700 hover:bg-ground-50'}`}>
                   {/* ⚠ SINGULAR here, PLURAL on the table heading below (owner, 2026-08-04). The
                       sentence being completed is "Invite as … Admin"; the heading sits above a
                       list of them. One key cannot be right in both places, so there are two. */}
@@ -132,7 +132,7 @@ export default function OrganisationInvitationsPage() {
                   {/* The waiting badge — see the ⚠ in the docblock. */}
                   {n > 0 && (
                     <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] ${
-                      kind === k ? 'bg-white/25 text-white' : 'bg-blue-100 text-blue-700'}`}>
+                      kind === k ? 'bg-ground-0/25 text-white' : 'bg-info-100 text-info-700'}`}>
                       {n}
                     </span>
                   )}
@@ -142,7 +142,7 @@ export default function OrganisationInvitationsPage() {
           </div>
 
           {kind === 'source' ? (
-            <p className="mt-4 text-sm text-gray-500">{t('admin.invitations.sourceComingSoon')}</p>
+            <p className="mt-4 text-sm text-ground-500">{t('admin.invitations.sourceComingSoon')}</p>
           ) : canInviteHere ? (
             <form onSubmit={submit} className="mt-4 space-y-4">
               {invitable.length > 1 && (
@@ -151,7 +151,7 @@ export default function OrganisationInvitationsPage() {
                     <button key={role_} type="button" onClick={() => setSubRole(role_)}
                       className={`rounded-full border px-3 py-1 text-xs font-medium ${
                         subRole === role_ ? 'border-primary-600 bg-primary-50 text-primary-700'
-                                          : 'border-gray-300 bg-white text-gray-600'}`}>
+                                          : 'border-ground-300 bg-ground-0 text-ground-600'}`}>
                       {t(`admin.administration.staffRole.${role_}`)}
                     </button>
                   ))}
@@ -175,12 +175,12 @@ export default function OrganisationInvitationsPage() {
           ) : null}
         </div>
 
-        <h2 className="mb-2 text-sm font-semibold text-gray-900">
+        <h2 className="mb-2 text-sm font-semibold text-ground-900">
           {t(`admin.invitations.kind.${kind}`)}{' '}
-          <span className="font-normal text-gray-400">({rows.length})</span>
+          <span className="font-normal text-ground-400">({rows.length})</span>
         </h2>
         {kind === 'source' ? (
-          <div className="rounded-lg border border-dashed bg-white p-6 text-center text-sm text-gray-500">
+          <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500">
             {t('admin.invitations.sourceComingSoon')}
           </div>
         ) : (
@@ -198,7 +198,7 @@ export default function OrganisationInvitationsPage() {
           />
         )}
         {!canManage && (
-          <p className="mt-3 text-sm text-gray-500">{t('admin.administration.viewOnlyNote')}</p>
+          <p className="mt-3 text-sm text-ground-500">{t('admin.administration.viewOnlyNote')}</p>
         )}
       </>)}
     </div>

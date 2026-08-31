@@ -39,7 +39,7 @@ export default function OrganisationOverviewPage() {
       .catch(() => { /* a count is a hint; never block the page on it */ })
   }, [token])
 
-  if (role && !mayView) return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
+  if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
   const orgName = role?.owning_org_name || role?.org_name || ''
   const staff = programmeStaff(admins)
@@ -69,27 +69,27 @@ export default function OrganisationOverviewPage() {
         {tiles.map((tile) => {
           const body = (
             <>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{tile.k}</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">{tile.v}</p>
-              <p className="mt-0.5 text-xs text-gray-400">{tile.d || ' '}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ground-500">{tile.k}</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-ground-900">{tile.v}</p>
+              <p className="mt-0.5 text-xs text-ground-400">{tile.d || ' '}</p>
             </>
           )
           return tile.href
             ? <Link key={tile.k} href={tile.href}
-                className="rounded-xl border bg-white p-4 shadow-sm transition-colors hover:border-primary-300">
+                className="rounded-xl border bg-ground-0 p-4 shadow-sm transition-colors hover:border-primary-300">
                 {body}
               </Link>
-            : <div key={tile.k} className="rounded-xl border bg-white p-4 shadow-sm">{body}</div>
+            : <div key={tile.k} className="rounded-xl border bg-ground-0 p-4 shadow-sm">{body}</div>
         })}
       </div>
 
       {pendingSponsors > 0 && hrefOf('sponsors') && (
-        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-semibold text-amber-900">
+        <div className="mt-6 rounded-xl border border-caution-200 bg-caution-50 p-4">
+          <p className="text-sm font-semibold text-caution-900">
             {t('admin.orgPage.needsAttention')}
           </p>
           <Link href={hrefOf('sponsors')!}
-            className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-amber-800 hover:underline">
+            className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-caution-800 hover:underline">
             <Icon name="sponsors" size={15} />
             {t('admin.shell.attn.sponsors', { count: String(pendingSponsors) })}
           </Link>

@@ -37,9 +37,12 @@ const dateTime = (iso: string | null | undefined) => {
 
 // Faint rosette seal on the signature cards (Stitch completed-box design).
 const Rosette = () => (
-  <svg viewBox="0 0 24 24" className="h-10 w-10 shrink-0 text-green-200" fill="currentColor" aria-hidden>
+  <svg viewBox="0 0 24 24" className="h-10 w-10 shrink-0 text-positive-200" fill="currentColor" aria-hidden>
     <path d="M12 1.7l2.5 1.9 3.1-.3 1.2 2.9 2.9 1.2-.3 3.1 1.9 2.5-1.9 2.5.3 3.1-2.9 1.2-1.2 2.9-3.1-.3-2.5 1.9-2.5-1.9-3.1.3-1.2-2.9-2.9-1.2.3-3.1L.8 12l1.9-2.5-.3-3.1 2.9-1.2 1.2-2.9 3.1.3L12 1.7z" />
-    <path d="M10.6 14.6l-2.2-2.2-1.4 1.4 3.6 3.6 6.4-6.4-1.4-1.4-5 5z" fill="#ffffff" />
+    {/* `fill-white` (a literal), never `--ground-0`: this tick sits ON the rosette, so it must
+          NOT invert with the ground — the same rule `text-white` follows everywhere. It was a
+          raw `#ffffff`, which is an SVG PROP and so invisible to any class scan. */}
+    <path d="M10.6 14.6l-2.2-2.2-1.4 1.4 3.6 3.6 6.4-6.4-1.4-1.4-5 5z" className="fill-white" />
   </svg>
 )
 
@@ -81,8 +84,8 @@ export default function PaymentRunDetailPage() {
   }, [token, id])
   useEffect(() => { if (allowed) load() }, [allowed, load])
 
-  if (role && !allowed) return <p className="text-red-600">{t('apiErrors.superAdminRequired')}</p>
-  if (!run) return <p className="text-gray-400">{t('common.loading')}</p>
+  if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
+  if (!run) return <p className="text-ground-400">{t('common.loading')}</p>
 
   const isCompleted = run.status === 'completed'
   // One pure decision for the whole conditional chain (lib/paymentStatus.signOffView), so the
@@ -104,8 +107,8 @@ export default function PaymentRunDetailPage() {
   const sortArrow = (key: SortKey) => (sort?.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : '')
   const SortTh = ({ k, label }: { k: SortKey; label: string }) => (
     <th className="px-4 py-3 font-semibold">
-      <button type="button" onClick={() => toggleSort(k)} className="inline-flex items-center uppercase tracking-wider hover:text-gray-700">
-        {label}<span className="text-gray-400">{sortArrow(k)}</span>
+      <button type="button" onClick={() => toggleSort(k)} className="inline-flex items-center uppercase tracking-wider hover:text-ground-700">
+        {label}<span className="text-ground-400">{sortArrow(k)}</span>
       </button>
     </th>
   )
@@ -143,43 +146,43 @@ export default function PaymentRunDetailPage() {
   }
 
   const appHref = (appId: number) => `/admin/scholarship/${appId}`
-  const inputCls = 'px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  const inputCls = 'px-2 py-1 border border-ground-300 rounded text-sm focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
   return (
     <div className="max-w-5xl">
-      <nav className="text-xs text-gray-400">
+      <nav className="text-xs text-ground-400">
         <a href="/admin/payments" className="hover:underline">{t('admin.payments.title')}</a>
-        <span className="mx-1">/</span><span className="text-gray-600">{run.reference}</span>
+        <span className="mx-1">/</span><span className="text-ground-600">{run.reference}</span>
       </nav>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">{run.reference}</h1>
+          <h1 className="text-2xl font-bold text-ground-900">{run.reference}</h1>
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusPill(run.status)}`}>{t(`admin.payments.status.${run.status}`)}</span>
         </div>
         {/* Two-segment stat card (Stitch design): STUDENTS | TOTAL AMOUNT */}
-        <div className="flex rounded-xl border bg-white shadow-sm divide-x">
+        <div className="flex rounded-xl border bg-ground-0 shadow-sm divide-x">
           <div className="px-5 py-2 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.payments.studentsHeading')}</p>
-            <p className="text-xl font-bold text-gray-900 tabular-nums leading-tight">{run.students}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.payments.studentsHeading')}</p>
+            <p className="text-xl font-bold text-ground-900 tabular-nums leading-tight">{run.students}</p>
           </div>
           <div className="px-5 py-2 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.payments.totalAmountHeading')}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.payments.totalAmountHeading')}</p>
             <p className="text-xl font-bold text-primary-500 tabular-nums leading-tight">RM {rm(run.total)}</p>
           </div>
         </div>
       </div>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-ground-500">
         {t('admin.payments.col.paymentDate')}: {formatDate(run.payment_date)}
-        {run.period_month && <> · {t('admin.payments.col.month')}: <span className="font-medium text-gray-700">{monthLabel(run.period_month)}</span></>}
+        {run.period_month && <> · {t('admin.payments.col.month')}: <span className="font-medium text-ground-700">{monthLabel(run.period_month)}</span></>}
       </p>
 
-      {error && <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{error}</div>}
+      {error && <div className="mt-4 rounded-lg bg-critical-50 border border-critical-200 p-3 text-sm text-critical-600">{error}</div>}
 
       {/* Students table */}
-      <div className="mt-5 bg-white rounded-xl shadow border overflow-x-auto">
+      <div className="mt-5 bg-ground-0 rounded-xl shadow border overflow-x-auto">
         <table className="w-full text-sm min-w-[840px]">
-          <thead className="bg-gray-50 border-b">
-            <tr className="text-left text-xs uppercase tracking-wider text-gray-500">
+          <thead className="bg-ground-50 border-b">
+            <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
               <SortTh k="name" label={t('admin.payments.col.name')} />
               <SortTh k="nric" label={t('admin.payments.col.nric')} />
               <SortTh k="vircle_id" label={t('admin.payments.col.vircleId')} />
@@ -189,22 +192,22 @@ export default function PaymentRunDetailPage() {
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.include')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-ground-100">
             {sortedItems.map((it) => (
-              <tr key={it.id} className={it.included ? 'hover:bg-primary-50/40' : 'bg-gray-50/60 text-gray-400'}>
+              <tr key={it.id} className={it.included ? 'hover:bg-primary-50/40' : 'bg-ground-50/60 text-ground-400'}>
                 <td className="px-4 py-3.5">
                   {isFinanceViewer ? (
                     // Finance has no B40 route — a link here would 403. Plain text instead.
-                    <span className="font-medium text-gray-900">{it.name || '—'}</span>
+                    <span className="font-medium text-ground-900">{it.name || '—'}</span>
                   ) : (
-                    <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">{it.name || '—'} ↗</a>
+                    <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-info-600 hover:underline">{it.name || '—'} ↗</a>
                   )}
                 </td>
                 <td className="px-4 py-3.5">{it.nric || '—'}</td>
                 <td className="px-4 py-3.5">
                   <div className="tabular-nums">{it.vircle_id || '—'}</div>
                   {!it.activated && (
-                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800"
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-caution-100 px-2 py-0.5 text-[11px] font-medium text-caution-800"
                       title={t('admin.payments.notActivatedHint')}>
                       ⚠ {t('admin.payments.notActivated')}
                     </span>
@@ -215,7 +218,7 @@ export default function PaymentRunDetailPage() {
                 <td className="px-4 py-3.5">
                   {isDraft && it.included ? (
                     <input defaultValue={rm(it.amount)} onBlur={(e) => { if (e.target.value !== rm(it.amount)) patchItem(it.id, { amount: e.target.value }) }}
-                      className="w-24 rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm tabular-nums focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                      className="w-24 rounded-lg border border-ground-300 px-2.5 py-1.5 text-sm tabular-nums focus:ring-2 focus:ring-info-500 focus:border-info-500" />
                   ) : (
                     <span className="tabular-nums">RM {rm(it.amount)}</span>
                   )}
@@ -248,8 +251,8 @@ export default function PaymentRunDetailPage() {
             <tr>
               <td colSpan={7} className="px-4 py-4">
                 <div className="flex items-center justify-end gap-4">
-                  <span className="text-sm font-medium text-gray-600">{t('admin.payments.totalToPay')}</span>
-                  <span className="text-2xl font-bold text-gray-900 tabular-nums">RM {rm(run.total)}</span>
+                  <span className="text-sm font-medium text-ground-600">{t('admin.payments.totalToPay')}</span>
+                  <span className="text-2xl font-bold text-ground-900 tabular-nums">RM {rm(run.total)}</span>
                 </div>
               </td>
             </tr>
@@ -259,12 +262,12 @@ export default function PaymentRunDetailPage() {
 
       {/* Skipped this run */}
       {run.skipped.length > 0 && (
-        <div className="mt-4 rounded-xl border bg-white p-4">
-          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-500">🚫 {t('admin.payments.skippedTitle')}</p>
+        <div className="mt-4 rounded-xl border bg-ground-0 p-4">
+          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ground-500">🚫 {t('admin.payments.skippedTitle')}</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {run.skipped.map((s) => (
-              <div key={s.application_id} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
-                <span className="font-medium text-gray-600">{s.name || '—'}</span>
+              <div key={s.application_id} className="rounded-lg border border-ground-200 bg-ground-50 px-3 py-2 text-sm text-ground-500">
+                <span className="font-medium text-ground-600">{s.name || '—'}</span>
                 <span className="mx-1">—</span>
                 {s.reasons.map((r) => t(`admin.payments.reason.${r}`)).join(', ')}
               </div>
@@ -275,22 +278,22 @@ export default function PaymentRunDetailPage() {
 
       {/* Sign-off */}
       {!isCompleted && run.status !== 'cancelled' && (
-        <div className="mt-4 rounded-xl border bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-900">{t('admin.payments.signOff')}</h2>
-          <p className="mt-2 rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-sm text-gray-700 italic">
+        <div className="mt-4 rounded-xl border bg-ground-0 p-5">
+          <h2 className="text-base font-semibold text-ground-900">{t('admin.payments.signOff')}</h2>
+          <p className="mt-2 rounded-lg border border-info-100 bg-info-50/60 p-3 text-sm text-ground-700 italic">
             {t('admin.payments.declaration', { month: monthLabelFull(run.period_month), email: run.vircle_email || '—' })}
           </p>
-          {signError && <div className="mt-3 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">{signError}</div>}
+          {signError && <div className="mt-3 rounded-lg bg-critical-50 border border-critical-200 p-3 text-sm text-critical-600">{signError}</div>}
           <div className={`mt-3 grid gap-6 ${needsFinance ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
             <div>
-              <p className="text-sm font-semibold text-gray-900">1 · {t('admin.payments.makerStep')}</p>
+              <p className="text-sm font-semibold text-ground-900">1 · {t('admin.payments.makerStep')}</p>
               {run.admin_signed ? (
-                <p className="mt-1 text-sm text-green-700">✓ {run.admin_signed.name}</p>
+                <p className="mt-1 text-sm text-positive-700">✓ {run.admin_signed.name}</p>
               ) : (<>
-                <p className="mt-1 text-xs text-gray-500">{t('admin.payments.typedNameHint')}</p>
+                <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                 <div className="mt-2 flex gap-2">
                   <input value={makerName} onChange={(e) => setMakerName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                  <button onClick={() => sign(makerName)} disabled={!!busy || !makerName.trim()} className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{t('admin.payments.sign')}</button>
+                  <button onClick={() => sign(makerName)} disabled={!!busy || !makerName.trim()} className="rounded-lg bg-primary-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{t('admin.payments.sign')}</button>
                 </div>
               </>)}
             </div>
@@ -298,98 +301,98 @@ export default function PaymentRunDetailPage() {
                 sees exactly the original two columns, never an empty placeholder. */}
             {needsFinance && (
               <div>
-                <p className="text-sm font-semibold text-gray-900">2 · {t('admin.payments.financeStep')}</p>
+                <p className="text-sm font-semibold text-ground-900">2 · {t('admin.payments.financeStep')}</p>
                 {run.finance_signed ? (
-                  <p className="mt-1 text-sm text-green-700">✓ {run.finance_signed.name}</p>
+                  <p className="mt-1 text-sm text-positive-700">✓ {run.finance_signed.name}</p>
                 ) : run.status === 'draft' ? (
-                  <p className="mt-1 text-xs text-gray-400">{t('admin.payments.afterMaker')}</p>
+                  <p className="mt-1 text-xs text-ground-400">{t('admin.payments.afterMaker')}</p>
                 ) : (<>
-                  <p className="mt-1 text-xs text-gray-500">{t('admin.payments.typedNameHint')}</p>
+                  <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                   <div className="mt-2 flex gap-2">
                     <input value={financeName} onChange={(e) => setFinanceName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                    <button onClick={() => sign(financeName)} disabled={!!busy || !financeName.trim()} className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{t('admin.payments.financeSign')}</button>
+                    <button onClick={() => sign(financeName)} disabled={!!busy || !financeName.trim()} className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{t('admin.payments.financeSign')}</button>
                   </div>
                 </>)}
               </div>
             )}
             <div>
-              <p className="text-sm font-semibold text-gray-900">{view.approverStepNumber} · {t('admin.payments.approverStep')}</p>
+              <p className="text-sm font-semibold text-ground-900">{view.approverStepNumber} · {t('admin.payments.approverStep')}</p>
               {run.status === 'draft' ? (
-                <p className="mt-1 text-xs text-gray-400">{t('admin.payments.afterMaker')}</p>
+                <p className="mt-1 text-xs text-ground-400">{t('admin.payments.afterMaker')}</p>
               ) : awaitingFinance ? (
                 // The server refuses a countersignature here (finance_check_required), so say
                 // so plainly rather than offering a control that can only fail.
-                <p className="mt-1 text-xs text-amber-700">{t('admin.payments.awaitingFinanceCheck')}</p>
+                <p className="mt-1 text-xs text-caution-700">{t('admin.payments.awaitingFinanceCheck')}</p>
               ) : (<>
-                <p className="mt-1 text-xs text-gray-500">{t('admin.payments.typedNameHint')}</p>
+                <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                 <div className="mt-2 flex gap-2">
                   <input value={approverName} onChange={(e) => setApproverName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                  <button onClick={() => sign(approverName)} disabled={!!busy || !approverName.trim()} className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{t('admin.payments.countersign')}</button>
+                  <button onClick={() => sign(approverName)} disabled={!!busy || !approverName.trim()} className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{t('admin.payments.countersign')}</button>
                 </div>
               </>)}
             </div>
           </div>
-          <p className="mt-3 text-xs text-gray-500">{t('admin.payments.signNote')}</p>
+          <p className="mt-3 text-xs text-ground-500">{t('admin.payments.signNote')}</p>
           {view.canCancel && (
-            <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
+            <button onClick={doCancel} disabled={!!busy} className="mt-3 text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">{t('admin.payments.cancelRun')}</button>
           )}
         </div>
       )}
 
       {/* Completed (Stitch design): green header bar + signature cards + CSV file row */}
       {isCompleted && (
-        <div className="mt-4 overflow-hidden rounded-xl border border-green-200 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-green-600 px-5 py-3 text-white">
+        <div className="mt-4 overflow-hidden rounded-xl border border-positive-200 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-positive-600 px-5 py-3 text-white">
             <p className="flex items-center gap-2 text-sm font-semibold">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-[11px]">✓</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ground-0/25 text-[11px]">✓</span>
               {t('admin.payments.completedOn', { date: formatDate(run.org_admin_signed?.at || run.payment_date) })}
               <span className="opacity-70">·</span> {t('admin.payments.sentToVircle')}
             </p>
-            <p className="text-[11px] font-medium uppercase tracking-wider text-green-100">{t('admin.payments.referenceCopy')}</p>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-positive-100">{t('admin.payments.referenceCopy')}</p>
           </div>
-          <div className="space-y-4 bg-white p-5">
+          <div className="space-y-4 bg-ground-0 p-5">
             {/* A historical run has a null finance triple → the original 2-card layout, with no
                 "skipped" step implied. */}
             <div className={`grid gap-4 ${view.completedColumns === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               {run.admin_signed && (
-                <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 p-4">
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-positive-50 p-4">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-green-700/70">{t('admin.payments.authorisedBy')}</p>
-                    <p className="mt-1 truncate font-serif text-lg italic text-gray-900">{run.admin_signed.name}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">{dateTime(run.admin_signed.at)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.authorisedBy')}</p>
+                    <p className="mt-1 truncate font-serif text-lg italic text-ground-900">{run.admin_signed.name}</p>
+                    <p className="mt-0.5 text-xs text-ground-500">{dateTime(run.admin_signed.at)}</p>
                   </div>
                   <Rosette />
                 </div>
               )}
               {run.finance_signed && (
-                <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 p-4">
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-positive-50 p-4">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-green-700/70">{t('admin.payments.checkedBy')}</p>
-                    <p className="mt-1 truncate font-serif text-lg italic text-gray-900">{run.finance_signed.name}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">{dateTime(run.finance_signed.at)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.checkedBy')}</p>
+                    <p className="mt-1 truncate font-serif text-lg italic text-ground-900">{run.finance_signed.name}</p>
+                    <p className="mt-0.5 text-xs text-ground-500">{dateTime(run.finance_signed.at)}</p>
                   </div>
                   <Rosette />
                 </div>
               )}
               {run.org_admin_signed && (
-                <div className="flex items-center justify-between gap-3 rounded-lg bg-green-50 p-4">
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-positive-50 p-4">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-green-700/70">{t('admin.payments.approvedBy')}</p>
-                    <p className="mt-1 truncate font-serif text-lg italic text-gray-900">{run.org_admin_signed.name}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">{dateTime(run.org_admin_signed.at)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-positive-700/70">{t('admin.payments.approvedBy')}</p>
+                    <p className="mt-1 truncate font-serif text-lg italic text-ground-900">{run.org_admin_signed.name}</p>
+                    <p className="mt-0.5 text-xs text-ground-500">{dateTime(run.org_admin_signed.at)}</p>
                   </div>
                   <Rosette />
                 </div>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3">
-              <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-lg">📄</span>
+              <span aria-hidden className="flex h-10 w-10 items-center justify-center rounded-lg bg-positive-100 text-lg">📄</span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-gray-900">{run.reference}.csv</p>
-                <p className="text-xs text-gray-500">{t('admin.payments.exportedForVircle')}</p>
+                <p className="truncate text-sm font-semibold text-ground-900">{run.reference}.csv</p>
+                <p className="text-xs text-ground-500">{t('admin.payments.exportedForVircle')}</p>
               </div>
-              {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
-              <button onClick={downloadCsv} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">{t('admin.payments.downloadCsv')}</button>
+              {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-info-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
+              <button onClick={downloadCsv} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">{t('admin.payments.downloadCsv')}</button>
             </div>
           </div>
         </div>

@@ -26,6 +26,13 @@ const RAW = /\b(?:bg|text|border|ring|divide|from|to|via|placeholder|fill|stroke
 const GOOGLE_LOGO = new Set(['#4285F4', '#34A853', '#FBBC05', '#EA4335'])
 
 /**
+ * HTML numeric entities removed, before any hex scan. `&#128100;` is 👤 and `&#127973;` is 🏥 —
+ * both read as "#" followed by valid hex digits, so a colour scan reports them as raw hex. F4's
+ * admin pages use a dozen as section icons. An entity is markup, not a colour.
+ */
+const withoutEntities = (s: string) => s.replace(/&#\d+;/g, ' ')
+
+/**
  * Comments removed, for the hex scan only.
  *
  * ⚠ WITHOUT THIS THE GUARD FLAGS ITS OWN DOCUMENTATION. `#15a` and `#15b` are audit references in
@@ -76,7 +83,7 @@ function assertConverted(name: string, files: string[], minFiles: number) {
       // Colour hides in inline styles, SVG fills and lib constants.
       const offenders: string[] = []
       for (const f of files) {
-        for (const hex of withoutComments(read(f)).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
+        for (const hex of withoutEntities(withoutComments(read(f))).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
           if (!GOOGLE_LOGO.has(hex.toUpperCase())) offenders.push(`${f}: ${hex}`)
         }
       }
@@ -419,9 +426,15 @@ const CATEGORICAL: Record<string, number> = {
   'src/components/RequirementsCard.tsx': 6 + 1,  // six institution types + the language chip
   'src/components/SpecialConditions.tsx': 7,     // seven entry conditions
   'src/components/CareerPathways.tsx': 1,        // one occupation chip
+  // Layer 1 F4 — the admin console's own category palettes.
+  'src/lib/roleBadge.ts': 7,                     // seven staff roles, ONE shared copy
+  'src/app/admin/students/page.tsx': 2,          // which exam a student sat: STPM / SPM
+  'src/app/admin/students/[id]/page.tsx': 1,     // the STPM section's chips (no exam-type badge here)
+  'src/app/admin/requests/[id]/page.tsx': 1,     // which component a request is about
+  'src/app/admin/billing/page.tsx': 1,           // platform-level, against an organisation
 }
 
-assertConverted('the category-palette files (F2c)', Object.keys(CATEGORICAL), 4)
+assertConverted('the category-palette files (F2c, F4)', Object.keys(CATEGORICAL), 9)
 
 describe('a category palette is a SET, and its members must stay distinguishable', () => {
   // ⚠ THE F2b FINDING, NOW GUARDED PROPERLY. A per-item rename can be right every time and still
@@ -430,7 +443,7 @@ describe('a category palette is a SET, and its members must stay distinguishable
   // nothing failing. The property that matters is not "which colour" but "how many DIFFERENT
   // ones", so that is what is asserted.
   for (const [file, needed] of Object.entries(CATEGORICAL)) {
-    it(`${file.split('/').pop()} uses ${needed} distinct swatches`, () => {
+    it(`${file.split('/').slice(-2).join('/')} uses ${needed} distinct swatches`, () => {
       const used = new Set(
         Array.from(withoutComments(read(file)).matchAll(/\bcategory-(\d)-(?:surface|ink|dot)\b/g),
           (m) => m[1]),
@@ -440,9 +453,16 @@ describe('a category palette is a SET, and its members must stay distinguishable
   }
 
   it('is a CLOSED list — a fifth categorical file has to be a deliberate addition', () => {
+    // Grown deliberately in F4, which is exactly what this test is for: it failed on the five
+    // admin additions and made adding them an explicit act rather than a silent one.
     expect(Object.keys(CATEGORICAL).sort()).toEqual([
+      'src/app/admin/billing/page.tsx',
+      'src/app/admin/requests/[id]/page.tsx',
+      'src/app/admin/students/[id]/page.tsx',
+      'src/app/admin/students/page.tsx',
       'src/components/CareerPathways.tsx', 'src/components/PathwayTrackCard.tsx',
       'src/components/RequirementsCard.tsx', 'src/components/SpecialConditions.tsx',
+      'src/lib/roleBadge.ts',
     ])
   })
 })
@@ -534,6 +554,74 @@ export const F3_FILES = [
 
 assertConverted('the student surfaces (F3)', F3_FILES, 20)
 
+/**
+ * F4's surface — the admin console, MINUS the officer cockpit.
+ *
+ * A walk, so a new admin page is caught the day it is added. `admin/scholarship/[id]` is excluded
+ * by name: it is one file with 544 raw colours and it belongs to F5.
+ */
+export const F5_COCKPIT = 'src/app/admin/scholarship/[id]/page.tsx'
+
+export const F4_FILES = [
+  ...walkFiles('src/app/admin').map((f) => f.split(path.sep).join('/')),
+  ...walkFiles('src/components/admin').map((f) => f.split(path.sep).join('/')),
+  'src/lib/roleBadge.ts',
+].filter((f) => f !== F5_COCKPIT)
+
+assertConverted('the admin console (F4)', F4_FILES, 40)
+
+describe('the F4 semantic corrections the codemod could not make', () => {
+  it('paints every filled control in the console with the BRAND — all 38 of them', () => {
+    // ⚠ THE LARGEST INSTANCE OF THE F1 DEFECT SO FAR, and the clearest argument for the rule. The
+    // console's primary button is `bg-info-600 text-white`, used 38 times across 17 files. Left as
+    // a tone, a tenant's colour would have reached almost nothing on the surface their own staff
+    // use all day. An info NOTICE (`bg-info-50` with dark text) is untouched — the distinction is
+    // "filled control the user ACTS on" versus "coloured surface that INFORMS".
+    const offenders: string[] = []
+    for (const f of F4_FILES.filter((x) => x.endsWith('.tsx'))) {
+      for (const line of withoutComments(read(f)).split(String.fromCharCode(10))) {
+        const filled = /text-white/.test(line) && /bg-info-[567]00/.test(line)
+        if (filled) offenders.push(`${f}: ${line.trim()}`)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('keeps ONE copy of the role palette, which is why it cannot desynchronise', () => {
+    // Three files declared this mapping independently, the third with a comment asking that they
+    // agree. F4's codemod converted one copy's `amber` to `caution` and left the others, and they
+    // silently stopped agreeing — the same role would have rendered one colour in Administration
+    // and another in the Manual. A comment is not a mechanism; a shared module is.
+    for (const f of ['src/components/admin/StaffAdmin.tsx',
+                     'src/app/admin/organisation/reviewers/page.tsx',
+                     'src/app/admin/guide/page.tsx']) {
+      expect(read(f)).toMatch(/roleBadgeClass/)
+      // …and none of them may re-declare a palette of its own.
+      expect(withoutComments(read(f))).not.toMatch(/'bg-category-\d-surface text-category-\d-ink'/)
+    }
+  })
+
+  it('says "suspended" and "declined" inside the vocabulary, by WEIGHT', () => {
+    // Two more sets that needed a state the four tones do not name outright. `suspended` is a
+    // HOLD — nearer to `pending` than to `rejected` — so it is `caution` at a heavier weight, the
+    // same move F3 made for `graduated`. `declined` (a reviewer's call) is `caution` against
+    // `rejectedAfterReview` (the case's fate), which stays `critical`.
+    expect(read('src/app/admin/sponsors/page.tsx')).toMatch(/'bg-caution-600 text-white'/)
+    expect(read('src/app/admin/organisation/reviewers/[id]/page.tsx')).toMatch(/declined: 'bg-caution-500'/)
+    expect(read('src/app/admin/organisation/reviewers/[id]/page.tsx')).toMatch(/rejectedAfterReview: 'bg-critical-500'/)
+  })
+})
+
+describe('the officer cockpit belongs to F5, and is deliberately NOT converted yet', () => {
+  // The ceiling idiom again: one file, and the number may only fall. F5 takes it to zero.
+  const CEILING = 544
+
+  it('has not grown', () => {
+    const count = withoutComments(read(F5_COCKPIT)).match(new RegExp(RAW, 'g'))?.length ?? 0
+    expect(count).toBeLessThanOrEqual(CEILING)
+  })
+})
+
 describe('the colour a class scan cannot see, on the student surfaces', () => {
   // ⚠ THREE SPRINTS, THREE NEW HIDING PLACES. F1 found inline `conic-gradient` hex; F2a found the
   // stylesheet's own `body` rule and a text control with no background at all; F3 found these two.
@@ -560,7 +648,7 @@ describe('the colour a class scan cannot see, on the student surfaces', () => {
     const GOOGLE_LOGO_HEXES = ['#4285F4', '#34A853', '#FBBC05', '#EA4335']
     const offenders: string[] = []
     for (const f of F3_FILES) {
-      for (const hex of withoutComments(read(f)).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
+      for (const hex of withoutEntities(withoutComments(read(f))).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
         if (!GOOGLE_LOGO_HEXES.includes(hex.toUpperCase())) offenders.push(`${f}: ${hex}`)
       }
     }

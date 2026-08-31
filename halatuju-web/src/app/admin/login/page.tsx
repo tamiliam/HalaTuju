@@ -138,62 +138,62 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+    <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center">
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
-          <span className="text-lg font-bold text-blue-600">Partner</span>
+          <span className="text-lg font-bold text-info-600">Partner</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+        <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
           {step === 'login' && (
             <>
-              <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
+              <h1 className="text-2xl font-bold text-ground-900 text-center mb-2">
                 {t('admin.loginTitle')}
               </h1>
-              <p className="text-gray-600 text-center mb-8">
+              <p className="text-ground-600 text-center mb-8">
                 {t('admin.loginSubtitle')}
               </p>
 
               {superseded && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                  <p className="text-amber-800 text-sm">{t('admin.signedOutElsewhere')}</p>
+                <div className="bg-caution-50 border border-caution-200 rounded-lg p-4 mb-6">
+                  <p className="text-caution-800 text-sm">{t('admin.signedOutElsewhere')}</p>
                 </div>
               )}
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <p className="text-red-600 text-sm">{error}</p>
+                <div className="bg-critical-50 border border-critical-200 rounded-lg p-4 mb-6">
+                  <p className="text-critical-600 text-sm">{error}</p>
                 </div>
               )}
 
               <form onSubmit={handleLogin} className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.email')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.email')}</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@organisation.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.password')}</label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.password')}</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('admin.enterPassword')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                     required
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading || !email || !password}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
                 >
                   {loading ? t('admin.signingIn') : t('admin.signIn')}
                 </button>
@@ -201,24 +201,24 @@ export default function AdminLoginPage() {
 
               <button
                 onClick={() => { setStep('forgot'); setError(null) }}
-                className="w-full text-sm text-gray-500 hover:text-gray-700 mb-6"
+                className="w-full text-sm text-ground-500 hover:text-ground-700 mb-6"
               >
                 {t('admin.forgotPassword')}
               </button>
 
               <div className="relative mb-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-ground-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">{t('login.or')}</span>
+                  <span className="px-4 bg-ground-0 text-ground-500">{t('login.or')}</span>
                 </div>
               </div>
 
               <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-3 px-6 py-3 border-2 border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 border-2 border-ground-200 rounded-lg font-medium text-ground-700 hover:bg-ground-50 transition-colors disabled:opacity-50"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -233,12 +233,12 @@ export default function AdminLoginPage() {
 
           {step === 'forgot' && (
             <>
-              <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('admin.resetPassword')}</h1>
-              <p className="text-gray-600 text-center mb-8">{t('admin.resetSubtitle')}</p>
+              <h1 className="text-2xl font-bold text-ground-900 text-center mb-2">{t('admin.resetPassword')}</h1>
+              <p className="text-ground-600 text-center mb-8">{t('admin.resetSubtitle')}</p>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <p className="text-red-600 text-sm">{error}</p>
+                <div className="bg-critical-50 border border-critical-200 rounded-lg p-4 mb-6">
+                  <p className="text-critical-600 text-sm">{error}</p>
                 </div>
               )}
 
@@ -248,20 +248,20 @@ export default function AdminLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@organisation.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500"
                   required
                 />
                 <button
                   type="submit"
                   disabled={loading || !email}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
                 >
                   {loading ? t('admin.sending') : t('admin.sendResetLink')}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setStep('login'); setError(null) }}
-                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                  className="w-full text-sm text-ground-500 hover:text-ground-700"
                 >
                   {t('login.backToLogin')}
                 </button>
@@ -271,13 +271,13 @@ export default function AdminLoginPage() {
 
           {step === 'forgot-sent' && (
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('admin.checkEmail')}</h1>
-              <p className="text-gray-600 mb-6">
+              <h1 className="text-2xl font-bold text-ground-900 mb-2">{t('admin.checkEmail')}</h1>
+              <p className="text-ground-600 mb-6">
                 {t('admin.resetSent')} <strong>{email}</strong>
               </p>
               <button
                 onClick={() => { setStep('login'); setError(null) }}
-                className="text-blue-600 hover:underline text-sm"
+                className="text-info-600 hover:underline text-sm"
               >
                 {t('login.backToLogin')}
               </button>
@@ -286,7 +286,7 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">
+          <Link href="/" className="text-sm text-ground-500 hover:text-info-600 transition-colors">
             {t('admin.backToHome')}
           </Link>
         </div>

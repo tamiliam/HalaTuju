@@ -160,18 +160,18 @@ export default function AdminRequestsPage() {
   }
 
   if (dark) {
-    return <p className="text-gray-500">{t('admin.requests.list.empty')}</p>
+    return <p className="text-ground-500">{t('admin.requests.list.empty')}</p>
   }
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-bold text-gray-900">{t('admin.requests.title')}</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-6">{t('admin.requests.subtitle')}</p>
+      <h1 className="text-2xl font-bold text-ground-900">{t('admin.requests.title')}</h1>
+      <p className="text-sm text-ground-500 mt-1 mb-6">{t('admin.requests.subtitle')}</p>
 
       {/* Rate card */}
-      <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-5 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-2">{t('admin.requests.rateCard.title')}</h2>
-        <ul className="space-y-1.5 text-sm text-gray-700">
+      <div className="rounded-xl border border-info-200 bg-info-50/60 p-5 mb-6">
+        <h2 className="font-semibold text-ground-900 mb-2">{t('admin.requests.rateCard.title')}</h2>
+        <ul className="space-y-1.5 text-sm text-ground-700">
           {(['bugReports', 'bugDefinition', 'featureDefinition', 'quotations'] as const).map((item) => (
             <li key={item}>
               • <strong>{t(`admin.requests.rateCard.${item}Label`)}</strong>{' '}
@@ -181,50 +181,50 @@ export default function AdminRequestsPage() {
         </ul>
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 border border-red-200 text-red-600 p-3 mb-4">{error}</div>}
+      {error && <div className="rounded-lg bg-critical-50 border border-critical-200 text-critical-600 p-3 mb-4">{error}</div>}
 
       {/* Submit form — org_admin only (the owner triages, never submits to itself) */}
       {isOrgAdmin && (
-        <form onSubmit={submit} className="bg-white rounded-xl border shadow-sm p-6 space-y-4 mb-8">
-          <h2 className="font-semibold text-gray-900">{t('admin.requests.form.title')}</h2>
+        <form onSubmit={submit} className="bg-ground-0 rounded-xl border shadow-sm p-6 space-y-4 mb-8">
+          <h2 className="font-semibold text-ground-900">{t('admin.requests.form.title')}</h2>
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">{t('admin.requests.form.kind')}</p>
+            <p className="text-sm font-medium text-ground-700 mb-2">{t('admin.requests.form.kind')}</p>
             <div className="flex gap-2">
               {(['bug', 'feature'] as const).map((k) => (
                 <button key={k} type="button" onClick={() => setKind(k)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                    kind === k ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
+                    kind === k ? 'bg-primary-600 text-white border-info-600'
+                    : 'bg-ground-0 text-ground-700 border-ground-300 hover:bg-ground-50'}`}>
                   {t(kindLabelKey(k))}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.titleLabel')}</label>
+            <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.form.titleLabel')}</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200}
               placeholder={t('admin.requests.form.titlePlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.descriptionLabel')}</label>
+            <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.form.descriptionLabel')}</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} required rows={4}
               placeholder={t('admin.requests.form.descriptionPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+              className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.component')}</label>
+              <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.form.component')}</label>
               <select value={component}
                 onChange={(e) => { setComponent(e.target.value); setSubComponent('') }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500">
                 <option value="">—</option>
                 {REQUEST_COMPONENT_PARENTS.map((c) => <option key={c} value={c}>{t(componentLabelKey(c))}</option>)}
               </select>
               {/* B40 sub-component — only when the parent surface has children (applications). */}
               {requestSubComponents(component).length > 0 && (
                 <select key={component} value={subComponent} onChange={(e) => setSubComponent(e.target.value)}
-                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                  className="mt-2 w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500">
                   <option value="">{t('admin.requests.form.subComponentAll')}</option>
                   {requestSubComponents(component).map((c) => (
                     <option key={c} value={c}>{t(componentLabelKey(c))}</option>
@@ -233,9 +233,9 @@ export default function AdminRequestsPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.urgency')}</label>
+              <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.form.urgency')}</label>
               <select value={urgency} onChange={(e) => setUrgency(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500">
                 <option value="">—</option>
                 {URGENCY_OPTIONS.map((u) => <option key={u} value={u}>{t(`admin.requests.urgency.${u}`)}</option>)}
               </select>
@@ -244,10 +244,10 @@ export default function AdminRequestsPage() {
           {/* Steps to reproduce — only meaningful for a bug. */}
           {kind === 'bug' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.form.stepsLabel')}</label>
+              <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.form.stepsLabel')}</label>
               <textarea value={steps} onChange={(e) => setSteps(e.target.value)} rows={3}
                 placeholder={t('admin.requests.form.stepsPlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500" />
             </div>
           )}
 
@@ -255,16 +255,16 @@ export default function AdminRequestsPage() {
               Paste + drag-and-drop as well as the picker: this is the surface where a screenshot
               starts life, and it shipped upload-only on 2026-07-30 (see screenshotInput.ts). */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.requests.attachments.label')}</label>
+            <label className="block text-sm font-medium text-ground-700 mb-1">{t('admin.requests.attachments.label')}</label>
             {files.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
                 {files.map((f, i) => (
                   <figure key={i} className="border rounded-lg overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-20 object-cover bg-gray-50" />
-                    <figcaption className="px-1 py-0.5 text-[10px] text-gray-500 truncate" title={f.name}>{f.name} · {formatFileSize(f.size)}</figcaption>
+                    <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-20 object-cover bg-ground-50" />
+                    <figcaption className="px-1 py-0.5 text-[10px] text-ground-500 truncate" title={f.name}>{f.name} · {formatFileSize(f.size)}</figcaption>
                     <button type="button" onClick={() => unstage(i)}
-                      className="w-full text-[11px] text-red-600 hover:text-red-800 py-0.5 border-t">
+                      className="w-full text-[11px] text-critical-600 hover:text-critical-800 py-0.5 border-t">
                       {t('admin.requests.attachments.remove')}
                     </button>
                   </figure>
@@ -285,14 +285,14 @@ export default function AdminRequestsPage() {
                 onDrop={onDropFiles}
                 className={`flex flex-col items-center justify-center gap-1 w-full rounded-lg border-2 border-dashed px-4 py-6 cursor-pointer transition-colors ${
                   dragging
-                    ? 'border-blue-400 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 bg-gray-50 hover:border-blue-300 hover:bg-blue-50/40 text-gray-500'
+                    ? 'border-info-400 bg-info-50 text-info-700'
+                    : 'border-ground-300 bg-ground-50 hover:border-info-300 hover:bg-info-50/40 text-ground-500'
                 }`}>
-                <span className="text-sm font-medium text-blue-600">
+                <span className="text-sm font-medium text-info-600">
                   + {t('admin.requests.attachments.add')}
                 </span>
                 <span className="text-xs">{t('admin.requests.attachments.dropZone')}</span>
-                <span className="text-[11px] text-gray-400">
+                <span className="text-[11px] text-ground-400">
                   {t('admin.requests.attachments.hint')}
                 </span>
                 <input type="file" accept="image/*" multiple className="hidden"
@@ -300,13 +300,13 @@ export default function AdminRequestsPage() {
               </label>
             )}
             {files.length >= MAX_ATTACHMENTS && (
-              <p className="text-xs text-gray-400 mt-1">{t('admin.requests.attachments.hint')}</p>
+              <p className="text-xs text-ground-400 mt-1">{t('admin.requests.attachments.hint')}</p>
             )}
           </div>
 
-          {warn && <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-700 p-3 text-sm">{warn}</div>}
+          {warn && <div className="rounded-lg bg-caution-50 border border-caution-200 text-caution-700 p-3 text-sm">{warn}</div>}
           <button type="submit" disabled={busy || !title.trim() || !description.trim()}
-            className="px-6 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50">
+            className="px-6 bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
             {busy ? t('admin.requests.form.submitting') : t('admin.requests.form.submit')}
           </button>
         </form>
@@ -322,9 +322,9 @@ export default function AdminRequestsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
+        <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
       ) : requests.length === 0 ? (
-        <div className="text-center text-gray-500 mt-8">{t('admin.requests.list.empty')}</div>
+        <div className="text-center text-ground-500 mt-8">{t('admin.requests.list.empty')}</div>
       ) : (
         <div className="space-y-2">
           {requests.map((r) => {
@@ -337,17 +337,17 @@ export default function AdminRequestsPage() {
             ).includes('answer')
             return (
               <Link key={r.id} href={`/admin/requests/${r.id}`}
-                className="block bg-white rounded-xl border hover:border-blue-300 hover:bg-blue-50/40 transition-colors p-4">
+                className="block bg-ground-0 rounded-xl border hover:border-info-300 hover:bg-info-50/40 transition-colors p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-900 truncate">{r.title}</span>
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{t(kindLabelKey(r.kind))}</span>
+                      <span className="font-medium text-ground-900 truncate">{r.title}</span>
+                      <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-ground-100 text-ground-600">{t(kindLabelKey(r.kind))}</span>
                       {needsAnswer && (
-                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{t('admin.requests.list.answerNeeded')}</span>
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-caution-100 text-caution-700">{t('admin.requests.list.answerNeeded')}</span>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-ground-500 mt-1">
                       {isSuper && r.organisation_name ? `${r.organisation_name} · ` : ''}
                       {t('admin.requests.list.submittedBy', { name: r.submitted_by_name })} · {formatDate(r.created_at)}
                     </div>

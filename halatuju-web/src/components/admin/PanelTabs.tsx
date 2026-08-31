@@ -39,12 +39,12 @@ export default function PanelTabs<K extends string>({ tabs, active, onSelect, ar
             onClick={() => !tab.disabled && onSelect(tab.key)}
             className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
               tab.disabled
-                ? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400'
-                : on ? 'border-blue-600 bg-blue-600 text-white'
-                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
+                ? 'cursor-not-allowed border-ground-200 bg-ground-50 text-ground-400'
+                : on ? 'border-info-600 bg-primary-600 text-white'
+                     : 'border-ground-200 bg-ground-0 text-ground-600 hover:bg-ground-50'}`}>
             {t(tab.labelKey)}
             {tab.disabled && (
-              <span className="ml-1.5 rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] text-gray-500">
+              <span className="ml-1.5 rounded-full bg-ground-200 px-1.5 py-0.5 text-[10px] text-ground-500">
                 {t('admin.soon')}
               </span>
             )}

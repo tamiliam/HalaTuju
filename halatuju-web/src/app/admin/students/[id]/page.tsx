@@ -30,11 +30,11 @@ export default function AdminStudentDetail() {
   }, [token, id])
 
   if (error) {
-    return <div className="text-red-600 mt-8">{error}</div>
+    return <div className="text-critical-600 mt-8">{error}</div>
   }
 
   if (!data) {
-    return <div className="mt-8 text-center text-gray-500">{t('common.loading')}</div>
+    return <div className="mt-8 text-center text-ground-500">{t('common.loading')}</div>
   }
 
   const handleDelete = async () => {
@@ -56,9 +56,9 @@ export default function AdminStudentDetail() {
   const fieldInterest = (data.student_signals?.field_interest || {}) as Record<string, number>
 
   const getStrengthLabel = (value: number) => {
-    if (value >= 0.7) return { text: t('admin.strong'), className: 'bg-green-100 text-green-700' }
-    if (value >= 0.4) return { text: t('admin.moderate'), className: 'bg-yellow-100 text-yellow-700' }
-    return { text: t('admin.weak'), className: 'bg-gray-100 text-gray-600' }
+    if (value >= 0.7) return { text: t('admin.strong'), className: 'bg-positive-100 text-positive-700' }
+    if (value >= 0.4) return { text: t('admin.moderate'), className: 'bg-caution-100 text-caution-700' }
+    return { text: t('admin.weak'), className: 'bg-ground-100 text-ground-600' }
   }
 
   const formatPhone = (phone: string | null) => {
@@ -83,7 +83,7 @@ export default function AdminStudentDetail() {
 
   return (
     <div>
-      <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-blue-600 text-sm hover:underline mb-5">
+      <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-info-600 text-sm hover:underline mb-5">
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
@@ -91,68 +91,68 @@ export default function AdminStudentDetail() {
       </Link>
 
       <h1 className="text-2xl font-bold mb-1">{data.name || t('admin.noName')}</h1>
-      <p className="text-gray-500 mb-8 text-sm">
+      <p className="text-ground-500 mb-8 text-sm">
         {formatNricDisplay(data.nric)} &middot; {data.exam_type?.toUpperCase()} &middot; {data.gender}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Card 1: Maklumat Peribadi */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#128100;</span> {t('admin.personalInfo')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.fullName')}</dt><dd className="font-medium">{data.name || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">{t('profile.angkaGiliran')}</dt><dd className="font-mono">{data.angka_giliran || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.nationality')}</dt><dd>{data.nationality || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.fullName')}</dt><dd className="font-medium">{data.name || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('profile.angkaGiliran')}</dt><dd className="font-mono">{data.angka_giliran || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.nationality')}</dt><dd>{data.nationality || '\u2014'}</dd></div>
           </dl>
         </div>
 
         {/* Card 2: Hubungi & Sekolah */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#128222;</span> {t('admin.contactSchool')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.phone')}</dt><dd>{formatPhone(data.contact_phone)}</dd></div>
-            <div><dt className="text-gray-500">{t('admin.address')}</dt><dd className="mt-1">{[data.address, [data.postal_code, data.city].filter(Boolean).join(' '), data.preferred_state].filter(Boolean).join(', ') || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.school')}</dt><dd>{data.school || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.phone')}</dt><dd>{formatPhone(data.contact_phone)}</dd></div>
+            <div><dt className="text-ground-500">{t('admin.address')}</dt><dd className="mt-1">{[data.address, [data.postal_code, data.city].filter(Boolean).join(' '), data.preferred_state].filter(Boolean).join(', ') || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.school')}</dt><dd>{data.school || '\u2014'}</dd></div>
           </dl>
         </div>
 
         {/* Card 3: Latar Belakang Keluarga */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#128106;</span> {t('admin.familyBackground')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.householdIncome')}</dt><dd>{data.household_income != null ? `RM${data.household_income}` : '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.householdSize')}</dt><dd>{data.household_size ?? '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.householdIncome')}</dt><dd>{data.household_income != null ? `RM${data.household_income}` : '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.householdSize')}</dt><dd>{data.household_size ?? '\u2014'}</dd></div>
           </dl>
         </div>
 
         {/* Card 4: Kesihatan & Kelayakan */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#127973;</span> {t('admin.healthEligibility')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.colorblind')}</dt><dd>{data.colorblind || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.disability')}</dt><dd>{data.disability || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.colorblind')}</dt><dd>{data.colorblind || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.disability')}</dt><dd>{data.disability || '\u2014'}</dd></div>
           </dl>
         </div>
 
         {/* Card 5: SPM Grades */}
         {hasSpmGrades && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
+          <div className="bg-ground-0 rounded-xl p-6 shadow-sm border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128202;</span> {t('admin.spmResults')}
             </h2>
             <div className="flex flex-wrap gap-2">
               {Object.entries(data.grades).map(([subject, grade]) => (
-                <span key={subject} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-sm">
-                  <span className="text-gray-600">{subject.toUpperCase()}</span>
-                  <span className="font-bold text-blue-700">{grade as string}</span>
+                <span key={subject} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-info-50 border border-info-200 text-sm">
+                  <span className="text-ground-600">{subject.toUpperCase()}</span>
+                  <span className="font-bold text-info-700">{grade as string}</span>
                 </span>
               ))}
             </div>
@@ -161,27 +161,27 @@ export default function AdminStudentDetail() {
 
         {/* Card 6: STPM Grades */}
         {hasStpmGrades && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
+          <div className="bg-ground-0 rounded-xl p-6 shadow-sm border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128202;</span> {t('admin.stpmResults')}
             </h2>
             <div className="flex gap-4 mb-4 text-sm">
               {data.stpm_cgpa != null && (
-                <span className="px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200">
-                  <span className="text-gray-600">CGPA:</span> <span className="font-bold text-purple-700">{data.stpm_cgpa.toFixed(2)}</span>
+                <span className="px-3 py-1.5 rounded-full bg-category-4-surface">
+                  <span className="text-ground-600">CGPA:</span> <span className="font-bold text-category-4-ink">{data.stpm_cgpa.toFixed(2)}</span>
                 </span>
               )}
               {data.muet_band != null && (
-                <span className="px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200">
-                  <span className="text-gray-600">MUET:</span> <span className="font-bold text-purple-700">Band {data.muet_band}</span>
+                <span className="px-3 py-1.5 rounded-full bg-category-4-surface">
+                  <span className="text-ground-600">MUET:</span> <span className="font-bold text-category-4-ink">Band {data.muet_band}</span>
                 </span>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
               {Object.entries(data.stpm_grades).map(([subject, grade]) => (
-                <span key={subject} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-sm">
-                  <span className="text-gray-600">{subject}</span>
-                  <span className="font-bold text-purple-700">{grade as string}</span>
+                <span key={subject} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-category-4-surface text-sm">
+                  <span className="text-ground-600">{subject}</span>
+                  <span className="font-bold text-category-4-ink">{grade as string}</span>
                 </span>
               ))}
             </div>
@@ -190,27 +190,27 @@ export default function AdminStudentDetail() {
 
         {/* No grades */}
         {!hasSpmGrades && !hasStpmGrades && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
+          <div className="bg-ground-0 rounded-xl p-6 shadow-sm border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128202;</span> {t('admin.examResults')}
             </h2>
-            <p className="text-gray-400 text-sm">{t('admin.notFilled')}</p>
+            <p className="text-ground-400 text-sm">{t('admin.notFilled')}</p>
           </div>
         )}
 
         {/* Card 7: Keutamaan & Isyarat */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#11088;</span> {t('admin.preferencesSignals')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.preferredState')}</dt><dd>{data.preferred_state || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.financialPressure')}</dt><dd>{data.financial_pressure || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.travelWillingness')}</dt><dd>{data.travel_willingness || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.preferredState')}</dt><dd>{data.preferred_state || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.financialPressure')}</dt><dd>{data.financial_pressure || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ground-500">{t('admin.travelWillingness')}</dt><dd>{data.travel_willingness || '\u2014'}</dd></div>
           </dl>
           {Object.keys(fieldInterest).length > 0 && (
-            <div className="mt-4 pt-3 border-t border-gray-100">
-              <p className="text-gray-500 text-sm mb-2">{t('admin.fieldInterest')}</p>
+            <div className="mt-4 pt-3 border-t border-ground-100">
+              <p className="text-ground-500 text-sm mb-2">{t('admin.fieldInterest')}</p>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(fieldInterest).map(([field, value]) => {
                   const strength = getStrengthLabel(value as number)
@@ -227,7 +227,7 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 8: Kursus Disimpan */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <span className="text-lg">&#128218;</span> {t('admin.savedCourses')}
           </h2>
@@ -235,26 +235,26 @@ export default function AdminStudentDetail() {
             <ul className="space-y-2.5 text-sm">
               {data.saved_courses.map((c) => (
                 <li key={c.course_id} className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-info-500 mt-1.5 shrink-0" />
                   {c.name}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-gray-400 text-sm">{t('admin.noSavedCourses')}</p>
+            <p className="text-ground-400 text-sm">{t('admin.noSavedCourses')}</p>
           )}
         </div>
 
         {/* Card 9: Sumber Rujukan (super admin only) */}
         {isSuper && (
-          <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <div className="bg-ground-0 rounded-xl p-6 shadow-sm border">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
               <span className="text-lg">&#128279;</span> {t('admin.referralSource')}
-              <span className="text-[10px] text-gray-400 ml-1">[{t('admin.superAdmin')}]</span>
+              <span className="text-[10px] text-ground-400 ml-1">[{t('admin.superAdmin')}]</span>
             </h2>
             <dl className="space-y-3 text-sm">
-              <div className="flex justify-between"><dt className="text-gray-500">{t('admin.source')}</dt><dd>{data.referral_source || '\u2014'}</dd></div>
-              <div className="flex justify-between"><dt className="text-gray-500">{t('admin.orgLabel')}</dt><dd>{data.org_name || '\u2014'}</dd></div>
+              <div className="flex justify-between"><dt className="text-ground-500">{t('admin.source')}</dt><dd>{data.referral_source || '\u2014'}</dd></div>
+              <div className="flex justify-between"><dt className="text-ground-500">{t('admin.orgLabel')}</dt><dd>{data.org_name || '\u2014'}</dd></div>
             </dl>
           </div>
         )}
@@ -262,14 +262,14 @@ export default function AdminStudentDetail() {
 
       {/* Danger Zone - super admin only */}
       {isSuper && (
-        <div className="mt-8 bg-white border border-red-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center justify-between">
+        <div className="mt-8 bg-ground-0 border border-critical-200 rounded-xl overflow-hidden">
+          <div className="px-6 py-4 bg-critical-50 border-b border-critical-200 flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-red-700 flex items-center gap-2">
+              <h2 className="font-semibold text-critical-700 flex items-center gap-2">
                 <span className="text-lg">&#9888;&#65039;</span> {t('admin.dangerZone')}
-                <span className="text-[10px] text-red-400 ml-1">[{t('admin.superAdmin')}]</span>
+                <span className="text-[10px] text-critical-400 ml-1">[{t('admin.superAdmin')}]</span>
               </h2>
-              <p className="text-sm text-red-500 mt-0.5">
+              <p className="text-sm text-critical-500 mt-0.5">
                 {t('admin.dangerWarning')}
               </p>
             </div>
@@ -280,12 +280,12 @@ export default function AdminStudentDetail() {
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
               placeholder={t('admin.typeDeleteConfirm')}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-64 focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-none"
+              className="px-3 py-2 border border-ground-300 rounded-lg text-sm w-full sm:w-64 focus:border-critical-400 focus:ring-1 focus:ring-critical-400 outline-none"
             />
             <button
               onClick={handleDelete}
               disabled={deleteConfirm !== 'delete' || deleting}
-              className="px-5 py-2 border-2 border-red-500 text-red-600 rounded-xl text-sm font-medium hover:bg-red-600 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-2 border-2 border-critical-500 text-critical-600 rounded-xl text-sm font-medium hover:bg-critical-600 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {deleting ? t('admin.deleting') : t('admin.deleteStudent')}
             </button>

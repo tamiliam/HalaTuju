@@ -7,6 +7,7 @@ import {
   type AdminItem, type OrgItem,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import { roleBadgeClass } from '@/lib/roleBadge'
 
 /**
  * Everything the four staff-facing pages share, in one place.
@@ -22,7 +23,7 @@ import { useT } from '@/lib/i18n'
  */
 
 export const inputCls =
-  'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+  'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
 
 export type Banner = { type: 'success' | 'warning' | 'error'; text: string } | null
 
@@ -30,30 +31,23 @@ export function MessageBanner({ message }: { message: Banner }) {
   if (!message) return null
   return (
     <div className={`rounded-lg p-4 mb-6 ${
-      message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700'
-      : message.type === 'warning' ? 'bg-amber-50 border border-amber-200 text-amber-700'
-      : 'bg-red-50 border border-red-200 text-red-600'}`}>{message.text}</div>
+      message.type === 'success' ? 'bg-positive-50 border border-positive-200 text-positive-700'
+      : message.type === 'warning' ? 'bg-caution-50 border border-caution-200 text-caution-700'
+      : 'bg-critical-50 border border-critical-200 text-critical-600'}`}>{message.text}</div>
   )
 }
 
 export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-6">
-      <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-      {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
+      <h1 className="text-2xl font-bold text-ground-900">{title}</h1>
+      {subtitle && <p className="mt-1 text-sm text-ground-500">{subtitle}</p>}
     </div>
   )
 }
 
 function roleBadge(rl: string) {
-  return rl === 'super' ? 'bg-purple-100 text-purple-700'
-    : rl === 'org_admin' ? 'bg-amber-100 text-amber-700'
-    : rl === 'admin' ? 'bg-indigo-100 text-indigo-700'
-    : rl === 'qc' ? 'bg-orange-100 text-orange-700'
-    : rl === 'finance' ? 'bg-emerald-100 text-emerald-700'
-    : rl === 'partner' ? 'bg-teal-100 text-teal-700'
-    : rl === 'reviewer' ? 'bg-blue-100 text-blue-700'
-    : 'bg-gray-100 text-gray-600'
+  return roleBadgeClass(rl)
 }
 
 export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle, soleOrgAdmin }: {
@@ -70,24 +64,24 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   const { t } = useT()
   const cols = 3 + (showOrg ? 1 : 0) + (canAct ? 1 : 0)
   return (
-    <div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-lg border bg-ground-0 shadow-sm">
       <table className="w-full min-w-[560px] text-sm">
-        <thead className="border-b bg-gray-50">
+        <thead className="border-b bg-ground-50">
           <tr>
-            <th className="px-4 py-3 text-left font-medium text-gray-600">{t('admin.nameHeader')}</th>
-            <th className="px-4 py-3 text-left font-medium text-gray-600">{t('admin.emailHeader')}</th>
-            {showOrg && <th className="px-4 py-3 text-left font-medium text-gray-600">{t('admin.orgHeader')}</th>}
-            <th className="px-4 py-3 text-left font-medium text-gray-600">{t('admin.roleHeader')}</th>
-            <th className="px-4 py-3 text-left font-medium text-gray-600">{t('admin.statusHeader')}</th>
-            {canAct && <th className="px-4 py-3 text-left font-medium text-gray-600">{t('admin.actionHeader')}</th>}
+            <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.nameHeader')}</th>
+            <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.emailHeader')}</th>
+            {showOrg && <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.orgHeader')}</th>}
+            <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.roleHeader')}</th>
+            <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.statusHeader')}</th>
+            {canAct && <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.actionHeader')}</th>}
           </tr>
         </thead>
         <tbody className="divide-y">
           {rows.map((a) => (
             <tr key={a.id}>
               <td className="px-4 py-3">{a.name}</td>
-              <td className="px-4 py-3 text-gray-500">{a.email}</td>
-              {showOrg && <td className="px-4 py-3 text-gray-500">{a.owning_org_name || '—'}</td>}
+              <td className="px-4 py-3 text-ground-500">{a.email}</td>
+              {showOrg && <td className="px-4 py-3 text-ground-500">{a.owning_org_name || '—'}</td>}
               <td className="px-4 py-3">
                 <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${roleBadge(a.role)}`}>
                   {t(`admin.role.${a.role}`)}
@@ -100,9 +94,9 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                   other said Paused. */}
               <td className="px-4 py-3">
                 <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${
-                  !a.is_active ? 'bg-red-100 text-red-600'
-                    : a.paused ? 'bg-amber-100 text-amber-700'
-                    : 'bg-green-100 text-green-700'}`}>
+                  !a.is_active ? 'bg-critical-100 text-critical-600'
+                    : a.paused ? 'bg-caution-100 text-caution-700'
+                    : 'bg-positive-100 text-positive-700'}`}>
                   {!a.is_active ? t('admin.revoked')
                     : a.paused ? t('admin.reviewers.status.paused')
                     : t('admin.active')}
@@ -121,7 +115,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                       {onToggle && !(a.is_active && soleOrgAdmin?.(a)) && (
                         <button disabled={busyId === a.id} onClick={() => onToggle(a)}
                           className={`text-xs font-medium disabled:opacity-50 ${
-                            a.is_active ? 'text-red-600 hover:text-red-800'
+                            a.is_active ? 'text-critical-600 hover:text-critical-800'
                                         : 'text-primary-600 hover:text-primary-800'}`}>
                           {a.is_active ? t('admin.revoke') : t('admin.restore')}
                         </button>
@@ -133,7 +127,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
             </tr>
           ))}
           {rows.length === 0 && (
-            <tr><td colSpan={cols} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td></tr>
+            <tr><td colSpan={cols} className="px-4 py-6 text-center text-ground-400">{t('admin.noAdmins')}</td></tr>
           )}
         </tbody>
       </table>
