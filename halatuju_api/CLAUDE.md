@@ -550,7 +550,35 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-31, after Layer 1 F3 — the student surfaces)
+## Next Sprint (as of 2026-08-31, after Layer 1 F3b — the brand ramp aligned to dark)
+
+**✅ SHIPPED — LAYER 1 F3b.** Branch `feat/layer1-f3b-brand-dark`, stacked on F3's branch.
+**NO migration. WEB ONLY.** 4 files. Retro
+`docs/retrospective-2026-08-31-layer1-f3b-brand-dark.md`; decision ×1; lessons ×3. jest **1518**.
+**F3's open question is closed.**
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`brandRamp(hex, theme)`** — dark tints mix toward the PAGE, dark shades toward WHITE. **`500`
+  is byte-identical in both modes; that is the owner's ruling and a test pins it.** Do not
+  "simplify" the theme parameter away: a tenant supplies one colour at runtime, so the dark ramp
+  must be derived, never typed.
+- **`branding-context` watches `data-theme` and recomputes a tenant's ramp.** NOT optional — the
+  tenant override writes INLINE styles, which outrank the dark block in `globals.css`.
+- **The old guard `a THEME may never write --brand-*` is GONE ON PURPOSE.** It banned the family
+  and therefore the fix. Four properties replace it. Do not restore the ban.
+- `DARK_GROUND` in `branding.ts` mirrors `--ground-50` in the dark block; a test refuses drift.
+
+**▶ AT DEPLOY: push main (web build only).** F3 and F3b merge in that order (F3b is stacked on F3).
+No migrate-first, no env vars. **Dark mode stays unreachable; light mode is byte-identical.**
+
+**▶ NEXT = LAYER 1 F4** — the admin console excluding the cockpit (34 files, the largest chromatic
+count on the list). Then F5 (the cockpit, ONE file, 544 raw colours), A1–A3, F6, F7.
+**Checklist for every repaint:** hunt the hiding places FIRST (inline styles, the stylesheet's own
+layers, undeclared form controls, lookup tables of class strings, arbitrary-value classes, SVG
+props — and assume one more); grep for `bg-info-[567]00` beside `text-white`; re-derive the file
+list rather than trusting the roadmap's. **Worktree:** junction `node_modules` before any gate.
+
+## Superseded — previous Next Sprint (as of 2026-08-31, after Layer 1 F3 — the student surfaces)
 
 **✅ SHIPPED — LAYER 1 F3.** Branch `feat/layer1-f3-student-surfaces`. **NO migration. WEB ONLY.**
 24 files, ~1205 utilities. Retro `docs/retrospective-2026-08-31-layer1-f3-student-surfaces.md`;
