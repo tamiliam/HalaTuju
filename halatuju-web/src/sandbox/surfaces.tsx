@@ -15,6 +15,9 @@ import { useState, type ReactNode } from 'react'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import ActionCentre from '@/components/ActionCentre'
+import SponsorLanding from '@/components/SponsorLanding'
+import SpecialConditions from '@/components/SpecialConditions'
+import PathwayTrackCard, { type PathwayTrack } from '@/components/PathwayTrackCard'
 import InfoBox from '@/components/InfoBox'
 import ProgressStepper from '@/components/ProgressStepper'
 import FilterPill from '@/components/FilterPill'
@@ -212,6 +215,34 @@ export const SURFACES: Surface[] = [
     render: () => <PiecesGallery />,
   },
   {
+    slug: 'sponsor-landing',
+    title: 'Sponsor landing — the public page',
+    note:
+      'The public "become a sponsor" page, repainted in F2b. The two call-to-action buttons and '
+      + 'the numbered step circles were corrected BY HAND from the info tone to the brand — the '
+      + 'codemod was right that they were blue and wrong that they meant "information", which is '
+      + 'the same defect F1 found on the sponsor portal. In dark they must read as the tenant’s '
+      + 'colour, not as a pale blue notice.',
+    render: () => (
+      <WithAuth profile={sandboxProfileSpm}>
+        <SponsorLanding count={12} />
+      </WithAuth>
+    ),
+  },
+  {
+    slug: 'category-colours',
+    title: '⚠ Category colours — the open question',
+    note:
+      'THIS SURFACE EXISTS TO BE DECIDED ON, not signed off. Every colour here identifies a '
+      + 'CATEGORY — a field of study, an institution type, an entry condition — and its only job '
+      + 'is to differ from its neighbours. The theme has four tones, all of which mean something '
+      + '(good / info / caution / bad), so these could not be converted without either collapsing '
+      + 'two categories into one colour or claiming that "Science" is a success and "female '
+      + 'applicants only" is an error. They are therefore still literal, and they DO NOT follow '
+      + 'dark mode: switch to dark and they stay light — that is the gap, shown deliberately.',
+    render: () => <CategoryColours />,
+  },
+  {
     slug: 'programme-config',
     title: 'Admin — what we ask for',
     note:
@@ -311,6 +342,44 @@ function WithSponsorPortal({ children }: { children: ReactNode }) {
  * props. The layout around them is scaffolding — labels and spacing — and carries no colour of its
  * own beyond the ground, so nothing here can make a broken component look correct.
  */
+/**
+ * The colours F2b could NOT convert, mounted so the gap can be seen rather than described.
+ *
+ * ⚠ Every component below is the real one. The point of the surface is that in dark mode these
+ * stay light — a category palette has no dark counterpart yet, because the product has no
+ * categorical token family. That is an owner decision, not an oversight.
+ */
+const SANDBOX_TRACKS: PathwayTrack[] = [
+  { id: '1', pathway: 'stpm', track: 'sains', meritScore: 88, meritLabel: 'High', collegeCount: 21 },
+  { id: '2', pathway: 'stpm', track: 'sains_sosial', meritScore: 71, meritLabel: 'Fair', collegeCount: 34 },
+  { id: '3', pathway: 'matric', track: 'perakaunan', meritScore: 64, meritLabel: 'Fair', collegeCount: 12 },
+  { id: '4', pathway: 'matric', track: 'kejuruteraan', meritScore: 79, meritLabel: 'High', collegeCount: 18 },
+]
+
+function CategoryColours() {
+  return (
+    <div className="mx-auto max-w-4xl px-4">
+      <h2 className="mb-1 text-lg font-semibold text-ground-900">Entry conditions</h2>
+      <p className="mb-3 text-sm text-ground-500">
+        Seven conditions, seven dot colours. None of them is a warning — “female applicants only”
+        is a requirement, not an error — so none of them maps onto a tone.
+      </p>
+      <SpecialConditions
+        reqInterview noColorblind reqMedicalFitness reqMale reqFemale single noDisability
+      />
+
+      <h2 className="mb-1 mt-8 text-lg font-semibold text-ground-900">Fields of study</h2>
+      <p className="mb-3 text-sm text-ground-500">
+        The badge on each card is one of five field colours, plus a sixth for the pathway.
+        Converting by colour family would put two of them on the same token.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {SANDBOX_TRACKS.map((track) => <PathwayTrackCard key={track.id} track={track} />)}
+      </div>
+    </div>
+  )
+}
+
 function PiecesGallery() {
   const [on, setOn] = useState(false)
   const [pill, setPill] = useState('all')

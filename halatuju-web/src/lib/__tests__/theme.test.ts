@@ -353,6 +353,32 @@ const CATEGORICAL = {
   'src/components/CareerPathways.tsx': ['bg-indigo-50 text-indigo-700'],
 }
 
+describe('the F2b semantic corrections the codemod could not make', () => {
+  // ⚠ THE F1 DEFECT, A THIRD TIME. The sponsor LANDING page's two calls to action and its step
+  // numbers were blue, so the codemod called them `info`. They are the only reason the page
+  // exists, and a tenant's colour has to reach them. Pinned by name because "a filled control the
+  // user ACTS on carries the BRAND" has no mechanical test.
+
+  it('paints the sponsor landing page’s calls to action with the BRAND', () => {
+    const src = read('src/components/SponsorLanding.tsx')
+    expect(src.match(/bg-primary-600/g) ?? []).toHaveLength(3)  // two CTAs + the step numbers
+    expect(src).not.toMatch(/bg-info-600/)
+  })
+
+  it('paints the sponsor sign-up form’s submit with the BRAND', () => {
+    expect(read('src/components/SponsorDetailsForm.tsx')).toMatch(/bg-primary-600/)
+    expect(read('src/components/SponsorDetailsForm.tsx')).not.toMatch(/bg-info-600/)
+  })
+
+  it('paints a SELECTED control with the brand, and leaves plain links on the info tone', () => {
+    // The mirror of the rule. A text link is not a filled control; F1 settled that it stays `info`,
+    // and three sprints have now followed it. Selection, though, is the product acknowledging what
+    // the reader just did.
+    expect(read('src/components/SponsorNotifyPrefs.tsx')).toMatch(/border-primary-600 bg-primary-50/)
+    expect(read('src/components/SponsorLanding.tsx')).toMatch(/text-info-600/)
+  })
+})
+
 describe('the category palettes are exempt ON PURPOSE, and stay that way', () => {
   // ⚠ THE F2b FINDING. The codemod renames by colour FAMILY, which is right for a signal and
   // destructive for a set of categories: `poly` (emerald) and `ILJTM` (green) would BOTH become
