@@ -550,7 +550,42 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-30, after Layer 0 Sprint 5 — LAYER 0 IS COMPLETE)
+## Next Sprint (as of 2026-08-31, after Layer 1 F2a — the shared components are repainted)
+
+**✅ SHIPPED — LAYER 1 F2a.** Branch `feat/layer1-f2a-shared-components`. **NO migration. WEB ONLY —
+nothing in `halatuju_api` changed.** 34 files. Retro
+`docs/retrospective-2026-08-31-layer1-f2a-shared-components.md`; decisions ×2; lessons ×3.
+jest 1482 → **1493**. pytest unchanged at 5677.
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **The dark GROUND ramp is designed, not derived** (`globals.css`). `ground-0` is the RAISED
+  surface (`#1f2937`), `ground-50` the page. Do NOT "restore the reversal" — it put the card
+  underneath its own page. The four TONE ramps are still a straight reversal and should stay so.
+- **`body` and `@layer components` carry tokens now**, not raw colour, and `.input` has an explicit
+  `bg-ground-0` — **that background is load-bearing**; without it a browser paints text controls
+  its own white, which is invisible in light mode and blinding in dark.
+- **`theme.test.ts` pins PROPERTIES, not numbers**: raised-lighter-than-page in both modes, every
+  ground role distinct, no raw colour in the stylesheet's layers, every text control has a
+  background. Comments are stripped before every scan — without that the guards flag their own
+  documentation.
+- **`FundingBar` is `bg-primary-600` on purpose** (brand, not a tone). The Toast and the "done"
+  medallions stay on their tones. Both are pinned by name.
+- The F2b ceiling is **659**, scoped to `src/components/*` top level only.
+
+**▶ AT DEPLOY: push main (web build only; api will rebuild but is unchanged).** No migrate-first,
+no env vars, no i18n keys. **Dark mode stays unreachable** — `NEXT_PUBLIC_THEME_SWITCH` is unset in
+production and no boot script is emitted without it. Post-check: any page in light mode looks as
+before, except the page ground is `#f9fafb` rather than pure white.
+
+**▶ NEXT = LAYER 1 F2b** — the other half of `src/components` (25 files, 659 raw colours; `AppHeader`
+64, `RequirementsCard` 59, `SponsorLanding` 40, `AppFooter` 30, `PathwayTrackCard` 29 …). Append its
+files to `F2A_FILES` and drop the ceiling to zero. Then F3 (student surfaces, incl.
+`ScholarshipDocuments.tsx` at 293), F4, F5, A1–A3, F6, F7. Run `sprint-start.md`.
+**⚠ Worktree gotcha, hit twice now:** a fresh worktree has no `node_modules`; make a directory
+junction to the main checkout's install BEFORE trusting any gate, or `npx` silently fetches a
+different tool from the network. Remove the junction with `rmdir`, never `rm -rf`.
+
+## Superseded — previous Next Sprint (as of 2026-08-30, after Layer 0 Sprint 5 — LAYER 0 IS COMPLETE)
 
 **✅ SHIPPED — LAYER 0 SPRINT 5, "What we ask for".** Branch `feat/layer0-sprint5-screen`. **NO
 migration.** Backend 4 files + 1 test file; web 13. Retro

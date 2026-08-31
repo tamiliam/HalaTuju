@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F2a — the shared student-journey components go onto the theme tokens - 2026-08-31
+
+**Sprint.** No migration. Web only, 34 files. Retro
+`docs/retrospective-2026-08-31-layer1-f2a-shared-components.md`. jest 1482 → **1493**.
+**Dark mode stays unreachable** — `NEXT_PUBLIC_THEME_SWITCH` is unset in production and the
+before-paint script is not emitted without it. Nothing a visitor sees changes, except the one
+light-mode change noted below.
+
+### Changed
+- **27 shared components repainted** — `ActionCentre`, `ScholarshipNextSteps`, `ScholarshipReview`,
+  `AwardComprehensionQuiz`, `AuthGateModal`, `FamilyRosterFields`, `IncomeRouteSwitch`,
+  `Pagination`, `OrgRequestAttachments`, `InfoBox`, `ScholarshipConsent`, `AuthButtons`,
+  `FilterPill`, `DocViewer`, `IcInput`, `InfoTip`, `ProgressStepper`, `FundingBar`,
+  `ScholarshipReferee`, `ScholarshipBanner`, `Toast`, `Toggle`, `FieldLabel`, `VerifiedTick`,
+  `DocumentHelpCoach`, `SelectWithOther`, `IncomeClusterCoach`. 386 utilities converted by
+  `scripts/theme-codemod.js`, every line reviewed by hand after. `ScholarshipDocuments.tsx` is
+  deliberately NOT here — 293 utilities, a third of the directory; it belongs to F3.
+- **Two semantic corrections the codemod could not make.** `FundingBar`'s fill is the BRAND, not
+  the info tone (a progress fill carries no semantic state, and `ActionCentre`'s identical bar was
+  already `bg-primary-500` — leaving them different meant a tenant's colour reached one bar and
+  not the other). `VerifiedTick`'s tick was a raw `stroke="#fff"` and is now `stroke-white`, a
+  literal that must never invert with the ground.
+- **⚠ ONE LIGHT-MODE CHANGE:** the page ground (`body`) goes from `#ffffff` to `#f9fafb`
+  (`ground-50`) — the value most of the app's pages already set for themselves with `bg-gray-50`.
+  It has to be the page stop, because `ground-0` is now the raised surface.
+
+### Fixed — three dark-mode defects found by LOOKING, none of which a test would have reported
+- **The dark ground was inverted, not designed.** Reversing the ramp made `--ground-0` pure black
+  while the page sat at `#111827`, so every card, input and modal read as a hole punched through
+  the page instead of a thing resting on it. The ground now carries roles rather than a
+  derivation: `0` raised (`#1f2937`), `50` the page, `100` wells, `200`/`300` borders, `400`
+  placeholder, `500` muted text. The tone ramps remain a straight reversal — a tone is a signal
+  and only has to stay legible; the ground is furniture and its roles are what matter.
+- **`body` was `bg-white text-gray-900`, raw**, so dark mode would have shipped dark cards and
+  light text on a WHITE page, product-wide. It was in the stylesheet, which no `.tsx` scan reads.
+- **`.input` had no background at all** — invisible in light mode because a browser's own default
+  for a text control is white and the page was white too. In dark it made every input and textarea
+  a blazing white rectangle. Also converted: `.card`, `.btn-secondary`, `.grade-badge-*`
+  (`orange` stays literal on the badge ramp, with the reason written beside it).
+
+### Added
+- **A per-surface conversion guard** (`assertConverted`) covering F1's sponsor portal and F2a's 27
+  files: no raw Tailwind colour, no raw hex, white stays literal. **Comments are stripped first** —
+  without that the guard flags its own documentation (`#15a` is three valid hex digits, and the
+  note explaining why `#fff` was removed contains `#fff`).
+- **A ceiling that may only fall** over F2b's unconverted half of `src/components` (659 raw
+  colours across 25 files). Scoped to that directory's top level only — ratcheting
+  `components/admin` would freeze the colours of a console people are still building on, with no
+  sanctioned way to pass the test.
+- **Two new guards on the ground:** the raised surface must be lighter than its page in BOTH
+  modes, and every ground role must hold a distinct value. Plus a guard that the stylesheet's own
+  base and component layers carry no raw colour, and that every text control has a background.
+- **Sandbox surfaces `action-centre`, `action-centre-clear` and `pieces`** — the last mounts the
+  small components side by side, because each is too small for a surface of its own and together
+  they carry the whole tone vocabulary. The sandbox harness chrome is itself converted, so the
+  review tool is legible in the mode it exists to review.
+- Bite-checked: four faults injected (raw colour back into a converted file, the brand correction
+  reverted, the card dropped back to black, the input's background removed) → four distinct guards
+  failed. Mid-session flip test passed: a half-typed answer survives the mode change.
+
 ## Layer 0 Sprint 5 — "What we ask for": the org_admin configures the programme - 2026-08-30
 
 **Sprint.** No migration. Backend 4 files, web 13 files. **LAYER 0 IS COMPLETE** (Sprints 1–5 +

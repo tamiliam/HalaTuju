@@ -107,6 +107,33 @@ want an eye; best done once two or three surfaces are converted. And the sandbox
 **Light/Dark/Auto toggle** plus a pattern for mounting a context-driven page against fixtures
 (`SponsorPortalContext` is exported for harness use) — every later repaint sprint reviews this way.
 
+#### ✅ F2a — SHIPPED 2026-08-31 (worktree `.worktrees/layer1-f2a`)
+
+Retro `docs/retrospective-2026-08-31-layer1-f2a-shared-components.md`; decisions ×2; lessons ×3.
+NO migration. 34 files, jest **1493**. 27 components converted (386 utilities); two semantic
+corrections by hand (`FundingBar` → brand, `VerifiedTick`'s `#fff` → `stroke-white`).
+
+**▶ THE CARRIED-IN TONE-TUNING PASS FOUND SOMETHING BIGGER THAN THE TONES.** F1 carried "saturated
+mid-stops want an eye" into this sprint. The tones are fine; **the GROUND was the casualty of the
+reversal** — `ground-0` (the card) reversed to pure black on a `#111827` page, so every card read
+as a hole. The dark ground is now written as ROLES, not a derivation, and the guard pins the
+property (raised is lighter than page, in both modes) rather than the formula. See decisions.
+
+**▶ TWO DEFECTS THAT WERE NEVER IN ANY FILE LIST.** `globals.css` is not a component and not a
+surface, so no sprint owned it: `body` was `bg-white text-gray-900` (a WHITE page in dark, product
+wide) and `.input` declared no background, so every text control fell back to the browser's own
+white. **F3–F6 must not assume their file table is the whole surface** — the stylesheet's
+`@layer base` / `@layer components`, and any control that inherits rather than declares a colour,
+are part of every repaint from here on. Both are now guarded.
+
+**▶ ONE LIGHT-MODE CHANGE, deliberate:** the page ground moves `#ffffff` → `#f9fafb`. "Pixel
+identical in light" still holds for the family rename; this is a separate, documented change.
+
+**▶ FOR F2b:** the ceiling is **659** raw colours across 25 files, `src/components/*` top level
+only (`components/admin` is F4's and is deliberately NOT ratcheted — it is under active feature
+work). Append F2b's files to `F2A_FILES` in `theme.test.ts` and drop the ceiling to zero.
+`ScholarshipDocuments.tsx` (293 utilities) stays with **F3**.
+
 #### F2a / F2b — Shared components
 **Goal.** The 52 components everything else mounts, split into two reviewable halves (student-journey
 components first, the rest second).
