@@ -550,7 +550,40 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-31, after Layer 1 F3b — the brand ramp aligned to dark)
+## Next Sprint (as of 2026-09-01, after Layer 1 F4 — the admin console)
+
+**SHIPPED — LAYER 1 F4.** Branch `feat/layer1-f4-admin-console`. **NO migration. WEB ONLY.**
+46 files, ~1445 utilities. Retro `docs/retrospective-2026-09-01-layer1-f4-admin-console.md`;
+lessons x3. jest 1518 -> **1531**. pytest unchanged at 5677.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- The whole console on the tokens, EXCEPT the officer cockpit (`admin/scholarship/[id]`), which is
+  excluded by name and **ceilinged at 544** until F5.
+- **38 filled controls are `bg-primary-600`, not `bg-info-600`** — pinned by a guard. An info
+  NOTICE (`bg-info-50`, dark text) is deliberately untouched; the line is "filled control the user
+  ACTS on" versus "coloured surface that INFORMS".
+- **`src/lib/roleBadge.ts` is the ONLY role palette.** Three files used to declare it and had
+  silently desynchronised. Do not re-inline it anywhere; a guard checks all three call it.
+- Five category palettes on `category-N`; the `CATEGORICAL` closed list is now 9 files.
+- `suspended` and `declined` are WEIGHT inside the tone vocabulary, not new hues.
+
+**AT DEPLOY: push main (web build only).** No migrate-first, no env vars. **Dark mode stays
+unreachable.** Nothing a visitor sees changes.
+
+**NEXT = LAYER 1 F5 — the officer cockpit.** ONE file, `src/app/admin/scholarship/[id]/page.tsx`,
+544 raw colours; its ceiling drops to zero. The roadmap says this is the one place section
+extraction is justified on readability alone — and only as far as the repaint reaches. Then
+A1-A3 (the tenant colour editor), F6 (public course guide, incl. ~78 colour literals returned as
+class strings from `lib/`), F7 (the flip).
+
+**CHECKLIST for every repaint, now five items:** re-derive the file list (the roadmap's table has
+been wrong three sprints running); hunt the hiding places FIRST (inline styles, the stylesheet's
+own layers, undeclared form controls, lookup tables of class strings, arbitrary-value classes, SVG
+props, HTML entities — and assume one more); grep for `bg-info-[567]00` beside `text-white`; ask of
+every colour table "state or kind?"; and **never generate a regex** — F4 shipped a guard whose
+script-written escape became a literal backspace byte, so it matched nothing and passed forever.
+
+## Superseded — previous Next Sprint (as of 2026-08-31, after Layer 1 F3b — the brand ramp aligned to dark)
 
 **✅ SHIPPED — LAYER 1 F3b.** Branch `feat/layer1-f3b-brand-dark`, stacked on F3's branch.
 **NO migration. WEB ONLY.** 4 files. Retro

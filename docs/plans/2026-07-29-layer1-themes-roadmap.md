@@ -237,6 +237,31 @@ the owner's ruling re-read), stop using brand tints as surfaces, or ship it. **S
 **Acceptance.** The apply flow and Documents tab in both modes, on the sandbox, which already mounts
 them. *medium-high.*
 
+#### ✅ F4 — SHIPPED 2026-09-01
+
+Retro `docs/retrospective-2026-09-01-layer1-f4-admin-console.md`; lessons ×3. NO migration.
+46 files, ~1445 utilities, jest **1531**. **44 files, not the 34 the table said** — third sprint
+running that the plan's file list has aged; re-derive at sprint start.
+
+**▶ 38 FILLED CONTROLS CORRECTED TO THE BRAND across 17 files** — the largest instance of the F1
+defect yet. The console's primary button is `bg-info-600 text-white`; left as a tone, a tenant's
+colour would have reached almost nothing on the surface their own staff use all day.
+
+**▶ THREE COPIES OF THE ROLE PALETTE, SILENTLY DESYNCHRONISED.** `StaffAdmin`, the reviewers list
+and the Manual each declared it; the Manual's comment asked that they agree. The codemod converted
+one and left another. Now one module: `src/lib/roleBadge.ts`.
+
+**▶ FIVE MORE CATEGORY PALETTES** onto `category-N` (roles, exam type ×2, request component,
+platform badge) — the `CATEGORICAL` closed list went 4 → 9 and **failed first**, which is its job.
+**▶ TWO STATES BY WEIGHT, not a new hue:** `suspended` = filled `caution` against pending's tint;
+`declined` = `caution-500` against `rejectedAfterReview`'s `critical-500`.
+
+**▶ ⚠ A GUARD THAT COULD NEVER HAVE FIRED.** The filled-control check was script-generated, and the
+word-boundary escape in it became a literal backspace byte — the regex compiled, matched nothing,
+and passed forever. Found only by bite-checking. **Never generate a regex.**
+
+**▶ FOR F5:** the cockpit is ceilinged at **544** in `theme.test.ts` and excluded by name.
+
 #### F4 — Admin console (excluding the cockpit)
 **Scope.** 34 files, the largest chromatic count on the list. *high.*
 
