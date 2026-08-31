@@ -28,10 +28,10 @@ export default function InfoTip({ text, defaultOpen = false }: { text: string; d
       {open && (
         <span
           role="tooltip"
-          className="absolute left-1/2 top-7 z-30 w-64 -translate-x-1/2 rounded-xl border border-primary-100 bg-white px-3.5 py-3 text-left text-xs font-normal leading-relaxed text-gray-600 shadow-xl"
+          className="absolute left-1/2 top-7 z-30 w-64 -translate-x-1/2 rounded-xl border border-primary-100 bg-ground-0 px-3.5 py-3 text-left text-xs font-normal leading-relaxed text-ground-600 shadow-xl"
         >
           {/* caret pointing up at the i button */}
-          <span className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-primary-100 bg-white" />
+          <span className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-primary-100 bg-ground-0" />
           <span className="relative flex gap-2">
             <svg className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 17h5M10 20.5h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z" />

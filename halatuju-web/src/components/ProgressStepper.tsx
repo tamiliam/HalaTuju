@@ -12,7 +12,7 @@ export default function ProgressStepper({ currentStep, totalSteps = 3 }: Progres
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-medium text-gray-500 whitespace-nowrap">
+      <span className="text-sm font-medium text-ground-500 whitespace-nowrap">
         {t('onboarding.step')} {currentStep} {t('onboarding.of')} {totalSteps}
       </span>
       <div className="flex items-center gap-1">
@@ -20,7 +20,7 @@ export default function ProgressStepper({ currentStep, totalSteps = 3 }: Progres
           <div
             key={i}
             className={`h-1.5 w-8 rounded-full transition-all ${
-              i < currentStep ? 'bg-primary-500' : 'bg-gray-200'
+              i < currentStep ? 'bg-primary-500' : 'bg-ground-200'
             }`}
           />
         ))}

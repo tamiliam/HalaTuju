@@ -26,26 +26,26 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
   if (!doc) return null
 
   const newTab = (
-    <a href={doc.url} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">
+    <a href={doc.url} target="_blank" rel="noreferrer" className="text-xs text-info-600 hover:underline">
       {t('admin.scholarship.docsDrawer.viewer.newTab')} ↗
     </a>
   )
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="flex h-full max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+      <div className="flex h-full max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-ground-0 shadow-2xl"
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-2.5">
+        <div className="flex items-center gap-3 border-b border-ground-100 px-4 py-2.5">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-gray-800">{doc.label}</p>
-            {doc.filename && <p className="truncate text-[11px] text-gray-400">{doc.filename}</p>}
+            <p className="truncate text-sm font-semibold text-ground-800">{doc.label}</p>
+            {doc.filename && <p className="truncate text-[11px] text-ground-400">{doc.filename}</p>}
           </div>
           {newTab}
           <button type="button" onClick={onClose}
             aria-label={t('admin.scholarship.docsDrawer.viewer.close')}
-            className="rounded-md px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700">✕</button>
+            className="rounded-md px-2 py-1 text-ground-400 hover:bg-ground-100 hover:text-ground-700">✕</button>
         </div>
-        <div className="flex-1 overflow-auto bg-gray-100">
+        <div className="flex-1 overflow-auto bg-ground-100">
           {doc.kind === 'image' && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={doc.url} alt={doc.label} className="mx-auto block max-h-full max-w-full object-contain" />
@@ -55,7 +55,7 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
           )}
           {doc.kind === 'unsupported' && (
             <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-              <p className="max-w-sm text-sm text-gray-600">
+              <p className="max-w-sm text-sm text-ground-600">
                 {t('admin.scholarship.docsDrawer.viewer.noPreview')}
               </p>
               {newTab}

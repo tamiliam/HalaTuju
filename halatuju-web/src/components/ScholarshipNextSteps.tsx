@@ -44,7 +44,7 @@ const STORY_TEXT_MAX = 5000
  *  by convention — keeps the cheat-sheet short and encouraging. */
 function Tips({ title, tips }: { title: string; tips: string[] }) {
   return (
-    <details className="mt-1 text-xs text-gray-500">
+    <details className="mt-1 text-xs text-ground-500">
       <summary className="cursor-pointer select-none text-primary-600 hover:underline">{title}</summary>
       <ul className="mt-1.5 ml-4 list-disc space-y-0.5">
         {tips.map((tip) => <li key={tip}>{tip}</li>)}
@@ -80,7 +80,7 @@ const PROGRAMME_LENGTH_OPTIONS: { key: string; months: number }[] = [
 
 // SVG icon for each tab — mirrors the style in /apply's TabIcon.
 function StepIcon({ step, active }: { step: NextStepKey; active: boolean }) {
-  const cls = `w-6 h-6 ${active ? 'text-primary-600' : 'text-gray-400'}`
+  const cls = `w-6 h-6 ${active ? 'text-primary-600' : 'text-ground-400'}`
   const paths: Record<NextStepKey, string> = {
     quiz: 'M9 12l2 2 4-4m1-7H8a2 2 0 00-2 2v14a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2z',
     story: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
@@ -294,7 +294,7 @@ export default function ScholarshipNextSteps({
     <>
       {error && <InfoBox kind="block">{error}</InfoBox>}
       {holdNote && <InfoBox kind="warning">{t('scholarship.nextSteps.incompleteToContinue')}</InfoBox>}
-      {saved && !holdNote && <p className="text-sm text-green-800">{t('scholarship.nextSteps.saved')}</p>}
+      {saved && !holdNote && <p className="text-sm text-positive-800">{t('scholarship.nextSteps.saved')}</p>}
     </>
   )
 
@@ -303,19 +303,19 @@ export default function ScholarshipNextSteps({
     quiz: (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${c.quiz_done ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`} aria-hidden>
+          <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${c.quiz_done ? 'bg-positive-500 text-white' : 'bg-ground-100 text-ground-400'}`} aria-hidden>
             {c.quiz_done ? '✓' : '○'}
           </span>
-          <p className="font-medium text-gray-900">{t('scholarship.nextSteps.step1Title')}</p>
+          <p className="font-medium text-ground-900">{t('scholarship.nextSteps.step1Title')}</p>
         </div>
-        <p className="text-sm text-gray-600">{t('scholarship.nextSteps.step1Body')}</p>
+        <p className="text-sm text-ground-600">{t('scholarship.nextSteps.step1Body')}</p>
         {!c.quiz_done && (
           <Link href="/quiz?return=application" className="btn-primary inline-block text-sm">
             {t('scholarship.nextSteps.step1Cta')}
           </Link>
         )}
         {c.quiz_done && (
-          <p className="text-sm text-green-700">{t('scholarship.nextSteps.allDone').split('—')[0].trim()}</p>
+          <p className="text-sm text-positive-700">{t('scholarship.nextSteps.allDone').split('—')[0].trim()}</p>
         )}
       </div>
     ),
@@ -326,8 +326,8 @@ export default function ScholarshipNextSteps({
         <InfoBox kind="info">{t('scholarship.nextSteps.story.langNote')}</InfoBox>
 
         {/* Card A — About your family (structured roster, 2026-06 redesign) */}
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-5">
-          <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardA.title')}</h3>
+        <div className="rounded-xl border border-ground-200 bg-ground-50 p-4 space-y-5">
+          <h3 className="font-medium text-ground-900">{t('scholarship.nextSteps.story.cardA.title')}</h3>
 
           <FamilyRosterFields
             form={form}
@@ -341,7 +341,7 @@ export default function ScholarshipNextSteps({
           />
 
           {/* family_context (kept — the free-text catch-all) */}
-          <div className="border-t border-gray-200 pt-4">
+          <div className="border-t border-ground-200 pt-4">
             <FieldLabel>{t('scholarship.nextSteps.story.cardA.familyContext')}</FieldLabel>
             <textarea
               className="input" rows={3}
@@ -365,9 +365,9 @@ export default function ScholarshipNextSteps({
             Layer 0 Sprint 4: drawn only if this programme asks the address question;
             required markers follow the catalogue (the server gate reads the same answer). */}
         {asks('address') && (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
-          <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardAddress.title')}</h3>
-          <p className="text-xs text-gray-500">{t('scholarship.nextSteps.story.cardAddress.intro')}</p>
+        <div className="rounded-xl border border-ground-200 bg-ground-50 p-4 space-y-4">
+          <h3 className="font-medium text-ground-900">{t('scholarship.nextSteps.story.cardAddress.title')}</h3>
+          <p className="text-xs text-ground-500">{t('scholarship.nextSteps.story.cardAddress.intro')}</p>
 
           {/* address (street) */}
           <div>
@@ -411,9 +411,9 @@ export default function ScholarshipNextSteps({
           {/* state — read-only, sourced from /apply */}
           <div>
             <FieldLabel>{t('scholarship.nextSteps.story.cardAddress.state')}</FieldLabel>
-            <div className="input flex items-center justify-between bg-gray-100 text-gray-600">
+            <div className="input flex items-center justify-between bg-ground-100 text-ground-600">
               <span>{app.preferred_state || '—'}</span>
-              <span className="text-xs text-gray-400">{t('scholarship.nextSteps.story.cardAddress.fromApply')}</span>
+              <span className="text-xs text-ground-400">{t('scholarship.nextSteps.story.cardAddress.fromApply')}</span>
             </div>
           </div>
         </div>
@@ -423,8 +423,8 @@ export default function ScholarshipNextSteps({
             switched off is not drawn, and the whole card collapses when none of the four is
             asked (computed here, never stored). */}
         {STORY_QUESTION_CODES.some(asks) && (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
-          <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardB.title')}</h3>
+        <div className="rounded-xl border border-ground-200 bg-ground-50 p-4 space-y-4">
+          <h3 className="font-medium text-ground-900">{t('scholarship.nextSteps.story.cardB.title')}</h3>
 
           {/* aspirations */}
           {asks('aspirations') && (
@@ -517,7 +517,7 @@ export default function ScholarshipNextSteps({
         )}
 
         {/* Statement-of-intent note */}
-        <p className="text-xs text-gray-500">{t('scholarship.nextSteps.story.soiNote')}</p>
+        <p className="text-xs text-ground-500">{t('scholarship.nextSteps.story.soiNote')}</p>
 
         {saveFeedback}
         <button type="submit" disabled={saving} className="btn-primary w-full disabled:opacity-50">
@@ -543,11 +543,11 @@ export default function ScholarshipNextSteps({
             || [pathway, app.pre_u_track, app.pre_u_institution].filter(Boolean).join(' · ')
             || pathway
           return label ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-gray-400">
+            <div className="rounded-lg border border-ground-200 bg-ground-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-ground-400">
                 {t('scholarship.nextSteps.funding.chosenStudyLabel')}
               </p>
-              <p className="mt-0.5 text-sm font-medium text-gray-800">{label}</p>
+              <p className="mt-0.5 text-sm font-medium text-ground-800">{label}</p>
             </div>
           ) : null
         })()}
@@ -568,7 +568,7 @@ export default function ScholarshipNextSteps({
                   className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium min-w-[3.5rem] text-center transition-colors ${
                     selected
                       ? 'border-primary-600 bg-primary-600 text-white'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                      : 'border-ground-300 bg-ground-0 text-ground-700 hover:bg-ground-50'
                   }`}
                 >
                   <input
@@ -603,17 +603,17 @@ export default function ScholarshipNextSteps({
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-ground-300 text-primary-600 focus:ring-primary-500"
                       checked={checked}
                       onChange={toggle}
                     />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-ground-700">
                       {t(`scholarship.nextSteps.funding.cat_${cat}`)}
                     </span>
                   </label>
                   {/* Tuition helper text */}
                   {cat === 'tuition' && (
-                    <p className="ml-7 mt-0.5 text-xs text-gray-500">
+                    <p className="ml-7 mt-0.5 text-xs text-ground-500">
                       {t('scholarship.nextSteps.funding.cat_tuition_helper')}
                     </p>
                   )}
@@ -707,9 +707,9 @@ export default function ScholarshipNextSteps({
 
       {/* Admin "please send more documentation" request — shown until resolved by the admin */}
       {app.info_request_note && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-          <p className="text-sm font-medium text-amber-900">{t('scholarship.nextSteps.infoRequestTitle')}</p>
-          <p className="text-sm text-amber-800 mt-1 whitespace-pre-line">{app.info_request_note}</p>
+        <div className="bg-caution-50 border border-caution-200 rounded-xl p-4 mb-6">
+          <p className="text-sm font-medium text-caution-900">{t('scholarship.nextSteps.infoRequestTitle')}</p>
+          <p className="text-sm text-caution-800 mt-1 whitespace-pre-line">{app.info_request_note}</p>
         </div>
       )}
 
@@ -718,17 +718,17 @@ export default function ScholarshipNextSteps({
           students stop before pressing Submit (the silent-limbo case the nudge chases). Only the
           confirmed (actually-submitted) state is a green success. */}
       <div className={`rounded-xl p-5 mb-6 border ${
-        c.complete && !confirmed ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+        c.complete && !confirmed ? 'bg-caution-50 border-caution-200' : 'bg-positive-50 border-positive-200'}`}>
         {c.complete ? (
           <>
             <div className="flex items-center gap-2">
               <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-sm font-bold ${
-                confirmed ? 'bg-green-600' : 'bg-amber-500'}`}>{confirmed ? '✓' : '!'}</span>
-              <h2 className="font-semibold text-gray-900">
+                confirmed ? 'bg-positive-600' : 'bg-caution-500'}`}>{confirmed ? '✓' : '!'}</span>
+              <h2 className="font-semibold text-ground-900">
                 {confirmed ? t('scholarship.nextSteps.confirmedTitle') : t('scholarship.nextSteps.allSetTitle')}
               </h2>
             </div>
-            <p className="text-sm text-gray-700 mt-1">
+            <p className="text-sm text-ground-700 mt-1">
               {confirmed ? t('scholarship.nextSteps.confirmedIntro') : t('scholarship.nextSteps.allSetIntro')}
             </p>
             {/* The commit lives on the Review page ("lock at Continue"): this opens
@@ -747,8 +747,8 @@ export default function ScholarshipNextSteps({
           </>
         ) : (
           <>
-            <h2 className="font-semibold text-gray-900">{t('scholarship.nextSteps.title')}</h2>
-            <p className="text-sm text-gray-700 mt-1">{t('scholarship.nextSteps.intro')}</p>
+            <h2 className="font-semibold text-ground-900">{t('scholarship.nextSteps.title')}</h2>
+            <p className="text-sm text-ground-700 mt-1">{t('scholarship.nextSteps.intro')}</p>
           </>
         )}
       </div>
@@ -767,8 +767,8 @@ export default function ScholarshipNextSteps({
               const done = stepDone[k]
               return (
                 <button key={k} type="button" onClick={() => setTab(k)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${active ? 'bg-primary-50 font-medium text-primary-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${active ? 'bg-primary-500 text-white' : done ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'}`}>
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${active ? 'bg-primary-50 font-medium text-primary-700' : 'text-ground-600 hover:bg-ground-50'}`}>
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${active ? 'bg-primary-500 text-white' : done ? 'bg-primary-100 text-primary-700' : 'bg-ground-100 text-ground-400'}`}>
                     {done ? '✓' : i + 1}
                   </span>
                   {t(`scholarship.nextSteps.tab.${k}`)}
@@ -788,16 +788,16 @@ export default function ScholarshipNextSteps({
           {/* Progress bar + step indicator */}
           <div className="mb-1 flex gap-1.5">
             {steps.map((k, i) => (
-              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-gray-200'}`} />
+              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-ground-200'}`} />
             ))}
           </div>
-          <p className="text-xs text-gray-500 mb-4">
+          <p className="text-xs text-ground-500 mb-4">
             {t('scholarship.nextSteps.stepOf', { n: String(tabIndex + 1), total: String(steps.length) })} · {t(`scholarship.nextSteps.tab.${shownTab}`)}
           </p>
 
           {/* Active section card */}
-          <div id="next-steps-active" className="bg-white border rounded-2xl p-5 shadow-sm scroll-mt-6">
-            <h2 className="font-semibold text-gray-900 mb-4">
+          <div id="next-steps-active" className="bg-ground-0 border rounded-2xl p-5 shadow-sm scroll-mt-6">
+            <h2 className="font-semibold text-ground-900 mb-4">
               {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${shownTab}`)}
             </h2>
             {sections[shownTab]}
@@ -812,12 +812,12 @@ export default function ScholarshipNextSteps({
       </div>
 
       {/* Bottom tab bar (mobile only) */}
-      <nav className="sticky bottom-0 bg-white border-t flex justify-around py-2 -mx-6 px-2 lg:hidden mt-4">
+      <nav className="sticky bottom-0 bg-ground-0 border-t flex justify-around py-2 -mx-6 px-2 lg:hidden mt-4">
         {steps.map((k) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
             <StepIcon step={k} active={k === shownTab} />
-            <span className={`text-[10px] ${k === shownTab ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>
+            <span className={`text-[10px] ${k === shownTab ? 'text-primary-600 font-medium' : 'text-ground-400'}`}>
               {t(`scholarship.nextSteps.tab.${k}`)}
             </span>
           </button>

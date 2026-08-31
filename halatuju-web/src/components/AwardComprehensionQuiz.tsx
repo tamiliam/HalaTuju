@@ -50,12 +50,12 @@ export default function AwardComprehensionQuiz({
   useEffect(() => { fetchQuiz() }, [fetchQuiz])
 
   if (load === 'loading') {
-    return <div className="rounded-2xl border bg-white p-6 text-center text-sm text-gray-500 shadow-sm">{ui.loading}</div>
+    return <div className="rounded-2xl border bg-ground-0 p-6 text-center text-sm text-ground-500 shadow-sm">{ui.loading}</div>
   }
   if (load === 'error') {
     return (
-      <div className="rounded-2xl border bg-white p-6 shadow-sm">
-        <p className="text-sm text-gray-700">{ui.loadError}</p>
+      <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+        <p className="text-sm text-ground-700">{ui.loadError}</p>
         <button type="button" onClick={fetchQuiz}
           className="mt-4 rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600">
           {ui.retry}
@@ -68,14 +68,14 @@ export default function AwardComprehensionQuiz({
 
   if (phase === 'intro') {
     return (
-      <div className="rounded-2xl border bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
         {retakeNote && (
-          <div className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{ui.versionChanged}</div>
+          <div className="mb-4 rounded-xl bg-caution-50 p-3 text-sm text-caution-900">{ui.versionChanged}</div>
         )}
         <div className="text-4xl" aria-hidden>🎉</div>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">{ui.introTitle}</h1>
-        <p className="mt-2 text-gray-600">{ui.introBody}</p>
-        <div className="mt-4 rounded-xl bg-blue-50 p-4 text-sm text-gray-800">
+        <h1 className="mt-2 text-2xl font-bold text-ground-900">{ui.introTitle}</h1>
+        <p className="mt-2 text-ground-600">{ui.introBody}</p>
+        <div className="mt-4 rounded-xl bg-info-50 p-4 text-sm text-ground-800">
           <div className="font-semibold">{ui.whatHappens}</div>
           <ul className="mt-1 list-disc space-y-1 pl-5">
             <li>{ui.step1(count)}</li>
@@ -90,7 +90,7 @@ export default function AwardComprehensionQuiz({
         >
           {ui.begin}
         </button>
-        <p className="mt-5 text-center text-xs text-gray-400">{ui.heldNote}</p>
+        <p className="mt-5 text-center text-xs text-ground-400">{ui.heldNote}</p>
       </div>
     )
   }
@@ -137,31 +137,31 @@ export default function AwardComprehensionQuiz({
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between text-sm text-gray-500">
+      <div className="mb-3 flex items-center justify-between text-sm text-ground-500">
         <span>{ui.understandHeading}</span>
         <span>{ui.ofCount(i + 1, count)}</span>
       </div>
 
-      <div className="rounded-2xl border bg-white p-6 shadow-sm">
-        <div className="text-xs font-semibold uppercase tracking-wider text-blue-600">{cp.tag}</div>
-        <div className="mt-2 rounded-xl bg-blue-50 p-4 text-sm text-gray-800">
+      <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
+        <div className="text-xs font-semibold uppercase tracking-wider text-info-600">{cp.tag}</div>
+        <div className="mt-2 rounded-xl bg-info-50 p-4 text-sm text-ground-800">
           <span className="font-semibold">{ui.whatThisMeans}</span>{cp.plain}
         </div>
-        <h2 className="mt-5 text-lg font-bold text-gray-900">{cp.question}</h2>
+        <h2 className="mt-5 text-lg font-bold text-ground-900">{cp.question}</h2>
 
         <div className="mt-2 space-y-2">
           {cp.options.map((text, idx) => {
             const chosen = picked === idx
-            const tone = status === 'correct' && chosen ? 'border-green-600 bg-green-50'
-              : status === 'wrong' && chosen ? 'border-red-600 bg-red-50'
-              : 'border-gray-300 bg-white hover:border-blue-300 hover:bg-slate-50'
+            const tone = status === 'correct' && chosen ? 'border-positive-600 bg-positive-50'
+              : status === 'wrong' && chosen ? 'border-critical-600 bg-critical-50'
+              : 'border-ground-300 bg-ground-0 hover:border-info-300 hover:bg-ground-50'
             return (
               <button
                 key={idx}
                 type="button"
                 disabled={status === 'correct'}
                 onClick={() => choose(idx)}
-                className={`block w-full rounded-xl border px-4 py-3 text-left text-sm text-gray-800 transition-colors ${tone}`}
+                className={`block w-full rounded-xl border px-4 py-3 text-left text-sm text-ground-800 transition-colors ${tone}`}
               >
                 {text}
               </button>
@@ -170,12 +170,12 @@ export default function AwardComprehensionQuiz({
         </div>
 
         {status === 'correct' && (
-          <div className="mt-4 rounded-xl bg-green-50 p-3 text-sm text-green-800">
+          <div className="mt-4 rounded-xl bg-positive-50 p-3 text-sm text-positive-800">
             <span className="font-semibold">✓ </span>{cp.why}
           </div>
         )}
         {status === 'wrong' && (
-          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{ui.notQuite}</div>
+          <div className="mt-4 rounded-xl bg-caution-50 p-3 text-sm text-caution-900">{ui.notQuite}</div>
         )}
 
         {status === 'correct' && (
@@ -189,7 +189,7 @@ export default function AwardComprehensionQuiz({
           </button>
         )}
       </div>
-      <p className="mt-5 text-center text-xs text-gray-400">{ui.footnote}</p>
+      <p className="mt-5 text-center text-xs text-ground-400">{ui.footnote}</p>
     </div>
   )
 }

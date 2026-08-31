@@ -52,8 +52,8 @@ function ToastItem({ toast, onDismiss }: { toast: ToastState; onDismiss: (id: nu
   }, [toast.id, onDismiss])
 
   const styles = toast.type === 'success'
-    ? 'bg-green-600 text-white'
-    : 'bg-red-600 text-white'
+    ? 'bg-positive-600 text-white'
+    : 'bg-critical-600 text-white'
 
   return (
     <div className={`${styles} px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-slide-in flex items-center gap-2 max-w-sm`}>

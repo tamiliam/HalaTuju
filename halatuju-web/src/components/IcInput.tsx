@@ -41,8 +41,8 @@ export default function IcInput({
   return (
     <div>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label} <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-ground-700 mb-1">
+          {label} <span className="text-critical-500">*</span>
         </label>
       )}
       <input
@@ -55,12 +55,12 @@ export default function IcInput({
         disabled={disabled}
         className={`w-full px-3 py-2.5 border rounded-lg text-sm tracking-wider focus:ring-1 outline-none ${
           displayError
-            ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-            : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+            ? 'border-critical-300 focus:border-critical-500 focus:ring-critical-500'
+            : 'border-ground-300 focus:border-primary-500 focus:ring-primary-500'
         }`}
       />
       {displayError && (
-        <p className="mt-1 text-xs text-red-500">{displayError}</p>
+        <p className="mt-1 text-xs text-critical-500">{displayError}</p>
       )}
     </div>
   )

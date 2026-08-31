@@ -62,12 +62,12 @@ export default function ScholarshipReview({
   const Card = ({ title, editStep, editAnchor, locked, children }: {
     title: string; editStep?: NextStepKey; editAnchor?: string; locked?: boolean; children: ReactNode
   }) => (
-    <section className={`rounded-2xl bg-white p-5 shadow-sm mb-4 ${
-      editStep ? 'border-l-4 border-primary-500' : 'border border-gray-100'}`}>
+    <section className={`rounded-2xl bg-ground-0 p-5 shadow-sm mb-4 ${
+      editStep ? 'border-l-4 border-primary-500' : 'border border-ground-100'}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">{title}</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-ground-400">{title}</h3>
         {locked ? (
-          <span className="text-[10px] font-semibold rounded-full bg-gray-100 text-gray-500 px-2 py-0.5">{s('locked')}</span>
+          <span className="text-[10px] font-semibold rounded-full bg-ground-100 text-ground-500 px-2 py-0.5">{s('locked')}</span>
         ) : editStep ? (
           <button type="button" onClick={() => onEdit(editStep, editAnchor)} className="text-xs font-semibold text-primary-600 hover:underline">
             {s('edit')}
@@ -80,8 +80,8 @@ export default function ScholarshipReview({
   // Stacked field: small label, then a large, dark, readable value.
   const Field = ({ label, value, strong }: { label: string; value: ReactNode; strong?: boolean }) => (
     <div>
-      <p className={`text-xs ${strong ? 'font-semibold text-gray-600' : 'font-medium text-gray-400'}`}>{label}</p>
-      <p className="text-[15px] leading-relaxed text-gray-900 mt-0.5 break-words">{value || dash}</p>
+      <p className={`text-xs ${strong ? 'font-semibold text-ground-600' : 'font-medium text-ground-400'}`}>{label}</p>
+      <p className="text-[15px] leading-relaxed text-ground-900 mt-0.5 break-words">{value || dash}</p>
     </div>
   )
 
@@ -106,7 +106,7 @@ export default function ScholarshipReview({
     <div>
       {/* No <h1> here — the page wrapper (application/page.tsx) already renders the
           "Your application" title. This page only adds its own subtitle. */}
-      <p className="text-sm text-gray-500 -mt-4 mb-5">{s('subtitle')}</p>
+      <p className="text-sm text-ground-500 -mt-4 mb-5">{s('subtitle')}</p>
 
       {/* 1. About you (locked) — identity + the non-editable household facts */}
       <Card title={s('section.about')} locked>
@@ -122,17 +122,17 @@ export default function ScholarshipReview({
 
       {/* 2. Your results (locked) */}
       <Card title={s('section.results')} locked>
-        <p className="text-xs font-medium text-gray-400">
+        <p className="text-xs font-medium text-ground-400">
           {(profile?.exam_type || 'spm').toUpperCase()}
           {app.exam_type === 'stpm' && app.stpm_pngk != null ? ` · PNGK ${app.stpm_pngk}` : ''}
         </p>
         <div className="flex flex-wrap gap-1.5">
           {grades.map(([code, g]) => (
-            <span key={code} className="text-[13px] rounded-full bg-gray-50 ring-1 ring-gray-200 text-gray-800 px-2.5 py-1">
+            <span key={code} className="text-[13px] rounded-full bg-ground-50 ring-1 ring-ground-200 text-ground-800 px-2.5 py-1">
               {subjectLabel(code)} {g}
             </span>
           ))}
-          {grades.length === 0 && <span className="text-sm text-gray-400">{dash}</span>}
+          {grades.length === 0 && <span className="text-sm text-ground-400">{dash}</span>}
         </div>
       </Card>
 
@@ -168,14 +168,14 @@ export default function ScholarshipReview({
         <Field strong label={s('field.programmeLengthLabel')}
                value={fn?.programme_months ? s('value.months', { n: String(fn.programme_months) }) : ''} />
         <div>
-          <p className="text-xs font-medium text-gray-400 mb-1.5">{s('field.support')}</p>
+          <p className="text-xs font-medium text-ground-400 mb-1.5">{s('field.support')}</p>
           <div className="flex flex-wrap gap-1.5">
             {(fn?.categories || []).map((cat) => (
               <span key={cat} className="text-[13px] rounded-full bg-primary-50 text-primary-700 px-3 py-1">
                 {t(`scholarship.nextSteps.funding.cat_${cat}`)}
               </span>
             ))}
-            {(!fn || fn.categories.length === 0) && <span className="text-sm text-gray-400">{dash}</span>}
+            {(!fn || fn.categories.length === 0) && <span className="text-sm text-ground-400">{dash}</span>}
           </div>
         </div>
         {fn?.funding_note ? <Field label={s('field.fundingNote')} value={fn.funding_note} /> : null}
@@ -194,21 +194,21 @@ export default function ScholarshipReview({
 
       {/* 6. Documents — grouped Identity / Results / Pathway / Income / Other */}
       <Card title={s('section.documents')} editStep="documents">
-        {docs.length === 0 && <p className="text-sm text-gray-400">{dash}</p>}
+        {docs.length === 0 && <p className="text-sm text-ground-400">{dash}</p>}
         <div className="space-y-4">
           {grouped.map(({ cat, items }) => (
             <div key={cat}>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ground-400 mb-1.5">
                 {t(`scholarship.docs.section.${cat}.title`)}
               </p>
               <div className="space-y-1.5">
                 {items.map((d) => (
                   <div key={d.id} className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-800 min-w-0 break-words">
+                    <span className="text-sm text-ground-800 min-w-0 break-words">
                       {t(`scholarship.docs.type.${d.doc_type}`)}
-                      {d.original_filename ? <span className="text-gray-400"> · {d.original_filename}</span> : null}
+                      {d.original_filename ? <span className="text-ground-400"> · {d.original_filename}</span> : null}
                     </span>
-                    <span className="shrink-0 text-[10px] font-semibold rounded-full bg-green-50 text-green-700 ring-1 ring-green-200 px-2 py-0.5">
+                    <span className="shrink-0 text-[10px] font-semibold rounded-full bg-positive-50 text-positive-700 ring-1 ring-positive-200 px-2 py-0.5">
                       {s('uploaded')}
                     </span>
                   </div>
@@ -230,24 +230,24 @@ export default function ScholarshipReview({
             ) : null}
           </>
         ) : (
-          <p className="text-sm text-gray-400">{dash}</p>
+          <p className="text-sm text-ground-400">{dash}</p>
         )}
       </Card>
 
       {/* info note + actions */}
-      <div className="rounded-xl bg-blue-50 ring-1 ring-blue-100 p-3.5 mb-4 flex gap-2">
+      <div className="rounded-xl bg-info-50 ring-1 ring-info-100 p-3.5 mb-4 flex gap-2">
         <span className="text-primary-600 text-sm shrink-0" aria-hidden>ⓘ</span>
-        <p className="text-sm text-blue-900/90 leading-relaxed">{s('lockNote')}</p>
+        <p className="text-sm text-info-900/90 leading-relaxed">{s('lockNote')}</p>
       </div>
 
       {!canSubmit && !confirmed && (
-        <p className="text-sm text-amber-700 mb-2">{s('incompleteNote')}</p>
+        <p className="text-sm text-caution-700 mb-2">{s('incompleteNote')}</p>
       )}
-      {submitError && <p className="text-sm text-red-600 mb-2">{submitError}</p>}
+      {submitError && <p className="text-sm text-critical-600 mb-2">{submitError}</p>}
 
       <div className="flex gap-3">
         <button type="button" onClick={onBack}
-          className="rounded-xl border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+          className="rounded-xl border border-ground-300 px-4 py-3 text-sm font-medium text-ground-700 bg-ground-0 hover:bg-ground-50">
           {s('back')}
         </button>
         {!confirmed && (

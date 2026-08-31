@@ -299,13 +299,13 @@ export default function AuthGateModal() {
         if (e.target === e.currentTarget) handleDismiss()
       }}
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-ground-0 rounded-2xl shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           {/* Header */}
-          <h2 className="text-xl font-bold text-gray-900 text-center mb-2">
+          <h2 className="text-xl font-bold text-ground-900 text-center mb-2">
             {t('authGate.title')}
           </h2>
-          <p className="text-gray-600 text-center mb-6">
+          <p className="text-ground-600 text-center mb-6">
             {t(`authGate.${reasonKey}`)}
           </p>
 
@@ -314,7 +314,7 @@ export default function AuthGateModal() {
             <div className="bg-primary-50 rounded-xl p-4 mb-6">
               <ul className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <li key={i} className="flex items-start gap-2 text-sm text-ground-700">
                     <svg className="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
@@ -327,8 +327,8 @@ export default function AuthGateModal() {
 
           {/* Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="bg-critical-50 border border-critical-200 rounded-lg p-3 mb-4">
+              <p className="text-critical-600 text-sm">{error}</p>
             </div>
           )}
 
@@ -337,11 +337,11 @@ export default function AuthGateModal() {
             <>
               <form onSubmit={handlePhoneSubmit} className="space-y-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ground-700 mb-1">
                     {t('authGate.phoneNumber')}
                   </label>
                   <div className="flex">
-                    <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                    <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-ground-300 bg-ground-50 text-ground-500 text-sm">
                       +60
                     </span>
                     <input
@@ -365,17 +365,17 @@ export default function AuthGateModal() {
 
               <div className="relative mb-4">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-ground-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">{t('authGate.or')}</span>
+                  <span className="px-4 bg-ground-0 text-ground-500">{t('authGate.or')}</span>
                 </div>
               </div>
 
               <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-3 px-6 py-3 border-2 border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3 border-2 border-ground-200 rounded-lg font-medium text-ground-700 hover:bg-ground-50 transition-colors disabled:opacity-50"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -392,7 +392,7 @@ export default function AuthGateModal() {
           {step === 'otp' && (
             <form onSubmit={handleOtpSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-ground-700 mb-1">
                   {t('authGate.enterOTP')}
                 </label>
                 <input
@@ -415,7 +415,7 @@ export default function AuthGateModal() {
               <button
                 type="button"
                 onClick={() => { setStep('login'); setOtp(''); setError(null) }}
-                className="w-full text-gray-600 hover:text-gray-900 text-sm"
+                className="w-full text-ground-600 hover:text-ground-900 text-sm"
               >
                 {t('authGate.differentPhone')}
               </button>
@@ -427,13 +427,13 @@ export default function AuthGateModal() {
             <>
               {showConfirm ? (
                 <div className="space-y-4">
-                  <p className="text-gray-600 text-center">
+                  <p className="text-ground-600 text-center">
                     {t('authGate.icExistsMessage') || `This NRIC is already registered${existingName ? ` to ${existingName}` : ''}. Is this you?`}
                   </p>
                   <div className="flex gap-3">
                     <button
                       onClick={() => { setShowConfirm(false); setIc(''); setError(null) }}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      className="flex-1 px-4 py-2 border border-ground-300 rounded-lg text-ground-700 hover:bg-ground-50"
                     >
                       {t('authGate.icNotMe') || 'No, not me'}
                     </button>
@@ -448,11 +448,11 @@ export default function AuthGateModal() {
                 </div>
               ) : (
                 <form onSubmit={handleIcSubmit} className="space-y-4">
-                  <p className="text-gray-600 text-center mb-2">
+                  <p className="text-ground-600 text-center mb-2">
                     {t('authGate.icSubtitle')}
                   </p>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-ground-700 mb-1">
                       {t('authGate.nameLabel')}
                     </label>
                     <input
@@ -476,7 +476,7 @@ export default function AuthGateModal() {
                   >
                     {loading ? '...' : t('authGate.icContinue')}
                   </button>
-                  <p className="text-xs text-gray-400 text-center">
+                  <p className="text-xs text-ground-400 text-center">
                     {t('authGate.icPrivacy')}
                   </p>
                 </form>
@@ -487,7 +487,7 @@ export default function AuthGateModal() {
           {/* Dismiss */}
           <button
             onClick={handleDismiss}
-            className="w-full text-gray-500 hover:text-gray-700 text-sm mt-4 text-center"
+            className="w-full text-ground-500 hover:text-ground-700 text-sm mt-4 text-center"
           >
             {t('authGate.continueBrowsing')}
           </button>

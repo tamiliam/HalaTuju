@@ -32,29 +32,29 @@ export default function AuthButtons() {
       <div className="relative" ref={ref}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1 text-sm font-medium text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50"
+          className="flex items-center gap-1 text-sm font-medium text-ground-700 px-3 py-1.5 rounded-lg hover:bg-ground-50"
         >
           {t('header.login.label')}
-          <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className={`w-4 h-4 text-ground-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
         {open && (
-          <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
+          <div className="absolute right-0 top-full mt-1 w-52 bg-ground-0 rounded-xl shadow-lg border border-ground-200 py-2 z-20">
             <button
               onClick={() => { setOpen(false); showAuthGate('profile') }}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="block w-full text-left px-4 py-2 text-sm text-ground-700 hover:bg-ground-50"
             >
               {t('header.login.student')}
             </button>
             <Link
               href="/sponsor/login"
               onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="block px-4 py-2 text-sm text-ground-700 hover:bg-ground-50"
             >
               {t('header.login.sponsor')}
             </Link>
-            <a href="/admin/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            <a href="/admin/login" className="block px-4 py-2 text-sm text-ground-700 hover:bg-ground-50">
               {t('header.login.partner')}
             </a>
           </div>

@@ -30,7 +30,7 @@ interface PaginationProps {
 }
 
 const NAV_BTN =
-  'text-sm py-1.5 rounded-lg border border-primary-500 text-primary-500 bg-white font-medium ' +
+  'text-sm py-1.5 rounded-lg border border-primary-500 text-primary-500 bg-ground-0 font-medium ' +
   'hover:bg-primary-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
 
 export function Pagination({
@@ -59,24 +59,24 @@ export function Pagination({
   const pageOf = t('admin.pageOf', { page: String(page), total: String(totalPages) })
 
   return (
-    <div className="w-full mt-4 pt-4 border-t border-gray-100">
+    <div className="w-full mt-4 pt-4 border-t border-ground-100">
       {/* Mobile: compact inline ‹ Page X of Y › */}
       <div className="flex sm:hidden items-center justify-center gap-3">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed p-1 transition-colors"
+          className="text-ground-500 hover:text-ground-700 disabled:opacity-30 disabled:cursor-not-allowed p-1 transition-colors"
           aria-label={t('admin.previous')}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
         </button>
-        <p className="text-sm text-gray-500">{pageOf}</p>
+        <p className="text-sm text-ground-500">{pageOf}</p>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed p-1 transition-colors"
+          className="text-ground-500 hover:text-ground-700 disabled:opacity-30 disabled:cursor-not-allowed p-1 transition-colors"
           aria-label={t('admin.next')}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -90,11 +90,11 @@ export function Pagination({
         <div className="flex items-center gap-4">
           {showPageSize && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400">{t('admin.show')}</span>
+              <span className="text-xs text-ground-400">{t('admin.show')}</span>
               <select
                 value={pageSize}
                 onChange={(e) => onPageSizeChange!(Number(e.target.value))}
-                className="text-xs border border-gray-200 rounded px-1.5 py-1 text-gray-600 bg-white"
+                className="text-xs border border-ground-200 rounded px-1.5 py-1 text-ground-600 bg-ground-0"
                 aria-label={t('admin.show')}
               >
                 {pageSizeOptions!.map((n) => (
@@ -103,10 +103,10 @@ export function Pagination({
                   </option>
                 ))}
               </select>
-              <span className="text-xs text-gray-400">{t('admin.perPageSuffix')}</span>
+              <span className="text-xs text-ground-400">{t('admin.perPageSuffix')}</span>
             </div>
           )}
-          <p className="text-sm text-gray-500 whitespace-nowrap">{pageOf}</p>
+          <p className="text-sm text-ground-500 whitespace-nowrap">{pageOf}</p>
           {totalPages > 5 && (
             <form onSubmit={handleJump} className="flex items-center gap-2">
               <input
@@ -117,9 +117,9 @@ export function Pagination({
                 onChange={(e) => setJumpValue(e.target.value)}
                 placeholder={t('admin.pageJump')}
                 aria-label={t('admin.pageJump')}
-                className="w-16 text-xs border border-gray-200 rounded px-2 py-1 text-gray-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="w-16 text-xs border border-ground-200 rounded px-2 py-1 text-ground-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
-              <button type="submit" className="text-sm py-1 px-2.5 rounded-lg border border-primary-500 text-primary-500 bg-white font-medium hover:bg-primary-50 transition-colors">
+              <button type="submit" className="text-sm py-1 px-2.5 rounded-lg border border-primary-500 text-primary-500 bg-ground-0 font-medium hover:bg-primary-50 transition-colors">
                 {t('admin.go')}
               </button>
             </form>

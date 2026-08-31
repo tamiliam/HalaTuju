@@ -171,20 +171,20 @@ export default function ScholarshipConsent({
     const byGuardian = active?.granted_by === 'guardian'
     return (
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-green-700">
+        <div className="flex items-center gap-2 text-sm font-medium text-positive-700">
           <span aria-hidden>✓</span>
           <span>{t('scholarship.consent.given')}</span>
         </div>
 
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ground-400">
           {t('scholarship.consent.givenHeading')}
         </p>
-        <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 whitespace-pre-line">
+        <div className="bg-ground-50 border rounded-lg p-3 text-sm text-ground-700 whitespace-pre-line">
           {renderRich(consentBody)}
         </div>
 
         {grantedAt && (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-ground-500">
             {byGuardian && active?.guardian_name
               ? t('scholarship.consent.givenMetaGuardian', { name: active.guardian_name, date: grantedAt })
               : t('scholarship.consent.givenMetaSelf', { date: grantedAt })}
@@ -226,7 +226,7 @@ export default function ScholarshipConsent({
           box makes the text look longer than it is and invites scrolling past it. The text is short
           enough to render whole — if a future version grows long enough to need a scroll, shorten
           the text rather than hiding it behind one. */}
-      <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 whitespace-pre-line">
+      <div className="bg-ground-50 border rounded-lg p-3 text-sm text-ground-700 whitespace-pre-line">
         {renderRich(consentBody)}
       </div>
 
@@ -250,7 +250,7 @@ export default function ScholarshipConsent({
               onChange={(e) => setGuardianName(e.target.value)}
             />
             {hasParentIc && nameMismatch && (
-              <p className="mt-1 text-xs text-red-600">
+              <p className="mt-1 text-xs text-critical-600">
                 {t('scholarship.consent.nameMismatch')}
               </p>
             )}
@@ -268,7 +268,7 @@ export default function ScholarshipConsent({
               onChange={(e) => setGuardianNric(formatNric(e.target.value))}
             />
             {hasParentIc && nricMismatch && (
-              <p className="mt-1 text-xs text-red-600">
+              <p className="mt-1 text-xs text-critical-600">
                 {t('scholarship.consent.nricMismatch')}
               </p>
             )}
@@ -295,7 +295,7 @@ export default function ScholarshipConsent({
 
       {/* Toggle attestation — adult vs guardian voice */}
       <div className="flex items-start justify-between gap-3">
-        <span className="text-sm text-gray-700">
+        <span className="text-sm text-ground-700">
           {isMinor ? t('scholarship.consent.agreeGuardian') : t('scholarship.consent.agree')}
         </span>
         <Toggle
@@ -305,7 +305,7 @@ export default function ScholarshipConsent({
         />
       </div>
 
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p className="text-critical-600 text-sm">{error}</p>}
       <button type="submit" disabled={submitDisabled}
         className="btn-primary disabled:opacity-50">
         {saving ? t('scholarship.consent.saving') : t('scholarship.consent.submit')}

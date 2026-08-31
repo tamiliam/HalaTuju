@@ -80,7 +80,7 @@ export default function IncomeRouteSwitch({
       type="button"
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-        active ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
+        active ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-ground-200 text-ground-700 hover:border-ground-300'
       }`}
     >
       {label}
@@ -88,10 +88,10 @@ export default function IncomeRouteSwitch({
   )
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <p className="text-xs font-medium text-gray-400">{t('scholarship.actionCentre.fromAssistant')}</p>
-      <h3 className="font-semibold text-gray-900">{t('scholarship.incomeRouteSwitch.title')}</h3>
-      <p className="mt-1 text-sm text-gray-500">{t('scholarship.incomeRouteSwitch.help')}</p>
+    <div className="rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
+      <p className="text-xs font-medium text-ground-400">{t('scholarship.actionCentre.fromAssistant')}</p>
+      <h3 className="font-semibold text-ground-900">{t('scholarship.incomeRouteSwitch.title')}</h3>
+      <p className="mt-1 text-sm text-ground-500">{t('scholarship.incomeRouteSwitch.help')}</p>
 
       {/* Route choice */}
       <div className="mt-4 space-y-2">
@@ -101,17 +101,17 @@ export default function IncomeRouteSwitch({
             type="button"
             onClick={() => setRoute(r)}
             className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left ${
-              route === r ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-gray-200 hover:border-gray-300'
+              route === r ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-ground-200 hover:border-ground-300'
             }`}
           >
             <span
               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                route === r ? 'border-primary-500' : 'border-gray-300'
+                route === r ? 'border-primary-500' : 'border-ground-300'
               }`}
             >
               {route === r && <span className="h-2 w-2 rounded-full bg-primary-500" />}
             </span>
-            <span className="text-sm font-medium text-gray-900">{t(`scholarship.incomeRouteSwitch.route.${r}`)}</span>
+            <span className="text-sm font-medium text-ground-900">{t(`scholarship.incomeRouteSwitch.route.${r}`)}</span>
           </button>
         ))}
       </div>
@@ -119,7 +119,7 @@ export default function IncomeRouteSwitch({
       {/* STR → whose name */}
       {route === 'str' && (
         <div className="mt-4">
-          <p className="text-sm font-medium text-gray-700">{t('scholarship.incomeRouteSwitch.earnerQ')}</p>
+          <p className="text-sm font-medium text-ground-700">{t('scholarship.incomeRouteSwitch.earnerQ')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {EARNERS.map((e) => (
               <Chip key={e} active={earner === e} label={t(`scholarship.incomeRouteSwitch.member.${e}`)} onClick={() => setEarner(e)} />
@@ -131,7 +131,7 @@ export default function IncomeRouteSwitch({
       {/* Salary → who works */}
       {route === 'salary' && (
         <div className="mt-4">
-          <p className="text-sm font-medium text-gray-700">{t('scholarship.incomeRouteSwitch.membersQ')}</p>
+          <p className="text-sm font-medium text-ground-700">{t('scholarship.incomeRouteSwitch.membersQ')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {MEMBERS.map((m) => (
               <Chip key={m} active={members.includes(m)} label={t(`scholarship.incomeRouteSwitch.member.${m}`)} onClick={() => toggleMember(m)} />
@@ -140,15 +140,15 @@ export default function IncomeRouteSwitch({
         </div>
       )}
 
-      <p className="mt-3 text-xs text-gray-400">{t('scholarship.incomeRouteSwitch.note')}</p>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      <p className="mt-3 text-xs text-ground-400">{t('scholarship.incomeRouteSwitch.note')}</p>
+      {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
 
       <div className="mt-4 flex gap-3">
         <button
           type="button"
           onClick={reset}
           disabled={busy}
-          className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+          className="flex-1 rounded-xl border border-ground-300 px-4 py-2.5 text-sm font-semibold text-ground-700 transition-colors hover:bg-ground-50 disabled:opacity-50"
         >
           {t('scholarship.incomeRouteSwitch.cancel')}
         </button>

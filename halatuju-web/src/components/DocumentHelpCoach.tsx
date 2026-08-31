@@ -144,7 +144,7 @@ export default function DocumentHelpCoach({
       {!loading && verdict === 'slip_grade_mismatch' && gradeDiffs.length > 0 && (
         <ul className="mt-1.5 space-y-0.5">
           {gradeDiffs.map((d) => (
-            <li key={d.subject} className="text-sm text-gray-800">
+            <li key={d.subject} className="text-sm text-ground-800">
               {t('scholarship.docs.help.gradeDiff')
                 .replace('{subject}', d.subject)
                 .replace('{typed}', d.typed)

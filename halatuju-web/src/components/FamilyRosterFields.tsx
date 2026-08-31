@@ -53,7 +53,7 @@ function UnemployedPanel({ member, detail, onChange, t }: {
 }) {
   const U = `${CA}.unemployed`
   return (
-    <div className="rounded-md bg-blue-50 ring-1 ring-blue-100 p-3 space-y-2">
+    <div className="rounded-md bg-info-50 ring-1 ring-info-100 p-3 space-y-2">
       <div>
         <FieldLabel>{t(`${U}.since`)}</FieldLabel>
         <input type="month" className="input" value={detail?.since || ''}
@@ -64,7 +64,7 @@ function UnemployedPanel({ member, detail, onChange, t }: {
         <input className="input" maxLength={200} placeholder={t(`${U}.reasonPlaceholder`)}
           value={detail?.reason || ''} onChange={(e) => onChange(member, { reason: e.target.value })} />
       </div>
-      <p className="flex items-start gap-1.5 text-xs text-gray-500">
+      <p className="flex items-start gap-1.5 text-xs text-ground-500">
         <span aria-hidden>ⓘ</span> {t(`${U}.epfNudge`)}
       </p>
     </div>
@@ -73,7 +73,7 @@ function UnemployedPanel({ member, detail, onChange, t }: {
 
 /** A +/− stepper for a sibling count. Defaults to 0 (a real "none" answer). */
 function CountStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const btn = 'h-9 w-9 rounded-full border border-gray-300 text-lg leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-40'
+  const btn = 'h-9 w-9 rounded-full border border-ground-300 text-lg leading-none text-ground-600 hover:bg-ground-100 disabled:opacity-40'
   return (
     <div className="flex items-center gap-3">
       <button type="button" aria-label="decrease" className={btn}
@@ -111,8 +111,8 @@ export default function FamilyRosterFields({
 }) {
   const req = !profileStyle
   const parentLabelClass = profileStyle
-    ? 'text-[11px] font-semibold uppercase tracking-wider text-gray-500'
-    : 'text-sm font-medium text-gray-700'
+    ? 'text-[11px] font-semibold uppercase tracking-wider text-ground-500'
+    : 'text-sm font-medium text-ground-700'
   return (
     <div className="space-y-5">
       {/* ── Parents / guardians ─────────────────────────────────────────── */}
@@ -130,7 +130,7 @@ export default function FamilyRosterFields({
                   <input className="input" maxLength={200}
                     value={form[nameKey]} onChange={(e) => onUpdate(nameKey, e.target.value)} />
                   {!isValidPersonName(form[nameKey]) && (
-                    <p className="mt-1 text-xs text-red-600">{t(`${CA}.nameInvalid`)}</p>
+                    <p className="mt-1 text-xs text-critical-600">{t(`${CA}.nameInvalid`)}</p>
                   )}
                 </div>
                 <div>
@@ -153,7 +153,7 @@ export default function FamilyRosterFields({
 
         {/* Optional member pool */}
         {form.otherFamilyMembers.map((m, i) => (
-          <div key={i} className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+          <div key={i} className="rounded-lg border border-ground-200 bg-ground-0 p-3 space-y-2">
             <div className="flex items-start gap-2">
               <div className="flex-1 grid gap-2 sm:grid-cols-2">
                 <select className="input" value={m.role}
@@ -167,7 +167,7 @@ export default function FamilyRosterFields({
                 <ProfessionSelect value={m.occupation} onChange={(v) => onUpdateMember(i, { occupation: v })} t={t} />
               </div>
               <button type="button" onClick={() => onRemoveMember(i)} aria-label={t(`${CA}.remove`)}
-                className="mt-1.5 shrink-0 text-gray-400 hover:text-red-500 text-lg leading-none">×</button>
+                className="mt-1.5 shrink-0 text-ground-400 hover:text-critical-500 text-lg leading-none">×</button>
             </div>
             {m.occupation === 'other' && (
               <input className="input" maxLength={120}
@@ -183,27 +183,27 @@ export default function FamilyRosterFields({
         ))}
         {form.otherFamilyMembers.length < MAX_OTHER_MEMBERS && (
           <button type="button" onClick={onAddMember}
-            className="w-full rounded-lg border border-dashed border-gray-300 py-2 text-sm font-medium text-primary-600 hover:bg-white">
+            className="w-full rounded-lg border border-dashed border-ground-300 py-2 text-sm font-medium text-primary-600 hover:bg-ground-0">
             + {t(`${CA}.addMember`)}
           </button>
         )}
       </div>
 
       {/* ── Brothers & sisters (compulsory steppers; derive first-in-family) ── */}
-      <div className={profileStyle ? 'space-y-3 pt-4' : 'space-y-3 border-t border-gray-200 pt-4'}>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+      <div className={profileStyle ? 'space-y-3 pt-4' : 'space-y-3 border-t border-ground-200 pt-4'}>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-ground-500">
           {t(`${CA}.siblingsHeading`)}
         </p>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-gray-700">{t(`${CA}.siblingsSchool`)}</span>
+          <span className="text-sm text-ground-700">{t(`${CA}.siblingsSchool`)}</span>
           <CountStepper value={form.siblingsInSchool} onChange={(v) => onUpdate('siblingsInSchool', v)} />
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-gray-700">{t(`${CA}.siblingsTertiary`)}</span>
+          <span className="text-sm text-ground-700">{t(`${CA}.siblingsTertiary`)}</span>
           <CountStepper value={form.siblingsInTertiary} onChange={(v) => onUpdate('siblingsInTertiary', v)} />
         </div>
         {form.siblingsInTertiary === 0 && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 p-2 text-sm text-green-700">
+          <div className="flex items-center gap-1.5 rounded-lg border border-positive-200 bg-positive-50 p-2 text-sm text-positive-700">
             <span aria-hidden>✓</span> {t(`${CA}.firstInFamilyNote`)}
           </div>
         )}

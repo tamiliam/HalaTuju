@@ -43,8 +43,8 @@ export default function ScholarshipBanner() {
         </svg>
       </span>
       <span className="min-w-0 leading-tight">
-        <span className="block text-sm font-semibold text-gray-900">{t(`scholarship.banner.${appStatus}Title`)}</span>
-        <span className="block text-xs text-gray-600">{t(`scholarship.banner.${appStatus}Body`)}</span>
+        <span className="block text-sm font-semibold text-ground-900">{t(`scholarship.banner.${appStatus}Title`)}</span>
+        <span className="block text-xs text-ground-600">{t(`scholarship.banner.${appStatus}Body`)}</span>
       </span>
       <svg className="ml-auto h-5 w-5 shrink-0 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

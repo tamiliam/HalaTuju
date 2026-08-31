@@ -13,9 +13,9 @@ export default function FieldLabel({
   tip?: string
 }) {
   return (
-    <span className="mb-1 flex items-center text-sm font-medium text-gray-700">
+    <span className="mb-1 flex items-center text-sm font-medium text-ground-700">
       {children}
-      {required && <span className="ml-0.5 text-red-500" aria-hidden>*</span>}
+      {required && <span className="ml-0.5 text-critical-500" aria-hidden>*</span>}
       {tip && <InfoTip text={tip} />}
     </span>
   )

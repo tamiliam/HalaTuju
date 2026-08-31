@@ -19,10 +19,10 @@ type Kind = 'success' | 'info' | 'warning' | 'block'
 const PALETTE: Record<Kind, string> = {
   // bg-{c}-50 / border-{c}-200 / text-{c}-800 across all four — tested for
   // accessible contrast on the light-mode background.
-  success: 'border-green-200 bg-green-50 text-green-800',
-  info:    'border-blue-200 bg-blue-50 text-blue-800',
-  warning: 'border-amber-200 bg-amber-50 text-amber-800',
-  block:   'border-red-200 bg-red-50 text-red-800',
+  success: 'border-positive-200 bg-positive-50 text-positive-800',
+  info:    'border-info-200 bg-info-50 text-info-800',
+  warning: 'border-caution-200 bg-caution-50 text-caution-800',
+  block:   'border-critical-200 bg-critical-50 text-critical-800',
 }
 
 export default function InfoBox({

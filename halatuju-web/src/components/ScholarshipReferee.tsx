@@ -42,7 +42,7 @@ export default function ScholarshipReferee({ token }: { token: string | null }) 
   return (
     <div className="space-y-3">
       {referees.length > 0 && (
-        <ul className="space-y-1 text-sm text-gray-700">
+        <ul className="space-y-1 text-sm text-ground-700">
           {referees.map((r) => (
             <li key={r.id}>• {r.name}{r.role ? ` (${r.role})` : ''}{r.phone ? ` — ${r.phone}` : ''}</li>
           ))}
@@ -56,7 +56,7 @@ export default function ScholarshipReferee({ token }: { token: string | null }) 
           <input className="input" placeholder={t('scholarship.referee.phone')} value={form.phone} onChange={(e) => set('phone', e.target.value)} />
           <input className="input" placeholder={t('scholarship.referee.email')} value={form.email} onChange={(e) => set('email', e.target.value)} />
         </div>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-critical-600 text-sm">{error}</p>}
         <button type="submit" disabled={saving || !form.name.trim()} className="btn-primary text-sm disabled:opacity-50">
           {saving ? t('scholarship.referee.adding') : t('scholarship.referee.add')}
         </button>

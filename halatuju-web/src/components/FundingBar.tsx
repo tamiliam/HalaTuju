@@ -25,10 +25,15 @@ export function FundingBar({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label="Funding progress"
-      className={`h-1.5 w-full overflow-hidden rounded-full bg-gray-100 ${className}`}
+      className={`h-1.5 w-full overflow-hidden rounded-full bg-ground-100 ${className}`}
     >
+      {/* BRAND, not the info tone — corrected by hand after the codemod (F2a). A progress fill
+          carries no semantic state: it is not "information", it is this product's own measure of
+          how far something has got. `ActionCentre`'s identical bar was already `bg-primary-500`,
+          so leaving this one a tone would mean a tenant sets their colour and one bar follows
+          while the other stays blue. */}
       <div
-        className="h-full rounded-full bg-blue-600 transition-[width] duration-500"
+        className="h-full rounded-full bg-primary-600 transition-[width] duration-500"
         style={{ width: `${pct}%` }}
       />
     </div>

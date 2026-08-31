@@ -52,7 +52,7 @@ export default function FilterPill({
           'flex items-center gap-1.5 transition-colors',
           value
             ? 'border-primary-500 bg-primary-50 text-primary-700 hover:bg-primary-100'
-            : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
+            : 'border-ground-200 bg-ground-100 text-ground-700 hover:bg-ground-200'
         )}
       >
         <span className="max-w-[160px] truncate">{displayText}</span>
@@ -68,7 +68,7 @@ export default function FilterPill({
 
       {/* Dropdown panel */}
       {isOpen && options.length > 0 && (
-        <div className="absolute left-0 top-full mt-1 z-20 w-48 max-h-60 overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-200 py-1">
+        <div className="absolute left-0 top-full mt-1 z-20 w-48 max-h-60 overflow-y-auto bg-ground-0 rounded-xl shadow-lg border border-ground-200 py-1">
           {/* Reset / "All" option */}
           <button
             type="button"
@@ -77,7 +77,7 @@ export default function FilterPill({
               'w-full text-left px-4 py-2 text-sm transition-colors',
               !value
                 ? 'bg-primary-50 text-primary-600 font-medium'
-                : 'text-gray-700 hover:bg-gray-50'
+                : 'text-ground-700 hover:bg-ground-50'
             )}
           >
             {label}
@@ -93,7 +93,7 @@ export default function FilterPill({
                 'w-full text-left px-4 py-2 text-sm transition-colors',
                 value === option
                   ? 'bg-primary-50 text-primary-600 font-medium'
-                  : 'text-gray-700 hover:bg-gray-50'
+                  : 'text-ground-700 hover:bg-ground-50'
               )}
             >
               {optionLabels?.[option] ?? option}

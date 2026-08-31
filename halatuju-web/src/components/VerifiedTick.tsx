@@ -11,17 +11,20 @@ export default function VerifiedTick({ label }: { label: string }) {
       title={label}
       aria-label={label}
       role="img"
-      className="ml-1 inline-flex shrink-0 align-middle text-sky-500"
+      className="ml-1 inline-flex shrink-0 align-middle text-info-500"
     >
       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" aria-hidden>
         <path
           fill="currentColor"
           d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
         />
+        {/* `stroke-white` (a literal), never `--ground-0`: this tick sits ON the coloured seal,
+            so it must NOT invert with the ground — the same rule the codemod applies to
+            `text-white`. It was a raw `#fff`, which a class scan cannot see. */}
         <path
           d="m9 12 2 2 4-4"
           fill="none"
-          stroke="#fff"
+          className="stroke-white"
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"

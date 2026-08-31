@@ -117,14 +117,14 @@ export default function OrgRequestAttachments({
   if (!editable && attachments.length === 0) return null
 
   return (
-    <div className="bg-white rounded-xl border p-5 mb-4"
+    <div className="bg-ground-0 rounded-xl border p-5 mb-4"
       onDragOver={(e) => { if (editable) { e.preventDefault(); setDragging(true) } }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}>
       <DocViewer doc={viewing} onClose={() => setViewing(null)} />
-      <h2 className="text-sm font-semibold text-gray-500 mb-3">{t('admin.requests.attachments.title')}</h2>
+      <h2 className="text-sm font-semibold text-ground-500 mb-3">{t('admin.requests.attachments.title')}</h2>
       {attachments.length === 0 ? (
-        <p className="text-sm text-gray-400">{t('admin.requests.attachments.none')}</p>
+        <p className="text-sm text-ground-400">{t('admin.requests.attachments.none')}</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {attachments.map((a) => (
@@ -142,12 +142,12 @@ export default function OrgRequestAttachments({
                   title={t('admin.requests.attachments.view')}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a.download_url} alt={a.original_filename}
-                    className="w-full h-32 object-cover bg-gray-50" />
+                    className="w-full h-32 object-cover bg-ground-50" />
                 </button>
               ) : (
-                <div className="w-full h-32 bg-gray-100 flex items-center justify-center text-xs text-gray-400">—</div>
+                <div className="w-full h-32 bg-ground-100 flex items-center justify-center text-xs text-ground-400">—</div>
               )}
-              <figcaption className="p-2 text-xs text-gray-600 truncate" title={a.original_filename}>
+              <figcaption className="p-2 text-xs text-ground-600 truncate" title={a.original_filename}>
                 {a.original_filename || t('admin.requests.attachments.image')} · {formatFileSize(a.size)}
               </figcaption>
               {a.download_url && (
@@ -158,7 +158,7 @@ export default function OrgRequestAttachments({
               )}
               {editable && (
                 <button type="button" disabled={busy} onClick={() => remove(a.id)}
-                  className="w-full text-xs text-red-600 hover:text-red-800 py-1 border-t disabled:opacity-50">
+                  className="w-full text-xs text-critical-600 hover:text-critical-800 py-1 border-t disabled:opacity-50">
                   {t('admin.requests.attachments.remove')}
                 </button>
               )}
@@ -178,7 +178,7 @@ export default function OrgRequestAttachments({
             } ${
               dragging
                 ? 'border-primary-400 bg-primary-50 text-primary-700'
-                : 'border-gray-300 bg-gray-50 hover:border-primary-300 hover:bg-primary-50/40 text-gray-500'
+                : 'border-ground-300 bg-ground-50 hover:border-primary-300 hover:bg-primary-50/40 text-ground-500'
             }`}>
             <span className="text-sm font-medium text-primary-600">
               {busy ? t('admin.requests.attachments.uploading') : `+ ${t('admin.requests.attachments.add')}`}
@@ -188,12 +188,12 @@ export default function OrgRequestAttachments({
                 ? t('admin.requests.attachments.dropHere')
                 : t('admin.requests.attachments.dropZone')}
             </span>
-            <span className="text-[11px] text-gray-400">{t('admin.requests.attachments.hint')}</span>
+            <span className="text-[11px] text-ground-400">{t('admin.requests.attachments.hint')}</span>
             <input type="file" accept="image/*" multiple className="hidden" disabled={busy} onChange={onFile} />
           </label>
         </div>
       )}
-      {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+      {error && <p className="text-xs text-critical-600 mt-2">{error}</p>}
     </div>
   )
 }

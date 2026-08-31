@@ -254,22 +254,22 @@ function ActionCard({
   // Not a to-do, not green/done, not deleted (the officer still sees it as unanswered).
   if (setAside) {
     return (
-      <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-5 shadow-sm">
+      <div className="rounded-2xl border border-caution-100 bg-caution-50/40 p-5 shadow-sm">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-400">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-caution-400">
             <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 12h12" />
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-gray-400">{fromLabel}</p>
+            <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-semibold text-gray-500 line-through decoration-amber-300">{title}</h3>
-              <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800">
+              <h3 className="font-semibold text-ground-500 line-through decoration-caution-300">{title}</h3>
+              <span className="shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800">
                 {t('scholarship.actionCentre.setAside')}
               </span>
             </div>
-            <p className="mt-1 text-sm text-gray-500">{t('scholarship.actionCentre.setAsideNote')}</p>
+            <p className="mt-1 text-sm text-ground-500">{t('scholarship.actionCentre.setAsideNote')}</p>
           </div>
         </div>
       </div>
@@ -280,18 +280,18 @@ function ActionCard({
   // so the student gets the satisfaction of seeing what they've cleared.
   if (done) {
     return (
-      <div className="rounded-2xl border border-green-100 bg-green-50/40 p-5 shadow-sm">
+      <div className="rounded-2xl border border-positive-100 bg-positive-50/40 p-5 shadow-sm">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-positive-500">
             <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-gray-400">{fromLabel}</p>
+            <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-semibold text-gray-500 line-through decoration-green-300">{title}</h3>
-              <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-green-800">
+              <h3 className="font-semibold text-ground-500 line-through decoration-positive-300">{title}</h3>
+              <span className="shrink-0 rounded-full bg-positive-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-positive-800">
                 {t('scholarship.actionCentre.done')}
               </span>
             </div>
@@ -306,22 +306,22 @@ function ActionCard({
   // upload button, no coach, no retry note — so a genuine student is never trapped re-uploading.
   if (needsOfficerEye(item)) {
     return (
-      <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5 shadow-sm">
+      <div className="rounded-2xl border border-info-100 bg-info-50/40 p-5 shadow-sm">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-info-500">
             <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-gray-400">{fromLabel}</p>
+            <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-semibold text-gray-900">{t('scholarship.actionCentre.officerHold.title')}</h3>
-              <span className="shrink-0 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-blue-800">
+              <h3 className="font-semibold text-ground-900">{t('scholarship.actionCentre.officerHold.title')}</h3>
+              <span className="shrink-0 rounded-full bg-info-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-info-800">
                 {t('scholarship.actionCentre.officerHold.chip')}
               </span>
             </div>
-            <p className="mt-1 text-sm text-gray-600">{t('scholarship.actionCentre.officerHold.body')}</p>
+            <p className="mt-1 text-sm text-ground-600">{t('scholarship.actionCentre.officerHold.body')}</p>
           </div>
         </div>
       </div>
@@ -329,25 +329,25 @@ function ActionCard({
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
       <div className="flex items-start gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-500">
           <KindIcon icon={iconFor(item.kind)} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-gray-400">{fromLabel}</p>
+          <p className="text-xs font-medium text-ground-400">{fromLabel}</p>
           <div className="flex items-start justify-between gap-3">
-            <h3 className="font-semibold text-gray-900">{title}</h3>
-            <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800">
+            <h3 className="font-semibold text-ground-900">{title}</h3>
+            <span className="shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800">
               {t('scholarship.actionCentre.toDo')}
             </span>
           </div>
           {retryNote && (
-            <p className="mt-1 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+            <p className="mt-1 rounded-lg bg-caution-50 px-3 py-2 text-sm font-medium text-caution-800">
               {retryNote}
             </p>
           )}
-          {desc && <p className="mt-1 text-sm text-gray-500">{desc}</p>}
+          {desc && <p className="mt-1 text-sm text-ground-500">{desc}</p>}
 
           {/* ── Action ─────────────────────────────────────────────── */}
           <div className="mt-4">
@@ -391,7 +391,7 @@ function ActionCard({
                 {/* Rare: the upload landed but its scan hasn't finished yet — keep the task
                     open and reassure, rather than ticking it Done on an unchecked file. */}
                 {stillChecking && (
-                  <p className="mt-3 text-sm text-gray-500">{t('scholarship.actionCentre.stillChecking')}</p>
+                  <p className="mt-3 text-sm text-ground-500">{t('scholarship.actionCentre.stillChecking')}</p>
                 )}
               </>
             )}
@@ -469,7 +469,7 @@ function ActionCard({
               </button>
             )}
 
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
           </div>
         </div>
       </div>
@@ -561,7 +561,7 @@ function BankDetailsTask({
     && !accountNumberTooShort
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
       <div className="flex items-start gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-500">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden>
@@ -570,12 +570,12 @@ function BankDetailsTask({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <h3 className="font-semibold text-gray-900">{t('scholarship.actionCentre.bank.title')}</h3>
-            <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-amber-800">
+            <h3 className="font-semibold text-ground-900">{t('scholarship.actionCentre.bank.title')}</h3>
+            <span className="shrink-0 rounded-full bg-caution-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-caution-800">
               {t('scholarship.actionCentre.toDo')}
             </span>
           </div>
-          <p className="mt-1 text-sm text-gray-500">{t('scholarship.actionCentre.bank.intro')}</p>
+          <p className="mt-1 text-sm text-ground-500">{t('scholarship.actionCentre.bank.intro')}</p>
 
           <div className="mt-4 space-y-4">
             {/* Step 1: upload the statement */}
@@ -593,23 +593,23 @@ function BankDetailsTask({
 
             {/* Step 2: confirm/correct the three fields (shown after an upload) */}
             {uploaded && (
-              <div className="space-y-3 rounded-xl bg-gray-50 p-4">
-                <p className="text-xs font-medium text-gray-500">{t('scholarship.actionCentre.bank.checkPrompt')}</p>
+              <div className="space-y-3 rounded-xl bg-ground-50 p-4">
+                <p className="text-xs font-medium text-ground-500">{t('scholarship.actionCentre.bank.checkPrompt')}</p>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">{t('scholarship.actionCentre.bank.bankName')}</label>
+                  <label className="block text-sm font-medium text-ground-700">{t('scholarship.actionCentre.bank.bankName')}</label>
                   <input className="input mt-1" value={bankName} onChange={(e) => setBankName(e.target.value)} disabled={busy} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">{t('scholarship.actionCentre.bank.accountNumber')}</label>
+                  <label className="block text-sm font-medium text-ground-700">{t('scholarship.actionCentre.bank.accountNumber')}</label>
                   <input className="input mt-1 font-mono" inputMode="numeric" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} disabled={busy} />
                   {accountNumberTooShort
-                    ? <p className="mt-1 text-xs text-red-600">{t('scholarship.actionCentre.bank.accountNumberInvalid')}</p>
-                    : <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.bank.numberHint')}</p>}
+                    ? <p className="mt-1 text-xs text-critical-600">{t('scholarship.actionCentre.bank.accountNumberInvalid')}</p>
+                    : <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.bank.numberHint')}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">{t('scholarship.actionCentre.bank.accountHolder')}</label>
+                  <label className="block text-sm font-medium text-ground-700">{t('scholarship.actionCentre.bank.accountHolder')}</label>
                   <input className="input mt-1" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} disabled={busy} />
-                  <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.bank.holderHint')}</p>
+                  <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.bank.holderHint')}</p>
                 </div>
                 <button
                   type="button" onClick={onSave} disabled={!canSave}
@@ -620,7 +620,7 @@ function BankDetailsTask({
               </div>
             )}
 
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
           </div>
         </div>
       </div>
@@ -679,19 +679,19 @@ function VircleTask({
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-ground-200 bg-ground-0 p-4 shadow-sm">
       <div className="flex gap-3">
         <span aria-hidden className="text-xl">💳</span>
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-gray-900">{t('scholarship.actionCentre.vircle.title')}</h3>
-          <p className="mt-1 text-sm text-gray-600">{t('scholarship.actionCentre.vircle.intro')}</p>
+          <h3 className="font-semibold text-ground-900">{t('scholarship.actionCentre.vircle.title')}</h3>
+          <p className="mt-1 text-sm text-ground-600">{t('scholarship.actionCentre.vircle.intro')}</p>
 
           <div className="mt-3">
-            <label className="block text-sm font-medium text-gray-700" htmlFor="vircle-mobile">
+            <label className="block text-sm font-medium text-ground-700" htmlFor="vircle-mobile">
               {t('scholarship.actionCentre.vircle.mobile')}
             </label>
             <div className="mt-1 flex items-center gap-2">
-              <span className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-600">+60</span>
+              <span className="rounded-lg bg-ground-100 px-3 py-2 text-sm text-ground-600">+60</span>
               <input
                 id="vircle-mobile"
                 className="input flex-1"
@@ -702,15 +702,15 @@ function VircleTask({
                 disabled={busy}
               />
             </div>
-            <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.vircle.mobileHint')}</p>
+            <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.vircle.mobileHint')}</p>
           </div>
 
           <div className="mt-3">
-            <label className="block text-sm font-medium text-gray-700" htmlFor="vircle-id">
+            <label className="block text-sm font-medium text-ground-700" htmlFor="vircle-id">
               {t('scholarship.actionCentre.vircle.walletId')}
             </label>
             <div className="mt-1 flex items-center gap-2">
-              <span className="rounded-lg bg-gray-100 px-3 py-2 text-sm tabular-nums text-gray-600">{VIRCLE_PREFIX}</span>
+              <span className="rounded-lg bg-ground-100 px-3 py-2 text-sm tabular-nums text-ground-600">{VIRCLE_PREFIX}</span>
               <input
                 id="vircle-id"
                 className="input w-28 tabular-nums"
@@ -722,17 +722,17 @@ function VircleTask({
                 disabled={busy}
               />
             </div>
-            <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.vircle.walletIdHint')}</p>
+            <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.vircle.walletIdHint')}</p>
             {/* Echo the assembled id as ONE continuous 13-digit run — the way the Vircle Settings
                 page prints it. Split across two boxes it is hard to compare, which is how three
                 students saved a DuitNow Transfer number without noticing. Costs no extra typing. */}
             {suffix.length === SUFFIX_LEN && (
-              <div className="mt-2 rounded-lg bg-gray-50 px-3 py-2">
-                <p className="text-sm text-gray-700">
+              <div className="mt-2 rounded-lg bg-ground-50 px-3 py-2">
+                <p className="text-sm text-ground-700">
                   {t('scholarship.actionCentre.vircle.walletIdEcho')}{' '}
                   <span className="font-semibold tabular-nums tracking-wide">{VIRCLE_PREFIX + suffix}</span>
                 </p>
-                <p className="mt-1 text-xs text-gray-500">{t('scholarship.actionCentre.vircle.walletIdCheck')}</p>
+                <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.vircle.walletIdCheck')}</p>
               </div>
             )}
           </div>
@@ -745,17 +745,17 @@ function VircleTask({
           </button>
 
           <details className="mt-3">
-            <summary className="cursor-pointer text-sm font-medium text-gray-700">
+            <summary className="cursor-pointer text-sm font-medium text-ground-700">
               {t('scholarship.actionCentre.vircle.stuckTitle')}
             </summary>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-600">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ground-600">
               <li>{t('scholarship.actionCentre.vircle.stuckCard')}</li>
               <li>{t('scholarship.actionCentre.vircle.stuckPhone')}</li>
               <li>{t('scholarship.actionCentre.vircle.stuckSupport')}</li>
             </ul>
           </details>
 
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
         </div>
       </div>
     </div>
@@ -844,12 +844,12 @@ export default function ActionCentre({
 
   // The calm "all set — we'll be in touch" card (post-submit, nothing left to do).
   const awaitCard = (
-    <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
+    <div className="rounded-2xl border border-positive-200 bg-positive-50 p-6">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm text-white">✓</span>
-        <h2 className="font-semibold text-gray-900">{t('scholarship.actionCentre.awaitTitle')}</h2>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-positive-600 text-sm text-white">✓</span>
+        <h2 className="font-semibold text-ground-900">{t('scholarship.actionCentre.awaitTitle')}</h2>
       </div>
-      <p className="mt-1 text-sm text-gray-700">
+      <p className="mt-1 text-sm text-ground-700">
         {t('scholarship.actionCentre.awaitBody', { email: email || t('scholarship.nextSteps.whatNext.yourEmail') })}
       </p>
     </div>
@@ -892,7 +892,7 @@ export default function ActionCentre({
   return (
     <section className="mb-8">
       {/* Header */}
-      <h2 className="text-xl font-bold text-gray-900">
+      <h2 className="text-xl font-bold text-ground-900">
         {t(
           funded
             ? 'scholarship.actionCentre.fundedTitle'
@@ -900,7 +900,7 @@ export default function ActionCentre({
           { name: firstName },
         )}
       </h2>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-ground-600">
         {t(
           funded
             ? 'scholarship.actionCentre.fundedIntro'
@@ -910,11 +910,11 @@ export default function ActionCentre({
 
       {/* Progress */}
       <div className="mt-3">
-        <div className="mb-1 flex items-center justify-between text-xs font-medium text-gray-500">
+        <div className="mb-1 flex items-center justify-between text-xs font-medium text-ground-500">
           <span>{t('scholarship.actionCentre.progressDone', { done: String(done), total: String(total) })}</span>
           <span>{t('scholarship.actionCentre.percentComplete', { pct: String(pct) })}</span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-ground-200">
           <div className="h-full rounded-full bg-primary-500 transition-all" style={{ width: `${pct}%` }} />
         </div>
       </div>
@@ -973,9 +973,9 @@ export default function ActionCentre({
       {doneCards}
       {/* Shortlisted (pre-submit) all-done banner. */}
       {!formLocked && open.length === 0 && (
-        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 p-5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm text-white">✓</span>
-          <p className="font-medium text-green-900">{t('scholarship.actionCentre.allDone')}</p>
+        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-positive-200 bg-positive-50 p-5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-positive-600 text-sm text-white">✓</span>
+          <p className="font-medium text-positive-900">{t('scholarship.actionCentre.allDone')}</p>
         </div>
       )}
     </section>
