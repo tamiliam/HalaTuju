@@ -8,8 +8,8 @@ export default function SandboxIndexPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Design sandbox</h1>
-        <p className="mt-2 max-w-2xl text-gray-600">
+        <h1 className="text-2xl font-semibold text-ground-900">Design sandbox</h1>
+        <p className="mt-2 max-w-2xl text-ground-600">
           These are the real components from the live application, rendered against invented data.
           Changing something here changes nothing anywhere — there is no database behind it and no
           account signed in.
@@ -21,10 +21,10 @@ export default function SandboxIndexPage() {
           <li key={s.slug}>
             <Link
               href={`/sandbox/${s.slug}`}
-              className="block rounded-xl border border-gray-200 bg-white p-4 transition-colors hover:border-gray-400"
+              className="block rounded-xl border border-ground-200 bg-ground-0 p-4 transition-colors hover:border-ground-400"
             >
-              <span className="font-semibold text-gray-900">{s.title}</span>
-              <span className="mt-1 block text-sm text-gray-600">{s.note}</span>
+              <span className="font-semibold text-ground-900">{s.title}</span>
+              <span className="mt-1 block text-sm text-ground-600">{s.note}</span>
             </Link>
           </li>
         ))}

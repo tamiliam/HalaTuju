@@ -11,9 +11,18 @@
  * `token` is a synthetic string, never a real session. It exists because the components take one;
  * the stubbed fetch ignores it, and there is no backend for it to reach.
  */
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
+import ActionCentre from '@/components/ActionCentre'
+import InfoBox from '@/components/InfoBox'
+import ProgressStepper from '@/components/ProgressStepper'
+import FilterPill from '@/components/FilterPill'
+import Toggle from '@/components/Toggle'
+import InfoTip from '@/components/InfoTip'
+import VerifiedTick from '@/components/VerifiedTick'
+import { FundingBar } from '@/components/FundingBar'
+import { Pagination } from '@/components/Pagination'
 import ScholarshipApplyPage from '@/app/scholarship/apply/page'
 import SponsorStudentsPage from '@/app/sponsor/(portal)/students/page'
 import AdminProgrammeConfigPage from '@/app/admin/programme/page'
@@ -24,6 +33,7 @@ import {
   sandboxApplication, sandboxApplicationLeanProgramme, sandboxNoApplications,
   sandboxProfileFormSix, sandboxProfileSpm, sandboxProfileStpm,
   sandboxProgrammeConfiguration, sandboxProgrammeConfigurationLean,
+  sandboxResolutionItems, sandboxResolutionItemsClear,
 } from './fixtures/scholarship'
 import { sandboxPool } from './fixtures/sponsor'
 
@@ -156,6 +166,52 @@ export const SURFACES: Surface[] = [
     ),
   },
   {
+    slug: 'action-centre',
+    title: 'Action Centre — tasks outstanding',
+    note:
+      'The post-submit task list, and the largest single surface Layer 1 F2a repainted (82 '
+      + 'colour utilities). Every tone the sprint touches is on screen at once: two open tasks, '
+      + 'the info-toned "a person is looking at this" card that replaces the upload prompt when a '
+      + 'ticket is escalated, and two finished tasks as positive Done cards. The progress bar is '
+      + 'BRAND, not a tone — a tenant’s colour reaches it. Check both modes.',
+    routes: {
+      '/api/v1/scholarship/resolution-items/': () => sandboxResolutionItems,
+    },
+    render: () => (
+      <WithAuth profile={sandboxProfileSpm}>
+        <ActionCentre token={SANDBOX_TOKEN} studentName="Aina Contoh" applicationId={1} />
+      </WithAuth>
+    ),
+  },
+  {
+    slug: 'action-centre-clear',
+    title: 'Action Centre — nothing left to do',
+    note:
+      'The same component with an empty open list: the calm "we’ll be in touch" card, which '
+      + 'is a different card entirely rather than an empty version of the one above. Its ground '
+      + 'and its positive Done cards are the whole surface, so it is where a wrong ground tone '
+      + 'shows up most plainly in dark.',
+    routes: {
+      '/api/v1/scholarship/resolution-items/': () => sandboxResolutionItemsClear,
+    },
+    render: () => (
+      <WithAuth profile={sandboxProfileSpm}>
+        <ActionCentre token={SANDBOX_TOKEN} studentName="Aina Contoh" applicationId={1} />
+      </WithAuth>
+    ),
+  },
+  {
+    slug: 'pieces',
+    title: 'The small shared pieces',
+    note:
+      'The rest of F2a’s components, mounted for real and side by side, because each is too '
+      + 'small to justify a surface of its own and together they carry the whole tone vocabulary. '
+      + 'InfoBox is the piece that NAMES it — success / info / warning / block — so if its four '
+      + 'boxes read correctly in dark, the vocabulary is right; if they do not, nothing else will '
+      + 'be. The tick and the funding bar are the two hand-corrections this sprint made.',
+    render: () => <PiecesGallery />,
+  },
+  {
     slug: 'programme-config',
     title: 'Admin — what we ask for',
     note:
@@ -245,6 +301,52 @@ function WithSponsorPortal({ children }: { children: ReactNode }) {
     <SponsorPortalContext.Provider value={{ pool: sandboxPool } as never}>
       {children}
     </SponsorPortalContext.Provider>
+  )
+}
+
+/**
+ * F2a's small components, mounted for real, one row each.
+ *
+ * ⚠ This is a GALLERY, not a mock: every element below is the actual exported component with real
+ * props. The layout around them is scaffolding — labels and spacing — and carries no colour of its
+ * own beyond the ground, so nothing here can make a broken component look correct.
+ */
+function PiecesGallery() {
+  const [on, setOn] = useState(false)
+  const [pill, setPill] = useState('all')
+  const [page, setPage] = useState(2)
+  const row = 'flex flex-wrap items-center gap-4 border-b border-ground-200 py-4'
+  return (
+    <div className="mx-auto max-w-3xl px-4">
+      <div className={row}>
+        <div className="w-full space-y-2">
+          {(['success', 'info', 'warning', 'block'] as const).map((kind) => (
+            <InfoBox key={kind} kind={kind}>
+              <strong className="capitalize">{kind}</strong> — the tone vocabulary this component names.
+            </InfoBox>
+          ))}
+        </div>
+      </div>
+      <div className={row}>
+        <ProgressStepper currentStep={2} totalSteps={3} />
+      </div>
+      <div className={row}>
+        <FilterPill
+          label="Status" value={pill} options={['all', 'open', 'done']}
+          optionLabels={{ all: 'All', open: 'Open', done: 'Done' }} onChange={setPill}
+        />
+        <Toggle on={on} onChange={setOn} label="A switch" />
+        <InfoTip text="A hint that opens on click." defaultOpen />
+        <span className="text-ground-700">Matched value <VerifiedTick label="Matches MyKad" /></span>
+      </div>
+      <div className={row}>
+        {/* The BRAND correction, visible: this bar must follow a tenant's colour. */}
+        <div className="w-full max-w-sm"><FundingBar funded={3200} award={5000} /></div>
+      </div>
+      <div className={row}>
+        <Pagination page={page} totalPages={7} pageSize={20} onPageChange={setPage} />
+      </div>
+    </div>
   )
 }
 

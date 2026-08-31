@@ -135,18 +135,35 @@
    mid-session while a form is half-filled. Losing that form would not be
    reported as a theming bug. */
 :root[data-theme='dark'] {
-  /* ground — 0 is white, 1000 is black. */
-  --ground-0: 0 0 0;
-  --ground-50: 17 24 39;
-  --ground-100: 31 41 55;
-  --ground-200: 55 65 81;
-  --ground-300: 75 85 99;
-  --ground-400: 107 114 128;
-  --ground-500: 156 163 175;
-  --ground-600: 209 213 219;
-  --ground-700: 229 231 235;
-  --ground-800: 243 244 246;
-  --ground-900: 249 250 251;
+  /* ── ground: the one ramp that is DESIGNED, not derived (Layer 1 F2a) ──────────────────────
+     The tone ramps below are a straight reversal and that works, because a tone is a signal and
+     a signal only has to stay legible. The ground is not a signal, it is FURNITURE, and its
+     stops carry ROLES that a reversal cannot preserve:
+
+       0    the raised surface — a card, an input, a modal, a popover
+       50   the page those sit ON
+       100  a well or a hover inside a card
+       200  a border          300  a stronger border      400  placeholder text
+       500  muted text        600-1000  text, up to the strongest
+
+     In light the raised surface is white — the EXTREME of the ramp, with everything else darker.
+     Reverse that and the card becomes pure black on a #111827 page: every card reads as a HOLE
+     punched in the page rather than a thing lying on it. That is what the F2a browser pass found,
+     and it is why this block is the one place the reversal is deliberately broken. The card is
+     lifted to #1f2937, ABOVE its page, and the stops above it shift up one to keep every role
+     distinct — a well must still separate from the card it sits in, a border from the well.
+     ⚠ Change a stop here and check the ROLE, not the number: `theme.test.ts` pins the ordering. */
+  --ground-0: 31 41 55;      /* #1f2937 — raised: cards, inputs, modals */
+  --ground-50: 17 24 39;     /* #111827 — the page beneath them */
+  --ground-100: 55 65 81;    /* #374151 — wells, hover, striped rows */
+  --ground-200: 75 85 99;    /* #4b5563 — borders */
+  --ground-300: 107 114 128; /* #6b7280 — stronger borders */
+  --ground-400: 156 163 175; /* #9ca3af — placeholder text */
+  --ground-500: 209 213 219; /* #d1d5db — muted text */
+  --ground-600: 229 231 235;
+  --ground-700: 243 244 246;
+  --ground-800: 249 250 251;
+  --ground-900: 255 255 255;
   --ground-1000: 255 255 255;
 
   /* positive — Tailwind green */
@@ -204,8 +221,14 @@
     font-family: 'Lexend', system-ui, sans-serif;
   }
 
+  /* ⚠ THE PAGE ITSELF. This was `bg-white text-gray-900` — RAW, so in dark mode the whole
+     product would have been dark cards and light text on a WHITE page. No class scan over
+     `.tsx` could ever have seen it: colour hides in the stylesheet too, not only in JSX.
+     The one deliberate light-mode change in F2a: the page ground goes from #ffffff to #f9fafb
+     (`ground-50`), the value most of the app's own pages already set with `bg-gray-50`. It has
+     to be the page stop rather than `ground-0`, because `ground-0` is now the RAISED surface. */
   body {
-    @apply bg-white text-gray-900 antialiased;
+    @apply bg-ground-50 text-ground-900 antialiased;
   }
 }
 
@@ -221,21 +244,26 @@
 
   /* Secondary button */
   .btn-secondary {
-    @apply bg-white text-primary-500 border-2 border-primary-500 px-6 py-3 rounded-lg font-medium;
+    @apply bg-ground-0 text-primary-500 border-2 border-primary-500 px-6 py-3 rounded-lg font-medium;
     @apply hover:bg-primary-50 transition-colors duration-200;
     @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
   }
 
   /* Card */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+    @apply bg-ground-0 rounded-xl shadow-sm border border-ground-100 p-6;
   }
 
-  /* Input field */
+  /* ⚠ Input field — THE BACKGROUND IS LOAD-BEARING, do not remove it as redundant.
+     This class had no background at all, which is invisible in light mode because a browser's
+     own default for a text control is white and the page is white too. In dark mode that same
+     default made every textarea and input a blazing white rectangle. Found by looking at the
+     Action Centre in the sandbox; no test would have reported it, because nothing was wrong
+     with the markup — the colour was coming from the user agent. */
   .input {
-    @apply w-full px-4 py-3 rounded-lg border border-gray-300;
+    @apply w-full px-4 py-3 rounded-lg border border-ground-300 bg-ground-0 text-ground-900;
     @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
-    @apply placeholder:text-gray-400;
+    @apply placeholder:text-ground-400;
   }
 
   /* Grade badge */
@@ -243,16 +271,21 @@
     @apply inline-flex items-center justify-center w-10 h-10 rounded-lg font-semibold text-sm;
   }
 
+  /* The grade badges are a RAMP of meaning (A is best, G is worst), not four independent
+     signals, so they are the one place `orange` earns its keep between caution and critical.
+     Tailwind's own `orange` is left literal deliberately: the vocabulary has no fifth tone, and
+     inventing one for a single badge would be a worse lie than a colour that does not follow
+     the theme. It is listed in the roadmap's F6 notes as the place to settle that. */
   .grade-badge-a {
-    @apply grade-badge bg-green-100 text-green-700;
+    @apply grade-badge bg-positive-100 text-positive-700;
   }
 
   .grade-badge-b {
-    @apply grade-badge bg-blue-100 text-blue-700;
+    @apply grade-badge bg-info-100 text-info-700;
   }
 
   .grade-badge-c {
-    @apply grade-badge bg-yellow-100 text-yellow-700;
+    @apply grade-badge bg-caution-100 text-caution-700;
   }
 
   .grade-badge-d {
@@ -260,11 +293,11 @@
   }
 
   .grade-badge-e {
-    @apply grade-badge bg-red-100 text-red-700;
+    @apply grade-badge bg-critical-100 text-critical-700;
   }
 
   .grade-badge-g {
-    @apply grade-badge bg-gray-100 text-gray-700;
+    @apply grade-badge bg-ground-100 text-ground-700;
   }
 }
 

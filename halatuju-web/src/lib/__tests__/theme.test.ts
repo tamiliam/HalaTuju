@@ -214,11 +214,74 @@ describe('the two guards the owner ruled on', () => {
       return m ? m[1].trim() : null
     }
     const lightBlock = css.slice(css.indexOf(':root {'), css.indexOf(`[${THEME_ATTR}='dark']`))
-    for (const [a, b] of [['ground-0', 'ground-1000'], ['ground-50', 'ground-900'],
-                          ['positive-50', 'positive-900'], ['critical-100', 'critical-800']]) {
+    // ⚠ TONES ONLY. The ground ramp was in this list until F2a and is deliberately no longer:
+    // a tone is a signal that only has to stay legible when reversed, but the ground carries
+    // ROLES (raised surface, page, well, border) that a reversal actively destroys — it put the
+    // card BELOW its own page. The ground's guarantee is the ordering test below instead.
+    for (const [a, b] of [['positive-50', 'positive-900'], ['critical-100', 'critical-800'],
+                          ['info-50', 'info-900'], ['caution-200', 'caution-700']]) {
       expect(chan(darkBlock, a)).toBe(chan(lightBlock, b))
       expect(chan(darkBlock, b)).toBe(chan(lightBlock, a))
     }
+  })
+
+  it('lifts the raised surface ABOVE its page, in BOTH modes', () => {
+    // ⚠ THE F2a DEFECT, PINNED. `ground-0` is the card, the input, the modal; `ground-50` is the
+    // page they lie on. A straight reversal made `ground-0` pure black on a #111827 page, so
+    // every card read as a hole punched THROUGH the page rather than a thing resting on it —
+    // found by looking, not by a test, because nothing about it is expressible as "a colour is
+    // wrong". This is the property that has to hold, whatever numbers a later tuning pass picks.
+    const lightBlock = css.slice(css.indexOf(':root {'), css.indexOf(`[${THEME_ATTR}='dark']`))
+    const lum = (block: string, name: string) => {
+      const m = block.match(new RegExp(`--${name}:\\s*([\\d ]+);`))
+      if (!m) throw new Error(`no --${name}`)
+      const [r, g, b] = m[1].trim().split(/\s+/).map(Number)
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    // Light: white card on a near-white page. Dark: a lifted card on a darker page.
+    expect(lum(lightBlock, 'ground-0')).toBeGreaterThan(lum(lightBlock, 'ground-50'))
+    expect(lum(darkBlock, 'ground-0')).toBeGreaterThan(lum(darkBlock, 'ground-50'))
+  })
+
+  it('keeps every ground role distinct, so a well never vanishes into its card', () => {
+    // The stops carry roles — 0 raised, 100 well/hover, 200 border, 300 stronger border. Two
+    // roles sharing a value is invisible in a screenshot of one component and wrong everywhere
+    // else, which is precisely the bug class the reversal produced when `ground-0` moved.
+    for (const block of [css.slice(css.indexOf(':root {'), css.indexOf(`[${THEME_ATTR}='dark']`)), darkBlock]) {
+      const stops = ['0', '50', '100', '200', '300', '400', '500']
+        .map((s) => block.match(new RegExp(`--ground-${s}:\\s*([\\d ]+);`))?.[1].trim())
+      expect(stops.filter(Boolean)).toHaveLength(stops.length)
+      expect(new Set(stops).size).toBe(stops.length)
+    }
+  })
+})
+
+describe('the stylesheet is a hiding place too', () => {
+  // ⚠ FOUND BY LOOKING, IN F2a. Every conversion guard in this file reads `.tsx`. `globals.css`
+  // is neither a component nor a surface, so nothing scanned it — and it held `body` painted
+  // `bg-white text-gray-900` (a WHITE page in dark mode, product-wide) and a `.input` class with
+  // no background at all, which a browser fills with its own white. Both were invisible in light
+  // mode and both would have shipped. The colour was in the stylesheet, not the markup.
+  const css = read('src/app/globals.css')
+  const layers = css.slice(css.indexOf('@layer base'))
+
+  it('has no raw Tailwind colour in the base and component layers', () => {
+    // Comments stripped, for the second time in this file and for the same reason: the note
+    // explaining WHY `body` no longer says `bg-white text-gray-900` contains the very strings it
+    // forbids. A guard that reads source text has to tell code from prose, or the only way to
+    // pass it is to stop explaining yourself.
+    const offenders = Array.from(new Set(withoutComments(layers).match(new RegExp(RAW, 'g')) ?? []))
+      // `orange` has no tone in the vocabulary and is left literal on the grade-badge ramp, on
+      // purpose and with the reason written beside it. Anything else here is a miss.
+      .filter((c) => !c.includes('-orange-'))
+    expect(offenders).toEqual([])
+  })
+
+  it('gives every text control an explicit background', () => {
+    // The user-agent default is white and it is NOT a colour anyone wrote, so it follows no
+    // theme. A control without a background is a light-mode island by omission.
+    const input = layers.slice(layers.indexOf('.input {'))
+    expect(input.slice(0, input.indexOf('}'))).toMatch(/bg-ground-/)
   })
 })
 

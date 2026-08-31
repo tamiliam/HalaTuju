@@ -21,6 +21,7 @@ import type {
   ApplicationRequirements,
   ConsentStatus,
   FundingNeed,
+  ResolutionItem,
   ScholarshipApplication,
 } from '@/lib/api'
 import type { ProgrammeConfigItem, ProgrammeConfiguration } from '@/lib/admin-api'
@@ -331,6 +332,54 @@ export const sandboxProfileFormSix = {
 
 /** No application yet, so the apply form renders instead of redirecting a returning applicant. */
 export const sandboxNoApplications = { total_count: 0, applications: [] }
+
+// ── The Action Centre (Layer 1 F2a) ─────────────────────────────────────────────────────────────
+// Chosen to put every TONE the repaint touches on one screen at once: an open upload task and an
+// explanation task (the ground + brand states), the officer-hold card (info), and two finished
+// tasks (positive). Without the hold item the info tone never renders and the surface would be
+// signed off without anyone seeing half of it.
+
+const ticket = (
+  id: number, kind: ResolutionItem['kind'], code: string, prompt: string,
+  extra: Partial<ResolutionItem> = {},
+): ResolutionItem => ({
+  id,
+  fact: code,
+  code,
+  params: {},
+  prompt,
+  kind,
+  doc_type: kind === 'doc' ? code : '',
+  status: 'open',
+  source: 'system',
+  resolution_text: '',
+  created_at: '2026-08-20T02:00:00Z',
+  resolved_at: null,
+  ...extra,
+})
+
+export const sandboxResolutionItems = {
+  open: [
+    ticket(1, 'doc', 'payslip', 'We could not read the payslip you sent. Please send a clearer photo.'),
+    ticket(2, 'explanation', 'income_gap', 'Tell us in your own words how the household manages month to month.'),
+    // The circuit-breaker card: no upload button, no coach, no retry note.
+    ticket(3, 'doc', 'utility_bill', 'A person is looking at this now.', {
+      params: { needs_officer_eye: true },
+    }),
+  ],
+  resolved: [
+    ticket(4, 'doc', 'ic', 'Identity card received.', {
+      status: 'resolved', resolved_at: '2026-08-22T02:00:00Z',
+    }),
+    ticket(5, 'confirm', 'address', 'Home address confirmed.', {
+      status: 'resolved', resolved_at: '2026-08-23T02:00:00Z',
+    }),
+  ],
+  set_aside: [],
+}
+
+/** Nothing left to do — the calm "we'll be in touch" state, which is a different card entirely. */
+export const sandboxResolutionItemsClear = { open: [], resolved: sandboxResolutionItems.resolved, set_aside: [] }
 
 // ── "What we ask for" (Layer 0 Sprint 5) ────────────────────────────────────────────────────────
 // The catalogue as the endpoint returns it: 9 documents + 10 questions, the six core rows locked.
