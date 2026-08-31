@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F2c — a category colour family, so dark mode is no longer blocked - 2026-08-31
+
+**Small sprint.** No migration. Web only, 8 files. Retro
+`docs/retrospective-2026-08-31-layer1-f2c-category-colours.md`. jest 1507 → **1509**.
+**Owner decision, 2026-08-31: build the categorical family** (the option F2b raised). This closes
+the gap that would have blocked F7. Nothing a visitor sees changes — dark mode is still off.
+
+### Added
+- **`--category-1…8`, a fifth token family**, in `globals.css` and wired through
+  `tailwind.config.ts` as `bg-category-N-surface`, `text-category-N-ink`, `bg-category-N-dot`.
+  - **Three ROLES, not numbered stops** — the F2a ground lesson applied from the start. A role
+    survives a retune and can be checked; a stop number would have to be re-derived per mode.
+  - **Dark is a ROLE SWAP, not the reversal the tones use**: the surface goes deep and the ink
+    goes pale, because a chip has to stay a chip rather than invert into the page.
+  - **The eight hues deliberately avoid green / blue / amber / red**, which belong to the tones —
+    a green category chip beside a green "done" badge is the confusion the family exists to
+    prevent. They are violet, teal, orange, pink, cyan, lime, fuchsia, indigo, taken from
+    Tailwind's own palette (100/800/500 light, 900/200/400 dark) and **generated, not typed**, the
+    same rule the tone ramps follow.
+  - Eight is what the largest set needs (seven entry conditions) plus one spare. Sets do not need
+    to differ from each OTHER, only within themselves.
+
+### Changed — the four category files converted, and two pre-existing collisions fixed
+- `PathwayTrackCard` (5 fields + 2 pathways), `RequirementsCard` (6 institution types + the
+  language chip), `SpecialConditions` (7 entry conditions), `CareerPathways` (1 occupation chip).
+- **✅ `ua` and `pismp` were both purple** — two of six institution types indistinguishable, which
+  predates all of this work. They now hold different swatches.
+- **✅ `noColorblind` and `noDisability` were both red** — same bug in the conditions list. Fixed.
+- The merit indicator and the Special Conditions warning triangle stay **tones**: they are states,
+  not categories, and that boundary is the whole point.
+
+### Guards
+- The F2b exemption block is replaced by a conversion check: those four files now have to be fully
+  converted like every other surface.
+- **A set-level guard** — each file must use exactly as many DISTINCT swatches as its set has
+  members. This is the property F2b's failure was really about ("how many different ones", not
+  "which colour"), and it is what catches a collapse that looks fine on any page showing one chip.
+- **A family guard**: all three roles defined for all eight swatches in both modes; every swatch
+  distinct from every other in both modes; **ink readable against its own surface, the opposite
+  way round in each mode**; and the tone hues stay out.
+- Bite-checked: four faults (two categories collapsed onto one swatch, two swatches given the same
+  value, a dark surface made pale so its chip became unreadable, a raw tone hue put back) → four
+  distinct guards failed.
+
 ## Layer 1 F2b — the rest of the shared components, and a colour the vocabulary cannot name - 2026-08-31
 
 **Sprint.** No migration. Web only, 29 files. Retro

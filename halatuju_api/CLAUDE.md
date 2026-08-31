@@ -550,7 +550,38 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-31, after Layer 1 F2b — `src/components` is repainted)
+## Next Sprint (as of 2026-08-31, after Layer 1 F2c — the category family)
+
+**✅ SHIPPED — LAYER 1 F2c.** Branch `feat/layer1-f2c-category-colours`. **NO migration. WEB ONLY.**
+8 files. Retro `docs/retrospective-2026-08-31-layer1-f2c-category-colours.md`; decision ×1;
+lessons ×2. jest 1507 → **1509**. pytest unchanged at 5677. **F7 IS NO LONGER BLOCKED.**
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`--category-1…8`, a FIFTH token family**, three roles each (`surface`/`ink`/`dot`), in
+  `globals.css` + `tailwind.config.ts`. **It is not a tone and must never be used for a state;
+  a tone must never be used for a category.** Both directions are guarded.
+- **Dark is a ROLE SWAP, not the reversal the tones use** — surface deep, ink pale. Do not
+  "make it consistent with the tones"; that would turn every chip into the lightest thing on the
+  page.
+- **The hues avoid green/blue/amber/red on purpose.** A green category chip beside a green "done"
+  badge is the confusion this family prevents.
+- `theme.test.ts` asserts the SET property — each file uses exactly as many distinct swatches as
+  its set has members — plus family-level distinctness and ink-on-surface readability per mode.
+- Fixed two pre-existing collisions: `ua`/`pismp` (both purple) and
+  `noColorblind`/`noDisability` (both red).
+
+**▶ AT DEPLOY: push main (web build only).** No migrate-first, no env vars, no i18n keys. **Dark
+mode stays unreachable.** Nothing a visitor sees changes.
+
+**▶ NEXT = LAYER 1 F3** — student surfaces, 16 files including `ScholarshipDocuments.tsx` (287 raw
+colours, the ceiling names exactly that file). Then F4, F5, A1–A3, F6, F7.
+**Three checklist items for every repaint from here:** grep for `bg-info-[567]00` beside
+`text-white` (a mis-classified CTA — found in three sprints running); grep for
+`Record<…, colour>` lookup tables (a category palette — now convert them onto `category-N`); and
+if the surface argues a case in a sandbox note, rewrite the note when the case is settled.
+**Worktree gotcha:** link `node_modules` by junction before trusting any gate; remove with `rmdir`.
+
+## Superseded — previous Next Sprint (as of 2026-08-31, after Layer 1 F2b — `src/components` is repainted)
 
 **✅ SHIPPED — LAYER 1 F2b.** Branch `feat/layer1-f2b-shared-components`. **NO migration. WEB ONLY.**
 29 files. Retro `docs/retrospective-2026-08-31-layer1-f2b-shared-components.md`; decision ×1;

@@ -134,6 +134,27 @@ only (`components/admin` is F4's and is deliberately NOT ratcheted — it is und
 work). Append F2b's files to `F2A_FILES` in `theme.test.ts` and drop the ceiling to zero.
 `ScholarshipDocuments.tsx` (293 utilities) stays with **F3**.
 
+#### ✅ F2c — SHIPPED 2026-08-31 — the category family. **F7 IS NO LONGER BLOCKED.**
+
+Retro `docs/retrospective-2026-08-31-layer1-f2c-category-colours.md`; decision ×1; lessons ×2.
+NO migration. 8 files, jest **1509**. The owner chose to build the family (2026-08-31), so F2b's
+open question is closed.
+
+`--category-1…8` in `globals.css`, wired through `tailwind.config.ts` as
+`bg-category-N-surface` / `text-category-N-ink` / `bg-category-N-dot`. **Three ROLES, not stops**
+(the F2a lesson, applied from the first line this time). **Dark is a role swap, not a reversal** —
+the surface goes deep, the ink goes pale, because a chip must stay a chip. **The eight hues avoid
+green/blue/amber/red**, which belong to the tones. Values generated from `tailwindcss/colors`.
+
+All four category files converted; the F2b exemption block in `theme.test.ts` is replaced by a
+conversion check plus a **set-level guard** (each file uses exactly as many DISTINCT swatches as
+its set has members) and a **family guard** (all roles defined, all swatches distinct, ink
+readable against its own surface — opposite way per mode, tone hues excluded).
+
+**▶ TWO PRE-EXISTING BUGS FIXED, found by counting rather than reading:** `ua` and `pismp` were
+both purple, and `noColorblind` and `noDisability` were both red. Two categories in each set were
+already indistinguishable, before any theming work.
+
 #### ✅ F2b — SHIPPED 2026-08-31 (worktree `.worktrees/layer1-f2b`)
 
 Retro `docs/retrospective-2026-08-31-layer1-f2b-shared-components.md`; decision ×1; lessons ×3.

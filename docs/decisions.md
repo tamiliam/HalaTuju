@@ -7977,8 +7977,38 @@ information silently, which is worse than an acknowledged gap.
 list somebody has to maintain. Accepted: the list is closed and tested, so growing it is a
 deliberate act, and the sandbox surface `category-colours` shows the gap rather than describing it.
 
-**Revisit if:** — this is the trigger — **before F7.** The owner decides whether to add a
+**RESOLVED 2026-08-31 (F2c) — the owner chose the categorical family; see the entry below.**
+**Was: revisit if** — this is the trigger — **before F7.** The owner decides whether to add a
 categorical family (a set of hues picked to stay mutually distinct in BOTH modes, defined in
 `globals.css` beside the tones), neutralise the chips, or ship dark mode with these surfaces
 light. Note `ua` and `pismp` are already the same purple today; a categorical family would fix
 that at the same time.
+
+## The category family: eight swatches, three roles, dark as a role swap — Layer 1 F2c, 2026-08-31
+
+**Decision:** `--category-1…8`, each with `surface` / `ink` / `dot`, defined independently for
+light and dark. The four category files are converted onto it. This resolves the question F2b
+raised and unblocks F7.
+
+**Alternatives considered:** (a) neutral grey chips — throws away information these lists are
+scanned for; (b) shipping those surfaces light in dark mode — leaves visible islands on a public
+page; (c) letting a tenant configure the category hues — rejected for now: eight mutually distinct
+colours is a constraint satisfaction problem, and a tenant picking one badly makes two categories
+indistinguishable. Revisit only with a picker that enforces separation.
+
+**Rationale, in the three choices that carry the weight:**
+1. **Roles, not numbered stops.** The F2a ground lesson. A stop number means nothing about what it
+   is for and must be re-derived per mode; `surface`/`ink`/`dot` survive a retune, and the guard
+   can assert a RELATIONSHIP (ink readable on its own surface) rather than a value.
+2. **Dark is a role swap, not a reversal.** The tones reverse because a signal only has to stay
+   legible. A chip has to stay a chip *sitting on a card* — reverse it and the surface becomes the
+   lightest thing on a dark page. So the surface goes deep and the ink goes pale.
+3. **The hues avoid green / blue / amber / red.** Those belong to the tones, and a green category
+   chip beside a green "done" badge is exactly the confusion this family exists to prevent.
+
+**Trade-offs:** a fifth family is more vocabulary to learn, and eight is a ceiling — a set needing
+nine categories has to be rethought rather than extended (which is the right pressure: nine
+colours is not tellable apart anyway). Values are hand-maintained per mode, not derived.
+
+**Revisit if:** a set outgrows eight; a third mode arrives; or tenants ask to brand these, which
+needs a picker that can enforce mutual distinctness.
