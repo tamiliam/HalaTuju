@@ -9,6 +9,7 @@ import path from 'path'
 import {
   DEFAULT_MODE, THEME_ATTR, THEME_MODES, THEME_STORAGE_KEY, isThemeMode, resolveTheme,
 } from '../theme'
+import { PLATFORM, brandRamp } from '../branding'
 
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), 'utf8')
 
@@ -189,10 +190,78 @@ describe('the two guards the owner ruled on', () => {
   const css = read('src/app/globals.css')
   const darkBlock = css.slice(css.indexOf(`[${THEME_ATTR}='dark']`))
 
-  it('a THEME may never write the tenant brand', () => {
-    // --brand-* is the ORGANISATION's identity. A mode that rewrote it would mean switching to dark
-    // silently changed whose product you are looking at.
-    expect(darkBlock).not.toMatch(/--brand-/)
+  const lightBlock = css.slice(css.indexOf(':root {'), css.indexOf(`[${THEME_ATTR}='dark']`))
+  const lum = (block: string, name: string) => {
+    // ⚠ `\\s` and `\\d`, not `\s`/`\d`: this is a TEMPLATE LITERAL, where `\s` is an unknown
+    // escape and collapses to a bare `s` — the regex then silently matches nothing and every
+    // luminance assertion throws "no --token". Written wrong once here; the other copies in this
+    // file have it right, which is exactly how the mistake survives review.
+    const m = block.match(new RegExp(`--${name}:\\s*([\\d ]+);`))
+    if (!m) throw new Error(`no --${name} in that block`)
+    const [r, g, b] = m[1].trim().split(/\s+/).map(Number)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+
+  it('a THEME may never change WHOSE product you are looking at — the identity stop is fixed', () => {
+    // ⚠ THIS REPLACES "the dark block contains no --brand-" (Layer 1 F3b, owner direction
+    // 2026-08-31). That test enforced the ruling by forbidding the whole family, which also
+    // forbade the fix: `--brand-50`..`200` are 95–70% WHITE, so every panel painted with one was a
+    // glaring pale patch on a dark page — 101 uses across 40 files — and `800`/`900` were 45–60%
+    // BLACK, so text in one was near invisible. The ruling is about IDENTITY, and the identity is
+    // `500`: the tenant's actual colour. It is pinned byte-for-byte across the two modes here.
+    // The other nine stops are furniture derived from it, and re-aiming furniture at the surface
+    // it sits on is not a change of identity.
+    const lightBlock = css.slice(css.indexOf(':root {'), css.indexOf(`[${THEME_ATTR}='dark']`))
+    const stop = (block: string) => block.match(/--brand-500:\s*([\d ]+);/)?.[1].trim()
+    expect(stop(darkBlock)).toBeDefined()
+    expect(stop(darkBlock)).toBe(stop(lightBlock))
+  })
+
+  it('aims the brand ramp at the ground it actually sits on — the ends SWAP per mode', () => {
+    // The property the pale-patch bug violated, stated as a relationship so any future retune
+    // still has to satisfy it. In light the tints are lighter than the brand and the shades are
+    // darker; in dark that is reversed, because the tints now mix toward the PAGE and the shades
+    // toward white. Pasting the light ramp into the dark block — the exact defect F3 raised —
+    // fails this immediately.
+    //
+    // ⚠ NOT "the tint is lighter than the page": in light mode a 95%-white blue tint is very
+    // slightly DARKER than a #f9fafb page, and asserting otherwise fails on correct values. The
+    // brand's own 500 is the honest reference point.
+    for (const [block, tintIsLighter] of [[lightBlock, true], [darkBlock, false]] as const) {
+      const base = lum(block, 'brand-500')
+      for (const tint of ['brand-50', 'brand-100', 'brand-200']) {
+        if (tintIsLighter) expect(lum(block, tint)).toBeGreaterThan(base)
+        else expect(lum(block, tint)).toBeLessThan(base)
+      }
+      for (const shade of ['brand-800', 'brand-900']) {
+        if (tintIsLighter) expect(lum(block, shade)).toBeLessThan(base)
+        else expect(lum(block, shade)).toBeGreaterThan(base)
+      }
+    }
+  })
+
+  it('reads its DARK ramp out of brandRamp(), so a tenant gets the same treatment', () => {
+    // ⚠ THE DARK BLOCK ONLY. The LIGHT ramp is the platform's exact seeded hexes (Tailwind's blue
+    // scale, a byte-identity contract from platform Sprint 6) and is deliberately NOT derived —
+    // `brandRamp` says so in as many words and never runs for BrightPath in light mode.
+    //
+    // Dark is different: it did not exist before, so there was no identity to preserve, and it MUST
+    // agree with the function because a tenant's dark ramp is computed by that function at runtime.
+    // If these baked values and `brandRamp` disagreed, a tenant's dark mode would quietly differ
+    // from the platform's and nothing else would notice.
+    const ramp = brandRamp(PLATFORM.brandColour, 'dark')
+    for (const [step, triplet] of Object.entries(ramp)) {
+      expect(darkBlock).toContain(`--brand-${step}: ${triplet};`)
+    }
+  })
+
+  it('keeps the dark ground constant in `branding.ts` in step with globals.css', () => {
+    // `brandRamp` mixes its dark tints toward the page. That page value is written in two files;
+    // this is the test that refuses to let the copies drift.
+    const src = read('src/lib/branding.ts')
+    const ground = darkBlock.match(/--ground-50:\s*([\d ]+);/)?.[1].trim()
+    expect(ground).toBeDefined()
+    expect(src).toContain(`const DARK_GROUND: Rgb = [${ground!.split(/\s+/).join(', ')}]`)
   })
 
   it('the dark set covers every token the light set defines — no half-converted ramp', () => {

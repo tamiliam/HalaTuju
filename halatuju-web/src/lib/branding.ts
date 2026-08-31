@@ -134,6 +134,12 @@ export function interpolateMessage(value: string, params?: Record<string, string
 
 // ── Tenant colour ramp (tenant-only; BrightPath uses the verbatim literal ramp in globals.css) ──
 
+type Rgb = [number, number, number]
+
+/** `--ground-50` in dark mode — the page a tinted brand panel actually sits on. `theme.test.ts`
+ *  reads this AND `globals.css` and refuses to let the two drift apart. */
+const DARK_GROUND: Rgb = [17, 24, 39]
+
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '')
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
@@ -143,23 +149,46 @@ function mix(channel: number, target: number, t: number): number {
   return Math.round(channel + (target - channel) * t)
 }
 
-/** Compute a 50–900 tint/shade ramp from a base hex (treated as the 500 step), returning each
- *  step as a space-separated RGB triplet (the CSS-var channel form). Tenant-only — the platform
- *  ramp is the exact seeded hexes baked into `globals.css`, so this never runs for BrightPath. */
-export function brandRamp(hex: string): Record<number, string> {
+/**
+ * Compute a 50–900 ramp from a base hex (the 500 step), each step a space-separated RGB triplet.
+ *
+ * ── WHY THIS TAKES A THEME (Layer 1 F3b, owner direction 2026-08-31) ──
+ * The ramp is derived by mixing the brand colour toward two ends. In light mode those ends are
+ * white (for the tints) and black (for the shades), which is right for a white page. In dark mode
+ * it is exactly backwards: `50`–`200` are 95–70% WHITE, so a panel painted with one is a glaring
+ * pale patch on a dark page, and `800`–`900` are 45–60% BLACK, so text in one is near invisible.
+ * F3 measured 101 uses of the pale stops as SURFACES across 40 files.
+ *
+ * The fix cannot be a second, hand-picked palette: a tenant supplies ONE colour at runtime, so any
+ * dark treatment has to be DERIVED from whatever they set. So the two ends swap — the tints mix
+ * toward the dark page, the shades mix toward white.
+ *
+ * ⚠ `500` IS THE SAME VALUE IN BOTH MODES, and that is the whole of the owner's ruling. The rule
+ * (2026-07-29) is that a theme may never change WHOSE product you are looking at. The identity
+ * stop IS the brand; the other nine are furniture derived from it, and re-aiming furniture at the
+ * surface it actually sits on does not change the identity. `theme.test.ts` pins `500`
+ * byte-for-byte across the two modes — a stricter and more honest test than "the dark block
+ * contains no `--brand-`" ever was.
+ */
+export function brandRamp(hex: string, theme: 'light' | 'dark' = 'light'): Record<number, string> {
   const [r, g, b] = hexToRgb(hex)
-  const light = (t: number) => `${mix(r, 255, t)} ${mix(g, 255, t)} ${mix(b, 255, t)}`
-  const dark = (t: number) => `${mix(r, 0, t)} ${mix(g, 0, t)} ${mix(b, 0, t)}`
+  // The two ends the ramp is pulled toward. In dark they are the page ground and white — the same
+  // pair swapped, so a tint stays a tint RELATIVE TO ITS BACKGROUND rather than absolutely.
+  const [toTint, toShade]: [Rgb, Rgb] = theme === 'dark'
+    ? [DARK_GROUND, [255, 255, 255]]
+    : [[255, 255, 255], [0, 0, 0]]
+  const towards = ([tr, tg, tb]: Rgb, t: number) =>
+    `${mix(r, tr, t)} ${mix(g, tg, t)} ${mix(b, tb, t)}`
   return {
-    50: light(0.95),
-    100: light(0.85),
-    200: light(0.7),
-    300: light(0.5),
-    400: light(0.25),
+    50: towards(toTint, 0.95),
+    100: towards(toTint, 0.85),
+    200: towards(toTint, 0.7),
+    300: towards(toTint, 0.5),
+    400: towards(toTint, 0.25),
     500: `${r} ${g} ${b}`,
-    600: dark(0.15),
-    700: dark(0.3),
-    800: dark(0.45),
-    900: dark(0.6),
+    600: towards(toShade, 0.15),
+    700: towards(toShade, 0.3),
+    800: towards(toShade, 0.45),
+    900: towards(toShade, 0.6),
   }
 }
