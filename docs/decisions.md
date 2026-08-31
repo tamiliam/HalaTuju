@@ -7947,3 +7947,38 @@ colour must never repaint it. The codebase had already made this call once (`bg-
 `ActionCentre`) and the two bars disagreeing would have meant a tenant's colour reaching one.
 **Trade-offs:** the rule now has two clauses instead of one. **Revisit if:** a surface appears where
 progress itself is a state (a deadline bar going red), which would want a tone after all.
+
+## A CATEGORY palette is a fifth kind of colour, and stays literal until the product names it — Layer 1 F2b, 2026-08-31
+
+**Decision:** four files keep their colours as raw Tailwind classes, exempt from the theme tokens
+and guarded so nobody converts them: `PathwayTrackCard` (field of study), `RequirementsCard`
+(institution type), `SpecialConditions` (entry condition), `CareerPathways` (occupation chips) —
+48 utilities. Their GROUND is converted like everything else; only the category hues are exempt.
+They therefore do not follow dark mode, which is a recorded gap rather than an oversight, and
+**F7 may not flip the theme switch while it stands.**
+
+**Alternatives considered:**
+(a) *Convert them like everything else.* Rejected: the theme has four tones and each asserts
+something. `poly` (emerald) and `ILJTM` (green) both map to `positive` — two institution types a
+student uses to compare courses, rendered identically — as do `sains_komputer` (blue) and
+`sains_sosial` (sky). It would also claim a Polytechnic is a "success" and that "female applicants
+only" is `critical`, an error. No test would have caught any of it.
+(b) *Neutralise them — make every category chip a ground chip.* Honest in dark mode and it throws
+away the information the colour carries; these lists are scanned, not read.
+(c) *Invent a categorical token family now.* The right end state, and not mine to define: how many
+hues, chosen how, and whether a tenant may set them is product scope, not implementation detail.
+
+**Rationale:** the vocabulary's four tones are SIGNALS — they mean good, informational, careful,
+bad. A category colour means only "not the same as the one above it". Its contract is mutual
+distinctness, and no family-level rename can preserve that. Forcing the nearest fit destroys
+information silently, which is worse than an acknowledged gap.
+
+**Trade-offs:** dark mode is incomplete until this is resolved, and the exemption is a standing
+list somebody has to maintain. Accepted: the list is closed and tested, so growing it is a
+deliberate act, and the sandbox surface `category-colours` shows the gap rather than describing it.
+
+**Revisit if:** — this is the trigger — **before F7.** The owner decides whether to add a
+categorical family (a set of hues picked to stay mutually distinct in BOTH modes, defined in
+`globals.css` beside the tones), neutralise the chips, or ship dark mode with these surfaces
+light. Note `ua` and `pismp` are already the same purple today; a categorical family would fix
+that at the same time.

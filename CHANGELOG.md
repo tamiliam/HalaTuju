@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F2b — the rest of the shared components, and a colour the vocabulary cannot name - 2026-08-31
+
+**Sprint.** No migration. Web only, 29 files. Retro
+`docs/retrospective-2026-08-31-layer1-f2b-shared-components.md`. jest 1493 → **1507**.
+**Dark mode stays unreachable** in production. No visible change in light mode.
+
+### Changed
+- **20 components fully repainted** onto the theme tokens — `AppHeader`, `AppFooter`,
+  `SponsorLanding`, `SponsorDetailsForm`, `CourseCard`, `PathwayPicker`, `CourseDetailShared`,
+  `AiReliabilityCard`, `SponsorNotifyPrefs`, `ProgrammePicker`, `SchoolSelect`,
+  `InstitutionPicker`, `CourseHeader`, `PathwaySelect`, `AliranPicker`, `PathwayCards`,
+  `LanguageSelector`, `ReferralCapture`, `HtmlLang`, `BrandLogo`. 273 utilities.
+- **Four more converted in their GROUND only** — `RequirementsCard`, `PathwayTrackCard`,
+  `SpecialConditions`, `CareerPathways` (81 utilities). Their category hues are exempt, below.
+- **Three semantic corrections by hand** (the F1 rule, third sprint running): the sponsor landing
+  page's two calls to action and its numbered step circles, and the sign-up form's submit, are the
+  BRAND, not the info tone — the codemod was right that they were blue and wrong that they meant
+  "information". A tenant's colour has to reach the one button that page exists for. The SELECTED
+  state in `SponsorNotifyPrefs` is likewise brand; plain text links stay `info`, as F1 settled.
+
+### ⚠ A COLOUR THE VOCABULARY CANNOT NAME — 48 utilities left literal, on purpose
+Four files colour a **category** — a field of study, an institution type, an entry condition —
+where the colour means nothing except *"not the same as its neighbour"*. The theme has four tones
+and every one of them asserts something. Converting by family would have:
+- put `poly` (emerald) and `ILJTM` (green) both on `positive` — **two institution types a student
+  uses to compare courses, rendered identically** — and claimed a Polytechnic is a "success";
+- put `sains_komputer` (blue) and `sains_sosial` (sky) both on `info` — same collapse;
+- turned "female applicants only" into `critical`, i.e. an error.
+
+None of that would have failed a test. They are therefore still literal and **do not follow dark
+mode**: a known, guarded gap, not an oversight. The product needs a fifth **categorical** family,
+and that is an owner decision — raised at the end of this sprint with a sandbox surface showing
+exactly what it looks like. **F7 must not flip the switch while these are literal.**
+
+### Added
+- **Guards**: `F2B_FILES` under the existing per-surface conversion check; a `CATEGORICAL` block
+  that pins each exempt palette by swatch (so nobody "finishes the migration" and silently
+  collapses the categories) while still requiring each of those files' GROUND to be converted; a
+  closed-list assertion so a fifth categorical file must be a deliberate addition; and three pins
+  on this sprint's semantic corrections.
+- **The ceiling falls 659 → 287**, and now names one file: `ScholarshipDocuments.tsx`, which is
+  F3's. A test asserts the ceiling covers exactly that file, so the number cannot quietly start
+  meaning something else.
+- **Sandbox surfaces `sponsor-landing` and `category-colours`** — the second exists to be decided
+  on rather than signed off: switch it to dark and the category colours stay light, which is the
+  gap made visible.
+- Bite-checked: four faults injected (a category palette "finished", raw ground colour back into an
+  exempt file, raw colour into a converted file, a CTA reverted to the tone) → four distinct guards
+  failed.
+
 ## Layer 1 F2a — the shared student-journey components go onto the theme tokens - 2026-08-31
 
 **Sprint.** No migration. Web only, 34 files. Retro

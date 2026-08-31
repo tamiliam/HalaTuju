@@ -550,7 +550,39 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-31, after Layer 1 F2a — the shared components are repainted)
+## Next Sprint (as of 2026-08-31, after Layer 1 F2b — `src/components` is repainted)
+
+**✅ SHIPPED — LAYER 1 F2b.** Branch `feat/layer1-f2b-shared-components`. **NO migration. WEB ONLY.**
+29 files. Retro `docs/retrospective-2026-08-31-layer1-f2b-shared-components.md`; decision ×1;
+lessons ×3. jest 1493 → **1507**. pytest unchanged at 5677.
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- 20 components fully on the tokens; 4 more (`RequirementsCard`, `PathwayTrackCard`,
+  `SpecialConditions`, `CareerPathways`) converted in their GROUND only.
+- **⛔ THE CATEGORY PALETTES IN THOSE FOUR FILES ARE EXEMPT ON PURPOSE — DO NOT CONVERT THEM.**
+  They colour a category, not a state. A family rename collapses `poly`+`ILJTM` onto `positive`
+  and `sains_komputer`+`sains_sosial` onto `info` — distinct things rendered identically, with
+  nothing failing. `theme.test.ts` pins each palette by swatch and keeps the list closed.
+- Sponsor landing CTAs, its step numbers, the sign-up submit and the selected notify option are
+  **brand**, not `info` — pinned by name. Plain text links stay `info` (settled in F1).
+- The ceiling is **287** and covers exactly `ScholarshipDocuments.tsx`; a test asserts that.
+
+**▶ AT DEPLOY: push main (web build only).** No migrate-first, no env vars, no i18n keys. **Dark
+mode stays unreachable.** Nothing a visitor sees changes — F2a's page-ground shift was the last
+visible difference. Post-check: any page in light mode looks as before.
+
+**▶ ⚠ AN OWNER DECISION IS OWED BEFORE F7.** The category palettes (48 utilities) do not follow
+dark mode. Options: a fifth CATEGORICAL token family, neutral chips, or shipping those surfaces
+light. Sandbox surface `category-colours` shows the gap. See `docs/decisions.md`.
+
+**▶ NEXT = LAYER 1 F3** — student surfaces, 16 files including `ScholarshipDocuments.tsx` (287 raw
+colours, the single biggest file in the product). Then F4, F5, A1–A3, F6, F7. Run `sprint-start.md`.
+**Two checklist items for every repaint from here:** grep the surface for `bg-info-[567]00` beside
+`text-white` (a mis-classified CTA — three sprints, three finds) and for `Record<…, colour>` lookup
+tables (a category palette). **Worktree gotcha:** link `node_modules` by junction before trusting
+any gate; remove it with `rmdir`, never `rm -rf`.
+
+## Superseded — previous Next Sprint (as of 2026-08-31, after Layer 1 F2a)
 
 **✅ SHIPPED — LAYER 1 F2a.** Branch `feat/layer1-f2a-shared-components`. **NO migration. WEB ONLY —
 nothing in `halatuju_api` changed.** 34 files. Retro

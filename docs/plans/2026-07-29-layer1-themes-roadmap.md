@@ -134,6 +134,31 @@ only (`components/admin` is F4's and is deliberately NOT ratcheted — it is und
 work). Append F2b's files to `F2A_FILES` in `theme.test.ts` and drop the ceiling to zero.
 `ScholarshipDocuments.tsx` (293 utilities) stays with **F3**.
 
+#### ✅ F2b — SHIPPED 2026-08-31 (worktree `.worktrees/layer1-f2b`)
+
+Retro `docs/retrospective-2026-08-31-layer1-f2b-shared-components.md`; decision ×1; lessons ×3.
+NO migration. 29 files, jest **1507**. 20 components fully converted (273 utilities) + 4 converted
+in their GROUND only (81). Three more brand/tone corrections by hand (sponsor CTAs, step numbers,
+form submit, selected state). **`src/components` is now done except `ScholarshipDocuments.tsx`.**
+
+**▶ ⚠ AN OWNER DECISION IS NOW OWED, AND F7 IS BLOCKED ON IT.** Four files colour a CATEGORY, not
+a state — field of study, institution type, entry condition, occupation. The vocabulary has four
+tones and each asserts something, so a family rename would have put `poly`(emerald) and
+`ILJTM`(green) both on `positive`, and `sains_komputer`(blue) and `sains_sosial`(sky) both on
+`info`: **two pairs of distinct categories rendered identically, with nothing failing.** 48
+utilities are therefore still literal and do NOT follow dark mode. See `docs/decisions.md`; the
+sandbox surface **`category-colours`** shows the gap in dark. **Do not run F7 until this is
+answered** — the choice is a fifth categorical token family, neutral chips, or shipping those
+surfaces light.
+
+**▶ FOR F3:** the ceiling is **287** and now names exactly one file, `ScholarshipDocuments.tsx`
+(a test asserts the ceiling covers only it, so the number cannot drift into meaning something
+else). F3 takes it to zero and deletes the ceiling block.
+
+**▶ A CHECKLIST ITEM, not a discovery, from here on:** every repaint sprint greps its surface for
+`bg-info-[567]00` beside `text-white` (a mis-classified CTA) and for `Record<…, colour>` lookup
+tables (a category palette). Three sprints, three sets of CTA corrections.
+
 #### F2a / F2b — Shared components
 **Goal.** The 52 components everything else mounts, split into two reviewable halves (student-journey
 components first, the rest second).
