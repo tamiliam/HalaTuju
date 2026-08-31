@@ -187,6 +187,33 @@ components first, the rest second).
 **Acceptance.** Both modes correct on the sandbox; the tone codemod's output reviewed by hand, not
 trusted — 88% mechanical means 12% wrong. *medium ×2 (~26 files each).*
 
+#### ✅ F3 — SHIPPED 2026-08-31 (worktree `.worktrees/layer1-f3`)
+
+Retro `docs/retrospective-2026-08-31-layer1-f3-student-surfaces.md`; lessons ×2; one OPEN question.
+NO migration. 24 files, ~1205 utilities, jest **1515**.
+
+**▶ SCOPE WAS BIGGER THAN THE TABLE SAID** — the plan's "16 files" measured 2026-07-29; the real
+surface was 18 student files plus 3 app shells (`error`/`loading`/`not-found`, which carried the
+same hidden page ground). Re-derive at sprint start; the table ages.
+
+**▶ TWO MORE HIDING PLACES CLOSED.** `bg-[#f8fafc]` — an arbitrary-value CLASS setting the whole
+page ground, in six files, invisible to any guard that enumerates colour names — and raw hex in SVG
+`stroke`/`fill` PROPS, which were also a hardcoded blue that never followed a tenant's brand. Both
+now guarded. Running list of hiding places: inline styles/gradients (F1), the stylesheet's own
+layers and undeclared form controls (F2a), lookup tables of class strings (F2b), arbitrary-value
+classes and SVG props (F3). **Assume there is one more.**
+
+**▶ `graduated` resolved by WEIGHT, not a new token** — the set needed two "good" states; a fifth
+tone would have lied and a category swatch would have been wrong (it is a state). `on_track` stays
+tinted, `graduated` is filled.
+
+**▶ THE `src/components` CEILING IS RETIRED** — F3 converted its last file.
+
+**▶ ⚠ ONE OPEN QUESTION FOR F7** (see `docs/decisions.md`): `bg-primary-50`/`-100` used as a
+SURFACE (101 uses, 40 files) stays near-white in dark, because `--brand-*` has no dark variant by
+design. Readable, looks unfinished. Options: give the brand's PALE stops a dark treatment (needs
+the owner's ruling re-read), stop using brand tints as surfaces, or ship it. **Settle before F7.**
+
 #### F3 — Student surfaces
 **Scope.** 16 files, 234 chromatic and 636 ground; `ScholarshipDocuments.tsx` alone carries 126.
 **Acceptance.** The apply flow and Documents tab in both modes, on the sandbox, which already mounts

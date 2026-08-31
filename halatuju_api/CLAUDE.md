@@ -550,7 +550,41 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-08-31, after Layer 1 F2c — the category family)
+## Next Sprint (as of 2026-08-31, after Layer 1 F3 — the student surfaces)
+
+**✅ SHIPPED — LAYER 1 F3.** Branch `feat/layer1-f3-student-surfaces`. **NO migration. WEB ONLY.**
+24 files, ~1205 utilities. Retro `docs/retrospective-2026-08-31-layer1-f3-student-surfaces.md`;
+lessons ×2. jest 1509 → **1515**. pytest unchanged at 5677.
+
+**▶ WHAT SHIPPED, and the parts that must not be "tidied":**
+- Every student surface + `ScholarshipDocuments.tsx` (288 utilities) + the three app shells.
+- **`bg-[#f8fafc]` → `bg-ground-50`** in six files. An arbitrary-value CLASS is a hiding place: it
+  passes any guard that enumerates colour names. Guarded now by SHAPE (`-[#…]`).
+- **SVG `stroke`/`fill` hex → `rgb(var(--brand-500))` / `rgb(var(--ground-500))`.** Those icons
+  never followed a tenant's brand before; do not "simplify" them back to a literal.
+- **Onboarding progress steps are `primary`, not `info`** — same as `ProgressStepper` and the
+  sponsor landing. **`graduated` is `bg-positive-600` (filled)** against `on_track`'s tint: two
+  good states told apart by WEIGHT, not by a new hue. Both pinned by name.
+- The `src/components` ceiling block is DELETED — its last file is converted.
+
+**▶ AT DEPLOY: push main (web build only).** No migrate-first, no env vars, no i18n keys. **Dark
+mode stays unreachable.** Nothing a visitor sees changes.
+
+**▶ ⚠ ONE OPEN QUESTION, OWED BEFORE F7** (`docs/decisions.md`): `bg-primary-50`/`-100` used as a
+SURFACE (101 uses, 40 files) stays near-white in dark, because `--brand-*` has no dark variant by
+design (owner ruling: a theme may never write the brand). Readable, looks unfinished. Options:
+dark treatment for the brand's PALE stops only / stop using brand tints as surfaces / ship it.
+Recommendation: the first, scoped to `50`/`100`/`200`.
+
+**▶ NEXT = LAYER 1 F4** — the admin console excluding the cockpit (34 files, the largest chromatic
+count on the list). Then F5 (the cockpit, one file, 544 raw colours), A1–A3, F6, F7.
+**Checklist for every repaint:** hunt the hiding places FIRST (inline styles, the stylesheet's own
+layers, undeclared form controls, lookup tables of class strings, arbitrary-value classes, SVG
+props — and assume one more); grep for `bg-info-[567]00` beside `text-white`; re-derive the file
+list rather than trusting the roadmap's. **Worktree:** junction `node_modules` before any gate;
+remove with `rmdir`.
+
+## Superseded — previous Next Sprint (as of 2026-08-31, after Layer 1 F2c — the category family)
 
 **✅ SHIPPED — LAYER 1 F2c.** Branch `feat/layer1-f2c-category-colours`. **NO migration. WEB ONLY.**
 8 files. Retro `docs/retrospective-2026-08-31-layer1-f2c-category-colours.md`; decision ×1;

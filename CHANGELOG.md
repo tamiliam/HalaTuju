@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F3 — every student surface repainted - 2026-08-31
+
+**Sprint.** No migration. Web only, 24 files. Retro
+`docs/retrospective-2026-08-31-layer1-f3-student-surfaces.md`. jest 1509 → **1515**.
+**Dark mode stays unreachable.** Nothing a visitor sees changes.
+
+### Changed
+- **Every student surface on the theme tokens** — `src/app/scholarship/**`, `/profile`,
+  `/onboarding/**`, `/dashboard`, `/saved`, `/settings`, `/verify-email`, `/report`, plus
+  `ScholarshipDocuments.tsx` (288 utilities, the largest single file in the product). ~1205
+  utilities converted, every line reviewed after.
+- **`error.tsx`, `loading.tsx`, `not-found.tsx` included** — not in the roadmap's F3 list, but they
+  carried the same hidden page ground as the student pages and would have been a white flash in
+  dark mode at the exact moment something had already gone wrong.
+- **Two semantic corrections.** The onboarding progress steps are the BRAND, not the info tone —
+  the fourth sprint running that the codemod called a piece of product furniture "information", and
+  the shared `ProgressStepper` and the sponsor landing's step numbers were already `primary`.
+  And `graduated` is now `bg-positive-600` (filled) against `on_track`'s tint: the set needs two
+  good states a student can tell apart, so it is resolved by WEIGHT rather than by a fifth hue.
+
+### Fixed — two more places colour hides, neither reachable by a class scan
+- **`bg-[#f8fafc]` — an arbitrary-value class setting the whole page ground**, in six files. It
+  passes any check that looks for `bg-gray-50`, because it *is* a class and it is not on the list.
+  Now `bg-ground-50`.
+- **Raw hex in SVG `stroke`/`fill` props** (`onboarding/grades`, `onboarding/profile`). A React
+  prop, so no codemod over class names will ever touch it. They were also a **hardcoded blue** —
+  those icons never followed a tenant's brand, despite sitting inside `bg-primary-500` buttons.
+  They read `rgb(var(--brand-500))` / `rgb(var(--ground-500))` now, so they follow both.
+
+### Guards
+- `assertConverted` over F3 as a **directory walk**, not a hand-list, so a NEW page under any
+  student route fails the guard instead of being silently ignored.
+- Two new hiding-place guards: no arbitrary-value colour class, and no raw hex in an SVG attribute.
+- Both semantic corrections pinned by name.
+- **The `src/components` ceiling is retired** — F3 converted the last file it covered
+  (`ScholarshipDocuments.tsx`), so the ratchet has done its job and the block is deleted.
+- Bite-checked: four faults injected → six guards fired across four distinct describes.
+- Mid-session flip test passed: a half-typed field survives the mode change.
+
+### ⚠ RAISED, NOT FIXED — a pale brand tint used as a SURFACE stays light in dark mode
+`bg-primary-50` / `bg-primary-100` (101 uses across 40 files, product-wide) render as near-white
+patches on a dark page — the active step in the apply rail is the clearest example. It is readable
+(the text on it is `primary-700`), but it is the brightest thing on the screen. **This is
+structural, not an F3 bug:** `--brand-*` has no dark variant *by design* — the owner ruled that a
+theme may never write the tenant brand, and a test pins it. Resolving it needs a decision, the same
+shape as F2b's category question, and **F7 should not flip the switch until it is settled.**
+
 ## Layer 1 F2c — a category colour family, so dark mode is no longer blocked - 2026-08-31
 
 **Small sprint.** No migration. Web only, 8 files. Retro

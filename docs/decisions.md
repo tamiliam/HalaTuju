@@ -8012,3 +8012,33 @@ colours is not tellable apart anyway). Values are hand-maintained per mode, not 
 
 **Revisit if:** a set outgrows eight; a third mode arrives; or tenants ask to brand these, which
 needs a picker that can enforce mutual distinctness.
+
+## OPEN — a pale brand tint used as a SURFACE has no dark counterpart — raised Layer 1 F3, 2026-08-31
+
+**Not a decision: a question, recorded so it is not rediscovered from scratch.**
+
+**What:** `bg-primary-50` / `bg-primary-100` (**101 uses across 40 files**) render as near-white
+patches on a dark page. The clearest example is the active step in the apply rail. The text on them
+is `primary-700`, so they are perfectly readable — they are simply the brightest thing on a dark
+screen, which reads as a mistake even though nothing is broken.
+
+**Why it happens, and why it is not a bug to fix quietly:** `--brand-*` has no dark variant **by
+design**. The owner ruled on 2026-07-29 that *a theme may never write the tenant brand* — switching
+to dark must not change whose product you are looking at — and `theme.test.ts` pins it. So the pale
+stops of the brand ramp stay pale in dark mode, necessarily.
+
+**The options, none of them free:**
+1. **Give the brand's PALE stops a dark treatment** (`50`/`100`/`200` only, derived from the
+   tenant's hue), leaving `500`–`900` — the identity stops — untouched. Needs the guard relaxed
+   from "a theme may never write `--brand-*`" to "a theme may never change the brand's identity",
+   which is a re-reading of the ruling and therefore the owner's call, not mine.
+2. **Stop using a brand tint as a surface** — replace those 101 uses with a ground surface plus a
+   brand border or text accent. No ruling to revisit, but it is 40 files and it visibly reduces how
+   much of a tenant's colour reaches the product.
+3. **Ship it.** Readable, and it looks unfinished.
+
+**Recommendation:** option 1, scoped strictly to the pale stops.
+
+**Revisit if:** — the trigger — **before F7**, alongside anything else the flip surfaces. Same
+shape as F2b's category question, which took one small sprint (F2c) once answered.
+
