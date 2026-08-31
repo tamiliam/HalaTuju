@@ -231,15 +231,17 @@ export const SURFACES: Surface[] = [
   },
   {
     slug: 'category-colours',
-    title: '⚠ Category colours — the open question',
+    title: 'Category colours — the fifth family',
     note:
-      'THIS SURFACE EXISTS TO BE DECIDED ON, not signed off. Every colour here identifies a '
-      + 'CATEGORY — a field of study, an institution type, an entry condition — and its only job '
-      + 'is to differ from its neighbours. The theme has four tones, all of which mean something '
-      + '(good / info / caution / bad), so these could not be converted without either collapsing '
-      + 'two categories into one colour or claiming that "Science" is a success and "female '
-      + 'applicants only" is an error. They are therefore still literal, and they DO NOT follow '
-      + 'dark mode: switch to dark and they stay light — that is the gap, shown deliberately.',
+      'Every colour here identifies a CATEGORY — a field of study, an institution type, an entry '
+      + 'condition — and its only job is to differ from its neighbours. F2b could not convert them: '
+      + 'the four tones each mean something, so a family rename collapsed two institution types '
+      + 'onto one colour and claimed "Science" is a success. F2c added an eighth-swatch CATEGORY '
+      + 'family instead (owner decision), three roles each — surface, ink, dot — with dark as a '
+      + 'ROLE SWAP rather than a mirror, so a chip stays a chip. Check both modes: all seven '
+      + 'conditions and all six badges must stay tellable apart in each. Two pairs that were '
+      + 'ALREADY identical before any of this (ua/pismp, and no-colourblindness/no-disability) are '
+      + 'fixed here. The merit dot stays a TONE — it is a state, not a category.',
     render: () => <CategoryColours />,
   },
   {
