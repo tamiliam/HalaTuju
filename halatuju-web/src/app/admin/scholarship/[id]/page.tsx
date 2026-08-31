@@ -182,12 +182,12 @@ const SHOW_REFEREES = false
 function Field({ label, value, verifiedLabel, note, noteTone = 'amber' }: { label: string; value: ReactNode; verifiedLabel?: string; note?: string; noteTone?: 'amber' | 'muted' }) {
   return (
     <div>
-      <dt className="text-xs text-gray-400 uppercase tracking-wider">{label}</dt>
-      <dd className="text-sm text-gray-800 break-words">
+      <dt className="text-xs text-ground-400 uppercase tracking-wider">{label}</dt>
+      <dd className="text-sm text-ground-800 break-words">
         {value === null || value === undefined || value === '' ? '—' : value}
         {verifiedLabel && <VerifiedTick label={verifiedLabel} />}
       </dd>
-      {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-gray-400' : 'text-amber-600'}`}>{note}</p>}
+      {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-ground-400' : 'text-caution-600'}`}>{note}</p>}
     </div>
   )
 }
@@ -209,12 +209,12 @@ function QcOverrideNote({ app, t }: { app: AdminScholarshipDetail; t: (k: string
   const who = app.qc_override_by_name || app.qc_override_by || '—'
   const when = app.qc_override_at ? ` · ${formatDate(app.qc_override_at)}` : ''
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-      <p className="text-xs font-medium text-amber-900">
+    <div className="rounded-lg border border-caution-200 bg-caution-50 px-3 py-2">
+      <p className="text-xs font-medium text-caution-900">
         {t('admin.scholarship.qcOverride.title')} {who}{when}
       </p>
       {(app.qc_override_reason || '').trim() && (
-        <p className="mt-1 whitespace-pre-line text-xs text-amber-800">{app.qc_override_reason}</p>
+        <p className="mt-1 whitespace-pre-line text-xs text-caution-800">{app.qc_override_reason}</p>
       )}
     </div>
   )
@@ -222,8 +222,8 @@ function QcOverrideNote({ app, t }: { app: AdminScholarshipDetail; t: (k: string
 
 function Card({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ${className}`}>
-      <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{title}</h2>
+    <div className={`rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm ${className}`}>
+      <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-ground-400">{title}</h2>
       {children}
     </div>
   )
@@ -231,7 +231,7 @@ function Card({ title, children, className = '' }: { title: string; children: Re
 
 /** Section heading for a group of panels (e.g. "Review & actions"). */
 function GroupLabel({ children }: { children: ReactNode }) {
-  return <h2 className="mb-2 mt-2 text-xs font-semibold uppercase tracking-wider text-gray-500">{children}</h2>
+  return <h2 className="mb-2 mt-2 text-xs font-semibold uppercase tracking-wider text-ground-500">{children}</h2>
 }
 
 const yn = (v: boolean | null | undefined) => (v === true ? 'Yes' : v === false ? 'No' : '—')
@@ -240,13 +240,13 @@ const joinOr = (a?: string[] | null) => (a && a.length ? a.join(', ') : '—')
 /** Grade dict → readable chips (subject key uppercased · grade). */
 function Grades({ grades, trailing }: { grades?: Record<string, string> | null; trailing?: ReactNode }) {
   const entries = Object.entries(grades || {}).filter(([, g]) => g)
-  if (!entries.length) return <span className="text-gray-400 text-sm">—</span>
+  if (!entries.length) return <span className="text-ground-400 text-sm">—</span>
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {entries.map(([k, g]) => (
-        <span key={k} className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs">
-          <span className="text-gray-500 uppercase">{k.replace(/_/g, ' ')}</span>
-          <span className="font-semibold text-gray-800">{g}</span>
+        <span key={k} className="inline-flex items-center gap-1 rounded-md bg-ground-100 px-2 py-0.5 text-xs">
+          <span className="text-ground-500 uppercase">{k.replace(/_/g, ' ')}</span>
+          <span className="font-semibold text-ground-800">{g}</span>
         </span>
       ))}
       {trailing}
@@ -901,8 +901,8 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.visionError')) } finally { setBusy('') }
   }
 
-  if (error && !app) return <div className="text-red-600 mt-8">{error}</div>
-  if (!app) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
+  if (error && !app) return <div className="text-critical-600 mt-8">{error}</div>
+  if (!app) return <div className="text-center text-ground-500 mt-8">{t('common.loading')}</div>
 
   // Field-level "verified" ticks — a small badge beside a value that MATCHES an uploaded,
   // machine-read document (see lib/fieldVerification). vtip() → the hover tooltip naming the source
@@ -1031,26 +1031,26 @@ export default function AdminScholarshipDetailPage() {
     <div className="mx-auto max-w-6xl space-y-4 pb-10">
       <DocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />
       {/* Header — applicant identity, status, and key facts at a glance */}
-      <header className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <header className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
         <div className="flex items-center justify-between">
-          <Link href="/admin/scholarship" className="text-xs text-gray-400 hover:text-gray-600">‹ {t('admin.scholarship.back')}</Link>
+          <Link href="/admin/scholarship" className="text-xs text-ground-400 hover:text-ground-600">‹ {t('admin.scholarship.back')}</Link>
           {(prevId != null || nextId != null) && (
             <div className="flex items-center gap-1 text-xs">
               {prevId != null ? (
-                <Link href={`/admin/scholarship/${prevId}`} className="rounded px-2 py-1 font-medium text-gray-600 hover:bg-gray-100">‹ {t('admin.scholarship.prev')}</Link>
+                <Link href={`/admin/scholarship/${prevId}`} className="rounded px-2 py-1 font-medium text-ground-600 hover:bg-ground-100">‹ {t('admin.scholarship.prev')}</Link>
               ) : (
-                <span className="rounded px-2 py-1 text-gray-300">‹ {t('admin.scholarship.prev')}</span>
+                <span className="rounded px-2 py-1 text-ground-300">‹ {t('admin.scholarship.prev')}</span>
               )}
               {nextId != null ? (
-                <Link href={`/admin/scholarship/${nextId}`} className="rounded px-2 py-1 font-medium text-gray-600 hover:bg-gray-100">{t('admin.scholarship.next')} ›</Link>
+                <Link href={`/admin/scholarship/${nextId}`} className="rounded px-2 py-1 font-medium text-ground-600 hover:bg-ground-100">{t('admin.scholarship.next')} ›</Link>
               ) : (
-                <span className="rounded px-2 py-1 text-gray-300">{t('admin.scholarship.next')} ›</span>
+                <span className="rounded px-2 py-1 text-ground-300">{t('admin.scholarship.next')} ›</span>
               )}
             </div>
           )}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}{vtip('name') && <VerifiedTick label={vtip('name')!} />}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-ground-900 sm:text-2xl">{app.name || '—'}{vtip('name') && <VerifiedTick label={vtip('name')!} />}</h1>
           {/* Status pill — a super-reopened decision shows "Reopened" (overrides accepted/rejected). */}
           {(() => {
             const s = displayStatus(app)
@@ -1071,23 +1071,23 @@ export default function AdminScholarshipDetailPage() {
             </button>
           )}
           {app.status === 'rejected' && app.rejection_category && (
-            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+            <span className="rounded-full bg-critical-100 px-2.5 py-0.5 text-xs font-semibold text-critical-700">
               {t(`admin.scholarship.reject.category.${app.rejection_category}`)}
             </span>
           )}
           {app.bucket && (
-            <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-100 px-1.5 text-xs font-bold text-amber-700">{app.bucket}</span>
+            <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-caution-100 px-1.5 text-xs font-bold text-caution-700">{app.bucket}</span>
           )}
           {app.qualification && (
-            <span className="rounded-full border border-gray-200 px-2 py-0.5 text-xs font-medium text-gray-500">{app.qualification.toUpperCase()}</span>
+            <span className="rounded-full border border-ground-200 px-2 py-0.5 text-xs font-medium text-ground-500">{app.qualification.toUpperCase()}</span>
           )}
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-          <span>NRIC <span className="font-mono text-gray-700">{formatNric(app.nric || '') || '—'}</span>{vtip('nric') && <VerifiedTick label={vtip('nric')!} />}</span>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ground-500">
+          <span>NRIC <span className="font-mono text-ground-700">{formatNric(app.nric || '') || '—'}</span>{vtip('nric') && <VerifiedTick label={vtip('nric')!} />}</span>
           {referralAcronym(app.referral_source) && (
             <span
               title={app.referral_source ? t(`scholarship.apply.org.${app.referral_source}`) : ''}
-              className="rounded-full border border-gray-200 px-2 py-0.5 font-medium text-gray-600"
+              className="rounded-full border border-ground-200 px-2 py-0.5 font-medium text-ground-600"
             >
               {referralAcronym(app.referral_source)}
             </span>
@@ -1101,7 +1101,7 @@ export default function AdminScholarshipDetailPage() {
               return timeline.map((step) => (
                 <span key={step.labelKey}>
                   {t(`admin.scholarship.statuses.${step.labelKey}`)}{' '}
-                  <span className="text-gray-700">{step.at ? formatDate(step.at) : '—'}</span>
+                  <span className="text-ground-700">{step.at ? formatDate(step.at) : '—'}</span>
                 </span>
               ))
             }
@@ -1113,7 +1113,7 @@ export default function AdminScholarshipDetailPage() {
                 {app.profile_completed_at && (
                   <span>{t('admin.scholarship.applied')} {formatDate(app.profile_completed_at)}</span>
                 )}
-                <span>{t('admin.scholarship.assigned')} <span className="text-gray-700">{app.assigned_to_name || '—'}</span></span>
+                <span>{t('admin.scholarship.assigned')} <span className="text-ground-700">{app.assigned_to_name || '—'}</span></span>
               </>
             )
           })()}
@@ -1123,27 +1123,27 @@ export default function AdminScholarshipDetailPage() {
       {/* Cool-off (#13/#14): a decision recorded but held silently — the student sees nothing
           until the reveal date, so it can be cancelled/held in the window. Admin-only. */}
       {app.decline_due_at && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm text-amber-800">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution-200 bg-caution-50 px-4 py-3">
+          <p className="text-sm text-caution-800">
             ⏳ {t('admin.scholarship.cooloff.declineScheduled')}{' '}
             <strong>{formatDate(app.decline_due_at)}</strong>.{' '}
             {t('admin.scholarship.cooloff.silentNote')}
           </p>
           <button onClick={doCancelDecline} disabled={busy === 'cooloff'}
-            className="whitespace-nowrap rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+            className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50">
             {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.cancelDecline')}
           </button>
         </div>
       )}
       {app.award_due_at && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm text-amber-800">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-caution-200 bg-caution-50 px-4 py-3">
+          <p className="text-sm text-caution-800">
             ⏳ {t('admin.scholarship.cooloff.awardScheduled')}{' '}
             <strong>{formatDate(app.award_due_at)}</strong>.{' '}
             {t('admin.scholarship.cooloff.silentNote')}
           </p>
           <button onClick={doHoldAward} disabled={busy === 'cooloff'}
-            className="whitespace-nowrap rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+            className="whitespace-nowrap rounded-lg border border-caution-300 bg-ground-0 px-3 py-1.5 text-sm font-medium text-caution-800 hover:bg-caution-100 disabled:opacity-50">
             {busy === 'cooloff' ? '…' : t('admin.scholarship.cooloff.holdAward')}
           </button>
         </div>
@@ -1274,7 +1274,7 @@ export default function AdminScholarshipDetailPage() {
                     return (
                       <>
                         {app.merit_score}{' '}
-                        <span className={sy.status === 'off' ? 'text-amber-600' : 'text-gray-500'}>
+                        <span className={sy.status === 'off' ? 'text-caution-600' : 'text-ground-500'}>
                           ({t('admin.scholarship.docsDrawer.examYear', { year: sy.year })})
                         </span>
                       </>
@@ -1283,7 +1283,7 @@ export default function AdminScholarshipDetailPage() {
                   {isStpm && <Field label="MUET" value={app.muet_band} />}
                 </dl>
                 <div className="mt-3">
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                  <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">
                     {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
                   </dt>
                   {/* The tick renders AFTER the subject chips (item 1). It verifies the SPM slip
@@ -1296,7 +1296,7 @@ export default function AdminScholarshipDetailPage() {
                   />
                   {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
                     <div className="mt-2">
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.spmPrereq')}</dt>
+                      <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('admin.scholarship.spmPrereq')}</dt>
                       <Grades grades={app.spm_prereq_grades} />
                     </div>
                   )}
@@ -1305,7 +1305,7 @@ export default function AdminScholarshipDetailPage() {
                 {/* Plans — chosen programme/pathway nested into Academic (no sub-label;
                     the divider sets it off). The free-text memos live in Student's note. */}
                 {hasPlans && (
-                  <div className="mt-4 border-t border-gray-100 pt-3">
+                  <div className="mt-4 border-t border-ground-100 pt-3">
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                       {/* Unified across ALL pathways (owner 2026-07-17): Chosen Programme (linked to
                           its course / pathway page) · Institution · Reporting Date. Replaces the old
@@ -1333,7 +1333,7 @@ export default function AdminScholarshipDetailPage() {
                             value={
                               <>
                                 {courseLink(cid, name)}
-                                {suffix && <span className="text-gray-400"> · {suffix}</span>}
+                                {suffix && <span className="text-ground-400"> · {suffix}</span>}
                               </>
                             }
                             verifiedLabel={vtip('chosenProgramme')}
@@ -1353,8 +1353,8 @@ export default function AdminScholarshipDetailPage() {
                     </dl>
                     {app.top_choices?.length > 0 && (
                       <div className="mt-3">
-                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
-                        <ol className="list-decimal ml-5 text-sm text-gray-800">
+                        <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
+                        <ol className="list-decimal ml-5 text-sm text-ground-800">
                           {app.top_choices.map((c) => <li key={c.rank}>{courseLink(c.course_id, c.course_name)}{c.institution ? ` — ${c.institution}` : ''}</li>)}
                         </ol>
                       </div>
@@ -1405,11 +1405,11 @@ export default function AdminScholarshipDetailPage() {
       <div className="space-y-4 min-w-0">
 
       {/* ── Verification verdict — four horizontal tiles ───────────────────────── */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.verdict.title')}</h2>
-            <p className="text-xs text-gray-500">{t('admin.scholarship.verdict.intro')}</p>
+            <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.verdict.title')}</h2>
+            <p className="text-xs text-ground-500">{t('admin.scholarship.verdict.intro')}</p>
           </div>
         </div>
         {/* Horizontal tile row */}
@@ -1417,22 +1417,22 @@ export default function AdminScholarshipDetailPage() {
           {(app.verdict || []).map((f) => {
             const tone = factTileTone(f)
             const tileColour = {
-              green: 'border-green-200 bg-green-50',
-              amber: 'border-amber-200 bg-amber-50',
+              green: 'border-positive-200 bg-positive-50',
+              amber: 'border-caution-200 bg-caution-50',
               blue: 'border-primary-200 bg-primary-50',
-              red: 'border-red-200 bg-red-50',
+              red: 'border-critical-200 bg-critical-50',
             }[tone]
             const dotColour = {
-              green: 'bg-green-500',
-              amber: 'bg-amber-500',
+              green: 'bg-positive-500',
+              amber: 'bg-caution-500',
               blue: 'bg-primary-500',
-              red: 'bg-red-500',
+              red: 'bg-critical-500',
             }[tone]
             const labelColour = {
-              green: 'text-green-700',
-              amber: 'text-amber-700',
+              green: 'text-positive-700',
+              amber: 'text-caution-700',
               blue: 'text-primary-700',
-              red: 'text-red-700',
+              red: 'text-critical-700',
             }[tone]
             // Subtitle: first evidence item text, or first unresolved item text.
             const resolve = (it: AdminVerdictItem) =>
@@ -1454,7 +1454,7 @@ export default function AdminScholarshipDetailPage() {
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
                   {isGreen && (
-                    <span className="ml-auto shrink-0 text-green-600 text-sm font-bold"
+                    <span className="ml-auto shrink-0 text-positive-600 text-sm font-bold"
                       aria-label={t('admin.scholarship.verdict.status.verified')}>✓</span>
                   )}
                 </div>
@@ -1463,21 +1463,21 @@ export default function AdminScholarshipDetailPage() {
                   {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tone]}`)}
                 </p>
                 {!isGreen && (
-                  <p className="text-[11px] text-gray-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
+                  <p className="text-[11px] text-ground-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
                 )}
               </div>
             )
           })}
           {(app.verdict || []).length === 0 && (
-            <p className="col-span-4 text-sm text-gray-400 italic">{t('admin.scholarship.none')}</p>
+            <p className="col-span-4 text-sm text-ground-400 italic">{t('admin.scholarship.none')}</p>
           )}
         </div>
         {/* Legend — the confidence scale the tile colours encode (green→red). */}
         {(app.verdict || []).length > 0 && (
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-400">
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-ground-400">
             {(['green', 'blue', 'amber', 'red'] as const).map((tn) => (
               <span key={tn} className="flex items-center gap-1">
-                <span className={`h-2 w-2 rounded-full ${ {green:'bg-green-500',blue:'bg-primary-500',amber:'bg-amber-500',red:'bg-red-500'}[tn] }`} aria-hidden />
+                <span className={`h-2 w-2 rounded-full ${ {green:'bg-positive-500',blue:'bg-primary-500',amber:'bg-caution-500',red:'bg-critical-500'}[tn] }`} aria-hidden />
                 {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tn]}`)}
               </span>
             ))}
@@ -1506,37 +1506,43 @@ export default function AdminScholarshipDetailPage() {
           )
         })()}
         {/* Check-2 case summary — the LLM briefing that "talks to the reviewer" (dark-flag aware;
-            empty when every fact is Certain). Sits above the checklist, which is the audit trail. */}
+            empty when every fact is Certain). Sits above the checklist, which is the audit trail.
+
+            INFO, not a category swatch (Layer 1 F5). The indigo here was picked to say "a model
+            wrote this, not a person" — but that is what the panel's own heading says, and the
+            panel's JOB is to inform the reviewer. A category colour would have made provenance a
+            decorative property of a block of prose. The capture chips further down ARE a category
+            (deterministic vs model-derived) and do take a swatch. */}
         {caseSummary?.enabled && (caseSummary.summary || '').trim() && (
-          <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3 text-sm text-gray-700">
+          <div className="mt-3 rounded-lg border border-info-100 bg-info-50/60 p-3 text-sm text-ground-700">
             {caseSummary.summary}
           </div>
         )}
         {/* Expanded evidence / unresolved — shown ONLY for facts that still need attention.
             A green fact is hidden here (its tile tick is the whole story). */}
         {(app.verdict || []).some((f) => factTileTone(f) !== 'green' && (f.evidence.length > 1 || f.unresolved.length > 0)) && (
-          <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+          <div className="mt-3 space-y-2 border-t border-ground-100 pt-3">
             {(app.verdict || []).map((f) => {
               const resolve = (it: AdminVerdictItem) =>
                 t(`admin.scholarship.verdict.item.${verdictItemKey(it)}`,
                   localiseParams(it.params, t))
               if (factTileTone(f) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
               return (
-                <div key={`detail-${f.fact}`} className="text-xs text-gray-600">
-                  <span className="font-medium text-gray-500 uppercase text-[10px] tracking-wide">
+                <div key={`detail-${f.fact}`} className="text-xs text-ground-600">
+                  <span className="font-medium text-ground-500 uppercase text-[10px] tracking-wide">
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
                   {/* Findings first (the active reasoning — e.g. the STR verdict leads the
                       income story), then the supporting confirmations. */}
                   {f.unresolved.map((it, i) => (
                     <div key={`u${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
-                      <span className="text-amber-600 shrink-0">•</span>
+                      <span className="text-caution-600 shrink-0">•</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
                   {f.evidence.slice(1).map((it, i) => (
                     <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
-                      <span className="text-green-600 shrink-0">✓</span>
+                      <span className="text-positive-600 shrink-0">✓</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
@@ -1556,13 +1562,13 @@ export default function AdminScholarshipDetailPage() {
         decisionReopened,
         hasProfile: !!(profile?.final_markdown || profile?.current_markdown),
       }) && (
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t(profile?.final_markdown ? 'admin.scholarship.profileFinalTitle' : 'admin.scholarship.profileTitle')}
           </h2>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500">{t('admin.scholarship.genLang')}</label>
+            <label className="text-xs text-ground-500">{t('admin.scholarship.genLang')}</label>
             <select value={genLang} onChange={(e) => setGenLang(e.target.value)} disabled={!!busy}
               className="border rounded-lg px-2 py-1 text-sm">
               <option value="en">English</option>
@@ -1577,20 +1583,20 @@ export default function AdminScholarshipDetailPage() {
         </div>
 
         {!profile || !(profile.final_markdown || profile.current_markdown) ? (
-          <p className="text-sm text-gray-400">{t('admin.scholarship.profilePending')}</p>
+          <p className="text-sm text-ground-400">{t('admin.scholarship.profilePending')}</p>
         ) : (
           <>
-            <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
+            <div className="whitespace-pre-wrap text-sm leading-relaxed text-ground-800">
               {profile.final_markdown || profile.current_markdown}
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-ground-400">
               {profile.final_markdown
                 ? `${t('admin.scholarship.finalProfile.title')} · ${profile.final_model_used || '—'}`
                 : `${t('admin.scholarship.model')}: ${profile.model_used || '—'}`}
             </p>
           </>
         )}
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-critical-600 text-sm">{error}</p>}
       </div>
       )}
 
@@ -1621,22 +1627,22 @@ export default function AdminScholarshipDetailPage() {
           </button>
           {showOwnWords && (
             /* One box, three labelled sections (note · story · funding), split by hairlines. */
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm divide-y divide-gray-100">
+            <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm divide-y divide-ground-100">
               {/* Student's note — both free-text memos, each question labelled. */}
               {(app.uncertainty_note || app.anything_else) && (
                 <div className="py-4 first:pt-0 last:pb-0">
-                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.scholarship.studentNote')}</h3>
+                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.scholarship.studentNote')}</h3>
                   <div className="space-y-3">
                     {app.uncertainty_note && (
                       <div>
-                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
+                        <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
+                        <p className="text-sm text-ground-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
                       </div>
                     )}
                     {app.anything_else && (
                       <div>
-                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
+                        <dt className="text-xs text-ground-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
+                        <p className="text-sm text-ground-800 whitespace-pre-wrap">{app.anything_else}</p>
                       </div>
                     )}
                   </div>
@@ -1646,7 +1652,7 @@ export default function AdminScholarshipDetailPage() {
               {/* Student's Story — post-shortlist; hidden until the student fills it */}
               {hasStory && (
                 <div className="py-4 first:pt-0 last:pb-0">
-                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.scholarship.sec.story')}</h3>
+                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.scholarship.sec.story')}</h3>
                   <div className="space-y-2">
                     <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
                     <Field label={t('admin.scholarship.plans')} value={app.plans} />
@@ -1670,7 +1676,7 @@ export default function AdminScholarshipDetailPage() {
               {/* Funding — hidden when empty */}
               {app.funding_need && (
                 <div className="py-4 first:pt-0 last:pb-0">
-                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{t('admin.scholarship.sec.funding')}</h3>
+                  <h3 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.scholarship.sec.funding')}</h3>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
                     <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
                     <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
@@ -1691,16 +1697,16 @@ export default function AdminScholarshipDetailPage() {
       {showsCheck2Box({
         status: app.status, decisionReopened, hasItems: (app.resolution_items?.length ?? 0) > 0,
       }) && (
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.outstanding.title')}</h2>
-            <p className="text-xs text-gray-500">{t('admin.scholarship.outstanding.subtitle')}</p>
+            <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.outstanding.title')}</h2>
+            <p className="text-xs text-ground-500">{t('admin.scholarship.outstanding.subtitle')}</p>
           </div>
           {(() => {
             const n = app.resolution_items?.length ?? 0
             return n > 0 ? (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-caution-100 text-caution-700">
                 {n} {n === 1 ? t('admin.scholarship.outstanding.itemOne') : t('admin.scholarship.outstanding.itemMany')}
               </span>
             ) : null
@@ -1709,7 +1715,7 @@ export default function AdminScholarshipDetailPage() {
         {/* The REASON, not just the fact: this line used to assert "the interview is concluded"
             on cases that never held one (the lock also fires on a terminal status). */}
         {queryingLocked && lockReason && (
-          <p className="rounded-md bg-gray-100 px-3 py-2 text-xs text-gray-500">
+          <p className="rounded-md bg-ground-100 px-3 py-2 text-xs text-ground-500">
             {t(lockReason === 'interview'
               ? 'admin.scholarship.outstanding.locked'
               : 'admin.scholarship.outstanding.lockedClosed')}
@@ -1718,14 +1724,14 @@ export default function AdminScholarshipDetailPage() {
         {/* V3 (#7): a higher-priority query crowded out by the clarify cap stays visible here,
             so a capped-out gap isn't silently dropped. */}
         {(app.query_sla?.clarify_overflow ?? 0) > 0 && (
-          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <p className="rounded-md bg-caution-50 px-3 py-2 text-xs text-caution-700">
             {t('admin.scholarship.outstanding.overflow', { n: String(app.query_sla.clarify_overflow) })}
           </p>
         )}
         {(() => {
           const caveats: AdminResolutionItem[] = app.resolution_items ?? []
           if (caveats.length === 0) {
-            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.outstanding.empty')}</p>
+            return <p className="text-sm text-ground-400 italic">{t('admin.scholarship.outstanding.empty')}</p>
           }
           return (
                   <ul className="space-y-2">
@@ -1750,24 +1756,24 @@ export default function AdminScholarshipDetailPage() {
                         }
                       }
                       return (
-                        <li key={item.id} className="flex items-start gap-2.5 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                        <li key={item.id} className="flex items-start gap-2.5 rounded-lg border border-ground-100 bg-ground-50 p-3">
                           {answered ? (
-                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                             </svg>
                           ) : (
-                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Awaiting student">
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-caution-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Awaiting student">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
                             </svg>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 break-words">
+                            <p className="text-sm text-ground-800 break-words">
                               {/* A document request is a task ("Upload"), not a "Question" — label by kind. */}
                               <span className="font-semibold">{item.kind === 'doc' ? t('admin.scholarship.outstanding.uploadLabel') : t('admin.scholarship.outstanding.questionLabel')}:</span> {question}
                               {' '}
-                              <span className="ml-0.5 rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.fact}</span>
+                              <span className="ml-0.5 rounded bg-ground-200 px-1.5 py-0.5 text-[11px] text-ground-500 align-middle">{item.fact}</span>
                               {' '}
-                              <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 align-middle">{item.kind}</span>
+                              <span className="rounded bg-ground-200 px-1.5 py-0.5 text-[11px] text-ground-500 align-middle">{item.kind}</span>
                               {/* Circuit-breaker (Phase 2/4): the student re-uploaded past the limit
                                   without a usable doc — the loop was stopped and their best copy kept
                                   live. A HOLD for a human, not an auto-resolve. */}
@@ -1776,7 +1782,11 @@ export default function AdminScholarshipDetailPage() {
                                   {' '}
                                   <span
                                     title={t('admin.scholarship.outstanding.holdTip')}
-                                    className="rounded bg-orange-100 px-1.5 py-0.5 text-[11px] font-semibold text-orange-700 align-middle"
+                                    // A HOLD, filled — the same treatment `suspended` got in F4.
+                                    // It is caution at weight, not a fifth hue: the loop was
+                                    // stopped and a human has to look, so it should not read as a
+                                    // quiet neighbour of the grey `kind` chip beside it.
+                                    className="rounded bg-caution-600 px-1.5 py-0.5 text-[11px] font-semibold text-white align-middle"
                                   >
                                     {t('admin.scholarship.outstanding.hold')}
                                   </span>
@@ -1784,14 +1794,14 @@ export default function AdminScholarshipDetailPage() {
                               )}
                             </p>
                             {detail && (
-                              <p className="mt-1 text-xs text-gray-500 break-words">{detail}</p>
+                              <p className="mt-1 text-xs text-ground-500 break-words">{detail}</p>
                             )}
                             {answered && item.resolution_text && (
                               <div className="mt-2 rounded-md border border-primary-100 bg-primary-50 p-2">
                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-700">
                                   {t('admin.scholarship.caveats.studentAnswer')}
                                 </p>
-                                <p className="mt-0.5 text-sm text-gray-800 break-words">{item.resolution_text}</p>
+                                <p className="mt-0.5 text-sm text-ground-800 break-words">{item.resolution_text}</p>
                               </div>
                             )}
                           </div>
@@ -1804,7 +1814,7 @@ export default function AdminScholarshipDetailPage() {
                               <button
                                 onClick={() => doActionResolution(item.id, 'waive')}
                                 disabled={!!busy}
-                                className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                                className="rounded border border-ground-300 px-2 py-1 text-xs text-ground-600 hover:border-critical-300 hover:bg-critical-50 hover:text-critical-700 disabled:opacity-50"
                               >
                                 {t('admin.scholarship.caveats.delete')}
                               </button>
@@ -1820,10 +1830,10 @@ export default function AdminScholarshipDetailPage() {
             Two roles: (1) raise a query, (2) request a document. Each adds a to-do to the
             student's Action Centre (they're notified there — no separate per-item email). */}
         {canWrite && !queryingLocked && (
-          <div className="border-t border-gray-200 pt-3 mt-1 space-y-3">
-            <p className="text-xs text-gray-500">{t('admin.scholarship.raiseSectionHint')}</p>
+          <div className="border-t border-ground-200 pt-3 mt-1 space-y-3">
+            <p className="text-xs text-ground-500">{t('admin.scholarship.raiseSectionHint')}</p>
             <div className="space-y-1.5">
-              <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.raiseQueryTitle')}</p>
+              <p className="text-xs font-medium text-ground-600">{t('admin.scholarship.raiseQueryTitle')}</p>
               <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
                 placeholder={t('admin.scholarship.raiseQueryPlaceholder')}
                 className="w-full border rounded-lg px-3 py-2 text-sm" />
@@ -1832,8 +1842,8 @@ export default function AdminScholarshipDetailPage() {
                 {busy === 'raise' ? t('common.loading') : t('admin.scholarship.raiseQuerySend')}
               </button>
             </div>
-            <div className="space-y-1.5 border-t border-gray-100 pt-3">
-              <p className="text-xs font-medium text-gray-600">{t('admin.scholarship.requestDocTitle')}</p>
+            <div className="space-y-1.5 border-t border-ground-100 pt-3">
+              <p className="text-xs font-medium text-ground-600">{t('admin.scholarship.requestDocTitle')}</p>
               {(() => {
                 const cat = REQ_CAT.get(reqCategory)
                 return (
@@ -1890,10 +1900,10 @@ export default function AdminScholarshipDetailPage() {
       {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
            stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}
       {SHOW_REFEREES && (
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
         <h3 className="font-semibold text-sm mb-1">{t('admin.scholarship.referees')}</h3>
-        <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
-        <ul className="text-sm text-gray-600 space-y-1">
+        <p className="text-xs text-ground-400 mb-2">{t('admin.scholarship.refHint')}</p>
+        <ul className="text-sm text-ground-600 space-y-1">
           {app.referees.map((r) => (
             <li key={r.id} className="flex items-start justify-between gap-2">
               <span>
@@ -1901,12 +1911,12 @@ export default function AdminScholarshipDetailPage() {
                 {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
               </span>
               <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
-                className="text-red-500 hover:underline text-xs shrink-0 disabled:opacity-50">
+                className="text-critical-500 hover:underline text-xs shrink-0 disabled:opacity-50">
                 {t('admin.scholarship.refRemove')}
               </button>
             </li>
           ))}
-          {app.referees.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
+          {app.referees.length === 0 && <li className="text-ground-400">{t('admin.scholarship.none')}</li>}
         </ul>
         {/* Add referee (coordinator records it at verify-&-accept) */}
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1944,10 +1954,10 @@ export default function AdminScholarshipDetailPage() {
       {showsInterviewStage({
         status: app.status, decisionReopened, hasInterviewSession: !!app.interview_session,
       }) && (
-      <div id="interview-section" className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+      <div id="interview-section" className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.interview.title')}</h2>
+            <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.interview.title')}</h2>
           </div>
           {interviewLocked
             ? (canWrite && !decisionRecorded && (
@@ -1955,7 +1965,7 @@ export default function AdminScholarshipDetailPage() {
                    (reopens this box AND Check 2; Approve/Decline switch off until re-submitted).
                    Post-decision, the Decision panel's Reopen is used instead. */
                 <button onClick={doReopenInterview} disabled={!!busy}
-                  className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50">
+                  className="rounded-lg border border-ground-300 px-2.5 py-1 text-xs text-ground-600 hover:bg-ground-100 disabled:opacity-50">
                   {busy === 'ivreopen' ? t('common.loading') : t('admin.scholarship.interview.reopen')}
                 </button>
               ))
@@ -1973,15 +1983,15 @@ export default function AdminScholarshipDetailPage() {
             their key probes, as a collapsible reference. The AI gaps above target whichever
             buckets the record leaves unanswered; this is the human checklist behind them. */}
         {canWrite && !interviewLocked && (
-          <details className="rounded-lg border border-gray-100 bg-gray-50/60 p-3">
-            <summary className="cursor-pointer text-xs font-medium text-gray-600">
+          <details className="rounded-lg border border-ground-100 bg-ground-50/60 p-3">
+            <summary className="cursor-pointer text-xs font-medium text-ground-600">
               {t('admin.scholarship.interviewGuide.title')}
             </summary>
             <div className="mt-2 space-y-2">
               {(['academic', 'financial', 'pathway'] as const).map((b) => (
                 <div key={b}>
-                  <p className="text-xs font-semibold text-gray-700">{t(`admin.scholarship.interviewGuide.${b}.title`)}</p>
-                  <ul className="ml-4 list-disc text-[11px] text-gray-500">
+                  <p className="text-xs font-semibold text-ground-700">{t(`admin.scholarship.interviewGuide.${b}.title`)}</p>
+                  <ul className="ml-4 list-disc text-[11px] text-ground-500">
                     {[0, 1, 2].map((i) => {
                       const key = `admin.scholarship.interviewGuide.${b}.q${i}`
                       const txt = t(key)
@@ -1990,7 +2000,7 @@ export default function AdminScholarshipDetailPage() {
                   </ul>
                 </div>
               ))}
-              <p className="text-[11px] text-gray-400">{t('admin.scholarship.interviewGuide.note')}</p>
+              <p className="text-[11px] text-ground-400">{t('admin.scholarship.interviewGuide.note')}</p>
             </div>
           </details>
         )}
@@ -2005,7 +2015,7 @@ export default function AdminScholarshipDetailPage() {
             })
             const hasNote = (note || '').trim().length > 0
             if (answered.length === 0 && !hasNote) {
-              return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noneRecorded')}</p>
+              return <p className="text-sm text-ground-400 italic">{t('admin.scholarship.interview.noneRecorded')}</p>
             }
             return (
               <div className="space-y-3">
@@ -2014,18 +2024,18 @@ export default function AdminScholarshipDetailPage() {
                 {answered.map((it) => {
                   const f = findings[it.code]
                   return (
-                    <div key={it.code} className="flex items-start gap-2.5 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
+                    <div key={it.code} className="flex items-start gap-2.5 rounded-lg border border-ground-100 bg-ground-50 p-3">
+                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                       </svg>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-800 break-words">
+                        <p className="text-sm text-ground-800 break-words">
                           <span className="font-semibold">{t('admin.scholarship.outstanding.questionLabel')}:</span> {it.label}
                           {it.ai && <span className="ml-1 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
                         </p>
-                        <p className="mt-1.5 text-xs font-medium text-gray-600">{t('admin.scholarship.interview.answerLabel')}</p>
-                        <div className="mt-0.5 rounded-md border border-blue-100 bg-blue-50/50 p-2">
-                          <p className="text-sm text-gray-800 break-words">
+                        <p className="mt-1.5 text-xs font-medium text-ground-600">{t('admin.scholarship.interview.answerLabel')}</p>
+                        <div className="mt-0.5 rounded-md border border-info-100 bg-info-50/50 p-2">
+                          <p className="text-sm text-ground-800 break-words">
                             {(f.rationale || '').trim() || `${t('admin.scholarship.interview.verdict.resolved')} ✓`}
                           </p>
                         </div>
@@ -2035,9 +2045,9 @@ export default function AdminScholarshipDetailPage() {
                 })}
                 {hasNote && (
                   <div>
-                    <p className="text-xs font-medium text-gray-600 mb-1">{t('admin.scholarship.interview.findingsLabel')}</p>
-                    <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                      <p className="whitespace-pre-line text-sm text-gray-800">{note}</p>
+                    <p className="text-xs font-medium text-ground-600 mb-1">{t('admin.scholarship.interview.findingsLabel')}</p>
+                    <div className="rounded-lg border border-info-100 bg-info-50/50 p-3">
+                      <p className="whitespace-pre-line text-sm text-ground-800">{note}</p>
                     </div>
                   </div>
                 )}
@@ -2045,13 +2055,13 @@ export default function AdminScholarshipDetailPage() {
                     been on the payload and was rendered nowhere, so an interview credited to the
                     wrong person looked exactly like one credited to the right person. */}
                 {app.interview_session?.interviewer_name && (
-                  <p className="text-[11px] text-gray-400">
+                  <p className="text-[11px] text-ground-400">
                     {t('admin.scholarship.interview.interviewedBy')}{' '}
                     {app.interview_session.interviewer_name}
                   </p>
                 )}
                 {app.interview_session?.submitted_at && (
-                  <p className="text-[11px] text-gray-400">
+                  <p className="text-[11px] text-ground-400">
                     {t('admin.scholarship.interview.submittedOn')} {formatDate(app.interview_session.submitted_at)}
                   </p>
                 )}
@@ -2060,9 +2070,9 @@ export default function AdminScholarshipDetailPage() {
           })()
         ) : (
           <>
-            <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
+            <p className="text-xs text-ground-500">{t('admin.scholarship.interview.intro')}</p>
             {editableAgenda.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
+              <p className="text-sm text-ground-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
             ) : (
               <ul className="space-y-3">
                 {editableAgenda.map((it) => {
@@ -2073,18 +2083,18 @@ export default function AdminScholarshipDetailPage() {
                   return (
                     <li key={it.code} className="border rounded-lg p-3">
                       <div className="flex items-start justify-between gap-3">
-                        <p className="text-sm text-gray-800 min-w-0">
+                        <p className="text-sm text-ground-800 min-w-0">
                           {it.ai && <span className="mr-1 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
                           {it.label}
                         </p>
                         {canWrite && (
                           <div className="flex shrink-0 gap-1.5">
                             <button onClick={() => doDeleteAgendaItem(it.code)} disabled={!!busy}
-                              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50">
+                              className="rounded border border-ground-300 px-2 py-1 text-xs text-ground-600 hover:border-critical-300 hover:bg-critical-50 hover:text-critical-700 disabled:opacity-50">
                               {t('admin.scholarship.caveats.delete')}
                             </button>
                             <button onClick={() => setF({ verdict: resolved ? '' : 'resolved' })}
-                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
+                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-positive-600 text-white hover:bg-positive-700' : 'border border-ground-300 text-ground-700 hover:bg-ground-100'}`}>
                               {t('admin.scholarship.interview.verdict.resolved')}
                             </button>
                           </div>
@@ -2115,7 +2125,7 @@ export default function AdminScholarshipDetailPage() {
                   className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
                   {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
                 </button>
-                {interviewMsg && <span className="text-sm font-medium text-green-600">{interviewMsg}</span>}
+                {interviewMsg && <span className="text-sm font-medium text-positive-600">{interviewMsg}</span>}
               </div>
             )}
           </>
@@ -2125,22 +2135,22 @@ export default function AdminScholarshipDetailPage() {
 
 
       {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
         <div className="mb-3">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.docsDrawer.title')} ({app.documents.length})</h2>
-          <p className="text-xs text-gray-400">{t('admin.scholarship.docsDrawer.subtitle')}</p>
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.docsDrawer.title')} ({app.documents.length})</h2>
+          <p className="text-xs text-ground-400">{t('admin.scholarship.docsDrawer.subtitle')}</p>
         </div>
         {(() => {
           const groups = groupDocumentsByFact(app.documents)
           const sectionKeys = ['identity', 'academic', 'pathway', 'income', 'additional', 'other'] as const
           const pillClass = (p: 'verified' | 'check' | 'unread') => {
-            if (p === 'verified') return 'bg-green-100 text-green-700'
-            if (p === 'check') return 'bg-amber-100 text-amber-700'
-            return 'bg-gray-100 text-gray-500'
+            if (p === 'verified') return 'bg-positive-100 text-positive-700'
+            if (p === 'check') return 'bg-caution-100 text-caution-700'
+            return 'bg-ground-100 text-ground-500'
           }
           // The doc-type icon sits in a badge tinted by the SAME verdict as the pill.
           const iconBadge = (p: 'verified' | 'check' | 'unread') =>
-            p === 'verified' ? 'bg-green-50' : p === 'check' ? 'bg-amber-50' : 'bg-gray-100'
+            p === 'verified' ? 'bg-positive-50' : p === 'check' ? 'bg-caution-50' : 'bg-ground-100'
           const trunc = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
           // Standard, student-independent label per doc type (the actual filename is shown
           // muted in brackets below). parent_ic → "Mother's IC" etc. when the earner is known.
@@ -2175,9 +2185,9 @@ export default function AdminScholarshipDetailPage() {
             })
           }
           const factClass = (s: FactStatus) =>
-            s === 'verified' ? 'text-green-600' : s === 'partial' ? 'text-amber-600'
-              : s === 'not' ? 'text-red-600' : 'text-gray-400'
-          const subLabel = 'text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5'
+            s === 'verified' ? 'text-positive-600' : s === 'partial' ? 'text-caution-600'
+              : s === 'not' ? 'text-critical-600' : 'text-ground-400'
+          const subLabel = 'text-[10px] font-semibold uppercase tracking-widest text-ground-400 mb-1.5'
           // Line 2: the coloured fact-labels — only the facts THIS document provides. A results slip
           // also surfaces the SPM exam YEAR, an offer letter its intake (course-start) YEAR — coloured
           // by currency vs the cohort (green = current, amber = off), so the officer sees at a glance
@@ -2192,7 +2202,7 @@ export default function AdminScholarshipDetailPage() {
             return null
           }
           const yearClass = (s: string) =>
-            s === 'current' ? 'text-green-600' : s === 'off' ? 'text-amber-600' : 'text-gray-500'
+            s === 'current' ? 'text-positive-600' : s === 'off' ? 'text-caution-600' : 'text-ground-500'
           const factLine = (d: AdminApplicantDocument) => {
             const facts = documentFacts(d)
             const yc = yearChip(d)
@@ -2201,7 +2211,7 @@ export default function AdminScholarshipDetailPage() {
               <p className="mt-0.5 flex flex-wrap items-center text-[11px]">
                 {facts.map((f, i) => (
                   <span key={`${f.key}-${i}`} className="flex items-center">
-                    {i > 0 && <span className="text-gray-300 mx-1.5">·</span>}
+                    {i > 0 && <span className="text-ground-300 mx-1.5">·</span>}
                     <span className={`font-medium ${factClass(f.status)}`}>
                       {t(`admin.scholarship.docsDrawer.fact.${f.key}`)}
                     </span>
@@ -2209,7 +2219,7 @@ export default function AdminScholarshipDetailPage() {
                 ))}
                 {yc && (
                   <span className="flex items-center">
-                    {facts.length > 0 && <span className="text-gray-300 mx-1.5">·</span>}
+                    {facts.length > 0 && <span className="text-ground-300 mx-1.5">·</span>}
                     <span className={`font-medium ${yearClass(yc.status)}`}>{yc.text}</span>
                   </span>
                 )}
@@ -2228,7 +2238,7 @@ export default function AdminScholarshipDetailPage() {
           const docRow = (d: AdminApplicantDocument) => {
             const p = documentPill(d)
             return (
-              <li key={d.id} className="flex items-start gap-2 rounded-lg border border-gray-100 p-2.5 hover:bg-gray-50">
+              <li key={d.id} className="flex items-start gap-2 rounded-lg border border-ground-100 p-2.5 hover:bg-ground-50">
                 <span className={`shrink-0 mt-0.5 flex h-7 w-7 items-center justify-center rounded-md text-sm ${iconBadge(p)}`} aria-hidden>
                   {docIconFor(d.doc_type)}
                 </span>
@@ -2237,11 +2247,11 @@ export default function AdminScholarshipDetailPage() {
                     {d.download_url ? (
                       <button type="button" onClick={() => openViewer(d)}
                         title={t('admin.scholarship.docsDrawer.view')}
-                        className="text-left text-sm font-medium text-gray-800 hover:text-primary-600 hover:underline truncate max-w-[200px]">
-                        {docLabel(d)} <span aria-hidden className="text-[10px] text-gray-400">↗</span>
+                        className="text-left text-sm font-medium text-ground-800 hover:text-primary-600 hover:underline truncate max-w-[200px]">
+                        {docLabel(d)} <span aria-hidden className="text-[10px] text-ground-400">↗</span>
                       </button>
                     ) : (
-                      <span className="text-sm font-medium text-gray-800 truncate max-w-[200px]">
+                      <span className="text-sm font-medium text-ground-800 truncate max-w-[200px]">
                         {docLabel(d)}
                       </span>
                     )}
@@ -2269,14 +2279,19 @@ export default function AdminScholarshipDetailPage() {
                           title={t(`admin.scholarship.docsDrawer.capture.${cap}.hint`)}
                           className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${
                             cap === 'deterministic'
-                              ? 'bg-slate-100 text-slate-500' : 'bg-violet-50 text-violet-500'}`}>
+                              // A CATEGORY: how the value was produced — read deterministically, or
+                              // derived by a model. Two kinds, so the neutral one keeps the ground
+                              // and the other takes one swatch. Not a tone: "a model read this" is
+                              // neither good news nor a warning, it is a provenance.
+                              ? 'bg-ground-100 text-ground-500'
+                              : 'bg-category-1-surface text-category-1-ink'}`}>
                           {t(`admin.scholarship.docsDrawer.capture.${cap}.label`)}
                         </span>
                       )
                     })()}
                   </div>
                   {d.original_filename && (
-                    <p className="text-[11px] text-gray-400 truncate max-w-[230px]" title={d.original_filename}>
+                    <p className="text-[11px] text-ground-400 truncate max-w-[230px]" title={d.original_filename}>
                       ({trunc(d.original_filename, 30)})
                     </p>
                   )}
@@ -2286,11 +2301,11 @@ export default function AdminScholarshipDetailPage() {
                   {(() => {
                     const vals = utilityBillValues(d)
                     return vals.length > 0 ? (
-                      <p className="text-[11px] text-gray-500 mt-0.5">
+                      <p className="text-[11px] text-ground-500 mt-0.5">
                         {vals.map((v, i) => (
                           <span key={v.labelKey}>
-                            {i > 0 && <span className="text-gray-300"> · </span>}
-                            <span className="text-gray-400">{t(`admin.scholarship.docsDrawer.billValue.${v.labelKey}`)} </span>
+                            {i > 0 && <span className="text-ground-300"> · </span>}
+                            <span className="text-ground-400">{t(`admin.scholarship.docsDrawer.billValue.${v.labelKey}`)} </span>
                             {v.value ?? t(`admin.scholarship.docsDrawer.billValue.${v.valueKey}`)}
                           </span>
                         ))}
@@ -2303,35 +2318,40 @@ export default function AdminScholarshipDetailPage() {
                   {(() => {
                     const vals = schoolLeavingValues(d)
                     return vals.length > 0 ? (
-                      <p className="text-[11px] text-gray-500 mt-0.5">
+                      <p className="text-[11px] text-ground-500 mt-0.5">
                         {vals.map((v, i) => (
                           <span key={v.labelKey}>
-                            {i > 0 && <span className="text-gray-300"> · </span>}
-                            <span className="text-gray-400">{t(`admin.scholarship.docsDrawer.certValue.${v.labelKey}`)} </span>
+                            {i > 0 && <span className="text-ground-300"> · </span>}
+                            <span className="text-ground-400">{t(`admin.scholarship.docsDrawer.certValue.${v.labelKey}`)} </span>
                             {v.value}
                           </span>
                         ))}
                       </p>
                     ) : null
                   })()}
+                  {/* CRITICAL, not caution. The generic vision warnings two blocks below are
+                      `caution-600`; "this bill is in an unrelated person's name" is a different
+                      order of thing — it is evidence the document may not belong to this household
+                      at all. Orange used to hold them apart; sharing `caution` would have
+                      flattened the distinction an officer most needs to see. */}
                   {d.utility_check?.name_note === 'unrelated' && (
-                    <p className="text-[11px] text-orange-600 mt-0.5">
+                    <p className="text-[11px] text-critical-600 mt-0.5">
                       {t('admin.scholarship.docsDrawer.utilityNote.unrelated', { name: d.utility_check.name })}
                     </p>
                   )}
                   {(d.utility_check?.reasonable_detail === 'water_only'
                     || d.utility_check?.reasonable_detail === 'electricity_only') && (
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-[11px] text-ground-400 mt-0.5">
                       {t(`admin.scholarship.docsDrawer.utilityNote.${d.utility_check.reasonable_detail}`)}
                     </p>
                   )}
                   {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
-                    <p className="text-[11px] text-amber-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
+                    <p className="text-[11px] text-caution-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
                   <button onClick={() => doReRunVision(d.id)} disabled={busy === 'vision'}
-                    className="text-[11px] text-gray-500 hover:text-gray-700 hover:underline disabled:opacity-50">
+                    className="text-[11px] text-ground-500 hover:text-ground-700 hover:underline disabled:opacity-50">
                     {busy === 'vision' ? t('common.loading') : t('admin.scholarship.docsDrawer.rerun')}
                   </button>
                 </div>
@@ -2340,15 +2360,15 @@ export default function AdminScholarshipDetailPage() {
           }
           const placeholderRow = (s: IncomeSlot) => (
             <li key={`ph-${s.docType}-${s.member}`}
-              className="flex items-center gap-2 rounded-lg border border-dashed border-gray-200 p-2.5">
-              <span className="shrink-0 text-gray-300 text-base" aria-hidden>
+              className="flex items-center gap-2 rounded-lg border border-dashed border-ground-200 p-2.5">
+              <span className="shrink-0 text-ground-300 text-base" aria-hidden>
                 {s.docType === 'parent_ic' ? '🪪' : '📄'}
               </span>
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium text-gray-500">{slotLabel(s.docType, s.member)}</span>
-                <span className="text-[11px] text-gray-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
+                <span className="text-sm font-medium text-ground-500">{slotLabel(s.docType, s.member)}</span>
+                <span className="text-[11px] text-ground-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
               </div>
-              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-red-100 text-red-600">
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-critical-100 text-critical-600">
                 {t('admin.scholarship.docsDrawer.pill.missing')}
               </span>
             </li>
@@ -2364,7 +2384,7 @@ export default function AdminScholarshipDetailPage() {
                   // shown only on the STR route with an STR doc; SALARY + UTILITY always (when
                   // they have content). A missing compulsory slot renders a "Missing" placeholder.
                   const sub = incomeSubSections(app, docs)
-                  const subHead = 'text-[9px] font-semibold uppercase tracking-wider text-gray-300 mb-1 mt-2'
+                  const subHead = 'text-[9px] font-semibold uppercase tracking-wider text-ground-300 mb-1 mt-2'
                   const subSection = (headKey: string, slots: IncomeSlot[]) => (
                     slots.length === 0 ? null : (
                       <div key={headKey}>
@@ -2396,13 +2416,13 @@ export default function AdminScholarshipDetailPage() {
               {/* Phase 2: replaced documents — version history, muted, kept out of every fact
                   group so a superseded doc never reads as a live verification input. */}
               {groups.superseded.length > 0 && (
-                <div key="superseded" className="pt-2 mt-2 border-t border-gray-100">
+                <div key="superseded" className="pt-2 mt-2 border-t border-ground-100">
                   <p className={subLabel}>{t('admin.scholarship.docsDrawer.group.superseded')}</p>
                   <ul className="space-y-1.5 opacity-60">{groups.superseded.map(docRow)}</ul>
                 </div>
               )}
               {app.documents.length === 0 && (
-                <p className="text-sm text-gray-400">{t('admin.scholarship.none')}</p>
+                <p className="text-sm text-ground-400">{t('admin.scholarship.none')}</p>
               )}
             </div>
           )
@@ -2420,31 +2440,31 @@ export default function AdminScholarshipDetailPage() {
       {/* Hidden at shortlisted (pre-submission): its rating can only be saved with the verdict.
           Hidden on a CLOSED case with no verdict, for the same reason at the other end. */}
       {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
-        <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.recordVerdict.rateTitle')}</h2>
+      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+        <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.recordVerdict.rateTitle')}</h2>
         <div className="space-y-2">
           {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => (
             decisionLocked ? (
-              <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
-                <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
+              <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-ground-100 p-2.5">
+                <span className="text-sm font-medium text-ground-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  officerVerdict[fact] === 'pass' ? 'bg-green-100 text-green-700'
-                  : officerVerdict[fact] === 'fail' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                  officerVerdict[fact] === 'pass' ? 'bg-positive-100 text-positive-700'
+                  : officerVerdict[fact] === 'fail' ? 'bg-critical-100 text-critical-700' : 'bg-ground-100 text-ground-500'}`}>
                   {officerVerdict[fact] === 'pass' ? t('admin.scholarship.recordVerdict.factPass')
                     : officerVerdict[fact] === 'fail' ? t('admin.scholarship.recordVerdict.factFail') : '—'}
                 </span>
               </div>
             ) : (
-              <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
-                <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
+              <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-ground-100 p-2.5">
+                <span className="text-sm font-medium text-ground-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
                 <div className="flex gap-1.5">
                   <button
                     onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'pass' ? '' : 'pass' }))}
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'pass'
-                        ? 'border-green-500 bg-green-500 text-white'
-                        : 'border-gray-300 text-gray-600 hover:border-green-400'
+                        ? 'border-positive-500 bg-positive-500 text-white'
+                        : 'border-ground-300 text-ground-600 hover:border-positive-400'
                     } disabled:opacity-50`}
                   >
                     {t('admin.scholarship.recordVerdict.factPass')}
@@ -2454,8 +2474,8 @@ export default function AdminScholarshipDetailPage() {
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'fail'
-                        ? 'border-red-500 bg-red-500 text-white'
-                        : 'border-gray-300 text-gray-600 hover:border-red-400'
+                        ? 'border-critical-500 bg-critical-500 text-white'
+                        : 'border-ground-300 text-ground-600 hover:border-critical-400'
                     } disabled:opacity-50`}
                   >
                     {t('admin.scholarship.recordVerdict.factFail')}
@@ -2470,16 +2490,16 @@ export default function AdminScholarshipDetailPage() {
           const sugg = aiSuggestionFor(app.verdict || [])
           const facts = ['identity', 'academic', 'pathway', 'income'] as const
           return (
-            <p className="text-[11px] text-gray-400">
+            <p className="text-[11px] text-ground-400">
               {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
               {facts.map((f, i) => (
                 <span key={f}>
                   {i > 0 && ', '}
                   {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
                   <span className={
-                    sugg[f] === 'yes' ? 'text-green-600 font-medium'
-                    : sugg[f] === 'no' ? 'text-red-600 font-medium'
-                    : 'text-amber-600 font-medium'
+                    sugg[f] === 'yes' ? 'text-positive-600 font-medium'
+                    : sugg[f] === 'no' ? 'text-critical-600 font-medium'
+                    : 'text-caution-600 font-medium'
                   }>
                     {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
                   </span>
@@ -2501,32 +2521,32 @@ export default function AdminScholarshipDetailPage() {
         if (!showsPostSubmissionCards(app.status)) return null
         if (!fe && !showBursary) return null
         return (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+          <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
             <h2 className="font-semibold">{t('admin.scholarship.estimate.title')}</h2>
             {fe ? (fe.known ? (
               <>
                 {/* Total + its monthly breakdown are one tight unit — grouped so the card's
                     space-y doesn't push them apart. */}
                 <div>
-                  <p className="text-2xl font-semibold text-gray-900">
+                  <p className="text-2xl font-semibold text-ground-900">
                     ≈ RM {fe.total.toLocaleString('en-US')}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-ground-500">
                     ~RM {fe.monthly.toLocaleString('en-US')}/{t('admin.scholarship.estimate.month')} × {fe.months} {t('admin.scholarship.estimate.months')}
                   </p>
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-ground-600">
                   {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
                 </p>
                 {fe.variable && (
-                  <p className="mt-2 text-xs text-amber-700">{t('admin.scholarship.estimate.variableNote')}</p>
+                  <p className="mt-2 text-xs text-caution-700">{t('admin.scholarship.estimate.variableNote')}</p>
                 )}
                 {fe.practical && (
-                  <p className="mt-1 text-xs text-gray-500">{t('admin.scholarship.estimate.practicalNote')}</p>
+                  <p className="mt-1 text-xs text-ground-500">{t('admin.scholarship.estimate.practicalNote')}</p>
                 )}
               </>
             ) : (
-              <p className="text-sm text-gray-500">{t('admin.scholarship.estimate.none')}</p>
+              <p className="text-sm text-ground-500">{t('admin.scholarship.estimate.none')}</p>
             )) : null}
             {/* Standard bursary — FIXED by pathway type (RM2k · RM3k STPM · RM1k continuing STPM),
                 the same figure for everyone incl. a likely-declined student. No slider: the amount
@@ -2540,8 +2560,8 @@ export default function AdminScholarshipDetailPage() {
               if (amt == null) return null
               return (
                 <div className="flex items-center justify-between border-t pt-3 text-sm">
-                  <span className="font-medium text-gray-600">{t('admin.scholarship.recordVerdict.assistanceLabel')}</span>
-                  <span className="font-semibold text-gray-900">RM{amt.toLocaleString()}</span>
+                  <span className="font-medium text-ground-600">{t('admin.scholarship.recordVerdict.assistanceLabel')}</span>
+                  <span className="font-semibold text-ground-900">RM{amt.toLocaleString()}</span>
                 </div>
               )
             })()}
@@ -2560,28 +2580,28 @@ export default function AdminScholarshipDetailPage() {
         letterHasDate: (app.documents || []).some(
           (d) => d.doc_type === 'offer_letter' && !d.superseded_at && !!d.pathway_check?.reporting_date),
       }) && (
-        <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm space-y-2">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+        <div className="rounded-2xl border border-caution-200 bg-ground-0 p-5 shadow-sm space-y-2">
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.reportingDateEntry.title')}
           </h2>
-          <p className="text-xs text-gray-500">{t('admin.scholarship.reportingDateEntry.help')}</p>
+          <p className="text-xs text-ground-500">{t('admin.scholarship.reportingDateEntry.help')}</p>
           <input
             type="date" value={reportingDateInput}
             onChange={(e) => setReportingDateInput(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm"
           />
           <button type="button" onClick={doSetReportingDate}
             disabled={!!busy || !reportingDateInput}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white
-                       hover:bg-blue-700 disabled:opacity-50">
+            className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white
+                       hover:bg-primary-700 disabled:opacity-50">
             {busy === 'reportingDate' ? t('common.loading') : t('admin.scholarship.reportingDateEntry.save')}
           </button>
           {app.reporting_date && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-ground-500">
               {t('admin.scholarship.reportingDateEntry.current', { date: formatDate(app.reporting_date) })}
             </p>
           )}
-          {reportingDateMsg && <p className="text-sm text-red-600">{reportingDateMsg}</p>}
+          {reportingDateMsg && <p className="text-sm text-critical-600">{reportingDateMsg}</p>}
         </div>
       )}
 
@@ -2593,14 +2613,14 @@ export default function AdminScholarshipDetailPage() {
           justification box invited writing one. WITH a verdict it stays: that is the frozen
           decision trail (21 rejected records on 2026-08-18), which must not disappear. */}
       {showsDecisionCards({ status: app.status, decisionReopened, decisionRecorded }) && (
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.decision.title')}</h2>
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.decision.title')}</h2>
           {/* Reopen = REVERSE a recorded decision (super-only). Asks for a reason first;
               reopening holds the profile from the pool and unlocks the panel. */}
           {decisionLocked && isSuper && !reopenOpen && (
             <button onClick={() => { setReopenOpen(true); setReopenReason('') }}
-              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100">
+              className="rounded-lg border border-ground-300 px-2.5 py-1 text-xs text-ground-600 hover:bg-ground-100">
               {t('admin.scholarship.recordVerdict.reopen')}
             </button>
           )}
@@ -2609,19 +2629,19 @@ export default function AdminScholarshipDetailPage() {
         {/* The "why are you reopening?" prompt — a reopen asserts a reviewer error, so a
             reason is required (logged + counted against the reviewer once a change is saved). */}
         {decisionLocked && isSuper && reopenOpen && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
-            <p className="text-xs font-medium text-amber-900">{t('admin.scholarship.recordVerdict.reopenTitle')}</p>
-            <p className="text-[11px] text-amber-800">{t('admin.scholarship.recordVerdict.reopenHint')}</p>
+          <div className="rounded-lg border border-caution-200 bg-caution-50 p-3 space-y-2">
+            <p className="text-xs font-medium text-caution-900">{t('admin.scholarship.recordVerdict.reopenTitle')}</p>
+            <p className="text-[11px] text-caution-800">{t('admin.scholarship.recordVerdict.reopenHint')}</p>
             <textarea value={reopenReason} rows={2} onChange={(e) => setReopenReason(e.target.value)}
               placeholder={t('admin.scholarship.recordVerdict.reopenPlaceholder')}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <div className="flex items-center gap-2">
               <button onClick={doReopenDecision} disabled={!!busy || !reopenReason.trim()}
-                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm disabled:opacity-50">
+                className="px-3 py-1.5 bg-critical-600 text-white rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.reopenConfirm')}
               </button>
               <button onClick={() => { setReopenOpen(false); setReopenReason('') }} disabled={!!busy}
-                className="px-3 py-1.5 border rounded-lg text-sm text-gray-600 disabled:opacity-50">
+                className="px-3 py-1.5 border rounded-lg text-sm text-ground-600 disabled:opacity-50">
                 {t('common.cancel')}
               </button>
             </div>
@@ -2631,16 +2651,16 @@ export default function AdminScholarshipDetailPage() {
         {/* Reopened banner — the decision is editable again and the profile is held from
             the pool. "Cancel reopen" restores it unchanged; saving the decision republishes. */}
         {decisionReopened && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 space-y-2">
-            <p className="text-sm font-medium text-amber-900">{t('admin.scholarship.recordVerdict.reopenedBanner')}</p>
+          <div className="rounded-lg border border-caution-300 bg-caution-50 p-3 space-y-2">
+            <p className="text-sm font-medium text-caution-900">{t('admin.scholarship.recordVerdict.reopenedBanner')}</p>
             {app.decision_reopen_reason && (
-              <p className="text-xs text-amber-800">
+              <p className="text-xs text-caution-800">
                 <span className="font-medium">{t('admin.scholarship.recordVerdict.reopenReasonLabel')}:</span> {app.decision_reopen_reason}
               </p>
             )}
             {isSuper && (
               <button onClick={doCancelReopen} disabled={!!busy}
-                className="px-3 py-1.5 border border-amber-400 text-amber-900 rounded-lg text-xs hover:bg-amber-100 disabled:opacity-50">
+                className="px-3 py-1.5 border border-caution-400 text-caution-900 rounded-lg text-xs hover:bg-caution-100 disabled:opacity-50">
                 {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.cancelReopen')}
               </button>
             )}
@@ -2656,15 +2676,15 @@ export default function AdminScholarshipDetailPage() {
                 Estimated-need cards above; this card keeps the justification + who/when. */}
             {(verdictReason || '').trim() && (
               <div>
-                <p className="text-xs font-medium text-gray-600 mb-1">{t('admin.scholarship.recordVerdict.reasonLabel')}</p>
-                <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                  <p className="whitespace-pre-line text-sm text-gray-800">{verdictReason}</p>
+                <p className="text-xs font-medium text-ground-600 mb-1">{t('admin.scholarship.recordVerdict.reasonLabel')}</p>
+                <div className="rounded-lg border border-info-100 bg-info-50/50 p-3">
+                  <p className="whitespace-pre-line text-sm text-ground-800">{verdictReason}</p>
                 </div>
               </div>
             )}
             {isQcAccepted(app.status) ? (
               <>
-                <p className="flex items-start gap-1.5 text-sm text-green-700">
+                <p className="flex items-start gap-1.5 text-sm text-positive-700">
                   <span aria-hidden>✓</span>
                   <span>
                     {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
@@ -2683,12 +2703,12 @@ export default function AdminScholarshipDetailPage() {
                   const stamp = step.date ? ` · ${formatDate(step.date)}` : ''
                   if (step.kind === 'reopened') {
                     return (
-                      <div key={i} className="flex items-start gap-1.5 text-sm text-amber-800">
+                      <div key={i} className="flex items-start gap-1.5 text-sm text-caution-800">
                         <span aria-hidden>↩</span>
                         <span>
                           {t('admin.scholarship.recordVerdict.reopenedBy')} {step.name}{stamp}
                           {step.reason && (
-                            <span className="block whitespace-pre-line text-amber-700">“{step.reason}”</span>
+                            <span className="block whitespace-pre-line text-caution-700">“{step.reason}”</span>
                           )}
                         </span>
                       </div>
@@ -2707,7 +2727,7 @@ export default function AdminScholarshipDetailPage() {
                   const tick = step.kind === 'reviewerRecommended' || step.kind === 'qcAcceptedRecommendation'
                     ? '✓' : '✗'
                   return (
-                    <p key={i} className={`flex items-start gap-1.5 text-sm ${ended ? 'text-red-700' : 'text-gray-600'}`}>
+                    <p key={i} className={`flex items-start gap-1.5 text-sm ${ended ? 'text-critical-700' : 'text-ground-600'}`}>
                       <span aria-hidden>{tick}</span>
                       <span>{label} {step.name}{stamp}</span>
                     </p>
@@ -2715,13 +2735,13 @@ export default function AdminScholarshipDetailPage() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-ground-600">
                 {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
               </p>
             )}
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
-                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                className="px-4 py-2 border border-critical-300 text-critical-700 rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
               </button>
             )}
@@ -2732,7 +2752,7 @@ export default function AdminScholarshipDetailPage() {
             proposed bursary now live in their own cards above this one. */}
         {/* Reason textarea */}
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
+          <label className="block text-xs font-medium text-ground-600 mb-1">
             {t('admin.scholarship.recordVerdict.reasonLabel')}
           </label>
           <textarea
@@ -2751,7 +2771,7 @@ export default function AdminScholarshipDetailPage() {
              Reopen (→ interviewed → declined as 'interview'); the direct 'contractual'
              decline is reserved for a genuinely post-award (sponsored) case. */
           <div className="space-y-2 border-t pt-3">
-            <p className="flex items-start gap-1.5 text-sm text-green-700">
+            <p className="flex items-start gap-1.5 text-sm text-positive-700">
               <span aria-hidden>✓</span>
               <span>
                 {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
@@ -2761,7 +2781,7 @@ export default function AdminScholarshipDetailPage() {
             <QcOverrideNote app={app} t={t} />
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (
               <button onClick={() => doReject('contractual')} disabled={!!busy}
-                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                className="px-4 py-2 border border-critical-300 text-critical-700 rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
               </button>
             )}
@@ -2777,25 +2797,25 @@ export default function AdminScholarshipDetailPage() {
                 <button onClick={selectApprove} disabled={!!busy || !approveReady}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     officerVerdict.overall === 'accept'
-                      ? 'border-green-600 bg-green-600 text-white'
-                      : 'border-green-600 bg-white text-green-700 hover:bg-green-50'}`}>
+                      ? 'border-positive-600 bg-positive-600 text-white'
+                      : 'border-positive-600 bg-ground-0 text-positive-700 hover:bg-positive-50'}`}>
                   {t('admin.scholarship.recordVerdict.approve')}
                 </button>
                 <button onClick={selectDecline} disabled={!!busy || !decisionReady}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     officerVerdict.overall === 'decline'
-                      ? 'border-red-600 bg-red-600 text-white'
-                      : 'border-red-500 bg-white text-red-700 hover:bg-red-50'}`}>
+                      ? 'border-critical-600 bg-critical-600 text-white'
+                      : 'border-critical-500 bg-ground-0 text-critical-700 hover:bg-critical-50'}`}>
                   {t('admin.scholarship.recordVerdict.decline')}
                 </button>
               </div>
               {/* One contextual hint: what's still missing before Save. */}
               {!decisionReady ? (
-                <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
+                <p className="text-[11px] text-caution-600">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
               ) : !officerVerdict.overall ? (
-                <p className="text-[11px] text-amber-600">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
+                <p className="text-[11px] text-caution-600">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
-                <p className="text-[11px] text-amber-600">{t(app.award_disqualifier
+                <p className="text-[11px] text-caution-600">{t(app.award_disqualifier
                   ? 'admin.scholarship.recordVerdict.approveNeedsReview'
                   : 'admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
               ) : null}
@@ -2807,17 +2827,17 @@ export default function AdminScholarshipDetailPage() {
             </div>
           )
         ) : (
-          <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
+          <p className="text-sm text-ground-400">{t('admin.scholarship.notShortlisted')}</p>
         )}
         </>
         )}
 
         {/* Feedback message */}
         {verdictMsg && (
-          <p className={`text-xs rounded p-2 ${verdictMsgTone === 'ok' ? 'text-green-700 bg-green-50' : 'text-amber-800 bg-amber-50'}`}>{verdictMsg}</p>
+          <p className={`text-xs rounded p-2 ${verdictMsgTone === 'ok' ? 'text-positive-700 bg-positive-50' : 'text-caution-800 bg-caution-50'}`}>{verdictMsg}</p>
         )}
 
-        {error && <p className="text-red-600 text-xs">{error}</p>}
+        {error && <p className="text-critical-600 text-xs">{error}</p>}
       </div>
       )}
 
@@ -2831,14 +2851,14 @@ export default function AdminScholarshipDetailPage() {
         const codes = app.consent_blockers || []
         const step = stuckStep(codes)
         return (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
-            <h2 className="text-base font-semibold tracking-tight text-gray-900">
+          <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+            <h2 className="text-base font-semibold tracking-tight text-ground-900">
               {t('admin.scholarship.blockers.title')}
             </h2>
             {codes.length > 0 ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
-                <p className="font-medium text-amber-900">{t('admin.scholarship.blockers.owes')}</p>
-                <ul className="mt-1.5 ml-5 list-disc space-y-1 text-amber-800">
+              <div className="rounded-lg border border-caution-200 bg-caution-50 p-3 text-sm">
+                <p className="font-medium text-caution-900">{t('admin.scholarship.blockers.owes')}</p>
+                <ul className="mt-1.5 ml-5 list-disc space-y-1 text-caution-800">
                   {codes.map((raw) => {
                     // Income codes are member-qualified ("parent_ic_missing:mother") so the line
                     // names the person; everything else is a plain code.
@@ -2853,7 +2873,7 @@ export default function AdminScholarshipDetailPage() {
                   })}
                 </ul>
                 {step && (
-                  <p className="mt-2.5 text-amber-900">
+                  <p className="mt-2.5 text-caution-900">
                     {t('admin.scholarship.blockers.stuck', {
                       step: t(`admin.scholarship.blockers.step.${step}`),
                     })}
@@ -2863,11 +2883,11 @@ export default function AdminScholarshipDetailPage() {
             ) : !app.completeness.consent_done ? (
               /* Nothing outstanding but consent not yet given — the gate never emits a
                  "consent missing" code (it IS the gate to consent), so say it plainly. */
-              <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+              <p className="rounded-lg border border-info-200 bg-info-50 p-3 text-sm text-info-800">
                 {t('admin.scholarship.blockers.awaitingConsent')}
               </p>
             ) : (
-              <p className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+              <p className="rounded-lg border border-positive-200 bg-positive-50 p-3 text-sm text-positive-800">
                 {t('admin.scholarship.blockers.none')}
               </p>
             )}
@@ -2880,28 +2900,28 @@ export default function AdminScholarshipDetailPage() {
               const at = app.nudge.available_at ? formatDate(app.nudge.available_at) : ''
               const sent = app.nudge.sent_at ? formatDate(app.nudge.sent_at) : ''
               return (
-                <div className="space-y-2 border-t border-gray-100 pt-3">
+                <div className="space-y-2 border-t border-ground-100 pt-3">
                   <button type="button" onClick={doNudge} disabled={!nb.enabled || !!busy}
-                    className="w-full rounded-lg border border-blue-300 px-3 py-2 text-sm font-medium
-                               text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:hover:bg-transparent">
+                    className="w-full rounded-lg border border-info-300 px-3 py-2 text-sm font-medium
+                               text-info-700 hover:bg-info-50 disabled:opacity-50 disabled:hover:bg-transparent">
                     {busy === 'nudge'
                       ? t('admin.scholarship.blockers.nudge.sending')
                       : t(`admin.scholarship.blockers.nudge.${nb.label}`)}
                   </button>
                   {nb.note === 'pending' && (
-                    <p className="text-xs text-gray-500">{t('admin.scholarship.blockers.nudge.pending')}</p>
+                    <p className="text-xs text-ground-500">{t('admin.scholarship.blockers.nudge.pending')}</p>
                   )}
                   {nb.note === 'cooldown' && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-ground-500">
                       {t('admin.scholarship.blockers.nudge.cooldown', { date: sent, next: at })}
                     </p>
                   )}
                   {nb.note === 'sent' && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-ground-500">
                       {t('admin.scholarship.blockers.nudge.sent', { date: sent })}
                     </p>
                   )}
-                  {nudgeMsg && <p className="text-xs text-gray-600">{nudgeMsg}</p>}
+                  {nudgeMsg && <p className="text-xs text-ground-600">{nudgeMsg}</p>}
                 </div>
               )
             })()}
@@ -2924,11 +2944,11 @@ export default function AdminScholarshipDetailPage() {
         const isDeclineVerdict = app.officer_verdict?.overall === 'decline'
         const floorBlocked = qcGapFacts.length > 0 && !isDeclineVerdict
         return (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">{t('admin.scholarship.qcDecision.title')}</h2>
-          <p className="text-xs text-gray-600">{t(isDeclineVerdict ? 'admin.scholarship.qcDecision.hintDecline' : 'admin.scholarship.qcDecision.hint')}</p>
+        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">{t('admin.scholarship.qcDecision.title')}</h2>
+          <p className="text-xs text-ground-600">{t(isDeclineVerdict ? 'admin.scholarship.qcDecision.hintDecline' : 'admin.scholarship.qcDecision.hint')}</p>
           {floorBlocked && (
-            <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-800">
+            <p className="rounded-lg border border-critical-200 bg-critical-50 p-2 text-xs text-critical-800">
               {t('admin.scholarship.qcDecision.gapFloor', { facts: qcGapLabels })}
               {canQc && <> {t('admin.scholarship.qcDecision.gapFloorSuper')}</>}
             </p>
@@ -2941,60 +2961,60 @@ export default function AdminScholarshipDetailPage() {
                   if (canQc) { setQcOverrideOpen(true); setQcOverrideReason('') }
                 }}
                 disabled={!!busy || (floorBlocked && !canQc)}
-                className={`rounded-lg border px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 ${isDeclineVerdict ? 'border-red-600 bg-red-600 hover:bg-red-700' : 'border-green-600 bg-green-600 hover:bg-green-700'}`}>
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 ${isDeclineVerdict ? 'border-critical-600 bg-critical-600 hover:bg-critical-700' : 'border-positive-600 bg-positive-600 hover:bg-positive-700'}`}>
                 {busy === 'qc' ? t('common.loading')
                   : t(isDeclineVerdict ? 'admin.scholarship.qcDecision.confirmDecline' : 'admin.scholarship.qcDecision.accept')}
               </button>
               <button onClick={() => { setQcReopenOpen(true); setQcComments('') }} disabled={!!busy}
-                className="rounded-lg border border-amber-600 bg-white px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50">
+                className="rounded-lg border border-caution-600 bg-ground-0 px-4 py-2.5 text-sm font-medium text-caution-700 hover:bg-caution-50 disabled:opacity-50">
                 {t(isDeclineVerdict ? 'admin.scholarship.qcDecision.reopenOnly' : 'admin.scholarship.qcDecision.reopen')}
               </button>
             </div>
           ) : qcOverrideOpen ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2">
-              <p className="text-xs font-medium text-red-900">{t('admin.scholarship.qcDecision.overrideTitle')}</p>
+            <div className="rounded-lg border border-critical-200 bg-critical-50 p-3 space-y-2">
+              <p className="text-xs font-medium text-critical-900">{t('admin.scholarship.qcDecision.overrideTitle')}</p>
               <textarea value={qcOverrideReason} rows={3} onChange={(e) => setQcOverrideReason(e.target.value)}
                 placeholder={t('admin.scholarship.qcDecision.overridePlaceholder')}
-                className="w-full rounded border border-red-300 px-2 py-1.5 text-sm" />
+                className="w-full rounded border border-critical-300 px-2 py-1.5 text-sm" />
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision('accept', qcOverrideReason)}
                   disabled={!!busy || !qcOverrideReason.trim()}
-                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+                  className="rounded-lg bg-critical-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-critical-700 disabled:opacity-50">
                   {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.overrideConfirm')}
                 </button>
                 <button onClick={() => { setQcOverrideOpen(false); setQcOverrideReason('') }}
-                  className="text-xs text-gray-500 hover:text-gray-700">{t('common.cancel')}</button>
+                  className="text-xs text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>
               </div>
             </div>
           ) : (
-            <div className={`rounded-lg border p-3 space-y-2 ${qcRejectMode ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
-              <p className={`text-xs font-medium ${qcRejectMode ? 'text-red-900' : 'text-amber-900'}`}>
+            <div className={`rounded-lg border p-3 space-y-2 ${qcRejectMode ? 'border-critical-200 bg-critical-50' : 'border-caution-200 bg-caution-50'}`}>
+              <p className={`text-xs font-medium ${qcRejectMode ? 'text-critical-900' : 'text-caution-900'}`}>
                 {t(isDeclineVerdict ? 'admin.scholarship.qcDecision.reopenTitleDecline'
                   : qcRejectMode ? 'admin.scholarship.qcDecision.rejectTitle' : 'admin.scholarship.qcDecision.reopenTitle')}
               </p>
               <textarea value={qcComments} rows={3} onChange={(e) => setQcComments(e.target.value)}
                 placeholder={t(isDeclineVerdict ? 'admin.scholarship.qcDecision.commentsPlaceholderDecline'
                   : qcRejectMode ? 'admin.scholarship.qcDecision.rejectPlaceholder' : 'admin.scholarship.qcDecision.commentsPlaceholder')}
-                className={`w-full rounded border px-2 py-1.5 text-sm ${qcRejectMode ? 'border-red-300' : 'border-amber-300'}`} />
+                className={`w-full rounded border px-2 py-1.5 text-sm ${qcRejectMode ? 'border-critical-300' : 'border-caution-300'}`} />
               {/* Reject toggle (default off): flip the reopen box into an outright rejection.
                   Hidden on the decline route — reject is already the primary "Confirm decline" button,
                   so offering it again here is redundant; the secondary path is reopen-only. */}
               {!isDeclineVerdict && (
-              <label className="flex items-center gap-2 text-xs text-gray-700 select-none cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-ground-700 select-none cursor-pointer">
                 <input type="checkbox" checked={qcRejectMode} disabled={!!busy}
                   onChange={(e) => setQcRejectMode(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-gray-300 text-red-600 focus:ring-red-500" />
+                  className="h-3.5 w-3.5 rounded border-ground-300 text-critical-600 focus:ring-critical-500" />
                 {t('admin.scholarship.qcDecision.rejectToggle')}
               </label>
               )}
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${qcRejectMode ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${qcRejectMode ? 'bg-critical-600 hover:bg-critical-700' : 'bg-caution-600 hover:bg-caution-700'}`}>
                   {busy === 'qc' ? t('common.loading')
                     : t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectConfirm' : 'admin.scholarship.qcDecision.reopenConfirm')}
                 </button>
                 <button onClick={() => { setQcReopenOpen(false); setQcComments(''); setQcRejectMode(false) }}
-                  className="text-xs text-gray-500 hover:text-gray-700">{t('common.cancel')}</button>
+                  className="text-xs text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>
               </div>
             </div>
           )}
@@ -3012,17 +3032,17 @@ export default function AdminScholarshipDetailPage() {
             and the status must match services.ORG_REJECT_FROM. Rendering it anywhere else just
             produces a button that 403s or 400s. ─── */}
       {canOrgReject({ isSuper, role: role?.role, status: app.status }) && (
-        <div className="rounded-2xl border border-red-200 bg-white p-5 shadow-sm space-y-3">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+        <div className="rounded-2xl border border-critical-200 bg-ground-0 p-5 shadow-sm space-y-3">
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.orgReject.title')}
           </h2>
 
           {rejectStep === 'idle' && (
             <>
-              <p className="text-xs text-gray-500">{t('admin.scholarship.orgReject.hint')}</p>
+              <p className="text-xs text-ground-500">{t('admin.scholarship.orgReject.hint')}</p>
               <button type="button" onClick={() => setRejectStep('form')} disabled={!!busy}
-                className="w-full rounded-lg border border-red-300 px-3 py-2 text-sm font-medium
-                           text-red-700 hover:bg-red-50 disabled:opacity-50">
+                className="w-full rounded-lg border border-critical-300 px-3 py-2 text-sm font-medium
+                           text-critical-700 hover:bg-critical-50 disabled:opacity-50">
                 {t('admin.scholarship.orgReject.start')}
               </button>
             </>
@@ -3030,7 +3050,7 @@ export default function AdminScholarshipDetailPage() {
 
           {rejectStep === 'form' && (
             <>
-              <label htmlFor="org-reject-why" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="org-reject-why" className="block text-sm font-medium text-ground-700">
                 {t('admin.scholarship.orgReject.whyLabel')}
               </label>
               <textarea
@@ -3039,17 +3059,17 @@ export default function AdminScholarshipDetailPage() {
                 placeholder={t('admin.scholarship.orgReject.whyPlaceholder')}
                 className="w-full rounded-lg border px-3 py-2 text-sm"
               />
-              <p className="text-xs text-gray-500">{t('admin.scholarship.orgReject.whyHint')}</p>
+              <p className="text-xs text-ground-500">{t('admin.scholarship.orgReject.whyHint')}</p>
               <div className="flex gap-2">
                 <button type="button" onClick={closeReject}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-ground-600 hover:bg-ground-50">
                   {t('admin.scholarship.orgReject.cancel')}
                 </button>
                 {/* Mandatory reason enforced here AND at the endpoint (400 comments_required). */}
                 <button type="button" onClick={() => setRejectStep('confirm')}
                   disabled={!rejectComments.trim()}
-                  className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white
-                             hover:bg-red-700 disabled:opacity-40">
+                  className="flex-1 rounded-lg bg-critical-600 px-3 py-2 text-sm font-medium text-white
+                             hover:bg-critical-700 disabled:opacity-40">
                   {t('admin.scholarship.orgReject.submit')}
                 </button>
               </div>
@@ -3058,22 +3078,22 @@ export default function AdminScholarshipDetailPage() {
 
           {rejectStep === 'confirm' && (
             <>
-              <div className="rounded-lg border border-red-300 bg-red-50 p-3">
-                <p className="text-sm font-medium text-red-800">
+              <div className="rounded-lg border border-critical-300 bg-critical-50 p-3">
+                <p className="text-sm font-medium text-critical-800">
                   {t('admin.scholarship.orgReject.confirmTitle')}
                 </p>
-                <p className="mt-1 text-xs text-red-700">
+                <p className="mt-1 text-xs text-critical-700">
                   {t('admin.scholarship.orgReject.confirmBody')}
                 </p>
               </div>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setRejectStep('form')} disabled={!!busy}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm text-ground-600 hover:bg-ground-50">
                   {t('admin.scholarship.orgReject.back')}
                 </button>
                 <button type="button" onClick={doOrgReject} disabled={!!busy}
-                  className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white
-                             hover:bg-red-700 disabled:opacity-50">
+                  className="flex-1 rounded-lg bg-critical-600 px-3 py-2 text-sm font-medium text-white
+                             hover:bg-critical-700 disabled:opacity-50">
                   {busy === 'orgReject' ? t('admin.scholarship.orgReject.running')
                     : t('admin.scholarship.orgReject.confirmYes')}
                 </button>
@@ -3081,19 +3101,19 @@ export default function AdminScholarshipDetailPage() {
             </>
           )}
 
-          {rejectErr && <p className="text-sm text-red-600">{rejectErr}</p>}
+          {rejectErr && <p className="text-sm text-critical-600">{rejectErr}</p>}
         </div>
       )}
 
       {/* The record of an org-admin reject, once made. The reason lives ONLY here (it is never
           emailed), so this is the whole audit surface for an irreversible action. */}
       {app.status === 'rejected' && app.rejection_category === 'incomplete' && app.rejection_comments && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-2">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-2">
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.scholarship.orgReject.recordTitle')}
           </h2>
-          <p className="whitespace-pre-wrap text-sm text-gray-700">{app.rejection_comments}</p>
-          <p className="text-xs text-gray-400">
+          <p className="whitespace-pre-wrap text-sm text-ground-700">{app.rejection_comments}</p>
+          <p className="text-xs text-ground-400">
             {app.rejected_by_name || app.rejected_by || '—'}
             {app.rejected_at ? ` · ${formatDate(app.rejected_at)}` : ''}
           </p>
@@ -3114,8 +3134,8 @@ export default function AdminScholarshipDetailPage() {
         const assignLocked = decisionLocked
         const assigned = !!app.assigned_to_id
         return (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-2">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-2">
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {assigned ? t('admin.scholarship.assign.assignedTitle') : t('admin.scholarship.assignTitle')}
           </h2>
           <select
@@ -3124,7 +3144,7 @@ export default function AdminScholarshipDetailPage() {
             title={assignLocked ? t('admin.scholarship.assign.lockedHint')
               : firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
             onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
-            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-gray-100 disabled:text-gray-400"
+            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-400"
           >
             <option value="">{t('admin.scholarship.unassigned')}</option>
             {/* Assignable options. The backend already returns the org-fenced, review-capable set
@@ -3147,9 +3167,9 @@ export default function AdminScholarshipDetailPage() {
               ))}
           </select>
           {assignLocked ? (
-            <p className="text-xs text-gray-400">{t('admin.scholarship.assign.lockedHint')}</p>
+            <p className="text-xs text-ground-400">{t('admin.scholarship.assign.lockedHint')}</p>
           ) : firstAssignBlocked && (
-            <p className="text-xs text-amber-600">{t('admin.scholarship.assign.notReadyHint')}</p>
+            <p className="text-xs text-caution-600">{t('admin.scholarship.assign.notReadyHint')}</p>
           )}
         </div>
         )
@@ -3168,8 +3188,8 @@ export default function AdminScholarshipDetailPage() {
             Restyled from the old wide card: the column is narrow, so the select + button stack
             full-width instead of sitting side by side, and the chrome matches its siblings. ─── */}
       {witnessCardVisible && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-2">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-2">
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.sources.witness.title')}
           </h2>
           {/* Two states. SETTLED (a witness is on file): name the organisation and say what
@@ -3178,32 +3198,32 @@ export default function AdminScholarshipDetailPage() {
               Setting it back to None returns the card to the unassigned invitation. */}
           {app.witness_org && !witnessEditing ? (
             <>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-ground-700">
                 {t('admin.sources.witness.assignedNote', { org: app.witness_org.name })}
               </p>
-              <p className="text-xs text-gray-500">{t('admin.sources.witness.assignedNext')}</p>
+              <p className="text-xs text-ground-500">{t('admin.sources.witness.assignedNext')}</p>
               <button type="button"
                 onClick={() => { setWitnessEditing(true); setWitnessMsg('') }}
-                className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">
+                className="text-sm font-medium text-info-600 hover:text-info-700 hover:underline">
                 {t('admin.sources.witness.change')}
               </button>
             </>
           ) : (
             <>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-ground-500">
                 {app.witness_org
                   ? t('admin.sources.witness.changeHelp')
                   : t('admin.sources.witness.help')}
               </p>
               <select
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm focus:border-info-500 focus:ring-2 focus:ring-info-500"
                 value={witnessSel} onChange={(e) => setWitnessSel(e.target.value)}>
                 <option value="">{t('admin.sources.witness.none')}</option>
                 {activeSources.map((s) => <option key={s.id} value={s.code}>{s.name}</option>)}
               </select>
               <button type="button" onClick={doAssignWitness}
                 disabled={witnessBusy || witnessSel === (app.witness_org?.code || '')}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
                 {witnessBusy
                   ? t('admin.sources.witness.assigning')
                   : app.witness_org ? t('admin.sources.witness.update') : t('admin.sources.witness.assign')}
@@ -3212,14 +3232,14 @@ export default function AdminScholarshipDetailPage() {
                 <button type="button"
                   onClick={() => { setWitnessEditing(false); setWitnessSel(app.witness_org?.code || ''); setWitnessMsg('') }}
                   disabled={witnessBusy}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+                  className="w-full rounded-lg border border-ground-300 px-4 py-2 text-sm text-ground-600 hover:bg-ground-50 disabled:opacity-50">
                   {t('common.cancel')}
                 </button>
               )}
             </>
           )}
           {witnessMsg && (
-            <p className={`text-sm ${witnessMsg === t('admin.sources.witness.assigned') ? 'text-green-700' : 'text-red-600'}`}>{witnessMsg}</p>
+            <p className={`text-sm ${witnessMsg === t('admin.sources.witness.assigned') ? 'text-positive-700' : 'text-critical-600'}`}>{witnessMsg}</p>
           )}
         </div>
       )}
@@ -3243,21 +3263,21 @@ export default function AdminScholarshipDetailPage() {
         const foundationDone = !!bursary?.foundation_signed_at
         const witnessDone = !!bursary?.witness_signed_at
         const stateRow = (label: string, done: boolean) => (
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
-            <span className="text-sm text-gray-700">{label}</span>
-            <span className={done ? 'text-green-600' : 'text-gray-300'} aria-hidden>
+          <div className="flex items-center justify-between rounded-lg border border-ground-200 px-3 py-2">
+            <span className="text-sm text-ground-700">{label}</span>
+            <span className={done ? 'text-positive-600' : 'text-ground-300'} aria-hidden>
               {done ? '✓' : '–'}
             </span>
           </div>
         )
         return (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+          <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold tracking-tight text-gray-900">
+              <h2 className="text-base font-semibold tracking-tight text-ground-900">
                 {t('admin.scholarship.bursary.title')}
               </h2>
               {bursary?.status && (
-                <span className="rounded-full border border-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                <span className="rounded-full border border-ground-200 px-2.5 py-0.5 text-xs font-medium text-ground-600">
                   {bursary.status}
                 </span>
               )}
@@ -3269,16 +3289,16 @@ export default function AdminScholarshipDetailPage() {
               {stateRow(t('admin.scholarship.bursary.witness'), witnessDone)}
             </div>
             {!hasAgreement && (
-              <p className="text-xs text-gray-500">{t('admin.scholarship.bursary.awaitingSignature')}</p>
+              <p className="text-xs text-ground-500">{t('admin.scholarship.bursary.awaitingSignature')}</p>
             )}
-            {bursaryMsg && <p className="text-xs text-amber-600">{bursaryMsg}</p>}
+            {bursaryMsg && <p className="text-xs text-caution-600">{bursaryMsg}</p>}
             <div className="flex flex-wrap items-center gap-2">
               {isSuper && (
                 <button
                   type="button"
                   onClick={doCountersignBursary}
                   disabled={busy === 'bursary' || !hasAgreement || foundationDone}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50"
                 >
                   {t('admin.scholarship.bursary.countersign')}
                 </button>
@@ -3287,7 +3307,7 @@ export default function AdminScholarshipDetailPage() {
                 type="button"
                 onClick={doWitnessBursary}
                 disabled={busy === 'bursary' || !hasAgreement || witnessDone}
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50"
               >
                 {t('admin.scholarship.bursary.witnessAction')}
               </button>
@@ -3296,13 +3316,13 @@ export default function AdminScholarshipDetailPage() {
                   href={bursary.pdf_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm font-medium text-ground-700 hover:bg-ground-100"
                 >
                   {t('admin.scholarship.bursary.download')}
                 </a>
               )}
             </div>
-            <p className="text-xs text-gray-400">{t('admin.scholarship.bursary.note')}</p>
+            <p className="text-xs text-ground-400">{t('admin.scholarship.bursary.note')}</p>
           </div>
         )
       })()}
@@ -3315,29 +3335,29 @@ export default function AdminScholarshipDetailPage() {
         const rows = app.disbursements ?? []
         const released = totalReleased(rows)
         return (
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
+          <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold tracking-tight text-gray-900">
+              <h2 className="text-base font-semibold tracking-tight text-ground-900">
                 {t('admin.disbursement.title')}
               </h2>
               {released > 0 && (
-                <span className="rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                <span className="rounded-full border border-positive-200 bg-positive-50 px-2.5 py-0.5 text-xs font-medium text-positive-700">
                   {t('admin.disbursement.totalReleased')} RM{released.toLocaleString()}
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-400">{t('admin.disbursement.note')}</p>
+            <p className="text-xs text-ground-400">{t('admin.disbursement.note')}</p>
 
             {/* S5: maintenance sub-state — only once funded into the recurring loop. */}
             {app.status === 'maintenance' && (
-              <div className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 space-y-2">
+              <div className="rounded-lg border border-ground-100 bg-ground-50/60 p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-600">{t('admin.maintenance.title')}</span>
+                  <span className="text-xs font-medium text-ground-600">{t('admin.maintenance.title')}</span>
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    app.maintenance_substate === 'on_track' ? 'bg-green-100 text-green-700'
-                    : app.maintenance_substate === 'probation' ? 'bg-amber-100 text-amber-700'
-                    : app.maintenance_substate === 'on_hold' ? 'bg-red-100 text-red-700'
-                    : 'bg-blue-100 text-blue-700'}`}>
+                    app.maintenance_substate === 'on_track' ? 'bg-positive-100 text-positive-700'
+                    : app.maintenance_substate === 'probation' ? 'bg-caution-100 text-caution-700'
+                    : app.maintenance_substate === 'on_hold' ? 'bg-critical-100 text-critical-700'
+                    : 'bg-info-100 text-info-700'}`}>
                     {t(`admin.maintenance.substate.${app.maintenance_substate}`)}
                   </span>
                 </div>
@@ -3349,36 +3369,36 @@ export default function AdminScholarshipDetailPage() {
                         <button key={s} type="button"
                           onClick={() => doSetSubstate(s)}
                           disabled={busy === 'disbursement'}
-                          className="rounded-lg border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50">
+                          className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
                           {t(`admin.maintenance.action.${s}`)}
                         </button>
                       ))}
                   </div>
                 )}
                 {app.maintenance_substate === 'on_hold' && (
-                  <p className="text-[11px] text-red-600">{t('admin.maintenance.onHoldHint')}</p>
+                  <p className="text-[11px] text-critical-600">{t('admin.maintenance.onHoldHint')}</p>
                 )}
               </div>
             )}
 
             {rows.length === 0 ? (
-              <p className="text-sm text-gray-400">{t('admin.disbursement.empty')}</p>
+              <p className="text-sm text-ground-400">{t('admin.disbursement.empty')}</p>
             ) : (
               <div className="space-y-2">
                 {rows.map((d: AdminDisbursement) => {
                   const tone = disbursementTone(d.status)
-                  const toneClass = tone === 'green' ? 'bg-green-100 text-green-700'
-                    : tone === 'amber' ? 'bg-amber-100 text-amber-700'
-                    : tone === 'red' ? 'bg-red-100 text-red-700'
-                    : tone === 'grey' ? 'bg-gray-100 text-gray-600'
-                    : 'bg-blue-100 text-blue-700'
+                  const toneClass = tone === 'green' ? 'bg-positive-100 text-positive-700'
+                    : tone === 'amber' ? 'bg-caution-100 text-caution-700'
+                    : tone === 'red' ? 'bg-critical-100 text-critical-700'
+                    : tone === 'grey' ? 'bg-ground-100 text-ground-600'
+                    : 'bg-info-100 text-info-700'
                   return (
-                    <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
+                    <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ground-100 p-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-ground-700">
                           {d.label || `${t('admin.disbursement.tranche')} ${d.sequence}`}
                         </span>
-                        <span className="text-sm font-semibold text-gray-900">RM{Math.round(Number(d.amount)).toLocaleString()}</span>
+                        <span className="text-sm font-semibold text-ground-900">RM{Math.round(Number(d.amount)).toLocaleString()}</span>
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${toneClass}`}>
                           {t(`admin.disbursement.status.${d.status}`)}
                         </span>
@@ -3389,7 +3409,7 @@ export default function AdminScholarshipDetailPage() {
                             <button key={action} type="button"
                               onClick={() => doDisbursementAction(d.id, action)}
                               disabled={busy === 'disbursement'}
-                              className="rounded-lg border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50">
+                              className="rounded-lg border border-ground-300 px-3 py-1 text-xs font-medium text-ground-700 hover:bg-ground-100 disabled:opacity-50">
                               {t(`admin.disbursement.action.${action}`)}
                             </button>
                           ))}
@@ -3404,14 +3424,14 @@ export default function AdminScholarshipDetailPage() {
             {canWrite && (
               <div className="flex flex-wrap items-end gap-2 border-t pt-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">{t('admin.disbursement.amountLabel')}</label>
+                  <label className="block text-[11px] font-medium text-ground-600 mb-1">{t('admin.disbursement.amountLabel')}</label>
                   <input type="number" min={1} step={50} value={disbAmount}
                     onChange={(e) => setDisbAmount(e.target.value)}
                     placeholder="500"
                     className="w-28 rounded-lg border px-3 py-1.5 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">{t('admin.disbursement.labelLabel')}</label>
+                  <label className="block text-[11px] font-medium text-ground-600 mb-1">{t('admin.disbursement.labelLabel')}</label>
                   <input type="text" value={disbLabel} maxLength={100}
                     onChange={(e) => setDisbLabel(e.target.value)}
                     placeholder={t('admin.disbursement.labelPlaceholder')}
@@ -3424,7 +3444,7 @@ export default function AdminScholarshipDetailPage() {
                 </button>
               </div>
             )}
-            {disbMsg && <p className="text-xs text-amber-600">{disbMsg}</p>}
+            {disbMsg && <p className="text-xs text-caution-600">{disbMsg}</p>}
           </div>
         )
       })()}
@@ -3433,36 +3453,36 @@ export default function AdminScholarshipDetailPage() {
           Close a funded student's file with a reason. Terminal. Shows the closed summary
           once closed (the graduation thank-you relay stays open after closure). */}
       {(app.status === 'active' || app.status === 'maintenance' || app.status === 'closed') && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
-          <h2 className="text-base font-semibold tracking-tight text-gray-900">
+        <div className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm space-y-3">
+          <h2 className="text-base font-semibold tracking-tight text-ground-900">
             {t('admin.closure.title')}
           </h2>
           {app.status === 'closed' ? (
             <div className="space-y-1">
-              <p className="flex items-center gap-1.5 text-sm text-gray-700">
+              <p className="flex items-center gap-1.5 text-sm text-ground-700">
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                   app.closure_reason === 'graduated' || app.closure_reason === 'completed'
-                    ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                    ? 'bg-positive-100 text-positive-700' : 'bg-ground-200 text-ground-600'}`}>
                   {t(`admin.closure.reason.${app.closure_reason}`)}
                 </span>
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-ground-500">
                 {t('admin.closure.closedBy')} {app.closed_by || '—'}
                 {app.closed_at ? ` · ${formatDate(app.closed_at)}` : ''}
               </p>
             </div>
           ) : canWrite ? (
             <>
-              <p className="text-xs text-gray-500">{t('admin.closure.note')}</p>
+              <p className="text-xs text-ground-500">{t('admin.closure.note')}</p>
               {/* Offboarding checklist — informational guidance before closing. */}
-              <ul className="list-disc ml-5 text-xs text-gray-500 space-y-0.5">
+              <ul className="list-disc ml-5 text-xs text-ground-500 space-y-0.5">
                 {(['finalDisbursement', 'thankYou', 'records'] as const).map((k) => (
                   <li key={k}>{t(`admin.closure.checklist.${k}`)}</li>
                 ))}
               </ul>
               <div className="flex flex-wrap items-end gap-2">
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">{t('admin.closure.reasonLabel')}</label>
+                  <label className="block text-[11px] font-medium text-ground-600 mb-1">{t('admin.closure.reasonLabel')}</label>
                   <select value={closeReason}
                     onChange={(e) => setCloseReason(e.target.value as ClosureReason | '')}
                     className="rounded-lg border px-3 py-1.5 text-sm">
@@ -3474,11 +3494,11 @@ export default function AdminScholarshipDetailPage() {
                 </div>
                 <button type="button" onClick={doClose}
                   disabled={busy === 'close' || !closeReason}
-                  className="rounded-lg border border-red-300 px-4 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50">
+                  className="rounded-lg border border-critical-300 px-4 py-1.5 text-sm font-medium text-critical-700 hover:bg-critical-50 disabled:opacity-50">
                   {busy === 'close' ? t('common.loading') : t('admin.closure.close')}
                 </button>
               </div>
-              {closeMsg && <p className="text-xs text-amber-600">{closeMsg}</p>}
+              {closeMsg && <p className="text-xs text-caution-600">{closeMsg}</p>}
             </>
           ) : null}
         </div>

@@ -555,20 +555,19 @@ export const F3_FILES = [
 assertConverted('the student surfaces (F3)', F3_FILES, 20)
 
 /**
- * F4's surface — the admin console, MINUS the officer cockpit.
+ * F4 + F5's surface — the WHOLE admin console, cockpit included.
  *
- * A walk, so a new admin page is caught the day it is added. `admin/scholarship/[id]` is excluded
- * by name: it is one file with 544 raw colours and it belongs to F5.
+ * A walk, so a new admin page is caught the day it is added. The officer cockpit
+ * (`admin/scholarship/[id]`) was excluded here through F4 and ceilinged at 544; **F5 converted it,
+ * so the exclusion and the ceiling are both gone** and it is now simply one of the files below.
  */
-export const F5_COCKPIT = 'src/app/admin/scholarship/[id]/page.tsx'
-
 export const F4_FILES = [
   ...walkFiles('src/app/admin').map((f) => f.split(path.sep).join('/')),
   ...walkFiles('src/components/admin').map((f) => f.split(path.sep).join('/')),
   'src/lib/roleBadge.ts',
-].filter((f) => f !== F5_COCKPIT)
+]
 
-assertConverted('the admin console (F4)', F4_FILES, 40)
+assertConverted('the admin console, cockpit included (F4 + F5)', F4_FILES, 41)
 
 describe('the F4 semantic corrections the codemod could not make', () => {
   it('paints every filled control in the console with the BRAND — all 38 of them', () => {
@@ -619,13 +618,42 @@ describe('the F4 semantic corrections the codemod could not make', () => {
   })
 })
 
-describe('the officer cockpit belongs to F5, and is deliberately NOT converted yet', () => {
-  // The ceiling idiom again: one file, and the number may only fall. F5 takes it to zero.
-  const CEILING = 544
+describe('the F5 semantic corrections the codemod could not make', () => {
+  // The cockpit's ceiling (544) is GONE, not lowered: F5 converted the file, so it is covered by
+  // the conversion guard above like every other admin page. A ratchet that guards a converted
+  // surface is noise — the same reason F3 deleted the `src/components` one.
+  const cockpit = 'src/app/admin/scholarship/[id]/page.tsx'
 
-  it('has not grown', () => {
-    const count = withoutComments(read(F5_COCKPIT)).match(new RegExp(RAW, 'g'))?.length ?? 0
-    expect(count).toBeLessThanOrEqual(CEILING)
+  it('paints its two Save buttons with the BRAND, like the other 38 in the console', () => {
+    const src = withoutComments(read(cockpit))
+    expect(src).not.toMatch(/bg-info-600[^"']*text-white/)
+    expect((src.match(/bg-primary-600/g) ?? []).length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('separates "unrelated name" from a generic vision warning', () => {
+    // Both are notes in the same block. `caution-600` is the generic warning; a utility bill in an
+    // unrelated person's name is evidence the document may not belong to this household at all,
+    // and orange used to hold them apart. Sharing a tone would have flattened the distinction the
+    // officer most needs to see.
+    const src = read(cockpit)
+    expect(src).toMatch(/text-critical-600[^]{0,400}utilityNote\.unrelated/)
+    expect(src).toMatch(/text-caution-600[^]{0,120}vision_fields\.warnings/)
+  })
+
+  it('treats "how was this value produced" as a CATEGORY, and the AI briefing as INFO', () => {
+    // Two provenance kinds — read deterministically, or derived by a model — so the neutral one
+    // keeps the ground and the other takes one swatch. The Check-2 case summary is a different
+    // thing: a briefing whose JOB is to inform, so it is the info tone and its heading carries the
+    // "a model wrote this" claim. Colour should not be doing that work.
+    const src = read(cockpit)
+    expect(src).toMatch(/bg-category-1-surface text-category-1-ink/)
+    expect(src).toMatch(/border-info-100 bg-info-50\/60/)
+  })
+
+  it('keeps the HOLD badge filled, the same as a suspended sponsor in F4', () => {
+    // A circuit-breaker stopped the loop and a human has to look. It sits beside a grey `kind`
+    // chip, so a tint would have read as its quiet neighbour.
+    expect(read(cockpit)).toMatch(/bg-caution-600 px-1\.5 py-0\.5 text-\[11px\] font-semibold text-white/)
   })
 })
 
