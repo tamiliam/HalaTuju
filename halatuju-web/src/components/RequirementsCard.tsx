@@ -76,26 +76,25 @@ function requirementDesc(
 
 // Source type display labels
 /**
- * ⚠ A CATEGORY PALETTE — DELIBERATELY NOT ON THE THEME TOKENS (Layer 1 F2b, 2026-08-31).
+ * A CATEGORY PALETTE, on the `category-N` family (Layer 1 F2c, owner decision 2026-08-31).
  *
- * One colour per institution TYPE, so the six can be told apart. Renaming by family would put
- * `poly` (emerald) and `ILJTM` (green) both on `positive` — two institution types a student uses
- * to compare courses, rendered identically — and would claim a Polytechnic is "success".
- * (`ua` and `pismp` are already the same purple; that predates this sprint and is worth fixing
- * when the categorical family below arrives.)
+ * One colour per institution TYPE, so the six can be told apart. F2b measured what a tone rename
+ * would have done: `poly` (emerald) and `ILJTM` (green) would BOTH have become `positive` — two
+ * institution types a student uses to compare courses, rendered identically — and it would have
+ * claimed a Polytechnic is a "success".
  *
- * Stays literal, so it does not follow dark mode yet. Known gap, awaiting an owner decision on a
- * fifth CATEGORICAL token family. See the same note in `PathwayTrackCard.tsx`.
+ * ✅ FIXED HERE: `ua` and `pismp` were both purple, so two of the six were already
+ * indistinguishable before any of this. They now hold different swatches.
  *
- * ⛔ Do not "finish the migration" by running the codemod over this object.
+ * ⛔ Six categories, six DIFFERENT numbers. Never a tone.
  */
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  ua: { label: 'Universiti', color: 'bg-purple-100 text-purple-700' },
-  poly: { label: 'Polytechnic', color: 'bg-emerald-100 text-emerald-700' },
-  kkom: { label: 'Community College', color: 'bg-teal-100 text-teal-700' },
-  pismp: { label: 'PISMP', color: 'bg-purple-100 text-purple-700' },
-  ILJTM: { label: 'ILJTM', color: 'bg-green-100 text-green-700' },
-  ILKBS: { label: 'ILKBS', color: 'bg-lime-100 text-lime-700' },
+  ua: { label: 'Universiti', color: 'bg-category-1-surface text-category-1-ink' },
+  poly: { label: 'Polytechnic', color: 'bg-category-2-surface text-category-2-ink' },
+  kkom: { label: 'Community College', color: 'bg-category-5-surface text-category-5-ink' },
+  pismp: { label: 'PISMP', color: 'bg-category-7-surface text-category-7-ink' },
+  ILJTM: { label: 'ILJTM', color: 'bg-category-6-surface text-category-6-ink' },
+  ILKBS: { label: 'ILKBS', color: 'bg-category-3-surface text-category-3-ink' },
 }
 
 // Language codes that indicate medium-of-instruction variants (PISMP)
@@ -461,7 +460,10 @@ function PismpSection({
             <div className="flex flex-wrap gap-1.5 ml-[34px] mt-2">
               {langNames.map((name, i) => (
                 <span key={i}>
-                  <span className="px-2.5 py-1 bg-purple-50 border border-purple-100 rounded-full text-xs font-medium text-purple-700">
+                  {/* The medium-of-instruction chip: one category, so one swatch. `border` is
+                      dropped rather than given a fourth role — the surface already separates it
+                      from the card, and a role nothing else needs is a role that will rot. */}
+                  <span className="px-2.5 py-1 bg-category-4-surface rounded-full text-xs font-medium text-category-4-ink">
                     {name}
                   </span>
                   {i < langNames.length - 1 && (

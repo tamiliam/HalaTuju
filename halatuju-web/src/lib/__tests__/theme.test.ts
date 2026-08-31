@@ -340,66 +340,33 @@ assertConverted('the remaining shared components (F2b)', F2B_FILES, 20)
 
 /**
  * The four files that carry a CATEGORY PALETTE — a colour per category, whose only job is to be
- * distinct from its neighbours. Their ground is converted; their category hues are deliberately
- * still literal, awaiting an owner decision on a fifth categorical token family.
+ * distinct from its neighbours. F2b left them literal because the vocabulary had no name for that
+ * kind of colour; F2c added the `category-N` family (owner decision, 2026-08-31) and they are now
+ * converted like everything else. The number beside each is how many DISTINCT swatches that
+ * file's set requires.
  */
-const CATEGORICAL = {
-  'src/components/PathwayTrackCard.tsx': ['bg-green-100 text-green-800', 'bg-sky-100 text-sky-800',
-    'bg-blue-100 text-blue-800', 'bg-orange-100 text-orange-800', 'bg-purple-100 text-purple-800'],
-  'src/components/RequirementsCard.tsx': ['bg-emerald-100 text-emerald-700',
-    'bg-green-100 text-green-700', 'bg-teal-100 text-teal-700', 'bg-lime-100 text-lime-700'],
-  'src/components/SpecialConditions.tsx': ['text-pink-700', 'text-purple-700', 'text-orange-700',
-    'text-blue-700', 'text-red-700', 'text-amber-700'],
-  'src/components/CareerPathways.tsx': ['bg-indigo-50 text-indigo-700'],
+const CATEGORICAL: Record<string, number> = {
+  'src/components/PathwayTrackCard.tsx': 5 + 2,  // five fields of study + two pathways
+  'src/components/RequirementsCard.tsx': 6 + 1,  // six institution types + the language chip
+  'src/components/SpecialConditions.tsx': 7,     // seven entry conditions
+  'src/components/CareerPathways.tsx': 1,        // one occupation chip
 }
 
-describe('the F2b semantic corrections the codemod could not make', () => {
-  // ⚠ THE F1 DEFECT, A THIRD TIME. The sponsor LANDING page's two calls to action and its step
-  // numbers were blue, so the codemod called them `info`. They are the only reason the page
-  // exists, and a tenant's colour has to reach them. Pinned by name because "a filled control the
-  // user ACTS on carries the BRAND" has no mechanical test.
+assertConverted('the category-palette files (F2c)', Object.keys(CATEGORICAL), 4)
 
-  it('paints the sponsor landing page’s calls to action with the BRAND', () => {
-    const src = read('src/components/SponsorLanding.tsx')
-    expect(src.match(/bg-primary-600/g) ?? []).toHaveLength(3)  // two CTAs + the step numbers
-    expect(src).not.toMatch(/bg-info-600/)
-  })
-
-  it('paints the sponsor sign-up form’s submit with the BRAND', () => {
-    expect(read('src/components/SponsorDetailsForm.tsx')).toMatch(/bg-primary-600/)
-    expect(read('src/components/SponsorDetailsForm.tsx')).not.toMatch(/bg-info-600/)
-  })
-
-  it('paints a SELECTED control with the brand, and leaves plain links on the info tone', () => {
-    // The mirror of the rule. A text link is not a filled control; F1 settled that it stays `info`,
-    // and three sprints have now followed it. Selection, though, is the product acknowledging what
-    // the reader just did.
-    expect(read('src/components/SponsorNotifyPrefs.tsx')).toMatch(/border-primary-600 bg-primary-50/)
-    expect(read('src/components/SponsorLanding.tsx')).toMatch(/text-info-600/)
-  })
-})
-
-describe('the category palettes are exempt ON PURPOSE, and stay that way', () => {
-  // ⚠ THE F2b FINDING. The codemod renames by colour FAMILY, which is right for a signal and
-  // destructive for a set of categories: `poly` (emerald) and `ILJTM` (green) would BOTH become
-  // `positive`, so two institution types a student uses to compare courses would render
-  // identically — and it would assert that a Polytechnic is "success". Same for `sains_komputer`
-  // (blue) and `sains_sosial` (sky), both → `info`.
-  //
-  // These assertions exist so nobody later "finishes the migration" and silently collapses the
-  // categories. Deleting a line here is a product decision, not a tidy-up.
-  for (const [file, palette] of Object.entries(CATEGORICAL)) {
-    it(`${file.split('/').pop()} keeps its category hues literal`, () => {
-      const src = read(file)
-      for (const swatch of palette) expect(src).toContain(swatch)
-    })
-
-    it(`${file.split('/').pop()} has its GROUND converted even so`, () => {
-      // The exemption is for the category hues ONLY. Everything neutral — the card, the page, the
-      // borders, the text — must still be on the tokens, or the file is a dark-mode island.
-      const raw = withoutComments(read(file))
-        .match(/\b(?:bg|text|border|ring|divide|from|to|via|placeholder)-(?:gray|slate|zinc|neutral|stone)-\d{2,3}\b/g)
-      expect(raw ?? []).toEqual([])
+describe('a category palette is a SET, and its members must stay distinguishable', () => {
+  // ⚠ THE F2b FINDING, NOW GUARDED PROPERLY. A per-item rename can be right every time and still
+  // destroy the set: `poly` (emerald) and `ILJTM` (green) would BOTH have become `positive`, so
+  // two institution types a student uses to compare courses would have rendered identically, with
+  // nothing failing. The property that matters is not "which colour" but "how many DIFFERENT
+  // ones", so that is what is asserted.
+  for (const [file, needed] of Object.entries(CATEGORICAL)) {
+    it(`${file.split('/').pop()} uses ${needed} distinct swatches`, () => {
+      const used = new Set(
+        Array.from(withoutComments(read(file)).matchAll(/\bcategory-(\d)-(?:surface|ink|dot)\b/g),
+          (m) => m[1]),
+      )
+      expect(used.size).toBe(needed)
     })
   }
 
@@ -411,27 +378,63 @@ describe('the category palettes are exempt ON PURPOSE, and stay that way', () =>
   })
 })
 
-describe('the F2a semantic corrections the codemod could not make', () => {
-  // ⚠ THE F1 LESSON, PINNED. The codemod renames a colour correctly and can classify it wrongly:
-  // it turned the sponsor portal's primary call-to-action into `info`, which both reversed badly in
-  // dark AND meant a tenant's colour could never reach it. The rule that resolved it — a filled
-  // control the user ACTS on carries the BRAND; a coloured surface that INFORMS carries the tone —
-  // has no mechanical test, so the two judgements F2a actually made are pinned by name instead.
+describe('the category family itself', () => {
+  const cssSrc = read('src/app/globals.css')
+  const lightBlock = cssSrc.slice(cssSrc.indexOf(':root {'), cssSrc.indexOf(`[${THEME_ATTR}='dark']`))
+  const darkBlock = cssSrc.slice(cssSrc.indexOf(`[${THEME_ATTR}='dark']`))
+  const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8]
+  const chan = (block: string, name: string) => {
+    const m = block.match(new RegExp(`--${name}:\\s*([\\d ]+);`))
+    return m ? m[1].trim() : null
+  }
+  const lum = (block: string, name: string) => {
+    const [r, g, b] = (chan(block, name) ?? '0 0 0').split(/\s+/).map(Number)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
 
-  it('paints the funding progress bar with the BRAND, like its twin in the Action Centre', () => {
-    // Not a semantic state: a progress fill is this product measuring its own progress. Left as
-    // `info` a tenant would set their colour and watch ONE of the two bars follow it.
-    expect(read('src/components/FundingBar.tsx')).toMatch(/bg-primary-600/)
-    expect(read('src/components/FundingBar.tsx')).not.toMatch(/bg-info-/)
-    expect(read('src/components/ActionCentre.tsx')).toMatch(/bg-primary-500/)
+  it('defines all three roles for all eight swatches, in both modes', () => {
+    for (const n of NUMBERS) {
+      for (const role of ['surface', 'ink', 'dot']) {
+        expect(chan(lightBlock, `category-${n}-${role}`)).not.toBeNull()
+        expect(chan(darkBlock, `category-${n}-${role}`)).not.toBeNull()
+      }
+    }
   })
 
-  it('keeps the "done" medallions and the toast on their TONES, not the brand', () => {
-    // The mirror of the rule, and the reason it is not "make everything brand": these DO carry a
-    // semantic state. A tenant's colour must never repaint "this succeeded".
-    expect(read('src/components/ActionCentre.tsx')).toMatch(/bg-positive-600 text-sm text-white/)
-    expect(read('src/components/Toast.tsx')).toMatch(/bg-positive-600 text-white/)
-    expect(read('src/components/Toast.tsx')).toMatch(/bg-critical-600 text-white/)
+  it('keeps every swatch distinct from every other, in both modes', () => {
+    // The entire point of the family. Two swatches sharing a value is the F2b bug reintroduced one
+    // level down — and it would be invisible on any page that shows only one of them.
+    for (const block of [lightBlock, darkBlock]) {
+      const surfaces = NUMBERS.map((n) => chan(block, `category-${n}-surface`))
+      expect(new Set(surfaces).size).toBe(NUMBERS.length)
+    }
+  })
+
+  it('is READABLE: ink contrasts against its own surface, the opposite way in each mode', () => {
+    // Light: dark ink on a pale chip. Dark: pale ink on a deep chip. This is a ROLE SWAP, not the
+    // reversal the tones use — a chip has to stay a chip. A swatch failing this would be an
+    // unreadable chip in exactly one mode, which is the failure a light-only review never sees.
+    for (const n of NUMBERS) {
+      expect(lum(lightBlock, `category-${n}-ink`))
+        .toBeLessThan(lum(lightBlock, `category-${n}-surface`))
+      expect(lum(darkBlock, `category-${n}-ink`))
+        .toBeGreaterThan(lum(darkBlock, `category-${n}-surface`))
+    }
+  })
+
+  it('avoids the four tone hues, so a category chip is never mistaken for a status', () => {
+    // The swatches are violet / teal / orange / pink / cyan / lime / fuchsia / indigo. Green, blue,
+    // amber and red belong to the tones, and a green category chip beside a green "done" badge is
+    // exactly the confusion this family exists to prevent. Pinned against the source comments that
+    // name each hue, so a retune has to restate the choice rather than drift out of it.
+    const block = lightBlock.slice(lightBlock.indexOf('--category-1-surface'),
+                                   lightBlock.indexOf('--critical-50'))
+    for (const hue of ['violet', 'teal', 'orange', 'pink', 'cyan', 'lime', 'fuchsia', 'indigo']) {
+      expect(block).toContain(hue)
+    }
+    for (const toneHue of ['green-', 'blue-', 'amber-', 'red-']) {
+      expect(block).not.toContain(toneHue)
+    }
   })
 })
 

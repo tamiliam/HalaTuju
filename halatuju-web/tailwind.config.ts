@@ -7,6 +7,21 @@ const toneRamp = (tone: string) => Object.fromEntries(
   ),
 )
 
+/**
+ * The eight category swatches, three ROLES each (Layer 1 F2c).
+ *
+ * Gives `bg-category-3-surface`, `text-category-3-ink`, `bg-category-3-dot`. Roles rather than
+ * numbered stops because a category colour has no ramp — it is one chip, and its dark values are
+ * a role swap (deep surface, pale ink), not the reversal the tones use.
+ */
+const categorySwatches = Object.fromEntries(
+  [1, 2, 3, 4, 5, 6, 7, 8].map((n) => [n, {
+    surface: `rgb(var(--category-${n}-surface) / <alpha-value>)`,
+    ink: `rgb(var(--category-${n}-ink) / <alpha-value>)`,
+    dot: `rgb(var(--category-${n}-dot) / <alpha-value>)`,
+  }]),
+)
+
 const config: Config = {
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
@@ -60,6 +75,10 @@ const config: Config = {
         info: toneRamp('info'),
         caution: toneRamp('caution'),
         critical: toneRamp('critical'),
+        // ⚠ NOT a tone. `category-N` MEANS NOTHING — it exists so one field of study, institution
+        // type or entry condition can be told from the next. Never use it for a state, and never
+        // use a tone for a category: see globals.css and docs/decisions.md.
+        category: categorySwatches,
 
         // Legacy flat semantics — predate the ramps above and are effectively
         // unused (`bg-success`, not `bg-green-500`). Left alone rather than

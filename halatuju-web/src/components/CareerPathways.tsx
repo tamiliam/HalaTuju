@@ -28,7 +28,7 @@ export default function CareerPathways({ occupations }: CareerPathwaysProps) {
               href={occ.emasco_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium hover:bg-indigo-100 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-category-8-surface text-category-8-ink rounded-full text-sm font-medium hover:opacity-80 transition-opacity"
             >
               {occ.job_title}
               <svg className="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,7 +38,7 @@ export default function CareerPathways({ occupations }: CareerPathwaysProps) {
           ) : (
             <span
               key={occ.masco_code}
-              className="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium"
+              className="inline-flex items-center px-3 py-1.5 bg-category-8-surface text-category-8-ink rounded-full text-sm font-medium"
             >
               {occ.job_title}
             </span>

@@ -31,28 +31,23 @@ const TRACK_IMAGES: Record<string, Record<string, string>> = {
 }
 
 /**
- * ⚠ A CATEGORY PALETTE — DELIBERATELY NOT ON THE THEME TOKENS (Layer 1 F2b, 2026-08-31).
+ * A CATEGORY PALETTE, on the `category-N` family (Layer 1 F2c, owner decision 2026-08-31).
  *
  * These five colours do not MEAN anything. They exist so a student can tell one field of study
- * from another at a glance, and their only requirement is to be DISTINCT from each other. The
- * theme vocabulary has four tones — positive / info / caution / critical — which are signals, and
- * renaming by colour family would map `sains_komputer` (blue) and `sains_sosial` (sky) BOTH onto
- * `info`: two different fields, rendered identically. It would also assert that Science is
- * "success", which is meaningless here.
+ * from another at a glance, and their only requirement is to be DISTINCT from each other — which
+ * is exactly why they are not tones. F2b measured what a tone rename would have done here:
+ * `sains_komputer` (blue) and `sains_sosial` (sky) would BOTH have become `info`, rendering two
+ * different fields identically, and it would have claimed Science is a "success".
  *
- * So they stay literal, and they do NOT follow dark mode yet. That is a known gap, not an
- * oversight: the product needs a fifth, CATEGORICAL family (a set of hues chosen to be mutually
- * distinct in both modes) and that is a decision the owner has not been asked for yet. Raised at
- * the end of F2b; F7 must not flip the switch while these are still literal.
- *
- * ⛔ Do not "finish the migration" by running the codemod over this object.
+ * ⛔ NEVER put a tone in this table, and never put `category-N` on a state. The numbers are
+ * arbitrary and carry no order — pick any unused one for a new field.
  */
 const TRACK_COLORS: Record<string, string> = {
-  sains: 'bg-green-100 text-green-800',
-  sains_komputer: 'bg-blue-100 text-blue-800',
-  kejuruteraan: 'bg-orange-100 text-orange-800',
-  perakaunan: 'bg-purple-100 text-purple-800',
-  sains_sosial: 'bg-sky-100 text-sky-800',
+  sains: 'bg-category-6-surface text-category-6-ink',
+  sains_komputer: 'bg-category-5-surface text-category-5-ink',
+  kejuruteraan: 'bg-category-3-surface text-category-3-ink',
+  perakaunan: 'bg-category-1-surface text-category-1-ink',
+  sains_sosial: 'bg-category-2-surface text-category-2-ink',
 }
 
 const TRACK_I18N_KEYS: Record<string, string> = {
@@ -94,9 +89,12 @@ export default function PathwayTrackCard({ track }: PathwayTrackCardProps) {
     ? `/pathway/matric?track=${track.track}`
     : `/pathway/stpm?stream=${track.track}`
 
+  // Two categories (Matriculation / Form 6), so two swatches. Distinct from each other is all
+  // that is required; they may reuse numbers the TRACK_COLORS table uses, because the two sets
+  // are never compared against one another — only within themselves.
   const pathwayBadgeColor = isMatric
-    ? 'bg-purple-100 text-purple-700'
-    : 'bg-indigo-100 text-indigo-700'
+    ? 'bg-category-7-surface text-category-7-ink'
+    : 'bg-category-8-surface text-category-8-ink'
 
   const trackBadgeColor = TRACK_COLORS[track.track] || 'bg-ground-100 text-ground-700'
 

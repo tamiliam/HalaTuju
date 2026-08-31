@@ -115,6 +115,52 @@
   --caution-800: 146 64 14;
   --caution-900: 120 53 15;
 
+  /* ── category: the fifth family, and the only one that MEANS NOTHING (Layer 1 F2c) ──────────
+     A field of study, a type of institution, an entry condition. The colour's entire job is to
+     be DIFFERENT from the one next to it. That is why it cannot be a tone: positive / info /
+     caution / critical each assert something, so mapping categories onto them both collapses
+     distinct categories that happen to share a hue family (F2b measured two such pairs) and
+     claims that "Science" is a success or that "female applicants only" is an error.
+
+     ── Three ROLES, not numbered stops (the F2a ground lesson) ──
+       surface  the chip's background      ink  the text on that surface      dot  a solid marker
+     A stop number would have to be re-derived per mode and would say nothing about what it is
+     for. A role survives any future retune, and the guard can check the relationship.
+
+     ── The eight hues deliberately AVOID green / blue / amber / red ──
+     Those four belong to the tones. A green category chip beside a green "done" badge is the
+     confusion this family exists to prevent. Eight is what the largest set needs (seven entry
+     conditions) plus one spare; sets do NOT need to be distinct from each OTHER, only within
+     themselves, so eight covers every set in the product.
+
+     Values are Tailwind's own (100/800/500 light, 900/200/400 dark), generated rather than typed
+     — the same rule the tone ramps follow. Dark is NOT a reversal of light: a chip has to stay a
+     chip, so the surface goes deep and the ink goes pale, which is a role swap, not a mirror. */
+  --category-1-surface: 237 233 254;  /* violet-100 */
+  --category-1-ink: 91 33 182;        /* violet-800 */
+  --category-1-dot: 139 92 246;       /* violet-500 */
+  --category-2-surface: 204 251 241;  /* teal-100 */
+  --category-2-ink: 17 94 89;         /* teal-800 */
+  --category-2-dot: 20 184 166;       /* teal-500 */
+  --category-3-surface: 255 237 213;  /* orange-100 */
+  --category-3-ink: 154 52 18;        /* orange-800 */
+  --category-3-dot: 249 115 22;       /* orange-500 */
+  --category-4-surface: 252 231 243;  /* pink-100 */
+  --category-4-ink: 157 23 77;        /* pink-800 */
+  --category-4-dot: 236 72 153;       /* pink-500 */
+  --category-5-surface: 207 250 254;  /* cyan-100 */
+  --category-5-ink: 21 94 117;        /* cyan-800 */
+  --category-5-dot: 6 182 212;        /* cyan-500 */
+  --category-6-surface: 236 252 203;  /* lime-100 */
+  --category-6-ink: 63 98 18;         /* lime-800 */
+  --category-6-dot: 132 204 22;       /* lime-500 */
+  --category-7-surface: 250 232 255;  /* fuchsia-100 */
+  --category-7-ink: 134 25 143;       /* fuchsia-800 */
+  --category-7-dot: 217 70 239;       /* fuchsia-500 */
+  --category-8-surface: 224 231 255;  /* indigo-100 */
+  --category-8-ink: 55 48 163;        /* indigo-800 */
+  --category-8-dot: 99 102 241;       /* indigo-500 */
+
   /* critical — Tailwind red */
   --critical-50: 254 242 242;
   --critical-100: 254 226 226;
@@ -201,6 +247,33 @@
   --caution-700: 253 230 138;
   --caution-800: 254 243 199;
   --caution-900: 255 251 235;
+
+  /* category — the surface goes deep and the ink goes pale. A ROLE SWAP, not the mirror the
+     tones use: a chip must still read as a chip sitting on the card, so it cannot simply invert. */
+  --category-1-surface: 76 29 149;    /* violet-900 */
+  --category-1-ink: 221 214 254;      /* violet-200 */
+  --category-1-dot: 167 139 250;      /* violet-400 */
+  --category-2-surface: 19 78 74;     /* teal-900 */
+  --category-2-ink: 153 246 228;      /* teal-200 */
+  --category-2-dot: 45 212 191;       /* teal-400 */
+  --category-3-surface: 124 45 18;    /* orange-900 */
+  --category-3-ink: 254 215 170;      /* orange-200 */
+  --category-3-dot: 251 146 60;       /* orange-400 */
+  --category-4-surface: 131 24 67;    /* pink-900 */
+  --category-4-ink: 251 207 232;      /* pink-200 */
+  --category-4-dot: 244 114 182;      /* pink-400 */
+  --category-5-surface: 22 78 99;     /* cyan-900 */
+  --category-5-ink: 165 243 252;      /* cyan-200 */
+  --category-5-dot: 34 211 238;       /* cyan-400 */
+  --category-6-surface: 54 83 20;     /* lime-900 */
+  --category-6-ink: 217 249 157;      /* lime-200 */
+  --category-6-dot: 163 230 53;       /* lime-400 */
+  --category-7-surface: 112 26 117;   /* fuchsia-900 */
+  --category-7-ink: 245 208 254;      /* fuchsia-200 */
+  --category-7-dot: 232 121 249;      /* fuchsia-400 */
+  --category-8-surface: 49 46 129;    /* indigo-900 */
+  --category-8-ink: 199 210 254;      /* indigo-200 */
+  --category-8-dot: 129 140 248;      /* indigo-400 */
 
   /* critical — Tailwind red */
   --critical-50: 127 29 29;

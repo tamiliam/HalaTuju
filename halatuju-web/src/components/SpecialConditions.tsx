@@ -34,55 +34,53 @@ export default function SpecialConditions({
         </svg>
         {t('common.specialConditions')}
       </h2>
-      {/* ⚠ A CATEGORY PALETTE — DELIBERATELY NOT ON THE THEME TOKENS (Layer 1 F2b, 2026-08-31).
-          Seven entry conditions, each with its own dot colour so they can be told apart in a list.
-          They are not signals: "female applicants only" is a REQUIREMENT, not a warning, and
-          "medical fitness required" is not an error. Renaming by family would put three of the
-          seven onto `critical`/`caution`/`info` — reading as alarm — while pink, purple and orange
-          stayed literal, leaving the set half-converted and incoherent. The warning triangle in
-          the heading above IS a genuine caution signal and DID convert.
-          Known gap: these do not follow dark mode. Awaiting the owner's decision on a fifth
-          CATEGORICAL family. ⛔ Do not "finish the migration" over this block. */}
+      {/* A CATEGORY PALETTE, on the `category-N` family (Layer 1 F2c, owner decision 2026-08-31).
+          Seven entry conditions, seven swatches, so they can be told apart in a list. They are NOT
+          signals: "female applicants only" is a REQUIREMENT, not a warning, and "medical fitness
+          required" is not an error — which is why a tone would have been wrong here, not merely
+          ugly. The warning triangle in the heading above IS a genuine caution and stays a tone.
+          ✅ Fixed here: `noColorblind` and `noDisability` were both red, so two of the seven were
+          already indistinguishable. ⛔ Seven conditions, seven DIFFERENT numbers. Never a tone. */}
       <div className="space-y-2">
         {reqMale && (
-          <div className="flex items-center gap-2 text-sm text-blue-700">
-            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-category-5-ink">
+            <span className="w-2 h-2 bg-category-5-dot rounded-full flex-shrink-0" />
             {t('common.maleOnly')}
           </div>
         )}
         {reqFemale && (
-          <div className="flex items-center gap-2 text-sm text-pink-700">
-            <span className="w-2 h-2 bg-pink-500 rounded-full flex-shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-category-4-ink">
+            <span className="w-2 h-2 bg-category-4-dot rounded-full flex-shrink-0" />
             {t('common.femaleOnly')}
           </div>
         )}
         {single && (
-          <div className="flex items-center gap-2 text-sm text-purple-700">
-            <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-category-1-ink">
+            <span className="w-2 h-2 bg-category-1-dot rounded-full flex-shrink-0" />
             {t('common.unmarriedOnly')}
           </div>
         )}
         {reqInterview && (
-          <div className="flex items-center gap-2 text-sm text-amber-700">
-            <span className="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-category-3-ink">
+            <span className="w-2 h-2 bg-category-3-dot rounded-full flex-shrink-0" />
             {t('common.interviewRequired')}
           </div>
         )}
         {noColorblind && (
-          <div className="flex items-center gap-2 text-sm text-red-700">
-            <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-category-2-ink">
+            <span className="w-2 h-2 bg-category-2-dot rounded-full flex-shrink-0" />
             {t('common.noColorblind')}
           </div>
         )}
         {noDisability && (
-          <div className="flex items-center gap-2 text-sm text-red-700">
-            <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-category-8-ink">
+            <span className="w-2 h-2 bg-category-8-dot rounded-full flex-shrink-0" />
             {t('common.noDisability')}
           </div>
         )}
         {reqMedicalFitness && (
-          <div className="flex items-center gap-2 text-sm text-orange-700">
-            <span className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-category-6-ink">
+            <span className="w-2 h-2 bg-category-6-dot rounded-full flex-shrink-0" />
             {t('common.medicalFitness')}
           </div>
         )}
