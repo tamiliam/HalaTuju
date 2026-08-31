@@ -75,6 +75,20 @@ function requirementDesc(
 }
 
 // Source type display labels
+/**
+ * ⚠ A CATEGORY PALETTE — DELIBERATELY NOT ON THE THEME TOKENS (Layer 1 F2b, 2026-08-31).
+ *
+ * One colour per institution TYPE, so the six can be told apart. Renaming by family would put
+ * `poly` (emerald) and `ILJTM` (green) both on `positive` — two institution types a student uses
+ * to compare courses, rendered identically — and would claim a Polytechnic is "success".
+ * (`ua` and `pismp` are already the same purple; that predates this sprint and is worth fixing
+ * when the categorical family below arrives.)
+ *
+ * Stays literal, so it does not follow dark mode yet. Known gap, awaiting an owner decision on a
+ * fifth CATEGORICAL token family. See the same note in `PathwayTrackCard.tsx`.
+ *
+ * ⛔ Do not "finish the migration" by running the codemod over this object.
+ */
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
   ua: { label: 'Universiti', color: 'bg-purple-100 text-purple-700' },
   poly: { label: 'Polytechnic', color: 'bg-emerald-100 text-emerald-700' },
@@ -135,10 +149,10 @@ export default function RequirementsCard({
   const isTvet = requirements.source_type === 'tvet'
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <section className="bg-ground-0 rounded-xl border border-ground-200 overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-5 pb-3 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-ground-900 flex items-center gap-2">
           <svg className="w-[18px] h-[18px] text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -155,16 +169,16 @@ export default function RequirementsCard({
         {/* General Requirements (Syarat Am) */}
         {hasGeneral && (
           <div>
-            <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            <h3 className="text-[11px] font-semibold text-ground-400 uppercase tracking-wider mb-2">
               {t('courseDetail.generalReq')}
             </h3>
             {isTvet ? (
               // TVET: clean key-value table layout (matches Stitch design)
-              <div className="rounded-lg border border-gray-100 divide-y divide-gray-100">
+              <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
                 {requirements.general.map((item) => (
                   <div key={item.key} className="flex justify-between items-center px-3 py-2">
-                    <span className="text-xs text-gray-500">{tvetKeyLabel(item.key, locale)}</span>
-                    <span className="text-xs font-medium text-gray-800">{tvetValueLabel(item, locale)}</span>
+                    <span className="text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
+                    <span className="text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
                   </div>
                 ))}
               </div>
@@ -174,7 +188,7 @@ export default function RequirementsCard({
                 {requirements.general.map((item) => (
                   <div key={item.key} className="flex items-start gap-2.5">
                     <CheckIcon color="gray" />
-                    <span className="text-[13px] text-gray-700 leading-snug">{item.label}</span>
+                    <span className="text-[13px] text-ground-700 leading-snug">{item.label}</span>
                   </div>
                 ))}
               </div>
@@ -185,15 +199,15 @@ export default function RequirementsCard({
         {/* Special Requirements (Syarat Khas) — simple flags */}
         {hasSpecial && (
           <div>
-            <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            <h3 className="text-[11px] font-semibold text-ground-400 uppercase tracking-wider mb-2">
               {t('courseDetail.specialReq')}
             </h3>
             {isTvet ? (
-              <div className="rounded-lg border border-gray-100 divide-y divide-gray-100">
+              <div className="rounded-lg border border-ground-100 divide-y divide-ground-100">
                 {requirements.special.map((item) => (
                   <div key={item.key} className="flex justify-between items-center px-3 py-2">
-                    <span className="text-xs text-gray-500">{tvetKeyLabel(item.key, locale)}</span>
-                    <span className="text-xs font-medium text-gray-800">{tvetValueLabel(item, locale)}</span>
+                    <span className="text-xs text-ground-500">{tvetKeyLabel(item.key, locale)}</span>
+                    <span className="text-xs font-medium text-ground-800">{tvetValueLabel(item, locale)}</span>
                   </div>
                 ))}
               </div>
@@ -202,7 +216,7 @@ export default function RequirementsCard({
                 {requirements.special.map((item) => (
                   <div key={item.key} className="flex items-start gap-2.5">
                     <CheckIcon color="blue" />
-                    <span className="text-[13px] text-gray-700 leading-snug">{item.label}</span>
+                    <span className="text-[13px] text-ground-700 leading-snug">{item.label}</span>
                   </div>
                 ))}
               </div>
@@ -234,7 +248,7 @@ export default function RequirementsCard({
 
         {/* Remarks — skip auto-generated text */}
         {requirements.remarks && !requirements.remarks.startsWith('General:') && (
-          <p className="text-[11px] text-gray-400 pt-3 border-t border-gray-100 italic leading-relaxed">
+          <p className="text-[11px] text-ground-400 pt-3 border-t border-ground-100 italic leading-relaxed">
             {requirements.remarks}
           </p>
         )}
@@ -247,9 +261,9 @@ export default function RequirementsCard({
 
 function CheckIcon({ color }: { color: 'gray' | 'blue' | 'green' }) {
   const styles = {
-    gray: 'bg-gray-100 text-gray-500',
-    blue: 'bg-blue-50 text-blue-500',
-    green: 'bg-green-50 text-green-500',
+    gray: 'bg-ground-100 text-ground-500',
+    blue: 'bg-info-50 text-info-500',
+    green: 'bg-positive-50 text-positive-500',
   }
   return (
     <span className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-full ${styles[color]} flex items-center justify-center`}>
@@ -309,17 +323,17 @@ function OrGroupSection({
 
   return (
     <div>
-      <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+      <h3 className="text-[11px] font-semibold text-ground-400 uppercase tracking-wider mb-2">
         {label}
       </h3>
       <div className="space-y-2">
         {displayGroups.map((group, idx) => (
-          <div key={idx} className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-100">
+          <div key={idx} className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
             <div className="flex items-start gap-2.5 mb-2">
               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-500 text-white text-[11px] font-bold flex-shrink-0">
                 {idx + 1}
               </span>
-              <span className="text-[13px] text-gray-600 leading-snug pt-0.5">
+              <span className="text-[13px] text-ground-600 leading-snug pt-0.5">
                 {requirementDesc(group.count, group.grade, group.subjects.length, locale)}
               </span>
             </div>
@@ -327,7 +341,7 @@ function OrGroupSection({
               {group.subjects.map((subj) => (
                 <span
                   key={subj}
-                  className="px-2.5 py-1 bg-blue-50 border border-blue-100 rounded-full text-xs font-medium text-blue-700"
+                  className="px-2.5 py-1 bg-info-50 border border-info-100 rounded-full text-xs font-medium text-info-700"
                 >
                   {getSubjectName(subj, locale)}
                 </span>
@@ -398,7 +412,7 @@ function PismpSection({
   return (
     <div>
       {showHeading && (
-        <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+        <h3 className="text-[11px] font-semibold text-ground-400 uppercase tracking-wider mb-2">
           {label}
         </h3>
       )}
@@ -407,12 +421,12 @@ function PismpSection({
           const isGenericRule = rule.subjects.length === 0
 
           return (
-            <div key={idx} className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-100">
+            <div key={idx} className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
               <div className="flex items-start gap-2.5">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-500 text-white text-[11px] font-bold flex-shrink-0">
                   {idx + 1}
                 </span>
-                <span className="text-[13px] text-gray-600 leading-snug pt-0.5">
+                <span className="text-[13px] text-ground-600 leading-snug pt-0.5">
                   {requirementDesc(rule.min_count, rule.min_grade, rule.subjects.length, locale)}
                 </span>
               </div>
@@ -421,7 +435,7 @@ function PismpSection({
                   {rule.subjects.map((subj) => (
                     <span
                       key={subj}
-                      className="px-2.5 py-1 bg-blue-50 border border-blue-100 rounded-full text-xs font-medium text-blue-700"
+                      className="px-2.5 py-1 bg-info-50 border border-info-100 rounded-full text-xs font-medium text-info-700"
                     >
                       {getSubjectName(subj, locale)}
                     </span>
@@ -434,12 +448,12 @@ function PismpSection({
 
         {/* Language OR rule — appended as last numbered rule */}
         {hasLangs && (
-          <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-100">
+          <div className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
             <div className="flex items-start gap-2.5">
               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-500 text-white text-[11px] font-bold flex-shrink-0">
                 {displayRules.length + 1}
               </span>
-              <span className="text-[13px] text-gray-600 leading-snug pt-0.5">
+              <span className="text-[13px] text-ground-600 leading-snug pt-0.5">
                 {gradeLabel(langGrade, locale)}{' '}
                 {locale === 'en' ? 'or better in:' : 'atau lebih dalam:'}
               </span>
@@ -451,7 +465,7 @@ function PismpSection({
                     {name}
                   </span>
                   {i < langNames.length - 1 && (
-                    <span className="text-xs text-gray-400 mx-1">{orLabel}</span>
+                    <span className="text-xs text-ground-400 mx-1">{orLabel}</span>
                   )}
                 </span>
               ))}

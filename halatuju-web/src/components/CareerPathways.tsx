@@ -13,11 +13,11 @@ export default function CareerPathways({ occupations }: CareerPathwaysProps) {
   if (!occupations || occupations.length === 0) return null
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+    <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+      <h2 className="text-xl font-semibold text-ground-900 mb-2">
         {t('courseDetail.careerPathways')}
       </h2>
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="text-sm text-ground-500 mb-4">
         {t('courseDetail.careerPathwaysDesc')}
       </p>
       <div className="flex flex-wrap gap-2">

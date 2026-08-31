@@ -16,7 +16,7 @@ import { verdictReliability, type Reliability } from '@/lib/officerCockpit'
 
 function Bar({ value, strong = false }: { value: number; strong?: boolean }) {
   return (
-    <div className={`flex-1 overflow-hidden rounded-full bg-gray-200 ${strong ? 'h-2.5' : 'h-2'}`}>
+    <div className={`flex-1 overflow-hidden rounded-full bg-ground-200 ${strong ? 'h-2.5' : 'h-2'}`}>
       <div className="h-full rounded-full bg-primary-500" style={{ width: `${Math.round(value * 100)}%` }} />
     </div>
   )
@@ -37,35 +37,35 @@ export default function AiReliabilityCard({ token }: { token: string | null }) {
   const pct = (x: number) => `${Math.round(x * 100)}%`
 
   return (
-    <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <h2 className="font-semibold text-gray-900">{t('admin.scholarship.reliability.title')}</h2>
-      <p className="mt-0.5 text-sm text-gray-500">
+    <div className="mb-6 rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
+      <h2 className="font-semibold text-ground-900">{t('admin.scholarship.reliability.title')}</h2>
+      <p className="mt-0.5 text-sm text-ground-500">
         {t('admin.scholarship.reliability.subtitle', { n: String(r.applications) })}
       </p>
       {r.overall.decided === 0 ? (
-        <p className="mt-3 text-sm text-gray-500">{t('admin.scholarship.reliability.empty')}</p>
+        <p className="mt-3 text-sm text-ground-500">{t('admin.scholarship.reliability.empty')}</p>
       ) : (
         <div className="mt-4 space-y-2.5">
           {r.perFact.map((f) => (
             <div key={f.fact} className="flex items-center gap-3">
-              <span className="w-28 shrink-0 text-sm text-gray-700">
+              <span className="w-28 shrink-0 text-sm text-ground-700">
                 {t(`admin.scholarship.verdict.fact.${f.fact}`)}
               </span>
               <Bar value={f.pct} />
-              <span className="w-10 shrink-0 text-right text-sm font-semibold text-gray-900">
+              <span className="w-10 shrink-0 text-right text-sm font-semibold text-ground-900">
                 {f.decided ? pct(f.pct) : '—'}
               </span>
-              <span className="w-16 shrink-0 text-right text-xs text-gray-400">
+              <span className="w-16 shrink-0 text-right text-xs text-ground-400">
                 {f.decided ? `(${f.agree}/${f.decided})` : ''}
               </span>
             </div>
           ))}
-          <div className="!mt-3 flex items-center gap-3 border-t border-gray-100 pt-3">
-            <span className="w-28 shrink-0 text-sm font-semibold text-gray-900">
+          <div className="!mt-3 flex items-center gap-3 border-t border-ground-100 pt-3">
+            <span className="w-28 shrink-0 text-sm font-semibold text-ground-900">
               {t('admin.scholarship.reliability.overall')}
             </span>
             <Bar value={r.overall.pct} strong />
-            <span className="w-10 shrink-0 text-right text-sm font-bold text-gray-900">{pct(r.overall.pct)}</span>
+            <span className="w-10 shrink-0 text-right text-sm font-bold text-ground-900">{pct(r.overall.pct)}</span>
             <span className="w-16 shrink-0" />
           </div>
         </div>

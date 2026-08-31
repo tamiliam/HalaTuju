@@ -132,7 +132,7 @@ export default function PathwayPicker({
   })
 
   const chip = (on: boolean) =>
-    `rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`
+    `rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`
 
   return (
     <div className="space-y-5">
@@ -142,7 +142,7 @@ export default function PathwayPicker({
         <div className="grid grid-cols-2 gap-3">
           {(['sure', 'uncertain'] as const).map((c) => (
             <button key={c} type="button" onClick={() => setCertainty(c)}
-              className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${form.pathwayCertainty === c ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}>
+              className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${form.pathwayCertainty === c ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-ground-300 text-ground-600 hover:border-ground-400'}`}>
               {t(`scholarship.apply.plan.${c}`)}
             </button>
           ))}
@@ -199,9 +199,9 @@ export default function PathwayPicker({
             <div>
               <FieldLabel>{t('scholarship.apply.plan.aliranLabel')}</FieldLabel>
               {loading ? (
-                <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
+                <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
               ) : availableAlirans.length === 0 ? (
-                <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noProgrammes')}</p>
+                <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t('scholarship.apply.plan.noProgrammes')}</p>
               ) : (
                 <AliranPicker alirans={availableAlirans} value={pismpAliran} onChange={chooseAliran} />
               )}
@@ -226,8 +226,8 @@ export default function PathwayPicker({
           <div className="space-y-4">
             <div>
               <FieldLabel>{t('scholarship.apply.plan.trackLabel')}</FieldLabel>
-              {loading ? <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
-                : matricTracks.length === 0 ? <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noTracks')}</p>
+              {loading ? <p className="text-sm text-ground-400">{t('scholarship.apply.plan.loading')}</p>
+                : matricTracks.length === 0 ? <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">{t('scholarship.apply.plan.noTracks')}</p>
                 : (
                   <div className="flex flex-wrap gap-2">
                     {matricTracks.map((tr) => (

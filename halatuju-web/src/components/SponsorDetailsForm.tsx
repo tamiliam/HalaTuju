@@ -10,7 +10,7 @@ import { COUNTRIES, DEFAULT_COUNTRY_ISO, countryByIso, flagOf } from '@/lib/coun
 import { KEY_SPONSOR_PENDING, KEY_SPONSOR_REF } from '@/lib/storage'
 
 const inputCls =
-  'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+  'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
 /**
  * The "complete your details" form shown to a signed-in sponsor whose account is
@@ -84,18 +84,18 @@ export default function SponsorDetailsForm() {
 
   return (
     <>
-      <h1 className="text-xl font-bold text-gray-900">{t('sponsorPortal.completeTitle')}</h1>
-      <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.completeBody')}</p>
+      <h1 className="text-xl font-bold text-ground-900">{t('sponsorPortal.completeTitle')}</h1>
+      <p className="text-sm text-ground-600 mt-1">{t('sponsorPortal.completeBody')}</p>
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('sponsorAuth.fullName')} <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-ground-700 mb-1">
+            {t('sponsorAuth.fullName')} <span className="text-critical-500">*</span>
           </label>
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('sponsorAuth.country')} <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-ground-700 mb-1">
+            {t('sponsorAuth.country')} <span className="text-critical-500">*</span>
           </label>
           <select value={country} onChange={(e) => setCountry(e.target.value)} className={inputCls}>
             {COUNTRIES.map((c) => (
@@ -104,33 +104,34 @@ export default function SponsorDetailsForm() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('sponsorAuth.phone')} <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-ground-700 mb-1">
+            {t('sponsorAuth.phone')} <span className="text-critical-500">*</span>
           </label>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600 whitespace-nowrap">{flagOf(country)} +{dial}</span>
+            <span className="inline-flex items-center gap-1 px-3 py-2 border border-ground-300 rounded-lg bg-ground-50 text-sm text-ground-600 whitespace-nowrap">{flagOf(country)} +{dial}</span>
             <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatIntlPhone(e.target.value))} placeholder={t('sponsorAuth.phonePlaceholder')} className={inputCls} />
           </div>
-          {phoneInvalid && <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.phoneInvalid')}</p>}
+          {phoneInvalid && <p className="text-xs text-critical-600 mt-1">{t('sponsorAuth.phoneInvalid')}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('sponsorAuth.source')} <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-ground-700 mb-1">
+            {t('sponsorAuth.source')} <span className="text-critical-500">*</span>
           </label>
           <select value={source} onChange={(e) => setSource(e.target.value)} className={inputCls}>
             <option value="">{t('sponsorAuth.sourcePlaceholder')}</option>
             {SPONSOR_SOURCES.map((s) => <option key={s} value={s}>{t(`sponsorAuth.sourceOption.${s}`)}</option>)}
           </select>
         </div>
-        <label className="flex items-start gap-2 text-sm text-gray-600">
+        <label className="flex items-start gap-2 text-sm text-ground-600">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
           <span>{t('sponsorAuth.consent')}{' '}
-            <Link href="/privacy" className="text-blue-600 hover:underline">{t('sponsorAuth.privacyNotice')}</Link>.
+            <Link href="/privacy" className="text-info-600 hover:underline">{t('sponsorAuth.privacyNotice')}</Link>.
           </span>
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-critical-600">{error}</p>}
+        {/* BRAND — the form's submit. A filled control the user ACTS on, not information. */}
         <button type="submit" disabled={!canSubmit}
-          className="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50">
+          className="w-full bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50">
           {submitting ? t('sponsorAuth.submitting') : t('sponsorAuth.submitDetails')}
         </button>
       </form>

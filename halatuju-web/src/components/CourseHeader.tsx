@@ -14,14 +14,14 @@ export default function CourseHeader({ sourceType, pathwayType, level, title, su
   const typeKey = pathwayType || sourceType
 
   return (
-    <section className="bg-white border-b">
+    <section className="bg-ground-0 border-b">
       <div className="container mx-auto px-6 py-8">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-1.5 mb-3">
               <span
                 className={`px-2.5 py-1 rounded text-xs font-medium ${
-                  TYPE_COLORS[typeKey] || 'bg-gray-100 text-gray-700'
+                  TYPE_COLORS[typeKey] || 'bg-ground-100 text-ground-700'
                 }`}
               >
                 {TYPE_LABELS[typeKey] || sourceType}
@@ -29,14 +29,14 @@ export default function CourseHeader({ sourceType, pathwayType, level, title, su
               {level && (
                 <span
                   className={`px-2.5 py-1 rounded text-xs font-medium ${
-                    LEVEL_COLORS[level] || 'bg-gray-50 text-gray-600'
+                    LEVEL_COLORS[level] || 'bg-ground-50 text-ground-600'
                   }`}
                 >
                   {level}
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-ground-900 mb-2">
               {title}
             </h1>
             {subtitle && (

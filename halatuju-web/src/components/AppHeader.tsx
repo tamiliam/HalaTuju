@@ -71,7 +71,7 @@ export default function AppHeader() {
     : '?'
 
   return (
-    <header className="bg-white border-b sticky top-0 z-10">
+    <header className="bg-ground-0 border-b sticky top-0 z-10">
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center shrink-0">
@@ -88,7 +88,7 @@ export default function AppHeader() {
                   type="button"
                   aria-haspopup="true"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1 ${
-                    b40Active ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    b40Active ? 'text-primary-600 bg-primary-50' : 'text-ground-600 hover:text-ground-900 hover:bg-ground-50'
                   }`}
                 >
                   {link.label}
@@ -97,13 +97,13 @@ export default function AppHeader() {
                   </svg>
                 </button>
                 <div className="absolute left-0 top-full pt-1 hidden group-hover:block group-focus-within:block z-20">
-                  <div className="min-w-[210px] rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
+                  <div className="min-w-[210px] rounded-xl border border-ground-100 bg-ground-0 py-1 shadow-lg">
                     {link.children.map((c) => (
                       <Link
                         key={c.href}
                         href={c.href}
                         className={`block px-4 py-2.5 text-sm ${
-                          pathname === c.href ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:bg-gray-50'
+                          pathname === c.href ? 'text-primary-600 bg-primary-50' : 'text-ground-600 hover:bg-ground-50'
                         }`}
                       >
                         {c.label}
@@ -116,7 +116,7 @@ export default function AppHeader() {
               <button
                 key={link.href}
                 onClick={() => hasGrades() ? showAuthGate(link.authReason || 'profile') : router.push('/onboarding/exam-type')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-50`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-ground-600 hover:text-ground-900 hover:bg-ground-50`}
               >
                 {link.label}
               </button>
@@ -127,12 +127,12 @@ export default function AppHeader() {
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   pathname === link.href
                     ? 'text-primary-600 bg-primary-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    : 'text-ground-600 hover:text-ground-900 hover:bg-ground-50'
                 } ${link.href === '/profile' ? 'relative' : ''}`}
               >
                 {link.label}
                 {link.href === '/profile' && isAuthenticated && incompleteCount > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                  <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-critical-500 rounded-full">
                     {incompleteCount}
                   </span>
                 )}
@@ -152,20 +152,20 @@ export default function AppHeader() {
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-ground-50 transition-colors"
               >
                 <div className="relative">
                   <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-semibold">
                     {initials}
                   </div>
                   {incompleteCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold text-white bg-critical-500 rounded-full flex items-center justify-center">
                       {incompleteCount}
                     </span>
                   )}
                 </div>
                 <svg
-                  className={`w-4 h-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 text-ground-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -175,20 +175,20 @@ export default function AppHeader() {
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
+                <div className="absolute right-0 top-full mt-1 w-56 bg-ground-0 rounded-xl shadow-lg border border-ground-200 py-2 z-20">
                   {(userName || userContact) && (
-                    <div className="px-4 py-2 border-b border-gray-100">
+                    <div className="px-4 py-2 border-b border-ground-100">
                       {userName && (
-                        <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
+                        <p className="text-sm font-medium text-ground-900 truncate">{userName}</p>
                       )}
                       {userContact && (
-                        <p className="text-xs text-gray-500 truncate">{userContact}</p>
+                        <p className="text-xs text-ground-500 truncate">{userContact}</p>
                       )}
                     </div>
                   )}
                   <Link
                     href="/profile"
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-ground-700 hover:bg-ground-50"
                     onClick={() => setProfileOpen(false)}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -198,7 +198,7 @@ export default function AppHeader() {
                   </Link>
                   <Link
                     href="/saved"
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-ground-700 hover:bg-ground-50"
                     onClick={() => setProfileOpen(false)}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -208,7 +208,7 @@ export default function AppHeader() {
                   </Link>
                   <Link
                     href="/settings"
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-ground-700 hover:bg-ground-50"
                     onClick={() => setProfileOpen(false)}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -217,10 +217,10 @@ export default function AppHeader() {
                     </svg>
                     {t('common.settings')}
                   </Link>
-                  <div className="border-t border-gray-100 mt-1 pt-1">
+                  <div className="border-t border-ground-100 mt-1 pt-1">
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-critical-600 hover:bg-critical-50 w-full text-left"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -238,16 +238,16 @@ export default function AppHeader() {
 
         {/* Mobile hamburger */}
         <button
-          className="lg:hidden p-2 rounded-lg hover:bg-gray-50"
+          className="lg:hidden p-2 rounded-lg hover:bg-ground-50"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Menu"
         >
           {mobileOpen ? (
-            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-6 h-6 text-ground-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           ) : (
-            <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-6 h-6 text-ground-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           )}
@@ -256,19 +256,19 @@ export default function AppHeader() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="lg:hidden border-t bg-white">
+        <div className="lg:hidden border-t bg-ground-0">
           <div className="container mx-auto px-6 py-4 space-y-1">
             {navLinks.map((link) => (
               link.children ? (
                 // BrightPath Bursary: a section label + its two audience sub-links, indented.
                 <div key={link.href}>
-                  <p className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{link.label}</p>
+                  <p className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-ground-400">{link.label}</p>
                   {link.children.map((c) => (
                     <Link
                       key={c.href}
                       href={c.href}
                       className={`block px-3 py-2.5 ml-2 rounded-lg text-sm font-medium ${
-                        pathname === c.href ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:bg-gray-50'
+                        pathname === c.href ? 'text-primary-600 bg-primary-50' : 'text-ground-600 hover:bg-ground-50'
                       }`}
                       onClick={() => setMobileOpen(false)}
                     >
@@ -280,7 +280,7 @@ export default function AppHeader() {
                 <button
                   key={link.href}
                   onClick={() => { setMobileOpen(false); hasGrades() ? showAuthGate(link.authReason || 'profile') : router.push('/onboarding/exam-type') }}
-                  className="block w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  className="block w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-ground-600 hover:bg-ground-50"
                 >
                   {link.label}
                 </button>
@@ -291,13 +291,13 @@ export default function AppHeader() {
                   className={`block px-3 py-2.5 rounded-lg text-sm font-medium ${
                     pathname === link.href
                       ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      : 'text-ground-600 hover:bg-ground-50'
                   }`}
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
                   {link.href === '/profile' && isAuthenticated && incompleteCount > 0 && (
-                    <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                    <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-critical-500 rounded-full">
                       {incompleteCount}
                     </span>
                   )}
@@ -307,36 +307,36 @@ export default function AppHeader() {
 
             {isAuthenticated && (
               <>
-                <div className="border-t border-gray-100 pt-2 mt-2">
+                <div className="border-t border-ground-100 pt-2 mt-2">
                   {userName && (
-                    <p className="px-3 py-1 text-xs text-gray-400 font-medium">{userName}</p>
+                    <p className="px-3 py-1 text-xs text-ground-400 font-medium">{userName}</p>
                   )}
                   <Link
                     href="/profile"
-                    className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                    className="block px-3 py-2.5 rounded-lg text-sm text-ground-600 hover:bg-ground-50"
                     onClick={() => setMobileOpen(false)}
                   >
                     {t('header.myProfile')}
                   </Link>
                   <Link
                     href="/saved"
-                    className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                    className="block px-3 py-2.5 rounded-lg text-sm text-ground-600 hover:bg-ground-50"
                     onClick={() => setMobileOpen(false)}
                   >
                     {t('header.myApplications')}
                   </Link>
                   <Link
                     href="/settings"
-                    className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                    className="block px-3 py-2.5 rounded-lg text-sm text-ground-600 hover:bg-ground-50"
                     onClick={() => setMobileOpen(false)}
                   >
                     {t('common.settings')}
                   </Link>
                 </div>
-                <div className="border-t border-gray-100 pt-2 mt-2">
+                <div className="border-t border-ground-100 pt-2 mt-2">
                   <button
                     onClick={handleSignOut}
-                    className="block w-full text-left px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50"
+                    className="block w-full text-left px-3 py-2.5 rounded-lg text-sm text-critical-600 hover:bg-critical-50"
                   >
                     {t('header.logout')}
                   </button>
@@ -345,37 +345,37 @@ export default function AppHeader() {
             )}
 
             {!isAuthenticated && (
-              <div className="border-t border-gray-100 pt-3 mt-2 space-y-1">
+              <div className="border-t border-ground-100 pt-3 mt-2 space-y-1">
                 <button
                   className="block w-full btn-primary text-sm text-center"
                   onClick={() => { setMobileOpen(false); router.push('/get-started'); }}
                 >
                   {t('header.signUp')}
                 </button>
-                <p className="px-3 pt-2 text-xs text-gray-400 font-medium">{t('header.login.label')}</p>
+                <p className="px-3 pt-2 text-xs text-ground-400 font-medium">{t('header.login.label')}</p>
                 <button
-                  className="block w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                  className="block w-full text-left px-3 py-2.5 rounded-lg text-sm text-ground-600 hover:bg-ground-50"
                   onClick={() => { setMobileOpen(false); showAuthGate('profile'); }}
                 >
                   {t('header.login.student')}
                 </button>
                 <Link
                   href="/sponsor/login"
-                  className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                  className="block px-3 py-2.5 rounded-lg text-sm text-ground-600 hover:bg-ground-50"
                   onClick={() => setMobileOpen(false)}
                 >
                   {t('header.login.sponsor')}
                 </Link>
                 <a
                   href="/admin/login"
-                  className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                  className="block px-3 py-2.5 rounded-lg text-sm text-ground-600 hover:bg-ground-50"
                 >
                   {t('header.login.partner')}
                 </a>
               </div>
             )}
 
-            <div className="border-t border-gray-100 pt-3 mt-2">
+            <div className="border-t border-ground-100 pt-3 mt-2">
               <LanguageSelector />
             </div>
           </div>

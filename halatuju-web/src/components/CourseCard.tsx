@@ -35,14 +35,14 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
 
   return (
     <div
-      className={`bg-white rounded-xl border overflow-hidden transition-all flex flex-col ${
+      className={`bg-ground-0 rounded-xl border overflow-hidden transition-all flex flex-col ${
         rank
           ? 'border-2 border-primary-100 hover:border-primary-300'
-          : 'border-gray-200 hover:border-primary-300'
+          : 'border-ground-200 hover:border-primary-300'
       } hover:shadow-sm ${isLowMerit ? 'opacity-60' : ''}`}
     >
       {/* Field image header */}
-      <div className="relative h-36 bg-gray-100 flex-shrink-0">
+      <div className="relative h-36 bg-ground-100 flex-shrink-0">
         <img
           src={imageUrl}
           alt={fieldLabel}
@@ -64,11 +64,11 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
               e.stopPropagation()
               onToggleSave(course.course_id)
             }}
-            className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
+            className="absolute top-2 right-2 p-1.5 bg-ground-0/80 backdrop-blur-sm rounded-full hover:bg-ground-0 transition-colors"
             aria-label={isSaved ? 'Remove from saved' : 'Save course'}
           >
             <svg
-              className={`w-4 h-4 ${isSaved ? 'text-primary-500 fill-primary-500' : 'text-gray-500'}`}
+              className={`w-4 h-4 ${isSaved ? 'text-primary-500 fill-primary-500' : 'text-ground-500'}`}
               viewBox="0 0 24 24"
               fill={isSaved ? 'currentColor' : 'none'}
               stroke="currentColor"
@@ -90,7 +90,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span
             className={`px-2 py-0.5 rounded text-xs font-medium ${
-              TYPE_COLORS[course.pathway_type || course.source_type] || 'bg-gray-100 text-gray-700'
+              TYPE_COLORS[course.pathway_type || course.source_type] || 'bg-ground-100 text-ground-700'
             }`}
           >
             {TYPE_LABELS[course.pathway_type || course.source_type] || course.source_type}
@@ -98,7 +98,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
           {course.level && (
             <span
               className={`px-2 py-0.5 rounded text-xs font-medium ${
-                LEVEL_COLORS[course.level] || 'bg-gray-50 text-gray-600'
+                LEVEL_COLORS[course.level] || 'bg-ground-50 text-ground-600'
               }`}
             >
               {course.level}
@@ -107,12 +107,12 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
         </div>
 
         {/* Course name */}
-        <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
+        <h3 className="text-sm font-semibold text-ground-900 mb-1 line-clamp-2">
           {course.course_name || course.course_id}
         </h3>
 
         {/* Field */}
-        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+        <div className="flex items-center gap-1 text-xs text-ground-500 mb-1">
           <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
           </svg>
@@ -121,16 +121,16 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
 
         {/* Institution info (search context only) */}
         {institutionName && (
-          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+          <div className="flex items-center gap-1 text-xs text-ground-500 mb-1">
             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
             </svg>
             <span className="truncate">
               {institutionName}
-              {institutionState && <span className="text-gray-400"> ({institutionState})</span>}
+              {institutionState && <span className="text-ground-400"> ({institutionState})</span>}
               {(institutionCount ?? 0) > 1 && (
-                <span className="text-gray-400 ml-1">+{(institutionCount ?? 1) - 1}</span>
+                <span className="text-ground-400 ml-1">+{(institutionCount ?? 1) - 1}</span>
               )}
             </span>
           </div>
@@ -181,14 +181,14 @@ function MeritIndicator({
   const hasScores = studentMerit !== null && meritCutoff !== null
 
   const barColor =
-    label === 'High' ? 'bg-green-500' :
-    label === 'Fair' ? 'bg-amber-400' :
-    'bg-red-500'
+    label === 'High' ? 'bg-positive-500' :
+    label === 'Fair' ? 'bg-caution-400' :
+    'bg-critical-500'
 
   const textClass =
-    label === 'High' ? 'text-green-700' :
-    label === 'Fair' ? 'text-amber-700' :
-    'text-red-700'
+    label === 'High' ? 'text-positive-700' :
+    label === 'Fair' ? 'text-caution-700' :
+    'text-critical-700'
 
   const displayLabel =
     label === 'High' ? 'High Chance' :
@@ -211,7 +211,7 @@ function MeritIndicator({
   return (
     <div className="mt-1">
       {/* Bar track */}
-      <div className="relative h-3 bg-gray-100 rounded-full mb-1">
+      <div className="relative h-3 bg-ground-100 rounded-full mb-1">
         {/* Student score fill */}
         <div
           className={`h-full rounded-full relative ${barColor}`}
@@ -225,14 +225,14 @@ function MeritIndicator({
         </div>
         {/* Cutoff dashed zone */}
         <div
-          className="absolute top-0 h-full border-l-2 border-dashed border-gray-400"
+          className="absolute top-0 h-full border-l-2 border-dashed border-ground-400"
           style={{ left: `${cutoffPos}%` }}
         />
       </div>
       {/* Label row */}
       <div className="flex items-center justify-between">
         <span className={`text-[11px] font-semibold ${textClass}`}>{displayLabel}</span>
-        <span className="text-[10px] text-gray-400">
+        <span className="text-[10px] text-ground-400">
           You: {displayStudent ?? studentMerit} &nbsp;|&nbsp; Need: {displayCutoff ?? meritCutoff}
         </span>
       </div>

@@ -322,6 +322,69 @@ export const F2A_FILES = [
 
 assertConverted('the shared student-journey components (F2a)', F2A_FILES, 27)
 
+/** F2b's surface — the rest of `src/components`, MINUS the four categorical files below. */
+export const F2B_FILES = [
+  'src/components/AppHeader.tsx', 'src/components/AppFooter.tsx',
+  'src/components/SponsorLanding.tsx', 'src/components/SponsorDetailsForm.tsx',
+  'src/components/CourseCard.tsx', 'src/components/PathwayPicker.tsx',
+  'src/components/CourseDetailShared.tsx', 'src/components/AiReliabilityCard.tsx',
+  'src/components/SponsorNotifyPrefs.tsx', 'src/components/ProgrammePicker.tsx',
+  'src/components/SchoolSelect.tsx', 'src/components/InstitutionPicker.tsx',
+  'src/components/CourseHeader.tsx', 'src/components/PathwaySelect.tsx',
+  'src/components/AliranPicker.tsx', 'src/components/PathwayCards.tsx',
+  'src/components/LanguageSelector.tsx', 'src/components/ReferralCapture.tsx',
+  'src/components/HtmlLang.tsx', 'src/components/BrandLogo.tsx',
+]
+
+assertConverted('the remaining shared components (F2b)', F2B_FILES, 20)
+
+/**
+ * The four files that carry a CATEGORY PALETTE — a colour per category, whose only job is to be
+ * distinct from its neighbours. Their ground is converted; their category hues are deliberately
+ * still literal, awaiting an owner decision on a fifth categorical token family.
+ */
+const CATEGORICAL = {
+  'src/components/PathwayTrackCard.tsx': ['bg-green-100 text-green-800', 'bg-sky-100 text-sky-800',
+    'bg-blue-100 text-blue-800', 'bg-orange-100 text-orange-800', 'bg-purple-100 text-purple-800'],
+  'src/components/RequirementsCard.tsx': ['bg-emerald-100 text-emerald-700',
+    'bg-green-100 text-green-700', 'bg-teal-100 text-teal-700', 'bg-lime-100 text-lime-700'],
+  'src/components/SpecialConditions.tsx': ['text-pink-700', 'text-purple-700', 'text-orange-700',
+    'text-blue-700', 'text-red-700', 'text-amber-700'],
+  'src/components/CareerPathways.tsx': ['bg-indigo-50 text-indigo-700'],
+}
+
+describe('the category palettes are exempt ON PURPOSE, and stay that way', () => {
+  // ⚠ THE F2b FINDING. The codemod renames by colour FAMILY, which is right for a signal and
+  // destructive for a set of categories: `poly` (emerald) and `ILJTM` (green) would BOTH become
+  // `positive`, so two institution types a student uses to compare courses would render
+  // identically — and it would assert that a Polytechnic is "success". Same for `sains_komputer`
+  // (blue) and `sains_sosial` (sky), both → `info`.
+  //
+  // These assertions exist so nobody later "finishes the migration" and silently collapses the
+  // categories. Deleting a line here is a product decision, not a tidy-up.
+  for (const [file, palette] of Object.entries(CATEGORICAL)) {
+    it(`${file.split('/').pop()} keeps its category hues literal`, () => {
+      const src = read(file)
+      for (const swatch of palette) expect(src).toContain(swatch)
+    })
+
+    it(`${file.split('/').pop()} has its GROUND converted even so`, () => {
+      // The exemption is for the category hues ONLY. Everything neutral — the card, the page, the
+      // borders, the text — must still be on the tokens, or the file is a dark-mode island.
+      const raw = withoutComments(read(file))
+        .match(/\b(?:bg|text|border|ring|divide|from|to|via|placeholder)-(?:gray|slate|zinc|neutral|stone)-\d{2,3}\b/g)
+      expect(raw ?? []).toEqual([])
+    })
+  }
+
+  it('is a CLOSED list — a fifth categorical file has to be a deliberate addition', () => {
+    expect(Object.keys(CATEGORICAL).sort()).toEqual([
+      'src/components/CareerPathways.tsx', 'src/components/PathwayTrackCard.tsx',
+      'src/components/RequirementsCard.tsx', 'src/components/SpecialConditions.tsx',
+    ])
+  })
+})
+
 describe('the F2a semantic corrections the codemod could not make', () => {
   // ⚠ THE F1 LESSON, PINNED. The codemod renames a colour correctly and can classify it wrongly:
   // it turned the sponsor portal's primary call-to-action into `info`, which both reversed badly in
@@ -359,17 +422,27 @@ describe('the unconverted shared components — a ceiling that may only fall', (
     .map((f) => f.split(path.sep).join('/'))
     .filter((f) => f.split('/').length === 3)   // src/components/X.tsx — top level only
     .filter((f) => !F2A_FILES.includes(f))
+    .filter((f) => !F2B_FILES.includes(f))
+    .filter((f) => !(f in CATEGORICAL))         // exempt by decision, counted above, not here
 
-  /** Measured 2026-08-31, immediately after F2a converted its 27 files. LOWER THIS, NEVER RAISE IT. */
-  const CEILING = 659
+  /**
+   * F2a measured 659 across 25 files. F2b converted 20 of them and the ground of 4 more, so what
+   * is left is `ScholarshipDocuments.tsx` ALONE — 287, and it belongs to F3.
+   * LOWER THIS, NEVER RAISE IT. F3 takes it to zero and this block goes away.
+   */
+  const CEILING = 287
+
+  it('is now one file only, so the ceiling means what it says', () => {
+    expect(rest).toEqual(['src/components/ScholarshipDocuments.tsx'])
+  })
 
   it('has not grown', () => {
     const count = rest.reduce(
-      (n, f) => n + (read(f).match(new RegExp(RAW, 'g'))?.length ?? 0), 0,
+      (n, f) => n + (withoutComments(read(f)).match(new RegExp(RAW, 'g'))?.length ?? 0), 0,
     )
     // A failure here is almost never "raise the number". It means new hand-written colour landed on
-    // a surface that is queued for conversion — write it on the tokens instead, the way F2a's files
-    // now are. Lower the ceiling when a sprint converts more of the directory.
+    // a surface that is queued for conversion — write it on the tokens instead, the way F2a's and
+    // F2b's files now are. Lower the ceiling when a sprint converts more of the directory.
     expect(count).toBeLessThanOrEqual(CEILING)
   })
 })

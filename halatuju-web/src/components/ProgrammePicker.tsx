@@ -34,12 +34,12 @@ export default function ProgrammePicker({
 
   if (loading) {
     return (
-      <input className="input text-gray-400" disabled value={t('scholarship.apply.plan.loading')} readOnly />
+      <input className="input text-ground-400" disabled value={t('scholarship.apply.plan.loading')} readOnly />
     )
   }
   if (courses.length === 0) {
     return (
-      <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">
+      <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">
         {t('scholarship.apply.plan.noProgrammes')}
       </p>
     )
@@ -85,7 +85,7 @@ export default function ProgrammePicker({
       />
       {open && (
         <div
-          className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+          className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-ground-200 bg-ground-0 shadow-lg"
           onMouseDown={(e) => e.preventDefault()}
         >
           {matches.length > 0 ? (
@@ -96,11 +96,11 @@ export default function ProgrammePicker({
                     type="button"
                     onClick={() => choose(c)}
                     onMouseEnter={() => setActive(i)}
-                    className={`flex w-full flex-col items-start px-3 py-2 text-left text-sm ${i === active ? 'bg-primary-50' : 'hover:bg-gray-50'}`}
+                    className={`flex w-full flex-col items-start px-3 py-2 text-left text-sm ${i === active ? 'bg-primary-50' : 'hover:bg-ground-50'}`}
                   >
-                    <span className="text-gray-900">{c.course_name}</span>
+                    <span className="text-ground-900">{c.course_name}</span>
                     {c.institution_name && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-ground-400">
                         {c.institution_count && c.institution_count > 1
                           ? t('scholarship.apply.plan.programmeAtN', { n: String(c.institution_count) })
                           : c.institution_name}
@@ -111,7 +111,7 @@ export default function ProgrammePicker({
               ))}
             </ul>
           ) : (
-            <p className="px-3 py-2 text-xs text-gray-500">{t('scholarship.apply.plan.programmeNoMatch')}</p>
+            <p className="px-3 py-2 text-xs text-ground-500">{t('scholarship.apply.plan.programmeNoMatch')}</p>
           )}
         </div>
       )}

@@ -96,7 +96,7 @@ export default function InstitutionPicker({
       />
       {open && !belowMin && (
         <div
-          className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+          className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-ground-200 bg-ground-0 shadow-lg"
           onMouseDown={(e) => e.preventDefault()}
         >
           {matches.length > 0 ? (
@@ -107,19 +107,19 @@ export default function InstitutionPicker({
                     type="button"
                     onClick={() => choose(o.name)}
                     onMouseEnter={() => setActive(i)}
-                    className={`flex w-full items-baseline justify-between gap-3 px-3 py-2 text-left text-sm ${i === active ? 'bg-primary-50' : 'hover:bg-gray-50'}`}
+                    className={`flex w-full items-baseline justify-between gap-3 px-3 py-2 text-left text-sm ${i === active ? 'bg-primary-50' : 'hover:bg-ground-50'}`}
                   >
-                    <span className="text-gray-900">{o.name}</span>
-                    {o.hint && <span className="shrink-0 text-xs text-gray-400">{o.hint}</span>}
+                    <span className="text-ground-900">{o.name}</span>
+                    {o.hint && <span className="shrink-0 text-xs text-ground-400">{o.hint}</span>}
                   </button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="px-3 py-2 text-xs text-gray-500">{t('scholarship.apply.plan.institutionNoMatch')}</p>
+            <p className="px-3 py-2 text-xs text-ground-500">{t('scholarship.apply.plan.institutionNoMatch')}</p>
           )}
           {truncated && (
-            <p className="border-t border-gray-100 px-3 py-2 text-xs text-gray-400">
+            <p className="border-t border-ground-100 px-3 py-2 text-xs text-ground-400">
               {t('scholarship.apply.plan.institutionMore')}
             </p>
           )}

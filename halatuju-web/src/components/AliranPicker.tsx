@@ -31,14 +31,14 @@ export default function AliranPicker({
             aria-checked={on}
             onClick={() => onChange(a)}
             className={`flex flex-col items-start rounded-xl border p-3 text-left transition-colors ${
-              on ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:border-gray-400'
+              on ? 'border-primary-500 bg-primary-50' : 'border-ground-300 hover:border-ground-400'
             }`}
           >
-            <span className={`flex w-full items-center justify-between text-sm font-medium ${on ? 'text-primary-700' : 'text-gray-800'}`}>
+            <span className={`flex w-full items-center justify-between text-sm font-medium ${on ? 'text-primary-700' : 'text-ground-800'}`}>
               {t(`scholarship.apply.plan.aliran.${a}`)}
               {on && <span aria-hidden className="text-primary-600">✓</span>}
             </span>
-            <span className="mt-0.5 text-xs text-gray-500">{t(`scholarship.apply.plan.aliranSub.${a}`)}</span>
+            <span className="mt-0.5 text-xs text-ground-500">{t(`scholarship.apply.plan.aliranSub.${a}`)}</span>
           </button>
         )
       })}

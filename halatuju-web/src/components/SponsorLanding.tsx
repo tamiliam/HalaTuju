@@ -33,7 +33,7 @@ export default function SponsorLanding({ count }: { count: number }) {
           the BrightPath Bursary nav). The page's own hero/CTAs handle "Become a sponsor". */}
       <AppHeader />
 
-      <main className="bg-gray-50">
+      <main className="bg-ground-50">
         {/* Hero — text + image, with a live "students waiting" counter under the CTAs */}
         <section className="container mx-auto px-6 pt-6 pb-10 lg:pt-14 lg:pb-16 max-w-2xl lg:max-w-6xl">
           <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
@@ -42,19 +42,24 @@ export default function SponsorLanding({ count }: { count: number }) {
                 className="object-cover object-center" sizes="(max-width:1024px) 100vw, 600px" />
             </div>
             <div className="lg:order-1">
-              <h1 className="text-3xl lg:text-5xl font-bold text-gray-900 leading-tight">{t('sponsorLanding.hero.heading')}</h1>
-              <p className="text-gray-600 mt-3 lg:mt-4 lg:text-lg">{t('sponsorLanding.hero.sub')}</p>
+              <h1 className="text-3xl lg:text-5xl font-bold text-ground-900 leading-tight">{t('sponsorLanding.hero.heading')}</h1>
+              <p className="text-ground-600 mt-3 lg:mt-4 lg:text-lg">{t('sponsorLanding.hero.sub')}</p>
               <div className="mt-5 lg:mt-7 flex flex-col sm:flex-row sm:items-center gap-3">
+                {/* BRAND — the page's primary call to action. This is the exact defect F1 found
+                    on the sponsor portal and it recurs wherever a CTA happens to be blue: the
+                    codemod is right that the colour is blue and wrong that the MEANING is
+                    "information". Left as a tone it would reverse to pale blue in dark, and a
+                    tenant's own colour would never reach the one button this page exists for. */}
                 <Link href="/sponsor/register"
-                  className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors text-center w-full sm:w-auto">
+                  className="bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors text-center w-full sm:w-auto">
                   {t('sponsorLanding.hero.becomeSponsor')} →
                 </Link>
-                <a href="#how" className="text-blue-600 text-sm text-center sm:text-left font-medium">
+                <a href="#how" className="text-info-600 text-sm text-center sm:text-left font-medium">
                   {t('sponsorLanding.hero.howItWorks')} ↓
                 </a>
               </div>
               {count > 0 && (
-                <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-blue-50 border border-blue-100 px-4 py-2 text-sm text-blue-800">
+                <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-info-50 border border-info-100 px-4 py-2 text-sm text-info-800">
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z" />
@@ -69,30 +74,30 @@ export default function SponsorLanding({ count }: { count: number }) {
         {/* Trust bar — the "Regulated by…" equivalent (R5). Honest: describes the
             assurance MODEL being established, not a current audited state. */}
         <section className="container mx-auto px-6 -mt-2 pb-8 lg:pb-12 max-w-2xl lg:max-w-5xl">
-          <div className="rounded-2xl border border-green-100 bg-green-50/50 px-5 py-4">
+          <div className="rounded-2xl border border-positive-100 bg-positive-50/50 px-5 py-4">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 justify-center text-center">
-              <span className="inline-flex items-center gap-2 text-sm text-gray-700">🛡️ <b>{t('sponsorLanding.trustBar.title')}</b></span>
-              <span className="text-sm text-gray-500">{t('sponsorLanding.trustBar.enrolment')}</span>
-              <span className="text-sm text-gray-500">{t('sponsorLanding.trustBar.audit')}</span>
-              <span className="text-sm text-gray-500">{t('sponsorLanding.trustBar.trustees')}</span>
+              <span className="inline-flex items-center gap-2 text-sm text-ground-700">🛡️ <b>{t('sponsorLanding.trustBar.title')}</b></span>
+              <span className="text-sm text-ground-500">{t('sponsorLanding.trustBar.enrolment')}</span>
+              <span className="text-sm text-ground-500">{t('sponsorLanding.trustBar.audit')}</span>
+              <span className="text-sm text-ground-500">{t('sponsorLanding.trustBar.trustees')}</span>
             </div>
-            <p className="text-xs text-gray-400 mt-2 text-center">{t('sponsorLanding.trustBar.note')}</p>
+            <p className="text-xs text-ground-400 mt-2 text-center">{t('sponsorLanding.trustBar.note')}</p>
           </div>
         </section>
 
         {/* Why sponsor — three promise cards */}
         <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 lg:mb-6">{t('sponsorLanding.promises.title')}</h2>
+          <h2 className="text-2xl font-bold text-ground-900 mb-4 lg:mb-6">{t('sponsorLanding.promises.title')}</h2>
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 md:gap-5">
             {PROMISE_CARDS.map((c) => (
-              <div key={c} className="bg-white rounded-2xl p-5 shadow-sm">
-                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mb-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <div key={c} className="bg-ground-0 rounded-2xl p-5 shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-info-50 flex items-center justify-center mb-2">
+                  <svg className="w-5 h-5 text-info-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d={PROMISE_ICONS[c]} />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-gray-900">{t(`sponsorLanding.promises.${c}Title`)}</h3>
-                <p className="text-sm text-gray-500 mt-1">{t(`sponsorLanding.promises.${c}Desc`)}</p>
+                <h3 className="font-semibold text-ground-900">{t(`sponsorLanding.promises.${c}Title`)}</h3>
+                <p className="text-sm text-ground-500 mt-1">{t(`sponsorLanding.promises.${c}Desc`)}</p>
               </div>
             ))}
           </div>
@@ -100,15 +105,18 @@ export default function SponsorLanding({ count }: { count: number }) {
 
         {/* How it works — four numbered steps */}
         <section id="how" className="scroll-mt-20 container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-6xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('sponsorLanding.how.title')}</h2>
+          <h2 className="text-2xl font-bold text-ground-900 mb-6">{t('sponsorLanding.how.title')}</h2>
           <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((n) => (
-              <li key={n} className="bg-white rounded-2xl p-5 shadow-sm">
-                <span className="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-semibold flex items-center justify-center mb-3">
+              <li key={n} className="bg-ground-0 rounded-2xl p-5 shadow-sm">
+                {/* BRAND — the step numbers are this page's own furniture, not a signal, and they
+                    sit beside the brand CTA above. Two different blues on one page is what leaving
+                    them as `info` would produce. */}
+                <span className="w-8 h-8 rounded-full bg-primary-600 text-white text-sm font-semibold flex items-center justify-center mb-3">
                   {n}
                 </span>
-                <h3 className="font-semibold text-gray-900">{t(`sponsorLanding.how.step${n}Title`)}</h3>
-                <p className="text-sm text-gray-500 mt-1">{t(`sponsorLanding.how.step${n}Desc`)}</p>
+                <h3 className="font-semibold text-ground-900">{t(`sponsorLanding.how.step${n}Title`)}</h3>
+                <p className="text-sm text-ground-500 mt-1">{t(`sponsorLanding.how.step${n}Desc`)}</p>
               </li>
             ))}
           </ol>
@@ -116,21 +124,21 @@ export default function SponsorLanding({ count }: { count: number }) {
 
         {/* FAQ — accordion */}
         <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4 lg:mb-6">{t('sponsorLanding.faq.title')}</h2>
+          <h2 className="text-2xl font-bold text-ground-900 mb-4 lg:mb-6">{t('sponsorLanding.faq.title')}</h2>
           <div className="grid gap-2 lg:grid-cols-2 lg:gap-x-5 lg:items-start">
             {FAQS.map((i) => {
               const open = openFaq === i
               return (
-                <div key={i} className="bg-white rounded-xl shadow-sm self-start">
+                <div key={i} className="bg-ground-0 rounded-xl shadow-sm self-start">
                   <button type="button" aria-expanded={open}
                     onClick={() => setOpenFaq(open ? null : i)}
                     className="w-full flex items-center justify-between gap-3 p-4 text-left">
-                    <span className="font-medium text-gray-900 text-sm">{t(`sponsorLanding.faq.q${i}`)}</span>
-                    <svg className={`w-5 h-5 text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <span className="font-medium text-ground-900 text-sm">{t(`sponsorLanding.faq.q${i}`)}</span>
+                    <svg className={`w-5 h-5 text-ground-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                  {open && <p className="px-4 pb-4 text-sm text-gray-600 leading-relaxed">{t(`sponsorLanding.faq.a${i}`)}</p>}
+                  {open && <p className="px-4 pb-4 text-sm text-ground-600 leading-relaxed">{t(`sponsorLanding.faq.a${i}`)}</p>}
                 </div>
               )
             })}
@@ -139,16 +147,17 @@ export default function SponsorLanding({ count }: { count: number }) {
 
         {/* Closing CTA */}
         <section className="container mx-auto px-6 pb-12 lg:pb-20 max-w-2xl lg:max-w-5xl">
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 lg:p-10 text-center">
-            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">{t('sponsorLanding.cta.heading')}</h2>
-            <p className="text-gray-700 mt-2 lg:text-lg">{t('sponsorLanding.cta.body')}</p>
+          <div className="bg-info-50 border border-info-100 rounded-2xl p-6 lg:p-10 text-center">
+            <h2 className="text-2xl lg:text-3xl font-bold text-ground-900">{t('sponsorLanding.cta.heading')}</h2>
+            <p className="text-ground-700 mt-2 lg:text-lg">{t('sponsorLanding.cta.body')}</p>
+            {/* BRAND — the closing call to action, same rule as the hero button above. */}
             <Link href="/sponsor/register"
-              className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors inline-block mt-5 w-full sm:w-auto">
+              className="bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors inline-block mt-5 w-full sm:w-auto">
               {t('sponsorLanding.hero.becomeSponsor')} →
             </Link>
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs text-ground-500 mt-4">
               {t('sponsorLanding.cta.questions')}{' '}
-              <a href={`mailto:${b.sponsorEmail}`} className="text-blue-600 underline">{b.sponsorEmail}</a>
+              <a href={`mailto:${b.sponsorEmail}`} className="text-info-600 underline">{b.sponsorEmail}</a>
             </p>
           </div>
         </section>

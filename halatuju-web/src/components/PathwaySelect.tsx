@@ -29,7 +29,7 @@ export default function PathwaySelect({
 
   if (loading) {
     return (
-      <select className="input text-gray-400" disabled>
+      <select className="input text-ground-400" disabled>
         <option>{t('scholarship.apply.plan.loading')}</option>
       </select>
     )
@@ -37,7 +37,7 @@ export default function PathwaySelect({
 
   if (pathways.length === 0) {
     return (
-      <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">
+      <p className="rounded-xl border border-caution-200 bg-caution-50 p-3 text-sm text-ground-600">
         {t('scholarship.apply.plan.noPathways')}
       </p>
     )
