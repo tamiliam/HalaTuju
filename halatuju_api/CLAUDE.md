@@ -550,7 +550,44 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-01, after Layer 1 F4 — the admin console)
+## Next Sprint (as of 2026-09-01, after Layer 1 F5 — the officer cockpit)
+
+**SHIPPED — LAYER 1 F5.** Branch `feat/layer1-f5-cockpit`. **NO migration. WEB ONLY.** 2 files,
+537 utilities in ONE file. Retro `docs/retrospective-2026-09-01-layer1-f5-cockpit.md`; lessons x2.
+jest 1531 -> **1534**. pytest unchanged at 5677.
+**Every surface in the product is now repainted except the public course guide (F6).**
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- The cockpit's CEILING IS GONE, not lowered — the file is inside the console's conversion walk now.
+- Two Save buttons on `bg-primary-600`, like the console's other 38.
+- **"Unrelated name" is `critical`; the generic vision warning beside it stays `caution`.** Orange
+  used to hold them apart. Do not merge them onto one tone.
+- **The capture chip is a CATEGORY** (deterministic vs model-derived); **the Check-2 briefing is
+  INFO**, not a category — its heading carries the "a model wrote this" claim, not its colour.
+- The HOLD badge is filled `caution`, matching F4's suspended sponsor.
+- `FactTileTone` still returns 'green'/'amber'/'blue'/'red'. Those are internal keys in an exported
+  lib type used by tests; renaming them is NOT part of a repaint. Left deliberately.
+
+**AT DEPLOY: push main (web build only).** No migrate-first, no env vars. **Dark mode stays
+unreachable.** Nothing a visitor sees changes.
+
+**⚠ A PREREQUISITE FOR F7, RECORDED HERE SO IT IS NOT FORGOTTEN:** the cockpit is the ONE repainted
+surface never reviewed in a browser. Mounting it needs a large `AdminApplicationDetail` sandbox
+fixture — a piece of work in its own right, and the sandbox forbids a hand-written approximation.
+**F7 cannot honestly claim "every surface reviewed in both modes" until that fixture exists.**
+
+**NEXT = LAYER 1 F6 — the public course guide.** 36 files, PLUS ~78 colour literals returned as
+class strings from `lib/` (`courseBadges.ts` 32, `applicationStatus.ts` 22, `requestStatus.ts` 14,
+`paymentStatus.ts` 6) — a codemod over `.tsx` never sees those, and they are exactly the status
+tones the vocabulary should own. Then A1-A3 (the tenant colour editor) and F7 (the flip).
+
+**CHECKLIST for every repaint, six items now:** re-derive the file list; hunt the hiding places
+FIRST (and weight the search by a file's AGE, not its size — F5's huge-but-recent file was clean
+while old small ones hid colour); grep for `bg-info-[567]00` beside `text-white`; ask of every
+colour table "state or kind?"; never generate a regex; and bite-check by injecting a fault AND
+VERIFYING IT LANDED before running the suite.
+
+## Superseded — previous Next Sprint (as of 2026-09-01, after Layer 1 F4 — the admin console)
 
 **SHIPPED — LAYER 1 F4.** Branch `feat/layer1-f4-admin-console`. **NO migration. WEB ONLY.**
 46 files, ~1445 utilities. Retro `docs/retrospective-2026-09-01-layer1-f4-admin-console.md`;

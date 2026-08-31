@@ -265,6 +265,30 @@ and passed forever. Found only by bite-checking. **Never generate a regex.**
 #### F4 — Admin console (excluding the cockpit)
 **Scope.** 34 files, the largest chromatic count on the list. *high.*
 
+#### ✅ F5 — SHIPPED 2026-09-01
+
+Retro `docs/retrospective-2026-09-01-layer1-f5-cockpit.md`; lessons x2. NO migration. 2 files,
+537 utilities in ONE file, jest **1534**. The cockpit's ceiling (544) is RETIRED — it now sits
+inside the console's conversion walk.
+
+**▶ THE HUNT CAME BACK CLEAN, for the first time in six sprints.** No hex, no arbitrary-value
+classes, no gradients, no inline colour styles, no entities. **Age, not size, predicts hiding
+places** — the biggest file in the product was the cleanest, because it was written recently and in
+one idiom.
+
+**▶ FOUR JUDGEMENT CALLS:** two Save buttons → brand; "unrelated name" → `critical` (the generic
+vision warning beside it stays `caution`, and orange used to hold them apart); the capture chip →
+a CATEGORY (deterministic vs model-derived); the Check-2 briefing → INFO, not a category, because
+its job is to inform and its heading already says a model wrote it. All four pinned.
+
+**▶ SECTION EXTRACTION DECLINED.** This section allows it "on readability alone"; the repaint did
+not need it, and a 3,500-line restructure is a far larger blast radius than a recolour.
+
+**▶ ⚠ PREREQUISITE FOR F7 — THE COCKPIT HAS NEVER BEEN SEEN IN A BROWSER.** It is the one repainted
+surface with no visual review: mounting it needs a large `AdminApplicationDetail` fixture, which is
+a piece of work in itself, and the sandbox forbids a hand-written approximation. **F7 cannot claim
+"every surface reviewed in both modes" until that fixture exists.**
+
 #### F5 — The officer cockpit
 **Scope.** ONE file: `src/app/admin/scholarship/[id]/page.tsx`, 235 chromatic and 275 ground.
 **This is the one place section extraction is justified on readability alone** — and only as far as

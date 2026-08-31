@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F5 — the officer cockpit repainted - 2026-09-01
+
+**Sprint.** No migration. Web only, 2 files. Retro
+`docs/retrospective-2026-09-01-layer1-f5-cockpit.md`. jest 1531 → **1534**.
+**Dark mode stays unreachable. Nothing a visitor sees changes.**
+
+### Changed
+- **`src/app/admin/scholarship/[id]/page.tsx` on the theme tokens** — 3,490 lines, 537 utilities,
+  the densest single file in the product. **The hiding-place hunt came back completely clean** for
+  the first time in six sprints: no raw hex, no arbitrary-value classes, no gradients, no inline
+  colour styles, no HTML entities.
+- **Two Save buttons corrected to the BRAND**, the same rule as F4's 38.
+- **Three judgement calls the codemod could not make:**
+  - **"This bill is in an unrelated person's name" is `critical`, not `caution`.** The generic
+    vision warnings two blocks below are `caution-600`; orange used to hold the two apart, and
+    sharing a tone would have flattened the distinction an officer most needs to see.
+  - **The capture chip is a CATEGORY** — read deterministically, or derived by a model. Two kinds,
+    so the neutral one keeps the ground and the other takes one swatch. Provenance is neither good
+    news nor a warning.
+  - **The Check-2 case summary is INFO, not a category.** Its indigo was saying "a model wrote
+    this", but the panel's own heading says that and its JOB is to inform. Colour should not be
+    carrying provenance for a block of prose.
+- **The HOLD badge is filled `caution`**, matching the suspended sponsor in F4 — a circuit-breaker
+  stopped the loop and a human has to look, so it must not read as a quiet grey neighbour.
+
+### Guards
+- **The cockpit's ceiling (544) is GONE, not lowered.** It is now inside the console's conversion
+  walk like every other admin page — a ratchet over a converted surface is noise, the same reason
+  F3 deleted the `src/components` one.
+- Four new pins, one per judgement call. Bite-checked with the F4 lesson applied: each fault was
+  **injected and then verified present** before running the suite. Four faults, five guards fired.
+
+### ⚠ ONE GAP IN THE EVIDENCE — the cockpit was NOT reviewed in a browser
+Every prior repaint was looked at in both modes on the sandbox. This one could not be: the cockpit
+takes a very large `AdminApplicationDetail` object and mounting it needs a fixture that is a piece
+of work in its own right, not a five-minute addition — and the sandbox's own rule forbids a
+hand-written approximation. Its tokens are the ones already reviewed on five surfaces and its four
+judgement calls are pinned by tests, so the risk is low, but it is not zero and it is not evidence.
+**Building that fixture is now a prerequisite for F7**, which reviews every surface in both modes.
+
 ## Layer 1 F4 — the admin console repainted - 2026-09-01
 
 **Sprint.** No migration. Web only, 46 files. Retro
