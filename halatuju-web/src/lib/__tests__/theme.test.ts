@@ -577,11 +577,18 @@ describe('the F4 semantic corrections the codemod could not make', () => {
     // a tone, a tenant's colour would have reached almost nothing on the surface their own staff
     // use all day. An info NOTICE (`bg-info-50` with dark text) is untouched — the distinction is
     // "filled control the user ACTS on" versus "coloured surface that INFORMS".
+    // ⚠ THE ESCAPES BELOW ARE WRITTEN BY HAND, NOT GENERATED. The first version of this guard
+    // came out of a script, and \b inside that script's own string became a literal BACKSPACE
+    // byte: the regex still compiled, matched nothing, and the guard passed forever. Bite-
+    // checking is the only reason it was ever found. Code that writes code has its escapes
+    // eaten twice, and the failure is silent — a dead guard, not a broken build.
     const offenders: string[] = []
-    for (const f of F4_FILES.filter((x) => x.endsWith('.tsx'))) {
-      for (const line of withoutComments(read(f)).split(String.fromCharCode(10))) {
-        const filled = /text-white/.test(line) && /bg-info-[567]00/.test(line)
-        if (filled) offenders.push(`${f}: ${line.trim()}`)
+    for (const f of F4_FILES) {
+      if (!f.endsWith('.tsx')) continue
+      for (const line of withoutComments(read(f)).split('\n')) {
+        if (/\btext-white\b/.test(line) && /\bbg-info-[567]00\b/.test(line)) {
+          offenders.push(`${f}: ${line.trim()}`)
+        }
       }
     }
     expect(offenders).toEqual([])
