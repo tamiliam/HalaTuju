@@ -576,10 +576,27 @@ surface never reviewed in a browser. Mounting it needs a large `AdminApplication
 fixture — a piece of work in its own right, and the sandbox forbids a hand-written approximation.
 **F7 cannot honestly claim "every surface reviewed in both modes" until that fixture exists.**
 
-**NEXT = LAYER 1 F6 — the public course guide.** 36 files, PLUS ~78 colour literals returned as
-class strings from `lib/` (`courseBadges.ts` 32, `applicationStatus.ts` 22, `requestStatus.ts` 14,
-`paymentStatus.ts` 6) — a codemod over `.tsx` never sees those, and they are exactly the status
-tones the vocabulary should own. Then A1-A3 (the tenant colour editor) and F7 (the flip).
+**NEXT = LAYER 1 A1 — the tenant colour editor (ARC A), not F6.**
+
+⚠ **CORRECTED 2026-09-01, caught by the owner.** The F5 close said "NEXT = F6" and that contradicted
+the approved plan. The roadmap's sequence is, verbatim:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+and its reason is explicit: *"Every surface Suresh named — student application, administration
+pages, sponsor pages — is repainted before the editor appears, so the first colour he sets lands
+coherently across all three. The public course guide follows, then the flip."* **All five of those
+surfaces are now live (F1–F5), so arc A's precondition is met and F6 is not one of its inputs.**
+The course guide is the shared base product, not a tenant surface — it only has to ship before F7,
+so that a person in dark mode does not click a course and get a white page.
+
+**After A1–A3: F6** — 36 files, PLUS ~78 colour literals returned as class strings from `lib/`
+(`courseBadges.ts` 32, `applicationStatus.ts` 22, `requestStatus.ts` 14, `paymentStatus.ts` 6) — a
+codemod over `.tsx` never sees those, and they are exactly the status tones the vocabulary should
+own. **Then F7** (the flip).
+
+⚠ **READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK.** The F5 error came from restating
+the order from memory five sprints in, not from the plan changing.
 
 **CHECKLIST for every repaint, six items now:** re-derive the file list; hunt the hiding places
 FIRST (and weight the search by a file's AGE, not its size — F5's huge-but-recent file was clean
