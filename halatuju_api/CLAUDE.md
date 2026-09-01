@@ -550,7 +550,79 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-01, after Layer 1 A2 — the colour picker)
+## Next Sprint (as of 2026-09-01, after Layer 1 A3 — ARC A IS COMPLETE)
+
+**SHIPPED — LAYER 1 A3. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-a3-draft-publish`.
+**⚠ MIGRATION `courses/0072` — NOT YET APPLIED. MIGRATE-FIRST.** api + web. Retro
+`docs/retrospective-2026-09-01-layer1-a3-draft-publish.md`; decisions ×3; lessons ×2.
+pytest 5738 → **5757**; jest 1573 → **1583**; tsc **24**; lint 0; i18n **4636×3**; build clean.
+Three guards bite-checked, each injection verified as landed first.
+
+**⚠ THIS BRANCH ALSO CARRIES A2's HELD PALETTE FIX** (`9313025c`) — parked rather than deployed a
+third time for A2, and it rides along here.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ A DRAFT MUST NEVER REACH A VISITOR.** ONE filter — `OrganisationTheme.active_for` — and
+  `scholarship.branding` calls it and nothing else. Widening it to "the organisation's theme" serves
+  an unpublished experiment the moment somebody types one. **Breaking it fails 13 tests.**
+- **`test_a_draft_never_reaches_a_visitor` uses an ANONYMOUS client on the PUBLIC endpoint.** Its
+  first draft reused the admin's token, which asks what an ADMINISTRATOR sees — a different question
+  with a different correct answer. Do not "simplify" it back to `self.client`.
+- **The lifecycle lives in `courses/theme_versions.py`, not on the model.** A publish is two writes
+  that must happen together; removing the archiving step trips four tests AND the database's own
+  partial unique index.
+- **`allowed=False` BY DEFAULT** on `publish` and `revert`, copied from `sponsor_terms.publish`. A
+  shell caller that forgets the role gate fails closed. The role gate itself is in the VIEW.
+- **Uniqueness is PARTIAL, per state** — one draft, one active, UNLIMITED archived. That history is
+  the undo; a blanket one-row rule would leave Revert nothing to go back to.
+- **Reverting the FIRST colour lands on the platform stylesheet** — a real outcome, not an error,
+  and the reason there is no separate "reset" verb to keep in step with revert.
+- **Publish sleeps while there are unsaved edits.** It ships the SAVED draft, so offering it
+  mid-edit publishes something other than what is on screen.
+- **The copy says it out loud**: *"Draft saved. Applicants still see the published colour."* A bare
+  "Saved" would read exactly like the old behaviour, which DID change what everyone saw.
+- **`set_organisation_theme` PUBLISHES immediately and `--clear` is a REVERT.** The command is the
+  operator's path; the screen is the careful one.
+
+**⚠ AT DEPLOY, IN ORDER:** (1) apply `courses/0072` MIGRATE-FIRST via Supabase MCP — hand-written
+Postgres DDL is in the migration's docstring and it **DROPS `organisation_themes_organisation_id_key`**
+(A1's OneToOne unique) and adds two PARTIAL unique indexes; (2) record the `django_migrations` row;
+(3) confirm the Security Advisor is still clean (no new table); (4) push (api + web).
+**Nothing a visitor sees changes** — no organisation has a theme yet, so there is nothing to draft
+or publish. The palette fix riding along is the only visible pixel, and it is on that same tab.
+
+Post-check: as the BrightPath `org_admin` (**elanjelian@me.com**, NOT the super account), open
+Programme → Colours; the banner should read "applicants are seeing the default colours", and both
+**Publish** and **Revert** should be asleep.
+
+**ARC A IS COMPLETE** — A1 (stored, served, applied), A2 (the picker + a gate that refuses an
+unreadable colour), A3 (draft, publish, revert). **A4 stays deferred with its written trigger.**
+
+**NEXT = LAYER 1 F6 — the public course guide.** The roadmap's sequence, verbatim:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+36 files, PLUS **~78 colour literals returned as class strings from `lib/`** (`courseBadges.ts` 32,
+`applicationStatus.ts` 22, `requestStatus.ts` 14, `paymentStatus.ts` 6) — a codemod over `.tsx`
+never sees those, and they are exactly the status tones the vocabulary should own.
+
+**⚠ TWO THINGS BLOCK F7, and neither is optional:**
+1. **TD-222 — the dark ramp cannot carry white button text.** `white` on `brand-600` measures
+   **3.22** in dark for the platform's own colour; `-700` measures **2.59**. Flipping dark on today
+   renders 106 primary buttons white-on-pale. Fix the ramp, THEN widen A2's gate — `check_tokens`
+   already takes the mode.
+2. **The officer cockpit has never been seen in a browser** — it needs the large
+   `AdminApplicationDetail` sandbox fixture, and the sandbox forbids a hand-written approximation.
+
+**⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase.
+
+**CHECKLIST, now eight items:** re-derive the file list; hunt the hiding places FIRST, weighted by a
+file's AGE not its size; grep for `bg-info-[567]00` beside `text-white`; ask of every colour table
+"state or kind?"; never generate a regex; bite-check by injecting a fault AND VERIFYING IT LANDED;
+read a codemod's residue rather than counting it; and **when a test names a person, make the request
+look like that person's** — borrowing the suite's authenticated client silently changes the question.
+
+## Superseded — previous Next Sprint (as of 2026-09-01, after Layer 1 A2 — the colour picker)
 
 **SHIPPED — LAYER 1 A2. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-a2-colour-picker`.
 **NO migration.** api + web. Retro `docs/retrospective-2026-09-01-layer1-a2-colour-picker.md`;

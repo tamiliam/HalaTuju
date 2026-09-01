@@ -8226,3 +8226,63 @@ need re-deriving once the dark ramp is fixed. Re-deriving is a deliberate act (`
 command, or a republish in A3), which is the same property the freeze buys everywhere else.
 
 **Revisit if:** immediately before F7. The flip must not ship with either half outstanding.
+
+## A colour version has a lifecycle, copied from the sponsor-terms one — Layer 1 A3, 2026-09-01
+
+**Decision:** `OrganisationTheme` gains `draft` / `active` / `archived`, with the transitions in
+`courses.theme_versions` (each `@transaction.atomic`, `allowed=False` by default). Uniqueness is
+PARTIAL — one draft and one active per organisation, unlimited archived. The serve path reads
+`active_for` and nothing else.
+
+**Alternatives considered:** (a) keep A1's single row and add a "published" boolean; (b) keep the
+single row and store the previous hex in a column for undo; (c) invent a lifecycle rather than
+copying one.
+
+**Rationale:** (a) and (b) both lose the thing that makes Revert honest — the previous version's
+whole resolved token SET, not just its input hex. Re-deriving from a stored hex is exactly the
+mistake A1 exists to avoid: it would hand back shades the tenant never approved if the ramp had
+changed in between. (c) throws away a state machine that has been in production for a month
+(`SponsorTermsVersion`) and whose failure modes are already understood.
+
+**Trade-offs:** more rows, and a migration that drops A1's uniqueness. Accepted: A1 said A3 would
+relax it. The transitions being in a service rather than on the model means two places to look for
+"what happens to a theme" — mitigated by the model docstring pointing at the service and vice versa.
+
+**Revisit if:** an organisation ever needs two live themes at once (a seasonal variant, say), which
+would make `active` a set rather than a singleton and is a different product question.
+
+## Reverting the first colour lands on the platform default, and there is no separate "reset" — Layer 1 A3, 2026-09-01
+
+**Decision:** `revert` archives the live version and re-activates the most recently archived one. If
+there is none, the organisation is left with no active theme — the platform stylesheet. A2's
+separate "Reset to default" control is gone.
+
+**Alternatives considered:** keep both verbs — Revert (one step back) and Reset (all the way to the
+platform).
+
+**Rationale:** two verbs whose outcomes overlap have to be kept in step forever, and a tenant has to
+work out which one they want. Reverting the first colour is GENUINELY what they had before, so one
+verb covers both cases honestly and there is no second code path to drift.
+
+**Trade-offs:** a tenant with a long history reaches the default by reverting repeatedly rather than
+in one press. Acceptable — and arguably better, since each step is reversible and a single jump to
+the default is not.
+
+**Revisit if:** a tenant accumulates enough versions that walking back is tedious, which would argue
+for a version LIST rather than a second button.
+
+## Publish is disabled while there are unsaved edits — Layer 1 A3, 2026-09-01
+
+**Decision:** the Publish button sleeps whenever the colour box differs from the saved draft, with a
+tooltip saying to save first.
+
+**Alternatives considered:** (a) let Publish save the current box and then publish it in one press;
+(b) leave it enabled and publish the saved draft regardless.
+
+**Rationale:** (b) is the dangerous one — it publishes something other than the colour the person is
+looking at, which is precisely the confusion A3 exists to remove. (a) is friendlier but collapses
+two decisions into one press, and the second of them is the one that changes what applicants see.
+Keeping them separate is the whole point of having a draft at all.
+
+**Revisit if:** real use shows the two-press flow is a nuisance — in which case (a) with an explicit
+"save and publish" label is the honest version, never a silently-widened Publish.

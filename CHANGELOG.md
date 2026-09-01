@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 A3 — draft, publish, revert. ARC A IS COMPLETE - 2026-09-01
+
+**Sprint.** **Migration `courses/0072` — additive PLUS one deliberate DROP and a data step.
+MIGRATE-FIRST.** api + web. Retro `docs/retrospective-2026-09-01-layer1-a3-draft-publish.md`.
+pytest 5738 → **5757**; jest 1573 → **1583**.
+
+Before this, saving a colour changed it for every applicant instantly, with no undo — the previous
+hex was simply gone.
+
+### Added
+- **`courses/theme_versions.py`** — the lifecycle. `draft` (never served) → `publish` → `revert`,
+  each `@transaction.atomic` and the ONLY sanctioned way to move a row between states. A publish is
+  two writes that must happen together; split across callers it is one deploy from an organisation
+  with two live themes or none.
+- **`OrganisationTheme.active_for`** — ⚠ **THE SERVE SEAM.** `scholarship.branding` calls this and
+  nothing else. Breaking it fails **13 tests**.
+- **Two endpoints**, `…/theme/publish/` and `…/theme/revert/`, subclassing the theme view so they
+  inherit one gate, one org fence and one payload rather than three copies.
+- **A banner** that says which colour applicants are actually seeing, so it is never inferred.
+
+### Changed
+- **`OrganisationTheme` is a FK with per-state uniqueness**, not a `OneToOne`. One draft and one
+  active per organisation; **as many archived as they like — that history IS the undo.**
+- **PUT saves a DRAFT**; DELETE discards it; what is live is untouched by both.
+- **`set_organisation_theme` publishes immediately, and `--clear` is now a REVERT.** The command is
+  the operator's path, run deliberately from a shell; the screen is the careful one.
+
+### The decisions that must not be "tidied"
+- **A DRAFT MUST NEVER REACH A VISITOR.** One filter, one seam.
+  `test_a_draft_never_reaches_a_visitor` drives the PUBLIC branding endpoint with an **anonymous**
+  client — the first draft of that test reused the admin's token, which asked a different question
+  and was refused by the NRIC gate.
+- **The shape is `SponsorTermsVersion`'s deliberately** — including `allowed=False` by default so a
+  shell caller fails closed. A month-old production state machine beats a new one.
+- **Reverting the FIRST colour lands on the platform stylesheet, and that is a real outcome**, not
+  an error — which is why there is no separate "reset" concept to keep in step.
+- **Publish is asleep while there are unsaved edits.** It ships the SAVED draft, so offering it
+  mid-edit would publish something other than what is on screen.
+- **The migration's data step exists for a case production does not have.** A pre-A3 row WAS the
+  live theme, so it becomes `active` rather than being silently un-published. Zero rows on
+  production — checked — so it is a no-op there. A migration should express intent, not rely on
+  being lucky.
+
+### At deploy
+**MIGRATE-FIRST**: apply `courses/0072` (hand-written DDL in the docstring — it DROPS A1's
+`organisation_themes_organisation_id_key` and adds two partial unique indexes), record the ledger
+row, confirm the Security Advisor is still clean, then push. **Nothing a visitor sees changes** —
+no organisation has a theme yet. This branch also carries A2's held palette fix.
+
 ## Layer 1 A2 — the colour picker, and the contrast gate - 2026-09-01
 
 **Sprint.** **NO migration.** api + web. Retro

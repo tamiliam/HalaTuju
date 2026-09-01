@@ -424,10 +424,33 @@ is dismissed and a student cannot read the page.
 
 **Complexity: medium-high.**
 
-#### A3 — Draft, preview, publish, revert
+#### ✅ A3 — SHIPPED 2026-09-01. **ARC A IS COMPLETE.**
+
+Retro `docs/retrospective-2026-09-01-layer1-a3-draft-publish.md`; decisions ×3; lessons ×2.
+**Migration `courses/0072`** — additive PLUS one deliberate DROP of A1's `OneToOne` unique, and a
+data step. pytest **5757**, jest **1583**.
+
+**▶ ⚠ A DRAFT MUST NEVER REACH A VISITOR**, and there is exactly ONE filter —
+`OrganisationTheme.active_for`, which `scholarship.branding` calls and nothing else. Breaking it
+fails 13 tests. That is the sprint's whole risk, held at one line.
+
+**▶ THE SHAPE IS `SponsorTermsVersion`'s, DELIBERATELY** — draft immutability, a publish that
+archives the previous active row in ONE transaction, `allowed=False` by default so a shell caller
+fails closed. Uniqueness is PARTIAL, per state: one draft and one active, unlimited archived,
+because that history IS the undo.
+
+**▶ REVERTING THE FIRST COLOUR LANDS ON THE PLATFORM STYLESHEET** — a real outcome, not an error,
+which is why there is no separate "reset" verb to keep in step.
+
+**▶ ⚠ A CORRECTION TO THIS SECTION'S OWN PLAN.** It said a tenant previews on the design SANDBOX.
+The sandbox is not a reachable page — its route files are deliberately renamed (`page.sandbox.tsx`)
+so they never build, and it is a local tool for the owner. The preview is the card A2 built, now
+showing the draft beside a banner naming what is live.
+
+#### A3 — the reasoning, kept
 **Goal.** Changing a colour is not a live experiment on applicants.
-**Scope.** Draft → sandbox preview → publish, mirroring the sponsor-terms shape already in the
-codebase; an `AUDIT` line per publish; one-click revert. *medium.*
+**Scope.** Draft → preview → publish, mirroring the sponsor-terms shape already in the codebase; an
+`AUDIT` line per publish; one-click revert. *medium.*
 
 #### A4 — The full palette — DEFERRED, WITH A WRITTEN TRIGGER
 **Not scheduled.** The owner's stated intent, held until there is a real ask.
