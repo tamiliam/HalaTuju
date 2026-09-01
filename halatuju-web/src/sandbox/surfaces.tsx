@@ -26,6 +26,9 @@ import InfoTip from '@/components/InfoTip'
 import VerifiedTick from '@/components/VerifiedTick'
 import { FundingBar } from '@/components/FundingBar'
 import { Pagination } from '@/components/Pagination'
+import CourseCard from '@/components/CourseCard'
+import CourseHeader from '@/components/CourseHeader'
+import type { EligibleCourse } from '@/lib/api'
 import ScholarshipApplyPage from '@/app/scholarship/apply/page'
 import SponsorStudentsPage from '@/app/sponsor/(portal)/students/page'
 import AdminProgrammeConfigPage from '@/app/admin/programme/page'
@@ -245,6 +248,21 @@ export const SURFACES: Surface[] = [
     render: () => <CategoryColours />,
   },
   {
+    slug: 'course-guide',
+    title: 'Course guide — the last surface (F6)',
+    note:
+      'The public course guide, the final repaint before the switch. Two things to check, and '
+      + 'both need the cards SIDE BY SIDE. First: the eight institution types must stay tellable '
+      + 'apart, in each mode — they are a category set, so their only job is to differ from each '
+      + 'other, and F6 moved them into one module because the search grid and the course page had '
+      + 'been describing them separately. Second: every LEVEL chip is grey on purpose. The two '
+      + 'sets sit adjacent and together wanted thirteen swatches against a family of eight; the '
+      + 'chip already reads “Diploma”, and an unrecognised level had ALWAYS been grey. The same '
+      + 'reasoning made the seventeen STPM subject chips grey. If a later sprint wants either set '
+      + 'coloured, the change is to --category-*, not to these files.',
+    render: () => <CourseGuide />,
+  },
+  {
     slug: 'programme-config',
     title: 'Admin — what we ask for',
     note:
@@ -377,6 +395,66 @@ function CategoryColours() {
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         {SANDBOX_TRACKS.map((track) => <PathwayTrackCard key={track.id} track={track} />)}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * F6's surface. The eight institution types are the sprint's whole visual argument, and they only
+ * make it side by side — one card on its own says nothing about whether the set separates.
+ */
+const SANDBOX_COURSES: EligibleCourse[] = ([
+  ['ua', 'Ijazah Sarjana Muda Kejuruteraan Awam', 'Ijazah Sarjana Muda', 'engineering'],
+  ['poly', 'Diploma Teknologi Maklumat', 'Diploma', 'computing'],
+  ['ilkbs', 'Diploma Belia dan Sukan', 'Diploma', 'social'],
+  ['matric', 'Matrikulasi Sains', 'Pra-U', 'science'],
+  ['kkom', 'Sijil Kulinari', 'Sijil', 'hospitality'],
+  ['iljtm', 'Sijil Kemahiran Kimpalan', 'Sijil', 'engineering'],
+  ['pismp', 'PISMP Pendidikan Matematik', 'Ijazah Sarjana Muda', 'education'],
+  ['stpm', 'STPM Aliran Sains', 'Pra-U', 'science'],
+] as const).map(([source_type, course_name, level, field_key], i) => {
+  // ⚠ `merit_label` is a CLOSED set — 'High' | 'Fair' | 'Low' — and anything else falls through to
+  // "Low Chance" with a red bar. The first draft of this fixture said 'Good' and rendered all eight
+  // cards as bad news, which a reader takes for a bug in the thing they were asked to look at.
+  const label = (['High', 'Fair', 'Low'] as const)[i % 3]
+  return {
+    course_id: `sandbox-${source_type}`,
+    course_name,
+    level,
+    field: field_key,
+    field_key,
+    source_type,
+    merit_cutoff: 85,
+    student_merit: label === 'High' ? 92 : label === 'Fair' ? 86 : 79,
+    merit_label: label,
+    merit_color: null,
+    institution_count: 3 + i,
+  }
+})
+
+function CourseGuide() {
+  return (
+    <div className="mx-auto max-w-5xl">
+      <CourseHeader
+        sourceType="poly"
+        level="Diploma"
+        title="Diploma Teknologi Maklumat"
+        subtitle="Politeknik Malaysia"
+      />
+      <div className="px-4">
+        <p className="my-4 text-sm text-ground-500">
+          Eight institution types, eight category swatches — the set only has to differ from itself,
+          and this is the only place you can see whether it does. Beside each one is the LEVEL chip,
+          which is deliberately grey in every card: it sits next to the type chip, the two sets
+          together wanted thirteen swatches against a family of eight, and the chip already says
+          “Diploma”. An unrecognised level had always been grey; now they all agree.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {SANDBOX_COURSES.map((course) => (
+            <CourseCard key={course.course_id} course={course} isSaved={false} />
+          ))}
+        </div>
       </div>
     </div>
   )
