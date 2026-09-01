@@ -552,7 +552,9 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-02, after Layer 1 F6 — THE REPAINT IS COMPLETE)
 
-**SHIPPED — LAYER 1 F6. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f6-remaining-surfaces`.
+**SHIPPED AND DEPLOYED — LAYER 1 F6.** `main` at `ade1829a`, Cloud Build SUCCESS, serving
+**halatuju-web-00814-v7s** (api unchanged at `00969-jgx`). All eight public routes 200 on
+halatuju.xyz; `/search` serves `bg-primary-600 text-white` and no `bg-blue-600` / `bg-purple-600`.
 **NO migration.** web only. Retro `docs/retrospective-2026-09-02-layer1-f6-course-guide.md`;
 decisions ×2; lessons ×7. jest 1583 → **1595**; tsc **24** (baseline); lint **0**;
 i18n **4636 × 3**; `next build` clean. Seven guards bite-checked, each injection verified as landed.
@@ -581,16 +583,23 @@ arbitrary-value colour class.** The only thing between here and dark mode is F7 
 - **The state tint on institution cards is GONE** — six of sixteen states tinted, ten grey, and the
   codemod had just called Kuala Lumpur `critical` and Johor `positive`. Not a regression.
 
-**⚠ AT DEPLOY:** no migration, no data step. **No Python changed** — but BOTH triggers fire, because
-`halatuju_api/**` matches this very file and the block you are reading is an edit to it. The api
-build is a no-op rebuild; the web build is the one that matters.
-**Visible changes, all on the public course guide:** the STPM
+**⚠ CORRECTION, MEASURED AT THIS DEPLOY — editing THIS FILE does NOT fire the api trigger.** Before
+pushing I wrote that both builds would run, because `halatuju_api/**` appears to match
+`halatuju_api/CLAUDE.md`. The commit changed this file, `docs/**`, `CHANGELOG.md` and
+`halatuju-web/**`, and **only the web build ran** (`ade1829` → `halatuju-web` alone; api stayed on
+`00969-jgx`). The api trigger's path filter is narrower than `halatuju_api/**` — probably Python
+only. A note saying otherwise had been carried forward for several sprints. **Do not restate it;
+if a sprint's deploy plan depends on which triggers fire, read `gcloud builds list` after the push.**
+
+**DEPLOYED, and it was VISIBLE. What moved, all on the public course guide:** the STPM
 subject chips and the qualification-level chips go grey; six institution types keep their exact
 colours while `matric` and `stpm` gain proper ones; the institution cards lose their state tint; and
 the two `/search` qualification toggles turn the tenant's colour instead of blue and purple.
 Do NOT say "nothing a visitor sees changes" — say what moved.
 
-Post-check on halatuju.xyz: open `/search`, then any course, then `/pathway/stpm`. Type badges must
+✅ Post-check DONE: all eight public routes 200, `Server: Google Frontend`, and `/search` serves
+`bg-primary-600 text-white` with no `bg-blue-600` / `bg-purple-600` anywhere. **Left for the owner's
+eyes** — open `/search`, then any course, then `/pathway/stpm`. Type badges must
 differ from each other; level and subject chips must be grey; the SPM/STPM toggles must be brand.
 
 **NEXT = LAYER 1 F7 — the flip.** The roadmap's sequence, verbatim:
