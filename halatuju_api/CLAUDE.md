@@ -550,7 +550,76 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-01, after Layer 1 A1 — a theme belongs to an organisation)
+## Next Sprint (as of 2026-09-01, after Layer 1 A2 — the colour picker)
+
+**SHIPPED — LAYER 1 A2. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-a2-colour-picker`.
+**NO migration.** api + web. Retro `docs/retrospective-2026-09-01-layer1-a2-colour-picker.md`;
+decisions ×3; lessons ×3; **TD-222** raised. pytest 5706 → **5738**; jest 1548 → **1573**;
+tsc **24** (baseline); lint 0; i18n 4581 → **4629×3** (ms/ta first drafts); `next build` clean.
+Four guards bite-checked, each injection verified as landed first.
+
+**⚠ THIS DEPLOY IS VISIBLE, unlike every Layer 1 sprint before it.** 54 filled controls go one
+shade darker in light mode — the main button on student and admin screens alike. Do NOT repeat
+"nothing a visitor sees changes"; say what moved and why.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **THE GATE CHECKS PAIRS, NOT A HEX** (`apps/courses/contrast.py`). "Is this colour safe" has no
+  answer. The pair table is COUNTED in the web app. **It REFUSES at save** (`400 unreadable`) — a
+  warning is dismissed by the person who chose the colour, and the person who cannot read the page
+  is a student who never saw it.
+- **⚠ `test_the_platform_colour_passes_its_own_gate` IS THE CALIBRATION CANARY.** The gate as first
+  written refused BrightPath's own live blue: white on `bg-primary-500` measures 3.98. That was the
+  gate reporting a defect in the PRODUCT — F4 had ruled a filled control carries `-600` and 54 had
+  never moved. Read that test's docstring before touching a threshold.
+- **`-500` now carries SHAPES ONLY** (dots, bars, toggles, `aria-hidden` icon circles), which is why
+  one row in the pair table is held to WCAG's 3:1 rather than 4.5. Moving it back to the text bar
+  fails four tests, canary first.
+- **THE BROWSER IS NOT THE GATE.** `lib/contrast.ts` exists so the answer appears as somebody types.
+  When the two DISAGREE the screen renders the **server's** answer — a test pins that.
+- **The preview is scoped to its own card** — painting a draft across the console would fight
+  `branding-context` and repaint the controls somebody is using to decide.
+- **`AdminOrganisationThemeView` derives the organisation, never takes it.** Same
+  `owning_organisation` the fence uses; cross-org 404 never 403; two tenants and no `?org=` is
+  `organisation_required`. `tenants()`, NOT `filter(is_active=True)`.
+- **⚠ The ENDPOINT does not refuse the platform organisation; `set_organisation_theme` DOES.**
+  Deliberate — the command is the mechanical path, this is the deliberate one, and DELETE puts the
+  stylesheet back exactly.
+- **The config tab MOVED unchanged** to `components/admin/ProgrammeConfigTab`; its 8 rendered tests
+  pass untouched. That is what says a move was a move.
+
+**AT DEPLOY: push (api + web).** No migrate-first, no env vars. Post-check: as the BrightPath
+`org_admin` (**elanjelian@me.com**, NOT the super account), open Programme → Colours, confirm the
+palette draws and all six checks pass on the current colour. **Change nothing.**
+
+**NEXT = LAYER 1 A3 — draft, preview, publish, revert.** The roadmap's sequence, verbatim:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+Changing a colour must not be a live experiment on applicants. Mirrors the sponsor-terms shape
+already in the codebase; an `AUDIT` line per publish; one-click revert. ⚠ It relaxes A1's
+`OneToOne` to several rows per organisation — a constraint drop plus a status column, both additive.
+
+Then **F6** (36 files PLUS ~78 colour literals returned as class strings from `lib/`), then **F7**.
+
+**⚠ TWO THINGS NOW BLOCK F7, and neither is optional:**
+1. **TD-222 — the dark ramp cannot carry white button text.** `white` on `brand-600` measures
+   **3.22** in dark for the platform's own colour, `-700` measures **2.59**. F3b swapped the shade
+   end so pale brand SURFACES would work and nothing accounted for those same stops being filled
+   buttons. Flipping dark on today renders 106 primary buttons white-on-pale. Fix the ramp, THEN
+   widen A2's gate — `check_tokens` already takes the mode.
+2. **The officer cockpit has never been seen in a browser** — it needs the large
+   `AdminApplicationDetail` sandbox fixture, and the sandbox forbids a hand-written approximation.
+
+**⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase from
+memory. The F5 close said "NEXT = F6" and was wrong.
+
+**CHECKLIST, now seven items:** re-derive the file list; hunt the hiding places FIRST, weighted by a
+file's AGE not its size; grep for `bg-info-[567]00` beside `text-white`; ask of every colour table
+"state or kind?"; never generate a regex; bite-check by injecting a fault AND VERIFYING IT LANDED;
+and **read a codemod's residue rather than counting it** — a class-string sweep cannot see a colour
+pair composed across a parent and its child.
+
+## Superseded — previous Next Sprint (as of 2026-09-01, after Layer 1 A1 — a theme belongs to an organisation)
 
 **SHIPPED — LAYER 1 A1. ARC A IS OPEN.** Branch `feat/layer1-a1-tenant-theme`.
 **⚠ MIGRATION `courses/0071` — ADDITIVE, ONE NEW TABLE, NOT YET APPLIED. MIGRATE-FIRST.**

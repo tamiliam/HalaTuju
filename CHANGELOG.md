@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 A2 — the colour picker, and the contrast gate - 2026-09-01
+
+**Sprint.** **NO migration.** api + web. Retro
+`docs/retrospective-2026-09-01-layer1-a2-colour-picker.md`. Design of record: the working mock
+approved 2026-09-01 (Stitch failed twice and produced nothing; same fallback as the
+sponsored-student page in July). pytest 5706 → **5738**; jest 1548 → **1573**.
+
+**⚠ THIS DEPLOY IS VISIBLE, unlike the last seven.** 54 filled controls go one shade darker in
+light mode. See below for why.
+
+### Added
+- **`apps/courses/contrast.py`** — the gate. It checks **PAIRS, not a hex**: "is this colour safe"
+  has no answer, contrast is a property of two colours. The pair table is counted in the web app,
+  not imagined. **It REFUSES at save** (`400 unreadable`, naming the failing pairs) — a warning is
+  dismissed by the person who chose the colour, while the person who cannot read the page is a
+  student who never saw it.
+- **`AdminOrganisationThemeView`** (`admin/scholarship/organisation/theme/`, GET/PUT/DELETE) —
+  `org_admin` + super. The organisation is **derived** from `owning_organisation`, the same field
+  the fence uses, so it cannot widen access however it is called; cross-org is 404 never 403; two
+  tenants and no `?org=` is `organisation_required`, never a silent pick. `tenants()`, not
+  `filter(is_active=True)`. DELETE restores the platform stylesheet exactly.
+- **The Colours tab** on `/admin/programme`, over A1's storage. Live palette, real-component
+  preview scoped to its own card, six plain-English readability checks, Save disabled with the
+  reason beside it.
+- **The tab shell** — a retro-fit the roadmap predicted (*"build either as a single-purpose page
+  and the other arrives as a retro-fit"*). The config tab MOVED unchanged; its 8 rendered tests
+  pass untouched, which is what says a move was a move.
+
+### Changed
+- **54 filled controls moved `bg-primary-500` → `-600`** across 21 files. **The maths found them:**
+  small white text on the lightest brand stop measures **3.98** for the platform's own colour, so
+  the gate as first written refused BrightPath's own live blue. F4 had already ruled that a filled
+  control carries `-600`; these never moved. What stays on `-500` is dots, bars, toggles and
+  `aria-hidden` icon circles — **shapes**, held to WCAG's 3:1, which is the one row in the pair
+  table with a different bar.
+
+### The decisions that must not be "tidied"
+- **THE BROWSER IS NOT THE GATE.** `lib/contrast.ts` exists so somebody sees the answer as they
+  type; the 400 is the rule. When the two DISAGREE the screen renders the **server's** answer —
+  showing our optimistic one would hide a real bug behind a cheerful screen. Pinned by a test.
+- **`test_the_platform_colour_passes_its_own_gate` is the CALIBRATION CANARY.** A gate that refuses
+  the colour the product ships is reporting a defect in the PRODUCT. Read its docstring before
+  changing a threshold.
+- **The preview is scoped to its own card.** Painting a draft across the console would fight
+  `branding-context` and repaint the very controls somebody is using to decide.
+- **Dark is deliberately NOT gated (TD-222).** In dark, white-on-`brand-600` measures 3.2 for the
+  platform's own colour — a defect in F3b's ramp, not in anybody's choice. Gating it now would
+  refuse every tenant for our mistake. **F7 must not ship before both are fixed.**
+- **The endpoint does not refuse the platform organisation; the COMMAND does.** The command is the
+  mechanical path; this is the deliberate one, where a person sees the shades and the checks first
+  and DELETE puts the stylesheet back.
+
+### At deploy
+Push (api + web). No migrate-first, no env vars. **Say that 54 buttons go one shade darker** —
+this is the first Layer 1 deploy a person could notice. Post-check: as the BrightPath `org_admin`
+(elanjelian@me.com, NOT the super account), open Programme → Colours and confirm the palette draws
+and all six checks pass. Change nothing.
+
 ## Layer 1 A1 — a theme belongs to an organisation - 2026-09-01
 
 **Sprint.** **Migration `courses/0071` — ADDITIVE, one new table, MIGRATE-FIRST.** api + web,

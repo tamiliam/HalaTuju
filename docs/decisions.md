@@ -8158,3 +8158,71 @@ The cost is a few lines, and all three are bite-checked, so none of them is deco
 
 **Revisit if:** the token set ever stops being publicly served, which would remove the third
 boundary.
+
+## The contrast gate checks token PAIRS, and REFUSES rather than warns — Layer 1 A2, 2026-09-01
+
+**Decision:** `courses.contrast` holds a table of the ink/surface pairs the product actually
+renders, counted in `src/**`. An unreadable colour is a `400 unreadable` from the save path, naming
+the failing pairs. The browser runs the same check so the answer appears as somebody types, and the
+Save button is disabled with the reason beside it — but the 400 is the gate.
+
+**Alternatives considered:** (a) judge the hex alone ("is #a21caf safe?"); (b) warn and let the
+tenant proceed; (c) gate in the browser only.
+
+**Rationale:** (a) has no answer — contrast is a property of two colours, and a checker written
+against a hex has to be rewritten the day per-token colours arrive, while one written against the
+pairs simply gets more rows. (b) fails on who bears the cost: the person dismissing the warning is
+the tenant, and the person who cannot read the page is a student who never saw it. (c) is not a
+gate; a browser is a courtesy.
+
+**Trade-offs:** two implementations of one calculation, which is a drift risk — mitigated by shared
+pair KEYS and shared golden fixtures on both sides. And a tenant can be refused a colour they like;
+measured at 13 of 18 realistic brand colours passing, with every refusal genuinely unreadable.
+
+**Revisit if:** the product's rendered pairs change materially (a redesign), or WCAG 3 lands with a
+different model — in which case the table is what changes, not the shape.
+
+## `bg-primary-500` stops carrying text, because the gate said so — Layer 1 A2, 2026-09-01
+
+**Decision:** 54 filled controls moved to `bg-primary-600`. `-500` now carries only shapes — dots,
+progress bars, toggles, `aria-hidden` icon circles — and its pair is held to WCAG's 3:1 for non-text
+rather than 4.5.
+
+**Alternatives considered:** (a) drop the `white on -500` pair from the table, so the gate stops
+complaining; (b) keep the pair AND the buttons, accepting that the gate refuses colours close to our
+own; (c) lower the threshold.
+
+**Rationale:** (a) would be lying about what the product renders, which is the one thing a
+pair-based gate must not do. (b) would have us tell a tenant "this blue is too hard to read" while
+shipping that exact blue — indefensible the moment anyone checks. (c) abandons the standard. The
+honest reading is that the gate found a real defect: **F4 already ruled a filled control carries
+`-600`**, and these were the stragglers. Fixing the product made the gate honest AND less
+restrictive — orange became usable, and our own colour passes.
+
+**Trade-offs:** the first Layer 1 deploy a person can see. 54 buttons go one shade darker. Accepted:
+the alternative is 54 sub-AA controls staying live.
+
+**Revisit if:** never as a whole. If a NEW control lands on `-500` with text on it, that is a bug in
+the control, and `test_the_platform_colour_passes_its_own_gate` will start failing.
+
+## Dark mode is deliberately not gated yet — Layer 1 A2, 2026-09-01
+
+**Decision:** `check_tokens` takes a mode; A2 passes `'light'` only. Recorded as TD-222 with the
+reason in the module docstring and in `test_dark_is_deliberately_not_gated_yet`.
+
+**Alternatives considered:** (a) gate both modes now; (b) fix F3b's dark ramp inside A2 and then
+gate both.
+
+**Rationale:** in dark, `brand-600` and `-700` are mixes toward WHITE, so `text-white` on them
+measures about 3.2 and 2.6 **for the platform's own colour**. That is a defect in the ramp, not in
+anybody's choice: F3b swapped the shade end toward white so pale brand SURFACES would work in dark,
+and nothing accounted for the same stops carrying white BUTTON text. Gating dark now (a) would
+refuse every tenant for our mistake. (b) reopens a shipped decision inside a sprint scoped as a
+picker, and dark is unreachable in production — verified on the live service, not from a settings
+default — so nothing a person can see is affected today.
+
+**Trade-offs:** "cannot ship an unreadable colour" is true of light only, and a set approved now may
+need re-deriving once the dark ramp is fixed. Re-deriving is a deliberate act (`--apply` on the
+command, or a republish in A3), which is the same property the freeze buys everywhere else.
+
+**Revisit if:** immediately before F7. The flip must not ship with either half outstanding.

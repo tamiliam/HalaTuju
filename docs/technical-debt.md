@@ -2840,3 +2840,43 @@ the gate list), or fix the 24 in one pass (mostly `Array.from(set)` and typed fi
 kind of drift the sandbox fixtures were typed to catch.
 
 **Estimate:** ~1.5h.
+
+### [TD-222] The contrast gate covers LIGHT mode only, because the dark brand ramp cannot pass it — medium
+
+**Found:** Layer 1 A2 (2026-09-01), building the contrast gate and measuring it against the
+platform's own colour in both modes.
+
+**What:** `courses.contrast.check_tokens` takes a mode and A2 calls it with `'light'`. In DARK mode
+the same six pairs measure, for the platform's own `#137fec`:
+
+| pair | dark | bar |
+|---|---|---|
+| `white` on `brand-600` (the main filled button) | **3.22** | 4.5 |
+| `white` on `brand-700` (its darker sibling) | **2.59** | 4.5 |
+| `white` on `brand-500` (shapes) | 3.98 | 3.0 ✓ |
+
+**Why:** F3b swapped the dark ramp's ends so that the PALE stops (`50`–`200`) mix toward the page
+instead of toward white — correct, and it fixed 101 pale brand panels across 40 files. Nothing
+accounted for `600`/`700` ALSO being surfaces that carry white button text: in dark they are mixes
+toward white, so they are LIGHTER than `500`, and white text on them is close to invisible.
+
+**Why it matters:** it is not a tenant problem and a gate must not be pointed at it. Gating dark
+today would refuse every colour on earth, including the platform's, for a defect in our own ramp.
+It is also currently invisible: `NEXT_PUBLIC_THEME_SWITCH` is unset on the live web service (read
+from `gcloud run services describe`, not from a settings default), so no person can reach dark mode.
+
+**⚠ IT BLOCKS F7.** The flip is the sprint that turns dark mode on. Shipping it with 106
+`bg-primary-600` buttons rendering white-on-pale would be the most visible defect this arc could
+produce. **F7 must not ship before this is fixed AND the gate is widened to both modes.**
+
+**Shape of the fix (not decided):** either the dark shade end stops mixing toward white for the
+stops used as filled surfaces, or the product takes a different stop for a filled control in dark.
+The first keeps one token meaning one thing; the second keeps the ramp's logic uniform. It is a
+design decision for the owner, not a mechanical change, which is why A2 recorded it rather than
+guessing at it inside a sprint scoped as a picker.
+
+**Switching the gate on afterwards is an ARGUMENT, not a rewrite** — `check_tokens(tokens, 'dark')`
+already works, and `test_dark_is_deliberately_not_gated_yet` carries the reason plus an instruction
+to delete itself rather than leave a passing assertion that means nothing.
+
+**Status:** Open.

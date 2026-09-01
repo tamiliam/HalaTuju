@@ -306,6 +306,18 @@ a white page. *medium-high.*
 Lower a `palette-guard` ceiling that may only fall, remove the flag, and review every surface in both
 modes. *low, but it is the sprint that must not be skipped.*
 
+**⚠ TWO THINGS NOW BLOCK IT, both found by later sprints and neither optional.**
+
+1. **TD-222 — the dark brand ramp cannot carry white button text.** In dark, `brand-600` and `-700`
+   are mixes toward WHITE, so `text-white` on them measures **3.22** and **2.59** for the platform's
+   own colour. F3b swapped the shade end so pale brand SURFACES would work; nothing accounted for
+   the same stops being filled-button backgrounds. Flipping dark on today would render 106
+   `bg-primary-600` buttons white-on-pale. **Fix the ramp, THEN widen A2's gate to both modes** —
+   which is an argument to `check_tokens`, not a rewrite.
+2. **The officer cockpit has never been seen in a browser.** Mounting it needs a large
+   `AdminApplicationDetail` sandbox fixture, and the sandbox forbids a hand-written approximation.
+   F7 cannot honestly claim "every surface reviewed in both modes" until it exists.
+
 ### Arc A — the authoring (what an `org_admin` actually touches)
 
 **Not in the superseded plan at all.** This is the arc that question 7 flagged as "its own arc" and
@@ -341,7 +353,33 @@ refuses that org by name.
 `branding.test.ts`. It caught a real one immediately: Python's `round()` is banker's, JavaScript's
 is not, and this colour lands on an exact `.5`.
 
-#### A2 — The colour picker, and the contrast gate
+#### ✅ A2 — SHIPPED 2026-09-01
+
+Retro `docs/retrospective-2026-09-01-layer1-a2-colour-picker.md`; decisions ×3; lessons ×3;
+**TD-222** raised. **NO migration.** api + web. pytest **5738**, jest **1573**.
+Design of record: the working mock approved by the owner (Stitch failed twice and produced nothing;
+same fallback as the sponsored-student page in July).
+
+**▶ THE GATE CHECKS PAIRS AND REFUSES AT SAVE.** `courses/contrast.py`; the browser runs the same
+check so the answer appears as somebody types, but the `400` is the rule. When the two disagree the
+screen renders the SERVER's answer — a test pins that.
+
+**▶ ⚠ IT REFUSED THE PLATFORM'S OWN BLUE, AND THAT WAS THE FINDING.** White on `bg-primary-500`
+measures 3.98 for `#137fec`. F4 had already ruled a filled control carries `-600`; **54 of them had
+never moved**, across 21 files. A2 moved them, so `-500` now carries only shapes (3:1, not 4.5).
+After the move 13 of 18 realistic brand colours pass, ours among them.
+`test_the_platform_colour_passes_its_own_gate` is the calibration canary.
+
+**▶ THE TAB SHELL WAS THE RETRO-FIT open question 3 predicted.** Layer 0 Sprint 5 shipped a
+single-purpose page; A2 built the shell and MOVED the config tab unchanged — its 8 rendered tests
+pass untouched.
+
+**▶ ⚠ THIS DEPLOY IS VISIBLE**, unlike every Layer 1 sprint before it: 54 filled controls go one
+shade darker in light mode.
+
+**▶ ⚠ DARK IS NOT GATED — TD-222, AND IT BLOCKS F7.** See the F7 section.
+
+#### A2 — the reasoning, kept
 **Goal.** An `org_admin` picks a colour, sees it immediately, and **cannot ship an unreadable one**.
 
 **✅ THE STORAGE HALF OF THIS SECTION IS BUILT (A1, 2026-09-01).** `OrganisationTheme` already
