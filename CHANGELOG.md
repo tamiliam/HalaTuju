@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F6 — the last unpainted surfaces. THE REPAINT IS COMPLETE - 2026-09-02
+
+**Sprint.** **NO migration.** web only. Retro
+`docs/retrospective-2026-09-02-layer1-f6-course-guide.md`. jest 1583 → **1595**; tsc **24**
+(baseline, TD-221); lint **0**; i18n **4636 × 3**; `next build` clean.
+
+36 files, ~860 utilities. Nothing under `src/` now carries a raw Tailwind colour, a raw hex, or an
+arbitrary-value colour class. **The only thing left before the switch is F7 itself.**
+
+**The roadmap called this "the public course guide, 36 files".** The count was right and the
+description was not: what was actually left was the course guide PLUS contracts, the email editor,
+sources, reviewers, the interview panel and the staff manual. F7 needs all of it, so F6 took all
+of it. Fourth sprint running that the plan's file table had aged.
+
+### Added
+- **`src/lib/stpmSubjects.ts`** and **`src/lib/matricTracks.ts`** — one home each for two
+  vocabularies that were declared TWICE, byte-identical, in `course/[id]` and the pathway pages.
+- **A `course-guide` sandbox surface**, mounting the real `CourseHeader` and `CourseCard`. The
+  eight institution types only make their argument side by side.
+- **Three guards that now cover the WHOLE TREE** — no raw colour, no raw hex, no arbitrary-value
+  class, asserted over `walkFiles('src')` rather than a per-sprint file list. A page written next
+  month is covered without anyone remembering to add it.
+
+### Changed
+- **`courseBadges.ts` owns institution type → swatch.** `RequirementsCard` described the same six
+  types independently and `stpm/[id]` held a fourth copy hard-coded to Universiti. Its six numbers
+  were carried over unchanged, so nothing a student sees moved.
+- **Two sets went NEUTRAL rather than onto the category family.** 17 STPM subject codes wanted 16
+  hues, and the type + level chips sit adjacent and wanted 13 between them; the family has 8 and
+  they deliberately avoid green/blue/amber/red. See `docs/decisions.md`.
+- **The search page's two qualification toggles are BRAND.** SPM was blue and STPM purple, so the
+  SELECTED state of one segmented control was two colours, neither of them the tenant's.
+- **Ten more filled controls onto the brand** — contracts, the email editor, the interview panel,
+  and five in `components/sponsors` that F1 missed.
+- **Two quiz pages stop painting themselves `bg-[#f5f7f8]`** — the fifth hiding place, and the F3
+  shape in files no sprint's list had covered.
+- **Free Meals was orange**; it informs, like the Free Hostel chip beside it.
+- **Two guards learned to strip comments** — the raw scan accused this sprint's own note explaining
+  a removal, and the white check accused `contrast.ts` explaining the rule it enforces.
+
+### Removed
+- **The state tint on institution cards.** It gave a pastel background to six of Malaysia's sixteen
+  states and grey to the other ten, and the codemod had just renamed four of the six onto TONES —
+  claiming Kuala Lumpur was an error and Johor a success. Every card now takes what ten of the
+  sixteen already had.
+- **`TYPE_COLORS` / `LEVEL_COLORS`**, replaced by `institutionTypeChip()` and one `LEVEL_CHIP`.
+
 ## Layer 1 A3 — draft, publish, revert. ARC A IS COMPLETE - 2026-09-01
 
 **Sprint.** **Migration `courses/0072` — additive PLUS one deliberate DROP and a data step.

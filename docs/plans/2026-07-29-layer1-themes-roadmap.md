@@ -294,13 +294,38 @@ a piece of work in itself, and the sandbox forbids a hand-written approximation.
 **This is the one place section extraction is justified on readability alone** — and only as far as
 the repaint already reaches. Never as Layer-2 groundwork. *high.*
 
-#### F6 — Public course guide
-**Scope.** 36 files, plus the ~78 colour literals returned as class strings from `lib/` —
-`courseBadges.ts` (32), `applicationStatus.ts` (22), `requestStatus.ts` (14), `paymentStatus.ts` (6).
-**⚠ Colour that is not in any JSX.** A codemod over `.tsx` misses them entirely, and they are exactly
-the status tones the vocabulary should own. Last because it is the shared base product rather than a
-tenant surface — but it must ship before the flip, or a person in dark mode clicks a course and gets
-a white page. *medium-high.*
+#### ✅ F6 — SHIPPED 2026-09-02. **THE REPAINT IS COMPLETE.**
+
+Retro `docs/retrospective-2026-09-02-layer1-f6-course-guide.md`; decisions ×2; lessons ×7. NO
+migration. web only. 36 files, ~860 utilities, jest **1595**. Seven guards bite-checked.
+
+**▶ THE COUNT WAS RIGHT AND THE TITLE WAS WRONG.** "Public course guide" was 36 files four weeks
+ago and is not what those 36 files are: the guide PLUS contracts, the email editor, sources,
+reviewers, the interview panel and the staff manual. F7 needs all of it, so F6 took all of it.
+**Fourth sprint running that the table aged — and the first where the DESCRIPTION aged too.**
+
+**▶ THE GUARD IS NO LONGER A LIST.** Three scans (raw colour, raw hex, arbitrary-value class) now
+run over `walkFiles('src')`, so a page written next month is covered with nobody remembering to add
+it. That is the property F7 actually needed; **there is no ceiling left to lower.** The per-surface
+blocks stay — each carries its own sprint's reasoning and names its own surface on failure.
+
+**▶ THE FIFTH HIDING PLACE:** two quiz pages still set their whole page ground with
+`bg-[#f5f7f8]` — F3's discovery exactly, in files no sprint's list had covered. **A guard scoped to
+a file list is blind by construction to whatever is not on the list.** Assume there is one more.
+
+**▶ THE LOAD-BEARING DECISION IS A REFUSAL TO WIDEN THE FAMILY.** 17 subject codes wanted 16 hues,
+and type + level sit adjacent and wanted 13; the family has 8 and they avoid green/blue/amber/red so
+a category is never read as a status. Both sets went NEUTRAL — each chip already renders its own
+name, and an unrecognised level had always been grey. See `docs/decisions.md`.
+
+**▶ THREE MORE COPIES OF THE F4 ROLE-PALETTE BUG**, all found by the `Record<…, colour>` grep:
+institution type (×2, plus a fourth hard-coded inline), the STPM subject vocabulary, and the matric
+tracks — every pair on two pages a student moves between while comparing. Merged into
+`courseBadges.ts`, `stpmSubjects.ts` and `matricTracks.ts`, numbers carried over unchanged.
+
+**▶ TEN MORE FILLED CONTROLS ONTO THE BRAND**, including the search page's two qualification
+toggles, whose SELECTED state was blue and purple — two colours in one segmented control, neither
+of them the tenant's. Fifth sprint running for this defect.
 
 #### F7 — The flip
 Lower a `palette-guard` ceiling that may only fall, remove the flag, and review every surface in both
@@ -317,6 +342,25 @@ modes. *low, but it is the sprint that must not be skipped.*
 2. **The officer cockpit has never been seen in a browser.** Mounting it needs a large
    `AdminApplicationDetail` sandbox fixture, and the sandbox forbids a hand-written approximation.
    F7 cannot honestly claim "every surface reviewed in both modes" until it exists.
+
+**AND TWO SMALL ONES RAISED BY F6, neither blocking:**
+
+3. **TD-223 — links are `info` on some surfaces and `brand` on others**, split by which sprint
+   converted the file. A2's contrast gate has a `link_on_card` pair asserting **brand**, so the
+   design of record already says which is right; making it true everywhere touches files from F1
+   through F5 and is a product-wide decision, not a leftover of any one surface.
+4. **The eight `category-N` swatches, seen together for the first time.** F6's sandbox surface is
+   the first screen in the product's history to render all eight at once — every earlier screen
+   showed one badge at a time. Measured in dark, `Politeknik rgb(19, 78, 74)` and
+   `Kolej Komuniti rgb(22, 78, 99)` are distinct by value (the guard passes, correctly) and hard to
+   separate by eye; `Universiti` and `PISMP` are next closest. Open `/sandbox/course-guide` in both
+   modes and decide. **Changing `--category-*` moves every category set in the product**, so it is
+   the owner's call, not a repaint's.
+
+**▶ F7's SCOPE IS SMALLER THAN ITS ONE-LINE DESCRIPTION SUGGESTS.** "Lower a `palette-guard` ceiling
+that may only fall" no longer applies — **F6 replaced every ceiling with a tree-wide assertion.**
+What is left is: fix the dark ramp, widen A2's gate to both modes, build the cockpit fixture, remove
+the flag, and do the review.
 
 ### Arc A — the authoring (what an `org_admin` actually touches)
 

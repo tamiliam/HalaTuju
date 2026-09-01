@@ -550,7 +550,89 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-01, after Layer 1 A3 — ARC A IS COMPLETE)
+## Next Sprint (as of 2026-09-02, after Layer 1 F6 — THE REPAINT IS COMPLETE)
+
+**SHIPPED — LAYER 1 F6. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f6-remaining-surfaces`.
+**NO migration.** web only. Retro `docs/retrospective-2026-09-02-layer1-f6-course-guide.md`;
+decisions ×2; lessons ×7. jest 1583 → **1595**; tsc **24** (baseline); lint **0**;
+i18n **4636 × 3**; `next build` clean. Seven guards bite-checked, each injection verified as landed.
+
+36 files, ~860 utilities. **Nothing under `src/` carries a raw Tailwind colour, a raw hex, or an
+arbitrary-value colour class.** The only thing between here and dark mode is F7 itself.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **THE GUARD IS NO LONGER A FILE LIST.** Three scans run over `walkFiles('src')`. A page written
+  next month is covered with nobody remembering to add it — that is what F7 actually needed.
+  **The per-surface blocks above it are NOT redundant**: each carries its own sprint's reasoning and
+  names its own surface on failure. The test says so. Do not delete them.
+- **`lib/courseBadges.ts` is the ONE home for institution type → swatch.** Four files described it;
+  `RequirementsCard` keeps its English labels and imports the colour. Its six numbers were carried
+  over BYTE-FOR-BYTE, which is the whole claim that nothing a student sees moved.
+- **The swatch classes are written out and INDEXED, never assembled.** `` `bg-category-${n}-surface` ``
+  compiles, renders, and ships with no styles — Tailwind's scanner reads source text.
+- **Subject chips and level chips are ONE neutral class each, deliberately.** 17 codes wanted 16
+  hues; type + level sit adjacent and wanted 13; the family has 8 and avoids green/blue/amber/red so
+  a category is never read as a status. Each chip already renders its own name, and an unrecognised
+  level had ALWAYS been grey. **If a later sprint wants them coloured, the change is to
+  `--category-*`, not to these files.** Pinned in `theme.test.ts` with the reasoning.
+- **Two guards strip comments now** — the raw scan accused this sprint's own note explaining a
+  removal, and the white check accused `contrast.ts` explaining the rule it enforces. Do not
+  "simplify" either back to `read(f)`.
+- **The state tint on institution cards is GONE** — six of sixteen states tinted, ten grey, and the
+  codemod had just called Kuala Lumpur `critical` and Johor `positive`. Not a regression.
+
+**⚠ AT DEPLOY:** no migration, no data step. **No Python changed** — but BOTH triggers fire, because
+`halatuju_api/**` matches this very file and the block you are reading is an edit to it. The api
+build is a no-op rebuild; the web build is the one that matters.
+**Visible changes, all on the public course guide:** the STPM
+subject chips and the qualification-level chips go grey; six institution types keep their exact
+colours while `matric` and `stpm` gain proper ones; the institution cards lose their state tint; and
+the two `/search` qualification toggles turn the tenant's colour instead of blue and purple.
+Do NOT say "nothing a visitor sees changes" — say what moved.
+
+Post-check on halatuju.xyz: open `/search`, then any course, then `/pathway/stpm`. Type badges must
+differ from each other; level and subject chips must be grey; the SPM/STPM toggles must be brand.
+
+**NEXT = LAYER 1 F7 — the flip.** The roadmap's sequence, verbatim:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+**F7's SCOPE IS SMALLER THAN ITS ONE-LINE DESCRIPTION.** "Lower a `palette-guard` ceiling that may
+only fall" no longer applies — **F6 replaced every ceiling with the tree-wide assertion.** What is
+left: fix the dark ramp, widen A2's gate to both modes, build the cockpit fixture, remove the flag,
+review every surface in both modes.
+
+**⚠ TWO THINGS BLOCK F7, and neither is optional:**
+1. **TD-222 — the dark ramp cannot carry white button text.** `white` on `brand-600` measures
+   **3.22** in dark for the platform's own colour; `-700` measures **2.59**. Flipping dark on today
+   renders 106 primary buttons white-on-pale. Fix the ramp, THEN widen A2's gate — `check_tokens`
+   already takes the mode.
+2. **The officer cockpit has never been seen in a browser** — it needs the large
+   `AdminApplicationDetail` sandbox fixture, and the sandbox forbids a hand-written approximation.
+
+**AND TWO SMALL ONES F6 RAISED, neither blocking:**
+3. **TD-223 — links are `info` on some surfaces and `brand` on others**, split by which sprint
+   converted the file. A2's gate has a `link_on_card` pair asserting brand, so the design of record
+   already says which is right; fixing it touches F1–F5 files and is a product-wide call.
+4. **The eight `category-N` swatches, seen together for the first time.** `/sandbox/course-guide` is
+   the first screen ever to render all eight at once. In dark, `Politeknik rgb(19, 78, 74)` and
+   `Kolej Komuniti rgb(22, 78, 99)` are distinct by value (the guard passes, correctly) and hard to
+   separate by eye. **Changing `--category-*` moves every category set in the product** — owner's
+   call, not a repaint's.
+
+**⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase.
+
+**CHECKLIST, now ten items:** re-derive the file list **and the surface the plan NAMES**; hunt the
+hiding places FIRST, weighted by a file's AGE not its size; grep for `bg-info-[567]00` beside
+`text-white`; ask of every colour table "state or kind?" **and whether it covers its whole domain**;
+never generate a regex; bite-check by injecting a fault AND VERIFYING IT LANDED; read a codemod's
+residue rather than counting it; when a test names a person, make the request look like that
+person's; **when you fix a class of bug in one guard, grep for its neighbours that read the same
+way**; and **look at any review fixture as its reader before handing it over.**
+
+## Superseded — previous Next Sprint (as of 2026-09-01, after Layer 1 A3 — ARC A IS COMPLETE)
+
+**DEPLOYED 2026-09-01** (api-00969-jgx / web-00813-wz9). Kept for the "must not be tidied" list.
 
 **SHIPPED — LAYER 1 A3. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-a3-draft-publish`.
 **⚠ MIGRATION `courses/0072` — NOT YET APPLIED. MIGRATE-FIRST.** api + web. Retro

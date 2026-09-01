@@ -1,5 +1,58 @@
 # Architectural Decisions — HalaTuju
 
+## A categorical set larger than the palette goes NEUTRAL; the family does not widen — 2026-09-02
+**Decision:** the seventeen STPM subject chips and the six qualification-level chips are drawn with
+one neutral class each (`bg-ground-100 text-ground-700`), not with `category-N`. The eight
+institution types keep the family, and `--category-*` stays at eight swatches.
+
+**Alternatives considered:** (a) **Widen `--category-*` from 8 to 16** — rejected on a property of
+the family rather than taste: the eight deliberately avoid green / blue / amber / red so a category
+chip is never mistaken for a status, and sixteen hues that dodge those four, separate from each
+OTHER, and survive the light→dark role swap do not exist. It would have produced exactly the
+indistinguishability F2c created the family to prevent, at twice the scale. (b) **Colour subjects by
+STREAM** (science vs social) — attractive because both sets already existed in the file, and killed
+by reading the caller: `filterSubjects` shows one stream at a time, so every chip on screen would
+have been the same colour. (c) **Give LEVEL the family and make TYPE neutral** — rejected: type is
+the axis a student scans a grid of results by ("I want a politeknik"), and level is a ladder whose
+chip already reads "Diploma".
+
+**Rationale:** in both cases the colour was decoding nothing a reader could use. Every subject chip
+renders beside its own full name (`BIO  Biology`); every level chip says its level; `/search`
+carries dropdowns for both axes. And an UNRECOGNISED level had always rendered grey, so grey level
+chips have been in the product since it shipped — this only makes the recognised ones agree with
+them. A category colour earns its place when a reader scans a SET; neither of these was being
+scanned.
+
+**Consequences:** the ceiling is now explicit and testable — `theme.test.ts` pins both chips to a
+single class and forbids either becoming a lookup table again, with the reasoning in the test. If a
+later sprint wants these coloured, the change is to `--category-*` and to every category set that
+draws from it, which is the owner's decision and not a per-file one.
+
+## `lib/courseBadges.ts` is the ONE home for institution type → swatch — 2026-09-02
+**Decision:** `institutionTypeChip()` is the only description of which colour an institution type
+is. `RequirementsCard.tsx` keeps its English labels and imports the colour; `CourseCard`,
+`CourseHeader`, `stpm/[id]`, `pathway/matric` and `pathway/stpm` all call it. Its six existing
+numbers were carried over **byte-for-byte**, and only `matric` and `stpm` are new.
+
+**Alternatives considered:** (a) **Leave the two tables and add a comment asking them to agree** —
+rejected outright; F4 proved on the role palette that a comment is a request and only a module is a
+mechanism, and a codemod converts one copy and leaves the other. (b) **Merge the LABELS too** —
+rejected: this card writes them in English ("Polytechnic") and the course card in Malay
+("Politeknik"), which is a genuine per-surface difference and not drift. (c) **Re-pick the eight
+numbers while merging** — rejected: a de-duplication and a re-colouring in one commit is a diff
+nobody can review, and the whole claim of this change is that nothing a student sees moved.
+
+**Rationale:** the two descriptions sat on pages a student moves between one click apart — the
+search grid and the course page — while comparing the exact thing the colour encodes. A drift shows
+the same Politeknik teal in one place and orange in the other, and the student blames the data.
+A fourth copy was found hard-coded inline in `stpm/[id]/page.tsx`.
+
+**Consequences:** `RequirementsCard`'s entry in the `CATEGORICAL` guard falls from 7 to 1 (only its
+language chip remains), and `courseBadges.ts` and `matricTracks.ts` join the closed list. The
+swatch classes are written out in full and INDEXED rather than assembled from a number, because
+Tailwind's JIT scanner reads source text and `` `bg-category-${n}-surface` `` would compile, render
+and ship with no styles at all.
+
 ## A closed case keeps its RECORDS and loses its CONTROLS — 2026-08-18
 **Decision:** on the terminal off-ramps (`rejected`, `withdrawn`, `expired`) the cockpit hides the
 Interview Stage unless the case holds an interview session, and hides Rate AI Prediction +
