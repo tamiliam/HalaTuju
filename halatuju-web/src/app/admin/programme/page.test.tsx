@@ -146,3 +146,34 @@ describe('every outcome has a line on screen', () => {
       .toBe('admin.programme.config.errorGeneric'))
   })
 })
+
+/**
+ * The tabbed shell (Layer 1 A2). Untested until now, which is why a screenshot could not settle
+ * whether the heading and tabs were rendering at all — the honest answer to "is it there?" is a
+ * test, not a third request for a screenshot.
+ */
+describe('the tabbed shell', () => {
+  it('shows the page heading and BOTH tabs, with the config tab open first', async () => {
+    render(<AdminProgrammeConfigPage />)
+    expect(screen.getByText('admin.programme.title')).toBeTruthy()
+    expect(screen.getByText('admin.programme.subtitle')).toBeTruthy()
+    expect(screen.getByTestId('tab-config').getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByTestId('tab-colours').getAttribute('aria-selected')).toBe('false')
+    // And the config tab's own heading, which sits between the tabs and its first card.
+    await waitFor(() => expect(screen.getByText('admin.programme.config.title')).toBeTruthy())
+  })
+
+  it('switches to Colours and back, and each tab owns its own content', async () => {
+    render(<AdminProgrammeConfigPage />)
+    await waitFor(() => expect(screen.getByText('admin.programme.config.title')).toBeTruthy())
+
+    fireEvent.click(screen.getByTestId('tab-colours'))
+    expect(screen.getByTestId('tab-colours').getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByText('admin.programme.colours.title')).toBeTruthy()
+    expect(screen.queryByText('admin.programme.config.title')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('tab-config'))
+    await waitFor(() => expect(screen.getByText('admin.programme.config.title')).toBeTruthy())
+    expect(screen.queryByText('admin.programme.colours.title')).toBeNull()
+  })
+})

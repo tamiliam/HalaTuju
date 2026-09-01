@@ -211,14 +211,20 @@ export default function ProgrammeColoursTab() {
             {/* ⚠ THE ENDS ARE ROUNDED BY INDEX, NOT BY `first:`. Each block is the only child of
                 its own cell, so `first:` matched EVERY one of them and the strip read as ten
                 separate chips rather than one ramp. Caught on the live screen, not by a test. */}
-            <div className="mt-4 grid grid-cols-10 items-end" data-testid="palette">
+            {/* ⚠ EACH BLOCK GETS ITS OWN FIXED-HEIGHT ROW, bottom-aligned. `items-end` on the GRID
+                aligns the CELLS, and the 500 cell carries an extra child (its dot) — so its whole
+                column was pushed up and the raised block floated a few pixels off the strip's
+                baseline. Aligning inside a fixed row means nothing below can move the ramp. */}
+            <div className="mt-4 grid grid-cols-10" data-testid="palette">
               {STEPS.map((step, i) => (
                 <div key={step} className="text-center">
-                  <span
-                    className={`block ${step === 500 ? 'h-14' : 'h-10'} ${
-                      i === 0 ? 'rounded-l-md' : ''} ${i === STEPS.length - 1 ? 'rounded-r-md' : ''} ${
-                      step === 500 ? 'rounded-md' : ''}`}
-                    style={{ background: `rgb(${ramp[step]})` }} aria-hidden />
+                  <span className="flex h-14 items-end">
+                    <span
+                      className={`w-full ${step === 500 ? 'h-14' : 'h-10'} ${
+                        i === 0 ? 'rounded-l-md' : ''} ${i === STEPS.length - 1 ? 'rounded-r-md' : ''} ${
+                        step === 500 ? 'rounded-md' : ''}`}
+                      style={{ background: `rgb(${ramp[step]})` }} aria-hidden />
+                  </span>
                   <span className="mt-1.5 block font-mono text-[10px] text-ground-500">{step}</span>
                   {/* The identity stop — the colour they actually chose. Every other shade is
                       derived from it, so the palette has to say which one is theirs. */}
