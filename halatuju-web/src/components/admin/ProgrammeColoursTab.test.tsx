@@ -70,6 +70,14 @@ describe('the palette', () => {
     await mount()
     expect(screen.getByTestId('palette').children).toHaveLength(10)
   })
+
+  it('marks the identity stop — the shade they actually chose', async () => {
+    // Every other shade is DERIVED from 500, so a palette that does not say which one is theirs
+    // reads as ten arbitrary blues. It was in the approved mock, lost in the build, and spotted
+    // on the live screen rather than by any test — hence this one.
+    await mount()
+    expect(screen.getByTestId('identity-stop')).toBeTruthy()
+  })
 })
 
 describe('Save, and when it may be pressed', () => {

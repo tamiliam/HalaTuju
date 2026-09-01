@@ -208,12 +208,24 @@ export default function ProgrammeColoursTab() {
           <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-ground-900">{t('admin.programme.colours.paletteTitle')}</h2>
             <p className="text-sm text-ground-500">{t('admin.programme.colours.paletteHint')}</p>
-            <div className="mt-4 grid grid-cols-10" data-testid="palette">
-              {STEPS.map((step) => (
+            {/* ⚠ THE ENDS ARE ROUNDED BY INDEX, NOT BY `first:`. Each block is the only child of
+                its own cell, so `first:` matched EVERY one of them and the strip read as ten
+                separate chips rather than one ramp. Caught on the live screen, not by a test. */}
+            <div className="mt-4 grid grid-cols-10 items-end" data-testid="palette">
+              {STEPS.map((step, i) => (
                 <div key={step} className="text-center">
-                  <span className="block h-10 rounded-none first:rounded-l-md"
+                  <span
+                    className={`block ${step === 500 ? 'h-14' : 'h-10'} ${
+                      i === 0 ? 'rounded-l-md' : ''} ${i === STEPS.length - 1 ? 'rounded-r-md' : ''} ${
+                      step === 500 ? 'rounded-md' : ''}`}
                     style={{ background: `rgb(${ramp[step]})` }} aria-hidden />
                   <span className="mt-1.5 block font-mono text-[10px] text-ground-500">{step}</span>
+                  {/* The identity stop — the colour they actually chose. Every other shade is
+                      derived from it, so the palette has to say which one is theirs. */}
+                  {step === 500 && (
+                    <span data-testid="identity-stop"
+                      className="mx-auto mt-1 block h-1 w-1 rounded-full bg-ground-900" />
+                  )}
                 </div>
               ))}
             </div>
