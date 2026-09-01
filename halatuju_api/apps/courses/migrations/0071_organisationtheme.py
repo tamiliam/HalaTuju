@@ -3,26 +3,29 @@
 ADDITIVE: one new table, no change to any existing one. Nothing reads it until a row exists, and
 BrightPath deliberately gets no row, so applying this changes nothing a visitor sees.
 
-⚠ MIGRATE-FIRST. Apply on production BEFORE the push, then record the `django_migrations` row.
-`sqlmigrate` renders SQLite on a dev box, so the Postgres DDL is hand-written here:
+✅ APPLIED TO PRODUCTION 2026-09-01, migrate-first, with the `django_migrations` row recorded
+(courses ledger 70 → 71). `sqlmigrate` renders SQLite on a dev box, so this is the Postgres DDL
+that was actually run, verbatim:
 
-    CREATE TABLE organisation_themes (
-        id                bigserial    PRIMARY KEY,
-        source_colour     varchar(20)  NOT NULL DEFAULT '',
-        tokens            jsonb        NOT NULL,
-        created_at        timestamptz  NOT NULL,
-        updated_at        timestamptz  NOT NULL,
-        organisation_id   bigint       NOT NULL UNIQUE
-                          REFERENCES partner_organisations(id) DEFERRABLE INITIALLY DEFERRED
+    CREATE TABLE public.organisation_themes (
+        id              bigserial    PRIMARY KEY,
+        source_colour   varchar(20)  NOT NULL,
+        tokens          jsonb        NOT NULL,
+        created_at      timestamptz  NOT NULL,
+        updated_at      timestamptz  NOT NULL,
+        organisation_id bigint       NOT NULL UNIQUE
+                        REFERENCES public.partner_organisations(id) DEFERRABLE INITIALLY DEFERRED
     );
-    CREATE INDEX organisation_themes_organisation_id_key
-        ON organisation_themes (organisation_id);
-    ALTER TABLE organisation_themes ENABLE ROW LEVEL SECURITY;
-    CREATE POLICY organisation_themes_service_role ON organisation_themes
+    ALTER TABLE public.organisation_themes ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY organisation_themes_service_role ON public.organisation_themes
         FOR ALL TO service_role USING (true) WITH CHECK (true);
 
+No separate index on `organisation_id` — `UNIQUE` already builds one, and Django emits none here
+for the same reason. `partner_organisations.id` was checked as `bigint` before writing the FK
+rather than assumed; an older table on `integer` would have needed a different column type.
+
 RLS in the SAME step as the CREATE — the house convention for every new table (deny by default,
-one service_role policy). Confirm the Supabase Security Advisor is clean afterwards.
+one service_role policy). Security Advisor confirmed clean afterwards.
 """
 import django.db.models.deletion
 from django.db import migrations, models
