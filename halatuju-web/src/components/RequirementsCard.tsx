@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { getSubjectName } from '@/lib/subjects'
+import { institutionTypeChip } from '@/lib/courseBadges'
 
 // --- Types matching backend CourseRequirementSerializer output ---
 
@@ -83,18 +84,24 @@ function requirementDesc(
  * institution types a student uses to compare courses, rendered identically — and it would have
  * claimed a Polytechnic is a "success".
  *
- * ✅ FIXED HERE: `ua` and `pismp` were both purple, so two of the six were already
+ * ✅ FIXED IN F2c: `ua` and `pismp` were both purple, so two of the six were already
  * indistinguishable before any of this. They now hold different swatches.
  *
- * ⛔ Six categories, six DIFFERENT numbers. Never a tone.
+ * ⚠ THE COLOURS MOVED OUT IN F6 — `lib/courseBadges.ts` owns institution-type → swatch now, and
+ * these six numbers went with them unchanged. The course CARD described the same types separately
+ * (`TYPE_COLORS`), which is the F4 role-palette shape: two files, one truth, and a student who saw
+ * a teal `Politeknik` in the search grid and an orange one here would blame the data, not the code.
+ * The LABELS stay here because this card writes them in English and the card writes them in Malay.
+ *
+ * ⛔ Never re-declare a colour in this table. Add the type to `courseBadges.ts`.
  */
-const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  ua: { label: 'Universiti', color: 'bg-category-1-surface text-category-1-ink' },
-  poly: { label: 'Polytechnic', color: 'bg-category-2-surface text-category-2-ink' },
-  kkom: { label: 'Community College', color: 'bg-category-5-surface text-category-5-ink' },
-  pismp: { label: 'PISMP', color: 'bg-category-7-surface text-category-7-ink' },
-  ILJTM: { label: 'ILJTM', color: 'bg-category-6-surface text-category-6-ink' },
-  ILKBS: { label: 'ILKBS', color: 'bg-category-3-surface text-category-3-ink' },
+const SOURCE_LABELS: Record<string, { label: string }> = {
+  ua: { label: 'Universiti' },
+  poly: { label: 'Polytechnic' },
+  kkom: { label: 'Community College' },
+  pismp: { label: 'PISMP' },
+  ILJTM: { label: 'ILJTM' },
+  ILKBS: { label: 'ILKBS' },
 }
 
 // Language codes that indicate medium-of-instruction variants (PISMP)
@@ -158,7 +165,7 @@ export default function RequirementsCard({
           {t('courseDetail.requirements')}
         </h2>
         {sourceInfo && (
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${sourceInfo.color}`}>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${institutionTypeChip(requirements.source_type)}`}>
             {sourceInfo.label}
           </span>
         )}

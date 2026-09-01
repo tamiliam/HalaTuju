@@ -1,6 +1,6 @@
 'use client'
 
-import { TYPE_LABELS, TYPE_COLORS, LEVEL_COLORS } from '@/lib/courseBadges'
+import { TYPE_LABELS, institutionTypeChip, LEVEL_CHIP } from '@/lib/courseBadges'
 
 interface CourseHeaderProps {
   sourceType: string
@@ -20,17 +20,13 @@ export default function CourseHeader({ sourceType, pathwayType, level, title, su
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-1.5 mb-3">
               <span
-                className={`px-2.5 py-1 rounded text-xs font-medium ${
-                  TYPE_COLORS[typeKey] || 'bg-ground-100 text-ground-700'
-                }`}
+                className={`px-2.5 py-1 rounded text-xs font-medium ${institutionTypeChip(typeKey)}`}
               >
                 {TYPE_LABELS[typeKey] || sourceType}
               </span>
               {level && (
                 <span
-                  className={`px-2.5 py-1 rounded text-xs font-medium ${
-                    LEVEL_COLORS[level] || 'bg-ground-50 text-ground-600'
-                  }`}
+                  className={`px-2.5 py-1 rounded text-xs font-medium ${LEVEL_CHIP}`}
                 >
                   {level}
                 </span>

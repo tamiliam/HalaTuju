@@ -9,15 +9,7 @@ import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
-
-type TrackId = 'sains' | 'sains_komputer' | 'kejuruteraan' | 'perakaunan'
-
-const TRACK_COLOURS: Record<TrackId, string> = {
-  sains: 'bg-green-100 text-green-800',
-  sains_komputer: 'bg-blue-100 text-blue-800',
-  kejuruteraan: 'bg-orange-100 text-orange-800',
-  perakaunan: 'bg-purple-100 text-purple-800',
-}
+import { TRACK_CHIP, type TrackId } from '@/lib/matricTracks'
 
 const TRACK_I18N_KEYS: Record<TrackId, string> = {
   sains: 'pathwayDetail.sains',
@@ -184,7 +176,7 @@ function MatricPageContent() {
               <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
                 {t('pathwayDetail.matricTitle')}
               </span>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${TRACK_COLOURS[currentTrackId]}`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${TRACK_CHIP[currentTrackId]}`}>
                 {t(TRACK_I18N_KEYS[currentTrackId])}
               </span>
             </div>
@@ -378,7 +370,7 @@ function CollegeCard({
       {/* Track badge — show only the active track */}
       <div className="flex flex-wrap gap-1.5 mb-3">
         <span
-          className={`text-xs px-2 py-0.5 rounded-full font-medium ${TRACK_COLOURS[currentTrackId]}`}
+          className={`text-xs px-2 py-0.5 rounded-full font-medium ${TRACK_CHIP[currentTrackId]}`}
         >
           {t(TRACK_I18N_KEYS[currentTrackId])}
         </span>

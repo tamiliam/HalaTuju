@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { EligibleCourse, RankedCourse } from '@/lib/api'
-import { TYPE_LABELS, TYPE_COLORS, LEVEL_COLORS } from '@/lib/courseBadges'
+import { TYPE_LABELS, institutionTypeChip, LEVEL_CHIP } from '@/lib/courseBadges'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 
 /** Build the detail page URL for a course. */
@@ -92,16 +92,14 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span
             className={`px-2 py-0.5 rounded text-xs font-medium ${
-              TYPE_COLORS[course.pathway_type || course.source_type] || 'bg-ground-100 text-ground-700'
+              institutionTypeChip(course.pathway_type || course.source_type)
             }`}
           >
             {TYPE_LABELS[course.pathway_type || course.source_type] || course.source_type}
           </span>
           {course.level && (
             <span
-              className={`px-2 py-0.5 rounded text-xs font-medium ${
-                LEVEL_COLORS[course.level] || 'bg-ground-50 text-ground-600'
-              }`}
+              className={`px-2 py-0.5 rounded text-xs font-medium ${LEVEL_CHIP}`}
             >
               {course.level}
             </span>

@@ -10,6 +10,7 @@ import { calculatePathways, type PathwayResult } from '@/lib/api'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 import { useAuth } from '@/lib/auth-context'
+import { SUBJECT_NAMES, SUBJECT_CHIP, filterSubjects, legendSubjects } from '@/lib/stpmSubjects'
 
 const PAGE_SIZE = 50
 
@@ -428,57 +429,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-const COMMON_SUBJECTS = new Set(['BI (MUET)', 'PA', 'BM'])
-const SCIENCE_SUBJECTS = new Set(['BIO', 'CHE', 'PHY', 'MT', 'MM'])
-const SOCIAL_SUBJECTS = new Set(['EKO', 'SEJ', 'GEO', 'PP', 'PAKN', 'SS', 'SV', 'BT', 'BC', 'KMK', 'ICT', 'L.ENG'])
-
-const SUBJECT_COLORS: Record<string, string> = {
-  BIO: 'bg-green-100 text-green-700',
-  CHE: 'bg-amber-100 text-amber-700',
-  PHY: 'bg-blue-100 text-blue-700',
-  MT: 'bg-indigo-100 text-indigo-700',
-  MM: 'bg-indigo-100 text-indigo-700',
-  EKO: 'bg-emerald-100 text-emerald-700',
-  SEJ: 'bg-rose-100 text-rose-700',
-  GEO: 'bg-teal-100 text-teal-700',
-  PP: 'bg-orange-100 text-orange-700',
-  PAKN: 'bg-purple-100 text-purple-700',
-  SS: 'bg-pink-100 text-pink-700',
-  SV: 'bg-cyan-100 text-cyan-700',
-  BT: 'bg-red-100 text-red-700',
-  BC: 'bg-yellow-100 text-yellow-700',
-  KMK: 'bg-fuchsia-100 text-fuchsia-700',
-  ICT: 'bg-sky-100 text-sky-700',
-  'L.ENG': 'bg-lime-100 text-lime-700',
-}
-
-const SUBJECT_NAMES: Record<string, string> = {
-  BIO: 'Biology',
-  CHE: 'Chemistry',
-  PHY: 'Physics',
-  MT: 'Mathematics (T)',
-  MM: 'Mathematics (M)',
-  EKO: 'Economics',
-  SEJ: 'History',
-  GEO: 'Geography',
-  PP: 'Business Studies',
-  PAKN: 'Accounting',
-  SS: 'Literature',
-  SV: 'Visual Arts',
-  BT: 'Bahasa Tamil',
-  BC: 'Bahasa Cina',
-  KMK: 'Kesusasteraan Melayu Komunikatif',
-  ICT: 'Information & Communication Technology',
-  'L.ENG': 'Literature in English',
-}
-
-function filterSubjects(raw: string, stream: string): string[] {
-  const relevant = stream === 'Sains' ? SCIENCE_SUBJECTS : SOCIAL_SUBJECTS
-  return raw
-    .split('; ')
-    .filter(s => !COMMON_SUBJECTS.has(s) && relevant.has(s))
-}
-
 function formatPhone(raw: string): string {
   const d = raw.replace(/\D/g, '')
   if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)} ${d.slice(6)}`
@@ -488,9 +438,7 @@ function formatPhone(raw: string): string {
 }
 
 function SubjectLegend({ stream }: { stream: string }) {
-  const subjects = stream === 'Sains'
-    ? ['BIO', 'CHE', 'PHY', 'MT', 'MM']
-    : ['EKO', 'PP', 'PAKN', 'SEJ', 'GEO', 'SS', 'SV', 'BT', 'BC', 'KMK', 'ICT', 'L.ENG']
+  const subjects = legendSubjects(stream)
 
   return (
     <section className="bg-white rounded-xl border border-gray-200 p-6">
@@ -498,7 +446,7 @@ function SubjectLegend({ stream }: { stream: string }) {
       <div className="space-y-2">
         {subjects.map(code => (
           <div key={code} className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${SUBJECT_COLORS[code]}`}>
+            <span className={`px-2 py-0.5 rounded text-xs font-medium ${SUBJECT_CHIP}`}>
               {code}
             </span>
             <span className="text-xs text-gray-600">{SUBJECT_NAMES[code]}</span>
@@ -525,7 +473,7 @@ function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream
           {subjects.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {subjects.map(s => (
-                <span key={s} className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium ${SUBJECT_COLORS[s] || 'bg-gray-100 text-gray-600'}`}>
+                <span key={s} className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium ${SUBJECT_CHIP}`}>
                   {s}
                 </span>
               ))}
