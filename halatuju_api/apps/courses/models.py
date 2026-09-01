@@ -518,19 +518,43 @@ class OrganisationTheme(models.Model):
     with no conversion. Every write passes `theme_tokens.validate_tokens` via `save()` — the fence
     is on the model, not on an endpoint, so a shell caller cannot go around it.
 
-    ── One theme per organisation, today ──
-    A `OneToOne` is the honest expression of the current product: an organisation has ITS colours.
-    A3 (draft → preview → publish → revert) needs several rows per organisation and will relax
-    this; that is a constraint drop plus a status column, both additive, and it is A3's own scope
-    rather than a reserved key sitting here unused.
+    ── Several rows per organisation, ONE of them live (Layer 1 A3) ──
+    A1 shipped this as a `OneToOne` and said A3 would relax it. It has. An organisation now has a
+    HISTORY of colour versions and at most one `active` — which is what makes changing a colour
+    something other than a live experiment on applicants:
+
+        draft     — being worked on. NEVER served. At most one per organisation.
+        active    — what visitors see. At most one per organisation.
+        archived  — what they used to see. Kept, because that is what makes Revert a real undo
+                    rather than "try to remember the old hex".
+
+    ⚠ **THE SERVE PATH READS `active` AND NOTHING ELSE**, at one seam — `active_for()` below, which
+    `scholarship.branding` calls. If a draft could reach a visitor, the whole sprint is undone, so
+    that is the single filter to protect. The lifecycle (publish, revert) lives in
+    `courses.theme_versions`, not here: a model that both stores and transitions ends up with the
+    transaction spread across its callers.
+
+    ⚠ THE UNIQUENESS IS PER STATE, NOT PER ORGANISATION. Two partial constraints (`draft` and
+    `active`) rather than one blanket rule — an organisation may hold many `archived` rows and must,
+    or Revert has nothing to go back to.
 
     ── BrightPath deliberately has NO row ──
     The platform's light ramp in `globals.css` is the seeded brand hexes, not `brand_ramp()`'s
     output, so giving BrightPath a derived row would shift its own colours by a channel or two.
     No row → the web app keeps today's behaviour exactly.
     """
-    organisation = models.OneToOneField(
-        PartnerOrganisation, on_delete=models.CASCADE, related_name='theme')
+    STATUS_DRAFT = 'draft'
+    STATUS_ACTIVE = 'active'
+    STATUS_ARCHIVED = 'archived'
+    STATUS_CHOICES = (
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_ACTIVE, 'Active'),
+        (STATUS_ARCHIVED, 'Archived'),
+    )
+
+    organisation = models.ForeignKey(
+        PartnerOrganisation, on_delete=models.CASCADE, related_name='themes')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
     # The colour the set was derived FROM. Provenance, not the source of truth — a hand-written or
     # (later) per-token set may have no single colour behind it, hence blank-able.
     source_colour = models.CharField(
@@ -538,11 +562,35 @@ class OrganisationTheme(models.Model):
         help_text="The hex these tokens were derived from, e.g. '#a21caf'; '' = set by hand",
     )
     tokens = models.JSONField(default=dict)
+    published_by_email = models.CharField(max_length=254, blank=True, default='')
+    published_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'organisation_themes'
+        ordering = ['-created_at']
+        constraints = [
+            # PARTIAL, per state. An organisation may hold many `archived` rows and must — that
+            # history IS the undo. Only "being worked on" and "what visitors see" are singular.
+            models.UniqueConstraint(
+                fields=['organisation'], condition=models.Q(status='draft'),
+                name='one_draft_theme_per_organisation'),
+            models.UniqueConstraint(
+                fields=['organisation'], condition=models.Q(status='active'),
+                name='one_active_theme_per_organisation'),
+        ]
+
+    @classmethod
+    def active_for(cls, organisation):
+        """⚠ THE SERVE SEAM. The one live theme for an organisation, or None.
+
+        `scholarship.branding.Branding.theme` calls this and nothing else. Everything a visitor
+        sees goes through here, so this filter is the whole of "a draft never reaches a student":
+        `test_a_draft_never_reaches_a_visitor` breaks loudly if it is widened.
+        """
+        return cls.objects.filter(organisation=organisation, status=cls.STATUS_ACTIVE).first()
 
     def __str__(self):
         return f'Theme for {self.organisation.code}'

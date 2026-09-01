@@ -5788,20 +5788,43 @@ class AdminOrganisationThemeView(_AdminBase):
         return orgs[0], None
 
     def _payload(self, org):
+        """What the screen needs to tell the two states apart.
+
+        ⚠ `live` AND `draft` ARE SEPARATE KEYS, never one "colour" that means whichever exists.
+        The entire point of A3 is that those are different things, and a payload that folds them
+        together would invite a screen that cannot say which one a visitor is seeing.
+        """
         from apps.courses import contrast, theme_tokens
-        from apps.courses.models import OrganisationTheme
-        row = OrganisationTheme.objects.filter(organisation=org).first()
-        tokens = theme_tokens.applied_tokens(row.tokens) if row else None
-        # Checks are reported for what is CURRENTLY stored, so the screen can show the state of a
-        # colour somebody else set. With no row there is nothing to measure: the platform stylesheet
-        # is not this organisation's choice to be judged on.
-        checks = [r._asdict() for r in contrast.check_tokens(tokens)] if tokens else []
+        from apps.courses import theme_versions
+
+        live = theme_versions.active_for(org)
+        draft = theme_versions.draft_for(org)
+        previous = theme_versions.previous_for(org)
+        live_tokens = theme_tokens.applied_tokens(live.tokens) if live else None
+        draft_tokens = theme_tokens.applied_tokens(draft.tokens) if draft else None
+
+        def block(row, tokens):
+            if row is None:
+                return None
+            return {
+                'colour': row.source_colour or '',
+                # Checks travel with whichever set they describe, so the screen never has to guess
+                # which colour a number belongs to.
+                'checks': [r._asdict() for r in contrast.check_tokens(tokens)] if tokens else [],
+            }
+
         return {
             'organisation': {'code': org.code, 'name': org.name},
-            'colour': (row.source_colour if row else '') or '',
-            'is_default': row is None,
-            'tokens': tokens,
-            'checks': checks,
+            'live': block(live, live_tokens),
+            'draft': block(draft, draft_tokens),
+            # What Revert would put back. '' means "the platform colours" — a real answer, because
+            # reverting the first colour an organisation ever published lands them there.
+            'previous_colour': (previous.source_colour if previous else '') or '',
+            'can_revert': live is not None,
+            'published_at': live.published_at.isoformat() if live and live.published_at else '',
+            'published_by': (live.published_by_email if live else '') or '',
+            # The LIVE tokens — what a visitor is seeing right now, never the draft.
+            'tokens': live_tokens,
         }
 
     def get(self, request):
@@ -5814,8 +5837,9 @@ class AdminOrganisationThemeView(_AdminBase):
         return Response(self._payload(org))
 
     def put(self, request):
+        """Save the DRAFT. **What visitors see is untouched** — that is the whole sprint."""
         from apps.courses import contrast, theme_tokens
-        from apps.courses.models import OrganisationTheme
+        from apps.courses import theme_versions
 
         admin, err = self._gate(request)
         if err:
@@ -5831,7 +5855,9 @@ class AdminOrganisationThemeView(_AdminBase):
             return Response({'error': 'bad_colour', 'code': 'bad_colour'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        # THE GATE. Refuse, and name the pairs — the screen renders them as plain sentences.
+        # ⚠ THE GATE RUNS AT DRAFT TIME, NOT ONLY AT PUBLISH. An unreadable colour should be
+        # refused at the moment somebody types it, not saved and refused later — a draft that
+        # cannot ever be published is a trap you walk into twice.
         fails = contrast.failures(tokens)
         if fails:
             return Response(
@@ -5840,16 +5866,14 @@ class AdminOrganisationThemeView(_AdminBase):
                  'failing': [r.key for r in fails]},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        was = (OrganisationTheme.objects.filter(organisation=org)
-               .values_list('source_colour', flat=True).first()) or 'default'
-        OrganisationTheme.objects.update_or_create(
-            organisation=org, defaults={'source_colour': colour, 'tokens': tokens})
-        logger.info('AUDIT organisation_theme_set org=%s was=%s now=%s by=%s',
-                    org.code, was, colour, admin.email or '')
+        theme_versions.save_draft(org, colour, tokens)
+        logger.info('AUDIT organisation_theme_draft_saved org=%s colour=%s by=%s',
+                    org.code, colour, admin.email or '')
         return Response(self._payload(org))
 
     def delete(self, request):
-        from apps.courses.models import OrganisationTheme
+        """Discard the DRAFT. What is live stays live — a draft you throw away costs nobody."""
+        from apps.courses import theme_versions
 
         admin, err = self._gate(request)
         if err:
@@ -5857,11 +5881,66 @@ class AdminOrganisationThemeView(_AdminBase):
         org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
         if err:
             return err
-        row = OrganisationTheme.objects.filter(organisation=org).first()
-        if row is not None:
-            logger.info('AUDIT organisation_theme_cleared org=%s was=%s by=%s',
-                        org.code, row.source_colour or 'hand-set', admin.email or '')
-            row.delete()
+        if theme_versions.discard_draft(org):
+            logger.info('AUDIT organisation_theme_draft_discarded org=%s by=%s',
+                        org.code, admin.email or '')
+        return Response(self._payload(org))
+
+
+class AdminOrganisationThemePublishView(AdminOrganisationThemeView):
+    """POST `admin/scholarship/organisation/theme/publish/` — the draft becomes what visitors see.
+
+    Inherits the gate, the org fence and the payload from the view above deliberately: three
+    endpoints acting on one resource should not each grow their own copy of "which organisation is
+    this, and may you touch it".
+
+    An `org_admin` may publish a draft they wrote themselves — the owner's 2026-07-28 ruling for
+    sponsor terms, where a same-author check is deliberately absent and a test pins its absence. A
+    colour is a smaller decision than a binding document, so the same answer holds.
+    """
+
+    def post(self, request):
+        from apps.courses import theme_versions
+
+        admin, err = self._gate(request)
+        if err:
+            return err
+        org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
+        if err:
+            return err
+        try:
+            # `allowed=True` asserts the ROLE GATE ABOVE HAS PASSED. The service defaults it False
+            # so a shell caller fails closed — mirroring `sponsor_terms.publish`.
+            theme_versions.publish(org, by_email=admin.email or '', allowed=True)
+        except theme_versions.ThemeVersionError as exc:
+            return Response({'error': exc.code, 'code': exc.code},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(self._payload(org))
+
+
+class AdminOrganisationThemeRevertView(AdminOrganisationThemeView):
+    """POST `admin/scholarship/organisation/theme/revert/` — put back the colour that was live before.
+
+    ⚠ REVERTING THE FIRST COLOUR EVER PUBLISHED LEAVES THE ORGANISATION ON THE PLATFORM STYLESHEET,
+    and that is a correct outcome rather than an error: it is genuinely what they had before, and it
+    is how a tenant gets all the way back to the default. The payload says so with an empty
+    `live`; the screen renders it as "using the default colours".
+    """
+
+    def post(self, request):
+        from apps.courses import theme_versions
+
+        admin, err = self._gate(request)
+        if err:
+            return err
+        org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
+        if err:
+            return err
+        try:
+            theme_versions.revert(org, by_email=admin.email or '', allowed=True)
+        except theme_versions.ThemeVersionError as exc:
+            return Response({'error': exc.code, 'code': exc.code},
+                            status=status.HTTP_400_BAD_REQUEST)
         return Response(self._payload(org))
 
 

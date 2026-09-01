@@ -154,7 +154,16 @@ class TestTheModelIsTheSeam(TestCase):
             organisation=self.org, source_colour='#a21caf', tokens=valid_tokens())
         theme.refresh_from_db()
         self.assertEqual(theme.tokens['light']['brand-500'], '162 28 175')
-        self.assertEqual(self.org.theme, theme)
+        self.assertEqual(self.org.themes.get(), theme)
+
+    def test_a_new_row_is_a_draft_and_a_draft_is_never_served(self):
+        """⚠ THE ONE THAT MATTERS MOST IN A3. A row starts as a draft, and `active_for` — the seam
+        the serve path reads — must not return it. If this ever passes with a draft, an unpublished
+        experiment is reaching applicants."""
+        draft = OrganisationTheme.objects.create(
+            organisation=self.org, source_colour='#a21caf', tokens=valid_tokens())
+        self.assertEqual(draft.status, OrganisationTheme.STATUS_DRAFT)
+        self.assertIsNone(OrganisationTheme.active_for(self.org))
 
     def test_a_shell_caller_cannot_go_around_the_fence(self):
         # The guard is on save(), not on an endpoint — otherwise it is a request, not a rule.
@@ -178,22 +187,40 @@ class TestTheCommand(TestCase):
         call_command('set_organisation_theme', '--org', 'inspire', '--colour', '#a21caf')
         self.assertFalse(OrganisationTheme.objects.exists())
 
-    def test_apply_writes_the_derived_set(self):
+    def test_apply_publishes_the_derived_set(self):
+        # ⚠ THE COMMAND PUBLISHES; THE SCREEN DRAFTS (Layer 1 A3). This is the operator's path, run
+        # deliberately from a shell by somebody who has just read the shades it printed.
         call_command('set_organisation_theme', '--org', 'inspire', '--colour', '#a21caf', '--apply')
-        theme = OrganisationTheme.objects.get(organisation=self.org)
+        theme = OrganisationTheme.active_for(self.org)
+        self.assertIsNotNone(theme)
         self.assertEqual(theme.source_colour, '#a21caf')
         self.assertEqual(theme.tokens, GOLDEN)
+        self.assertIsNotNone(theme.published_at)
 
-    def test_applying_twice_updates_rather_than_duplicates(self):
+    def test_applying_twice_keeps_ONE_live_and_archives_the_other(self):
+        # The old version is archived, never overwritten — that history is what makes --clear a
+        # real revert rather than a guess at the previous hex.
         call_command('set_organisation_theme', '--org', 'inspire', '--colour', '#a21caf', '--apply')
         call_command('set_organisation_theme', '--org', 'inspire', '--colour', '#137fec', '--apply')
-        self.assertEqual(OrganisationTheme.objects.count(), 1)
-        self.assertEqual(OrganisationTheme.objects.get().source_colour, '#137fec')
+        self.assertEqual(OrganisationTheme.objects.count(), 2)
+        self.assertEqual(OrganisationTheme.active_for(self.org).source_colour, '#137fec')
+        self.assertEqual(
+            OrganisationTheme.objects.filter(status='archived').get().source_colour, '#a21caf')
 
-    def test_clear_removes_it(self):
+    def test_clear_reverts_to_the_previous_colour(self):
+        call_command('set_organisation_theme', '--org', 'inspire', '--colour', '#a21caf', '--apply')
+        call_command('set_organisation_theme', '--org', 'inspire', '--colour', '#137fec', '--apply')
+        call_command('set_organisation_theme', '--org', 'inspire', '--clear', '--apply')
+        self.assertEqual(OrganisationTheme.active_for(self.org).source_colour, '#a21caf')
+
+    def test_clearing_the_FIRST_colour_lands_on_the_platform_default(self):
+        # A real outcome, not a failure: it is genuinely what they had before, and it is how a
+        # tenant gets all the way back.
         call_command('set_organisation_theme', '--org', 'inspire', '--colour', '#a21caf', '--apply')
         call_command('set_organisation_theme', '--org', 'inspire', '--clear', '--apply')
-        self.assertFalse(OrganisationTheme.objects.exists())
+        self.assertIsNone(OrganisationTheme.active_for(self.org))
+        # The row is KEPT, archived — nothing is thrown away.
+        self.assertEqual(OrganisationTheme.objects.filter(status='archived').count(), 1)
 
     def test_the_platform_organisation_is_refused(self):
         # BrightPath is seeded as org #1 by a data migration, so it is already there — and the

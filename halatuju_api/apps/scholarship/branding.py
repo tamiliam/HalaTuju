@@ -229,6 +229,12 @@ class Branding:
         every accessor here: a missing row, a broken row or a DB hiccup falls through rather than
         failing a page that only wanted a brand name.
 
+        ⚠ **`active_for` — THE ACTIVE ROW, NEVER A DRAFT (Layer 1 A3).** An organisation now keeps a
+        history of colour versions and at most one live. This single call is the whole of "an
+        unpublished experiment never reaches an applicant"; widening it to "the organisation's
+        theme" would serve a draft the moment somebody started typing one.
+        `test_a_draft_never_reaches_a_visitor` breaks loudly if it is.
+
         `applied_tokens` re-filters on the way OUT even though the fence already ran on the way in.
         The write guard covers writers; a row edited around the ORM — a console, a restore, a
         future migration — has no writer, and a repainted tone would change what the product means
@@ -237,7 +243,8 @@ class Branding:
         if self._is_platform or self._org is None:
             return PLATFORM['theme']
         try:
-            row = self._org.theme
+            from apps.courses.models import OrganisationTheme
+            row = OrganisationTheme.active_for(self._org)
         except Exception:
             return None
         return theme_tokens.applied_tokens(getattr(row, 'tokens', None))

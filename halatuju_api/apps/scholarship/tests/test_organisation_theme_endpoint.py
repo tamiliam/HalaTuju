@@ -21,6 +21,8 @@ from apps.courses.models import OrganisationTheme, PartnerAdmin, PartnerOrganisa
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 URL = '/api/v1/admin/scholarship/organisation/theme/'
+PUBLISH = URL + 'publish/'
+REVERT = URL + 'revert/'
 
 GOOD = '#a21caf'      # purple — passes every pair
 UNREADABLE = '#facc15'  # yellow — fails the text pairs badly
@@ -65,31 +67,36 @@ class TestOrganisationThemeEndpoint(TestCase):
         self._auth('oa-a')
         body = self.client.get(URL).json()
         self.assertEqual(body['organisation'], {'code': 'alpha', 'name': 'Alpha Foundation'})
-        self.assertTrue(body['is_default'])
-        self.assertEqual(body['colour'], '')
+        self.assertIsNone(body['live'])
+        self.assertIsNone(body['draft'])
         self.assertIsNone(body['tokens'])
-        # No row means nothing of THEIRS to judge — the platform stylesheet is not their choice.
-        self.assertEqual(body['checks'], [])
+        self.assertFalse(body['can_revert'])
 
     def test_the_payload_carries_no_student_data(self):
         self._auth('oa-a')
         self.client.put(URL, {'colour': GOOD}, format='json')
         body = self.client.get(URL).json()
-        self.assertEqual(set(body), {'organisation', 'colour', 'is_default', 'tokens', 'checks'})
+        self.assertEqual(set(body), {
+            'organisation', 'live', 'draft', 'previous_colour', 'can_revert',
+            'published_at', 'published_by', 'tokens'})
 
     # ── the gate ─────────────────────────────────────────────────────────────────────────────
-    def test_a_readable_colour_is_stored_as_the_resolved_set(self):
+    def test_a_readable_colour_is_saved_as_a_DRAFT_and_nothing_goes_live(self):
+        # ⚠ THE WHOLE OF A3 IN ONE TEST. A save used to change what every applicant saw, instantly
+        # and with no undo. Now it makes a draft and leaves the live colour exactly as it was.
         self._auth('oa-a')
         r = self.client.put(URL, {'colour': GOOD}, format='json')
         self.assertEqual(r.status_code, 200)
-        self.assertFalse(r.json()['is_default'])
-        self.assertEqual(r.json()['colour'], GOOD)
+        self.assertEqual(r.json()['draft']['colour'], GOOD)
+        self.assertIsNone(r.json()['live'])
+        self.assertIsNone(r.json()['tokens'])
 
         row = OrganisationTheme.objects.get(organisation=self.org_a)
+        self.assertEqual(row.status, 'draft')
         self.assertEqual(row.tokens, theme_tokens.tokens_from_colour(GOOD))
         self.assertEqual(row.tokens['light']['brand-500'], row.tokens['dark']['brand-500'])
         # Every check comes back so the screen can show the reader why it is allowed, not just that.
-        self.assertTrue(all(c['passes'] for c in r.json()['checks']))
+        self.assertTrue(all(c['passes'] for c in r.json()['draft']['checks']))
 
     def test_an_unreadable_colour_is_refused_and_NOTHING_is_stored(self):
         self._auth('oa-a')
@@ -123,17 +130,21 @@ class TestOrganisationThemeEndpoint(TestCase):
             self.assertEqual(r.status_code, 400, bad)
             self.assertEqual(r.json()['code'], 'bad_colour', bad)
 
-    # ── reset ────────────────────────────────────────────────────────────────────────────────
-    def test_delete_returns_the_organisation_to_the_platform_colours(self):
+    # ── discarding a draft ───────────────────────────────────────────────────────────────────
+    def test_delete_throws_the_draft_away_and_leaves_the_live_colour_alone(self):
         self._auth('oa-a')
         self.client.put(URL, {'colour': GOOD}, format='json')
+        self.client.post(PUBLISH, {}, format='json')
+        self.client.put(URL, {'colour': '#0f766e'}, format='json')   # a second, unpublished idea
+
         r = self.client.delete(URL)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.json()['is_default'])
-        self.assertIsNone(r.json()['tokens'])
-        self.assertFalse(OrganisationTheme.objects.filter(organisation=self.org_a).exists())
+        self.assertIsNone(r.json()['draft'])
+        # ⚠ The live colour is untouched. A draft you throw away costs nobody anything, which is
+        # the property that makes trying one safe.
+        self.assertEqual(r.json()['live']['colour'], GOOD)
 
-    def test_delete_with_no_theme_is_harmless(self):
+    def test_delete_with_no_draft_is_harmless(self):
         self._auth('oa-a')
         self.assertEqual(self.client.delete(URL).status_code, 200)
 
@@ -158,13 +169,15 @@ class TestOrganisationThemeEndpoint(TestCase):
     def test_two_organisations_cannot_leak_into_each_other(self):
         self._auth('oa-a')
         self.client.put(URL, {'colour': '#a21caf'}, format='json')
+        self.client.post(PUBLISH, {}, format='json')
         self._auth('oa-b')
         self.client.put(URL, {'colour': '#0f766e'}, format='json')
+        self.client.post(PUBLISH, {}, format='json')
 
         self._auth('oa-a')
-        self.assertEqual(self.client.get(URL).json()['colour'], '#a21caf')
+        self.assertEqual(self.client.get(URL).json()['live']['colour'], '#a21caf')
         self._auth('oa-b')
-        self.assertEqual(self.client.get(URL).json()['colour'], '#0f766e')
+        self.assertEqual(self.client.get(URL).json()['live']['colour'], '#0f766e')
 
     def test_a_super_with_two_tenants_must_name_one(self):
         self._auth('super-uid')
@@ -200,18 +213,32 @@ class TestTheAuditTrail(TestCase):
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("oa-a")}')
 
-    def test_setting_and_clearing_are_both_recorded(self):
+    def test_drafting_and_discarding_are_recorded(self):
         with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
             self.client.put(URL, {'colour': GOOD}, format='json')
         line = '\n'.join(logs.output)
-        self.assertIn('AUDIT organisation_theme_set', line)
+        self.assertIn('AUDIT organisation_theme_draft_saved', line)
         self.assertIn('org=alpha', line)
-        self.assertIn('was=default', line)   # the first set records that there was none
         self.assertIn('oaa@x.com', line)
 
         with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
             self.client.delete(URL)
-        self.assertIn('AUDIT organisation_theme_cleared', '\n'.join(logs.output))
+        self.assertIn('AUDIT organisation_theme_draft_discarded', '\n'.join(logs.output))
+
+    def test_publishing_and_reverting_are_recorded(self):
+        """⚠ A PUBLISH IS THE MOMENT APPLICANTS SEE SOMETHING NEW, so it is the line that has to be
+        in the log. Its audit says what it replaced, not just what it set."""
+        self.client.put(URL, {'colour': GOOD}, format='json')
+        with self.assertLogs('apps.courses.theme_versions', level='INFO') as logs:
+            self.client.post(PUBLISH, {}, format='json')
+        line = '\n'.join(logs.output)
+        self.assertIn('AUDIT organisation_theme_published', line)
+        self.assertIn('was=default', line)   # the first publish records that there was none
+        self.assertIn('oaa@x.com', line)
+
+        with self.assertLogs('apps.courses.theme_versions', level='INFO') as logs:
+            self.client.post(REVERT, {}, format='json')
+        self.assertIn('AUDIT organisation_theme_reverted', '\n'.join(logs.output))
 
     def test_a_refused_colour_writes_no_audit_line(self):
         with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
@@ -219,7 +246,7 @@ class TestTheAuditTrail(TestCase):
             # assertLogs needs at least one record; this one is not the audit line.
             import logging
             logging.getLogger('apps.scholarship.views_admin').info('probe')
-        self.assertNotIn('AUDIT organisation_theme_set', '\n'.join(logs.output))
+        self.assertNotIn('AUDIT organisation_theme_draft_saved', '\n'.join(logs.output))
 
 
 class TestStoredThemesAreAlwaysFenced(TestCase):

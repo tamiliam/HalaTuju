@@ -16,8 +16,8 @@ colours by a channel or two — a change nobody asked for, on the one tenant tha
 """
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.courses import theme_tokens
-from apps.courses.models import OrganisationTheme, PartnerOrganisation
+from apps.courses import theme_tokens, theme_versions
+from apps.courses.models import PartnerOrganisation
 
 PLATFORM_ORG_CODE = 'brightpath'
 
@@ -43,7 +43,7 @@ class Command(BaseCommand):
         if org is None:
             raise CommandError(f'No organisation with code {code!r}')
 
-        existing = OrganisationTheme.objects.filter(organisation=org).first()
+        existing = theme_versions.active_for(org)
 
         if opts['clear']:
             return self._clear(org, existing, opts['apply'])
@@ -68,18 +68,33 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('Report only. Re-run with --apply to write.'))
             return
 
-        OrganisationTheme.objects.update_or_create(
-            organisation=org, defaults={'source_colour': colour, 'tokens': tokens})
-        self.stdout.write(self.style.SUCCESS(f'Theme stored for {org.code}.'))
+        # ⚠ THE COMMAND PUBLISHES IMMEDIATELY; THE SCREEN DOES NOT (Layer 1 A3). A3 made the screen
+        # a draft-then-publish flow so a colour change is never a live experiment on applicants.
+        # This is the operator's path — run deliberately, from a shell, by somebody who has just
+        # read the ten shades printed above — so it does what it has always done and sets the live
+        # colour in one step. The previous version is ARCHIVED, not overwritten, so
+        # `--clear` (a revert) still puts it back.
+        theme_versions.save_draft(org, colour, tokens)
+        theme_versions.publish(org, by_email='set_organisation_theme', allowed=True)
+        self.stdout.write(self.style.SUCCESS(f'Theme published for {org.code}.'))
 
     def _clear(self, org, existing, apply_it):
+        """`--clear` is now a REVERT, not a delete (Layer 1 A3).
+
+        Deleting the live row would throw away the history that makes Revert work at all. A revert
+        archives what is live and re-activates whatever was live before it — which for an
+        organisation on its FIRST colour means the platform stylesheet, the same outcome the delete
+        used to give.
+        """
         if existing is None:
-            self.stdout.write(f'{org.code} has no theme — nothing to clear.')
+            self.stdout.write(f'{org.code} has no live theme — nothing to clear.')
             return
-        self.stdout.write(f'{org.code} would lose its theme (was {existing.source_colour or "hand-set"}) '
-                          'and fall back to the platform colours.')
+        previous = theme_versions.previous_for(org)
+        goes_to = (previous.source_colour if previous else '') or 'the platform colours'
+        self.stdout.write(f'{org.code} would go back from '
+                          f'{existing.source_colour or "hand-set"} to {goes_to}.')
         if not apply_it:
             self.stdout.write(self.style.WARNING('Report only. Re-run with --apply to write.'))
             return
-        existing.delete()
-        self.stdout.write(self.style.SUCCESS(f'Theme cleared for {org.code}.'))
+        theme_versions.revert(org, by_email='set_organisation_theme', allowed=True)
+        self.stdout.write(self.style.SUCCESS(f'{org.code} reverted to {goes_to}.'))

@@ -1,26 +1,29 @@
 'use client'
 
 /**
- * "Colours" — Layer 1 A2. The second tab of the Programme screen.
+ * "Colours" — Layer 1 A2, given a lifecycle by A3. The second tab of the Programme screen.
  *
  * Design of record: the working mock approved 2026-09-01
  * (https://claude.ai/code/artifact/97405467-1fd5-45e3-97be-d83c5fb8739e). Stitch failed twice on
  * this project that day and never produced a screen; the mock is the same fallback used for the
- * sponsored-student page in July.
+ * sponsored-student page in July. A3 adds a status banner and two verbs to it.
+ *
+ * ⚠ THE SCREEN'S ONE JOB IS THAT NOBODY CONFUSES "LIVE" WITH "DRAFT" (Layer 1 A3). Saving no longer
+ * changes what applicants see; publishing does. So the two are kept apart everywhere — separate
+ * payload keys, separate buttons — and a banner at the top always says which colour an applicant is
+ * actually looking at, rather than leaving it to be inferred from the box.
  *
  * ⚠ THE BROWSER IS NOT THE GATE. `apps/courses/contrast.py` refuses the save, and it re-runs
  * everything this file computes. The live check here exists so the person choosing sees the answer
- * as they type — and the Save button is disabled with the reason beside it, so they are never
- * invited to press something that will be refused. Both, not either: a disabled button is a
- * courtesy, a 400 is the rule.
+ * as they type — and Save is disabled with the reason beside it, so they are never invited to press
+ * something that will be refused. A disabled button is a courtesy; the 400 is the rule.
  *
  * ⚠ THE PREVIEW IS SCOPED TO ITS OWN CARD, deliberately. Painting the draft colour onto the whole
  * console while somebody types would fight `branding-context` (which owns the real tokens) and
- * would repaint the very controls they are using to decide. The samples show real components; the
- * page around them stays the product they know.
+ * would repaint the very controls they are using to decide.
  *
- * Every outcome of a Save has a line on screen (the #20 rule): saved, reset, refused as unreadable,
- * or a generic failure. There is no silent branch.
+ * Every outcome has a line on screen (the #20 rule): saved, discarded, published, reverted, refused
+ * as unreadable, or a generic failure. There is no silent branch.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
@@ -29,24 +32,26 @@ import InfoBox from '@/components/InfoBox'
 import { PLATFORM, brandRamp } from '@/lib/branding'
 import { PAIRS, checkColour, isHexColour } from '@/lib/contrast'
 import {
-  getOrganisationTheme, resetOrganisationTheme, saveOrganisationTheme,
+  discardOrganisationThemeDraft, getOrganisationTheme, publishOrganisationTheme,
+  revertOrganisationTheme, saveOrganisationThemeDraft,
   type OrganisationTheme,
 } from '@/lib/admin-api'
 
 const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
 
-/** The platform's own colour — what "Reset to default" goes back to, and what an organisation that
- *  has never chosen is already showing.
+/** The platform's own colour — what an organisation that has never chosen is already showing.
  *
  *  ⚠ READ FROM THE BRANDING SEAM, NEVER RE-TYPED. `lib/branding.ts` is the one sanctioned home for
  *  a brand literal and `theme.test.ts` fails the build on a copy anywhere else — which it did, on
- *  the first draft of this very file, three lines under a comment saying not to. */
+ *  the first draft of this file, three lines under a comment saying not to. */
 const PLATFORM_COLOUR = PLATFORM.brandColour
 
 type Outcome =
   | { kind: 'idle' }
-  | { kind: 'saved' }
-  | { kind: 'reset' }
+  | { kind: 'draftSaved' }
+  | { kind: 'draftDiscarded' }
+  | { kind: 'published' }
+  | { kind: 'reverted' }
   | { kind: 'unreadable'; failing: string[] }
   | { kind: 'error' }
 
@@ -58,6 +63,11 @@ function previewVars(hex: string): Record<string, string> {
   return out
 }
 
+/** What the colour box should hold: the unpublished work if any, else what is live, else ours. */
+function boxColour(th: OrganisationTheme | null): string {
+  return th?.draft?.colour || th?.live?.colour || PLATFORM_COLOUR
+}
+
 export default function ProgrammeColoursTab() {
   const { token } = useAdminAuth()
   const { t } = useT()
@@ -67,7 +77,7 @@ export default function ProgrammeColoursTab() {
   const [loadError, setLoadError] = useState(false)
   const [orgChoices, setOrgChoices] = useState<string[] | null>(null)
   const [org, setOrg] = useState<string | undefined>(undefined)
-  const [saving, setSaving] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [outcome, setOutcome] = useState<Outcome>({ kind: 'idle' })
 
   // Depends on the token and the chosen organisation ONLY — never on `t`. A translator handle can
@@ -78,7 +88,7 @@ export default function ProgrammeColoursTab() {
     try {
       const th = await getOrganisationTheme(code, { token })
       setTheme(th)
-      setDraft(th.colour || PLATFORM_COLOUR)
+      setDraft(boxColour(th))
       setOrgChoices(null)
     } catch (e) {
       const err = e as Error & { body?: { code?: string; organisations?: string[] } }
@@ -95,28 +105,35 @@ export default function ProgrammeColoursTab() {
   const valid = isHexColour(draft)
   const checks = useMemo(() => (valid ? checkColour(draft) : []), [draft, valid])
   const failing = checks.filter((c) => !c.passes)
-  const saved = theme?.colour || ''
-  // ⚠ COMPARE AGAINST THE EFFECTIVE COLOUR, NOT THE STORED ONE. An organisation with no row is
-  // ALREADY showing the platform colour, so comparing the draft against '' woke Save the moment
-  // the tab loaded — offering to "save" a change nobody made, which would create a row that
-  // changes nothing and quietly take the organisation off the stylesheet. Found by the rendered
-  // test; a pure test of the maths could never have seen it.
-  const current = saved || PLATFORM_COLOUR
-  const changed = valid && draft.toLowerCase() !== current.toLowerCase()
-  const canSave = changed && valid && failing.length === 0 && !saving
+
+  // Compare the box against the EFFECTIVE colour, never against '' — the A2 lesson. An
+  // organisation with no row is already showing the platform colour, so comparing against nothing
+  // woke Save the moment the tab loaded.
+  const saved = boxColour(theme)
+  const edited = valid && draft.toLowerCase() !== saved.toLowerCase()
+  const canSaveDraft = edited && failing.length === 0 && !busy
+  // ⚠ PUBLISH IS ASLEEP WHILE THERE ARE UNSAVED EDITS. Publishing would ship the SAVED draft, not
+  // what is in the box — so offering it mid-edit would publish something other than what the
+  // person is looking at. The tooltip says to save first.
+  const canPublish = !!theme?.draft && !edited && !busy
+  const canDiscard = (!!theme?.draft || edited) && !busy
+  const canRevert = !!theme?.can_revert && !busy
 
   const onColour = (value: string) => {
     setOutcome({ kind: 'idle' })
     setDraft(value)
   }
 
-  const save = async () => {
-    if (!token || !canSave) return
-    setSaving(true)
-    // Do NOT clear the outcome on the way in — a refusal must never be wiped by a loader.
+  /** One shape for all four writes: never clear the outcome on the way IN (a refusal must not be
+   *  wiped by a loader), always re-read the whole record, always leave a line on screen. */
+  const run = async (action: () => Promise<OrganisationTheme>, ok: Outcome) => {
+    if (!token || busy) return
+    setBusy(true)
     try {
-      setTheme(await saveOrganisationTheme(draft, org, { token }))
-      setOutcome({ kind: 'saved' })
+      const th = await action()
+      setTheme(th)
+      setDraft(boxColour(th))
+      setOutcome(ok)
     } catch (e) {
       const err = e as Error & { body?: { code?: string; failing?: string[] } }
       if (err.body?.code === 'unreadable') {
@@ -127,26 +144,30 @@ export default function ProgrammeColoursTab() {
         setOutcome({ kind: 'error' })
       }
     } finally {
-      setSaving(false)
-    }
-  }
-
-  const reset = async () => {
-    if (!token || saving) return
-    setSaving(true)
-    try {
-      const th = await resetOrganisationTheme(org, { token })
-      setTheme(th)
-      setDraft(PLATFORM_COLOUR)
-      setOutcome({ kind: 'reset' })
-    } catch {
-      setOutcome({ kind: 'error' })
-    } finally {
-      setSaving(false)
+      setBusy(false)
     }
   }
 
   const ramp = valid ? brandRamp(draft, 'light') : brandRamp(PLATFORM_COLOUR, 'light')
+
+  const statusLine = () => {
+    switch (outcome.kind) {
+      case 'draftSaved': return t('admin.programme.colours.draftSaved')
+      case 'draftDiscarded': return t('admin.programme.colours.draftDiscarded')
+      case 'published': return t('admin.programme.colours.published')
+      case 'reverted': return t('admin.programme.colours.reverted')
+      case 'unreadable': return t('admin.programme.colours.refused', {
+        pairs: outcome.failing.map((k) => t(`admin.programme.colours.pairShort.${k}`)).join(', '),
+      })
+      case 'error': return t('admin.programme.colours.errorGeneric')
+      default:
+        if (!valid) return t('admin.programme.colours.badHex')
+        if (failing.length > 0) return t('admin.programme.colours.cannotSave')
+        if (edited) return t('admin.programme.colours.unsaved')
+        if (theme?.draft) return t('admin.programme.colours.draftWaiting')
+        return t('admin.programme.colours.nothingToDo')
+    }
+  }
 
   return (
     <>
@@ -173,6 +194,17 @@ export default function ProgrammeColoursTab() {
 
       {theme && (
         <>
+          {/* ── 0. WHAT APPLICANTS SEE RIGHT NOW. First, because it is the fact everything below is
+                 relative to, and the one thing a person must never have to infer. ──────────── */}
+          <div className="mt-4" data-testid="live-state">
+            <InfoBox kind={theme.draft ? 'warning' : 'info'}>
+              {theme.live
+                ? t('admin.programme.colours.liveIs', { colour: theme.live.colour })
+                : t('admin.programme.colours.liveIsDefault')}
+              {theme.draft ? ` ${t('admin.programme.colours.draftPending')}` : ''}
+            </InfoBox>
+          </div>
+
           {/* ── 1. the colour ─────────────────────────────────────────────────────────── */}
           <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-ground-900">{t('admin.programme.colours.pickTitle')}</h2>
@@ -191,11 +223,6 @@ export default function ProgrammeColoursTab() {
                   onChange={(e) => onColour(e.target.value)}
                   className="mt-1 w-36 rounded-lg border border-ground-200 bg-ground-0 px-3 py-2 font-mono text-sm text-ground-900" />
               </div>
-              <button type="button" onClick={reset} disabled={theme.is_default || saving}
-                data-testid="reset-colour"
-                className="ml-auto pb-2 text-sm text-ground-500 underline hover:no-underline disabled:opacity-50">
-                {t('admin.programme.colours.reset')}
-              </button>
             </div>
             {!valid && (
               <p className="mt-3 text-sm text-critical-700" data-testid="bad-hex">
@@ -208,13 +235,11 @@ export default function ProgrammeColoursTab() {
           <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-ground-900">{t('admin.programme.colours.paletteTitle')}</h2>
             <p className="text-sm text-ground-500">{t('admin.programme.colours.paletteHint')}</p>
-            {/* ⚠ THE ENDS ARE ROUNDED BY INDEX, NOT BY `first:`. Each block is the only child of
-                its own cell, so `first:` matched EVERY one of them and the strip read as ten
-                separate chips rather than one ramp. Caught on the live screen, not by a test. */}
             {/* ⚠ EACH BLOCK GETS ITS OWN FIXED-HEIGHT ROW, bottom-aligned. `items-end` on the GRID
                 aligns the CELLS, and the 500 cell carries an extra child (its dot) — so its whole
-                column was pushed up and the raised block floated a few pixels off the strip's
-                baseline. Aligning inside a fixed row means nothing below can move the ramp. */}
+                column was pushed up and the raised block floated off the strip's baseline. And the
+                ends are rounded BY INDEX: each block is the only child of its cell, so a `first:`
+                variant matched all ten. Both found on the live screen, not by a test. */}
             <div className="mt-4 grid grid-cols-10" data-testid="palette">
               {STEPS.map((step, i) => (
                 <div key={step} className="text-center">
@@ -263,7 +288,7 @@ export default function ProgrammeColoursTab() {
               {checks.map((c) => (
                 <li key={c.key} className="flex items-center gap-3 py-2.5 text-sm"
                   data-testid={`check-${c.key}`} data-passes={c.passes ? 'yes' : 'no'}>
-                  <span aria-hidden className={`grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white ${
+                  <span aria-hidden className={`grid shrink-0 place-items-center rounded-full text-[11px] font-bold text-white ${
                     c.passes ? 'bg-positive-600' : 'bg-critical-600'}`}
                     style={{ height: '18px', width: '18px' }}>
                     {c.passes ? '✓' : '✗'}
@@ -289,34 +314,49 @@ export default function ProgrammeColoursTab() {
             )}
           </section>
 
-          {/* ── the toolbar ───────────────────────────────────────────────────────────── */}
+          {/* ── the toolbar. FOUR verbs; the two that change what applicants see are on the
+                 right, and only ONE of them is the brand-filled button. ───────────────────── */}
           <div className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ground-200 bg-ground-50 px-5 py-3">
-            <p className="text-sm text-ground-700" data-testid="colours-outcome">
-              {outcome.kind === 'saved' ? t('admin.programme.colours.saved')
-                : outcome.kind === 'reset' ? t('admin.programme.colours.wasReset')
-                  : outcome.kind === 'unreadable'
-                    ? t('admin.programme.colours.refused', {
-                      pairs: outcome.failing
-                        .map((k) => t(`admin.programme.colours.pairShort.${k}`)).join(', '),
-                    })
-                    : outcome.kind === 'error' ? t('admin.programme.colours.errorGeneric')
-                      : !valid ? t('admin.programme.colours.badHex')
-                        : failing.length > 0 ? t('admin.programme.colours.cannotSave')
-                          : changed ? t('admin.programme.colours.changed')
-                            : theme.is_default ? t('admin.programme.colours.usingDefault')
-                              : t('admin.programme.colours.unchanged')}
-            </p>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => { setDraft(current); setOutcome({ kind: 'idle' }) }}
-                disabled={!changed || saving}
+            <p className="text-sm text-ground-700" data-testid="colours-outcome">{statusLine()}</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" data-testid="revert-colours" disabled={!canRevert}
+                onClick={() => void run(
+                  () => revertOrganisationTheme(org, { token: token as string }),
+                  { kind: 'reverted' })}
+                className="rounded-lg border border-ground-300 bg-ground-0 px-4 py-2 text-sm font-medium text-ground-700 disabled:opacity-50">
+                {theme.previous_colour
+                  ? t('admin.programme.colours.revertTo', { colour: theme.previous_colour })
+                  : t('admin.programme.colours.revertToDefault')}
+              </button>
+              <button type="button" data-testid="discard-draft" disabled={!canDiscard}
+                onClick={() => {
+                  if (theme.draft) {
+                    void run(() => discardOrganisationThemeDraft(org, { token: token as string }),
+                      { kind: 'draftDiscarded' })
+                  } else {
+                    // Nothing saved to throw away — just put the box back.
+                    setDraft(saved)
+                    setOutcome({ kind: 'idle' })
+                  }
+                }}
                 className="rounded-lg border border-ground-300 bg-ground-0 px-4 py-2 text-sm font-medium text-ground-700 disabled:opacity-50">
                 {t('admin.programme.colours.discard')}
               </button>
-              <button type="button" onClick={save} disabled={!canSave}
-                data-testid="save-colours"
-                title={!changed ? t('common.nothingToSave') : undefined}
+              <button type="button" data-testid="save-draft" disabled={!canSaveDraft}
+                onClick={() => void run(
+                  () => saveOrganisationThemeDraft(draft, org, { token: token as string }),
+                  { kind: 'draftSaved' })}
+                title={!edited ? t('common.nothingToSave') : undefined}
+                className="rounded-lg border border-primary-600 bg-ground-0 px-4 py-2 text-sm font-semibold text-primary-700 disabled:opacity-50">
+                {t('admin.programme.colours.saveDraft')}
+              </button>
+              <button type="button" data-testid="publish-colours" disabled={!canPublish}
+                onClick={() => void run(
+                  () => publishOrganisationTheme(org, { token: token as string }),
+                  { kind: 'published' })}
+                title={edited ? t('admin.programme.colours.saveFirst') : undefined}
                 className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
-                {saving ? t('admin.programme.colours.saving') : t('admin.programme.colours.save')}
+                {t('admin.programme.colours.publish')}
               </button>
             </div>
           </div>

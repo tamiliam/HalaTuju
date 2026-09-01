@@ -116,6 +116,9 @@ class TestBrandingEndpoint(TestCase):
                                    ('sabah', 'Sabah Trust', '#0f766e')):
             org = PartnerOrganisation.objects.create(code=code, name=name)
             OrganisationTheme.objects.create(
+                # A3: a row with no status is a DRAFT, and a draft is served to nobody. These tests
+                # mean 'this organisation HAS colours', which is an ACTIVE version.
+                status=OrganisationTheme.STATUS_ACTIVE,
                 organisation=org, source_colour=colour,
                 tokens=theme_tokens.tokens_from_colour(colour))
 
@@ -131,6 +134,9 @@ class TestBrandingEndpoint(TestCase):
     def test_a_theme_carries_both_modes_and_a_stable_identity_stop(self):
         org = PartnerOrganisation.objects.create(code='inspire', name='Inspire Foundation')
         OrganisationTheme.objects.create(
+            # A3: a row with no status is a DRAFT, and a draft is served to nobody. These tests
+            # mean 'this organisation HAS colours', which is an ACTIVE version.
+            status=OrganisationTheme.STATUS_ACTIVE,
             organisation=org, source_colour='#a21caf',
             tokens=theme_tokens.tokens_from_colour('#a21caf'))
         theme = self.client.get('/api/v1/branding/inspire/').json()['theme']
@@ -142,6 +148,9 @@ class TestBrandingEndpoint(TestCase):
         # `update()` goes around save(), which is exactly the shape this filter exists for.
         org = PartnerOrganisation.objects.create(code='inspire', name='Inspire Foundation')
         theme = OrganisationTheme.objects.create(
+            # A3: a row with no status is a DRAFT, and a draft is served to nobody.
+            # These tests mean 'this organisation HAS colours' = an ACTIVE version.
+            status=OrganisationTheme.STATUS_ACTIVE,
             organisation=org, tokens=theme_tokens.tokens_from_colour('#a21caf'))
         smuggled = theme_tokens.tokens_from_colour('#a21caf')
         smuggled['light']['critical-500'] = '0 255 0'
@@ -155,6 +164,9 @@ class TestBrandingEndpoint(TestCase):
     def test_an_unreadable_theme_row_falls_through_rather_than_500s(self):
         org = PartnerOrganisation.objects.create(code='inspire', name='Inspire Foundation')
         theme = OrganisationTheme.objects.create(
+            # A3: a row with no status is a DRAFT, and a draft is served to nobody.
+            # These tests mean 'this organisation HAS colours' = an ACTIVE version.
+            status=OrganisationTheme.STATUS_ACTIVE,
             organisation=org, tokens=theme_tokens.tokens_from_colour('#a21caf'))
         OrganisationTheme.objects.filter(pk=theme.pk).update(tokens={'light': 'blue'})
         r = self.client.get('/api/v1/branding/inspire/')

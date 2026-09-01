@@ -209,6 +209,11 @@ class TestFenceCoverageCompleteness(TestCase):
         # code outside the caller's organisation is 404, never 403. It carries NO student data: the
         # payload is one organisation's name, its colour, and six contrast numbers.
         'AdminOrganisationThemeView': 'organisation-theme-org-fenced',
+        # A3's two lifecycle endpoints SUBCLASS the view above, so they inherit its gate, its org
+        # fence and its payload rather than growing their own copies. Classified separately because
+        # the coverage check enumerates subclasses, and a shared fence is still a fence per route.
+        'AdminOrganisationThemePublishView': 'organisation-theme-org-fenced',
+        'AdminOrganisationThemeRevertView': 'organisation-theme-org-fenced',
         # base
         '_BursaryAdminBase': 'base — shared _agreement lookup',
         '_PaymentsBase': 'base — shared payments gate + org-fenced run lookup',
