@@ -19,6 +19,46 @@
 
 export type Locale = 'en' | 'ms' | 'ta'
 
+export type ThemeMode = 'light' | 'dark'
+
+/** A tenant's STORED colour tokens, one block per mode: `{ 'brand-50': '250 244 251', … }`.
+ *  Values are the space-separated RGB triplets the CSS custom properties take, so painting is a
+ *  straight `setProperty('--brand-50', triplet)` with no conversion. (Layer 1 A1.) */
+export type ThemeTokens = Record<ThemeMode, Record<string, string>>
+
+/** What a tenant may tint. Mirrors `TENANT_FAMILIES` in `apps/courses/theme_tokens.py`. */
+const TENANT_FAMILIES = ['brand']
+
+const TOKEN_NAME = /^([a-z]+)-([0-9]+)$/
+const TRIPLET = /^[0-9]{1,3} [0-9]{1,3} [0-9]{1,3}$/
+
+/**
+ * Keep only the tokens this app is allowed to paint; return null rather than half a theme.
+ *
+ * The server fences on write AND filters on read, so this is the third copy of one rule — and it
+ * earns its place, because it is the only one that runs on the bytes the BROWSER actually received.
+ * A tone repainted by a tenant would not change how the product looks so much as what it MEANS:
+ * red stops meaning "this is broken". Cheap to keep honest, so it is kept honest here too.
+ */
+export function applicableTokens(raw: unknown): ThemeTokens | null {
+  if (!raw || typeof raw !== 'object') return null
+  const out = {} as ThemeTokens
+  for (const mode of ['light', 'dark'] as ThemeMode[]) {
+    const block = (raw as Record<string, unknown>)[mode]
+    if (!block || typeof block !== 'object') return null
+    const kept: Record<string, string> = {}
+    for (const [name, value] of Object.entries(block as Record<string, unknown>)) {
+      const parts = name.match(TOKEN_NAME)
+      if (!parts || !TENANT_FAMILIES.includes(parts[1])) continue
+      if (typeof value !== 'string' || !TRIPLET.test(value)) continue
+      kept[name] = value
+    }
+    if (Object.keys(kept).length === 0) return null
+    out[mode] = kept
+  }
+  return out
+}
+
 /** The raw shape of the public GET /api/v1/branding/<code>/ payload (all optional — a total,
  *  never-raises endpoint). Per-language groups may be partial; '' means "fall through". */
 export interface BrandingConfig {
@@ -30,6 +70,8 @@ export interface BrandingConfig {
   email_support?: string | null
   sponsor_email?: string | null
   frontend_domain?: string | null
+  /** The tenant's stored colour tokens, or null = "paint the stylesheet you already have". */
+  theme?: unknown
 }
 
 export interface ResolvedBranding {
@@ -42,6 +84,9 @@ export interface ResolvedBranding {
   emailSupport: string
   sponsorEmail: string
   frontendDomain: string
+  /** The APPROVED shades, when this tenant has stored some. null → derive from `brandColour`
+   *  exactly as before A1, which is what keeps the platform and un-themed tenants unchanged. */
+  theme: ThemeTokens | null
 }
 
 /** Today's FE brand constants, verbatim — the one sanctioned literal home (guard-allowlisted).
@@ -59,6 +104,10 @@ export const PLATFORM: ResolvedBranding = {
   emailSupport: 'help@halatuju.xyz',
   sponsorEmail: 'sponsor@halatuju.xyz',
   frontendDomain: 'halatuju.xyz',
+  // The platform stores NO token set, deliberately: the light ramp in `globals.css` is the seeded
+  // brand hexes rather than `brandRamp()`'s output, so a derived set would move BrightPath's own
+  // colours by a channel. null keeps the stylesheet in charge. (Layer 1 A1.)
+  theme: null,
 }
 
 /** The five branding params `t()` auto-injects into every message render (beneath explicit
@@ -104,6 +153,7 @@ export function resolveBranding(config: BrandingConfig | null | undefined): Reso
     emailSupport: keep(config.email_support, PLATFORM.emailSupport),
     sponsorEmail: keep(config.sponsor_email, PLATFORM.sponsorEmail),
     frontendDomain: keep(config.frontend_domain, PLATFORM.frontendDomain),
+    theme: applicableTokens(config.theme),
   }
 }
 

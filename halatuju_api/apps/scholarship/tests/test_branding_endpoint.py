@@ -1,14 +1,18 @@
 """Sprint 6 — the public GET /api/v1/branding/<code>/ endpoint.
 
-Anonymous, total (unknown/garbage → platform payload, never 404), exact 8-key response, and no
+Anonymous, total (unknown/garbage → platform payload, never 404), exact 9-key response, and no
 student data reachable. Mirrors the SponsorPoolCountView public rails.
+
+Layer 1 A1 added `theme` — a tenant's STORED colour tokens, or null. The tests below pin the
+acceptance the roadmap asked for: two organisations, two colours, no leakage.
 """
 import json
 
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerOrganisation
+from apps.courses import theme_tokens
+from apps.courses.models import OrganisationTheme, PartnerOrganisation
 
 # The platform payload the endpoint must return for brightpath / unknown / garbage codes.
 # NOTE persona_name.ta is the Tamil SCRIPT form (the backend's email-body persona); the web app in
@@ -22,11 +26,13 @@ PLATFORM_PAYLOAD = {
     'email_support': 'help@halatuju.xyz',
     'sponsor_email': 'sponsor@halatuju.xyz',
     'frontend_domain': 'halatuju.xyz',
+    # The platform has no stored set on purpose — its ramp is the seeded hexes in globals.css.
+    'theme': None,
 }
 
 EXPECTED_KEYS = {
     'programme_name', 'persona_name', 'org_short_name', 'brand_colour', 'logo_url',
-    'email_support', 'sponsor_email', 'frontend_domain',
+    'email_support', 'sponsor_email', 'frontend_domain', 'theme',
 }
 
 
@@ -97,6 +103,63 @@ class TestBrandingEndpoint(TestCase):
         # here (no email_reply_to/email_from set) resolves to the platform reply-to.
         self.assertEqual(body['sponsor_email'], 'help@halatuju.xyz')
         self.assertEqual(set(body.keys()), EXPECTED_KEYS)
+
+    def test_a_tenant_with_no_theme_serves_null(self):
+        PartnerOrganisation.objects.create(code='plain', name='Plain Org', brand_colour='#a21caf')
+        # A colour COLUMN is not a theme. Until a token set is stored the web app keeps deriving
+        # from the hex exactly as it does today — the fallback that makes A1 a no-op on deploy.
+        self.assertIsNone(self.client.get('/api/v1/branding/plain/').json()['theme'])
+
+    def test_two_organisations_two_colours_no_leakage(self):
+        # The roadmap's acceptance for A1, stated verbatim as a test.
+        for code, name, colour in (('inspire', 'Inspire Foundation', '#a21caf'),
+                                   ('sabah', 'Sabah Trust', '#0f766e')):
+            org = PartnerOrganisation.objects.create(code=code, name=name)
+            OrganisationTheme.objects.create(
+                organisation=org, source_colour=colour,
+                tokens=theme_tokens.tokens_from_colour(colour))
+
+        inspire = self.client.get('/api/v1/branding/inspire/').json()['theme']
+        sabah = self.client.get('/api/v1/branding/sabah/').json()['theme']
+
+        self.assertEqual(inspire['light']['brand-500'], '162 28 175')
+        self.assertEqual(sabah['light']['brand-500'], '15 118 110')
+        self.assertNotEqual(inspire, sabah)
+        # And neither reaches the platform, nor the platform them.
+        self.assertIsNone(self.client.get('/api/v1/branding/brightpath/').json()['theme'])
+
+    def test_a_theme_carries_both_modes_and_a_stable_identity_stop(self):
+        org = PartnerOrganisation.objects.create(code='inspire', name='Inspire Foundation')
+        OrganisationTheme.objects.create(
+            organisation=org, source_colour='#a21caf',
+            tokens=theme_tokens.tokens_from_colour('#a21caf'))
+        theme = self.client.get('/api/v1/branding/inspire/').json()['theme']
+        self.assertEqual(set(theme), {'light', 'dark'})
+        self.assertEqual(theme['light']['brand-500'], theme['dark']['brand-500'])
+        self.assertEqual(len(theme['light']), 10)
+
+    def test_a_tone_smuggled_into_a_row_never_reaches_the_browser(self):
+        # `update()` goes around save(), which is exactly the shape this filter exists for.
+        org = PartnerOrganisation.objects.create(code='inspire', name='Inspire Foundation')
+        theme = OrganisationTheme.objects.create(
+            organisation=org, tokens=theme_tokens.tokens_from_colour('#a21caf'))
+        smuggled = theme_tokens.tokens_from_colour('#a21caf')
+        smuggled['light']['critical-500'] = '0 255 0'
+        smuggled['dark']['critical-500'] = '0 255 0'
+        OrganisationTheme.objects.filter(pk=theme.pk).update(tokens=smuggled)
+
+        served = self.client.get('/api/v1/branding/inspire/').json()['theme']
+        self.assertNotIn('critical-500', served['light'])
+        self.assertNotIn('critical-500', served['dark'])
+
+    def test_an_unreadable_theme_row_falls_through_rather_than_500s(self):
+        org = PartnerOrganisation.objects.create(code='inspire', name='Inspire Foundation')
+        theme = OrganisationTheme.objects.create(
+            organisation=org, tokens=theme_tokens.tokens_from_colour('#a21caf'))
+        OrganisationTheme.objects.filter(pk=theme.pk).update(tokens={'light': 'blue'})
+        r = self.client.get('/api/v1/branding/inspire/')
+        self.assertEqual(r.status_code, 200)
+        self.assertIsNone(r.json()['theme'])
 
     def test_no_student_data_reachable(self):
         # Whatever codes are thrown at it, the payload is 8 brand strings — never a student field.

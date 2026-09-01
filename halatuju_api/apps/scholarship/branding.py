@@ -32,6 +32,8 @@ OWN ``email_from`` domain gets that address for all mail — no per-topic aliase
 """
 from django.conf import settings
 
+from apps.courses import theme_tokens
+
 # The org code of the platform tenant (BrightPath is seeded as org #1). Its branding IS the
 # platform default, so it renders from PLATFORM rather than its own seeded columns (see above).
 PLATFORM_ORG_CODE = 'brightpath'
@@ -80,6 +82,11 @@ PLATFORM = {
     'brand_colour': '#137fec',
     'logo_url': '',
     'org_short_name': 'BrightPath',
+    # The platform has NO stored token set, and that is deliberate rather than an omission: the
+    # light ramp in `globals.css` is the seeded brand hexes, not `brand_ramp()`'s output, so a
+    # derived row would shift BrightPath's own colours by a channel. None → the web app paints the
+    # stylesheet it already has. (Layer 1 A1.)
+    'theme': None,
 }
 
 
@@ -212,6 +219,28 @@ class Branding:
         if not self._is_platform and self._org is not None and (self._org.logo_url or '').strip():
             return self._org.logo_url.strip()
         return PLATFORM['logo_url']
+
+    @property
+    def theme(self):
+        """The tenant's STORED colour tokens, or None (Layer 1 A1).
+
+        None means "paint the stylesheet you already have" — the platform, a tenant that has not
+        set colours, and any tenant whose stored row is unreadable all resolve to it. Total, like
+        every accessor here: a missing row, a broken row or a DB hiccup falls through rather than
+        failing a page that only wanted a brand name.
+
+        `applied_tokens` re-filters on the way OUT even though the fence already ran on the way in.
+        The write guard covers writers; a row edited around the ORM — a console, a restore, a
+        future migration — has no writer, and a repainted tone would change what the product means
+        rather than how it looks.
+        """
+        if self._is_platform or self._org is None:
+            return PLATFORM['theme']
+        try:
+            row = self._org.theme
+        except Exception:
+            return None
+        return theme_tokens.applied_tokens(getattr(row, 'tokens', None))
 
     @property
     def org_short_name(self):

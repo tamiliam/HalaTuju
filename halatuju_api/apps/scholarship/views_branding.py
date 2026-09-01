@@ -1,11 +1,17 @@
 """Public per-org branding endpoint (platform Sprint 6, decision D1).
 
-``GET /api/v1/branding/<code>/`` returns the 8 brand strings the web app needs to render a
-tenant's identity (programme name, coach persona, short name, colour, logo, support/sponsor
-addresses, display domain). It is PUBLIC (a pre-login page reads it) and TOTAL — an unknown,
-inactive or garbage code resolves to the PLATFORM payload, never a 404, so there is no
-enumeration oracle and no student data is ever reachable (the response is 8 fixed keys of brand
-copy only).
+``GET /api/v1/branding/<code>/`` returns the brand values the web app needs to render a tenant's
+identity (programme name, coach persona, short name, colour, logo, support/sponsor addresses,
+display domain) plus, since Layer 1 A1, that tenant's stored colour ``theme``. It is PUBLIC (a
+pre-login page reads it) and TOTAL — an unknown, inactive or garbage code resolves to the PLATFORM
+payload, never a 404, so there is no enumeration oracle and no student data is ever reachable (the
+response is 9 fixed keys of brand copy and colours only).
+
+``theme`` is the RESOLVED token set — the shades a tenant approved, stored, not derived per
+request. ``null`` means "paint the stylesheet you already have", which is the platform's answer and
+any un-themed tenant's. Colours are not private, so serving them publicly costs nothing; what the
+fence protects is the other direction — a tenant may not set a colour that carries the platform's
+own meaning (see ``courses.theme_tokens``).
 
 BrightPath (env unset / code 'brightpath') resolves to the platform block, so the endpoint
 returns today's constants; the web app in platform mode never even calls this (zero flash).
@@ -40,7 +46,7 @@ class BrandingView(APIView):
 
     Registered beside ``sponsor/pool/count/`` with the same public rails (AllowAny + throttle).
     The response is an EXACT key-set: programme_name/persona_name (each en/ms/ta), org_short_name,
-    brand_colour, logo_url, email_support, sponsor_email, frontend_domain."""
+    brand_colour, logo_url, email_support, sponsor_email, frontend_domain, theme."""
     permission_classes = [AllowAny]
     throttle_classes = [PublicCountRateThrottle]
 
@@ -55,4 +61,5 @@ class BrandingView(APIView):
             'email_support': b.email_support,
             'sponsor_email': b.sponsor_reply_to,
             'frontend_domain': b.frontend_domain,
+            'theme': b.theme,
         })

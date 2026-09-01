@@ -9,8 +9,10 @@
  * identity once it lands.
  *
  * Mounted OUTSIDE I18nProvider (see providers.tsx) so `t()` can read the branding and auto-inject
- * the five AUTO_TOKENS. The colour override (D3) writes `--brand-N` onto documentElement ONLY when
- * the tenant colour differs from the platform — so it never fires for BrightPath.
+ * the five AUTO_TOKENS. The colour override writes `--brand-N` onto documentElement from the
+ * tenant's STORED token set (Layer 1 A1) or, when it has none, from the derivation D3 shipped —
+ * and the derivation still fires only when the tenant colour differs from the platform, so
+ * BrightPath keeps its own `globals.css` ramps either way.
  */
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 
@@ -25,28 +27,56 @@ import { THEME_ATTR } from '@/lib/theme'
 
 const BrandingContext = createContext<ResolvedBranding>(PLATFORM)
 
-const ORG_CODE = process.env.NEXT_PUBLIC_ORG_CODE || ''
 const PLATFORM_CODE = 'brightpath'
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// Read INSIDE the functions, not once at module scope. Next inlines every `process.env.NEXT_PUBLIC_*`
+// textually at build time, so production is identical either way — but a module-scope constant can
+// only be changed by re-importing the module, and re-importing under `jest.resetModules()` hands
+// the provider a SECOND copy of React, which then has no hooks. Reading lazily is what lets
+// `branding-context.test.tsx` mount one org code per case.
+function orgCode(): string {
+  return process.env.NEXT_PUBLIC_ORG_CODE || ''
+}
+
+function apiUrl(): string {
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+}
 
 function isPlatformMode(): boolean {
-  return !ORG_CODE || ORG_CODE === PLATFORM_CODE
+  const code = orgCode()
+  return !code || code === PLATFORM_CODE
 }
 
 /**
- * Write the tenant's colour ramp onto :root as `--brand-N` RGB triplets, for the CURRENT mode.
- * Never runs for the platform (guarded on a differing colour), so BrightPath keeps the static
- * `globals.css` ramps — both of them.
+ * Write the tenant's colours onto :root as RGB triplets, for the CURRENT mode.
+ *
+ * TWO SOURCES, and the order matters (Layer 1 A1):
+ *
+ *  1. **A STORED token set wins.** Those are the shades the tenant APPROVED, frozen at the moment
+ *     they approved them. Deriving them again here would mean that improving `brandRamp()` later
+ *     silently restyles every tenant's product — the same reason a student's requirements freeze at
+ *     submit. The names arrive as `brand-50`, so painting is a straight `--brand-50`.
+ *  2. **Otherwise, derive from the colour column, exactly as before A1.** This is what makes the
+ *     sprint a no-op on deploy: the platform and every tenant that has not set colours behave
+ *     identically to yesterday. The `=== PLATFORM.brandColour` guard is the old one, kept — it is
+ *     what stops BrightPath ever getting an inline ramp over its own `globals.css`.
  *
  * ⚠ THESE ARE INLINE STYLES, SO THEY BEAT THE STYLESHEET — including the dark block. That is what
  * makes `useBrandRampForTheme` below necessary: without it a tenant would get the LIGHT ramp
  * pinned onto the element in dark mode, which is the exact defect F3 raised, except unfixable from
- * CSS because an inline style wins.
+ * CSS because an inline style wins. A stored set has the same property and the same cure — hence
+ * both modes being stored, and this function taking the mode.
  */
 function applyColourOverride(b: ResolvedBranding, theme: 'light' | 'dark'): void {
   if (typeof document === 'undefined') return
-  if (b.brandColour === PLATFORM.brandColour) return
   const root = document.documentElement
+  if (b.theme) {
+    for (const [name, triplet] of Object.entries(b.theme[theme])) {
+      root.style.setProperty(`--${name}`, triplet)
+    }
+    return
+  }
+  if (b.brandColour === PLATFORM.brandColour) return
   for (const [step, triplet] of Object.entries(brandRamp(b.brandColour, theme))) {
     root.style.setProperty(`--brand-${step}`, triplet)
   }
@@ -84,7 +114,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isPlatformMode()) return // BrightPath: never fetch
     let cancelled = false
-    fetch(`${API_URL}/api/v1/branding/${encodeURIComponent(ORG_CODE)}/`)
+    fetch(`${apiUrl()}/api/v1/branding/${encodeURIComponent(orgCode())}/`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: BrandingConfig | null) => {
         if (cancelled || !data) return

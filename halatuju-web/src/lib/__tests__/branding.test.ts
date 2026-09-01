@@ -11,6 +11,7 @@ import {
   brandingParams,
   interpolateMessage,
   brandRamp,
+  applicableTokens,
   type BrandingConfig,
 } from '@/lib/branding'
 
@@ -129,5 +130,94 @@ describe('brandRamp (tenant-only)', () => {
     for (const step of [50, 100, 200, 300, 400, 600, 700, 800, 900]) {
       expect(ramp[step]).toMatch(/^\d{1,3} \d{1,3} \d{1,3}$/)
     }
+  })
+
+  /**
+   * ⚠ THE CROSS-LANGUAGE PIN (Layer 1 A1).
+   *
+   * `apps/courses/theme_tokens.py` derives a tenant's shades at SAVE time; this function derives
+   * them in the browser for a tenant that has not stored a set yet. Two implementations of one sum
+   * is a drift risk with a nasty symptom — a tenant's colours would shift by a channel the moment
+   * a theme row was created, which nobody would read as a bug.
+   *
+   * So both sides assert THE SAME fixture for the same input. If either drifts, that language's
+   * own suite fails. The Python copy is `GOLDEN` in `apps/courses/tests/test_organisation_theme.py`
+   * and the values are hand-verified at the corners.
+   */
+  const GOLDEN = {
+    light: {
+      50: '250 244 251', 100: '241 221 243', 200: '227 187 231', 300: '209 142 215',
+      400: '185 85 195', 500: '162 28 175', 600: '138 24 149', 700: '113 20 123',
+      800: '89 15 96', 900: '65 11 70',
+    },
+    dark: {
+      50: '24 24 46', 100: '39 25 59', 200: '61 25 80', 300: '90 26 107',
+      400: '126 27 141', 500: '162 28 175', 600: '176 62 187', 700: '190 96 199',
+      800: '204 130 211', 900: '218 164 223',
+    },
+  } as const
+
+  it('agrees byte-for-byte with the backend derivation', () => {
+    expect(brandRamp('#a21caf', 'light')).toEqual(GOLDEN.light)
+    expect(brandRamp('#a21caf', 'dark')).toEqual(GOLDEN.dark)
+  })
+})
+
+describe('applicableTokens — the fence, on the bytes the browser received', () => {
+  const good = {
+    light: { 'brand-50': '250 244 251', 'brand-500': '162 28 175' },
+    dark: { 'brand-50': '24 24 46', 'brand-500': '162 28 175' },
+  }
+
+  it('keeps a tenant brand token', () => {
+    expect(applicableTokens(good)).toEqual(good)
+  })
+
+  it('DROPS a platform tone, whatever the server sent', () => {
+    // The durable rule: red means "this is broken". A tenant may not redefine a meaning.
+    for (const family of ['positive', 'info', 'caution', 'critical', 'category', 'ground']) {
+      const smuggled = {
+        light: { ...good.light, [`${family}-500`]: '0 255 0' },
+        dark: { ...good.dark, [`${family}-500`]: '0 255 0' },
+      }
+      const out = applicableTokens(smuggled)!
+      expect(out.light[`${family}-500`]).toBeUndefined()
+      expect(out.light['brand-500']).toBe('162 28 175')
+    }
+  })
+
+  it('drops a malformed value rather than painting it', () => {
+    const out = applicableTokens({
+      light: { ...good.light, 'brand-100': '#a21caf' },
+      dark: good.dark,
+    })!
+    expect(out.light['brand-100']).toBeUndefined()
+    expect(out.light['brand-50']).toBe('250 244 251')
+  })
+
+  it('returns null rather than half a theme', () => {
+    expect(applicableTokens(null)).toBeNull()
+    expect(applicableTokens(undefined)).toBeNull()
+    expect(applicableTokens('blue')).toBeNull()
+    expect(applicableTokens({ light: good.light })).toBeNull() // no dark block
+    expect(applicableTokens({ light: {}, dark: good.dark })).toBeNull()
+    expect(applicableTokens({ light: { 'critical-500': '1 2 3' }, dark: good.dark })).toBeNull()
+  })
+})
+
+describe('resolveBranding carries the theme', () => {
+  it('the platform has none — the stylesheet stays in charge', () => {
+    expect(PLATFORM.theme).toBeNull()
+    expect(resolveBranding({}).theme).toBeNull()
+  })
+
+  it('a tenant set survives resolution', () => {
+    const cfg: BrandingConfig = {
+      theme: {
+        light: { 'brand-500': '162 28 175' },
+        dark: { 'brand-500': '162 28 175' },
+      },
+    }
+    expect(resolveBranding(cfg).theme!.light['brand-500']).toBe('162 28 175')
   })
 })

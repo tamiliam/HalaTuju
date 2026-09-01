@@ -504,6 +504,58 @@ class PartnerOrganisation(models.Model):
         return f'{self.name} ({self.code})'
 
 
+class OrganisationTheme(models.Model):
+    """An organisation's colours, STORED as the resolved token set (Layer 1 A1).
+
+    Why a row rather than a wider `brand_colour` column: what is stored is the set of shades a
+    tenant APPROVED, not an input we re-derive per request. See `theme_tokens` for the full
+    argument — briefly, deriving on the way out means improving the derivation silently restyles
+    every tenant, and it makes A4's full palette a migration instead of a second editor.
+
+    ── Shape ──
+    `tokens` is `{"light": {"brand-50": "247 250 254", ...}, "dark": {...}}`; values are the
+    space-separated RGB triplets the CSS custom properties take, so painting is a straight write
+    with no conversion. Every write passes `theme_tokens.validate_tokens` via `save()` — the fence
+    is on the model, not on an endpoint, so a shell caller cannot go around it.
+
+    ── One theme per organisation, today ──
+    A `OneToOne` is the honest expression of the current product: an organisation has ITS colours.
+    A3 (draft → preview → publish → revert) needs several rows per organisation and will relax
+    this; that is a constraint drop plus a status column, both additive, and it is A3's own scope
+    rather than a reserved key sitting here unused.
+
+    ── BrightPath deliberately has NO row ──
+    The platform's light ramp in `globals.css` is the seeded brand hexes, not `brand_ramp()`'s
+    output, so giving BrightPath a derived row would shift its own colours by a channel or two.
+    No row → the web app keeps today's behaviour exactly.
+    """
+    organisation = models.OneToOneField(
+        PartnerOrganisation, on_delete=models.CASCADE, related_name='theme')
+    # The colour the set was derived FROM. Provenance, not the source of truth — a hand-written or
+    # (later) per-token set may have no single colour behind it, hence blank-able.
+    source_colour = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="The hex these tokens were derived from, e.g. '#a21caf'; '' = set by hand",
+    )
+    tokens = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'organisation_themes'
+
+    def __str__(self):
+        return f'Theme for {self.organisation.code}'
+
+    def save(self, *args, **kwargs):
+        # The seam every writer passes. `validate_tokens` raises ThemeTokenError (a ValueError) on
+        # anything a tenant may not store — a tone, an unknown family, a malformed triplet, or a
+        # `brand-500` that differs between the modes.
+        from . import theme_tokens
+        theme_tokens.validate_tokens(self.tokens)
+        return super().save(*args, **kwargs)
+
+
 class PartnerAdmin(models.Model):
     """Admin user for a partner organisation. Separate from StudentProfile."""
     # Role categories. Kept ALONGSIDE is_super_admin (expand-contract): is_super_admin
