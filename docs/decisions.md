@@ -8069,3 +8069,92 @@ pinned to the light ramp in dark mode with no CSS remedy.
 near-white brand has nowhere to go in light mode) — that is a picker-validation problem, not a
 ramp problem, and it exists in light mode today.
 
+
+## A tenant's theme is STORED as the resolved token set, not derived from a hex — Layer 1 A1, 2026-09-01
+
+**Decision:** `OrganisationTheme.tokens` holds the full ten-shade set for BOTH modes
+(`{"light": {"brand-50": "…"}, "dark": {…}}`), derived once at SAVE time and served verbatim. The
+`brand_colour` column stays as the fallback input, not as the source of truth for a themed tenant.
+
+**Alternatives considered:** (a) store the hex and derive in the browser on every load — one column
+smaller, and the derivation already existed; (b) store the hex and derive in the serializer — same
+shape, different place; (c) store a per-token set only when A4 arrives, hex until then.
+
+**Rationale:** two independent reasons, either of which is sufficient.
+*Correctness:* a tenant approved **those** colours. Derived per request, an improvement to
+`brandRamp()` silently restyles every tenant's product without anyone asking. This codebase has
+settled the same question twice already — a student's requirements freeze at submit, a terms
+version freezes at publish — and the answer is the same: store what was approved.
+*Sequencing:* A2's picker becomes a UI that WRITES this shape and A4's full palette becomes a
+SECOND EDITOR over the same storage. Option (c) makes A4 two storage shapes, a backfill, and every
+reader taught both.
+
+**Trade-offs:** the ramp now has two implementations — Python at save time, TypeScript for the
+un-themed fallback — which is a drift risk. Mitigated by a shared golden fixture asserted on both
+sides (`GOLDEN` in `test_organisation_theme.py` and in `branding.test.ts`), so a drift fails that
+language's own suite. A stored set also does NOT pick up an improvement to the derivation; that is
+the point, and re-deriving is a deliberate act (re-run `set_organisation_theme`, or later a
+re-publish in A3).
+
+**Revisit if:** the token set ever needs to be per-something-other-than-organisation (per
+programme, say). The storage would move; the shape would not.
+
+## `TENANT_FAMILIES` is just `brand` today — the eventual boundary is not a reserved key — Layer 1 A1, 2026-09-01
+
+**Decision:** the write fence allows exactly one family, `brand`. The owner's ruling names brand +
+ground as a tenant's eventual scope, and `ground` is deliberately NOT allowed yet.
+
+**Alternatives considered:** allow `ground` now, since the ruling already covers it and the storage
+shape supports it.
+
+**Rationale:** nothing writes a ground tint. The standing constraint on arc A is explicit that
+forward-compatibility must never take the shape of *"a `tokens` column that nothing writes, a
+disabled advanced tab, or a reserved key"* — and an allowed family with no writer is exactly the
+third. The forward-compatibility that IS justified lives in the storage SHAPE (arbitrary
+`family-step` keys), which is defended on its own merits above.
+
+**Trade-offs:** the day a ground tint is wanted, someone must notice this constant. That is one
+word plus a test, and the docstring says so at the constant.
+
+**Revisit if:** a tenant asks for a tinted page ground — that is A4's written trigger #1.
+
+## A tone is refused per family, INDEPENDENTLY of the allow-list — Layer 1 A1, 2026-09-01
+
+**Decision:** `validate_tokens` checks `PLATFORM_FAMILIES` BEFORE `TENANT_FAMILIES`, and
+`test_a_tone_is_never_a_tenants` asserts the refusal per family without consulting the allow-list
+at all. `brand-500` being byte-identical across the modes is enforced in the same function.
+
+**Alternatives considered:** a single allow-list check — a tone is not in `TENANT_FAMILIES`, so it
+is already refused, and the second check is redundant today.
+
+**Rationale:** it is redundant today and it is the whole guard tomorrow. The moment A4 widens
+`TENANT_FAMILIES`, an allow-list-only guard weakens by exactly as much as the widening, silently.
+This is the F3b lesson applied in the other direction: *a ban is a proxy for a property.* The
+durable property is "a tenant may not redefine what red MEANS", so that is what is stated and what
+is tested. Moving the identity-stop rule down to the storage fence is the same move — F3b enforced
+it on the function that derives; a hand-written set never passes through that function.
+
+**Trade-offs:** two checks where one would pass the suite today, and a test that looks tautological
+until you read why. Both carry their reason in a comment.
+
+**Revisit if:** never as a whole. The families inside `PLATFORM_FAMILIES` change only if the token
+vocabulary itself does.
+
+## The fence runs three times — write, read, browser — Layer 1 A1, 2026-09-01
+
+**Decision:** the same rule is enforced in `OrganisationTheme.save()`, in
+`theme_tokens.applied_tokens` on the way out, and in `branding.applicableTokens` in the browser.
+
+**Alternatives considered:** enforce once at write, and trust the stored row thereafter.
+
+**Rationale:** each copy sits on a different trust boundary. The write guard covers WRITERS — but a
+row edited in a console, restored from a backup, or rewritten by a future migration has no writer,
+so the read filter is the only thing standing between that row and a repainted tone. And the
+browser copy is the only one that runs on the bytes the page actually received. Three copies of one
+rule is normally a smell; here the alternative is trusting a boundary that has no guard on it.
+The cost is a few lines, and all three are bite-checked, so none of them is decorative.
+
+**Trade-offs:** three places to change if the rule changes. Accepted, and each names the others.
+
+**Revisit if:** the token set ever stops being publicly served, which would remove the third
+boundary.

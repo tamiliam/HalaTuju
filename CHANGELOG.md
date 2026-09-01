@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 A1 — a theme belongs to an organisation - 2026-09-01
+
+**Sprint.** **Migration `courses/0071` — ADDITIVE, one new table, MIGRATE-FIRST.** api + web,
+11 files. Retro `docs/retrospective-2026-09-01-layer1-a1-tenant-theme.md`.
+pytest 5677 → **5706**; jest 1534 → **1548**. **Dark mode stays unreachable. Nothing a visitor
+sees changes** — BrightPath has no theme row, deliberately.
+
+### Added
+- **`apps/courses/theme_tokens.py`** — the one home for what a tenant's colours ARE: the ramp
+  maths, the write fence, and the read filter.
+- **`courses.OrganisationTheme`** (table `organisation_themes`) — one theme per organisation,
+  stored as the RESOLVED token set: `{"light": {"brand-50": "…"}, "dark": {…}}`.
+  **The fence runs in `save()`**, so a shell caller cannot go around it.
+- **`manage.py set_organisation_theme --org <code> --colour '#hex'`** — report-only until
+  `--apply`; `--clear` removes a theme. It exists so this sprint ships no storage that nothing
+  fills. **It refuses the platform organisation by name.**
+- **`theme` on the public `GET /api/v1/branding/<code>/`** — the exact key-set is now 9. `null`
+  means "keep the stylesheet you already have", which is the platform's answer and any un-themed
+  tenant's.
+- **`applicableTokens()` in `branding.ts`** + a jsdom suite for the provider
+  (`branding-context.test.tsx`, 7 cases).
+
+### Changed
+- **`branding-context` paints a STORED set when there is one**, and still derives from the colour
+  column when there is not — which is what makes this a no-op on deploy.
+- **`NEXT_PUBLIC_ORG_CODE` / `NEXT_PUBLIC_API_URL` are read inside functions**, not once at module
+  scope. Next inlines them at build time either way; a module constant can only be changed by
+  re-importing, and re-importing under `jest.resetModules()` hands the provider a second copy of
+  React with no hooks.
+
+### The decisions that must not be "tidied"
+- **THE STORED VALUE IS THE TOKEN SET, NOT THE HEX.** A tenant approved *those* shades; deriving
+  per request means improving the ramp silently restyles every tenant. It also makes A4 a second
+  editor rather than a migration. Same reasoning as the submit-time snapshot and a published terms
+  version.
+- **A TONE IS NEVER A TENANT'S**, and that rule is asserted **per family and independently of the
+  allow-list** — so widening what a tenant may tint (A4 adds ground) cannot quietly widen it into
+  a tone. `TENANT_FAMILIES` is deliberately just `brand` today, because nothing writes a ground
+  tint yet and a reserved key is forbidden on this arc.
+- **`brand-500` must be byte-identical across the modes**, enforced at the STORAGE fence now, not
+  only in the function that derives.
+- **The fence runs three times on purpose** — write, read, browser. Each sits on a different trust
+  boundary: a row edited around the ORM has no writer, and only the browser copy sees the bytes the
+  page received. All three bite-checked.
+- **BrightPath deliberately has NO row.** Its light ramp in `globals.css` is the seeded hexes, not
+  `brandRamp()`'s output, so a derived row would move its own colours by a channel.
+- **The Python and TypeScript ramps assert the SAME golden fixture.** Python's `round()` is
+  banker's and JavaScript's is not (`round(100.5)` → 100 vs 101), and this colour lands on an exact
+  `.5` — so `_round_half_up` is load-bearing, and pinned directly.
+
+### At deploy
+**MIGRATE-FIRST**: apply `courses/0071` (hand-written Postgres DDL + RLS in the migration
+docstring), record the ledger row, confirm the Security Advisor is clean, then push. No env vars.
+Post-check: `GET /api/v1/branding/brightpath/` returns `"theme": null`.
+
 ## Layer 1 F5 — the officer cockpit repainted - 2026-09-01
 
 **Sprint.** No migration. Web only, 2 files. Retro

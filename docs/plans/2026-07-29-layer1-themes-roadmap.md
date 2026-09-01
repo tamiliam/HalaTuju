@@ -311,14 +311,45 @@ modes. *low, but it is the sprint that must not be skipped.*
 **Not in the superseded plan at all.** This is the arc that question 7 flagged as "its own arc" and
 which the owner has now confirmed is in scope.
 
-#### A1 — A theme belongs to an organisation
-**Goal.** An organisation's colours are stored, served and applied.
-**Scope.** One model (or an extension of the existing branding rows), the public branding endpoint,
-`branding-context`. `brandRamp()` already derives ten shades from one hex, so the derivation exists.
-**Acceptance.** Two organisations, two colours, no leakage; the fence unchanged. *medium.*
+#### ✅ A1 — SHIPPED 2026-09-01
+
+Retro `docs/retrospective-2026-09-01-layer1-a1-tenant-theme.md`; decisions ×4; lessons ×3.
+**Migration `courses/0071`, ADDITIVE, migrate-first.** 11 files. pytest **5706**, jest **1548**.
+Acceptance met: two organisations, two colours, no leakage; the org fence untouched (the endpoint
+is public and is not an `_AdminBase` subclass).
+
+**▶ THE STORED VALUE IS THE TOKEN SET, NOT THE HEX** — A2's ruling, applied here because A1 is
+where the storage lands. `courses.theme_tokens` is the one home for the maths and the fence;
+`OrganisationTheme` holds `{"light": {...}, "dark": {...}}`; the fence runs in `save()`, so a shell
+caller cannot go around it. `manage.py set_organisation_theme` is the writer, shipped in the same
+sprint so nothing here is a reserved key.
+
+**▶ THE FENCE, and what makes it survive A4.** `PLATFORM_FAMILIES` is checked BEFORE the allow-list
+and its test never consults the allow-list, so widening `TENANT_FAMILIES` cannot quietly widen into
+a tone. `TENANT_FAMILIES` is deliberately just `brand` — ground is the owner's eventual boundary but
+has no writer yet, and this arc forbids a reserved key. **`brand-500` byte-identical across modes is
+now enforced at the STORAGE fence**, not only in the deriving function.
+
+**▶ THE FENCE RUNS THREE TIMES ON PURPOSE** — write, read, browser. A row edited around the ORM has
+no writer; only the browser copy sees the bytes the page received. All three bite-checked.
+
+**▶ BRIGHTPATH DELIBERATELY HAS NO ROW.** Its light ramp in `globals.css` is the seeded hexes, not
+`brandRamp()`'s output, so a derived row would move its own colours by a channel. The command
+refuses that org by name.
+
+**▶ TWO IMPLEMENTATIONS OF ONE SUM, pinned by a shared golden** in `test_organisation_theme.py` and
+`branding.test.ts`. It caught a real one immediately: Python's `round()` is banker's, JavaScript's
+is not, and this colour lands on an exact `.5`.
 
 #### A2 — The colour picker, and the contrast gate
 **Goal.** An `org_admin` picks a colour, sees it immediately, and **cannot ship an unreadable one**.
+
+**✅ THE STORAGE HALF OF THIS SECTION IS BUILT (A1, 2026-09-01).** `OrganisationTheme` already
+stores the resolved token set, `theme_tokens.validate_tokens` already refuses a tone, and
+`set_organisation_theme` already writes one from a hex. **So A2 is a SCREEN over storage that
+exists** — the picker derives a preview, posts a colour, and the server freezes the set. The
+paragraphs below are kept because they carry the reasoning, not because anything in them is
+outstanding.
 
 **⚠ THE STAGING DECISION, AND THE ONE THING THAT MAKES IT SAFE.** The owner's intent (2026-07-29) is
 a **full token set** eventually; the near-term build is a **single-colour picker**, expanded "when
@@ -348,8 +379,10 @@ is dismissed and a student cannot read the page.
 **Also settled.**
 - **The preview surface already exists.** The design sandbox mounts real components against fixtures,
   so a tenant previews their colour on genuine screens without touching live data.
-- **A tenant tints the brand and the ground; the tones stay ours.** Owner ruling, enforced in A1's
-  serializer as well as in the UI — a UI-only guard is not a guard.
+- **A tenant tints the brand and the ground; the tones stay ours.** Owner ruling — **✅ enforced as
+  of A1**, on write, on read and in the browser, so a UI-only guard was never the plan. ⚠ Note the
+  allow-list today is `brand` ALONE: ground is in the ruling but has no writer, and this arc forbids
+  a reserved key. A2 does not need it; A4's trigger #1 is when it arrives.
 
 **Complexity: medium-high.**
 

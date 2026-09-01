@@ -550,7 +550,78 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-01, after Layer 1 F5 — the officer cockpit)
+## Next Sprint (as of 2026-09-01, after Layer 1 A1 — a theme belongs to an organisation)
+
+**SHIPPED — LAYER 1 A1. ARC A IS OPEN.** Branch `feat/layer1-a1-tenant-theme`.
+**⚠ MIGRATION `courses/0071` — ADDITIVE, ONE NEW TABLE, NOT YET APPLIED. MIGRATE-FIRST.**
+api + web, 11 files. Retro `docs/retrospective-2026-09-01-layer1-a1-tenant-theme.md`; decisions ×4;
+lessons ×3. pytest 5677 → **5706**; jest 1534 → **1548**; tsc **24** (unchanged, TD-221).
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **THE STORED VALUE IS THE TOKEN SET, NOT THE HEX.** `OrganisationTheme.tokens` holds
+  `{"light": {"brand-50": …}, "dark": {…}}`, derived at SAVE time and served verbatim. A tenant
+  approved *those* shades; deriving per request means improving `brandRamp()` silently restyles
+  every tenant. Same reasoning as the submit-time snapshot and a published terms version. It also
+  makes A4 a second editor rather than a migration.
+- **`apps/courses/theme_tokens.py` is the ONE home** for the ramp maths, the fence and the read
+  filter. **The fence runs in `OrganisationTheme.save()`**, not on an endpoint — a shell caller
+  cannot go around it.
+- **`PLATFORM_FAMILIES` is checked BEFORE `TENANT_FAMILIES`, and its test never consults the
+  allow-list.** That is the whole point: A4 widens `TENANT_FAMILIES`, and an allow-list-only guard
+  would weaken by exactly that width, silently. Do not "simplify" the redundant-looking check away.
+- **`TENANT_FAMILIES` is deliberately just `brand`.** Ground is the owner's eventual boundary but
+  has NO WRITER, and this arc forbids a reserved key. Adding it is one word plus a test, on the day
+  A4's trigger #1 fires.
+- **`brand-500` byte-identical across modes is enforced at the STORAGE fence now**, so it holds for
+  a hand-written set too — F3b only enforced it on the function that derives.
+- **The fence runs THREE times on purpose** (write · read · browser). A row edited around the ORM
+  has no writer; only the browser copy sees the bytes the page received. All three bite-checked.
+- **BrightPath deliberately has NO theme row.** Its light ramp in `globals.css` is the seeded
+  hexes, not `brandRamp()`'s output, so a derived row would move its own colours by a channel.
+  `set_organisation_theme` refuses that org by name.
+- **Python and TypeScript assert the SAME golden fixture.** Python's `round()` is banker's,
+  JavaScript's is not, and this colour lands on an exact `.5` — `_round_half_up` is load-bearing.
+- **`NEXT_PUBLIC_ORG_CODE` is now read INSIDE a function.** Next inlines it either way; a module
+  constant can only be varied by re-importing, and that hands the provider a second React with no
+  hooks. Do not hoist it back.
+
+**⚠ AT DEPLOY, IN ORDER:** (1) apply `courses/0071` MIGRATE-FIRST via Supabase MCP — hand-written
+Postgres DDL **including `ENABLE ROW LEVEL SECURITY` + the one `service_role` policy** is in the
+migration's docstring; (2) record the `django_migrations` row; (3) confirm the Security Advisor is
+clean; (4) push (api + web). **No env vars. Dark mode stays unreachable.** Nothing a visitor sees
+changes — no theme row exists. Post-check: `GET /api/v1/branding/brightpath/` returns
+`"theme": null`.
+
+**NEXT = LAYER 1 A2 — the colour picker and the contrast gate.** The roadmap's sequence, verbatim:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+A2 is now a SCREEN over storage that already exists. Two things it must carry:
+- **⚠ A STITCH PROTOTYPE APPROVED BEFORE ANY PAGE CODE** (house rule). The tab strip it joins was
+  built by Layer 0 Sprint 5 — `/admin/programme`, `org_admin` + super, already fenced.
+- **⚠ THE CONTRAST GATE CHECKS TOKEN PAIRS, not "is this hex safe".** Deterministic
+  relative-luminance maths, tested, **BLOCKING AT SAVE — it refuses, it does not warn.** A tenant
+  will pick a colour that renders 4:1 against white; a warning is dismissed and a student cannot
+  read the page. A checker written against a hex has to be rewritten when tokens arrive; one
+  written against the pairs actually rendered simply gets more pairs.
+
+Then **A3** (draft → preview → publish → revert, mirroring the sponsor-terms shape; an `AUDIT` line
+per publish). ⚠ A3 relaxes A1's `OneToOne` to several rows per organisation — that is a constraint
+drop plus a status column, both additive, and it is A3's own scope.
+
+Then **F6** — 36 files PLUS ~78 colour literals returned as class strings from `lib/`
+(`courseBadges.ts` 32, `applicationStatus.ts` 22, `requestStatus.ts` 14, `paymentStatus.ts` 6),
+invisible to a `.tsx` codemod. Then **F7** (the flip).
+
+**⚠ STILL OWED BEFORE F7:** the cockpit is the ONE repainted surface never reviewed in a browser.
+Mounting it needs a large `AdminApplicationDetail` sandbox fixture, and the sandbox forbids a
+hand-written approximation. F7 cannot honestly claim "every surface reviewed in both modes" until
+that fixture exists.
+
+**⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase it
+from memory. The F5 close said "NEXT = F6" and was wrong.
+
+## Superseded — previous Next Sprint (as of 2026-09-01, after Layer 1 F5 — the officer cockpit)
 
 **SHIPPED — LAYER 1 F5.** Branch `feat/layer1-f5-cockpit`. **NO migration. WEB ONLY.** 2 files,
 537 utilities in ONE file. Retro `docs/retrospective-2026-09-01-layer1-f5-cockpit.md`; lessons x2.
