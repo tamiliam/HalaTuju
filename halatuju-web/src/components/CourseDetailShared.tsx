@@ -67,7 +67,7 @@ export function CourseActions({ isSaved, isHovering, onSave, onHoverStart, onHov
               ? isHovering
                 ? 'bg-critical-500 text-white hover:bg-critical-600'
                 : 'bg-positive-500 text-white'
-              : 'bg-primary-500 text-white hover:bg-primary-600'
+              : 'bg-primary-600 text-white hover:bg-primary-700'
           }`}
         >
           {isSaved

@@ -1065,7 +1065,7 @@ export default function AdminScholarshipDetailPage() {
           {canWrite && ['shortlisted', 'profile_complete', 'interviewing'].includes(app.status) && (
             <button
               onClick={() => document.getElementById('record-verdict-panel')?.scrollIntoView({ behavior: 'smooth' })}
-              className="ml-auto rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-600"
+              className="ml-auto rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-700"
             >
               {t('admin.scholarship.recordVerdict.title')}
             </button>
@@ -1932,7 +1932,7 @@ export default function AdminScholarshipDetailPage() {
             placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
         </div>
         <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
-          className="mt-2 px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm disabled:opacity-50">
+          className="mt-2 px-3 py-1.5 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
           {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
         </button>
       </div>
@@ -2821,7 +2821,7 @@ export default function AdminScholarshipDetailPage() {
               ) : null}
               {/* Save is the final commit of the chosen outcome. */}
               <button onClick={doSave} disabled={!!busy || !canSave}
-                className="w-full px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                className="w-full px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
                 {(busy === 'verdict' || busy === 'reject') ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
               </button>
             </div>
@@ -3439,7 +3439,7 @@ export default function AdminScholarshipDetailPage() {
                 </div>
                 <button type="button" onClick={doScheduleTranche}
                   disabled={busy === 'disbursement'}
-                  className="rounded-lg bg-primary-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
+                  className="rounded-lg bg-primary-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
                   {t('admin.disbursement.schedule')}
                 </button>
               </div>

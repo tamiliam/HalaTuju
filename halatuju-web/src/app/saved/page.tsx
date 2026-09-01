@@ -404,7 +404,7 @@ export default function SavedPage() {
                   <span className="text-sm">{selected.size} kursus dipilih</span>
                   <button
                     onClick={handleCompare}
-                    className="bg-primary-500 hover:bg-primary-600 text-white px-5 py-1.5 rounded-full text-sm font-medium transition-colors"
+                    className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-1.5 rounded-full text-sm font-medium transition-colors"
                   >
                     Bandingkan
                   </button>

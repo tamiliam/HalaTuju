@@ -295,7 +295,7 @@ export default function GradesInputPage() {
         {/* Section 1: Select your Stream */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
+            <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.selectStream')}</h2>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -305,7 +305,7 @@ export default function GradesInputPage() {
                 onClick={() => handleStreamChange(s.id)}
                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   stream === s.id
-                    ? 'bg-primary-500 text-white shadow-md'
+                    ? 'bg-primary-600 text-white shadow-md'
                     : 'bg-ground-0 text-ground-700 border border-ground-200 shadow-sm hover:shadow-md hover:border-ground-300'
                 }`}
               >
@@ -319,7 +319,7 @@ export default function GradesInputPage() {
         {/* Section 2: Core Subjects — button grid */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
+            <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.coreSubjects')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.coreSubjectsCount')}</p>
@@ -339,7 +339,7 @@ export default function GradesInputPage() {
         {/* Section 3: Stream Subjects — compact dropdown rows */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
+            <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
             <h2 className="text-lg font-semibold text-ground-900">
               {t('onboarding.streamSubjects')}
             </h2>
@@ -364,7 +364,7 @@ export default function GradesInputPage() {
         {/* Section 4: Elective Subjects — compact dropdown + add button */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">4</span>
+            <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">4</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.electiveSubjects')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.pickBest2Elective')}</p>
@@ -395,7 +395,7 @@ export default function GradesInputPage() {
         {/* Section 5: Co-curricular + Total Merit */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">5</span>
+            <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">5</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.coqScore')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.coqHint')}</p>
@@ -502,7 +502,7 @@ function CoreSubjectGrade({
             onClick={() => onChange(grade)}
             className={`h-9 rounded-lg text-xs font-medium transition-all ${
               value === grade
-                ? 'bg-primary-500 text-white shadow-md'
+                ? 'bg-primary-600 text-white shadow-md'
                 : 'bg-ground-50 text-ground-700 shadow-sm hover:bg-ground-100 hover:shadow-md border border-ground-100'
             }`}
           >

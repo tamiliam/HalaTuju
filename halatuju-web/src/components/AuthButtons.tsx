@@ -62,7 +62,7 @@ export default function AuthButtons() {
       </div>
       <button
         onClick={() => router.push('/get-started')}
-        className="bg-primary-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-primary-600 transition-colors whitespace-nowrap"
+        className="bg-primary-600 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
       >
         {t('header.signUp')}
       </button>

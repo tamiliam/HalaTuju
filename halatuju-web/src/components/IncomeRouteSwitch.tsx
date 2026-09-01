@@ -156,7 +156,7 @@ export default function IncomeRouteSwitch({
           type="button"
           onClick={confirm}
           disabled={busy || !valid}
-          className="flex-1 rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+          className="flex-1 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
         >
           {busy ? t('scholarship.incomeRouteSwitch.confirming') : t('scholarship.incomeRouteSwitch.confirm')}
         </button>

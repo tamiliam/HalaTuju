@@ -51,7 +51,8 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
 
         {/* Rank badge overlay */}
         {rank && (
-          <div className="absolute top-2 left-2 w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center shadow">
+          {/* A2: the rank badge holds `#{rank}` in white — TEXT, not a shape, so `-600`. */}
+          <div className="absolute top-2 left-2 w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center shadow">
             <span className="text-white text-sm font-bold">#{rank}</span>
           </div>
         )}

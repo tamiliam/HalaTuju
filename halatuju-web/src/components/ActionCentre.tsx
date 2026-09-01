@@ -353,7 +353,7 @@ function ActionCard({
           <div className="mt-4">
             {item.kind === 'doc' && (
               <>
-                <label className={`block w-full cursor-pointer rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600 ${busy ? 'opacity-50' : ''}`}>
+                <label className={`block w-full cursor-pointer rounded-xl bg-primary-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-700 ${busy ? 'opacity-50' : ''}`}>
                   {busy ? t('scholarship.actionCentre.uploading') : t('scholarship.actionCentre.upload')}
                   <input
                     type="file"
@@ -408,7 +408,7 @@ function ActionCard({
             {routesToPicker && (
               <a
                 href={pickerHref}
-                className="block w-full rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600"
+                className="block w-full rounded-xl bg-primary-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-700"
               >
                 {t(isPismpSwitch
                   ? 'scholarship.actionCentre.confirmPathwaySwitchOnProfile'
@@ -431,7 +431,7 @@ function ActionCard({
                   type="button"
                   onClick={onSend}
                   disabled={busy || !text.trim()}
-                  className="w-full rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+                  className="w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
                 >
                   {busy ? t('scholarship.actionCentre.sending') : t('scholarship.actionCentre.send')}
                 </button>
@@ -446,7 +446,7 @@ function ActionCard({
                 type="button"
                 onClick={onAffirm}
                 disabled={busy}
-                className="w-full rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+                className="w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
               >
                 {busy ? t('scholarship.actionCentre.sending')
                   : t(item.code === 'household_size_confirm'
@@ -579,7 +579,7 @@ function BankDetailsTask({
 
           <div className="mt-4 space-y-4">
             {/* Step 1: upload the statement */}
-            <label className={`block w-full cursor-pointer rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600 ${busy ? 'opacity-50' : ''}`}>
+            <label className={`block w-full cursor-pointer rounded-xl bg-primary-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-700 ${busy ? 'opacity-50' : ''}`}>
               {busy && !uploaded ? t('scholarship.actionCentre.uploading')
                 : uploaded ? t('scholarship.actionCentre.bank.reupload')
                 : t('scholarship.actionCentre.bank.upload')}
@@ -613,7 +613,7 @@ function BankDetailsTask({
                 </div>
                 <button
                   type="button" onClick={onSave} disabled={!canSave}
-                  className="w-full rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+                  className="w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
                 >
                   {busy ? t('scholarship.actionCentre.bank.saving') : t('scholarship.actionCentre.bank.save')}
                 </button>
@@ -739,7 +739,7 @@ function VircleTask({
 
           <button
             type="button" onClick={onConfirmDone} disabled={!valid || busy}
-            className="mt-3 w-full rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+            className="mt-3 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
           >
             {busy ? t('scholarship.actionCentre.vircle.confirming') : t('scholarship.actionCentre.vircle.confirm')}
           </button>

@@ -204,6 +204,11 @@ class TestFenceCoverageCompleteness(TestCase):
         # 404, never 403); super/org_admin only. It writes CONFIGURATION, never access — the
         # catalogue is not a fence, and the view docstring says so.
         'AdminProgrammeConfigurationView': 'programme-config-org-fenced',
+        # Layer 1 A2. The ORGANISATION is derived from `admin.owning_organisation` — the same field
+        # the fence itself uses — so it cannot widen access; a super names one with `?org=`, and a
+        # code outside the caller's organisation is 404, never 403. It carries NO student data: the
+        # payload is one organisation's name, its colour, and six contrast numbers.
+        'AdminOrganisationThemeView': 'organisation-theme-org-fenced',
         # base
         '_BursaryAdminBase': 'base — shared _agreement lookup',
         '_PaymentsBase': 'base — shared payments gate + org-fenced run lookup',

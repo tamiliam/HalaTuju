@@ -329,7 +329,7 @@ function OrGroupSection({
         {displayGroups.map((group, idx) => (
           <div key={idx} className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
             <div className="flex items-start gap-2.5 mb-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-500 text-white text-[11px] font-bold flex-shrink-0">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-600 text-white text-[11px] font-bold flex-shrink-0">
                 {idx + 1}
               </span>
               <span className="text-[13px] text-ground-600 leading-snug pt-0.5">
@@ -422,7 +422,7 @@ function PismpSection({
           return (
             <div key={idx} className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
               <div className="flex items-start gap-2.5">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-500 text-white text-[11px] font-bold flex-shrink-0">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-600 text-white text-[11px] font-bold flex-shrink-0">
                   {idx + 1}
                 </span>
                 <span className="text-[13px] text-ground-600 leading-snug pt-0.5">
@@ -449,7 +449,7 @@ function PismpSection({
         {hasLangs && (
           <div className="bg-gradient-to-br from-ground-50 to-ground-50 rounded-lg p-3 border border-ground-100">
             <div className="flex items-start gap-2.5">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-500 text-white text-[11px] font-bold flex-shrink-0">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-600 text-white text-[11px] font-bold flex-shrink-0">
                 {displayRules.length + 1}
               </span>
               <span className="text-[13px] text-ground-600 leading-snug pt-0.5">

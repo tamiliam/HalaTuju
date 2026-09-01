@@ -768,7 +768,7 @@ export default function ScholarshipNextSteps({
               return (
                 <button key={k} type="button" onClick={() => setTab(k)}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${active ? 'bg-primary-50 font-medium text-primary-700' : 'text-ground-600 hover:bg-ground-50'}`}>
-                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${active ? 'bg-primary-500 text-white' : done ? 'bg-primary-100 text-primary-700' : 'bg-ground-100 text-ground-400'}`}>
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${active ? 'bg-primary-600 text-white' : done ? 'bg-primary-100 text-primary-700' : 'bg-ground-100 text-ground-400'}`}>
                     {done ? '✓' : i + 1}
                   </span>
                   {t(`scholarship.nextSteps.tab.${k}`)}

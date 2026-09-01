@@ -69,7 +69,10 @@ export default function LandingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-primary-500 py-16">
+      {/* A2: the brand band carries `text-white` on its CHILD grid, so it is a TEXT pair and takes
+          `-600` like every other filled control. The codemod could not see it — it matches within
+          one class string, and CSS composes this one across two elements. */}
+      <section className="bg-primary-600 py-16">
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8 text-center text-white">
             <StatCard number="1,300+" label={t('landing.courses')} />
