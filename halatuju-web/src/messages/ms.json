@@ -5461,7 +5461,11 @@
         "sectionQuestions": "Soalan",
         "documentsHint": "Apa yang dimuat naik pemohon. Baris berkunci diwajibkan oleh platform untuk setiap program.",
         "questionsHint": "Apa yang ditanya dalam borang permohonan. Baris berkunci diwajibkan oleh platform untuk setiap program.",
-        "state": { "off": "Jangan tanya", "optional": "Pilihan", "required": "Wajib" },
+        "state": {
+          "off": "Jangan tanya",
+          "optional": "Pilihan",
+          "required": "Wajib"
+        },
         "alwaysRequired": "Sentiasa wajib",
         "heavyNote": "Bukan satu muat naik — keseluruhan bahagian pendapatan isi rumah. Mematikannya akan membuang soalan pendapatan keluarga, slip gaji dan IC setiap pencari nafkah, serta bil utiliti sekaligus.",
         "summary": "Program anda meminta {required} dan menawarkan {optional} daripada {total} item.",
@@ -5513,6 +5517,62 @@
         "consent": "Persetujuan",
         "justification": "Sebab memerlukan bantuan",
         "anything_else": "Apa-apa lagi"
+      },
+      "title": "Program",
+      "subtitle": "Apa yang program anda minta, dan rupanya.",
+      "tab": {
+        "config": "Apa yang kami minta",
+        "colours": "Warna"
+      },
+      "colours": {
+        "title": "Warna anda",
+        "subtitle": "Tetapkan warna yang dilihat pelajar dan penaja anda di seluruh program.",
+        "loadError": "Kami tidak dapat memuatkan warna anda. Sila muat semula halaman.",
+        "organisationRequired": "Pilih sebuah organisasi.",
+        "pickTitle": "Warna jenama anda",
+        "pickHint": "Pilih satu warna. Setiap ton di bawah dibina daripadanya.",
+        "swatchLabel": "Pilih warna jenama anda",
+        "hexLabel": "Warna heks",
+        "reset": "Kembali kepada warna asal",
+        "badHex": "Masukkan warna sebagai simbol pagar dan enam aksara, seperti #137fec.",
+        "paletteTitle": "Palet anda",
+        "paletteHint": "Inilah ton tepat yang kami simpan. Ia kekal seperti yang anda luluskan.",
+        "previewTitle": "Rupanya nanti",
+        "previewHint": "Bahagian sebenar produk, dalam warna anda.",
+        "sampleButton": "Simpan perubahan",
+        "samplePanel": "Permohonan anda sedang disemak.",
+        "sampleLink": "Lihat panduan",
+        "checkTitle": "Semakan kebolehbacaan",
+        "checkHint": "Kami mengukur warna anda di setiap tempat teks berada di atasnya.",
+        "needs": "perlu {n}",
+        "unreadable": "Warna ini sukar dibaca pada {pairs}. Cuba warna yang lebih gelap.",
+        "pair": {
+          "filled_button": "Teks putih pada butang utama anda",
+          "filled_button_dark": "Teks putih pada butang gelap anda",
+          "panel_text": "Warna anda sebagai teks pada panel pucat",
+          "link_on_card": "Pautan pada kad putih",
+          "link_on_page": "Pautan pada latar halaman",
+          "ui_shape": "Titik kecil dan bar kemajuan"
+        },
+        "pairShort": {
+          "filled_button": "butang utama anda",
+          "filled_button_dark": "butang gelap anda",
+          "panel_text": "panel pucat",
+          "link_on_card": "pautan pada kad",
+          "link_on_page": "pautan pada halaman",
+          "ui_shape": "titik dan bar"
+        },
+        "saved": "Warna disimpan.",
+        "wasReset": "Kembali kepada warna asal.",
+        "refused": "Tidak disimpan — terlalu sukar dibaca pada {pairs}.",
+        "errorGeneric": "Kami tidak dapat menyimpan warna anda. Sila cuba lagi.",
+        "cannotSave": "Tidak boleh disimpan — sebahagian teks akan sukar dibaca.",
+        "changed": "Diubah, belum disimpan",
+        "unchanged": "Tiada perubahan",
+        "usingDefault": "Menggunakan warna asal",
+        "discard": "Buang",
+        "save": "Simpan warna",
+        "saving": "Menyimpan…"
       }
     },
     "invitations": {

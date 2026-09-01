@@ -49,9 +49,10 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
           className="w-full h-full object-cover"
         />
 
-        {/* Rank badge overlay */}
+        {/* Rank badge overlay. A2: it holds the rank number in white — TEXT, not a shape, so the
+            background takes `-600` like every other filled control. The codemod could not see it:
+            it matches within one class string, and this pair is composed across two elements. */}
         {rank && (
-          {/* A2: the rank badge holds `#{rank}` in white — TEXT, not a shape, so `-600`. */}
           <div className="absolute top-2 left-2 w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center shadow">
             <span className="text-white text-sm font-bold">#{rank}</span>
           </div>

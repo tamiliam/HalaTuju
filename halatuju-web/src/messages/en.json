@@ -5461,7 +5461,11 @@
         "sectionQuestions": "Questions",
         "documentsHint": "What an applicant uploads. A locked row is required by the platform for every programme.",
         "questionsHint": "What the application form asks. A locked row is required by the platform for every programme.",
-        "state": { "off": "Don't ask", "optional": "Optional", "required": "Required" },
+        "state": {
+          "off": "Don't ask",
+          "optional": "Optional",
+          "required": "Required"
+        },
         "alwaysRequired": "Always required",
         "heavyNote": "Not one upload — the whole household-income section. Switching this off would remove the family's income questions, every earner's payslip and IC, and the utility bills together.",
         "summary": "Your programme asks for {required} and offers {optional} of {total} items.",
@@ -5513,6 +5517,62 @@
         "consent": "Consent",
         "justification": "Why they need support",
         "anything_else": "Anything else"
+      },
+      "title": "Programme",
+      "subtitle": "What your programme asks for, and how it looks.",
+      "tab": {
+        "config": "What we ask for",
+        "colours": "Colours"
+      },
+      "colours": {
+        "title": "Your colours",
+        "subtitle": "Set the colour your students and sponsors see across the programme.",
+        "loadError": "We could not load your colours. Please refresh the page.",
+        "organisationRequired": "Choose an organisation.",
+        "pickTitle": "Your brand colour",
+        "pickHint": "Pick one colour. Every shade below is built from it.",
+        "swatchLabel": "Choose your brand colour",
+        "hexLabel": "Hex colour",
+        "reset": "Reset to default",
+        "badHex": "Enter a colour as a hash and six characters, like #137fec.",
+        "paletteTitle": "Your palette",
+        "paletteHint": "These are the exact shades we save. They stay as you approved them.",
+        "previewTitle": "How it will look",
+        "previewHint": "Real parts of the product, in your colour.",
+        "sampleButton": "Save changes",
+        "samplePanel": "Your application is being reviewed.",
+        "sampleLink": "View the guide",
+        "checkTitle": "Readability check",
+        "checkHint": "We measure your colour everywhere text sits on it.",
+        "needs": "needs {n}",
+        "unreadable": "This colour is hard to read on {pairs}. Try a darker colour.",
+        "pair": {
+          "filled_button": "White text on your main button",
+          "filled_button_dark": "White text on your darker button",
+          "panel_text": "Your colour as text on a pale panel",
+          "link_on_card": "A link on a white card",
+          "link_on_page": "A link on the page background",
+          "ui_shape": "Small dots and progress bars"
+        },
+        "pairShort": {
+          "filled_button": "your main button",
+          "filled_button_dark": "your darker button",
+          "panel_text": "pale panels",
+          "link_on_card": "links on cards",
+          "link_on_page": "links on the page",
+          "ui_shape": "dots and bars"
+        },
+        "saved": "Colours saved.",
+        "wasReset": "Back to the default colours.",
+        "refused": "Not saved — too hard to read on {pairs}.",
+        "errorGeneric": "We could not save your colours. Please try again.",
+        "cannotSave": "Cannot save — some text would be hard to read.",
+        "changed": "Changed, not yet saved",
+        "unchanged": "Nothing changed",
+        "usingDefault": "Using the default colours",
+        "discard": "Discard",
+        "save": "Save colours",
+        "saving": "Saving…"
       }
     },
     "invitations": {

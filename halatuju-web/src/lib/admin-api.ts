@@ -2774,6 +2774,55 @@ export async function saveProgrammeConfiguration(
   return adminMutate(`/api/v1/admin/scholarship/programme/configuration/${q}`, 'PUT', { items }, options)
 }
 
+// ── Layer 1 A2: the organisation's colours ───────────────────────────────────
+
+/** One contrast pair, measured. `key` is shared with `lib/contrast.ts` and with the server, so a
+ *  `400 unreadable` names rows the screen has already drawn. */
+export interface ThemeCheck {
+  key: string
+  ratio: number
+  min_ratio: number
+  passes: boolean
+}
+
+export interface OrganisationTheme {
+  organisation: { code: string; name: string }
+  /** The hex the stored shades were derived from. '' when the organisation has set none. */
+  colour: string
+  /** True = no stored row, so the platform stylesheet is in charge. */
+  is_default: boolean
+  /** The APPROVED shades, both modes, or null. What is stored is this, never the hex. */
+  tokens: { light: Record<string, string>; dark: Record<string, string> } | null
+  checks: ThemeCheck[]
+}
+
+/** GET the organisation's colours. `org` is optional for an org_admin (their one organisation) and
+ *  required for a super when more than one tenant exists (`organisation_required`). */
+export async function getOrganisationTheme(
+  org?: string, options?: ApiOptions,
+): Promise<OrganisationTheme> {
+  const q = org ? `?org=${encodeURIComponent(org)}` : ''
+  return adminFetch(`/api/v1/admin/scholarship/organisation/theme/${q}`, options)
+}
+
+/** PUT one colour. The SERVER derives the shades and refuses an unreadable one with `unreadable`
+ *  plus the failing pair keys — the browser's own check is a courtesy, never the gate. */
+export async function saveOrganisationTheme(
+  colour: string, org?: string, options?: ApiOptions,
+): Promise<OrganisationTheme> {
+  const q = org ? `?org=${encodeURIComponent(org)}` : ''
+  return adminMutate(`/api/v1/admin/scholarship/organisation/theme/${q}`, 'PUT', { colour }, options)
+}
+
+/** Remove the stored colours, returning the organisation to the platform stylesheet exactly.
+ *  This is what makes trying a colour safe, so it must never be quietly dropped. */
+export async function resetOrganisationTheme(
+  org?: string, options?: ApiOptions,
+): Promise<OrganisationTheme> {
+  const q = org ? `?org=${encodeURIComponent(org)}` : ''
+  return adminMutate(`/api/v1/admin/scholarship/organisation/theme/${q}`, 'DELETE', null, options)
+}
+
 export async function listReviewers(options?: ApiOptions): Promise<{ reviewers: AdminReviewer[] }> {
   return adminFetch('/api/v1/admin/reviewers/', options)
 }
