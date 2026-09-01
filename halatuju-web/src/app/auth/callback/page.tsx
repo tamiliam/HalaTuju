@@ -39,7 +39,7 @@ export default function AuthCallback() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-gray-500">Redirecting...</div>
+      <div className="text-ground-500">Redirecting...</div>
     </div>
   )
 }

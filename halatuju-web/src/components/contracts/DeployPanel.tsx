@@ -43,30 +43,30 @@ export default function DeployPanel(
 
   return (
     <div className="space-y-6">
-      {err && <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-600 text-sm">{err}</div>}
+      {err && <div className="rounded-lg p-3 bg-critical-50 border border-critical-200 text-critical-600 text-sm">{err}</div>}
 
       {/* Validation checklist */}
-      <div className="bg-white rounded-xl border p-5">
-        <div className="font-semibold text-gray-900 mb-3">{t('admin.contracts.validationChecklist')}</div>
-        {!val ? <p className="text-sm text-gray-400">{t('admin.contracts.loading')}</p>
-          : val.ok ? <p className="text-sm text-green-700">✓ {t('admin.contracts.allChecksPass')}</p>
+      <div className="bg-ground-0 rounded-xl border p-5">
+        <div className="font-semibold text-ground-900 mb-3">{t('admin.contracts.validationChecklist')}</div>
+        {!val ? <p className="text-sm text-ground-400">{t('admin.contracts.loading')}</p>
+          : val.ok ? <p className="text-sm text-positive-700">✓ {t('admin.contracts.allChecksPass')}</p>
           : (
             <>
-              <p className="text-sm text-red-600 mb-2">{t('admin.contracts.issuesFound', { n: String(val.errors.length) })}</p>
+              <p className="text-sm text-critical-600 mb-2">{t('admin.contracts.issuesFound', { n: String(val.errors.length) })}</p>
               <ul className="space-y-1">
                 {val.errors.map((e) => (
-                  <li key={e.code} className="text-sm text-gray-700 flex items-center gap-2">
-                    <span className="text-red-500">✗</span>{e.label}
+                  <li key={e.code} className="text-sm text-ground-700 flex items-center gap-2">
+                    <span className="text-critical-500">✗</span>{e.label}
                   </li>
                 ))}
               </ul>
             </>
           )}
         {val && val.warnings.length > 0 && (
-          <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3">
-            <div className="text-xs font-semibold text-amber-800 mb-1">{t('admin.contracts.warningsTitle')}</div>
+          <div className="mt-4 rounded-lg bg-caution-50 border border-caution-200 p-3">
+            <div className="text-xs font-semibold text-caution-800 mb-1">{t('admin.contracts.warningsTitle')}</div>
             <ul className="space-y-1">
-              {val.warnings.map((w) => <li key={w.code} className="text-sm text-amber-800">• {w.label}</li>)}
+              {val.warnings.map((w) => <li key={w.code} className="text-sm text-caution-800">• {w.label}</li>)}
             </ul>
           </div>
         )}
@@ -74,15 +74,15 @@ export default function DeployPanel(
 
       {/* Legal attestation — draft only */}
       {draft && (
-        <div className="bg-white rounded-xl border p-5 space-y-3">
-          <div className="font-semibold text-gray-900">{t('admin.contracts.attestation')}</div>
+        <div className="bg-ground-0 rounded-xl border p-5 space-y-3">
+          <div className="font-semibold text-ground-900">{t('admin.contracts.attestation')}</div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
-              <span className="text-xs font-medium text-gray-600">{t('admin.contracts.vettedByName')}</span>
+              <span className="text-xs font-medium text-ground-600">{t('admin.contracts.vettedByName')}</span>
               <input className={inputCls} value={vName} onChange={(e) => setVName(e.target.value)} />
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-gray-600">{t('admin.contracts.vettedOn')}</span>
+              <span className="text-xs font-medium text-ground-600">{t('admin.contracts.vettedOn')}</span>
               <input type="date" className={inputCls} value={vOn || ''} onChange={(e) => setVOn(e.target.value)} />
             </label>
           </div>
@@ -118,11 +118,11 @@ export default function DeployPanel(
       </div>
 
       {pending && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-ground-500">
           {isSuper ? t('admin.contracts.deployArchives') : t('admin.contracts.superOnlyDeploy')}
         </p>
       )}
-      {active && <p className="text-sm text-green-700">{t('admin.contracts.deployed')}</p>}
+      {active && <p className="text-sm text-positive-700">{t('admin.contracts.deployed')}</p>}
     </div>
   )
 }

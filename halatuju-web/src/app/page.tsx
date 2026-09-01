@@ -11,7 +11,7 @@ export default function LandingPage() {
   const { t } = useT()
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
+    <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0">
       {/* Navigation */}
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
@@ -19,7 +19,7 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-4">
           <LanguageSelector />
-          <Link href="/about" className="hidden sm:inline text-gray-600 hover:text-gray-900">
+          <Link href="/about" className="hidden sm:inline text-ground-600 hover:text-ground-900">
             {t('common.about')}
           </Link>
           <AuthButtons />
@@ -28,10 +28,10 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+        <h1 className="text-5xl md:text-6xl font-bold text-ground-900 mb-6">
           {t('landing.heroTitle')}
         </h1>
-        <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+        <p className="text-xl text-ground-600 mb-10 max-w-2xl mx-auto">
           {t('landing.heroSubtitle')}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -46,7 +46,7 @@ export default function LandingPage() {
 
       {/* Features Section */}
       <section className="container mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+        <h2 className="text-3xl font-bold text-center text-ground-900 mb-12">
           {t('landing.howItWorks')}
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
@@ -85,10 +85,10 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-6 py-20 text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">
+        <h2 className="text-3xl font-bold text-ground-900 mb-6">
           {t('landing.readyTitle')}
         </h2>
-        <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
+        <p className="text-lg text-ground-600 mb-8 max-w-xl mx-auto">
           {t('landing.readySubtitle')}
         </p>
         <Link href="/onboarding/exam-type" className="btn-primary text-lg px-8 py-4">
@@ -115,8 +115,8 @@ function FeatureCard({
       <div className="w-12 h-12 bg-primary-100 text-primary-500 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
         {step}
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-600">{description}</p>
+      <h3 className="text-xl font-semibold text-ground-900 mb-2">{title}</h3>
+      <p className="text-ground-600">{description}</p>
     </div>
   )
 }

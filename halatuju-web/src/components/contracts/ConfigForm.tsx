@@ -56,60 +56,60 @@ export default function ConfigForm(
   return (
     <div className="space-y-6">
       <div ref={topRef} className="scroll-mt-4" />
-      <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2">{t('admin.contracts.englishAuthoritative')}</p>
-      {err && <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-600 text-sm">{err}</div>}
-      {msg && <div className="rounded-lg p-3 bg-green-50 border border-green-200 text-green-700 text-sm">{msg}</div>}
+      <p className="text-xs text-info-700 bg-info-50 rounded-lg px-3 py-2">{t('admin.contracts.englishAuthoritative')}</p>
+      {err && <div className="rounded-lg p-3 bg-critical-50 border border-critical-200 text-critical-600 text-sm">{err}</div>}
+      {msg && <div className="rounded-lg p-3 bg-positive-50 border border-positive-200 text-positive-700 text-sm">{msg}</div>}
 
       <div className="flex justify-end"><LangTabs value={lang} onChange={setLang} /></div>
 
-      <div className="bg-white rounded-xl border p-5 space-y-4">
+      <div className="bg-ground-0 rounded-xl border p-5 space-y-4">
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.titleLabel')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.titleLabel')}</span>
           <input className={inputCls} disabled={!draft} value={String(f[L('title')] || '')}
             onChange={(e) => set(L('title'), e.target.value)} />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.preamble')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.preamble')}</span>
           <textarea rows={3} className={inputCls} disabled={!draft} value={String(f[L('preamble')] || '')}
             onChange={(e) => set(L('preamble'), e.target.value)} />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.progressStandard')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.progressStandard')}</span>
           <textarea rows={2} className={inputCls} disabled={!draft} value={String(f[L('progress_standard')] || '')}
             onChange={(e) => set(L('progress_standard'), e.target.value)} />
         </label>
       </div>
 
-      <div className="bg-white rounded-xl border p-5 grid gap-4 sm:grid-cols-2">
+      <div className="bg-ground-0 rounded-xl border p-5 grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.counterpartyName')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.counterpartyName')}</span>
           <input className={inputCls} disabled={!draft} value={f.counterparty_name}
             onChange={(e) => set('counterparty_name', e.target.value)} />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.counterpartyTitle')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.counterpartyTitle')}</span>
           <input className={inputCls} disabled={!draft} value={f.counterparty_title}
             onChange={(e) => set('counterparty_title', e.target.value)} />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.counterpartyNric')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.counterpartyNric')}</span>
           <input className={inputCls} disabled={!draft} value={f.counterparty_nric}
             onChange={(e) => set('counterparty_nric', e.target.value)} />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.counterpartyAddress')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.counterpartyAddress')}</span>
           <textarea rows={2} className={inputCls} disabled={!draft} value={f.counterparty_address || ''}
             onChange={(e) => set('counterparty_address', e.target.value)} />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.notifyEmails')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.notifyEmails')}</span>
           <input className={inputCls} disabled={!draft}
             value={(f.counterparty_notify_emails || []).join(', ')}
             onChange={(e) => set('counterparty_notify_emails',
               e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.parentRole')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.parentRole')}</span>
           <select className={inputCls} disabled={!draft} value={f.parent_role}
             onChange={(e) => set('parent_role', e.target.value)}>
             <option value="co_signer_all">{t('admin.contracts.coSignerAll')}</option>
@@ -117,7 +117,7 @@ export default function ConfigForm(
           </select>
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-gray-600">{t('admin.contracts.witnessPolicy')}</span>
+          <span className="text-xs font-medium text-ground-600">{t('admin.contracts.witnessPolicy')}</span>
           <select className={inputCls} disabled={!draft} value={f.witness_policy}
             onChange={(e) => set('witness_policy', e.target.value)}>
             <option value="none">{t('admin.contracts.witness.none')}</option>
@@ -131,7 +131,7 @@ export default function ConfigForm(
         ? <button type="button" onClick={save} disabled={saving || !dirty}
             title={dirty ? undefined : t('common.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
-        : <p className="text-sm text-gray-500">{t('admin.contracts.notDraftMsg')}</p>}
+        : <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
   )
 }

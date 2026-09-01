@@ -46,7 +46,7 @@ export default function ReviewerEmailsCard({ token, t }: {
 
   if (!data) {
     return error ? (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">{error}</div>
+      <div className="rounded-lg border border-critical-200 bg-critical-50 p-4 text-sm text-critical-600">{error}</div>
     ) : null
   }
 
@@ -73,23 +73,23 @@ export default function ReviewerEmailsCard({ token, t }: {
     .filter((x): x is PartnerEmailTemplate => !!x)
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <div className="bg-ground-0 rounded-xl shadow-sm border overflow-hidden">
       <div className="px-4 sm:px-5 py-4 border-b">
-        <h2 className="font-semibold text-gray-900">{t('admin.reviewers.emails.title')}</h2>
-        <p className="text-sm text-gray-500 mt-1 max-w-3xl">
+        <h2 className="font-semibold text-ground-900">{t('admin.reviewers.emails.title')}</h2>
+        <p className="text-sm text-ground-500 mt-1 max-w-3xl">
           {t('admin.reviewers.emails.subtitle')}
         </p>
         {/* The one thing a reader must not get wrong: these are live. */}
-        <p className="text-sm text-amber-700 mt-2 max-w-3xl">
+        <p className="text-sm text-caution-700 mt-2 max-w-3xl">
           {t('admin.reviewers.emails.liveNote')}
         </p>
       </div>
 
       {error && (
-        <div className="px-4 sm:px-5 py-3 text-sm text-red-600 border-b">{error}</div>
+        <div className="px-4 sm:px-5 py-3 text-sm text-critical-600 border-b">{error}</div>
       )}
 
-      <ul className="divide-y divide-gray-100">
+      <ul className="divide-y divide-ground-100">
         {ordered.map((tpl) => (
           <li key={tpl.kind} className="px-4 sm:px-5 py-4">
             {/* Switch on the LEFT, then the name, with Edit trailing — the same shape as the
@@ -102,20 +102,20 @@ export default function ReviewerEmailsCard({ token, t }: {
                   onClick={() => { void toggle(tpl) }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-ground-900">
                   {t(`admin.reviewers.emails.kind.${tpl.kind}`)}
                 </p>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <p className="text-sm text-ground-500 mt-0.5">
                   {t(`admin.reviewers.emails.when.${tpl.kind}`)}
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-ground-400 mt-1">
                   {tpl.last_sent_at
                     ? t('admin.reviewers.emails.lastSent', { date: formatDate(tpl.last_sent_at) })
                     : t('admin.reviewers.emails.neverSent')}
                 </p>
               </div>
               <button type="button" onClick={() => setOpenKind(openKind === tpl.kind ? null : tpl.kind)}
-                className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline shrink-0">
+                className="text-sm font-medium text-info-600 hover:text-info-700 hover:underline shrink-0">
                 {t(openKind === tpl.kind ? 'common.cancel' : 'admin.reviewers.emails.edit')}
               </button>
             </div>
@@ -138,48 +138,48 @@ export default function ReviewerEmailsCard({ token, t }: {
           an omission, the statement. The wording is served by the code that sends it, so it
           cannot show something we do not send. */}
       {system.length > 0 && (
-        <div className="border-t bg-gray-50">
+        <div className="border-t bg-ground-50">
           <div className="px-4 sm:px-5 py-4">
-            <h3 className="font-semibold text-gray-900">
+            <h3 className="font-semibold text-ground-900">
               {t('admin.reviewers.emails.system.title')}
             </h3>
-            <p className="text-sm text-gray-500 mt-1 max-w-3xl">
+            <p className="text-sm text-ground-500 mt-1 max-w-3xl">
               {t('admin.reviewers.emails.system.subtitle')}
             </p>
           </div>
-          <ul className="divide-y divide-gray-200 border-t border-gray-200">
+          <ul className="divide-y divide-ground-200 border-t border-ground-200">
             {system.map((row) => (
               <li key={row.key} className="px-4 sm:px-5 py-4">
                 <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-ground-900">
                       {t(`admin.reviewers.emails.system.kind.${row.key}`)}
                     </p>
-                    <p className="text-sm text-gray-500 mt-0.5">
+                    <p className="text-sm text-ground-500 mt-0.5">
                       {t(`admin.reviewers.emails.system.when.${row.key}`)}
                     </p>
                     {/* The subject shows without asking — it is the one line a person scanning
                         the list would recognise an email by. */}
-                    <p className="text-sm text-gray-700 mt-1.5 break-words">
-                      <span className="text-gray-400">
+                    <p className="text-sm text-ground-700 mt-1.5 break-words">
+                      <span className="text-ground-400">
                         {t('admin.reviewers.emails.system.subjectLabel')}{' '}
                       </span>
                       {row.subject}
                     </p>
                     {row.sensitive && (
-                      <p className="text-xs text-amber-700 mt-1.5">
+                      <p className="text-xs text-caution-700 mt-1.5">
                         {t('admin.reviewers.emails.system.sensitive')}
                       </p>
                     )}
                     {row.wider_audience && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-ground-500 mt-1">
                         {t('admin.reviewers.emails.system.widerAudience')}
                       </p>
                     )}
                   </div>
                   <button type="button"
                     onClick={() => setOpenSystem(openSystem === row.key ? null : row.key)}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline shrink-0">
+                    className="text-sm font-medium text-info-600 hover:text-info-700 hover:underline shrink-0">
                     {t(openSystem === row.key
                       ? 'admin.reviewers.emails.system.hide'
                       : 'admin.reviewers.emails.system.show')}
@@ -193,18 +193,18 @@ export default function ReviewerEmailsCard({ token, t }: {
                 {openSystem === row.key && (
                   <div className="mt-3 grid gap-4 lg:grid-cols-2">
                     <div>
-                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-1.5">
+                      <p className="text-xs uppercase tracking-wide text-ground-400 mb-1.5">
                         {t('admin.reviewers.emails.system.shapeLabel')}
                       </p>
-                      <pre className="whitespace-pre-wrap break-words rounded-lg border bg-white
-                                      p-3 text-sm text-gray-700 font-sans">{row.body}</pre>
+                      <pre className="whitespace-pre-wrap break-words rounded-lg border bg-ground-0
+                                      p-3 text-sm text-ground-700 font-sans">{row.body}</pre>
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-wide text-gray-400 mb-1.5">
+                      <p className="text-xs uppercase tracking-wide text-ground-400 mb-1.5">
                         {t('admin.reviewers.emails.system.exampleLabel')}
                       </p>
                       <pre className="whitespace-pre-wrap break-words rounded-lg border
-                                      border-gray-200 bg-gray-100 p-3 text-sm text-gray-600
+                                      border-ground-200 bg-ground-100 p-3 text-sm text-ground-600
                                       font-sans">{row.sample_body}</pre>
                     </div>
                   </div>

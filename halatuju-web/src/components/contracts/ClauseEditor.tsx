@@ -238,14 +238,14 @@ export default function ClauseEditor(
     }
   }
 
-  const iconBtn = 'w-7 h-7 inline-flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-30 disabled:hover:bg-transparent'
-  const toolBtn = 'h-7 px-2 inline-flex items-center gap-1 rounded-md border border-gray-200 text-gray-600 hover:bg-blue-50 hover:text-blue-700 text-xs font-semibold'
+  const iconBtn = 'w-7 h-7 inline-flex items-center justify-center rounded-md border border-ground-200 text-ground-500 hover:bg-info-50 hover:text-info-700 disabled:opacity-30 disabled:hover:bg-transparent'
+  const toolBtn = 'h-7 px-2 inline-flex items-center gap-1 rounded-md border border-ground-200 text-ground-600 hover:bg-info-50 hover:text-info-700 text-xs font-semibold'
 
   return (
     <div className="space-y-5">
       <div ref={topRef} className="scroll-mt-4" />
-      {err && <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-600 text-sm">{err}</div>}
-      {msg && <div className="rounded-lg p-3 bg-green-50 border border-green-200 text-green-700 text-sm">{msg}</div>}
+      {err && <div className="rounded-lg p-3 bg-critical-50 border border-critical-200 text-critical-600 text-sm">{err}</div>}
+      {msg && <div className="rounded-lg p-3 bg-positive-50 border border-positive-200 text-positive-700 text-sm">{msg}</div>}
 
       {draft && (
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -259,22 +259,22 @@ export default function ClauseEditor(
           </div>
         </div>
       )}
-      {draft && <p className="text-xs text-gray-400">{t('admin.contracts.hierarchyHint')}</p>}
+      {draft && <p className="text-xs text-ground-400">{t('admin.contracts.hierarchyHint')}</p>}
 
       {/* Word-import review-before-accept (indented to show the detected levels) */}
       {proposed && (
-        <div className="rounded-xl border-2 border-blue-300 bg-blue-50/40 p-5 space-y-3">
-          <div className="font-semibold text-gray-900">{t('admin.contracts.importReviewTitle')}</div>
-          <p className="text-sm text-gray-600">{t('admin.contracts.importReviewHint')}</p>
+        <div className="rounded-xl border-2 border-info-300 bg-info-50/40 p-5 space-y-3">
+          <div className="font-semibold text-ground-900">{t('admin.contracts.importReviewTitle')}</div>
+          <p className="text-sm text-ground-600">{t('admin.contracts.importReviewHint')}</p>
           {(proposedTitle || proposedPreamble) && (
-            <div className="rounded-lg bg-white border border-blue-200 p-3 space-y-2 text-sm">
+            <div className="rounded-lg bg-ground-0 border border-info-200 p-3 space-y-2 text-sm">
               {proposedTitle && (<div>
-                <span className="text-[11px] uppercase tracking-wide font-semibold text-blue-700">{t('admin.contracts.importTitleLabel')}</span>
-                <div className="text-gray-800">{proposedTitle}</div></div>)}
+                <span className="text-[11px] uppercase tracking-wide font-semibold text-info-700">{t('admin.contracts.importTitleLabel')}</span>
+                <div className="text-ground-800">{proposedTitle}</div></div>)}
               {proposedPreamble && (<div>
-                <span className="text-[11px] uppercase tracking-wide font-semibold text-blue-700">{t('admin.contracts.importPreambleLabel')}</span>
-                <div className="text-gray-600 whitespace-pre-wrap">{proposedPreamble}</div></div>)}
-              <p className="text-[11px] text-gray-400">{t('admin.contracts.importFillNote')}</p>
+                <span className="text-[11px] uppercase tracking-wide font-semibold text-info-700">{t('admin.contracts.importPreambleLabel')}</span>
+                <div className="text-ground-600 whitespace-pre-wrap">{proposedPreamble}</div></div>)}
+              <p className="text-[11px] text-ground-400">{t('admin.contracts.importFillNote')}</p>
             </div>
           )}
           {(() => { const pn = clauseNumbers(proposed.map((c) => c.level ?? 0)); return (
@@ -285,9 +285,9 @@ export default function ClauseEditor(
                 // top level; no "—" placeholder when a clause legitimately has no heading.
                 return (
                   <div key={i} className="text-sm" style={{ paddingLeft: `${(c.level ?? 0) * 22}px` }}>
-                    <span className={`font-mono text-blue-700 mr-2 ${top ? 'font-semibold' : ''}`}>{pn[i]}</span>
+                    <span className={`font-mono text-info-700 mr-2 ${top ? 'font-semibold' : ''}`}>{pn[i]}</span>
                     {c.heading && <span className={top ? 'font-semibold' : ''}>{c.heading} </span>}
-                    <span className="text-gray-600 whitespace-pre-wrap">{c.body}</span>
+                    <span className="text-ground-600 whitespace-pre-wrap">{c.body}</span>
                   </div>
                 )
               })}
@@ -305,11 +305,11 @@ export default function ClauseEditor(
       {clauses.map((c, i) => {
         const level = c.level ?? 0
         return (
-          <div key={i} className="bg-white rounded-xl border p-4 space-y-2"
+          <div key={i} className="bg-ground-0 rounded-xl border p-4 space-y-2"
             style={{ marginLeft: `${level * 28}px` }}>
             {/* Number sits to the LEFT of the boxes (1. [box]); only the fields in use are shown. */}
             <div className="flex gap-2">
-              <span className="font-mono text-xs font-bold text-blue-700 tabular-nums shrink-0 w-12 text-right pt-2.5">{numbers[i]}</span>
+              <span className="font-mono text-xs font-bold text-info-700 tabular-nums shrink-0 w-12 text-right pt-2.5">{numbers[i]}</span>
               <div className="flex-1 min-w-0 space-y-2">
                 {hasHeading(c) && (
                   <input className={inputCls} disabled={!draft} placeholder={t('admin.contracts.heading')}
@@ -321,7 +321,7 @@ export default function ClauseEditor(
                     value={String(c[bk] || '')} onChange={(e) => set(i, bk, e.target.value)} />
                 )}
                 {!hasHeading(c) && !hasBody(c) && (
-                  <p className="text-xs text-gray-300 py-2">{t('admin.contracts.emptyClauseHint')}</p>
+                  <p className="text-xs text-ground-300 py-2">{t('admin.contracts.emptyClauseHint')}</p>
                 )}
               </div>
             </div>
@@ -333,7 +333,7 @@ export default function ClauseEditor(
               <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
               <div className="min-w-0">
                 {level <= QUIZ_MAX_LEVEL && (
-                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <label className="flex items-center gap-2 text-sm text-ground-700 cursor-pointer">
                     <Toggle on={!!c.is_quiz_candidate} disabled={!draft}
                       onChange={(v) => toggleQuiz(i, v)}
                       label={t('admin.contracts.useForQuiz')} />
@@ -355,13 +355,13 @@ export default function ClauseEditor(
                         <button type="button" onClick={() => setVarMenu(varMenu === i ? null : i)} className={toolBtn}>
                           ＋ {t('admin.contracts.insertVariable')} <span className="text-[10px]">▾</span></button>
                         {varMenu === i && (
-                          <div className="absolute z-10 bottom-9 right-0 w-80 max-h-56 overflow-auto rounded-lg border border-gray-300 bg-white shadow-xl p-1.5">
-                            <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-gray-400 font-semibold">{t('admin.contracts.variableMenuHint')}</div>
+                          <div className="absolute z-10 bottom-9 right-0 w-80 max-h-56 overflow-auto rounded-lg border border-ground-300 bg-ground-0 shadow-xl p-1.5">
+                            <div className="px-2 py-1 text-[11px] uppercase tracking-wide text-ground-400 font-semibold">{t('admin.contracts.variableMenuHint')}</div>
                             {VARIABLES.map((v) => (
                               <button key={v.token} type="button" onClick={() => insertVar(i, v.token)}
-                                className="w-full flex items-center justify-between gap-3 px-2 py-1.5 rounded-md hover:bg-blue-50 text-left">
-                                <code className="text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 whitespace-nowrap">{v.token}</code>
-                                <span className="text-[11px] text-gray-500 text-right">{v.desc}</span>
+                                className="w-full flex items-center justify-between gap-3 px-2 py-1.5 rounded-md hover:bg-info-50 text-left">
+                                <code className="text-xs text-info-800 bg-info-50 border border-info-200 rounded px-1.5 py-0.5 whitespace-nowrap">{v.token}</code>
+                                <span className="text-[11px] text-ground-500 text-right">{v.desc}</span>
                               </button>
                             ))}
                           </div>
@@ -372,15 +372,15 @@ export default function ClauseEditor(
                     <button type="button" onClick={() => showField(i, '_showB')} className={toolBtn}>
                       ＋ {t('admin.contracts.body')}</button>
                   )}
-                  <span className="w-px h-5 bg-gray-200 mx-1" aria-hidden="true" />
+                  <span className="w-px h-5 bg-ground-200 mx-1" aria-hidden="true" />
                   <button type="button" title={t('admin.contracts.insertBelow')} onClick={() => insertAfter(i)}
-                    className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-emerald-200 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-bold">＋</button>
+                    className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-positive-200 text-positive-600 bg-positive-50 hover:bg-positive-100 font-bold">＋</button>
                   <button type="button" title={t('admin.contracts.outdent')} onClick={() => outdent(i)} disabled={!canOutdent(levels, i)} className={iconBtn}>←</button>
                   <button type="button" title={t('admin.contracts.indent')} onClick={() => indent(i)} disabled={!canIndent(levels, i)} className={iconBtn}>→</button>
                   <button type="button" title={t('admin.contracts.moveUp')} onClick={() => move(i, -1)} disabled={i === 0} className={iconBtn}>↑</button>
                   <button type="button" title={t('admin.contracts.moveDown')} onClick={() => move(i, 1)} disabled={i === clauses.length - 1} className={iconBtn}>↓</button>
                   <button type="button" title={t('admin.contracts.remove')} onClick={() => remove(i)}
-                    className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-transparent text-gray-400 hover:bg-red-50 hover:text-red-600">🗑</button>
+                    className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-transparent text-ground-400 hover:bg-critical-50 hover:text-critical-600">🗑</button>
                 </div>
               )}
               </div>
@@ -388,7 +388,7 @@ export default function ClauseEditor(
           </div>
         )
       })}
-      {clauses.length === 0 && <p className="text-sm text-gray-400">{t('admin.contracts.noClauses')}</p>}
+      {clauses.length === 0 && <p className="text-sm text-ground-400">{t('admin.contracts.noClauses')}</p>}
 
       {draft && (
         <div className="flex gap-3">
@@ -399,7 +399,7 @@ export default function ClauseEditor(
             {saving ? t('admin.contracts.saving') : t('admin.contracts.saveClauses')}</button>
         </div>
       )}
-      {!draft && <p className="text-sm text-gray-500">{t('admin.contracts.notDraftMsg')}</p>}
+      {!draft && <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
   )
 }

@@ -14,7 +14,7 @@ import { insertPlaceholder } from '@/lib/partnerComms'
 // i18n prefix. The alternative was a second 135-line copy of this file, and a duplicated component
 // is where the next fix lands in one place and not the other.
 
-const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
 /** The minimum shape an editable template must have, whichever family it belongs to. */
 export interface EditableTemplate {
@@ -29,11 +29,11 @@ export interface EditableTemplate {
 function Preview({ subject, body }: { subject: string; body: string }) {
   const blocks = body.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean)
   return (
-    <div className="rounded-lg border bg-gray-50 p-4">
-      <p className="pb-2.5 mb-3 border-b border-dashed border-gray-300 text-xs text-gray-500">
+    <div className="rounded-lg border bg-ground-50 p-4">
+      <p className="pb-2.5 mb-3 border-b border-dashed border-ground-300 text-xs text-ground-500">
         {subject}
       </p>
-      <div className="rounded-xl border bg-white p-4 text-sm leading-relaxed text-gray-700 space-y-3">
+      <div className="rounded-xl border bg-ground-0 p-4 text-sm leading-relaxed text-ground-700 space-y-3">
         {blocks.map((b, i) => <p key={i} className="whitespace-pre-wrap">{b}</p>)}
       </div>
     </div>
@@ -91,28 +91,28 @@ export default function TemplateEditor<T extends EditableTemplate>({
   }
 
   return (
-    <div className="border-t border-dashed bg-white">
+    <div className="border-t border-dashed bg-ground-0">
       <div className="grid lg:grid-cols-2">
         <div className="p-4 lg:p-5 space-y-3 min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-ground-400">
             {t(`${prefix}.editLabel`)}
           </p>
           <label className="block">
-            <span className="block text-sm text-gray-600 mb-1">{t(`${prefix}.subject`)}</span>
+            <span className="block text-sm text-ground-600 mb-1">{t(`${prefix}.subject`)}</span>
             <input className={inputCls} value={subject} onChange={(e) => setSubject(e.target.value)} />
           </label>
           <label className="block">
-            <span className="block text-sm text-gray-600 mb-1">{t(`${prefix}.body`)}</span>
+            <span className="block text-sm text-ground-600 mb-1">{t(`${prefix}.body`)}</span>
             <textarea ref={bodyRef} rows={11} spellCheck={false}
               className={`${inputCls} font-mono text-xs leading-relaxed`}
               value={body} onChange={(e) => setBody(e.target.value)} />
           </label>
           <div>
-            <p className="text-xs text-gray-400 mb-1.5">{t(`${prefix}.placeholderHint`)}</p>
+            <p className="text-xs text-ground-400 mb-1.5">{t(`${prefix}.placeholderHint`)}</p>
             <div className="flex flex-wrap gap-1.5">
               {template.placeholders.map((p) => (
                 <button key={p} type="button" onClick={() => dropIn(`{${p}}`)}
-                  className="rounded border border-gray-200 bg-blue-50 px-1.5 py-0.5 font-mono text-[11px] text-blue-700 hover:border-blue-500">
+                  className="rounded border border-ground-200 bg-info-50 px-1.5 py-0.5 font-mono text-[11px] text-info-700 hover:border-info-500">
                   {`{${p}}`}
                 </button>
               ))}
@@ -121,7 +121,7 @@ export default function TemplateEditor<T extends EditableTemplate>({
         </div>
 
         <div className="p-4 lg:p-5 space-y-3 min-w-0 border-t lg:border-t-0 lg:border-l">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-ground-400">
             {t(`${prefix}.previewLabel`)}
           </p>
           <Preview subject={subject} body={body} />
@@ -134,25 +134,25 @@ export default function TemplateEditor<T extends EditableTemplate>({
             const key = `${prefix}.note.${template.kind}`
             const note = t(key)
             return note && note !== key
-              ? <p className="text-xs text-gray-400">{note}</p>
+              ? <p className="text-xs text-ground-400">{note}</p>
               : null
           })()}
         </div>
       </div>
 
       {error && (
-        <div className="mx-4 lg:mx-5 mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+        <div className="mx-4 lg:mx-5 mb-3 rounded-lg border border-critical-200 bg-critical-50 p-3 text-sm text-critical-600">
           {error}
         </div>
       )}
 
       <div className="flex flex-wrap items-center gap-4 border-t px-4 lg:px-5 py-3">
-        <span className="mr-auto text-xs text-gray-400">{t(`${prefix}.sharedNote`)}</span>
-        <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700">
+        <span className="mr-auto text-xs text-ground-400">{t(`${prefix}.sharedNote`)}</span>
+        <button type="button" onClick={onCancel} className="text-sm text-ground-500 hover:text-ground-700">
           {t('admin.sources.cancel')}
         </button>
         <button type="button" onClick={save} disabled={busy || !dirty}
-          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+          className="rounded-lg bg-primary-600 px-5 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
           {busy ? t('admin.sources.saving') : t('admin.sources.save')}
         </button>
       </div>

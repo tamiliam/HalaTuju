@@ -198,12 +198,12 @@ export default function QuizPage() {
   // Auth gate: show sign-in prompt if not authenticated
   if (!authLoading && !isAuthenticated) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-primary-50 to-white flex items-center justify-center">
+      <main className="min-h-screen bg-gradient-to-b from-primary-50 to-ground-0 flex items-center justify-center">
         <div className="text-center max-w-md px-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-ground-900 mb-4">
             {t('authGate.title')}
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-ground-600 mb-6">
             {t('authGate.quizReason')}
           </p>
           <button
@@ -212,7 +212,7 @@ export default function QuizPage() {
           >
             {t('saved.signIn')}
           </button>
-          <Link href="/dashboard" className="block mt-4 text-gray-500 hover:text-gray-700 text-sm">
+          <Link href="/dashboard" className="block mt-4 text-ground-500 hover:text-ground-700 text-sm">
             {t('authGate.continueBrowsing')}
           </Link>
         </div>
@@ -222,10 +222,10 @@ export default function QuizPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-white">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-ground-0">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
-          <p className="text-gray-600">{t('quiz.loadingQuiz')}</p>
+          <p className="text-ground-600">{t('quiz.loadingQuiz')}</p>
         </div>
       </div>
     )
@@ -235,7 +235,7 @@ export default function QuizPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-critical-600 mb-4">{error}</p>
           <button onClick={() => window.location.reload()} className="btn-primary">
             {t('quiz.retry')}
           </button>
@@ -250,9 +250,9 @@ export default function QuizPage() {
   const notSureIndex = notSureOption && question ? question.options.indexOf(notSureOption) : -1
 
   return (
-    <main className="min-h-screen bg-[#f5f7f8]">
+    <main className="min-h-screen bg-ground-50">
       {/* Gradient header — matches Stitch design */}
-      <header className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+      <header className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="text-white/90 hover:text-white text-sm font-medium">
             ← {t('common.appName')}
@@ -272,9 +272,9 @@ export default function QuizPage() {
               {t('quiz.answered', { count: String(answeredCount) })}
             </span>
           </div>
-          <div className="w-full bg-white/20 rounded-full h-1.5">
+          <div className="w-full bg-ground-0/20 rounded-full h-1.5">
             <div
-              className="bg-white h-1.5 rounded-full transition-all duration-300"
+              className="bg-ground-0 h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${((currentStep + 1) / visibleQuestions.length) * 100}%` }}
             />
           </div>
@@ -294,10 +294,10 @@ export default function QuizPage() {
                 onClick={() => setCurrentStep(i)}
                 className={`w-2.5 h-2.5 rounded-full transition-all ${
                   i === currentStep
-                    ? 'bg-blue-500 scale-125'
+                    ? 'bg-info-500 scale-125'
                     : hasAnswer
-                      ? 'bg-blue-300'
-                      : 'bg-gray-300'
+                      ? 'bg-info-300'
+                      : 'bg-ground-300'
                 }`}
                 aria-label={t('quiz.goToQuestion', { n: String(i + 1) })}
               />
@@ -310,18 +310,18 @@ export default function QuizPage() {
           <div className="mb-6">
             {/* Conditional Q2.5 context label */}
             {question.condition && (
-              <p className="text-xs text-gray-400 text-center mb-1">
+              <p className="text-xs text-ground-400 text-center mb-1">
                 {t('quiz.becauseYouPicked')}
               </p>
             )}
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-1 text-center">
+            <h2 className="text-2xl font-bold text-ground-900 mb-1 text-center">
               {question.prompt}
             </h2>
 
             {/* Multi-select subtitle */}
             {isMultiSelect && (
-              <p className="text-sm text-blue-500 mb-4 text-center font-medium">
+              <p className="text-sm text-info-500 mb-4 text-center font-medium">
                 {t('quiz.pickUpTo', { count: String(question.max_select || 2) })}
               </p>
             )}
@@ -343,13 +343,13 @@ export default function QuizPage() {
                       flex flex-col items-center justify-center gap-3
                       transition-all duration-200 shadow-sm
                       ${selected
-                        ? 'border-blue-500 bg-blue-50 shadow-lg scale-[1.04]'
-                        : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-md'}
+                        ? 'border-info-500 bg-info-50 shadow-lg scale-[1.04]'
+                        : 'border-ground-100 bg-ground-0 hover:border-info-200 hover:shadow-md'}
                       ${disabled ? 'opacity-35 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
                     `}
                   >
                     <span className="text-5xl leading-none">{ICON_EMOJI[option.icon] || '❓'}</span>
-                    <span className={`text-sm font-bold text-center leading-tight ${selected ? 'text-blue-700' : 'text-gray-700'}`}>
+                    <span className={`text-sm font-bold text-center leading-tight ${selected ? 'text-info-700' : 'text-ground-700'}`}>
                       {option.text}
                     </span>
                   </button>
@@ -366,8 +366,8 @@ export default function QuizPage() {
                     flex items-center gap-2 px-6 py-2.5 rounded-full border-2
                     transition-all duration-200
                     ${isOptionSelected(notSureIndex)
-                      ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
-                      : 'border-gray-200 bg-white text-gray-400 hover:border-blue-200 hover:text-gray-500'}
+                      ? 'border-info-500 bg-info-50 text-info-700 shadow-sm'
+                      : 'border-ground-200 bg-ground-0 text-ground-400 hover:border-info-200 hover:text-ground-500'}
                   `}
                 >
                   <span className="text-base">✨</span>
@@ -383,7 +383,7 @@ export default function QuizPage() {
           <button
             onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
+            className="text-ground-400 hover:text-ground-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
           >
             {t('quiz.previous')}
           </button>

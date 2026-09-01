@@ -10,9 +10,9 @@ export type TermsLocale = (typeof TERMS_LOCALES)[number]
 
 /** Status → the pill's look. Active is the only one that is doing anything. */
 export const STATUS_TONE: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  draft: 'bg-amber-100 text-amber-700',
-  archived: 'bg-gray-100 text-gray-500',
+  active: 'bg-positive-100 text-positive-700',
+  draft: 'bg-caution-100 text-caution-700',
+  archived: 'bg-ground-100 text-ground-500',
 }
 
 /** Only a draft may be edited — a published version is immutable so a past acceptance can point

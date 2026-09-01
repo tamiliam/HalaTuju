@@ -111,7 +111,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
             </Link>.
           </p>
           <button type="button" onClick={() => setPhase('quiz')}
-            className="self-start px-6 py-3 bg-info-600 text-white rounded-xl font-medium hover:bg-info-700">
+            className="self-start px-6 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700">
             {checkpoints.length > 0
               ? t('sponsorPortal.terms.startQuiz', { n: String(checkpoints.length) })
               : t('sponsorPortal.terms.continue')}
@@ -124,7 +124,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
           <div className="flex gap-1 px-5 pt-5" aria-hidden>
             {checkpoints.map((c, k) => (
               <span key={c.order} className={`flex-1 h-1 rounded ${
-                k < i ? 'bg-positive-600' : k === i ? 'bg-info-600' : 'bg-ground-200'}`} />
+                k < i ? 'bg-positive-600' : k === i ? 'bg-primary-600' : 'bg-ground-200'}`} />
             ))}
           </div>
           <div className="p-5 flex flex-col gap-3">
@@ -175,7 +175,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
                 if (i + 1 >= checkpoints.length) setPhase('sign')
                 else { setI(i + 1); setWrong([]); setPassed(false) }
               }}
-              className="px-5 py-2.5 bg-info-600 text-white rounded-xl font-medium hover:bg-info-700 disabled:opacity-40">
+              className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 disabled:opacity-40">
               {i + 1 >= checkpoints.length
                 ? t('sponsorPortal.terms.toSign')
                 : t('sponsorPortal.terms.next')}
@@ -200,7 +200,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
             className="w-full border border-ground-300 border-b-2 rounded-lg px-4 py-3 text-lg
                        focus:border-info-500 focus:outline-none" />
           <button type="button" disabled={busy || name.trim().length < 3} onClick={accept}
-            className="px-6 py-3 bg-info-600 text-white rounded-xl font-medium hover:bg-info-700 disabled:opacity-40">
+            className="px-6 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 disabled:opacity-40">
             {busy ? t('sponsorPortal.terms.accepting') : t('sponsorPortal.terms.accept')}
           </button>
           <p className="text-xs text-ground-500">{t('sponsorPortal.terms.signNote')}</p>

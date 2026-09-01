@@ -36,7 +36,7 @@ export const roleQc: ManualChapter = {
       anchor: 'qc-gap-floor',
       title: 'The gap floor',
       body: (
-        <>If any of the four facts is still <strong className="text-red-700">red</strong>, <strong>Accept is
+        <>If any of the four facts is still <strong className="text-critical-700">red</strong>, <strong>Accept is
         blocked</strong> — a red fact must not reach sponsors unexamined. Resolve the gap (or reopen to the
         reviewer). If you&rsquo;re certain despite the red — say you verified it offline — you may
         <strong> override with a recorded reason</strong>, which is kept on the case.</>

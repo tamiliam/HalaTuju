@@ -2,10 +2,10 @@
 // `finance_checked` shares the amber "part-signed, still in flight" tone with `admin_signed` —
 // both mean signatures are being collected and no money has moved.
 export const statusPill = (s: string) =>
-  s === 'completed' ? 'bg-green-100 text-green-700'
-  : s === 'admin_signed' || s === 'finance_checked' ? 'bg-amber-100 text-amber-700'
-  : s === 'cancelled' ? 'bg-gray-100 text-gray-500'
-  : 'bg-blue-100 text-blue-700'   // draft
+  s === 'completed' ? 'bg-positive-100 text-positive-700'
+  : s === 'admin_signed' || s === 'finance_checked' ? 'bg-caution-100 text-caution-700'
+  : s === 'cancelled' ? 'bg-ground-100 text-ground-500'
+  : 'bg-info-100 text-info-700'   // draft
 
 // The month a run pays for, e.g. '2026-07-01' → 'Jul 2026'. Hand-formatted (deterministic,
 // hydration-safe — never toLocaleDateString, whose locale differs on the server).

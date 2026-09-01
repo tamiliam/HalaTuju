@@ -18,7 +18,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 import { SUBJECT_NAMES, SUBJECT_CHIP, filterSubjects, legendSubjects } from '@/lib/stpmSubjects'
-import { MATRIC_TRACK_MAP, TRACK_CHIP, TRACK_LABELS } from '@/lib/matricTracks'
+import { MATRIC_TRACK_MAP, TRACK_CHIP, TRACK_LABELS, type TrackId } from '@/lib/matricTracks'
 
 export default function CourseDetailPage() {
   const params = useParams()
@@ -67,7 +67,7 @@ export default function CourseDetailPage() {
         : institutions?.[0]?.hyperlink || null
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
       <CourseHeader
@@ -83,11 +83,11 @@ export default function CourseDetailPage() {
           {/* Left Column - Description */}
           <div className="md:col-span-2 space-y-8">
             {/* About */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+              <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.aboutTitle')}
               </h2>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-ground-600 leading-relaxed">
                 {t(`courses.${course.course_id}.description`) !== `courses.${course.course_id}.description`
                   ? t(`courses.${course.course_id}.description`)
                   : locale === 'ms'
@@ -117,11 +117,11 @@ export default function CourseDetailPage() {
             ) : courseId.startsWith('matric-') ? (
               <MatricInstitutionsSection courseId={courseId} />
             ) : (
-              <section className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+                <h2 className="text-xl font-semibold text-ground-900 mb-4">
                   {t('courseDetail.whereToStudy')}
                   {institutions && (
-                    <span className="text-gray-500 font-normal ml-2">
+                    <span className="text-ground-500 font-normal ml-2">
                       ({t(institutions.length === 1 ? 'courseDetail.institutionCount' : 'courseDetail.institutionsCount', { count: String(institutions.length) })})
                     </span>
                   )}
@@ -133,7 +133,7 @@ export default function CourseDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">
+                  <p className="text-ground-500">
                     {t('courseDetail.noInstitutions')}
                   </p>
                 )}
@@ -144,8 +144,8 @@ export default function CourseDetailPage() {
           {/* Right Column - Quick Info */}
           <div className="space-y-6">
             {/* Quick Facts */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+              <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
               </h2>
               <div className="space-y-4">
@@ -157,17 +157,17 @@ export default function CourseDetailPage() {
                 )}
                 {!isPreU && <InfoRow label="WBL" value={course.wbl ? 'Yes' : 'No'} />}
                 {merit_cutoff != null && (
-                  <div className="pt-2 mt-2 border-t border-gray-100">
+                  <div className="pt-2 mt-2 border-t border-ground-100">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-500 text-sm">
+                      <span className="text-ground-500 text-sm">
                         {isMatGred ? t('courseDetail.maxGradePoints') : 'Avg. Merit'}
                       </span>
                       <span className={`font-medium text-sm ${
                         isMatGred
                           ? (isArtsStream
-                              ? (merit_cutoff <= 12 ? 'text-green-600' : merit_cutoff <= 18 ? 'text-amber-600' : 'text-red-600')
-                              : (merit_cutoff <= 18 ? 'text-green-600' : 'text-amber-600'))
-                          : (merit_cutoff >= 80 ? 'text-green-600' : merit_cutoff >= 60 ? 'text-amber-600' : 'text-red-600')
+                              ? (merit_cutoff <= 12 ? 'text-positive-600' : merit_cutoff <= 18 ? 'text-caution-600' : 'text-critical-600')
+                              : (merit_cutoff <= 18 ? 'text-positive-600' : 'text-caution-600'))
+                          : (merit_cutoff >= 80 ? 'text-positive-600' : merit_cutoff >= 60 ? 'text-caution-600' : 'text-critical-600')
                       }`}>
                         {merit_cutoff.toFixed(1)}
                       </span>
@@ -216,34 +216,29 @@ export default function CourseDetailPage() {
 }
 
 function InstitutionCard({ institution }: { institution: Institution }) {
-  const stateColors: Record<string, string> = {
-    'Selangor': 'bg-blue-50',
-    'Kuala Lumpur': 'bg-red-50',
-    'Johor': 'bg-green-50',
-    'Penang': 'bg-yellow-50',
-    'Sabah': 'bg-purple-50',
-    'Sarawak': 'bg-pink-50',
-  }
-
+  // ⚠ THE STATE TINT IS GONE (Layer 1 F6). It gave a pastel card background to six of Malaysia's
+  // sixteen states and `bg-gray-50` to the other ten, so the colour asserted a distinction that
+  // stopped a third of the way through the set — and the codemod had just renamed four of the six
+  // onto TONES, which additionally claimed Kuala Lumpur was an error and Johor a success. Every
+  // institution card now takes what ten of the sixteen already had. The state is written on the
+  // card in words, which is where that fact belongs.
   const hasFees = institution.tuition_fee_semester || institution.registration_fee
   const hasAllowance = institution.monthly_allowance && institution.monthly_allowance > 0
 
   return (
     <div
-      className={`rounded-lg border border-gray-200 p-4 ${
-        stateColors[institution.state] || 'bg-gray-50'
-      }`}
+      className="rounded-lg border border-ground-200 p-4 bg-ground-50"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 mb-1">
+          <h3 className="font-semibold text-ground-900 mb-1">
             {institution.institution_name}
           </h3>
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-ground-500 mb-2">
             {institution.acronym && `(${institution.acronym}) · `}
             {institution.type}
           </p>
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+          <div className="flex items-center gap-2 text-sm text-ground-600 mb-3">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -271,20 +266,20 @@ function InstitutionCard({ institution }: { institution: Institution }) {
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3">
               {institution.tuition_fee_semester && (
                 <>
-                  <span className="text-gray-500">Tuition</span>
-                  <span className="text-gray-900">{institution.tuition_fee_semester}</span>
+                  <span className="text-ground-500">Tuition</span>
+                  <span className="text-ground-900">{institution.tuition_fee_semester}</span>
                 </>
               )}
               {institution.hostel_fee_semester && (
                 <>
-                  <span className="text-gray-500">Hostel</span>
-                  <span className="text-gray-900">{institution.hostel_fee_semester}</span>
+                  <span className="text-ground-500">Hostel</span>
+                  <span className="text-ground-900">{institution.hostel_fee_semester}</span>
                 </>
               )}
               {institution.registration_fee && (
                 <>
-                  <span className="text-gray-500">Registration</span>
-                  <span className="text-gray-900">{institution.registration_fee}</span>
+                  <span className="text-ground-500">Registration</span>
+                  <span className="text-ground-900">{institution.registration_fee}</span>
                 </>
               )}
             </div>
@@ -293,17 +288,17 @@ function InstitutionCard({ institution }: { institution: Institution }) {
           {/* Allowance + badges */}
           <div className="flex flex-wrap items-center gap-2">
             {hasAllowance && (
-              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+              <span className="px-2 py-0.5 bg-positive-100 text-positive-700 rounded text-xs font-medium">
                 RM{institution.monthly_allowance}/month
               </span>
             )}
             {institution.free_hostel && (
-              <span className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs font-medium">
+              <span className="px-2 py-0.5 bg-info-100 text-info-700 rounded text-xs font-medium">
                 Free Hostel
               </span>
             )}
             {institution.free_meals && (
-              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+              <span className="px-2 py-0.5 bg-info-100 text-info-700 rounded text-xs font-medium">
                 Free Meals
               </span>
             )}
@@ -314,8 +309,8 @@ function InstitutionCard({ institution }: { institution: Institution }) {
           <span
             className={`px-2 py-1 rounded text-xs font-medium ${
               institution.category === 'Public'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-blue-100 text-blue-700'
+                ? 'bg-positive-100 text-positive-700'
+                : 'bg-info-100 text-info-700'
             }`}
           >
             {institution.category}
@@ -342,15 +337,15 @@ function SubjectLegend({ stream }: { stream: string }) {
   const subjects = legendSubjects(stream)
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">Subject Key</h2>
+    <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+      <h2 className="text-lg font-semibold text-ground-900 mb-3">Subject Key</h2>
       <div className="space-y-2">
         {subjects.map(code => (
           <div key={code} className="flex items-center gap-2">
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${SUBJECT_CHIP}`}>
               {code}
             </span>
-            <span className="text-xs text-gray-600">{SUBJECT_NAMES[code]}</span>
+            <span className="text-xs text-ground-600">{SUBJECT_NAMES[code]}</span>
           </div>
         ))}
       </div>
@@ -405,10 +400,10 @@ function StpmInstitutionsSection({ courseId }: { courseId: string }) {
   const remaining = filteredSchools.length - displayCount
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">
+    <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
+      <h2 className="text-xl font-semibold text-ground-900 mb-4">
         {t('courseDetail.whereToStudy')}
-        <span className="text-gray-500 font-normal ml-2">
+        <span className="text-ground-500 font-normal ml-2">
           ({filteredSchools.length})
         </span>
       </h2>
@@ -417,7 +412,7 @@ function StpmInstitutionsSection({ courseId }: { courseId: string }) {
         <select
           value={stateFilter}
           onChange={e => { setStateFilter(e.target.value); setPpdFilter(''); setDisplayCount(PAGE_SIZE) }}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
           <option value="">All States</option>
           {allStates.map(state => (
@@ -427,7 +422,7 @@ function StpmInstitutionsSection({ courseId }: { courseId: string }) {
         <select
           value={ppdFilter}
           onChange={e => { setPpdFilter(e.target.value); setDisplayCount(PAGE_SIZE) }}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
           <option value="">All Districts</option>
           {availablePpds.map(ppd => (
@@ -442,7 +437,7 @@ function StpmInstitutionsSection({ courseId }: { courseId: string }) {
             <StpmSchoolCard key={school.code} school={school} stream={streamName} />
           ))
         ) : (
-          <p className="text-gray-400 text-center py-8">
+          <p className="text-ground-400 text-center py-8">
             No schools match the selected filters.
           </p>
         )}
@@ -466,13 +461,13 @@ function StpmSchoolCard({ school, stream }: { school: StpmSchool; stream: string
   const subjects = school.subjects ? filterSubjects(school.subjects, stream) : []
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+    <div className="rounded-lg border border-ground-200 bg-ground-50 p-3 sm:p-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1 truncate">
+          <h3 className="font-semibold text-ground-900 text-sm sm:text-base mb-1 truncate">
             {school.name}
           </h3>
-          <p className="text-xs sm:text-sm text-gray-500 mb-2">
+          <p className="text-xs sm:text-sm text-ground-500 mb-2">
             {school.state} &middot; {school.ppd}
           </p>
           {subjects.length > 0 && (
@@ -505,7 +500,7 @@ function StpmSchoolCard({ school, stream }: { school: StpmSchool; stream: string
 
 function MatricInstitutionsSection({ courseId }: { courseId: string }) {
   const { t } = useT()
-  const trackId = MATRIC_TRACK_MAP[courseId] || 'sains'
+  const trackId: TrackId = MATRIC_TRACK_MAP[courseId] || 'sains'
   const [stateFilter, setStateFilter] = useState('')
 
   const trackColleges = useMemo(() => {
@@ -524,18 +519,18 @@ function MatricInstitutionsSection({ courseId }: { courseId: string }) {
   }, [trackId])
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+    <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">
+        <h2 className="text-xl font-semibold text-ground-900">
           {t('courseDetail.whereToStudy')}
-          <span className="text-gray-400 font-normal ml-2 text-base">
+          <span className="text-ground-400 font-normal ml-2 text-base">
             ({trackColleges.length})
           </span>
         </h2>
         <select
           value={stateFilter}
           onChange={e => setStateFilter(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
           <option value="">All States</option>
           {availableStates.map(state => (
@@ -551,7 +546,7 @@ function MatricInstitutionsSection({ courseId }: { courseId: string }) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-500 text-center py-8">
+        <p className="text-sm text-ground-500 text-center py-8">
           No colleges found for the selected filters.
         </p>
       )}
@@ -559,12 +554,12 @@ function MatricInstitutionsSection({ courseId }: { courseId: string }) {
   )
 }
 
-function MatricCollegeCard({ college, trackId }: { college: MatricCollege; trackId: string }) {
+function MatricCollegeCard({ college, trackId }: { college: MatricCollege; trackId: TrackId }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4">
-      <h3 className="font-semibold text-gray-900 mb-2">{college.name}</h3>
+    <div className="bg-ground-50 rounded-lg p-4">
+      <h3 className="font-semibold text-ground-900 mb-2">{college.name}</h3>
 
-      <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-3">
+      <div className="flex items-center gap-1.5 text-sm text-ground-500 mb-3">
         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -578,7 +573,7 @@ function MatricCollegeCard({ college, trackId }: { college: MatricCollege; track
         </span>
       </div>
 
-      <div className="flex items-center gap-2 text-sm text-gray-600 mb-1.5">
+      <div className="flex items-center gap-2 text-sm text-ground-600 mb-1.5">
         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
         </svg>

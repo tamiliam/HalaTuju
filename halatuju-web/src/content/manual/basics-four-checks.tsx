@@ -25,10 +25,10 @@ export const basicsFourChecks: ManualChapter = {
       body: (
         <>Each fact tile is colour-coded by how certain the evidence is:
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li><strong className="text-green-700">Green — Certain.</strong> The documents back it up.</li>
-            <li><strong className="text-blue-700">Blue — Probable.</strong> Likely fine, but worth a glance.</li>
-            <li><strong className="text-amber-700">Amber — Unsure.</strong> Needs a human judgement.</li>
-            <li><strong className="text-red-700">Red — Can&rsquo;t verify.</strong> The evidence is missing or
+            <li><strong className="text-positive-700">Green — Certain.</strong> The documents back it up.</li>
+            <li><strong className="text-info-700">Blue — Probable.</strong> Likely fine, but worth a glance.</li>
+            <li><strong className="text-caution-700">Amber — Unsure.</strong> Needs a human judgement.</li>
+            <li><strong className="text-critical-700">Red — Can&rsquo;t verify.</strong> The evidence is missing or
             unreadable — someone must act on it.</li>
           </ul>
           <span className="mt-2 block">Green tiles you can move past quickly; the real work is the

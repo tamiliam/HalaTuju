@@ -30,7 +30,7 @@ import {
 import { QC_ACCEPTED_STATES, isQcAccepted } from '@/lib/officerCockpit'
 
 const ALL_STATUSES = [...APPLICATION_STATUSES, ...SYNTHETIC_STATUSES]
-const DEFAULT_TONE = 'bg-gray-100 text-gray-600'
+const DEFAULT_TONE = 'bg-ground-100 text-ground-600'
 
 const statusesBlock = (m: {
   admin: { scholarship: { statuses: Record<string, string> } }

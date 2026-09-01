@@ -65,55 +65,55 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
       <div className="container mx-auto px-6 py-8 max-w-lg">
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('contactForm.title')}</h1>
-          <p className="text-sm text-gray-500 mb-6">{t('contactForm.subtitle')}</p>
+        <div className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+          <h1 className="text-2xl font-bold text-ground-900 mb-1">{t('contactForm.title')}</h1>
+          <p className="text-sm text-ground-500 mb-6">{t('contactForm.subtitle')}</p>
 
           {submitted ? (
             <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-12 h-12 rounded-full bg-positive-100 flex items-center justify-center mx-auto mb-3">
+                <svg className="w-6 h-6 text-positive-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="text-gray-700 font-medium">{t('contactForm.success')}</p>
+              <p className="text-ground-700 font-medium">{t('contactForm.success')}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('contactForm.name')}</label>
+                <label className="block text-sm font-medium text-ground-700 mb-1">{t('contactForm.name')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t('contactForm.namePlaceholder')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('contactForm.contact')}</label>
+                <label className="block text-sm font-medium text-ground-700 mb-1">{t('contactForm.contact')}</label>
                 <input
                   type="text"
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
                   placeholder={t('contactForm.contactPlaceholder')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('contactForm.category')}</label>
+                <label className="block text-sm font-medium text-ground-700 mb-1">{t('contactForm.category')}</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-ground-0"
                 >
                   <option value="general">{t('contactForm.categoryGeneral')}</option>
                   <option value="bug">{t('contactForm.categoryBug')}</option>
@@ -123,19 +123,19 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('contactForm.message')}</label>
+                <label className="block text-sm font-medium text-ground-700 mb-1">{t('contactForm.message')}</label>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={t('contactForm.messagePlaceholder')}
                   rows={5}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
                   required
                 />
               </div>
 
               {error && (
-                <p className="text-sm text-red-600">{t('contactForm.error')}</p>
+                <p className="text-sm text-critical-600">{t('contactForm.error')}</p>
               )}
 
               <button

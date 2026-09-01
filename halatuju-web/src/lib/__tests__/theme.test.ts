@@ -26,6 +26,18 @@ const RAW = /\b(?:bg|text|border|ring|divide|from|to|via|placeholder|fill|stroke
 const GOOGLE_LOGO = new Set(['#4285F4', '#34A853', '#FBBC05', '#EA4335'])
 
 /**
+ * The ONE file allowed to write a colour down, and the one value it may write (Layer 1 F6).
+ *
+ * `branding.ts` holds the platform's own brand colour, which every ramp in the product is derived
+ * FROM. It has to be a literal somewhere or there is nothing to derive. The exemption is scoped to
+ * the file AND the value, not to hex in general, so a second colour appearing in that file still
+ * fails — this is a definition, not a licence.
+ */
+const COLOUR_DEFINITIONS: Record<string, string[]> = {
+  'src/lib/branding.ts': ['#137FEC'],
+}
+
+/**
  * HTML numeric entities removed, before any hex scan. `&#128100;` is 👤 and `&#127973;` is 🏥 —
  * both read as "#" followed by valid hex digits, so a colour scan reports them as raw hex. F4's
  * admin pages use a dozen as section icons. An entity is markup, not a colour.
@@ -69,8 +81,11 @@ function assertConverted(name: string, files: string[], minFiles: number) {
     })
 
     it('has no raw Tailwind colour left anywhere in it', () => {
+      // ⚠ COMMENTS STRIPPED, same as the hex scan below and for the same reason (F2a's lesson).
+      // F6's note explaining why the state tint was removed has to name `bg-gray-50` to explain
+      // it; without this the only way to pass the guard is to stop writing down what changed.
       const offenders = files
-        .map((f) => [f, read(f).match(new RegExp(RAW, 'g'))] as const)
+        .map((f) => [f, withoutComments(read(f)).match(new RegExp(RAW, 'g'))] as const)
         .filter(([, m]) => m)
         .map(([f, m]) => `${f}: ${Array.from(new Set(m!)).join(', ')}`)
       expect(offenders).toEqual([])
@@ -83,8 +98,10 @@ function assertConverted(name: string, files: string[], minFiles: number) {
       // Colour hides in inline styles, SVG fills and lib constants.
       const offenders: string[] = []
       for (const f of files) {
+        const allowed = COLOUR_DEFINITIONS[f] ?? []
         for (const hex of withoutEntities(withoutComments(read(f))).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
-          if (!GOOGLE_LOGO.has(hex.toUpperCase())) offenders.push(`${f}: ${hex}`)
+          const up = hex.toUpperCase()
+          if (!GOOGLE_LOGO.has(up) && !allowed.includes(up)) offenders.push(`${f}: ${hex}`)
         }
       }
       expect(offenders).toEqual([])
@@ -94,9 +111,11 @@ function assertConverted(name: string, files: string[], minFiles: number) {
       // 214 uses across the product, nearly all on a coloured or dark surface: a button label, a
       // filled badge, the tick inside a seal. Mapped onto --ground-0 they turn black in dark mode.
       // The codemod converts BACKGROUND white only; this asserts the distinction survived here.
-      const withWhite = files.filter((f) => /\b(?:text|stroke|border|ring)-white\b/.test(read(f)))
+      // ⚠ COMMENTS STRIPPED — `contrast.ts` explains this very rule in prose and quotes both sides
+      // of it, so the unstripped version accused the sentence describing the invariant.
+      const withWhite = files.filter((f) => /\b(?:text|stroke|border|ring)-white\b/.test(withoutComments(read(f))))
       expect(withWhite.length).toBeGreaterThan(0)
-      for (const f of withWhite) expect(read(f)).not.toMatch(/\b(?:text|stroke)-ground-0\b/)
+      for (const f of withWhite) expect(withoutComments(read(f))).not.toMatch(/\b(?:text|stroke)-ground-0\b/)
     })
   })
 }
@@ -423,18 +442,23 @@ assertConverted('the remaining shared components (F2b)', F2B_FILES, 20)
  */
 const CATEGORICAL: Record<string, number> = {
   'src/components/PathwayTrackCard.tsx': 5 + 2,  // five fields of study + two pathways
-  'src/components/RequirementsCard.tsx': 6 + 1,  // six institution types + the language chip
   'src/components/SpecialConditions.tsx': 7,     // seven entry conditions
   'src/components/CareerPathways.tsx': 1,        // one occupation chip
+  // ⚠ WAS 6 + 1. Layer 1 F6 moved the six institution types into `lib/courseBadges.ts` — the
+  // course CARD described the same six independently — leaving this file only its language chip.
+  'src/components/RequirementsCard.tsx': 1,      // the PISMP medium-of-instruction chip
   // Layer 1 F4 — the admin console's own category palettes.
   'src/lib/roleBadge.ts': 7,                     // seven staff roles, ONE shared copy
   'src/app/admin/students/page.tsx': 2,          // which exam a student sat: STPM / SPM
   'src/app/admin/students/[id]/page.tsx': 1,     // the STPM section's chips (no exam-type badge here)
   'src/app/admin/requests/[id]/page.tsx': 1,     // which component a request is about
   'src/app/admin/billing/page.tsx': 1,           // platform-level, against an organisation
+  // Layer 1 F6 — the course guide's two, each now the ONLY description of its set.
+  'src/lib/courseBadges.ts': 8,                  // eight institution types, ONE shared copy
+  'src/lib/matricTracks.ts': 4,                  // four matriculation tracks, ONE shared copy
 }
 
-assertConverted('the category-palette files (F2c, F4)', Object.keys(CATEGORICAL), 9)
+assertConverted('the category-palette files (F2c, F4, F6)', Object.keys(CATEGORICAL), 11)
 
 describe('a category palette is a SET, and its members must stay distinguishable', () => {
   // ⚠ THE F2b FINDING, NOW GUARDED PROPERLY. A per-item rename can be right every time and still
@@ -452,9 +476,9 @@ describe('a category palette is a SET, and its members must stay distinguishable
     })
   }
 
-  it('is a CLOSED list — a fifth categorical file has to be a deliberate addition', () => {
-    // Grown deliberately in F4, which is exactly what this test is for: it failed on the five
-    // admin additions and made adding them an explicit act rather than a silent one.
+  it('is a CLOSED list — another categorical file has to be a deliberate addition', () => {
+    // Grown deliberately in F4 and again in F6, which is exactly what this test is for: it failed
+    // on each addition and made adding them an explicit act rather than a silent one.
     expect(Object.keys(CATEGORICAL).sort()).toEqual([
       'src/app/admin/billing/page.tsx',
       'src/app/admin/requests/[id]/page.tsx',
@@ -462,6 +486,7 @@ describe('a category palette is a SET, and its members must stay distinguishable
       'src/app/admin/students/page.tsx',
       'src/components/CareerPathways.tsx', 'src/components/PathwayTrackCard.tsx',
       'src/components/RequirementsCard.tsx', 'src/components/SpecialConditions.tsx',
+      'src/lib/courseBadges.ts', 'src/lib/matricTracks.ts',
       'src/lib/roleBadge.ts',
     ])
   })
@@ -710,5 +735,112 @@ describe('the F3 semantic corrections the codemod could not make', () => {
     expect(src).toMatch(/graduated: 'bg-positive-600 text-white'/)
     expect(src).toMatch(/on_track: 'bg-positive-100 text-positive-700'/)
     expect(withoutComments(src)).not.toMatch(/indigo/)
+  })
+})
+
+/**
+ * F6 — THE LAST SURFACE, so this one is not a file list. It is the WHOLE TREE.
+ *
+ * Every sprint before it named its own files, which was right while the migration was partway
+ * through: `gray`/`blue`/… had to stay legal for the surfaces not yet done, so a per-surface list
+ * was the only shape the guard could take. F6 finishes the job, and from here the honest assertion
+ * is the strong one — nowhere under `src` carries a raw Tailwind colour, a raw hex, or an
+ * arbitrary-value colour class. A new page is covered on the day it is written, with nobody having
+ * to remember to add it, which is the property F7 actually needs before the switch goes on.
+ *
+ * ⚠ THE PER-SURFACE BLOCKS ABOVE ARE NOT REDUNDANT — DO NOT DELETE THEM. Each carries the reasoning
+ * for its own sprint's judgement calls, and each fails with a message naming its surface. This one
+ * fails with a list of every file in the app.
+ */
+const ALL_FILES = walkFiles('src').map((f) => f.split(path.sep).join('/'))
+
+assertConverted('the WHOLE application (F6 — the migration is complete)', ALL_FILES, 240)
+
+describe('the colour a class scan cannot see, everywhere (F6)', () => {
+  // The running list of hiding places, in the order they were found: inline styles and gradients
+  // (F1), the stylesheet's own @layer rules and a control with no declared background (F2a),
+  // lookup tables returning class strings (F2b), arbitrary-value classes and raw hex in SVG props
+  // (F3). F6 found the fifth: two quiz pages still setting `bg-[#f5f7f8]` as their whole page
+  // ground — the F3 shape, in files no sprint's list had ever covered. **Assume there is one more.**
+  it('has no ARBITRARY-VALUE colour class anywhere under src', () => {
+    const offenders: string[] = []
+    for (const f of ALL_FILES) {
+      for (const m of withoutComments(read(f)).match(/-\[#[0-9a-fA-F]{3,8}\]/g) ?? []) {
+        offenders.push(`${f}: ${m}`)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})
+
+describe('the F6 semantic corrections the codemod could not make', () => {
+  it('has ONE home for institution type → swatch, and three files that import it', () => {
+    // The F4 role-palette shape, found twice more. `courseBadges.ts` and `RequirementsCard.tsx`
+    // both described the six institution types; a student sees the first in the search grid and
+    // the second on the course page, one click apart, so a drift renders the same Politeknik in
+    // two colours and reads as bad data. `stpm/[id]` held a FOURTH copy, hard-coded to Universiti.
+    for (const f of ['src/components/CourseCard.tsx', 'src/components/CourseHeader.tsx',
+                     'src/components/RequirementsCard.tsx', 'src/app/stpm/[id]/page.tsx',
+                     'src/app/pathway/matric/page.tsx', 'src/app/pathway/stpm/page.tsx']) {
+      expect(read(f)).toMatch(/institutionTypeChip/)
+      // …and none of them may re-declare a swatch of its own.
+      expect(withoutComments(read(f))).not.toMatch(/'bg-category-\d-surface text-category-\d-ink'/)
+    }
+  })
+
+  it('keeps the STPM subject vocabulary and the matric tracks in one file each', () => {
+    // Both were declared twice, byte-identical, in `course/[id]` and the pathway page — the two
+    // pages a student moves between while comparing. Same bug as above, found by grepping for
+    // `Record<…, colour>` rather than by reading, which is why that grep is on the checklist.
+    for (const f of ['src/app/course/[id]/page.tsx', 'src/app/pathway/stpm/page.tsx']) {
+      expect(read(f)).toMatch(/from '@\/lib\/stpmSubjects'/)
+      expect(withoutComments(read(f))).not.toMatch(/const SUBJECT_NAMES/)
+    }
+    for (const f of ['src/app/course/[id]/page.tsx', 'src/app/pathway/matric/page.tsx']) {
+      expect(read(f)).toMatch(/from '@\/lib\/matricTracks'/)
+      expect(withoutComments(read(f))).not.toMatch(/const TRACK_COLOURS/)
+    }
+  })
+
+  it('draws the subject and level chips with ONE class each, not a palette', () => {
+    // ⚠ THIS IS THE SPRINT'S LOAD-BEARING DECISION, AND IT IS A REFUSAL TO WIDEN THE FAMILY.
+    // 17 subject codes wanted 16 hues and the type+level pair wanted 13; the family has 8, and the
+    // eight avoid green/blue/amber/red so a category is never read as a status. Sixteen hues that
+    // dodge those four AND separate in dark mode do not exist. Both sets went neutral instead,
+    // which cost nothing: every subject chip renders beside its own full name, every level chip
+    // says "Diploma", and an unrecognised level had ALWAYS been grey.
+    // If a later sprint wants these coloured, the change is to `--category-*`, not to these files.
+    expect(read('src/lib/stpmSubjects.ts')).toMatch(/SUBJECT_CHIP = 'bg-ground-100 text-ground-700'/)
+    expect(read('src/lib/courseBadges.ts')).toMatch(/LEVEL_CHIP = 'bg-ground-100 text-ground-700'/)
+    // Neither may quietly become a lookup table again.
+    expect(withoutComments(read('src/lib/stpmSubjects.ts'))).not.toMatch(/SUBJECT_COLORS/)
+    expect(withoutComments(read('src/lib/courseBadges.ts'))).not.toMatch(/LEVEL_COLORS/)
+  })
+
+  it('paints the search page\'s qualification toggles with the BRAND', () => {
+    // Fifth sprint running that the codemod called a control the user ACTS on "information". Worse
+    // here than usual: SPM was `bg-blue-600` and STPM `bg-purple-600`, so the SELECTED state of two
+    // buttons in one segmented control was two different colours, neither of them the tenant's.
+    const src = withoutComments(read('src/app/search/page.tsx'))
+    expect(src.match(/bg-primary-600 text-white/g)?.length).toBe(2)
+    expect(src).not.toMatch(/bg-info-600 text-white/)
+  })
+
+  it('has no filled control left on a TONE across the whole app', () => {
+    // The F4 guard, widened from the console to everywhere now that everywhere is converted.
+    // ⚠ ESCAPES WRITTEN BY HAND. F4's version of this line was script-generated and its \b became
+    // a literal backspace byte: it compiled, matched nothing, and passed forever.
+    // `positive` and `critical` are NOT included — an Approve button and a Delete button assert
+    // their outcome, and F4 ruled on exactly that. This is about `info`, which asserts nothing.
+    const offenders: string[] = []
+    for (const f of ALL_FILES) {
+      if (!f.endsWith('.tsx')) continue
+      for (const line of withoutComments(read(f)).split('\n')) {
+        if (/\btext-white\b/.test(line) && /\bbg-info-[567]00\b/.test(line)) {
+          offenders.push(`${f}: ${line.trim()}`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
   })
 })

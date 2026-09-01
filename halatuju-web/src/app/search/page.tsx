@@ -17,7 +17,7 @@ import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_EXAM_TYPE, KEY_STPM_GRADES, KE
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-ground-50">
         <AppHeader />
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
@@ -299,26 +299,26 @@ function SearchPageInner() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+          <h1 className="text-2xl font-bold text-ground-900 mb-1">
             {t('search.title')}
           </h1>
-          <p className="text-gray-600 text-sm">
+          <p className="text-ground-600 text-sm">
             {t('search.subtitle')}
           </p>
         </div>
 
         {/* Search + Filter container */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
+        <div className="bg-ground-0 rounded-xl border border-ground-200 shadow-sm p-4 mb-4">
           {/* Search bar */}
           <div className="relative mb-3">
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ground-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -332,7 +332,7 @@ function SearchPageInner() {
             </svg>
             <input
               type="text"
-              className="w-full pl-10 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+              className="w-full pl-10 px-4 py-3 rounded-lg border border-ground-200 bg-ground-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-ground-400"
               placeholder={t('search.searchPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -342,23 +342,23 @@ function SearchPageInner() {
           {/* Filter row */}
           <div className="flex flex-wrap items-center gap-2">
           {/* Qualification filter — toggle buttons */}
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          <div className="flex rounded-lg border border-ground-200 overflow-hidden">
             <button
               onClick={() => setQualification(qualification === 'SPM' ? '' : 'SPM')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                 qualification === 'SPM'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-ground-0 text-ground-600 hover:bg-ground-50'
               }`}
             >
               SPM
             </button>
             <button
               onClick={() => setQualification(qualification === 'STPM' ? '' : 'STPM')}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-200 ${
+              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-ground-200 ${
                 qualification === 'STPM'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-ground-0 text-ground-600 hover:bg-ground-50'
               }`}
             >
               STPM
@@ -433,16 +433,16 @@ function SearchPageInner() {
             <div className="relative inline-flex items-center">
               <div className={clsx(
                 'w-10 h-5 rounded-full transition-colors',
-                eligibleOnly ? 'bg-primary-500' : 'bg-gray-200'
+                eligibleOnly ? 'bg-primary-500' : 'bg-ground-200'
               )} />
               <div className={clsx(
-                'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
+                'absolute top-0.5 left-0.5 w-4 h-4 bg-ground-0 rounded-full shadow-sm transition-transform',
                 eligibleOnly && 'translate-x-5'
               )} />
             </div>
             <div className="text-sm text-left">
-              <span className="font-medium text-gray-700">{t('search.eligibleOnly')}</span>
-              <span className="block text-xs text-gray-400">{t('search.eligibleToggleDesc')}</span>
+              <span className="font-medium text-ground-700">{t('search.eligibleOnly')}</span>
+              <span className="block text-xs text-ground-400">{t('search.eligibleToggleDesc')}</span>
             </div>
           </button>
           </div>
@@ -450,7 +450,7 @@ function SearchPageInner() {
 
         {/* Results meta */}
         <div className="mb-4">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-ground-600">
             {t('search.showing')}{' '}
             <span className="font-medium">{Math.min(displayCount, displayedCourses.length)}</span>
             {' '}{t('search.of')}{' '}
@@ -463,15 +463,15 @@ function SearchPageInner() {
         {isLoading && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
-            <p className="text-gray-600">{t('common.loading')}</p>
+            <p className="text-ground-600">{t('common.loading')}</p>
           </div>
         )}
 
         {/* Empty state */}
         {!isLoading && displayedCourses.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-2">{t('search.noCourses')}</p>
-            <p className="text-gray-400 text-sm">{t('search.tryDifferent')}</p>
+            <p className="text-ground-600 mb-2">{t('search.noCourses')}</p>
+            <p className="text-ground-400 text-sm">{t('search.tryDifferent')}</p>
           </div>
         )}
 

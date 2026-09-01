@@ -11,6 +11,7 @@ import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 import { useAuth } from '@/lib/auth-context'
 import { SUBJECT_NAMES, SUBJECT_CHIP, filterSubjects, legendSubjects } from '@/lib/stpmSubjects'
+import { institutionTypeChip } from '@/lib/courseBadges'
 
 const PAGE_SIZE = 50
 
@@ -23,21 +24,21 @@ const STREAM_META: Record<StreamId, {
 }> = {
   sains: {
     label: 'Science',
-    badgeColor: 'bg-green-100 text-green-800',
+    badgeColor: 'bg-positive-100 text-positive-800',
     schoolStream: 'Sains',
   },
   sains_sosial: {
     label: 'Social Science',
-    badgeColor: 'bg-sky-100 text-sky-800',
+    badgeColor: 'bg-info-100 text-info-800',
     schoolStream: 'Sains Sosial',
   },
 }
 
 function mataGredColor(mg: number | undefined | null): string {
-  if (mg === undefined || mg === null) return 'text-gray-500'
-  if (mg <= 6) return 'text-green-600'
-  if (mg <= 12) return 'text-amber-600'
-  return 'text-red-600'
+  if (mg === undefined || mg === null) return 'text-ground-500'
+  if (mg <= 6) return 'text-positive-600'
+  if (mg <= 12) return 'text-caution-600'
+  return 'text-critical-600'
 }
 
 export default function StpmDetailPage() {
@@ -211,10 +212,10 @@ function StpmContent() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <main className="min-h-screen bg-ground-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
-          <p className="text-gray-600">{t('common.loading')}</p>
+          <p className="text-ground-600">{t('common.loading')}</p>
         </div>
       </main>
     )
@@ -222,12 +223,12 @@ function StpmContent() {
 
   if (!profile) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <main className="min-h-screen bg-ground-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-ground-900 mb-4">
             {t('dashboard.noProfile')}
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-ground-600 mb-6">
             {t('dashboard.noProfileDesc')}
           </p>
           <Link href="/onboarding/exam-type" className="btn-primary">
@@ -239,11 +240,11 @@ function StpmContent() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <main className="min-h-screen bg-ground-50 overflow-x-hidden">
       <AppHeader />
 
       {/* Header Section */}
-      <section className="bg-white border-b">
+      <section className="bg-ground-0 border-b">
         <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Back link */}
           <Link
@@ -255,7 +256,7 @@ function StpmContent() {
 
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${institutionTypeChip('stpm')}`}>
                 Form 6
               </span>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${meta.badgeColor}`}>
@@ -263,7 +264,7 @@ function StpmContent() {
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-ground-900 mb-2">
               Form 6 (STPM) — {streamName}
             </h1>
 
@@ -271,14 +272,14 @@ function StpmContent() {
               {subtitleText}
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-ground-600">
               <span className="flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 3 Semesters
               </span>
-              <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+              <span className="px-2 py-0.5 bg-positive-100 text-positive-700 rounded text-xs font-medium">
                 Free
               </span>
             </div>
@@ -292,20 +293,20 @@ function StpmContent() {
           {/* Left Column */}
           <div className="md:col-span-2 space-y-6">
             {/* About This Stream */}
-            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
+              <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 About This Stream
               </h2>
-              <p className="text-sm sm:text-base text-gray-600 leading-relaxed break-words">
+              <p className="text-sm sm:text-base text-ground-600 leading-relaxed break-words">
                 {aboutText}
               </p>
             </section>
 
             {/* Where to Study */}
-            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <section className="bg-ground-0 rounded-xl border border-ground-200 p-4 sm:p-6">
+              <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 {t('courseDetail.whereToStudy')}
-                <span className="text-gray-500 font-normal ml-2">
+                <span className="text-ground-500 font-normal ml-2">
                   ({filteredSchools.length})
                 </span>
               </h2>
@@ -315,7 +316,7 @@ function StpmContent() {
                 <select
                   value={stateFilter}
                   onChange={(e) => setStateFilter(e.target.value)}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">{t('pathwayDetail.allStates')}</option>
                   {allStates.map((state) => (
@@ -331,7 +332,7 @@ function StpmContent() {
                     setPpdFilter(e.target.value)
                     setDisplayCount(PAGE_SIZE)
                   }}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">All Districts</option>
                   {availablePpds.map((ppd) => (
@@ -349,7 +350,7 @@ function StpmContent() {
                     <SchoolCard key={school.code} school={school} activeStream={meta.schoolStream} />
                   ))
                 ) : (
-                  <p className="text-gray-400 text-center py-8">
+                  <p className="text-ground-400 text-center py-8">
                     No schools match the selected filters.
                   </p>
                 )}
@@ -372,8 +373,8 @@ function StpmContent() {
           {/* Right Column */}
           <div className="space-y-6">
             {/* Quick Facts */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+              <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 {t('courseDetail.quickFacts')}
               </h2>
               <div className="space-y-4">
@@ -381,18 +382,18 @@ function StpmContent() {
                 <InfoRow label={t('pathwayDetail.stream')} value={streamName} />
                 <InfoRow label="Duration" value="3 Semesters" />
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 text-sm">Fee</span>
-                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                  <span className="text-ground-500 text-sm">Fee</span>
+                  <span className="px-2 py-0.5 bg-positive-100 text-positive-700 rounded text-xs font-medium">
                     Free
                   </span>
                 </div>
                 {currentResult?.mataGred != null && (
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 text-sm">{t('pathwayDetail.mataGred')}</span>
+                    <span className="text-ground-500 text-sm">{t('pathwayDetail.mataGred')}</span>
                     <span className={`font-bold ${mataGredColor(currentResult.mataGred)}`}>
                       {currentResult.mataGred}
                       {currentResult.maxMataGred != null && (
-                        <span className="text-gray-400 font-normal text-xs ml-1">
+                        <span className="text-ground-400 font-normal text-xs ml-1">
                           / {currentResult.maxMataGred}
                         </span>
                       )}
@@ -406,8 +407,8 @@ function StpmContent() {
             <SubjectLegend stream={meta.schoolStream} />
 
             {/* Caveat */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <p className="text-xs text-amber-700">
+            <div className="bg-caution-50 border border-caution-200 rounded-xl p-4">
+              <p className="text-xs text-caution-700">
                 {t('pathwayDetail.stpmCaveat')}
               </p>
             </div>
@@ -423,8 +424,8 @@ function StpmContent() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-center">
-      <span className="text-gray-500 text-sm">{label}</span>
-      <span className="font-medium text-gray-900 text-sm">{value}</span>
+      <span className="text-ground-500 text-sm">{label}</span>
+      <span className="font-medium text-ground-900 text-sm">{value}</span>
     </div>
   )
 }
@@ -441,15 +442,15 @@ function SubjectLegend({ stream }: { stream: string }) {
   const subjects = legendSubjects(stream)
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">Subject Key</h2>
+    <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+      <h2 className="text-lg font-semibold text-ground-900 mb-3">Subject Key</h2>
       <div className="space-y-2">
         {subjects.map(code => (
           <div key={code} className="flex items-center gap-2">
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${SUBJECT_CHIP}`}>
               {code}
             </span>
-            <span className="text-xs text-gray-600">{SUBJECT_NAMES[code]}</span>
+            <span className="text-xs text-ground-600">{SUBJECT_NAMES[code]}</span>
           </div>
         ))}
       </div>
@@ -461,13 +462,13 @@ function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream
   const subjects = school.subjects ? filterSubjects(school.subjects, activeStream) : []
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+    <div className="rounded-lg border border-ground-200 bg-ground-50 p-3 sm:p-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1 truncate">
+          <h3 className="font-semibold text-ground-900 text-sm sm:text-base mb-1 truncate">
             {school.name}
           </h3>
-          <p className="text-xs sm:text-sm text-gray-500 mb-2">
+          <p className="text-xs sm:text-sm text-ground-500 mb-2">
             {school.state} &middot; {school.ppd}
           </p>
           {subjects.length > 0 && (

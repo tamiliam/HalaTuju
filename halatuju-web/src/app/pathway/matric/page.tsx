@@ -10,6 +10,7 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 import { TRACK_CHIP, type TrackId } from '@/lib/matricTracks'
+import { institutionTypeChip } from '@/lib/courseBadges'
 
 const TRACK_I18N_KEYS: Record<TrackId, string> = {
   sains: 'pathwayDetail.sains',
@@ -108,9 +109,9 @@ function MatricPageContent() {
   // Merit band
   const meritBand = useMemo(() => {
     if (meritScore === null) return null
-    if (meritScore >= 94) return { label: t('pathwayDetail.high'), colour: 'text-green-700' }
-    if (meritScore >= 89) return { label: t('pathwayDetail.fair'), colour: 'text-amber-700' }
-    return { label: t('pathwayDetail.low'), colour: 'text-red-700' }
+    if (meritScore >= 94) return { label: t('pathwayDetail.high'), colour: 'text-positive-700' }
+    if (meritScore >= 89) return { label: t('pathwayDetail.fair'), colour: 'text-caution-700' }
+    return { label: t('pathwayDetail.low'), colour: 'text-critical-700' }
   }, [meritScore, t])
 
   // Filter colleges: must offer THIS specific track
@@ -135,12 +136,12 @@ function MatricPageContent() {
   // Loading / no profile state
   if (!grades) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-ground-50">
         <AppHeader />
         <div className="flex items-center justify-center py-24">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
-            <p className="text-gray-600">{t('common.loadingProfile')}</p>
+            <p className="text-ground-600">{t('common.loadingProfile')}</p>
           </div>
         </div>
         <AppFooter />
@@ -151,14 +152,14 @@ function MatricPageContent() {
   const trackName = currentTrack?.name ?? currentTrackId
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-ground-50">
       <AppHeader />
 
       {/* Back link */}
       <div className="container mx-auto px-4 sm:px-6 pt-6">
         <Link
           href="/dashboard"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-primary-600"
+          className="inline-flex items-center text-sm text-ground-500 hover:text-primary-600"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -168,12 +169,12 @@ function MatricPageContent() {
       </div>
 
       {/* Header section */}
-      <section className="bg-white border-b mt-4">
+      <section className="bg-ground-0 border-b mt-4">
         <div className="container mx-auto px-4 sm:px-6 py-8">
           <div className="flex-1">
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${institutionTypeChip('matric')}`}>
                 {t('pathwayDetail.matricTitle')}
               </span>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${TRACK_CHIP[currentTrackId]}`}>
@@ -182,7 +183,7 @@ function MatricPageContent() {
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-ground-900 mb-2">
               {t('pathwayDetail.matricTitle')} &mdash; {t(TRACK_I18N_KEYS[currentTrackId])}
             </h1>
 
@@ -192,14 +193,14 @@ function MatricPageContent() {
             </p>
 
             {/* Duration + Fee */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-ground-600">
               <span className="flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 2 Semesters
               </span>
-              <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+              <span className="px-2 py-0.5 bg-positive-100 text-positive-700 rounded text-xs font-medium">
                 Free
               </span>
             </div>
@@ -215,21 +216,21 @@ function MatricPageContent() {
           <div className="md:col-span-2 space-y-6">
 
             {/* About This Track */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+              <h2 className="text-xl font-semibold text-ground-900 mb-4">
                 About This Track
               </h2>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-ground-600 leading-relaxed">
                 {TRACK_DESCRIPTIONS[currentTrackId]}
               </p>
             </section>
 
             {/* Where to Study */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
+            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-ground-900">
                   {t('pathwayDetail.colleges')}
-                  <span className="text-gray-400 font-normal ml-2 text-base">
+                  <span className="text-ground-400 font-normal ml-2 text-base">
                     ({trackColleges.length})
                   </span>
                 </h2>
@@ -238,7 +239,7 @@ function MatricPageContent() {
                 <select
                   value={stateFilter}
                   onChange={e => setStateFilter(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="all">{t('pathwayDetail.allStates')}</option>
                   {availableStates.map(state => (
@@ -258,7 +259,7 @@ function MatricPageContent() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 text-center py-8">
+                <p className="text-sm text-ground-500 text-center py-8">
                   No colleges found for the selected filters.
                 </p>
               )}
@@ -269,8 +270,8 @@ function MatricPageContent() {
           <div className="space-y-6">
 
             {/* Quick Facts */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <section className="bg-ground-0 rounded-xl border border-ground-200 p-6">
+              <h2 className="text-lg font-semibold text-ground-900 mb-4">
                 Quick Facts
               </h2>
               <div className="space-y-4">
@@ -278,17 +279,17 @@ function MatricPageContent() {
                 <InfoRow label="Track" value={t(TRACK_I18N_KEYS[currentTrackId])} />
                 <InfoRow label="Duration" value="2 Semesters" />
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-500 text-sm">Fee</span>
-                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                  <span className="text-ground-500 text-sm">Fee</span>
+                  <span className="px-2 py-0.5 bg-positive-100 text-positive-700 rounded text-xs font-medium">
                     Free
                   </span>
                 </div>
                 <InfoRow label="Intake" value="March (yearly)" />
                 {meritScore !== null && meritBand && (
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 text-sm">{t('pathwayDetail.meritScore')}</span>
+                    <span className="text-ground-500 text-sm">{t('pathwayDetail.meritScore')}</span>
                     <span className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-900 text-sm">{meritScore}</span>
+                      <span className="font-semibold text-ground-900 text-sm">{meritScore}</span>
                       <span className={`text-xs font-medium ${meritBand.colour}`}>
                         ({meritBand.label})
                       </span>
@@ -299,12 +300,12 @@ function MatricPageContent() {
             </section>
 
             {/* Caveat card */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="bg-caution-50 border border-caution-200 rounded-xl p-4">
               <div className="flex gap-3">
-                <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-caution-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
-                <p className="text-sm text-amber-800">
+                <p className="text-sm text-caution-800">
                   {t('pathwayDetail.matricCaveat')}
                 </p>
               </div>
@@ -321,10 +322,10 @@ function MatricPageContent() {
 export default function MatricPathwayPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <main className="min-h-screen bg-ground-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-ground-600">Loading...</p>
         </div>
       </main>
     }>
@@ -338,8 +339,8 @@ export default function MatricPathwayPage() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-center">
-      <span className="text-gray-500 text-sm">{label}</span>
-      <span className="font-medium text-gray-900 text-sm">{value}</span>
+      <span className="text-ground-500 text-sm">{label}</span>
+      <span className="font-medium text-ground-900 text-sm">{value}</span>
     </div>
   )
 }
@@ -354,12 +355,12 @@ function CollegeCard({
   const { t } = useT()
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4">
+    <div className="bg-ground-50 rounded-lg p-4">
       {/* College name */}
-      <h3 className="font-semibold text-gray-900 mb-2">{college.name}</h3>
+      <h3 className="font-semibold text-ground-900 mb-2">{college.name}</h3>
 
       {/* State */}
-      <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-3">
+      <div className="flex items-center gap-1.5 text-sm text-ground-500 mb-3">
         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -377,7 +378,7 @@ function CollegeCard({
       </div>
 
       {/* Phone */}
-      <div className="flex items-center gap-2 text-sm text-gray-600 mb-1.5">
+      <div className="flex items-center gap-2 text-sm text-ground-600 mb-1.5">
         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
         </svg>

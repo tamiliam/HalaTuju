@@ -22,7 +22,7 @@ import {
   requestSubComponents, componentLabelKey,
 } from '@/lib/requestStatus'
 
-const DEFAULT_TONE = 'bg-gray-100 text-gray-600'
+const DEFAULT_TONE = 'bg-ground-100 text-ground-600'
 const block = (m: unknown, key: string): Record<string, string> =>
   key.split('.').reduce<Record<string, unknown>>(
     (o, k) => (o[k] as Record<string, unknown>), m as Record<string, unknown>) as Record<string, string>

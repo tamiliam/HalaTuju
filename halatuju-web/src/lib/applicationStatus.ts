@@ -44,27 +44,27 @@ export const SYNTHETIC_STATUSES = ['reopened'] as const
  *  cannot see a class assembled at runtime, so `` `bg-blue-${n}` `` would silently ship unstyled. */
 const STATUS_TONE: Record<string, string> = {
   // In progress — a deepening blue ramp down the funnel.
-  submitted: 'bg-blue-50 text-blue-700',
-  shortlisted: 'bg-blue-100 text-blue-700',
-  profile_complete: 'bg-blue-200 text-blue-800',
-  interviewing: 'bg-blue-300 text-blue-900',
-  interviewed: 'bg-blue-400 text-blue-900',
+  submitted: 'bg-info-50 text-info-700',
+  shortlisted: 'bg-info-100 text-info-700',
+  profile_complete: 'bg-info-200 text-info-800',
+  interviewing: 'bg-info-300 text-info-900',
+  interviewed: 'bg-info-400 text-info-900',
   // Committed — a deepening green ramp down the funnel.
-  recommended: 'bg-green-100 text-green-800',
-  awarded: 'bg-green-200 text-green-900',
-  active: 'bg-green-300 text-green-900',
-  maintenance: 'bg-green-400 text-green-900',
+  recommended: 'bg-positive-100 text-positive-800',
+  awarded: 'bg-positive-200 text-positive-900',
+  active: 'bg-positive-300 text-positive-900',
+  maintenance: 'bg-positive-400 text-positive-900',
   // Ended — grey.
-  closed: 'bg-gray-100 text-gray-600',
-  withdrawn: 'bg-gray-100 text-gray-600',
-  expired: 'bg-gray-100 text-gray-600',
+  closed: 'bg-ground-100 text-ground-600',
+  withdrawn: 'bg-ground-100 text-ground-600',
+  expired: 'bg-ground-100 text-ground-600',
   // Rejected — red.
-  rejected: 'bg-red-100 text-red-700',
+  rejected: 'bg-critical-100 text-critical-700',
   // Needs attention — amber (reserved).
-  reopened: 'bg-amber-100 text-amber-700',
+  reopened: 'bg-caution-100 text-caution-700',
 }
 
-const DEFAULT_TONE = 'bg-gray-100 text-gray-600'
+const DEFAULT_TONE = 'bg-ground-100 text-ground-600'
 
 /** i18n key for a status label. Wrapping the prefix here means callers can't misspell it.
  *  (officerCockpit.headerTimeline already emits bare `labelKey` suffixes — those stay as they are.) */

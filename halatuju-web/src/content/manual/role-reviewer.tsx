@@ -102,7 +102,7 @@ export const roleReviewer: ManualChapter = {
         <strong> conclusion</strong>, select <strong>Approve</strong> or <strong>Decline</strong>, and click
         <strong> Save verdict &amp; generate final profile</strong>. You can Pass all four facts and still Decline
         (for example, income is verified but sits above the B40 line).
-          <span className="mt-2 block rounded-lg border border-amber-200 bg-amber-50 p-3"><strong>Save is a
+          <span className="mt-2 block rounded-lg border border-caution-200 bg-caution-50 p-3"><strong>Save is a
           one-way step from your side.</strong> It records the decision and sends the case on for QC; only a
           super-admin can reopen it afterwards. Check the facts before you save.</span></>
       ),
@@ -118,7 +118,7 @@ export const roleReviewer: ManualChapter = {
         <strong> Taking part</strong> card: tick <strong>Pause new cases</strong> and nobody new will be assigned
         to you. Untick it whenever you&rsquo;re ready and you go straight back into the rota — there is no
         application, and nobody has to approve it.
-          <span className="mt-2 block rounded-lg border border-blue-200 bg-blue-50 p-3">Pausing is <strong>not
+          <span className="mt-2 block rounded-lg border border-info-200 bg-info-50 p-3">Pausing is <strong>not
           </strong> leaving. You keep your account, you can still sign in, and <strong>any interview already
           yours stays yours</strong> — please do finish those, or tell the programme lead if you can&rsquo;t.
           If you have gone quiet, your organisation admin can pause you on your behalf; the same switch brings

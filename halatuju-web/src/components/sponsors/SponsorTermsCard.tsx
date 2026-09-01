@@ -92,7 +92,7 @@ export default function SponsorTermsCard({ token, t }: {
           <p className="text-sm text-ground-500 mt-1">{t('admin.sponsors.terms.subtitle')}</p>
         </div>
         <button type="button" onClick={() => setShowNew((s) => !s)}
-          className="shrink-0 px-4 py-2.5 bg-info-600 text-white rounded-lg font-medium hover:bg-info-700">
+          className="shrink-0 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700">
           {t('admin.sponsors.terms.newVersion')}
         </button>
       </div>
@@ -137,7 +137,7 @@ export default function SponsorTermsCard({ token, t }: {
           )}
           <div className="flex gap-3">
             <button type="submit" disabled={busy || !version.trim()}
-              className="px-6 py-2.5 bg-info-600 text-white rounded-lg font-medium hover:bg-info-700 disabled:opacity-50">
+              className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
               {busy ? t('admin.sponsors.terms.creating') : t('admin.sponsors.terms.create')}
             </button>
             <button type="button" onClick={() => setShowNew(false)}

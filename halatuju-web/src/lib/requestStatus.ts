@@ -31,20 +31,20 @@ export type RequestStatus = (typeof REQUEST_STATUSES)[number]
 /** Tailwind tone per status — complete literal class names (JIT can't see runtime-assembled ones). */
 const STATUS_TONE: Record<string, string> = {
   // Awaiting a decision / in the review loop — blue ramp.
-  submitted: 'bg-blue-50 text-blue-700',
-  triaged: 'bg-blue-100 text-blue-700',
-  quoted: 'bg-blue-200 text-blue-800',
+  submitted: 'bg-info-50 text-info-700',
+  triaged: 'bg-info-100 text-info-700',
+  quoted: 'bg-info-200 text-info-800',
   // Committed — green.
-  approved: 'bg-green-100 text-green-800',
-  scheduled: 'bg-green-200 text-green-900',
-  done: 'bg-green-300 text-green-900',
+  approved: 'bg-positive-100 text-positive-800',
+  scheduled: 'bg-positive-200 text-positive-900',
+  done: 'bg-positive-300 text-positive-900',
   // Parked — amber (needs the org's attention to un-park).
-  deferred: 'bg-amber-100 text-amber-700',
+  deferred: 'bg-caution-100 text-caution-700',
   // Ended — grey.
-  declined: 'bg-gray-100 text-gray-600',
+  declined: 'bg-ground-100 text-ground-600',
 }
 
-const DEFAULT_TONE = 'bg-gray-100 text-gray-600'
+const DEFAULT_TONE = 'bg-ground-100 text-ground-600'
 
 /** i18n key for a status label. */
 export function statusLabelKey(status: string): string {

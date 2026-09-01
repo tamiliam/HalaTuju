@@ -106,45 +106,45 @@ export default function InterviewBookingPanel({
   const toggleReschedule = () => { setError(''); setRescheduling((v) => !v) }
 
   return (
-    <section className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
-      <h2 className="text-lg font-semibold text-gray-900">{t('scholarship.application.interview.title')}</h2>
+    <section className="mb-6 rounded-2xl border border-info-200 bg-info-50/40 p-5">
+      <h2 className="text-lg font-semibold text-ground-900">{t('scholarship.application.interview.title')}</h2>
 
       {sched.status === 'booked' && over ? (
         <div className="mt-2">
-          <p className="text-sm text-gray-700">{t('scholarship.application.interview.bookedPast')}:</p>
-          <p className="mt-1 text-base font-semibold text-gray-900">{formatMyt(sched.start)}</p>
-          <p className="mt-3 text-sm text-gray-700">{t('scholarship.application.interview.completedNote')}</p>
+          <p className="text-sm text-ground-700">{t('scholarship.application.interview.bookedPast')}:</p>
+          <p className="mt-1 text-base font-semibold text-ground-900">{formatMyt(sched.start)}</p>
+          <p className="mt-3 text-sm text-ground-700">{t('scholarship.application.interview.completedNote')}</p>
         </div>
       ) : sched.status === 'booked' ? (
         <div className="mt-2">
-          <p className="text-sm text-gray-700">{t('scholarship.application.interview.booked')}:</p>
-          <p className="mt-1 text-base font-semibold text-gray-900">{formatMyt(sched.start)}</p>
+          <p className="text-sm text-ground-700">{t('scholarship.application.interview.booked')}:</p>
+          <p className="mt-1 text-base font-semibold text-ground-900">{formatMyt(sched.start)}</p>
           {sched.meeting_url
             ? <a href={sched.meeting_url} target="_blank" rel="noreferrer"
-                 className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                 className="mt-3 inline-block rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
                 {t('scholarship.application.interview.joinMeet')}
               </a>
-            : <p className="mt-2 text-xs text-gray-500">{t('scholarship.application.interview.noLinkYet')}</p>}
-          <p className="mt-3 text-xs text-gray-500">{t('scholarship.application.interview.parentsNote')}</p>
+            : <p className="mt-2 text-xs text-ground-500">{t('scholarship.application.interview.noLinkYet')}</p>}
+          <p className="mt-3 text-xs text-ground-500">{t('scholarship.application.interview.parentsNote')}</p>
 
           {locked ? (
-            <p className="mt-3 text-xs text-amber-700">{t('scholarship.application.interview.tooLateNote')}</p>
+            <p className="mt-3 text-xs text-caution-700">{t('scholarship.application.interview.tooLateNote')}</p>
           ) : confirmingCancel ? (
-            <div className="mt-3 rounded-lg border border-red-200 bg-red-50/60 p-3">
-              <p className="text-sm text-gray-800">{t('scholarship.application.interview.cancelConfirm')}</p>
-              <label className="mt-2 block text-xs font-medium text-gray-600">
+            <div className="mt-3 rounded-lg border border-critical-200 bg-critical-50/60 p-3">
+              <p className="text-sm text-ground-800">{t('scholarship.application.interview.cancelConfirm')}</p>
+              <label className="mt-2 block text-xs font-medium text-ground-600">
                 {t('scholarship.application.interview.cancelReasonLabel')}
               </label>
               <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={2} maxLength={1000}
                 placeholder={t('scholarship.application.interview.cancelReasonPlaceholder')}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                className="mt-1 w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <button type="button" onClick={cancel} disabled={busy}
-                  className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                  className="rounded-lg bg-critical-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-critical-700 disabled:opacity-50">
                   {t('scholarship.application.interview.cancelYes')}
                 </button>
                 <button type="button" onClick={() => { setError(''); setConfirmingCancel(false) }} disabled={busy}
-                  className="text-sm text-gray-600 hover:text-gray-800">
+                  className="text-sm text-ground-600 hover:text-ground-800">
                   {t('scholarship.application.interview.cancelKeep')}
                 </button>
               </div>
@@ -153,14 +153,14 @@ export default function InterviewBookingPanel({
             <div className="mt-3 flex flex-wrap items-center gap-3">
               {reschedulable.length > 0 && (
                 <button type="button" onClick={toggleReschedule}
-                  className="text-sm text-blue-600 hover:underline">
+                  className="text-sm text-info-600 hover:underline">
                   {t(rescheduling
                     ? 'scholarship.application.interview.rescheduleKeep'
                     : 'scholarship.application.interview.reschedule')}
                 </button>
               )}
               <button type="button" onClick={() => { setError(''); setConfirmingCancel(true) }} disabled={busy}
-                className="text-sm text-gray-500 hover:text-red-600 disabled:opacity-50">
+                className="text-sm text-ground-500 hover:text-critical-600 disabled:opacity-50">
                 {t('scholarship.application.interview.cancelInterview')}
               </button>
             </div>
@@ -171,7 +171,7 @@ export default function InterviewBookingPanel({
               {reschedulable.map((s) => (
                 <li key={s.id}>
                   <button type="button" onClick={() => book(s.id)} disabled={busy}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-left text-sm hover:border-blue-400 disabled:opacity-50">
+                    className="w-full rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-left text-sm hover:border-info-400 disabled:opacity-50">
                     {formatMyt(s.start)}
                   </button>
                 </li>
@@ -180,58 +180,58 @@ export default function InterviewBookingPanel({
           )}
         </div>
       ) : sched.status === 'cancelled' ? (
-        <p className="mt-2 text-sm text-amber-700">{t('scholarship.application.interview.cancelledNote')}</p>
+        <p className="mt-2 text-sm text-caution-700">{t('scholarship.application.interview.cancelledNote')}</p>
       ) : (
         <div className="mt-2">
           {pickable.length > 0 ? (
             <>
-              <p className="text-sm text-gray-700">{t('scholarship.application.interview.pickIntro')}</p>
+              <p className="text-sm text-ground-700">{t('scholarship.application.interview.pickIntro')}</p>
               <ul className="mt-3 space-y-2">
                 {pickable.map((s) => (
                   <li key={s.id}>
-                    <label className="flex items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm hover:border-blue-400">
+                    <label className="flex items-center gap-3 rounded-lg border border-ground-300 bg-ground-0 px-3 py-2 text-sm hover:border-info-400">
                       <input type="radio" name="slot" checked={picked === s.id}
-                        onChange={() => { setError(''); setPicked(s.id) }} className="accent-blue-600" />
+                        onChange={() => { setError(''); setPicked(s.id) }} className="accent-info-600" />
                       <span>{formatMyt(s.start)}</span>
                     </label>
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-xs text-gray-500">{t('scholarship.application.interview.parentsNote')}</p>
+              <p className="mt-2 text-xs text-ground-500">{t('scholarship.application.interview.parentsNote')}</p>
               <button type="button" disabled={busy || picked == null}
                 onClick={() => picked != null ? book(picked) : setError(t('scholarship.application.interview.selectFirst'))}
-                className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                className="mt-3 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
                 {t('scholarship.application.interview.book')}
               </button>
             </>
           ) : (
-            <p className="text-sm text-amber-700">{t('scholarship.application.interview.allPassed')}</p>
+            <p className="text-sm text-caution-700">{t('scholarship.application.interview.allPassed')}</p>
           )}
 
           {/* "None of these work" — request other times (notifies the interviewer). */}
           {sched.alternatives_requested ? (
-            <p className="mt-4 rounded-lg bg-white/70 px-3 py-2 text-xs text-gray-600">
+            <p className="mt-4 rounded-lg bg-ground-0/70 px-3 py-2 text-xs text-ground-600">
               {t('scholarship.application.interview.altRequested')}
             </p>
           ) : requesting ? (
             <div className="mt-4 space-y-2">
               <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={1000}
                 placeholder={t('scholarship.application.interview.altNotePlaceholder')}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
               <div className="flex items-center gap-3">
                 <button type="button" onClick={requestAlt} disabled={busy}
-                  className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-900 disabled:opacity-50">
+                  className="rounded-lg bg-ground-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-ground-900 disabled:opacity-50">
                   {t('scholarship.application.interview.altSubmit')}
                 </button>
                 <button type="button" onClick={() => { setRequesting(false); setNote('') }}
-                  className="text-sm text-gray-500 hover:text-gray-700">
+                  className="text-sm text-ground-500 hover:text-ground-700">
                   {t('scholarship.application.interview.altCancel')}
                 </button>
               </div>
             </div>
           ) : (
             <button type="button" onClick={() => { setError(''); setRequesting(true) }}
-              className="mt-4 block text-sm text-blue-600 hover:underline">
+              className="mt-4 block text-sm text-info-600 hover:underline">
               {t('scholarship.application.interview.altAsk')}
             </button>
           )}
@@ -242,38 +242,38 @@ export default function InterviewBookingPanel({
           EVERY state (proposed / booked / locked-inside-cutoff / cancelled): when
           reschedule and cancel are closed, this is how "I'm running late" or "I'm
           sick" still reaches the interviewer — even an hour before the call. */}
-      <div className="mt-4 border-t border-blue-100 pt-3">
+      <div className="mt-4 border-t border-info-100 pt-3">
         {msgSent && !messaging && (
-          <p className="mb-2 rounded-lg bg-white/70 px-3 py-2 text-xs text-gray-600">
+          <p className="mb-2 rounded-lg bg-ground-0/70 px-3 py-2 text-xs text-ground-600">
             {t('scholarship.application.interview.msgSent')}
           </p>
         )}
         {messaging ? (
           <div className="space-y-2">
-            <p className="text-xs text-gray-600">{t('scholarship.application.interview.msgIntro')}</p>
+            <p className="text-xs text-ground-600">{t('scholarship.application.interview.msgIntro')}</p>
             <textarea value={msgText} onChange={(e) => setMsgText(e.target.value)} rows={2} maxLength={1000}
               placeholder={t('scholarship.application.interview.msgPlaceholder')}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              className="w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
             <div className="flex items-center gap-3">
               <button type="button" onClick={sendMsg} disabled={busy || !msgText.trim()}
-                className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-900 disabled:opacity-50">
+                className="rounded-lg bg-ground-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-ground-900 disabled:opacity-50">
                 {t('scholarship.application.interview.msgSend')}
               </button>
               <button type="button" onClick={() => { setMessaging(false); setMsgText('') }}
-                className="text-sm text-gray-500 hover:text-gray-700">
+                className="text-sm text-ground-500 hover:text-ground-700">
                 {t('scholarship.application.interview.altCancel')}
               </button>
             </div>
           </div>
         ) : (
           <button type="button" onClick={() => { setError(''); setMessaging(true) }}
-            className="block text-sm text-blue-600 hover:underline">
+            className="block text-sm text-info-600 hover:underline">
             {t('scholarship.application.interview.msgAsk')}
           </button>
         )}
       </div>
 
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-xs text-critical-600">{error}</p>}
     </section>
   )
 }

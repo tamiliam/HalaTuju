@@ -79,22 +79,22 @@ export default function ScheduleEditor(
 
   return (
     <div className="space-y-5">
-      {err && <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-600 text-sm">{err}</div>}
-      {msg && <div className="rounded-lg p-3 bg-green-50 border border-green-200 text-green-700 text-sm">{msg}</div>}
+      {err && <div className="rounded-lg p-3 bg-critical-50 border border-critical-200 text-critical-600 text-sm">{err}</div>}
+      {msg && <div className="rounded-lg p-3 bg-positive-50 border border-positive-200 text-positive-700 text-sm">{msg}</div>}
 
       {draft && others.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-gray-500">{t('admin.contracts.schedCopyFrom')}</span>
-          <select className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm"
+          <span className="text-ground-500">{t('admin.contracts.schedCopyFrom')}</span>
+          <select className="px-2 py-1.5 border border-ground-300 rounded-lg text-sm"
             defaultValue="" onChange={(e) => { copyFrom(Number(e.target.value)); e.target.value = '' }}>
             <option value="" disabled>{t('admin.contracts.schedCopyPick')}</option>
             {others.map((o) => <option key={o.id} value={o.id}>{o.version}</option>)}
           </select>
-          <span className="text-xs text-gray-400">{t('admin.contracts.schedCopyHint')}</span>
+          <span className="text-xs text-ground-400">{t('admin.contracts.schedCopyHint')}</span>
         </div>
       )}
       {rows.length === 0 && (
-        <p className="text-sm text-gray-400">{t('admin.contracts.schedEmpty')}</p>
+        <p className="text-sm text-ground-400">{t('admin.contracts.schedEmpty')}</p>
       )}
 
       <div className="space-y-4">
@@ -104,21 +104,21 @@ export default function ScheduleEditor(
           const expected = expectedTotal(r.pathway, r.variant)
           const ok = total === expected
           return (
-            <div key={`${r.pathway}-${r.variant}`} className="bg-white rounded-xl border p-4">
+            <div key={`${r.pathway}-${r.variant}`} className="bg-ground-0 rounded-xl border p-4">
               <div className="flex flex-wrap items-center gap-3 mb-3">
-                <span className="font-semibold text-gray-900">{r.label_en || r.pathway}</span>
-                {r.variant && <span className="text-xs text-gray-400">({r.variant})</span>}
-                <label className="text-xs text-gray-500 flex items-center gap-1 ml-auto">
+                <span className="font-semibold text-ground-900">{r.label_en || r.pathway}</span>
+                {r.variant && <span className="text-xs text-ground-400">({r.variant})</span>}
+                <label className="text-xs text-ground-500 flex items-center gap-1 ml-auto">
                   {t('admin.contracts.schedMonthly')}
                   <input type="number" disabled={!draft} value={monthly}
                     onChange={(e) => setRow(i, { monthly_amount: e.target.value })}
-                    className="w-20 px-2 py-1 border rounded text-sm disabled:bg-gray-50" />
+                    className="w-20 px-2 py-1 border rounded text-sm disabled:bg-ground-50" />
                 </label>
-                <label className="text-xs text-gray-500 flex items-center gap-1">
+                <label className="text-xs text-ground-500 flex items-center gap-1">
                   {t('admin.contracts.schedStart')}
                   <input type="number" min={1} max={12} disabled={!draft} value={r.start_month}
                     onChange={(e) => setRow(i, { start_month: Number(e.target.value) })}
-                    className="w-14 px-2 py-1 border rounded text-sm disabled:bg-gray-50" />
+                    className="w-14 px-2 py-1 border rounded text-sm disabled:bg-ground-50" />
                 </label>
               </div>
 
@@ -132,8 +132,8 @@ export default function ScheduleEditor(
                     <button key={off} type="button" onClick={() => toggle(i, off)} disabled={!draft}
                       title={`${month}${year2 ? ' (Y2)' : ''}`}
                       className={`w-10 h-9 rounded text-[10px] font-medium border ${
-                        paid ? 'bg-green-100 border-green-400 text-green-800'
-                             : 'bg-gray-50 border-gray-200 text-gray-400'} ${year2 ? 'ring-1 ring-inset ring-blue-100' : ''}`}>
+                        paid ? 'bg-positive-100 border-positive-400 text-positive-800'
+                             : 'bg-ground-50 border-ground-200 text-ground-400'} ${year2 ? 'ring-1 ring-inset ring-info-100' : ''}`}>
                       {month}
                     </button>
                   )
@@ -141,11 +141,11 @@ export default function ScheduleEditor(
               </div>
 
               <div className="mt-3 text-sm flex items-center gap-2">
-                <span className="text-gray-500">{t('admin.contracts.schedMonths')}: {r.paid_offsets.length}</span>
-                <span className="text-gray-500">· {t('admin.contracts.schedTotal')}: RM{total}</span>
+                <span className="text-ground-500">{t('admin.contracts.schedMonths')}: {r.paid_offsets.length}</span>
+                <span className="text-ground-500">· {t('admin.contracts.schedTotal')}: RM{total}</span>
                 {ok
-                  ? <span className="text-green-700">✓ {t('admin.contracts.schedMatches')} (RM{expected})</span>
-                  : <span className="text-red-600">✗ {t('admin.contracts.schedMismatch')} (RM{expected})</span>}
+                  ? <span className="text-positive-700">✓ {t('admin.contracts.schedMatches')} (RM{expected})</span>
+                  : <span className="text-critical-600">✗ {t('admin.contracts.schedMismatch')} (RM{expected})</span>}
               </div>
             </div>
           )
@@ -156,7 +156,7 @@ export default function ScheduleEditor(
         ? <button type="button" onClick={save} disabled={saving || !dirty}
             title={dirty ? undefined : t('common.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
-        : <p className="text-sm text-gray-500">{t('admin.contracts.notDraftMsg')}</p>}
+        : <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
   )
 }

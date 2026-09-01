@@ -11,12 +11,12 @@ export default function GetStartedPage() {
   const { showAuthGate } = useAuth()
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-ground-50">
       <AppHeader />
       <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border p-8">
-          <h1 className="text-xl font-bold text-gray-900">{t('getStarted.title')}</h1>
-          <p className="text-sm text-gray-600 mt-1">{t('getStarted.tagline')}</p>
+        <div className="w-full max-w-md bg-ground-0 rounded-2xl shadow-sm border p-8">
+          <h1 className="text-xl font-bold text-ground-900">{t('getStarted.title')}</h1>
+          <p className="text-sm text-ground-600 mt-1">{t('getStarted.tagline')}</p>
 
           <button
             onClick={() => showAuthGate('profile')}
@@ -26,9 +26,9 @@ export default function GetStartedPage() {
           </button>
 
           <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">{t('getStarted.or')}</span>
-            <div className="flex-1 h-px bg-gray-200" />
+            <div className="flex-1 h-px bg-ground-200" />
+            <span className="text-xs text-ground-400">{t('getStarted.or')}</span>
+            <div className="flex-1 h-px bg-ground-200" />
           </div>
 
           <Link
@@ -39,15 +39,15 @@ export default function GetStartedPage() {
           </Link>
 
           <div className="border-t mt-6 pt-4 flex items-center justify-between">
-            <span className="text-sm text-gray-600">{t('getStarted.haveAccount')}</span>
+            <span className="text-sm text-ground-600">{t('getStarted.haveAccount')}</span>
             <button
               onClick={() => showAuthGate('profile')}
-              className="text-sm font-semibold text-primary-600 border border-gray-200 rounded-lg px-4 py-1.5 hover:bg-gray-50"
+              className="text-sm font-semibold text-primary-600 border border-ground-200 rounded-lg px-4 py-1.5 hover:bg-ground-50"
             >
               {t('header.login.label')}
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-3">{t('getStarted.partnerNote')}</p>
+          <p className="text-xs text-ground-400 mt-3">{t('getStarted.partnerNote')}</p>
         </div>
       </main>
       <AppFooter />

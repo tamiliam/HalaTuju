@@ -5,11 +5,11 @@ export const CLOCALES = ['en', 'ms', 'ta'] as const
 export type CLocale = typeof CLOCALES[number]
 
 export const inputCls =
-  'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500'
+  'w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-info-500 focus:border-info-500 disabled:bg-ground-50 disabled:text-ground-500'
 export const btnPrimary =
-  'px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50'
+  'px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50'
 export const btnGhost =
-  'px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50'
+  'px-4 py-2 rounded-lg text-sm font-medium border border-ground-300 text-ground-700 hover:bg-ground-50 disabled:opacity-50'
 
 /**
  * A stable fingerprint of the clause list, for "is there anything to save?" (request #6).
@@ -44,10 +44,10 @@ export function clauseFingerprint(list: readonly unknown[]): string {
 /** en | ms | ta selector; en is labelled authoritative. */
 export function LangTabs({ value, onChange }: { value: CLocale; onChange: (l: CLocale) => void }) {
   return (
-    <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+    <div className="inline-flex rounded-lg border border-ground-200 overflow-hidden text-xs">
       {CLOCALES.map((l) => (
         <button key={l} type="button" onClick={() => onChange(l)}
-          className={`px-3 py-1.5 font-medium uppercase ${value === l ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+          className={`px-3 py-1.5 font-medium uppercase ${value === l ? 'bg-primary-600 text-white' : 'bg-ground-0 text-ground-600 hover:bg-ground-50'}`}>
           {l}{l === 'en' ? ' ★' : ''}
         </button>
       ))}

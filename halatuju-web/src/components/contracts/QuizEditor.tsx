@@ -67,13 +67,13 @@ export default function QuizEditor(
   }
 
   if (candidates.length === 0) {
-    return <p className="text-sm text-gray-500">{t('admin.contracts.quizCandidatesOnly')}</p>
+    return <p className="text-sm text-ground-500">{t('admin.contracts.quizCandidatesOnly')}</p>
   }
 
   return (
     <div className="space-y-5">
-      {err && <div className="rounded-lg p-3 bg-red-50 border border-red-200 text-red-600 text-sm">{err}</div>}
-      {msg && <div className="rounded-lg p-3 bg-green-50 border border-green-200 text-green-700 text-sm">{msg}</div>}
+      {err && <div className="rounded-lg p-3 bg-critical-50 border border-critical-200 text-critical-600 text-sm">{err}</div>}
+      {msg && <div className="rounded-lg p-3 bg-positive-50 border border-positive-200 text-positive-700 text-sm">{msg}</div>}
       <div className="flex justify-end"><LangTabs value={lang} onChange={setLang} /></div>
 
       {candidates.map(({ c, number }) => {
@@ -81,9 +81,9 @@ export default function QuizEditor(
         const opts = q.options || ['', '', '']
         const has = !!q.question
         return (
-          <div key={c.order} className="bg-white rounded-xl border p-4 space-y-3">
+          <div key={c.order} className="bg-ground-0 rounded-xl border p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-gray-900">{number} {c.heading_en}</span>
+              <span className="font-semibold text-ground-900">{number} {c.heading_en}</span>
               {draft && (
                 <button type="button" onClick={() => generate(c.order)} disabled={busy === c.order} className={btnGhost}>
                   {busy === c.order ? t('admin.contracts.generating')
@@ -92,19 +92,19 @@ export default function QuizEditor(
               )}
             </div>
 
-            {!has ? <p className="text-sm text-gray-400">{t('admin.contracts.noQuizYet')}</p> : (
+            {!has ? <p className="text-sm text-ground-400">{t('admin.contracts.noQuizYet')}</p> : (
               <div className="space-y-2">
                 <label className="block">
-                  <span className="text-xs font-medium text-gray-600">{t('admin.contracts.quizPlain')}</span>
+                  <span className="text-xs font-medium text-ground-600">{t('admin.contracts.quizPlain')}</span>
                   <textarea rows={2} className={inputCls} disabled={!draft} value={q.plain || ''}
                     onChange={(e) => patchQuiz(c.order, { ...q, plain: e.target.value })} />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-medium text-gray-600">{t('admin.contracts.quizQuestion')}</span>
+                  <span className="text-xs font-medium text-ground-600">{t('admin.contracts.quizQuestion')}</span>
                   <input className={inputCls} disabled={!draft} value={q.question || ''}
                     onChange={(e) => patchQuiz(c.order, { ...q, question: e.target.value })} />
                 </label>
-                <span className="text-xs font-medium text-gray-600">
+                <span className="text-xs font-medium text-ground-600">
                   {t('admin.contracts.quizOptions')} — {t('admin.contracts.markCorrect')}
                 </span>
                 {opts.map((o, k) => (
@@ -116,12 +116,12 @@ export default function QuizEditor(
                   </div>
                 ))}
                 <label className="block">
-                  <span className="text-xs font-medium text-gray-600">{t('admin.contracts.quizWhy')}</span>
+                  <span className="text-xs font-medium text-ground-600">{t('admin.contracts.quizWhy')}</span>
                   <textarea rows={2} className={inputCls} disabled={!draft} value={q.why || ''}
                     onChange={(e) => patchQuiz(c.order, { ...q, why: e.target.value })} />
                 </label>
                 {c.quiz_generated_model && (
-                  <p className="text-xs text-gray-400">{t('admin.contracts.draftedBy', { model: c.quiz_generated_model })}</p>
+                  <p className="text-xs text-ground-400">{t('admin.contracts.draftedBy', { model: c.quiz_generated_model })}</p>
                 )}
               </div>
             )}
@@ -133,7 +133,7 @@ export default function QuizEditor(
         ? <button type="button" onClick={save} disabled={saving || !dirty}
             title={dirty ? undefined : t('common.nothingToSave')} className={btnPrimary}>
             {saving ? t('admin.contracts.saving') : t('admin.contracts.save')}</button>
-        : <p className="text-sm text-gray-500">{t('admin.contracts.notDraftMsg')}</p>}
+        : <p className="text-sm text-ground-500">{t('admin.contracts.notDraftMsg')}</p>}
     </div>
   )
 }

@@ -97,9 +97,11 @@ describe('statusPill knows the new status', () => {
   })
 
   it('still distinguishes completed, cancelled and draft', () => {
-    expect(statusPill('completed')).toContain('green')
-    expect(statusPill('cancelled')).toContain('gray')
-    expect(statusPill('draft')).toContain('blue')
+    // Layer 1 F6 renamed the FAMILIES, not the meanings: green→positive, gray→ground, blue→info.
+    // The values are Tailwind's own, so nothing a person sees moved in light mode.
+    expect(statusPill('completed')).toContain('positive')
+    expect(statusPill('cancelled')).toContain('ground')
+    expect(statusPill('draft')).toContain('info')
     // A run mid-chain must never read as finished.
     expect(statusPill('finance_checked')).not.toBe(statusPill('completed'))
   })

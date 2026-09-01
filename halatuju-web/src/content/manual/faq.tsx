@@ -178,7 +178,7 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>Why is Accept blocked on this case?</>,
-      a: <>A verdict fact is still <strong className="text-red-700">red</strong> — the gap floor blocks Accept so a
+      a: <>A verdict fact is still <strong className="text-critical-700">red</strong> — the gap floor blocks Accept so a
         red fact never reaches sponsors unexamined. Resolve the gap or reopen to the reviewer; if you&rsquo;re
         certain despite it, override with a recorded reason.</>,
     },
