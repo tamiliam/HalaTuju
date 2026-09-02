@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Layer 1 F7d — the flip - 2026-09-02
 
-**Sprint.** **NO migration.** web only. Retro
+**Sprint. DEPLOYED** — `main` at `70eb0302`, build `f6aca5a7` SUCCESS, serving
+**halatuju-web-00817-754**; api unchanged at `halatuju-api-00971-ck4` (only the web trigger fired —
+a fourth observation that it follows PYTHON). **F7c rode along in the same push.**
+**NO migration.** web only. Retro
 `docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`. jest 1605 → **1617**; tsc **24**; lint **0**;
 i18n 4640 → **4646 × 3**; build clean. **All 25 surfaces walked in both modes, measured rather than
 eyeballed.**

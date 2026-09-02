@@ -404,11 +404,16 @@ parameter, any prop beyond `PageProps`, and any extra module export — so a pag
 id nor export the component that does. The screen moved whole into `view.tsx`; the route is 22
 lines. **The body did not change.** `tsc`, `jest` and `next lint` were green through all three.
 
-#### ✅ F7d — SHIPPED 2026-09-02. **DARK MODE IS REACHABLE. AND LIGHT IS THE BROKEN ONE.**
+#### ✅ F7d — SHIPPED **AND DEPLOYED** 2026-09-02. **DARK MODE IS REACHABLE. AND LIGHT IS THE BROKEN ONE.**
 
 Retro `docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`; decisions ×2; lessons ×6. NO
 migration. web only. jest **1617**; i18n **4646 × 3**. **All 25 surfaces walked in both modes,
 measured rather than eyeballed** (`docs/contrast-sweep.md`).
+
+**LIVE: `halatuju-web-00817-754`** (build `f6aca5a7` SUCCESS), api unchanged at `00971-ck4`.
+**F7c rode along in the same push.** All eight public routes 200; `/theme-boot.js` served and
+referenced; the switch is in the served markup. **Dark is reachable in production for the first
+time** — `auto` is the default and follows the device.
 
 **▶ THE SWITCH EXISTS.** `ThemeSelector` — a `<select>` matching `LanguageSelector` class for class
 — on the public header (desktop + mobile), the landing nav, settings, the admin top bar and the

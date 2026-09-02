@@ -552,15 +552,27 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-02, after Layer 1 F7d — DARK IS REACHABLE, AND **LIGHT** IS THE BROKEN ONE)
 
-**SHIPPED — LAYER 1 F7d. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f7d-the-flip`.
+**SHIPPED AND DEPLOYED — LAYER 1 F7c + F7d, TOGETHER.** `main` at `70eb0302`, pushed 2026-09-02.
 **NO migration.** web only. Retro `docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`;
 decisions ×2; lessons ×6. jest 1605 → **1617**; tsc **24** (baseline); lint **0**;
 i18n 4640 → **4646 × 3**; build clean.
 **All 25 surfaces walked in both modes, MEASURED rather than eyeballed** (`docs/contrast-sweep.md`).
 
-**⚠ F7c IS STILL UNPUSHED TOO.** `main` carries F7c's three commits plus F7d's. One push deploys
-both; that was deliberate (F7c alone is a sandbox fixture and a form-control fix, and holding it
-saved a deploy).
+**LIVE STATE, verified 2026-09-02 after the deploy:**
+- **`halatuju-web-00817-754`** (was `00816-nbc`) — Cloud Build `f6aca5a7` SUCCESS.
+- **`halatuju-api-00971-ck4` — UNCHANGED.** Only the WEB trigger fired. **That is a FOURTH
+  observation that the api trigger follows PYTHON, not the `halatuju_api/**` glob** — this push
+  edited `halatuju_api/CLAUDE.md` and nothing else under that path, and api did not rebuild.
+- All eight public routes 200; `Server: Google Frontend`; `/theme-boot.js` 200 and referenced from
+  the served HTML; **the switch is in the served markup** (`aria-label="Theme"` with
+  `value="light" | "dark" | "auto"`).
+- **⚠ DARK IS NOW REACHABLE IN PRODUCTION FOR THE FIRST TIME.** `auto` is the default and follows
+  the device, so a visitor whose machine is set to dark now gets a dark product. To make it opt-in
+  instead: `DEFAULT_MODE` in `theme.ts` plus the fallback in `theme-boot.js` — a test reads both.
+
+**F7c rode along in the same push** (its three commits sat unpushed while the owner gated the
+deploy), which was deliberate: F7c alone is a sandbox fixture plus a form-control fix, and holding
+it saved a deploy.
 
 **WHAT SHIPPED, and the parts that must not be "tidied":**
 - **THE SWITCH EXISTS.** `ThemeSelector` — Light / Dark / Auto — on the public header (desktop +
@@ -575,14 +587,9 @@ saved a deploy).
 - **THE CHOICE IS DEVICE-LOCAL** (owner ruling). `theme.ts` and `theme-boot.js` both used to say the
   home was the ACCOUNT; both rewritten. **F1b as originally scoped is SUPERSEDED, not deferred.**
 
-**⚠ AT DEPLOY — THIS ONE IS VISIBLE.** No migration, no data step, **web only** — confirm with
-`gcloud builds list` rather than assuming. `NEXT_PUBLIC_THEME_SWITCH` is **confirmed unset on the
-live service** (read 2026-09-02 from `gcloud run services describe`, never from a settings default),
-so no dark has ever painted in production. **After this deploy, every visitor whose device is set to
-dark gets a dark product on their next visit**, because `auto` is the default and follows the
-device. That is the intended flip and the largest user-visible change of the arc. If the owner would
-rather dark stayed opt-in, the change is `DEFAULT_MODE` in `theme.ts` plus the fallback in
-`theme-boot.js` — a test reads both and refuses to let them drift.
+**⚠ THE DEPLOY WAS THE VISIBLE ONE.** `NEXT_PUBLIC_THEME_SWITCH` was confirmed unset on the live
+service before the push (read from `gcloud run services describe`, never from a settings default),
+so no dark had ever painted in production. It is reachable now — see the LIVE STATE block above.
 
 **⚠⚠ THE WALK'S FINDING INVERTS THE ARC'S ASSUMPTION. READ THIS BEFORE F7e.**
 Measured over 25 routes: **light 263 failing elements / 55 distinct; dark 54 / 11.** `ground-400`,
