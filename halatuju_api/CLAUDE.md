@@ -550,7 +550,74 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-02, after Layer 1 F7b — THE GATE HAS NO EXEMPTIONS LEFT)
+## Next Sprint (as of 2026-09-02, after Layer 1 F7c — EVERY SURFACE CAN NOW BE LOOKED AT)
+
+**SHIPPED — LAYER 1 F7c. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f7c-cockpit-fixture`.
+**NO migration.** web only. Retro `docs/retrospective-2026-09-02-layer1-f7c-cockpit-fixture.md`;
+decision ×1; lessons ×5. jest 1603 → **1605**; tsc **24** (baseline); lint **0**;
+i18n **4640 × 3**; build clean. Three guards bite-checked.
+**Reviewed in a browser in both modes — the first time the cockpit ever has been.**
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ EVERY FORM CONTROL WAS INVISIBLE IN DARK, product-wide.** `background: white` AND
+  `color: white`. The background came from the BROWSER (~300 controls do not use `.input`); the ink
+  was INHERITED from `body`'s `text-ground-900`, which is white in dark. **The fix is ONE element
+  rule in `@layer base`** — do not "simplify" it into `.input`, and do not move it to a component:
+  it is one property of every control, present and future, and `base` means a utility still wins.
+- **THE COCKPIT LIVES IN `view.tsx` NOW; `page.tsx` is 22 lines.** Next rejects a defaulted first
+  parameter, ANY prop beyond `PageProps`, and ANY extra module export — so a page can neither take
+  an id nor export the component that does. **Do not merge them back.** The body did not change;
+  this is a move, not the section extraction F5 declined.
+- **`globals.css` carries no `primary-500` at all**, and a guard says so. F7b's codemod ran over
+  `.ts`/`.tsx` and missed this file — F2a's lesson, one sprint later.
+- **The sandbox safety guard scans EVERY sandbox file and BOTH NRIC spellings.** Fixture data now
+  lives in `surfaces.tsx` too, and an API payload carries an IC as twelve bare digits.
+
+**⚠ AT DEPLOY:** no migration, no data step, **web only** — but confirm with `gcloud builds list`
+rather than assuming (three observations now agree the api trigger follows PYTHON, and this sprint
+changes none). **Nothing a visitor sees changes in light**: the base rule restates what the browser
+was already doing, and the `.btn-*` role fixes are on classes used by a handful of pages where
+light values are unchanged. Dark is still unreachable (`NEXT_PUBLIC_THEME_SWITCH` unset — read it
+from the service, never from a settings default).
+
+**NEXT = LAYER 1 F7d — the flip.** The roadmap's sequence, verbatim:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+(F7 expands to F7a → F7b → F7c → F7d. The first three are done.)
+
+**⚠ F7d's FIRST TASK IS THE BLOCKER THE PLAN NEVER NAMED: there is no switch a person can click.**
+`NEXT_PUBLIC_THEME_SWITCH` gates only the before-paint script in `layout.tsx`, so removing the flag
+makes everyone follow their device with no override. **Owner ruled 2026-09-02: device-local, no
+account storage** — language is a bigger per-person choice and is already device-local, so making
+theme MORE persistent than language would be backwards. Mount it where `LanguageSelector` is, plus
+the admin and sponsor shells. **F1b as originally scoped (four settings surfaces, three identity
+models, a migration) is SUPERSEDED, not deferred.**
+
+Then: remove the flag, and **walk every surface in both modes — all of which can now be walked.**
+F7d also settles **TD-223** (links are `info` on some surfaces and `brand` on others; A2's gate says
+brand) and the **eight category swatches seen together** on `/sandbox/course-guide`.
+
+**⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase.
+
+**CHECKLIST, now eighteen items:** re-derive the file list **and the surface the plan NAMES**; hunt
+the hiding places FIRST, weighted by a file's AGE not its size; grep for `bg-info-[567]00` beside
+`text-white`; ask of every colour table "state or kind?" and whether it covers its whole domain;
+classify a token's call sites by what they DO before choosing a role; re-derive a recorded fix over
+a SPREAD of realistic inputs before building what the ticket says; ask whether both constraints can
+be met at all before picking a winner; never generate a regex and sweep for control bytes after any
+generated write; bite-check by injecting a fault AND VERIFYING IT LANDED, and when the injection
+produces SILENCE ask which test should have failed; **restore a bite by writing the original back,
+never by `git checkout --` — a WIP commit is what makes that feel safe and it is not**; read a
+codemod's residue rather than counting it; after a bulk rename grep the new token in COMMENT context
+and read every hit for tense; when a test names a person make the request look like that person's;
+when you fix a class of bug in one guard grep for its neighbours; when you remove a guard's
+exemption pin that the population it protected did not move; rewrite the module's own docstring when
+you remove the omission it was arguing for; **`next build` before believing any of the other gates —
+it enforces framework contracts none of them read**; and **a surface with no way to be looked at has
+NOT been reviewed, however green it is.**
+
+## Superseded — previous Next Sprint (as of 2026-09-02, after Layer 1 F7b)
 
 **SHIPPED AND DEPLOYED — LAYER 1 F7b.** `main` at `70a60501`, both Cloud Builds SUCCESS, serving
 **halatuju-web-00816-nbc** / **halatuju-api-00971-ck4**. All eight public routes 200 and the api's

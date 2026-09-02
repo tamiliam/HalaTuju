@@ -383,9 +383,26 @@ call sites. **When a token is checked at one bar, enumerate its uses and ask abo
 class scans read class names, F3's SVG guard reads raw hex, and a `var()` reference is neither. The
 new guard states the property: no component may read `var(--brand-500)` directly.
 
-#### F7c — The officer cockpit fixture
-The one repainted surface never seen in a browser. Needs a large `AdminApplicationDetail` sandbox
-fixture; the sandbox forbids a hand-written approximation. *~4 files.*
+#### ✅ F7c — SHIPPED 2026-09-02. **EVERY SURFACE CAN NOW BE LOOKED AT.**
+
+Retro `docs/retrospective-2026-09-02-layer1-f7c-cockpit-fixture.md`; decision ×1; lessons ×5. NO
+migration. web only. jest **1605**. Reviewed in both modes — the first time this screen ever was.
+
+**▶ THE FIRST MOUNT FOUND A SEVERE DEFECT, AND IT WAS NOT IN THE COCKPIT.** Every text box,
+dropdown and textarea in the product measured `background: white` AND `color: white` in dark —
+white text in a white box. The background came from the BROWSER (F2a fixed the `.input` class;
+~300 controls do not use it) and the ink was INHERITED from `body`'s `text-ground-900`, which is
+white in dark. In light the two accidents cancel exactly. **No static scan could have found it** —
+one half is an absent declaration and the other is inheritance, which is the entire argument for
+the sandbox existing. Fixed with one element rule in `@layer base`.
+
+**▶ F7b MISSED THE STYLESHEET** — its codemod ran over `.ts`/`.tsx`, so `.btn-primary`,
+`.btn-secondary` and `.input` still reached for `primary-500`. F2a's lesson, one sprint later.
+
+**▶ THE PAGE HAD TO SPLIT, AND ONLY `next build` SAID SO.** Next rejects a defaulted first
+parameter, any prop beyond `PageProps`, and any extra module export — so a page can neither take an
+id nor export the component that does. The screen moved whole into `view.tsx`; the route is 22
+lines. **The body did not change.** `tsc`, `jest` and `next lint` were green through all three.
 
 #### F7d — The flip
 Lower a `palette-guard` ceiling that may only fall, remove the flag, and review every surface in both

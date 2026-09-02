@@ -1,5 +1,34 @@
 # Architectural Decisions — HalaTuju
 
+## Every form control declares its own background and ink, in the stylesheet — 2026-09-02
+**Decision:** an element rule in `@layer base` gives `input` (except checkbox/radio/range), `select`
+and `textarea` `bg-ground-0 text-ground-900`. Separately, the officer cockpit's 3,500-line body
+moves from `page.tsx` into `view.tsx`, leaving a 22-line route.
+
+**Alternatives considered:** (a) **Add `bg-ground-0 text-ground-900` to the ~300 call sites** —
+rejected: it is one property of every control, a per-site fix is silently incomplete the moment
+somebody writes the 301st form, and reviewing 300 mechanical edits buys nothing over one rule.
+(b) **Extend `.input` and convert the controls to use it** — rejected for the same reason plus a
+worse one: it changes padding and radius on 300 controls, so a readability fix would ship a visual
+redesign with it. (c) **Leave the cockpit unmountable and review it some other way** — rejected;
+there is no other way, which is precisely the state that let this defect live for four sprints.
+(d) **Keep the component in `page.tsx` and give it a prop** — impossible, not merely unwise: Next
+rejects a defaulted first parameter, any prop beyond `PageProps`, and any extra module export.
+(e) **Extract the cockpit into sections while moving it** — rejected; F5 declined section
+extraction on its own merits and a 3,500-line restructure inside a move makes the diff unreadable.
+
+**Rationale:** the defect is invisible in light and invisible to every static scan, because one half
+is an absent declaration and the other is inheritance from `body`. `@layer base` is the right
+instrument for "all of them, always" — the same call `body` got in F2a — and it leaves any utility
+class winning, so a deliberate per-control background still holds. The page split is a constraint of
+Next's page typing, discovered by `next build` after `tsc`, `jest` and `next lint` were all green.
+
+**Consequences:** light mode is byte-identical (the rule restates the browser's own default). The
+cockpit is mountable, so F7d can honestly claim every surface was reviewed. `theme.test.ts` gains
+two stylesheet guards — one for the control rule, one asserting `globals.css` carries no
+`primary-500` at all, which is how F7b's miss of this file is stopped from recurring. The sandbox
+safety guard now scans every sandbox file and both NRIC spellings.
+
 ## The mark a SHAPE makes is a role too, and brand text leaves the identity stop — 2026-09-02
 **Decision:** `--brand-shape` resolves to `brand-500` in light and `brand-600` in dark, and carries
 every dot, progress bar, toggle track, spinner, selected-pill border and focus ring. Separately,

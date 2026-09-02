@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F7c — the cockpit can be mounted, and it was broken - 2026-09-02
+
+**Sprint.** **NO migration.** web only. Retro
+`docs/retrospective-2026-09-02-layer1-f7c-cockpit-fixture.md`. jest 1603 → **1605**; tsc **24**;
+lint **0**; i18n **4640 × 3**; build clean. Three guards bite-checked.
+**Reviewed in a browser in both modes — the first time this screen ever has been.**
+
+### Fixed
+- **⚠ EVERY FORM CONTROL WAS INVISIBLE IN DARK.** Text boxes, dropdowns and textareas measured
+  `background: white` AND `color: white` — white text in a white box. Two independent halves,
+  neither visible in light: the background came from the BROWSER (F2a fixed the `.input` class;
+  ~300 controls do not use it) and the ink was INHERITED from `body`'s `text-ground-900`, which is
+  white in dark. **No static scan could have found it** — one half is an absent declaration, the
+  other is inheritance. Fixed with one element rule in `@layer base`; light is byte-identical.
+- **F7b missed the stylesheet.** Its codemod ran over `.ts`/`.tsx`, so `.btn-primary`,
+  `.btn-secondary` and `.input` still reached for `primary-500` — F2a's lesson, walked into again.
+  All three are on the roles, and a guard now asserts `globals.css` carries no `primary-500`.
+
+### Added
+- **`/sandbox/officer-cockpit`** and a complete `AdminScholarshipDetail` fixture (141 fields,
+  nobody real). Deliberately mid-review, so most cards render at once.
+- **Two stylesheet guards** and a widened sandbox safety guard — it now scans every sandbox file
+  rather than `fixtures/` only, and both NRIC spellings rather than the dashed one only. Its
+  original form caught my `.test` emails immediately, which is the guard working.
+
+### Changed
+- **The cockpit moved from `page.tsx` to `view.tsx`; the route is 22 lines.** Only `next build`
+  said so: Next rejects a defaulted first parameter, any prop beyond `PageProps`, and any extra
+  module export — so a page can neither take an id nor export the component that does. **The body
+  did not change**; this is a move, not the section extraction F5 declined.
+
 ## Layer 1 F7b — the shape role. THE GATE HAS NO EXEMPTIONS LEFT - 2026-09-02
 
 **Sprint.** **NO migration.** web + api. Retro
