@@ -550,7 +550,86 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-02, after Layer 1 F7c — EVERY SURFACE CAN NOW BE LOOKED AT)
+## Next Sprint (as of 2026-09-02, after Layer 1 F7d — DARK IS REACHABLE, AND **LIGHT** IS THE BROKEN ONE)
+
+**SHIPPED — LAYER 1 F7d. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f7d-the-flip`.
+**NO migration.** web only. Retro `docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`;
+decisions ×2; lessons ×6. jest 1605 → **1617**; tsc **24** (baseline); lint **0**;
+i18n 4640 → **4646 × 3**; build clean.
+**All 25 surfaces walked in both modes, MEASURED rather than eyeballed** (`docs/contrast-sweep.md`).
+
+**⚠ F7c IS STILL UNPUSHED TOO.** `main` carries F7c's three commits plus F7d's. One push deploys
+both; that was deliberate (F7c alone is a sandbox fixture and a form-control fix, and holding it
+saved a deploy).
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **THE SWITCH EXISTS.** `ThemeSelector` — Light / Dark / Auto — on the public header (desktop +
+  mobile), the landing nav, settings, the admin top bar and the sponsor shell. It is a `<select>`
+  matching `LanguageSelector` CLASS FOR CLASS on purpose: the two sit side by side doing the same
+  shape of job, and two differently-drawn controls in one corner reads as an accident.
+- **`ThemeWatcher` IS IN THE PROVIDER STACK, NOT IN THE CONTROL.** A chromeless page renders no
+  header — document upload is one, and it is where someone sits long enough to meet a sunset. Do
+  not move it into `ThemeSelector`.
+- **`ThemeSelector` DOES NOT APPLY A THEME ON MOUNT.** The boot script already did. Two things
+  setting `data-theme` can only ever disagree.
+- **THE CHOICE IS DEVICE-LOCAL** (owner ruling). `theme.ts` and `theme-boot.js` both used to say the
+  home was the ACCOUNT; both rewritten. **F1b as originally scoped is SUPERSEDED, not deferred.**
+
+**⚠ AT DEPLOY — THIS ONE IS VISIBLE.** No migration, no data step, **web only** — confirm with
+`gcloud builds list` rather than assuming. `NEXT_PUBLIC_THEME_SWITCH` is **confirmed unset on the
+live service** (read 2026-09-02 from `gcloud run services describe`, never from a settings default),
+so no dark has ever painted in production. **After this deploy, every visitor whose device is set to
+dark gets a dark product on their next visit**, because `auto` is the default and follows the
+device. That is the intended flip and the largest user-visible change of the arc. If the owner would
+rather dark stayed opt-in, the change is `DEFAULT_MODE` in `theme.ts` plus the fallback in
+`theme-boot.js` — a test reads both and refuses to let them drift.
+
+**⚠⚠ THE WALK'S FINDING INVERTS THE ARC'S ASSUMPTION. READ THIS BEFORE F7e.**
+Measured over 25 routes: **light 263 failing elements / 55 distinct; dark 54 / 11.** `ground-400`,
+the muted-text token, is **2.43–2.54** against a bar of 4.5 — the footer on every public page, 29
+cockpit field labels, every `text-xs` hint. **Light is what every visitor has looked at since
+launch.** The flip does not make the product less readable; it makes an existing problem visible.
+Two of the causes are fixes this arc already wrote FOR THE BRAND ONLY — F7a's fill role and F7b's
+move of brand text off `-500` — which apply verbatim to the four TONE ramps.
+
+**NEXT = LAYER 1 F7e — the contrast sprint.** See **TD-224** (high). Fold in **TD-223** (links
+`info` vs `brand`; A2's gate says brand) — same call sites. **One part is an OWNER decision, not a
+repaint's:** move `ground-400`, which is one edit that changes every muted label in the product, or
+move ~150 call sites to `ground-500` and leave the token as a trap for the next person.
+
+Also still open for the owner: the **eight category swatches seen together** on
+`/sandbox/course-guide`, and **TD-225** (the brand logo is drawn for a light ground).
+
+**⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+(F7 expanded to F7a → F7b → F7c → F7d, all done. F7e is NEW, raised by F7d's walk.)
+
+**CHECKLIST, now twenty-two items:** re-derive the file list **and the surface the plan NAMES**; hunt
+the hiding places FIRST, weighted by a file's AGE not its size; grep for `bg-info-[567]00` beside
+`text-white`; ask of every colour table "state or kind?" and whether it covers its whole domain;
+classify a token's call sites by what they DO before choosing a role; **when you fix one token
+FAMILY, ask which sibling families have the same shape**; re-derive a recorded fix over a SPREAD of
+realistic inputs before building what the ticket says; ask whether both constraints can be met at
+all before picking a winner; **measure the RENDERED result, not the declared one — a gate is blind
+to every pair it does not name**; **distrust a scan that returns zero, and verify BOTH directions:
+plant a defect to prove it bites, and read the worst findings back to source to prove it is not
+lying**; never generate a regex and sweep for control bytes after any generated write; bite-check by
+injecting a fault AND VERIFYING IT LANDED, and when the injection produces SILENCE ask which test
+should have failed; **restore a bite by writing the original back, never by `git checkout --` — a
+WIP commit is what makes that feel safe and it is not**; read a codemod's residue rather than
+counting it; after a bulk rename grep the new token in COMMENT context and read every hit for tense;
+**anchor a source-scanning test on the CALL, not the identifier, and exclude itself BY PATH rather
+than skipping a directory**; when a test names a person make the request look like that person's;
+when you fix a class of bug in one guard grep for its neighbours; when you remove a guard's
+exemption pin that the population it protected did not move; **rewrite the module's own docstring
+when you act on a ruling it argued against — four times now**; **when you invert a guard, carry its
+rationale forward: the defect it was written for did not stop existing**; **`next build` before
+believing any of the other gates — it enforces framework contracts none of them read**; and **a
+surface with no way to be looked at has NOT been reviewed, however green it is.**
+
+## Superseded — previous Next Sprint (as of 2026-09-02, after Layer 1 F7c)
 
 **SHIPPED — LAYER 1 F7c. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f7c-cockpit-fixture`.
 **NO migration.** web only. Retro `docs/retrospective-2026-09-02-layer1-f7c-cockpit-fixture.md`;
@@ -600,7 +679,7 @@ brand) and the **eight category swatches seen together** on `/sandbox/course-gui
 
 **⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase.
 
-**CHECKLIST, now eighteen items:** re-derive the file list **and the surface the plan NAMES**; hunt
+**CHECKLIST at F7c, eighteen items:** re-derive the file list **and the surface the plan NAMES**; hunt
 the hiding places FIRST, weighted by a file's AGE not its size; grep for `bg-info-[567]00` beside
 `text-white`; ask of every colour table "state or kind?" and whether it covers its whole domain;
 classify a token's call sites by what they DO before choosing a role; re-derive a recorded fix over

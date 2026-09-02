@@ -2879,4 +2879,98 @@ guessing at it inside a sprint scoped as a picker.
 already works, and `test_dark_is_deliberately_not_gated_yet` carries the reason plus an instruction
 to delete itself rather than leave a passing assertion that means nothing.
 
-**Status:** Open.
+**Status:** ✅ **RESOLVED — Layer 1 F7a (2026-09-02), and it was two faults rather than one.**
+Measuring 18 realistic tenant colours over every rendered pair found that the dark shade end had
+been aimed right by F3b but travelled LIGHT's distances, so `brand-600` — the app's LINK ink —
+failed AA on a `#1f2937` card for **14 of 18**; and that a button and a link were spelled with the
+same stop while wanting opposite things there. Fixed by `_SHADE_MIX` (four numbers, no call sites
+changed) plus a `--brand-fill` ROLE. F7b then added `--brand-shape` and deleted `DARK_EXEMPT`, so
+**the gate now runs in both modes with no exemptions left.** Building only what this ticket
+described would have fixed the buttons and left every link unreadable, with a green suite.
+
+---
+
+### [TD-223] Links are `info` on some surfaces and `brand` on others — low
+
+**Found:** Layer 1 F6 (2026-09-02), converting the public course guide. Carried into the register at
+F7d, which is the sprint that was supposed to settle it and did not.
+
+**What:** A link's colour is split by which sprint converted the file it sits in. F1–F3 surfaces
+spell it `info`; F4–F6 surfaces spell it `brand`. Both render blue on the platform's own colour, so
+nobody has ever seen the difference — a tenant with a non-blue brand would see it immediately.
+
+**The design of record already says which is right.** A2's contrast gate carries a `link_on_card`
+pair asserting **brand**, and F7b re-pinned brand text at `-600` after finding `-500` measured 3.98.
+So this is not an open design question; it is unfinished conversion.
+
+**Why it is still open:** making it true everywhere touches files from F1 through F5, and it is a
+product-wide call rather than a leftover of any one surface. F7d deliberately did not fold it in —
+that sprint's deliverable was the switch and the flip, and a link recolour across five sprints'
+worth of files is a different change with a different blast radius.
+
+**Status:** Open. Sized as part of **F7e** (see TD-224), which touches the same call sites.
+
+---
+
+### [TD-224] Small muted text fails AA across the product — **in LIGHT mode, live today** — high
+
+**Found:** Layer 1 F7d (2026-09-02), walking all 25 surfaces in both modes with a composited
+contrast sweep (procedure: `docs/contrast-sweep.md`).
+
+**What:** Measured over 25 routes, against the effective background with alpha composited:
+
+| mode | failing elements | distinct causes |
+|---|---|---|
+| **light** | **263** | **55** |
+| dark | 54 | 11 |
+
+**⚠ THE HEADLINE IS THE ONE NOBODY EXPECTED: LIGHT IS FIVE TIMES WORSE THAN DARK, AND LIGHT IS WHAT
+EVERY VISITOR HAS BEEN LOOKING AT SINCE LAUNCH.** The walk was scheduled to check that dark was safe
+to switch on. It found dark is the *better-contrasting* of the two modes.
+
+The clusters, largest first:
+
+| ink | ground | ratio | bar | where |
+|---|---|---|---|---|
+| `text-ground-400` | `ground-0` / `ground-50` | **2.43–2.54** | 4.5 | the muted-text token, product-wide — the footer copyright on every public page, 29 field labels in the officer cockpit, "Locked", "Add", "View", every `text-xs` hint |
+| `text-white` | `bg-positive-600` / `-500`, `caution-500`, `critical-500` | **1.40–3.76** | 4.5 | tone FILLS: the cockpit's **Accept** button, step ticks, the course guide's score badges. Fails in BOTH modes; dark is worse |
+| `text-critical-500`, `text-caution-600`, `text-positive-600` | white | **3.19–3.76** | 4.5 | tone INK as small text — required-field asterisks, "Remove", verdict words |
+| `text-ground-500` | `bg-ground-100` | **4.39** | 4.5 | tinted chips — "Unread", "Exact", "✓ Sponsored" |
+| `bg-info-400 text-info-900` | — | 3.38–4.07 | 4.5 | the "Awaiting QC" status chip, in both modes |
+
+**⚠ TWO OF THESE ARE DEFECTS THIS ARC ALREADY FIXED ONCE, FOR THE BRAND ONLY.** F7a gave the brand
+a `--brand-fill` role because a fill that reverses in dark cannot keep light's ink. F7b moved brand
+TEXT off `-500` because it measured 3.98. **The four tone ramps reverse in dark exactly the same way
+and were given neither.** The pattern was named twice and generalised zero times.
+
+**Why the gate did not catch it:** `contrast.py` checks the BRAND ramp against the ground. It has no
+pair for a tone fill and no pair for `ground-400` as ink, so the whole class is outside what it
+measures. **A gate is blind to every pair it does not name** — the third time this arc has recorded
+that sentence.
+
+**Not counted as failures, deliberately:** disabled controls (`text-ground-300` + `cursor-not-allowed`,
+×24 — WCAG 1.4.3 exempts inactive components) and decorative `·` separators.
+
+**Shape of the fix (F7e, not decided):** the tone fills want the F7a treatment — a `--*-fill` /
+`-fill-ink` role per tone, resolving to a different stop per mode — and the muted-ink stops want a
+ruling on whether `ground-400` moves or every call site moves to `ground-500`. Moving the token is
+one edit and changes every muted label in the product; moving the call sites is ~150 edits and
+leaves the token as a trap for the next person. **That is an owner decision, not a repaint's.**
+
+**Status:** Open. **This is F7e**, and it is the largest remaining Layer 1 item.
+
+---
+
+### [TD-225] The brand logo is drawn for a light ground and half-disappears in dark — low
+
+**Found:** Layer 1 F7d (2026-09-02), the first time the landing page was looked at in dark.
+
+**What:** `BrandLogo` renders one raster asset (`logoUrl`, platform default `/logo-icon.png`). Its
+icon is dark ink on transparency, so on the dark ground the mark reads as a smudge. The wordmark
+beside it is blue and survives.
+
+**Why it is not a repaint fix:** it needs artwork, not a token. And tenants supply their own
+`logoUrl`, so "a dark variant" is a data-model question (a second URL per tenant, plus a fallback
+for the tenants who never supply one) rather than a CSS one.
+
+**Status:** Open. Owner's call — it is brand artwork.

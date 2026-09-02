@@ -404,7 +404,51 @@ parameter, any prop beyond `PageProps`, and any extra module export — so a pag
 id nor export the component that does. The screen moved whole into `view.tsx`; the route is 22
 lines. **The body did not change.** `tsc`, `jest` and `next lint` were green through all three.
 
-#### F7d — The flip
+#### ✅ F7d — SHIPPED 2026-09-02. **DARK MODE IS REACHABLE. AND LIGHT IS THE BROKEN ONE.**
+
+Retro `docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`; decisions ×2; lessons ×6. NO
+migration. web only. jest **1617**; i18n **4646 × 3**. **All 25 surfaces walked in both modes,
+measured rather than eyeballed** (`docs/contrast-sweep.md`).
+
+**▶ THE SWITCH EXISTS.** `ThemeSelector` — a `<select>` matching `LanguageSelector` class for class
+— on the public header (desktop + mobile), the landing nav, settings, the admin top bar and the
+sponsor shell. Plus `ThemeWatcher` in the PROVIDER STACK, not in the control, so a chromeless page
+still follows the device at sunset. **`themeSwitchEnabled()` is deleted and the boot script is
+unconditional.** F1b as originally scoped (four settings surfaces, three identity models, a
+migration) is **SUPERSEDED** by the owner's device-local ruling, not deferred.
+
+**▶ THE WALK INVERTED THE SPRINT'S EXPECTED QUESTION.** It was scheduled to check dark was safe.
+Measured over 25 routes: **light 263 failing elements / 55 distinct; dark 54 / 11.** `ground-400`,
+the muted-text token, is 2.43–2.54 on a light ground against a bar of 4.5 — the footer on every
+public page, 29 cockpit field labels, every `text-xs` hint. **Light is what every visitor has looked
+at since launch.** The flip does not make the product less readable; it makes an existing problem
+visible. Recorded as **TD-224**; this is **F7e**.
+
+**▶ TWO OF THE FAULTS ARE ONES THIS ARC FIXED ALREADY — FOR THE BRAND ONLY.** F7a's fill role and
+F7b's move of brand text off `-500` both apply verbatim to the four TONE ramps, which reverse in
+dark by the same rule and were given neither. `bg-positive-600 text-white` — the cockpit's **Accept**
+button — is **1.40** in dark and **3.30** in light. Named twice, generalised zero times.
+
+**▶ THE GATE IS BLIND TO EVERY PAIR IT DOES NOT NAME.** `contrast.py`'s seven pairs are all
+brand-versus-ground, so the whole TD-224 class sits outside it while it passes correctly. Third form
+of one lesson in three sprints (F7b: one bar hides the other kind; F7c: a folder-scoped guard).
+
+**▶ ALSO FOUND:** the brand logo is drawn for a light ground and its icon half-disappears in dark
+(**TD-225** — artwork, and tenants supply their own, so it is the owner's call).
+
+#### F7e — the contrast sprint (NEW, raised by F7d's walk)
+Give the four TONE ramps the F7a/F7b treatment, and settle the muted-ink stops. See **TD-224**
+(high), and fold in **TD-223** (links `info` vs `brand`) which touches the same call sites.
+*Largest remaining Layer 1 item. ~44 call sites carrying white ink on a tone fill, across 22 files,
+plus four fill roles and a widened gate — F7a's size exactly.*
+
+**⚠ ONE PART OF IT IS AN OWNER DECISION, NOT A REPAINT'S:** move `ground-400` (one edit, changes
+every muted label in the product) or move ~150 call sites to `ground-500` (and leave the token as a
+trap for the next person).
+
+---
+
+#### F7d — The flip *(original scoping, kept for the record)*
 Lower a `palette-guard` ceiling that may only fall, remove the flag, and review every surface in both
 modes. *low, but it is the sprint that must not be skipped.*
 

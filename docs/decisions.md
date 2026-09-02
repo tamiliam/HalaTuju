@@ -8458,3 +8458,64 @@ Keeping them separate is the whole point of having a draft at all.
 
 **Revisit if:** real use shows the two-press flow is a nuisance — in which case (a) with an explicit
 "save and publish" label is the honest version, never a silently-widened Publish.
+
+---
+
+## Layer 1 F7d — the theme choice is DEVICE-LOCAL, and F1b is superseded
+
+**Date:** 2026-09-02. **Decided by:** owner, on the record.
+
+**Decision:** a person's Light / Dark / Auto choice lives in `localStorage` on the device they are
+using. There is no account write path, and building one is not deferred work — it is cancelled.
+
+**What this supersedes:** F1 shipped `theme.ts` with a docstring stating, in as many words, that the
+theme's home is the ACCOUNT and that local storage is a CACHE of that value. F1b was scoped around
+that sentence: four settings surfaces, three identity models (student, admin, sponsor), and a
+migration. **That scoping is SUPERSEDED, not deferred.** Both docstrings were rewritten in F7d,
+because a docstring that outlives the decision it describes is a confident falsehood and this one
+was load-bearing.
+
+**Rationale:** LANGUAGE is a larger per-person choice than theme — it changes what the product says,
+not how it looks — and language is already device-local. Making the theme *more* persistent than the
+language would be backwards. A shared machine is also the common case for this product's users.
+
+**What survives from the old reasoning:** the module stays separate from `uiPrefs.ts`, but on
+different grounds. The original argument was taxonomic (account preference versus device
+preference); the surviving one is mechanical — the theme is read by a blocking `<head>` script that
+cannot import a module, and `uiPrefs` is a React-side store.
+
+**Revisit if:** someone who needs dark for accessibility reports having to set it on every machine
+they sign in from. That is the case account storage exists for, and it is a real one — it simply has
+not been reported, and building three identity models against a hypothetical was the wrong trade.
+
+---
+
+## Layer 1 F7d — the flip ships even though the walk found contrast failures
+
+**Date:** 2026-09-02. **Decided by:** engineering, for the owner's deploy call.
+
+**Decision:** F7d removes the theme flag and ships the switch, with **TD-224** open.
+
+**Rationale:** the walk was expected to raise "hold the flip until dark is clean". It found the
+opposite. Measured over 25 surfaces, **light mode has 263 failing elements against dark's 54** —
+and light is what every visitor has been looking at since launch. Holding the flip would keep the
+better-contrasting mode unreachable while leaving the worse one shipped, which fixes nothing and
+delays the control the arc spent seven sprints earning.
+
+**Alternatives considered:** (a) hold the flip and land TD-224 first, shipping one deploy; (b) fold
+the tone-fill roles into F7d.
+
+**Why not (a):** it treats dark as the risk when the measurement says light is. (b) is 44 call sites
+carrying white ink on a tone fill across 22 files, plus four new fill roles and a widened gate —
+that is F7a's size exactly, and F7a was its own sprint for the same reason.
+
+**⚠ WHAT THE DEPLOY ACTUALLY CHANGES:** `NEXT_PUBLIC_THEME_SWITCH` is confirmed unset on the live
+service (read from `gcloud run services describe`, not from a settings default), so no dark has ever
+painted in production. After this deploy, **every visitor whose device is set to dark gets a dark
+product on their next visit**, because `auto` is the default and follows the device. That is the
+intended flip and the single largest user-visible change of the arc. Anyone who dislikes it now has
+a control to say so, which is the entire point of shipping the switch in the same sprint.
+
+**Revisit if:** the owner would rather dark stayed opt-in — in which case the default becomes
+`light` rather than `auto`, which is one constant in `theme.ts` and one in `theme-boot.js`, pinned
+by a test that reads both.

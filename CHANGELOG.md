@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F7d — the flip - 2026-09-02
+
+**Sprint.** **NO migration.** web only. Retro
+`docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`. jest 1605 → **1617**; tsc **24**; lint **0**;
+i18n 4640 → **4646 × 3**; build clean. **All 25 surfaces walked in both modes, measured rather than
+eyeballed.**
+
+### Added
+- **A theme switch a person can click.** `ThemeSelector` — Light / Dark / Auto, a `<select>` styled
+  to match `LanguageSelector` exactly — on the public header (desktop + mobile), the landing nav,
+  the settings page, the admin top bar and the sponsor portal shell. **The choice is device-local**
+  (owner ruling: language is a larger per-person choice and is already device-local).
+- **`ThemeWatcher`**, which renders nothing and keeps `auto` following the device for the life of
+  the tab. It is mounted in the PROVIDER STACK rather than in the control, so a chromeless page —
+  document upload, where someone sits for a long time — still flips at sunset.
+
+### Changed
+- **⚠ DARK MODE IS NOW REACHABLE.** `themeSwitchEnabled()` is deleted and `theme-boot.js` runs
+  unconditionally. `NEXT_PUBLIC_THEME_SWITCH` was confirmed unset on the live service, so no dark
+  has ever painted in production: **after this deploy, every visitor whose device is set to dark
+  gets a dark product**, because `auto` is the default and follows the device. They now have a
+  control to say otherwise, which is why the switch ships in the same sprint as the flip.
+- **`theme.ts` and `theme-boot.js` said the theme's home is the ACCOUNT.** True when F1 wrote it,
+  false since the owner's ruling, and load-bearing — F1b was scoped around that sentence. Both
+  rewritten; F1b as originally scoped is **superseded, not deferred**.
+- **The sandbox dropped its own segmented toggle** and mounts the real control. It was legitimate
+  chrome right up until the product had one.
+
+### Found (not fixed — see TD-224, sized as F7e)
+- **⚠ LIGHT MODE HAS FIVE TIMES MORE CONTRAST FAILURES THAN DARK, AND LIGHT IS WHAT SHIPPED.**
+  Measured over 25 routes: **light 263 failing elements / 55 distinct causes; dark 54 / 11.**
+  `text-ground-400`, the muted-text token, is **2.43–2.54** against a bar of 4.5 — the footer on
+  every public page, 29 field labels in the officer cockpit, every `text-xs` hint. The flip does not
+  make the product less readable; it makes an existing problem visible.
+- **The four tone ramps never got F7a's fill role or F7b's text fix**, though they reverse in dark by
+  the same rule. `bg-positive-600 text-white` — the cockpit's Accept button — is **1.40** in dark and
+  **3.30** in light.
+- **The brand logo is drawn for a light ground** and its icon half-disappears in dark (**TD-225**).
+
 ## Layer 1 F7c — the cockpit can be mounted, and it was broken - 2026-09-02
 
 **Sprint.** **NO migration.** web only. Retro
