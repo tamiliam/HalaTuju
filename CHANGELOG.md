@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F7b — the shape role. THE GATE HAS NO EXEMPTIONS LEFT - 2026-09-02
+
+**Sprint.** **NO migration.** web + api. Retro
+`docs/retrospective-2026-09-02-layer1-f7b-brand-shape-role.md`. jest 1597 → **1603**;
+pytest 5765 → **5772**; tsc **24**; lint **0**; i18n **4640 × 3**; build clean.
+Four guards bite-checked. Reviewed in a browser in both modes.
+
+### Added
+- **`--brand-shape`** — `brand-500` in light, `brand-600` in dark. Every dot, progress bar, toggle
+  track, spinner, selected-pill border and focus ring: 204 utilities. They were all on the IDENTITY
+  stop, which cannot move between modes by ruling, so a tenant whose brand is dark got a dark shape
+  on a dark card (**10 of 18** under 3.0, worst 1.42). All 18 pass now, worst 4.82.
+  **`--brand-500` itself does not move — the ROLE does**, and a test says exactly that.
+- **A guard forbidding any component from reading `var(--brand-500)` directly.** Added because
+  reverting the SVG-prop fix during the bite-check produced **no failure at all** — which is how a
+  missing guard announces itself.
+
+### Fixed
+- **⚠ A LIVE LIGHT-MODE DEFECT.** 31 uses spelled brand TEXT as `text-primary-500`, where the
+  platform's own colour measures **3.98** against white — below AA — in eleven places at `text-sm`
+  or smaller. The gate could never have caught it: its only pair on that token was correctly scoped
+  as a non-text shape at 3.0. Found by classifying the call sites. Brand text is `-600` now.
+- **The two-tone stream icons** stroked themselves with `rgb(var(--brand-500))` as an SVG prop —
+  F3's hiding place, invisible to every class scan.
+
+### Removed
+- **`DARK_EXEMPT`.** Every contrast pair is checked in every mode, with no exemptions anywhere.
+  **Closing it added ZERO new refusals** — the same 11 colours pass and the same 7 refuse, for the
+  same reasons, which is what distinguishes a role from a loosened bar. Now its own test.
+
+### Changed
+- **`FILL_ROLE` → `BRAND_ROLE`**, gaining `shape`. One table of brand roles per language; two is the
+  F4 role-palette shape waiting to happen.
+- **`FundingBar` deliberately did NOT move.** It was already on `-600`, which is pale in dark, so it
+  needed nothing — and switching it would have lightened a progress bar in light mode for no reason
+  a person could see the point of. The decision is written at that line.
+
 ## Layer 1 F7a — the filled control becomes a ROLE, and dark is gated. TD-222 CLOSED - 2026-09-02
 
 **Sprint.** **NO migration.** web + api. Retro

@@ -550,7 +550,75 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-02, after Layer 1 F7a — TD-222 IS CLOSED)
+## Next Sprint (as of 2026-09-02, after Layer 1 F7b — THE GATE HAS NO EXEMPTIONS LEFT)
+
+**SHIPPED — LAYER 1 F7b. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f7b-brand-shape-role`.
+**NO migration.** web + api. Retro `docs/retrospective-2026-09-02-layer1-f7b-brand-shape-role.md`;
+decision ×1; lessons ×5. jest 1597 → **1603**; pytest 5765 → **5772**; tsc **24** (baseline);
+lint **0**; i18n **4640 × 3**; build clean. Four guards bite-checked. **Reviewed in both modes.**
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`--brand-shape`** — `brand-500` in light, `brand-600` in dark, over 204 utilities: dots, bars,
+  toggle tracks, spinners, selected-pill borders and every focus ring. **`--brand-500` itself does
+  NOT move** — the ruling is about the identity stop, and a role landing elsewhere does not touch
+  it. A test asserts that in one line; do not "simplify" it away.
+- **⚠ A LIVE LIGHT-MODE DEFECT WAS FIXED, not a dark-mode one.** 31 uses spelled brand TEXT as
+  `text-primary-500`, where the platform's own colour is **3.98** against white — below AA — in
+  eleven places at `text-sm` or smaller. **Brand text is `-600`. Do not put it back on `-500`.**
+- **`DARK_EXEMPT` IS GONE and closing it added ZERO new refusals.** The same 11 pass, the same 7
+  refuse. That is pinned as `test_gating_shapes_in_dark_added_NO_new_refusals` — it is the assertion
+  that says the role was a fix rather than a loosened bar.
+- **NO COMPONENT MAY READ `var(--brand-500)` DIRECTLY.** New guard, added because reverting the
+  SVG-prop fix during the bite-check produced no failure at all.
+- **ONE table of brand roles per language** — `BRAND_ROLE`, four roles. Two tables is the F4
+  role-palette shape waiting to happen.
+- **`FundingBar` deliberately stays on `-600`.** It did not need moving and switching it would have
+  lightened a progress bar in light. The reason is at that line; do not "finish the job".
+
+**⚠ AT DEPLOY:** no migration, no data step. **Light mode is byte-identical for shapes** (the role
+resolves to `brand-500` there, verified in a browser) — **except** the 31 brand-TEXT uses, which go
+one stop darker and are a deliberate accessibility fix. Dark is still unreachable
+(`NEXT_PUBLIC_THEME_SWITCH` unset; read it from the service, never from a settings default).
+Python changed, so **both** builds fire — confirm with `gcloud builds list`.
+
+**NEXT = LAYER 1 F7c — the officer cockpit fixture.** The roadmap's sequence, verbatim:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+(F7 expands to F7a → F7b → F7c → F7d. F7a and F7b are done.)
+
+**F7c:** build the large `AdminApplicationDetail` sandbox fixture so the cockpit can be seen in a
+browser. It is the one repainted surface never reviewed, and the sandbox forbids a hand-written
+approximation — fix the component so it can be mounted, or leave the surface out. *~4 files.*
+
+**THEN F7d — the flip.** ⚠ **ITS FIRST TASK IS THE BLOCKER THE PLAN NEVER NAMED: there is no switch
+a person can click.** `NEXT_PUBLIC_THEME_SWITCH` gates only the before-paint script in `layout.tsx`,
+so removing the flag makes everyone follow their device with no override. **Owner ruled 2026-09-02:
+device-local, no account storage** — language is a bigger per-person choice and is already
+device-local, so making theme MORE persistent than language would be backwards. Mount it where
+`LanguageSelector` is, plus the admin and sponsor shells. **F1b as originally scoped (four settings
+surfaces, three identity models, a migration) is SUPERSEDED, not deferred.**
+F7d also settles **TD-223** (links are `info` on some surfaces and `brand` on others; A2's gate says
+brand) and the **eight category swatches seen together** on `/sandbox/course-guide`.
+
+**⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase.
+
+**CHECKLIST, now fifteen items:** re-derive the file list **and the surface the plan NAMES**; hunt
+the hiding places FIRST, weighted by a file's AGE not its size; grep for `bg-info-[567]00` beside
+`text-white`; ask of every colour table "state or kind?" **and whether it covers its whole domain**;
+**classify a token's call sites by what they DO before choosing a role — a gate checking one bar is
+blind to a defect of the other kind on the same token**; re-derive a recorded fix over a SPREAD of
+realistic inputs before building what the ticket says; ask whether both constraints can be met at
+all before picking a winner; never generate a regex **and sweep for control bytes after any
+generated write**; bite-check by injecting a fault AND VERIFYING IT LANDED — **and when the
+injection produces SILENCE, ask which test should have failed and write it**; read a codemod's
+residue rather than counting it; **after a bulk rename, grep the new token in COMMENT context and
+read every hit for tense**; when a test names a person, make the request look like that person's;
+when you fix a class of bug in one guard, grep for its neighbours that read the same way; **when you
+remove a guard's exemption, pin that the population it protected did not move**; and rewrite the
+module's own docstring when you remove the omission it was arguing for.
+
+## Superseded — previous Next Sprint (as of 2026-09-02, after Layer 1 F7a — TD-222 IS CLOSED)
 
 **SHIPPED AND DEPLOYED — LAYER 1 F7a.** `main` at `f684a8e6`, **both** Cloud Builds SUCCESS, serving
 **halatuju-web-00815-8z8** and **halatuju-api-00970-7r2**. All eight public routes 200; `/search`

@@ -1,5 +1,40 @@
 # Architectural Decisions — HalaTuju
 
+## The mark a SHAPE makes is a role too, and brand text leaves the identity stop — 2026-09-02
+**Decision:** `--brand-shape` resolves to `brand-500` in light and `brand-600` in dark, and carries
+every dot, progress bar, toggle track, spinner, selected-pill border and focus ring. Separately,
+brand TEXT moves from `text-primary-500` to `text-primary-600`. `DARK_EXEMPT` is deleted: every
+contrast pair is now checked in every mode, with no exemptions anywhere in the gate.
+
+**Alternatives considered:** (a) **Leave shapes on `brand-500` and keep the dark exemption** —
+rejected: it means a tenant whose brand is dark ships invisible focus rings, and an exemption that
+outlives the sprint that named it becomes permanent. (b) **Give shapes their own STORED token** so a
+tenant could tune it — rejected: it is a reserved key nothing fills, which arc A forbids, and the
+derived role already gives every tenant a correct answer. (c) **Move `brand-500` itself in dark** —
+forbidden by the 2026-07-29 ruling and rightly: it would change whose product you are looking at.
+(d) **Leave `text-primary-500` alone** — rejected once measured: the platform's own colour is 3.98
+against white there, below AA, in eleven places at `text-sm` or smaller. That is a live light-mode
+defect, not a dark-mode concern. (e) **Move `FundingBar` onto the shape role for uniformity** —
+rejected: it is already on `-600`, which is pale in dark, so it needed nothing, and switching it
+would have lightened a progress bar in light for no visible benefit.
+
+**Rationale:** the shape role is the same argument as `--brand-fill`, applied to the other kind of
+mark. `brand-500` is byte-identical across modes by ruling and therefore cannot serve anything that
+must stay visible in both; a role is free to land on a different stop, and does not touch the
+ruling. `brand-600` in dark is the smallest move that clears 3.0 for all 18 realistic colours, and
+it only clears it because F7a's retune made that stop genuinely pale.
+
+The text half was found by classifying the call sites rather than by the gate, which was never going
+to catch it: the only pair reading `-500` was correctly scoped as a non-text shape at 3.0, so a
+defect of the OTHER kind on the same token was invisible to it.
+
+**Consequences:** 204 utilities moved. **The measured spread did not change by one colour** — the
+same 11 pass and the same 7 refuse, which is what distinguishes a role from a loosened bar, and is
+now pinned as its own test. `FILL_ROLE` becomes `BRAND_ROLE`: one table of brand roles per language,
+because two is the F4 role-palette shape waiting to happen. A new guard forbids any component
+reading `var(--brand-500)` directly — added because reverting the SVG-prop fix during the
+bite-check produced no failure at all, which is how a missing guard announces itself.
+
 ## The filled control is a ROLE, and the dark ramp's shade end travels further — 2026-09-02
 **Decision:** `--brand-fill` / `--brand-fill-hover` / `--brand-fill-ink` resolve to `brand-600` /
 `-700` / white in light and `brand-800` / `-900` / `ground-50` in dark. Separately, `_SHADE_MIX`

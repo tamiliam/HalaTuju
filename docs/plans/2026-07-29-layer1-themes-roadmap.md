@@ -359,6 +359,30 @@ identity stop and cannot move, so a dark tenant colour makes a dark dot on a dar
 under 3.0). The fix is `--brand-shape` over ~50 files, almost all one repeating pattern
 (`focus:ring-2 focus:ring-primary-500 focus:border-primary-500`). Then delete `DARK_EXEMPT`.
 
+#### ✅ F7b — SHIPPED 2026-09-02. **THE GATE HAS NO EXEMPTIONS LEFT.**
+
+Retro `docs/retrospective-2026-09-02-layer1-f7b-brand-shape-role.md`; decision ×1; lessons ×5. NO
+migration. web + api. 204 utilities. jest **1603**, pytest **5772**. Reviewed in both modes.
+
+**▶ `--brand-shape`** — `brand-500` in light, `brand-600` in dark. Dots, bars, tracks, spinners,
+selected-pill borders and every focus ring. They sat on the IDENTITY stop, which cannot move between
+modes by ruling, so a dark tenant colour drew an invisible mark on a dark card (10 of 18 under 3.0,
+worst 1.42). All 18 pass now. **`--brand-500` does not move; the ROLE does.**
+
+**▶ `DARK_EXEMPT` IS GONE and closing it added ZERO new refusals** — the same 11 colours pass and
+the same 7 refuse, for the same reasons. That result is what makes it a fix rather than a loosened
+bar, and it is now its own test.
+
+**▶ A SECOND DEFECT, LIVE IN LIGHT MODE, THAT THE GATE COULD NOT SEE.** 31 uses spelled brand TEXT
+as `text-primary-500`, where the platform's own colour measures **3.98** against white — below AA —
+in eleven places at `text-sm` or smaller. Its only pair on that token was correctly scoped as a
+non-text shape at 3.0, so a defect of the OTHER kind there was invisible. Found by classifying the
+call sites. **When a token is checked at one bar, enumerate its uses and ask about the other kind.**
+
+**▶ THE BITE-CHECK FOUND A MISSING GUARD.** Reverting the SVG-prop fix produced no failure at all —
+class scans read class names, F3's SVG guard reads raw hex, and a `var()` reference is neither. The
+new guard states the property: no component may read `var(--brand-500)` directly.
+
 #### F7c — The officer cockpit fixture
 The one repainted surface never seen in a browser. Needs a large `AdminApplicationDetail` sandbox
 fixture; the sandbox forbids a hand-written approximation. *~4 files.*

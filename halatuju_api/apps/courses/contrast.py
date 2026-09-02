@@ -14,13 +14,14 @@ renders, derived by counting them in the web app rather than imagined:
     text-primary-700 on bg-primary-50   the tinted panel with brand text
     text-primary-600 on a card          a link
     text-primary-600 on the page ground a link outside a card
-    bg-primary-500   on a card          dots, bars and icon circles — NOT text
+    the shape role   on a card          dots, bars, spinners, focus rings — NOT text
 
 A checker written against a hex has to be rewritten the day per-token colours arrive; one written
 against the pairs actually rendered simply gets more rows.
 
-The first three rows name a ROLE rather than a stop, and `FILL_ROLE` resolves it per mode — see
-that table for why a button and a link cannot share a number in dark.
+Four of those rows name a ROLE rather than a stop, and `BRAND_ROLE` resolves it per mode — see that
+table for why a button and a link cannot share a number in dark, and why a shape cannot sit on the
+identity stop.
 
 ⚠ THE LAST ROW HAS A DIFFERENT BAR, AND THE REASON IS THE SPRINT'S OWN FINDING. `bg-primary-500`
 used to carry `text-white` in 46 places, which put small white text on the lightest usable brand
@@ -48,7 +49,7 @@ earth would have passed, so the gate would have been refusing every tenant for o
 F7a fixed the two things behind that number. The dark shade end was aimed correctly (F3b) but
 travelled light's short distances, so `brand-600` was barely lighter than the tenant's colour on a
 `#1f2937` card; and a filled button and a link were being spelled with the SAME stop while wanting
-opposite things there. The first is `_SHADE_MIX`, the second is `FILL_ROLE`. **The save path now
+opposite things there. The first is `_SHADE_MIX`, the second is `BRAND_ROLE`. **The save path now
 calls `failures_all_modes`** — a colour is stored once and rendered in both, and a tenant refused
 only after somebody flips the switch has been let down by the gate rather than protected by it.
 

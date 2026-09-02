@@ -341,6 +341,24 @@ describe('the two guards the owner ruled on', () => {
     expect(brandRamp('#1e3a8a', 'light')[500]).toBe(brandRamp('#1e3a8a', 'dark')[500])
   })
 
+  it('never reaches for the identity stop from a COMPONENT', () => {
+    // ⚠ FOUND BY BITE-CHECKING, AND IT WAS A MISSING GUARD RATHER THAN A BROKEN ONE. The two-tone
+    // stream icons stroke themselves with `rgb(var(--brand-500))` as an SVG PROP — F3's hiding
+    // place, invisible to every class scan — so on a dark card a dark tenant colour drew an
+    // invisible icon. F7b moved it to the role, and then nothing failed when the change was
+    // reverted, which is the tell that no test owned it.
+    //
+    // `--brand-500` is the identity stop: it is byte-identical across modes BY RULING, so anything
+    // that must stay visible in both cannot read it directly. Reading it from a component is
+    // therefore always a bug — the roles exist precisely so nobody has to.
+    const offenders: string[] = []
+    for (const f of ALL_FILES) {
+      if (f === 'src/lib/branding.ts' || f === 'src/lib/contrast.ts') continue  // the ramp's home
+      if (/var\(--brand-500\)/.test(withoutComments(read(f)))) offenders.push(f)
+    }
+    expect(offenders).toEqual([])
+  })
+
   it('keeps brand TEXT off the shape stop — F7b\'s second finding', () => {
     // ⚠ A LIVE LIGHT-MODE DEFECT, found by classifying rather than by the gate. 31 uses spelled
     // brand text `text-primary-500`, and the platform's own colour measures **3.98** there against
