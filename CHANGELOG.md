@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## `/admin/programme` is the Configuration page - 2026-09-02
 
-**Small change** (`small-change-lane.md`). **NO migration.** web only. jest 1617 → **1618**;
-tsc **24** (baseline); lint **0**; i18n 4646 → **4644 × 3**; build clean. One guard bite-checked.
+**Small change** (`small-change-lane.md`). **DEPLOYED** — `main` at `5cf75c08`, build `7edc8726`
+SUCCESS, serving **halatuju-web-00818-2xd**; api unchanged at `halatuju-api-00971-ck4`.
+**NO migration.** web only. jest 1617 → **1618**; tsc **24** (baseline); lint **0**;
+i18n 4646 → **4644 × 3**; build clean. One guard bite-checked.
+
+**Verified in the deployed bundle, not only in the build log:** `"Configuration"` and
+`"Konfigurasi"` are present; the deleted heading `"What your programme asks for"` appears **zero**
+times as a complete value (the phrase survives only inside the page subtitle, which was kept); the
+tab label `"What we ask for"` is still there, which is correct — the tab keeps its name.
 
 ### Changed
 - **The page and its sidebar entry are now "Configuration".** The sidebar item had been named after
