@@ -56,6 +56,10 @@ const config: Config = {
           fill: 'rgb(var(--brand-fill) / <alpha-value>)',
           'fill-hover': 'rgb(var(--brand-fill-hover) / <alpha-value>)',
           'fill-ink': 'rgb(var(--brand-fill-ink) / <alpha-value>)',
+          // The mark a SHAPE makes (Layer 1 F7b): `bg-brand-shape`, `border-brand-shape`,
+          // `ring-brand-shape`. Dots, bars, tracks, spinners and every focus ring. Never words —
+          // its bar is WCAG's 3.0 for a non-text edge. Brand TEXT is `primary-600`.
+          shape: 'rgb(var(--brand-shape) / <alpha-value>)',
         },
         // ── Theme tokens (Layer 1 F1) ────────────────────────────────────────
         // Same mechanism as `primary` above, extended to the ground and to the

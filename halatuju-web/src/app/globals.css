@@ -42,6 +42,22 @@
   --brand-fill: var(--brand-600);
   --brand-fill-hover: var(--brand-700);
   --brand-fill-ink: 255 255 255;
+
+  /* ── AND SO IS THE MARK A SHAPE MAKES (Layer 1 F7b, 2026-09-02) ────────────────────────────
+     Dots, progress bars, toggle tracks, spinners, selected-pill borders and — by far the most of
+     them — the focus ring on every form control. All the same requirement: an EDGE a person can
+     find against the surface behind it. WCAG's bar for that is 3.0, not 4.5, because none of them
+     carries words.
+
+     They were spelled `brand-500`, the IDENTITY stop, which is byte-identical across modes by
+     owner ruling and therefore cannot move. So a tenant whose brand is dark got a dark shape on a
+     dark card: 10 of 18 realistic colours measured under 3.0, worst 1.42. The ruling is about
+     `--brand-500` itself and this does not touch it — the tenant's colour is still the tenant's
+     colour, and a role is free to land on a different stop, exactly as `--brand-fill` does.
+
+     `brand-600` in dark is the minimum move that works, and only because F7a's retune made it
+     genuinely pale: 18 of 18 pass, worst 4.82. Light is `brand-500`, unchanged. */
+  --brand-shape: var(--brand-500);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -245,6 +261,11 @@
      bug this block exists to remove. What is wanted is the PAGE colour, so the label reads as a
      hole punched through the button, and `--ground-50` is the page in dark. */
   --brand-fill-ink: var(--ground-50);
+
+  /* The shape's mark moves one stop up the pale end — the smallest change that clears 3.0 for
+     every realistic tenant colour, and it only clears it because F7a made `-600` genuinely pale
+     in dark. `--brand-500` itself is untouched: the identity stop does not move, the ROLE does. */
+  --brand-shape: var(--brand-600);
 
   /* ── ground: the one ramp that is DESIGNED, not derived (Layer 1 F2a) ──────────────────────
      The tone ramps below are a straight reversal and that works, because a tone is a signal and
