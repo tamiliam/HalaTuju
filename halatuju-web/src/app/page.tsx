@@ -114,7 +114,7 @@ function FeatureCard({
 }) {
   return (
     <div className="card text-center">
-      <div className="w-12 h-12 bg-primary-100 text-primary-500 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
+      <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
         {step}
       </div>
       <h3 className="text-xl font-semibold text-ground-900 mb-2">{title}</h3>

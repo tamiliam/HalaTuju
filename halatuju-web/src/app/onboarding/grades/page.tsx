@@ -29,9 +29,12 @@ function StreamIcon({ stream, active }: { stream: string; active: boolean }) {
   // ⚠ SVG ATTRIBUTES, NOT CLASSES — invisible to every colour scan in the project, which is why
   // these were still raw hex three sprints into the migration. `#3b82f6`/`#bfdbfe` were also a
   // HARDCODED blue: this icon never followed a tenant's brand, even though it sits inside a
-  // `bg-primary-500` button. The vars make it do both — follow the tenant, and follow the theme.
+  // `bg-brand-shape` button. The vars make it do both — follow the tenant, and follow the theme.
   // White stays literal on the active chip, for the same reason `text-white` does everywhere.
-  const stroke = active ? 'white' : 'rgb(var(--brand-500))'
+  // ⚠ `--brand-shape`, not `--brand-500` (Layer 1 F7b). This stroke IS a shape's edge on a card,
+  // and the identity stop cannot move between modes, so on a dark card a dark tenant colour drew
+  // an invisible icon. The role lands on a paler stop in dark; the tenant's colour is unchanged.
+  const stroke = active ? 'white' : 'rgb(var(--brand-shape))'
   const fill = active ? 'rgba(255,255,255,0.3)' : 'rgb(var(--brand-200))'
   if (stream === 'science') return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -413,7 +416,7 @@ export default function GradesInputPage() {
                     value={coqInput}
                     onChange={(e) => handleCoqChange(e.target.value)}
                     placeholder="0.00"
-                    className="w-28 px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-center font-medium"
+                    className="w-28 px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none text-center font-medium"
                   />
                   <span className="text-sm text-ground-400">/ 10</span>
                 </div>
@@ -542,7 +545,7 @@ function CompactSubjectRow({
       <select
         value={selectedId}
         onChange={(e) => onSubjectChange(e.target.value)}
-        className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+        className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
       >
         <option value="">{t('onboarding.selectSubject')}</option>
         {options.map((s) => (

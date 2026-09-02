@@ -194,7 +194,7 @@ export default function AdminScholarshipList() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('admin.searchPlaceholder')}
-            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-ground-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-transparent"
           />
         </div>
         <select value={source} onChange={(e) => changeFilter(setSource)(e.target.value)}

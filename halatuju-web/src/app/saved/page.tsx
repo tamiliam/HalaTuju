@@ -254,7 +254,7 @@ export default function SavedPage() {
       <div className="container mx-auto px-6 py-8">
         {(loading || guardLoading) && (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent" />
           </div>
         )}
 
@@ -331,7 +331,7 @@ export default function SavedPage() {
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleSelect(course.course_id)}
-                            className="w-4 h-4 rounded border-ground-300 text-primary-500 focus:ring-primary-500"
+                            className="w-4 h-4 rounded border-ground-300 text-primary-600 focus:ring-brand-shape"
                           />
                         </label>
 
@@ -435,7 +435,7 @@ export default function SavedPage() {
 
             {compareLoading ? (
               <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent" />
                 <p className="text-ground-500 mt-3">Memuatkan maklumat kursus...</p>
               </div>
             ) : (

@@ -9,7 +9,7 @@ export default function NotFound() {
   return (
     <main className="min-h-screen bg-ground-50 flex items-center justify-center px-6">
       <div className="text-center max-w-sm">
-        <p className="text-6xl font-bold text-primary-500 mb-2">404</p>
+        <p className="text-6xl font-bold text-primary-600 mb-2">404</p>
         <h1 className="text-xl font-semibold text-ground-900 mb-2">{t('errors.pageNotFound')}</h1>
         <p className="text-ground-500 text-sm mb-6">
           {t('errors.pageNotFoundDesc')}

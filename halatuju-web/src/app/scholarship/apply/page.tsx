@@ -409,7 +409,7 @@ export default function ScholarshipApplyPage() {
       <ul className="space-y-2.5 text-sm text-ground-700">
         {['criteria1', 'criteria2', 'criteria3', 'criteria4'].map((k) => (
           <li key={k} className="flex items-start gap-2">
-            <svg className="w-5 h-5 text-primary-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {t(`scholarship.apply.${k}`)}
@@ -628,7 +628,7 @@ export default function ScholarshipApplyPage() {
               const on = form.pathwayCertainty === c
               return (
                 <button key={c} type="button" onClick={() => setCertainty(c)}
-                  className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${on ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-ground-300 text-ground-600 hover:border-ground-400'}`}>
+                  className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${on ? 'border-brand-shape bg-primary-50 text-primary-700' : 'border-ground-300 text-ground-600 hover:border-ground-400'}`}>
                   {t(`scholarship.apply.plan.${c}`)}
                 </button>
               )
@@ -678,7 +678,7 @@ export default function ScholarshipApplyPage() {
                     const on = form.pathwaysConsidered.includes(key)
                     return (
                       <button key={key} type="button" onClick={() => toggleLeaning(key)}
-                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
+                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                         {t(`scholarship.apply.plan.pathway.${key}`)}
                       </button>
                     )
@@ -724,7 +724,7 @@ export default function ScholarshipApplyPage() {
                   const on = form.uncertaintyReasons.includes(r)
                   return (
                     <button key={r} type="button" onClick={() => toggleReason(r)}
-                      className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
+                      className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                       {t(`scholarship.apply.plan.reason.${r}`)}
                     </button>
                   )
@@ -790,7 +790,7 @@ export default function ScholarshipApplyPage() {
                       const on = form.preUTrack === tr
                       return (
                         <button key={tr} type="button" onClick={() => setPreUTrack(tr)}
-                          className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
+                          className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                           {t(`scholarship.apply.plan.track.${tr}`)}
                         </button>
                       )
@@ -820,7 +820,7 @@ export default function ScholarshipApplyPage() {
                     const on = form.preUTrack === s
                     return (
                       <button key={s} type="button" onClick={() => setPreUTrack(s)}
-                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
+                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                         {t(`scholarship.apply.plan.stream.${s}`)}
                       </button>
                     )
@@ -863,7 +863,7 @@ export default function ScholarshipApplyPage() {
               const on = form.otherScholarships.includes(opt)
               return (
                 <button key={opt} type="button" onClick={() => toggleScholarship(opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                   {t(`scholarship.apply.scholarship.${opt}`)}
                 </button>
               )
@@ -885,7 +885,7 @@ export default function ScholarshipApplyPage() {
               const on = form.helpUniversity === opt
               return (
                 <button key={opt} type="button" onClick={() => update('helpUniversity', opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                   {t(`scholarship.apply.help.${opt}`)}
                 </button>
               )
@@ -899,7 +899,7 @@ export default function ScholarshipApplyPage() {
               const on = form.helpScholarship === opt
               return (
                 <button key={opt} type="button" onClick={() => update('helpScholarship', opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`}>
                   {t(`scholarship.apply.help.${opt}`)}
                 </button>
               )
@@ -991,7 +991,7 @@ export default function ScholarshipApplyPage() {
           {/* Progress */}
           <div className="mb-1 flex gap-1.5">
             {TAB_ORDER.map((k, i) => (
-              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-ground-200'}`} />
+              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-brand-shape' : 'bg-ground-200'}`} />
             ))}
           </div>
           <p className="text-xs text-ground-500 mb-4">

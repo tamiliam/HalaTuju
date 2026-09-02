@@ -221,7 +221,7 @@ export default function ProfileInputPage() {
               <select
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
               >
                 <option value="">{t('onboarding.selectState')}</option>
                 {MALAYSIAN_STATES.map((s) => (
@@ -240,7 +240,7 @@ export default function ProfileInputPage() {
                   onClick={() => setNationality('malaysian')}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                     nationality === 'malaysian'
-                      ? 'bg-primary-50 border-primary-500 text-primary-700'
+                      ? 'bg-primary-50 border-brand-shape text-primary-700'
                       : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
                   }`}
                 >
@@ -254,7 +254,7 @@ export default function ProfileInputPage() {
                   onClick={() => setNationality('non_malaysian')}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                     nationality === 'non_malaysian'
-                      ? 'bg-primary-50 border-primary-500 text-primary-700'
+                      ? 'bg-primary-50 border-brand-shape text-primary-700'
                       : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
                   }`}
                 >
@@ -287,7 +287,7 @@ export default function ProfileInputPage() {
                 onClick={() => setGender('male')}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border-2 ${
                   gender === 'male'
-                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    ? 'border-brand-shape bg-primary-50 text-primary-700'
                     : 'border-ground-200 text-ground-600 hover:border-ground-300'
                 }`}
               >
@@ -301,7 +301,7 @@ export default function ProfileInputPage() {
                 onClick={() => setGender('female')}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border-2 ${
                   gender === 'female'
-                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    ? 'border-brand-shape bg-primary-50 text-primary-700'
                     : 'border-ground-200 text-ground-600 hover:border-ground-300'
                 }`}
               >
@@ -323,14 +323,14 @@ export default function ProfileInputPage() {
             <div className="flex flex-wrap gap-3">
               <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
                 colorblind
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-brand-shape bg-primary-50'
                   : 'border-ground-200 hover:border-ground-300'
               }`}>
                 <input
                   type="checkbox"
                   checked={colorblind}
                   onChange={(e) => setColorblind(e.target.checked)}
-                  className="w-4 h-4 rounded border-ground-300 text-primary-500 focus:ring-primary-500"
+                  className="w-4 h-4 rounded border-ground-300 text-primary-600 focus:ring-brand-shape"
                 />
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colorblind ? 'rgb(var(--brand-700))' : 'rgb(var(--ground-500))'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill={colorblind ? 'rgb(var(--brand-200))' : 'rgb(var(--ground-200))'} />
@@ -341,14 +341,14 @@ export default function ProfileInputPage() {
               </label>
               <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
                 disability
-                  ? 'border-primary-500 bg-primary-50'
+                  ? 'border-brand-shape bg-primary-50'
                   : 'border-ground-200 hover:border-ground-300'
               }`}>
                 <input
                   type="checkbox"
                   checked={disability}
                   onChange={(e) => setDisability(e.target.checked)}
-                  className="w-4 h-4 rounded border-ground-300 text-primary-500 focus:ring-primary-500"
+                  className="w-4 h-4 rounded border-ground-300 text-primary-600 focus:ring-brand-shape"
                 />
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={disability ? 'rgb(var(--brand-700))' : 'rgb(var(--ground-500))'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" fill={disability ? 'rgb(var(--brand-200))' : 'rgb(var(--ground-200))'} />

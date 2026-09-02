@@ -61,7 +61,7 @@ export default function PrivacyPage() {
           <p className="text-ground-600">
             You may access, correct, or delete your data, and withdraw consent (including
             a sponsor-sharing consent) at any time. Use the{' '}
-            <a href="/contact" className="text-primary-500 hover:underline">contact form</a>{' '}
+            <a href="/contact" className="text-primary-600 hover:underline">contact form</a>{' '}
             (there&rsquo;s a &ldquo;Data Deletion Request&rdquo; option).
           </p>
 
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
 
           <p className="text-sm text-ground-500 italic pt-2">
             Questions about your data? Use our{' '}
-            <a href="/contact" className="text-primary-500 hover:underline">contact form</a>.
+            <a href="/contact" className="text-primary-600 hover:underline">contact form</a>.
           </p>
         </div>
       </div>

@@ -131,12 +131,15 @@ class TestTheGate(TestCase):
         # needing `-700`, `-50` or `-500` drop out.
         self.assertEqual(keys, {'filled_button', 'filled_button_visible',
                                 'link_on_card', 'link_on_page'})
+        # ⚠ `ui_shape` drops out in LIGHT, where the shape role resolves to `brand-500`, and comes
+        # BACK in dark, where it resolves to `brand-600` — which this partial set happens to carry.
+        # Two roles now move between modes, so a one-mode assertion would miss half the behaviour.
         # ⚠ AND THE SAME SET IS DIFFERENT IN DARK, which is the whole point of the role. There the
         # fill resolves to `brand-800`, which this partial set does not carry, so the button pairs
         # drop out and only the links remain. A test asserting one mode would have missed that the
         # resolution moved at all.
         self.assertEqual({r.key for r in cx.check_tokens(partial, 'dark')},
-                         {'link_on_card', 'link_on_page'})
+                         {'link_on_card', 'link_on_page', 'ui_shape'})
 
     def test_an_unknown_mode_raises(self):
         with self.assertRaises(ValueError):
@@ -172,36 +175,53 @@ class TestDarkIsGatedNow(TestCase):
                 tokens = tt.tokens_from_colour(hex_colour)
                 self.assertEqual(cx.failures_all_modes(tokens), [])
 
-    def test_the_shape_pair_is_deliberately_light_only(self):
-        """⚠ THE ONE THING F7a DID NOT FIX, recorded so the omission is not read as an oversight.
+    def test_EVERY_pair_is_checked_in_EVERY_mode_now(self):
+        """⚠ F7b CLOSED THE LAST EXEMPTION, and this replaces the test that named it.
 
-        `ui_shape` is a dot, bar or focus ring at `brand-500` — the IDENTITY stop, byte-identical
-        across modes by owner ruling. So a dark tenant colour puts a dark shape on a dark card, and
-        10 of 18 realistic colours measure under 3.0. The answer is a `--brand-shape` role, the same
-        move `--brand-fill` just made, over ~50 files of focus rings and borders. **That is F7b.**
-
-        Gating it today would refuse ten tenants for a defect of ours — the exact mistake A2's
-        docstring warned about, which is why this is an exemption with a name rather than a silence.
+        `ui_shape` was light-only because it measured `brand-500` — the IDENTITY stop, which cannot
+        move between modes by owner ruling — so a dark tenant colour drew an invisible dot on a dark
+        card. It is a ROLE now, like the fill, and `DARK_EXEMPT` is gone with it.
         """
-        self.assertEqual(cx.DARK_EXEMPT, ('ui_shape',))
-        # It is still checked in LIGHT — the exemption is per mode, not a deletion.
-        self.assertIn('ui_shape', {r.key for r in cx.check_tokens(tt.tokens_from_colour('#137fec'))})
-        self.assertNotIn('ui_shape',
-                         {r.key for r in cx.check_tokens(tt.tokens_from_colour('#137fec'), 'dark')})
-        # And the defect it is standing in for is REAL, so this cannot quietly become vacuous: a
-        # dark navy dot on a dark card is genuinely under the bar. If this assertion ever fails,
-        # F7b has landed — delete the exemption rather than leaving a test that means nothing.
+        self.assertFalse(hasattr(cx, 'DARK_EXEMPT'))
+        tokens = tt.tokens_from_colour('#137fec')
+        for mode in tt.MODES:
+            self.assertEqual({r.key for r in cx.check_tokens(tokens, mode)},
+                             {p.key for p in cx.PAIRS}, mode)
+
+    def test_the_shape_role_is_what_made_that_possible(self):
+        """The defect the exemption stood for was REAL, so pin that the ROLE is what fixed it and
+        not a loosened bar. A dark navy dot drawn at the identity stop is still under 3.0; drawn
+        through the role it is not."""
         navy = tt.tokens_from_colour('#1e3a8a')
-        shape = cx.contrast_ratio(cx._rgb('brand-500', navy, 'dark'),
-                                  cx.PLATFORM_SURFACES['dark']['ground-0'])
-        self.assertLess(shape, cx.AA_NON_TEXT)
+        card = cx.PLATFORM_SURFACES['dark']['ground-0']
+        at_identity = cx.contrast_ratio(cx._rgb('brand-500', navy, 'dark'), card)
+        through_role = cx.contrast_ratio(cx._rgb('shape', navy, 'dark'), card)
+        self.assertLess(at_identity, cx.AA_NON_TEXT)
+        self.assertGreaterEqual(through_role, cx.AA_NON_TEXT)
+        # ⚠ AND THE IDENTITY STOP DID NOT MOVE. The ruling is about `--brand-500`, not about which
+        # stop a role lands on — this is the assertion that says the two are different things.
+        self.assertEqual(navy['light']['brand-500'], navy['dark']['brand-500'])
+
+    def test_gating_shapes_in_dark_added_NO_new_refusals(self):
+        """⚠ THE RESULT THAT MAKES F7b CREDIBLE. A2's lesson is that a gate refusing lots of colours
+        is usually reporting OUR defect. F7a exempted this pair because 10 of 18 failed; if the role
+        were the wrong fix, closing the exemption would show up here as colours moving into REFUSES.
+        None did — the same 11 pass and the same 7 refuse, for the same reasons as before."""
+        for hexv in PASSES:
+            with self.subTest(hexv):
+                self.assertEqual(cx.failures_all_modes(tt.tokens_from_colour(hexv)), [])
+        for hexv in DARK_ONLY_REFUSALS:
+            with self.subTest(hexv):
+                self.assertEqual({r.key for r in cx.failures(tt.tokens_from_colour(hexv), 'dark')},
+                                 {'link_on_card', 'link_on_page'})
 
 
-class TestTheFillRoleAgreesWithTheBrowser(SimpleTestCase):
+class TestTheBrandRolesAgreeWithTheBrowser(SimpleTestCase):
     """⚠ THREE FILES DESCRIBE THE FILL ROLE AND ALL THREE MUST AGREE (Layer 1 F7a).
 
-    `--brand-fill` is declared in `globals.css` (what the browser PAINTS), `FILL_ROLE` in
-    `branding.ts` (what the picker MEASURES as somebody types) and `FILL_ROLE` here (what the SAVE
+    `--brand-fill*` and `--brand-shape` are declared in `globals.css` (what the browser PAINTS),
+    `BRAND_ROLE` in
+    `branding.ts` (what the picker MEASURES as somebody types) and `BRAND_ROLE` here (what the SAVE
     PATH measures, and therefore what is actually enforced).
 
     A disagreement is silent in both directions: the gate would approve a colour on a button nobody
@@ -222,19 +242,23 @@ class TestTheFillRoleAgreesWithTheBrowser(SimpleTestCase):
         dark_at = css.index("[data-theme='dark']")
         light, dark = css[:dark_at], css[dark_at:]
 
-        self.assertEqual(self._stop(light, 'fill'), cx.FILL_ROLE['light']['fill'])
-        self.assertEqual(self._stop(light, 'fill-hover'), cx.FILL_ROLE['light']['hover'])
-        self.assertEqual(self._stop(dark, 'fill'), cx.FILL_ROLE['dark']['fill'])
-        self.assertEqual(self._stop(dark, 'fill-hover'), cx.FILL_ROLE['dark']['hover'])
+        self.assertEqual(self._stop(light, 'fill'), cx.BRAND_ROLE['light']['fill'])
+        self.assertEqual(self._stop(light, 'fill-hover'), cx.BRAND_ROLE['light']['hover'])
+        self.assertEqual(self._stop(dark, 'fill'), cx.BRAND_ROLE['dark']['fill'])
+        self.assertEqual(self._stop(dark, 'fill-hover'), cx.BRAND_ROLE['dark']['hover'])
 
         # Light's ink is the white LITERAL; dark's is the page it punches through.
-        self.assertEqual(cx.FILL_ROLE['light']['ink'], 'white')
+        self.assertEqual(cx.BRAND_ROLE['light']['ink'], 'white')
         self.assertRegex(light, r'--brand-fill-ink:\s*255 255 255;')
-        self.assertEqual(self._stop(dark, 'fill-ink'), cx.FILL_ROLE['dark']['ink'])
+        self.assertEqual(self._stop(dark, 'fill-ink'), cx.BRAND_ROLE['dark']['ink'])
+
+        # …and the SHAPE role, added in F7b. It is in the same table for the same reason.
+        self.assertEqual(self._stop(light, 'shape'), cx.BRAND_ROLE['light']['shape'])
+        self.assertEqual(self._stop(dark, 'shape'), cx.BRAND_ROLE['dark']['shape'])
 
     def test_the_fill_never_shares_a_stop_with_the_link(self):
         # The property behind the whole sprint, so a later tuning pass cannot undo it by accident:
         # on a dark card a link has to be pale enough to READ and a button dark enough to carry ink,
         # so they may not be the same number.
         link = [p for p in cx.PAIRS if p.key == 'link_on_card'][0].ink
-        self.assertNotEqual(cx.FILL_ROLE['dark']['fill'], link)
+        self.assertNotEqual(cx.BRAND_ROLE['dark']['fill'], link)

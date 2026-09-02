@@ -114,7 +114,7 @@ function FileChip({
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-ground-200 bg-ground-50/60 px-3 py-2.5">
       <span className="flex min-w-0 items-center gap-2 text-sm text-ground-600">
-        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-primary-500" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M14 3v5h5" />
         </svg>

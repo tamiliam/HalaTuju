@@ -29,9 +29,14 @@ export function FundingBar({
     >
       {/* BRAND, not the info tone — corrected by hand after the codemod (F2a). A progress fill
           carries no semantic state: it is not "information", it is this product's own measure of
-          how far something has got. `ActionCentre`'s identical bar was already `bg-primary-500`,
-          so leaving this one a tone would mean a tenant sets their colour and one bar follows
-          while the other stays blue. */}
+          how far something has got. `ActionCentre`'s identical bar was already on the brand, so
+          leaving this one a tone would mean a tenant sets their colour and one bar follows while
+          the other stays blue.
+          ⚠ F7b LEFT THIS ONE ON `-600` DELIBERATELY, while every other bar and dot moved to
+          `bg-brand-shape`. It did not need moving: `-600` is already pale in dark after F7a's
+          retune, so this bar is visible there, and switching it would have LIGHTENED a progress
+          bar in light mode for no reason a person could see the point of. The two bars this
+          comment is about still differ by one stop in light — they did before F7b too. */}
       <div
         className="h-full rounded-full bg-primary-600 transition-[width] duration-500"
         style={{ width: `${pct}%` }}

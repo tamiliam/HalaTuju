@@ -536,8 +536,8 @@ export default function ProfilePage() {
           <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${identityIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
                   </svg>
                 </div>
@@ -576,7 +576,7 @@ export default function ProfilePage() {
                       aria-label={t('profile.icMasked')}
                       className={`w-full px-3 py-2.5 border rounded-lg text-sm font-mono pr-10 ${
                         icEditable
-                          ? 'border-ground-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none'
+                          ? 'border-ground-300 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none'
                           : 'border-ground-200 bg-ground-50 text-ground-500 cursor-not-allowed'
                       }`}
                     />
@@ -630,7 +630,7 @@ export default function ProfilePage() {
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -643,7 +643,7 @@ export default function ProfilePage() {
                           onClick={() => setGender(g)}
                           className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                             gender === g
-                              ? 'bg-primary-50 border-primary-500 text-primary-700'
+                              ? 'bg-primary-50 border-brand-shape text-primary-700'
                               : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
                           }`}
                         >
@@ -661,7 +661,7 @@ export default function ProfilePage() {
                           onClick={() => setNationality(n)}
                           className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                             nationality === n
-                              ? 'bg-primary-50 border-primary-500 text-primary-700'
+                              ? 'bg-primary-50 border-brand-shape text-primary-700'
                               : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'
                           }`}
                         >
@@ -675,15 +675,15 @@ export default function ProfilePage() {
                   <div>
                     <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.colorBlindness')}</label>
                     <div className="flex gap-2">
-                      <button onClick={() => setColorblind(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${colorblind ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.yes')}</button>
-                      <button onClick={() => setColorblind(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!colorblind ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.no')}</button>
+                      <button onClick={() => setColorblind(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${colorblind ? 'bg-primary-50 border-brand-shape text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.yes')}</button>
+                      <button onClick={() => setColorblind(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!colorblind ? 'bg-primary-50 border-brand-shape text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.no')}</button>
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.physicalDisability')}</label>
                     <div className="flex gap-2">
-                      <button onClick={() => setDisability(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${disability ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.yes')}</button>
-                      <button onClick={() => setDisability(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!disability ? 'bg-primary-50 border-primary-500 text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.no')}</button>
+                      <button onClick={() => setDisability(true)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${disability ? 'bg-primary-50 border-brand-shape text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.yes')}</button>
+                      <button onClick={() => setDisability(false)} className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${!disability ? 'bg-primary-50 border-brand-shape text-primary-700' : 'bg-ground-0 border-ground-300 text-ground-600 hover:border-ground-400'}`}>{t('profile.no')}</button>
                     </div>
                   </div>
                 </div>
@@ -762,8 +762,8 @@ export default function ProfilePage() {
           <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${contactDetailsIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                   </svg>
                 </div>
@@ -799,7 +799,7 @@ export default function ProfilePage() {
                       type="email"
                       value={contactEmail}
                       onChange={e => setContactEmail(e.target.value)}
-                      className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                     />
                     <button
                       onClick={async () => {
@@ -837,7 +837,7 @@ export default function ProfilePage() {
                         setVerifyingPhone(false)
                       }}
                       placeholder="012-345 6789"
-                      className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                     />
                     {phoneVerifyEnabled && (
                     <button
@@ -880,7 +880,7 @@ export default function ProfilePage() {
                           value={phoneCode}
                           onChange={e => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                           placeholder={t('profile.phoneCodePlaceholder')}
-                          className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm tracking-widest focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                          className="flex-1 px-3 py-2.5 border border-ground-300 rounded-lg text-sm tracking-widest focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                         />
                         <button
                           onClick={async () => {
@@ -979,8 +979,8 @@ export default function ProfilePage() {
           <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${contactIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                   </svg>
@@ -1008,7 +1008,7 @@ export default function ProfilePage() {
                     onChange={e => setAddress(e.target.value)}
                     placeholder="No. 12, Jalan ABC, Taman XYZ"
                     rows={2}
-                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
+                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none resize-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1030,7 +1030,7 @@ export default function ProfilePage() {
                       }}
                       placeholder="08000"
                       maxLength={5}
-                      className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                     />
                   </div>
                   <div>
@@ -1040,7 +1040,7 @@ export default function ProfilePage() {
                       value={city}
                       onChange={e => setCity(e.target.value)}
                       placeholder="Sungai Petani"
-                      className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                     />
                   </div>
                 </div>
@@ -1049,7 +1049,7 @@ export default function ProfilePage() {
                   <select
                     value={state}
                     onChange={e => setState(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className="w-full px-3 py-2.5 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                   >
                     <option value="">{t('onboarding.selectState')}</option>
                     {MALAYSIAN_STATES.map(s => (
@@ -1084,8 +1084,8 @@ export default function ProfilePage() {
           <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${familyIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                   </svg>
                 </div>
@@ -1114,7 +1114,7 @@ export default function ProfilePage() {
                     placeholder="2500"
                     value={householdIncome}
                     onChange={e => setHouseholdIncome(e.target.value)}
-                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdIncomeInvalid ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500' : 'border-ground-300 focus:border-primary-500 focus:ring-primary-500'}`}
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdIncomeInvalid ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500' : 'border-ground-300 focus:border-brand-shape focus:ring-brand-shape'}`}
                   />
                   {householdIncomeInvalid
                     ? <p className="text-xs text-critical-500 mt-1">{t('profile.invalidHouseholdIncome')}</p>
@@ -1128,7 +1128,7 @@ export default function ProfilePage() {
                     max="20"
                     value={householdSize}
                     onChange={e => setHouseholdSize(e.target.value)}
-                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdSizeInvalid ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500' : 'border-ground-300 focus:border-primary-500 focus:ring-primary-500'}`}
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdSizeInvalid ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500' : 'border-ground-300 focus:border-brand-shape focus:ring-brand-shape'}`}
                   />
                   {householdSizeInvalid
                     ? <p className="text-xs text-critical-500 mt-1">{t('profile.invalidHouseholdSize')}</p>
@@ -1199,8 +1199,8 @@ export default function ProfilePage() {
           <div className={`bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5 ${appIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                   </svg>
                 </div>
@@ -1237,7 +1237,7 @@ export default function ProfilePage() {
                     className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none font-mono uppercase ${
                       angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran)
                         ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500'
-                        : 'border-ground-300 focus:border-primary-500 focus:ring-primary-500'
+                        : 'border-ground-300 focus:border-brand-shape focus:ring-brand-shape'
                     }`}
                   />
                   {angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran) && (
@@ -1313,8 +1313,8 @@ export default function ProfilePage() {
           {/* Section 6: My Course Interests */}
           <div className="bg-ground-0 border border-ground-100 rounded-xl shadow-sm p-6 mb-5">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-fill to-brand-fill-hover flex items-center justify-center shadow-sm shadow-primary-500/20">
+                <svg className="w-5 h-5 text-brand-fill-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
                 </svg>
               </div>

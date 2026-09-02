@@ -251,7 +251,13 @@ export function brandRamp(hex: string, theme: 'light' | 'dark' = 'light'): Recor
 }
 
 /**
- * Which ramp stop plays the FILLED-CONTROL role in each mode (Layer 1 F7a).
+ * Which ramp stop plays each BRAND ROLE in each mode (Layer 1 F7a, extended by F7b).
+ *
+ * `shape` is the mark a dot, bar, spinner or focus ring makes. It was `brand-500` — the IDENTITY
+ * stop, which cannot move between modes by owner ruling — so a dark tenant colour drew an
+ * invisible shape on a dark card (10 of 18 realistic colours under 3.0, worst 1.42). `brand-600`
+ * in dark is the smallest move that clears it for all 18, and only because F7a's retune made that
+ * stop genuinely pale. The ruling is untouched: `--brand-500` does not move, the ROLE does.
  *
  * ⚠ THIS IS THE ONE THING THE RAMP RETUNE COULD NOT FIX. A link's ink and a button's fill want
  * opposite things on a dark card — the link wants to be pale, the button wants to be dark enough
@@ -264,7 +270,7 @@ export function brandRamp(hex: string, theme: 'light' | 'dark' = 'light'): Recor
  * Kept here rather than in `globals.css` alone because the contrast gate has to resolve the same
  * roles to check a tenant's colour, and two descriptions of that mapping would drift.
  */
-export const FILL_ROLE = {
-  light: { fill: 600, hover: 700, ink: 'white' },
-  dark: { fill: 800, hover: 900, ink: 'ground-50' },
+export const BRAND_ROLE = {
+  light: { fill: 600, hover: 700, ink: 'white', shape: 500 },
+  dark: { fill: 800, hover: 900, ink: 'ground-50', shape: 600 },
 } as const

@@ -70,7 +70,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
             aria-label={isSaved ? 'Remove from saved' : 'Save course'}
           >
             <svg
-              className={`w-4 h-4 ${isSaved ? 'text-primary-500 fill-primary-500' : 'text-ground-500'}`}
+              className={`w-4 h-4 ${isSaved ? 'text-primary-600 fill-brand-shape' : 'text-ground-500'}`}
               viewBox="0 0 24 24"
               fill={isSaved ? 'currentColor' : 'none'}
               stroke="currentColor"

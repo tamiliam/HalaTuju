@@ -97,7 +97,7 @@ export default function SponsorRegisterPage() {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+  const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape'
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-info-50 to-ground-0 flex items-center justify-center py-12">

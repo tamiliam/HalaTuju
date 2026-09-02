@@ -52,7 +52,9 @@ opposite things there. The first is `_SHADE_MIX`, the second is `FILL_ROLE`. **T
 calls `failures_all_modes`** — a colour is stored once and rendered in both, and a tenant refused
 only after somebody flips the switch has been let down by the gate rather than protected by it.
 
-One pair is still light-only, with a name and a reason: see `DARK_EXEMPT`.
+**F7b closed the last exemption.** `ui_shape` was light-only because it measured `brand-500` — the
+identity stop, which cannot move between modes — so a dark tenant colour drew an invisible dot on a
+dark card. It is a ROLE now, like the fill, and every pair is checked in every mode.
 """
 from collections import namedtuple
 
@@ -78,13 +80,21 @@ PLATFORM_SURFACES = {
     'dark': {'white': (255, 255, 255), 'ground-0': (31, 41, 55), 'ground-50': (17, 24, 39)},
 }
 
-# ⚠ THE FILLED CONTROL IS A ROLE, NOT A STOP (Layer 1 F7a). It resolves to a DIFFERENT stop per
-# mode, because a button's fill and a link's ink want opposite things on a dark card and no single
-# number can be both. This table must stay byte-identical to `FILL_ROLE` in `src/lib/branding.ts`
-# and to the `--brand-fill*` block in `globals.css`; a test pins all three together.
-FILL_ROLE = {
-    'light': {'fill': 'brand-600', 'hover': 'brand-700', 'ink': 'white'},
-    'dark': {'fill': 'brand-800', 'hover': 'brand-900', 'ink': 'ground-50'},
+# ⚠ THE BRAND'S ROLES, AND WHICH STOP EACH LANDS ON PER MODE.
+#
+# A role rather than a stop wherever one number cannot serve two jobs across modes:
+#   fill / hover / ink   the filled control (F7a). A button's fill and a link's ink want opposite
+#                        things on a dark card, and no set of ramp distances gives both.
+#   shape                the mark a dot, bar, spinner or focus ring makes (F7b). It was the
+#                        IDENTITY stop, which cannot move between modes by owner ruling, so a dark
+#                        tenant colour drew an invisible shape on a dark card — 10 of 18 under 3.0.
+#
+# ⚠ ONE TABLE ON PURPOSE. Two tables of brand roles is the F4 role-palette shape waiting to happen.
+# It must stay byte-identical to `BRAND_ROLE` in `src/lib/branding.ts` and to the `--brand-fill*` /
+# `--brand-shape` block in `globals.css`; a test on each side pins all three together.
+BRAND_ROLE = {
+    'light': {'fill': 'brand-600', 'hover': 'brand-700', 'ink': 'white', 'shape': 'brand-500'},
+    'dark': {'fill': 'brand-800', 'hover': 'brand-900', 'ink': 'ground-50', 'shape': 'brand-600'},
 }
 
 PAIRS = (
@@ -104,16 +114,9 @@ PAIRS = (
     # ⚠ `ground-0` rather than `white`: in light they are the same colour, and in dark `ground-0` is
     # the CARD, which is what a dot actually sits on. `white` here would have measured the dot
     # against a surface that does not exist in dark.
-    Pair('ui_shape', 'brand-500', 'ground-0', AA_NON_TEXT),
+    # ⚠ A ROLE since F7b, and it is gated in BOTH modes now. `DARK_EXEMPT` is gone with it.
+    Pair('ui_shape', 'shape', 'ground-0', AA_NON_TEXT),
 )
-
-# ⚠ NOT CHECKED IN DARK, AND F7b IS WHY — see `test_the_shape_pair_is_deliberately_light_only`.
-# `brand-500` is the IDENTITY stop and is byte-identical across modes by owner ruling, so a dark
-# tenant colour makes a dark dot on a dark card: 10 of 18 realistic colours measure under 3.0. The
-# answer is a `--brand-shape` role, the same move `--brand-fill` just made, and it is ~50 files of
-# focus rings and borders — a sprint, not a footnote. Gating it before that exists would refuse ten
-# tenants for a defect of ours, which is precisely the mistake A2's docstring warned about.
-DARK_EXEMPT = ('ui_shape',)
 
 Result = namedtuple('Result', 'key ratio min_ratio passes')
 
@@ -139,11 +142,13 @@ def contrast_ratio(a, b):
 def _rgb(ref, tokens, mode):
     """Resolve a pair reference to an RGB triple, or None when the set does not carry it.
 
-    A `fill*` reference is a ROLE and is resolved through `FILL_ROLE` FIRST, so it lands on a
-    different stop in each mode. Everything else is a literal token name.
+    A ROLE name is resolved through `BRAND_ROLE` FIRST, so it lands on a different stop in each
+    mode. Everything else is a literal token name.
     """
     if ref.startswith('fill'):
-        ref = FILL_ROLE[mode][ref[5:] or 'fill']
+        ref = BRAND_ROLE[mode][ref[5:] or 'fill']
+    elif ref == 'shape':
+        ref = BRAND_ROLE[mode]['shape']
     if ref in PLATFORM_SURFACES[mode]:
         return PLATFORM_SURFACES[mode][ref]
     raw = (tokens.get(mode) or {}).get(ref)
@@ -166,8 +171,6 @@ def check_tokens(tokens, mode='light'):
         raise ValueError(f'unknown mode: {mode!r}')
     out = []
     for pair in PAIRS:
-        if mode == 'dark' and pair.key in DARK_EXEMPT:
-            continue
         ink = _rgb(pair.ink, tokens, mode)
         surface = _rgb(pair.surface, tokens, mode)
         if ink is None or surface is None:

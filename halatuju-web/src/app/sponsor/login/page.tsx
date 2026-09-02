@@ -117,7 +117,7 @@ export default function SponsorLoginPage() {
                   <input
                     type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                     required
                   />
                 </div>
@@ -126,7 +126,7 @@ export default function SponsorLoginPage() {
                   <input
                     type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder={t('sponsorAuth.enterPassword')}
-                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                     required
                   />
                 </div>
@@ -183,7 +183,7 @@ export default function SponsorLoginPage() {
                 <input
                   type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                   required
                 />
                 <button

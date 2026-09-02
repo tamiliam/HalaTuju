@@ -31,7 +31,7 @@ export default function AliranPicker({
             aria-checked={on}
             onClick={() => onChange(a)}
             className={`flex flex-col items-start rounded-xl border p-3 text-left transition-colors ${
-              on ? 'border-primary-500 bg-primary-50' : 'border-ground-300 hover:border-ground-400'
+              on ? 'border-brand-shape bg-primary-50' : 'border-ground-300 hover:border-ground-400'
             }`}
           >
             <span className={`flex w-full items-center justify-between text-sm font-medium ${on ? 'text-primary-700' : 'text-ground-800'}`}>

@@ -20,7 +20,7 @@ export default function ProgressStepper({ currentStep, totalSteps = 3 }: Progres
           <div
             key={i}
             className={`h-1.5 w-8 rounded-full transition-all ${
-              i < currentStep ? 'bg-primary-500' : 'bg-ground-200'
+              i < currentStep ? 'bg-brand-shape' : 'bg-ground-200'
             }`}
           />
         ))}

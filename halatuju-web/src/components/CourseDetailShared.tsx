@@ -11,7 +11,7 @@ export function LoadingSpinner() {
   return (
     <main className="min-h-screen bg-ground-50 flex items-center justify-center">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent mb-4" />
         <p className="text-ground-600">Loading course details...</p>
       </div>
     </main>

@@ -64,7 +64,7 @@ function ItemRow({ item, value, onChange, t }: {
   const heavy = isHeavy(item)
   return (
     <li className={`flex items-start justify-between gap-4 px-5 py-4 ${
-      heavy ? 'bg-primary-50/60 border-l-4 border-primary-500' : ''}`}
+      heavy ? 'bg-primary-50/60 border-l-4 border-brand-shape' : ''}`}
       data-testid={`row-${itemKey(item)}`}>
       <div className="min-w-0">
         <p className="font-medium text-ground-900">{t(item.label_key)}</p>

@@ -250,7 +250,7 @@ export default function InProgrammePage() {
 
           {app?.status === 'closed' ? null : !showForm ? (
             <button onClick={() => setShowForm(true)}
-              className="mt-3 w-full rounded-xl border border-primary-500 py-2.5 text-sm font-medium text-primary-600">
+              className="mt-3 w-full rounded-xl border border-brand-shape py-2.5 text-sm font-medium text-primary-600">
               + {t('scholarship.inProgramme.results.add')}
             </button>
           ) : (

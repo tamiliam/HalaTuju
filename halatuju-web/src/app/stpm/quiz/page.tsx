@@ -252,7 +252,7 @@ export default function StpmQuizPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-ground-0">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-brand-shape border-t-transparent mb-4" />
           <p className="text-ground-600">{t('stpmQuiz.loading')}</p>
         </div>
       </div>
@@ -275,12 +275,12 @@ export default function StpmQuizPage() {
   return (
     <main className="min-h-screen bg-ground-50">
       {/* Gradient header */}
-      <header className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
+      <header className="bg-gradient-to-r from-brand-fill to-brand-fill-hover text-brand-fill-ink">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="text-white/90 hover:text-white text-sm font-medium">
+          <Link href="/dashboard" className="text-brand-fill-ink/90 hover:text-brand-fill-ink text-sm font-medium">
             &larr; {t('common.appName')}
           </Link>
-          <Link href="/dashboard" className="text-white/70 hover:text-white text-sm">
+          <Link href="/dashboard" className="text-brand-fill-ink/70 hover:text-brand-fill-ink text-sm">
             {t('stpmQuiz.skip')}
           </Link>
         </div>
@@ -288,10 +288,10 @@ export default function StpmQuizPage() {
         {/* Progress bar */}
         <div className="px-6 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-white/90">
+            <span className="text-sm font-medium text-brand-fill-ink/90">
               {t('quiz.questionOf', { current: String(currentStep + 1), total: String(allQuestions.length) })}
             </span>
-            <span className="text-sm text-white/60">
+            <span className="text-sm text-brand-fill-ink/60">
               {t('quiz.answered', { count: String(answeredCount) })}
             </span>
           </div>

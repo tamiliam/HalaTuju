@@ -412,7 +412,7 @@ function StpmInstitutionsSection({ courseId }: { courseId: string }) {
         <select
           value={stateFilter}
           onChange={e => { setStateFilter(e.target.value); setPpdFilter(''); setDisplayCount(PAGE_SIZE) }}
-          className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
         >
           <option value="">All States</option>
           {allStates.map(state => (
@@ -422,7 +422,7 @@ function StpmInstitutionsSection({ courseId }: { courseId: string }) {
         <select
           value={ppdFilter}
           onChange={e => { setPpdFilter(e.target.value); setDisplayCount(PAGE_SIZE) }}
-          className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
         >
           <option value="">All Districts</option>
           {availablePpds.map(ppd => (
@@ -530,7 +530,7 @@ function MatricInstitutionsSection({ courseId }: { courseId: string }) {
         <select
           value={stateFilter}
           onChange={e => setStateFilter(e.target.value)}
-          className="border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
         >
           <option value="">All States</option>
           {availableStates.map(state => (

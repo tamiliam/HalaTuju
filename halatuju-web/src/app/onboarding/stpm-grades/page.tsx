@@ -292,7 +292,7 @@ export default function StpmGradesPage() {
               {/* PA — compulsory */}
               <div className="flex items-center gap-2 bg-ground-0 rounded-xl border border-ground-200 shadow-sm p-3">
                 <div className="flex-1 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-primary-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-primary-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   <span className="font-medium text-ground-900">Pengajian Am</span>
@@ -318,7 +318,7 @@ export default function StpmGradesPage() {
                   <select
                     value={subjectId}
                     onChange={(e) => handleSubjectChange(index, e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                   >
                     <option value="">{t('onboarding.stpmSelectSubject')}</option>
                     {streamSubjects
@@ -357,7 +357,7 @@ export default function StpmGradesPage() {
                   <select
                     value={electiveSubject}
                     onChange={(e) => handleElectiveChange(e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                   >
                     <option value="">{t('onboarding.stpmElective')}</option>
                     {allOptionalSubjects
@@ -442,7 +442,7 @@ export default function StpmGradesPage() {
                 value={kokoScore}
                 onChange={(e) => setKokoScore(e.target.value)}
                 placeholder="0.00 – 10.00"
-                className="w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                className="w-32 px-3 py-2 border border-ground-300 rounded-lg text-sm focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
               />
               <p className="text-xs text-ground-400 mt-1">{t('onboarding.kokoHint')}</p>
             </div>
@@ -534,7 +534,7 @@ export default function StpmGradesPage() {
                     <select
                       value={subjectId}
                       onChange={(e) => handleSpmAliranChange(index, e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                     >
                       <option value="">{t('onboarding.selectSubject')}</option>
                       {spmStreamPool
@@ -580,7 +580,7 @@ export default function StpmGradesPage() {
                     <select
                       value={subjectId}
                       onChange={(e) => updateSpmElektifSubject(index, e.target.value)}
-                      className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                      className="flex-1 min-w-0 px-3 py-2 border border-ground-300 rounded-lg text-sm bg-ground-0 focus:border-brand-shape focus:ring-1 focus:ring-brand-shape outline-none"
                     >
                       <option value="">{t('onboarding.selectSubject')}</option>
                       {spmElektifPool

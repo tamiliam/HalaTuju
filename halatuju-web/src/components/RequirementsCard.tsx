@@ -159,7 +159,7 @@ export default function RequirementsCard({
       {/* Header */}
       <div className="px-5 pt-5 pb-3 flex items-center justify-between">
         <h2 className="text-base font-semibold text-ground-900 flex items-center gap-2">
-          <svg className="w-[18px] h-[18px] text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-[18px] h-[18px] text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           {t('courseDetail.requirements')}

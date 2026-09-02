@@ -80,7 +80,7 @@ export default function IncomeRouteSwitch({
       type="button"
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-        active ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-ground-200 text-ground-700 hover:border-ground-300'
+        active ? 'border-brand-shape bg-primary-50 text-primary-700' : 'border-ground-200 text-ground-700 hover:border-ground-300'
       }`}
     >
       {label}
@@ -101,15 +101,15 @@ export default function IncomeRouteSwitch({
             type="button"
             onClick={() => setRoute(r)}
             className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left ${
-              route === r ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-ground-200 hover:border-ground-300'
+              route === r ? 'border-brand-shape bg-primary-50 ring-1 ring-brand-shape' : 'border-ground-200 hover:border-ground-300'
             }`}
           >
             <span
               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                route === r ? 'border-primary-500' : 'border-ground-300'
+                route === r ? 'border-brand-shape' : 'border-ground-300'
               }`}
             >
-              {route === r && <span className="h-2 w-2 rounded-full bg-primary-500" />}
+              {route === r && <span className="h-2 w-2 rounded-full bg-brand-shape" />}
             </span>
             <span className="text-sm font-medium text-ground-900">{t(`scholarship.incomeRouteSwitch.route.${r}`)}</span>
           </button>

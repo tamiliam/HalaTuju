@@ -45,7 +45,7 @@ export default function StpmDetailPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
+        <div className="animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent" />
       </div>
     }>
       <StpmContent />
@@ -214,7 +214,7 @@ function StpmContent() {
     return (
       <main className="min-h-screen bg-ground-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent mb-4" />
           <p className="text-ground-600">{t('common.loading')}</p>
         </div>
       </main>
@@ -249,7 +249,7 @@ function StpmContent() {
           {/* Back link */}
           <Link
             href="/dashboard"
-            className="text-sm text-primary-500 hover:text-primary-700 mb-4 inline-block"
+            className="text-sm text-primary-600 hover:text-primary-700 mb-4 inline-block"
           >
             &larr; {t('pathwayDetail.backToDashboard')}
           </Link>
@@ -316,7 +316,7 @@ function StpmContent() {
                 <select
                   value={stateFilter}
                   onChange={(e) => setStateFilter(e.target.value)}
-                  className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                 >
                   <option value="">{t('pathwayDetail.allStates')}</option>
                   {allStates.map((state) => (
@@ -332,7 +332,7 @@ function StpmContent() {
                     setPpdFilter(e.target.value)
                     setDisplayCount(PAGE_SIZE)
                   }}
-                  className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="rounded-lg border border-ground-300 px-3 py-2 text-sm bg-ground-0 focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                 >
                   <option value="">All Districts</option>
                   {availablePpds.map((ppd) => (

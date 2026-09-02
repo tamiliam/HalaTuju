@@ -71,7 +71,7 @@ export function Topbar({
   const initials = (adminName ?? '?').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
   const toneBar = (tone: Attention['tone']) =>
-    tone === 'crit' ? 'bg-critical-500' : tone === 'warn' ? 'bg-caution-500' : 'bg-primary-500'
+    tone === 'crit' ? 'bg-critical-500' : tone === 'warn' ? 'bg-caution-500' : 'bg-brand-shape'
 
   return (
     <header className="flex h-13 items-center gap-2 border-b border-ground-200 bg-ground-0 px-3 py-2">

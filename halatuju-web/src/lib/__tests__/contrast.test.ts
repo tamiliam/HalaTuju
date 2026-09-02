@@ -95,11 +95,21 @@ describe('the pair table', () => {
     expect(light.passes && dark.passes).toBe(true)
   })
 
-  it('skips the shape pair in dark, and ONLY in dark', () => {
-    // F7b's job — `brand-500` is the identity stop and cannot move, so a dark tenant colour makes
-    // a dark dot on a dark card. An exemption with a name, not a silence.
-    expect(checkColour('#137fec', 'light').map((c) => c.key)).toContain('ui_shape')
-    expect(checkColour('#137fec', 'dark').map((c) => c.key)).not.toContain('ui_shape')
+  it('checks EVERY pair in EVERY mode — F7b closed the last exemption', () => {
+    // `ui_shape` was light-only because it measured `brand-500`, the identity stop, which cannot
+    // move between modes. It is a ROLE now, so the exemption is gone rather than loosened.
+    const keys = PAIRS.map((p) => p.key)
+    expect(checkColour('#137fec', 'light').map((c) => c.key)).toEqual(keys)
+    expect(checkColour('#137fec', 'dark').map((c) => c.key)).toEqual(keys)
+  })
+
+  it('measures the SHAPE role against a different step in each mode too', () => {
+    // Same property as the fill, and the reason F7b could close the exemption at all: at the
+    // identity stop a dark navy dot is under 3.0 on a dark card; through the role it is not.
+    const light = checkColour('#1e3a8a', 'light').find((c) => c.key === 'ui_shape')!
+    const dark = checkColour('#1e3a8a', 'dark').find((c) => c.key === 'ui_shape')!
+    expect(light.ratio).not.toBe(dark.ratio)
+    expect(dark.passes).toBe(true)
   })
 
   it('uses the SERVER keys, so a refusal maps onto a row already on screen', () => {

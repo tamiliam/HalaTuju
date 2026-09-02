@@ -23,7 +23,7 @@ import { roleBadgeClass } from '@/lib/roleBadge'
  */
 
 export const inputCls =
-  'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+  'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-brand-shape focus:border-brand-shape'
 
 export type Banner = { type: 'success' | 'warning' | 'error'; text: string } | null
 

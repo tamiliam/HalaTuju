@@ -140,7 +140,7 @@ function MatricPageContent() {
         <AppHeader />
         <div className="flex items-center justify-center py-24">
           <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent mb-4" />
             <p className="text-ground-600">{t('common.loadingProfile')}</p>
           </div>
         </div>
@@ -239,7 +239,7 @@ function MatricPageContent() {
                 <select
                   value={stateFilter}
                   onChange={e => setStateFilter(e.target.value)}
-                  className="border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="border border-ground-300 rounded-lg px-3 py-2 text-sm text-ground-700 bg-ground-0 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-brand-shape"
                 >
                   <option value="all">{t('pathwayDetail.allStates')}</option>
                   {availableStates.map(state => (
@@ -324,7 +324,7 @@ export default function MatricPathwayPage() {
     <Suspense fallback={
       <main className="min-h-screen bg-ground-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent mb-4" />
           <p className="text-ground-600">Loading...</p>
         </div>
       </main>

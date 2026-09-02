@@ -91,7 +91,7 @@ export default function ContactPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t('contactForm.namePlaceholder')}
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
                   required
                 />
               </div>
@@ -103,7 +103,7 @@ export default function ContactPage() {
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
                   placeholder={t('contactForm.contactPlaceholder')}
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none"
                   required
                 />
               </div>
@@ -113,7 +113,7 @@ export default function ContactPage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-ground-0"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none bg-ground-0"
                 >
                   <option value="general">{t('contactForm.categoryGeneral')}</option>
                   <option value="bug">{t('contactForm.categoryBug')}</option>
@@ -129,7 +129,7 @@ export default function ContactPage() {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={t('contactForm.messagePlaceholder')}
                   rows={5}
-                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
+                  className="w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-shape focus:border-brand-shape outline-none resize-none"
                   required
                 />
               </div>

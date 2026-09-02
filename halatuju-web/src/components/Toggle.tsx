@@ -18,7 +18,7 @@ export default function Toggle({
       type="button" role="switch" aria-checked={on} aria-label={label} disabled={disabled}
       onClick={() => { if (!disabled) onChange(!on) }}
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-        on ? 'bg-primary-500' : 'bg-ground-300'
+        on ? 'bg-brand-shape' : 'bg-ground-300'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <span className={`inline-block h-5 w-5 transform rounded-full bg-ground-0 shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />

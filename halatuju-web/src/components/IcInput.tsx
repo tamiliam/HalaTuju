@@ -56,7 +56,7 @@ export default function IcInput({
         className={`w-full px-3 py-2.5 border rounded-lg text-sm tracking-wider focus:ring-1 outline-none ${
           displayError
             ? 'border-critical-300 focus:border-critical-500 focus:ring-critical-500'
-            : 'border-ground-300 focus:border-primary-500 focus:ring-primary-500'
+            : 'border-ground-300 focus:border-brand-shape focus:ring-brand-shape'
         }`}
       />
       {displayError && (

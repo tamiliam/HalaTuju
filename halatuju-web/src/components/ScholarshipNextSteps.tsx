@@ -603,7 +603,7 @@ export default function ScholarshipNextSteps({
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-ground-300 text-primary-600 focus:ring-primary-500"
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-ground-300 text-primary-600 focus:ring-brand-shape"
                       checked={checked}
                       onChange={toggle}
                     />
@@ -788,7 +788,7 @@ export default function ScholarshipNextSteps({
           {/* Progress bar + step indicator */}
           <div className="mb-1 flex gap-1.5">
             {steps.map((k, i) => (
-              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-ground-200'}`} />
+              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-brand-shape' : 'bg-ground-200'}`} />
             ))}
           </div>
           <p className="text-xs text-ground-500 mb-4">

@@ -63,7 +63,7 @@ export default function ScholarshipReview({
     title: string; editStep?: NextStepKey; editAnchor?: string; locked?: boolean; children: ReactNode
   }) => (
     <section className={`rounded-2xl bg-ground-0 p-5 shadow-sm mb-4 ${
-      editStep ? 'border-l-4 border-primary-500' : 'border border-ground-100'}`}>
+      editStep ? 'border-l-4 border-brand-shape' : 'border border-ground-100'}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ground-400">{title}</h3>
         {locked ? (

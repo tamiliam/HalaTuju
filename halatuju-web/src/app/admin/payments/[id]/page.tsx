@@ -167,7 +167,7 @@ export default function PaymentRunDetailPage() {
           </div>
           <div className="px-5 py-2 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">{t('admin.payments.totalAmountHeading')}</p>
-            <p className="text-xl font-bold text-primary-500 tabular-nums leading-tight">RM {rm(run.total)}</p>
+            <p className="text-xl font-bold text-primary-600 tabular-nums leading-tight">RM {rm(run.total)}</p>
           </div>
         </div>
       </div>
@@ -223,7 +223,7 @@ export default function PaymentRunDetailPage() {
                     <span className="tabular-nums">RM {rm(it.amount)}</span>
                   )}
                   {Number(it.credit_applied) > 0 && (
-                    <p className="mt-0.5 text-[11px] italic text-primary-500">{t('admin.payments.creditApplied', { amount: rm(it.credit_applied) })}</p>
+                    <p className="mt-0.5 text-[11px] italic text-primary-600">{t('admin.payments.creditApplied', { amount: rm(it.credit_applied) })}</p>
                   )}
                 </td>
                 <td className="px-4 py-3.5">

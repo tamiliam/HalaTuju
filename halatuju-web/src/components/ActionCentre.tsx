@@ -331,7 +331,7 @@ function ActionCard({
   return (
     <div className="rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
       <div className="flex items-start gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-500">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-shape">
           <KindIcon icon={iconFor(item.kind)} />
         </div>
         <div className="min-w-0 flex-1">
@@ -463,7 +463,7 @@ function ActionCard({
               <button
                 type="button"
                 onClick={() => onConfirm(confirmTargetFor(item.fact))}
-                className="w-full rounded-xl border border-primary-500 px-4 py-2.5 text-sm font-semibold text-primary-600 transition-colors hover:bg-primary-50"
+                className="w-full rounded-xl border border-brand-shape px-4 py-2.5 text-sm font-semibold text-primary-600 transition-colors hover:bg-primary-50"
               >
                 {t('scholarship.actionCentre.review')}
               </button>
@@ -563,7 +563,7 @@ function BankDetailsTask({
   return (
     <div className="rounded-2xl border border-ground-100 bg-ground-0 p-5 shadow-sm">
       <div className="flex items-start gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-500">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-shape">
           <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 10l9-6 9 6M5 10v8a2 2 0 002 2h10a2 2 0 002-2v-8" />
           </svg>
@@ -915,7 +915,7 @@ export default function ActionCentre({
           <span>{t('scholarship.actionCentre.percentComplete', { pct: String(pct) })}</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-ground-200">
-          <div className="h-full rounded-full bg-primary-500 transition-all" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-brand-shape transition-all" style={{ width: `${pct}%` }} />
         </div>
       </div>
 

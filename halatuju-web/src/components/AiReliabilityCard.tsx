@@ -17,7 +17,7 @@ import { verdictReliability, type Reliability } from '@/lib/officerCockpit'
 function Bar({ value, strong = false }: { value: number; strong?: boolean }) {
   return (
     <div className={`flex-1 overflow-hidden rounded-full bg-ground-200 ${strong ? 'h-2.5' : 'h-2'}`}>
-      <div className="h-full rounded-full bg-primary-500" style={{ width: `${Math.round(value * 100)}%` }} />
+      <div className="h-full rounded-full bg-brand-shape" style={{ width: `${Math.round(value * 100)}%` }} />
     </div>
   )
 }

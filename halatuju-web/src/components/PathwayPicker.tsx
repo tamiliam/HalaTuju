@@ -132,7 +132,7 @@ export default function PathwayPicker({
   })
 
   const chip = (on: boolean) =>
-    `rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`
+    `rounded-full border px-3 py-1.5 text-sm ${on ? 'border-brand-shape bg-primary-50 font-medium text-primary-700' : 'border-ground-300 text-ground-600'}`
 
   return (
     <div className="space-y-5">
@@ -142,7 +142,7 @@ export default function PathwayPicker({
         <div className="grid grid-cols-2 gap-3">
           {(['sure', 'uncertain'] as const).map((c) => (
             <button key={c} type="button" onClick={() => setCertainty(c)}
-              className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${form.pathwayCertainty === c ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-ground-300 text-ground-600 hover:border-ground-400'}`}>
+              className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${form.pathwayCertainty === c ? 'border-brand-shape bg-primary-50 text-primary-700' : 'border-ground-300 text-ground-600 hover:border-ground-400'}`}>
               {t(`scholarship.apply.plan.${c}`)}
             </button>
           ))}

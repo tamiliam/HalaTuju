@@ -338,7 +338,7 @@ export default function DashboardPage() {
               </div>
             ) : stpmResults === null ? (
               <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent mb-4" />
                 <p className="text-ground-500">{t('dashboard.checkingEligibility')}</p>
               </div>
             ) : stpmResults.length === 0 ? (
@@ -379,7 +379,7 @@ export default function DashboardPage() {
               {/* Left: headline + chance pills */}
               <div>
                 <h1 className="text-lg sm:text-xl font-bold text-ground-900">
-                  {t('dashboard.qualifyFor')} <span className="text-primary-500">{eligibilityData.eligible_courses.length}</span> {t('dashboard.qualifyCourses')}
+                  {t('dashboard.qualifyFor')} <span className="text-primary-600">{eligibilityData.eligible_courses.length}</span> {t('dashboard.qualifyCourses')}
                 </h1>
                 {eligibilityData.insights && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm">
@@ -398,7 +398,7 @@ export default function DashboardPage() {
                     {eligibilityData.insights.merit_summary.no_data > 0 && (
                       <span className="text-ground-400">&middot; {eligibilityData.insights.merit_summary.no_data} unrated</span>
                     )}
-                    <Link href="/onboarding/grades" className="text-xs text-ground-400 hover:text-primary-500 underline">
+                    <Link href="/onboarding/grades" className="text-xs text-ground-400 hover:text-primary-600 underline">
                       {t('dashboard.editProfile')}
                     </Link>
                   </div>
@@ -422,7 +422,7 @@ export default function DashboardPage() {
                   </button>
                 )}
                 {quizSignals ? (
-                  <button onClick={handleRetakeQuiz} className="text-sm text-ground-400 hover:text-primary-500 underline whitespace-nowrap">
+                  <button onClick={handleRetakeQuiz} className="text-sm text-ground-400 hover:text-primary-600 underline whitespace-nowrap">
                     {t('dashboard.retakeQuiz')}
                   </button>
                 ) : (
@@ -451,7 +451,7 @@ export default function DashboardPage() {
         {/* Loading State */}
         {examType === 'spm' && (eligibilityLoading || rankingLoading) && (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent mb-4" />
             <p className="text-ground-600">
               {rankingLoading ? t('dashboard.rankingCourses') : t('dashboard.checkingEligibility')}
             </p>
@@ -651,7 +651,7 @@ function StpmDashboardCards({
             ) : (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <h1 className="text-xl font-bold text-ground-900">
-                  {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> {t('dashboard.qualifyCourses')}
+                  {t('dashboard.qualifyFor')} <span className="text-primary-600">{stpmResults.length}</span> {t('dashboard.qualifyCourses')}
                 </h1>
                 <div className="flex items-center gap-3 text-sm">
                   <span className="flex items-center gap-1.5">
@@ -669,13 +669,13 @@ function StpmDashboardCards({
                 </div>
               </div>
             )}
-            <Link href="/onboarding/stpm-grades" className="text-xs text-ground-400 hover:text-primary-500 underline mt-1 inline-block">
+            <Link href="/onboarding/stpm-grades" className="text-xs text-ground-400 hover:text-primary-600 underline mt-1 inline-block">
               {t('dashboard.editProfile')}
             </Link>
           </div>
           <div className="flex items-center gap-2">
             {quizSignals ? (
-              <button onClick={onQuizCta} className="text-sm text-ground-400 hover:text-primary-500 underline whitespace-nowrap">
+              <button onClick={onQuizCta} className="text-sm text-ground-400 hover:text-primary-600 underline whitespace-nowrap">
                 {t('stpmQuiz.retakeQuiz')}
               </button>
             ) : (
@@ -790,7 +790,7 @@ function LoadingScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-ground-0">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-brand-shape border-t-transparent mb-4" />
         <p className="text-ground-600">{t('common.loadingProfile')}</p>
       </div>
     </div>

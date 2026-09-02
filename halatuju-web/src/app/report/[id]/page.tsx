@@ -45,7 +45,7 @@ export default function ReportPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-ground-50">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-brand-shape border-t-transparent mb-4" />
           <p className="text-ground-600">{t('report.loading')}</p>
         </div>
       </div>

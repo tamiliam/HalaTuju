@@ -51,7 +51,7 @@ export default function FilterPill({
           'px-3 py-1.5 text-sm font-medium rounded-lg border',
           'flex items-center gap-1.5 transition-colors',
           value
-            ? 'border-primary-500 bg-primary-50 text-primary-700 hover:bg-primary-100'
+            ? 'border-brand-shape bg-primary-50 text-primary-700 hover:bg-primary-100'
             : 'border-ground-200 bg-ground-100 text-ground-700 hover:bg-ground-200'
         )}
       >

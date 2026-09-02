@@ -1425,7 +1425,7 @@ export default function AdminScholarshipDetailPage() {
             const dotColour = {
               green: 'bg-positive-500',
               amber: 'bg-caution-500',
-              blue: 'bg-primary-500',
+              blue: 'bg-brand-shape',
               red: 'bg-critical-500',
             }[tone]
             const labelColour = {
@@ -1477,7 +1477,7 @@ export default function AdminScholarshipDetailPage() {
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-ground-400">
             {(['green', 'blue', 'amber', 'red'] as const).map((tn) => (
               <span key={tn} className="flex items-center gap-1">
-                <span className={`h-2 w-2 rounded-full ${ {green:'bg-positive-500',blue:'bg-primary-500',amber:'bg-caution-500',red:'bg-critical-500'}[tn] }`} aria-hidden />
+                <span className={`h-2 w-2 rounded-full ${ {green:'bg-positive-500',blue:'bg-brand-shape',amber:'bg-caution-500',red:'bg-critical-500'}[tn] }`} aria-hidden />
                 {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tn]}`)}
               </span>
             ))}

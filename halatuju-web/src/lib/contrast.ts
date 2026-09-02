@@ -14,7 +14,7 @@
  * golden fixture (`contrast.test.ts` here, `test_contrast.py` there) so a drift fails loudly on the
  * side that drifted.
  */
-import { brandRamp, FILL_ROLE } from '@/lib/branding'
+import { brandRamp, BRAND_ROLE } from '@/lib/branding'
 
 export type Rgb = [number, number, number]
 
@@ -47,7 +47,7 @@ export interface Pair {
 /**
  * The pairs the product renders, counted in `src/**` rather than imagined.
  *
- * `ui_shape` carries a different bar because `bg-primary-500` no longer carries text: A2 moved 52
+ * `ui_shape` carries a different bar because the brand's shape stop no longer carries text: A2 moved 52
  * filled controls off it onto `-600`, leaving dots, progress bars, toggles and aria-hidden icon
  * circles. Holding a shape to the text bar is what made the gate refuse the platform's own colour.
  *
@@ -62,12 +62,10 @@ export const PAIRS: Pair[] = [
   { key: 'panel_text', ink: 700, surface: 50, min: AA_TEXT },
   { key: 'link_on_card', ink: 600, surface: 'ground-0', min: AA_TEXT },
   { key: 'link_on_page', ink: 600, surface: 'ground-50', min: AA_TEXT },
-  { key: 'ui_shape', ink: 500, surface: 'ground-0', min: AA_NON_TEXT },
+  // ⚠ A ROLE since F7b, and gated in both modes now. It measured `brand-500` — the identity stop,
+  // which cannot move between modes — so a dark tenant colour drew an invisible dot on a dark card.
+  { key: 'ui_shape', ink: 'shape', surface: 'ground-0', min: AA_NON_TEXT },
 ]
-
-/** Not checked in dark, and F7b is why — `brand-500` is the identity stop and cannot move, so a
- *  dark tenant colour makes a dark dot on a dark card. Mirrors `DARK_EXEMPT` in the Python. */
-export const DARK_EXEMPT = ['ui_shape']
 
 export interface Check {
   key: string
@@ -105,9 +103,11 @@ function tripletToRgb(triplet: string): Rgb | null {
 function resolve(
   ref: number | string, ramp: Record<number, string>, mode: ThemeMode,
 ): Rgb | null {
-  // A `fill*` reference is a ROLE and lands on a different step per mode — see FILL_ROLE.
+  // A ROLE name lands on a different step per mode — see BRAND_ROLE.
   if (typeof ref === 'string' && ref.startsWith('fill')) {
-    ref = FILL_ROLE[mode][(ref.slice(5) || 'fill') as 'fill' | 'hover' | 'ink']
+    ref = BRAND_ROLE[mode][(ref.slice(5) || 'fill') as 'fill' | 'hover' | 'ink']
+  } else if (ref === 'shape') {
+    ref = BRAND_ROLE[mode].shape
   }
   if (typeof ref === 'string') return SURFACES[mode][ref] ?? null
   return tripletToRgb(ramp[ref] ?? '')
@@ -118,7 +118,6 @@ export function checkColour(hex: string, mode: ThemeMode = 'light'): Check[] {
   const ramp = brandRamp(hex, mode)
   const out: Check[] = []
   for (const pair of PAIRS) {
-    if (mode === 'dark' && DARK_EXEMPT.includes(pair.key)) continue
     const ink = resolve(pair.ink, ramp, mode)
     const surface = resolve(pair.surface, ramp, mode)
     if (!ink || !surface) continue

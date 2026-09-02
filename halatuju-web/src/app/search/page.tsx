@@ -20,7 +20,7 @@ export default function SearchPage() {
       <main className="min-h-screen bg-ground-50">
         <AppHeader />
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent" />
         </div>
         <AppFooter />
       </main>
@@ -332,7 +332,7 @@ function SearchPageInner() {
             </svg>
             <input
               type="text"
-              className="w-full pl-10 px-4 py-3 rounded-lg border border-ground-200 bg-ground-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-ground-400"
+              className="w-full pl-10 px-4 py-3 rounded-lg border border-ground-200 bg-ground-50 focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-transparent placeholder:text-ground-400"
               placeholder={t('search.searchPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -412,7 +412,7 @@ function SearchPageInner() {
           <button
             onClick={clearAllFilters}
             disabled={!hasActiveFilters}
-            className="px-3 py-1.5 text-sm font-medium text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-default"
+            className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-default"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -433,7 +433,7 @@ function SearchPageInner() {
             <div className="relative inline-flex items-center">
               <div className={clsx(
                 'w-10 h-5 rounded-full transition-colors',
-                eligibleOnly ? 'bg-primary-500' : 'bg-ground-200'
+                eligibleOnly ? 'bg-brand-shape' : 'bg-ground-200'
               )} />
               <div className={clsx(
                 'absolute top-0.5 left-0.5 w-4 h-4 bg-ground-0 rounded-full shadow-sm transition-transform',
@@ -462,7 +462,7 @@ function SearchPageInner() {
         {/* Loading */}
         {isLoading && (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-shape border-t-transparent mb-4" />
             <p className="text-ground-600">{t('common.loading')}</p>
           </div>
         )}

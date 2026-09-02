@@ -30,7 +30,7 @@ interface PaginationProps {
 }
 
 const NAV_BTN =
-  'text-sm py-1.5 rounded-lg border border-primary-500 text-primary-500 bg-ground-0 font-medium ' +
+  'text-sm py-1.5 rounded-lg border border-brand-shape text-primary-600 bg-ground-0 font-medium ' +
   'hover:bg-primary-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
 
 export function Pagination({
@@ -119,7 +119,7 @@ export function Pagination({
                 aria-label={t('admin.pageJump')}
                 className="w-16 text-xs border border-ground-200 rounded px-2 py-1 text-ground-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
-              <button type="submit" className="text-sm py-1 px-2.5 rounded-lg border border-primary-500 text-primary-500 bg-ground-0 font-medium hover:bg-primary-50 transition-colors">
+              <button type="submit" className="text-sm py-1 px-2.5 rounded-lg border border-brand-shape text-primary-600 bg-ground-0 font-medium hover:bg-primary-50 transition-colors">
                 {t('admin.go')}
               </button>
             </form>
