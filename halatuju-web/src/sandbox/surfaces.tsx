@@ -32,6 +32,7 @@ import type { EligibleCourse } from '@/lib/api'
 import ScholarshipApplyPage from '@/app/scholarship/apply/page'
 import SponsorStudentsPage from '@/app/sponsor/(portal)/students/page'
 import AdminProgrammeConfigPage from '@/app/admin/programme/page'
+import AdminScholarshipDetailPage from '@/app/admin/scholarship/[id]/page'
 import { AuthContext } from '@/lib/auth-context'
 import { AdminAuthContext } from '@/lib/admin-auth-context'
 import { SponsorPortalContext } from '@/lib/sponsor-portal-context'
@@ -42,6 +43,9 @@ import {
   sandboxResolutionItems, sandboxResolutionItemsClear,
 } from './fixtures/scholarship'
 import { sandboxPool } from './fixtures/sponsor'
+import {
+  sandboxCockpitApplication, sandboxCockpitCaseSummary, sandboxCockpitInterview,
+} from './fixtures/cockpit'
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
 
@@ -261,6 +265,48 @@ export const SURFACES: Surface[] = [
       + 'reasoning made the seventeen STPM subject chips grey. If a later sprint wants either set '
       + 'coloured, the change is to --category-*, not to these files.',
     render: () => <CourseGuide />,
+  },
+  {
+    slug: 'officer-cockpit',
+    title: 'Officer cockpit — the surface nobody had ever seen (F7c)',
+    note:
+      'The biggest screen in the product — 3,500 lines, 537 colour utilities — and until now the '
+      + 'ONE surface repainted in this arc that had never been opened in a browser. F5 converted '
+      + 'it; F7 could not honestly claim "every surface reviewed in both modes" while this one had '
+      + 'been reviewed in neither. The case is deliberately mid-review — assigned, interviewed, '
+      + 'one open resolution item, one amber verdict fact and one gap — because a freshly submitted '
+      + 'application renders a third of the screen and would prove nothing about the rest. '
+      + 'What to check in DARK: the four verdict facts must stay tellable apart (they are TONES, '
+      + 'not categories); the two Save buttons carry the brand, not the info tone; the HOLD badge '
+      + 'is filled while a suspended chip is tinted; "unrelated name" is critical where the generic '
+      + 'vision warning beside it is caution; and the capture chip is a CATEGORY while the Check-2 '
+      + 'briefing is INFO. Those were F5’s four judgement calls, made without ever seeing them.',
+    routes: {
+      '/api/v1/admin/scholarship/applications/1/': () => sandboxCockpitApplication,
+      '/api/v1/admin/scholarship/applications/1/verdict-summary/': () => sandboxCockpitCaseSummary,
+      '/api/v1/admin/scholarship/applications/1/interview/': () => ({
+        session: sandboxCockpitInterview, agenda: [],
+      }),
+      '/api/v1/admin/scholarship/assignable-admins/': () => ({
+        admins: [
+          { id: 7, name: 'Balan Reviewer', email: 'balan@sandbox.invalid', role: 'reviewer',
+            languages: ['ms', 'ta'], corrections: 0, paused: false },
+          // ⚠ A PAUSED reviewer is in the list, flagged, never filtered — bug #66. The option
+          // renders disabled with "Paused" as its reason, and this is where you can see that.
+          { id: 8, name: 'Devi Reviewer', email: 'devi@sandbox.invalid', role: 'reviewer',
+            languages: ['en'], corrections: 1, paused: true },
+        ],
+      }),
+      '/api/v1/admin/scholarship/sources/': () => ({ sources: [] }),
+    },
+    render: () => (
+      <WithAdminAuth>
+        {/* `applicationId` is the ONE concession the page makes to being mounted here: the sandbox
+            lives at `/sandbox/[surface]`, so `useParams()` has no `id`. Everything else — the
+            fetches, the loading states, the error handling — is the real page's own code path. */}
+        <AdminScholarshipDetailPage applicationId={1} />
+      </WithAdminAuth>
+    ),
   },
   {
     slug: 'programme-config',

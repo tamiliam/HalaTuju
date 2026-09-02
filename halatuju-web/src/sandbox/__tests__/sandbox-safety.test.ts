@@ -43,19 +43,32 @@ describe('sandbox fixtures contain no real person', () => {
     expect(chars).toBeGreaterThan(2000)
   })
 
+  // ⚠ THESE TWO SCAN EVERY SANDBOX FILE, NOT ONLY `fixtures/` (widened in F7c). The cockpit
+  // surface carries its reviewer list inline in `surfaces.tsx`, which is fixture DATA sitting
+  // outside the fixtures folder — so the old scope would have let a live-looking address through
+  // on the very screen that lists people. A guard scoped to a folder is blind to whatever is not
+  // in it, and this project has now been bitten by that shape three times.
+
   it('has no NRIC-shaped digits anywhere', () => {
     // A Malaysian identity number is the highest-consequence string that could leak into a
     // screenshot. Fixtures render `XXXXXX-XX-XXXX` instead — unmistakably not a card.
-    for (const file of fixtureFiles) {
-      const matches = readFileSync(file, 'utf-8').match(/\d{6}-\d{2}-\d{4}/g)
-      expect({ file, matches: matches ?? [] }).toEqual({ file, matches: [] })
+    // ⚠ BOTH SPELLINGS. The API returns an IC UNDASHED and the UI formats it, so a fixture written
+    // from a payload holds twelve bare digits — which the dashed-only pattern happily ignored.
+    // F7c's first draft did exactly that and passed.
+    for (const file of sandboxFiles) {
+      const text = readFileSync(file, 'utf-8')
+      const matches = [
+        ...(text.match(/\d{6}-\d{2}-\d{4}/g) ?? []),
+        ...(text.match(/(?<!\d)\d{12}(?!\d)/g) ?? []),
+      ]
+      expect({ file, matches }).toEqual({ file, matches: [] })
     }
   })
 
   it('routes every email address to a domain that cannot receive mail', () => {
     // `.invalid` is reserved by RFC 2606 and resolves nowhere, so a stray send in a design review
     // cannot reach a person. A plausible-looking address could.
-    for (const file of fixtureFiles) {
+    for (const file of sandboxFiles) {
       const emails = readFileSync(file, 'utf-8').match(/[\w.+-]+@[\w.-]+\.\w+/g) ?? []
       const offenders = emails.filter((e) => !e.endsWith('.invalid'))
       expect({ file, offenders }).toEqual({ file, offenders: [] })

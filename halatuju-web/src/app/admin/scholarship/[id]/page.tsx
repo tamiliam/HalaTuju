@@ -254,9 +254,19 @@ function Grades({ grades, trailing }: { grades?: Record<string, string> | null; 
   )
 }
 
-export default function AdminScholarshipDetailPage() {
+/**
+ * ⚠ `applicationId` EXISTS SO THE SANDBOX CAN MOUNT THIS PAGE (Layer 1 F7c), and it is the only
+ * concession made for it. The route supplies the id in production and always wins; the sandbox
+ * lives at `/sandbox/[surface]`, where `useParams()` has no `id` at all and `Number(undefined)` is
+ * NaN. The alternative was stubbing `useParams` — mocking the framework, which would mean the
+ * sandbox exercised a different code path from production and could no longer prove anything.
+ *
+ * That is the sandbox's own rule applied: fix the component so it can be MOUNTED rather than
+ * re-implementing it, and keep the concession to the one thing the route cannot provide.
+ */
+export default function AdminScholarshipDetailPage({ applicationId }: { applicationId?: number } = {}) {
   const params = useParams()
-  const id = Number(params?.id)
+  const id = applicationId ?? Number(params?.id)
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const isSuper = effectiveRole(role) === 'super'
