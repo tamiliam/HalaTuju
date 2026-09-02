@@ -174,8 +174,11 @@ export default function ProgrammeConfigTab() {
 
   return (
     <>
-      <h2 className="mt-6 text-lg font-semibold text-ground-900">{t('admin.programme.config.title')}</h2>
-      <p className="mt-1 text-sm text-ground-600">{t('admin.programme.config.subtitle')}</p>
+      {/* ⚠ NO HEADING HERE, DELIBERATELY (2026-09-02). The tab above already says "What we ask for",
+          and this carried an <h2> reading "What your programme asks for" — the same sentence a third
+          time, after the page title and the tab. Four restatements stood between the page's top and
+          its first control. The tab IS the heading; this line is the only thing that adds anything. */}
+      <p className="mt-6 text-sm text-ground-600">{t('admin.programme.config.subtitle')}</p>
 
       {loadError && (
         <div className="mt-4"><InfoBox kind="block">{t('admin.programme.config.loadError')}</InfoBox></div>

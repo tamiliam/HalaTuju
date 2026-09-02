@@ -5460,9 +5460,8 @@
     },
     "programme": {
       "config": {
-        "nav": "Apa yang kami minta",
-        "title": "Apa yang program anda minta",
-        "subtitle": "Pilih dokumen dan soalan yang wajib diberikan pemohon, yang ditawarkan tetapi tidak menghalang mereka, dan yang tidak anda mahu langsung. Perubahan berkuat kuasa serta-merta untuk permohonan baharu; pelajar yang sudah menghantar kekal dengan borang yang mereka hantar.",
+        "nav": "Konfigurasi",
+        "subtitle": "Tandakan setiap item sebagai Wajib, Pilihan, atau Jangan tanya. Perubahan sampai kepada permohonan baharu serta-merta; sesiapa yang sudah menghantar kekal dengan borang yang diisi mereka.",
         "liveWarning": "{n} pelajar sedang mengisi permohonan sekarang. Apa sahaja yang anda jadikan wajib akan diminta daripada mereka juga — mereka akan melihatnya apabila membuka permohonan mereka semula.",
         "liveWarningNone": "Tiada sesiapa sedang mengisi permohonan sekarang, jadi perubahan hanya sampai kepada pemohon baharu.",
         "sectionDocuments": "Dokumen",
@@ -5526,14 +5525,13 @@
         "justification": "Sebab memerlukan bantuan",
         "anything_else": "Apa-apa lagi"
       },
-      "title": "Program",
+      "title": "Konfigurasi",
       "subtitle": "Apa yang program anda minta, dan rupanya.",
       "tab": {
         "config": "Apa yang kami minta",
         "colours": "Warna"
       },
       "colours": {
-        "title": "Warna anda",
         "subtitle": "Tetapkan warna yang dilihat pelajar dan penaja anda di seluruh program.",
         "loadError": "Kami tidak dapat memuatkan warna anda. Sila muat semula halaman.",
         "organisationRequired": "Pilih sebuah organisasi.",

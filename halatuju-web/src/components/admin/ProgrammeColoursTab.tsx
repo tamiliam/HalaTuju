@@ -174,8 +174,9 @@ export default function ProgrammeColoursTab() {
 
   return (
     <>
-      <h2 className="mt-6 text-lg font-semibold text-ground-900">{t('admin.programme.colours.title')}</h2>
-      <p className="mt-1 text-sm text-ground-600">{t('admin.programme.colours.subtitle')}</p>
+      {/* No heading — the "Colours" tab above is it. Same change as the config tab (2026-09-02);
+          this one read "Your colours" directly under a tab labelled "Colours". */}
+      <p className="mt-6 text-sm text-ground-600">{t('admin.programme.colours.subtitle')}</p>
 
       {loadError && (
         <div className="mt-4"><InfoBox kind="block">{t('admin.programme.colours.loadError')}</InfoBox></div>

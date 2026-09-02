@@ -10,6 +10,8 @@ _(cleared at the 2026-08-19 review — counter reset; the 14 reviewed entries ar
 
 - 2026-08-27 fix: eWallet ID form takes the last 5 digits, not 4 — Vircle's sequence rolled past 800040017xxxx (newest wallet …79897) and three students could not enter their id at all (`settings/base.py` prefix 800040017→80004001 + band 7–9, `payments.py`, `ActionCentre.tsx`, en/ms/ta hints, `test_payments.py` fixtures + regression)
 
+- 2026-09-02 fix: `/admin/programme` is the Configuration page, and said so four times — the sidebar item was named after ONE of its two tabs ("What we ask for", so clicking it landed you on a page that also holds Colours), the `<h1>` repeated the sidebar GROUP ("Programme"), and each tab opened with an `<h2>` restating its own tab label. Title and nav → "Configuration"; both tab headings deleted with their keys; the config subtitle now names the three states the control actually offers (`ProgrammeConfigTab.tsx`, `ProgrammeColoursTab.tsx`, en/ms/ta, `page.test.tsx` re-anchored onto subtitles + a bite-checked guard that no tab may add a heading). 6 files, copy and two deleted elements; no model, no endpoint, no new surface — over the ~5-file line only because one JSON edit lands in three languages.
+
 ## Reviews
 
 ### 2026-08-19 — Consolidation review (14 small changes, 25 Jul → 18 Aug)

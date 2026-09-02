@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## `/admin/programme` is the Configuration page - 2026-09-02
+
+**Small change** (`small-change-lane.md`). **NO migration.** web only. jest 1617 → **1618**;
+tsc **24** (baseline); lint **0**; i18n 4646 → **4644 × 3**; build clean. One guard bite-checked.
+
+### Changed
+- **The page and its sidebar entry are now "Configuration".** The sidebar item had been named after
+  ONE of the page's two tabs ("What we ask for"), so clicking it landed you on a page that also
+  holds Colours — the menu described a tab, not the page. The `<h1>` said "Programme", which is the
+  sidebar GROUP it already sits under.
+- **Both tabs lost their opening heading**, and their keys with them. "What your programme asks for"
+  sat under a tab reading "What we ask for"; "Your colours" sat under one reading "Colours". With
+  the page title and the tab, that was four restatements above the first control.
+- **The config tab's intro now names the three states the control offers** — Required, Optional,
+  Don't ask — instead of describing them in prose that never used the button words.
+- Side effect: Tamil had two different words for "we" between the nav label and the tab
+  (நாம் / நாங்கள்). The nav label is gone, so the clash is too. **ms/ta are first drafts.**
+
 ## Layer 1 F7d — the flip - 2026-09-02
 
 **Sprint. DEPLOYED** — `main` at `70eb0302`, build `f6aca5a7` SUCCESS, serving

@@ -5460,9 +5460,8 @@
     },
     "programme": {
       "config": {
-        "nav": "What we ask for",
-        "title": "What your programme asks for",
-        "subtitle": "Choose which documents and questions an applicant must provide, which are offered but never block them, and which you don't want at all. Changes apply to new applications straight away; a student who has already submitted keeps the form they submitted.",
+        "nav": "Configuration",
+        "subtitle": "Mark each item Required, Optional, or Don't ask. Changes reach new applications straight away; anyone who has already submitted keeps the form they filled in.",
         "liveWarning": "{n} students are part-way through an application right now. Anything you make required will be asked of them too — they'll see it the next time they open their application.",
         "liveWarningNone": "Nobody is part-way through an application right now, so a change reaches new applicants only.",
         "sectionDocuments": "Documents",
@@ -5526,14 +5525,13 @@
         "justification": "Why they need support",
         "anything_else": "Anything else"
       },
-      "title": "Programme",
+      "title": "Configuration",
       "subtitle": "What your programme asks for, and how it looks.",
       "tab": {
         "config": "What we ask for",
         "colours": "Colours"
       },
       "colours": {
-        "title": "Your colours",
         "subtitle": "Set the colour your students and sponsors see across the programme.",
         "loadError": "We could not load your colours. Please refresh the page.",
         "organisationRequired": "Choose an organisation.",

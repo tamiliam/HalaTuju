@@ -153,27 +153,58 @@ describe('every outcome has a line on screen', () => {
  * test, not a third request for a screenshot.
  */
 describe('the tabbed shell', () => {
+  // ⚠ THESE ASSERT ON EACH TAB'S SUBTITLE, NOT ITS HEADING, AND THE HEADINGS ARE WHY (2026-09-02).
+  // Both tabs used to open with an <h2> restating the tab label — "What your programme asks for"
+  // under a tab reading "What we ask for", and "Your colours" under one reading "Colours". With the
+  // page title and the tabs, that was FOUR restatements above the first control. The headings are
+  // deleted and their keys with them; the subtitle is now each tab's own marker.
   it('shows the page heading and BOTH tabs, with the config tab open first', async () => {
     render(<AdminProgrammeConfigPage />)
     expect(screen.getByText('admin.programme.title')).toBeTruthy()
     expect(screen.getByText('admin.programme.subtitle')).toBeTruthy()
     expect(screen.getByTestId('tab-config').getAttribute('aria-selected')).toBe('true')
     expect(screen.getByTestId('tab-colours').getAttribute('aria-selected')).toBe('false')
-    // And the config tab's own heading, which sits between the tabs and its first card.
-    await waitFor(() => expect(screen.getByText('admin.programme.config.title')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
   })
 
   it('switches to Colours and back, and each tab owns its own content', async () => {
     render(<AdminProgrammeConfigPage />)
-    await waitFor(() => expect(screen.getByText('admin.programme.config.title')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
 
     fireEvent.click(screen.getByTestId('tab-colours'))
     expect(screen.getByTestId('tab-colours').getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByText('admin.programme.colours.title')).toBeTruthy()
-    expect(screen.queryByText('admin.programme.config.title')).toBeNull()
+    expect(screen.getByText('admin.programme.colours.subtitle')).toBeTruthy()
+    expect(screen.queryByText('admin.programme.config.subtitle')).toBeNull()
 
     fireEvent.click(screen.getByTestId('tab-config'))
-    await waitFor(() => expect(screen.getByText('admin.programme.config.title')).toBeTruthy())
-    expect(screen.queryByText('admin.programme.colours.title')).toBeNull()
+    await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
+    expect(screen.queryByText('admin.programme.colours.subtitle')).toBeNull()
+  })
+
+  it('gives the page exactly ONE heading above the tabs, and neither tab adds another', async () => {
+    // The regression guard. Deleting a heading is a one-line change that a later "the tab looks
+    // bare, add a title" would silently undo — and nothing else in the suite would notice, because
+    // an extra <h2> breaks no behaviour. Section cards inside a tab (Documents, Questions, and the
+    // colours panels) keep their own headings; those name real groups rather than repeating the tab.
+    render(<AdminProgrammeConfigPage />)
+    await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
+
+    // ⚠ `matches`, NOT `querySelectorAll`. The first draft collected headings INSIDE each child and
+    // so never looked at the child itself — an <h2> sitting directly in the panel searched its own
+    // empty insides and reported nothing. It passed with a heading deliberately injected. Written
+    // wrong once here; the bite-check is the only reason that is not still true.
+    const tabs = screen.getByRole('tablist')
+    const panel = document.querySelector('[role=tabpanel]') as HTMLElement
+    // `Array.from`, not a spread: an HTMLCollection is not iterable under this tsconfig's target,
+    // and the spread put the project's `tsc` baseline up from 24 to 25 (TD-221 counts it).
+    const loose = Array.from(panel.children)
+      .filter((el) => el.matches('h1,h2,h3'))
+      .map((el) => el.textContent)
+    expect({ loose }).toEqual({ loose: [] })
+
+    // And the page's own <h1> is the only top-level heading, sitting above the tabs.
+    expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent))
+      .toEqual(['admin.programme.title'])
+    expect(tabs).toBeTruthy()
   })
 })
