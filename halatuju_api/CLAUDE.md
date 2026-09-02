@@ -552,7 +552,11 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-02, after Layer 1 F7a — TD-222 IS CLOSED)
 
-**SHIPPED — LAYER 1 F7a. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f7a-brand-fill-role`.
+**SHIPPED AND DEPLOYED — LAYER 1 F7a.** `main` at `f684a8e6`, **both** Cloud Builds SUCCESS, serving
+**halatuju-web-00815-8z8** and **halatuju-api-00970-7r2**. All eight public routes 200; `/search`
+serves `bg-brand-fill` and no `bg-primary-600 text-white`; the api's branding endpoint is 200 with
+BrightPath still `theme: null` and `brand_colour: #137fec`.
+**✅ The F6 trigger correction held**: Python changed this time, so BOTH builds fired — as predicted.
 **NO migration.** web + api. Retro `docs/retrospective-2026-09-02-layer1-f7a-brand-fill-role.md`;
 decisions ×2; lessons ×6. jest 1595 → **1597**; pytest 5757 → **5765**; tsc **24** (baseline);
 lint **0**; i18n **4640 × 3**; build clean. Three guards bite-checked, each injection verified as
@@ -581,12 +585,17 @@ landed. **Reviewed in a browser in both modes.**
 - **`ui_shape` IS EXEMPT IN DARK ON PURPOSE**, with a test naming F7b and asserting the defect is
   real. Do not gate it before the shape role exists — that refuses ten tenants for a defect of ours.
 
-**⚠ AT DEPLOY:** no migration, no data step. **Nothing a visitor sees changes** — light mode is
-byte-identical and dark is still unreachable (`NEXT_PUBLIC_THEME_SWITCH` unset; read it from the
-service, never from a settings default). The only visible surface is Programme → Colours, where the
-check list is now twice as long and each row is labelled Light or Dark.
-Note F6's measured correction: editing `halatuju_api/CLAUDE.md` does NOT fire the api trigger — but
-this sprint DOES change Python, so both builds will run. Confirm with `gcloud builds list`.
+**✅ DEPLOYED 2026-09-02.** No migration, no data step. **Nothing a visitor sees changed** — light
+mode is byte-identical and dark is still unreachable (`NEXT_PUBLIC_THEME_SWITCH` unset; read it from
+the service, never from a settings default). The only visible surface is Programme → Colours, where
+the check list is now twice as long and each row is labelled Light or Dark.
+**Left for the owner's eyes:** open Programme → Colours as the BrightPath `org_admin`
+(**elanjelian@me.com**, NOT the super account) and confirm the doubled, mode-labelled check list.
+
+**✅ AND THE F6 TRIGGER CORRECTION HELD.** F6 measured that editing `halatuju_api/CLAUDE.md` alone
+does NOT fire the api trigger; this sprint changed Python and **both** builds ran, exactly as
+predicted. Two observations now agree, so the rule is: **the api trigger follows Python, not the
+`halatuju_api/**` glob.** Still confirm with `gcloud builds list` rather than assuming.
 
 **NEXT = LAYER 1 F7b — the shape role.** The roadmap's sequence, verbatim:
 
