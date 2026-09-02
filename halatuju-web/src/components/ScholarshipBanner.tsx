@@ -37,7 +37,7 @@ export default function ScholarshipBanner() {
       href="/scholarship/application"
       className="mb-6 flex items-center gap-3 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-3 transition-colors hover:bg-primary-100"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-fill text-brand-fill-ink">
         <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>

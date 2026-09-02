@@ -5546,16 +5546,18 @@
         "needs": "needs {n}",
         "unreadable": "This colour is hard to read on {pairs}. Try a darker colour.",
         "pair": {
-          "filled_button": "White text on your main button",
-          "filled_button_dark": "White text on your darker button",
+          "filled_button": "The label on your main button",
+          "filled_button_hover": "The label when somebody hovers that button",
+          "filled_button_visible": "Your main button against the card behind it",
           "panel_text": "Your colour as text on a pale panel",
-          "link_on_card": "A link on a white card",
+          "link_on_card": "A link on a card",
           "link_on_page": "A link on the page background",
           "ui_shape": "Small dots and progress bars"
         },
         "pairShort": {
           "filled_button": "your main button",
-          "filled_button_dark": "your darker button",
+          "filled_button_hover": "hovering that button",
+          "filled_button_visible": "seeing that button",
           "panel_text": "pale panels",
           "link_on_card": "links on cards",
           "link_on_page": "links on the page",
@@ -5579,7 +5581,11 @@
         "publish": "Publish",
         "saveFirst": "Save the draft before publishing it",
         "revertTo": "Revert to {colour}",
-        "revertToDefault": "Revert to the default"
+        "revertToDefault": "Revert to the default",
+        "mode": {
+          "light": "Light",
+          "dark": "Dark"
+        }
       }
     },
     "invitations": {

@@ -252,7 +252,7 @@ export default function ScholarshipReview({
         </button>
         {!confirmed && (
           <button type="button" onClick={onSubmit} disabled={submitting || !canSubmit}
-            className="flex-1 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50">
+            className="flex-1 rounded-xl bg-brand-fill px-4 py-3 text-sm font-semibold text-brand-fill-ink shadow-sm hover:bg-brand-fill-hover disabled:opacity-50">
             {submitting ? s('submitting') : s('submit')}
           </button>
         )}

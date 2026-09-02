@@ -20,7 +20,7 @@ export default function GetStartedPage() {
 
           <button
             onClick={() => showAuthGate('profile')}
-            className="mt-6 w-full bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition-colors"
+            className="mt-6 w-full bg-brand-fill text-brand-fill-ink font-semibold py-3 rounded-xl hover:bg-brand-fill-hover transition-colors"
           >
             {t('getStarted.student')}
           </button>

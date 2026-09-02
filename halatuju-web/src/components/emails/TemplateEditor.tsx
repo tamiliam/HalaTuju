@@ -152,7 +152,7 @@ export default function TemplateEditor<T extends EditableTemplate>({
           {t('admin.sources.cancel')}
         </button>
         <button type="button" onClick={save} disabled={busy || !dirty}
-          className="rounded-lg bg-primary-600 px-5 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+          className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
           {busy ? t('admin.sources.saving') : t('admin.sources.save')}
         </button>
       </div>

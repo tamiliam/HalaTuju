@@ -183,7 +183,7 @@ export default function StudentDetailPage() {
                     <p className="text-xs text-ground-700">{t('sponsorPortal.students.confirmBody', { amount: rmWhole(detail.award_amount) })}</p>
                     <div className="flex gap-2">
                       <button disabled={funding} onClick={doFund}
-                        className="flex-1 rounded-md bg-primary-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
+                        className="flex-1 rounded-md bg-brand-fill px-3 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-60">
                         {funding ? t('common.loading') : t('sponsorPortal.students.confirmAward')}
                       </button>
                       <button disabled={funding} onClick={() => { setConfirming(false); setErrCode(null) }}
@@ -194,7 +194,7 @@ export default function StudentDetailPage() {
                   </div>
                 ) : (
                   <button onClick={() => { setConfirming(true); setErrCode(null) }}
-                    className="w-full rounded-md bg-primary-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
+                    className="w-full rounded-md bg-brand-fill px-3 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
                     {t('sponsorPool.fullyFund')}
                   </button>
                 )}

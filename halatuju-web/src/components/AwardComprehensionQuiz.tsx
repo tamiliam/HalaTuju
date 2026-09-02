@@ -57,7 +57,7 @@ export default function AwardComprehensionQuiz({
       <div className="rounded-2xl border bg-ground-0 p-6 shadow-sm">
         <p className="text-sm text-ground-700">{ui.loadError}</p>
         <button type="button" onClick={fetchQuiz}
-          className="mt-4 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
+          className="mt-4 rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
           {ui.retry}
         </button>
       </div>
@@ -86,7 +86,7 @@ export default function AwardComprehensionQuiz({
         <button
           type="button"
           onClick={() => { setPhase('learn'); setI(0); setStatus('idle'); setPicked(null); setRetakeNote(false); window.scrollTo(0, 0) }}
-          className="mt-6 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700"
+          className="mt-6 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover"
         >
           {ui.begin}
         </button>
@@ -183,7 +183,7 @@ export default function AwardComprehensionQuiz({
             type="button"
             onClick={advance}
             disabled={submitting}
-            className="mt-5 w-full rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-50"
+            className="mt-5 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
           >
             {isLast ? ui.finish : ui.next}
           </button>

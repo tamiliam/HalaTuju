@@ -103,7 +103,9 @@ class TestOrganisationThemeEndpoint(TestCase):
         r = self.client.put(URL, {'colour': UNREADABLE}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'unreadable')
-        self.assertIn('filled_button', r.json()['failing'])
+        # ⚠ `failing` IS MODE-QUALIFIED since F7a (`light:filled_button`), because the same pair is
+        # now measured twice and a bare key could not say which one refused the save.
+        self.assertIn('light:filled_button', r.json()['failing'])
         self.assertFalse(OrganisationTheme.objects.filter(organisation=self.org_a).exists())
 
     def test_a_refusal_still_reports_the_checks_that_PASSED(self):

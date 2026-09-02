@@ -287,7 +287,7 @@ export default function AdminRequestDetailPage() {
               className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
             <button disabled={busy || !answer.trim()}
               onClick={() => run(async () => { const r = await answerOrgRequest(id, { answer }, opt); setAnswer(''); return r })}
-              className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.answerSend')}
             </button>
           </div>
@@ -319,7 +319,7 @@ export default function AdminRequestDetailPage() {
                   id, { body: commentText, visibility: commentInternal ? 'internal' : 'shared' }, opt)
                 setCommentText(''); setCommentInternal(false); return r
               })}
-              className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.commentSend')}
             </button>
             {isSuper && commentInternal && (
@@ -339,7 +339,7 @@ export default function AdminRequestDetailPage() {
               className="w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500" />
             <button disabled={busy || !question.trim()}
               onClick={() => run(async () => { const r = await askOrgRequest(id, { question }, opt); setQuestion(''); return r })}
-              className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+              className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.askSend')}
             </button>
             <p className="mt-1 text-xs text-ground-400">{t('admin.requests.detail.askHint')}</p>
@@ -575,7 +575,7 @@ export default function AdminRequestDetailPage() {
                 className="mt-3 w-full px-3 py-2 border border-ground-300 rounded-lg" />
               <button disabled={busy}
                 onClick={() => run(() => triageOrgRequest(id, { triaged_kind: triageKind, lane: triageLane, note: triageNote }, opt))}
-                className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                 {t('admin.requests.action.triage')}
               </button>
             </div>
@@ -604,7 +604,7 @@ export default function AdminRequestDetailPage() {
                   const data = { hours: Number(quoteHours), margin_pct: Number(quoteMargin), note: quoteNote }
                   run(() => (has('requote') ? requoteOrgRequest(id, data, opt) : quoteOrgRequest(id, data, opt)))
                 }}
-                className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                 {has('requote') ? t('admin.requests.action.requote') : t('admin.requests.action.quote')}
               </button>
             </div>
@@ -619,7 +619,7 @@ export default function AdminRequestDetailPage() {
               <div>
                 <button disabled={busy}
                   onClick={() => run(() => scheduleOrgRequest(id, scheduleDate ? { scheduled_for: scheduleDate } : {}, opt))}
-                  className="mt-2 px-4 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                  className="mt-2 px-4 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                   {t('admin.requests.action.schedule')}
                 </button>
               </div>

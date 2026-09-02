@@ -691,7 +691,7 @@ export default function ProfilePage() {
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
-                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                     {saving ? '...' : t('profile.save')}
                   </button>
                 </div>
@@ -904,7 +904,7 @@ export default function ProfilePage() {
                             }
                           }}
                           disabled={!phoneCode || checkingPhoneCode}
-                          className="px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 whitespace-nowrap"
+                          className="px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50 whitespace-nowrap"
                         >
                           {checkingPhoneCode ? '...' : t('profile.confirm')}
                         </button>
@@ -926,7 +926,7 @@ export default function ProfilePage() {
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
-                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                     {saving ? '...' : t('profile.save')}
                   </button>
                 </div>
@@ -1061,7 +1061,7 @@ export default function ProfilePage() {
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
-                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                     {saving ? '...' : t('profile.save')}
                   </button>
                 </div>
@@ -1152,7 +1152,7 @@ export default function ProfilePage() {
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
-                  <button onClick={saveSection} disabled={saving || householdSizeInvalid || householdIncomeInvalid} className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                  <button onClick={saveSection} disabled={saving || householdSizeInvalid || householdIncomeInvalid} className="flex-1 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                     {saving ? '...' : t('profile.save')}
                   </button>
                 </div>
@@ -1264,7 +1264,7 @@ export default function ProfilePage() {
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-ground-300 rounded-lg text-sm font-medium text-ground-700 hover:bg-ground-50">
                     {t('profile.cancel')}
                   </button>
-                  <button onClick={saveSection} disabled={saving || (!!angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran))} className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                  <button onClick={saveSection} disabled={saving || (!!angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran))} className="flex-1 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                     {saving ? '...' : t('profile.save')}
                   </button>
                 </div>

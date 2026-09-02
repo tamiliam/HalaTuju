@@ -52,7 +52,7 @@ export default function MyGivingPage() {
             </span>
           </div>
         </div>
-        <Link href="/sponsor/students" className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 whitespace-nowrap">
+        <Link href="/sponsor/students" className="rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover whitespace-nowrap">
           {t('sponsorPortal.nav.support')} →
         </Link>
       </div>
@@ -182,7 +182,7 @@ export default function MyGivingPage() {
       ) : (
         <div className="rounded-2xl border border-dashed bg-ground-0 px-6 py-10 text-center">
           <p className="text-sm text-ground-500">{t('sponsorPortal.myStudents.none')}</p>
-          <Link href="/sponsor/students" className="inline-block mt-3 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
+          <Link href="/sponsor/students" className="inline-block mt-3 rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
             {t('sponsorPortal.nav.support')} →
           </Link>
         </div>

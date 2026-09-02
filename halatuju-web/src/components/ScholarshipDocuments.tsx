@@ -1080,7 +1080,7 @@ function IncomeProofCard({
                 onClick={() => setActiveType(dt)}
                 className={`text-xs px-2 py-1 rounded border transition-colors ${
                   activeType === dt
-                    ? 'bg-primary-600 text-white border-primary-600'
+                    ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
                     : 'text-ground-600 border-ground-300 hover:border-primary-400'
                 }`}
               >
@@ -1280,7 +1280,7 @@ function IncomeWizard({
           onClick={() => onPick(o.value)}
           className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
             selected === o.value
-              ? 'bg-primary-600 text-white border-primary-600'
+              ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
               : 'text-ground-600 border-ground-300 hover:border-primary-400'
           }`}
         >
@@ -1476,7 +1476,7 @@ function IncomeWizard({
               return (
                 <button key={m} type="button" onClick={() => toggleMember(m)}
                   className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                    on ? 'bg-primary-600 text-white border-primary-600'
+                    on ? 'bg-brand-fill text-brand-fill-ink border-primary-600'
                        : 'text-ground-600 border-ground-300 hover:border-primary-400'}`}>
                   {on ? '✓ ' : ''}{iq(`member.${m}`)}
                 </button>

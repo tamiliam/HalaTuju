@@ -348,7 +348,7 @@ export default function AdminProfilePage() {
 
         <button type="submit" disabled={saving || !name || !dirty}
           title={dirty ? undefined : t('common.nothingToSave')}
-          className="w-full sm:w-auto px-8 bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50">
+          className="w-full sm:w-auto px-8 bg-brand-fill text-brand-fill-ink py-3 rounded-lg font-medium hover:bg-brand-fill-hover transition-colors disabled:opacity-50">
           {saving ? t('admin.saving') : t('common.save')}
         </button>
       </form>

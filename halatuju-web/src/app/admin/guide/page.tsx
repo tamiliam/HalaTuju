@@ -144,7 +144,7 @@ export default function AdminManualPage() {
                 </div>
               )}
               <h2 className="flex items-center gap-2 text-lg font-semibold text-ground-900">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-fill text-sm font-bold text-brand-fill-ink">
                   {i + 1}
                 </span>
                 {s.title}

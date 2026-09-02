@@ -7,7 +7,7 @@ export type CLocale = typeof CLOCALES[number]
 export const inputCls =
   'w-full px-3 py-2 border border-ground-300 rounded-lg text-sm focus:ring-2 focus:ring-info-500 focus:border-info-500 disabled:bg-ground-50 disabled:text-ground-500'
 export const btnPrimary =
-  'px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50'
+  'px-5 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50'
 export const btnGhost =
   'px-4 py-2 rounded-lg text-sm font-medium border border-ground-300 text-ground-700 hover:bg-ground-50 disabled:opacity-50'
 
@@ -47,7 +47,7 @@ export function LangTabs({ value, onChange }: { value: CLocale; onChange: (l: CL
     <div className="inline-flex rounded-lg border border-ground-200 overflow-hidden text-xs">
       {CLOCALES.map((l) => (
         <button key={l} type="button" onClick={() => onChange(l)}
-          className={`px-3 py-1.5 font-medium uppercase ${value === l ? 'bg-primary-600 text-white' : 'bg-ground-0 text-ground-600 hover:bg-ground-50'}`}>
+          className={`px-3 py-1.5 font-medium uppercase ${value === l ? 'bg-brand-fill text-brand-fill-ink' : 'bg-ground-0 text-ground-600 hover:bg-ground-50'}`}>
           {l}{l === 'en' ? ' ★' : ''}
         </button>
       ))}

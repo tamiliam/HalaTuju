@@ -53,8 +53,8 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
             background takes `-600` like every other filled control. The codemod could not see it:
             it matches within one class string, and this pair is composed across two elements. */}
         {rank && (
-          <div className="absolute top-2 left-2 w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center shadow">
-            <span className="text-white text-sm font-bold">#{rank}</span>
+          <div className="absolute top-2 left-2 w-8 h-8 bg-brand-fill rounded-lg flex items-center justify-center shadow">
+            <span className="text-brand-fill-ink text-sm font-bold">#{rank}</span>
           </div>
         )}
 

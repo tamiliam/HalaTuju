@@ -177,7 +177,7 @@ export default function InterviewScheduleCard({
           </div>
           {schedule.meeting_url
             ? <a href={schedule.meeting_url} target="_blank" rel="noreferrer"
-                 className="mt-2 inline-block rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                 className="mt-2 inline-block rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
                 {t('admin.scholarship.interview.schedule.meetLink')}
               </a>
             : <span className="mt-1 block text-xs text-ground-500">
@@ -296,7 +296,7 @@ export default function InterviewScheduleCard({
                       className={
                         'relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm transition ' +
                         (isSel
-                          ? 'bg-primary-600 font-semibold text-white'
+                          ? 'bg-brand-fill font-semibold text-brand-fill-ink'
                           : tooEarly
                             ? 'text-ground-300'
                             : 'text-ground-800 hover:bg-info-50')
@@ -334,7 +334,7 @@ export default function InterviewScheduleCard({
                         className={
                           'flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ' +
                           (isSel
-                            ? 'border-info-600 bg-primary-600 text-white'
+                            ? 'border-info-600 bg-brand-fill text-brand-fill-ink'
                             : isBusy
                               ? 'border-ground-200 bg-ground-50 text-ground-400 line-through'
                               : atMax
@@ -373,7 +373,7 @@ export default function InterviewScheduleCard({
             )}
             <div className="flex items-center gap-3">
               <button type="button" onClick={propose} disabled={busy || !ready}
-                className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+                className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {t('admin.scholarship.interview.schedule.propose')}
               </button>
               {(proposedSlots.length > 0 || rescheduling) && (

@@ -5714,6 +5714,19 @@ class AdminSponsorTermsPreviewView(_SponsorTermsBase):
         })
 
 
+def _checks_both_modes(tokens):
+    """Every contrast result for a token set, in both modes, each row carrying its own `mode`.
+
+    ONE helper rather than a call per site: the payload builder and the refusal path both report
+    these numbers, and two independently-written list comprehensions is how they start disagreeing
+    about which modes were measured.
+    """
+    from apps.courses import contrast, theme_tokens
+    return [dict(r._asdict(), mode=mode)
+            for mode in theme_tokens.MODES
+            for r in contrast.check_tokens(tokens, mode)]
+
+
 class AdminOrganisationThemeView(_AdminBase):
     """GET/PUT/DELETE `admin/scholarship/organisation/theme/` — an organisation's colour.
 
@@ -5810,7 +5823,10 @@ class AdminOrganisationThemeView(_AdminBase):
                 'colour': row.source_colour or '',
                 # Checks travel with whichever set they describe, so the screen never has to guess
                 # which colour a number belongs to.
-                'checks': [r._asdict() for r in contrast.check_tokens(tokens)] if tokens else [],
+                # ⚠ BOTH MODES since F7a. A colour is stored once and rendered in light AND dark,
+                # so a screen showing only the light numbers would report a colour as fine while
+                # the gate that saves it disagrees.
+                'checks': _checks_both_modes(tokens) if tokens else [],
             }
 
         return {
@@ -5858,12 +5874,15 @@ class AdminOrganisationThemeView(_AdminBase):
         # ⚠ THE GATE RUNS AT DRAFT TIME, NOT ONLY AT PUBLISH. An unreadable colour should be
         # refused at the moment somebody types it, not saved and refused later — a draft that
         # cannot ever be published is a trap you walk into twice.
-        fails = contrast.failures(tokens)
+        # ⚠ AND IT RUNS IN BOTH MODES since F7a. A2 could honestly gate light alone because dark was
+        # unreachable; it is reachable now, and a tenant refused only after somebody flips the
+        # switch has been let down by the gate rather than protected by it.
+        fails = contrast.failures_all_modes(tokens)
         if fails:
             return Response(
                 {'error': 'unreadable', 'code': 'unreadable',
-                 'checks': [r._asdict() for r in contrast.check_tokens(tokens)],
-                 'failing': [r.key for r in fails]},
+                 'checks': _checks_both_modes(tokens),
+                 'failing': [f'{mode}:{r.key}' for mode, r in fails]},
                 status=status.HTTP_400_BAD_REQUEST)
 
         theme_versions.save_draft(org, colour, tokens)

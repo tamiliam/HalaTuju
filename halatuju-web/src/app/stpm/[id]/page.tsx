@@ -69,7 +69,7 @@ export default function StpmCourseDetailPage() {
                       href={data.mohe_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors whitespace-nowrap"
+                      className="px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-xs font-medium hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
                     >
                       More Info
                     </a>
@@ -117,7 +117,7 @@ export default function StpmCourseDetailPage() {
                           href={data.institution.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
+                          className="px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-xs font-medium hover:bg-brand-fill-hover transition-colors"
                         >
                           More Info
                         </a>

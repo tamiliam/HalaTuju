@@ -131,7 +131,7 @@ export default function SponsorDetailsForm() {
         {error && <p className="text-sm text-critical-600">{error}</p>}
         {/* BRAND — the form's submit. A filled control the user ACTS on, not information. */}
         <button type="submit" disabled={!canSubmit}
-          className="w-full bg-primary-600 text-white font-semibold py-3 rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50">
+          className="w-full bg-brand-fill text-brand-fill-ink font-semibold py-3 rounded-xl hover:bg-brand-fill-hover transition-colors disabled:opacity-50">
           {submitting ? t('sponsorAuth.submitting') : t('sponsorAuth.submitDetails')}
         </button>
       </form>

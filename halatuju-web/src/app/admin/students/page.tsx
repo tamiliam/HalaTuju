@@ -115,7 +115,7 @@ export default function AdminStudentList() {
         </div>
         <button
           onClick={handleExport}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm self-start sm:self-auto"
+          className="flex items-center gap-2 px-5 py-2.5 bg-brand-fill text-brand-fill-ink rounded-xl text-sm font-medium hover:bg-brand-fill-hover transition-colors shadow-sm self-start sm:self-auto"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

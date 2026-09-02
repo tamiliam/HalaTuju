@@ -111,7 +111,7 @@ export default function ContractsListPage() {
           <p className="text-sm text-ground-500 mt-1">{t('admin.contracts.subtitle')}</p>
         </div>
         <button type="button" onClick={() => setShowNew((s) => !s)}
-          className="shrink-0 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700">
+          className="shrink-0 px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg font-medium hover:bg-brand-fill-hover">
           {t('admin.contracts.newVersion')}
         </button>
       </div>
@@ -162,7 +162,7 @@ export default function ContractsListPage() {
           )}
           <div className="flex gap-3">
             <button type="submit" disabled={creating}
-              className="px-6 bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
+              className="px-6 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover disabled:opacity-50">
               {creating ? t('admin.contracts.creating') : t('admin.contracts.create')}
             </button>
             <button type="button" onClick={() => setShowNew(false)}

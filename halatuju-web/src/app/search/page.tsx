@@ -347,7 +347,7 @@ function SearchPageInner() {
               onClick={() => setQualification(qualification === 'SPM' ? '' : 'SPM')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors ${
                 qualification === 'SPM'
-                  ? 'bg-primary-600 text-white'
+                  ? 'bg-brand-fill text-brand-fill-ink'
                   : 'bg-ground-0 text-ground-600 hover:bg-ground-50'
               }`}
             >
@@ -357,7 +357,7 @@ function SearchPageInner() {
               onClick={() => setQualification(qualification === 'STPM' ? '' : 'STPM')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-ground-200 ${
                 qualification === 'STPM'
-                  ? 'bg-primary-600 text-white'
+                  ? 'bg-brand-fill text-brand-fill-ink'
                   : 'bg-ground-0 text-ground-600 hover:bg-ground-50'
               }`}
             >

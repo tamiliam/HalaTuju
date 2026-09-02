@@ -135,7 +135,7 @@ export default function SourcesPage() {
         {/* Adding belongs to the registry — on the emails panel the button would do nothing visible. */}
         {panel === 'orgs' && (
           <button type="button" onClick={() => setAdding((v) => !v)}
-            className="shrink-0 px-4 bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700">
+            className="shrink-0 px-4 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover">
             + {t('admin.sources.add')}
           </button>
         )}
@@ -187,7 +187,7 @@ export default function SourcesPage() {
           </div>
           <p className="text-xs text-ground-400">{t('admin.sources.activeHelp')}</p>
           <div className="flex items-center gap-3">
-            <button type="submit" disabled={busy === 'new'} className="px-6 bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
+            <button type="submit" disabled={busy === 'new'} className="px-6 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover disabled:opacity-50">
               {busy === 'new' ? t('admin.sources.saving') : t('admin.sources.create')}
             </button>
             <button type="button" onClick={() => setAdding(false)} className="text-sm text-ground-500 hover:text-ground-700">{t('admin.sources.cancel')}</button>
@@ -256,7 +256,7 @@ export default function SourcesPage() {
                       <button disabled={busy === s.id || phoneInvalid(editForm.phone)
                                         || !editDirty(s)} onClick={() => saveEdit(s.id)}
                         title={editDirty(s) ? undefined : t('common.nothingToSave')}
-                        className="px-5 bg-primary-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+                        className="px-5 bg-brand-fill text-brand-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-brand-fill-hover disabled:opacity-50">
                         {busy === s.id ? t('admin.sources.saving') : t('admin.sources.save')}
                       </button>
                       <button onClick={() => setEditingId(null)} className="text-sm text-ground-500 hover:text-ground-700">{t('admin.sources.cancel')}</button>

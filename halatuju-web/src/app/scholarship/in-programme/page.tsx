@@ -276,7 +276,7 @@ export default function InProgrammePage() {
               {resultError && <p className="text-sm text-critical-600">{resultError}</p>}
               <div className="flex gap-2">
                 <button onClick={saveResult} disabled={savingResult}
-                  className="flex-1 rounded-xl bg-primary-600 py-2.5 text-sm font-medium text-white disabled:opacity-60">
+                  className="flex-1 rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
                   {savingResult ? t('scholarship.inProgramme.results.saving') : t('scholarship.inProgramme.results.save')}
                 </button>
                 <button onClick={() => { setShowForm(false); setResultError(null) }}
@@ -338,7 +338,7 @@ export default function InProgrammePage() {
             placeholder={t('scholarship.inProgramme.grad.placeholder')}
             className="mt-3 w-full rounded-xl border border-ground-300 px-3 py-2 text-sm" />
           <button onClick={sendThankYou} disabled={sending || !compose.trim()}
-            className="mt-2 w-full rounded-xl bg-primary-600 py-2.5 text-sm font-medium text-white disabled:opacity-60">
+            className="mt-2 w-full rounded-xl bg-brand-fill py-2.5 text-sm font-medium text-brand-fill-ink disabled:opacity-60">
             {sending ? t('scholarship.inProgramme.grad.sending') : t('scholarship.inProgramme.grad.send')}
           </button>
         </section>

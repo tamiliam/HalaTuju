@@ -193,7 +193,7 @@ export default function AdminRequestsPage() {
               {(['bug', 'feature'] as const).map((k) => (
                 <button key={k} type="button" onClick={() => setKind(k)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                    kind === k ? 'bg-primary-600 text-white border-info-600'
+                    kind === k ? 'bg-brand-fill text-brand-fill-ink border-info-600'
                     : 'bg-ground-0 text-ground-700 border-ground-300 hover:bg-ground-50'}`}>
                   {t(kindLabelKey(k))}
                 </button>
@@ -306,7 +306,7 @@ export default function AdminRequestsPage() {
 
           {warn && <div className="rounded-lg bg-caution-50 border border-caution-200 text-caution-700 p-3 text-sm">{warn}</div>}
           <button type="submit" disabled={busy || !title.trim() || !description.trim()}
-            className="px-6 bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50">
+            className="px-6 bg-brand-fill text-brand-fill-ink py-2.5 rounded-lg font-medium hover:bg-brand-fill-hover disabled:opacity-50">
             {busy ? t('admin.requests.form.submitting') : t('admin.requests.form.submit')}
           </button>
         </form>

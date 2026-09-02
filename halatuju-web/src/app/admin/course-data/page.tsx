@@ -130,7 +130,7 @@ export default function CourseDataDashboard() {
           <button
             onClick={runCheck}
             disabled={checking}
-            className="px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-60 whitespace-nowrap"
+            className="px-4 py-2 bg-brand-fill text-brand-fill-ink text-sm rounded-lg hover:bg-brand-fill-hover transition-colors disabled:opacity-60 whitespace-nowrap"
           >
             {checking ? t('admin.courseData.checking') : t('admin.courseData.runCheck')}
           </button>

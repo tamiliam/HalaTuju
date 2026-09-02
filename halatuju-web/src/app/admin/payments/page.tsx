@@ -104,7 +104,7 @@ export default function PaymentsLandingPage() {
         </div>
         {canCreate && (
           <button onClick={() => { setPayDate(''); setPayMonth(''); setError(''); setDialogOpen(true) }}
-            className="shrink-0 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700">
+            className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
             + {t('admin.payments.newRun')}
           </button>
         )}
@@ -239,7 +239,7 @@ export default function PaymentsLandingPage() {
             {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
             <div className="mt-5 flex items-center justify-end gap-3">
               <button onClick={() => setDialogOpen(false)} disabled={busy} className="text-sm font-medium text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>
-              <button onClick={create} disabled={busy || !payDate} className="rounded-lg bg-primary-600 px-5 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+              <button onClick={create} disabled={busy || !payDate} className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {busy ? t('common.loading') : t('admin.payments.createDraft')}
               </button>
             </div>

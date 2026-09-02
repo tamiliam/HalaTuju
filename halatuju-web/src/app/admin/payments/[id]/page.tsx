@@ -293,7 +293,7 @@ export default function PaymentRunDetailPage() {
                 <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                 <div className="mt-2 flex gap-2">
                   <input value={makerName} onChange={(e) => setMakerName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                  <button onClick={() => sign(makerName)} disabled={!!busy || !makerName.trim()} className="rounded-lg bg-primary-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{t('admin.payments.sign')}</button>
+                  <button onClick={() => sign(makerName)} disabled={!!busy || !makerName.trim()} className="rounded-lg bg-brand-fill px-4 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">{t('admin.payments.sign')}</button>
                 </div>
               </>)}
             </div>
@@ -310,7 +310,7 @@ export default function PaymentRunDetailPage() {
                   <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                   <div className="mt-2 flex gap-2">
                     <input value={financeName} onChange={(e) => setFinanceName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                    <button onClick={() => sign(financeName)} disabled={!!busy || !financeName.trim()} className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{t('admin.payments.financeSign')}</button>
+                    <button onClick={() => sign(financeName)} disabled={!!busy || !financeName.trim()} className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">{t('admin.payments.financeSign')}</button>
                   </div>
                 </>)}
               </div>
@@ -327,7 +327,7 @@ export default function PaymentRunDetailPage() {
                 <p className="mt-1 text-xs text-ground-500">{t('admin.payments.typedNameHint')}</p>
                 <div className="mt-2 flex gap-2">
                   <input value={approverName} onChange={(e) => setApproverName(e.target.value)} className={`flex-1 ${inputCls}`} placeholder={t('admin.payments.fullName')} />
-                  <button onClick={() => sign(approverName)} disabled={!!busy || !approverName.trim()} className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">{t('admin.payments.countersign')}</button>
+                  <button onClick={() => sign(approverName)} disabled={!!busy || !approverName.trim()} className="rounded-lg bg-brand-fill px-3 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">{t('admin.payments.countersign')}</button>
                 </div>
               </>)}
             </div>
@@ -392,7 +392,7 @@ export default function PaymentRunDetailPage() {
                 <p className="text-xs text-ground-500">{t('admin.payments.exportedForVircle')}</p>
               </div>
               {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-info-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
-              <button onClick={downloadCsv} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">{t('admin.payments.downloadCsv')}</button>
+              <button onClick={downloadCsv} className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">{t('admin.payments.downloadCsv')}</button>
             </div>
           </div>
         </div>

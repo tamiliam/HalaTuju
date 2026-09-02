@@ -20,7 +20,7 @@ export default function Error({
         </p>
         <button
           onClick={reset}
-          className="inline-block px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="inline-block px-5 py-2.5 bg-brand-fill hover:bg-brand-fill-hover text-brand-fill-ink text-sm font-medium rounded-lg transition-colors"
         >
           {t('errors.tryAgain')}
         </button>

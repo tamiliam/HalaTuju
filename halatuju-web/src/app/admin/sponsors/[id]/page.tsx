@@ -259,7 +259,7 @@ export default function AdminSponsorDetailPage() {
         action={mayRecord && !recording ? (
           <button
             onClick={() => { setRecording(true); setCreditError('') }}
-            className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700"
+            className="rounded-lg bg-brand-fill px-3 py-1.5 text-xs font-semibold text-brand-fill-ink hover:bg-brand-fill-hover"
           >
             + {t('admin.sponsors.detail.recordCredit')}
           </button>
@@ -321,7 +321,7 @@ export default function AdminSponsorDetailPage() {
                 <button
                   onClick={submitRecord}
                   disabled={busy || !form.amount.trim() || !form.external_reference.trim()}
-                  className="rounded-lg bg-primary-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                  className="rounded-lg bg-brand-fill px-4 py-1.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50"
                 >
                   {t('admin.sponsors.detail.recordSave')}
                 </button>
@@ -393,7 +393,7 @@ export default function AdminSponsorDetailPage() {
                             <button
                               onClick={() => runCreditAction(() => signSponsorCredit(c.id, typedNames[c.id] || '', { token: token! }))}
                               disabled={busy || !(typedNames[c.id] || '').trim()}
-                              className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                              className="rounded-lg bg-brand-fill px-3 py-1.5 text-xs font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50"
                             >
                               {t(`admin.sponsors.detail.sign.${actions.nextStep}`)}
                             </button>

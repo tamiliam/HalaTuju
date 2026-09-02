@@ -30,7 +30,7 @@ function Breadcrumb({ orgName, programmeName, scopes }: {
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[13px]">
       <span className="flex shrink-0 items-center gap-1.5 font-bold text-ground-900">
-        <span aria-hidden className="grid h-5 w-5 place-items-center rounded bg-primary-600 text-[10px] font-extrabold text-white">H</span>
+        <span aria-hidden className="grid h-5 w-5 place-items-center rounded bg-brand-fill text-[10px] font-extrabold text-brand-fill-ink">H</span>
         HalaTuju
       </span>
       {scopes ?? (
@@ -171,7 +171,7 @@ export function Topbar({
         label={t('admin.shell.account')}
         trigger={
           <>
-            <span aria-hidden className="grid h-6 w-6 place-items-center rounded-full bg-primary-600 text-[10px] font-bold text-white">
+            <span aria-hidden className="grid h-6 w-6 place-items-center rounded-full bg-brand-fill text-[10px] font-bold text-brand-fill-ink">
               {initials}
             </span>
             <span className="hidden text-left leading-tight md:block">

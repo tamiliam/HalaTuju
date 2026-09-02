@@ -260,7 +260,7 @@ export default function ProgrammeConfigTab() {
               </button>
               <button type="button" onClick={save} disabled={nothingToSave || saving}
                 title={nothingToSave ? t('common.nothingToSave') : undefined}
-                className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
+                className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {saving ? t('admin.programme.config.saving') : t('admin.programme.config.save')}
               </button>
             </div>

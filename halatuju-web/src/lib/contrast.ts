@@ -14,7 +14,7 @@
  * golden fixture (`contrast.test.ts` here, `test_contrast.py` there) so a drift fails loudly on the
  * side that drifted.
  */
-import { brandRamp } from '@/lib/branding'
+import { brandRamp, FILL_ROLE } from '@/lib/branding'
 
 export type Rgb = [number, number, number]
 
@@ -24,19 +24,23 @@ export const AA_TEXT = 4.5
 /** WCAG AA for non-text: a shape whose boundary must be discernible, not read. */
 export const AA_NON_TEXT = 3.0
 
-/** The light-mode platform surfaces. `white` and `ground-0` are separate on purpose — `text-white`
- *  is a literal in this codebase and deliberately never became `text-ground-0`. */
-const GROUND_0: Rgb = [255, 255, 255]
-const GROUND_50: Rgb = [249, 250, 251]
-const WHITE: Rgb = [255, 255, 255]
+/** The platform surfaces, per mode. `white` and `ground-0` are separate on purpose — `text-white`
+ *  is a literal in this codebase and deliberately never became `text-ground-0`. In light they are
+ *  the same colour; in dark they are nothing like each other, which is why the table is per mode.
+ *  Mirrors `PLATFORM_SURFACES` in `apps/courses/contrast.py`. */
+const SURFACES: Record<ThemeMode, Record<string, Rgb>> = {
+  light: { white: [255, 255, 255], 'ground-0': [255, 255, 255], 'ground-50': [249, 250, 251] },
+  dark: { white: [255, 255, 255], 'ground-0': [31, 41, 55], 'ground-50': [17, 24, 39] },
+}
+
+export type ThemeMode = 'light' | 'dark'
 
 export interface Pair {
   /** The server's key for this pair. Do not rename one side only. */
   key: string
-  /** Which ramp step the INK comes from, or 'white' for the literal. */
-  ink: number | 'white'
-  /** Which ramp step the SURFACE comes from, or a platform ground. */
-  surface: number | 'ground-0' | 'ground-50'
+  /** A ramp step, a platform surface name, or a `fill*` ROLE resolved per mode. */
+  ink: number | string
+  surface: number | string
   min: number
 }
 
@@ -46,18 +50,29 @@ export interface Pair {
  * `ui_shape` carries a different bar because `bg-primary-500` no longer carries text: A2 moved 52
  * filled controls off it onto `-600`, leaving dots, progress bars, toggles and aria-hidden icon
  * circles. Holding a shape to the text bar is what made the gate refuse the platform's own colour.
+ *
+ * `filled_button_visible` is F7a's, and it is the pair that stops the obvious wrong fix: moving the
+ * button down the ramp so white text reads in dark ALSO drops it to 2.52 against its own card. A
+ * control has to be findable as well as readable, so both bars are held at once.
  */
 export const PAIRS: Pair[] = [
-  { key: 'filled_button', ink: 'white', surface: 600, min: AA_TEXT },
-  { key: 'filled_button_dark', ink: 'white', surface: 700, min: AA_TEXT },
+  { key: 'filled_button', ink: 'fill-ink', surface: 'fill', min: AA_TEXT },
+  { key: 'filled_button_hover', ink: 'fill-ink', surface: 'fill-hover', min: AA_TEXT },
+  { key: 'filled_button_visible', ink: 'fill', surface: 'ground-0', min: AA_NON_TEXT },
   { key: 'panel_text', ink: 700, surface: 50, min: AA_TEXT },
   { key: 'link_on_card', ink: 600, surface: 'ground-0', min: AA_TEXT },
   { key: 'link_on_page', ink: 600, surface: 'ground-50', min: AA_TEXT },
-  { key: 'ui_shape', ink: 'white', surface: 500, min: AA_NON_TEXT },
+  { key: 'ui_shape', ink: 500, surface: 'ground-0', min: AA_NON_TEXT },
 ]
+
+/** Not checked in dark, and F7b is why — `brand-500` is the identity stop and cannot move, so a
+ *  dark tenant colour makes a dark dot on a dark card. Mirrors `DARK_EXEMPT` in the Python. */
+export const DARK_EXEMPT = ['ui_shape']
 
 export interface Check {
   key: string
+  /** Which mode this row was measured in. The server sends it too, on every row. */
+  mode: ThemeMode
   ratio: number
   min: number
   passes: boolean
@@ -87,29 +102,44 @@ function tripletToRgb(triplet: string): Rgb | null {
   return nums as Rgb
 }
 
-function resolve(ref: Pair['ink'] | Pair['surface'], ramp: Record<number, string>): Rgb | null {
-  if (ref === 'white') return WHITE
-  if (ref === 'ground-0') return GROUND_0
-  if (ref === 'ground-50') return GROUND_50
-  return tripletToRgb(ramp[ref as number] ?? '')
+function resolve(
+  ref: number | string, ramp: Record<number, string>, mode: ThemeMode,
+): Rgb | null {
+  // A `fill*` reference is a ROLE and lands on a different step per mode — see FILL_ROLE.
+  if (typeof ref === 'string' && ref.startsWith('fill')) {
+    ref = FILL_ROLE[mode][(ref.slice(5) || 'fill') as 'fill' | 'hover' | 'ink']
+  }
+  if (typeof ref === 'string') return SURFACES[mode][ref] ?? null
+  return tripletToRgb(ramp[ref] ?? '')
 }
 
-/** Every pair, measured for one brand colour in LIGHT mode — the only mode gated today. */
-export function checkColour(hex: string): Check[] {
-  const ramp = brandRamp(hex, 'light')
+/** Every pair, measured for one brand colour in ONE mode. */
+export function checkColour(hex: string, mode: ThemeMode = 'light'): Check[] {
+  const ramp = brandRamp(hex, mode)
   const out: Check[] = []
   for (const pair of PAIRS) {
-    const ink = resolve(pair.ink, ramp)
-    const surface = resolve(pair.surface, ramp)
+    if (mode === 'dark' && DARK_EXEMPT.includes(pair.key)) continue
+    const ink = resolve(pair.ink, ramp, mode)
+    const surface = resolve(pair.surface, ramp, mode)
     if (!ink || !surface) continue
     const ratio = contrastRatio(ink, surface)
-    out.push({ key: pair.key, ratio: Math.round(ratio * 100) / 100, min: pair.min, passes: ratio >= pair.min })
+    out.push({
+      key: pair.key, mode, ratio: Math.round(ratio * 100) / 100,
+      min: pair.min, passes: ratio >= pair.min,
+    })
   }
   return out
 }
 
+/** ⚠ WHAT THE PICKER SHOULD CALL. A colour is stored once and rendered in BOTH modes, so a screen
+ *  reporting only the light numbers tells somebody their colour is fine while the gate that saves
+ *  it disagrees. `checkColour(hex)` stays for the single-mode question. */
+export function checkColourBothModes(hex: string): Check[] {
+  return [...checkColour(hex, 'light'), ...checkColour(hex, 'dark')]
+}
+
 export function isReadable(hex: string): boolean {
-  return checkColour(hex).every((c) => c.passes)
+  return checkColourBothModes(hex).every((c) => c.passes)
 }
 
 /** A 6-digit hex, the only shape the server accepts. Anything else is not yet a colour. */

@@ -123,7 +123,7 @@ export default function OrganisationInvitationsPage() {
               return (
                 <button key={k} type="button" onClick={() => setKind(k)}
                   className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                    kind === k ? 'border-primary-600 bg-primary-600 text-white'
+                    kind === k ? 'border-primary-600 bg-brand-fill text-brand-fill-ink'
                                : 'border-ground-300 bg-ground-0 text-ground-700 hover:bg-ground-50'}`}>
                   {/* ⚠ SINGULAR here, PLURAL on the table heading below (owner, 2026-08-04). The
                       sentence being completed is "Invite as … Admin"; the heading sits above a
@@ -168,7 +168,7 @@ export default function OrganisationInvitationsPage() {
                   value={note} onChange={(e) => setNote(e.target.value)} />
               )}
               <button type="submit" disabled={busy}
-                className="rounded-lg bg-primary-600 px-6 py-2.5 font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+                className="rounded-lg bg-brand-fill px-6 py-2.5 font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {t('admin.sendInvite')}
               </button>
             </form>

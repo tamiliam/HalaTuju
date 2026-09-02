@@ -36,7 +36,7 @@ export default function PathwayCards({
               onClick={() => onFilterChange(isActive ? 'all' : p.type)}
               className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors cursor-pointer ${
                 isActive
-                  ? 'bg-primary-600 text-white border border-primary-600'
+                  ? 'bg-brand-fill text-brand-fill-ink border border-primary-600'
                   : 'bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100'
               }`}
             >

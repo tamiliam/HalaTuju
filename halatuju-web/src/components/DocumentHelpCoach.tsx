@@ -28,7 +28,7 @@ export function CoachCard({
       {/* Friendly mentor icon — distinct from the amber warning above. */}
       <div
         aria-hidden
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-fill text-brand-fill-ink"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />

@@ -72,9 +72,11 @@ export default function LandingPage() {
       {/* A2: the brand band carries `text-white` on its CHILD grid, so it is a TEXT pair and takes
           `-600` like every other filled control. The codemod could not see it — it matches within
           one class string, and CSS composes this one across two elements. */}
-      <section className="bg-primary-600 py-16">
+      <section className="bg-brand-fill py-16">
         <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8 text-center text-white">
+          {/* The ink pairs with `bg-brand-fill` on the SECTION above, not with anything here — the
+              same parent/child split A2 found on this band, now on the role tokens. */}
+          <div className="grid md:grid-cols-4 gap-8 text-center text-brand-fill-ink">
             <StatCard number="1,300+" label={t('landing.courses')} />
             <StatCard number="800+" label={t('landing.institutions')} />
             <StatCard number="3" label={t('landing.languages')} />

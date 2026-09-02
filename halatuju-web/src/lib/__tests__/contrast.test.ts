@@ -20,11 +20,16 @@ import {
   isReadable,
 } from '@/lib/contrast'
 
-// Measured 2026-09-01, after the 52 filled controls moved off `bg-primary-500`.
-// Identical list to PASSES / REFUSES in test_contrast.py.
+// Re-measured 2026-09-02 in BOTH MODES (Layer 1 F7a).
+// Identical lists to PASSES / REFUSES in test_contrast.py.
 const PASSES = ['#137fec', '#1e3a8a', '#0f766e', '#166534', '#7f1d1d', '#a21caf',
-  '#4338ca', '#010066', '#dc2626', '#ea580c', '#db2777', '#475569', '#111827']
-const REFUSES = ['#d97706', '#0ea5e9', '#65a30d', '#6ee7b7', '#facc15']
+  '#4338ca', '#dc2626', '#ea580c', '#db2777', '#475569']
+
+// ⚠ TWO COLOURS MOVED OUT OF PASSES, and it is the gate telling the truth rather than getting
+// stricter for its own sake. Both are near-black: gating dark asks a question light never did —
+// can this be a READABLE LINK on a #1f2937 card? — and even mixed 45% toward white it cannot.
+const DARK_ONLY_REFUSALS = ['#010066', '#111827']
+const REFUSES = ['#d97706', '#0ea5e9', '#65a30d', '#6ee7b7', '#facc15', ...DARK_ONLY_REFUSALS]
 
 describe('the maths', () => {
   it('gives the two ratios everybody knows', () => {
@@ -72,15 +77,39 @@ describe('the gate agrees with the server', () => {
 
 describe('the pair table', () => {
   it('holds shapes to 3, and everything carrying words to 4.5', () => {
-    const shapes = PAIRS.filter((p) => p.min === AA_NON_TEXT)
-    expect(shapes.map((p) => p.key)).toEqual(['ui_shape'])
-    PAIRS.filter((p) => p.key !== 'ui_shape').forEach((p) => expect(p.min).toBe(AA_TEXT))
+    // TWO pairs are about a shape's EDGE rather than about words: the dot/bar, and — since F7a —
+    // whether the filled button can be FOUND against its own card at all.
+    const shapes = ['ui_shape', 'filled_button_visible']
+    PAIRS.forEach((p) => {
+      expect(p.min).toBe(shapes.includes(p.key) ? AA_NON_TEXT : AA_TEXT)
+    })
+    expect(PAIRS.map((p) => p.key)).toEqual(expect.arrayContaining(shapes))
+  })
+
+  it('measures the fill role against a DIFFERENT step in each mode', () => {
+    // The whole reason the role exists. If both modes resolved to the same step this would pass
+    // vacuously, so it compares the ratios rather than asserting each one separately.
+    const light = checkColour('#137fec', 'light').find((c) => c.key === 'filled_button')!
+    const dark = checkColour('#137fec', 'dark').find((c) => c.key === 'filled_button')!
+    expect(light.ratio).not.toBe(dark.ratio)
+    expect(light.passes && dark.passes).toBe(true)
+  })
+
+  it('skips the shape pair in dark, and ONLY in dark', () => {
+    // F7b's job — `brand-500` is the identity stop and cannot move, so a dark tenant colour makes
+    // a dark dot on a dark card. An exemption with a name, not a silence.
+    expect(checkColour('#137fec', 'light').map((c) => c.key)).toContain('ui_shape')
+    expect(checkColour('#137fec', 'dark').map((c) => c.key)).not.toContain('ui_shape')
   })
 
   it('uses the SERVER keys, so a refusal maps onto a row already on screen', () => {
     // Renaming one side only would leave the screen unable to explain its own 400.
+    // `filled_button_dark` is GONE and was never about dark mode — it named the darker sibling
+    // stop, `-700`, which is now reached through the fill role and is called `filled_button_hover`.
+    // The old name would have become an outright lie the day dark was gated.
     expect(PAIRS.map((p) => p.key).sort()).toEqual([
-      'filled_button', 'filled_button_dark', 'link_on_card', 'link_on_page', 'panel_text', 'ui_shape',
+      'filled_button', 'filled_button_hover', 'filled_button_visible',
+      'link_on_card', 'link_on_page', 'panel_text', 'ui_shape',
     ])
   })
 })

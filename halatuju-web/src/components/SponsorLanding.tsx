@@ -51,7 +51,7 @@ export default function SponsorLanding({ count }: { count: number }) {
                     "information". Left as a tone it would reverse to pale blue in dark, and a
                     tenant's own colour would never reach the one button this page exists for. */}
                 <Link href="/sponsor/register"
-                  className="bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors text-center w-full sm:w-auto">
+                  className="bg-brand-fill text-brand-fill-ink font-semibold px-6 py-3 rounded-xl hover:bg-brand-fill-hover transition-colors text-center w-full sm:w-auto">
                   {t('sponsorLanding.hero.becomeSponsor')} →
                 </Link>
                 <a href="#how" className="text-info-600 text-sm text-center sm:text-left font-medium">
@@ -112,7 +112,7 @@ export default function SponsorLanding({ count }: { count: number }) {
                 {/* BRAND — the step numbers are this page's own furniture, not a signal, and they
                     sit beside the brand CTA above. Two different blues on one page is what leaving
                     them as `info` would produce. */}
-                <span className="w-8 h-8 rounded-full bg-primary-600 text-white text-sm font-semibold flex items-center justify-center mb-3">
+                <span className="w-8 h-8 rounded-full bg-brand-fill text-brand-fill-ink text-sm font-semibold flex items-center justify-center mb-3">
                   {n}
                 </span>
                 <h3 className="font-semibold text-ground-900">{t(`sponsorLanding.how.step${n}Title`)}</h3>
@@ -152,7 +152,7 @@ export default function SponsorLanding({ count }: { count: number }) {
             <p className="text-ground-700 mt-2 lg:text-lg">{t('sponsorLanding.cta.body')}</p>
             {/* BRAND — the closing call to action, same rule as the hero button above. */}
             <Link href="/sponsor/register"
-              className="bg-primary-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary-700 transition-colors inline-block mt-5 w-full sm:w-auto">
+              className="bg-brand-fill text-brand-fill-ink font-semibold px-6 py-3 rounded-xl hover:bg-brand-fill-hover transition-colors inline-block mt-5 w-full sm:w-auto">
               {t('sponsorLanding.hero.becomeSponsor')} →
             </Link>
             <p className="text-xs text-ground-500 mt-4">

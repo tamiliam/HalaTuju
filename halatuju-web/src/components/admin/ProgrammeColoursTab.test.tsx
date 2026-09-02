@@ -139,7 +139,10 @@ describe('saving a draft', () => {
     expect(btn('save-draft').disabled).toBe(true)
     expect(outcome()).toBe('admin.programme.colours.cannotSave')
     expect(screen.getByTestId('unreadable-note')).toBeTruthy()
-    expect(screen.getByTestId('check-filled_button').getAttribute('data-passes')).toBe('no')
+    // ⚠ THE ROW IS NAMED PER MODE since F7a, because the same pair now appears twice with
+    // different numbers. Asserting the LIGHT row specifically also keeps this test about the
+    // colour being unreadable rather than about which mode happened to notice first.
+    expect(screen.getByTestId('check-light-filled_button').getAttribute('data-passes')).toBe('no')
     expect(mockApi.saveOrganisationThemeDraft).not.toHaveBeenCalled()
   })
 

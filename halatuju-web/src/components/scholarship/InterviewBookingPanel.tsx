@@ -121,7 +121,7 @@ export default function InterviewBookingPanel({
           <p className="mt-1 text-base font-semibold text-ground-900">{formatMyt(sched.start)}</p>
           {sched.meeting_url
             ? <a href={sched.meeting_url} target="_blank" rel="noreferrer"
-                 className="mt-3 inline-block rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                 className="mt-3 inline-block rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
                 {t('scholarship.application.interview.joinMeet')}
               </a>
             : <p className="mt-2 text-xs text-ground-500">{t('scholarship.application.interview.noLinkYet')}</p>}
@@ -200,7 +200,7 @@ export default function InterviewBookingPanel({
               <p className="mt-2 text-xs text-ground-500">{t('scholarship.application.interview.parentsNote')}</p>
               <button type="button" disabled={busy || picked == null}
                 onClick={() => picked != null ? book(picked) : setError(t('scholarship.application.interview.selectFirst'))}
-                className="mt-3 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+                className="mt-3 rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {t('scholarship.application.interview.book')}
               </button>
             </>

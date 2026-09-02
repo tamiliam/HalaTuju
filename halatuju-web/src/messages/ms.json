@@ -5546,16 +5546,18 @@
         "needs": "perlu {n}",
         "unreadable": "Warna ini sukar dibaca pada {pairs}. Cuba warna yang lebih gelap.",
         "pair": {
-          "filled_button": "Teks putih pada butang utama anda",
-          "filled_button_dark": "Teks putih pada butang gelap anda",
+          "filled_button": "Label pada butang utama anda",
+          "filled_button_hover": "Label apabila kursor berada di atas butang itu",
+          "filled_button_visible": "Butang utama anda berbanding kad di belakangnya",
           "panel_text": "Warna anda sebagai teks pada panel pucat",
-          "link_on_card": "Pautan pada kad putih",
+          "link_on_card": "Pautan pada kad",
           "link_on_page": "Pautan pada latar halaman",
           "ui_shape": "Titik kecil dan bar kemajuan"
         },
         "pairShort": {
           "filled_button": "butang utama anda",
-          "filled_button_dark": "butang gelap anda",
+          "filled_button_hover": "butang itu semasa dituding",
+          "filled_button_visible": "melihat butang itu",
           "panel_text": "panel pucat",
           "link_on_card": "pautan pada kad",
           "link_on_page": "pautan pada halaman",
@@ -5579,7 +5581,11 @@
         "publish": "Terbitkan",
         "saveFirst": "Simpan draf sebelum menerbitkannya",
         "revertTo": "Kembali kepada {colour}",
-        "revertToDefault": "Kembali kepada warna asal"
+        "revertToDefault": "Kembali kepada warna asal",
+        "mode": {
+          "light": "Cerah",
+          "dark": "Gelap"
+        }
       }
     },
     "invitations": {

@@ -69,16 +69,42 @@ PLATFORM_SURFACES = {
     'dark': {'white': (255, 255, 255), 'ground-0': (31, 41, 55), 'ground-50': (17, 24, 39)},
 }
 
+# ⚠ THE FILLED CONTROL IS A ROLE, NOT A STOP (Layer 1 F7a). It resolves to a DIFFERENT stop per
+# mode, because a button's fill and a link's ink want opposite things on a dark card and no single
+# number can be both. This table must stay byte-identical to `FILL_ROLE` in `src/lib/branding.ts`
+# and to the `--brand-fill*` block in `globals.css`; a test pins all three together.
+FILL_ROLE = {
+    'light': {'fill': 'brand-600', 'hover': 'brand-700', 'ink': 'white'},
+    'dark': {'fill': 'brand-800', 'hover': 'brand-900', 'ink': 'ground-50'},
+}
+
 PAIRS = (
-    Pair('filled_button', 'white', 'brand-600', AA_TEXT),
-    Pair('filled_button_dark', 'white', 'brand-700', AA_TEXT),
+    Pair('filled_button', 'fill-ink', 'fill', AA_TEXT),
+    Pair('filled_button_hover', 'fill-ink', 'fill-hover', AA_TEXT),
+    # ⚠ THE PAIR THAT STOPS THE OBVIOUS "FIX". When dark first failed, the reflex was to move the
+    # button DOWN the ramp so white text would read. It does — `brand-400` measures 5.82 — and the
+    # button then sits at **2.52** against its own card and stops looking like a button. A control
+    # has to be findable as well as readable, so both bars are held at once and neither can be
+    # traded for the other. Non-text, because what is being seen here is a SHAPE's edge.
+    Pair('filled_button_visible', 'fill', 'ground-0', AA_NON_TEXT),
     Pair('panel_text', 'brand-700', 'brand-50', AA_TEXT),
     Pair('link_on_card', 'brand-600', 'ground-0', AA_TEXT),
     Pair('link_on_page', 'brand-600', 'ground-50', AA_TEXT),
     # Shapes, not words — see the docstring. Moving this to AA_TEXT would refuse the platform's
     # own colour, and `test_the_platform_colour_passes_its_own_gate` says so out loud.
-    Pair('ui_shape', 'white', 'brand-500', AA_NON_TEXT),
+    # ⚠ `ground-0` rather than `white`: in light they are the same colour, and in dark `ground-0` is
+    # the CARD, which is what a dot actually sits on. `white` here would have measured the dot
+    # against a surface that does not exist in dark.
+    Pair('ui_shape', 'brand-500', 'ground-0', AA_NON_TEXT),
 )
+
+# ⚠ NOT CHECKED IN DARK, AND F7b IS WHY — see `test_the_shape_pair_is_deliberately_light_only`.
+# `brand-500` is the IDENTITY stop and is byte-identical across modes by owner ruling, so a dark
+# tenant colour makes a dark dot on a dark card: 10 of 18 realistic colours measure under 3.0. The
+# answer is a `--brand-shape` role, the same move `--brand-fill` just made, and it is ~50 files of
+# focus rings and borders — a sprint, not a footnote. Gating it before that exists would refuse ten
+# tenants for a defect of ours, which is precisely the mistake A2's docstring warned about.
+DARK_EXEMPT = ('ui_shape',)
 
 Result = namedtuple('Result', 'key ratio min_ratio passes')
 
@@ -102,7 +128,13 @@ def contrast_ratio(a, b):
 
 
 def _rgb(ref, tokens, mode):
-    """Resolve a pair reference to an RGB triple, or None when the set does not carry it."""
+    """Resolve a pair reference to an RGB triple, or None when the set does not carry it.
+
+    A `fill*` reference is a ROLE and is resolved through `FILL_ROLE` FIRST, so it lands on a
+    different stop in each mode. Everything else is a literal token name.
+    """
+    if ref.startswith('fill'):
+        ref = FILL_ROLE[mode][ref[5:] or 'fill']
     if ref in PLATFORM_SURFACES[mode]:
         return PLATFORM_SURFACES[mode][ref]
     raw = (tokens.get(mode) or {}).get(ref)
@@ -125,6 +157,8 @@ def check_tokens(tokens, mode='light'):
         raise ValueError(f'unknown mode: {mode!r}')
     out = []
     for pair in PAIRS:
+        if mode == 'dark' and pair.key in DARK_EXEMPT:
+            continue
         ink = _rgb(pair.ink, tokens, mode)
         surface = _rgb(pair.surface, tokens, mode)
         if ink is None or surface is None:
@@ -141,3 +175,18 @@ def failures(tokens, mode='light'):
 
 def is_readable(tokens, mode='light'):
     return not failures(tokens, mode)
+
+
+def failures_all_modes(tokens):
+    """Every unreadable pair across EVERY mode, as `(mode, Result)`.
+
+    ⚠ THIS IS WHAT THE SAVE PATH CALLS, and the difference matters. `failures(tokens)` answers
+    "is this readable in light", which is the question A2 could honestly ask while dark was
+    unreachable. A colour is now stored once and rendered in both, and a tenant who is refused only
+    after somebody switches mode has been let down by the gate rather than protected by it.
+    """
+    return [(mode, r) for mode in MODES for r in failures(tokens, mode)]
+
+
+def is_readable_everywhere(tokens):
+    return not failures_all_modes(tokens)

@@ -104,7 +104,7 @@ export default function AdminDashboard() {
                 />
                 <button
                   onClick={handleCopy}
-                  className="px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors whitespace-nowrap"
+                  className="px-4 py-2 bg-brand-fill text-brand-fill-ink text-sm rounded-lg hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
                 >
                   {copied ? t('admin.copied') : t('admin.copy')}
                 </button>

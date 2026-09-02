@@ -151,7 +151,7 @@ export default function ScholarshipLandingPage() {
           <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((n) => (
               <li key={n} className="bg-ground-0 rounded-2xl p-5 shadow-sm">
-                <span className="w-8 h-8 rounded-full bg-primary-600 text-white text-sm font-semibold flex items-center justify-center mb-3">
+                <span className="w-8 h-8 rounded-full bg-brand-fill text-brand-fill-ink text-sm font-semibold flex items-center justify-center mb-3">
                   {n}
                 </span>
                 <h3 className="font-semibold text-ground-900">{t(`scholarship.landing.how.step${n}Title`)}</h3>

@@ -59,7 +59,7 @@ export default function OrganisationsPage() {
             value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} required />
         </div>
         <button type="submit" disabled={busy}
-          className="rounded-lg bg-primary-600 px-6 py-2.5 font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+          className="rounded-lg bg-brand-fill px-6 py-2.5 font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
           {t('admin.administration.createTenant')}
         </button>
       </form>

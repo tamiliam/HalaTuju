@@ -193,7 +193,7 @@ export default function SponsorRegisterPage() {
                 </label>
 
                 <button type="submit" disabled={!canSubmit}
-                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50">
+                  className="w-full bg-brand-fill text-brand-fill-ink py-3 rounded-lg font-medium hover:bg-brand-fill-hover transition-colors disabled:opacity-50">
                   {loading ? t('sponsorAuth.creating') : t('sponsorAuth.signUp')}
                 </button>
               </form>

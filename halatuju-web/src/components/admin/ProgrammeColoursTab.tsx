@@ -30,7 +30,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InfoBox from '@/components/InfoBox'
 import { PLATFORM, brandRamp } from '@/lib/branding'
-import { PAIRS, checkColour, isHexColour } from '@/lib/contrast'
+import { PAIRS, checkColourBothModes, isHexColour } from '@/lib/contrast'
 import {
   discardOrganisationThemeDraft, getOrganisationTheme, publishOrganisationTheme,
   revertOrganisationTheme, saveOrganisationThemeDraft,
@@ -103,7 +103,10 @@ export default function ProgrammeColoursTab() {
   useEffect(() => { void load(org) }, [load, org])
 
   const valid = isHexColour(draft)
-  const checks = useMemo(() => (valid ? checkColour(draft) : []), [draft, valid])
+  // ⚠ BOTH MODES since F7a. A colour is stored once and rendered in light AND dark, so a screen
+  // reporting only the light numbers would tell somebody their colour is fine while the save path
+  // — which checks both — refuses it. The list is longer; that is the point.
+  const checks = useMemo(() => (valid ? checkColourBothModes(draft) : []), [draft, valid])
   const failing = checks.filter((c) => !c.passes)
 
   // Compare the box against the EFFECTIVE colour, never against '' — the A2 lesson. An
@@ -268,7 +271,7 @@ export default function ProgrammeColoursTab() {
             <h2 className="text-lg font-semibold text-ground-900">{t('admin.programme.colours.previewTitle')}</h2>
             <p className="text-sm text-ground-500">{t('admin.programme.colours.previewHint')}</p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
-              <span className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white">
+              <span className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink">
                 {t('admin.programme.colours.sampleButton')}
               </span>
               <span className="rounded-r-lg border-l-4 border-primary-500 bg-primary-50 px-4 py-2 text-sm text-primary-700">
@@ -286,12 +289,17 @@ export default function ProgrammeColoursTab() {
             <p className="text-sm text-ground-500">{t('admin.programme.colours.checkHint')}</p>
             <ul className="mt-3 divide-y divide-ground-100 border-t border-ground-100" data-testid="checks">
               {checks.map((c) => (
-                <li key={c.key} className="flex items-center gap-3 py-2.5 text-sm"
-                  data-testid={`check-${c.key}`} data-passes={c.passes ? 'yes' : 'no'}>
+                <li key={`${c.mode}-${c.key}`} className="flex items-center gap-3 py-2.5 text-sm"
+                  data-testid={`check-${c.mode}-${c.key}`} data-passes={c.passes ? 'yes' : 'no'}>
                   <span aria-hidden className={`grid shrink-0 place-items-center rounded-full text-[11px] font-bold text-white ${
                     c.passes ? 'bg-positive-600' : 'bg-critical-600'}`}
                     style={{ height: '18px', width: '18px' }}>
                     {c.passes ? '✓' : '✗'}
+                  </span>
+                  {/* Every row now says which mode it measured. Without it a person reading two
+                      rows with the same name and different numbers would think one was a mistake. */}
+                  <span className="shrink-0 rounded-full bg-ground-100 px-2 py-0.5 text-[11px] font-medium text-ground-600">
+                    {t(`admin.programme.colours.mode.${c.mode}`)}
                   </span>
                   <span className="min-w-0 flex-1 text-ground-800">
                     {t(`admin.programme.colours.pair.${c.key}`)}
@@ -355,7 +363,7 @@ export default function ProgrammeColoursTab() {
                   () => publishOrganisationTheme(org, { token: token as string }),
                   { kind: 'published' })}
                 title={edited ? t('admin.programme.colours.saveFirst') : undefined}
-                className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
+                className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {t('admin.programme.colours.publish')}
               </button>
             </div>

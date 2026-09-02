@@ -290,6 +290,42 @@ describe('the two guards the owner ruled on', () => {
     expect(src).toContain(`const DARK_GROUND: Rgb = [${ground!.split(/\s+/).join(', ')}]`)
   })
 
+  it('THE FILL ROLE IS DESCRIBED IN THREE FILES AND ALL THREE MUST AGREE', () => {
+    // ⚠ THE F4 ROLE-PALETTE SHAPE, ARRIVING BEFORE IT COULD BITE. `--brand-fill` is declared in
+    // globals.css (what the browser paints), `FILL_ROLE` in branding.ts (what the picker measures)
+    // and `FILL_ROLE` in contrast.py (what the SAVE PATH measures). If the CSS said one stop and
+    // the gate another, a tenant would be approved on a button nobody would ever see — and the
+    // failure is silent in both directions. A comment asking them to agree is a request.
+    const lightBlock = css.slice(0, css.indexOf(`[${THEME_ATTR}='dark']`))
+    const stop = (block: string, role: string) =>
+      block.match(new RegExp(`--brand-${role}:\\s*var\\(--([a-z0-9-]+)\\)`))?.[1]
+
+    expect(stop(lightBlock, 'fill')).toBe('brand-600')
+    expect(stop(lightBlock, 'fill-hover')).toBe('brand-700')
+    expect(stop(darkBlock, 'fill')).toBe('brand-800')
+    expect(stop(darkBlock, 'fill-hover')).toBe('brand-900')
+
+    // Light's ink is a literal (white), dark's is the page it punches through.
+    expect(lightBlock).toMatch(/--brand-fill-ink:\s*255 255 255;/)
+    expect(stop(darkBlock, 'fill-ink')).toBe('ground-50')
+
+    // …and the TypeScript half says the same, in the numbers the picker actually resolves.
+    const ts = read('src/lib/branding.ts')
+    expect(ts).toContain("light: { fill: 600, hover: 700, ink: 'white' }")
+    expect(ts).toContain("dark: { fill: 800, hover: 900, ink: 'ground-50' }")
+  })
+
+  it('never lets the fill role resolve to the stop a LINK uses', () => {
+    // The property behind the whole sprint, stated so a later tuning pass cannot undo it by
+    // accident: a button and a link may not share a stop in dark, because on a dark card one has
+    // to be pale enough to read as text and the other dark enough to carry ink.
+    const ts = read('src/lib/branding.ts')
+    const fill = ts.match(/dark: \{ fill: (\d+)/)?.[1]
+    expect(fill).toBeDefined()
+    // `link_on_card` measures `brand-600`; the fill must be a different, paler stop.
+    expect(Number(fill)).toBeGreaterThan(600)
+  })
+
   it('the dark set covers every token the light set defines — no half-converted ramp', () => {
     const lightBlock = css.slice(css.indexOf(':root {'), css.indexOf(`[${THEME_ATTR}='dark']`))
     const names = (s: string) => new Set(
@@ -651,8 +687,14 @@ describe('the F5 semantic corrections the codemod could not make', () => {
 
   it('paints its two Save buttons with the BRAND, like the other 38 in the console', () => {
     const src = withoutComments(read(cockpit))
-    expect(src).not.toMatch(/bg-info-600[^"']*text-white/)
-    expect((src.match(/bg-primary-600/g) ?? []).length).toBeGreaterThanOrEqual(2)
+    expect(src).not.toMatch(/bg-info-600[^"']*text-brand-fill-ink/)
+    // ⚠ `bg-brand-fill` since F7a, not `bg-primary-600`. The stop did not change in light — the
+    // ROLE did, because in dark a button and a link cannot share one number. See globals.css.
+    // ⚠ AND THE PATTERN WAS TYPED BY HAND, NOT GENERATED. Its first version came out of a
+    // Python heredoc and the word-boundary escape became a literal BACKSPACE byte (0x08) - F4's
+    // lesson recurring through a path I had assumed was safe. It was caught only because this
+    // assertion COUNTS and got 0; phrased as `not.toMatch` it would have passed over a dead regex.
+    expect((src.match(/bg-brand-fill /g) ?? []).length).toBeGreaterThanOrEqual(2)
   })
 
   it('separates "unrelated name" from a generic vision warning', () => {
@@ -722,7 +764,7 @@ describe('the F3 semantic corrections the codemod could not make', () => {
     // The shared `ProgressStepper` and the sponsor landing's step numbers were already `primary`;
     // this one would have left a tenant's colour reaching two of the three.
     const src = read('src/app/scholarship/onboarding/page.tsx')
-    expect(src).toMatch(/bg-primary-600 text-white/)
+    expect(src).toMatch(/bg-brand-fill text-brand-fill-ink/)
     expect(withoutComments(src)).not.toMatch(/bg-info-600/)
     expect(read('src/components/ProgressStepper.tsx')).toMatch(/bg-primary-500/)
   })
@@ -822,7 +864,7 @@ describe('the F6 semantic corrections the codemod could not make', () => {
     // here than usual: SPM was `bg-blue-600` and STPM `bg-purple-600`, so the SELECTED state of two
     // buttons in one segmented control was two different colours, neither of them the tenant's.
     const src = withoutComments(read('src/app/search/page.tsx'))
-    expect(src.match(/bg-primary-600 text-white/g)?.length).toBe(2)
+    expect(src.match(/bg-brand-fill text-brand-fill-ink/g)?.length).toBe(2)
     expect(src).not.toMatch(/bg-info-600 text-white/)
   })
 

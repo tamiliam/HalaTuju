@@ -1065,7 +1065,7 @@ export default function AdminScholarshipDetailPage() {
           {canWrite && ['shortlisted', 'profile_complete', 'interviewing'].includes(app.status) && (
             <button
               onClick={() => document.getElementById('record-verdict-panel')?.scrollIntoView({ behavior: 'smooth' })}
-              className="ml-auto rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-700"
+              className="ml-auto rounded-lg bg-brand-fill px-3 py-1.5 text-xs font-semibold text-brand-fill-ink shadow-sm hover:bg-brand-fill-hover"
             >
               {t('admin.scholarship.recordVerdict.title')}
             </button>
@@ -1932,7 +1932,7 @@ export default function AdminScholarshipDetailPage() {
             placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
         </div>
         <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
-          className="mt-2 px-3 py-1.5 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
+          className="mt-2 px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm disabled:opacity-50">
           {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
         </button>
       </div>
@@ -1971,7 +1971,7 @@ export default function AdminScholarshipDetailPage() {
               ))
             : (canWrite && (
                 <button onClick={doSuggestGaps} disabled={!!busy}
-                  className="px-2.5 py-1 rounded-lg text-xs bg-primary-600 text-white disabled:opacity-50">
+                  className="px-2.5 py-1 rounded-lg text-xs bg-brand-fill text-brand-fill-ink disabled:opacity-50">
                   {busy === 'gaps' ? t('admin.scholarship.gaps.running')
                     : (app.interview_gaps?.length ?? 0) > 0 ? t('admin.scholarship.gaps.more')
                     : t('admin.scholarship.gaps.button')}
@@ -2031,7 +2031,7 @@ export default function AdminScholarshipDetailPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-ground-800 break-words">
                           <span className="font-semibold">{t('admin.scholarship.outstanding.questionLabel')}:</span> {it.label}
-                          {it.ai && <span className="ml-1 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                          {it.ai && <span className="ml-1 rounded bg-brand-fill px-1.5 py-0.5 text-[10px] font-semibold text-brand-fill-ink align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
                         </p>
                         <p className="mt-1.5 text-xs font-medium text-ground-600">{t('admin.scholarship.interview.answerLabel')}</p>
                         <div className="mt-0.5 rounded-md border border-info-100 bg-info-50/50 p-2">
@@ -2084,7 +2084,7 @@ export default function AdminScholarshipDetailPage() {
                     <li key={it.code} className="border rounded-lg p-3">
                       <div className="flex items-start justify-between gap-3">
                         <p className="text-sm text-ground-800 min-w-0">
-                          {it.ai && <span className="mr-1 rounded bg-primary-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                          {it.ai && <span className="mr-1 rounded bg-brand-fill px-1.5 py-0.5 text-[10px] font-semibold text-brand-fill-ink align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
                           {it.label}
                         </p>
                         {canWrite && (
@@ -2122,7 +2122,7 @@ export default function AdminScholarshipDetailPage() {
                   {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
                 </button>
                 <button onClick={doSubmitInterview} disabled={!!busy}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm disabled:opacity-50">
+                  className="px-4 py-2 bg-brand-fill text-brand-fill-ink rounded-lg text-sm disabled:opacity-50">
                   {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
                 </button>
                 {interviewMsg && <span className="text-sm font-medium text-positive-600">{interviewMsg}</span>}
@@ -2592,8 +2592,8 @@ export default function AdminScholarshipDetailPage() {
           />
           <button type="button" onClick={doSetReportingDate}
             disabled={!!busy || !reportingDateInput}
-            className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white
-                       hover:bg-primary-700 disabled:opacity-50">
+            className="w-full rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink
+                       hover:bg-brand-fill-hover disabled:opacity-50">
             {busy === 'reportingDate' ? t('common.loading') : t('admin.scholarship.reportingDateEntry.save')}
           </button>
           {app.reporting_date && (
@@ -2821,7 +2821,7 @@ export default function AdminScholarshipDetailPage() {
               ) : null}
               {/* Save is the final commit of the chosen outcome. */}
               <button onClick={doSave} disabled={!!busy || !canSave}
-                className="w-full px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                className="w-full px-4 py-2.5 bg-brand-fill text-brand-fill-ink rounded-lg text-sm font-medium disabled:opacity-50">
                 {(busy === 'verdict' || busy === 'reject') ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
               </button>
             </div>
@@ -3223,7 +3223,7 @@ export default function AdminScholarshipDetailPage() {
               </select>
               <button type="button" onClick={doAssignWitness}
                 disabled={witnessBusy || witnessSel === (app.witness_org?.code || '')}
-                className="w-full rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+                className="w-full rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {witnessBusy
                   ? t('admin.sources.witness.assigning')
                   : app.witness_org ? t('admin.sources.witness.update') : t('admin.sources.witness.assign')}
@@ -3439,7 +3439,7 @@ export default function AdminScholarshipDetailPage() {
                 </div>
                 <button type="button" onClick={doScheduleTranche}
                   disabled={busy === 'disbursement'}
-                  className="rounded-lg bg-primary-600 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50">
+                  className="rounded-lg bg-brand-fill px-4 py-1.5 text-sm font-medium text-brand-fill-ink disabled:opacity-50">
                   {t('admin.disbursement.schedule')}
                 </button>
               </div>

@@ -100,7 +100,7 @@ export default function CourseDetailPage() {
                     href={courseInfoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors whitespace-nowrap"
+                    className="px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-xs font-medium hover:bg-brand-fill-hover transition-colors whitespace-nowrap"
                   >
                     More Info
                   </a>
@@ -320,7 +320,7 @@ function InstitutionCard({ institution }: { institution: Institution }) {
               href={institution.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors"
+              className="px-3 py-1.5 bg-brand-fill text-brand-fill-ink rounded-lg text-xs font-medium hover:bg-brand-fill-hover transition-colors"
             >
               More Info
             </a>

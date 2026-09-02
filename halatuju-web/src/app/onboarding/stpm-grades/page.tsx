@@ -259,7 +259,7 @@ export default function StpmGradesPage() {
         {/* Section 0: Stream Selection */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
+            <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">1</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.stpmStream')}</h2>
           </div>
           <div className="flex gap-3">
@@ -269,7 +269,7 @@ export default function StpmGradesPage() {
                 onClick={() => handleStreamChange(s)}
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
                   stream === s
-                    ? 'bg-primary-600 text-white shadow-md'
+                    ? 'bg-brand-fill text-brand-fill-ink shadow-md'
                     : 'bg-ground-0 text-ground-700 border border-ground-200 hover:bg-ground-50'
                 }`}
               >
@@ -283,7 +283,7 @@ export default function StpmGradesPage() {
         {stream && (
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-1">
-              <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
+              <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">2</span>
               <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.stpmSubjects')}</h2>
             </div>
             <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.stpmSubjectsHint')}</p>
@@ -403,7 +403,7 @@ export default function StpmGradesPage() {
         {/* Section 2: MUET + Co-curriculum + CGPA */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
+            <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">3</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.muetBand')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.muetHint')}</p>
@@ -419,7 +419,7 @@ export default function StpmGradesPage() {
                     onClick={() => setMuetBand(band)}
                     className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
                       muetBand === band
-                        ? 'bg-primary-600 text-white shadow-md'
+                        ? 'bg-brand-fill text-brand-fill-ink shadow-md'
                         : 'bg-ground-50 text-ground-700 border border-ground-200 hover:bg-ground-100'
                     }`}
                   >
@@ -469,7 +469,7 @@ export default function StpmGradesPage() {
         {/* Section 4: SPM Prerequisites — stream-based design */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-600 text-white rounded text-xs flex items-center justify-center font-bold">4</span>
+            <span className="w-6 h-6 bg-brand-fill text-brand-fill-ink rounded text-xs flex items-center justify-center font-bold">4</span>
             <h2 className="text-lg font-semibold text-ground-900">{t('onboarding.spmPrerequisites')}</h2>
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.spmPrereqHint')}</p>
@@ -489,7 +489,7 @@ export default function StpmGradesPage() {
                     onClick={() => handleSpmStreamChange(s.id)}
                     className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
                       spmStream === s.id
-                        ? 'bg-primary-600 text-white shadow-sm'
+                        ? 'bg-brand-fill text-brand-fill-ink shadow-sm'
                         : 'bg-ground-0 text-ground-600 border border-ground-200 hover:bg-ground-50'
                     }`}
                   >

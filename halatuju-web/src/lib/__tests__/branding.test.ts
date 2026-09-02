@@ -150,10 +150,19 @@ describe('brandRamp (tenant-only)', () => {
       400: '185 85 195', 500: '162 28 175', 600: '138 24 149', 700: '113 20 123',
       800: '89 15 96', 900: '65 11 70',
     },
+    // ⚠ THE DARK SHADES MOVED IN F7a and were re-derived BY HAND on both sides, not copied out of
+    // either implementation — a golden taken from the code pins whatever the code does, which is
+    // the one thing this fixture exists to prevent. #a21caf is (162, 28, 175) and the dark shade
+    // end mixes toward white at 0.45 / 0.60 / 0.75 / 0.86, ties rounding UP:
+    //   600  162+93(.45)=203.85→204   28+227(.45)=130.15→130   175+80(.45)=211
+    //   700  162+93(.60)=217.8 →218   28+227(.60)=164.2 →164   175+80(.60)=223
+    //   800  162+93(.75)=231.75→232   28+227(.75)=198.25→198   175+80(.75)=235
+    //   900  162+93(.86)=241.98→242   28+227(.86)=223.22→223   175+80(.86)=243.8→244
+    // The tints are UNCHANGED — F7a moved the shade end only.
     dark: {
       50: '24 24 46', 100: '39 25 59', 200: '61 25 80', 300: '90 26 107',
-      400: '126 27 141', 500: '162 28 175', 600: '176 62 187', 700: '190 96 199',
-      800: '204 130 211', 900: '218 164 223',
+      400: '126 27 141', 500: '162 28 175', 600: '204 130 211', 700: '218 164 223',
+      800: '232 198 235', 900: '242 223 244',
     },
   } as const
 

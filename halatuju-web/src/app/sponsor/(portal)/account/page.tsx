@@ -140,7 +140,7 @@ export default function AccountPage() {
         </div>
         <div className="mt-4 flex items-center gap-3">
           <button onClick={saveStandingGift} disabled={sgSaving}
-            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+            className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink disabled:opacity-60">
             {sgSaving ? t('sponsorPortal.autoSponsor.saving') : t('sponsorPortal.autoSponsor.save')}
           </button>
           {sgSaved && <span className="text-sm text-positive-600">{t('sponsorPortal.autoSponsor.saved')}</span>}
@@ -187,7 +187,7 @@ export default function AccountPage() {
             {inviteError && <p className="text-sm text-critical-600">{inviteError}</p>}
             {inviteSent && <p className="text-sm text-positive-600">{t('sponsorPortal.referrals.sent')}</p>}
             <button onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}
-              className="w-full rounded-lg bg-primary-600 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+              className="w-full rounded-lg bg-brand-fill py-2.5 text-sm font-semibold text-brand-fill-ink disabled:opacity-60">
               {inviting ? t('sponsorPortal.referrals.sending') : t('sponsorPortal.referrals.send')}
             </button>
             <p className="text-xs text-ground-400">{t('sponsorPortal.referrals.privacy')}</p>

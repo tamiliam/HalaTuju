@@ -129,7 +129,7 @@ export default function ScholarshipOnboardingPage() {
                   a tone would mean a tenant's colour reached two of the three. */}
               <span
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                  active ? 'bg-primary-600 text-white' : 'bg-ground-200 text-ground-500'
+                  active ? 'bg-brand-fill text-brand-fill-ink' : 'bg-ground-200 text-ground-500'
                 }`}
               >
                 {i + 1}

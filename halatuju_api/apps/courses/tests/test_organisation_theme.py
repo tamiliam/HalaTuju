@@ -28,11 +28,20 @@ GOLDEN = {
         'brand-600': '138 24 149', 'brand-700': '113 20 123', 'brand-800': '89 15 96',
         'brand-900': '65 11 70',
     },
+    # ⚠ THE DARK SHADES MOVED IN F7a and were re-derived BY HAND, not copied out of the code — a
+    # golden taken from the implementation pins whatever that implementation does, including its
+    # bugs, which is the one thing this fixture exists to prevent. #a21caf is (162, 28, 175) and the
+    # dark shade end mixes toward white at 0.45 / 0.60 / 0.75 / 0.86, ties rounding UP:
+    #   600  r 162+93(.45)=203.85→204   g 28+227(.45)=130.15→130   b 175+80(.45)=211
+    #   700  r 162+93(.60)=217.8 →218   g 28+227(.60)=164.2 →164   b 175+80(.60)=223
+    #   800  r 162+93(.75)=231.75→232   g 28+227(.75)=198.25→198   b 175+80(.75)=235
+    #   900  r 162+93(.86)=241.98→242   g 28+227(.86)=223.22→223   b 175+80(.86)=243.8→244
+    # The tints are UNCHANGED — F7a moved the shade end only.
     'dark': {
         'brand-50': '24 24 46', 'brand-100': '39 25 59', 'brand-200': '61 25 80',
         'brand-300': '90 26 107', 'brand-400': '126 27 141', 'brand-500': '162 28 175',
-        'brand-600': '176 62 187', 'brand-700': '190 96 199', 'brand-800': '204 130 211',
-        'brand-900': '218 164 223',
+        'brand-600': '204 130 211', 'brand-700': '218 164 223', 'brand-800': '232 198 235',
+        'brand-900': '242 223 244',
     },
 }
 

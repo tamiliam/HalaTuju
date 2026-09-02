@@ -132,7 +132,7 @@ export default function SponsorLoginPage() {
                 </div>
                 <button
                   type="submit" disabled={loading || !email || !password}
-                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  className="w-full bg-brand-fill text-brand-fill-ink py-3 rounded-lg font-medium hover:bg-brand-fill-hover transition-colors disabled:opacity-50"
                 >
                   {loading ? t('sponsorAuth.signingIn') : t('sponsorAuth.signIn')}
                 </button>
@@ -188,7 +188,7 @@ export default function SponsorLoginPage() {
                 />
                 <button
                   type="submit" disabled={loading || !email}
-                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  className="w-full bg-brand-fill text-brand-fill-ink py-3 rounded-lg font-medium hover:bg-brand-fill-hover transition-colors disabled:opacity-50"
                 >
                   {loading ? t('sponsorAuth.sending') : t('sponsorAuth.sendResetLink')}
                 </button>

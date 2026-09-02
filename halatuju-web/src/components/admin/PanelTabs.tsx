@@ -40,7 +40,7 @@ export default function PanelTabs<K extends string>({ tabs, active, onSelect, ar
             className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
               tab.disabled
                 ? 'cursor-not-allowed border-ground-200 bg-ground-50 text-ground-400'
-                : on ? 'border-info-600 bg-primary-600 text-white'
+                : on ? 'border-info-600 bg-brand-fill text-brand-fill-ink'
                      : 'border-ground-200 bg-ground-0 text-ground-600 hover:bg-ground-50'}`}>
             {t(tab.labelKey)}
             {tab.disabled && (
