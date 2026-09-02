@@ -52,9 +52,30 @@ MODES = ('light', 'dark')
 # in `branding.ts`, which `theme.test.ts` already refuses to let drift from `globals.css`.
 DARK_GROUND = (17, 24, 39)
 
-# How far each step is pulled toward its end. Positive = toward the TINT end, negative = the SHADE.
-_MIX = {50: 0.95, 100: 0.85, 200: 0.7, 300: 0.5, 400: 0.25,
-        600: -0.15, 700: -0.3, 800: -0.45, 900: -0.6}
+# How far each step is pulled toward its end.
+#
+# TINTS are the same distances in both modes — only the END they aim at swaps (white in light, the
+# page ground in dark), which is F3b's ruling.
+_TINT_MIX = {50: 0.95, 100: 0.85, 200: 0.7, 300: 0.5, 400: 0.25}
+
+# ⚠ SHADES ARE NOT. THE DARK DISTANCES ARE MUCH LONGER, AND THAT IS THE F7a FIX (2026-09-02).
+#
+# F3b aimed the dark shade end at WHITE, which was right, and kept light's distances, which was not.
+# At 15% toward white, `brand-600` in dark is barely lighter than the tenant's colour — and the app
+# spells its LINK ink `text-primary-600`, sitting on a `#1f2937` card. Measured across 18 realistic
+# tenant colours, that pair failed AA for 14 of them; the panel-text pair failed for 4. Nothing was
+# wrong with the direction; the steps were simply too short to reach a pale enough value.
+#
+# At these distances all 18 pass every text pair the product renders. Light is untouched, so the
+# only mode that moves is the one no person can currently reach.
+#
+# ⚠ THE FILLED BUTTON IS A SEPARATE FIX AND THESE NUMBERS DO NOT ADDRESS IT — see `--brand-fill`
+# in globals.css. A button's ink and a link's ink want opposite things in dark, and no single set
+# of ramp distances can be both. Retuning further to "fix" a button would break every link again.
+_SHADE_MIX = {
+    'light': {600: 0.15, 700: 0.3, 800: 0.45, 900: 0.6},
+    'dark': {600: 0.45, 700: 0.6, 800: 0.75, 900: 0.86},
+}
 
 _HEX_RE = re.compile(r'^#[0-9a-fA-F]{6}$')
 _KEY_RE = re.compile(r'^([a-z]+)-([0-9]+)$')
@@ -93,6 +114,9 @@ def brand_ramp(colour, mode):
     black, which is right for a white page. In dark that is exactly backwards — a 95%-white tint is
     a glaring patch on a dark page — so the tints mix toward the page ground and the shades toward
     white. `500` is the same value in both, by ruling.
+
+    The DISTANCES also differ, on the shade end only: see `_SHADE_MIX`. Aiming at the right end was
+    F3b's job and travelling far enough was F7a's.
     """
     if mode not in MODES:
         raise ThemeTokenError(f'unknown mode: {mode!r}')
@@ -106,13 +130,15 @@ def brand_ramp(colour, mode):
             for channel, target in zip((r, g, b), end)
         )
 
+    shades = _SHADE_MIX[mode]
     out = {}
     for step in STEPS:
         if step == IDENTITY_STEP:
             out[step] = f'{r} {g} {b}'
+        elif step in _TINT_MIX:
+            out[step] = towards(to_tint, _TINT_MIX[step])
         else:
-            t = _MIX[step]
-            out[step] = towards(to_tint, t) if t > 0 else towards(to_shade, -t)
+            out[step] = towards(to_shade, shades[step])
     return out
 
 

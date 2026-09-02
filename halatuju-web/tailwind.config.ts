@@ -46,6 +46,17 @@ const config: Config = {
           800: 'rgb(var(--brand-800) / <alpha-value>)',
           900: 'rgb(var(--brand-900) / <alpha-value>)',
         },
+        // ── The filled control, as a ROLE (Layer 1 F7a) ───────────────────────
+        // `bg-brand-fill text-brand-fill-ink hover:bg-brand-fill-hover` — used by
+        // every button a person ACTS on. It is a role rather than a stop because
+        // in dark the fill and the panel-text stop want opposite things, and no
+        // single number on the ramp can be both. globals.css carries the
+        // measurements and the reasoning; do not inline a stop here.
+        brand: {
+          fill: 'rgb(var(--brand-fill) / <alpha-value>)',
+          'fill-hover': 'rgb(var(--brand-fill-hover) / <alpha-value>)',
+          'fill-ink': 'rgb(var(--brand-fill-ink) / <alpha-value>)',
+        },
         // ── Theme tokens (Layer 1 F1) ────────────────────────────────────────
         // Same mechanism as `primary` above, extended to the ground and to the
         // four meanings the product speaks in. Values live in globals.css; the

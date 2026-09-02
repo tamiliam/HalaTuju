@@ -19,6 +19,29 @@
   --brand-700: 13 79 153;    /* #0d4f99 */
   --brand-800: 10 57 112;    /* #0a3970 */
   --brand-900: 7 35 71;      /* #072347 */
+
+  /* ── THE FILLED CONTROL IS A ROLE, NOT A STOP (Layer 1 F7a, 2026-09-02) ────────────────────
+     A button the user ACTS on and text sitting on a pale brand panel were both spelled with the
+     same stops, and in dark mode they want OPPOSITE things. Panel text wants a stop pulled toward
+     white so it reads on a dark brand surface — which is exactly what F3b built, and it works
+     (4.70–6.51 measured across realistic tenant colours). A filled button wants the reverse.
+
+     ⚠ AND IT CANNOT BE FIXED BY MOVING THE BUTTON DOWN THE RAMP. Going darker in dark mode does
+     let white text read (`brand-400` measures 5.82) but drops the button to **2.52** against its
+     own card, under the 3.0 a non-text shape needs — it stops looking like a button at all.
+     Squeezed from both ends, the escape is the one F2c already took for the category family:
+     SWAP THE ROLE, not the value. In dark a brand button is a PALE fill with DARK ink.
+
+     Measured over nine realistic tenant colours (see `brandFill` in `src/lib/branding.ts`):
+     ink-on-fill never below 5.82, fill-against-card never below 4.82. Light is unchanged.
+
+     ⚠ THESE ARE `var()` INDIRECTIONS ON PURPOSE. A tenant override writes `--brand-600` and
+     friends as INLINE styles on `:root`, so an indirection picks the tenant's value up for free
+     and `branding-context` needs no new code. Writing literals here would silently paint every
+     tenant's button in the PLATFORM's blue. */
+  --brand-fill: var(--brand-600);
+  --brand-fill-hover: var(--brand-700);
+  --brand-fill-ink: 255 255 255;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -202,10 +225,26 @@
   --brand-300: 18 76 138;
   --brand-400: 19 101 187;
   --brand-500: 19 127 236;   /* IDENTICAL to light. The identity stop never moves. */
-  --brand-600: 54 146 239;
-  --brand-700: 90 165 242;
-  --brand-800: 125 185 245;
-  --brand-900: 161 204 247;
+  /* ⚠ THE SHADE END TRAVELS MUCH FURTHER IN DARK THAN IN LIGHT (Layer 1 F7a). F3b aimed it at
+     white, correctly, and kept light's short distances, which left `-600` barely lighter than the
+     tenant's own colour — and the app spells its LINK ink `text-primary-600`, on a `#1f2937` card.
+     That pair failed AA for 14 of 18 realistic tenant colours. Regenerated from `brandRamp()`;
+     never typed by hand. */
+  --brand-600: 125 185 245;
+  --brand-700: 161 204 247;
+  --brand-800: 196 223 250;
+  --brand-900: 222 237 252;
+
+  /* THE ROLE SWAP. In dark the ramp's shade end is pulled toward WHITE, so `-800` and `-900` are
+     the PALE stops here — a filled button takes one of them and carries dark ink. This is not a
+     different design in dark; it is the same role landing on the stop that plays it. */
+  --brand-fill: var(--brand-800);
+  --brand-fill-hover: var(--brand-900);
+  /* ⚠ `--ground-50`, NOT `--ground-900`. The ground REVERSES, so in dark `--ground-900` is WHITE —
+     using "the darkest ground" by name would have put white ink on a pale fill, which is the exact
+     bug this block exists to remove. What is wanted is the PAGE colour, so the label reads as a
+     hole punched through the button, and `--ground-50` is the page in dark. */
+  --brand-fill-ink: var(--ground-50);
 
   /* ── ground: the one ramp that is DESIGNED, not derived (Layer 1 F2a) ──────────────────────
      The tone ramps below are a straight reversal and that works, because a tone is a signal and

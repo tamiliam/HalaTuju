@@ -229,6 +229,13 @@ export function brandRamp(hex: string, theme: 'light' | 'dark' = 'light'): Recor
     : [[255, 255, 255], [0, 0, 0]]
   const towards = ([tr, tg, tb]: Rgb, t: number) =>
     `${mix(r, tr, t)} ${mix(g, tg, t)} ${mix(b, tb, t)}`
+  // ⚠ THE SHADE DISTANCES DIFFER BY MODE — this is the F7a fix (2026-09-02), and it must stay
+  // byte-identical to `_SHADE_MIX` in `halatuju_api/apps/courses/theme_tokens.py`, which is what
+  // the shared golden fixture pins. F3b aimed the dark shade end at white and kept light's short
+  // distances, so `brand-600` in dark was barely lighter than the tenant's colour — and the app
+  // spells its LINK ink `text-primary-600`, on a `#1f2937` card. That pair failed AA for 14 of 18
+  // realistic tenant colours. At these distances all 18 pass every text pair the product renders.
+  const shade = theme === 'dark' ? [0.45, 0.6, 0.75, 0.86] : [0.15, 0.3, 0.45, 0.6]
   return {
     50: towards(toTint, 0.95),
     100: towards(toTint, 0.85),
@@ -236,9 +243,28 @@ export function brandRamp(hex: string, theme: 'light' | 'dark' = 'light'): Recor
     300: towards(toTint, 0.5),
     400: towards(toTint, 0.25),
     500: `${r} ${g} ${b}`,
-    600: towards(toShade, 0.15),
-    700: towards(toShade, 0.3),
-    800: towards(toShade, 0.45),
-    900: towards(toShade, 0.6),
+    600: towards(toShade, shade[0]),
+    700: towards(toShade, shade[1]),
+    800: towards(toShade, shade[2]),
+    900: towards(toShade, shade[3]),
   }
 }
+
+/**
+ * Which ramp stop plays the FILLED-CONTROL role in each mode (Layer 1 F7a).
+ *
+ * ⚠ THIS IS THE ONE THING THE RAMP RETUNE COULD NOT FIX. A link's ink and a button's fill want
+ * opposite things on a dark card — the link wants to be pale, the button wants to be dark enough
+ * to carry white text — and no single set of distances gives both. Nor can the button simply move
+ * DOWN the ramp: going darker in dark does let white text read (`brand-400` measures 5.82) but
+ * drops the button to 2.52 against its own card, under the 3.0 a non-text shape needs, so it stops
+ * looking like a button. Squeezed from both ends, the escape is the one F2c took for the category
+ * family: swap the ROLE. In dark a brand button is a PALE fill with DARK ink.
+ *
+ * Kept here rather than in `globals.css` alone because the contrast gate has to resolve the same
+ * roles to check a tenant's colour, and two descriptions of that mapping would drift.
+ */
+export const FILL_ROLE = {
+  light: { fill: 600, hover: 700, ink: 'white' },
+  dark: { fill: 800, hover: 900, ink: 'ground-50' },
+} as const
