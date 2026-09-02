@@ -552,7 +552,10 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-02, after Layer 1 F7b — THE GATE HAS NO EXEMPTIONS LEFT)
 
-**SHIPPED — LAYER 1 F7b. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f7b-brand-shape-role`.
+**SHIPPED AND DEPLOYED — LAYER 1 F7b.** `main` at `70a60501`, both Cloud Builds SUCCESS, serving
+**halatuju-web-00816-nbc** / **halatuju-api-00971-ck4**. All eight public routes 200 and the api's
+branding endpoint 200; `/search` serves `ring-brand-shape` / `border-brand-shape` and **no**
+`ring-primary-500`, `border-primary-500`, `bg-primary-500` or `text-primary-500` anywhere.
 **NO migration.** web + api. Retro `docs/retrospective-2026-09-02-layer1-f7b-brand-shape-role.md`;
 decision ×1; lessons ×5. jest 1597 → **1603**; pytest 5765 → **5772**; tsc **24** (baseline);
 lint **0**; i18n **4640 × 3**; build clean. Four guards bite-checked. **Reviewed in both modes.**
@@ -575,11 +578,13 @@ lint **0**; i18n **4640 × 3**; build clean. Four guards bite-checked. **Reviewe
 - **`FundingBar` deliberately stays on `-600`.** It did not need moving and switching it would have
   lightened a progress bar in light. The reason is at that line; do not "finish the job".
 
-**⚠ AT DEPLOY:** no migration, no data step. **Light mode is byte-identical for shapes** (the role
-resolves to `brand-500` there, verified in a browser) — **except** the 31 brand-TEXT uses, which go
-one stop darker and are a deliberate accessibility fix. Dark is still unreachable
-(`NEXT_PUBLIC_THEME_SWITCH` unset; read it from the service, never from a settings default).
-Python changed, so **both** builds fire — confirm with `gcloud builds list`.
+**✅ DEPLOYED 2026-09-02.** No migration, no data step. **Light mode is byte-identical for shapes**
+(the role resolves to `brand-500` there, verified in a browser) — **except** the 31 brand-TEXT uses,
+which went one stop darker: a deliberate fix for a live AA failure, not a cosmetic change. Dark is
+still unreachable (`NEXT_PUBLIC_THEME_SWITCH` unset; read it from the service, never a settings
+default). Python changed and **both** builds fired, as expected — third observation agreeing that
+the api trigger follows PYTHON, not the `halatuju_api/**` glob.
+**Left for the owner's eyes:** click into any text box on halatuju.xyz and check the focus ring.
 
 **NEXT = LAYER 1 F7c — the officer cockpit fixture.** The roadmap's sequence, verbatim:
 
