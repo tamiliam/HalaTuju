@@ -550,7 +550,83 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-02, after Layer 1 F6 — THE REPAINT IS COMPLETE)
+## Next Sprint (as of 2026-09-02, after Layer 1 F7a — TD-222 IS CLOSED)
+
+**SHIPPED — LAYER 1 F7a. NOT DEPLOYED (owner gates it).** Branch `feat/layer1-f7a-brand-fill-role`.
+**NO migration.** web + api. Retro `docs/retrospective-2026-09-02-layer1-f7a-brand-fill-role.md`;
+decisions ×2; lessons ×6. jest 1595 → **1597**; pytest 5757 → **5765**; tsc **24** (baseline);
+lint **0**; i18n **4640 × 3**; build clean. Three guards bite-checked, each injection verified as
+landed. **Reviewed in a browser in both modes.**
+
+**⚠ F7 IS FOUR SPRINTS, NOT ONE (owner approved 2026-09-02).** Measuring its two blockers made it
+~90 files. F7a the fill role · F7b the shape role · F7c the cockpit fixture · F7d the flip.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **THE DARK RAMP'S SHADE END TRAVELS FURTHER** — `.15/.30/.45/.60` → `.45/.60/.75/.86`, dark only.
+  F3b aimed it at white (right) and kept light's distances (wrong), so `brand-600` — which the app
+  spells as its LINK ink — failed AA on a `#1f2937` card for **14 of 18** realistic tenant colours.
+  **Light is untouched and NO call site changed for this half.**
+- **THE FILLED CONTROL IS A ROLE.** `--brand-fill` / `-hover` / `-ink`. In dark a brand button is a
+  PALE fill with DARK ink. ⚠ **It cannot be fixed by moving the button down the ramp** — `brand-400`
+  lets white text read at 5.82 AND drops the button to **2.52** against its own card. That near-miss
+  is pinned as the `filled_button_visible` pair; do not delete it to "simplify" the table.
+- **THE `var()` INDIRECTIONS ARE LOAD-BEARING.** `--brand-fill: var(--brand-600)`, never a literal.
+  A tenant's colours arrive as INLINE styles on `:root`; a literal would paint every tenant's
+  primary button in the PLATFORM's blue while every other brand surface followed theirs.
+- **THREE FILES DESCRIBE THE FILL ROLE** — `globals.css`, `branding.ts`, `contrast.py` — and a guard
+  on EACH side pins them. F4's role-palette shape, caught before it could bite.
+- **THE GATE RUNS IN BOTH MODES.** `failures_all_modes` is what the save path calls; every check row
+  carries its mode. `failing` is mode-qualified (`light:filled_button`).
+- **TWO COLOURS NARROWED** — `#010066`, `#111827`, near-black, failing only the dark link pairs.
+- **`ui_shape` IS EXEMPT IN DARK ON PURPOSE**, with a test naming F7b and asserting the defect is
+  real. Do not gate it before the shape role exists — that refuses ten tenants for a defect of ours.
+
+**⚠ AT DEPLOY:** no migration, no data step. **Nothing a visitor sees changes** — light mode is
+byte-identical and dark is still unreachable (`NEXT_PUBLIC_THEME_SWITCH` unset; read it from the
+service, never from a settings default). The only visible surface is Programme → Colours, where the
+check list is now twice as long and each row is labelled Light or Dark.
+Note F6's measured correction: editing `halatuju_api/CLAUDE.md` does NOT fire the api trigger — but
+this sprint DOES change Python, so both builds will run. Confirm with `gcloud builds list`.
+
+**NEXT = LAYER 1 F7b — the shape role.** The roadmap's sequence, verbatim:
+
+> **Recommended: F1 → F2a → F2b → F3 → F4 → F5 → A1 → A2 → A3 → F6 → F7.**
+
+(F7 now expands to F7a → F7b → F7c → F7d.)
+
+**F7b:** `--brand-shape` — light `brand-500`, dark a paler stop — over ~50 files that are almost
+entirely one repeating pattern (`focus:ring-2 focus:ring-primary-500 focus:border-primary-500` on
+form inputs). Then **delete `DARK_EXEMPT`** and the test that names it, and re-measure the 18-colour
+spread: `#010066` and `#111827` may or may not return.
+
+**THEN F7c** (the `AdminApplicationDetail` sandbox fixture — the one repainted surface never seen in
+a browser) **and F7d** (the flip).
+
+**⚠ F7d's FIRST TASK IS THE ONE THE PLAN NEVER NAMED: there is no switch a person can click.**
+`NEXT_PUBLIC_THEME_SWITCH` gates only the before-paint script; nothing renders a control, so
+removing the flag makes everyone follow their device with no override. **Owner ruled 2026-09-02:
+device-local, no account storage** — language is a bigger per-person choice and is already
+device-local, so making theme MORE persistent than language would be backwards. Mount it where
+`LanguageSelector` is, plus the admin and sponsor shells. **F1b as originally scoped (four settings
+surfaces, three identity models, a migration) is SUPERSEDED, not deferred.**
+F7d also settles **TD-223** (links are `info` on some surfaces and `brand` on others; A2's gate says
+brand) and the **eight category swatches seen together** on `/sandbox/course-guide`.
+
+**⚠ READ THE ROADMAP'S SEQUENCE LINE BEFORE WRITING THIS BLOCK** — quote it, never paraphrase.
+
+**CHECKLIST, now twelve items:** re-derive the file list **and the surface the plan NAMES**; hunt the
+hiding places FIRST, weighted by a file's AGE not its size; grep for `bg-info-[567]00` beside
+`text-white`; ask of every colour table "state or kind?" **and whether it covers its whole domain**;
+**re-derive a recorded fix over a SPREAD of realistic inputs before building what the ticket says**;
+**ask whether both constraints can be met at all before picking a winner** — a control must be
+findable as well as readable; never generate a regex **and sweep for control bytes after any
+generated write** (`grep -P '[\x00-\x08\x0b\x0c\x0e-\x1f]'`); bite-check by injecting a fault AND
+VERIFYING IT LANDED; read a codemod's residue rather than counting it; when a test names a person,
+make the request look like that person's; when you fix a class of bug in one guard, grep for its
+neighbours that read the same way; and **rewrite the module's own docstring when you remove the
+omission it was arguing for.**
+
+## Superseded — previous Next Sprint (as of 2026-09-02, after Layer 1 F6 — THE REPAINT IS COMPLETE)
 
 **SHIPPED AND DEPLOYED — LAYER 1 F6.** `main` at `ade1829a`, Cloud Build SUCCESS, serving
 **halatuju-web-00814-v7s** (api unchanged at `00969-jgx`). All eight public routes 200 on

@@ -1,5 +1,60 @@
 # Architectural Decisions — HalaTuju
 
+## The filled control is a ROLE, and the dark ramp's shade end travels further — 2026-09-02
+**Decision:** `--brand-fill` / `--brand-fill-hover` / `--brand-fill-ink` resolve to `brand-600` /
+`-700` / white in light and `brand-800` / `-900` / `ground-50` in dark. Separately, `_SHADE_MIX`
+splits by mode: light keeps `.15/.30/.45/.60`, dark becomes `.45/.60/.75/.86`. TD-222 is closed and
+the contrast gate now runs in both modes on the save path and on the screen.
+
+**Alternatives considered:** (a) **Move the filled button DOWN the ramp in dark** so white text
+reads — rejected on measurement: `brand-400` gives white text 5.82 AND drops the button to **2.52**
+against its own card, under the 3.0 a non-text shape needs, so the control stops being findable.
+That near-miss is now pinned as `filled_button_visible` so it cannot be traded away. (b) **Retune
+the shade distances far enough to fix the button too** — impossible in principle, not merely hard: a
+link's ink must be PALE on a dark card and a button's fill must be dark enough to carry ink, so one
+number cannot be both, and retuning further to help the button breaks every link again. (c) **Keep
+`text-white` on the dark fill and pick a different fill stop** — rejected for the same reason as (a);
+every stop dark enough for white text is too dark to see against the card. (d) **Write the fill as a
+literal RGB** instead of `var(--brand-600)` — rejected: a tenant's colours arrive as inline styles on
+`:root`, so a literal would paint every tenant's primary button in the PLATFORM's blue while every
+other brand surface followed theirs.
+
+**Rationale:** TD-222 described one fault and measurement over 18 realistic tenant colours found two.
+The ramp was aimed correctly by F3b and simply travelled light's short distances, so `brand-600` —
+which the app spells as its LINK ink — failed AA on a `#1f2937` card for 14 of 18. That half cost
+four numbers and changed no call sites. The other half is a role conflict no set of distances can
+resolve, and the escape is the one F2c already took for the category family: in dark a brand button
+is a pale fill with dark ink. Measured over nine colours, ink-on-fill never below 5.82 and
+fill-against-card never below 4.82.
+
+**Consequences:** 66 files, 142 fills. Light mode is byte-identical. **Two colours moved from PASSES
+to REFUSES** — `#010066` and `#111827`, both near-black, both failing only the dark link pairs: the
+gate telling the truth about a surface nobody could previously see. `filled_button_dark` is renamed
+`filled_button_hover` (it never meant dark mode). Three files describe the fill role and a guard on
+each side pins them together, which is the F4 role-palette shape caught before it could bite.
+
+## The theme switch is DEVICE-LOCAL, with no account storage — 2026-09-02
+**Decision (owner, 2026-09-02):** when F7c ships the switch, the chosen mode lives in the browser
+only. No column, no migration, no endpoint. It mounts where `LanguageSelector` already is, plus the
+admin and sponsor shells (their staff use the console all day and are the likeliest to want dark).
+
+**Alternatives considered:** (a) **Store it on the account** across `StudentProfile`, `PartnerAdmin`
+and `Sponsor` — this was the F1b scope as originally written, ~20 files and a migration on three
+identity models. Rejected as disproportionate for a choice most people make once per device. (b) Ship
+dark following the device only, with no switch at all — rejected: a person on a dark laptop who wants
+the light product would have no escape, and "the flag gates only the before-paint script" is exactly
+why F7c cannot simply delete the flag.
+
+**Rationale:** the precedent that settles it is **language**, which is a bigger per-person choice
+than theme and is already device-local (`KEY_LOCALE` in `localStorage`, surfaced in `AppHeader`,
+`/settings` and the landing page). Making the theme follow somebody between machines while their
+LANGUAGE does not would be backwards. Note the argument is NOT "we already do it this way" —
+`lib/uiPrefs.ts` explicitly warns that theming is its own decision and that precedent alone must not
+settle it; language is cited because it is the same KIND of choice, not because it is nearby.
+
+**Consequences:** F1b as originally scoped is superseded rather than deferred. Adding account
+storage later is purely additive and nothing shipped here has to be undone.
+
 ## A categorical set larger than the palette goes NEUTRAL; the family does not widen — 2026-09-02
 **Decision:** the seventeen STPM subject chips and the six qualification-level chips are drawn with
 one neutral class each (`bg-ground-100 text-ground-700`), not with `category-N`. The eight

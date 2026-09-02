@@ -327,21 +327,63 @@ tracks — every pair on two pages a student moves between while comparing. Merg
 toggles, whose SELECTED state was blue and purple — two colours in one segmented control, neither
 of them the tenant's. Fifth sprint running for this defect.
 
-#### F7 — The flip
+#### ✅ F7a — SHIPPED 2026-09-02. **TD-222 IS CLOSED.**
+
+Retro `docs/retrospective-2026-09-02-layer1-f7a-brand-fill-role.md`; decisions ×2; lessons ×6. NO
+migration. web + api. 66 files, 142 fills. jest **1597**, pytest **5765**. Reviewed in both modes.
+
+**▶ F7 SPLIT INTO FOUR (owner approved 2026-09-02), because measuring the blockers made it bigger
+than one sprint: F7a the fill role, F7b the shape role, F7c the cockpit fixture, F7d the flip.**
+
+**▶ THE TICKET NAMED A SYMPTOM AND THE FIX WAS TWO THINGS.** TD-222 said the dark ramp cannot carry
+white button text, with correct numbers. Measuring 18 realistic tenant colours over every rendered
+pair found (1) the shade end was aimed right by F3b but travelled LIGHT's distances, so `brand-600`
+— the app's LINK ink — failed AA on a `#1f2937` card for **14 of 18**; and (2) a button and a link
+were spelled with the same stop while wanting opposite things there. Building only what the ticket
+described would have fixed the buttons and left every link unreadable, with a green suite.
+
+**▶ FOUR NUMBERS FIXED THE FIRST HALF AND CHANGED NO CALL SITES** — dark shades `.15/.30/.45/.60` →
+`.45/.60/.75/.86`. All 18 pass every text pair. Light untouched.
+
+**▶ THE SECOND HALF IS A ROLE, and it could not have been a stop.** Walking the button down the ramp
+DOES let white text read (`brand-400` = 5.82) and drops it to **2.52** against its own card, so it
+stops looking like a button. `--brand-fill` / `-hover` / `-ink`, `var()` indirections so a tenant
+override flows through with no change to `branding-context`. That near-miss is now the
+`filled_button_visible` pair, so nobody can trade one bar for the other.
+
+**▶ TWO COLOURS HONESTLY LOST.** `#010066` and `#111827` moved to REFUSES, failing only the dark link
+pairs — they were never unreadable before because nobody could see the surface they fail on.
+
+**▶ FOR F7b:** `ui_shape` is exempt in dark with a test that names the reason. `brand-500` is the
+identity stop and cannot move, so a dark tenant colour makes a dark dot on a dark card (**10 of 18**
+under 3.0). The fix is `--brand-shape` over ~50 files, almost all one repeating pattern
+(`focus:ring-2 focus:ring-primary-500 focus:border-primary-500`). Then delete `DARK_EXEMPT`.
+
+#### F7c — The officer cockpit fixture
+The one repainted surface never seen in a browser. Needs a large `AdminApplicationDetail` sandbox
+fixture; the sandbox forbids a hand-written approximation. *~4 files.*
+
+#### F7d — The flip
 Lower a `palette-guard` ceiling that may only fall, remove the flag, and review every surface in both
 modes. *low, but it is the sprint that must not be skipped.*
 
-**⚠ TWO THINGS NOW BLOCK IT, both found by later sprints and neither optional.**
+**⚠ ~~TWO THINGS NOW BLOCK IT~~ — TD-222 IS CLOSED (F7a) AND THE COCKPIT FIXTURE IS NOW F7c.**
 
-1. **TD-222 — the dark brand ramp cannot carry white button text.** In dark, `brand-600` and `-700`
-   are mixes toward WHITE, so `text-white` on them measures **3.22** and **2.59** for the platform's
-   own colour. F3b swapped the shade end so pale brand SURFACES would work; nothing accounted for
-   the same stops being filled-button backgrounds. Flipping dark on today would render 106
-   `bg-primary-600` buttons white-on-pale. **Fix the ramp, THEN widen A2's gate to both modes** —
-   which is an argument to `check_tokens`, not a rewrite.
-2. **The officer cockpit has never been seen in a browser.** Mounting it needs a large
-   `AdminApplicationDetail` sandbox fixture, and the sandbox forbids a hand-written approximation.
-   F7 cannot honestly claim "every surface reviewed in both modes" until it exists.
+1. ~~**TD-222 — the dark brand ramp cannot carry white button text.**~~ **CLOSED 2026-09-02 by F7a**,
+   and it was two faults rather than one: the shade end travelled light's distances (fixed by
+   `_SHADE_MIX`), and a button and a link were sharing a stop while wanting opposite things (fixed
+   by `FILL_ROLE`). The gate now runs in both modes. See the F7a block above.
+2. **The officer cockpit has never been seen in a browser** — now scheduled as **F7c**.
+
+**⚠ AND ONE BLOCKER THE PLAN NEVER NAMED, found at F7a's planning:**
+
+3. **THERE IS NO SWITCH A PERSON CAN CLICK.** `NEXT_PUBLIC_THEME_SWITCH` gates only the before-paint
+   script in `layout.tsx`; nothing in the product renders a control. Removing the flag today makes
+   everyone follow their device with no way to override. That was **F1b**, split out of F1 with the
+   note *"nothing needs it until F7"* — and that day is now. **Owner ruled 2026-09-02: device-local,
+   no account storage** (language, a bigger per-person choice, is already device-local). F1b as
+   originally scoped — four settings surfaces, three identity models, a migration — is SUPERSEDED,
+   not deferred. **This is F7d's first task.**
 
 **AND TWO SMALL ONES RAISED BY F6, neither blocking:**
 

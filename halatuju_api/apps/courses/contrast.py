@@ -8,15 +8,19 @@ whether it is one anybody can read. They are separate questions and they stay in
 "is THIS ink readable on THAT surface". So the gate holds a table of the pairs the product actually
 renders, derived by counting them in the web app rather than imagined:
 
-    text-white  on bg-primary-600   the main filled button
-    text-white  on bg-primary-700   its hover / darker sibling
+    the fill role's ink  on the fill role   the main filled button
+    the fill role's ink  on its hover stop  that button under the cursor
+    the fill role        on a card          whether the button can be FOUND at all
     text-primary-700 on bg-primary-50   the tinted panel with brand text
-    text-primary-600 on a white card    a link
+    text-primary-600 on a card          a link
     text-primary-600 on the page ground a link outside a card
-    text-white  on bg-primary-500   dots, bars and icon circles — NOT text
+    bg-primary-500   on a card          dots, bars and icon circles — NOT text
 
 A checker written against a hex has to be rewritten the day per-token colours arrive; one written
 against the pairs actually rendered simply gets more rows.
+
+The first three rows name a ROLE rather than a stop, and `FILL_ROLE` resolves it per mode — see
+that table for why a button and a link cannot share a number in dark.
 
 ⚠ THE LAST ROW HAS A DIFFERENT BAR, AND THE REASON IS THE SPRINT'S OWN FINDING. `bg-primary-500`
 used to carry `text-white` in 46 places, which put small white text on the lightest usable brand
@@ -25,25 +29,30 @@ refused BrightPath's own live blue, and orange besides. That is not a mis-calibr
 correctly-calibrated gate finding a real defect, because F4 had already ruled that a filled control
 carries `bg-primary-600` and those 46 were the ones that never moved. A2 moved them. What is left on
 `-500` is dots, progress bars and icon circles — SHAPES, not text — so its bar is WCAG's **3:1 for
-non-text** rather than 4.5. Measured after the move: 13 of 18 realistic brand colours pass, and every
-refusal is a colour a person genuinely could not read.
+non-text** rather than 4.5. Measured after the move: 13 of 18 realistic brand colours passed in
+light, and every refusal was a colour a person genuinely could not read.
+
+**Re-measured in BOTH modes after F7a: 11 of 18.** The two that moved (`#010066`, `#111827`) are
+near-black and fail only the dark link pairs — a question light never asked.
 
 ── IT REFUSES; IT DOES NOT WARN ───────────────────────────────────────────────────────────────────
 A tenant will pick a colour that renders at 4:1 against white. A warning is dismissed and a student
 cannot read the page, and the person who dismissed it is not the person who suffers. So this is
 called from the save path and a failure is a `400`, not a note on the screen.
 
-── LIGHT MODE ONLY, AND THAT IS DELIBERATE (see TD-222) ───────────────────────────────────────────
-Dark mode is unreachable in production (`NEXT_PUBLIC_THEME_SWITCH` is unset on the live service —
-read from the service, not from a settings default), so light is the whole of what any person can
-currently see. It is also the only mode a gate can honestly police today: in dark, `brand-600` and
-`-700` are mixes toward WHITE, so `text-white` on them measures 3.2 and 2.6 **for the platform's own
-colour** — a defect in the ramp rather than in anybody's choice, and no colour on earth would pass.
-Gating dark before fixing that would refuse every tenant for our mistake.
+── BOTH MODES, SINCE LAYER 1 F7a. TD-222 IS CLOSED ────────────────────────────────────────────────
+A2 gated light alone and said why: dark was unreachable, and it was also ungateable, because
+`text-white` on the dark `brand-600` measured 3.22 **for the platform's own colour** — no colour on
+earth would have passed, so the gate would have been refusing every tenant for our defect.
 
-`check_tokens(tokens, mode)` takes the mode, so widening this is passing a different argument, not a
-rewrite. F7 must not ship before dark is gated too — `test_dark_is_deliberately_not_gated_yet`
-carries that reason so nobody reads the omission as an oversight.
+F7a fixed the two things behind that number. The dark shade end was aimed correctly (F3b) but
+travelled light's short distances, so `brand-600` was barely lighter than the tenant's colour on a
+`#1f2937` card; and a filled button and a link were being spelled with the SAME stop while wanting
+opposite things there. The first is `_SHADE_MIX`, the second is `FILL_ROLE`. **The save path now
+calls `failures_all_modes`** — a colour is stored once and rendered in both, and a tenant refused
+only after somebody flips the switch has been let down by the gate rather than protected by it.
+
+One pair is still light-only, with a name and a reason: see `DARK_EXEMPT`.
 """
 from collections import namedtuple
 

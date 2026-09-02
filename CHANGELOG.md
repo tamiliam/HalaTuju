@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F7a — the filled control becomes a ROLE, and dark is gated. TD-222 CLOSED - 2026-09-02
+
+**Sprint.** **NO migration.** web + api. Retro
+`docs/retrospective-2026-09-02-layer1-f7a-brand-fill-role.md`. jest 1595 → **1597**;
+pytest 5757 → **5765**; tsc **24** (baseline); lint **0**; i18n **4640 × 3**; build clean.
+Reviewed in a browser in both modes.
+
+TD-222 said *"the dark ramp cannot carry white button text"*. Measuring 18 realistic tenant colours
+across every pair the product renders found **two** faults, only one of which was the ramp.
+
+### Changed
+- **The dark ramp's shade end travels much further** — `.15/.30/.45/.60` → `.45/.60/.75/.86`. F3b
+  aimed it at white (right) and kept light's distances (wrong), so `brand-600` — which the app
+  spells as its LINK ink — was barely lighter than the tenant's own colour on a `#1f2937` card and
+  failed AA for **14 of 18**. All 18 pass now. **Light is untouched and no call site changed.**
+- **A filled brand control is a ROLE, not a stop.** `--brand-fill` / `-hover` / `-ink`: `brand-600`
+  + white in light, `brand-800` + the page colour in dark. 66 files, 142 fills. In dark a brand
+  button is a **pale fill with dark ink**, which is F2c's role-swap applied to the brand.
+- **The gate runs in BOTH modes** on the save path and on the screen, and every check row carries
+  its mode.
+- **`filled_button_dark` → `filled_button_hover`.** It never meant dark mode; it named the darker
+  sibling stop, and the old name was one sprint from being an outright lie.
+- **The picker's copy no longer says "white text"** — in dark the ink is not white. New ms/ta first
+  drafts for three keys.
+
+### Added
+- **`filled_button_visible`** — the pair that stops the obvious wrong fix. Walking the button down
+  the ramp DOES let white text read (`brand-400` measures 5.82) and drops it to **2.52** against its
+  own card, so it stops looking like a button. Both bars are held at once now.
+- **Three guards pinning the three descriptions of the fill role together** (`globals.css`,
+  `branding.ts`, `contrast.py`) — the F4 role-palette shape, caught before it could bite.
+
+### Removed
+- **`TestDarkIsDeliberatelyNotGatedYet`**, replaced by `TestDarkIsGatedNow`. The old docstring
+  defended light-only gating with real numbers and became a confident falsehood the moment dark was
+  gated.
+
+### ⚠ What a tenant may choose has narrowed by two
+`#010066` and `#111827` moved from PASSES to REFUSES. Both near-black, both failing only the dark
+link pairs. **They were never unreadable before because nobody could see the surface they are
+unreadable on.** No live organisation has a theme, so nothing in production is affected.
+
+### ⚠ One pair is still light-only, on purpose
+`ui_shape` (dots, bars, focus rings at `brand-500`) is exempt in dark: `brand-500` is the identity
+stop and cannot move, so a dark tenant colour makes a dark shape on a dark card — **10 of 18** under
+3.0. The fix is a `--brand-shape` role over ~50 files of focus rings. **That is F7b.**
+
 ## Layer 1 F6 — the last unpainted surfaces. THE REPAINT IS COMPLETE - 2026-09-02
 
 **Sprint.** **NO migration.** web only. Retro
