@@ -389,23 +389,55 @@
   body {
     @apply bg-ground-50 text-ground-900 antialiased;
   }
+
+  /* ⚠ EVERY FORM CONTROL, NOT ONLY THE ONES USING `.input` (Layer 1 F7c).
+     ─────────────────────────────────────────────────────────────────────────────────────────
+     THE DEFECT THIS FIXES WAS FOUND ON THE FIRST SCREEN F7c COULD FINALLY MOUNT, and it was
+     worse than the one F2a fixed. On the officer cockpit — 3,500 lines, and the one surface
+     nobody had ever opened — every text box, dropdown and textarea measured
+     `background: white` AND `color: white` in dark mode. **White text in a white box.** Not
+     hard to read: INVISIBLE.
+
+     Two independent halves, and neither is visible in light:
+       * the BACKGROUND came from the browser's own default, because these controls are written
+         with bare utilities (`border rounded-lg px-3 py-2`) and never declare one — F2a's `.input`
+         lesson, in the ~300 controls that do not use `.input`;
+       * the COLOUR was INHERITED from `body`, which is `text-ground-900` — and `ground-900` in
+         dark is white.
+     In light the two accidents cancel: the UA white matches the page and the inherited ink is
+     dark. Only reversing the ground puts them on top of each other.
+
+     ⚠ WHY A BASE RULE RATHER THAN ~300 EDITS. This belongs to the stylesheet for the same reason
+     `body` did: it is one property of every control, present and future, and a per-call-site fix
+     is a convention that decays at the rate new forms are written. `@layer base` also means any
+     utility class still WINS, so a control that deliberately sets its own background keeps it. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    @apply bg-ground-0 text-ground-900;
+  }
 }
 
 /* Component styles */
 @layer components {
   /* Primary button */
   .btn-primary {
-    @apply bg-primary-500 text-white px-6 py-3 rounded-lg font-medium;
-    @apply hover:bg-primary-600 transition-colors duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    /* the FILL ROLE, like every other filled control (F7a) - reached here in F7c, because
+       F7b's codemod ran over `.ts`/`.tsx` and this stylesheet is neither. Same miss F2a made
+       with `body`: globals.css is not a component and not a surface, so no sprint owned it. */
+    @apply bg-brand-fill text-brand-fill-ink px-6 py-3 rounded-lg font-medium;
+    @apply hover:bg-brand-fill-hover transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-shape focus:ring-offset-2;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* Secondary button */
   .btn-secondary {
-    @apply bg-ground-0 text-primary-500 border-2 border-primary-500 px-6 py-3 rounded-lg font-medium;
+    /* Brand TEXT is `-600` (F7b: `-500` measures 3.98 on white, below AA); the BORDER is an
+       edge, so it takes the shape role. Two different roles on one control, which is the point. */
+    @apply bg-ground-0 text-primary-600 border-2 border-brand-shape px-6 py-3 rounded-lg font-medium;
     @apply hover:bg-primary-50 transition-colors duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-shape focus:ring-offset-2;
   }
 
   /* Card */
@@ -421,7 +453,7 @@
      with the markup — the colour was coming from the user agent. */
   .input {
     @apply w-full px-4 py-3 rounded-lg border border-ground-300 bg-ground-0 text-ground-900;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-transparent;
     @apply placeholder:text-ground-400;
   }
 

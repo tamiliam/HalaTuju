@@ -460,6 +460,35 @@ describe('the stylesheet is a hiding place too', () => {
     const input = layers.slice(layers.indexOf('.input {'))
     expect(input.slice(0, input.indexOf('}'))).toMatch(/bg-ground-/)
   })
+
+  it('declares a background AND an ink for EVERY control, not only `.input`', () => {
+    // ⚠ THE F7c DEFECT, AND IT WAS WORSE THAN F2a's. On the officer cockpit — the one surface
+    // nobody had ever opened — every text box, dropdown and textarea measured `background: white`
+    // AND `color: white` in dark mode. White text in a white box: invisible, not merely faint.
+    //
+    // Two independent halves, neither visible in light. The BACKGROUND came from the browser,
+    // because ~300 controls are written with bare utilities and never declare one — F2a fixed the
+    // `.input` CLASS, and these do not use it. The INK was INHERITED from `body`, which is
+    // `text-ground-900`, and `ground-900` in dark is WHITE. In light the two accidents cancel out.
+    //
+    // The fix is an ELEMENT rule in `@layer base`, so it covers every control written from here
+    // on and any utility class still wins over it. This asserts both halves.
+    const base = css.slice(css.indexOf('@layer base'))
+    const block = base.slice(base.indexOf('input:not('), base.indexOf('@layer components'))
+    expect(block).toMatch(/select/)
+    expect(block).toMatch(/textarea/)
+    expect(block).toMatch(/bg-ground-0/)
+    expect(block).toMatch(/text-ground-900/)
+  })
+
+  it('keeps the stylesheet\'s OWN controls on the roles, like every component', () => {
+    // ⚠ globals.css is not a component and not a surface, so no repaint sprint owned it — F2a's
+    // lesson, and F7b walked straight into it again: its codemod ran over `.ts`/`.tsx` and left
+    // `.btn-primary`, `.btn-secondary` and `.input` still reaching for `primary-500`.
+    expect(withoutComments(css)).not.toMatch(/primary-500/)
+    const btn = layers.slice(layers.indexOf('.btn-primary {'))
+    expect(btn.slice(0, btn.indexOf('}'))).toMatch(/bg-brand-fill text-brand-fill-ink/)
+  })
 })
 
 // ── The converted surfaces, one entry per repaint sprint ────────────────────────────────────────
@@ -729,7 +758,10 @@ describe('the F5 semantic corrections the codemod could not make', () => {
   // The cockpit's ceiling (544) is GONE, not lowered: F5 converted the file, so it is covered by
   // the conversion guard above like every other admin page. A ratchet that guards a converted
   // surface is noise — the same reason F3 deleted the `src/components` one.
-  const cockpit = 'src/app/admin/scholarship/[id]/page.tsx'
+  // ⚠ THE VIEW, NOT THE PAGE. F7c moved the 3,500-line screen into `view.tsx` because Next forbids
+  // a page module from exporting anything but its default, and the sandbox had to import it to
+  // mount it at all. The route file is 22 lines now; the body did not change.
+  const cockpit = 'src/app/admin/scholarship/[id]/view.tsx'
 
   it('paints its two Save buttons with the BRAND, like the other 38 in the console', () => {
     const src = withoutComments(read(cockpit))

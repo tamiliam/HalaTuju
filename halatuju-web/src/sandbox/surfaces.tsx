@@ -32,7 +32,7 @@ import type { EligibleCourse } from '@/lib/api'
 import ScholarshipApplyPage from '@/app/scholarship/apply/page'
 import SponsorStudentsPage from '@/app/sponsor/(portal)/students/page'
 import AdminProgrammeConfigPage from '@/app/admin/programme/page'
-import AdminScholarshipDetailPage from '@/app/admin/scholarship/[id]/page'
+import { AdminScholarshipDetailView } from '@/app/admin/scholarship/[id]/view'
 import { AuthContext } from '@/lib/auth-context'
 import { AdminAuthContext } from '@/lib/admin-auth-context'
 import { SponsorPortalContext } from '@/lib/sponsor-portal-context'
@@ -304,7 +304,7 @@ export const SURFACES: Surface[] = [
         {/* `applicationId` is the ONE concession the page makes to being mounted here: the sandbox
             lives at `/sandbox/[surface]`, so `useParams()` has no `id`. Everything else — the
             fetches, the loading states, the error handling — is the real page's own code path. */}
-        <AdminScholarshipDetailPage applicationId={1} />
+        <AdminScholarshipDetailView applicationId={1} />
       </WithAdminAuth>
     ),
   },
