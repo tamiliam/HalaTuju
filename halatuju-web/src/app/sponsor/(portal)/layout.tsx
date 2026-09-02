@@ -13,6 +13,7 @@ import SponsorLanding from '@/components/SponsorLanding'
 import SponsorDetailsForm from '@/components/SponsorDetailsForm'
 import SponsorTermsWizard from '@/components/sponsors/SponsorTermsWizard'
 import SponsorNotifyPrefs from '@/components/SponsorNotifyPrefs'
+import ThemeSelector from '@/components/ThemeSelector'
 import { SponsorPortalProvider, useSponsorPortal } from '@/lib/sponsor-portal-context'
 
 /**
@@ -180,6 +181,9 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
                 ))}
               </nav>
             )}
+            {/* Light / Dark / Auto (Layer 1 F7d). The sponsor portal has no settings page of its
+                own, so the top bar is the only place a sponsor could ever find it. */}
+            <div className="ml-1 sm:ml-2"><ThemeSelector /></div>
             <button onClick={signOut} className="ml-1 sm:ml-2 px-2.5 sm:px-3 py-2 text-sm text-ground-400 hover:text-ground-600">
               {t('header.logout')}
             </button>

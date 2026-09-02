@@ -4,7 +4,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { ReferralCapture } from '@/components/ReferralCapture'
 import { HtmlLang } from '@/components/HtmlLang'
-import { THEME_BOOT_SRC, themeSwitchEnabled } from '@/lib/theme'
+import { THEME_BOOT_SRC } from '@/lib/theme'
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -71,34 +71,32 @@ export default function RootLayout({
       <head>
         {/*
           Paints the person's theme before the first pixel (Layer 1 F1). Render-blocking on
-          purpose: the account's copy of Light/Dark/Auto arrives with the session, which is after
-          first paint, so resolving it in React would make a dark user watch every page turn white
-          then dark. See public/theme-boot.js — it sets one attribute and globals.css does the rest.
+          purpose: the choice is device-local, but anything read in React still lands after first
+          paint, so a dark person would watch every page turn white then dark. See
+          public/theme-boot.js — it sets one attribute and globals.css does the rest.
 
-          ⚠⚠ THE FLAG GATES THE SCRIPT ITSELF, AND IT HAS TO. F1 shipped this tag unconditionally
-          while claiming the feature was "behind a flag" — but the flag only hid the CONTROL. The
-          script still ran on every page, and its default is `auto`, which follows the device. So
-          every visitor whose computer is set to dark got a dark product the moment F1 deployed,
-          across surfaces no sprint has repainted yet. Reported from the live sponsor page.
+          ⚠⚠ THIS IS THE FLIP (Layer 1 F7d). The tag was gated on `themeSwitchEnabled()` for the
+          whole arc, and the flag GATED THE SCRIPT rather than the control — because F1 first
+          shipped it gating only the affordance, which left the script running everywhere with a
+          default of `auto`, handing a dark product to every device set to dark across surfaces no
+          sprint had painted. Reported from the live sponsor page. **A flag that gates only the
+          affordance gates nothing** — keep that lesson even though the flag is gone.
 
-          With the flag unset there is NO script, therefore no `data-theme` attribute, therefore
-          `:root[data-theme='dark']` never matches and every page is light — the mechanism is
-          completely inert rather than merely invisible. That is what "ships dark" has to mean for
-          anything that paints. A flag that gates only the affordance gates nothing.
+          The flag is deleted because its condition is met: every surface is converted (F2a–F6),
+          the brand ramp carries both modes (F7a, F7b), the gate has no exemptions left, the last
+          unopened screen was mounted and fixed (F7c), and there is now a control a person can
+          click (`ThemeSelector`). Removing it before all of that would have put half the product
+          into a mode nothing had painted for.
         */}
-        {themeSwitchEnabled() && (
-          <>
-            {/*
-              The synchronous-script rule is suppressed below as A DELIBERATE EXCEPTION, not an
-              oversight. That rule exists to stop render-blocking scripts delaying first paint —
-              and here, delaying first paint is precisely the requirement: the attribute has to be
-              on <html> BEFORE the first pixel, or a dark user sees a white flash on every
-              navigation. Both `async` and `defer` run after paint and would put it straight back.
-            */}
-            {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-            <script src={THEME_BOOT_SRC} />
-          </>
-        )}
+        {/*
+          The synchronous-script rule is suppressed below as A DELIBERATE EXCEPTION, not an
+          oversight. That rule exists to stop render-blocking scripts delaying first paint — and
+          here, delaying first paint is precisely the requirement: the attribute has to be on
+          <html> BEFORE the first pixel, or a dark user sees a white flash on every navigation.
+          Both `async` and `defer` run after paint and would put it straight back.
+        */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src={THEME_BOOT_SRC} />
       </head>
       <body className="font-sans">
         <Providers>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { Menu, MenuHeading, MenuItem, MenuSeparator } from '@/components/admin/Menu'
 import { Icon } from '@/components/admin/icons'
+import ThemeSelector from '@/components/ThemeSelector'
 
 /**
  * The top bar: where you ARE on the left, what is YOURS on the right.
@@ -116,6 +117,11 @@ export function Topbar({
           Ctrl K
         </kbd>
       </button>
+
+      {/* Light / Dark / Auto (Layer 1 F7d). It sits in the bar rather than in the account menu
+          because a reviewer changing it is changing the thing in front of them — the same reason
+          the nav pin is not buried either. A reviewer reads documents on this shell for hours. */}
+      <ThemeSelector />
 
       {(guideHref || faqHref) && (
         <Menu label={t('admin.shell.help')} trigger={<Icon name="help" size={17} />}>

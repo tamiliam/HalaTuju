@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useT, LOCALE_LABELS } from '@/lib/i18n'
 import { clearAll } from '@/lib/storage'
 import LanguageSelector from '@/components/LanguageSelector'
+import ThemeSelector from '@/components/ThemeSelector'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 
@@ -30,6 +31,14 @@ export default function SettingsPage() {
           <h2 className="font-semibold text-ground-900 mb-1">{t('settings.language')}</h2>
           <p className="text-sm text-ground-500 mb-3">{t('settings.languageDesc')}</p>
           <LanguageSelector />
+        </section>
+
+        {/* Theme (Layer 1 F7d). Beside Language on purpose: both are device-local personal
+            choices, and this is the page a person looks on when they want to change one. */}
+        <section className="bg-ground-0 rounded-xl border border-ground-200 p-5">
+          <h2 className="font-semibold text-ground-900 mb-1">{t('settings.theme')}</h2>
+          <p className="text-sm text-ground-500 mb-3">{t('settings.themeDesc')}</p>
+          <ThemeSelector />
         </section>
 
         {/* Clear Data */}

@@ -46,6 +46,12 @@
       "partner": "Log masuk rakan kongsi"
     }
   },
+  "theme": {
+    "label": "Tema",
+    "light": "Terang",
+    "dark": "Gelap",
+    "auto": "Auto"
+  },
   "getStarted": {
     "title": "Selamat datang ke HalaTuju",
     "tagline": "Cari kursus yang sesuai, dan mohon bantuan untuk ke sana.",
@@ -764,6 +770,8 @@
   "settings": {
     "language": "Bahasa",
     "languageDesc": "Pilih bahasa pilihan anda untuk antara muka.",
+    "theme": "Tema",
+    "themeDesc": "Pilih skrin terang atau gelap. Auto mengikut tetapan peranti ini sendiri. Disimpan pada peranti ini sahaja.",
     "clearData": "Padam Data Profil",
     "clearDataDesc": "Padam gred, pilihan aliran dan jawapan kuiz anda dari peranti ini. Akaun dan kursus yang disimpan tidak terjejas.",
     "clearConfirm": "Adakah anda pasti mahu memadamkan semua data profil? Anda perlu memasukkan semula gred anda.",

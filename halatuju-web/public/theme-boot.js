@@ -2,13 +2,18 @@
  * Paints the person's theme BEFORE the first pixel (Layer 1 F1).
  *
  * ⚠ THIS RUNS AS A RENDER-BLOCKING SCRIPT IN <head>, AND THAT PLACEMENT IS THE FEATURE.
- * A person's Light/Dark/Auto choice lives on their ACCOUNT, which arrives with the session — long
- * after first paint. Resolve it in React and someone who chose dark watches a white page turn dark
- * on every single navigation. So the device's cached copy is read synchronously here, ahead of
- * everything, and the account reconciles afterwards.
+ * A person's Light/Dark/Auto choice is DEVICE-LOCAL (owner ruling, 2026-09-02) and lives in the
+ * storage key below. Even so, anything read in React lands after first paint — so someone who chose
+ * dark would watch a white page turn dark on every single navigation. It is read synchronously
+ * here, ahead of everything.
  *
  * It sets ONE attribute; `globals.css` does the rest. That is why changing mode costs no re-render
  * and cannot lose a half-filled form when the device flips at sunset.
+ *
+ * ⚠ IT RESOLVES `auto` ONCE, at load, and that is on purpose — a head script should not hold a
+ * subscription for the life of the tab. The sunset flip is `ThemeWatcher`'s job, in the React tree.
+ *
+ * ⚠ NO LONGER FLAG-GATED (Layer 1 F7d). Every surface is painted and the switch is reachable.
  *
  * ⚠ KEEP IN STEP WITH `src/lib/theme.ts`. A blocking head script cannot import a module, so the key,
  * the attribute and the default are spelled out twice on purpose. `src/lib/__tests__/theme.test.ts`

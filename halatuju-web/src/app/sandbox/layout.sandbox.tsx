@@ -16,7 +16,7 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { SandboxProviders } from '@/sandbox/providers'
 import { SURFACES } from '@/sandbox/surfaces'
-import { SandboxThemeToggle } from '@/sandbox/ThemeToggle'
+import ThemeSelector from '@/components/ThemeSelector'
 
 export default function SandboxLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -32,9 +32,13 @@ export default function SandboxLayout({ children }: { children: ReactNode }) {
             <p className="text-sm text-caution-900">
               Real components, invented data. Nothing here is a person, and nothing you do is saved.
             </p>
-            {/* Layer 1: flip modes without a login. The product's own switch lives on a person's
-                account and is later work — this is chrome, so a repaint sprint can be reviewed. */}
-            <div className="ml-auto"><SandboxThemeToggle /></div>
+            {/* ⚠ THIS IS THE PRODUCT'S OWN SWITCH, NOT SANDBOX CHROME (changed in Layer 1 F7d).
+                For F1–F7c the sandbox carried its own segmented toggle, because the real control
+                did not exist and every repaint sprint still had to be looked at in both modes.
+                It exists now, so the copy is deleted: the sandbox's whole promise is that it
+                mounts real components, and a hand-written stand-in for a shipped control is the
+                exact drift `sandbox-safety.test.ts` was written to refuse. */}
+            <div className="ml-auto"><ThemeSelector /></div>
           </div>
           <nav className="mx-auto flex max-w-6xl flex-wrap gap-1 px-4 pb-3">
             {SURFACES.map((s) => {

@@ -4,6 +4,7 @@ import BrandLogo from '@/components/BrandLogo'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from '@/components/LanguageSelector'
+import ThemeSelector from '@/components/ThemeSelector'
 import AuthButtons from '@/components/AuthButtons'
 import AppFooter from '@/components/AppFooter'
 
@@ -18,6 +19,7 @@ export default function LandingPage() {
           <BrandLogo width={120} height={40} />
         </div>
         <div className="flex items-center gap-4">
+          <ThemeSelector />
           <LanguageSelector />
           <Link href="/about" className="hidden sm:inline text-ground-600 hover:text-ground-900">
             {t('common.about')}

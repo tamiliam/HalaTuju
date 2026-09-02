@@ -169,23 +169,58 @@ describe('the before-paint boot script', () => {
     expect(boot).toContain('catch')
   })
 
-  it('IS GATED ON THE FLAG — with the switch off, nothing paints a theme at all', () => {
-    // ⚠ THE F1 DEFECT, PINNED. F1 shipped this tag unconditionally and called the feature
-    // "flag-gated", but the flag only hid the CONTROL. The script still ran everywhere, and its
-    // default is `auto` — which follows the device — so every visitor whose computer was set to
-    // dark got a dark product across surfaces no sprint had repainted. It was reported from the
-    // live sponsor page, not caught here.
+  it('IS UNCONDITIONAL — THE FLIP (Layer 1 F7d)', () => {
+    // ⚠ THIS TEST ASSERTED THE EXACT OPPOSITE FOR THE WHOLE ARC, and both versions were right in
+    // their turn. F1 shipped the tag unconditionally while calling the feature "flag-gated" — but
+    // the flag only hid the CONTROL. The script still ran everywhere with a default of `auto`,
+    // which follows the device, so every visitor whose computer was set to dark got a dark product
+    // across surfaces no sprint had repainted. Reported from the live sponsor page, not caught
+    // here. The fix was to gate the SCRIPT, and this test pinned that.
     //
-    // With the flag off there must be NO script, so no `data-theme` attribute exists, so the dark
-    // ramp cannot match and every page is light. Inert, not merely invisible.
+    // F7d removes the gate because its condition is met: every surface is converted, the ramp
+    // carries both modes with no exemptions, the last unopened screen was mounted and fixed, and
+    // `ThemeSelector` exists. **Keep the lesson even though the flag is gone: a flag that gates
+    // only the affordance gates nothing.**
     const layout = read('src/app/layout.tsx')
     const head = layout.slice(layout.indexOf('<head>'), layout.indexOf('</head>'))
-    const tagAt = head.indexOf('<script')
-    expect(tagAt).toBeGreaterThan(-1)
-    // The guard has to sit BEFORE the tag and wrap it — not merely appear somewhere in the file.
-    const guardAt = head.indexOf('themeSwitchEnabled()')
-    expect(guardAt).toBeGreaterThan(-1)
-    expect(guardAt).toBeLessThan(tagAt)
+    expect(head).toContain('<script')
+    // Comments are stripped first: the rationale above the tag NAMES the deleted function, and a
+    // raw search of the head would match its own explanation. (It did, on the first run — the same
+    // shape of self-match the `defer`/`async` test below already documents.)
+    const code = head.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
+    expect(code).not.toContain('themeSwitchEnabled')
+    // Nothing may CONDITION the tag — not this flag and not a future one. Anything rendering the
+    // script behind a `&&` or a `?` puts a whole class of visitor back on an unthemed page.
+    const before = code.slice(0, code.indexOf('<script'))
+    expect(before).not.toMatch(/&&|\?/)
+  })
+
+  it('leaves no trace of the flag anywhere in the source', () => {
+    // A deleted flag that survives in one call site is worse than no flag: the switch is reachable
+    // but one surface silently is not. Scans everything, not the layout alone.
+    // ⚠ THIS FILE IS EXCLUDED, AND ONLY THIS FILE. It has to spell the flag out to search for it,
+    // so a scan that includes itself can only ever fail. Naming the exclusion narrowly is the
+    // point — a scan that quietly skipped `__tests__` would also stop noticing a live call site
+    // that a test happens to sit beside.
+    const SELF = 'src/lib/__tests__/theme.test.ts'
+    const offenders: string[] = []
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(path.join(process.cwd(), dir))) {
+        const rel = `${dir}/${e}`
+        if (rel === SELF) continue
+        if (fs.statSync(path.join(process.cwd(), rel)).isDirectory()) walk(rel)
+        else if (/\.(ts|tsx|js)$/.test(e)) {
+          const src = read(rel).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ').replace(/\/\/.*/g, ' ')
+          if (src.includes('NEXT_PUBLIC_THEME_SWITCH') || src.includes('themeSwitchEnabled')) {
+            offenders.push(rel)
+          }
+        }
+      }
+    }
+    walk('src')
+    // Self-check: a broken walk must not pass on nothing.
+    expect(fs.readdirSync(path.join(process.cwd(), 'src')).length).toBeGreaterThan(0)
+    expect(offenders).toEqual([])
   })
 
   it('is loaded render-blocking from the head, not deferred and not in the body', () => {
@@ -204,11 +239,74 @@ describe('the before-paint boot script', () => {
   })
 })
 
-describe('the switch is off by default', () => {
-  it('the flag is unset in the environment the tests run in', () => {
-    // If this ever fails, someone has turned the theme switch on globally — which, before F6,
-    // means an unpainted surface can be put into dark mode by a visitor's own OS setting.
-    expect(process.env.NEXT_PUBLIC_THEME_SWITCH).not.toBe('1')
+describe('the switch a person can actually click (Layer 1 F7d)', () => {
+  // ⚠ THIS DESCRIBE ASSERTED THE FLAG WAS OFF FOR THE WHOLE ARC. It is the sprint's central fact
+  // inverted: dark mode was complete and unreachable, and F7d's job was to make it reachable. A
+  // test that says "off by default" would now pass forever while nobody could use the feature.
+
+  const selector = read('src/components/ThemeSelector.tsx')
+
+  it('offers exactly the three modes the module defines, and names none of them itself', () => {
+    // The options are generated from THEME_MODES, so a fourth mode cannot appear in one place and
+    // not the other. Hard-coded English in a `<option>` is the failure this catches — the product
+    // ships in three languages and the arc has already shipped one untranslated control.
+    expect(selector).toContain('THEME_MODES.map')
+    for (const m of THEME_MODES) {
+      expect(selector).not.toMatch(new RegExp(`>\\s*${m}\\s*<`, 'i'))
+    }
+  })
+
+  it('writes the mode to storage — the choice is DEVICE-LOCAL, by the owner\'s ruling', () => {
+    // Owner, 2026-09-02: device-local, no account storage. Language is a larger per-person choice
+    // and is already device-local, so a MORE persistent theme would be backwards. F1b as scoped —
+    // four settings surfaces, three identity models, a migration — is superseded, not deferred.
+    expect(selector).toContain('writeStoredMode')
+    // No account call may creep in later. This is the assertion that would fail if it did.
+    expect(selector).not.toMatch(/fetch\(|useMutation|api\./)
+  })
+
+  it('does NOT re-apply a theme on mount — the boot script already did', () => {
+    // Two things setting `data-theme` can only ever disagree. The sandbox toggle had to apply on
+    // mount because the script was gated off; that reason died with the flag.
+    // ⚠ Anchor on the CALL, not the identifier: `useEffect` first appears in the import line, so
+    // slicing from there swallows the whole import list — including `applyTheme`, which `pick`
+    // legitimately uses. The first draft did exactly that and failed on its own imports.
+    const mountEffect = selector.slice(selector.indexOf('useEffect(() =>'), selector.indexOf('const pick'))
+    expect(mountEffect).toContain('readStoredMode')
+    expect(mountEffect).not.toContain('applyTheme')
+  })
+
+  it('is mounted on every shell a person can be in', () => {
+    // The defect this prevents is silent and partial: the control exists, so the feature looks
+    // shipped, but one population — sponsors, or reviewers — has no way to reach it.
+    const SHELLS = [
+      'src/components/AppHeader.tsx',        // students and the public
+      'src/components/admin/Topbar.tsx',     // reviewers, org admins, the officer cockpit
+      'src/app/sponsor/(portal)/layout.tsx', // sponsors, who have no settings page at all
+      'src/app/page.tsx',                    // the landing page, which draws its own nav
+      'src/app/settings/page.tsx',           // where a person goes looking for it
+    ]
+    const missing = SHELLS.filter((f) => !read(f).includes('<ThemeSelector />'))
+    expect({ missing }).toEqual({ missing: [] })
+  })
+
+  it('keeps `auto` live for the whole tab, from the provider stack and not from the control', () => {
+    // A chromeless page renders no header. Document upload is one, and it is exactly the screen
+    // someone sits on for a long time — long enough for a device to reach its own sunset.
+    expect(read('src/app/providers.tsx')).toContain('<ThemeWatcher />')
+    const watcher = read('src/components/ThemeWatcher.tsx')
+    expect(watcher).toContain("addEventListener('change'")
+    expect(watcher).toContain('removeEventListener')
+    // Re-reads storage in the handler rather than closing over state, so switching to `dark` and
+    // back to `auto` cannot leave a stale subscription behind.
+    expect(watcher).toContain('readStoredMode')
+  })
+
+  it('is the ONE control — the sandbox no longer keeps a copy of it', () => {
+    // `sandbox-safety.test.ts` states the rule; this states the specific instance, because the
+    // sandbox's segmented toggle was legitimate right up until the real control shipped.
+    expect(fs.existsSync(path.join(process.cwd(), 'src/sandbox/ThemeToggle.tsx'))).toBe(false)
+    expect(read('src/app/sandbox/layout.sandbox.tsx')).toContain('<ThemeSelector />')
   })
 })
 

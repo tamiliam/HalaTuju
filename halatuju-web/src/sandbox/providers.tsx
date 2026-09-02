@@ -19,6 +19,7 @@ import { useState, type ReactNode } from 'react'
 import { I18nProvider } from '@/lib/i18n'
 import { BrandingProvider } from '@/lib/branding-context'
 import { ToastProvider } from '@/components/Toast'
+import ThemeWatcher from '@/components/ThemeWatcher'
 import { installStubFetch } from './stubFetch'
 
 export function SandboxProviders({ children }: { children: ReactNode }) {
@@ -36,7 +37,10 @@ export function SandboxProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <BrandingProvider>
         <I18nProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <ThemeWatcher />
+            {children}
+          </ToastProvider>
         </I18nProvider>
       </BrandingProvider>
     </QueryClientProvider>

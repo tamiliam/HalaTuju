@@ -46,6 +46,12 @@
       "partner": "Partner login"
     }
   },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Auto"
+  },
   "getStarted": {
     "title": "Welcome to HalaTuju",
     "tagline": "Find the right course, and apply for support to get there.",
@@ -764,6 +770,8 @@
   "settings": {
     "language": "Language",
     "languageDesc": "Choose your preferred language for the interface.",
+    "theme": "Theme",
+    "themeDesc": "Choose a light or dark screen. Auto follows this device's own setting. Saved on this device only.",
     "clearData": "Clear Profile Data",
     "clearDataDesc": "Remove your saved grades, stream selection, and quiz answers from this device. Your account and saved courses are not affected.",
     "clearConfirm": "Are you sure you want to clear all your profile data? You will need to re-enter your grades.",

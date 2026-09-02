@@ -6,24 +6,27 @@
  * account settings/profile."* So: the organisation owns the colours, the person owns the mode. An
  * `org_admin` never sets what mode a reviewer sits in.
  *
- * ⚠ THIS IS DELIBERATELY NOT IN `uiPrefs.ts`, WHOSE DOCSTRING SAYS SO IN SO MANY WORDS.
- * That module is for device-local preferences whose home is the device — a menu's width. The theme's
- * home is the ACCOUNT, so that someone who needs dark for accessibility has it on every machine they
- * sign in from. Local storage below is a CACHE of that account value, not its home, and the
- * distinction is the whole reason this file exists separately.
+ * ⚠ THE CHOICE IS DEVICE-LOCAL. STORAGE IS ITS HOME, NOT A CACHE OF AN ACCOUNT VALUE.
+ * Owner ruling, 2026-09-02, at F7d: **device-local, no account storage.** LANGUAGE is a larger
+ * per-person choice and is already device-local, so making the theme *more* persistent than the
+ * language would be backwards.
  *
- * ⚠ AND IT IS NOT THE RESERVED-KEY MISTAKE COMING BACK. `docs/lessons.md` records a `PREF_KEYS.theme`
- * that was deleted for silently asserting a theme is a device preference while that was exactly the
- * open question. The question is now answered — by the owner, on the record — and what is written
- * here follows the answer. The account WRITE PATH is not built yet (three identity models, four
- * settings surfaces); it is openly deferred, named below, and the flag keeps the control unreachable
- * until it lands. Deferred and named is not the same as guessed and hidden.
+ * ⚠ THIS FILE SAID THE OPPOSITE UNTIL F7d, and the paragraph it said it in was load-bearing —
+ * F1b was scoped around it (four settings surfaces, three identity models, a migration) and is now
+ * SUPERSEDED, not deferred. A docstring that outlives the decision it describes is a confident
+ * falsehood, and this arc has now been bitten by that four times. Whichever sprint acts on a ruling
+ * owns rewriting the case that was made against it.
  *
- * ── Why local storage is read before the account ──
- * The account value arrives with the session, which is after first paint. Read it first and a dark
- * user watches a white page turn dark on every navigation. So the cache is read SYNCHRONOUSLY in a
- * blocking inline script before any paint (`ThemeScript`), and the account reconciles afterwards.
- * That ordering is not an optimisation; without it the feature is visibly broken on every page load.
+ * ⚠ IT IS STILL NOT `uiPrefs.ts`, and that separation survives the ruling on different grounds.
+ * `docs/lessons.md` records a `PREF_KEYS.theme` deleted for silently ASSUMING a theme is a device
+ * preference while that was the open question. The question is answered now, so the answer is not
+ * the problem — but the theme is read by a blocking head script that cannot import a module, and
+ * `uiPrefs` is a React-side store. The mechanism, not the taxonomy, is why this file is separate.
+ *
+ * ── Why a blocking script reads it, when there is no account to wait for ──
+ * Even a device value read in React lands after first paint, so a dark person would watch a white
+ * page turn dark on every navigation. `public/theme-boot.js` reads it SYNCHRONOUSLY in `<head>`.
+ * That ordering is not an optimisation; without it the feature is visibly broken on every load.
  */
 
 export const THEME_MODES = ['light', 'dark', 'auto'] as const
@@ -110,17 +113,12 @@ export function applyTheme(theme: ResolvedTheme): void {
  * import this module, so the key, the attribute and the default are spelled out in both places —
  * and `theme.test.ts` READS THAT FILE and asserts it agrees with the constants here. Duplication a
  * test refuses to let drift is the only acceptable kind.
+ *
+ * ⚠ IT IS UNCONDITIONAL SINCE F7d. There was a `themeSwitchEnabled()` flag here, and it gated the
+ * SCRIPT rather than the control — deliberately, because F1 first shipped it gating only the
+ * affordance, which left the script running with a default of `auto` and handed a dark product to
+ * every device set to dark, across surfaces no sprint had painted. That flag is deleted, because
+ * every surface is painted now and the switch is reachable. **A flag that gates only the affordance
+ * gates nothing**, and that lesson outlives the flag itself.
  */
 export const THEME_BOOT_SRC = '/theme-boot.js'
-
-/**
- * Is the theme switch reachable by a person yet?
- *
- * Ships OFF. The token vocabulary lands one surface at a time (F1 → F6) and a reachable switch part
- * way through means a person can put half the product into a mode nothing has painted for. It flips
- * in F7, once every surface is converted — which is what makes the repaint ORDER a question of risk
- * rather than of user-visible breakage.
- */
-export function themeSwitchEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_THEME_SWITCH === '1'
-}

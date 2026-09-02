@@ -7,6 +7,7 @@ import { BrandingProvider } from '@/lib/branding-context'
 import { AuthProvider } from '@/lib/auth-context'
 import AuthGateModal from '@/components/AuthGateModal'
 import { ToastProvider } from '@/components/Toast'
+import ThemeWatcher from '@/components/ThemeWatcher'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -29,6 +30,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <I18nProvider>
           <AuthProvider>
             <ToastProvider>
+              {/* Renders nothing. Keeps `auto` following the device for the life of the tab, on
+                  every page including the chromeless ones that render no ThemeSelector. */}
+              <ThemeWatcher />
               {children}
               <AuthGateModal />
             </ToastProvider>

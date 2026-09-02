@@ -9,6 +9,7 @@ import { signOut } from '@/lib/supabase'
 import { clearAll, hasGrades } from '@/lib/storage'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from './LanguageSelector'
+import ThemeSelector from './ThemeSelector'
 import AuthButtons from './AuthButtons'
 import { useProfileCompleteness } from '@/lib/useProfileCompleteness'
 
@@ -146,6 +147,7 @@ export default function AppHeader() {
 
         {/* Right side — desktop */}
         <div className="hidden lg:flex items-center gap-3">
+          <ThemeSelector />
           <LanguageSelector />
 
           {isAuthenticated ? (
@@ -375,7 +377,8 @@ export default function AppHeader() {
               </div>
             )}
 
-            <div className="border-t border-ground-100 pt-3 mt-2">
+            <div className="border-t border-ground-100 pt-3 mt-2 flex items-center gap-2">
+              <ThemeSelector />
               <LanguageSelector />
             </div>
           </div>
