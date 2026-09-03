@@ -132,3 +132,107 @@ class TestShortlistingEngine(TestCase):
         g = _spm_grades(a=4, bplus=2, lower=3)
         self.assertEqual(count_spm_a_grades(g), 4)
         self.assertEqual(count_spm_strong_grades(g), 6)
+
+
+class TestOptionalRequirements(TestCase):
+    """A threshold of ``None`` means that test is NOT APPLIED (Sabah S2a, 2026-09-02).
+
+    ⚠ THE DEFECT THIS CLOSES IS LIVE AND WAS INVISIBLE. Every threshold column was NOT NULL with a
+    default, so every test always ran. BrightPath never asked for an STPM requirement, yet a PNGK
+    floor of 2.90 was applied to all nine of its STPM applicants for a whole intake — it rejected
+    none of them, so nobody found out. An organisation must be able to say "we do not use this
+    one", and a missing value is how that becomes sayable.
+    """
+
+    def test_no_stpm_requirement_lets_an_stpm_applicant_through_with_no_pngk_at_all(self):
+        # With a floor set, a missing PNGK is a rejection — that is unchanged.
+        r = evaluate(app(qualification='stpm', stpm_pngk=None), cohort())
+        self.assertEqual(r.verdict, 'rejected')
+        self.assertEqual(r.category, 'merit')
+        # Unticked, the test does not run, so there is nothing to be missing.
+        r = evaluate(app(qualification='stpm', stpm_pngk=None), cohort(min_stpm_pngk=None))
+        self.assertEqual(r.verdict, 'shortlisted')
+
+    def test_no_academic_requirement_at_all_passes_the_academic_test(self):
+        # A programme that sets no results requirement is a legitimate shape, not a hole: it takes
+        # an admin clearing every box on a screen that shows which are ticked.
+        weak = app(grades=_spm_grades(a=0, bplus=0, lower=9))
+        self.assertEqual(evaluate(weak, cohort()).verdict, 'rejected')
+        self.assertEqual(
+            evaluate(weak, cohort(min_spm_a_count=None, min_spm_bplus_count=None)).verdict,
+            'shortlisted')
+
+    def test_each_academic_requirement_can_be_dropped_on_its_own(self):
+        # 4 at A- and 4 strong: clears the A- rule exactly, misses the B+ rule by one. This is a
+        # REAL case — application #40 was rejected on precisely these counts.
+        edge = app(grades=_spm_grades(a=4, bplus=0, lower=5))
+        self.assertEqual(evaluate(edge, cohort()).verdict, 'rejected')
+        self.assertEqual(evaluate(edge, cohort(min_spm_bplus_count=None)).verdict, 'shortlisted')
+        # Dropping the OTHER rule does not rescue it — the counts, not the labels, decide.
+        self.assertEqual(evaluate(edge, cohort(min_spm_a_count=None)).verdict, 'rejected')
+
+    def test_no_financial_requirement_passes_with_a_BLANK_bucket_not_a_borrowed_B(self):
+        # 'B' means "passed the income test". There was no income test, so claiming 'B' would put
+        # a false record on the application. The bucket is an admin filter label, never a gate.
+        rich = app(household_income=99000, household_size=1)
+        self.assertEqual(evaluate(rich, cohort()).verdict, 'rejected')
+        r = evaluate(rich, cohort(income_ceiling=None, per_capita_ceiling=None))
+        self.assertEqual(r.verdict, 'shortlisted')
+        self.assertEqual(r.bucket, '')
+
+    def test_dropping_only_the_per_capita_rescue_leaves_the_gross_ceiling_biting(self):
+        over = app(household_income=7000, household_size=5)   # per-capita 1400, would be rescued
+        self.assertEqual(evaluate(over, cohort()).verdict, 'shortlisted')
+        r = evaluate(over, cohort(per_capita_ceiling=None))
+        self.assertEqual(r.verdict, 'rejected')
+        self.assertEqual(r.category, 'need')
+
+
+class TestMeritRequirement(TestCase):
+    """`min_merit_score` — the UPU merit point out of 100, SPM applicants only."""
+
+    def _merit_of(self, application):
+        from apps.scholarship.shortlisting import spm_merit
+        return spm_merit(application.profile)
+
+    def test_a_merit_floor_rejects_below_and_passes_at_or_above(self):
+        strong = app(grades=_spm_grades(a=9, bplus=0, lower=0))
+        m = self._merit_of(strong)
+        self.assertIsNotNone(m)
+        # Unticked by default — every cohort today.
+        self.assertEqual(evaluate(strong, cohort()).verdict, 'shortlisted')
+        self.assertEqual(evaluate(strong, cohort(min_merit_score=m)).verdict, 'shortlisted')
+        r = evaluate(strong, cohort(min_merit_score=m + 1))
+        self.assertEqual(r.verdict, 'rejected')
+        self.assertEqual(r.category, 'merit')
+        self.assertIn('merit point', r.reason)
+
+    def test_it_does_NOT_apply_to_an_stpm_applicant(self):
+        # An STPM applicant's comparable figure is the PNGK, which is `min_stpm_pngk`. Applying a
+        # 0-100 merit floor to a 0-4 CGPA would reject everyone with STPM results.
+        stpm = app(qualification='stpm', stpm_pngk=3.5, grades={})
+        self.assertEqual(evaluate(stpm, cohort(min_merit_score=95)).verdict, 'shortlisted')
+
+    def test_an_spm_applicant_with_no_grades_cannot_clear_a_merit_floor(self):
+        # Absence is not a low score, but it is not a pass either — say so rather than defaulting.
+        r = evaluate(app(grades={}), cohort(min_spm_a_count=None, min_spm_bplus_count=None,
+                                           min_merit_score=50))
+        self.assertEqual(r.verdict, 'rejected')
+        self.assertIn('not available', r.reason)
+
+
+class TestRejectionWording(TestCase):
+    """The reason is stated the way the requirement is SET, not the way it is stored."""
+
+    def test_it_no_longer_reads_as_nine_subjects(self):
+        # The column holds the TOTAL strong count, so the old text said "need 4 A- and 5 at B+" —
+        # which the owner, who set the rule, read as nine subjects (2026-09-02). It is 4 A- plus
+        # one more. Twelve real applicants carry the old wording on their record.
+        r = evaluate(app(grades=_spm_grades(a=1, bplus=1, lower=7)), cohort())
+        self.assertIn('4 at A- plus 1 more at B+', r.reason)
+        self.assertNotIn('need 4 A- and 5 at B+', r.reason)
+
+    def test_it_names_only_the_requirements_that_actually_failed(self):
+        r = evaluate(app(grades=_spm_grades(a=3, bplus=2, lower=4)), cohort())
+        self.assertIn('3 at A- (need 4)', r.reason)      # this one failed
+        self.assertNotIn('at B+ or better (need', r.reason)  # 5 strong — this one passed

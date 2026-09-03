@@ -122,29 +122,51 @@ class ScholarshipCohort(models.Model):
         default=True, help_text="Currently accepting new applications",
     )
 
-    # Shortlisting thresholds (consumed by the rules engine in Sprint 3)
-    # Academic floor (S8 redesign): SPM needs >= min_spm_a_count grades at A-/A/A+ AND
-    # >= min_spm_bplus_count grades at B+ or better; STPM needs PNGK >= min_stpm_pngk.
+    # ── Shortlisting requirements (consumed by `shortlisting.evaluate`) ──────────────────────
+    #
+    # ⚠⚠ NULL MEANS THE TEST IS NOT APPLIED (Sabah S2a, owner 2026-09-02). Every one of these was
+    # NOT NULL with a default, so every test always ran and an organisation had no way to say
+    # "we do not use this one". BrightPath never asked for an STPM floor, and PNGK >= 2.90 applied
+    # to all nine of its STPM applicants for a whole intake regardless.
+    #
+    # ⚠ THE VALUE **IS** THE SWITCH — there is deliberately no companion `use_x` boolean. Two
+    # columns can disagree ("on, but blank"; "off, but 4") and then something has to decide which
+    # wins, silently. One column cannot. The admin screen ticks a box by writing a value and
+    # unticks it by clearing one.
+    #
+    # Defaults are kept so that existing rows and every test fixture behave exactly as before —
+    # a NEW cohort still arrives with the flagship's floor and is edited from there.
     min_spm_a_count = models.IntegerField(
-        default=4, help_text="Minimum SPM grades at A- or better (A+/A/A- all count)",
+        null=True, blank=True, default=4,
+        help_text="Minimum SPM grades at A- or better (A+/A/A- all count). NULL = not applied.",
     )
     min_spm_bplus_count = models.IntegerField(
-        default=5,
-        help_text="Minimum SPM grades at B+ or better (the '+1 B+' beyond the A's → 5 strong subjects)",
+        null=True, blank=True, default=5,
+        help_text="Minimum SPM grades at B+ or better — the TOTAL strong count, not the extra "
+                  "beyond the A's (4 A- plus 1 more B+ is stored as 5). NULL = not applied.",
     )
     min_stpm_pngk = models.FloatField(
-        default=2.9, help_text="Minimum STPM PNGK (academic floor)",
+        null=True, blank=True, default=2.9,
+        help_text="Minimum STPM PNGK. NULL = not applied.",
+    )
+    min_merit_score = models.FloatField(
+        null=True, blank=True, default=None,
+        help_text="Minimum UPU merit point out of 100 (grades + co-curriculum). SPM applicants "
+                  "only — an STPM applicant's comparable figure is their PNGK, which is "
+                  "min_stpm_pngk. NULL = not applied, which is every cohort today.",
     )
     income_ceiling = models.IntegerField(
         null=True, blank=True,
         help_text="B40 monthly household GROSS income ceiling in RM (DOSM B40 line, RM5,860 in 2024). "
-                  "PRIMARY income gate: a non-STR applicant at or below this passes regardless of household size.",
+                  "PRIMARY income gate: a non-STR applicant at or below this passes regardless of household size. "
+                  "NULL together with per_capita_ceiling = the financial test is not applied.",
     )
     per_capita_ceiling = models.IntegerField(
-        default=1584,
+        null=True, blank=True, default=1584,
         help_text="Per-capita monthly income ceiling in RM (household_income / household_size). "
                   "SAFETY NET only — applies to non-STR applicants whose gross income is ABOVE income_ceiling, "
-                  "rescuing large households. RM5,860 B40 ceiling / 3.7 avg household = RM1,584 (DOSM 2024).",
+                  "rescuing large households. RM5,860 B40 ceiling / 3.7 avg household = RM1,584 (DOSM 2024). "
+                  "NULL = this rescue is not offered.",
     )
     bucket_b_margin = models.IntegerField(
         default=1,
