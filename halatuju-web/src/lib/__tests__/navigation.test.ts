@@ -61,17 +61,22 @@ describe('visibleNav per role', () => {
   const EXPECTED: Record<AdminRoleName, string[]> = {
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'contracts',
-      'billing',
+      'administration', 'staff', 'reviewers', 'programmes', 'sponsors', 'sources', 'payments',
+      'contracts', 'billing',
       'programmeConfig', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
     // an org_admin (+ super) power — configuration, not a fence. admin/qc lose the placeholder
     // slot they never had a page behind. role-matrix.md updated in the same change.
+    //
+    // Sabah S2b (2026-09-02): `programmes` — creating a gift and switching it on. ORGANISATION
+    // scope, super + org_admin only, because the endpoint refuses every other role and a menu row
+    // that opens a 403 is worse than no row. A plain `admin` does NOT get it: deciding what gifts
+    // an organisation offers is the administrator's call, the same reasoning as programmeConfig.
     org_admin: [
-      'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'contracts',
-      'billing',
+      'administration', 'staff', 'reviewers', 'programmes', 'sponsors', 'sources', 'payments',
+      'contracts', 'billing',
       'programmeConfig', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
       'profile', 'guide', 'faq',
     ],

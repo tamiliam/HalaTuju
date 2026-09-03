@@ -5653,6 +5653,90 @@
         }
       }
     },
-    "soon": "விரைவில்"
+    "soon": "விரைவில்",
+    "programmes": {
+      "nav": "நன்கொடைத் திட்டங்கள்",
+      "title": "நன்கொடைத் திட்டங்கள்",
+      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
+      "new": "புதிய நன்கொடைத் திட்டம்",
+      "create": "உருவாக்கு",
+      "active": "செயலில்",
+      "notActive": "இன்னும் செயலில் இல்லை",
+      "none": "இல்லை",
+      "switchOn": "இயக்கு",
+      "switchOff": "நிறுத்து",
+      "intakeYears": "சேர்க்கை ஆண்டுகள்",
+      "empty": "No gift programmes yet.",
+      "loadFailed": "Could not load your gift programmes.",
+      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
+      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
+      "col": {
+        "years": "சேர்க்கை ஆண்டுகள்",
+        "applications": "விண்ணப்பங்கள்",
+        "takingApplications": "விண்ணப்பங்களை ஏற்கிறது"
+      },
+      "field": {
+        "name": "பெயர்",
+        "code": "சுருக்கக் குறியீடு",
+        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
+      },
+      "error": {
+        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
+        "codeTaken": "That short code is already in use. Please choose another.",
+        "nameRequired": "Please give the programme a name.",
+        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
+        "noOrg": "Your account is not tied to an organisation.",
+        "generic": "That did not work. Nothing was changed."
+      }
+    },
+    "years": {
+      "title": "சேர்க்கை ஆண்டுகள்",
+      "subtitle": "one round of students per year.",
+      "new": "புதிய சேர்க்கை ஆண்டு",
+      "createClosed": "உருவாக்கு - இன்னும் திறக்க வேண்டாம்",
+      "open": "திறந்துள்ளது",
+      "closed": "மூடப்பட்டுள்ளது",
+      "openIt": "விண்ணப்பங்களைத் திற",
+      "close": "மூடு",
+      "empty": "No intake years yet.",
+      "chooseProgramme": "எந்த நன்கொடைத் திட்டம்?",
+      "noProgrammes": "Create a gift programme first",
+      "loadFailed": "Could not load the intake years.",
+      "oneOpen": "Opening a round is what lets students apply. Only one round across your organisation may be open at a time.",
+      "oneOpenNamed": "{code} is taking applications. Only one round across your organisation may be open at a time, so close it before opening another.",
+      "reqTitle": "பட்டியலிடும் தேவைகள்",
+      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
+      "col": {
+        "year": "ஆண்டு",
+        "name": "மாணவர்கள் காண்பது",
+        "applications": "விண்ணப்பங்கள்",
+        "status": "நிலை"
+      },
+      "field": {
+        "year": "ஆண்டு",
+        "code": "சுருக்கக் குறியீடு",
+        "name": "மாணவர்கள் காணப் போவது"
+      },
+      "req": {
+        "spmA": "SPM - minimum grades at A- or better",
+        "spmB": "SPM - further grades at B+ or better",
+        "spmBHint": "in addition to those above",
+        "pngk": "STPM - minimum PNGK",
+        "merit": "குறைந்தபட்ச தகுதிப் புள்ளி",
+        "meritHint": "UPU score out of 100. SPM applicants only.",
+        "income": "Household income at most (RM per month)",
+        "perPerson": "or, above that, income per person under (RM)",
+        "perPersonHint": "rescues a large household above the ceiling"
+      },
+      "error": {
+        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
+        "codeTaken": "That short code is already in use. Please choose another.",
+        "badYear": "Please give a year.",
+        "nameRequired": "Please give the intake year a name.",
+        "anotherOpen": "Another round is already taking applications. Close it first.",
+        "notActive": "Switch the gift programme on before opening a round.",
+        "generic": "That did not work. Nothing was changed."
+      }
+    }
   }
 }

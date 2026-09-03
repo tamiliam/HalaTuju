@@ -2884,3 +2884,96 @@ export async function getReviewerDetail(
 ): Promise<AdminReviewerDetail> {
   return adminFetch(`/api/v1/admin/reviewers/${id}/`, options)
 }
+
+// ── Gift programmes and their intake years (Sabah S2b, 2026-09-02) ──────────────────────────────
+//
+// The screens an `org_admin` uses to stand up a gift without an engineer. Every endpoint is fenced
+// server-side on the programme's own organisation; cross-tenant is 404, never 403. Nothing here is
+// an access check — it is the org fence's own answer, rendered.
+
+/** The requirement columns the tick boxes write. `null` means the test is NOT APPLIED (S2a) —
+ *  the value IS the switch, so unticking is writing null and there is no companion boolean. */
+export interface ProgrammeRequirements {
+  min_spm_a_count: number | null
+  /** The TOTAL strong count, not the extra beyond the A's: "4 A− plus 1 more at B+" is stored 5.
+   *  The screen shows the difference, because that is how the rule is set and read. */
+  min_spm_bplus_count: number | null
+  min_stpm_pngk: number | null
+  min_merit_score: number | null
+  income_ceiling: number | null
+  per_capita_ceiling: number | null
+}
+
+export interface AdminProgramme {
+  id: number
+  code: string
+  name_en: string
+  name_ms: string
+  name_ta: string
+  is_active: boolean
+  intake_years: number
+  applications: number
+  /** The year currently taking applications, or null. A PROGRAMME is never open — a year is. */
+  open_year: number | null
+}
+
+export interface AdminIntakeYear {
+  id: number
+  code: string
+  name: string
+  year: number
+  is_open: boolean
+  is_active: boolean
+  applications: number
+  requirements: ProgrammeRequirements
+}
+
+export async function getAdminProgrammes(options?: ApiOptions) {
+  return adminFetch<{ programmes: AdminProgramme[] }>(
+    '/api/v1/admin/scholarship/programmes/', options)
+}
+
+/** Create a gift. It arrives INACTIVE whatever is sent — switching it on is a separate press,
+ *  because an active second programme changes live behaviour the moment it exists. */
+export async function createAdminProgramme(
+  body: { code: string; name_en: string; name_ms?: string; name_ta?: string },
+  options?: ApiOptions,
+) {
+  return adminMutate<AdminProgramme>('/api/v1/admin/scholarship/programmes/', 'POST', body, options)
+}
+
+export async function updateAdminProgramme(
+  id: number,
+  body: Partial<{ name_en: string; name_ms: string; name_ta: string; is_active: boolean }>,
+  options?: ApiOptions,
+) {
+  return adminMutate<AdminProgramme>(
+    `/api/v1/admin/scholarship/programmes/${id}/`, 'PATCH', body, options)
+}
+
+export async function getAdminIntakeYears(programmeId: number, options?: ApiOptions) {
+  return adminFetch<{
+    programme: { id: number; code: string; name_en: string; is_active: boolean }
+    years: AdminIntakeYear[]
+  }>(`/api/v1/admin/scholarship/programmes/${programmeId}/years/`, options)
+}
+
+/** Create an intake year. It arrives CLOSED — opening is what lets real students in, and gets its
+ *  own deliberate press. Requirement keys may be omitted; a `null` unticks that test. */
+export async function createAdminIntakeYear(
+  programmeId: number,
+  body: { code: string; name: string; year: number } & Partial<ProgrammeRequirements>,
+  options?: ApiOptions,
+) {
+  return adminMutate<AdminIntakeYear>(
+    `/api/v1/admin/scholarship/programmes/${programmeId}/years/`, 'POST', body, options)
+}
+
+export async function updateAdminIntakeYear(
+  id: number,
+  body: Partial<{ name: string; is_open: boolean }> & Partial<ProgrammeRequirements>,
+  options?: ApiOptions,
+) {
+  return adminMutate<AdminIntakeYear>(
+    `/api/v1/admin/scholarship/intake-years/${id}/`, 'PATCH', body, options)
+}

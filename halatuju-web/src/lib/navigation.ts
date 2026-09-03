@@ -178,6 +178,11 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' } },
+      // Sabah S2b: the gifts this organisation runs, and where a new one is created. ORGANISATION
+      // scope on purpose — creating a gift is an organisation-level act, and the Programme group is
+      // for working INSIDE one gift. super + org_admin only: the endpoint refuses every other role.
+      { id: 'programmes', href: '/admin/organisation/programmes', labelKey: 'admin.programmes.nav',
+        scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
@@ -224,9 +229,11 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         labelKey: 'admin.nav.reviewerScoping',
         scope: 'programme', roles: ['super', 'org_admin'],
         gate: { mode: 'always' }, placeholder: true },
+      // Sabah S2b — the reserved slot is now the screen. One round of students per year beneath a
+      // gift that never lapses; creating a year does NOT open it.
       { id: 'years', href: '/admin/programme/years', labelKey: 'admin.nav.years',
         scope: 'programme', roles: ['super', 'org_admin'],
-        gate: { mode: 'always' }, placeholder: true },
+        gate: { mode: 'always' } },
       { id: 'fund', href: '/admin/programme/fund', labelKey: 'admin.nav.fund',
         scope: 'programme', roles: ['super', 'org_admin', 'finance'],
         gate: { mode: 'always' }, placeholder: true },
