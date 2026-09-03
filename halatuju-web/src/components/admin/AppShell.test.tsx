@@ -78,15 +78,19 @@ describe('AppShell renders the scope sidebar per role', () => {
     expect(within(sidebar()).queryByText('admin.nav.group.utility')).toBeNull()
   })
 
+  // ⚠ `super`, NOT `org_admin`. The shape sprint (2026-09-03) deleted the Programme group's three
+  // reserved slots, so the only one left is Billing rates, which is platform-scoped and super-only.
+  // The mechanism is unchanged and still has to be proven — a slot must render as disabled TEXT,
+  // because a link to a page that does not exist is worse than a row that says "soon".
   it('renders a reserved slot as disabled text, never as a link', () => {
-    asRole('org_admin')
+    asRole('super')
     render(<AppShell>content</AppShell>)
     const nav = sidebar()
-    const fund = within(nav).getByText('admin.nav.fund').closest('[aria-disabled]')
-    expect(fund).toBeTruthy()
+    const slot = within(nav).getByText('admin.nav.billingRates').closest('[aria-disabled]')
+    expect(slot).toBeTruthy()
     // and it is not among the sidebar's links
     const hrefs = within(nav).getAllByRole('link').map((a) => a.getAttribute('href'))
-    expect(hrefs).not.toContain('/admin/programme/fund')
+    expect(hrefs).not.toContain('/admin/billing-rates')
   })
 
   it('marks the current page for a screen reader as well as visually', () => {

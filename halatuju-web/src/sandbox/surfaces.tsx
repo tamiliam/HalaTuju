@@ -49,6 +49,56 @@ import {
 
 const SANDBOX_TOKEN = 'sandbox-not-a-real-token'
 
+/**
+ * The gifts an organisation runs, and the round beneath one — what the Programme screen's Rules
+ * and Intake-year tabs ask for (shape sprint, 2026-09-03).
+ *
+ * ⚠ THE REQUIREMENTS ARE THE LIVE TENANT'S REAL RULE, in its STORED form: four at A- and a strong
+ * TOTAL of five, meaning "four at A- plus one more at B+". The Rules tab must render that second
+ * number as a 1. A fixture that quietly used 1 here would make the surface agree with a broken
+ * screen — which is the whole reason the number is copied from production rather than invented.
+ */
+const sandboxProgrammes = [{
+  id: 1, code: 'contoh-utama', name_en: 'Biasiswa Contoh', name_ms: '', name_ta: '',
+  is_active: true, intake_years: 2, applications: 41, open_year: 2026,
+}]
+
+const sandboxProgrammesTwo = [
+  ...sandboxProgrammes,
+  {
+    id: 2, code: 'contoh-kedua', name_en: 'Biasiswa Contoh Kedua', name_ms: '', name_ta: '',
+    is_active: false, intake_years: 0, applications: 0, open_year: null,
+  },
+]
+
+const sandboxIntakeYears = {
+  programme: { id: 1, code: 'contoh-utama', name_en: 'Biasiswa Contoh', is_active: true },
+  years: [
+    {
+      id: 20, code: 'contoh-2026', name: 'Intake 2026', year: 2026, is_open: true,
+      is_active: true, applications: 41,
+      requirements: {
+        min_spm_a_count: 4, min_spm_bplus_count: 5, min_stpm_pngk: null,
+        min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
+      },
+    },
+    {
+      id: 19, code: 'contoh-2025', name: 'Intake 2025', year: 2025, is_open: false,
+      is_active: true, applications: 88,
+      requirements: {
+        min_spm_a_count: 5, min_spm_bplus_count: 5, min_stpm_pngk: 3.0,
+        min_merit_score: null, income_ceiling: 5860, per_capita_ceiling: 1584,
+      },
+    },
+  ],
+}
+
+/** Both endpoints the Programme screen's three tabs need, in the one-gift state production is in. */
+const PROGRAMME_ROUTES = {
+  '/api/v1/admin/scholarship/programmes/': () => ({ programmes: sandboxProgrammes }),
+  '/api/v1/admin/scholarship/programmes/1/years/': () => sandboxIntakeYears,
+}
+
 export interface Surface {
   slug: string
   title: string
@@ -310,14 +360,19 @@ export const SURFACES: Surface[] = [
   },
   {
     slug: 'programme-config',
-    title: 'Admin — what we ask for',
+    title: 'Admin — one gift’s Configuration (three tabs)',
     note:
-      'The org_admin’s Layer 0 screen (Sprint 5): every document and question the platform knows, '
-      + 'with the programme’s choice on each row. Six rows are locked at Required by the platform '
-      + 'and say so in muted text; the household-income row is tinted because it is a whole '
-      + 'section, not one upload. 41 students are in flight, so the amber warning names them. '
-      + 'Save wakes only on a real change. Content column only — the admin shell is not mounted.',
+      'The whole of what an org_admin SETS about one gift, on one screen (shape sprint, '
+      + '2026-09-03). It opens on RULES — who qualifies — because that precedes what applicants '
+      + 'are asked to send. Note the B+ box: the round stores a strong total of 5 and the box '
+      + 'reads 1, because the rule is a total: “four at A- plus one more”. The warning on this tab is '
+      + 'not the one on the next: rules are read live, so a change moves the bar for everybody '
+      + 'still to be judged. Tab two is the Layer 0 screen unchanged — six rows locked at Required '
+      + 'by the platform, the household-income row tinted because it is a section rather than one '
+      + 'upload, 41 students named in the warning. Tab three is the intake year. Four sidebar rows '
+      + 'collapsed into this. Content column only — the admin shell is not mounted.',
     routes: {
+      ...PROGRAMME_ROUTES,
       '/api/v1/admin/scholarship/programme/configuration/': () => sandboxProgrammeConfiguration,
     },
     render: () => (
@@ -328,13 +383,34 @@ export const SURFACES: Surface[] = [
   },
   {
     slug: 'programme-config-lean',
-    title: 'Admin — what we ask for, a leaner programme',
+    title: 'Admin — the same screen, a leaner programme',
     note:
-      'The same screen for a programme that switched off everything it could: only the six '
-      + 'locked rows are Required, nobody is in flight, so the warning is the calm one-liner. '
-      + 'Style both — a tenant will land on each.',
+      'A programme that switched off everything it could: on tab two only the six locked rows are '
+      + 'Required, nobody is in flight, so the warning is the calm one-liner. Style both — a '
+      + 'tenant will land on each.',
     routes: {
+      ...PROGRAMME_ROUTES,
       '/api/v1/admin/scholarship/programme/configuration/': () => sandboxProgrammeConfigurationLean,
+    },
+    render: () => (
+      <WithAdminAuth>
+        <AdminProgrammeConfigPage />
+      </WithAdminAuth>
+    ),
+  },
+  {
+    slug: 'programme-config-two-gifts',
+    title: 'Admin — the same screen when the organisation runs TWO gifts',
+    note:
+      'What an org_admin sees the day their organisation runs a second gift. Every tab ASKS which '
+      + 'one rather than picking it: an admin who believed they were editing the new gift’s rules '
+      + 'while looking at the older gift’s would change a live programme. It is the same refusal '
+      + 'the student side makes at Apply when two rounds are open (PF-1) — raise, never guess. In '
+      + 'the real console the trail across the top switches gift too, and both read one selection.',
+    routes: {
+      '/api/v1/admin/scholarship/programmes/': () => ({ programmes: sandboxProgrammesTwo }),
+      '/api/v1/admin/scholarship/programmes/1/years/': () => sandboxIntakeYears,
+      '/api/v1/admin/scholarship/programme/configuration/': () => sandboxProgrammeConfiguration,
     },
     render: () => (
       <WithAdminAuth>

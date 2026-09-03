@@ -550,7 +550,83 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-03, after Sabah S2 — A GIFT CAN BE CREATED WITHOUT AN ENGINEER)
+## Next Sprint (as of 2026-09-03, after THE SHAPE — the console says what belongs to what)
+
+**SHIPPED, NOT DEPLOYED (owner gates it).** Branch `feat/console-shape`. **NO MIGRATION.**
+web + a two-line backend audit. Retro `docs/retrospective-2026-09-03-console-shape.md`;
+decisions x2; lessons x5. pytest **5792** (FULL suite across `apps/`, +2); jest 1631 -> **1657**
+(+26); tsc **24** (baseline); lint **0**; i18n 4714 -> **4722 x 3**; `next build` clean.
+Two guards bite-checked.
+
+**Not on the Sabah roadmap.** The owner read the sidebar and said the parts did not fit: *"We
+cannot open new branches that are disconnected."* One question — **what is a subset of what** —
+answered from the DATABASE rather than from the menu. **Menu 16 rows -> 12; reserved slots 4 -> 1.**
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ EVERYTHING A PERSON SETS ABOUT ONE GIFT IS ONE SCREEN.** `/admin/programme` is three tabs in
+  the OWNER'S ORDER — **Rules · What we ask for · Intake year**. Do not promote a tab back into a
+  menu row: four rows collapsed into this and three of them were never pages.
+- **⚠ RULES ARE COLUMNS ON THE INTAKE YEAR AND STAY THERE.** The screen speaks the owner's model
+  ("this gift's rules") while the data stays on the row `shortlisting.evaluate()` trusts. Moving
+  them up to `Programme` is behaviour-sensitive and the roadmap already declined it.
+- **⚠ RULES AND "WHAT WE ASK FOR" HAVE DIFFERENT BLAST RADIUS.** Documents/questions are frozen per
+  application at submit (`requirements_snapshot`); the six thresholds are read LIVE. Hence a warning
+  on one tab and not the other, and `AUDIT intake_year_requirements_set` carrying **old -> new**.
+- **⚠ `requirementsToDraft` IS THE DANGEROUS HALF.** The B+ requirement is shown as an EXTRA and
+  stored as a TOTAL. The live row is `(4, 5)`; loading 5 into the extra box would write `(4, 9)` —
+  nine subjects — on the first save, with nobody touching a control. Round-trip test + a rendered
+  test asserting what reaches the wire. Bite-checked.
+- **⚠ COLOURS IS ORGANISATION-LEVEL AND IS NOW UNDER Organisation -> Settings.**
+  `OrganisationTheme` is ONE row per tenant and its endpoint DERIVES the organisation. Do not move
+  it back to a gift's screen. i18n moved with it: `admin.orgSettings.colours`.
+- **⚠ THE BREADCRUMB SWITCHER DRIVES CONTENT AND IS STILL NOT AN AUTH CONTEXT** (TD-193 resolved,
+  programme half). `lib/programmeScope` hands the chosen gift to each endpoint as an EXPLICIT
+  `?programme=<code>` the server re-fences. **Never a header, cookie or middleware rewrite** — that
+  relocates the org fence into the client (2026-07-15 surface-partition incident). **It never picks
+  silently**: several gifts + no choice resolves to NOTHING and the page asks (PF-1's rule).
+  **Not persisted** — a stored gift code would silently reopen someone else's gift after a reload.
+- **⚠ ONE RESERVED SLOT REMAINS AND THE RULE IS WHY.** `billingRates` stays because its ENDPOINT
+  SHIPPED (2026-07-27) and only the page is missing. The three deleted ones reserved pages for work
+  nobody had scoped and each guessed the shape wrongly. A slot is for a thing that demonstrably
+  exists. `navigation.test.ts` pins the population literally.
+- **Fixed in passing:** the requirement inputs remounted on every keystroke (`Req` inside a
+  component body — the identical 2026-07-21 invite-form defect); the Rules tab announced "no intake
+  year yet" on every load; `useSelectedProgramme` could throw into a tab.
+
+**▶ AT DEPLOY: push (web + api rebuild — Python changed, so expect BOTH).** No migrate-first, no
+env vars, no data step. **What a visitor sees does not change; what an ADMIN sees does.** Post-check
+as the BrightPath `org_admin` (**elanjelian@me.com**, NOT the super account): the sidebar is 12 rows
+with no "Soon"; Overview lists the gift programmes; Organisation -> Settings holds Colours;
+Programme -> Configuration opens on Rules and the B+ box reads **1**, not 5.
+
+**▶ NEXT = S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT.** The owner's model merged
+old S4 + old S5 and added a third piece, so **four remaining sprints became one**:
+
+| Who | Today | Needs |
+|---|---|---|
+| Sponsors | `SponsorProgrammeMembership` EXISTS | kill the hard-coded `DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'`; the invite carries the gift; a panel to accept/move |
+| Reviewers | **no field at all** | nullable `programme` on `PartnerAdmin`, **NULL = organisation-wide**, no backfill |
+| Sources | **no field at all** | the same, on the referral organisation |
+
+**It is what still blocks the RM100,000** (`record_admin_credit` refuses `sponsor_not_in_programme`).
+**⚠ The sponsor invite does not ask which gift** (`views_admin.py` ~2624): it takes an email, a name
+and a note and derives the organisation, so the Sabah benefactor would land in the flagship silently.
+**⚠ The pool is FAIL-CLOSED and must stay so** — P3's source guard exists because the weekly digest
+and the real-time alert once routed around the fence.
+
+**⚠ OWNER RULING OWED, ASKED TWICE — TD-229: is the agreement wording ONE PER ORGANISATION or ONE
+PER GIFT?** `ContractTemplate.organisation` allows exactly one ACTIVE template per tenant, so a
+second gift's students would sign the first gift's document. Not blocking S-ASSIGN; it does block a
+Sabah student ever signing anything.
+
+**⚠ ALSO OPEN:** TD-228 (the ORGANISATION crumb still filters nothing — trigger is a second
+ORGANISATION, not a second programme); **F7e** the contrast sprint (TD-224, high); ms/ta first
+drafts, now +17 keys from this sprint on top of the backlog.
+
+**⚠ THE OWNER GATE STILL STANDS:** record nothing for Sabah until it is **inked AND the money has
+changed hands** (bank ref for `external_reference`). No sprint has created a Sabah row.
+
+## Superseded — previous Next Sprint (as of 2026-09-03, after Sabah S2)
 
 **SHIPPED AND DEPLOYED — SABAH S2** (built as S2a the engine + S2b the screens). `main` at
 `ad43786d`, both builds SUCCESS, serving **halatuju-web-00820-r2r** / **halatuju-api-00972-jrg**.

@@ -2,6 +2,67 @@
 
 All notable changes to this project will be documented in this file.
 
+## The shape — the console says what belongs to what - 2026-09-03
+
+**Sprint. SHIPPED, NOT DEPLOYED (owner gates the deploy).** Branch `feat/console-shape`.
+**NO MIGRATION.** web + a two-line backend audit. Retro
+`docs/retrospective-2026-09-03-console-shape.md`; decisions x2; lessons x5.
+pytest **5792** (full suite across `apps/`, +2); jest 1631 -> **1657** (+26); tsc **24**
+(baseline); lint **0 errors**; i18n 4714 -> **4722 x 3**;
+`next build` clean. **Two guards bite-checked.**
+
+Not on the Sabah roadmap. The owner read the sidebar and said the parts did not fit: *"We cannot
+open new branches that are disconnected."* One question -- **what is a subset of what** -- answered
+from the database rather than from the menu.
+
+**Menu 16 rows -> 12. Reserved slots 4 -> 1.**
+
+### Added
+- **Organisation -> Settings**, a tabbed shell mirroring Programme -> Configuration one level up.
+- **Programme -> Configuration -> Rules**, the first tab: the six shortlisting thresholds, editable
+  on the round you are running, with a warning the neighbouring tab does not carry.
+- **`lib/programmeScope`** -- the breadcrumb switcher now drives page content (**TD-193 resolved**
+  for the programme half). The chosen gift is passed to each endpoint as an explicit
+  `?programme=<code>` the server re-fences. It never became ambient, and it never picks silently.
+- **`requirementsToDraft`** -- the inverse of the stored-total/shown-extra conversion, with a
+  round-trip test. S2b's retro warned that the first screen to READ the stored value would turn
+  "4 plus 1" into "4 plus 5"; the Rules tab is that screen.
+- **`AUDIT intake_year_requirements_set`** -- a second log line, only when a threshold moved,
+  carrying old -> new. TD-203's lesson applied before it bit twice.
+- Three sandbox surfaces for the new screen, including the two-gift state.
+
+### Changed
+- **Gift programmes moved onto Organisation -> Overview.** The gifts an organisation runs are what
+  it IS, and the row was a sidebar entry for a list of one.
+- **Colours moved to Organisation -> Settings** (i18n `admin.programme.colours` ->
+  `admin.orgSettings.colours`). It writes `OrganisationTheme` -- one row for the whole tenant -- and
+  was being set from inside a single gift: silent with one gift, wrong with two.
+- **Intake years became a tab**, not a page. A year is a child of the gift.
+- Manual and FAQ currency: the org-admin chapter and Basics both described the old menu.
+
+### Removed
+- **Four reserved menu slots** -- `rules`, `years`, `reviewerScoping`, `fund`. Three guessed the
+  shape of unscoped work and guessed wrongly. `billingRates` stays: its endpoint shipped, and only
+  the page is missing.
+
+### Fixed
+- **The requirement inputs remounted on every keystroke** and lost focus after one character --
+  `Req` was declared inside a component body. Live since S2b; the identical defect the 2026-07-21
+  invite form shipped.
+- **The Rules tab announced "no intake year yet" on every load**, because it keyed its empty state
+  on a flag that goes false when the PROGRAMMES arrive rather than the YEARS.
+- **`useSelectedProgramme` could throw into a tab** -- `.catch()` cannot see the call itself throw.
+
+### Raised
+- **TD-228** -- the ORGANISATION crumb still filters nothing; trigger is a second organisation.
+- **TD-229** -- a second gift would have its students sign the first gift's agreement.
+  **Owner ruling owed:** one template per organisation, or one per gift?
+
+### Roadmap
+- **S3 superseded** (it shipped as a tab). **S4 + S5 merged into S-ASSIGN**, plus sources: one
+  pattern -- invited by the organisation, assigned to a gift -- built three times. Four remaining
+  sprints became one.
+
 ## Sabah S2 — a gift programme can be created without an engineer - 2026-09-03
 
 **Sprint. DEPLOYED** — `main` at `ad43786d`, both builds SUCCESS, serving

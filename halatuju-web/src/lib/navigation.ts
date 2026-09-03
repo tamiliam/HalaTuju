@@ -94,10 +94,19 @@ export interface NavItem {
   chord?: string
   /**
    * A reserved slot: the sidebar renders it disabled with a "soon" pill and it links nowhere.
-   * These are the empty slots the programme-layer roadmap asks the shell to ship with (risk #6,
-   * "each extraction sprint fills one — no second redesign"), so a later sprint fills a slot
-   * rather than re-cutting the menu. A placeholder has no page, and the route-drift test knows
-   * not to look for one.
+   *
+   * ⚠ EXACTLY ONE SLOT IS RESERVED, AND THE THREE THAT WENT SHOW WHERE THE LINE IS (owner,
+   * 2026-09-03). `billingRates` stays: its endpoint SHIPPED on 2026-07-27, super-only, and what
+   * is missing is only the page — a slot for a thing that demonstrably exists. The Programme
+   * group's three (reviewer scoping, the fund, the rules) each reserved a page for work nobody
+   * had scoped, and each guessed its SHAPE wrongly: rules are a section of the programme's own
+   * configuration, reviewer scoping is a field on a reviewer's record, and the fund is a report.
+   * lessons.md (N4, 2026-07-28) names the cost: "a placeholder for future work encodes an
+   * assumption about that work — if the assumption is not yours to make, do not leave the
+   * placeholder."
+   *
+   * The test for a reserved slot is therefore not "will we build it" but "do we already know
+   * where it goes". `navigation.test.ts` pins the behaviour and the current population.
    */
   placeholder?: boolean
 }
@@ -119,8 +128,8 @@ export interface NavGroup {
  * `sponsors` and `requests` have NO client guard — they rely on the backend alone. Their role
  * sets here drive menu visibility only and add no client-side block.
  *
- * Items marked `placeholder` are the roadmap's reserved slots: they render disabled with a
- * "soon" pill and have no page behind them yet.
+ * `billingRates` is the only item marked `placeholder` — see that field's own note for why the
+ * Programme group's three reserved slots were removed rather than filled.
  */
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
@@ -161,9 +170,23 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // (a permanent redirect) highlighting here, so an old bookmark still lights the right row.
       // `exact` because /admin/organisation is a page, not a section — /admin/organisation/staff
       // is its sibling in the menu, not its child.
+      //
+      // ⚠ `/admin/organisation/programmes` REDIRECTS HERE (2026-09-03). The gifts an organisation
+      // runs are what the organisation IS, so they belong on its overview rather than in a row of
+      // their own — and the row was a whole menu entry for a list of one. The old route stays as a
+      // permanent redirect and is matched here, so a bookmark still lights the right sidebar row.
       { id: 'administration', href: '/admin/organisation', labelKey: 'admin.orgPage.nav', chord: 'V',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' }, exact: true, match: ['/admin/administration'] },
+        gate: { mode: 'always' }, exact: true,
+        match: ['/admin/administration', '/admin/organisation/programmes'] },
+      // The organisation's own settings, mirroring Programme → Configuration one level up
+      // (owner, 2026-09-03: "each Org would have its own config/setting, and each programme would
+      // likewise have its own"). Colours moved here from the Programme screen, where they had
+      // never belonged: `OrganisationTheme` is ONE colour for the whole tenant, so setting it
+      // while standing inside a gift would have changed every other gift too — invisible with one
+      // gift, wrong the day there are two. super + org_admin: the endpoint refuses everyone else.
+      { id: 'orgSettings', href: '/admin/organisation/settings', labelKey: 'admin.orgSettings.nav',
+        scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       // Renamed "Staff" → "Invitations" on 2026-08-03: reviewers moved to their own page in
       // request #10, and what is left is the asking. The ROUTE is unchanged deliberately — every
       // bookmark, the `/admin/invite` redirect and the highlight rules keep working; only the
@@ -178,11 +201,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' } },
-      // Sabah S2b: the gifts this organisation runs, and where a new one is created. ORGANISATION
-      // scope on purpose — creating a gift is an organisation-level act, and the Programme group is
-      // for working INSIDE one gift. super + org_admin only: the endpoint refuses every other role.
-      { id: 'programmes', href: '/admin/organisation/programmes', labelKey: 'admin.programmes.nav',
-        scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
@@ -212,34 +230,30 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // screen — what the programme ASKS FOR (documents + questions), Off / Optional / Required.
       // super + org_admin only: the page's endpoint refuses every other role, and a menu row that
       // opens a 403 is worse than no row. ⚠ Visibility only — the fence is the endpoint.
+      //
+      // ⚠ TWO ROWS, AND FOUR WERE DELETED TO GET HERE (owner, 2026-09-03). Everything a person
+      // SETS about a gift is one screen with tabs — Rules, What we ask for, Intake year — because
+      // they are one job: what this gift asks of an applicant and who it says yes to. The rows
+      // that went, and why each was not a page:
+      //   · `rules`  — the six thresholds are COLUMNS ON THE INTAKE YEAR the create form already
+      //     writes, so a Rules page was a second view of a form that exists. It is now the first
+      //     tab, ahead of "what we ask for", which is the order the owner reads them in.
+      //   · `years`  — a year is a child of the gift, not its sibling. `/admin/programme/years`
+      //     redirects here and is matched below so the bookmark lights this row.
+      //   · `reviewerScoping` — which gift a reviewer covers is one FIELD on that reviewer, and
+      //     belongs on their record under Organisation → Reviewers. A `PartnerAdmin` has no
+      //     programme column at all today; reserving a page for it guessed the shape wrongly.
+      //   · `fund`   — a report, not a setting. Money in lives under Sponsors and money out under
+      //     Payments; a third surface with no scope agreed was a slot waiting to be misread.
+      //
+      // WHICH gift comes from the breadcrumb switcher (`lib/programmeScope`), which is a display
+      // preference passed to each endpoint explicitly — never an ambient scope. See that module.
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
-        exact: true },
+        exact: true, match: ['/admin/programme/years'] },
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
         gate: { mode: 'always' } },
-      // Reserved slots the programme-layer roadmap owes: reviewer assignment/scoping, the intake
-      // years beneath the gift, the fund, and the rules that currently live on the cohort.
-      // ⚠ RENAMED, not repurposed (2026-08-02). This slot is SCOPING — binding a reviewer to one
-      // programme — which is a different page from the Organisation → Reviewers directory that now
-      // exists. It kept the label "Reviewers" until that directory shipped, at which point the
-      // sidebar said Reviewers twice. The slot itself is untouched and stays reserved: scoping is
-      // meaningless while there is one programme (owner, 2026-08-02).
-      { id: 'reviewerScoping', href: '/admin/programme/reviewers',
-        labelKey: 'admin.nav.reviewerScoping',
-        scope: 'programme', roles: ['super', 'org_admin'],
-        gate: { mode: 'always' }, placeholder: true },
-      // Sabah S2b — the reserved slot is now the screen. One round of students per year beneath a
-      // gift that never lapses; creating a year does NOT open it.
-      { id: 'years', href: '/admin/programme/years', labelKey: 'admin.nav.years',
-        scope: 'programme', roles: ['super', 'org_admin'],
-        gate: { mode: 'always' } },
-      { id: 'fund', href: '/admin/programme/fund', labelKey: 'admin.nav.fund',
-        scope: 'programme', roles: ['super', 'org_admin', 'finance'],
-        gate: { mode: 'always' }, placeholder: true },
-      { id: 'rules', href: '/admin/programme/rules', labelKey: 'admin.nav.rules',
-        scope: 'programme', roles: ['super', 'org_admin'],
-        gate: { mode: 'always' }, placeholder: true },
     ],
   },
   {

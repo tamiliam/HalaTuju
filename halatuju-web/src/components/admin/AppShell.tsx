@@ -10,10 +10,11 @@ import { useT } from '@/lib/i18n'
 import { useNavProbes } from '@/lib/useNavProbes'
 import { activeItem, chordTarget, effectiveRole, visibleNav, CHORD_PREFIX } from '@/lib/navigation'
 import { PREF_KEYS, readPref, writePref } from '@/lib/uiPrefs'
+import { ProgrammeScopeProvider } from '@/lib/programmeScope'
 import { Sidebar } from '@/components/admin/Sidebar'
 import { Topbar, type Attention } from '@/components/admin/Topbar'
 import { CommandPalette } from '@/components/admin/CommandPalette'
-import { ScopeSwitcher } from '@/components/admin/ScopeSwitcher'
+import { BreadcrumbScopes } from '@/components/admin/ScopeSwitcher'
 
 /**
  * The console shell: breadcrumb + scope sidebar + the account cluster.
@@ -66,22 +67,32 @@ export function AppShell({ children }: { children: ReactNode }) {
   /*
    * The scopes behind the breadcrumb switchers (nav/IA N3a).
    *
-   * ⚠ A selected scope is a DISPLAY preference. It is not sent with any request, and nothing is
-   * re-scoped because of it — the organisation fence is server-side and unchanged. Putting it in
-   * a header or a cookie would relocate that fence into the client.
+   * ⚠ A selected scope is a DISPLAY preference. It is not sent as a header, a cookie or anything
+   * ambient, and nothing is re-scoped because of it — the organisation fence is server-side and
+   * unchanged. Putting it in a header or a cookie would relocate that fence into the client.
+   *
+   * ⚠ THE PROGRAMME HALF NOW LIVES IN `ProgrammeScopeProvider`, NOT IN THIS COMPONENT'S STATE
+   * (TD-193, 2026-09-03). The crumb and the Programme-scope pages must agree about which gift is
+   * open, and the only way to guarantee that is one holder — so the shell provides the context and
+   * the crumb consumes it exactly as the tabs do. The chosen code is handed to each endpoint as an
+   * explicit request value the server re-fences; it never travels on its own.
    *
    * A failed fetch is swallowed: a switcher is furniture, and the console must not go down
    * because a dropdown could not be populated. Empty scopes fall back to the static crumbs.
    */
   const [scopes, setScopes] = useState<AdminScopes>({ organisations: [], programmes: [] })
   const [selectedOrg, setSelectedOrg] = useState('')
-  const [selectedProgramme, setSelectedProgramme] = useState('')
   useEffect(() => {
     if (!token) return
     getAdminScopes(locale, { token })
       .then(setScopes)
       .catch(() => { /* furniture — never block the shell */ })
   }, [token, locale])
+
+  const programmeChoices = useMemo(
+    () => scopes.programmes.map((p) => ({ code: p.code, name: p.name })),
+    [scopes.programmes],
+  )
 
   const { probes, requestsWaiting } = useNavProbes(token)
   const r = effectiveRole(role)
@@ -200,6 +211,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const hrefOf = (id: string) => utility?.items.find((i) => i.id === id)?.href
 
   return (
+    <ProgrammeScopeProvider choices={programmeChoices}>
     <div className="flex min-h-screen flex-col bg-ground-50">
       <Topbar
         orgName={role?.owning_org_name ?? role?.org_name}
@@ -211,13 +223,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         onOpenMobileNav={() => setMobileNav(true)}
         scopes={
           scopes.organisations.length || scopes.programmes.length ? (
-            <ScopeSwitcher
+            <BreadcrumbScopes
               organisations={scopes.organisations}
-              programmes={scopes.programmes}
               selectedOrg={selectedOrg}
-              selectedProgramme={selectedProgramme}
               onSelectOrg={setSelectedOrg}
-              onSelectProgramme={setSelectedProgramme}
               scope={active?.scope}
             />
           ) : undefined
@@ -287,5 +296,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         onClose={() => setPaletteOpen(false)}
       />
     </div>
+    </ProgrammeScopeProvider>
   )
 }

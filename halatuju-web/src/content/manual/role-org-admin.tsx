@@ -132,11 +132,20 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>The menu — the strip of icons on the left, which opens when you point at it — groups everything
         by what it belongs to. Your organisation&rsquo;s group holds
-        <strong> Overview</strong>, <strong>Invitations</strong>, <strong>Sponsors</strong>, <strong>Payments</strong>,
-        <strong> Contracts</strong>, <strong>Sources</strong> and <strong>Billing &amp; usage</strong> (marked
-        <em> soon</em> until metering is switched on). Below it sits your programme&rsquo;s own group, with the
-        applications. Platform-only tools — adding organisations or referral partners — never appear for you;
-        those stay with the HalaTuju platform team.</>
+        <strong> Overview</strong>, <strong>Settings</strong>, <strong>Invitations</strong>,
+        <strong> Reviewers</strong>, <strong>Sponsors</strong>, <strong>Sources</strong>,
+        <strong> Payments</strong>, <strong>Contract templates</strong>, <strong>Billing &amp; usage</strong> and
+        <strong> Requests</strong>. Two of those are worth knowing about before you need them.
+        <strong> Overview</strong> is also where your <strong>gift programmes</strong> are listed and where a new
+        one is created — the gifts you run are what your organisation IS, so they sit on its front page rather
+        than off in a menu entry of their own. <strong>Settings</strong> holds the choices that belong to the
+        whole organisation, starting with your <strong>colours</strong>: one colour, applying to every gift you
+        run.
+        <br /><br />
+        Below it sits your programme&rsquo;s own group, which is deliberately short:
+        <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
+        for, and its intake year) and <strong>B40 Applications</strong>. Platform-only tools — adding
+        organisations or referral partners — never appear for you; those stay with the HalaTuju platform team.</>
       ),
       img: '/manual/org-admin-administration.png',
       alt: 'The organisation group in the menu (placeholder)',

@@ -3117,7 +3117,8 @@
       "pinNav": "பட்டியலைச் சுருங்காமல் வைக்கவும்",
       "unpinNav": "பட்டியல் சுருங்கட்டும்",
       "switchOrg": "நிறுவனத்தை மாற்று",
-      "switchProgramme": "திட்டத்தை மாற்று"
+      "switchProgramme": "திட்டத்தை மாற்று",
+      "chooseProgramme": "ஒரு கொடையைத் தேர்ந்தெடுங்கள்"
     },
     "nav": {
       "organisations": "நிறுவனங்கள்",
@@ -3126,10 +3127,6 @@
       "staff": "பணியாளர்கள்",
       "programmeOverview": "மேலோட்டம்",
       "reviewers": "மதிப்பாய்வாளர்கள்",
-      "reviewerScoping": "மதிப்பாய்வாளர் எல்லை",
-      "years": "சேர்க்கை ஆண்டுகள்",
-      "fund": "நிதி",
-      "rules": "விதிகள்",
       "soon": "விரைவில்",
       "group": {
         "platform": "தளம்",
@@ -3137,7 +3134,8 @@
         "programme": "திட்டம்",
         "utility": "கணக்கு"
       },
-      "invitations": "அழைப்புகள்"
+      "invitations": "அழைப்புகள்",
+      "orgSettings": "அமைப்புகள்"
     },
     "reviewers": {
       "title": "மதிப்பாய்வாளர்கள்",
@@ -5533,6 +5531,152 @@
       "subtitle": "உங்கள் திட்டம் என்ன கேட்கிறது, அது எப்படித் தோன்றுகிறது.",
       "tab": {
         "config": "நாங்கள் கேட்பவை",
+        "rules": "விதிகள்",
+        "year": "சேர்க்கை ஆண்டு"
+      }
+    },
+    "invitations": {
+      "title": "அழைப்புகள்",
+      "subtitle": "இந்த அமைப்பில் சேர யார் அழைக்கப்பட்டுள்ளனர், இப்போது யார் இருக்கிறார்கள்.",
+      "send": {
+        "sent": "சேர்ந்தது",
+        "failed": "தோல்வி",
+        "notRecorded": "பதிவு இல்லை"
+      },
+      "status": {
+        "invited": "காத்திருக்கிறது",
+        "expired": "கடவுச்சொல் காலாவதியானது",
+        "no_reply": "இன்னும் பதில் இல்லை",
+        "accepted": "உள்நுழைந்துவிட்டார்",
+        "revoked": "ரத்து செய்யப்பட்டது"
+      },
+      "tabsAria": "அழைப்புகள் அல்லது மின்னஞ்சல்கள்",
+      "tab": {
+        "invitations": "அழைப்புகள்",
+        "emails": "மின்னஞ்சல்கள்"
+      },
+      "kind": {
+        "admins": "நிர்வாகிகள்",
+        "reviewers": "மதிப்பாய்வாளர்கள்",
+        "source": "மூலம்",
+        "sponsors": "ஆதரவாளர்கள்"
+      },
+      "kindOne": {
+        "admins": "நிர்வாகி",
+        "reviewers": "மதிப்பாய்வாளர்",
+        "source": "மூல அமைப்பு",
+        "sponsors": "ஆதரவாளர்"
+      },
+      "noneInKind": "இந்தக் குழுவில் இதுவரை யாரும் அழைக்கப்படவில்லை.",
+      "sourceComingSoon": "விரைவில். மூல அமைப்புகள் இன்று எங்கள் மின்னஞ்சல்களைப் பெறுகின்றன; அது உருவாக்கப்பட்டதும் அவர்கள் உள்நுழைந்து தமது மாணவர்களைப் பார்க்க முடியும்.",
+      "notePlaceholder": "சேர்க்க வேண்டிய குறுஞ்செய்தி (விருப்பத்தேர்வு)",
+      "emails": {
+        "title": "நீங்கள் அழைக்கும்போது அவர்களுக்குச் சொல்லப்படுவது",
+        "subtitle": "நான்கு அழைப்பு மின்னஞ்சல்களின் வாசகம். சுதந்திரமாகத் திருத்தலாம்.",
+        "alwaysSends": "இவை எப்போதும் அனுப்பப்படும். சுவிட்ச் இல்லை — ஏனெனில் மின்னஞ்சல் அனுப்பாத அழைப்பு என்பது யாருக்கும் கிடைக்காத அழைப்பே.",
+        "accessLocked": "ஒரு கடிதம் ஒருவருக்குக் கணக்கை வழங்கும்போது, உள்நுழைவுப் பத்தி — தற்காலிகக் கடவுச்சொல் உட்பட — எங்களால் சேர்க்கப்படுகிறது; அதைத் திருத்த முடியாது. அவர் எவ்வாறு உள்நுழைகிறார் என்பதைப் பொறுத்து அது மாறும்.",
+        "loadError": "இந்த மின்னஞ்சல்களை ஏற்ற முடியவில்லை.",
+        "kind": {
+          "invite_admin": "குழுவில் இணைதல் — நிர்வாகி",
+          "invite_reviewer": "குழுவில் இணைதல் — மதிப்பாய்வாளர்",
+          "invite_source": "மூல அமைப்பை அழைத்தல்",
+          "invite_sponsor": "நன்கொடையாளரை அழைத்தல்"
+        },
+        "when": {
+          "invite_admin": "ஒருவரை நிர்வாகி அல்லது நிதிப் பொறுப்பாளராகச் சேர்க்கும்போது — மேலும் நீங்கள் மீண்டும் அனுப்பு அழுத்தும் ஒவ்வொரு முறையும் அனுப்பப்படும்.",
+          "invite_reviewer": "ஒருவரை மதிப்பாய்வாளர் அல்லது QC ஆகச் சேர்க்கும்போது — மேலும் நீங்கள் மீண்டும் அனுப்பு அழுத்தும் ஒவ்வொரு முறையும் அனுப்பப்படும்.",
+          "invite_source": "இன்னும் அனுப்பப்படவில்லை. மூல அமைப்புகள் உள்நுழைந்து தங்கள் மாணவர்களைப் பின்தொடரும் வசதி உருவானதும் அவர்கள் பெறும் வாசகம் இது.",
+          "invite_sponsor": "ஒருவரை நன்கொடையாளராக அழைக்கும்போது அனுப்பப்படும். இது அவர்களை வழக்கமான பதிவுப் பக்கத்திற்கு இணைக்கிறது; அங்கு அவர்கள் ஒப்புதல் அளித்து சரிபார்க்கப்படுவார்கள்."
+        }
+      }
+    },
+    "soon": "விரைவில்",
+    "programmes": {
+      "title": "நன்கொடைத் திட்டங்கள்",
+      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
+      "new": "புதிய நன்கொடைத் திட்டம்",
+      "create": "உருவாக்கு",
+      "active": "செயலில்",
+      "notActive": "இன்னும் செயலில் இல்லை",
+      "none": "இல்லை",
+      "switchOn": "இயக்கு",
+      "switchOff": "நிறுத்து",
+      "empty": "No gift programmes yet.",
+      "loadFailed": "Could not load your gift programmes.",
+      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
+      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
+      "col": {
+        "years": "சேர்க்கை ஆண்டுகள்",
+        "applications": "விண்ணப்பங்கள்",
+        "takingApplications": "விண்ணப்பங்களை ஏற்கிறது"
+      },
+      "field": {
+        "name": "பெயர்",
+        "code": "சுருக்கக் குறியீடு",
+        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
+      },
+      "error": {
+        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
+        "codeTaken": "That short code is already in use. Please choose another.",
+        "nameRequired": "Please give the programme a name.",
+        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
+        "noOrg": "Your account is not tied to an organisation.",
+        "generic": "That did not work. Nothing was changed."
+      },
+      "openSettings": "அதன் அமைப்புகளைத் திறக்க"
+    },
+    "years": {
+      "subtitle": "one round of students per year.",
+      "new": "புதிய சேர்க்கை ஆண்டு",
+      "createClosed": "உருவாக்கு - இன்னும் திறக்க வேண்டாம்",
+      "open": "திறந்துள்ளது",
+      "closed": "மூடப்பட்டுள்ளது",
+      "openIt": "விண்ணப்பங்களைத் திற",
+      "close": "மூடு",
+      "empty": "No intake years yet.",
+      "noProgrammes": "Create a gift programme first",
+      "loadFailed": "Could not load the intake years.",
+      "oneOpen": "Opening a round is what lets students apply. Only one round across your organisation may be open at a time.",
+      "oneOpenNamed": "{code} is taking applications. Only one round across your organisation may be open at a time, so close it before opening another.",
+      "reqTitle": "பட்டியலிடும் தேவைகள்",
+      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
+      "col": {
+        "year": "ஆண்டு",
+        "name": "மாணவர்கள் காண்பது",
+        "applications": "விண்ணப்பங்கள்",
+        "status": "நிலை"
+      },
+      "field": {
+        "year": "ஆண்டு",
+        "code": "சுருக்கக் குறியீடு",
+        "name": "மாணவர்கள் காணப் போவது"
+      },
+      "req": {
+        "spmA": "SPM - minimum grades at A- or better",
+        "spmB": "SPM - further grades at B+ or better",
+        "spmBHint": "in addition to those above",
+        "pngk": "STPM - minimum PNGK",
+        "merit": "குறைந்தபட்ச தகுதிப் புள்ளி",
+        "meritHint": "UPU score out of 100. SPM applicants only.",
+        "income": "Household income at most (RM per month)",
+        "perPerson": "or, above that, income per person under (RM)",
+        "perPersonHint": "rescues a large household above the ceiling"
+      },
+      "error": {
+        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
+        "codeTaken": "That short code is already in use. Please choose another.",
+        "badYear": "Please give a year.",
+        "nameRequired": "Please give the intake year a name.",
+        "anotherOpen": "Another round is already taking applications. Close it first.",
+        "notActive": "Switch the gift programme on before opening a round.",
+        "generic": "That did not work. Nothing was changed."
+      }
+    },
+    "orgSettings": {
+      "nav": "அமைப்புகள்",
+      "title": "நிறுவன அமைப்புகள்",
+      "subtitle": "உங்கள் நிறுவனம் தானே தீர்மானிப்பவை. நீங்கள் நடத்தும் ஒவ்வொரு கொடைத் திட்டத்திற்கும் இவை பொருந்தும்.",
+      "tab": {
         "colours": "நிறங்கள்"
       },
       "colours": {
@@ -5598,145 +5742,17 @@
         }
       }
     },
-    "invitations": {
-      "title": "அழைப்புகள்",
-      "subtitle": "இந்த அமைப்பில் சேர யார் அழைக்கப்பட்டுள்ளனர், இப்போது யார் இருக்கிறார்கள்.",
-      "send": {
-        "sent": "சேர்ந்தது",
-        "failed": "தோல்வி",
-        "notRecorded": "பதிவு இல்லை"
-      },
-      "status": {
-        "invited": "காத்திருக்கிறது",
-        "expired": "கடவுச்சொல் காலாவதியானது",
-        "no_reply": "இன்னும் பதில் இல்லை",
-        "accepted": "உள்நுழைந்துவிட்டார்",
-        "revoked": "ரத்து செய்யப்பட்டது"
-      },
-      "tabsAria": "அழைப்புகள் அல்லது மின்னஞ்சல்கள்",
-      "tab": {
-        "invitations": "அழைப்புகள்",
-        "emails": "மின்னஞ்சல்கள்"
-      },
-      "kind": {
-        "admins": "நிர்வாகிகள்",
-        "reviewers": "மதிப்பாய்வாளர்கள்",
-        "source": "மூலம்",
-        "sponsors": "ஆதரவாளர்கள்"
-      },
-      "kindOne": {
-        "admins": "நிர்வாகி",
-        "reviewers": "மதிப்பாய்வாளர்",
-        "source": "மூல அமைப்பு",
-        "sponsors": "ஆதரவாளர்"
-      },
-      "noneInKind": "இந்தக் குழுவில் இதுவரை யாரும் அழைக்கப்படவில்லை.",
-      "sourceComingSoon": "விரைவில். மூல அமைப்புகள் இன்று எங்கள் மின்னஞ்சல்களைப் பெறுகின்றன; அது உருவாக்கப்பட்டதும் அவர்கள் உள்நுழைந்து தமது மாணவர்களைப் பார்க்க முடியும்.",
-      "notePlaceholder": "சேர்க்க வேண்டிய குறுஞ்செய்தி (விருப்பத்தேர்வு)",
-      "emails": {
-        "title": "நீங்கள் அழைக்கும்போது அவர்களுக்குச் சொல்லப்படுவது",
-        "subtitle": "நான்கு அழைப்பு மின்னஞ்சல்களின் வாசகம். சுதந்திரமாகத் திருத்தலாம்.",
-        "alwaysSends": "இவை எப்போதும் அனுப்பப்படும். சுவிட்ச் இல்லை — ஏனெனில் மின்னஞ்சல் அனுப்பாத அழைப்பு என்பது யாருக்கும் கிடைக்காத அழைப்பே.",
-        "accessLocked": "ஒரு கடிதம் ஒருவருக்குக் கணக்கை வழங்கும்போது, உள்நுழைவுப் பத்தி — தற்காலிகக் கடவுச்சொல் உட்பட — எங்களால் சேர்க்கப்படுகிறது; அதைத் திருத்த முடியாது. அவர் எவ்வாறு உள்நுழைகிறார் என்பதைப் பொறுத்து அது மாறும்.",
-        "loadError": "இந்த மின்னஞ்சல்களை ஏற்ற முடியவில்லை.",
-        "kind": {
-          "invite_admin": "குழுவில் இணைதல் — நிர்வாகி",
-          "invite_reviewer": "குழுவில் இணைதல் — மதிப்பாய்வாளர்",
-          "invite_source": "மூல அமைப்பை அழைத்தல்",
-          "invite_sponsor": "நன்கொடையாளரை அழைத்தல்"
-        },
-        "when": {
-          "invite_admin": "ஒருவரை நிர்வாகி அல்லது நிதிப் பொறுப்பாளராகச் சேர்க்கும்போது — மேலும் நீங்கள் மீண்டும் அனுப்பு அழுத்தும் ஒவ்வொரு முறையும் அனுப்பப்படும்.",
-          "invite_reviewer": "ஒருவரை மதிப்பாய்வாளர் அல்லது QC ஆகச் சேர்க்கும்போது — மேலும் நீங்கள் மீண்டும் அனுப்பு அழுத்தும் ஒவ்வொரு முறையும் அனுப்பப்படும்.",
-          "invite_source": "இன்னும் அனுப்பப்படவில்லை. மூல அமைப்புகள் உள்நுழைந்து தங்கள் மாணவர்களைப் பின்தொடரும் வசதி உருவானதும் அவர்கள் பெறும் வாசகம் இது.",
-          "invite_sponsor": "ஒருவரை நன்கொடையாளராக அழைக்கும்போது அனுப்பப்படும். இது அவர்களை வழக்கமான பதிவுப் பக்கத்திற்கு இணைக்கிறது; அங்கு அவர்கள் ஒப்புதல் அளித்து சரிபார்க்கப்படுவார்கள்."
-        }
-      }
+    "programmeScope": {
+      "choose": "எந்தக் கொடைத் திட்டம்?",
+      "chooseHint": "நீங்கள் ஒன்றுக்கு மேற்பட்டவற்றை நடத்துகிறீர்கள், எனவே நாங்கள் ஊகிக்க மாட்டோம். ஒன்றைத் தேர்ந்தெடுங்கள் - பக்கத்தின் மேலே உள்ள பாதையிலிருந்தும் மாற்றலாம்."
     },
-    "soon": "விரைவில்",
-    "programmes": {
-      "nav": "நன்கொடைத் திட்டங்கள்",
-      "title": "நன்கொடைத் திட்டங்கள்",
-      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
-      "new": "புதிய நன்கொடைத் திட்டம்",
-      "create": "உருவாக்கு",
-      "active": "செயலில்",
-      "notActive": "இன்னும் செயலில் இல்லை",
-      "none": "இல்லை",
-      "switchOn": "இயக்கு",
-      "switchOff": "நிறுத்து",
-      "intakeYears": "சேர்க்கை ஆண்டுகள்",
-      "empty": "No gift programmes yet.",
-      "loadFailed": "Could not load your gift programmes.",
-      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
-      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
-      "col": {
-        "years": "சேர்க்கை ஆண்டுகள்",
-        "applications": "விண்ணப்பங்கள்",
-        "takingApplications": "விண்ணப்பங்களை ஏற்கிறது"
-      },
-      "field": {
-        "name": "பெயர்",
-        "code": "சுருக்கக் குறியீடு",
-        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
-      },
-      "error": {
-        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
-        "codeTaken": "That short code is already in use. Please choose another.",
-        "nameRequired": "Please give the programme a name.",
-        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
-        "noOrg": "Your account is not tied to an organisation.",
-        "generic": "That did not work. Nothing was changed."
-      }
-    },
-    "years": {
-      "title": "சேர்க்கை ஆண்டுகள்",
-      "subtitle": "one round of students per year.",
-      "new": "புதிய சேர்க்கை ஆண்டு",
-      "createClosed": "உருவாக்கு - இன்னும் திறக்க வேண்டாம்",
-      "open": "திறந்துள்ளது",
-      "closed": "மூடப்பட்டுள்ளது",
-      "openIt": "விண்ணப்பங்களைத் திற",
-      "close": "மூடு",
-      "empty": "No intake years yet.",
-      "chooseProgramme": "எந்த நன்கொடைத் திட்டம்?",
-      "noProgrammes": "Create a gift programme first",
-      "loadFailed": "Could not load the intake years.",
-      "oneOpen": "Opening a round is what lets students apply. Only one round across your organisation may be open at a time.",
-      "oneOpenNamed": "{code} is taking applications. Only one round across your organisation may be open at a time, so close it before opening another.",
-      "reqTitle": "பட்டியலிடும் தேவைகள்",
-      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
-      "col": {
-        "year": "ஆண்டு",
-        "name": "மாணவர்கள் காண்பது",
-        "applications": "விண்ணப்பங்கள்",
-        "status": "நிலை"
-      },
-      "field": {
-        "year": "ஆண்டு",
-        "code": "சுருக்கக் குறியீடு",
-        "name": "மாணவர்கள் காணப் போவது"
-      },
-      "req": {
-        "spmA": "SPM - minimum grades at A- or better",
-        "spmB": "SPM - further grades at B+ or better",
-        "spmBHint": "in addition to those above",
-        "pngk": "STPM - minimum PNGK",
-        "merit": "குறைந்தபட்ச தகுதிப் புள்ளி",
-        "meritHint": "UPU score out of 100. SPM applicants only.",
-        "income": "Household income at most (RM per month)",
-        "perPerson": "or, above that, income per person under (RM)",
-        "perPersonHint": "rescues a large household above the ceiling"
-      },
-      "error": {
-        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
-        "codeTaken": "That short code is already in use. Please choose another.",
-        "badYear": "Please give a year.",
-        "nameRequired": "Please give the intake year a name.",
-        "anotherOpen": "Another round is already taking applications. Close it first.",
-        "notActive": "Switch the gift programme on before opening a round.",
-        "generic": "That did not work. Nothing was changed."
-      }
+    "rules": {
+      "subtitle": "இந்தக் கொடைக்கு யார் தகுதி பெறுகிறார்கள். நீங்கள் தேர்வு செய்யாத சோதனை எதுவும் பயன்படுத்தப்படாது.",
+      "editing": "{year} - {name} இன் விதிகள் இவை.",
+      "liveWarning": "ஒரு விதியை மாற்றினால், நீங்கள் சேமித்த தருணத்திலிருந்து யார் தகுதி பெறுகிறார்கள் என்பது மாறும். \"நாங்கள் கேட்பவை\" போலன்றி, ஏற்கெனவே விண்ணப்பித்த மாணவர்களுக்கு இது நிலைநிறுத்தப்படவில்லை - எனவே மறுமதிப்பீடு புதிய விதியைப் பயன்படுத்தும். சேர்க்கை நடுவில் கவனமாக இருங்கள்.",
+      "untickNote": "ஒரு சோதனையைப் பயன்படுத்துவதை நிறுத்த அதன் தேர்வை நீக்குங்கள். வெற்றுப் பெட்டி என்றால் அந்தச் சோதனை இயங்காது.",
+      "noYear": "இந்தக் கொடைக்கு இன்னும் சேர்க்கை ஆண்டு இல்லை; விதிகள் ஆண்டின் மேல் இருக்கும். சேர்க்கை ஆண்டு தத்தலில் ஒன்றை உருவாக்கி அங்கே அமைக்கவும்.",
+      "saved": "சேமிக்கப்பட்டது"
     }
   }
 }

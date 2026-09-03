@@ -139,10 +139,14 @@ describe('the Go-to chip', () => {
     expect(within(staff).getByText(/admin.shell.goTo/).getAttribute('aria-hidden')).toBe('true')
   })
 
+  // `super`: the shape sprint left Billing rates as the only reserved slot, and it is platform-
+  // scoped. The rule under test is unchanged — a chord chip on a row that goes nowhere would
+  // advertise a shortcut that cannot fire.
   it('offers no chip on a reserved slot', () => {
-    const nav = renderRail('org_admin')
-    const fund = within(nav).getByText('admin.nav.fund').closest('[aria-disabled]') as HTMLElement
-    expect(within(fund).queryByText(/admin.shell.goTo/)).toBeNull()
+    const nav = renderRail('super')
+    const slot = within(nav).getByText('admin.nav.billingRates')
+      .closest('[aria-disabled]') as HTMLElement
+    expect(within(slot).queryByText(/admin.shell.goTo/)).toBeNull()
   })
 })
 

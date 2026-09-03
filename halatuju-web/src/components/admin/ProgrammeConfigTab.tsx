@@ -24,6 +24,7 @@ import {
   ITEM_STATES, allowedStates, changes, documents, draftFrom, isHeavy, itemKey, questions, tally,
   type Draft,
 } from '@/lib/programmeConfig'
+import { useProgrammeScope } from '@/lib/programmeScope'
 
 /** The three-state control. Rendered per row; a locked row offers `required` only. */
 function StateControl({ item, value, onChange, t }: {
@@ -98,8 +99,21 @@ export default function ProgrammeConfigTab() {
   const [draft, setDraft] = useState<Draft>({})
   const [loadError, setLoadError] = useState(false)
   const [programmeChoices, setProgrammeChoices] = useState<string[] | null>(null)
-  const [programme, setProgramme] = useState<string | undefined>(undefined)
   const [saving, setSaving] = useState(false)
+
+  /*
+   * WHICH gift, from the breadcrumb (TD-193, 2026-09-03). This tab used to hold its own selection,
+   * which was correct while it was a page of its own and became a second answer the moment the
+   * Rules and Intake-year tabs arrived beside it — three tabs on one screen, each able to be
+   * looking at a different gift, with the crumb above them naming a fourth.
+   *
+   * ⚠ `undefined` IS STILL A VALID VALUE TO SEND, and the server's own refusal below is still the
+   * real chooser. With one gift the endpoint resolves it; with several and nothing chosen it
+   * answers `programme_required` carrying the list. That path is kept deliberately: it is the
+   * server telling us what it will accept, and a client-side list is only ever a shortcut to it.
+   */
+  const { chosen, select } = useProgrammeScope()
+  const programme = chosen || undefined
   // ONE closed set of outcomes; every value has a line below. Adding a value without a line is
   // the #20 bug returning.
   const [outcome, setOutcome] = useState<
@@ -189,7 +203,7 @@ export default function ProgrammeConfigTab() {
           <p className="text-sm font-medium text-ground-800">{t('admin.programme.config.programmeRequired')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {programmeChoices.map((code) => (
-              <button key={code} type="button" onClick={() => setProgramme(code)}
+              <button key={code} type="button" onClick={() => select(code)}
                 className="rounded-lg border border-ground-300 px-3 py-1.5 text-sm hover:bg-ground-50">
                 {code}
               </button>

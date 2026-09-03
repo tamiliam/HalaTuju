@@ -50,3 +50,43 @@ export function draftToRequirements(d: RequirementDraft) {
     per_capita_ceiling: num(d.perPerson),
   }
 }
+
+/** What is stored → what the boxes show. */
+const str = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n))
+
+/**
+ * The stored columns → the screen's boxes: the exact inverse of `draftToRequirements`.
+ *
+ * ⚠ IT EXISTS BECAUSE THE RULES CAN NOW BE EDITED, NOT ONLY SET (owner, 2026-09-03: rules are a
+ * configuration item, and they come before "what we ask for"). Until then the conversion ran one
+ * way — a create form wrote a total and nothing ever read it back — and the retro warned in as many
+ * words that "if a future screen ever sends what it displays, 4 plus 1 silently becomes 4 plus 1
+ * more than 4". An edit form is that future screen: it loads a TOTAL of 5 and must show an EXTRA
+ * of 1, or the first save after opening the page would quietly raise the bar to nine subjects.
+ *
+ * A stored total BELOW the A- count cannot be spelled by this screen and should not be silently
+ * repaired into a negative box: it clamps at zero, which is what "no extra beyond the A grades"
+ * means, and a round trip then writes back the honest total.
+ */
+export function requirementsToDraft(r: {
+  min_spm_a_count?: number | null
+  min_spm_bplus_count?: number | null
+  min_stpm_pngk?: number | null
+  min_merit_score?: number | null
+  income_ceiling?: number | null
+  per_capita_ceiling?: number | null
+} | null | undefined): RequirementDraft {
+  if (!r) return { ...EMPTY_REQUIREMENTS }
+  const a = r.min_spm_a_count
+  const total = r.min_spm_bplus_count
+  return {
+    aCount: str(a),
+    spmExtra: total === null || total === undefined
+      ? ''
+      : String(Math.max(0, total - (a ?? 0))),
+    pngk: str(r.min_stpm_pngk),
+    merit: str(r.min_merit_score),
+    income: str(r.income_ceiling),
+    perPerson: str(r.per_capita_ceiling),
+  }
+}

@@ -1,16 +1,32 @@
 'use client'
 
-// Programme settings — the TABBED shell (Layer 1 A2, 2026-09-01).
+// Programme → Configuration — everything a person SETS about one gift, on one screen.
 //
-// The owner ruled on 2026-07-29 that Layer 0's "what a programme asks for" and Layer 1's colour
-// picker are the same person doing two related jobs, so they share one route with two tabs rather
-// than two menu entries. The roadmap warned that whichever shipped first would own the shell and
-// the second would arrive as a retro-fit; Layer 0 Sprint 5 shipped a single-purpose page, so this
-// is that retro-fit. The config tab moved to `components/admin/ProgrammeConfigTab` UNCHANGED.
+// THREE TABS, IN THE OWNER'S ORDER (2026-09-03): Rules · What we ask for · Intake year.
 //
-// ⚠ THE TABS ARE NOT A FENCE. Both tabs read and write through endpoints that are themselves
-// org-fenced. `mayView` below only avoids rendering a page that would 403 — the endpoints are the
-// authority, and each fences on the caller's own `owning_organisation`.
+// ⚠ FOUR MENU ROWS WERE DELETED TO BUILD THIS, and the reasoning matters more than the layout.
+// The console had grown a Programme group of six rows, four of them reserved slots that each
+// guessed at the shape of unscoped work. Following one rule — what is a subset of what — settled
+// every one of them:
+//   · RULES are the six thresholds stored on the intake year, which the create form already
+//     wrote. A Rules page would have been a second view of an existing form, so it is tab one —
+//     and it comes FIRST because who qualifies precedes what they are asked to send.
+//   · INTAKE YEAR is a child of the gift, not a sibling of its settings. The owner's own model:
+//     "the intake year is merely a column within the application table, and not a superset."
+//   · REVIEWER SCOPING is one field on a reviewer's record, under Organisation → Reviewers.
+//   · FUND is a report, not a setting.
+// `/admin/programme/years` redirects here; the registry matches it so the bookmark lights this row.
+//
+// ⚠ COLOURS LEFT. `OrganisationTheme` is one colour for the whole tenant and its endpoint derives
+// the organisation, so a tenant-wide setting was being changed from inside a single gift — silent
+// while there is one gift, wrong the day there are two. It is Organisation → Settings now.
+//
+// ⚠ WHICH GIFT COMES FROM THE BREADCRUMB, and it is a display preference passed explicitly, never
+// an ambient scope — see `lib/programmeScope`. With several gifts and no choice made, each tab
+// ASKS rather than picking one (PF-1's refuse-don't-guess rule, applied to a screen).
+//
+// ⚠ THE TABS ARE NOT A FENCE. Every tab reads and writes through org-fenced endpoints; `mayView`
+// below only avoids rendering a page that would 403.
 //
 // Each tab keeps its OWN draft and its own loader, and an unmounted tab loses its draft. That is
 // deliberate: one shared draft across two unrelated saves is how a person ends up pressing Save on
@@ -20,24 +36,29 @@ import { useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
+import { useProgrammeScope } from '@/lib/programmeScope'
+import ProgrammeRulesTab from '@/components/admin/ProgrammeRulesTab'
 import ProgrammeConfigTab from '@/components/admin/ProgrammeConfigTab'
-import ProgrammeColoursTab from '@/components/admin/ProgrammeColoursTab'
+import IntakeYearTab from '@/components/admin/IntakeYearTab'
 
-const TABS = ['config', 'colours'] as const
+const TABS = ['rules', 'config', 'year'] as const
 type Tab = (typeof TABS)[number]
 
 export default function AdminProgrammePage() {
   const { role } = useAdminAuth()
   const { t } = useT()
   const mayView = canAccess('/admin/programme', effectiveRole(role))
-  const [tab, setTab] = useState<Tab>('config')
+  const [tab, setTab] = useState<Tab>('rules')
+  const { programme } = useProgrammeScope()
 
   if (!mayView) return null
 
   return (
     <div className="max-w-4xl">
       <h1 className="text-2xl font-semibold text-ground-900">{t('admin.programme.title')}</h1>
-      <p className="mt-1 text-sm text-ground-600">{t('admin.programme.subtitle')}</p>
+      <p className="mt-1 text-sm text-ground-600">
+        {programme ? `${programme.name} — ` : ''}{t('admin.programme.subtitle')}
+      </p>
 
       {/* Understated text tabs on a full-width rule — the console's own restraint. A pill or a
           boxed tab would compete with the brand actions inside each tab. */}
@@ -58,7 +79,9 @@ export default function AdminProgrammePage() {
       </div>
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'config' ? <ProgrammeConfigTab /> : <ProgrammeColoursTab />}
+        {tab === 'rules' ? <ProgrammeRulesTab />
+          : tab === 'config' ? <ProgrammeConfigTab />
+            : <IntakeYearTab />}
       </div>
     </div>
   )

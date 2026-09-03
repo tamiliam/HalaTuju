@@ -6419,6 +6419,16 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
         if bad:
             return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
                             status=status.HTTP_400_BAD_REQUEST)
+        # ⚠ CAPTURE THE OLD VALUE BEFORE WRITING. A threshold decides who is shortlisted, and
+        # `shortlisting.evaluate()` reads these columns LIVE — unlike the documents and questions,
+        # which are frozen per application at submit (`requirements_snapshot`). So a change here
+        # moves the bar for everybody still to be judged, and "which fields changed" does not
+        # answer the only question anybody will ask afterwards: FROM WHAT, TO WHAT.
+        #
+        # This is TD-203's lesson applied before it bites twice: `award_amount` had no audit line
+        # either, and when three production rows had to be corrected on 2026-07-30 there was no
+        # system record of who set them or to what — it came down to the owner's memory.
+        moved = {f: (getattr(c, f), v) for f, v in reqs.items() if getattr(c, f) != v}
         for f, v in reqs.items():
             setattr(c, f, v); changed.append(f)
 
@@ -6447,4 +6457,14 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
             c.save(update_fields=changed)
             logger.info('AUDIT intake_year_updated cohort=%s fields=%s by=%s',
                         c.code, ','.join(changed), admin.email or '')
+            # A SECOND line, only when a threshold actually moved, carrying old -> new. Kept
+            # separate from the line above rather than widening it: that one records that an
+            # intake year was edited, this one records that the bar changed, and the two are read
+            # by different people asking different questions.
+            if moved:
+                logger.info(
+                    'AUDIT intake_year_requirements_set cohort=%s changes=%s by=%s',
+                    c.code,
+                    ';'.join('%s:%s->%s' % (f, old, new) for f, (old, new) in sorted(moved.items())),
+                    admin.email or '')
         return Response(_cohort_row(c))

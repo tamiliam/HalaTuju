@@ -46,9 +46,12 @@ export const basicsProgramme: ManualChapter = {
         HalaTuju name at the top, and the console will remember. The page you are on is the coloured one.
         <br /><br />
         The pages are grouped by what they belong to: <strong>HalaTuju</strong> (the platform),
-        <strong> your organisation</strong>, and <strong>your programme</strong> — which is where
-        <strong> B40 Applications</strong> lives. You only ever see the groups your role reaches, so a short
-        menu is not a fault. A few entries are marked <em>soon</em>: those are pages being built.
+        <strong> your organisation</strong> — the people, the money and the paperwork — and
+        <strong> your programme</strong>, which is one gift: its <strong>Configuration</strong> and its
+        <strong> B40 Applications</strong>. If your organisation runs more than one gift, the trail across the
+        top says which one you are in, and you can switch there. You only ever see the groups your role
+        reaches, so a short menu is not a fault. An entry marked <em>soon</em> is a page still being built; you
+        may well see none at all.
         <br /><br />
         Two shortcuts, once the strip is familiar. Pointing at an entry shows <em>Go to…</em> with a pair of
         keys — press <strong>G</strong>, then that letter, and you are there. <strong>Ctrl&nbsp;K</strong>

@@ -3117,7 +3117,8 @@
       "pinNav": "Biarkan menu terbuka",
       "unpinNav": "Biarkan menu mengecil",
       "switchOrg": "Tukar organisasi",
-      "switchProgramme": "Tukar program"
+      "switchProgramme": "Tukar program",
+      "chooseProgramme": "Pilih pemberian"
     },
     "nav": {
       "organisations": "Organisasi",
@@ -3126,10 +3127,6 @@
       "staff": "Kakitangan",
       "programmeOverview": "Gambaran keseluruhan",
       "reviewers": "Penilai",
-      "reviewerScoping": "Skop penilai",
-      "years": "Tahun kemasukan",
-      "fund": "Dana",
-      "rules": "Peraturan",
       "soon": "Akan datang",
       "group": {
         "platform": "Platform",
@@ -3137,7 +3134,8 @@
         "programme": "Program",
         "utility": "Akaun"
       },
-      "invitations": "Jemputan"
+      "invitations": "Jemputan",
+      "orgSettings": "Tetapan"
     },
     "reviewers": {
       "title": "Penilai",
@@ -5533,6 +5531,152 @@
       "subtitle": "Apa yang program anda minta, dan rupanya.",
       "tab": {
         "config": "Apa yang kami minta",
+        "rules": "Peraturan",
+        "year": "Tahun pengambilan"
+      }
+    },
+    "invitations": {
+      "title": "Jemputan",
+      "subtitle": "Siapa yang telah dijemput menyertai organisasi ini, dan siapa yang sudah ada.",
+      "send": {
+        "sent": "Sampai",
+        "failed": "Gagal",
+        "notRecorded": "Tiada rekod"
+      },
+      "status": {
+        "invited": "Menunggu",
+        "expired": "Kata laluan tamat tempoh",
+        "no_reply": "Belum ada jawapan",
+        "accepted": "Telah log masuk",
+        "revoked": "Dibatalkan"
+      },
+      "tabsAria": "Jemputan atau e-mel",
+      "tab": {
+        "invitations": "Jemputan",
+        "emails": "E-mel"
+      },
+      "kind": {
+        "admins": "Pentadbir",
+        "reviewers": "Penilai",
+        "source": "Sumber",
+        "sponsors": "Penaja"
+      },
+      "kindOne": {
+        "admins": "Pentadbir",
+        "reviewers": "Penilai",
+        "source": "Sumber",
+        "sponsors": "Penaja"
+      },
+      "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
+      "sourceComingSoon": "Akan datang. Rakan sumber menerima e-mel kami hari ini; mereka akan dapat log masuk dan melihat pelajar mereka sendiri apabila ia siap.",
+      "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
+      "emails": {
+        "title": "Apa yang diberitahu apabila anda menjemput seseorang",
+        "subtitle": "Teks empat e-mel jemputan. Suntinglah dengan bebas.",
+        "alwaysSends": "E-mel ini sentiasa dihantar. Tiada suis, kerana jemputan yang tidak menghantar e-mel ialah jemputan yang tidak diterima sesiapa.",
+        "accessLocked": "Apabila sesuatu surat memberikan akaun kepada seseorang, perenggan log masuk — termasuk sebarang kata laluan sementara — ditambah oleh kami dan tidak boleh disunting. Ia berubah mengikut cara orang itu log masuk.",
+        "loadError": "E-mel ini tidak dapat dimuatkan.",
+        "kind": {
+          "invite_admin": "Menyertai pasukan — pentadbir",
+          "invite_reviewer": "Menyertai pasukan — penilai",
+          "invite_source": "Menjemput organisasi sumber",
+          "invite_sponsor": "Menjemput penderma"
+        },
+        "when": {
+          "invite_admin": "Dihantar apabila anda menambah seseorang sebagai pentadbir atau kewangan — dan setiap kali anda menekan Hantar Semula.",
+          "invite_reviewer": "Dihantar apabila anda menambah seseorang sebagai penilai atau QC — dan setiap kali anda menekan Hantar Semula.",
+          "invite_source": "Belum dihantar. Ini ialah teks yang akan diterima oleh organisasi sumber apabila mereka boleh log masuk dan mengikuti pelajar mereka sendiri.",
+          "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penderma. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring."
+        }
+      }
+    },
+    "soon": "Akan datang",
+    "programmes": {
+      "title": "Program hadiah",
+      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
+      "new": "Program hadiah baharu",
+      "create": "Cipta",
+      "active": "Aktif",
+      "notActive": "Belum aktif",
+      "none": "Tiada",
+      "switchOn": "Hidupkan",
+      "switchOff": "Matikan",
+      "empty": "No gift programmes yet.",
+      "loadFailed": "Could not load your gift programmes.",
+      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
+      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
+      "col": {
+        "years": "Tahun pengambilan",
+        "applications": "Permohonan",
+        "takingApplications": "Menerima permohonan"
+      },
+      "field": {
+        "name": "Nama",
+        "code": "Kod ringkas",
+        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
+      },
+      "error": {
+        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
+        "codeTaken": "That short code is already in use. Please choose another.",
+        "nameRequired": "Please give the programme a name.",
+        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
+        "noOrg": "Your account is not tied to an organisation.",
+        "generic": "That did not work. Nothing was changed."
+      },
+      "openSettings": "Buka tetapannya"
+    },
+    "years": {
+      "subtitle": "one round of students per year.",
+      "new": "Tahun pengambilan baharu",
+      "createClosed": "Cipta - jangan buka lagi",
+      "open": "Dibuka",
+      "closed": "Ditutup",
+      "openIt": "Buka permohonan",
+      "close": "Tutup",
+      "empty": "No intake years yet.",
+      "noProgrammes": "Create a gift programme first",
+      "loadFailed": "Could not load the intake years.",
+      "oneOpen": "Opening a round is what lets students apply. Only one round across your organisation may be open at a time.",
+      "oneOpenNamed": "{code} is taking applications. Only one round across your organisation may be open at a time, so close it before opening another.",
+      "reqTitle": "Syarat penyenaraian pendek",
+      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
+      "col": {
+        "year": "Tahun",
+        "name": "Apa yang pelajar lihat",
+        "applications": "Permohonan",
+        "status": "Status"
+      },
+      "field": {
+        "year": "Tahun",
+        "code": "Kod ringkas",
+        "name": "Apa yang pelajar akan lihat"
+      },
+      "req": {
+        "spmA": "SPM - minimum grades at A- or better",
+        "spmB": "SPM - further grades at B+ or better",
+        "spmBHint": "in addition to those above",
+        "pngk": "STPM - minimum PNGK",
+        "merit": "Mata merit minimum",
+        "meritHint": "UPU score out of 100. SPM applicants only.",
+        "income": "Household income at most (RM per month)",
+        "perPerson": "or, above that, income per person under (RM)",
+        "perPersonHint": "rescues a large household above the ceiling"
+      },
+      "error": {
+        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
+        "codeTaken": "That short code is already in use. Please choose another.",
+        "badYear": "Please give a year.",
+        "nameRequired": "Please give the intake year a name.",
+        "anotherOpen": "Another round is already taking applications. Close it first.",
+        "notActive": "Switch the gift programme on before opening a round.",
+        "generic": "That did not work. Nothing was changed."
+      }
+    },
+    "orgSettings": {
+      "nav": "Tetapan",
+      "title": "Tetapan organisasi",
+      "subtitle": "Apa yang ditetapkan oleh organisasi anda sendiri. Ini terpakai kepada setiap program pemberian yang anda jalankan.",
+      "tab": {
         "colours": "Warna"
       },
       "colours": {
@@ -5598,145 +5742,17 @@
         }
       }
     },
-    "invitations": {
-      "title": "Jemputan",
-      "subtitle": "Siapa yang telah dijemput menyertai organisasi ini, dan siapa yang sudah ada.",
-      "send": {
-        "sent": "Sampai",
-        "failed": "Gagal",
-        "notRecorded": "Tiada rekod"
-      },
-      "status": {
-        "invited": "Menunggu",
-        "expired": "Kata laluan tamat tempoh",
-        "no_reply": "Belum ada jawapan",
-        "accepted": "Telah log masuk",
-        "revoked": "Dibatalkan"
-      },
-      "tabsAria": "Jemputan atau e-mel",
-      "tab": {
-        "invitations": "Jemputan",
-        "emails": "E-mel"
-      },
-      "kind": {
-        "admins": "Pentadbir",
-        "reviewers": "Penilai",
-        "source": "Sumber",
-        "sponsors": "Penaja"
-      },
-      "kindOne": {
-        "admins": "Pentadbir",
-        "reviewers": "Penilai",
-        "source": "Sumber",
-        "sponsors": "Penaja"
-      },
-      "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
-      "sourceComingSoon": "Akan datang. Rakan sumber menerima e-mel kami hari ini; mereka akan dapat log masuk dan melihat pelajar mereka sendiri apabila ia siap.",
-      "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
-      "emails": {
-        "title": "Apa yang diberitahu apabila anda menjemput seseorang",
-        "subtitle": "Teks empat e-mel jemputan. Suntinglah dengan bebas.",
-        "alwaysSends": "E-mel ini sentiasa dihantar. Tiada suis, kerana jemputan yang tidak menghantar e-mel ialah jemputan yang tidak diterima sesiapa.",
-        "accessLocked": "Apabila sesuatu surat memberikan akaun kepada seseorang, perenggan log masuk — termasuk sebarang kata laluan sementara — ditambah oleh kami dan tidak boleh disunting. Ia berubah mengikut cara orang itu log masuk.",
-        "loadError": "E-mel ini tidak dapat dimuatkan.",
-        "kind": {
-          "invite_admin": "Menyertai pasukan — pentadbir",
-          "invite_reviewer": "Menyertai pasukan — penilai",
-          "invite_source": "Menjemput organisasi sumber",
-          "invite_sponsor": "Menjemput penderma"
-        },
-        "when": {
-          "invite_admin": "Dihantar apabila anda menambah seseorang sebagai pentadbir atau kewangan — dan setiap kali anda menekan Hantar Semula.",
-          "invite_reviewer": "Dihantar apabila anda menambah seseorang sebagai penilai atau QC — dan setiap kali anda menekan Hantar Semula.",
-          "invite_source": "Belum dihantar. Ini ialah teks yang akan diterima oleh organisasi sumber apabila mereka boleh log masuk dan mengikuti pelajar mereka sendiri.",
-          "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penderma. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring."
-        }
-      }
+    "programmeScope": {
+      "choose": "Program pemberian yang mana?",
+      "chooseHint": "Anda menjalankan lebih daripada satu, jadi kami tidak akan meneka. Pilih satu - anda juga boleh menukarnya dari jejak di bahagian atas halaman."
     },
-    "soon": "Akan datang",
-    "programmes": {
-      "nav": "Program hadiah",
-      "title": "Program hadiah",
-      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
-      "new": "Program hadiah baharu",
-      "create": "Cipta",
-      "active": "Aktif",
-      "notActive": "Belum aktif",
-      "none": "Tiada",
-      "switchOn": "Hidupkan",
-      "switchOff": "Matikan",
-      "intakeYears": "Tahun pengambilan",
-      "empty": "No gift programmes yet.",
-      "loadFailed": "Could not load your gift programmes.",
-      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
-      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
-      "col": {
-        "years": "Tahun pengambilan",
-        "applications": "Permohonan",
-        "takingApplications": "Menerima permohonan"
-      },
-      "field": {
-        "name": "Nama",
-        "code": "Kod ringkas",
-        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
-      },
-      "error": {
-        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
-        "codeTaken": "That short code is already in use. Please choose another.",
-        "nameRequired": "Please give the programme a name.",
-        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
-        "noOrg": "Your account is not tied to an organisation.",
-        "generic": "That did not work. Nothing was changed."
-      }
-    },
-    "years": {
-      "title": "Tahun pengambilan",
-      "subtitle": "one round of students per year.",
-      "new": "Tahun pengambilan baharu",
-      "createClosed": "Cipta - jangan buka lagi",
-      "open": "Dibuka",
-      "closed": "Ditutup",
-      "openIt": "Buka permohonan",
-      "close": "Tutup",
-      "empty": "No intake years yet.",
-      "chooseProgramme": "Program hadiah yang mana?",
-      "noProgrammes": "Create a gift programme first",
-      "loadFailed": "Could not load the intake years.",
-      "oneOpen": "Opening a round is what lets students apply. Only one round across your organisation may be open at a time.",
-      "oneOpenNamed": "{code} is taking applications. Only one round across your organisation may be open at a time, so close it before opening another.",
-      "reqTitle": "Syarat penyenaraian pendek",
-      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
-      "col": {
-        "year": "Tahun",
-        "name": "Apa yang pelajar lihat",
-        "applications": "Permohonan",
-        "status": "Status"
-      },
-      "field": {
-        "year": "Tahun",
-        "code": "Kod ringkas",
-        "name": "Apa yang pelajar akan lihat"
-      },
-      "req": {
-        "spmA": "SPM - minimum grades at A- or better",
-        "spmB": "SPM - further grades at B+ or better",
-        "spmBHint": "in addition to those above",
-        "pngk": "STPM - minimum PNGK",
-        "merit": "Mata merit minimum",
-        "meritHint": "UPU score out of 100. SPM applicants only.",
-        "income": "Household income at most (RM per month)",
-        "perPerson": "or, above that, income per person under (RM)",
-        "perPersonHint": "rescues a large household above the ceiling"
-      },
-      "error": {
-        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
-        "codeTaken": "That short code is already in use. Please choose another.",
-        "badYear": "Please give a year.",
-        "nameRequired": "Please give the intake year a name.",
-        "anotherOpen": "Another round is already taking applications. Close it first.",
-        "notActive": "Switch the gift programme on before opening a round.",
-        "generic": "That did not work. Nothing was changed."
-      }
+    "rules": {
+      "subtitle": "Siapa yang layak untuk pemberian ini. Ujian yang tidak ditanda tidak dikenakan langsung.",
+      "editing": "Ini ialah peraturan bagi {year} - {name}.",
+      "liveWarning": "Menukar peraturan menukar siapa yang layak, sebaik sahaja anda simpan. Ia TIDAK dibekukan untuk pelajar yang sudah memohon - tidak seperti \"Apa yang kami minta\" - jadi penilaian semula akan menggunakan peraturan baharu. Berhati-hati di pertengahan pengambilan.",
+      "untickNote": "Nyahtanda sesuatu ujian untuk berhenti mengenakannya. Kotak kosong bermakna ujian itu tidak dijalankan langsung.",
+      "noYear": "Pemberian ini belum mempunyai tahun pengambilan, dan peraturan disimpan pada tahun itu. Cipta satu di tab Tahun pengambilan dan tetapkannya di sana.",
+      "saved": "Disimpan"
     }
   }
 }

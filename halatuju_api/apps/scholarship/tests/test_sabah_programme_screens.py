@@ -200,6 +200,34 @@ class TestIntakeYears(_Case):
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data['code'], 'programme_not_active')
 
+    def test_moving_a_threshold_is_audited_with_the_OLD_and_NEW_value(self):
+        # ⚠ THE VALUES, NOT JUST THE FIELD NAMES. A threshold decides who is shortlisted, and
+        # `shortlisting.evaluate()` reads it LIVE — so the only question anybody asks afterwards is
+        # "from what, to what". TD-203 is the same gap on `award_amount`: three production rows had
+        # to be corrected with no system record of who set them, on the owner's memory alone.
+        c = ScholarshipCohort.objects.create(
+            programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-2032',
+            name='A 2032', year=2032, is_active=True, is_open=False, min_spm_a_count=4)
+        with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            r = self._patch(self.admin_a, f'/api/v1/admin/scholarship/intake-years/{c.id}/',
+                            {'min_spm_a_count': 3})
+        self.assertEqual(r.status_code, 200)
+        line = [m for m in logs.output if 'intake_year_requirements_set' in m]
+        self.assertEqual(len(line), 1)
+        self.assertIn('min_spm_a_count:4->3', line[0])
+        self.assertIn(self.admin_a.email, line[0])
+
+    def test_a_threshold_that_did_NOT_move_writes_no_change_line(self):
+        # A PATCH restating the same value is not a change, and a log that says otherwise makes the
+        # trail useless for the one job it has — a reader cannot tell a real edit from a re-save.
+        c = ScholarshipCohort.objects.create(
+            programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-2033',
+            name='A 2033', year=2033, is_active=True, is_open=False, min_spm_a_count=4)
+        with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
+            self._patch(self.admin_a, f'/api/v1/admin/scholarship/intake-years/{c.id}/',
+                        {'min_spm_a_count': 4, 'name': 'Renamed'})
+        self.assertEqual([m for m in logs.output if 'intake_year_requirements_set' in m], [])
+
     def test_another_tenants_intake_year_is_404(self):
         c = ScholarshipCohort.objects.create(
             programme=self.prog_b, owning_organisation=self.org_b, code='sab-b-2026',

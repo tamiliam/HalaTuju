@@ -17,7 +17,7 @@
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import ProgrammeColoursTab, { PAIR_KEYS } from './ProgrammeColoursTab'
+import OrganisationColoursTab, { PAIR_KEYS } from './OrganisationColoursTab'
 import * as api from '@/lib/admin-api'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
@@ -59,12 +59,12 @@ function theme(over: Partial<api.OrganisationTheme> = {}): api.OrganisationTheme
 }
 
 async function mount() {
-  render(<ProgrammeColoursTab />)
+  render(<OrganisationColoursTab />)
   await waitFor(() => expect(screen.getByTestId('palette')).toBeTruthy())
 }
 
 function typeColour(value: string) {
-  fireEvent.change(screen.getByLabelText('admin.programme.colours.hexLabel'), { target: { value } })
+  fireEvent.change(screen.getByLabelText('admin.orgSettings.colours.hexLabel'), { target: { value } })
 }
 
 const btn = (id: string) => screen.getByTestId(id) as HTMLButtonElement
@@ -79,7 +79,7 @@ describe('the screen says what applicants are seeing', () => {
   it('names the default when nothing has been published', async () => {
     await mount()
     expect(screen.getByTestId('live-state').textContent)
-      .toContain('admin.programme.colours.liveIsDefault')
+      .toContain('admin.orgSettings.colours.liveIsDefault')
   })
 
   it('names the live colour, and flags an unpublished draft beside it', async () => {
@@ -87,9 +87,9 @@ describe('the screen says what applicants are seeing', () => {
       theme({ live: version(READABLE), draft: version(TEAL), can_revert: true }))
     await mount()
     const banner = screen.getByTestId('live-state').textContent
-    expect(banner).toContain('admin.programme.colours.liveIs')
+    expect(banner).toContain('admin.orgSettings.colours.liveIs')
     expect(banner).toContain(READABLE)
-    expect(banner).toContain('admin.programme.colours.draftPending')
+    expect(banner).toContain('admin.orgSettings.colours.draftPending')
   })
 
   it('shows the DRAFT in the box when there is one, not the live colour', async () => {
@@ -98,7 +98,7 @@ describe('the screen says what applicants are seeing', () => {
     mockApi.getOrganisationTheme.mockResolvedValue(
       theme({ live: version(READABLE), draft: version(TEAL) }))
     await mount()
-    expect((screen.getByLabelText('admin.programme.colours.hexLabel') as HTMLInputElement).value)
+    expect((screen.getByLabelText('admin.orgSettings.colours.hexLabel') as HTMLInputElement).value)
       .toBe(TEAL)
   })
 })
@@ -107,7 +107,7 @@ describe('saving a draft', () => {
   it('is asleep with nothing changed', async () => {
     await mount()
     expect(btn('save-draft').disabled).toBe(true)
-    expect(outcome()).toBe('admin.programme.colours.nothingToDo')
+    expect(outcome()).toBe('admin.orgSettings.colours.nothingToDo')
   })
 
   it('wakes on a readable change and sends the colour', async () => {
@@ -129,7 +129,7 @@ describe('saving a draft', () => {
     await mount()
     typeColour(TEAL)
     fireEvent.click(btn('save-draft'))
-    await waitFor(() => expect(outcome()).toBe('admin.programme.colours.draftSaved'))
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.colours.draftSaved'))
     expect(screen.getByTestId('live-state').textContent).toContain(READABLE)
   })
 
@@ -137,7 +137,7 @@ describe('saving a draft', () => {
     await mount()
     typeColour(UNREADABLE)
     expect(btn('save-draft').disabled).toBe(true)
-    expect(outcome()).toBe('admin.programme.colours.cannotSave')
+    expect(outcome()).toBe('admin.orgSettings.colours.cannotSave')
     expect(screen.getByTestId('unreadable-note')).toBeTruthy()
     // ⚠ THE ROW IS NAMED PER MODE since F7a, because the same pair now appears twice with
     // different numbers. Asserting the LIGHT row specifically also keeps this test about the
@@ -169,7 +169,7 @@ describe('publishing', () => {
     typeColour(READABLE)
     expect(btn('publish-colours').disabled).toBe(true)
     expect(btn('publish-colours').getAttribute('title'))
-      .toBe('admin.programme.colours.saveFirst')
+      .toBe('admin.orgSettings.colours.saveFirst')
   })
 
   it('publishes and says applicants can see it now', async () => {
@@ -179,7 +179,7 @@ describe('publishing', () => {
     await mount()
     fireEvent.click(btn('publish-colours'))
     await waitFor(() => expect(mockApi.publishOrganisationTheme).toHaveBeenCalled())
-    await waitFor(() => expect(outcome()).toBe('admin.programme.colours.published'))
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.colours.published'))
     expect(screen.getByTestId('live-state').textContent).toContain(TEAL)
   })
 })
@@ -192,7 +192,7 @@ describe('discarding and reverting', () => {
     typeColour(TEAL)                       // an unsaved edit — no server call needed
     fireEvent.click(btn('discard-draft'))
     expect(mockApi.discardOrganisationThemeDraft).not.toHaveBeenCalled()
-    expect((screen.getByLabelText('admin.programme.colours.hexLabel') as HTMLInputElement).value)
+    expect((screen.getByLabelText('admin.orgSettings.colours.hexLabel') as HTMLInputElement).value)
       .toBe(READABLE)
   })
 
@@ -204,7 +204,7 @@ describe('discarding and reverting', () => {
     await mount()
     fireEvent.click(btn('discard-draft'))
     await waitFor(() => expect(mockApi.discardOrganisationThemeDraft).toHaveBeenCalled())
-    await waitFor(() => expect(outcome()).toBe('admin.programme.colours.draftDiscarded'))
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.colours.draftDiscarded'))
     expect(screen.getByTestId('live-state').textContent).toContain(READABLE)
   })
 
@@ -212,7 +212,7 @@ describe('discarding and reverting', () => {
     await mount()
     expect(btn('revert-colours').disabled).toBe(true)
     // With no previous version, reverting lands on the platform default — said plainly.
-    expect(btn('revert-colours').textContent).toBe('admin.programme.colours.revertToDefault')
+    expect(btn('revert-colours').textContent).toBe('admin.orgSettings.colours.revertToDefault')
   })
 
   it('names the previous colour when there is one', async () => {
@@ -223,7 +223,7 @@ describe('discarding and reverting', () => {
     await mount()
     expect(btn('revert-colours').textContent).toContain(READABLE)
     fireEvent.click(btn('revert-colours'))
-    await waitFor(() => expect(outcome()).toBe('admin.programme.colours.reverted'))
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.colours.reverted'))
   })
 })
 
@@ -235,7 +235,7 @@ describe('when the server disagrees', () => {
     await mount()
     typeColour(READABLE)
     fireEvent.click(btn('save-draft'))
-    await waitFor(() => expect(outcome()).toContain('admin.programme.colours.refused'))
+    await waitFor(() => expect(outcome()).toContain('admin.orgSettings.colours.refused'))
   })
 
   it('has a line on screen for a plain failure too', async () => {
@@ -243,7 +243,7 @@ describe('when the server disagrees', () => {
     await mount()
     typeColour(READABLE)
     fireEvent.click(btn('save-draft'))
-    await waitFor(() => expect(outcome()).toBe('admin.programme.colours.errorGeneric'))
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.colours.errorGeneric'))
   })
 })
 
@@ -267,9 +267,9 @@ describe('a super with more than one tenant', () => {
     const err = new Error('organisation_required') as Error & { body?: Record<string, unknown> }
     err.body = { code: 'organisation_required', organisations: ['alpha', 'beta'] }
     mockApi.getOrganisationTheme.mockRejectedValueOnce(err)
-    render(<ProgrammeColoursTab />)
+    render(<OrganisationColoursTab />)
     await waitFor(() =>
-      expect(screen.getByText('admin.programme.colours.organisationRequired')).toBeTruthy())
+      expect(screen.getByText('admin.orgSettings.colours.organisationRequired')).toBeTruthy())
     expect(screen.getByText('alpha')).toBeTruthy()
     expect(screen.getByText('beta')).toBeTruthy()
   })
@@ -279,11 +279,11 @@ describe('every pair the check can report has words behind it', () => {
   // A refusal renders `pair.<key>` and `pairShort.<key>`. A missing one shows a raw dotted key at
   // the exact moment somebody is being told no — the "UI asserts what nothing checks" cluster.
   type PairLabels = {
-    admin: { programme: { colours: { pair: Record<string, string>; pairShort: Record<string, string> } } }
+    admin: { orgSettings: { colours: { pair: Record<string, string>; pairShort: Record<string, string> } } }
   }
 
   it.each([['en', en], ['ms', ms], ['ta', ta]])('%s', (_locale, messages) => {
-    const colours = (messages as unknown as PairLabels).admin.programme.colours
+    const colours = (messages as unknown as PairLabels).admin.orgSettings.colours
     for (const key of PAIR_KEYS) {
       expect(typeof colours.pair[key]).toBe('string')
       expect(colours.pair[key].length).toBeGreaterThan(0)

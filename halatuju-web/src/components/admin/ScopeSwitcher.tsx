@@ -1,8 +1,9 @@
 'use client'
 
-import { Menu, MenuItem, MenuSeparator } from '@/components/admin/Menu'
+import { Menu, MenuItem } from '@/components/admin/Menu'
 import { Icon } from '@/components/admin/icons'
 import { useT } from '@/lib/i18n'
+import { useProgrammeScope } from '@/lib/programmeScope'
 import type { NavScope } from '@/lib/navigation'
 
 /**
@@ -15,6 +16,18 @@ import type { NavScope } from '@/lib/navigation'
  * into the client — which is the 2026-07-15 surface-partition incident in a new costume, where
  * the nav hid something the backend did not. The fence is `_org_scoped` / `_org_allows`,
  * server-side, and it is unchanged by anything here.
+ *
+ * ⚠ THE PROGRAMME CRUMB NOW DRIVES PAGE CONTENT (TD-193, 2026-09-03) AND THE RULE ABOVE STILL
+ * HOLDS. `lib/programmeScope` holds the choice and hands it to each Programme-scope page, which
+ * passes it to its endpoint as an EXPLICIT value the server re-fences on the caller's own
+ * `owning_organisation` — the `?programme=<code>` contract `AdminProgrammeConfigurationView` has
+ * always had. Nothing became ambient; the control simply stopped being decorative. The slot was
+ * left inert in N3a with a written trigger ("a second organisation or programme going active"),
+ * and BrightPath Sabah is that trigger.
+ *
+ * ⚠ NO PROGRAMME SELECTED SHOWS A PROMPT, NEVER THE FIRST ONE. With several gifts and no choice
+ * made, `programmeScope` resolves to nothing on purpose, so a crumb reading "BrightPath Bursary"
+ * would be the console asserting an answer the rest of the page is still asking for.
  *
  * What the list means: `GET admin/scholarship/scopes/` answers "what may I LOOK AT", derived
  * server-side from the same `owning_organisation` the fence uses. So it can never offer a tenant
@@ -100,7 +113,9 @@ export function ScopeSwitcher({
   const showProgramme = scope === 'programme'
 
   const org = organisations.find((o) => o.code === selectedOrg) ?? organisations[0]
-  const programme = programmes.find((p) => p.code === selectedProgramme) ?? programmes[0]
+  // ⚠ NO `?? programmes[0]`. An unresolved selection is a real state (several gifts, none chosen)
+  // and the crumb must say so rather than naming one — see the note at the top of this file.
+  const programme = programmes.find((p) => p.code === selectedProgramme) ?? null
 
   return (
     <>
@@ -116,18 +131,50 @@ export function ScopeSwitcher({
           />
         </>
       )}
-      {showProgramme && programme && (
+      {showProgramme && programmes.length > 0 && (
         <>
           {sep}
           <Crumb
-            label={programme.name}
+            label={programme?.name ?? t('admin.shell.chooseProgramme')}
             options={programmes}
-            selectedCode={programme.code}
+            selectedCode={programme?.code ?? ''}
             onSelect={onSelectProgramme}
             ariaLabel={t('admin.shell.switchProgramme')}
           />
         </>
       )}
     </>
+  )
+}
+
+/**
+ * The switcher as the shell mounts it: organisations still come from the shell, the PROGRAMME
+ * comes from `lib/programmeScope`.
+ *
+ * ⚠ ONE SOURCE OF TRUTH, AND THAT IS THE WHOLE REASON THIS WRAPPER EXISTS. If the shell held the
+ * selection in its own state and the pages read it from a context, the crumb and the page could
+ * disagree about which gift is open — and the crumb is the only thing on screen claiming to answer
+ * that question. Both read `useProgrammeScope()`, so the resolved value (which fills itself in
+ * when there is exactly one gift, and stays empty when there are several and none chosen) is the
+ * same value the tabs act on.
+ */
+export function BreadcrumbScopes({ organisations, selectedOrg, onSelectOrg, scope }: {
+  organisations: ScopeOption[]
+  selectedOrg: string
+  onSelectOrg: (code: string) => void
+  scope?: NavScope
+}) {
+  const { choices, chosen, select } = useProgrammeScope()
+
+  return (
+    <ScopeSwitcher
+      organisations={organisations}
+      programmes={choices.map((c, i) => ({ id: i, code: c.code, name: c.name }))}
+      selectedOrg={selectedOrg}
+      selectedProgramme={chosen}
+      onSelectOrg={onSelectOrg}
+      onSelectProgramme={select}
+      scope={scope}
+    />
   )
 }

@@ -44,6 +44,19 @@ const CONFIG: api.ProgrammeConfiguration = {
 beforeEach(() => {
   jest.clearAllMocks()
   viewerRole = { role: 'org_admin' }
+  // The Rules and Intake-year tabs share this page now, and both ask which gift they are in.
+  // ONE gift here on purpose: that is production today, and it is the path where nothing should
+  // ask the reader anything (`useSelectedProgramme` resolves a single gift without a question).
+  mockApi.getAdminProgrammes.mockResolvedValue({
+    programmes: [{
+      id: 1, code: 'bp', name_en: 'BrightPath Bursary', name_ms: '', name_ta: '',
+      is_active: true, intake_years: 1, applications: 41, open_year: null,
+    }],
+  })
+  mockApi.getAdminIntakeYears.mockResolvedValue({
+    programme: { id: 1, code: 'bp', name_en: 'BrightPath Bursary', is_active: true },
+    years: [],
+  })
   mockApi.getProgrammeConfiguration.mockResolvedValue(CONFIG)
   mockApi.saveProgrammeConfiguration.mockImplementation(async (items) => ({
     ...CONFIG,
@@ -54,8 +67,16 @@ beforeEach(() => {
   }))
 })
 
+/**
+ * ⚠ THE PAGE OPENS ON RULES NOW (shape sprint, 2026-09-03), so every "what we ask for" assertion
+ * has to walk there first. That is not test friction to route around — the tab ORDER is an owner
+ * decision ("I see the rules as a configuration item, and it precedes what we ask for"), so a
+ * helper that silently mounted the config tab in isolation would let the order drift with nothing
+ * noticing. It clicks the tab a person would click.
+ */
 const loaded = async () => {
   render(<AdminProgrammeConfigPage />)
+  fireEvent.click(screen.getByTestId('tab-config'))
   await waitFor(() => expect(screen.getByTestId('row-document:ic')).toBeTruthy())
 }
 
@@ -158,35 +179,50 @@ describe('the tabbed shell', () => {
   // under a tab reading "What we ask for", and "Your colours" under one reading "Colours". With the
   // page title and the tabs, that was FOUR restatements above the first control. The headings are
   // deleted and their keys with them; the subtitle is now each tab's own marker.
-  it('shows the page heading and BOTH tabs, with the config tab open first', async () => {
+  //
+  // ⚠ THREE TABS SINCE 2026-09-03, AND THE ORDER IS THE OWNER'S. Rules first, because who
+  // qualifies precedes what they are asked to send; Colours LEFT the screen entirely (it writes a
+  // tenant-wide row and now lives under Organisation → Settings). Four sidebar rows collapsed into
+  // this one screen, so the tab list is the artefact that has to be right.
+  it('opens on Rules, and offers exactly the three tabs in the owner order', () => {
     render(<AdminProgrammeConfigPage />)
     expect(screen.getByText('admin.programme.title')).toBeTruthy()
     expect(screen.getByText('admin.programme.subtitle')).toBeTruthy()
-    expect(screen.getByTestId('tab-config').getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByTestId('tab-colours').getAttribute('aria-selected')).toBe('false')
-    await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
+
+    const tabs = screen.getAllByRole('tab').map((el) => el.getAttribute('data-testid'))
+    expect(tabs).toEqual(['tab-rules', 'tab-config', 'tab-year'])
+    expect(screen.getByTestId('tab-rules').getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByTestId('tab-config').getAttribute('aria-selected')).toBe('false')
   })
 
-  it('switches to Colours and back, and each tab owns its own content', async () => {
+  it('no longer carries Colours — that writes a tenant-wide row, not this gift', () => {
     render(<AdminProgrammeConfigPage />)
-    await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
+    expect(screen.queryByTestId('tab-colours')).toBeNull()
+    expect(screen.queryByText('admin.orgSettings.colours.subtitle')).toBeNull()
+  })
 
-    fireEvent.click(screen.getByTestId('tab-colours'))
-    expect(screen.getByTestId('tab-colours').getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByText('admin.programme.colours.subtitle')).toBeTruthy()
+  it('switches between tabs, and each tab owns its own content', async () => {
+    render(<AdminProgrammeConfigPage />)
+
+    fireEvent.click(screen.getByTestId('tab-config'))
+    await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
+    expect(screen.queryByText('admin.rules.subtitle')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('tab-year'))
+    expect(screen.getByTestId('tab-year').getAttribute('aria-selected')).toBe('true')
     expect(screen.queryByText('admin.programme.config.subtitle')).toBeNull()
 
     fireEvent.click(screen.getByTestId('tab-config'))
     await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
-    expect(screen.queryByText('admin.programme.colours.subtitle')).toBeNull()
   })
 
-  it('gives the page exactly ONE heading above the tabs, and neither tab adds another', async () => {
+  it('gives the page exactly ONE heading above the tabs, and no tab adds another', async () => {
     // The regression guard. Deleting a heading is a one-line change that a later "the tab looks
     // bare, add a title" would silently undo — and nothing else in the suite would notice, because
     // an extra <h2> breaks no behaviour. Section cards inside a tab (Documents, Questions, and the
     // colours panels) keep their own headings; those name real groups rather than repeating the tab.
     render(<AdminProgrammeConfigPage />)
+    fireEvent.click(screen.getByTestId('tab-config'))
     await waitFor(() => expect(screen.getByText('admin.programme.config.subtitle')).toBeTruthy())
 
     // ⚠ `matches`, NOT `querySelectorAll`. The first draft collected headings INSIDE each child and

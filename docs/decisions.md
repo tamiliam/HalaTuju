@@ -1,5 +1,57 @@
 # Architectural Decisions — HalaTuju
 
+## Everything a person SETS about one gift is one screen; four reserved slots deleted — 2026-09-03
+**Decision:** the Programme scope becomes two rows — `Configuration` (tabs: **Rules · What we ask
+for · Intake year**) and `Applications`. `rules`, `years`, `reviewerScoping` and `fund` are removed
+from the registry; `/admin/programme/years` becomes a permanent redirect. Gift programmes move onto
+Organisation → Overview and `/admin/organisation/programmes` redirects there. Colours moves to a new
+Organisation → Settings. Rules is the FIRST tab, ahead of "what we ask for".
+
+**Alternatives considered:** (a) **Fill the four slots as separate pages** — rejected: three of the
+four described work whose shape nobody had scoped, and each guess was wrong (rules are columns on
+the intake year the create form already writes; reviewer scoping is a field on a reviewer; the fund
+is a report). (b) **Move the six thresholds from the cohort up to the Programme** so "Rules" is
+genuinely programme-level — rejected: they feed the decision engine, the roadmap already declined it
+as behaviour-sensitive for no gain, and the screen can speak the owner's model while the data stays
+on the row the engine trusts. (c) **Leave Colours where it was** — rejected: it writes a row scoped
+to the whole ORGANISATION from inside one gift, which is silent with one gift and wrong with two.
+(d) **Keep `programmes` as its own menu row** — rejected: the gifts an organisation runs are what it
+IS, and the row was a sidebar entry for a list of one.
+
+**Rationale:** one question — what is a subset of what — answered from the database rather than from
+the menu. `billingRates` remains reserved because its endpoint SHIPPED (2026-07-27) and only the page
+is missing: a slot is for a thing that demonstrably exists, not one somebody intends.
+
+**Consequences:** 16 rows → 12; reserved slots 4 → 1. `finance` loses the `fund` row, which had no
+page. Rules and "what we ask for" now share a screen with DIFFERENT blast radius — the first is read
+live by `shortlisting.evaluate()`, the second is frozen per application at submit — so the Rules tab
+carries a warning the other does not, and threshold changes write a second audit line with old → new.
+
+## The breadcrumb switcher drives page content, and is still not an auth context — 2026-09-03
+**Decision:** TD-193 closed. `lib/programmeScope` holds the selected gift; Programme-scope pages read
+it and pass it to their endpoints as an explicit `?programme=<code>` value the server re-fences. With
+several gifts and no choice made it resolves to NOTHING and each tab asks. Not persisted.
+
+**Alternatives considered:** (a) **A header, cookie or middleware rewrite** — refused; that
+relocates the organisation fence into the client, which is the 2026-07-15 surface-partition incident
+in a new costume, and `ScopeSwitcher`'s own docstring has forbidden it since N3a. (b) **Default to
+the first gift** — rejected: an admin who believes they are editing the new gift's rules while
+looking at the old one's would change a live programme. PF-1's rule is raise, never guess.
+(c) **A separate picker on the Configuration page** — rejected: the owner had already approved the
+breadcrumb for this ("they select the programme at the top through a drop down list"), and two
+controls answering one question can disagree. (d) **Persist the choice in `uiPrefs`** — rejected:
+that module says not to reach for it by default, and a stored gift code outlives the tab and would
+silently reopen someone else's gift after a reload.
+
+**Rationale:** the slot was shipped inert in N3a with a written trigger — "a second organisation or
+programme going active" — and Sabah is it. Nothing became ambient: a client ignoring the value
+reaches identical data, and the list itself is derived server-side from the same field the fence uses.
+
+**Consequences:** the crumb shows a prompt rather than a name when nothing is resolved, so the
+console never asserts an answer the page is still asking for. A hard reload resets to the same honest
+place a first visit does.
+
+
 ## Every form control declares its own background and ink, in the stylesheet — 2026-09-02
 **Decision:** an element rule in `@layer base` gives `input` (except checkbox/radio/range), `select`
 and `textarea` `bg-ground-0 text-ground-900`. Separately, the officer cockpit's 3,500-line body

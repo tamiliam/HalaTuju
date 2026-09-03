@@ -1,7 +1,16 @@
 'use client'
 
 /**
- * "Colours" — Layer 1 A2, given a lifecycle by A3. The second tab of the Programme screen.
+ * "Colours" — Layer 1 A2, given a lifecycle by A3. A tab of ORGANISATION → Settings.
+ *
+ * ⚠ IT LIVED ON THE PROGRAMME SCREEN UNTIL 2026-09-03 AND THAT WAS A SCOPE ERROR, not a matter of
+ * taste. `OrganisationTheme` holds ONE colour for the whole tenant and its endpoint DERIVES the
+ * organisation from `admin.owning_organisation` — it has never taken a programme, and there is no
+ * per-gift colour to set. Sitting inside the Programme screen, an admin standing in one gift would
+ * have changed every other gift's colour with it: invisible while BrightPath ran a single gift,
+ * and plainly wrong the day Sabah exists beside it. Nothing about the component changed in the
+ * move; only where a person finds it. (Owner: "Colours, etc. is Org level configuration or
+ * setting.")
  *
  * Design of record: the working mock approved 2026-09-01
  * (https://claude.ai/code/artifact/97405467-1fd5-45e3-97be-d83c5fb8739e). Stitch failed twice on
@@ -68,7 +77,7 @@ function boxColour(th: OrganisationTheme | null): string {
   return th?.draft?.colour || th?.live?.colour || PLATFORM_COLOUR
 }
 
-export default function ProgrammeColoursTab() {
+export default function OrganisationColoursTab() {
   const { token } = useAdminAuth()
   const { t } = useT()
 
@@ -155,20 +164,20 @@ export default function ProgrammeColoursTab() {
 
   const statusLine = () => {
     switch (outcome.kind) {
-      case 'draftSaved': return t('admin.programme.colours.draftSaved')
-      case 'draftDiscarded': return t('admin.programme.colours.draftDiscarded')
-      case 'published': return t('admin.programme.colours.published')
-      case 'reverted': return t('admin.programme.colours.reverted')
-      case 'unreadable': return t('admin.programme.colours.refused', {
-        pairs: outcome.failing.map((k) => t(`admin.programme.colours.pairShort.${k}`)).join(', '),
+      case 'draftSaved': return t('admin.orgSettings.colours.draftSaved')
+      case 'draftDiscarded': return t('admin.orgSettings.colours.draftDiscarded')
+      case 'published': return t('admin.orgSettings.colours.published')
+      case 'reverted': return t('admin.orgSettings.colours.reverted')
+      case 'unreadable': return t('admin.orgSettings.colours.refused', {
+        pairs: outcome.failing.map((k) => t(`admin.orgSettings.colours.pairShort.${k}`)).join(', '),
       })
-      case 'error': return t('admin.programme.colours.errorGeneric')
+      case 'error': return t('admin.orgSettings.colours.errorGeneric')
       default:
-        if (!valid) return t('admin.programme.colours.badHex')
-        if (failing.length > 0) return t('admin.programme.colours.cannotSave')
-        if (edited) return t('admin.programme.colours.unsaved')
-        if (theme?.draft) return t('admin.programme.colours.draftWaiting')
-        return t('admin.programme.colours.nothingToDo')
+        if (!valid) return t('admin.orgSettings.colours.badHex')
+        if (failing.length > 0) return t('admin.orgSettings.colours.cannotSave')
+        if (edited) return t('admin.orgSettings.colours.unsaved')
+        if (theme?.draft) return t('admin.orgSettings.colours.draftWaiting')
+        return t('admin.orgSettings.colours.nothingToDo')
     }
   }
 
@@ -176,15 +185,15 @@ export default function ProgrammeColoursTab() {
     <>
       {/* No heading — the "Colours" tab above is it. Same change as the config tab (2026-09-02);
           this one read "Your colours" directly under a tab labelled "Colours". */}
-      <p className="mt-6 text-sm text-ground-600">{t('admin.programme.colours.subtitle')}</p>
+      <p className="mt-6 text-sm text-ground-600">{t('admin.orgSettings.colours.subtitle')}</p>
 
       {loadError && (
-        <div className="mt-4"><InfoBox kind="block">{t('admin.programme.colours.loadError')}</InfoBox></div>
+        <div className="mt-4"><InfoBox kind="block">{t('admin.orgSettings.colours.loadError')}</InfoBox></div>
       )}
 
       {orgChoices && (
         <div className="mt-4 rounded-xl border border-ground-200 bg-ground-0 p-4">
-          <p className="text-sm font-medium text-ground-800">{t('admin.programme.colours.organisationRequired')}</p>
+          <p className="text-sm font-medium text-ground-800">{t('admin.orgSettings.colours.organisationRequired')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {orgChoices.map((code) => (
               <button key={code} type="button" onClick={() => setOrg(code)}
@@ -203,25 +212,25 @@ export default function ProgrammeColoursTab() {
           <div className="mt-4" data-testid="live-state">
             <InfoBox kind={theme.draft ? 'warning' : 'info'}>
               {theme.live
-                ? t('admin.programme.colours.liveIs', { colour: theme.live.colour })
-                : t('admin.programme.colours.liveIsDefault')}
-              {theme.draft ? ` ${t('admin.programme.colours.draftPending')}` : ''}
+                ? t('admin.orgSettings.colours.liveIs', { colour: theme.live.colour })
+                : t('admin.orgSettings.colours.liveIsDefault')}
+              {theme.draft ? ` ${t('admin.orgSettings.colours.draftPending')}` : ''}
             </InfoBox>
           </div>
 
           {/* ── 1. the colour ─────────────────────────────────────────────────────────── */}
           <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-ground-900">{t('admin.programme.colours.pickTitle')}</h2>
-            <p className="text-sm text-ground-500">{t('admin.programme.colours.pickHint')}</p>
+            <h2 className="text-lg font-semibold text-ground-900">{t('admin.orgSettings.colours.pickTitle')}</h2>
+            <p className="text-sm text-ground-500">{t('admin.orgSettings.colours.pickHint')}</p>
             <div className="mt-4 flex flex-wrap items-end gap-4">
               <input type="color" value={valid ? draft : PLATFORM_COLOUR}
                 onChange={(e) => onColour(e.target.value)}
-                aria-label={t('admin.programme.colours.swatchLabel')}
+                aria-label={t('admin.orgSettings.colours.swatchLabel')}
                 data-testid="colour-swatch"
                 className="h-14 w-14 shrink-0 cursor-pointer rounded-xl border border-ground-200 p-0" />
               <div>
                 <label htmlFor="brand-hex" className="block text-xs font-semibold uppercase tracking-wide text-ground-500">
-                  {t('admin.programme.colours.hexLabel')}
+                  {t('admin.orgSettings.colours.hexLabel')}
                 </label>
                 <input id="brand-hex" type="text" value={draft} spellCheck={false} autoComplete="off"
                   onChange={(e) => onColour(e.target.value)}
@@ -230,15 +239,15 @@ export default function ProgrammeColoursTab() {
             </div>
             {!valid && (
               <p className="mt-3 text-sm text-critical-700" data-testid="bad-hex">
-                {t('admin.programme.colours.badHex')}
+                {t('admin.orgSettings.colours.badHex')}
               </p>
             )}
           </section>
 
           {/* ── 2. the palette ────────────────────────────────────────────────────────── */}
           <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-ground-900">{t('admin.programme.colours.paletteTitle')}</h2>
-            <p className="text-sm text-ground-500">{t('admin.programme.colours.paletteHint')}</p>
+            <h2 className="text-lg font-semibold text-ground-900">{t('admin.orgSettings.colours.paletteTitle')}</h2>
+            <p className="text-sm text-ground-500">{t('admin.orgSettings.colours.paletteHint')}</p>
             {/* ⚠ EACH BLOCK GETS ITS OWN FIXED-HEIGHT ROW, bottom-aligned. `items-end` on the GRID
                 aligns the CELLS, and the 500 cell carries an extra child (its dot) — so its whole
                 column was pushed up and the raised block floated off the strip's baseline. And the
@@ -269,25 +278,25 @@ export default function ProgrammeColoursTab() {
           {/* ── 3. the preview, scoped to this card ───────────────────────────────────── */}
           <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm"
             style={previewVars(valid ? draft : PLATFORM_COLOUR) as React.CSSProperties}>
-            <h2 className="text-lg font-semibold text-ground-900">{t('admin.programme.colours.previewTitle')}</h2>
-            <p className="text-sm text-ground-500">{t('admin.programme.colours.previewHint')}</p>
+            <h2 className="text-lg font-semibold text-ground-900">{t('admin.orgSettings.colours.previewTitle')}</h2>
+            <p className="text-sm text-ground-500">{t('admin.orgSettings.colours.previewHint')}</p>
             <div className="mt-4 flex flex-wrap items-center gap-4">
               <span className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink">
-                {t('admin.programme.colours.sampleButton')}
+                {t('admin.orgSettings.colours.sampleButton')}
               </span>
               <span className="rounded-r-lg border-l-4 border-brand-shape bg-primary-50 px-4 py-2 text-sm text-primary-700">
-                {t('admin.programme.colours.samplePanel')}
+                {t('admin.orgSettings.colours.samplePanel')}
               </span>
               <span className="text-sm text-primary-600 underline">
-                {t('admin.programme.colours.sampleLink')}
+                {t('admin.orgSettings.colours.sampleLink')}
               </span>
             </div>
           </section>
 
           {/* ── 4. the check ──────────────────────────────────────────────────────────── */}
           <section className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-ground-900">{t('admin.programme.colours.checkTitle')}</h2>
-            <p className="text-sm text-ground-500">{t('admin.programme.colours.checkHint')}</p>
+            <h2 className="text-lg font-semibold text-ground-900">{t('admin.orgSettings.colours.checkTitle')}</h2>
+            <p className="text-sm text-ground-500">{t('admin.orgSettings.colours.checkHint')}</p>
             <ul className="mt-3 divide-y divide-ground-100 border-t border-ground-100" data-testid="checks">
               {checks.map((c) => (
                 <li key={`${c.mode}-${c.key}`} className="flex items-center gap-3 py-2.5 text-sm"
@@ -300,14 +309,14 @@ export default function ProgrammeColoursTab() {
                   {/* Every row now says which mode it measured. Without it a person reading two
                       rows with the same name and different numbers would think one was a mistake. */}
                   <span className="shrink-0 rounded-full bg-ground-100 px-2 py-0.5 text-[11px] font-medium text-ground-600">
-                    {t(`admin.programme.colours.mode.${c.mode}`)}
+                    {t(`admin.orgSettings.colours.mode.${c.mode}`)}
                   </span>
                   <span className="min-w-0 flex-1 text-ground-800">
-                    {t(`admin.programme.colours.pair.${c.key}`)}
+                    {t(`admin.orgSettings.colours.pair.${c.key}`)}
                   </span>
                   <span className="font-mono text-sm tabular-nums text-ground-600">{c.ratio.toFixed(1)}</span>
                   <span className="text-xs text-ground-400">
-                    {t('admin.programme.colours.needs', { n: c.min.toFixed(1) })}
+                    {t('admin.orgSettings.colours.needs', { n: c.min.toFixed(1) })}
                   </span>
                 </li>
               ))}
@@ -315,8 +324,8 @@ export default function ProgrammeColoursTab() {
             {valid && failing.length > 0 && (
               <div className="mt-4" data-testid="unreadable-note">
                 <InfoBox kind="block">
-                  {t('admin.programme.colours.unreadable', {
-                    pairs: failing.map((c) => t(`admin.programme.colours.pairShort.${c.key}`)).join(', '),
+                  {t('admin.orgSettings.colours.unreadable', {
+                    pairs: failing.map((c) => t(`admin.orgSettings.colours.pairShort.${c.key}`)).join(', '),
                   })}
                 </InfoBox>
               </div>
@@ -334,8 +343,8 @@ export default function ProgrammeColoursTab() {
                   { kind: 'reverted' })}
                 className="rounded-lg border border-ground-300 bg-ground-0 px-4 py-2 text-sm font-medium text-ground-700 disabled:opacity-50">
                 {theme.previous_colour
-                  ? t('admin.programme.colours.revertTo', { colour: theme.previous_colour })
-                  : t('admin.programme.colours.revertToDefault')}
+                  ? t('admin.orgSettings.colours.revertTo', { colour: theme.previous_colour })
+                  : t('admin.orgSettings.colours.revertToDefault')}
               </button>
               <button type="button" data-testid="discard-draft" disabled={!canDiscard}
                 onClick={() => {
@@ -349,7 +358,7 @@ export default function ProgrammeColoursTab() {
                   }
                 }}
                 className="rounded-lg border border-ground-300 bg-ground-0 px-4 py-2 text-sm font-medium text-ground-700 disabled:opacity-50">
-                {t('admin.programme.colours.discard')}
+                {t('admin.orgSettings.colours.discard')}
               </button>
               <button type="button" data-testid="save-draft" disabled={!canSaveDraft}
                 onClick={() => void run(
@@ -357,15 +366,15 @@ export default function ProgrammeColoursTab() {
                   { kind: 'draftSaved' })}
                 title={!edited ? t('common.nothingToSave') : undefined}
                 className="rounded-lg border border-primary-600 bg-ground-0 px-4 py-2 text-sm font-semibold text-primary-700 disabled:opacity-50">
-                {t('admin.programme.colours.saveDraft')}
+                {t('admin.orgSettings.colours.saveDraft')}
               </button>
               <button type="button" data-testid="publish-colours" disabled={!canPublish}
                 onClick={() => void run(
                   () => publishOrganisationTheme(org, { token: token as string }),
                   { kind: 'published' })}
-                title={edited ? t('admin.programme.colours.saveFirst') : undefined}
+                title={edited ? t('admin.orgSettings.colours.saveFirst') : undefined}
                 className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {t('admin.programme.colours.publish')}
+                {t('admin.orgSettings.colours.publish')}
               </button>
             </div>
           </div>

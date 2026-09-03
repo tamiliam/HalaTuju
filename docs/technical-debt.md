@@ -2096,7 +2096,27 @@ expected occasion for it.
 (Logged 2026-07-28 from the owner's instruction at sprint close. **Number allocated when TD-191 was
 the highest — re-verify uniqueness at the next close**, per the concurrent-agent lesson.)
 ### [TD-193] The scope switcher changes the breadcrumb and nothing else — low, but it will read as broken
-**Status:** Open — logged 2026-07-28 at N3a's own close, with the condition that makes it matter.
+**Status:** ✅ **RESOLVED for the PROGRAMME crumb, 2026-09-03** (console shape sprint). The
+ORGANISATION crumb is still display-only and stays that way — see the split below.
+**How it was resolved, and why it did not become the thing this entry forbids.** `lib/programmeScope`
+holds the chosen gift; the Programme-scope pages read it and pass it to their endpoints as an
+explicit `?programme=<code>` value the server re-fences on the caller's own `owning_organisation` —
+the safe shape this entry named ("per-endpoint query parameters, re-fenced server-side"), and the
+contract `AdminProgrammeConfigurationView` had carried since Layer 0. Nothing was attached to
+requests globally. A client ignoring the value reaches identical data.
+It also **never picks silently**: several gifts with no choice made resolves to nothing and each tab
+asks, so the "pick Inspire and see the other organisation's work underneath" reading cannot occur.
+The crumb shows a prompt rather than a name in that state.
+**What remains open, deliberately.** The ORGANISATION crumb still filters nothing, and the
+organisation-scope LISTS (Sponsors, Payments, Sources, Requests) are unchanged. That half needs the
+per-endpoint pass this entry describes, and its trigger is a second ORGANISATION — not a second
+programme. Tracked as **TD-228**.
+(Trigger fired 2026-09-03: BrightPath Sabah. Resolved for the half the trigger actually reached.)
+
+---
+
+### [TD-193 — superseded detail, kept for the reasoning]
+**Status:** Superseded by the entry above.
 **What.** `ScopeSwitcher` lets a super choose an organisation or programme, and the selection moves
 the breadcrumb. It does **not** filter any page: B40 Applications, Sponsors and Payments still show
 everything the caller's fence allows, exactly as before.
@@ -3050,3 +3070,40 @@ private-college offer before a reviewer is assigned is the system working, and f
 are exactly that.
 
 **Status:** Open. Not in the Sabah roadmap; raised for the owner to schedule.
+
+---
+
+### [TD-228] The ORGANISATION crumb still filters nothing, and its lists are unchanged — low
+**Status:** Open — split out of TD-193 on 2026-09-03 when the PROGRAMME half was resolved.
+**What.** `lib/programmeScope` made the programme crumb drive the Programme-scope pages. The
+organisation crumb was left as it was: choosing a different organisation moves the breadcrumb and
+changes nothing on Sponsors, Payments, Sources or Requests, which continue to show everything the
+caller's fence allows.
+**Why that is right for now.** Only a `super` ever sees more than one organisation, the fence is
+doing exactly what it should, and the safe shape is the same one the programme half used —
+per-endpoint query parameters re-fenced server-side, list by list, with a fence test each. That is a
+sprint of its own, and doing it badly is precisely how the 2026-07-15 surface-partition incident
+happened. **Do not** solve it by attaching the scope to requests globally.
+**The trigger:** a second ORGANISATION going active (Inspire Society, or whoever follows). A second
+PROGRAMME does not fire this one — that was TD-193's half and it is closed.
+(Logged 2026-09-03, console shape sprint.)
+
+---
+
+### [TD-229] A second gift would have its students sign the first gift's agreement — medium
+**Status:** Open — surfaced 2026-09-03 while mapping what belongs to the organisation and what to
+the gift. **Owner ruling owed; asked twice and not yet answered.**
+**What.** `ContractTemplate.organisation` scopes a template to a TENANT, and `contracts.deploy`
+keeps exactly one ACTIVE template per organisation. A gift has no template of its own, and
+`BursaryAgreement` renders from whichever one is active. So the day BrightPath runs a second gift,
+its students sign wording written for the first — including its programme name, its amounts and its
+conditions.
+**Why it is not urgent.** `BURSARY_AGREEMENT_ENABLED` is OFF, so nothing signs anything today, and
+the second gift has no students. It becomes live work the moment both are true.
+**The question for the owner, plainly:** should the agreement wording be **one per organisation**
+(every gift shares it, and the prose is written to suit them all) or **one per gift** (a
+`programme` FK on `ContractTemplate`, and "one active" becomes one active per gift)? It is a legal
+question before it is an engineering one; the engineering follows in an afternoon either way.
+**⚠ Do not guess.** A template is a binding document, and `BursaryAgreement.template` is PROTECT
+precisely because a deployed template that has governed a signed agreement can never be deleted.
+(Logged 2026-09-03, console shape sprint.)

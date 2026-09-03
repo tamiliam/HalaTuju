@@ -3117,7 +3117,8 @@
       "pinNav": "Keep the menu open",
       "unpinNav": "Let the menu collapse",
       "switchOrg": "Switch organisation",
-      "switchProgramme": "Switch programme"
+      "switchProgramme": "Switch programme",
+      "chooseProgramme": "Choose a gift"
     },
     "nav": {
       "organisations": "Organisations",
@@ -3126,10 +3127,6 @@
       "staff": "Staff",
       "programmeOverview": "Overview",
       "reviewers": "Reviewers",
-      "reviewerScoping": "Reviewer scoping",
-      "years": "Intake years",
-      "fund": "Fund",
-      "rules": "Rules",
       "soon": "Soon",
       "group": {
         "platform": "Platform",
@@ -3137,7 +3134,8 @@
         "programme": "Programme",
         "utility": "Account"
       },
-      "invitations": "Invitations"
+      "invitations": "Invitations",
+      "orgSettings": "Settings"
     },
     "reviewers": {
       "title": "Reviewers",
@@ -5533,6 +5531,152 @@
       "subtitle": "What your programme asks for, and how it looks.",
       "tab": {
         "config": "What we ask for",
+        "rules": "Rules",
+        "year": "Intake year"
+      }
+    },
+    "invitations": {
+      "title": "Invitations",
+      "subtitle": "Who has been asked to join this organisation, and who is here now.",
+      "send": {
+        "sent": "Delivered",
+        "failed": "Failed",
+        "notRecorded": "Not recorded"
+      },
+      "status": {
+        "invited": "Waiting",
+        "expired": "Password expired",
+        "no_reply": "No reply yet",
+        "accepted": "Signed in",
+        "revoked": "Cancelled"
+      },
+      "tabsAria": "Invitations or emails",
+      "tab": {
+        "invitations": "Invitations",
+        "emails": "Emails"
+      },
+      "kind": {
+        "admins": "Admins",
+        "reviewers": "Reviewers",
+        "source": "Source",
+        "sponsors": "Sponsors"
+      },
+      "kindOne": {
+        "admins": "Admin",
+        "reviewers": "Reviewer",
+        "source": "Source",
+        "sponsors": "Sponsor"
+      },
+      "noneInKind": "Nobody has been invited in this group yet.",
+      "sourceComingSoon": "Coming soon. Source partners receive our emails today; they will be able to sign in and see their own students once that is built.",
+      "notePlaceholder": "A short note to include (optional)",
+      "emails": {
+        "title": "What people are told when you invite them",
+        "subtitle": "The wording of the four invitation emails. Edit them freely.",
+        "alwaysSends": "These always send. There is no switch, because an invitation that sends no email is an invitation nobody receives.",
+        "accessLocked": "Where a letter hands somebody an account, the sign-in paragraph — including any temporary password — is added by us and cannot be edited. It changes depending on how the person signs in.",
+        "loadError": "These emails could not be loaded.",
+        "kind": {
+          "invite_admin": "Joining the team — admin",
+          "invite_reviewer": "Joining the team — reviewer",
+          "invite_source": "Inviting a source organisation",
+          "invite_sponsor": "Inviting a donor"
+        },
+        "when": {
+          "invite_admin": "Sent when you add somebody as an admin or finance — and again whenever you press Resend.",
+          "invite_reviewer": "Sent when you add somebody as a reviewer or QC — and again whenever you press Resend.",
+          "invite_source": "Not sent yet. This is the wording a source organisation will receive once they can sign in and follow their own students.",
+          "invite_sponsor": "Sent when you invite somebody to become a donor. It links them to the ordinary sign-up, where they still give consent and are vetted."
+        }
+      }
+    },
+    "soon": "Soon",
+    "programmes": {
+      "title": "Gift programmes",
+      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
+      "new": "New gift programme",
+      "create": "Create",
+      "active": "Active",
+      "notActive": "Not active yet",
+      "none": "None",
+      "switchOn": "Switch on",
+      "switchOff": "Switch off",
+      "empty": "No gift programmes yet.",
+      "loadFailed": "Could not load your gift programmes.",
+      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
+      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
+      "col": {
+        "years": "Intake years",
+        "applications": "Applications",
+        "takingApplications": "Taking applications"
+      },
+      "field": {
+        "name": "Name",
+        "code": "Short code",
+        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
+      },
+      "error": {
+        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
+        "codeTaken": "That short code is already in use. Please choose another.",
+        "nameRequired": "Please give the programme a name.",
+        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
+        "noOrg": "Your account is not tied to an organisation.",
+        "generic": "That did not work. Nothing was changed."
+      },
+      "openSettings": "Open its settings"
+    },
+    "years": {
+      "subtitle": "one round of students per year.",
+      "new": "New intake year",
+      "createClosed": "Create - do not open yet",
+      "open": "Open",
+      "closed": "Closed",
+      "openIt": "Open applications",
+      "close": "Close",
+      "empty": "No intake years yet.",
+      "noProgrammes": "Create a gift programme first",
+      "loadFailed": "Could not load the intake years.",
+      "oneOpen": "Opening a round is what lets students apply. Only one round across your organisation may be open at a time.",
+      "oneOpenNamed": "{code} is taking applications. Only one round across your organisation may be open at a time, so close it before opening another.",
+      "reqTitle": "Shortlisting requirements",
+      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
+      "col": {
+        "year": "Year",
+        "name": "What students see",
+        "applications": "Applications",
+        "status": "Status"
+      },
+      "field": {
+        "year": "Year",
+        "code": "Short code",
+        "name": "What students will see"
+      },
+      "req": {
+        "spmA": "SPM - minimum grades at A- or better",
+        "spmB": "SPM - further grades at B+ or better",
+        "spmBHint": "in addition to those above",
+        "pngk": "STPM - minimum PNGK",
+        "merit": "Minimum merit point",
+        "meritHint": "UPU score out of 100. SPM applicants only.",
+        "income": "Household income at most (RM per month)",
+        "perPerson": "or, above that, income per person under (RM)",
+        "perPersonHint": "rescues a large household above the ceiling"
+      },
+      "error": {
+        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
+        "codeTaken": "That short code is already in use. Please choose another.",
+        "badYear": "Please give a year.",
+        "nameRequired": "Please give the intake year a name.",
+        "anotherOpen": "Another round is already taking applications. Close it first.",
+        "notActive": "Switch the gift programme on before opening a round.",
+        "generic": "That did not work. Nothing was changed."
+      }
+    },
+    "orgSettings": {
+      "nav": "Settings",
+      "title": "Organisation settings",
+      "subtitle": "What your organisation decides for itself. These apply across every gift programme you run.",
+      "tab": {
         "colours": "Colours"
       },
       "colours": {
@@ -5598,145 +5742,17 @@
         }
       }
     },
-    "invitations": {
-      "title": "Invitations",
-      "subtitle": "Who has been asked to join this organisation, and who is here now.",
-      "send": {
-        "sent": "Delivered",
-        "failed": "Failed",
-        "notRecorded": "Not recorded"
-      },
-      "status": {
-        "invited": "Waiting",
-        "expired": "Password expired",
-        "no_reply": "No reply yet",
-        "accepted": "Signed in",
-        "revoked": "Cancelled"
-      },
-      "tabsAria": "Invitations or emails",
-      "tab": {
-        "invitations": "Invitations",
-        "emails": "Emails"
-      },
-      "kind": {
-        "admins": "Admins",
-        "reviewers": "Reviewers",
-        "source": "Source",
-        "sponsors": "Sponsors"
-      },
-      "kindOne": {
-        "admins": "Admin",
-        "reviewers": "Reviewer",
-        "source": "Source",
-        "sponsors": "Sponsor"
-      },
-      "noneInKind": "Nobody has been invited in this group yet.",
-      "sourceComingSoon": "Coming soon. Source partners receive our emails today; they will be able to sign in and see their own students once that is built.",
-      "notePlaceholder": "A short note to include (optional)",
-      "emails": {
-        "title": "What people are told when you invite them",
-        "subtitle": "The wording of the four invitation emails. Edit them freely.",
-        "alwaysSends": "These always send. There is no switch, because an invitation that sends no email is an invitation nobody receives.",
-        "accessLocked": "Where a letter hands somebody an account, the sign-in paragraph — including any temporary password — is added by us and cannot be edited. It changes depending on how the person signs in.",
-        "loadError": "These emails could not be loaded.",
-        "kind": {
-          "invite_admin": "Joining the team — admin",
-          "invite_reviewer": "Joining the team — reviewer",
-          "invite_source": "Inviting a source organisation",
-          "invite_sponsor": "Inviting a donor"
-        },
-        "when": {
-          "invite_admin": "Sent when you add somebody as an admin or finance — and again whenever you press Resend.",
-          "invite_reviewer": "Sent when you add somebody as a reviewer or QC — and again whenever you press Resend.",
-          "invite_source": "Not sent yet. This is the wording a source organisation will receive once they can sign in and follow their own students.",
-          "invite_sponsor": "Sent when you invite somebody to become a donor. It links them to the ordinary sign-up, where they still give consent and are vetted."
-        }
-      }
+    "programmeScope": {
+      "choose": "Which gift programme?",
+      "chooseHint": "You run more than one, so we will not guess. Choose one - you can also switch it from the trail at the top of the page."
     },
-    "soon": "Soon",
-    "programmes": {
-      "nav": "Gift programmes",
-      "title": "Gift programmes",
-      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
-      "new": "New gift programme",
-      "create": "Create",
-      "active": "Active",
-      "notActive": "Not active yet",
-      "none": "None",
-      "switchOn": "Switch on",
-      "switchOff": "Switch off",
-      "intakeYears": "Intake years",
-      "empty": "No gift programmes yet.",
-      "loadFailed": "Could not load your gift programmes.",
-      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
-      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
-      "col": {
-        "years": "Intake years",
-        "applications": "Applications",
-        "takingApplications": "Taking applications"
-      },
-      "field": {
-        "name": "Name",
-        "code": "Short code",
-        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
-      },
-      "error": {
-        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
-        "codeTaken": "That short code is already in use. Please choose another.",
-        "nameRequired": "Please give the programme a name.",
-        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
-        "noOrg": "Your account is not tied to an organisation.",
-        "generic": "That did not work. Nothing was changed."
-      }
-    },
-    "years": {
-      "title": "Intake years",
-      "subtitle": "one round of students per year.",
-      "new": "New intake year",
-      "createClosed": "Create - do not open yet",
-      "open": "Open",
-      "closed": "Closed",
-      "openIt": "Open applications",
-      "close": "Close",
-      "empty": "No intake years yet.",
-      "chooseProgramme": "Which gift programme?",
-      "noProgrammes": "Create a gift programme first",
-      "loadFailed": "Could not load the intake years.",
-      "oneOpen": "Opening a round is what lets students apply. Only one round across your organisation may be open at a time.",
-      "oneOpenNamed": "{code} is taking applications. Only one round across your organisation may be open at a time, so close it before opening another.",
-      "reqTitle": "Shortlisting requirements",
-      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
-      "col": {
-        "year": "Year",
-        "name": "What students see",
-        "applications": "Applications",
-        "status": "Status"
-      },
-      "field": {
-        "year": "Year",
-        "code": "Short code",
-        "name": "What students will see"
-      },
-      "req": {
-        "spmA": "SPM - minimum grades at A- or better",
-        "spmB": "SPM - further grades at B+ or better",
-        "spmBHint": "in addition to those above",
-        "pngk": "STPM - minimum PNGK",
-        "merit": "Minimum merit point",
-        "meritHint": "UPU score out of 100. SPM applicants only.",
-        "income": "Household income at most (RM per month)",
-        "perPerson": "or, above that, income per person under (RM)",
-        "perPersonHint": "rescues a large household above the ceiling"
-      },
-      "error": {
-        "badCode": "The short code may use lower case letters, numbers and hyphens only.",
-        "codeTaken": "That short code is already in use. Please choose another.",
-        "badYear": "Please give a year.",
-        "nameRequired": "Please give the intake year a name.",
-        "anotherOpen": "Another round is already taking applications. Close it first.",
-        "notActive": "Switch the gift programme on before opening a round.",
-        "generic": "That did not work. Nothing was changed."
-      }
+    "rules": {
+      "subtitle": "Who qualifies for this gift. A test you do not tick is not applied at all.",
+      "editing": "These are the rules for {year} - {name}.",
+      "liveWarning": "Changing a rule changes who qualifies, from the moment you save. It is NOT frozen for students who have already applied - unlike \"What we ask for\" - so a fresh run would judge them by the new rule. Take care mid-intake.",
+      "untickNote": "Untick a test to stop applying it. An empty box means the test does not run at all.",
+      "noYear": "This gift has no intake year yet, and the rules live on the year. Create one on the Intake year tab and set them there.",
+      "saved": "Saved"
     }
   }
 }

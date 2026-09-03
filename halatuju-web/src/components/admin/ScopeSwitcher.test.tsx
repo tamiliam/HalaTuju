@@ -91,11 +91,21 @@ describe('degenerate scopes', () => {
     expect(container.textContent).toBe('')
   })
 
-  it('falls back to the first option when the selection names something absent', () => {
-    // e.g. a stored preference for an organisation that has since been deactivated.
+  // ⚠ THE TWO CRUMBS NOW DIFFER ON PURPOSE (shape sprint, 2026-09-03), and this test is where the
+  // difference is stated. The ORGANISATION crumb still falls back to the first option, because it
+  // only labels where you are and every request is fenced on the caller's own organisation
+  // regardless. The PROGRAMME crumb must not: it decides which gift the Rules and Configuration
+  // tabs read and write, so naming one the person did not choose would have the console asserting
+  // an answer while the page below it is still asking the question. Unresolved shows the prompt.
+  it('an absent ORGANISATION falls back to the first — it only labels where you are', () => {
     renderSwitcher({ selectedOrg: 'gone', selectedProgramme: 'gone' })
     expect(screen.getByText('BrightPath')).toBeTruthy()
-    expect(screen.getByText('BrightPath Bursary')).toBeTruthy()
+  })
+
+  it('an absent PROGRAMME shows the prompt, never the first gift', () => {
+    renderSwitcher({ selectedOrg: 'gone', selectedProgramme: 'gone' })
+    expect(screen.queryByText('BrightPath Bursary')).toBeNull()
+    expect(screen.getByText('admin.shell.chooseProgramme')).toBeTruthy()
   })
 })
 

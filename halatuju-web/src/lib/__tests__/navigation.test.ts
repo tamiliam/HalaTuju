@@ -61,23 +61,30 @@ describe('visibleNav per role', () => {
   const EXPECTED: Record<AdminRoleName, string[]> = {
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'staff', 'reviewers', 'programmes', 'sponsors', 'sources', 'payments',
+      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
       'contracts', 'billing',
-      'programmeConfig', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
+      'programmeConfig', 'applications',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
     // an org_admin (+ super) power — configuration, not a fence. admin/qc lose the placeholder
     // slot they never had a page behind. role-matrix.md updated in the same change.
     //
-    // Sabah S2b (2026-09-02): `programmes` — creating a gift and switching it on. ORGANISATION
-    // scope, super + org_admin only, because the endpoint refuses every other role and a menu row
-    // that opens a 403 is worse than no row. A plain `admin` does NOT get it: deciding what gifts
-    // an organisation offers is the administrator's call, the same reasoning as programmeConfig.
+    // ⚠ THE SHAPE SPRINT (2026-09-03) REMOVED FIVE ROWS AND ADDED ONE. `programmes` moved onto the
+    // organisation OVERVIEW (the gifts a tenant runs are what it is, not a feature beside it), and
+    // the Programme group's `reviewerScoping` / `years` / `fund` / `rules` were deleted rather than
+    // filled — years and rules became TABS of `programmeConfig`, reviewer scoping is a field on a
+    // reviewer's record, and the fund is a report. `orgSettings` is new and holds Colours, which
+    // had been sitting on the Programme screen while writing a TENANT-wide row.
+    //
+    // Nobody GAINED reach: `orgSettings` carries exactly the roles the theme endpoint already
+    // allowed (super + org_admin), and every deleted row was a page that did not exist. The one
+    // real loss is `finance`, which is no longer offered the reserved `fund` slot — it never had a
+    // page, so this removes a disabled row rather than a power.
     org_admin: [
-      'administration', 'staff', 'reviewers', 'programmes', 'sponsors', 'sources', 'payments',
+      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
       'contracts', 'billing',
-      'programmeConfig', 'applications', 'reviewerScoping', 'years', 'fund', 'rules',
+      'programmeConfig', 'applications',
       'profile', 'guide', 'faq',
     ],
     admin: [
@@ -87,7 +94,6 @@ describe('visibleNav per role', () => {
     ],
     finance: [
       'administration', 'staff', 'reviewers', 'sponsors', 'payments',
-      'fund',
       'profile', 'guide', 'faq',
     ],
     qc: ['applications', 'profile', 'guide', 'faq'],
@@ -174,10 +180,14 @@ describe('activeItem resolves by longest match', () => {
     ] as const) {
       expect(activeItem(p)?.id).toBe(id)
     }
-    // Two permanent redirects, each pointing at the row it now belongs to (N3b). An old
-    // bookmark must light the correct sidebar row, not merely land somewhere.
+    // Four permanent redirects, each pointing at the row it now belongs to. An old bookmark must
+    // light the correct sidebar row, not merely land somewhere.
     expect(activeItem('/admin/administration')?.id).toBe('administration')  // → the org overview
     expect(activeItem('/admin/invite')?.id).toBe('staff')                   // → org staff
+    // The shape sprint (2026-09-03). Both pages existed for exactly one sprint, so a bookmark is
+    // young and a stale link is likelier than usual.
+    expect(activeItem('/admin/organisation/programmes')?.id).toBe('administration')
+    expect(activeItem('/admin/programme/years')?.id).toBe('programmeConfig')
   })
 
   it('the organisation overview is a page, not a section', () => {
@@ -185,6 +195,16 @@ describe('activeItem resolves by longest match', () => {
     // the menu rather than its child — the same boundary rule as the /admin index route.
     expect(activeItem('/admin/organisation')?.id).toBe('administration')
     expect(activeItem('/admin/organisation/staff')?.id).toBe('staff')
+    // …and the new settings page is a sibling too, not something inside the overview.
+    expect(activeItem('/admin/organisation/settings')?.id).toBe('orgSettings')
+  })
+
+  it('the programme screen is a page whose tabs are not routes', () => {
+    // Rules, "What we ask for" and Intake year are TABS: one route, one registry row. A tab that
+    // grew its own path would need its own entry, and the sidebar would say Programme twice.
+    expect(activeItem('/admin/programme')?.id).toBe('programmeConfig')
+    // The redirect above is matched exactly; nothing deeper claims the row by accident.
+    expect(activeItem('/admin/programme/reviewers')).toBeUndefined()
   })
 
   it('a reserved slot never claims a path — it has no page to be inside', () => {
@@ -316,20 +336,38 @@ describe('visibleNav groups', () => {
     expect(keys.filter((k, i) => keys.indexOf(k) !== i)).toEqual([])
   })
 
-  it('separates the reviewer DIRECTORY from the reserved reviewer-SCOPING slot', () => {
-    const dir = NAV_ITEMS.find((i) => i.id === 'reviewers')!
-    const scoping = NAV_ITEMS.find((i) => i.id === 'reviewerScoping')!
-    expect(dir.href).toBe('/admin/organisation/reviewers')
-    expect(dir.scope).toBe('organisation')
-    expect(dir.placeholder).toBeFalsy()
-    expect(scoping.href).toBe('/admin/programme/reviewers')
-    expect(scoping.placeholder).toBe(true)
+  // Request #10 shipped Organisation → Reviewers while Programme reserved a second row for
+  // per-programme SCOPING. The shape sprint deleted that slot rather than renaming it again:
+  // which gift a reviewer covers is a FIELD on that reviewer, so it belongs on their record here.
+  it('there is ONE reviewer row, and it is the organisation directory', () => {
+    const rows = NAV_ITEMS.filter((i) => i.href.includes('reviewers'))
+    expect(rows.map((i) => i.id)).toEqual(['reviewers'])
+    expect(rows[0].href).toBe('/admin/organisation/reviewers')
+    expect(rows[0].scope).toBe('organisation')
+    expect(rows[0].placeholder).toBeFalsy()
+  })
+
+  // ⚠ THE ASSERTION IS THE COUNT, not the contents. Everything a person SETS about a gift is one
+  // screen with tabs; a third row here means somebody has promoted a tab back into a page, which
+  // is the drift this sprint removed. Applications is the only other thing you DO to a gift.
+  it('the programme scope is two rows: configure it, and work through it', () => {
+    const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
+    expect(prog.items.map((i) => i.id)).toEqual(['programmeConfig', 'applications'])
+    expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
   it('marks reserved slots so the sidebar can disable them', () => {
-    const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
-    expect(prog.items.find((i) => i.id === 'applications')!.placeholder).toBeFalsy()
-    expect(prog.items.find((i) => i.id === 'fund')!.placeholder).toBe(true)
+    const platform = visibleNav(ctx('super')).find((g) => g.scope === 'platform')!
+    expect(platform.items.find((i) => i.id === 'students')!.placeholder).toBeFalsy()
+    expect(platform.items.find((i) => i.id === 'billingRates')!.placeholder).toBe(true)
+  })
+
+  // ⚠ LITERAL ON PURPOSE, like the role matrix. A reserved slot is a promise about where a thing
+  // will live, and three of the four that existed guessed the shape wrongly (see the `placeholder`
+  // note in navigation.ts). `billingRates` survives because its endpoint SHIPPED and only the page
+  // is missing. Adding a fifth slot should cost somebody a deliberate edit here and a reason.
+  it('reserves exactly one slot, and it is the one with a shipped endpoint behind it', () => {
+    expect(NAV_ITEMS.filter((i) => i.placeholder).map((i) => i.id)).toEqual(['billingRates'])
   })
 })
 
@@ -340,7 +378,7 @@ describe('searchNav', () => {
   const items = [
     L('overview', 'Dashboard'), L('students', 'Students'),
     L('payments', 'Payments'), L('applications', 'B40 Applications'),
-    L('fund', 'Fund'),                       // reserved
+    L('billingRates', 'Billing rates'),      // reserved
   ]
 
   it('an empty query lists everything navigable, in registry order', () => {
@@ -349,7 +387,7 @@ describe('searchNav', () => {
   })
 
   it('never offers a reserved slot — there is nowhere to go', () => {
-    expect(searchNav('fund', items)).toEqual([])
+    expect(searchNav('billing rates', items)).toEqual([])
   })
 
   it('ranks a prefix hit above a word hit above a bare substring', () => {

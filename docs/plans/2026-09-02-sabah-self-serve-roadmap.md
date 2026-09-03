@@ -127,7 +127,47 @@ nine of its STPM applicants for an intake anyway, rejecting none of them.
 cannot. **▶ MERIT DOES NOT REUSE THE ADMIN LIST'S FUNCTION**, whose docstring says "NOT A GATE, AND
 MUST NOT BECOME ONE".
 
-### S3 — the rules screen · complexity: MEDIUM · **Stitch first**
+### ✅ S0 — THE SHAPE · SHIPPED 2026-09-03. **Not on the original plan; the owner added it.**
+
+The owner opened the console, read the sidebar and said the parts did not fit: *"We cannot open new
+branches that are disconnected."* One question — **what is a subset of what** — answered from the
+database rather than from the menu, and it re-cut three of the four sprints below.
+
+Retro `docs/retrospective-2026-09-03-console-shape.md`; decisions ×2; lessons ×5; **TD-193 resolved
+(programme half)**; TD-228 + TD-229 raised. NO migration. web + a two-line backend audit.
+pytest **5792** (full suite); jest 1631 → **1657**; tsc **24**; lint **0**;
+i18n 4714 → **4722 × 3**; build clean. Two guards
+bite-checked.
+
+**Menu 16 rows → 12. Reserved slots 4 → 1.**
+- Gift programmes moved onto **Organisation → Overview** (the gifts you run are what the
+  organisation IS, and the row listed one thing). Old route redirects.
+- **Programme → Configuration** became three tabs in the owner's order: **Rules · What we ask for ·
+  Intake year**. `/admin/programme/years` redirects here.
+- **Colours moved to Organisation → Settings.** It writes `OrganisationTheme` — one row for the
+  whole tenant — and was being set from inside a single gift. Silent with one gift, wrong with two.
+- **The breadcrumb switcher works** (TD-193). The chosen gift is passed to each endpoint as an
+  explicit `?programme=<code>` the server re-fences; it never became ambient, and it never picks
+  silently.
+
+**▶ THE OWNER'S MODEL RE-CUT THE REST OF THIS ROADMAP.** Their words: *"Reviewers, sponsors and
+sources are invited by the org. So, they are subset of the org, and they could be assigned to the
+select programme by the org admin."* That is **one pattern, three times** — which merges S4 and S5
+and adds a third piece, as **S-ASSIGN** below. And *"I see the rules as a configuration item"* means
+S3 is not a sprint at all: it shipped as a tab in S0.
+
+### ~~S3 — the rules screen~~ · **SUPERSEDED by S0, 2026-09-03**
+
+It was never a page. The six thresholds are columns on the intake year that S2b's create form
+already wrote, so a Rules screen was a second view of an existing form. It is the FIRST tab of
+Programme → Configuration, with the one thing the original scope was right about: a warning, because
+these thresholds are read LIVE by `shortlisting.evaluate()` while "what we ask for" is frozen per
+application at submit. Threshold changes also write an audit line carrying old → new (TD-203's
+lesson, applied before it bit twice).
+
+*Original scope kept below for the reasoning it carries.*
+
+### ~~S3 (original scope)~~ · complexity: MEDIUM · **Stitch first**
 
 **Goal.** The **Rules** placeholder becomes the 13 thresholds, editable and explained.
 
@@ -144,7 +184,36 @@ will not be retro-applied — **owner's call, raised in the Stitch pass.**
 because S2 is structural and S3 is behaviour-sensitive, and mixing those is how a config screen
 quietly changes a verdict.
 
-### S4 — accepting a sponsor into a gift · complexity: MEDIUM · **unblocks the RM100,000**
+### S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT · **unblocks the RM100,000**
+
+**Replaces S4 and S5, and adds sources** (owner, 2026-09-03). One pattern, three times:
+
+| Who | The link today | What it needs |
+|---|---|---|
+| **Sponsors** | `SponsorProgrammeMembership` **exists** | `sync_account_membership`'s hard-coded `DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'` stops being a tenant literal; the invite carries the gift; a panel on the sponsor page accepts or moves somebody |
+| **Reviewers** | **no field at all** | nullable `programme` on `PartnerAdmin`, **NULL = organisation-wide** (owner's ruling — no backfill, existing staff unaffected); set on their own record under Organisation → Reviewers, and from the invite |
+| **Sources** | **no field at all** | the same, on the referral organisation |
+
+**⚠ THE INVITE SHOULD ASK, AND A SCREEN MUST STILL FIX IT AFTERWARDS.** The sponsor invite
+(`views_admin.py` ~2624) takes an email, a name and a note, derives the organisation from the admin,
+and **never asks which gift** — so the Sabah benefactor would be invited by BrightPath and land in
+the flagship, silently. Asking at invite time is the clean fix; a screen is still needed because a
+sponsor can register with no invite at all, and because a wrong assignment must be correctable.
+With one gift, nothing asks anything — today's flow is unchanged.
+
+**⚠ The pool is fail-closed and must stay so.** No membership → empty pool. Every channel narrows
+through `pool.for_sponsor`, **including the weekly digest and the real-time alert** — P3's source
+guard exists precisely because those two routed around the fence once. Do not add a sixth channel
+without extending that guard.
+
+**Acceptance.** The Sabah benefactor is accepted into Sabah only, sees Sabah students only, and the
+RM100,000 credit is accepted where it was previously refused `sponsor_not_in_programme`. A
+Sabah-bound reviewer is offered Sabah applications only. Every existing BrightPath sponsor,
+reviewer and source keeps working with no change — proven by the existing suite passing unmodified.
+
+*The original S4 scope, which this absorbs:*
+
+### ~~S4 (original scope)~~ — accepting a sponsor into a gift · complexity: MEDIUM
 
 **Goal.** An `org_admin` accepts a benefactor into a programme; the flagship literal dies.
 
@@ -161,7 +230,15 @@ without extending that guard.
 RM100,000 credit is accepted where it was previously refused `sponsor_not_in_programme`. A flagship
 sponsor's visibility is byte-identical.
 
-### S5 — reviewers bound to one gift · complexity: MEDIUM · not launch-blocking
+### ~~S5 — reviewers bound to one gift~~ · **ABSORBED INTO S-ASSIGN, 2026-09-03**
+
+It is the same shape as the sponsor one, and building it separately would produce two screens
+answering one question. Its reserved menu slot was deleted in S0: which gift a reviewer covers is a
+FIELD on that reviewer, so it belongs on their record, not on a page of its own.
+
+*Original scope kept below for the rulings it carries.*
+
+### ~~S5 (original scope)~~ · complexity: MEDIUM · not launch-blocking
 
 **Goal.** P1b's remaining third: Sabah's volunteers see Sabah applications.
 
@@ -188,6 +265,15 @@ narrowing, not a fence, and the org fence is unchanged either way.
 
 **Minimum to hand Suresh the keys: S1 + S2 + S4.** S3 and S5 make it comfortable rather than
 possible.
+
+> **⚠ RE-CUT 2026-09-03.** The owner added **S0 (the shape)** and it changed the rest. S3 shipped as
+> a tab inside it; S4 and S5 merged into **S-ASSIGN** with a third piece (sources). So the sequence
+> is now **S1 ✅ → S2 ✅ → S0 ✅ → S-ASSIGN**, and **S-ASSIGN is the only thing left between the owner
+> and the sentence to Suresh.** Four remaining sprints became one.
+>
+> Also owed, and not engineering: **TD-229 — is the agreement wording one per organisation, or one
+> per gift?** Asked twice, unanswered. It does not block S-ASSIGN, and it does block a Sabah student
+> ever signing anything.
 
 ## Standing owner gate — still in force
 
