@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sabah S2 — a gift programme can be created without an engineer - 2026-09-03
+
+**Sprint. DEPLOYED** — `main` at `ad43786d`, both builds SUCCESS, serving
+**halatuju-web-00820-r2r** / **halatuju-api-00972-jrg**. **Migration `0148` applied migrate-first
+and verified BEFORE the push.** Retro `docs/retrospective-2026-09-03-sabah-s2-programme-screens.md`;
+lessons x3. pytest 5716 -> **5742**; jest 1623 -> **1631**; tsc **24**; lint **0**;
+i18n 4648 -> **4714 x 3**; build clean. Five guards bite-checked.
+
+### Added
+- **Organisation -> Gift programmes** and **Programme -> Intake years** (the reserved slot). An
+  `org_admin` can now create a gift and open its first year. Neither could be created anywhere
+  before: no endpoint, no screen, and `scholarship` registers no models in Django admin.
+- **`min_merit_score`** — the UPU merit point out of 100, SPM applicants only, unticked on every
+  cohort today.
+
+### Changed
+- **⚠ A SHORTLISTING REQUIREMENT CAN NOW BE NOT APPLIED.** Every threshold was `NOT NULL` with a
+  default, so every test always ran — BrightPath never asked for an STPM requirement and a PNGK
+  floor of 2.90 was applied to all nine of its STPM applicants for a whole intake anyway. It
+  rejected none of them, so nobody found out. `None` now means the test does not run, and **the
+  value IS the switch** — deliberately no companion boolean, because two columns can disagree.
+- **The rejection reason is stated the way the rule is SET**: "4 at A- plus 1 more at B+", not
+  "need 4 A- and 5 at B+", which the owner who wrote the rule read as nine subjects.
+
+### Refused, on purpose
+- A new gift is created **inactive**; a new intake year is created **closed**; only **one round per
+  organisation** may be open; a gift taking applications cannot be switched off.
+
 ## Sabah S1 — the payment run says which gift - 2026-09-02
 
 **Sprint. DEPLOYED** — `main` at `6dfcefe0`, build `c684a867` SUCCESS, serving

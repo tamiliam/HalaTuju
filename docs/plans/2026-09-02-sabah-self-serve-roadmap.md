@@ -124,7 +124,27 @@ programme (P2b) — confirm, don't rebuild.
 
 **Why first.** It is the only item that protects money already moving.
 
-### S2 — a programme and its first intake, created in the app · complexity: HIGH · **Stitch first**
+### ✅ S2 — SHIPPED **AND DEPLOYED** 2026-09-03. **The screens exist.**
+
+Retro `docs/retrospective-2026-09-03-sabah-s2-programme-screens.md`; lessons x3. **Migration `0148`
+applied migrate-first + verified.** web + api. pytest **5742**, jest **1631**, i18n **4714 x 3**.
+Five guards bite-checked. LIVE `halatuju-web-00820-r2r` / `halatuju-api-00972-jrg`.
+
+**Approved design:** the Artifact mock, drafts 1-4 (Stitch timed out and never surfaced the screens
+across ~10 minutes and two polls — the memory note's own fallback). Owner rulings folded in:
+"Gift Programme" as the wording; two screens because one act is org-level and one programme-level;
+requirements as **tick boxes with an open value**; neutral labels so another organisation reads the
+same screen; and shortlisting on **self-declaration**, which is the design, not a gap.
+
+**▶ THE REAL FIND WAS A LIVE, INVISIBLE DEFECT.** Every threshold was `NOT NULL` with a default, so
+every test always ran. BrightPath never asked for an STPM requirement; PNGK >= 2.90 applied to all
+nine of its STPM applicants for an intake anyway, rejecting none of them.
+
+**▶ THE VALUE IS THE SWITCH** — no companion boolean, because two columns can disagree and one
+cannot. **▶ MERIT DOES NOT REUSE THE ADMIN LIST'S FUNCTION**, whose docstring says "NOT A GATE, AND
+MUST NOT BECOME ONE".
+
+#### S2 — original scoping · complexity: HIGH · **Stitch first**
 
 **Goal.** An `org_admin` creates the gift and opens its first year without an engineer.
 
