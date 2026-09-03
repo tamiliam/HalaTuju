@@ -117,10 +117,35 @@ class TestScopeList(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(), {'organisations': [], 'programmes': []})
 
-    def test_an_inactive_programme_is_not_offered(self):
-        _programme(self.org_a, 'a-retired', active=False)
+    # ⚠ REVERSED DELIBERATELY, 2026-09-03. This asserted that an inactive programme is NOT offered,
+    # which was reasonable when the switcher was decorative and read "where you are". It became
+    # wrong the moment the crumb started choosing which gift the Configuration screen edits: a gift
+    # is CREATED INACTIVE and must be configured BEFORE it is switched on, so "not switched on yet"
+    # is the state an org_admin spends the most time inside. The owner created a second gift,
+    # pressed into it, and the console showed them the first gift's settings — because this list
+    # did not contain the new one, so the selection was discarded and fell back.
+    #
+    # The INACTIVE-ORGANISATION test below is untouched and still correct: nobody configures a
+    # tenant that has been switched off, and it is a different question.
+    def test_an_inactive_programme_IS_offered_because_that_is_when_it_is_configured(self):
+        _programme(self.org_a, 'a-draft', active=False)
         body = self._as(_admin('org-a2', org=self.org_a)).json()
-        self.assertEqual([p['code'] for p in body['programmes']], ['a-bursary'])
+        self.assertEqual(sorted(p['code'] for p in body['programmes']), ['a-bursary', 'a-draft'])
+
+    def test_it_says_which_programmes_are_switched_on(self):
+        # So a switcher can MARK one rather than leaving the reader to discover it from the screen
+        # underneath. Without this the crumb would name a draft gift as if it were live.
+        _programme(self.org_a, 'a-draft-2', active=False)
+        body = self._as(_admin('org-a3', org=self.org_a)).json()
+        by_code = {p['code']: p['is_active'] for p in body['programmes']}
+        self.assertFalse(by_code['a-draft-2'])
+        self.assertTrue(by_code['a-bursary'])
+
+    def test_widening_on_is_active_did_NOT_widen_on_the_organisation(self):
+        # The assertion that says the fence did not move with the filter.
+        _programme(self.org_b, 'b-draft', active=False)
+        body = self._as(_admin('org-a4', org=self.org_a)).json()
+        self.assertNotIn('b-draft', [p['code'] for p in body['programmes']])
 
     def test_an_inactive_organisation_is_not_offered(self):
         _org('gone', active=False)

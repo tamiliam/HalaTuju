@@ -2154,7 +2154,17 @@ class AdminScopeListView(_AdminBase):
         # (schools, NGOs that send us students) with no flag between them. The rule and the
         # reason it is BOTH conditions live on the manager, so nobody has to know it here.
         orgs = PartnerOrganisation.objects.tenants().filter(is_active=True).order_by('name')
-        programmes = (Programme.objects.filter(is_active=True)
+        # ⚠ INACTIVE PROGRAMMES ARE INCLUDED, AND THE PRODUCT RULE IS WHY (2026-09-03).
+        # A gift is CREATED INACTIVE by design (Sabah S2: an active second programme changes live
+        # behaviour the instant it exists) and must then be configured — its rules, what it asks
+        # for, its first intake year — BEFORE it is switched on. So "not switched on yet" is
+        # precisely the state an org_admin spends the most time standing inside, and a switcher
+        # that could not reach it made the gift they had just created unreachable: the crumb
+        # discarded the selection and fell back to the only ACTIVE gift, silently showing them
+        # somebody else's settings. Reported by the owner on the first real use.
+        # The ORGANISATION list keeps its `is_active` filter — an inactive tenant is a different
+        # question, and nobody configures one.
+        programmes = (Programme.objects.all()
                       .select_related('organisation').order_by('organisation__name', 'code'))
         if not self.has_role(admin, 'super'):
             # Derived from the SAME column the fence uses — so this can never widen access.
@@ -2172,6 +2182,9 @@ class AdminScopeListView(_AdminBase):
             ],
             'programmes': [
                 {'id': p.id, 'code': p.code, 'name': _name(p),
+                 # So a switcher can SAY a gift is not switched on yet, rather than the reader
+                 # discovering it from the screen underneath.
+                 'is_active': p.is_active,
                  'organisation_id': p.organisation_id} for p in programmes
             ],
         })
@@ -6010,8 +6023,15 @@ class AdminProgrammeConfigurationView(_AdminBase):
 
         Fenced on `organisation_id` — derived from the same `owning_organisation` the org fence
         uses, so it cannot widen anything. Missing or cross-org → 404 (never 403).
+
+        ⚠ NOT FILTERED ON `is_active`, AND THAT IS THE PRODUCT RULE (2026-09-03). A gift is created
+        INACTIVE and is configured before it is switched on, so refusing to load the configuration
+        of an unswitched gift refused the only screen that makes switching it on safe. It was
+        `is_active=True` until the owner created a second gift and found they could not open it.
+        Configuring an inactive programme reaches nobody: no cohort is open beneath it, so no
+        application resolves through it. The FENCE is the organisation, and it is untouched.
         """
-        qs = Programme.objects.filter(is_active=True).select_related('organisation')
+        qs = Programme.objects.all().select_related('organisation')
         if not self.has_role(admin, 'super'):
             org_id = admin.owning_organisation_id
             qs = qs.filter(organisation_id=org_id) if org_id else qs.none()

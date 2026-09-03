@@ -43,8 +43,12 @@ const FUNDING = {
   totals: { students: 2, award_total: '6000', paid_total: '1000', remaining_total: '5000' },
 } as unknown as api.FundingSummary
 
+// `is_active` arrived on the scopes payload on 2026-09-03, when the endpoint started offering
+// gifts that are not switched on yet (they are configured before they are switched on). These
+// fixtures are all ACTIVE gifts — a payment run is only ever made against one — so the flag is
+// true and this file's behaviour is unchanged.
 const programme = (id: number, code: string, name: string, organisation_id = 11) =>
-  ({ id, code, name, organisation_id })
+  ({ id, code, name, organisation_id, is_active: true })
 
 const scopes = (...programmes: ReturnType<typeof programme>[]) =>
   ({ organisations: [{ id: 11, code: 'brightpath', name: 'BrightPath' }], programmes })

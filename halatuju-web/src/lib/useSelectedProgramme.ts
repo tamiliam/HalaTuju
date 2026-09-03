@@ -65,14 +65,23 @@ export function useSelectedProgramme(): SelectedProgramme {
   // The scope context knows the caller's whole list from the scopes endpoint; this one knows the
   // richer records. When exactly one gift exists, either source resolves it — so fall back to the
   // single record rather than requiring both calls to have landed.
+  //
+  // ⚠ THE FALLBACK ONLY APPLIES WHEN NOTHING WAS CHOSEN. Same rule, same reason as
+  // `programmeScope`: a chosen code we cannot find must resolve to NOTHING, never to whichever
+  // gift happens to be the only one — that substitution is what showed the owner a different
+  // programme's settings than the one they pressed into (2026-09-03).
   const byCode = programmes.find((p) => p.code === chosen) ?? null
-  const programme = byCode ?? (programmes.length === 1 ? programmes[0] : null)
+  const programme = chosen
+    ? byCode
+    : (programmes.length === 1 ? programmes[0] : null)
 
   return {
     programmes,
     programme,
     loading,
-    mustChoose: !loading && programme === null && programmes.length > 1,
+    // `> 0`, not `> 1`: a chosen code we could not find leaves ONE gift unresolved too, and the
+    // honest screen there is the same question rather than a blank tab.
+    mustChoose: !loading && programme === null && programmes.length > 0,
     select,
   }
 }

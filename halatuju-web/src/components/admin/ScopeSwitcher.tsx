@@ -44,14 +44,18 @@ export interface ScopeOption {
   id: number
   code: string
   name: string
+  /** Programmes only. False for a gift not switched on yet — see `notActiveLabel` below. */
+  isActive?: boolean
 }
 
-function Crumb({ label, options, selectedCode, onSelect, ariaLabel }: {
+function Crumb({ label, options, selectedCode, onSelect, ariaLabel, notActiveLabel }: {
   label: string
   options: ScopeOption[]
   selectedCode: string
   onSelect: (code: string) => void
   ariaLabel: string
+  /** Shown beside a gift that is not switched on yet. Absent for organisations. */
+  notActiveLabel?: string
 }) {
   // Nothing to switch between: render the name, not a control that suggests otherwise.
   if (options.length <= 1) {
@@ -75,6 +79,12 @@ function Crumb({ label, options, selectedCode, onSelect, ariaLabel }: {
           icon={o.code === selectedCode ? <Icon name="dot" size={13} /> : <span className="w-[13px]" />}
         >
           {o.name}
+          {/* ⚠ A DRAFT GIFT IS OFFERED AND MUST SAY SO. It is offered because configuring a gift
+              before switching it on is the normal flow; it is LABELLED because a crumb naming it
+              plainly would read as the live programme. */}
+          {notActiveLabel && o.isActive === false && (
+            <span className="ml-2 text-xs font-normal text-ground-400">{notActiveLabel}</span>
+          )}
         </MenuItem>
       ))}
     </Menu>
@@ -140,6 +150,7 @@ export function ScopeSwitcher({
             selectedCode={programme?.code ?? ''}
             onSelect={onSelectProgramme}
             ariaLabel={t('admin.shell.switchProgramme')}
+            notActiveLabel={t('admin.programmes.notActive')}
           />
         </>
       )}
@@ -169,7 +180,7 @@ export function BreadcrumbScopes({ organisations, selectedOrg, onSelectOrg, scop
   return (
     <ScopeSwitcher
       organisations={organisations}
-      programmes={choices.map((c, i) => ({ id: i, code: c.code, name: c.name }))}
+      programmes={choices.map((c, i) => ({ id: i, code: c.code, name: c.name, isActive: c.isActive }))}
       selectedOrg={selectedOrg}
       selectedProgramme={chosen}
       onSelectOrg={onSelectOrg}

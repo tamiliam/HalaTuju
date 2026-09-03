@@ -2662,7 +2662,13 @@ export async function fetchContractPreviewPdf(id: number, locale: string, option
 // ── nav/IA N3a: the breadcrumb switchers ─────────────────────────────────────
 /** One organisation or programme the caller may LOOK AT. */
 export interface AdminScopeOrg { id: number; code: string; name: string }
-export interface AdminScopeProgramme extends AdminScopeOrg { organisation_id: number }
+export interface AdminScopeProgramme extends AdminScopeOrg {
+  organisation_id: number
+  /** ⚠ An INACTIVE gift IS offered (2026-09-03): one is created inactive and configured before it
+   *  is switched on, so that is the state an org_admin most often stands inside. The flag exists so
+   *  the crumb can SAY so rather than naming a draft gift as if it were live. */
+  is_active: boolean
+}
 export interface AdminScopes {
   organisations: AdminScopeOrg[]
   programmes: AdminScopeProgramme[]

@@ -34,6 +34,8 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 export interface ProgrammeChoice {
   code: string
   name: string
+  /** False for a gift that is not switched on yet — a normal, and common, state. */
+  isActive?: boolean
 }
 
 export interface ProgrammeScope {
@@ -65,10 +67,25 @@ export function ProgrammeScopeProvider(
   const [picked, setPicked] = useState('')
 
   const value = useMemo<ProgrammeScope>(() => {
-    // A stale pick — the gift was switched off, or the person changed organisation — must not
-    // survive as a code nothing recognises. Validate against the list every render.
-    const valid = choices.some((c) => c.code === picked) ? picked : ''
-    const chosen = valid || (choices.length === 1 ? choices[0].code : '')
+    /*
+     * ⚠ A DISCARDED PICK RESOLVES TO NOTHING — IT MUST NEVER FALL THROUGH TO "THE ONLY ONE".
+     *
+     * The first cut wrote `valid || (choices.length === 1 ? choices[0].code : '')`, which reads as
+     * one expression and is two rules welded together: "drop a code we do not recognise" and
+     * "resolve a single gift when nobody has chosen". Fine while they cannot both fire — and they
+     * both fired on the owner's first real use. They created a second gift, pressed into it, and
+     * the code was not in the list (the scopes endpoint was returning ACTIVE programmes only), so
+     * it was dropped and the fallback then handed them the one active gift instead. **The console
+     * silently showed them a different programme's settings than the one they had opened.**
+     *
+     * The endpoint is fixed too, but this is the half that turns "we do not know that gift" into
+     * "here is a different gift", and that substitution must be impossible however the list is
+     * populated. Not recognised now means ASK — the same refusal `resolve_open_cohort` makes.
+     */
+    const known = choices.some((c) => c.code === picked)
+    const chosen = picked
+      ? (known ? picked : '')
+      : (choices.length === 1 ? choices[0].code : '')
     return {
       choices,
       chosen,

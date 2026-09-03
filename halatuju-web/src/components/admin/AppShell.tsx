@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [token, locale])
 
   const programmeChoices = useMemo(
-    () => scopes.programmes.map((p) => ({ code: p.code, name: p.name })),
+    () => scopes.programmes.map((p) => ({ code: p.code, name: p.name, isActive: p.is_active })),
     [scopes.programmes],
   )
 

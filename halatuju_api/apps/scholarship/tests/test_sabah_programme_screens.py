@@ -116,6 +116,68 @@ class TestProgrammes(_Case):
         self.assertEqual(r.data['code'], 'has_open_year')
 
 
+class TestAnInactiveGiftIsReachable(_Case):
+    """⚠ A GIFT IS CREATED INACTIVE AND MUST BE CONFIGURED BEFORE IT IS SWITCHED ON.
+
+    That is the whole shape of the create flow (S2: an active second programme changes live
+    behaviour the instant it exists), and TWO endpoints filtered `is_active=True` and so refused
+    the state an org_admin spends the most time in. The owner hit it on first use: they created a
+    second gift, pressed into it, and the console showed them the FIRST gift's settings — the
+    breadcrumb list did not contain the new one, so the selection was discarded and fell back.
+
+    The FENCE is the organisation and it is untouched; the cross-org 404s below prove it.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.draft = Programme.objects.create(
+            organisation=self.org_a, code='sab-a-draft-gift', name_en='A Draft Gift',
+            is_active=False)
+
+    def test_the_scope_switcher_offers_a_gift_that_is_not_switched_on_yet(self):
+        r = self._get(self.admin_a, '/api/v1/admin/scholarship/scopes/')
+        self.assertEqual(r.status_code, 200)
+        codes = [p['code'] for p in r.data['programmes']]
+        self.assertIn('sab-a-draft-gift', codes)
+        self.assertIn('sab-a-flagship', codes)
+
+    def test_it_says_which_are_switched_on(self):
+        # So a switcher can mark one rather than leaving the reader to find out from the screen.
+        r = self._get(self.admin_a, '/api/v1/admin/scholarship/scopes/')
+        by_code = {p['code']: p['is_active'] for p in r.data['programmes']}
+        self.assertFalse(by_code['sab-a-draft-gift'])
+        self.assertTrue(by_code['sab-a-flagship'])
+
+    def test_ANOTHER_TENANTS_inactive_gift_is_still_invisible(self):
+        # Widening on `is_active` must not widen on the ORGANISATION. This is the assertion that
+        # says the fence did not move.
+        Programme.objects.create(
+            organisation=self.org_b, code='sab-b-draft', name_en='B Draft', is_active=False)
+        r = self._get(self.admin_a, '/api/v1/admin/scholarship/scopes/')
+        self.assertNotIn('sab-b-draft', [p['code'] for p in r.data['programmes']])
+
+    def test_its_configuration_can_be_opened_before_it_is_switched_on(self):
+        r = self._get(self.admin_a,
+                      '/api/v1/admin/scholarship/programme/configuration/?programme=sab-a-draft-gift')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data['programme']['code'], 'sab-a-draft-gift')
+
+    def test_configuration_still_404s_across_the_fence(self):
+        Programme.objects.create(
+            organisation=self.org_b, code='sab-b-draft-2', name_en='B Draft 2', is_active=False)
+        r = self._get(self.admin_a,
+                      '/api/v1/admin/scholarship/programme/configuration/?programme=sab-b-draft-2')
+        self.assertEqual(r.status_code, 404)
+
+    def test_two_gifts_still_refuse_to_be_guessed_between(self):
+        # The inactive gift now COUNTS towards ambiguity, which is correct: an unnamed request has
+        # two honest answers, so it must ask rather than resolve to the active one.
+        r = self._get(self.admin_a, '/api/v1/admin/scholarship/programme/configuration/')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'programme_required')
+        self.assertEqual(sorted(r.data['programmes']), ['sab-a-draft-gift', 'sab-a-flagship'])
+
+
 class TestIntakeYears(_Case):
     def _years(self, prog):
         return f'{PROGRAMMES}{prog.id}/years/'

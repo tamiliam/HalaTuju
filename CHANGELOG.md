@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: a gift that is not switched on yet was unreachable - 2026-09-04
+
+**Follow-up to the shape sprint, found by the owner on first use.** They created a second gift,
+pressed "Open its settings", and the console showed them the FIRST gift's settings — silently,
+with the breadcrumb naming the first gift too. **NO MIGRATION.** web + api.
+pytest 5792 -> **5800** (+8); jest 1657 -> **1666** (+9); tsc **24**; lint **0**;
+i18n **4722 x 3** (unchanged); build clean. **Two guards bite-checked.**
+
+**One symptom, two independent causes, and the product rule neither of them knew.**
+A gift is CREATED INACTIVE and is configured BEFORE it is switched on (Sabah S2), so "not switched
+on yet" is the state an org_admin spends the most time inside.
+
+### Fixed
+- **`AdminScopeListView` filtered `is_active=True`**, so the breadcrumb could not offer the gift
+  that had just been created. It now returns the caller's programmes whatever their state, each
+  carrying `is_active` so the crumb marks a draft one. **The ORGANISATION filter is untouched** —
+  nobody configures a switched-off tenant — and a cross-org 404 test pins that the fence did not
+  move with the filter.
+- **`AdminProgrammeConfigurationView._programme_for` filtered `is_active=True`**, so even with the
+  right gift chosen, "What we ask for" would have 404'd on it. Configuring an inactive programme
+  reaches nobody: no cohort is open beneath it, so no application resolves through it.
+- **A discarded pick fell through to "the only one".** `programmeScope` welded two correct rules
+  into one expression, so an unrecognised code was dropped and the fallback then substituted a
+  DIFFERENT gift. A pick is now honoured or resolves to nothing — never replaced.
+  `useSelectedProgramme` had the same shape and got the same fix.
+
+### Changed
+- `test_an_inactive_programme_is_not_offered` **reversed deliberately**, with the reason at the
+  line: it encoded the old rule, which was reasonable while the switcher was decorative.
+
 ## The shape — the console says what belongs to what - 2026-09-03
 
 **Sprint. SHIPPED, NOT DEPLOYED (owner gates the deploy).** Branch `feat/console-shape`.
