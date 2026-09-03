@@ -192,6 +192,21 @@ class TestFenceCoverageCompleteness(TestCase):
 
     # name → how it is fenced (see docs/plans/2026-07-15-phase1-s3a-endpoint-audit.md).
     FENCED_OR_EXEMPT = {
+        # Sabah S2b — gift programmes and their intake years. FENCED on the PROGRAMME's own
+        # `organisation_id`, derived from the caller's `owning_organisation` in
+        # `_ProgrammeScopedBase._programmes_for`; a super sees every tenant, everyone else exactly
+        # their own, and a NULL-org admin sees none (`.none()`, not everything). Cross-tenant is
+        # **404, never 403** — the same reasoning that keeps the org fence on 404 elsewhere: a 403
+        # would confirm the tenant exists. Intake years are reached only through
+        # `programme__in=_programmes_for(...)`, so they inherit the same wall.
+        # ⚠ `_programmes_for` deliberately includes INACTIVE programmes, unlike the configuration
+        # screen's `_programme_for` — you cannot switch a gift on if you cannot see it. That widens
+        # what is LISTED, never across the organisation boundary.
+        '_ProgrammeScopedBase': 'sabah-s2b-programme-scoped-base',
+        'AdminProgrammeListView': 'sabah-s2b-programmes-fenced',
+        'AdminProgrammeDetailView': 'sabah-s2b-programmes-fenced',
+        'AdminIntakeYearListView': 'sabah-s2b-intake-years-fenced',
+        'AdminIntakeYearDetailView': 'sabah-s2b-intake-years-fenced',
         # nav/IA N3a — the breadcrumb switchers. LIST-fenced on the same
         # owning_organisation the fence itself uses, so it cannot widen anything: super sees
         # every active org/programme, everyone else exactly their own, `partner` nothing (a

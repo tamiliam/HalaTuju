@@ -6118,3 +6118,333 @@ class AdminProgrammeConfigurationView(_AdminBase):
             logger.info('AUDIT programme_item_set programme=%s item=%s:%s was=%s now=%s by=%s',
                         programme.code, item.kind, item.code, was, state, admin.email or '')
         return Response(self._payload(programme))
+
+
+# ── Gift programmes and their intake years (Sabah S2b, 2026-09-02) ───────────────────────────────
+#
+# Until now neither a Programme nor a ScholarshipCohort could be created anywhere: no endpoint, no
+# screen, and `scholarship` registers no models in Django admin either. Standing up a second gift
+# meant an engineer writing SQL. That is the whole reason this exists — the owner's acceptance test
+# is "Suresh, as org admin, can do everything on his own without any work from me".
+#
+# ⚠ THE FENCE IS THE ORGANISATION, EXACTLY AS `AdminProgrammeConfigurationView` DOES IT:
+# `organisation_id` derived from the caller's own `owning_organisation`, and anything outside it is
+# **404, never 403** — a 403 would confirm the tenant exists. A super sees every tenant, because
+# they genuinely work across them.
+#
+# ⚠ THESE SCREENS ARE NOT A SECOND SECURITY BOUNDARY. A programme narrows INSIDE the org wall; it
+# never replaces it (`Programme` docstring). Nothing here authorises anything.
+
+def _programme_row(p):
+    """One gift, with the two counts the list screen shows. Deliberately not a serializer: the
+    shape is three joins wide and exists only here."""
+    from .models import ScholarshipCohort, ScholarshipApplication
+    cohorts = ScholarshipCohort.objects.filter(programme=p)
+    open_year = cohorts.filter(is_open=True, is_active=True).values_list('year', flat=True).first()
+    return {
+        'id': p.id, 'code': p.code,
+        'name_en': p.name_en, 'name_ms': p.name_ms, 'name_ta': p.name_ta,
+        'is_active': p.is_active,
+        'intake_years': cohorts.count(),
+        # Counted on a programme ALREADY narrowed to the caller's own `owning_organisation`, so it
+        # cannot be handed another tenant's programme in the first place.
+        # org-fence: programme pre-fenced by `_ProgrammeScopedBase._programmes_for`
+        'applications': ScholarshipApplication.objects.filter(programme=p).count(),
+        # The year currently taking applications, or None. Named `open_year` rather than `is_open`
+        # because a PROGRAMME is never open — one of its years is.
+        'open_year': open_year,
+    }
+
+
+# The requirement columns the screens tick and fill. NULL means "not applied" (S2a) — the value IS
+# the switch, so unticking is writing null and there is no companion boolean to disagree with it.
+REQUIREMENT_FIELDS = (
+    'min_spm_a_count', 'min_spm_bplus_count', 'min_stpm_pngk', 'min_merit_score',
+    'income_ceiling', 'per_capita_ceiling',
+)
+
+
+def _cohort_row(c):
+    from .models import ScholarshipApplication
+    return {
+        'id': c.id, 'code': c.code, 'name': c.name, 'year': c.year,
+        'is_open': c.is_open, 'is_active': c.is_active,
+        # org-fence: same reasoning — the cohort reached here was selected through
+        # `programme__in=self._programmes_for(admin)`, so it is already inside the caller's org.
+        'applications': ScholarshipApplication.objects.filter(cohort=c).count(),
+        'requirements': {f: getattr(c, f) for f in REQUIREMENT_FIELDS},
+    }
+
+
+class _ProgrammeScopedBase(_AdminBase):
+    """Shared gate + org fence for the two screens. `org_admin` and `super` only — deciding what a
+    programme is and who it asks for is the organisation's own decision, held by its administrator
+    (the same rule and the same roles as the Layer 0 configuration screen)."""
+
+    ROLES = ('org_admin',)
+
+    def _gate(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not self.has_role(admin, *self.ROLES):
+            return None, self._deny_role()
+        return admin, None
+
+    def _programmes_for(self, admin):
+        """Every gift this caller may touch. ⚠ INCLUDES INACTIVE ONES, unlike the configuration
+        screen's `_programme_for` — you cannot switch a programme on if you cannot see it."""
+        from .models import Programme
+        qs = Programme.objects.select_related('organisation')
+        if not self.has_role(admin, 'super'):
+            org_id = admin.owning_organisation_id
+            qs = qs.filter(organisation_id=org_id) if org_id else qs.none()
+        return qs
+
+    def _programme_or_404(self, admin, pk):
+        p = self._programmes_for(admin).filter(pk=pk).first()
+        if p is None:
+            return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        return p, None
+
+
+# A URL-safe slug, because this is what an apply link carries (`?p=<code>`), and lower-case only
+# so two codes cannot differ by case alone in a place people retype by hand.
+CODE_RE = re.compile(r'^[a-z0-9][a-z0-9-]{1,49}$')
+
+
+class AdminProgrammeListView(_ProgrammeScopedBase):
+    """GET the organisation's gift programmes · POST create one."""
+
+    def get(self, request):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        rows = [_programme_row(p) for p in self._programmes_for(admin).order_by('code')]
+        return Response({'programmes': rows})
+
+    def post(self, request):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        org = admin.owning_organisation
+        if org is None:
+            return Response({'error': 'no_org', 'code': 'no_org'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from .models import Programme
+        code = (request.data.get('code') or '').strip().lower()
+        name_en = (request.data.get('name_en') or '').strip()
+        if not CODE_RE.match(code):
+            return Response({'error': 'bad_code', 'code': 'bad_code'}, status=status.HTTP_400_BAD_REQUEST)
+        if not name_en:
+            return Response({'error': 'name_required', 'code': 'name_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # `Programme.code` is unique PLATFORM-WIDE, not per organisation, because it is what an
+        # apply link carries (`/scholarship/apply?p=<code>`) — PF-1. So the clash a tenant hits may
+        # be with another tenant's code, and the message must not say whose.
+        if Programme.objects.filter(code=code).exists():
+            return Response({'error': 'code_taken', 'code': 'code_taken'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # ⚠ CREATED INACTIVE, ALWAYS, whatever the client sends. An active second programme changes
+        # live behaviour the moment it exists: the payment-run picker appears (Sabah S1) and the
+        # configuration screen starts asking which programme. Switching it on is a separate,
+        # deliberate press once its first intake year is set up.
+        p = Programme.objects.create(
+            organisation=org, code=code, name_en=name_en,
+            name_ms=(request.data.get('name_ms') or '').strip(),
+            name_ta=(request.data.get('name_ta') or '').strip(),
+            is_active=False,
+        )
+        logger.info('AUDIT programme_created code=%s org=%s by=%s', p.code, org.id, admin.email or '')
+        return Response(_programme_row(p), status=status.HTTP_201_CREATED)
+
+
+class AdminProgrammeDetailView(_ProgrammeScopedBase):
+    """PATCH one gift — its three names and whether it is active. The CODE is never editable."""
+
+    def patch(self, request, pk):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        p, err = self._programme_or_404(admin, pk)
+        if err:
+            return err
+
+        changed = []
+        for f in ('name_en', 'name_ms', 'name_ta'):
+            if f in request.data:
+                v = (request.data.get(f) or '').strip()
+                if f == 'name_en' and not v:
+                    return Response({'error': 'name_required', 'code': 'name_required'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                setattr(p, f, v); changed.append(f)
+
+        if 'is_active' in request.data:
+            want = bool(request.data.get('is_active'))
+            # ⚠ SWITCHING OFF A GIFT THAT IS TAKING APPLICATIONS WOULD STRAND THEM MID-FLIGHT: the
+            # apply link would stop resolving (`resolve_open_cohort` filters `programme__is_active`)
+            # while a half-finished application still points at it. Close the year first.
+            if not want:
+                from .models import ScholarshipCohort
+                if ScholarshipCohort.objects.filter(programme=p, is_open=True, is_active=True).exists():
+                    return Response({'error': 'has_open_year', 'code': 'has_open_year'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            p.is_active = want; changed.append('is_active')
+
+        if changed:
+            p.save(update_fields=changed)
+            logger.info('AUDIT programme_updated code=%s fields=%s by=%s',
+                        p.code, ','.join(changed), admin.email or '')
+        return Response(_programme_row(p))
+
+
+def _requirements_from(data):
+    """Read the tick boxes. A key that is ABSENT is left alone; a key that is present and null
+    UNTICKS that requirement. Both matter: a PATCH sends only what changed, and clearing a value is
+    how a test is switched off (S2a — the value IS the switch)."""
+    out, bad = {}, None
+    for f in REQUIREMENT_FIELDS:
+        if f not in data:
+            continue
+        v = data.get(f)
+        if v in (None, ''):
+            out[f] = None
+            continue
+        try:
+            out[f] = float(v) if f in ('min_stpm_pngk', 'min_merit_score') else int(v)
+        except (TypeError, ValueError):
+            bad = f
+            break
+        if out[f] < 0:
+            bad = f
+            break
+    return out, bad
+
+
+class AdminIntakeYearListView(_ProgrammeScopedBase):
+    """GET one gift's intake years · POST open a new one."""
+
+    def get(self, request, pk):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        p, err = self._programme_or_404(admin, pk)
+        if err:
+            return err
+        from .models import ScholarshipCohort
+        years = ScholarshipCohort.objects.filter(programme=p).order_by('-year', 'code')
+        return Response({
+            'programme': {'id': p.id, 'code': p.code, 'name_en': p.name_en,
+                          'is_active': p.is_active},
+            'years': [_cohort_row(c) for c in years],
+        })
+
+    def post(self, request, pk):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        p, err = self._programme_or_404(admin, pk)
+        if err:
+            return err
+
+        from .models import ScholarshipCohort
+        code = (request.data.get('code') or '').strip().lower()
+        name = (request.data.get('name') or '').strip()
+        year = request.data.get('year')
+        if not CODE_RE.match(code):
+            return Response({'error': 'bad_code', 'code': 'bad_code'}, status=status.HTTP_400_BAD_REQUEST)
+        if not name:
+            return Response({'error': 'name_required', 'code': 'name_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            year = int(year)
+        except (TypeError, ValueError):
+            return Response({'error': 'bad_year', 'code': 'bad_year'}, status=status.HTTP_400_BAD_REQUEST)
+        if ScholarshipCohort.objects.filter(code=code).exists():
+            return Response({'error': 'code_taken', 'code': 'code_taken'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        reqs, bad = _requirements_from(request.data)
+        if bad:
+            return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # ⚠ BOTH THE PROGRAMME AND THE ORGANISATION ARE SET, and they must agree. The application
+        # denormalises `owning_organisation` from its cohort, so a cohort carrying one and not the
+        # other files students under the wrong fence (TD-177 is exactly this, in a test fixture).
+        # It is DERIVED, never asked for.
+        #
+        # ⚠ CREATED CLOSED, ALWAYS. `is_open` defaults to True on the model, which would mean
+        # creating a year opens applications in the same press. Opening is what lets real students
+        # in; it gets its own deliberate action below.
+        c = ScholarshipCohort.objects.create(
+            programme=p, owning_organisation=p.organisation,
+            code=code, name=name, year=year, is_active=True, is_open=False, **reqs,
+        )
+        logger.info('AUDIT intake_year_created cohort=%s programme=%s by=%s',
+                    c.code, p.code, admin.email or '')
+        return Response(_cohort_row(c), status=status.HTTP_201_CREATED)
+
+
+class AdminIntakeYearDetailView(_ProgrammeScopedBase):
+    """PATCH one intake year — its name, its requirements, and whether it is taking applications."""
+
+    def _cohort_or_404(self, admin, pk):
+        from .models import ScholarshipCohort
+        c = (ScholarshipCohort.objects
+             .select_related('programme', 'programme__organisation')
+             .filter(pk=pk, programme__in=self._programmes_for(admin)).first())
+        if c is None:
+            return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        return c, None
+
+    def patch(self, request, pk):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        c, err = self._cohort_or_404(admin, pk)
+        if err:
+            return err
+
+        changed = []
+        if 'name' in request.data:
+            name = (request.data.get('name') or '').strip()
+            if not name:
+                return Response({'error': 'name_required', 'code': 'name_required'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            c.name = name; changed.append('name')
+
+        reqs, bad = _requirements_from(request.data)
+        if bad:
+            return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
+                            status=status.HTTP_400_BAD_REQUEST)
+        for f, v in reqs.items():
+            setattr(c, f, v); changed.append(f)
+
+        if 'is_open' in request.data:
+            want = bool(request.data.get('is_open'))
+            if want:
+                # ⚠ ONE OPEN ROUND PER ORGANISATION, REFUSED HERE RATHER THAN DISCOVERED LATER.
+                # `services.resolve_open_cohort` RAISES when two rounds are open, because picking
+                # one would file a student under the wrong fence (PF-1). That refusal protects the
+                # student, but it arrives at the moment they press Apply. This one arrives at the
+                # moment the admin creates the ambiguity, which is where it can still be undone.
+                from .models import ScholarshipCohort
+                clash = (ScholarshipCohort.objects
+                         .filter(owning_organisation=c.programme.organisation,
+                                 is_open=True, is_active=True)
+                         .exclude(pk=c.pk).values_list('code', flat=True).first())
+                if clash:
+                    return Response({'error': 'another_year_open', 'code': 'another_year_open',
+                                     'open_code': clash}, status=status.HTTP_400_BAD_REQUEST)
+                if not c.programme.is_active:
+                    return Response({'error': 'programme_not_active', 'code': 'programme_not_active'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            c.is_open = want; changed.append('is_open')
+
+        if changed:
+            c.save(update_fields=changed)
+            logger.info('AUDIT intake_year_updated cohort=%s fields=%s by=%s',
+                        c.code, ','.join(changed), admin.email or '')
+        return Response(_cohort_row(c))

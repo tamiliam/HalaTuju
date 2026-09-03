@@ -76,6 +76,8 @@ from .views_admin import (
     AdminAssignableAdminsView,
     AdminScopeListView,
     AdminProgrammeConfigurationView,
+    AdminProgrammeListView, AdminProgrammeDetailView,
+    AdminIntakeYearListView, AdminIntakeYearDetailView,
     AdminOrganisationThemeView,
     AdminOrganisationThemePublishView,
     AdminOrganisationThemeRevertView,
@@ -393,6 +395,12 @@ urlpatterns = [
          AdminCloseApplicationView.as_view()),
     path('admin/scholarship/scopes/', AdminScopeListView.as_view()),
     path('admin/scholarship/programme/configuration/', AdminProgrammeConfigurationView.as_view()),
+    # Gift programmes and their intake years (Sabah S2b). Org-fenced on the programme's own
+    # organisation, cross-tenant => 404 not 403, org_admin + super only.
+    path('admin/scholarship/programmes/', AdminProgrammeListView.as_view()),
+    path('admin/scholarship/programmes/<int:pk>/', AdminProgrammeDetailView.as_view()),
+    path('admin/scholarship/programmes/<int:pk>/years/', AdminIntakeYearListView.as_view()),
+    path('admin/scholarship/intake-years/<int:pk>/', AdminIntakeYearDetailView.as_view()),
     path('admin/scholarship/organisation/theme/', AdminOrganisationThemeView.as_view()),
     path('admin/scholarship/organisation/theme/publish/', AdminOrganisationThemePublishView.as_view()),
     path('admin/scholarship/organisation/theme/revert/', AdminOrganisationThemeRevertView.as_view()),
