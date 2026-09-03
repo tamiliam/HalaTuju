@@ -165,24 +165,6 @@ these thresholds are read LIVE by `shortlisting.evaluate()` while "what we ask f
 application at submit. Threshold changes also write an audit line carrying old → new (TD-203's
 lesson, applied before it bit twice).
 
-*Original scope kept below for the reasoning it carries.*
-
-### ~~S3 (original scope)~~ · complexity: MEDIUM · **Stitch first**
-
-**Goal.** The **Rules** placeholder becomes the 13 thresholds, editable and explained.
-
-**Scope.** `min_spm_a_count`, `min_spm_bplus_count`, `min_stpm_pngk`, `income_ceiling`,
-`per_capita_ceiling`, `bucket_b_margin`, `funding_envelope`, and the four email-timing fields.
-Per-intake (they live on the cohort). **These feed the decision engine** — every change wants an
-audit line and a "this changes who qualifies" warning, the Layer 0 pattern.
-
-**Acceptance.** Changing a threshold changes who shortlists, is audited, and warns first. A
-cohort mid-intake refuses a change that would strand a decided applicant, or says plainly that it
-will not be retro-applied — **owner's call, raised in the Stitch pass.**
-
-**Could merge into S2** if fewer handoffs are wanted — same model, two screens. Kept separate
-because S2 is structural and S3 is behaviour-sensitive, and mixing those is how a config screen
-quietly changes a verdict.
 
 ### S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT · **unblocks the RM100,000**
 
@@ -211,24 +193,6 @@ RM100,000 credit is accepted where it was previously refused `sponsor_not_in_pro
 Sabah-bound reviewer is offered Sabah applications only. Every existing BrightPath sponsor,
 reviewer and source keeps working with no change — proven by the existing suite passing unmodified.
 
-*The original S4 scope, which this absorbs:*
-
-### ~~S4 (original scope)~~ — accepting a sponsor into a gift · complexity: MEDIUM
-
-**Goal.** An `org_admin` accepts a benefactor into a programme; the flagship literal dies.
-
-**Scope.** `DEFAULT_PROGRAMME_CODE` stops being a tenant literal in production code. An acceptance
-surface on the existing sponsor detail page (memberships already render there). Endpoint fenced on
-`programme__organisation_id` like the credits endpoints.
-
-**⚠ The pool is fail-closed and must stay so.** No membership → empty pool. Every channel narrows
-through `pool.for_sponsor`, **including the weekly digest and the real-time alert** — P3's source
-guard exists precisely because those two routed around the fence once. Do not add a sixth channel
-without extending that guard.
-
-**Acceptance.** The Sabah benefactor is accepted into Sabah only, sees Sabah students only, and the
-RM100,000 credit is accepted where it was previously refused `sponsor_not_in_programme`. A flagship
-sponsor's visibility is byte-identical.
 
 ### ~~S5 — reviewers bound to one gift~~ · **ABSORBED INTO S-ASSIGN, 2026-09-03**
 
@@ -236,24 +200,6 @@ It is the same shape as the sponsor one, and building it separately would produc
 answering one question. Its reserved menu slot was deleted in S0: which gift a reviewer covers is a
 FIELD on that reviewer, so it belongs on their record, not on a page of its own.
 
-*Original scope kept below for the rulings it carries.*
-
-### ~~S5 (original scope)~~ · complexity: MEDIUM · not launch-blocking
-
-**Goal.** P1b's remaining third: Sabah's volunteers see Sabah applications.
-
-**Scope.** Nullable `programme` on `PartnerAdmin`, **NULL = organisation-wide** (owner's ruling —
-no backfill, existing staff unaffected). Assignment lists filter by the application's programme when
-the reviewer is bound. `org_admin` / `finance` stay org-wide. The **Reviewer scoping** placeholder
-becomes the screen. Set from the invite.
-
-**Acceptance.** A Sabah-bound reviewer is offered Sabah applications only. Every existing BrightPath
-reviewer keeps working with no change — proven by the existing suite passing unmodified.
-
-**Why last.** Org-wide reviewing is correct-but-broad, not wrong. It is the only gap of the five
-that does not block the launch or endanger money.
-
----
 
 ## Sequencing rationale
 

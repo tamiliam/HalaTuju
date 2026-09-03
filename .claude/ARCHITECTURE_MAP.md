@@ -228,14 +228,34 @@ out of 100 and applies to **SPM applicants only**; `shortlisting.spm_merit` deli
 reuse `serializers_admin._application_merit_score`, whose `held_qualification` docstring says
 **"NOT A GATE, AND MUST NOT BECOME ONE"**.
 
-**The screens that write them** (Sabah S2b): `Organisation → Gift programmes`
-(`app/admin/organisation/programmes/`) creates a `Programme`, and `Programme → Intake years`
-(`app/admin/programme/years/`) creates a `ScholarshipCohort` and opens it. Endpoints in
-`views_admin.py` under `_ProgrammeScopedBase`, fenced on the programme's `organisation_id`
-(cross-tenant → 404). A gift is created INACTIVE and a year CLOSED whatever the client sends; only
-ONE round per organisation may be open. ⚠ The B+ requirement is STORED as the total strong count and
-SHOWN as the extra beyond the A− grades — that conversion lives in `lib/intakeYears.ts` with the
-test that pins it, and nowhere else. Sprint 4a
+**The screens that write them** (Sabah S2b, re-shaped 2026-09-03). The gifts an organisation runs
+are a SECTION of `Organisation → Overview` (`components/admin/GiftProgrammes.tsx`); everything you
+SET about one gift is `Programme → Configuration` (`app/admin/programme/page.tsx`), three tabs in
+this order: **Rules · What we ask for · Intake year**. Endpoints in `views_admin.py` under
+`_ProgrammeScopedBase`, fenced on the programme's `organisation_id` (cross-tenant → 404).
+`/admin/organisation/programmes` and `/admin/programme/years` are permanent redirects.
+
+A gift is created INACTIVE and a year CLOSED whatever the client sends; only ONE round per
+organisation may be open.
+
+⚠ **AN INACTIVE GIFT MUST STAY REACHABLE.** A gift is created inactive and CONFIGURED before it is
+switched on, so that is the state an org_admin most often stands inside. Two endpoints filtered
+`is_active=True` and made it unreachable — `AdminScopeListView` and
+`AdminProgrammeConfigurationView._programme_for` — and both now return the caller's programmes
+whatever their state. Do not re-add either filter; the FENCE is the organisation.
+
+⚠ The B+ requirement is STORED as the total strong count and SHOWN as the extra beyond the A−
+grades. Both directions live in `lib/intakeYears.ts` (`draftToRequirements` /
+`requirementsToDraft`) with the round-trip test that pins them, and nowhere else — the Rules tab
+LOADS a stored value, so a screen that sent what it displays would silently raise "4 plus 1" to
+"4 plus 5".
+
+⚠ **RULES AND "WHAT WE ASK FOR" HAVE DIFFERENT BLAST RADIUS**, which is why one tab carries a
+warning and the other does not: documents/questions are frozen per application at submit
+(`requirements_snapshot`), while `shortlisting.evaluate()` reads the six thresholds LIVE. A
+threshold change writes `AUDIT intake_year_requirements_set` carrying old → new.
+
+Sprint 4a
 added the `FundingNeed` model (OneToOne → application, `funding_needs`, computed `total`), deeper-info
 fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoint, and a
 `completeness` block on the read serializer (migration 0003). Sprint 5a added `ApplicantDocument`/
@@ -875,8 +895,20 @@ Four sprints replaced a hardcoded top bar with a data-driven shell. Two files ca
     with no registry entry FAILS the build, deliberately (it is what stopped a seventh orphaned
     route). Nested dynamic routes (`sponsors/[id]`) need nothing.
   - `activeItem()` is longest-prefix with `exact: true` on routes that are pages rather than
-    sections — `/admin` and `/admin/organisation` both need it.
+    sections — `/admin`, `/admin/organisation` and `/admin/programme` all need it.
   - Chords are optional; a test asserts they are unique across the whole registry.
+  - **⚠ THE PROGRAMME SCOPE IS TWO ROWS** (`programmeConfig`, `applications`) and a third means
+    somebody has promoted a TAB back into a page. Four reserved slots were deleted on 2026-09-03
+    because three of them guessed the shape of unscoped work wrongly; `billingRates` is the only
+    one left, and it survives because its ENDPOINT shipped. A test pins that population literally.
+- **`halatuju-web/src/lib/programmeScope.tsx`** — WHICH GIFT the Programme-scope pages are about.
+  Held by the shell, shown by the breadcrumb (`ScopeSwitcher` / `BreadcrumbScopes`), read by every
+  tab, and handed to each endpoint as an explicit `?programme=<code>` the server re-fences.
+  **⚠ STILL NOT AN AUTH CONTEXT** — never a header, cookie or middleware rewrite (that relocates
+  the org fence into the client). **⚠ It never picks silently, and a pick it does not recognise
+  resolves to NOTHING rather than to a different gift** — that substitution was a live defect on
+  2026-09-03. Not persisted. `lib/useSelectedProgramme.ts` joins the chosen CODE to the full
+  programme record the intake-year endpoints need.
 - **`halatuju-web/src/components/admin/`** — `AppShell` (owns probe + badge state, the ⌘K palette
   and the `G`-then-letter listener), `Sidebar` (the 48px rail; opens on hover/focus, overlays),
   `Topbar` (breadcrumb + rail pin + search/help/bell/account), `Menu` (ONE dropdown primitive, used
