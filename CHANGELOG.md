@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Sabah S1 — the payment run says which gift - 2026-09-02
 
-**Sprint.** **NO migration.** web only. Retro
+**Sprint. DEPLOYED** — `main` at `6dfcefe0`, build `c684a867` SUCCESS, serving
+**halatuju-web-00819-9zw**; api unchanged at `halatuju-api-00971-ck4`. Verified in the served
+bundle, not only the build log: the picker label and the `programme_required` sentence are both
+present. **NO migration.** web only. Retro
 `docs/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`; lessons ×2.
 jest 1618 → **1623**; tsc **24** (baseline); lint **0**; i18n 4644 → **4648 × 3**; build clean.
 Two guards bite-checked. First sprint of `docs/plans/2026-09-02-sabah-self-serve-roadmap.md`.

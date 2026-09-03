@@ -82,7 +82,11 @@ the screen, with an unexplained failure.** The API is right; the screen is behin
 
 Five, sequenced by **live risk first, then hard dependency, then value.**
 
-### ✅ S1 — SHIPPED 2026-09-02. **The armed regression is disarmed.**
+### ✅ S1 — SHIPPED **AND DEPLOYED** 2026-09-02. **The armed regression is disarmed.**
+
+**LIVE: `halatuju-web-00819-9zw`** (build `c684a867` SUCCESS), api unchanged at `00971-ck4` — only
+the web trigger fired, a fifth observation that it follows PYTHON. Verified in the served bundle.
+**A Sabah `Programme` row may now be created without breaking the flagship's payouts.**
 
 Retro `docs/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`; lessons ×2. NO migration.
 web only. jest 1618 → **1623**; i18n 4644 → **4648 × 3**. Two guards bite-checked.

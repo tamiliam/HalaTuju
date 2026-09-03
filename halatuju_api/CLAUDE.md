@@ -552,7 +552,10 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-02, after Sabah S1 — THE ARMED PAYOUT REGRESSION IS DISARMED)
 
-**SHIPPED — SABAH S1. NOT DEPLOYED (owner gates it).** Branch `feat/sabah-s1-payment-run-programme`.
+**SHIPPED AND DEPLOYED — SABAH S1.** `main` at `6dfcefe0`, build `c684a867` SUCCESS, serving
+**halatuju-web-00819-9zw**; api unchanged at `halatuju-api-00971-ck4` (**fifth observation** that
+the api trigger follows PYTHON). Verified in the served bundle, not only the build log.
+**A Sabah `Programme` row may now be created without breaking the flagship's payouts.**
 **NO migration.** web only. Retro `docs/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`;
 lessons ×2. jest 1618 → **1623**; tsc **24** (baseline); lint **0**; i18n 4644 → **4648 × 3**;
 build clean. Two guards bite-checked.
