@@ -557,7 +557,7 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 **Migration `0148` APPLIED MIGRATE-FIRST and verified BEFORE the push** (five columns made
 nullable, one added; the live cohort's values untouched; `django_migrations` row recorded).
 Retro `docs/retrospective-2026-09-03-sabah-s2-programme-screens.md`; lessons x3.
-pytest 5716 -> **5742**; jest 1623 -> **1631**; tsc **24**; lint **0**; i18n 4648 -> **4714 x 3**;
+pytest **5790** (FULL suite, +26); jest **1631** (+8); tsc **24**; lint **0**; i18n 4648 -> **4714 x 3**;
 build clean. Five guards bite-checked. Live smoke green; intake still `{"open":false}`.
 
 **⚠ ROADMAP: `docs/plans/2026-09-02-sabah-self-serve-roadmap.md`** (owner-approved 2026-09-02).

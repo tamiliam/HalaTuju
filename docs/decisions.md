@@ -8519,3 +8519,88 @@ a control to say so, which is the entire point of shipping the switch in the sam
 **Revisit if:** the owner would rather dark stayed opt-in — in which case the default becomes
 `light` rather than `auto`, which is one constant in `theme.ts` and one in `theme-boot.js`, pinned
 by a test that reads both.
+
+---
+
+## A shortlisting requirement is optional, and the VALUE is the switch — Sabah S2a, 2026-09-03
+
+**Decision:** every threshold on `ScholarshipCohort` becomes nullable, and `None` means that test is
+not applied. There is **no companion `use_x` boolean**. The admin screen ticks a requirement by
+writing a value and unticks it by clearing one.
+
+**Alternatives considered:** (a) a boolean beside each number (`use_stpm_floor` + `min_stpm_pngk`);
+(b) a JSON `requirements` blob listing the enabled tests; (c) a sentinel value such as 0 or -1
+meaning "off".
+
+**Rationale:** (a) can express states that must never exist — on-but-blank, off-but-4 — and once
+they exist something has to decide which field wins, silently, in whichever module was written last.
+One nullable column cannot contradict itself. (b) makes every read a parse and loses the database's
+own type checking on values that feed a decision engine. (c) is worse than either: **0 is a real
+requirement that everybody passes**, and collapsing it into "off" removes a setting an organisation
+might legitimately want.
+
+**Trade-offs:** "ticked" is no longer directly queryable as a boolean — `WHERE min_stpm_pngk IS NOT
+NULL` is the query. Accepted: that is one idiom, not a class of bug. The screen also has to render a
+tick from the presence of a value, which is three lines.
+
+**Why it was needed at all:** every column was `NOT NULL` with a default, so every test always ran.
+BrightPath never asked for an STPM requirement and a PNGK floor of 2.90 was applied to all nine of
+its STPM applicants for an entire intake regardless. It rejected none of them, so the defect was
+live, real and invisible — and the next programme would have inherited it.
+
+**Revisit if:** a requirement is ever wanted in an "off but remember the number" state — a draft.
+That is a genuinely different feature and would want its own representation, not a second column
+bolted beside this one.
+
+---
+
+## The merit gate does not reuse the admin list's merit function — Sabah S2a, 2026-09-03
+
+**Decision:** `shortlisting.spm_merit` computes the UPU merit for the gate, keyed on `exam_type`.
+It does **not** call `serializers_admin._application_merit_score`, which computes the same number.
+
+**Alternatives considered:** import the existing function — one line, identical arithmetic.
+
+**Rationale:** that function keys on `held_qualification`, whose own docstring reads **"⚠ NOT A
+GATE, AND MUST NOT BECOME ONE"** and records that widening it re-bands live applicants, naming the
+awarded record it would have re-based. It answers *"what should we rank this person by in the admin
+list?"*; the engine asks *"does this applicant clear the programme's requirement?"* Those are
+different questions that happen to want the same arithmetic today.
+
+**The arithmetic is not duplicated** — `prepare_merit_inputs` / `calculate_merit_score` in
+`apps.courses.engine` remain the single source, and are what the course selector uses. What is
+deliberately separate is the QUALIFICATION decision.
+
+**Trade-offs:** two call sites can drift on which profiles they score. Accepted, and it is the
+lesser risk: collapsing them is how a display heuristic silently becomes a decision about money.
+
+**Also settled here:** the merit requirement applies to **SPM applicants only**. An STPM applicant's
+comparable figure is the PNGK (`min_stpm_pngk`); a 0–100 floor against a 0–4 CGPA would reject
+everyone who sat STPM.
+
+**Revisit if:** merit is ever wanted as an STPM requirement too — which needs a separate column with
+STPM's own scale, never this one reinterpreted.
+
+---
+
+## Creating a gift never activates it; creating an intake year never opens it — Sabah S2b, 2026-09-03
+
+**Decision:** `POST` a programme and it is created `is_active=False`; `POST` an intake year and it is
+created `is_open=False` — **whatever the client sends**. Switching on and opening are separate,
+deliberate actions.
+
+**Alternatives considered:** honour an `is_active` / `is_open` in the create payload, which is the
+conventional REST shape and one fewer press.
+
+**Rationale:** both flags change live behaviour the instant they flip, and neither change is
+obviously connected to the act of creating. An active second programme makes the payment-run picker
+appear (Sabah S1) and makes the configuration screen start asking which programme. An open intake
+year is the moment real students can walk in. `is_open` **defaults to True on the model**, so the
+conventional shape would have opened applications as a side effect of filling in a form.
+
+**Trade-offs:** two presses instead of one, and a client that sends `is_active: true` is silently
+ignored rather than refused. Accepted: a refusal would be noise on a field the caller should not be
+setting, and the response carries the actual state.
+
+**Revisit if:** an import or bulk-provisioning path ever needs to create a live programme in one
+step — that is a different caller with a different audit story, and should say so explicitly.

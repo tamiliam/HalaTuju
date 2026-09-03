@@ -213,7 +213,29 @@ now also carries a rejection `category` — merit/need/ineligible — which `sco
 each bucket maps to its own decline email via `emails.send_decline_email(category=…)`. 2026-07-21 adds a THIRD admin
 bucket `incomplete` — `services.org_admin_reject`/`AdminOrgRejectView`, super/org_admin only, `shortlisted` only,
 IMMEDIATE and irreversible (no cool-off), reason stored verbatim in `rejection_comments` but never emailed; it has
-no template of its own so it falls through to the generic `FAIL_*` copy.) Sprint 4a
+no template of its own so it falls through to the generic `FAIL_*` copy.)
+
+**⚠ EVERY SHORTLISTING THRESHOLD IS OPTIONAL — `NULL` MEANS THE TEST IS NOT APPLIED** (Sabah S2a,
+migration `0148`). `min_spm_a_count`, `min_spm_bplus_count`, `min_stpm_pngk`, `min_merit_score`,
+`income_ceiling` and `per_capita_ceiling` are all nullable, and **the value IS the switch** — there
+is deliberately no companion `use_x` boolean, because two columns can disagree and one cannot.
+Before this every column was `NOT NULL` with a default, so every test always ran: BrightPath never
+asked for an STPM requirement and PNGK ≥ 2.90 applied to all nine of its STPM applicants for a whole
+intake anyway. Two consequences to know rather than discover: no academic requirement at all PASSES
+the academic test, and neither income ceiling set passes the financial test with bucket `''` (not
+`'B'` — `'B'` means "passed the income test", and there was none). `min_merit_score` is the UPU merit
+out of 100 and applies to **SPM applicants only**; `shortlisting.spm_merit` deliberately does NOT
+reuse `serializers_admin._application_merit_score`, whose `held_qualification` docstring says
+**"NOT A GATE, AND MUST NOT BECOME ONE"**.
+
+**The screens that write them** (Sabah S2b): `Organisation → Gift programmes`
+(`app/admin/organisation/programmes/`) creates a `Programme`, and `Programme → Intake years`
+(`app/admin/programme/years/`) creates a `ScholarshipCohort` and opens it. Endpoints in
+`views_admin.py` under `_ProgrammeScopedBase`, fenced on the programme's `organisation_id`
+(cross-tenant → 404). A gift is created INACTIVE and a year CLOSED whatever the client sends; only
+ONE round per organisation may be open. ⚠ The B+ requirement is STORED as the total strong count and
+SHOWN as the extra beyond the A− grades — that conversion lives in `lib/intakeYears.ts` with the
+test that pins it, and nowhere else. Sprint 4a
 added the `FundingNeed` model (OneToOne → application, `funding_needs`, computed `total`), deeper-info
 fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoint, and a
 `completeness` block on the read serializer (migration 0003). Sprint 5a added `ApplicantDocument`/

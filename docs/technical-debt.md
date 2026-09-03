@@ -1409,6 +1409,13 @@ Harmless today — the column is nullable, the command is dev/e2e-only, and prod
 — but it is a half-updated write path of exactly the kind that bites once routing reads the column.
 **Fix:** set both, alongside the routing work (PF-1). (Logged 2026-07-26, platform P1a.)
 
+**Update 2026-09-03 (Sabah S2b): still open, and now the LAST one-sided writer.** The canonical
+path is fixed — `AdminIntakeYearListView.post` derives `owning_organisation` from the programme and
+never asks for it, with `test_it_sets_BOTH_the_programme_and_the_organisation` pinning it. So the
+rule is enforced everywhere a real cohort is created; `bursary_e2e.py:142` is the one remaining
+place that writes one without the other. Two lines, dev-only, and deliberately not folded into a
+sprint close.
+
 ### [TD-178] Artifact Registry: 30-day retention costs RM27/mo — RESOLVED 2026-07-27 (reclaim MEASURED)
 
 > **✅ RESOLVED 2026-07-27 — measured, not projected.**
@@ -2974,3 +2981,72 @@ beside it is blue and survives.
 for the tenants who never supply one) rather than a CSS one.
 
 **Status:** Open. Owner's call — it is brand artwork.
+
+
+---
+
+### [TD-226] Two cohort settings are stored and read by nothing — low
+
+**Found:** Sabah S2 (2026-09-03), enumerating the requirement columns for the intake-year screen.
+
+**What:** `ScholarshipCohort.funding_envelope` and `ScholarshipCohort.bucket_b_margin` are declared
+on the model and read by **no code at all** outside migrations. Verified by grep across `apps/`.
+
+| column | live value | read by |
+|---|---|---|
+| `funding_envelope` | **NULL** on the only cohort | nothing |
+| `bucket_b_margin` | 1 | nothing (its own `help_text` says `DEPRECATED (pre-S8)`) |
+
+**Why it matters, mildly:** the owner's own reading of the funding pot was *"was not an issue"* —
+and the data agrees, because nothing ever enforced it. A settings field that looks enforceable and
+is not is a small trap: the Sabah mock asked for the pot at creation on the strength of the column
+existing, and was corrected by the owner, not by the code.
+
+**Why it is LOW and not being fixed now:** dropping a column is a migration against a live table for
+no behavioural gain, and `funding_envelope` may yet be wanted once a programme has a real budget
+ceiling. **The cheap half is done:** the intake-year screen does not offer either of them, so
+nothing new can come to depend on them.
+
+**Fix (when convenient):** drop `bucket_b_margin` outright — it is explicitly deprecated. Decide
+whether `funding_envelope` is a real requirement or should follow it.
+
+**Status:** Open.
+
+---
+
+### [TD-227] A rejection can be recorded by someone who was never assigned, with no reason — medium
+
+**Found:** Sabah S2 (2026-09-03), reconciling the owner's count of automatic rejections against
+production.
+
+**What:** of BrightPath's 42 rejections, **25 carry no reviewer assignment**. Fifteen were the
+engine. The other **ten were recorded by a person who was never assigned the case** — and all ten
+had *passed* the engine, so a human overrode a shortlisting decision on an application that was
+never formally theirs.
+
+The owner reviewed all ten and confirmed each is legitimate (2026-09-03): five are private-college
+offer letters the IPTS gate could not see, and five are early cleanup. **This is not a report of
+wrong decisions.** It is a report that nothing in the system distinguishes the two shapes:
+
+| | count | comment recorded |
+|---|---|---|
+| marked `incomplete` | 5 | **all five** carry a real reason |
+| marked `interview` | 5 | **none** |
+
+Five applications say *"rejected at interview"* with no assignment, no comment, and — on four of
+them, all the same account on the same day — no plausible interview. The record now asserts
+something that may not have happened.
+
+**Why it matters now:** Sabah runs on the same rails with its own volunteers, and reviewer
+programme scoping (S5) is not built either, so the population who can do this is about to grow.
+
+**Shape of the fix (two cheap guardrails, neither decided):**
+1. **Require a comment** when rejecting. The five good cases already do it voluntarily.
+2. **Say who, plainly.** If the rejecter was not the assigned reviewer, the record should show that
+   rather than reading as a reviewer's verdict.
+
+Deliberately NOT proposed: blocking an unassigned rejection. An `org_admin` catching a
+private-college offer before a reviewer is assigned is the system working, and five of these ten
+are exactly that.
+
+**Status:** Open. Not in the Sabah roadmap; raised for the owner to schedule.

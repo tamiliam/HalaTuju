@@ -2,7 +2,7 @@
 
 **2026-09-03. web + api. Migration `0148`, applied migrate-first and verified before the push.**
 Built in two halves on one branch: **S2a** the engine, **S2b** the endpoints and screens.
-pytest 5716 → **5742**; jest 1623 → **1631**; tsc **24** (baseline); lint **0**;
+pytest **5790** (full suite, +26); jest **1631** (+8); tsc **24** (baseline); lint **0**;
 i18n 4648 → **4714 × 3**; build clean. **Five guards bite-checked.**
 
 **LIVE:** `halatuju-web-00820-r2r` / `halatuju-api-00972-jrg`. Both triggers fired (Python changed).
@@ -80,6 +80,18 @@ Merit applies to **SPM applicants only**: an STPM applicant's comparable figure 
   it and the guard still failed, correctly, because it could not see it.
 - **The role matrix** in `navigation.test.ts` is literal by design and failed on the new nav item.
   That is a permission change and it should take a deliberate edit.
+
+## ▶ I REPORTED THE TEST COUNT FROM TWO APP DIRECTORIES, NOT THE SUITE
+
+Every number I gave during the sprint — "5716 → 5742" — came from
+`pytest apps/scholarship/tests apps/courses/tests`, the two directories I was working in. The full
+suite is **5790**. The delta was right (+26); the base was a subset, so the figure understated the
+project by 48 tests and would have been copied forward into the registry.
+
+Caught by sprint-close step 10, which says in as many words: *run the full suite across ALL test
+directories and record the combined total, not just one component.* **A number is only a baseline
+if it was measured the same way last time** — and a scoped command is the easy way to produce two
+figures that look comparable and are not.
 
 ## ▶ AND ONE I CAUGHT BEFORE THE BUILD DID
 

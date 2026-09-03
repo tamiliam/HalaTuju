@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 **Sprint. DEPLOYED** — `main` at `ad43786d`, both builds SUCCESS, serving
 **halatuju-web-00820-r2r** / **halatuju-api-00972-jrg**. **Migration `0148` applied migrate-first
 and verified BEFORE the push.** Retro `docs/retrospective-2026-09-03-sabah-s2-programme-screens.md`;
-lessons x3. pytest 5716 -> **5742**; jest 1623 -> **1631**; tsc **24**; lint **0**;
+lessons x3. pytest **5790** (full suite, +26); jest **1631** (+8); tsc **24**; lint **0**;
 i18n 4648 -> **4714 x 3**; build clean. Five guards bite-checked.
 
 ### Added

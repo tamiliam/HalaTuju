@@ -107,27 +107,10 @@ nothing sent → today's behaviour exactly. Pinned as its own test.
 inputs. **Pinned, not fixed:** every create failure renders twice (one `error` state feeds both the
 page banner and the dialog) — pre-existing, and asserting one node would have hidden it.
 
-#### S1 — the payment run says which gift *(original scoping)* · complexity: LOW · **must ship before any Sabah row exists**
-
-**Goal.** The screen that creates a monthly run states the programme, and survives a second one.
-
-**Scope.** `createPaymentRun` gains `programme_id`; a picker on the payments screen that
-**preselects and hides itself when the org runs one** (so nothing changes for BrightPath today);
-`programme_required` mapped to real copy in en/ms/ta; the run list and detail already show the
-programme (P2b) — confirm, don't rebuild.
-
-**Acceptance.**
-- A test with **two** active programmes proves the screen creates a run against the chosen one.
-- With **one**, the payload and the screen are unchanged — proven by the existing suite passing
-  unmodified.
-- The error path is exercised, not just the happy one.
-
-**Why first.** It is the only item that protects money already moving.
-
 ### ✅ S2 — SHIPPED **AND DEPLOYED** 2026-09-03. **The screens exist.**
 
 Retro `docs/retrospective-2026-09-03-sabah-s2-programme-screens.md`; lessons x3. **Migration `0148`
-applied migrate-first + verified.** web + api. pytest **5742**, jest **1631**, i18n **4714 x 3**.
+applied migrate-first + verified.** web + api. pytest **5790** (full suite), jest **1631**, i18n **4714 x 3**.
 Five guards bite-checked. LIVE `halatuju-web-00820-r2r` / `halatuju-api-00972-jrg`.
 
 **Approved design:** the Artifact mock, drafts 1-4 (Stitch timed out and never surfaced the screens
@@ -143,24 +126,6 @@ nine of its STPM applicants for an intake anyway, rejecting none of them.
 **▶ THE VALUE IS THE SWITCH** — no companion boolean, because two columns can disagree and one
 cannot. **▶ MERIT DOES NOT REUSE THE ADMIN LIST'S FUNCTION**, whose docstring says "NOT A GATE, AND
 MUST NOT BECOME ONE".
-
-#### S2 — original scoping · complexity: HIGH · **Stitch first**
-
-**Goal.** An `org_admin` creates the gift and opens its first year without an engineer.
-
-**Scope.** The **Intake years** placeholder slot becomes real. Create/edit `Programme` (code, three
-names, active) and `ScholarshipCohort` (code, name, year, open/closed, deadlines). Org-fenced on
-`organisation_id`, **404 not 403**, matching the Layer 0 configuration view exactly. `org_admin` +
-`super` only.
-
-**⚠ One gift per programme** (owner ruling) — creating the programme IS creating the bursary. Do
-**not** build two creation steps.
-
-**Acceptance.** Suresh creates "BrightPath Sabah", opens `sabah-2026`, and the apply link
-`/apply?p=brightpath-sabah` routes a student into it. A cross-org attempt is a 404.
-
-**Risk.** Opening an intake is the switch that lets real students in. The open/close control needs
-the same "name a real counted number" treatment Layer 0's live-applicant warning got.
 
 ### S3 — the rules screen · complexity: MEDIUM · **Stitch first**
 
