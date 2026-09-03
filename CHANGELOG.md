@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sabah S1 — the payment run says which gift - 2026-09-02
+
+**Sprint.** **NO migration.** web only. Retro
+`docs/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`; lessons ×2.
+jest 1618 → **1623**; tsc **24** (baseline); lint **0**; i18n 4644 → **4648 × 3**; build clean.
+Two guards bite-checked. First sprint of `docs/plans/2026-09-02-sabah-self-serve-roadmap.md`.
+
+### Fixed
+- **⚠ A LATENT REGRESSION IN THE LIVE PAYOUT PATH, not a Sabah feature.** P2b made a run pay ONE
+  gift and had the endpoint refuse `programme_required` rather than pick — correct. The screen
+  never sent a programme and **did not know that error code**, so the day a second `Programme` row
+  existed, BrightPath's own monthly run would have failed here with an unexplained message.
+- **The dialog's date and month labels were never associated with their inputs** — a screen reader
+  announced an unnamed date field on a money form. Fixed in passing; no visual change.
+
+### Added
+- **A picker, only when there is something to pick.** One gift → no control and nothing sent, byte
+  identical to today. Two → the operator states which, with **nothing preselected**. Options are
+  filtered to the admin's own organisation, because the endpoint reads `owning_organisation` even
+  for a super.
+- `programme_required` in en/ms/ta. Still reachable with the picker shipped — a programme created
+  after the page loaded is not in the list. **ms/ta are first drafts.**
+
+### Changed
+- `createPaymentRun` takes `programme_id` **required positionally, nullable in value** — required
+  so no call site sneaks past the new dimension (P2a's lesson), nullable because absence cannot
+  produce a wrong answer here, only a resolution or a 400 (PF-1's precedent for `programme_code`).
+
 ## `/admin/programme` is the Configuration page - 2026-09-02
 
 **Small change** (`small-change-lane.md`). **DEPLOYED** — `main` at `5cf75c08`, build `7edc8726`

@@ -5320,7 +5320,11 @@
           "active": "Aktif",
           "maintenance": "Dalam program"
         }
-      }
+      },
+      "programme": "Hadiah mana yang membayar ini?",
+      "programmeChoose": "Pilih hadiah…",
+      "programmeHint": "Satu larian membayar daripada satu hadiah sahaja. Pelajar hadiah lain tidak pernah disertakan.",
+      "programmeRequired": "Organisasi anda menjalankan lebih daripada satu hadiah, jadi sila nyatakan yang mana membayar larian ini."
     },
     "contracts": {
       "title": "Templat kontrak",

@@ -550,7 +550,52 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-02, after Layer 1 F7d — DARK IS REACHABLE, AND **LIGHT** IS THE BROKEN ONE)
+## Next Sprint (as of 2026-09-02, after Sabah S1 — THE ARMED PAYOUT REGRESSION IS DISARMED)
+
+**SHIPPED — SABAH S1. NOT DEPLOYED (owner gates it).** Branch `feat/sabah-s1-payment-run-programme`.
+**NO migration.** web only. Retro `docs/retrospective-2026-09-02-sabah-s1-payment-run-programme.md`;
+lessons ×2. jest 1618 → **1623**; tsc **24** (baseline); lint **0**; i18n 4644 → **4648 × 3**;
+build clean. Two guards bite-checked.
+
+**⚠ NEW ROADMAP, OWNER-APPROVED 2026-09-02: `docs/plans/2026-09-02-sabah-self-serve-roadmap.md`.**
+BrightPath Sabah is **ready to launch** (owner: no longer a possibility). The acceptance test for
+the whole roadmap is the owner's own sentence: *"Suresh, as org admin you may start the new
+programme, and you can do everything on your own without any work from me."* Five sprints,
+**S1 → S2 → S3 → S4 → S5**; the owner chose them kept separate rather than folding S3 into S2.
+**Minimum to hand Suresh the keys: S1 + S2 + S4.**
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ S1 WAS NOT A SABAH FEATURE — it disarmed a latent regression in the LIVE payout path.** P2b
+  made a run pay ONE gift and had the endpoint refuse `programme_required` rather than pick. The
+  screen never sent a programme and did not know that code, so **the day a second `Programme` row
+  existed the flagship's own monthly run would have failed with an unexplained message.**
+- **ONE GIFT → NO PICKER AND NOTHING SENT.** Do not "simplify" this into always sending an id: a
+  control with one option is furniture, and BrightPath must keep the screen it has always had.
+  **Nothing is preselected when there are two** — a defaulted fund is how one benefactor's money
+  pays another's students.
+- **`createPaymentRun` takes `programme_id` REQUIRED POSITIONALLY, NULLABLE IN VALUE.** Required so
+  no call site sneaks past the dimension (P2a); nullable because absence cannot produce a wrong
+  answer, only a resolution or a 400 (PF-1's precedent). Do not make it optional-with-a-default.
+- **THE SCOPE FETCH FALLS BACK TO TODAY'S BEHAVIOUR, not to a plausible guess.** Empty list → no
+  picker → nothing sent. Never fall back to "the first programme".
+
+**⚠ AT DEPLOY:** no migration, no data step, **web only** — confirm with `gcloud builds list`
+rather than assuming. **Nothing a BrightPath operator sees changes**, because they run one gift.
+
+**NEXT = SABAH S2 — the Intake years screen** (create the `Programme` + open its first
+`ScholarshipCohort`, org-fenced 404-not-403 like the Layer 0 config view). **Stitch first** — it is
+a new page. **⚠ ONE GIFT PER PROGRAMME (owner ruling): creating the programme IS creating the
+bursary — do NOT build two creation steps.**
+
+**⚠ THE OWNER GATE STILL STANDS:** record nothing until Sabah is **inked AND the money has changed
+hands** (bank ref for `external_reference`). No sprint creates a Sabah row; S2 creates the *screen*.
+
+**⚠ DATE-PARKED, NOT TRIGGER-PARKED:** M2–M4 (a student holding two applications) become live work
+around **May/June 2027**, when the flagship reopens beside a live Sabah intake. Verified
+2026-09-02: the flagship intake is CLOSED (`scholarship/intake/` → `{"open":false}`), which is the
+only reason S1–S5 can skip them. A trigger can silently never fire; this one is a calendar entry.
+
+## Superseded — previous Next Sprint (as of 2026-09-02, after Layer 1 F7d)
 
 **SHIPPED AND DEPLOYED — LAYER 1 F7c + F7d, TOGETHER.** `main` at `70eb0302`, pushed 2026-09-02.
 **NO migration.** web only. Retro `docs/retrospective-2026-09-02-layer1-f7d-the-flip.md`;

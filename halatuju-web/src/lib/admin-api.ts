@@ -2467,8 +2467,25 @@ export async function getFundingSummary(options?: ApiOptions) {
 export async function getPaymentRuns(options?: ApiOptions) {
   return adminFetch<{ runs: PaymentRunSummary[] }>('/api/v1/admin/scholarship/payment-runs/', options)
 }
-export async function createPaymentRun(payment_date: string, payment_month: string, options?: ApiOptions) {
-  return adminMutate<PaymentRunDetail>('/api/v1/admin/scholarship/payment-runs/', 'POST', { payment_date, payment_month }, options)
+/**
+ * Create a DRAFT run. `programme_id` is **which gift the money comes from** (P2b).
+ *
+ * ⚠ REQUIRED POSITIONALLY, NULLABLE IN VALUE, and both halves are deliberate.
+ *
+ * Required, because P2a's lesson is that a new scoping dimension must not be sneakable — a
+ * defaulted programme is the exact shape of the PF-1 routing bug. Every call site has to answer.
+ *
+ * Nullable, because absence here cannot produce a wrong answer. The server uses the org's only
+ * active programme when there is exactly one, and **400 `programme_required` when there is more
+ * than one — never a silent pick**. That is PF-1's own precedent for `programme_code`: the guard
+ * is the server's refusal, not the signature. So `null` means "I am not choosing", which is
+ * honest and safe, and is what the screen sends while BrightPath runs one gift.
+ */
+export async function createPaymentRun(
+  payment_date: string, payment_month: string, programme_id: number | null, options?: ApiOptions,
+) {
+  return adminMutate<PaymentRunDetail>('/api/v1/admin/scholarship/payment-runs/', 'POST',
+    { payment_date, payment_month, ...(programme_id === null ? {} : { programme_id }) }, options)
 }
 export async function getPaymentRun(id: number, options?: ApiOptions) {
   return adminFetch<PaymentRunDetail>(`/api/v1/admin/scholarship/payment-runs/${id}/`, options)

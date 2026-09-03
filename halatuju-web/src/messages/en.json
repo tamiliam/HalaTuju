@@ -5320,7 +5320,11 @@
           "active": "Active",
           "maintenance": "In programme"
         }
-      }
+      },
+      "programme": "Which gift is this paid from?",
+      "programmeChoose": "Choose a gift…",
+      "programmeHint": "A run pays from one gift only. Students of another gift are never included.",
+      "programmeRequired": "Your organisation runs more than one gift, so please say which this run pays from."
     },
     "contracts": {
       "title": "Contract templates",
