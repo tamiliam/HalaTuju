@@ -130,12 +130,12 @@ export default function StudentDetailPage() {
               <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
                 {CHECKS.map((c) => (
                   <li key={c} className="flex items-center gap-2 text-sm text-ground-700">
-                    <span className="text-positive-600">✓</span> {t(`sponsorPool.${c}`)}
+                    <span className="text-positive-700">✓</span> {t(`sponsorPool.${c}`)}
                   </li>
                 ))}
                 {detail.enrolment_verified && (
                   <li className="flex items-center gap-2 text-sm text-ground-700">
-                    <span className="text-positive-600">✓</span> {t('sponsorPool.checkEnrolment')}
+                    <span className="text-positive-700">✓</span> {t('sponsorPool.checkEnrolment')}
                   </li>
                 )}
               </ul>
@@ -243,7 +243,7 @@ export default function StudentDetailPage() {
 
             {/* Privacy note — blue info box with an ⓘ icon (matches the design) */}
             <div className="flex items-start gap-2 rounded-lg bg-info-50 px-3 py-2.5 text-xs leading-relaxed text-info-800/80">
-              <svg viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 h-4 w-4 shrink-0 text-info-500" aria-hidden>
+              <svg viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 h-4 w-4 shrink-0 text-info-600" aria-hidden>
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 9a1 1 0 012 0v4a1 1 0 11-2 0V9zm1-4a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
               </svg>
               <span>{t('sponsorPool.privacyNote')}</span>

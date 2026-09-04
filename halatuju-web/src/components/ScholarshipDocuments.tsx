@@ -134,7 +134,7 @@ function FileChip({
           <UploadTrigger docType={docType} busy={busy} onUpload={onUpload}
             label={busy ? t('scholarship.docs.uploading') : t('scholarship.docs.replace')} />
         )}
-        <button onClick={() => onDelete(doc.id)} className="text-sm text-critical-500 hover:underline">
+        <button onClick={() => onDelete(doc.id)} className="text-sm text-critical-600 hover:underline">
           {t('scholarship.docs.remove')}
         </button>
       </span>
@@ -210,7 +210,7 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
       </div>
       {suspect && (
         <div className="mt-2 flex items-start gap-2 rounded-xl border border-caution-200 bg-caution-50 px-3 py-2.5">
-          <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
           <p className="text-xs text-caution-800">{t('scholarship.docs.icCheck.notGenuine')}</p>
@@ -394,7 +394,7 @@ function GenuinenessNote({ doc, t }: { doc: ApplicantDocument; t: (key: string) 
   if (!s || s === 'genuine') return null   // show for any non-genuine canonical status (suspect / not_<type>)
   return (
     <div className="mt-2 flex items-start gap-2 rounded-xl border border-caution-200 bg-caution-50 px-3 py-2.5">
-      <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+      <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
       </svg>
       <p className="text-xs text-caution-800">{t('scholarship.docs.genuineness.note')}</p>
@@ -909,7 +909,7 @@ function SingleDocCard({
   const title = (
     <>
       {titleOverride ?? t(`scholarship.docs.type.${docType}`)}
-      {required && <span className="text-critical-500"> *</span>}
+      {required && <span className="text-critical-600"> *</span>}
     </>
   )
 
@@ -1125,7 +1125,7 @@ function IncomeProofCard({
                 </span>
                 <button
                   onClick={() => onDelete(d.id)}
-                  className="text-critical-500 hover:underline ml-2 shrink-0"
+                  className="text-critical-600 hover:underline ml-2 shrink-0"
                 >
                   {t('scholarship.docs.remove')}
                 </button>

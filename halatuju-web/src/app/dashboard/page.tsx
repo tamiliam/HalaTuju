@@ -432,7 +432,7 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
-            {reportError && <p className="text-critical-500 text-xs mt-2">{t('dashboard.reportError')}</p>}
+            {reportError && <p className="text-critical-600 text-xs mt-2">{t('dashboard.reportError')}</p>}
           </div>
         )}
 

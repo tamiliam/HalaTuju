@@ -42,7 +42,7 @@ export default function IcInput({
     <div>
       {label && (
         <label className="block text-sm font-medium text-ground-700 mb-1">
-          {label} <span className="text-critical-500">*</span>
+          {label} <span className="text-critical-600">*</span>
         </label>
       )}
       <input
@@ -60,7 +60,7 @@ export default function IcInput({
         }`}
       />
       {displayError && (
-        <p className="mt-1 text-xs text-critical-500">{displayError}</p>
+        <p className="mt-1 text-xs text-critical-600">{displayError}</p>
       )}
     </div>
   )

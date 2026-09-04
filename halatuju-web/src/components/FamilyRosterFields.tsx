@@ -167,7 +167,7 @@ export default function FamilyRosterFields({
                 <ProfessionSelect value={m.occupation} onChange={(v) => onUpdateMember(i, { occupation: v })} t={t} />
               </div>
               <button type="button" onClick={() => onRemoveMember(i)} aria-label={t(`${CA}.remove`)}
-                className="mt-1.5 shrink-0 text-ground-400 hover:text-critical-500 text-lg leading-none">×</button>
+                className="mt-1.5 shrink-0 text-ground-400 hover:text-critical-600 text-lg leading-none">×</button>
             </div>
             {m.occupation === 'other' && (
               <input className="input" maxLength={120}

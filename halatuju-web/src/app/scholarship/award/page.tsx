@@ -265,7 +265,7 @@ export default function ScholarshipAwardPage() {
     return wrap(
       <div className="rounded-2xl border bg-ground-0 p-8 text-center shadow-sm">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-positive-100">
-          <svg className="h-8 w-8 text-positive-600" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <svg className="h-8 w-8 text-positive-700" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>

@@ -268,7 +268,7 @@ export default function AdminRequestDetailPage() {
                     that permanently). Then it is simply unanswered. */}
                 {c.awaiting_reply && (
                   has('answer')
-                    ? <p className="text-caution-600 text-xs mt-1">{t('admin.requests.list.answerNeeded')}</p>
+                    ? <p className="text-caution-700 text-xs mt-1">{t('admin.requests.list.answerNeeded')}</p>
                     : <p className="text-ground-400 text-xs mt-1">{t('admin.requests.detail.unanswered')}</p>
                 )}
               </li>
@@ -323,7 +323,7 @@ export default function AdminRequestDetailPage() {
               {busy ? t('admin.requests.action.working') : t('admin.requests.detail.commentSend')}
             </button>
             {isSuper && commentInternal && (
-              <p className="mt-1 text-xs text-caution-600">{t('admin.requests.detail.commentInternalHint')}</p>
+              <p className="mt-1 text-xs text-caution-700">{t('admin.requests.detail.commentInternalHint')}</p>
             )}
           </div>
         )}

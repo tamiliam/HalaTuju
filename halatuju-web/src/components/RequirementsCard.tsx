@@ -268,8 +268,8 @@ export default function RequirementsCard({
 function CheckIcon({ color }: { color: 'gray' | 'blue' | 'green' }) {
   const styles = {
     gray: 'bg-ground-100 text-ground-500',
-    blue: 'bg-info-50 text-info-500',
-    green: 'bg-positive-50 text-positive-500',
+    blue: 'bg-info-50 text-info-600',
+    green: 'bg-positive-50 text-positive-700',
   }
   return (
     <span className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-full ${styles[color]} flex items-center justify-center`}>

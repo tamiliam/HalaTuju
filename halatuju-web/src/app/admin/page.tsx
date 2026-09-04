@@ -73,7 +73,7 @@ export default function AdminDashboard() {
         </div>
         <div className="bg-ground-0 rounded-lg p-6 shadow-sm border">
           <p className="text-sm text-ground-500">{t('admin.completedOnboarding')}</p>
-          <p className="text-3xl font-bold text-positive-600">
+          <p className="text-3xl font-bold text-positive-700">
             {data.completed_onboarding}
           </p>
         </div>

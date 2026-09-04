@@ -107,7 +107,7 @@ export default function MyStudentDetailPage() {
                   <div key={s.key} className="flex-1 flex flex-col items-center text-center relative">
                     {i > 0 && <div className={`absolute top-1.5 -left-1/2 w-full h-px ${stages[i - 1].status === 'done' ? 'bg-positive-200' : 'bg-ground-200'}`} />}
                     <span className={`w-3 h-3 rounded-full z-10 ${dot}`} />
-                    <span className={`text-[11px] mt-1.5 ${withdrew ? 'text-critical-500 font-semibold' : 'text-ground-400'}`}>
+                    <span className={`text-[11px] mt-1.5 ${withdrew ? 'text-critical-600 font-semibold' : 'text-ground-400'}`}>
                       {t(withdrew ? 'sponsorPortal.journey.withdrew' : `sponsorPortal.journey.${s.key}`)}
                     </span>
                   </div>

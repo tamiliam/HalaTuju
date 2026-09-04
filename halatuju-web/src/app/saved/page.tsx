@@ -347,7 +347,7 @@ export default function SavedPage() {
                         </Link>
                         <button
                           onClick={() => handleRemove(course.course_id)}
-                          className="ml-4 p-2 text-ground-400 hover:text-critical-500 transition-colors"
+                          className="ml-4 p-2 text-ground-400 hover:text-critical-600 transition-colors"
                           aria-label={t('saved.remove')}
                         >
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

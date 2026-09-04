@@ -56,7 +56,7 @@ export default function DeployPanel(
               <ul className="space-y-1">
                 {val.errors.map((e) => (
                   <li key={e.code} className="text-sm text-ground-700 flex items-center gap-2">
-                    <span className="text-critical-500">✗</span>{e.label}
+                    <span className="text-critical-600">✗</span>{e.label}
                   </li>
                 ))}
               </ul>

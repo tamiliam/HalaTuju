@@ -187,7 +187,7 @@ function Field({ label, value, verifiedLabel, note, noteTone = 'amber' }: { labe
         {value === null || value === undefined || value === '' ? '—' : value}
         {verifiedLabel && <VerifiedTick label={verifiedLabel} />}
       </dd>
-      {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-ground-400' : 'text-caution-600'}`}>{note}</p>}
+      {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-ground-400' : 'text-caution-700'}`}>{note}</p>}
     </div>
   )
 }
@@ -1292,7 +1292,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     return (
                       <>
                         {app.merit_score}{' '}
-                        <span className={sy.status === 'off' ? 'text-caution-600' : 'text-ground-500'}>
+                        <span className={sy.status === 'off' ? 'text-caution-700' : 'text-ground-500'}>
                           ({t('admin.scholarship.docsDrawer.examYear', { year: sy.year })})
                         </span>
                       </>
@@ -1472,7 +1472,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
                   {isGreen && (
-                    <span className="ml-auto shrink-0 text-positive-600 text-sm font-bold"
+                    <span className="ml-auto shrink-0 text-positive-700 text-sm font-bold"
                       aria-label={t('admin.scholarship.verdict.status.verified')}>✓</span>
                   )}
                 </div>
@@ -1554,13 +1554,13 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                       income story), then the supporting confirmations. */}
                   {f.unresolved.map((it, i) => (
                     <div key={`u${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
-                      <span className="text-caution-600 shrink-0">•</span>
+                      <span className="text-caution-700 shrink-0">•</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
                   {f.evidence.slice(1).map((it, i) => (
                     <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
-                      <span className="text-positive-600 shrink-0">✓</span>
+                      <span className="text-positive-700 shrink-0">✓</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
@@ -1776,11 +1776,11 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                       return (
                         <li key={item.id} className="flex items-start gap-2.5 rounded-lg border border-ground-100 bg-ground-50 p-3">
                           {answered ? (
-                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-700" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                             </svg>
                           ) : (
-                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-caution-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Awaiting student">
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-caution-700" viewBox="0 0 20 20" fill="currentColor" aria-label="Awaiting student">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
                             </svg>
                           )}
@@ -1929,7 +1929,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
               </span>
               <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
-                className="text-critical-500 hover:underline text-xs shrink-0 disabled:opacity-50">
+                className="text-critical-600 hover:underline text-xs shrink-0 disabled:opacity-50">
                 {t('admin.scholarship.refRemove')}
               </button>
             </li>
@@ -2043,7 +2043,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   const f = findings[it.code]
                   return (
                     <div key={it.code} className="flex items-start gap-2.5 rounded-lg border border-ground-100 bg-ground-50 p-3">
-                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
+                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-700" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                       </svg>
                       <div className="flex-1 min-w-0">
@@ -2143,7 +2143,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   className="px-4 py-2 bg-brand-fill text-brand-fill-ink rounded-lg text-sm disabled:opacity-50">
                   {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
                 </button>
-                {interviewMsg && <span className="text-sm font-medium text-positive-600">{interviewMsg}</span>}
+                {interviewMsg && <span className="text-sm font-medium text-positive-700">{interviewMsg}</span>}
               </div>
             )}
           </>
@@ -2203,7 +2203,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             })
           }
           const factClass = (s: FactStatus) =>
-            s === 'verified' ? 'text-positive-600' : s === 'partial' ? 'text-caution-600'
+            s === 'verified' ? 'text-positive-700' : s === 'partial' ? 'text-caution-700'
               : s === 'not' ? 'text-critical-600' : 'text-ground-400'
           const subLabel = 'text-[10px] font-semibold uppercase tracking-widest text-ground-400 mb-1.5'
           // Line 2: the coloured fact-labels — only the facts THIS document provides. A results slip
@@ -2220,7 +2220,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             return null
           }
           const yearClass = (s: string) =>
-            s === 'current' ? 'text-positive-600' : s === 'off' ? 'text-caution-600' : 'text-ground-500'
+            s === 'current' ? 'text-positive-700' : s === 'off' ? 'text-caution-700' : 'text-ground-500'
           const factLine = (d: AdminApplicantDocument) => {
             const facts = documentFacts(d)
             const yc = yearChip(d)
@@ -2364,7 +2364,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     </p>
                   )}
                   {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
-                    <p className="text-[11px] text-caution-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
+                    <p className="text-[11px] text-caution-700 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
@@ -2515,9 +2515,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   {i > 0 && ', '}
                   {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
                   <span className={
-                    sugg[f] === 'yes' ? 'text-positive-600 font-medium'
+                    sugg[f] === 'yes' ? 'text-positive-700 font-medium'
                     : sugg[f] === 'no' ? 'text-critical-600 font-medium'
-                    : 'text-caution-600 font-medium'
+                    : 'text-caution-700 font-medium'
                   }>
                     {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
                   </span>
@@ -2829,11 +2829,11 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               </div>
               {/* One contextual hint: what's still missing before Save. */}
               {!decisionReady ? (
-                <p className="text-[11px] text-caution-600">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
+                <p className="text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
               ) : !officerVerdict.overall ? (
-                <p className="text-[11px] text-caution-600">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
+                <p className="text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
-                <p className="text-[11px] text-caution-600">{t(app.award_disqualifier
+                <p className="text-[11px] text-caution-700">{t(app.award_disqualifier
                   ? 'admin.scholarship.recordVerdict.approveNeedsReview'
                   : 'admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
               ) : null}
@@ -3202,7 +3202,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
           {assignLocked ? (
             <p className="text-xs text-ground-400">{t('admin.scholarship.assign.lockedHint')}</p>
           ) : firstAssignBlocked && (
-            <p className="text-xs text-caution-600">{t('admin.scholarship.assign.notReadyHint')}</p>
+            <p className="text-xs text-caution-700">{t('admin.scholarship.assign.notReadyHint')}</p>
           )}
         </div>
         )
@@ -3298,7 +3298,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         const stateRow = (label: string, done: boolean) => (
           <div className="flex items-center justify-between rounded-lg border border-ground-200 px-3 py-2">
             <span className="text-sm text-ground-700">{label}</span>
-            <span className={done ? 'text-positive-600' : 'text-ground-300'} aria-hidden>
+            <span className={done ? 'text-positive-700' : 'text-ground-300'} aria-hidden>
               {done ? '✓' : '–'}
             </span>
           </div>
@@ -3324,7 +3324,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             {!hasAgreement && (
               <p className="text-xs text-ground-500">{t('admin.scholarship.bursary.awaitingSignature')}</p>
             )}
-            {bursaryMsg && <p className="text-xs text-caution-600">{bursaryMsg}</p>}
+            {bursaryMsg && <p className="text-xs text-caution-700">{bursaryMsg}</p>}
             <div className="flex flex-wrap items-center gap-2">
               {isSuper && (
                 <button
@@ -3477,7 +3477,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 </button>
               </div>
             )}
-            {disbMsg && <p className="text-xs text-caution-600">{disbMsg}</p>}
+            {disbMsg && <p className="text-xs text-caution-700">{disbMsg}</p>}
           </div>
         )
       })()}
@@ -3531,7 +3531,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   {busy === 'close' ? t('common.loading') : t('admin.closure.close')}
                 </button>
               </div>
-              {closeMsg && <p className="text-xs text-caution-600">{closeMsg}</p>}
+              {closeMsg && <p className="text-xs text-caution-700">{closeMsg}</p>}
             </>
           ) : null}
         </div>

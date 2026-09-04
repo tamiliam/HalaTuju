@@ -11,7 +11,7 @@ export default function VerifiedTick({ label }: { label: string }) {
       title={label}
       aria-label={label}
       role="img"
-      className="ml-1 inline-flex shrink-0 align-middle text-info-500"
+      className="ml-1 inline-flex shrink-0 align-middle text-info-600"
     >
       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" aria-hidden>
         <path

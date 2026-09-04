@@ -350,7 +350,7 @@ export default function AdminScholarshipList() {
                           </option>
                         ))}
                       </select>
-                      {assignNote[a.id] && <p className="text-xs text-critical-500 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
+                      {assignNote[a.id] && <p className="text-xs text-critical-600 mt-1 max-w-[180px]">{assignNote[a.id]}</p>}
                     </td>
                   )}
                 </tr>

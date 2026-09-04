@@ -269,7 +269,7 @@ export default function AdminStudentDetail() {
                 <span className="text-lg">&#9888;&#65039;</span> {t('admin.dangerZone')}
                 <span className="text-[10px] text-critical-400 ml-1">[{t('admin.superAdmin')}]</span>
               </h2>
-              <p className="text-sm text-critical-500 mt-0.5">
+              <p className="text-sm text-critical-600 mt-0.5">
                 {t('admin.dangerWarning')}
               </p>
             </div>

@@ -36,8 +36,8 @@ const STREAM_META: Record<StreamId, {
 
 function mataGredColor(mg: number | undefined | null): string {
   if (mg === undefined || mg === null) return 'text-ground-500'
-  if (mg <= 6) return 'text-positive-600'
-  if (mg <= 12) return 'text-caution-600'
+  if (mg <= 6) return 'text-positive-700'
+  if (mg <= 12) return 'text-caution-700'
   return 'text-critical-600'
 }
 

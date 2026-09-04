@@ -143,7 +143,7 @@ export default function AccountPage() {
             className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink disabled:opacity-60">
             {sgSaving ? t('sponsorPortal.autoSponsor.saving') : t('sponsorPortal.autoSponsor.save')}
           </button>
-          {sgSaved && <span className="text-sm text-positive-600">{t('sponsorPortal.autoSponsor.saved')}</span>}
+          {sgSaved && <span className="text-sm text-positive-700">{t('sponsorPortal.autoSponsor.saved')}</span>}
         </div>
         <p className="text-[11px] text-ground-400 mt-3">{t('sponsorPortal.autoSponsor.note')}</p>
         {sgConfigured && sgLast && (
@@ -185,7 +185,7 @@ export default function AccountPage() {
             <textarea value={inviteNote} onChange={(e) => setInviteNote(e.target.value)} rows={3} maxLength={500}
               placeholder={t('sponsorPortal.referrals.notePh')} className={inputCls} />
             {inviteError && <p className="text-sm text-critical-600">{inviteError}</p>}
-            {inviteSent && <p className="text-sm text-positive-600">{t('sponsorPortal.referrals.sent')}</p>}
+            {inviteSent && <p className="text-sm text-positive-700">{t('sponsorPortal.referrals.sent')}</p>}
             <button onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}
               className="w-full rounded-lg bg-brand-fill py-2.5 text-sm font-semibold text-brand-fill-ink disabled:opacity-60">
               {inviting ? t('sponsorPortal.referrals.sending') : t('sponsorPortal.referrals.send')}
@@ -203,7 +203,7 @@ export default function AccountPage() {
                   <span className="text-ground-700 truncate pr-2">{r.invitee_name || r.invitee_email || '—'}</span>
                   <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     r.status === 'joined' ? 'bg-positive-100 text-positive-700'
-                      : r.status === 'expired' ? 'bg-caution-50 text-caution-600' : 'bg-ground-100 text-ground-600'}`}>
+                      : r.status === 'expired' ? 'bg-caution-50 text-caution-700' : 'bg-ground-100 text-ground-600'}`}>
                     {t(`sponsorPortal.referrals.status.${r.status}`)}
                   </span>
                 </li>

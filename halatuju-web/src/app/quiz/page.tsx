@@ -321,7 +321,7 @@ export default function QuizPage() {
 
             {/* Multi-select subtitle */}
             {isMultiSelect && (
-              <p className="text-sm text-info-500 mb-4 text-center font-medium">
+              <p className="text-sm text-info-600 mb-4 text-center font-medium">
                 {t('quiz.pickUpTo', { count: String(question.max_select || 2) })}
               </p>
             )}

@@ -83,7 +83,7 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
                       {statusText(r)}
                     </span>
                     {r.last_send_ok === false && (
-                      <div className="mt-1 max-w-[18rem] break-words text-xs text-critical-500">
+                      <div className="mt-1 max-w-[18rem] break-words text-xs text-critical-600">
                         {t('admin.invitations.send.failed')}
                         {r.last_send_error ? ` — ${r.last_send_error}` : ''}
                       </div>

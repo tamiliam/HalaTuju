@@ -114,8 +114,18 @@ function assertConverted(name: string, files: string[], minFiles: number) {
       // ⚠ COMMENTS STRIPPED — `contrast.ts` explains this very rule in prose and quotes both sides
       // of it, so the unstripped version accused the sentence describing the invariant.
       const withWhite = files.filter((f) => /\b(?:text|stroke|border|ring)-white\b/.test(withoutComments(read(f))))
-      expect(withWhite.length).toBeGreaterThan(0)
+      // ⚠ THE FLOOR HAD TO CHANGE AT F7e, AND WHY IT CHANGED IS THE POINT. It was
+      // `toBeGreaterThan(0)` — a self-check that the guard had a population to guard — and F7e
+      // legitimately EMPTIED one of these groups by moving every filled control onto
+      // `text-<tone>-fill-ink`. A group with no white literal left is now a correct outcome, so
+      // the self-check moves to the thing that must be true instead: the ink WENT SOMEWHERE. It
+      // was converted to a role, not deleted, and never onto `ground-0`.
+      // (docs/lessons.md: when you remove a guard's exemption, pin that the population it
+      // protected did not simply disappear.)
+      const withFillInk = files.filter((f) => /-fill-ink\b/.test(withoutComments(read(f))))
+      expect(withWhite.length + withFillInk.length).toBeGreaterThan(0)
       for (const f of withWhite) expect(withoutComments(read(f))).not.toMatch(/\b(?:text|stroke)-ground-0\b/)
+      for (const f of withFillInk) expect(withoutComments(read(f))).not.toMatch(/\b(?:text|stroke)-ground-0\b/)
     })
   })
 }
@@ -1007,9 +1017,13 @@ describe('the F5 semantic corrections the codemod could not make', () => {
     // unrelated person's name is evidence the document may not belong to this household at all,
     // and orange used to hold them apart. Sharing a tone would have flattened the distinction the
     // officer most needs to see.
+    // ⚠ RESPELLED AT F7e, NOT RE-DECIDED. The generic warning moved `caution-600` -> `-700`
+    // because `-600` measured **3.19** on a card; `critical-600` already passed at 4.83 and did
+    // not move. The DISTINCTION — two different tones, so the officer can tell an unrelated name
+    // from a routine warning — is what this pins, and it is unchanged.
     const src = read(cockpit)
     expect(src).toMatch(/text-critical-600[^]{0,400}utilityNote\.unrelated/)
-    expect(src).toMatch(/text-caution-600[^]{0,120}vision_fields\.warnings/)
+    expect(src).toMatch(/text-caution-700[^]{0,120}vision_fields\.warnings/)
   })
 
   it('treats "how was this value produced" as a CATEGORY, and the AI briefing as INFO', () => {

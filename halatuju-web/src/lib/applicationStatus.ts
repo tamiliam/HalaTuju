@@ -48,7 +48,7 @@ const STATUS_TONE: Record<string, string> = {
   shortlisted: 'bg-info-100 text-info-700',
   profile_complete: 'bg-info-200 text-info-800',
   interviewing: 'bg-info-300 text-info-900',
-  interviewed: 'bg-info-400 text-info-900',
+  interviewed: 'bg-info-fill text-info-fill-ink',
   // Committed — a deepening green ramp down the funnel.
   recommended: 'bg-positive-100 text-positive-800',
   awarded: 'bg-positive-200 text-positive-900',

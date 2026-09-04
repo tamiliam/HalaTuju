@@ -102,19 +102,19 @@ export default function SponsorResetPasswordPage() {
 
               <form onSubmit={handleSave} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.newPassword')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.newPassword')} <span className="text-critical-600">*</span></label>
                   <div className="rounded-lg bg-info-50/70 border border-info-100 px-3 py-2 mb-2 text-xs text-ground-600">
                     <p className="font-medium text-ground-700 mb-1">{t('sponsorAuth.pwRulesTitle')}</p>
                     <ul className="space-y-0.5">
-                      <li className={pw.minLength ? 'text-positive-600' : ''}>{pw.minLength ? '✓' : '•'} {t('sponsorAuth.pwMinLength')}</li>
-                      <li className={pw.mixedCase ? 'text-positive-600' : ''}>{pw.mixedCase ? '✓' : '•'} {t('sponsorAuth.pwMixedCase')}</li>
-                      <li className={pw.hasNumber ? 'text-positive-600' : ''}>{pw.hasNumber ? '✓' : '•'} {t('sponsorAuth.pwNumber')}</li>
+                      <li className={pw.minLength ? 'text-positive-700' : ''}>{pw.minLength ? '✓' : '•'} {t('sponsorAuth.pwMinLength')}</li>
+                      <li className={pw.mixedCase ? 'text-positive-700' : ''}>{pw.mixedCase ? '✓' : '•'} {t('sponsorAuth.pwMixedCase')}</li>
+                      <li className={pw.hasNumber ? 'text-positive-700' : ''}>{pw.hasNumber ? '✓' : '•'} {t('sponsorAuth.pwNumber')}</li>
                     </ul>
                   </div>
                   <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} autoComplete="new-password" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.reenterPassword')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.reenterPassword')} <span className="text-critical-600">*</span></label>
                   <input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} className={inputCls} autoComplete="new-password" />
                   {password2.length > 0 && !pwMatch && (
                     <p className="text-xs text-critical-600 mt-1">{t('sponsorAuth.pwMismatch')}</p>

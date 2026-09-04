@@ -46,7 +46,7 @@ export default function SettingsPage() {
           <h2 className="font-semibold text-ground-900 mb-1">{t('settings.clearData')}</h2>
           <p className="text-sm text-ground-500 mb-3">{t('settings.clearDataDesc')}</p>
           {cleared ? (
-            <p className="text-sm text-positive-600 font-medium">{t('settings.dataCleared')}</p>
+            <p className="text-sm text-positive-700 font-medium">{t('settings.dataCleared')}</p>
           ) : (
             <button
               onClick={handleClearData}

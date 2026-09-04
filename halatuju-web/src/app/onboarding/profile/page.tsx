@@ -280,7 +280,7 @@ export default function ProfileInputPage() {
           {/* Row 2: Jantina */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-ground-700 mb-2">
-              {t('onboarding.gender')} <span className="text-critical-500">*</span>
+              {t('onboarding.gender')} <span className="text-critical-600">*</span>
             </label>
             <div className="flex gap-3">
               <button
