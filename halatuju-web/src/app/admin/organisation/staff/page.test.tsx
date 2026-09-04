@@ -21,15 +21,24 @@ const mockApi = api as jest.Mocked<typeof api>
 const row = (over: Partial<api.InvitationRow>): api.InvitationRow => ({
   id: 1, name: 'Someone', email: 's@example.org', role: 'admin', status: 'accepted',
   sent_at: '2026-07-21T00:00:00Z', send_count: 1, last_send_ok: true, last_send_error: '',
-  accepted_at: '2026-07-22T00:00:00Z', admin_id: 10, is_active: true, paused: false, ...over,
+  accepted_at: '2026-07-22T00:00:00Z', admin_id: 10, is_active: true, paused: false,
+  // Blank = EVERY gift, which is what a staff invitation carries and what every row written
+  // before the column existed reads as.
+  programme: '', programme_name: '', ...over,
 })
 
 const WAITING = { admins: 1, reviewers: 0, source: 0, sponsors: 2 }
+
+/** The organisation's ACTIVE gifts. Default one — today's BrightPath shape, where the invite
+ *  form asks nothing. Tests that need the picker pass two. */
+let giftChoices: api.InvitationsPayload['programmes'] =
+  [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' }]
 
 const payloadFor = (kind: api.InvitationKind): api.InvitationsPayload => {
   if (kind === 'admins') {
     return {
       kind, waiting: WAITING, invitable_roles: ['admin', 'finance'],
+      programmes: giftChoices,
       invitations: [
         row({ id: 1, name: 'Yeoh Liew Se', role: 'admin', status: 'no_reply',
               accepted_at: null, admin_id: 10 }),
@@ -39,18 +48,20 @@ const payloadFor = (kind: api.InvitationKind): api.InvitationsPayload => {
   }
   if (kind === 'sponsors') {
     return {
-      kind, waiting: WAITING, invitable_roles: [],
+      kind, waiting: WAITING, invitable_roles: [], programmes: giftChoices,
       invitations: [row({ id: 3, name: 'Donor', role: '', status: 'invited',
-                          accepted_at: null, admin_id: null, is_active: null })],
+                          accepted_at: null, admin_id: null, is_active: null,
+                          programme: 'flagship', programme_name: 'BrightPath Bursary' })],
     }
   }
   return { kind, waiting: WAITING, invitable_roles: kind === 'reviewers' ? ['reviewer', 'qc'] : [],
-           invitations: [] }
+           programmes: giftChoices, invitations: [] }
 }
 
 beforeEach(() => {
   jest.clearAllMocks()
   viewerRole = { role: 'org_admin' }
+  giftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary' }]
   mockApi.getInvitations.mockImplementation(async (kind) => payloadFor(kind))
   // `useStaffAdmin` still owns invite/resend/revoke, and loads the staff list on mount; the
   // auto-mock must answer it or the hook throws before anything renders.
@@ -146,6 +157,79 @@ describe('what each kind can do', () => {
     await waitFor(() =>
       expect(screen.getAllByText('admin.invitations.sourceComingSoon').length).toBeGreaterThan(0))
     expect(screen.queryByText('admin.sendInvite')).toBeNull()
+  })
+})
+
+/**
+ * Which gift a sponsor invitation is for (S-ASSIGN, 2026-09-04).
+ *
+ * Until now this form asked for an email, a name and a note and never asked which gift, so a
+ * benefactor invited for Sabah would have registered straight into the flagship, silently —
+ * and their credit would then have been refused `sponsor_not_in_programme`.
+ */
+describe('which gift a sponsor is invited into', () => {
+  const inviteSponsorNamed = () => {
+    fireEvent.change(screen.getByPlaceholderText('admin.name'), { target: { value: 'Donor' } })
+    fireEvent.change(screen.getByPlaceholderText('admin.emailLabel'),
+      { target: { value: 'donor@example.org' } })
+  }
+
+  it('⚠ asks NOTHING when the organisation runs one gift — today’s BrightPath form', async () => {
+    await loaded()
+    await pick('sponsors')
+    expect(screen.queryByText('admin.invitations.giftLabel')).toBeNull()
+  })
+
+  it('sends no gift in that case, and the server takes the sole one', async () => {
+    mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
+      { email: 'donor@example.org', name: 'Donor', note: '' }, { token: 'tok' }))
+  })
+
+  it('asks once there are two, and starts BLANK — never a silent default', async () => {
+    giftChoices = [
+      { id: 7, code: 'flagship', name: 'BrightPath Bursary' },
+      { id: 9, code: 'sabah', name: 'Sabah Bursary' },
+    ]
+    await loaded()
+    await pick('sponsors')
+    const select = screen.getByRole('combobox') as HTMLSelectElement
+    expect(select.value).toBe('')
+    expect(select.required).toBe(true)
+  })
+
+  it('sends the chosen gift', async () => {
+    giftChoices = [
+      { id: 7, code: 'flagship', name: 'BrightPath Bursary' },
+      { id: 9, code: 'sabah', name: 'Sabah Bursary' },
+    ]
+    mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '9' } })
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
+      { email: 'donor@example.org', name: 'Donor', note: '', programme_id: 9 },
+      { token: 'tok' }))
+  })
+
+  it('shows which gift an existing invitation was for', async () => {
+    await loaded()
+    await pick('sponsors')
+    await waitFor(() => expect(screen.getByText('Donor')).toBeTruthy())
+    expect(screen.getByText('BrightPath Bursary')).toBeTruthy()
+  })
+
+  it('⚠ prints nothing for a staff invitation, which carries no gift', async () => {
+    // A blank means EVERY gift. An empty line under a staff row would read as a missing value.
+    await loaded()
+    const row = screen.getByText('Yeoh Liew Se').closest('td')!
+    expect(row.querySelectorAll('div').length).toBe(0)
   })
 })
 

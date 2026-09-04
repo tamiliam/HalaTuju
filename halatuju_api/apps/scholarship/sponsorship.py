@@ -136,15 +136,54 @@ def _is_accepted_into(sponsor, programme):
         sponsor=sponsor, programme=programme, status='approved').exists()
 
 
-# The gift a sponsor is onboarded into when they register through the public form. There is
-# exactly one today and the form does not ask which gift, so it cannot mean anything else. When
-# a second gift opens its own onboarding the programme comes from the form and this retires —
-# it is the DEFAULT for the one registration path, never a fallback to lean on elsewhere.
-DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'
+def signup_programme_for(sponsor):
+    """WHICH GIFT a registering sponsor is joining, or None when we genuinely cannot say.
+
+    ⚠ THIS REPLACES A TENANT LITERAL. Until 2026-09-04 the answer was the constant
+    ``DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'`` — correct while the platform ran one gift
+    and a silent wrong answer the moment it ran two, because a benefactor invited into Sabah would
+    have been filed against the flagship and then refused their credit
+    (``record_admin_credit`` → ``sponsor_not_in_programme``). It is what blocked the second gift's
+    money.
+
+    Two sources, in order, and both are EVIDENCE rather than a guess:
+
+    1. **The invitation they answered.** An organisation that invites somebody states which gift,
+       and that statement is the whole point of asking. Matched on email — an admin sponsor
+       invitation deliberately creates no account and carries no credential, so the address is the
+       only thread between the asking and the arriving (the same key ``_close_admin_invitation``
+       uses).
+    2. **The platform's sole ACTIVE gift.** With one, there is nothing to get wrong, and this
+       reproduces the old constant exactly for BrightPath. Note ``is_active``: a gift that has been
+       created but not switched on is not taking anybody, so it must not make the answer ambiguous.
+
+    ⚠ NONE IS A REAL ANSWER AND MUST STAY ONE. Several active gifts and no invitation means a
+    stranger arrived off the public form and nothing on the platform knows which gift they meant.
+    Guessing files them — and their money — against the wrong one; returning None leaves them with
+    no membership, an empty pool, and an org_admin who accepts them by hand on the sponsor page.
+    That is PF-1's rule (``resolve_open_cohort`` raises rather than choosing) applied to the money.
+    """
+    from .models import Invitation, Programme
+    email = (getattr(sponsor, 'email', '') or '').strip()
+    if email:
+        invited = (Invitation.objects
+                   .filter(audience='sponsor', email__iexact=email,
+                           programme__isnull=False, revoked_at__isnull=True)
+                   .order_by('-created_at').first())
+        if invited is not None:
+            return invited.programme
+    live = list(Programme.objects.filter(is_active=True)[:2])
+    return live[0] if len(live) == 1 else None
 
 
-def sync_account_membership(sponsor, vetted_by=''):
-    """Create or refresh this sponsor's membership of the DEFAULT gift, mirroring their ACCOUNT status.
+def sync_account_membership(sponsor, programme, vetted_by=''):
+    """Create or refresh this sponsor's membership of ONE gift, mirroring their ACCOUNT status.
+
+    ⚠ `programme` IS REQUIRED AND POSITIONAL, with no default. That is the P2a discipline the money
+    model already uses (`sponsor_balance`, `payments.create_run`): a default would compile, pass
+    every test written before a second gift existed, and quietly file somebody against the wrong
+    one. A caller that cannot answer passes the result of `signup_programme_for`, and **None is
+    handled here** — it writes nothing rather than falling back.
 
     Migration ``0123`` gave every sponsor alive on 2026-07-25 a flagship membership copied from
     their account status — and **nothing was ever written to do the same for a sponsor who
@@ -159,17 +198,18 @@ def sync_account_membership(sponsor, vetted_by=''):
     and from vetting (which settles it), and it is idempotent, so calling it on an existing
     sponsor heals a missing row rather than duplicating one.
 
-    **Only the default gift's row is touched.** A membership of a second gift is a separate
-    acceptance decision by the organisation running it, and must never be flipped as a
-    side-effect of platform-level account vetting.
+    **Only the ONE gift passed in is touched, and that rule predates the parameter.** A membership
+    of another gift is a separate acceptance decision by the organisation running it, and must
+    never be flipped as a side-effect of platform-level account vetting. Vetting therefore passes
+    the SAME gift the registration resolved (`signup_programme_for` is stable — the invitation
+    outlives the registration), so the account's own row settles and nobody else's moves.
 
-    Best-effort in the sense that a missing programme row (a bare or partial test DB, exactly as
-    ``0123`` allows for) returns None rather than inventing an acceptance — but it does NOT
-    swallow database errors: a registration that silently loses its membership is the bug this
-    exists to fix.
+    Best-effort in the sense that an unresolvable programme (None from `signup_programme_for`, or
+    a bare test DB exactly as ``0123`` allows for) returns None rather than inventing an
+    acceptance — but it does NOT swallow database errors: a registration that silently loses its
+    membership is the bug this exists to fix.
     """
     from .models import SponsorProgrammeMembership
-    programme = Programme.objects.filter(code=DEFAULT_PROGRAMME_CODE).first()
     if programme is None:
         return None
     settled = sponsor.status != 'pending'
@@ -185,6 +225,66 @@ def sync_account_membership(sponsor, vetted_by=''):
         membership.status = sponsor.status
         membership.vetted_by = vetted_by
         membership.vetted_at = timezone.now()
+        membership.save(update_fields=['status', 'vetted_by', 'vetted_at', 'updated_at'])
+    return membership
+
+
+MEMBERSHIP_STATUSES = ('pending', 'approved', 'rejected', 'suspended')
+
+
+class MembershipError(Exception):
+    """Raised with a machine-readable code the endpoint turns into a 400."""
+
+
+def set_programme_membership(sponsor, programme, status, vetted_by=''):
+    """An organisation ACCEPTS a benefactor into one of its gifts — or takes it back.
+
+    ⚠ THIS IS THE VERB THAT UNBLOCKS THE MONEY. `record_admin_credit` refuses
+    `sponsor_not_in_programme` unless an APPROVED row exists here, and until today nothing but a
+    migration and a hard-coded flagship literal could write one. A gift's first benefactor could
+    not be recorded without an engineer.
+
+    ⚠ IT IS A DELIBERATE, PER-GIFT DECISION AND MUST STAY SEPARATE FROM ACCOUNT VETTING. The
+    account gate ("is this a real, legitimate person") is `Sponsor.status` and is settled once,
+    platform-wide; this is the second gate, and the owner's rule for it is that a sponsor sees a
+    gift's students only if they were *"specifically onboarded into both and accepted into both —
+    and that is not a given"*. So approving somebody here says nothing about any other gift, and
+    `sync_account_membership` deliberately touches only the one gift a registration resolved.
+
+    ⚠ THE POOL IS FAIL-CLOSED AND THIS DOES NOT CHANGE THAT. Visibility narrows through the single
+    seam `pool.for_sponsor` / `pool.approved_programme_ids`, which every one of the five
+    sponsor-facing channels already uses — list, detail, the weekly digest, the real-time alert and
+    standing gifts. This writes the row that seam reads; it adds no channel and bypasses none. Do
+    not add a sixth reader without extending P3's source guard.
+
+    The caller is responsible for the ORGANISATION fence: `programme` must belong to the admin's
+    own organisation, which the endpoint checks by resolving it through `_programmes_for`.
+    """
+    from .models import SponsorProgrammeMembership
+    if programme is None:
+        raise MembershipError('programme_required')
+    if status not in MEMBERSHIP_STATUSES:
+        raise MembershipError('bad_status')
+    # ⚠ THE ACCOUNT GATE COMES FIRST AND IS NOT NEGOTIABLE HERE. Accepting an unvetted or rejected
+    # account into a gift would produce a row that reads "approved" while `Sponsor.status` still
+    # refuses them everything — a screen saying yes and a system saying no. Vet the account, then
+    # accept them into the gift.
+    if status == 'approved' and sponsor.status != 'approved':
+        raise MembershipError('account_not_approved')
+
+    settled = status != 'pending'
+    membership, created = SponsorProgrammeMembership.objects.get_or_create(
+        sponsor=sponsor, programme=programme,
+        defaults={
+            'status': status,
+            'vetted_by': vetted_by if settled else '',
+            'vetted_at': timezone.now() if settled else None,
+        },
+    )
+    if not created and membership.status != status:
+        membership.status = status
+        membership.vetted_by = vetted_by if settled else ''
+        membership.vetted_at = timezone.now() if settled else None
         membership.save(update_fields=['status', 'vetted_by', 'vetted_at', 'updated_at'])
     return membership
 

@@ -3175,12 +3175,22 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 because a name that simply vanishes leaves the reader guessing. The label says why.
                 The person already holding the case is never disabled: pause stops NEW work, and
                 disabling the current value would make the select unable to show its own state.
-                Both rules live in the pure `assignOptions`, where they are tested. */}
-            {assignOptions(admins, { isSuper, currentAssigneeId: app.assigned_to_id })
+                ⚠ A reviewer scoped to ANOTHER GIFT is greyed the same way, with the gift named
+                (S-ASSIGN). Same two reasons, and a blank gift on either side greys nobody — it
+                means "every gift", which is what all 17 live staff still carry.
+                All the rules live in the pure `assignOptions`, where they are tested. */}
+            {assignOptions(admins, {
+              isSuper,
+              currentAssigneeId: app.assigned_to_id,
+              applicationProgrammeId: app.programme_id ?? null,
+            })
               .map((a) => (
                 <option key={a.id} value={a.id} disabled={a.disabled}>
                   {a.name}{a.role !== 'reviewer' ? ` (${a.role})` : ''}
-                  {a.disabled ? ` — ${t('admin.reviewers.status.paused')}` : ''}
+                  {a.reason === 'paused' ? ` — ${t('admin.reviewers.status.paused')}` : ''}
+                  {a.reason === 'otherGift'
+                    ? ` — ${t('admin.scholarship.assign.coversOtherGift', { gift: a.programmeName })}`
+                    : ''}
                 </option>
               ))}
           </select>

@@ -44,6 +44,7 @@ EXPECTED_KEYS = {
     'consent_at', 'consent_version',
     'notify_frequency', 'last_digest_sent_at',
     'programmes', 'credits', 'sponsorships', 'referrals', 'memberships',
+    'assignable_programmes',
     'finance_check_required', 'fenced',
 }
 
@@ -206,6 +207,47 @@ class TestMoneyIsOrgFenced(SponsorDetailBase):
         res = self._get(self.approver_a)
         self.assertEqual([m['programme_name'] for m in res.data['memberships']],
                          ['Alpha Bursary'])
+
+
+class TestAssignableProgrammes(SponsorDetailBase):
+    """The choices behind the accept / move panel (S-ASSIGN, 2026-09-04).
+
+    This list is what makes the RM100,000 recordable through a screen rather than through SQL:
+    without it there is no way to say "accept this benefactor into the Sabah gift", and
+    `record_admin_credit` then refuses `sponsor_not_in_programme` for ever.
+    """
+
+    def test_it_offers_a_gift_they_are_NOT_yet_in(self):
+        """The whole purpose. `memberships` lists where they already are; a panel built from
+        that list could only ever re-state the status quo."""
+        prog_c = Programme.objects.create(organisation=self.org_a, code='sd-pc',
+                                          name_en='Alpha Second Gift', is_active=True)
+        res = self._get(self.approver_a)
+        self.assertNotIn('Alpha Second Gift',
+                         [m['programme_name'] for m in res.data['memberships']])
+        self.assertIn(prog_c.id, [p['id'] for p in res.data['assignable_programmes']])
+
+    def test_an_inactive_gift_is_offered(self):
+        """⚠ THE CASE THIS EXISTS FOR. A second gift is created switched OFF and is staffed
+        before it opens, so filtering to active gifts would offer nothing at exactly the moment
+        somebody needs to accept its first benefactor."""
+        prog_c = Programme.objects.create(organisation=self.org_a, code='sd-pc',
+                                          name_en='Sabah Bursary', is_active=False)
+        rows = {p['id']: p for p in self._get(self.approver_a).data['assignable_programmes']}
+        self.assertIn(prog_c.id, rows)
+        # …and the screen is told, so it can say so rather than implying the gift is open.
+        self.assertFalse(rows[prog_c.id]['is_active'])
+
+    def test_it_is_org_fenced(self):
+        res = self._get(self.approver_a)
+        self.assertEqual([p['code'] for p in res.data['assignable_programmes']], ['sd-pa'])
+
+    def test_a_super_sees_every_tenants_gifts(self):
+        # A SUPERSET, not an equality: migration 0098 seeds `brightpath-flagship` into every
+        # test database, so a super legitimately sees a third gift this fixture never made.
+        res = self._get(self.superadmin)
+        codes = {p['code'] for p in res.data['assignable_programmes']}
+        self.assertTrue({'sd-pa', 'sd-pb'} <= codes, codes)
 
 
 class TestWalletFigures(SponsorDetailBase):

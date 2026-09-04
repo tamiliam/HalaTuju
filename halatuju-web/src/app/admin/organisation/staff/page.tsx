@@ -64,6 +64,11 @@ export default function OrganisationInvitationsPage() {
   const [sName, setSName] = useState('')
   const [sEmail, setSEmail] = useState('')
   const [note, setNote] = useState('')
+  // Which gift a sponsor is being invited into (S-ASSIGN). Starts BLANK and stays blank — the
+  // picker only appears when there is a real choice, and it must never default to one. Until
+  // now this form never asked, so a benefactor invited for Sabah would have registered
+  // straight into the flagship, silently.
+  const [sProgramme, setSProgramme] = useState('')
 
   const load = useCallback(async () => {
     if (!token) return
@@ -84,19 +89,26 @@ export default function OrganisationInvitationsPage() {
     let ok = false
     if (kind === 'sponsors') {
       try {
-        await inviteSponsor({ email: sEmail, name: sName, note }, { token: token! })
+        // Omitted when blank, which is the ONE-GIFT case: the server takes the organisation's
+        // sole active gift. With several it refuses `programme_required` rather than picking,
+        // and the picker below is `required` so the form never reaches that refusal.
+        await inviteSponsor({
+          email: sEmail, name: sName, note,
+          ...(sProgramme ? { programme_id: Number(sProgramme) } : {}),
+        }, { token: token! })
         ok = true
       } catch { ok = false }
     } else {
       ok = await invite({ email: sEmail, name: sName, role: subRole as StaffRole })
     }
-    if (ok) { setSName(''); setSEmail(''); setNote('') }
+    if (ok) { setSName(''); setSEmail(''); setNote(''); setSProgramme('') }
     void load()
   }
 
   const rows = data?.invitations ?? []
   const waiting = data?.waiting
   const invitable = data?.invitable_roles ?? []
+  const giftChoices = data?.programmes ?? []
   const canInviteHere = canManage && (kind === 'sponsors' || invitable.length > 0)
 
   return (
@@ -163,6 +175,24 @@ export default function OrganisationInvitationsPage() {
                 <input className={inputCls} type="email" placeholder={t('admin.emailLabel')}
                   value={sEmail} onChange={(e) => setSEmail(e.target.value)} required />
               </div>
+              {/* ⚠ ONE GIFT ASKS NOTHING. The picker appears only when the organisation runs
+                  more than one, so the form is unchanged for BrightPath today. With several it
+                  is REQUIRED and starts blank — never a silent default, which is exactly how a
+                  Sabah benefactor would otherwise have landed in the flagship. */}
+              {kind === 'sponsors' && giftChoices.length > 1 && (
+                <label className="block text-sm">
+                  <span className="mb-1 block font-medium text-ground-700">
+                    {t('admin.invitations.giftLabel')}
+                  </span>
+                  <select className={inputCls} value={sProgramme} required
+                    onChange={(e) => setSProgramme(e.target.value)}>
+                    <option value="">{t('admin.invitations.giftChoose')}</option>
+                    {giftChoices.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {kind === 'sponsors' && (
                 <input className={inputCls} placeholder={t('admin.invitations.notePlaceholder')}
                   value={note} onChange={(e) => setNote(e.target.value)} />

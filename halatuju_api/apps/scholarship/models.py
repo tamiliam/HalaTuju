@@ -3978,6 +3978,22 @@ class Invitation(models.Model):
     sponsor = models.ForeignKey(
         'Sponsor', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
     )
+    #: WHICH GIFT a sponsor invitation is into (S-ASSIGN, 2026-09-04).
+    #:
+    #: ⚠ IT GRANTS NOTHING, AND THAT RULE IS OLDER THAN THIS FIELD. A sponsor invitation creates
+    #: no account: it is a prompt with a link to the ordinary public registration, and the invitee
+    #: still consents, signs the terms and is vetted (owner's constraint, see the class docstring —
+    #: "an invitation must never be a way around any of that"). This only records which gift the
+    #: organisation MEANT, so that when they do register the pending membership opens against the
+    #: right one instead of whichever gift happens to be the only active one.
+    #:
+    #: NULL is normal: every invitation sent before today has none, and with a single active gift
+    #: the registration resolves it anyway. It is only load-bearing once an organisation runs two.
+    programme = models.ForeignKey(
+        'Programme', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+        help_text='Sponsor invitations only: the gift the organisation is inviting them into. '
+                  'NULL = not stated, and registration resolves it if it can.',
+    )
 
     expires_at = models.DateTimeField(null=True, blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)

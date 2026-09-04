@@ -3199,6 +3199,10 @@
         "pauseNoteActive": "Pausing stops NEW cases only. They keep their account, and any interview already theirs stays with them.",
         "pauseNotePaused": "This reviewer is paused, so they are not being given new cases. Everything else — their account, their sign-in, the cases already theirs — is untouched.",
         "pauseFailed": "That could not be changed. Please try again.",
+        "giftLabel": "Covers:",
+        "giftEvery": "Every gift",
+        "giftNotOpen": "not open yet",
+        "giftFailed": "That could not be changed. Please try again.",
         "about": "About",
         "recommended": "Recommended",
         "rejectedAfterReview": "Rejected after review",
@@ -3286,6 +3290,8 @@
       "email": "Email",
       "phone": "Phone",
       "activeInApply": "Active",
+      "giftLabel": "Listed on:",
+      "giftEvery": "Every gift",
       "activeHelp": "Show this organisation in the apply form's source list when the intake reopens.",
       "empty": "—",
       "noSources": "No sources yet.",
@@ -3465,6 +3471,24 @@
         "scrubbed": "scrubbed after 60 days",
         "joinedOn": "Joined {date}",
         "membershipsTitle": "Programme acceptance",
+        "giftsNote": "A benefactor sees the students of a gift only once they are accepted into it, and a gift they are not in cannot take their money. Accepting here does not change their account — that is settled separately, and an account that is not approved cannot be accepted into anything.",
+        "giftNotOpen": "not open yet",
+        "giftAccept": "Accept",
+        "giftTakeBack": "Take back",
+        "giftStatus": {
+          "none": "Not accepted",
+          "pending": "Waiting",
+          "approved": "Accepted",
+          "rejected": "Not accepted",
+          "suspended": "Paused"
+        },
+        "giftError": {
+          "programme_required": "Choose a gift first.",
+          "bad_status": "That is not a status we can set.",
+          "account_not_approved": "Approve this benefactor\u2019s account first. An account that is still waiting cannot be accepted into a gift.",
+          "not_found": "That gift is not one of yours.",
+          "unknown": "That did not go through. Nothing was changed."
+        },
         "digest": {
           "realtime": "Real-time alerts",
           "weekly": "Weekly digest",
@@ -3800,6 +3824,7 @@
       "assign": {
         "assignedTitle": "Reviewer assigned",
         "lockedHint": "Locked — a decision has been recorded. Reopen the decision to change the reviewer.",
+        "coversOtherGift": "covers {gift}",
         "notReadyHint": "Assignment opens once the applicant's queries are answered, or the 5-day window passes.",
         "error": {
           "not_ready": "This application isn't ready to assign yet — its queries are still open and the SLA window hasn't passed.",
@@ -5569,6 +5594,8 @@
       },
       "noneInKind": "Nobody has been invited in this group yet.",
       "sourceComingSoon": "Coming soon. Source partners receive our emails today; they will be able to sign in and see their own students once that is built.",
+      "giftLabel": "Which gift is this invitation for?",
+      "giftChoose": "Choose a gift…",
       "notePlaceholder": "A short note to include (optional)",
       "emails": {
         "title": "What people are told when you invite them",

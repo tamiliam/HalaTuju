@@ -13,14 +13,16 @@ import {
 
 const R = (over: Partial<AdminReviewer> = {}): AdminReviewer => ({
   id: 1, name: 'Aisha', email: 'a@example.org', role: 'reviewer', languages: ['en'],
-  open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null, ...over,
+  open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
+  // NULL = every gift, the permissive default with no backfill — never "no gift".
+  programme_id: null, programme_name: '', ...over,
 })
 
 const D = (over: Partial<AdminReviewerDetail> = {}): AdminReviewerDetail => ({
   ...R(), recommended: 0, declined: 0, rejected_after_review: 0, awaiting_qc: 0,
   created_at: '2026-03-01T00:00:00Z', qualification: '', university: '',
   graduation_year: null, field_of_study: '', phone: '', share_phone_with_students: false,
-  reopens: [], ...over,
+  reopens: [], programmes: [], ...over,
 })
 
 describe('turnaroundBand', () => {

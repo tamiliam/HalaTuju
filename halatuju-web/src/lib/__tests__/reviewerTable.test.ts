@@ -13,7 +13,9 @@ import en from '@/messages/en.json'
 
 const R = (over: Partial<AdminReviewer> = {}): AdminReviewer => ({
   id: 1, name: 'Aisha', email: 'a@example.org', role: 'reviewer', languages: ['en'],
-  open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null, ...over,
+  open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
+  // NULL = every gift, the permissive default with no backfill — never "no gift".
+  programme_id: null, programme_name: '', ...over,
 })
 
 const resolve = (key: string) =>

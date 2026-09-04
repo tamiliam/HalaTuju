@@ -8,11 +8,13 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { effectiveRole } from '@/lib/navigation'
 import {
-  canRecordCredit, creditActions, creditableProgrammes, creditChain, creditErrorKey,
-  hasNoMoney, pendingTotal, seenBand, studentStage,
+  canRecordCredit, canSetMembership, creditActions, creditableProgrammes, creditChain,
+  creditErrorKey, hasNoMoney, membershipErrorKey, membershipRows, pendingTotal, seenBand,
+  studentStage,
 } from '@/lib/sponsorDetail'
 import {
-  getSponsorDetail, recordSponsorCredit, signSponsorCredit, voidSponsorCredit,
+  getSponsorDetail, recordSponsorCredit, setSponsorMembership, signSponsorCredit,
+  voidSponsorCredit,
   type AdminSponsorDetail,
 } from '@/lib/admin-api'
 import { PAGE_SIZE_OPTIONS } from '@/lib/tableView'
@@ -95,6 +97,11 @@ export default function AdminSponsorDetailPage() {
   const [creditError, setCreditError] = useState('')
   const [recording, setRecording] = useState(false)
   const [form, setForm] = useState({ programme_id: '', amount: '', external_reference: '' })
+  // The accept / take-back panel gets its OWN busy flag and error line. It sits in a separate
+  // block from the credits, and sharing one would have a refused acceptance print its message
+  // above the money.
+  const [giftBusy, setGiftBusy] = useState(0)
+  const [giftError, setGiftError] = useState('')
   // Typed name per credit — the signature is per row, so one shared input would let a click
   // on row B submit the name typed for row A.
   const [typedNames, setTypedNames] = useState<Record<number, string>>({})
@@ -145,6 +152,29 @@ export default function AdminSponsorDetailPage() {
   const pending = pendingTotal(detail.credits)
   const creditable = creditableProgrammes(detail)
   const mayRecord = canRecordCredit(viewerRole) && creditable.length > 0
+  const gifts = membershipRows(detail)
+  const maySetGift = canSetMembership(viewerRole)
+
+  /**
+   * Accept into a gift, or take it back — then RE-FETCH the whole record.
+   *
+   * Same reasoning as `runCreditAction`: an acceptance changes what may be credited, so a
+   * local row patch would leave the credit form offering a gift the database disagrees about.
+   */
+  const setGift = async (programmeId: number, next: 'approved' | 'rejected') => {
+    setGiftBusy(programmeId)
+    setGiftError('')
+    try {
+      await setSponsorMembership(detail.id, { programme_id: programmeId, status: next },
+        { token: token! })
+      await load()
+    } catch (e) {
+      const code = (e as { code?: string }).code
+      setGiftError(t(`admin.sponsors.detail.giftError.${membershipErrorKey(code)}`))
+    } finally {
+      setGiftBusy(0)
+    }
+  }
 
   const submitRecord = async () => {
     const programmeId = Number(form.programme_id || creditable[0]?.programme_id)
@@ -498,14 +528,63 @@ export default function AdminSponsorDetailPage() {
         <TableFooter paged={pagedReferrals} />
       </Block>
 
-      {detail.memberships.length > 0 && (
-        <Block title={t('admin.sponsors.detail.membershipsTitle')}>
+      {/* ── which gifts they may fund ────────────────────────────────────────
+          The panel that unblocks the money. `record_admin_credit` refuses
+          `sponsor_not_in_programme` without an approved row here, so before this existed a
+          second gift's first benefactor needed an engineer writing SQL.
+
+          Every gift is listed, including the ones they are NOT in — that is the case the
+          panel is for. A read-only list of held memberships (what stood here before) could
+          only ever restate the status quo. */}
+      {gifts.length > 0 && (
+        <Block
+          title={t('admin.sponsors.detail.membershipsTitle')}
+          note={t('admin.sponsors.detail.giftsNote')}
+        >
+          {giftError && (
+            <p className="px-4 sm:px-5 pt-3 text-sm text-critical-600">{giftError}</p>
+          )}
           <ul className="divide-y">
-            {detail.memberships.map((m) => (
-              <li key={m.programme_name} className="flex items-baseline justify-between gap-4 px-4 sm:px-5 py-2.5 text-sm">
-                <span className="text-ground-900">{m.programme_name || '—'}</span>
-                <span className="text-xs text-ground-500">
-                  {m.status}{m.vetted_by ? ` · ${m.vetted_by}` : ''}
+            {gifts.map((g) => (
+              <li key={g.programme_id}
+                  className="flex items-center justify-between gap-4 flex-wrap px-4 sm:px-5 py-3 text-sm">
+                <span className="text-ground-900">
+                  {g.programme_name}
+                  {/* A gift is created switched off and staffed before it opens, so say so
+                      rather than let a blank imply it is taking applicants. */}
+                  {!g.is_active && (
+                    <span className="ml-2 text-xs text-ground-500">
+                      {t('admin.sponsors.detail.giftNotOpen')}
+                    </span>
+                  )}
+                </span>
+                <span className="flex items-center gap-3">
+                  <span className="text-xs text-ground-500">
+                    {g.status
+                      ? t(`admin.sponsors.detail.giftStatus.${g.status}`)
+                      : t('admin.sponsors.detail.giftStatus.none')}
+                  </span>
+                  {maySetGift && (
+                    g.status === 'approved' ? (
+                      <button
+                        type="button"
+                        onClick={() => setGift(g.programme_id, 'rejected')}
+                        disabled={giftBusy !== 0}
+                        className="text-xs px-3 py-1.5 rounded-lg border text-ground-700 hover:bg-ground-50 disabled:opacity-50"
+                      >
+                        {t('admin.sponsors.detail.giftTakeBack')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setGift(g.programme_id, 'approved')}
+                        disabled={giftBusy !== 0}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
+                      >
+                        {t('admin.sponsors.detail.giftAccept')}
+                      </button>
+                    )
+                  )}
                 </span>
               </li>
             ))}

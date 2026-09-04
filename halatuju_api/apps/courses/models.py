@@ -462,6 +462,21 @@ class PartnerOrganisation(models.Model):
     # orgs are seeded True by migration. Referral attribution still uses `referred_by_org`
     # regardless of this flag — this only governs apply-form visibility.
     show_in_apply = models.BooleanField(default=False)
+    # ⚠ NULL MEANS EVERY GIFT — the same ruling and the same shape as `PartnerAdmin.programme`.
+    # This narrows `show_in_apply`: it says WHICH gifts' apply forms list this school, and it is
+    # only consulted when the flag is on. All seven live referral organisations are NULL, so every
+    # one of them still appears on every form and there is nothing to backfill.
+    #
+    # ⚠ NOT ACCESS CONTROL, and doubly so here. A referral organisation is an ATTRIBUTION
+    # relationship, never a scope (`PartnerAdmin.org` / `referred_by_org` carry that warning too,
+    # and the scopes endpoint refuses to offer a referral org as a tenant for the same reason).
+    # This is a dropdown's contents.
+    programme = models.ForeignKey(
+        'scholarship.Programme', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='referral_sources',
+        help_text="Gift programme whose apply form lists this source. NULL = every gift, which "
+                  "is the default and what every existing source has.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     # ── Tenant identity & branding (platform Sprint 1; '' = use platform default) ──
@@ -667,6 +682,27 @@ class PartnerAdmin(models.Model):
         null=True, blank=True, related_name='staff',
         help_text='Tenant org this staff member is scoped to for B40 access '
                   '(NULL = platform-level: super/partner). Never the referral org.',
+    )
+    # ⚠ NULL MEANS EVERY GIFT, AND THAT IS THE OWNER'S RULING (2026-09-04). Which gift a reviewer
+    # covers is a NARROWING, not a fence: `owning_organisation` above is the boundary, and this
+    # only says "offer this person the Sabah cases, not the flagship's". So NULL is the permissive
+    # default, every one of the 17 org-scoped staff on production keeps working untouched, and
+    # THERE IS NO BACKFILL — which is the point. Migration 0123 once populated a column for
+    # everybody alive that day and nothing kept doing it for the next person; a default that means
+    # "as before" cannot go stale that way (lessons.md, 2026-07-29).
+    #
+    # ⚠ ONE gift, not a list. With two gifts "NULL = both" covers every case; a person who should
+    # cover two of three cannot be expressed and would need a join table. That limit is accepted
+    # deliberately (owner, 2026-09-04) and is unreachable until a third gift exists.
+    #
+    # ⚠ IT IS NOT A FENCE, AND MUST NEVER BECOME ONE. The org fence is `_org_scoped`/`_org_allows`;
+    # a reviewer bound to a gift who is somehow handed another gift's case still passes the fence,
+    # because the fence is about the ORGANISATION. This decides who is OFFERED work.
+    programme = models.ForeignKey(
+        'scholarship.Programme', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='staff',
+        help_text='Gift programme this person is scoped to. NULL = every gift the organisation '
+                  'runs, which is the default and what every existing staff member has.',
     )
     is_super_admin = models.BooleanField(default=False)
     role = models.CharField(

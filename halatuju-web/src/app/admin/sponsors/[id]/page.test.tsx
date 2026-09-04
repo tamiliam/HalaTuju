@@ -77,6 +77,12 @@ const detail = (over: Partial<api.AdminSponsorDetail> = {}): api.AdminSponsorDet
     programme_id: 7, programme_name: 'BrightPath Bursary',
     status: 'approved', vetted_by: '', vetted_at: null,
   }],
+  // Two gifts, one held and one NOT — the only shape that can prove the accept panel offers a
+  // gift the benefactor is not yet in. A one-gift fixture would pass either way.
+  assignable_programmes: [
+    { id: 7, code: 'flagship', name: 'BrightPath Bursary', is_active: true },
+    { id: 9, code: 'sabah', name: 'Sabah Bursary', is_active: false },
+  ],
   finance_check_required: false,
   fenced: false,
   ...over,
@@ -139,6 +145,82 @@ describe('recording a credit', () => {
     mockApi.getSponsorDetail.mockResolvedValue(detail({ memberships: [] }))
     await open()
     expect(screen.queryByRole('button', { name: /recordCredit/ })).toBeNull()
+  })
+})
+
+/**
+ * Accepting a benefactor into a gift (S-ASSIGN, 2026-09-04).
+ *
+ * This panel is what unblocks the money: `record_admin_credit` refuses
+ * `sponsor_not_in_programme` without an approved row, and before it existed the only writer
+ * hard-coded the flagship — so a second gift's first credit needed an engineer writing SQL.
+ */
+describe('accepting into a gift', () => {
+  const asOrgAdmin = async () => {
+    viewerRole = { role: 'org_admin' }
+    await open()
+  }
+
+  it('offers the gift the benefactor is NOT in yet — the whole point of the panel', async () => {
+    await asOrgAdmin()
+    // Two buttons, one per gift: Accept for Sabah (no membership), Take back for the flagship
+    // (already approved). A panel built from `memberships` alone could draw only the second.
+    expect(screen.getAllByRole('button', { name: /giftAccept/ }).length).toBe(1)
+    expect(screen.getAllByRole('button', { name: /giftTakeBack/ }).length).toBe(1)
+  })
+
+  it('says a gift is not open yet rather than leaving it blank', async () => {
+    await asOrgAdmin()
+    expect(screen.getByText(/giftNotOpen/)).toBeTruthy()
+  })
+
+  it('posts the gift and the status, then re-reads the whole record', async () => {
+    mockApi.setSponsorMembership.mockResolvedValue(
+      { programme_id: 9, programme: 'sabah', status: 'approved' })
+    await asOrgAdmin()
+    fireEvent.click(screen.getByRole('button', { name: /giftAccept/ }))
+
+    await waitFor(() => expect(mockApi.setSponsorMembership).toHaveBeenCalledWith(
+      5, { programme_id: 9, status: 'approved' }, { token: 'tok' }))
+    // An acceptance changes what may be CREDITED, so a local row patch would leave the credit
+    // form offering a gift the database disagrees about.
+    await waitFor(() => expect(mockApi.getSponsorDetail).toHaveBeenCalledTimes(2))
+  })
+
+  it('takes an acceptance back with `rejected`, never by deleting the row', async () => {
+    mockApi.setSponsorMembership.mockResolvedValue(
+      { programme_id: 7, programme: 'flagship', status: 'rejected' })
+    await asOrgAdmin()
+    fireEvent.click(screen.getByRole('button', { name: /giftTakeBack/ }))
+    await waitFor(() => expect(mockApi.setSponsorMembership).toHaveBeenCalledWith(
+      5, { programme_id: 7, status: 'rejected' }, { token: 'tok' }))
+  })
+
+  it('draws no control for a plain admin — who may fund your students is the org admin’s call', async () => {
+    // ⚠ The OPPOSITE gate to recording a credit, which this same `admin` may do. Deliberate:
+    // recording is bookkeeping; deciding who may fund your students is the organisation's.
+    await open()   // role 'admin'
+    expect(screen.queryByRole('button', { name: /giftAccept/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /giftTakeBack/ })).toBeNull()
+    // …but the gifts are still LISTED, so they can see where the benefactor stands.
+    expect(screen.getByText('Sabah Bursary')).toBeTruthy()
+  })
+
+  it('names the reason when the server refuses', async () => {
+    mockApi.setSponsorMembership.mockRejectedValue({ code: 'account_not_approved' })
+    await asOrgAdmin()
+    fireEvent.click(screen.getByRole('button', { name: /giftAccept/ }))
+    await waitFor(() => expect(
+      screen.getByText(/giftError\.account_not_approved/)).toBeTruthy())
+  })
+
+  it('falls back to a plain message on an unrecognised code, never a raw key path', async () => {
+    // `t()` returns the key on a miss, so interpolating a new server code would print
+    // `admin.sponsors.detail.giftError.some_new_code` on screen. That has shipped here before.
+    mockApi.setSponsorMembership.mockRejectedValue({ code: 'some_new_code' })
+    await asOrgAdmin()
+    fireEvent.click(screen.getByRole('button', { name: /giftAccept/ }))
+    await waitFor(() => expect(screen.getByText(/giftError\.unknown/)).toBeTruthy())
   })
 })
 
