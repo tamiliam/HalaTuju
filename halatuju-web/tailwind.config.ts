@@ -85,6 +85,11 @@ const config: Config = {
           800: 'rgb(var(--ground-800) / <alpha-value>)',
           900: 'rgb(var(--ground-900) / <alpha-value>)',
           1000: 'rgb(var(--ground-1000) / <alpha-value>)',
+          // ⚠ A ROLE, not a stop — `placeholder:text-ground-placeholder`. It exists so the
+          // 400 stop could be corrected to the INK job it was actually doing in 395 of its
+          // 404 call sites (F7e). Placeholder text is the one muted thing that must NOT get
+          // darker: an empty field would start reading as a filled one.
+          placeholder: 'rgb(var(--ground-placeholder) / <alpha-value>)',
         },
         positive: toneRamp('positive'),
         info: toneRamp('info'),

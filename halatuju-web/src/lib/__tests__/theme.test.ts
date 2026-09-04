@@ -529,6 +529,82 @@ describe('the two guards the owner ruled on', () => {
       expect(new Set(stops).size).toBe(stops.length)
     }
   })
+
+  // ── the ink stops must be READABLE, not merely distinct (Layer 1 F7e, 2026-09-04) ──────────
+  //
+  // ⚠ THIS FILE PASSED THROUGHOUT TD-224, AND TD-224 WAS 263 FAILING ELEMENTS LIVE IN LIGHT MODE.
+  // The distinctness test above asks whether two stops share a VALUE; nothing here asked whether
+  // a stop a person has to READ can be read. `contrast.py` did not cover it either — its pairs are
+  // all brand-versus-ground. **A gate is blind to every pair it does not name**, and this is the
+  // fourth time this arc has written that sentence, so this time the pairs are named.
+
+  /** WCAG relative luminance — the real curve, not the linear approximation used for ordering. */
+  const rel = (rgb: number[]) => {
+    const [r, g, b] = rgb.map((v) => {
+      const s = v / 255
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  const contrast = (a: number[], b: number[]) => {
+    const [hi, lo] = [rel(a), rel(b)].sort((x, y) => y - x)
+    return (hi + 0.05) / (lo + 0.05)
+  }
+  const rgbOf = (block: string, name: string) => {
+    const m = block.match(new RegExp(`--${name}:\\s*([\\d ]+);`))
+    if (!m) throw new Error(`no --${name}`)
+    return m[1].trim().split(/\s+/).map(Number)
+  }
+  const lightBlockOf = () => css.slice(css.indexOf(':root {'), css.indexOf(`[${THEME_ATTR}='dark']`))
+
+  it('keeps every INK stop above AA on the tightest ground it sits on, in BOTH modes', () => {
+    // ⚠ THE GROUND THAT MATTERS IS THE WELL (`ground-100`), NOT THE CARD. Muted ink appears on a
+    // card, on the page, and inside wells/striped rows/hover states — and the well is the closest
+    // of the three to the ink, so it is the one that decides. Measuring against the card is how
+    // `ground-500` sat at a comfortable-looking 4.83 while the chips it painted read 4.39.
+    //
+    // 300 is deliberately NOT in this list: it is a border, and WCAG's 4.5 bar is for text.
+    for (const [mode, block] of [['light', lightBlockOf()], ['dark', darkBlock]] as const) {
+      const well = rgbOf(block, 'ground-100')
+      for (const stop of ['400', '500', '600', '700', '800', '900']) {
+        const ratio = contrast(rgbOf(block, `ground-${stop}`), well)
+        expect(`${mode} ground-${stop} on a well: ${ratio.toFixed(2)}`)
+          .toBe(`${mode} ground-${stop} on a well: ${Math.max(ratio, 4.5).toFixed(2)}`)
+      }
+    }
+  })
+
+  it('keeps the ink ramp MONOTONIC, so a later tuning cannot invert two stops', () => {
+    // F7e moved 400 and 500 in light and 400 in dark. Without this, moving one stop past its
+    // neighbour is a silent reordering: `text-ground-500` would render LIGHTER than
+    // `text-ground-400`, and every "muted, but a bit stronger" pairing in the product inverts
+    // with nothing failing.
+    for (const [mode, block] of [['light', lightBlockOf()], ['dark', darkBlock]] as const) {
+      const inks = ['400', '500', '600', '700', '800', '900']
+        .map((s) => contrast(rgbOf(block, `ground-${s}`), rgbOf(block, 'ground-100')))
+      for (let i = 1; i < inks.length; i += 1) {
+        expect(`${mode} ${i}: ${inks[i] > inks[i - 1]}`).toBe(`${mode} ${i}: true`)
+      }
+    }
+  })
+
+  it('⚠ keeps PLACEHOLDER a separate token, and does NOT hold it to the ink bar', () => {
+    // The whole reason F7e was ~10 edits rather than ~400: `ground-400` was NAMED for placeholder
+    // text and USED as muted ink in 395 of its 404 call sites, so the SMALL role moved out.
+    // A placeholder is deliberately fainter than content — darkening it makes an empty field read
+    // as a filled one — so it is exempt from the bar above BY DESIGN, not by oversight.
+    for (const block of [lightBlockOf(), darkBlock]) {
+      const ph = rgbOf(block, 'ground-placeholder')
+      expect(ph).toEqual([156, 163, 175])
+      // …and it must not silently become the ink stop again.
+      expect(ph).not.toEqual(rgbOf(block, 'ground-400'))
+    }
+    // The three call sites that want it say so explicitly; nothing else may.
+    const strays = walkFiles('src')
+      .filter((f) => /\.(tsx?|css)$/.test(f))
+      .filter((f) => /placeholder:text-ground-(?!placeholder)/.test(withoutComments(read(f))))
+    expect(strays).toEqual([])
+  })
 })
 
 describe('the stylesheet is a hiding place too', () => {

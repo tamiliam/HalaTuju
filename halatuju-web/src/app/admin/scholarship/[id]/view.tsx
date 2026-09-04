@@ -3162,7 +3162,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             title={assignLocked ? t('admin.scholarship.assign.lockedHint')
               : firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
             onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
-            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-400"
+            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-placeholder"
           >
             <option value="">{t('admin.scholarship.unassigned')}</option>
             {/* Assignable options. The backend already returns the org-fenced, review-capable set

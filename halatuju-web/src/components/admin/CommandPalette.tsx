@@ -87,7 +87,7 @@ export function CommandPalette({ groups, open, onClose }: {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('admin.shell.searchPlaceholder')}
             aria-label={t('admin.shell.search')}
-            className="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-ground-900 outline-none placeholder:text-ground-400"
+            className="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-ground-900 outline-none placeholder:text-ground-placeholder"
           />
         </div>
 

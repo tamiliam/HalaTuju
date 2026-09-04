@@ -110,13 +110,28 @@
   --ground-100: 243 244 246;
   --ground-200: 229 231 235;
   --ground-300: 209 213 219;
-  --ground-400: 156 163 175;
-  --ground-500: 107 114 128;
+  /* ⚠ 400 and 500 MOVED at F7e (2026-09-04) and the reason is measured, not aesthetic — see the
+     ROLE TABLE in the dark block below. Both are INK stops (404 and 614 call sites), and both
+     failed AA on a WELL: 400 read 2.31 and 500 read 4.39 against a bar of 4.5. They now clear it
+     on the tightest ground either sits on. **Do not lighten either back toward Tailwind's gray-400
+     / gray-500** — those are the values that were failing, product-wide, in the mode every visitor
+     has used since launch (TD-224). */
+  --ground-400: 101 109 122;  /* #656d7a — muted ink; 4.74 on a well, 5.22 on a card */
+  --ground-500: 88 95 107;    /* #585f6b — stronger muted ink; 5.85 on a well */
   --ground-600: 75 85 99;
   --ground-700: 55 65 81;
   --ground-800: 31 41 55;
   --ground-900: 17 24 39;
   --ground-1000: 0 0 0;
+
+  /* ⚠ PLACEHOLDER IS ITS OWN TOKEN NOW, AND THAT IS WHAT MADE F7e ONE EDIT INSTEAD OF 400.
+     `--ground-400` was NAMED for placeholder text and USED as muted ink in ~395 of its 404 call
+     sites; exactly THREE sites wanted the placeholder meaning. The token was named after the
+     smaller role, so the small role moved out and the stop was corrected to the job it was
+     actually doing. Deliberately UNCHANGED at #9ca3af in both modes, so placeholders look exactly
+     as they did — a placeholder is not content, and darkening it would make an empty field read
+     as a filled one. */
+  --ground-placeholder: 156 163 175;   /* #9ca3af */
 
   /* positive — Tailwind green */
   --positive-50: 240 253 244;
@@ -275,8 +290,17 @@
        0    the raised surface — a card, an input, a modal, a popover
        50   the page those sit ON
        100  a well or a hover inside a card
-       200  a border          300  a stronger border      400  placeholder text
-       500  muted text        600-1000  text, up to the strongest
+       200  a border          300  a stronger border
+       400  muted ink         500  stronger muted ink     600-1000  text, up to the strongest
+
+     ⚠ THIS TABLE USED TO SAY `400 placeholder text`, AND THE CODE DISAGREED WITH IT IN 395 OF 404
+     PLACES. F7e (2026-09-04) settled it in the code's favour: 400 is an INK stop, placeholder text
+     has its own `--ground-placeholder`, and both ink stops were moved to values that pass AA. The
+     table is rewritten rather than annotated because a role table that half the product ignores is
+     worse than no table.
+
+     ⚠ 300 IS A BORDER AND IS NOT REQUIRED TO PASS. It reads 2.13 on a dark well and that is fine —
+     WCAG's 4.5 bar is for TEXT. Do not "fix" it, and do not use it for ink.
 
      In light the raised surface is white — the EXTREME of the ramp, with everything else darker.
      Reverse that and the card becomes pure black on a #111827 page: every card reads as a HOLE
@@ -290,13 +314,21 @@
   --ground-100: 55 65 81;    /* #374151 — wells, hover, striped rows */
   --ground-200: 75 85 99;    /* #4b5563 — borders */
   --ground-300: 107 114 128; /* #6b7280 — stronger borders */
-  --ground-400: 156 163 175; /* #9ca3af — placeholder text */
-  --ground-500: 209 213 219; /* #d1d5db — muted text */
+  /* ⚠ 400 MOVED at F7e: #9ca3af read 4.06 on a dark WELL, so dark failed here too. The ticket
+     recorded this as a light-mode problem and the well case is bad in both modes. 500 already
+     cleared the bar (7.00) and is untouched. */
+  --ground-400: 180 186 196; /* #b4bac4 — muted ink; 5.28 on a well, 7.52 on a card */
+  --ground-500: 209 213 219; /* #d1d5db — stronger muted ink */
   --ground-600: 229 231 235;
   --ground-700: 243 244 246;
   --ground-800: 249 250 251;
   --ground-900: 255 255 255;
   --ground-1000: 255 255 255;
+
+  /* Same value as light, and deliberately: a placeholder is faint text on a raised surface in
+     both modes, and #9ca3af reads 5.78 on the dark card — comfortably legible without competing
+     with the content a filled field would show. */
+  --ground-placeholder: 156 163 175;   /* #9ca3af */
 
   /* positive — Tailwind green */
   --positive-50: 20 83 45;
@@ -454,7 +486,7 @@
   .input {
     @apply w-full px-4 py-3 rounded-lg border border-ground-300 bg-ground-0 text-ground-900;
     @apply focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-transparent;
-    @apply placeholder:text-ground-400;
+    @apply placeholder:text-ground-placeholder;
   }
 
   /* Grade badge */

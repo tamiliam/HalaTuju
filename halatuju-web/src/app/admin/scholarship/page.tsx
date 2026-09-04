@@ -330,7 +330,7 @@ export default function AdminScholarshipList() {
                           : (a.assigned_to_id == null && a.ready_for_assignment === false)
                             ? t('admin.scholarship.assign.error.not_ready')
                             : undefined}
-                        className="border rounded-lg px-2 py-1 text-sm bg-ground-0 max-w-[220px] disabled:bg-ground-100 disabled:text-ground-400 disabled:cursor-not-allowed"
+                        className="border rounded-lg px-2 py-1 text-sm bg-ground-0 max-w-[220px] disabled:bg-ground-100 disabled:text-ground-placeholder disabled:cursor-not-allowed"
                       >
                         <option value="">{t('admin.scholarship.unassigned')}</option>
                         {/* keep the current assignee selectable even if not in the reviewer list */}
