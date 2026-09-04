@@ -168,6 +168,67 @@ export function creditableProgrammes(
 }
 
 /**
+ * Who may accept a benefactor into a gift, or take it back.
+ *
+ * ⚠ DELIBERATELY NARROWER THAN `canRecordCredit`, and in the other direction. Recording a
+ * credit is bookkeeping an `admin` does; deciding **who may fund your students** is the
+ * organisation's own decision, so it sits with `org_admin` — the same gate as sponsor
+ * vetting. The server holds the same pair; this only decides whether to draw the panel.
+ */
+export function canSetMembership(viewerRole: string): boolean {
+  return viewerRole === 'super' || viewerRole === 'org_admin'
+}
+
+/** One gift, with where this benefactor stands in it. `status: ''` means NOT IN IT YET. */
+export interface MembershipRow {
+  programme_id: number
+  programme_name: string
+  is_active: boolean
+  status: '' | 'pending' | 'approved' | 'rejected' | 'suspended' | string
+}
+
+/**
+ * Every gift the admin may act on, joined to this benefactor's standing in each.
+ *
+ * ⚠ DRIVEN BY `assignable_programmes`, NOT by `memberships`. The memberships list says where
+ * they already are; a panel built from it could only ever restate the status quo, and the
+ * whole point is the gift they are **not** in — which is what the Sabah RM100,000 was waiting
+ * on. A gift with no membership row shows `status: ''` rather than being hidden.
+ *
+ * A legacy membership whose gift is not in the assignable list (another tenant's, for a super
+ * reading a fenced-out row) is not appended: this list is what the panel can WRITE to.
+ */
+export function membershipRows(detail: AdminSponsorDetail): MembershipRow[] {
+  const held = new Map(
+    detail.memberships
+      .filter((m) => m.programme_id != null)
+      .map((m) => [m.programme_id as number, m.status]),
+  )
+  return detail.assignable_programmes.map((p) => ({
+    programme_id: p.id,
+    programme_name: p.name,
+    is_active: p.is_active,
+    status: held.get(p.id) ?? '',
+  }))
+}
+
+/**
+ * Every error code the membership endpoint answers with, mapped to a copy key.
+ *
+ * Same allowlist discipline as `creditErrorKey` and for the same reason: `t()` returns the
+ * key on a miss, so interpolating an unknown server code renders a raw dotted path on screen.
+ */
+const MEMBERSHIP_ERROR_CODES = [
+  'programme_required', 'bad_status', 'account_not_approved', 'not_found',
+] as const
+
+export function membershipErrorKey(code: string | undefined): string {
+  return (MEMBERSHIP_ERROR_CODES as readonly string[]).includes(code ?? '')
+    ? (code as string)
+    : 'unknown'
+}
+
+/**
  * Every error code the credit endpoints answer with, mapped to a copy key.
  *
  * An unrecognised code falls back to `unknown` rather than being interpolated into a key:

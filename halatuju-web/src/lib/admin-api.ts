@@ -223,6 +223,11 @@ export interface InvitationRow {
   admin_id: number | null
   is_active: boolean | null
   paused: boolean | null
+  /** Which gift this invitation was for. **Empty means EVERY gift** — the honest reading for
+   *  a staff invitation and for every row written before the column existed. Never render a
+   *  blank as a gift name. */
+  programme: string
+  programme_name: string
 }
 
 export interface InvitationsPayload {
@@ -234,6 +239,10 @@ export interface InvitationsPayload {
   /** Roles this caller may grant in this kind. ⚠ NOT the roles LISTED: `org_admin` appears in the
    *  admins table but is appointed at platform level by a super, never from here. */
   invitable_roles: string[]
+  /** Gift choices for the sponsor invite form. ACTIVE only, matching what the POST accepts —
+   *  an invitation is a prompt to register TODAY, so a gift that is not open yet would be an
+   *  invitation through a door that does not open. */
+  programmes: Array<{ id: number; code: string; name: string }>
 }
 
 export async function getInvitations(kind: InvitationKind, options?: ApiOptions) {
@@ -241,9 +250,13 @@ export async function getInvitations(kind: InvitationKind, options?: ApiOptions)
 }
 
 /** Invite a SPONSOR. Creates no account: the link goes to the ordinary public registration, where
- *  they consent, sign the terms and are vetted exactly as anybody else. */
+ *  they consent, sign the terms and are vetted exactly as anybody else.
+ *
+ *  `programme_id` records WHICH GIFT the organisation meant (S-ASSIGN). Omit it and the server
+ *  takes the organisation's sole active gift, or refuses `programme_required` when there are
+ *  several — it never picks silently. */
 export async function inviteSponsor(
-  data: { email: string; name?: string; note?: string }, options?: ApiOptions,
+  data: { email: string; name?: string; note?: string; programme_id?: number }, options?: ApiOptions,
 ) {
   return adminMutate<{ id: number; emailed: boolean }>(
     '/api/v1/admin/invitations/', 'POST', { audience: 'sponsor', ...data }, options)
@@ -1942,6 +1955,17 @@ export interface AdminSponsorDetail {
     vetted_by: string
     vetted_at: string | null
   }>
+  /**
+   * Every gift this admin may accept the benefactor into — the choices behind the accept /
+   * move panel. INCLUDES inactive gifts (`is_active: false`): a second gift is created
+   * switched off and staffed before it opens, so the panel must offer it.
+   */
+  assignable_programmes: Array<{
+    id: number
+    code: string
+    name: string
+    is_active: boolean
+  }>
   /** Live, never stored — appointing a finance admin arms the credit chain's middle step. */
   finance_check_required: boolean
   /** True when this caller sees only their own organisation's share of the account. */
@@ -1950,6 +1974,24 @@ export interface AdminSponsorDetail {
 
 export async function getSponsorDetail(id: number, options?: ApiOptions): Promise<AdminSponsorDetail> {
   return adminFetch(`/api/v1/admin/sponsors/${id}/`, options)
+}
+
+/**
+ * Accept a benefactor into one of THIS organisation's gifts, or take it back.
+ *
+ * ⚠ THIS IS THE CALL THAT UNBLOCKS THE MONEY. `record_admin_credit` refuses
+ * `sponsor_not_in_programme` without an approved membership, and until S-ASSIGN the only
+ * writer hard-coded the flagship — so a second gift's first credit needed an engineer.
+ *
+ * The server refuses `programme_required`, `bad_status` and `account_not_approved`; a gift
+ * outside the caller's organisation is 404, never 403.
+ */
+export async function setSponsorMembership(
+  id: number,
+  body: { programme_id: number; status: 'pending' | 'approved' | 'rejected' | 'suspended' },
+  options?: ApiOptions
+): Promise<{ programme_id: number; programme: string; status: string }> {
+  return adminMutate(`/api/v1/admin/sponsors/${id}/membership/`, 'POST', body, options)
 }
 
 export async function listSponsors(status?: string, options?: ApiOptions): Promise<{ sponsors: AdminSponsor[] }> {

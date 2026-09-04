@@ -3465,6 +3465,24 @@
         "scrubbed": "dibersihkan selepas 60 hari",
         "joinedOn": "Menyertai {date}",
         "membershipsTitle": "Penerimaan program",
+        "giftsNote": "Penderma hanya melihat pelajar sesuatu pemberian selepas mereka diterima ke dalamnya, dan pemberian yang mereka tiada di dalamnya tidak boleh menerima wang mereka. Penerimaan di sini tidak mengubah akaun mereka — itu diputuskan berasingan, dan akaun yang belum diluluskan tidak boleh diterima ke mana-mana pemberian.",
+        "giftNotOpen": "belum dibuka",
+        "giftAccept": "Terima",
+        "giftTakeBack": "Tarik balik",
+        "giftStatus": {
+          "none": "Belum diterima",
+          "pending": "Menunggu",
+          "approved": "Diterima",
+          "rejected": "Belum diterima",
+          "suspended": "Dijeda"
+        },
+        "giftError": {
+          "programme_required": "Pilih pemberian dahulu.",
+          "bad_status": "Itu bukan status yang boleh kami tetapkan.",
+          "account_not_approved": "Luluskan akaun penderma ini dahulu. Akaun yang masih menunggu tidak boleh diterima ke dalam pemberian.",
+          "not_found": "Pemberian itu bukan milik anda.",
+          "unknown": "Ia tidak berjaya. Tiada apa-apa yang diubah."
+        },
         "digest": {
           "realtime": "Makluman masa nyata",
           "weekly": "Ringkasan mingguan",
@@ -5569,6 +5587,8 @@
       },
       "noneInKind": "Belum ada sesiapa dijemput dalam kumpulan ini.",
       "sourceComingSoon": "Akan datang. Rakan sumber menerima e-mel kami hari ini; mereka akan dapat log masuk dan melihat pelajar mereka sendiri apabila ia siap.",
+      "giftLabel": "Jemputan ini untuk pemberian yang mana?",
+      "giftChoose": "Pilih pemberian…",
       "notePlaceholder": "Nota ringkas untuk disertakan (pilihan)",
       "emails": {
         "title": "Apa yang diberitahu apabila anda menjemput seseorang",

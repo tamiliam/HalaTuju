@@ -1383,6 +1383,19 @@ def _sponsor_detail_dict(sponsor, admin, base):
             }
             for m in membership_rows
         ],
+        # Every gift this ADMIN may accept the benefactor into — the choices behind the accept /
+        # move panel. Deliberately NOT derived from `memberships` (which lists gifts they are
+        # ALREADY in): the whole point of the panel is the gift they are not in yet.
+        #
+        # ⚠ `_programmes_for` INCLUDES INACTIVE gifts, and that is the case this exists for. A
+        # second gift is created switched OFF and staffed before it opens, so a list of active
+        # gifts would offer nothing at exactly the moment somebody needs to accept its first
+        # benefactor — the defect the owner hit on their own first use of THE SHAPE.
+        'assignable_programmes': [
+            {'id': p.id, 'code': p.code, 'name': p.name_en or p.code,
+             'is_active': p.is_active}
+            for p in AdminProgrammeListView()._programmes_for(admin).order_by('code')
+        ],
         # Live, never stored — appointing a finance admin arms the middle step of the credit
         # chain retroactively, so the screen must ask at read time, exactly as the sign
         # service does.
@@ -2622,7 +2635,7 @@ class AdminInvitationsView(_ReviewersBase):
         from .models import Invitation
 
         # org-fence: an invitation belongs to the organisation that sent it. A super sees all.
-        qs = Invitation.objects.select_related('partner_admin', 'invited_by').all()
+        qs = Invitation.objects.select_related('partner_admin', 'invited_by', 'programme').all()
         if org_id is not None:
             qs = qs.filter(organisation_id=org_id)
 
@@ -2651,6 +2664,12 @@ class AdminInvitationsView(_ReviewersBase):
                 'admin_id': pa.id if pa else None,
                 'is_active': pa.is_active if pa else None,
                 'paused': (pa.paused_at is not None) if pa else None,
+                # Which gift this invitation was for (S-ASSIGN). NULL means EVERY gift — the
+                # honest reading for every row written before the column existed, and for a
+                # staff invitation, which carries none. Never render a blank as a gift name.
+                'programme': i.programme.code if i.programme_id else '',
+                'programme_name': (i.programme.name_en or i.programme.code)
+                                  if i.programme_id else '',
             })
 
         return Response({
@@ -2660,6 +2679,16 @@ class AdminInvitationsView(_ReviewersBase):
             # What this caller may actually grant here. The FE renders the sub-selection from it
             # rather than keeping its own copy, so the two cannot drift.
             'invitable_roles': list(inv_service.KIND_INVITABLE_ROLES.get(kind, ())),
+            # The gift choices for the sponsor invite form. ACTIVE only, matching exactly what
+            # the POST accepts — an invitation is a prompt to register TODAY, so offering a gift
+            # that is not open yet would invite somebody into a door that does not open. (The
+            # accept panel on the sponsor detail page is the opposite case and takes inactive
+            # ones, because a gift is staffed before it is switched on.)
+            'programmes': [
+                {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
+                for p in AdminProgrammeListView()._programmes_for(admin)
+                                                 .filter(is_active=True).order_by('code')
+            ],
         })
 
     def post(self, request):

@@ -296,9 +296,12 @@ class TestNewSponsorIsOnboardedIntoTheGift(TestCase):
         self.assertEqual(self._membership(sponsor).status, 'rejected')
 
     def test_syncing_twice_never_duplicates(self):
+        # ⚠ `programme` IS REQUIRED AND POSITIONAL since S-ASSIGN (2026-09-04). It used to
+        # default to the `'brightpath-flagship'` literal, which is the bug that made a second
+        # gift's benefactor un-creditable. Naming it here is the point, not boilerplate.
         sponsor = self._register(uid='new-3', email='n3@x.com')
-        sponsorship.sync_account_membership(sponsor)
-        sponsorship.sync_account_membership(sponsor)
+        sponsorship.sync_account_membership(sponsor, self.flagship)
+        sponsorship.sync_account_membership(sponsor, self.flagship)
         self.assertEqual(
             SponsorProgrammeMembership.objects.filter(sponsor=sponsor).count(), 1)
 
@@ -306,13 +309,22 @@ class TestNewSponsorIsOnboardedIntoTheGift(TestCase):
         """The migration's case: a sponsor already in the gap gets a membership, not a duplicate."""
         sponsor = _sponsor(email='gap@x.com', uid='gap-1', status='approved')
         self.assertIsNone(self._membership(sponsor))
-        sponsorship.sync_account_membership(sponsor, vetted_by='heal')
+        sponsorship.sync_account_membership(sponsor, self.flagship, vetted_by='heal')
         self.assertEqual(self._membership(sponsor).status, 'approved')
 
     def test_account_vetting_never_touches_another_gift(self):
-        """Acceptance into a second gift is that organisation's decision, not a side-effect."""
+        """Acceptance into a second gift is that organisation's decision, not a side-effect.
+
+        ⚠ THE SECOND GIFT IS INACTIVE, AND THAT IS THE REAL SABAH SHAPE, not a convenience. A
+        gift is created switched OFF and staffed before it opens, and the sponsor is accepted
+        into it by hand — so the PLATFORM still has exactly one active gift and a registering
+        stranger is still resolvable. Make it active and this fixture becomes the *ambiguous*
+        case, which is a different claim and is tested separately below.
+        """
         org = _org('other-org')
         sabah = _programme(org, 'p-sabah-2', 'Sabah Bursary')
+        sabah.is_active = False
+        sabah.save(update_fields=['is_active'])
         sponsor = self._register(uid='new-4', email='n4@x.com')
         _accept(sponsor, sabah, status='approved')
 
@@ -324,3 +336,43 @@ class TestNewSponsorIsOnboardedIntoTheGift(TestCase):
             'approved',
             'suspending the ACCOUNT silently revoked a gift the sponsor was accepted into',
         )
+
+    def test_a_stranger_arriving_with_two_open_gifts_is_filed_against_NEITHER(self):
+        """⚠ NONE IS A REAL ANSWER. PF-1's rule applied to the money.
+
+        Two gifts open and no invitation means nothing on the platform knows which one this
+        person meant. Guessing files them — and their gift — against the wrong one; writing
+        nothing leaves an org_admin to accept them by hand on the sponsor page, which is
+        exactly what the accept panel is for. This is the case the old
+        `DEFAULT_PROGRAMME_CODE` literal got silently wrong.
+        """
+        _programme(_org('second-org'), 'p-open-2', 'Second Open Gift')   # active by default
+
+        sponsor = self._register(uid='new-5', email='n5@x.com')
+
+        self.assertEqual(
+            SponsorProgrammeMembership.objects.filter(sponsor=sponsor).count(), 0,
+            'a stranger was filed against a gift nobody said they had chosen',
+        )
+
+    def test_an_invitation_answers_it_even_with_two_open_gifts(self):
+        """The invitation is EVIDENCE, not a guess — an organisation that invites somebody has
+        stated which gift, and stating it is the whole point of asking.
+
+        Matched on EMAIL because a sponsor invitation deliberately creates no account and
+        carries no credential, so the address is the only thread between the asking and the
+        arriving.
+        """
+        from apps.scholarship import invitations as inv_service
+        org = _org('sabah-org')
+        sabah = _programme(org, 'p-sabah-3', 'Sabah Bursary')     # active, so it is ambiguous
+        inv_service.create_or_refresh(
+            audience='sponsor', email='n6@x.com', organisation=org, programme=sabah)
+
+        sponsor = self._register(uid='new-6', email='n6@x.com')
+
+        rows = SponsorProgrammeMembership.objects.filter(sponsor=sponsor)
+        self.assertEqual([m.programme_id for m in rows], [sabah.id],
+                         'the gift the organisation actually named was not honoured')
+        self.assertIsNone(self._membership(sponsor),
+                          'an invited benefactor was ALSO filed against the flagship')

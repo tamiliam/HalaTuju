@@ -61,7 +61,15 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
               const waiting = r.status === 'invited' || r.status === 'expired' || r.status === 'no_reply'
               return (
                 <tr key={r.id}>
-                  <td className="px-4 py-3 font-medium text-ground-900">{r.name || '—'}</td>
+                  <td className="px-4 py-3 font-medium text-ground-900">
+                    {r.name || '—'}
+                    {/* Which gift this invitation was for (S-ASSIGN). Rendered only when the row
+                        HAS one: a blank means every gift, and printing an empty line under a
+                        staff invitation would read as a missing value rather than as "n/a". */}
+                    {r.programme_name && (
+                      <div className="text-xs font-normal text-ground-500">{r.programme_name}</div>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-ground-500">{r.email}</td>
                   <td className="px-4 py-3">
                     {r.role ? t(`admin.role.${r.role}`) : '—'}
