@@ -550,7 +550,80 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-03, after THE SHAPE — the console says what belongs to what)
+## Next Sprint (as of 2026-09-04, after S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT)
+
+**SHIPPED AND DEPLOYED.** `main` at `e07a09bb`, both Cloud Builds SUCCESS on `e07a09b`, serving
+**halatuju-api-00975-nrj** / **halatuju-web-00823-pc5** at 100%. **Migrations `courses/0073` +
+`scholarship/0149` APPLIED MIGRATE-FIRST and verified BEFORE the push**; ledger reconciled against
+production (scholarship **149/149**, courses **73/73**, no gaps). Retro
+`docs/retrospective-2026-09-04-s-assign.md`; decisions x3; lessons x4; **TD-230** raised.
+pytest 5800 -> **5844**; jest 1666 -> **1692**; tsc **24** (baseline); lint **0**;
+i18n 4722 -> **4745 x 3**; build clean. Four guards bite-checked.
+
+**⚠ IT IS WHAT BLOCKED THE RM100,000, and that is now unblocked in code AND on a screen.**
+`record_admin_credit` refuses `sponsor_not_in_programme` without an approved membership, and the
+only writer of one hard-coded `DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'`. A second gift's
+first benefactor needed an engineer writing SQL. **The owner gate still stands** — record nothing
+for Sabah until it is **inked AND the money has changed hands** (bank ref for `external_reference`).
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ NULL MEANS EVERY GIFT, ON ALL THREE COLUMNS, AND THERE IS NO BACKFILL.** Measured on
+  production before the push: **0 of 21 staff, 0 of 10 organisations, 0 of 20 invitations** carry
+  a gift. A backfill is correct on the day it runs and rots on the next INSERT — that is exactly
+  how migration `0123` left the 28/07 sponsor with zero memberships. Every reader must treat blank
+  as an ANSWER: `assignOptions` greys nobody on a blank reviewer gift AND nobody on an unknown
+  application gift, and every screen renders "Every gift" rather than an empty cell.
+- **⚠ IT IS A NARROWING, NEVER A FENCE.** The org boundary is `_org_scoped`/`_org_allows`; a gift
+  decides who is OFFERED work and which form lists a source. A reviewer scoped to Sabah who is
+  handed a flagship case still passes the fence and can still work it — deliberately, or a tidied
+  dropdown strands an in-flight review.
+- **⚠ `signup_programme_for` ANSWERS FROM EVIDENCE AND `None` IS A REAL ANSWER.** The invitation
+  they answered (matched on email — a sponsor invitation creates no account, so the address is the
+  only thread), else the platform's sole ACTIVE gift, else NOTHING. Several gifts open and no
+  invitation means nobody knows which gift a stranger meant; guessing files their money against
+  the wrong one. PF-1's rule applied to the money.
+- **⚠ `sync_account_membership(sponsor, programme, …)` — REQUIRED AND POSITIONAL.** The P2a
+  discipline. A default would compile, pass every test written before a second gift existed, and
+  file somebody against the wrong one.
+- **⚠ THE ACCEPT PANEL READS `assignable_programmes`, NOT `memberships`.** The memberships list
+  says where a benefactor already is; the whole point is the gift they are NOT in.
+- **⚠ TWO PICKERS TAKE INACTIVE GIFTS (reviewer, sponsor) AND ONE TAKES ACTIVE ONLY (source).**
+  Not an inconsistency: a gift is STAFFED before it opens, but a source narrows which apply FORM
+  lists it and a form that is not open lists nothing.
+- **⚠ THE REVIEWER GIFT COLUMN CAME BACK ON ITS OWN TRIGGER** (owner, 2026-08-02: *"it comes back
+  when a second programme exists"*), and the ruling still holds — it renders ONLY above one gift,
+  on reviewers and sources alike. `test_there_is_NO_programmes_key` was rewritten in place.
+- **⚠ A reviewer on another gift is GREYED WITH THE GIFT NAMED, never dropped** — the `paused`
+  rule, because the cockpit unions the current assignee in from that list (bug #66).
+- **⚠ TD-230: A SOURCE'S GIFT REACHES NO STUDENT YET.** The apply form's source list is the
+  hard-coded `REFERRING_ORG_OPTIONS` constant and nothing student-facing reads `show_in_apply`.
+  A test asserts that; do not read a value in that column as proof the form is narrowed.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com — NOT the super account):**
+Sponsors -> open one: the acceptance panel lists BOTH gifts, the test gift reads "not open yet",
+Accept and Take back both work. Reviewers -> open one: **no gift line**, correctly (one ACTIVE
+gift). Invitations -> Sponsors: **no gift question**, correctly. Switching the test gift ON is the
+trigger that makes the last two start asking.
+
+**▶ NEXT — THREE CANDIDATES, OWNER PICKS:**
+1. **TD-229 — the contract template per gift.** Already RULED (2026-09-04, decisions.md): a
+   `programme` FK on `ContractTemplate`, "one ACTIVE per organisation" becomes per GIFT.
+   Not launch-blocking (`BURSARY_AGREEMENT_ENABLED` is OFF) but it blocks a Sabah student ever
+   signing anything. ⚠ `BursaryAgreement.template` is PROTECT — re-homing the live template onto
+   the flagship is a deliberate data step, not a default.
+2. **F7e — the contrast sprint (TD-224, high).** Measured over 25 routes: light **263 failing
+   elements / 55 distinct**; dark 54 / 11. `ground-400` is 2.43-2.54 against a bar of 4.5 — the
+   footer on every public page. Fold in TD-223. One part is an OWNER decision: move `ground-400`
+   (one edit, every muted label in the product) or move ~150 call sites.
+3. **The Sabah apply link + the source list.** TD-230's trigger and PF-1's second half arrive
+   together: a second gift running its own intake needs `/scholarship/apply?p=<code>` publicised
+   AND the referring-school list to stop being a constant.
+
+**⚠ ALSO OPEN:** TD-228 (the ORGANISATION crumb filters nothing — trigger is a second
+ORGANISATION, not a second programme); ms/ta first drafts, **+23 keys from this sprint** on top of
+the backlog.
+
+## Superseded — previous Next Sprint (as of 2026-09-03, after THE SHAPE — the console says what belongs to what)
 
 **SHIPPED, NOT DEPLOYED (owner gates it).** Branch `feat/console-shape`. **NO MIGRATION.**
 web + a two-line backend audit. Retro `docs/retrospective-2026-09-03-console-shape.md`;

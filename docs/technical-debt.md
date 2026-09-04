@@ -3117,3 +3117,25 @@ question before it is an engineering one; the engineering follows in an afternoo
 **⚠ Do not guess.** A template is a binding document, and `BursaryAgreement.template` is PROTECT
 precisely because a deployed template that has governed a signed agreement can never be deleted.
 (Logged 2026-09-03, console shape sprint.)
+
+---
+
+### [TD-230] A source's gift is recorded and reaches no student — low
+**Status:** Open — shipped knowingly, S-ASSIGN 2026-09-04, with a test pinning the limit.
+**What.** `PartnerOrganisation.programme` says which gift's apply form lists a referral source, and
+the Sources screen sets it. **Nothing student-facing reads it, or reads `show_in_apply` beneath it.**
+The apply form's referring-organisation list is the hard-coded `REFERRING_ORG_OPTIONS` constant in
+`halatuju-web/src/lib/scholarship.ts` — a fixed list from the legacy Google Form — so a value in
+this column changes what an ADMIN sees and nothing a visitor sees.
+**Why it shipped that way.** The owner's model named sources alongside reviewers and sponsors, and
+the three are one shape; shipping two thirds would leave the third to be re-derived. Wiring the form
+to the registry changes what EVERY applicant sees and needs the owner's call on the fixed list
+(which codes survive, what happens to `pushparani`/`govind`/`social`/`other`, and whether an
+unlisted org should appear at all).
+**⚠ Do not read a value in this column as proof the form is narrowed.**
+`test_setting_a_gift_does_NOT_narrow_the_student_form_yet` asserts that `apps/scholarship/views.py`
+never mentions `show_in_apply`; the day somebody wires it, that test fails and forces the note on
+`_source_dict` to be rewritten with it.
+**The trigger:** a second gift running its own intake with a different set of referring schools —
+i.e. the same trigger as the Sabah apply link, not before.
+(Logged 2026-09-04, S-ASSIGN.)

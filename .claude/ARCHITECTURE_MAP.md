@@ -244,6 +244,33 @@ switched on, so that is the state an org_admin most often stands inside. Two end
 `AdminProgrammeConfigurationView._programme_for` — and both now return the caller's programmes
 whatever their state. Do not re-add either filter; the FENCE is the organisation.
 
+**Who is scoped to a gift** (S-ASSIGN, 2026-09-04). Three nullable FKs to `Programme`, and on all
+three **NULL MEANS EVERY GIFT** with **no backfill** — the permissive default every live row still
+carries:
+
+| Column | Narrows | Set from |
+|---|---|---|
+| `SponsorProgrammeMembership` (existing) | which gift's students a benefactor sees, and where their money may be credited | the accept panel on `/admin/sponsors/<id>`, or `signup_programme_for` at registration |
+| `PartnerAdmin.programme` | who is OFFERED a case in the assignment dropdown | `POST admin/reviewers/<pk>/programme/` |
+| `PartnerOrganisation.programme` | which gift's apply form lists a referral source | the Sources screen |
+| `Invitation.programme` | which gift a sponsor invitation was for | the sponsor invite form |
+
+⚠ **A GIFT SCOPE IS A NARROWING, NEVER A FENCE.** The organisation boundary is
+`_org_scoped`/`_org_allows`; these decide who is offered work. A reviewer scoped to one gift who is
+handed another gift's case still passes the fence and can still work it — deliberately, so a tidied
+dropdown cannot strand an in-flight review. Every list FLAGS a mismatch and never filters it out
+(the `paused` rule: the cockpit unions the current assignee in from that list — bug #66).
+
+⚠ `sponsorship.signup_programme_for` REPLACED the tenant literal `DEFAULT_PROGRAMME_CODE`. It
+answers from evidence — the invitation they answered, else the platform's sole ACTIVE gift — and
+**None is a real answer**: several gifts open and no invitation writes nothing rather than guessing.
+`sync_account_membership(sponsor, programme, …)` takes the programme REQUIRED and POSITIONAL.
+
+⚠ **`PartnerOrganisation.programme` REACHES NO STUDENT YET** (TD-230). The apply form's source list
+is the hard-coded `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts`, and nothing
+student-facing reads `show_in_apply` at all. A test asserts that; a value in that column is intent,
+not proof the form is narrowed.
+
 ⚠ The B+ requirement is STORED as the total strong count and SHOWN as the extra beyond the A−
 grades. Both directions live in `lib/intakeYears.ts` (`draftToRequirements` /
 `requirementsToDraft`) with the round-trip test that pins them, and nowhere else — the Rules tab

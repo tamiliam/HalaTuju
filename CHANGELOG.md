@@ -2,6 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
+## S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT - 2026-09-04
+
+**Sprint. SHIPPED AND DEPLOYED.** `main` at `e07a09bb`; both Cloud Builds SUCCESS on `e07a09b`;
+serving **halatuju-api-00975-nrj** / **halatuju-web-00823-pc5** at 100%. Retro
+`docs/retrospective-2026-09-04-s-assign.md`; decisions x3; lessons x4.
+**Migrations `courses/0073` + `scholarship/0149` APPLIED MIGRATE-FIRST and verified BEFORE the
+push** (three additive nullable columns; ledger reconciled scholarship 149/149, courses 73/73,
+no gaps). pytest 5800 -> **5844** (+44); jest 1666 -> **1692** (+26); tsc **24** (baseline);
+lint **0**; i18n 4722 -> **4745 x 3**; build clean. **Four guards bite-checked**, each injection
+verified as landed first.
+
+**It is what blocked the RM100,000.** `record_admin_credit` refuses `sponsor_not_in_programme`
+unless an approved membership exists, and the only writer of one hard-coded
+`DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'`. A second gift's first benefactor could not be
+recorded without an engineer writing SQL.
+
+### Added
+- **A benefactor can be accepted into any of the organisation's gifts, or taken back.**
+  `sponsorship.set_programme_membership` + `POST admin/sponsors/<pk>/membership/`
+  (super/org_admin), and the accept/move panel on the sponsor detail page.
+  **Driven by `assignable_programmes`, NOT by `memberships`** — the memberships list says where a
+  benefactor already is, and the whole point is the gift they are **not** in.
+- **The sponsor invitation carries the gift.** `Invitation.programme`; the form asks nothing
+  above one active gift (unchanged for BrightPath) and is required-and-blank above one — never a
+  silent pick. The invitations table shows which gift each invitation was for.
+- **`PartnerAdmin.programme`** — which gift a reviewer covers.
+  `POST admin/reviewers/<pk>/programme/` (super/org_admin, narrower than reading the surface);
+  a picker on the reviewer detail page; the gift under each name on the list.
+- **`PartnerOrganisation.programme`** — which gift's apply form lists a source. Picker on the
+  Sources screen. ⚠ **It reaches no student yet** — the apply form's referring-organisation list
+  is still the hard-coded `REFERRING_ORG_OPTIONS` constant and nothing student-facing reads
+  `show_in_apply`. A test pins that honestly.
+- `AdminReviewerProgrammeView` classified in `test_org_fence.py` (the guard refused the build
+  until it was, as designed).
+
+### Changed
+- **`DEFAULT_PROGRAMME_CODE` DELETED.** `sponsorship.signup_programme_for` answers from EVIDENCE
+  instead: the invitation they answered (matched on email), else the platform's sole ACTIVE gift.
+  **None is a real answer** — several gifts open and no invitation means nobody knows which gift
+  a stranger meant, so nothing is written and an org_admin accepts them by hand. PF-1's rule
+  applied to the money.
+- **`sync_account_membership(sponsor, programme, vetted_by='')`** — `programme` is now REQUIRED
+  and POSITIONAL, the P2a discipline (`sponsor_balance`, `payments.create_run`). A default would
+  compile, pass every test written before a second gift existed, and file somebody against the
+  wrong one.
+- **The reviewer gift column is BACK because its own trigger fired.** It was an explicit absence
+  — owner, 2026-08-02: *"with one programme the column could only say one thing; it comes back
+  when a second programme exists"* — and a second gift was created on 2026-09-03.
+  `test_there_is_NO_programmes_key` was rewritten in place, not deleted, and the ruling still
+  holds: the gift renders ONLY above one gift, on reviewers and sources alike.
+- **`assignOptions` greys a reviewer on another gift, with the gift named — never drops them.**
+  Same rule as `paused` and the same reason: the cockpit unions the current assignee in from that
+  list, so dropping anybody reproduces bug #66. `AssignOption` gained `reason` so the label can
+  say which of the two it is. **A blank on EITHER side greys nobody** — a blank reviewer gift is
+  the live default for all 17 org-scoped staff, and a narrowing we cannot evaluate falls open.
+- `AdminApplicationDetailSerializer` carries `programme_id` so the picker knows the case's gift.
+
+### Fixed
+- **Three part-one tests still called the old `sync_account_membership` signature**, and one
+  created its second gift ACTIVE — which under the new resolver is the *ambiguous* case, not the
+  Sabah one. The second gift is now inactive (the real shape), and the two claims that fixture
+  blurred are separated: an INVITATION answers the question even with two gifts open, and a
+  stranger arriving with two open gifts is filed against NEITHER.
+- A stray Arabic **U+0658** that a generated write put into the Tamil copy. Both message-file
+  scripts now scan for control bytes and wrong-script marks before finishing.
+
 ## Fix: a gift that is not switched on yet was unreachable - 2026-09-04
 
 **Follow-up to the shape sprint, found by the owner on first use.** They created a second gift,

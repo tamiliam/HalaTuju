@@ -1,4 +1,19 @@
-# Sabah self-serve — roadmap
+# Sabah self-serve — roadmap · ✅ **COMPLETE 2026-09-04**
+
+**Every sprint has shipped and deployed: S1 ✅ → S2 ✅ → S0 (the shape) ✅ → S-ASSIGN ✅.**
+The acceptance test below is met **in the product**: an org_admin can create a gift, configure its
+rules and what it asks for, open an intake year, accept a benefactor into it, scope a reviewer and a
+source to it, and have the credit recorded — with no engineer touching the database.
+
+**⚠ WHAT IS STILL OWED IS NOT ENGINEERING.** The standing owner gate at the foot of this file
+remains in force: **record nothing for Sabah until the programme is inked AND the money has changed
+hands**, with a bank reference for `external_reference`. No sprint here created a Sabah row.
+
+**⚠ ONE THING BLOCKS A SABAH STUDENT SIGNING: TD-229**, now RULED (2026-09-04, decisions.md) — the
+agreement template is **per gift** — but not built. `BURSARY_AGREEMENT_ENABLED` is OFF, so nothing
+signs anything today. Also open: **TD-230** (a source's gift reaches no student yet — the apply
+form's referring-school list is still a hard-coded constant) and the Sabah **apply link**
+(`/scholarship/apply?p=<code>`, PF-1), which needs publicising when the intake opens.
 
 **Drafted 2026-09-02** per `Settings/_workflows/implementation-planning.md`, on the owner's word that
 **BrightPath Sabah is ready to launch — no longer a possibility.**
@@ -166,39 +181,23 @@ application at submit. Threshold changes also write an audit line carrying old �
 lesson, applied before it bit twice).
 
 
-### S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT · **unblocks the RM100,000**
+### ~~S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT~~ · ✅ **SHIPPED + DEPLOYED 2026-09-04**
 
-**Replaces S4 and S5, and adds sources** (owner, 2026-09-03). One pattern, three times:
+Absorbed S4 and S5 and added sources. Migrations `courses/0073` + `scholarship/0149`.
+Detail in `docs/retrospective-2026-09-04-s-assign.md`; the rules that must not be tidied are in
+`halatuju_api/CLAUDE.md` → Next Sprint, and the map of who is scoped to what is in
+`.claude/ARCHITECTURE_MAP.md`.
 
-| Who | The link today | What it needs |
-|---|---|---|
-| **Sponsors** | `SponsorProgrammeMembership` **exists** | `sync_account_membership`'s hard-coded `DEFAULT_PROGRAMME_CODE = 'brightpath-flagship'` stops being a tenant literal; the invite carries the gift; a panel on the sponsor page accepts or moves somebody |
-| **Reviewers** | **no field at all** | nullable `programme` on `PartnerAdmin`, **NULL = organisation-wide** (owner's ruling — no backfill, existing staff unaffected); set on their own record under Organisation → Reviewers, and from the invite |
-| **Sources** | **no field at all** | the same, on the referral organisation |
+**The acceptance test is met:** a benefactor can be accepted into any gift and their credit
+recorded where it was previously refused `sponsor_not_in_programme`; a reviewer and a source can
+each be scoped to a gift; every existing BrightPath sponsor, reviewer and source is untouched
+(NULL = every gift, no backfill — 0 of 21 staff, 0 of 10 organisations, 0 of 20 invitations carry
+one). Raised **TD-230**: a source's gift reaches no student yet.
 
-**⚠ THE INVITE SHOULD ASK, AND A SCREEN MUST STILL FIX IT AFTERWARDS.** The sponsor invite
-(`views_admin.py` ~2624) takes an email, a name and a note, derives the organisation from the admin,
-and **never asks which gift** — so the Sabah benefactor would be invited by BrightPath and land in
-the flagship, silently. Asking at invite time is the clean fix; a screen is still needed because a
-sponsor can register with no invite at all, and because a wrong assignment must be correctable.
-With one gift, nothing asks anything — today's flow is unchanged.
-
-**⚠ The pool is fail-closed and must stay so.** No membership → empty pool. Every channel narrows
-through `pool.for_sponsor`, **including the weekly digest and the real-time alert** — P3's source
-guard exists precisely because those two routed around the fence once. Do not add a sixth channel
-without extending that guard.
-
-**Acceptance.** The Sabah benefactor is accepted into Sabah only, sees Sabah students only, and the
-RM100,000 credit is accepted where it was previously refused `sponsor_not_in_programme`. A
-Sabah-bound reviewer is offered Sabah applications only. Every existing BrightPath sponsor,
-reviewer and source keeps working with no change — proven by the existing suite passing unmodified.
-
-
-### ~~S5 — reviewers bound to one gift~~ · **ABSORBED INTO S-ASSIGN, 2026-09-03**
-
-It is the same shape as the sponsor one, and building it separately would produce two screens
-answering one question. Its reserved menu slot was deleted in S0: which gift a reviewer covers is a
-FIELD on that reviewer, so it belongs on their record, not on a page of its own.
+**⚠ Still true and still binding: the pool is FAIL-CLOSED.** No membership → empty pool. Every
+channel narrows through `pool.for_sponsor`, **including the weekly digest and the real-time
+alert** — P3's source guard exists precisely because those two routed around the fence once. Do
+not add a sixth channel without extending that guard.
 
 
 ## Sequencing rationale

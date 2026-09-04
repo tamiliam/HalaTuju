@@ -1,5 +1,74 @@
 # Architectural Decisions — HalaTuju
 
+## A gift scope is NULL-means-everything, with no backfill — S-ASSIGN, 2026-09-04
+**Decision:** `PartnerAdmin.programme`, `PartnerOrganisation.programme` and
+`Invitation.programme` are all nullable, and **NULL means EVERY gift**. Nothing is backfilled:
+all 21 staff, 10 organisations and 20 invitations on production stay NULL.
+
+**Alternatives considered:** (a) **Backfill everyone onto the flagship** — this is precisely what
+migration `0123` did for sponsor memberships on 2026-07-25, and nothing was written to keep doing
+it, so the next sponsor to register (28/07) held zero memberships and was silently un-creditable.
+A backfill is correct on the day it runs and starts rotting on the next INSERT. (b) **NOT NULL
+with a default** — the same trap in a different costume, and Sabah S2a already recorded what it
+costs: every shortlisting threshold was NOT NULL with a default, so a PNGK floor nobody chose was
+applied to nine real applicants for a whole intake.
+
+**Rationale:** a permissive default that means *"as before"* cannot go stale. There is no moment
+at which a row becomes wrong, because the absent value is the correct answer for everybody who
+never chose one — which is everybody, until an org_admin decides otherwise.
+
+**Trade-offs:** every reader must treat blank as an ANSWER rather than a missing value, in both
+directions. `assignOptions` greys nobody on a blank reviewer gift AND nobody on an unknown
+application gift; every screen renders "Every gift" rather than an empty cell. That is three
+places that must not be "tidied" into a falsy check.
+
+**Revisit if:** a gift scope ever becomes a FENCE rather than a narrowing. NULL-means-everything
+is safe only while the field decides who is OFFERED work; as a boundary it would be a
+fail-open default, which is the wrong direction for a fence.
+
+---
+
+## One gift per person, not a list — S-ASSIGN, 2026-09-04
+**Decision:** the scope is a single FK, not a many-to-many. A reviewer covers one gift, or (NULL)
+all of them.
+
+**Alternatives considered:** a join table (`ReviewerProgramme`) allowing an arbitrary subset.
+
+**Rationale:** with TWO gifts, "one" and "NULL = both" together cover every expressible case, so a
+join table buys nothing today and costs a table, a fence and a set of screens that render a set.
+
+**Trade-offs:** accepted knowingly (owner, 2026-09-04) — a person who should cover two of THREE
+gifts cannot be expressed. That state is unreachable until a third gift exists.
+
+**Revisit if:** a third gift is created. The migration is additive and the screens already render
+a picker, so the change is contained.
+
+---
+
+## A source's gift records intent and reaches no student — S-ASSIGN, 2026-09-04
+**Decision:** ship `PartnerOrganisation.programme` and its picker, knowing that setting it changes
+nothing a visitor sees, and pin that limit with a test.
+
+**Alternatives considered:** (a) **Wire the apply form to the registry in the same sprint** — the
+student's referring-organisation list is the hard-coded `REFERRING_ORG_OPTIONS` constant in
+`lib/scholarship.ts` and nothing student-facing reads `show_in_apply` at all, so this is a change
+to what every applicant sees and needs the owner's call on the fixed list. (b) **Leave the source
+half out entirely** — but the owner's model named sources explicitly alongside reviewers and
+sponsors, and the column belongs with its siblings.
+
+**Rationale:** the three populations are one shape, and shipping two thirds of it would leave the
+third to be re-derived later. The column and its screen are correct; only the consumer is missing.
+
+**Trade-offs:** a value in that column is NOT proof the form is narrowed, and a future reader
+could easily assume it is. `test_setting_a_gift_does_NOT_narrow_the_student_form_yet` asserts that
+`apps/scholarship/views.py` does not mention `show_in_apply`, so the day somebody wires it, that
+test fails and forces the note on `_source_dict` to be rewritten with it.
+
+**Revisit if:** the apply form's source list moves off the constant and onto the registry. That is
+the change this test is waiting for.
+
+---
+
 ## The bursary agreement template belongs to a GIFT, not to the organisation — 2026-09-04
 **Decision:** owner's ruling, asked three times and settled: **one template per gift.**
 `ContractTemplate` gains a `programme` FK and "exactly one ACTIVE per organisation" becomes

@@ -19,7 +19,7 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
 
 | Role | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
 |---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **Payments: create/edit/cancel + countersignature** | edit | view |
+| **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel + countersignature** | edit | view |
 | **Admin — General** (`admin`) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
 | **Admin — Finance** (`finance`) | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
 | **QC** (`qc`) | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
@@ -34,6 +34,15 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
   award-amount setting (moves to Finance when that role exists), bursary countersigning,
   tenant-admin (`org_admin`) appointment and the Add Tenant function.
 - **Last-org-admin protection:** the sole active `org_admin` of a tenant cannot be revoked.
+- **Gift scoping is super + `org_admin` only (S-ASSIGN, 2026-09-04), and it is NARROWER than
+  reading the surface it sits on.** `admin` and `finance` may READ the reviewers list and the
+  sponsor list; deciding *who may fund your students* and *who is offered which case* is staff
+  management, so the three setters (`admin/sponsors/<pk>/membership/`,
+  `admin/reviewers/<pk>/programme/`, and `programme_id` on a source PATCH) re-gate rather than
+  inheriting. ⚠ Note this points the OPPOSITE way to recording a wallet credit, which is `admin`
+  and refuses `org_admin` — bookkeeping is the maker's job; acceptance is the organisation's.
+- **A gift scope is a NARROWING, never a fence.** It decides who is OFFERED work; the org boundary
+  stays `_org_scoped`/`_org_allows`. NULL means EVERY gift, and no row was backfilled.
 - **Sponsors under multi-org (D-1 caveat):** sponsor ACCOUNTS are platform-level identities;
   when a second organisation exists, account-level approval may move platform-side while
   pool membership stays org-level. Revisit this cell at tenant #2.
