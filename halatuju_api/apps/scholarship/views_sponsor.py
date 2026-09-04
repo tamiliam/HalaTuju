@@ -180,7 +180,11 @@ class SponsorRegisterView(SponsorMixin, APIView):
             _attribute_referral(data, existing)
             # Also called here, not just on create: this path serves a sponsor whose row already
             # exists, so it heals a missing membership rather than assuming create ran first.
-            sponsorship_service.sync_account_membership(existing)
+            # ⚠ The gift is RESOLVED, never assumed — `signup_programme_for` reads the invitation
+            # they answered, else the platform's sole active gift, else None (and None writes
+            # nothing rather than filing them against a gift nobody named).
+            sponsorship_service.sync_account_membership(
+                existing, sponsorship_service.signup_programme_for(existing))
             sponsor_notify.send_welcome(existing)
             return Response(SponsorSerializer(existing).data)
 
@@ -200,7 +204,12 @@ class SponsorRegisterView(SponsorMixin, APIView):
         # Onboard them into the gift they registered for, PENDING — vetting settles it. Without
         # this the account exists but belongs to no gift, so the pool reads empty and no credit
         # can be recorded (the 2026-07-28 gap; see sponsorship.sync_account_membership).
-        sponsorship_service.sync_account_membership(sponsor)
+        #
+        # ⚠ RESOLVED AFTER `_attribute_referral`, and the ORDER MATTERS: that call closes the
+        # admin invitation and links it to this sponsor, and the invitation is where the gift is
+        # stated. Resolving first would read an invitation that had not been matched yet.
+        sponsorship_service.sync_account_membership(
+            sponsor, sponsorship_service.signup_programme_for(sponsor))
         # S3: the first thing we have ever said to a sponsor. Dark until the template is switched
         # on; best-effort either way, so a mail problem can never cost someone their registration.
         sponsor_notify.send_welcome(sponsor)

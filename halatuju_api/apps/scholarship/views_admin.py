@@ -1239,10 +1239,16 @@ class AdminSponsorReviewView(_AdminBase):
         sponsor.reviewed_at = timezone.now()
         sponsor.reviewed_by = admin.email
         sponsor.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'updated_at'])
-        # Vetting the ACCOUNT settles their membership of the default gift the same way, which is
+        # Vetting the ACCOUNT settles their membership of the gift they registered into, which is
         # what migration 0123 did for every sponsor who predates the programme layer. Without it
         # an approved sponsor sees no students and can hold no wallet.
-        sponsorship_service.sync_account_membership(sponsor, vetted_by=admin.email)
+        #
+        # ⚠ THE SAME GIFT THE REGISTRATION RESOLVED, AND ONLY THAT ONE. `signup_programme_for` is
+        # stable across both moments because the invitation outlives the registration — so the
+        # account's own row settles and a SECOND gift's membership, which is that organisation's
+        # separate acceptance decision, is never flipped as a side-effect of account vetting.
+        sponsorship_service.sync_account_membership(
+            sponsor, sponsorship_service.signup_programme_for(sponsor), vetted_by=admin.email)
         # S3: until now this endpoint flipped a field and returned — eight people on production
         # were approved and never told. `previous_status` is read BEFORE the write because an
         # approval that lifts a suspension is a REINSTATEMENT, and the two read very differently
@@ -1454,6 +1460,66 @@ class AdminSponsorDetailView(_AdminBase):
         scope = _SponsorScope(sponsor, admin.owning_organisation_id,
                               self.has_role(admin, 'super'))
         return Response(_sponsor_detail_dict(sponsor, admin, scope))
+
+
+class AdminSponsorMembershipView(_AdminBase):
+    """POST .../admin/sponsors/<pk>/membership/ {programme_id, status} — accept a benefactor into
+    one of THIS organisation's gifts, or take it back (S-ASSIGN, 2026-09-04).
+
+    ⚠ THIS IS THE ENDPOINT THAT UNBLOCKS THE MONEY. `record_admin_credit` refuses
+    `sponsor_not_in_programme` unless an approved membership exists, and until now the only writer
+    was `sync_account_membership` with a hard-coded `'brightpath-flagship'`. A second gift's first
+    benefactor could not be recorded without an engineer writing SQL — the one thing the owner's
+    acceptance test forbids.
+
+    ⚠ TWO GATES, AND THIS IS ONLY THE SECOND. `Sponsor.status` is the ACCOUNT gate ("is this a real,
+    legitimate person"), settled once, platform-wide, by `AdminSponsorReviewView`. This is the
+    per-gift acceptance, and the owner's rule is that a sponsor sees a gift's students only if
+    *"specifically onboarded into both and accepted into both — and that is not a given"*. The
+    service refuses `account_not_approved` rather than letting a row say yes while the account
+    says no.
+
+    ⚠ THE FENCE IS THE PROGRAMME'S ORGANISATION, resolved through `_ProgrammeScopedBase`'s own
+    `_programmes_for`, so a cross-org gift is **404, never 403** — a 403 would confirm the tenant
+    exists. The SPONSOR is deliberately unfenced: an account is platform-level by design (one
+    login, one identity, one vetting), which is exactly why the money and the students hanging off
+    it are fenced instead.
+
+    Who may write: `super` and `org_admin`. Deciding who may fund your students is the
+    organisation's own decision, held by its administrator — the same gate as sponsor vetting, one
+    role narrower than the sponsor LIST (which `admin` and `finance` also read).
+    """
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not (admin.is_super or self.has_role(admin, 'org_admin')):
+            return self._deny_role()
+
+        sponsor = Sponsor.objects.filter(pk=pk).first()
+        if sponsor is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Reuse the programme fence rather than re-deriving it — `_programmes_for` already answers
+        # "which gifts may this admin touch", INCLUDING inactive ones, which matters here: a gift
+        # is configured and staffed before it is switched on.
+        programmes = AdminProgrammeListView()._programmes_for(admin)
+        programme = programmes.filter(pk=request.data.get('programme_id')).first()
+        if programme is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            m = sponsorship_service.set_programme_membership(
+                sponsor, programme, (request.data.get('status') or '').strip(),
+                vetted_by=admin.email or '')
+        except sponsorship_service.MembershipError as e:
+            code = str(e)
+            return Response({'error': code, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
+
+        logger.info('AUDIT sponsor_membership_set sponsor=%s programme=%s status=%s by=%s',
+                    sponsor.id, programme.code, m.status, admin.email or '')
+        return Response({'programme_id': programme.id, 'programme': programme.code,
+                         'status': m.status})
 
 
 class AdminSetAwardAmountView(_AdminBase):
@@ -2634,9 +2700,39 @@ class AdminInvitationsView(_ReviewersBase):
                             status=status.HTTP_400_BAD_REQUEST)
 
         org = admin.owning_organisation
+
+        # ⚠ WHICH GIFT ARE YOU INVITING THEM INTO? (S-ASSIGN, 2026-09-04.) Until now this form
+        # asked for an email, a name and a note, derived the organisation, and never asked — so a
+        # benefactor invited for Sabah would have registered straight into the flagship, silently,
+        # and their credit would then have been refused `sponsor_not_in_programme`.
+        #
+        # ⚠ ONE GIFT ASKS NOTHING. Omitted + the organisation runs exactly one → that one, so the
+        # existing form is unchanged for BrightPath and nothing is sent. More than one and none
+        # named → 400 `programme_required` carrying the choices, never a silent pick (the P2b /
+        # PF-1 rule). A gift outside the caller's organisation is 404, never 403.
+        #
+        # It GRANTS nothing either way: a sponsor invitation creates no account and is a prompt to
+        # the ordinary public registration, where they still consent, sign the terms and are
+        # vetted. This only records which gift the organisation meant.
+        programmes = AdminProgrammeListView()._programmes_for(admin).filter(is_active=True)
+        asked = request.data.get('programme_id')
+        if asked:
+            programme = programmes.filter(pk=asked).first()
+            if programme is None:
+                return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            live = list(programmes.order_by('code')[:2])
+            if len(live) > 1:
+                return Response(
+                    {'error': 'programme_required', 'code': 'programme_required',
+                     'programmes': [{'id': p.id, 'code': p.code, 'name': p.name_en}
+                                    for p in programmes.order_by('code')]},
+                    status=status.HTTP_400_BAD_REQUEST)
+            programme = live[0] if live else None
+
         inv = inv_service.create_or_refresh(
             audience='sponsor', email=email, name=(request.data.get('name') or '').strip(),
-            organisation=org, invited_by=admin,
+            organisation=org, invited_by=admin, programme=programme,
             ttl_days=inv_service.PII_RETENTION_DAYS)
 
         from .emails import send_sponsor_invitation_email

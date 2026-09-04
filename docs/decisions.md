@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## The bursary agreement template belongs to a GIFT, not to the organisation — 2026-09-04
+**Decision:** owner's ruling, asked three times and settled: **one template per gift.**
+`ContractTemplate` gains a `programme` FK and "exactly one ACTIVE per organisation" becomes
+"exactly one ACTIVE per gift".
+
+**Alternatives considered:** (a) **One per organisation, worded to suit every gift** — rejected by
+the owner. It reads plausible until you write it: the agreement names the programme, its amounts and
+its conditions, so one document covering two gifts either says nothing specific or says something
+false about one of them. (b) **A template per gift with an organisation-level fallback** — not
+chosen, and the reason is the safer failure: a gift with no template of its own would silently
+inherit wording nobody wrote for its students. A gift with NO template should refuse to produce an
+agreement, loudly.
+
+**Rationale:** a gift is the durable thing a student is funded by, and the agreement is the document
+that binds that funding. Scoping it anywhere else means the binding text and the money it binds sit
+at different levels.
+
+**Consequences:** ⚠ `BursaryAgreement.template` is PROTECT — a deployed template that has governed a
+signed agreement can never be deleted — so migrating the EXISTING template onto a gift is a data
+decision, not a default: BrightPath's belongs to the flagship, explicitly, and a second gift starts
+with none. Not launch-blocking (`BURSARY_AGREEMENT_ENABLED` is OFF); it blocks a Sabah student
+signing, which is downstream of the money. Tracked as TD-229.
+
+
 ## Everything a person SETS about one gift is one screen; four reserved slots deleted — 2026-09-03
 **Decision:** the Programme scope becomes two rows — `Configuration` (tabs: **Rules · What we ask
 for · Intake year**) and `Applications`. `rules`, `years`, `reviewerScoping` and `fund` are removed

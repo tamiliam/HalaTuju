@@ -114,6 +114,7 @@ from .views_admin import (
     AdminSponsorPendingCountView,
     AdminSponsorDetailView,
     AdminSponsorReviewView,
+    AdminSponsorMembershipView,
     AdminSuggestGapsView,
     AdminReleaseNricLockView,
     AdminVerifyAcceptView,
@@ -356,6 +357,9 @@ urlpatterns = [
     path('admin/sponsors/pending-count/', AdminSponsorPendingCountView.as_view()),  # nav + hub badge
     path('admin/sponsors/<int:pk>/', AdminSponsorDetailView.as_view()),
     path('admin/sponsors/<int:pk>/review/', AdminSponsorReviewView.as_view()),
+    # S-ASSIGN: accept a benefactor into ONE gift, or take it back. The verb that unblocks
+    # a second gift's money — `record_admin_credit` refuses without an approved membership.
+    path('admin/sponsors/<int:pk>/membership/', AdminSponsorMembershipView.as_view()),
     # Phase E3: match oversight + set the award amount
     path('admin/sponsorships/', AdminSponsorshipListView.as_view()),
     # Sources (referral organisations) + per-application witness assignment (go-live transition)

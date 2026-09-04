@@ -388,6 +388,12 @@ class TestFenceCoverageCompleteness(TestCase):
         # fenced per-request by _SponsorScope (programme->organisation for credits + wallets,
         # application->owning_organisation for sponsorships). Same split as the credit endpoints.
         'AdminSponsorDetailView': 'identity-cross-org+money-fenced',
+        # S-ASSIGN. The SPONSOR is deliberately unfenced (a platform-level account: one
+        # login, one identity, one vetting), and the PROGRAMME is fenced hard — resolved
+        # through `_programmes_for`, so another tenant's gift is 404, never 403. That is the
+        # same split `AdminSponsorDetailView` carries: identity is cross-org, the money and
+        # the students hanging off it are not.
+        'AdminSponsorMembershipView': 'identity-cross-org+money-fenced',
         'AdminSponsorPendingCountView': 'cross-org-by-design',
         # Sponsor comms (S3): the templates are PLATFORM-level, not tenant content. A Sponsor has
         # no organisation, and enablement is per EMAIL not per recipient — so there is exactly one

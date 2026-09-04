@@ -3091,8 +3091,18 @@ PROGRAMME does not fire this one — that was TD-193's half and it is closed.
 ---
 
 ### [TD-229] A second gift would have its students sign the first gift's agreement — medium
-**Status:** Open — surfaced 2026-09-03 while mapping what belongs to the organisation and what to
-the gift. **Owner ruling owed; asked twice and not yet answered.**
+**Status:** Open — **RULED 2026-09-04: the template is PER GIFT.** Surfaced 2026-09-03 while
+mapping what belongs to the organisation and what to the gift. The question below is settled; the
+work is not built.
+**⚠ THE RULING, and what it costs:** `ContractTemplate` gains a `programme` FK, and `contracts.deploy`'s
+"exactly one ACTIVE per organisation" becomes "exactly one ACTIVE per GIFT" — a partial unique index
+per programme rather than per org. `BursaryAgreement.template` is PROTECT and must stay so: a
+deployed template that has governed a signed agreement can never be deleted, and re-homing an
+EXISTING template onto a gift must therefore be a data decision, not a default. BrightPath's live
+template belongs to the flagship; back-fill it there explicitly and let a second gift start with
+none, so nobody signs a document nobody wrote for them.
+**Not launch-blocking:** `BURSARY_AGREEMENT_ENABLED` is OFF, so nothing signs anything today.
+It blocks a Sabah student signing, which is downstream of the money.
 **What.** `ContractTemplate.organisation` scopes a template to a TENANT, and `contracts.deploy`
 keeps exactly one ACTIVE template per organisation. A gift has no template of its own, and
 `BursaryAgreement` renders from whichever one is active. So the day BrightPath runs a second gift,

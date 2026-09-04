@@ -150,7 +150,8 @@ def open_invitation(audience, email):
 
 
 def create_or_refresh(*, audience, email, name='', role='', organisation=None, invited_by=None,
-                      partner_admin=None, credential_issued=False, ttl_days=None, now=None):
+                      partner_admin=None, credential_issued=False, programme=None,
+                      ttl_days=None, now=None):
     """The one way an invitation comes into being, and the one way a re-invite is handled.
 
     Idempotent on an OPEN invitation to the same address: a second invite finds the existing row and
@@ -160,6 +161,11 @@ def create_or_refresh(*, audience, email, name='', role='', organisation=None, i
     ⚠ A RE-SEND IS NOT A NEW ROW. It moves ONE clock — `expires_at` — forward, matching the fact
     that `AdminResendView` also resets the temp-password clock. Two clocks would let this screen and
     the login gate disagree about whether somebody can still get in.
+
+    ⚠ `programme` (sponsor invitations only, S-ASSIGN) FOLLOWS THE SAME "a re-invite may correct it"
+    rule as `name`, `role` and `organisation`: a truthy value overwrites, None leaves the existing
+    one alone. Re-inviting somebody into a DIFFERENT gift is a real correction and must land; a
+    re-send that names no gift must not silently erase the one already stated.
     """
     now = now or timezone.now()
     from datetime import timedelta
@@ -174,15 +180,16 @@ def create_or_refresh(*, audience, email, name='', role='', organisation=None, i
         inv.organisation = organisation or inv.organisation
         inv.partner_admin = partner_admin or inv.partner_admin
         inv.credential_issued = credential_issued or inv.credential_issued
+        inv.programme = programme or inv.programme
         inv.expires_at = expires
         inv.save(update_fields=['name', 'role', 'organisation', 'partner_admin',
-                                'credential_issued', 'expires_at', 'updated_at'])
+                                'credential_issued', 'programme', 'expires_at', 'updated_at'])
         return inv
 
     return Invitation.objects.create(
         audience=audience, email=email, name=name, role=role, organisation=organisation,
         invited_by=invited_by, partner_admin=partner_admin, code=_new_code(),
-        credential_issued=credential_issued, expires_at=expires)
+        credential_issued=credential_issued, programme=programme, expires_at=expires)
 
 
 def record_send(inv, ok, error=''):
