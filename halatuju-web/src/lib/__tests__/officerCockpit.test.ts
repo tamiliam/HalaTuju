@@ -1375,8 +1375,12 @@ describe('rejectionTrail — a decline names the reviewer AND the QC', () => {
 
 // ── assignOptions — the assignee picker (request #10, pause) ──────────────────
 describe('assignOptions', () => {
-  const A = (over: Partial<{ id: number; name: string; role: string; paused: boolean }> = {}) =>
-    ({ id: 1, name: 'Anand', role: 'reviewer', paused: false, ...over })
+  const A = (over: Partial<{
+    id: number; name: string; role: string; paused: boolean
+    programme_id: number | null; programme_name: string
+  }> = {}) =>
+    ({ id: 1, name: 'Anand', role: 'reviewer', paused: false,
+       programme_id: null, programme_name: '', ...over })
 
   it('offers a non-super only their own organisation\'s reviewers', () => {
     const rows = [A({ id: 1 }), A({ id: 2, role: 'qc' }), A({ id: 3, role: 'org_admin' })]
@@ -1415,5 +1419,63 @@ describe('assignOptions', () => {
   it('treats a payload with no `paused` field as not paused', () => {
     const rows = [{ id: 1, name: 'Anand', role: 'reviewer' }]
     expect(assignOptions(rows, { isSuper: false, currentAssigneeId: null })[0].disabled).toBe(false)
+  })
+
+  // ── which gift a reviewer covers (S-ASSIGN, 2026-09-04) ─────────────────────
+  //
+  // Same treatment as pause, for the same two reasons: the current assignee is unioned in from
+  // this list, and a name that simply vanishes leaves the reader guessing.
+
+  it('DISABLES a reviewer scoped to another gift, and names the gift', () => {
+    const rows = [
+      A({ id: 1, programme_id: 7, programme_name: 'BrightPath Bursary' }),
+      A({ id: 2, name: 'Kavitha', programme_id: 9, programme_name: 'Sabah Bursary' }),
+    ]
+    const out = assignOptions(rows, {
+      isSuper: false, currentAssigneeId: null, applicationProgrammeId: 7,
+    })
+    expect(out.map((o) => o.id)).toEqual([1, 2])
+    expect(out.map((o) => o.disabled)).toEqual([false, true])
+    expect(out[1].reason).toBe('otherGift')
+    expect(out[1].programmeName).toBe('Sabah Bursary')
+  })
+
+  it('⚠ a BLANK gift means EVERY gift and greys nobody', () => {
+    // The live default: all 17 org-scoped staff on production carry NULL, so reading it as
+    // "covers nothing" would grey out the entire roster on the first render.
+    const rows = [A({ id: 1, programme_id: null }), A({ id: 2, name: 'K' })]
+    const out = assignOptions(rows, {
+      isSuper: false, currentAssigneeId: null, applicationProgrammeId: 7,
+    })
+    expect(out.map((o) => o.disabled)).toEqual([false, false])
+  })
+
+  it('⚠ an UNKNOWN application gift greys nobody either — a narrowing we cannot judge falls open', () => {
+    // An older payload with no `programme_id`. This is an OFFER, not a fence: the server does
+    // not refuse on it at all, so failing closed here would invent a refusal.
+    const rows = [A({ id: 1, programme_id: 9, programme_name: 'Sabah Bursary' })]
+    expect(assignOptions(rows, { isSuper: false, currentAssigneeId: null })[0].disabled).toBe(false)
+  })
+
+  it('never disables the person already holding the case, even on another gift', () => {
+    // The gift narrows who is OFFERED new work. It never confiscates a case already theirs,
+    // and a <select> whose current value is disabled cannot show its own state.
+    const rows = [A({ id: 2, programme_id: 9, programme_name: 'Sabah Bursary' })]
+    const out = assignOptions(rows, {
+      isSuper: false, currentAssigneeId: 2, applicationProgrammeId: 7,
+    })
+    expect(out[0].disabled).toBe(false)
+    expect(out[0].reason).toBeNull()
+  })
+
+  it('reports PAUSED when somebody is both paused and on another gift', () => {
+    // Paused is a fact about the person; the gift is a fact about this one case. Either way
+    // they are unavailable, so the label leads with the one that outlives the case.
+    const rows = [A({ id: 1, paused: true, programme_id: 9, programme_name: 'Sabah Bursary' })]
+    const out = assignOptions(rows, {
+      isSuper: false, currentAssigneeId: null, applicationProgrammeId: 7,
+    })
+    expect(out[0].disabled).toBe(true)
+    expect(out[0].reason).toBe('paused')
   })
 })

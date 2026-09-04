@@ -1614,6 +1614,22 @@ def _source_dict(org, student_count=None):
         'contact_email': org.contact_email or '',
         'phone': org.phone or '',
         'show_in_apply': bool(org.show_in_apply),
+        # WHICH GIFT'S apply form lists this source (S-ASSIGN, 2026-09-04). NULL = every gift,
+        # which is what all seven live referral organisations have and what needs no backfill.
+        #
+        # ⚠ IT NARROWS `show_in_apply`, and `show_in_apply` DOES NOT YET REACH THE STUDENT FORM.
+        # The apply form's referring-organisation list is still the hard-coded
+        # `REFERRING_ORG_OPTIONS` constant in `lib/scholarship.ts`; nothing reads this flag on
+        # the student side yet. So setting a gift here records the organisation's intent and
+        # changes NOTHING a visitor sees — do not read a value in this column as proof that the
+        # form is narrowed. Wiring the form to the registry is its own change, and it is what
+        # makes this field bite.
+        #
+        # ⚠ NOT ACCESS CONTROL. A referral organisation is an ATTRIBUTION relationship, never a
+        # scope — the same warning `PartnerAdmin.org` and `referred_by_org` carry.
+        'programme_id': org.programme_id,
+        'programme_name': (org.programme.name_en or org.programme.code)
+                          if org.programme_id else '',
         'is_active': bool(org.is_active),
         'student_count': student_count,
     }
@@ -1687,8 +1703,17 @@ class AdminSourcesView(_SourcesBase):
             return err
         from apps.courses.models import PartnerOrganisation
         counts = _source_application_counts()
-        orgs = PartnerOrganisation.objects.order_by('name')
-        return Response({'sources': [_source_dict(o, counts.get(o.id, 0)) for o in orgs]})
+        orgs = PartnerOrganisation.objects.select_related('programme').order_by('name')
+        return Response({
+            'sources': [_source_dict(o, counts.get(o.id, 0)) for o in orgs],
+            # The gift choices behind the per-source picker. ACTIVE only: this narrows which
+            # apply form lists the source, and a form that is not open lists nothing.
+            'programmes': [
+                {'id': p.id, 'code': p.code, 'name': p.name_en or p.code}
+                for p in AdminProgrammeListView()._programmes_for(admin)
+                                                 .filter(is_active=True).order_by('code')
+            ],
+        })
 
     def post(self, request):
         admin, err = self._sources_admin(request)
@@ -1741,6 +1766,21 @@ class AdminSourceDetailView(_SourcesBase):
         if 'show_in_apply' in request.data:
             org.show_in_apply = bool(request.data.get('show_in_apply'))
             fields.append('show_in_apply')
+        if 'programme_id' in request.data:
+            # Blank/null CLEARS it, and clearing means EVERY gift — the permissive default all
+            # seven live sources carry. A gift outside the caller's organisation is refused, so
+            # a tenant cannot list a source on somebody else's form.
+            asked = request.data.get('programme_id')
+            if asked in (None, ''):
+                org.programme = None
+            else:
+                programme = AdminProgrammeListView()._programmes_for(admin).filter(
+                    pk=asked).first()
+                if programme is None:
+                    return Response({'error': 'not_found', 'code': 'not_found'},
+                                    status=status.HTTP_404_NOT_FOUND)
+                org.programme = programme
+            fields.append('programme')
         if 'is_active' in request.data:
             org.is_active = bool(request.data.get('is_active'))
             fields.append('is_active')
@@ -2286,7 +2326,7 @@ class AdminAssignableAdminsView(_AdminBase):
         # assignment can't reach across tenants. (A PartnerAdmin list, not applicant data.)
         admins = (PartnerAdmin.objects.filter(is_active=True)
                   .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'super', 'admin', 'qc', 'org_admin']))
-                  .select_related('reviewer_profile').order_by('name'))
+                  .select_related('reviewer_profile', 'programme').order_by('name'))
         if not self.has_role(admin, 'super'):
             admins = admins.filter(owning_organisation_id=admin.owning_organisation_id,
                                    is_super_admin=False)
@@ -2323,10 +2363,20 @@ class AdminAssignableAdminsView(_AdminBase):
         # #66 — the case reads as "Unassigned" when it is nothing of the sort. The dropdown renders
         # them disabled with "Paused" as the reason, which also answers the reader's next question
         # instead of leaving a name mysteriously absent.
+        #
+        # ⚠ A reviewer's GIFT travels the same way, and for the same reason (S-ASSIGN,
+        # 2026-09-04). `programme_id` NULL means EVERY gift — the owner's ruling and the
+        # permissive default every one of the 17 org-scoped staff on production still has — so a
+        # client that ignores this field behaves exactly as before. It is a NARROWING of who is
+        # offered work, never a fence: the org fence is `_org_scoped`, and a reviewer somehow
+        # handed another gift's case still passes it. The screen greys the row and says which
+        # gift they cover rather than hiding the name.
         return Response({'admins': [
             {'id': a.id, 'name': a.name, 'email': a.email,
              'role': 'super' if a.is_super else a.role, 'languages': langs(a),
              'paused': a.paused_at is not None,
+             'programme_id': a.programme_id,
+             'programme_name': (a.programme.name_en or a.programme.code) if a.programme_id else '',
              'corrections': corrections.get(a.id, 0)}
             for a in admins
         ], 'past_assignees': [{'id': p.id, 'name': p.name} for p in past]})
@@ -2456,10 +2506,18 @@ def _reviewer_dict(admin, work):
         'turnaround_days': work['turnaround_days'],
         'paused': admin.paused_at is not None,
         'paused_at': admin.paused_at,
-        # ⚠ NO `programmes` KEY, and that is a decision (owner, 2026-08-02): with one programme
-        # every reviewer serves it, so the column could only ever say one thing. It returns when a
-        # second programme exists — until then everyone is on the BrightPath Bursary by default.
-        # Do not add it back "for completeness"; a column with one possible value is furniture.
+        # ⚠ THE GIFT COLUMN IS BACK, AND ITS OWN TRIGGER IS WHY (S-ASSIGN, 2026-09-04). This
+        # used to be an explicit ABSENCE: "with one programme every reviewer serves it, so the
+        # column could only ever say one thing… it returns when a second programme exists". The
+        # owner created a second gift on 2026-09-03, so the condition that ruling named has
+        # fired. The old note is rewritten rather than deleted so the reasoning survives.
+        #
+        # ⚠ NULL MEANS EVERY GIFT and is the permissive default — every one of the 17 org-scoped
+        # staff on production still has it, and there is NO BACKFILL. A blank here is "as
+        # before", never a missing value; the screen must not render it as one.
+        'programme_id': admin.programme_id,
+        'programme_name': (admin.programme.name_en or admin.programme.code)
+                          if admin.programme_id else '',
     }
 
 
@@ -2484,10 +2542,22 @@ class _ReviewersBase(_AdminBase):
         # org-fence: narrowed by owning_organisation for a non-super (org_id set by `_side`).
         qs = (PartnerAdmin.objects.filter(is_active=True)
               .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'qc']))
-              .select_related('reviewer_profile').order_by('name'))
+              .select_related('reviewer_profile', 'programme').order_by('name'))
         if org_id is not None:
             qs = qs.filter(owning_organisation_id=org_id, is_super_admin=False)
         return qs
+
+    def _gift_choices(self, admin):
+        """The gifts this admin may scope a reviewer to.
+
+        INCLUDES inactive gifts, for the same reason the sponsor accept panel does: a gift is
+        created switched off and STAFFED before it opens, so an active-only list would offer
+        nothing at exactly the moment somebody needs to put a reviewer on the new gift.
+        """
+        return [
+            {'id': p.id, 'code': p.code, 'name': p.name_en or p.code, 'is_active': p.is_active}
+            for p in AdminProgrammeListView()._programmes_for(admin).order_by('code')
+        ]
 
 
 class AdminReviewerListView(_ReviewersBase):
@@ -2503,7 +2573,12 @@ class AdminReviewerListView(_ReviewersBase):
             return err
         rows = list(self._reviewers(org_id))
         work = _reviewer_workloads(rows, organisation_id=org_id)
-        return Response({'reviewers': [_reviewer_dict(r, work[r.id]) for r in rows]})
+        return Response({
+            'reviewers': [_reviewer_dict(r, work[r.id]) for r in rows],
+            # The gift choices behind the per-reviewer picker. Sent with the LIST so the screen
+            # can offer the change wherever a reviewer is shown, without a second round trip.
+            'programmes': self._gift_choices(admin),
+        })
 
 
 class AdminReviewerDetailView(_ReviewersBase):
@@ -2549,6 +2624,7 @@ class AdminReviewerDetailView(_ReviewersBase):
                  'at': r.closed_at or r.created_at}
                 for r in reopen_service.reviewer_reopens(target, organisation_id=org_id)
             ],
+            'programmes': self._gift_choices(admin),
         })
         return Response(payload)
 
@@ -2583,6 +2659,59 @@ class AdminReviewerPauseView(_ReviewersBase):
         return Response({'id': target.id,
                          'paused': target.paused_at is not None,
                          'paused_at': target.paused_at})
+
+
+class AdminReviewerProgrammeView(_ReviewersBase):
+    """POST admin/reviewers/<pk>/programme/ {programme_id} — which gift this person covers.
+
+    ⚠ **A NARROWING, NOT A FENCE, AND IT MUST NEVER BECOME ONE.** The organisation boundary is
+    `_org_scoped`/`_org_allows`; this only decides who is OFFERED a case. A reviewer scoped to
+    Sabah who is somehow handed a flagship case still passes the fence and can still work it —
+    deliberately, because the alternative is stranding an in-flight review the day somebody
+    tidies a dropdown.
+
+    ⚠ **`programme_id` NULL / absent CLEARS IT, and clearing means EVERY GIFT** — the permissive
+    default and what all 17 org-scoped staff on production have. So this endpoint can only ever
+    narrow or widen the offer; it can never lock somebody out of work they already hold.
+
+    ⚠ **NARROWER THAN READING THIS SURFACE**, exactly like `AdminReviewerPauseView`: `admin` and
+    `finance` may look at the reviewers list, but deciding who gets which work is staff
+    management, which the role matrix gives to super + org_admin. The list gate would admit all
+    four, so this re-gates rather than inheriting.
+
+    The gift is resolved through `_programmes_for`, so a gift outside the caller's organisation
+    is **404, never 403** — a 403 would confirm the other tenant's gift exists.
+    """
+
+    def post(self, request, pk):
+        admin, org_id, err = self._side(request)
+        if err:
+            return err
+        if not (admin.is_super or self.has_role(admin, 'org_admin')):
+            return self._deny_role()
+        # org-fence: `_reviewers` is already narrowed, so a cross-org id 404s rather than resolving.
+        target = self._reviewers(org_id).filter(pk=pk).first()
+        if target is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        asked = request.data.get('programme_id')
+        programme = None
+        if asked not in (None, ''):
+            programme = AdminProgrammeListView()._programmes_for(admin).filter(pk=asked).first()
+            if programme is None:
+                return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        old = target.programme.code if target.programme_id else ''
+        target.programme = programme
+        target.save(update_fields=['programme'])
+        logger.info('AUDIT reviewer_programme_set admin=%s old=%s new=%s by=%s',
+                    target.id, old or '(every gift)',
+                    (programme.code if programme else '(every gift)'), admin.email or '')
+        return Response({
+            'id': target.id,
+            'programme_id': target.programme_id,
+            'programme_name': (programme.name_en or programme.code) if programme else '',
+        })
 
 
 class AdminReviewerSystemEmailsView(_ReviewersBase):

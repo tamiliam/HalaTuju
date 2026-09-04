@@ -3199,6 +3199,10 @@
         "pauseNoteActive": "Jeda menghentikan kes BAHARU sahaja. Akaun mereka kekal, dan temu duga yang sudah menjadi tanggungjawab mereka tetap bersama mereka.",
         "pauseNotePaused": "Penilai ini sedang dijeda, jadi mereka tidak diberi kes baharu. Segala yang lain — akaun, log masuk, kes yang sudah menjadi tanggungjawab mereka — tidak tersentuh.",
         "pauseFailed": "Perubahan itu tidak dapat dilakukan. Sila cuba lagi.",
+        "giftLabel": "Meliputi:",
+        "giftEvery": "Semua pemberian",
+        "giftNotOpen": "belum dibuka",
+        "giftFailed": "Itu tidak dapat diubah. Sila cuba lagi.",
         "about": "Maklumat",
         "recommended": "Disyorkan",
         "rejectedAfterReview": "Ditolak selepas penilaian",
@@ -3286,6 +3290,8 @@
       "email": "E-mel",
       "phone": "Telefon",
       "activeInApply": "Aktif",
+      "giftLabel": "Disenaraikan pada:",
+      "giftEvery": "Semua pemberian",
       "activeHelp": "Tunjukkan organisasi ini dalam senarai sumber borang permohonan apabila pengambilan dibuka semula.",
       "empty": "—",
       "noSources": "Tiada sumber lagi.",
@@ -3818,6 +3824,7 @@
       "assign": {
         "assignedTitle": "Penyemak ditugaskan",
         "lockedHint": "Dikunci — keputusan telah direkodkan. Buka semula keputusan untuk menukar penyemak.",
+        "coversOtherGift": "meliputi {gift}",
         "notReadyHint": "Tugasan dibuka apabila pertanyaan pemohon dijawab, atau tempoh 5 hari tamat.",
         "error": {
           "not_ready": "Permohonan ini belum bersedia untuk ditugaskan — pertanyaannya masih terbuka dan tempoh SLA belum tamat.",

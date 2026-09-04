@@ -294,6 +294,11 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminReviewerListView': 'list-fenced',
         'AdminReviewerDetailView': 'list-fenced',
         'AdminReviewerPauseView': 'list-fenced+org_admin-only',
+        # Same shape, and doubly fenced: the reviewer resolves through the list-fenced
+        # `_reviewers`, and the GIFT resolves through `_programmes_for`. Both a cross-org
+        # reviewer and a cross-org gift are 404. What it sets is a NARROWING of who is offered
+        # work, never a fence — see the view's docstring.
+        'AdminReviewerProgrammeView': 'list-fenced+org_admin-only',
         # The seven code-owned reviewer emails. Serves the SAME seven strings to every tenant —
         # there is no organisation data in it to narrow — so it is exempt on content, not on
         # oversight. The role gate is inherited from `_ReviewersBase` all the same.

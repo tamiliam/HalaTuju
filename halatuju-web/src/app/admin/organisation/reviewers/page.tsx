@@ -22,9 +22,15 @@ import { roleBadgeClass } from '@/lib/roleBadge'
 // somebody before handing them the next case. Sorted by open caseload on arrival, because that is
 // the question the page is opened to answer.
 //
-// Two things are deliberately absent and must stay absent unless the owner says otherwise:
-// a corrections count (it reads as a competence score — the reopens live on the detail page WITH
-// their reasons) and a programmes column (with one programme it could only ever say one thing).
+// A corrections count is deliberately absent and must stay absent unless the owner says
+// otherwise: it reads as a competence score, and the reopens live on the detail page WITH their
+// reasons.
+//
+// ⚠ THE GIFT WAS ABSENT FOR THE SAME KIND OF REASON AND IS NOW CONDITIONAL (S-ASSIGN,
+// 2026-09-04). Owner, 2026-08-02: "with one programme it could only ever say one thing". That
+// is still true of a one-gift organisation, so it renders only above one gift — the ruling is
+// honoured rather than reversed. It is a line under the name, not a column: inventing a sort
+// key and a header for a fact most organisations never see is furniture.
 
 const roleBadge = (r: string) => roleBadgeClass(r)
 
@@ -66,6 +72,10 @@ export default function AdminReviewersList() {
   // endpoint is the authority; this only avoids offering a 403.
   const mayEditEmails = ['super', 'org_admin', 'admin'].includes(effectiveRole(role))
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
+  // How many gifts the organisation runs. Only the COUNT is used here: with one, every reviewer
+  // covers it and the gift would say the same thing on every row — the owner's own 2026-08-02
+  // ruling, which still holds for a one-gift organisation.
+  const [giftCount, setGiftCount] = useState(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const { sort, setSort } = useSort<ReviewerSortKey>(DEFAULT_SORT)
@@ -74,7 +84,7 @@ export default function AdminReviewersList() {
     if (!token) return
     setLoading(true)
     listReviewers({ token })
-      .then((d) => setReviewers(d.reviewers))
+      .then((d) => { setReviewers(d.reviewers); setGiftCount((d.programmes ?? []).length) })
       .catch(() => setError(t('admin.reviewers.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -152,6 +162,17 @@ export default function AdminReviewersList() {
                         {r.name || '—'}
                       </Link>
                       <div className="text-xs text-ground-500 mt-0.5">{r.email || '—'}</div>
+                      {/* Which gift they cover (S-ASSIGN). Under the name rather than as a
+                          column, so no sort key or header has to be invented for a fact that
+                          most organisations will never see; and shown only when there is more
+                          than one gift, per the ruling in the comment at the top of this file.
+                          ⚠ BLANK MEANS EVERY GIFT — it is the live default for all 17
+                          org-scoped staff and must read as an answer, not as missing data. */}
+                      {giftCount > 1 && (
+                        <div className="text-xs text-ground-400 mt-0.5">
+                          {r.programme_name || t('admin.reviewers.detail.giftEvery')}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${roleBadge(r.role)}`}>

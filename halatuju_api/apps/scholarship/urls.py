@@ -143,6 +143,7 @@ from .views_admin import (
     AdminReviewerListView,
     AdminReviewerDetailView,
     AdminReviewerPauseView,
+    AdminReviewerProgrammeView,
     AdminReviewerSystemEmailsView,
     AdminInvitationsView,
     AdminOrgRequestApproveView,
@@ -312,6 +313,7 @@ urlpatterns = [
     path('admin/reviewers/', AdminReviewerListView.as_view()),
     path('admin/reviewers/<int:pk>/', AdminReviewerDetailView.as_view()),
     path('admin/reviewers/<int:pk>/pause/', AdminReviewerPauseView.as_view()),
+    path('admin/reviewers/<int:pk>/programme/', AdminReviewerProgrammeView.as_view()),
     # The seven reviewer emails nobody can edit, shown so at least everybody can read them.
     # Order-safe wherever it sits: `<int:pk>` cannot match 'system-emails'.
     path('admin/reviewers/system-emails/', AdminReviewerSystemEmailsView.as_view()),

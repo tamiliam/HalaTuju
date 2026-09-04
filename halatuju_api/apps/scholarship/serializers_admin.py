@@ -522,6 +522,14 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'disbursements',
             # Payments module (P2): Vircle account ID + paid-to-date + paid-ahead credit.
             'vircle_id', 'payment_credit', 'paid_to_date',
+            # S-ASSIGN: WHICH GIFT this case belongs to. The assignee picker needs it to grey a
+            # reviewer scoped to a different gift. `programme` is denormalised on the model and
+            # SET ONCE at save, so this is a plain column read, not a derivation.
+            #
+            # ⚠ IT IS NOT A FENCE and adding it does not make one. The org fence is
+            # `_org_scoped`; this narrows an OFFER in a dropdown. A blank on either side falls
+            # open (see `officerCockpit.assignOptions`).
+            'programme_id',
         ]
 
     def get_disbursements(self, obj):

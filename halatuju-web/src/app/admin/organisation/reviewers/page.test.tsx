@@ -36,10 +36,16 @@ const REVIEWERS = [
   },
 ] as unknown as api.AdminReviewer[]
 
+/** The organisation's gifts. Only the COUNT matters to this page — the gift line under a name
+ *  renders above one, per the ruling at the top of `page.tsx`. */
+let giftChoices: api.AdminReviewerGift[] = []
+
 beforeEach(() => {
   jest.clearAllMocks()
   viewerRole = { role: 'org_admin' }
-  mockApi.listReviewers.mockResolvedValue({ reviewers: REVIEWERS })
+  // One gift by default — today's BrightPath shape, where the gift line does not render.
+  giftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary', is_active: true }]
+  mockApi.listReviewers.mockResolvedValue({ reviewers: REVIEWERS, programmes: giftChoices })
 })
 
 const loaded = async () => {
@@ -203,7 +209,7 @@ describe('failure', () => {
   })
 
   it('says so plainly when there are no reviewers at all', async () => {
-    mockApi.listReviewers.mockResolvedValue({ reviewers: [] })
+    mockApi.listReviewers.mockResolvedValue({ reviewers: [], programmes: giftChoices })
     render(<AdminReviewersList />)
     await waitFor(() => expect(screen.getByText('admin.reviewers.empty')).toBeTruthy())
   })

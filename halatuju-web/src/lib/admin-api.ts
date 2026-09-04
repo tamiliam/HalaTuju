@@ -428,12 +428,27 @@ export interface SourceItem {
   contact_email: string
   phone: string
   show_in_apply: boolean
+  /**
+   * Which gift's apply form lists this source. **NULL = every gift** (what all seven live
+   * sources carry).
+   *
+   * ⚠ IT RECORDS INTENT AND CHANGES NOTHING A STUDENT SEES — yet. The apply form's
+   * referring-organisation list is still the hard-coded `REFERRING_ORG_OPTIONS` constant in
+   * `lib/scholarship.ts`; nothing on the student side reads `show_in_apply`, let alone this.
+   * Wiring the form to the registry is its own change.
+   */
+  programme_id: number | null
+  programme_name: string
   is_active: boolean
   student_count: number | null
 }
 
 export async function getSources(options?: ApiOptions) {
-  return adminFetch<{ sources: SourceItem[] }>('/api/v1/admin/scholarship/sources/', options)
+  return adminFetch<{
+    sources: SourceItem[]
+    /** Active gifts, for the per-source picker. */
+    programmes: Array<{ id: number; code: string; name: string }>
+  }>('/api/v1/admin/scholarship/sources/', options)
 }
 
 export async function createSource(
@@ -451,6 +466,8 @@ export async function updateSource(
   data: Partial<{
     name: string; contact_person: string; contact_email: string; phone: string
     show_in_apply: boolean; is_active: boolean
+    /** null clears it, and clearing means EVERY gift. */
+    programme_id: number | null
   }>,
   options?: ApiOptions,
 ) {
@@ -1104,6 +1121,10 @@ export interface AdminScholarshipDetail {
   /** Internal-only corrections tally for the assigned reviewer (reopened decisions
    *  that led to a real change). Never shown on a sponsor/student surface. */
   assigned_to_corrections: number
+  /** WHICH GIFT funds this case. The assignee picker uses it to grey a reviewer scoped to a
+   *  different gift. ⚠ Not a fence — the org fence is server-side; a blank on either side
+   *  greys nobody (see `officerCockpit.assignOptions`). */
+  programme_id?: number | null
   /** Whether the dark-by-default Conditional Bursary Agreement feature is live; the cockpit
    *  only renders the agreement panel when true. */
   bursary_agreement_enabled?: boolean
@@ -1319,6 +1340,11 @@ export async function getAssignableAdmins(options?: ApiOptions) {
     admins: Array<{
       id: number; name: string; email: string; role: string
       languages: string[]; corrections: number; paused: boolean
+      /** Which gift they cover. **NULL = every gift** — the permissive default all 17
+       *  org-scoped staff still carry, so a blank must never grey anybody out. Flagged the
+       *  same way `paused` is: greyed with the gift named, never filtered out. */
+      programme_id: number | null
+      programme_name: string
     }>
     past_assignees?: Array<{ id: number; name: string }>
   }>(
@@ -2741,9 +2767,12 @@ export async function getAdminScopes(
  * One row of the reviewers table.
  *
  * Every figure is org-fenced and computed server-side; nothing here is re-derived on the client.
- * There is deliberately **no `programmes`** field (with one programme the column could only ever
- * say one thing) and **no corrections count** — reopens live on the detail page, with their
+ * There is deliberately **no corrections count** — reopens live on the detail page, with their
  * reasons, because a bare number beside a volunteer's name reads as a competence score.
+ *
+ * ⚠ The gift field is ONE gift (`programme_id`), never a list. It was absent by decision until
+ * 2026-09-04 — *"with one programme the column could only say one thing; it comes back when a
+ * second programme exists"* — and a second gift now exists, so the ruling's own clause fired.
  */
 export interface AdminReviewer {
   id: number
@@ -2759,6 +2788,33 @@ export interface AdminReviewer {
   /** Stepped back from NEW work. Never a revoke — see `PartnerAdmin.paused_at`. */
   paused: boolean
   paused_at: string | null
+  /** The gift they cover. **NULL = every gift**, the permissive default with no backfill —
+   *  render it as "every gift", never as a blank cell that reads as missing data. */
+  programme_id: number | null
+  programme_name: string
+}
+
+/** A gift the caller may scope a reviewer to. Includes gifts that are not switched on yet:
+ *  a gift is staffed BEFORE it opens. */
+export interface AdminReviewerGift {
+  id: number
+  code: string
+  name: string
+  is_active: boolean
+}
+
+/**
+ * Which gift a reviewer covers. Passing `null` clears it, and clearing means EVERY gift —
+ * there is no state in which somebody is offered nothing.
+ *
+ * ⚠ A NARROWING, NEVER A FENCE. It decides who is OFFERED a case; the org boundary is
+ * server-side and untouched, and a reviewer already holding another gift's case keeps it.
+ */
+export async function setReviewerProgramme(
+  reviewerId: number, programmeId: number | null, options?: ApiOptions,
+): Promise<{ id: number; programme_id: number | null; programme_name: string }> {
+  return adminMutate(`/api/v1/admin/reviewers/${reviewerId}/programme/`, 'POST',
+    { programme_id: programmeId }, options)
 }
 
 /** One reopened decision, with the reason recorded at the time it was reopened. */
@@ -2778,6 +2834,8 @@ export interface AdminReviewerReopen {
  * See `docs/scholarship/role-matrix.md`.
  */
 export interface AdminReviewerDetail extends AdminReviewer {
+  /** The gift choices behind the picker on this page — the caller's own organisation's. */
+  programmes: AdminReviewerGift[]
   /**
    * The four outcome bands. They PARTITION the decided cases, so they always sum to `completed`
    * and the bar can never disagree with the figure above it.
@@ -2923,7 +2981,9 @@ export async function revertOrganisationTheme(
     `/api/v1/admin/scholarship/organisation/theme/revert/${q}`, 'POST', {}, options)
 }
 
-export async function listReviewers(options?: ApiOptions): Promise<{ reviewers: AdminReviewer[] }> {
+export async function listReviewers(
+  options?: ApiOptions,
+): Promise<{ reviewers: AdminReviewer[]; programmes: AdminReviewerGift[] }> {
   return adminFetch('/api/v1/admin/reviewers/', options)
 }
 

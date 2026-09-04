@@ -1514,8 +1514,16 @@ export interface AssignOption {
   id: number
   name: string
   role: string
-  /** True when the option renders greyed with "Paused" appended. */
+  /** True when the option renders greyed. `reason` says which of the two reasons it is. */
   disabled: boolean
+  /**
+   * WHY this option is greyed, so the label can say so. A name that is simply unpickable
+   * leaves the reader guessing; the whole point of disabling rather than removing is to
+   * answer the next question.
+   */
+  reason: 'paused' | 'otherGift' | null
+  /** The gift this person covers, when they cover only one. Empty means every gift. */
+  programmeName: string
 }
 
 /**
@@ -1531,18 +1539,48 @@ export interface AssignOption {
  * not confiscate a case already theirs — and a `<select>` whose current value is disabled cannot
  * show its own state.
  *
+ * ⚠ **A reviewer scoped to ANOTHER GIFT gets exactly the same treatment** (S-ASSIGN,
+ * 2026-09-04): greyed with the gift named, never removed. Same two reasons — the current
+ * assignee is unioned in from this list, and a vanished name is a mystery.
+ *
+ * ⚠ **A BLANK `programmeId` MEANS EVERY GIFT and must never grey anybody.** It is the
+ * permissive default that all 17 org-scoped staff on production still carry, so reading it as
+ * "covers nothing" would grey out the entire live roster on the first render. Likewise an
+ * UNKNOWN `applicationProgrammeId` (an older payload) greys nobody: a narrowing we cannot
+ * evaluate must fall open, because the server is the authority and does not refuse on this at
+ * all — this is an offer, not a fence.
+ *
  * Who is offered at all mirrors the server's `bad_assignee` rule: a super may pick any review-
  * capable person, a non-super delegates only to their own organisation's reviewers.
  */
-export function assignOptions<T extends { id: number; name: string; role: string; paused?: boolean }>(
-  admins: T[], { isSuper, currentAssigneeId }: { isSuper: boolean; currentAssigneeId: number | null },
+export function assignOptions<T extends {
+  id: number; name: string; role: string; paused?: boolean
+  programme_id?: number | null; programme_name?: string
+}>(
+  admins: T[],
+  { isSuper, currentAssigneeId, applicationProgrammeId }: {
+    isSuper: boolean
+    currentAssigneeId: number | null
+    applicationProgrammeId?: number | null
+  },
 ): AssignOption[] {
   return admins
     .filter((a) => a.id === currentAssigneeId || isSuper || a.role === 'reviewer')
-    .map((a) => ({
-      id: a.id,
-      name: a.name,
-      role: a.role,
-      disabled: !!a.paused && a.id !== currentAssigneeId,
-    }))
+    .map((a) => {
+      const isCurrent = a.id === currentAssigneeId
+      const coversOther = !!a.programme_id && !!applicationProgrammeId
+        && a.programme_id !== applicationProgrammeId
+      // Paused wins the label: it is a fact about the PERSON (they have stepped back), while
+      // the gift is a fact about this one case. Somebody who is both is unavailable either way.
+      const reason: AssignOption['reason'] =
+        isCurrent ? null : a.paused ? 'paused' : coversOther ? 'otherGift' : null
+      return {
+        id: a.id,
+        name: a.name,
+        role: a.role,
+        disabled: reason !== null,
+        reason,
+        programmeName: a.programme_name || '',
+      }
+    })
 }

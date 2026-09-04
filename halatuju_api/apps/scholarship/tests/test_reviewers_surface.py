@@ -129,13 +129,34 @@ class TestTheTable(_Base):
         row = self.client.get(LIST).json()['reviewers'][0]
         self.assertEqual(set(row), {
             'id', 'name', 'email', 'role', 'languages',
-            'open_now', 'completed', 'turnaround_days', 'paused', 'paused_at'})
+            'open_now', 'completed', 'turnaround_days', 'paused', 'paused_at',
+            'programme_id', 'programme_name'})
 
-    def test_there_is_NO_programmes_key(self):
-        # Owner, 2026-08-02: with one programme the column could only say one thing. It comes back
-        # when a second programme exists; until then everyone serves the BrightPath Bursary.
+    def test_the_gift_column_is_back_because_its_own_trigger_fired(self):
+        """⚠ THIS TEST USED TO ASSERT THE OPPOSITE, and the reason it flipped is the point.
+
+        Owner, 2026-08-02: *"with one programme the column could only say one thing. It comes
+        back when a second programme exists."* A second gift was created on 2026-09-03, so the
+        condition that ruling NAMED has fired — this is not somebody quietly reversing a
+        decision, it is the decision's own clause.
+
+        It is ONE gift, not a list (`programme_id`), per the model's ruling: with two gifts
+        "NULL = both" covers every case, and a person covering two of three would need a join
+        table. That limit is unreachable until a third gift exists.
+        """
         self._auth('rv-oa')
-        self.assertNotIn('programmes', self.client.get(LIST).json()['reviewers'][0])
+        row = self.client.get(LIST).json()['reviewers'][0]
+        self.assertIn('programme_id', row)
+        self.assertNotIn('programmes', row, 'one gift, not a list — see the model docstring')
+
+    def test_a_reviewer_with_no_gift_reads_as_EVERY_gift_not_as_a_blank_value(self):
+        """⚠ NULL IS THE PERMISSIVE DEFAULT and there is NO BACKFILL — every one of the 17
+        org-scoped staff on production still has it. The payload must let the screen say "every
+        gift" rather than render an empty cell that reads as missing data."""
+        self._auth('rv-oa')
+        row = self.client.get(LIST).json()['reviewers'][0]
+        self.assertIsNone(row['programme_id'])
+        self.assertEqual(row['programme_name'], '')
 
     def test_the_table_carries_NO_corrections_figure(self):
         # Owner decision, 2026-08-02: reopens appear on the detail page WITH their reasons, never as
@@ -339,3 +360,95 @@ class TestTheFence(_Base):
 
     def test_anonymous_is_refused(self):
         self.assertIn(self.client.get(LIST).status_code, (401, 403))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestWhichGiftAReviewerCovers(TestCase):
+    """S-ASSIGN, 2026-09-04. Reviewers had NO gift field at all.
+
+    ⚠ IT IS A NARROWING, NOT A FENCE, and every test here is written to keep it one. The org
+    boundary is `_org_scoped`; this only decides who is OFFERED a case. NULL means EVERY gift —
+    the permissive default all 17 org-scoped staff on production still have, with no backfill.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.scholarship.models import Programme
+        cls.org = PartnerOrganisation.objects.create(code='gv', name='Gift Org')
+        cls.other = PartnerOrganisation.objects.create(code='gv2', name='Other Org')
+        cls.flagship = Programme.objects.create(
+            organisation=cls.org, code='gv-flag', name_en='Flagship Bursary')
+        # Created switched OFF — the real Sabah shape. A gift is staffed before it opens, which
+        # is exactly why the choices list must not filter on `is_active`.
+        cls.sabah = Programme.objects.create(
+            organisation=cls.org, code='gv-sabah', name_en='Sabah Bursary', is_active=False)
+        cls.foreign_gift = Programme.objects.create(
+            organisation=cls.other, code='gv-x', name_en='Another Tenant Gift')
+
+        cls.oa = PartnerAdmin.objects.create(
+            supabase_user_id='gv-oa', role='org_admin', is_active=True,
+            owning_organisation=cls.org, name='Dina', email='dina@gv.test')
+        cls.plain_admin = PartnerAdmin.objects.create(
+            supabase_user_id='gv-ad', role='admin', is_active=True,
+            owning_organisation=cls.org, name='Kulaly', email='kulaly@gv.test')
+        cls.reviewer = PartnerAdmin.objects.create(
+            supabase_user_id='gv-r1', role='reviewer', is_active=True,
+            owning_organisation=cls.org, name='Anand', email='anand@gv.test')
+        cls.foreign_reviewer = PartnerAdmin.objects.create(
+            supabase_user_id='gv-x', role='reviewer', is_active=True,
+            owning_organisation=cls.other, name='Intruder', email='x@gv2.test')
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+
+    def _set(self, reviewer, programme_id):
+        return self.client.post(f'{LIST}{reviewer.id}/programme/',
+                                {'programme_id': programme_id}, format='json')
+
+    def test_it_records_the_gift(self):
+        self._auth('gv-oa')
+        r = self._set(self.reviewer, self.sabah.id)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.reviewer.refresh_from_db()
+        self.assertEqual(self.reviewer.programme_id, self.sabah.id)
+
+    def test_clearing_it_means_EVERY_gift_never_no_gift(self):
+        """The only two states are "this gift" and "all of them". There is no third state in
+        which a reviewer is offered nothing — that would strand a volunteer silently."""
+        self._auth('gv-oa')
+        self._set(self.reviewer, self.sabah.id)
+        r = self._set(self.reviewer, None)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.reviewer.refresh_from_db()
+        self.assertIsNone(self.reviewer.programme_id)
+
+    def test_a_gift_that_is_not_switched_on_yet_is_offered(self):
+        """⚠ THE CASE THIS EXISTS FOR — a gift is staffed BEFORE it opens."""
+        self._auth('gv-oa')
+        codes = {p['code'] for p in self.client.get(LIST).json()['programmes']}
+        self.assertIn('gv-sabah', codes)
+
+    def test_another_tenants_gift_is_404_never_403(self):
+        # A 403 would confirm the other tenant's gift exists.
+        self._auth('gv-oa')
+        self.assertEqual(self._set(self.reviewer, self.foreign_gift.id).status_code, 404)
+        self.reviewer.refresh_from_db()
+        self.assertIsNone(self.reviewer.programme_id)
+
+    def test_another_tenants_reviewer_is_404_never_403(self):
+        self._auth('gv-oa')
+        self.assertEqual(self._set(self.foreign_reviewer, self.flagship.id).status_code, 404)
+
+    def test_a_plain_admin_may_READ_the_surface_but_not_set_this(self):
+        """⚠ NARROWER THAN READING IT, exactly like pause. `admin` and `finance` may look at
+        the reviewers list; deciding who gets which work is staff management."""
+        self._auth('gv-ad')
+        self.assertEqual(self.client.get(LIST).status_code, 200)
+        self.assertEqual(self._set(self.reviewer, self.flagship.id).status_code, 403)
+
+    def test_a_reviewer_cannot_set_their_own(self):
+        self._auth('gv-r1')
+        self.assertEqual(self._set(self.reviewer, self.flagship.id).status_code, 403)

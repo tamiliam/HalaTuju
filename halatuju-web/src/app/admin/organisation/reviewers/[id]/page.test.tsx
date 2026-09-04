@@ -34,6 +34,10 @@ const DETAIL = {
   qualification: 'MSc', university: 'Universiti Malaya', graduation_year: 2014,
   field_of_study: 'Physics',
   phone: '012-3456789', share_phone_with_students: false,
+  // NULL = every gift, the permissive default with no backfill. One gift in the choices, so the
+  // gift row does not render by default — today's BrightPath shape.
+  programme_id: null, programme_name: '',
+  programmes: [{ id: 7, code: 'flagship', name: 'BrightPath Bursary', is_active: true }],
   reopens: [
     {
       id: 21, application_id: 88, reopened_by: 'tamiliam@gmail.com',
@@ -219,5 +223,82 @@ describe('the role gate and failure', () => {
     await loaded()
     expect(screen.getByText('← admin.reviewers.detail.back').closest('a')!
       .getAttribute('href')).toBe('/admin/organisation/reviewers')
+  })
+})
+
+/**
+ * Which gift a reviewer covers (S-ASSIGN, 2026-09-04).
+ *
+ * Reviewers had no gift field at all until now. ⚠ It is a NARROWING, not a fence — it decides
+ * who is OFFERED a case; the org boundary is server-side and a reviewer already holding
+ * another gift's case keeps it.
+ */
+describe('which gift a reviewer covers', () => {
+  const TWO_GIFTS = [
+    { id: 7, code: 'flagship', name: 'BrightPath Bursary', is_active: true },
+    { id: 9, code: 'sabah', name: 'Sabah Bursary', is_active: false },
+  ]
+
+  it('⚠ says nothing when the organisation runs ONE gift', async () => {
+    // Owner, 2026-08-02: with one programme the row could only ever say one thing. That ruling
+    // still holds for a one-gift organisation, and this is the fixture's default.
+    await loaded()
+    expect(screen.queryByText('admin.reviewers.detail.giftLabel')).toBeNull()
+  })
+
+  it('asks once there are two', async () => {
+    await loaded({ programmes: TWO_GIFTS })
+    expect(screen.getByText('admin.reviewers.detail.giftLabel')).toBeTruthy()
+  })
+
+  it('⚠ shows a blank as EVERY GIFT, never as an empty value', async () => {
+    // The live default: all 17 org-scoped staff carry NULL, and an empty select would read as
+    // missing data on every one of them.
+    await loaded({ programmes: TWO_GIFTS, programme_id: null })
+    const select = screen.getByRole('combobox') as HTMLSelectElement
+    expect(select.value).toBe('')
+    expect(screen.getByText('admin.reviewers.detail.giftEvery')).toBeTruthy()
+  })
+
+  it('offers a gift that is not switched on yet — a gift is STAFFED before it opens', async () => {
+    await loaded({ programmes: TWO_GIFTS })
+    expect(screen.getByText(/Sabah Bursary — admin\.reviewers\.detail\.giftNotOpen/)).toBeTruthy()
+  })
+
+  it('posts the chosen gift and patches only that pair', async () => {
+    mockApi.setReviewerProgramme.mockResolvedValue(
+      { id: 5, programme_id: 9, programme_name: 'Sabah Bursary' })
+    await loaded({ programmes: TWO_GIFTS })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '9' } })
+    await waitFor(() => expect(mockApi.setReviewerProgramme)
+      .toHaveBeenCalledWith(5, 9, { token: 'tok' }))
+    // Nothing else on the record moves, so a full re-fetch would only make the page flicker.
+    expect(mockApi.getReviewerDetail).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears it back to EVERY gift with null, never with a magic id', async () => {
+    mockApi.setReviewerProgramme.mockResolvedValue(
+      { id: 5, programme_id: null, programme_name: '' })
+    await loaded({ programmes: TWO_GIFTS, programme_id: 9, programme_name: 'Sabah Bursary' })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '' } })
+    await waitFor(() => expect(mockApi.setReviewerProgramme)
+      .toHaveBeenCalledWith(5, null, { token: 'tok' }))
+  })
+
+  it('⚠ shows a plain admin the gift as TEXT, with no way to change it', async () => {
+    // Narrower than reading the page, exactly like pause: `admin` and `finance` may look;
+    // deciding who gets which work is staff management.
+    viewerRole = { role: 'admin' }
+    await loaded({ programmes: TWO_GIFTS, programme_id: 9, programme_name: 'Sabah Bursary' })
+    expect(screen.getByText('Sabah Bursary')).toBeTruthy()
+    expect(screen.queryByRole('combobox')).toBeNull()
+  })
+
+  it('names the failure rather than silently keeping the old value on screen', async () => {
+    mockApi.setReviewerProgramme.mockRejectedValue(new Error('boom'))
+    await loaded({ programmes: TWO_GIFTS })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '9' } })
+    await waitFor(() =>
+      expect(screen.getByText('admin.reviewers.detail.giftFailed')).toBeTruthy())
   })
 })

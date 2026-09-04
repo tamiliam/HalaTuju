@@ -3199,6 +3199,10 @@
         "pauseNoteActive": "Pausing stops NEW cases only. They keep their account, and any interview already theirs stays with them.",
         "pauseNotePaused": "This reviewer is paused, so they are not being given new cases. Everything else — their account, their sign-in, the cases already theirs — is untouched.",
         "pauseFailed": "That could not be changed. Please try again.",
+        "giftLabel": "Covers:",
+        "giftEvery": "Every gift",
+        "giftNotOpen": "not open yet",
+        "giftFailed": "That could not be changed. Please try again.",
         "about": "About",
         "recommended": "Recommended",
         "rejectedAfterReview": "Rejected after review",
@@ -3286,6 +3290,8 @@
       "email": "Email",
       "phone": "Phone",
       "activeInApply": "Active",
+      "giftLabel": "Listed on:",
+      "giftEvery": "Every gift",
       "activeHelp": "Show this organisation in the apply form's source list when the intake reopens.",
       "empty": "—",
       "noSources": "No sources yet.",
@@ -3818,6 +3824,7 @@
       "assign": {
         "assignedTitle": "Reviewer assigned",
         "lockedHint": "Locked — a decision has been recorded. Reopen the decision to change the reviewer.",
+        "coversOtherGift": "covers {gift}",
         "notReadyHint": "Assignment opens once the applicant's queries are answered, or the 5-day window passes.",
         "error": {
           "not_ready": "This application isn't ready to assign yet — its queries are still open and the SLA window hasn't passed.",

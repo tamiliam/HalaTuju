@@ -63,7 +63,11 @@ export default function SourcesPage() {
   const [panel, setPanel] = useState<Panel>('orgs')
   const [addForm, setAddForm] = useState({ code: '', name: '', contact_person: '', contact_email: '', phone: '', show_in_apply: false })
 
-  const load = () => { if (token) getSources({ token }).then((d) => setSources(d.sources)).catch(() => setMessage({ type: 'error', text: t('admin.sources.loadError') })) }
+  // The organisation's ACTIVE gifts. Only the count matters to whether the gift control shows:
+  // with one gift, every source is on it and the control could say only one thing.
+  const [gifts, setGifts] = useState<Array<{ id: number; code: string; name: string }>>([])
+
+  const load = () => { if (token) getSources({ token }).then((d) => { setSources(d.sources); setGifts(d.programmes ?? []) }).catch(() => setMessage({ type: 'error', text: t('admin.sources.loadError') })) }
   useEffect(() => { load() }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (role && !canManage) {
@@ -82,6 +86,25 @@ export default function SourcesPage() {
     try {
       const updated = await updateSource(s.id, { show_in_apply: !s.show_in_apply }, { token: token! })
       setSources((rows) => rows.map((r) => (r.id === s.id ? { ...r, show_in_apply: updated.show_in_apply } : r)))
+    } catch (err) { setMessage({ type: 'error', text: errText(err) }) }
+    setBusy(null)
+  }
+
+  /**
+   * Which gift's apply form lists this source (S-ASSIGN). `null` clears it back to every gift.
+   *
+   * ⚠ Saved on CHANGE, not with the row's Save button, and deliberately: Save writes the four
+   * contact fields and is gated on `editDirty`, which compares exactly those four. Folding a
+   * fifth field into it means either widening that comparison or shipping a control whose
+   * change never enables its own Save — the request-#6 defect in a new costume.
+   */
+  const setGift = async (s: SourceItem, programmeId: number | null) => {
+    setBusy(s.id); setMessage(null)
+    try {
+      const updated = await updateSource(s.id, { programme_id: programmeId }, { token: token! })
+      setSources((rows) => rows.map((r) => (r.id === s.id
+        ? { ...r, programme_id: updated.programme_id, programme_name: updated.programme_name }
+        : r)))
     } catch (err) { setMessage({ type: 'error', text: errText(err) }) }
     setBusy(null)
   }
@@ -249,6 +272,22 @@ export default function SourcesPage() {
                       <Toggle on={s.show_in_apply} disabled={busy === s.id} onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} />
                       <span className="text-sm text-ground-700">{t('admin.sources.activeInApply')}</span>
                     </div>
+                    {/* ⚠ WHICH GIFT'S form lists it — shown only above one gift, because with one
+                        it could say only one thing. ⚠ BLANK MEANS EVERY GIFT, the live default
+                        for all seven sources; an empty select would read as missing data. */}
+                    {gifts.length > 1 && (
+                      <label className="flex items-center gap-2 text-sm text-ground-700">
+                        <span>{t('admin.sources.giftLabel')}</span>
+                        <select className={inputCls} value={s.programme_id ?? ''}
+                          disabled={busy === s.id}
+                          onChange={(e) => setGift(s, e.target.value ? Number(e.target.value) : null)}>
+                          <option value="">{t('admin.sources.giftEvery')}</option>
+                          {gifts.map((g) => (
+                            <option key={g.id} value={g.id}>{g.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     <div className="flex items-center gap-3 ml-auto">
                       {/* Request #6: nothing edited, nothing to save. The row IS its own baseline —
                           `startEdit` copies the source into the form — so the comparison is direct.
@@ -269,6 +308,12 @@ export default function SourcesPage() {
                 <td className="px-4 py-3">
                   <span className="font-semibold text-ground-900">{s.name}</span>
                   <span className="block text-xs text-ground-400">{s.code}</span>
+                  {/* The gift, under the name rather than as a column — see the edit row. */}
+                  {gifts.length > 1 && (
+                    <span className="block text-xs text-ground-400">
+                      {s.programme_name || t('admin.sources.giftEvery')}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-ground-600">{s.contact_person || t('admin.sources.empty')}</td>
                 <td className="px-4 py-3 text-ground-500">{s.contact_email || t('admin.sources.empty')}</td>
