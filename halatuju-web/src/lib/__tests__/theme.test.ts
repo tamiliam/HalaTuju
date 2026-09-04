@@ -588,6 +588,55 @@ describe('the two guards the owner ruled on', () => {
     }
   })
 
+  it('⚠ never lets a filled control be spelled as a tone STOP again', () => {
+    // THE DEFECT THIS SPRINT EXISTS FOR, made unspellable. `bg-positive-600 text-white` was the
+    // cockpit's Accept button: **3.30** in light and **1.40** in dark. F7a built exactly this
+    // role for the BRAND and stopped there; the four tone ramps reverse identically and were
+    // given neither it nor F7b's move of small text off `-500`. The pattern was named twice and
+    // generalised zero times, so this is the guard that makes the third time impossible.
+    //
+    // The pair `bg-<tone>-<mid stop>` + `text-white` IS the definition of a filled control. A
+    // tinted NOTICE (`bg-info-50` with dark ink) is a different thing and deliberately untouched.
+    const offenders: string[] = []
+    for (const f of walkFiles('src').filter((p) => /\.tsx?$/.test(p))) {
+      if (f.includes('__tests__')) continue
+      for (const line of withoutComments(read(f)).split('\n')) {
+        if (!line.includes('text-white')) continue
+        if (/bg-(?:positive|caution|critical|info)-(?:400|500|600|700|800)/.test(line)) {
+          offenders.push(`${f}: ${line.trim().slice(0, 120)}`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('⚠ keeps every tone FILL readable in BOTH modes, ink and edge alike', () => {
+    // Two bars, and a fill has to clear both: its INK needs 4.5 (it carries words) and the fill
+    // itself needs 3.0 against the card it sits on (it has to look like a control). F7a's whole
+    // finding was that these squeeze from opposite ends — moving `brand-400` let white ink read
+    // at 5.82 and dropped the button to 2.52 against its own card. Assert both, or "fixing" one
+    // silently breaks the other.
+    for (const [mode, block] of [['light', lightBlockOf()], ['dark', darkBlock]] as const) {
+      const card = rgbOf(block, 'ground-0')
+      for (const tone of ['positive', 'caution', 'critical', 'info']) {
+        // `--positive-fill: var(--positive-700)` — follow the indirection to the stop it names.
+        const stop = block.match(new RegExp(`--${tone}-fill:\\s*var\\(--${tone}-(\\d+)\\)`))?.[1]
+        expect(`${mode} ${tone} fill resolves: ${!!stop}`).toBe(`${mode} ${tone} fill resolves: true`)
+        const fill = rgbOf(block, `${tone}-${stop}`)
+        const inkRaw = block.match(new RegExp(`--${tone}-fill-ink:\\s*([^;]+);`))![1].trim()
+        const ink = inkRaw.startsWith('var(')
+          ? rgbOf(block, inkRaw.slice(6, -1))          // var(--ground-50) → ground-50
+          : inkRaw.split(/\s+/).map(Number)
+        const onFill = contrast(ink, fill)
+        const onCard = contrast(fill, card)
+        expect(`${mode} ${tone} ink: ${onFill.toFixed(2)}`)
+          .toBe(`${mode} ${tone} ink: ${Math.max(onFill, 4.5).toFixed(2)}`)
+        expect(`${mode} ${tone} edge: ${onCard.toFixed(2)}`)
+          .toBe(`${mode} ${tone} edge: ${Math.max(onCard, 3).toFixed(2)}`)
+      }
+    }
+  })
+
   it('⚠ keeps PLACEHOLDER a separate token, and does NOT hold it to the ink bar', () => {
     // The whole reason F7e was ~10 edits rather than ~400: `ground-400` was NAMED for placeholder
     // text and USED as muted ink in 395 of its 404 call sites, so the SMALL role moved out.
@@ -922,7 +971,11 @@ describe('the F4 semantic corrections the codemod could not make', () => {
     // HOLD — nearer to `pending` than to `rejected` — so it is `caution` at a heavier weight, the
     // same move F3 made for `graduated`. `declined` (a reviewer's call) is `caution` against
     // `rejectedAfterReview` (the case's fate), which stays `critical`.
-    expect(read('src/app/admin/sponsors/page.tsx')).toMatch(/'bg-caution-600 text-white'/)
+    //
+    // ⚠ RESPELLED AT F7e, NOT RE-DECIDED. The CLAIM — a suspended sponsor is caution at FILLED
+    // weight — is unchanged and is the thing worth pinning. `bg-caution-600 text-white` was
+    // measured at 3.30 in light and 1.40 in dark, so the fill became a role. Assert the role.
+    expect(read('src/app/admin/sponsors/page.tsx')).toMatch(/'bg-caution-fill text-caution-fill-ink'/)
     expect(read('src/app/admin/organisation/reviewers/[id]/page.tsx')).toMatch(/declined: 'bg-caution-500'/)
     expect(read('src/app/admin/organisation/reviewers/[id]/page.tsx')).toMatch(/rejectedAfterReview: 'bg-critical-500'/)
   })
@@ -972,7 +1025,9 @@ describe('the F5 semantic corrections the codemod could not make', () => {
   it('keeps the HOLD badge filled, the same as a suspended sponsor in F4', () => {
     // A circuit-breaker stopped the loop and a human has to look. It sits beside a grey `kind`
     // chip, so a tint would have read as its quiet neighbour.
-    expect(read(cockpit)).toMatch(/bg-caution-600 px-1\.5 py-0\.5 text-\[11px\] font-semibold text-white/)
+    // ⚠ Respelled onto the F7e fill role; the claim (FILLED, not tinted) is what is pinned.
+    expect(read(cockpit)).toMatch(
+      /bg-caution-fill px-1\.5 py-0\.5 text-\[11px\] font-semibold text-caution-fill-ink/)
   })
 })
 
@@ -1028,7 +1083,11 @@ describe('the F3 semantic corrections the codemod could not make', () => {
     // student can tell apart. A category swatch would have been wrong (it IS a state); a second
     // tone would have lied about it. Same tone, filled instead of tinted.
     const src = read('src/app/scholarship/in-programme/page.tsx')
-    expect(src).toMatch(/graduated: 'bg-positive-600 text-white'/)
+    // ⚠ Respelled onto the F7e fill role. The WEIGHT contrast between the two — filled vs tinted,
+    // same tone — is the claim, and it is unchanged; `on_track` is a TINT and deliberately does
+    // not move (a tinted panel and a filled control want opposite things when the ground inverts,
+    // which is the whole reason the fill became a role).
+    expect(src).toMatch(/graduated: 'bg-positive-fill text-positive-fill-ink'/)
     expect(src).toMatch(/on_track: 'bg-positive-100 text-positive-700'/)
     expect(withoutComments(src)).not.toMatch(/indigo/)
   })

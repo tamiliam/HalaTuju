@@ -37,7 +37,7 @@ const PROGRESS_TONE: Record<string, string> = {
   on_track: 'bg-positive-100 text-positive-700',
   semester_completed: 'bg-info-100 text-info-700',
   needs_attention: 'bg-caution-100 text-caution-700',
-  graduated: 'bg-positive-600 text-white',
+  graduated: 'bg-positive-fill text-positive-fill-ink',
 }
 
 /** F9b — the in-programme student's "My progress" home: record semester results

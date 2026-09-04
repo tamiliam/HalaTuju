@@ -34,7 +34,7 @@ const money = (v: string) => Number(v).toLocaleString('en-MY', { minimumFraction
 const statusBadge = (s: string) =>
   s === 'approved' ? 'bg-positive-100 text-positive-700'
     : s === 'pending' ? 'bg-caution-100 text-caution-700'
-      : s === 'suspended' ? 'bg-caution-600 text-white'
+      : s === 'suspended' ? 'bg-caution-fill text-caution-fill-ink'
         : 'bg-critical-100 text-critical-600'
 
 const creditBadge = (s: string) =>

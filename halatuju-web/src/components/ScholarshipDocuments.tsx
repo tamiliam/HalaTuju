@@ -825,7 +825,7 @@ function CollapsibleSection({
           done ? (open ? 'bg-positive-50' : 'bg-positive-50/70') : 'bg-ground-50/60'}`}
       >
         <span aria-hidden className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
-          done ? 'bg-positive-600 text-white' : 'border border-ground-200 bg-ground-100 text-ground-400'}`}>
+          done ? 'bg-positive-fill text-positive-fill-ink' : 'border border-ground-200 bg-ground-100 text-ground-400'}`}>
           {done ? (
             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -978,7 +978,7 @@ function SingleDocCard({
           aria-expanded={open}
           className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${open ? 'bg-positive-50' : 'bg-positive-50/70'} focus:outline-none focus-visible:ring-2 focus-visible:ring-positive-500`}
         >
-          <span aria-hidden className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-positive-600 text-white">
+          <span aria-hidden className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-positive-fill text-positive-fill-ink">
             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -1584,7 +1584,7 @@ function IncomeWizard({
                   shown ? 'border-positive-200 bg-positive-50/40' : 'border-dashed border-ground-200 bg-ground-0'}`}>
                   <div className="flex items-start gap-2">
                     <span aria-hidden className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full ${
-                      shown ? 'bg-positive-600 text-white' : 'border border-ground-300 text-ground-400'}`}>
+                      shown ? 'bg-positive-fill text-positive-fill-ink' : 'border border-ground-300 text-ground-400'}`}>
                       {shown ? (
                         <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                       ) : (

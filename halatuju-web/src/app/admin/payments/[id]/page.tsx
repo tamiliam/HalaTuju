@@ -342,7 +342,7 @@ export default function PaymentRunDetailPage() {
       {/* Completed (Stitch design): green header bar + signature cards + CSV file row */}
       {isCompleted && (
         <div className="mt-4 overflow-hidden rounded-xl border border-positive-200 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-positive-600 px-5 py-3 text-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-positive-fill px-5 py-3 text-positive-fill-ink">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ground-0/25 text-[11px]">✓</span>
               {t('admin.payments.completedOn', { date: formatDate(run.org_admin_signed?.at || run.payment_date) })}

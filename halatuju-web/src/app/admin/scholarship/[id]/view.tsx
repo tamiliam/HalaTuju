@@ -1804,7 +1804,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                                     // It is caution at weight, not a fifth hue: the loop was
                                     // stopped and a human has to look, so it should not read as a
                                     // quiet neighbour of the grey `kind` chip beside it.
-                                    className="rounded bg-caution-600 px-1.5 py-0.5 text-[11px] font-semibold text-white align-middle"
+                                    className="rounded bg-caution-fill px-1.5 py-0.5 text-[11px] font-semibold text-caution-fill-ink align-middle"
                                   >
                                     {t('admin.scholarship.outstanding.hold')}
                                   </span>
@@ -2112,7 +2112,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                               {t('admin.scholarship.caveats.delete')}
                             </button>
                             <button onClick={() => setF({ verdict: resolved ? '' : 'resolved' })}
-                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-positive-600 text-white hover:bg-positive-700' : 'border border-ground-300 text-ground-700 hover:bg-ground-100'}`}>
+                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-positive-fill text-positive-fill-ink hover:bg-positive-fill-hover' : 'border border-ground-300 text-ground-700 hover:bg-ground-100'}`}>
                               {t('admin.scholarship.interview.verdict.resolved')}
                             </button>
                           </div>
@@ -2481,7 +2481,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'pass'
-                        ? 'border-positive-500 bg-positive-500 text-white'
+                        ? 'border-positive-fill bg-positive-fill text-positive-fill-ink'
                         : 'border-ground-300 text-ground-600 hover:border-positive-400'
                     } disabled:opacity-50`}
                   >
@@ -2492,7 +2492,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'fail'
-                        ? 'border-critical-500 bg-critical-500 text-white'
+                        ? 'border-critical-fill bg-critical-fill text-critical-fill-ink'
                         : 'border-ground-300 text-ground-600 hover:border-critical-400'
                     } disabled:opacity-50`}
                   >
@@ -2655,7 +2655,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <div className="flex items-center gap-2">
               <button onClick={doReopenDecision} disabled={!!busy || !reopenReason.trim()}
-                className="px-3 py-1.5 bg-critical-600 text-white rounded-lg text-sm disabled:opacity-50">
+                className="px-3 py-1.5 bg-critical-fill text-critical-fill-ink rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.reopenConfirm')}
               </button>
               <button onClick={() => { setReopenOpen(false); setReopenReason('') }} disabled={!!busy}
@@ -2815,14 +2815,14 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 <button onClick={selectApprove} disabled={!!busy || !approveReady}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     officerVerdict.overall === 'accept'
-                      ? 'border-positive-600 bg-positive-600 text-white'
+                      ? 'border-positive-fill bg-positive-fill text-positive-fill-ink'
                       : 'border-positive-600 bg-ground-0 text-positive-700 hover:bg-positive-50'}`}>
                   {t('admin.scholarship.recordVerdict.approve')}
                 </button>
                 <button onClick={selectDecline} disabled={!!busy || !decisionReady}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     officerVerdict.overall === 'decline'
-                      ? 'border-critical-600 bg-critical-600 text-white'
+                      ? 'border-critical-fill bg-critical-fill text-critical-fill-ink'
                       : 'border-critical-500 bg-ground-0 text-critical-700 hover:bg-critical-50'}`}>
                   {t('admin.scholarship.recordVerdict.decline')}
                 </button>
@@ -2979,7 +2979,12 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   if (canQc) { setQcOverrideOpen(true); setQcOverrideReason('') }
                 }}
                 disabled={!!busy || (floorBlocked && !canQc)}
-                className={`rounded-lg border px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 ${isDeclineVerdict ? 'border-critical-600 bg-critical-600 hover:bg-critical-700' : 'border-positive-600 bg-positive-600 hover:bg-positive-700'}`}>
+                /* ⚠ THE INK MOVED INSIDE THE BRANCHES (F7e). It was one shared `text-white`
+                   outside the ternary, serving a decline button and an accept button; the codemod
+                   could only pick one tone for it and chose `positive`, which rendered correctly
+                   only because both tones resolve their ink to the same value today. A decline
+                   button carrying positive ink is a trap for whoever next tunes one tone. */
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${isDeclineVerdict ? 'border-critical-fill bg-critical-fill text-critical-fill-ink hover:bg-critical-fill-hover' : 'border-positive-fill bg-positive-fill text-positive-fill-ink hover:bg-positive-fill-hover'}`}>
                 {busy === 'qc' ? t('common.loading')
                   : t(isDeclineVerdict ? 'admin.scholarship.qcDecision.confirmDecline' : 'admin.scholarship.qcDecision.accept')}
               </button>
@@ -2997,7 +3002,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision('accept', qcOverrideReason)}
                   disabled={!!busy || !qcOverrideReason.trim()}
-                  className="rounded-lg bg-critical-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-critical-700 disabled:opacity-50">
+                  className="rounded-lg bg-critical-fill px-3 py-1.5 text-xs font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
                   {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.overrideConfirm')}
                 </button>
                 <button onClick={() => { setQcOverrideOpen(false); setQcOverrideReason('') }}
@@ -3027,7 +3032,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               )}
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${qcRejectMode ? 'bg-critical-600 hover:bg-critical-700' : 'bg-caution-600 hover:bg-caution-700'}`}>
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-caution-fill-ink disabled:opacity-50 ${qcRejectMode ? 'bg-critical-fill hover:bg-critical-fill-hover' : 'bg-caution-fill hover:bg-caution-fill-hover'}`}>
                   {busy === 'qc' ? t('common.loading')
                     : t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectConfirm' : 'admin.scholarship.qcDecision.reopenConfirm')}
                 </button>
@@ -3086,7 +3091,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 {/* Mandatory reason enforced here AND at the endpoint (400 comments_required). */}
                 <button type="button" onClick={() => setRejectStep('confirm')}
                   disabled={!rejectComments.trim()}
-                  className="flex-1 rounded-lg bg-critical-600 px-3 py-2 text-sm font-medium text-white
+                  className="flex-1 rounded-lg bg-critical-fill px-3 py-2 text-sm font-medium text-critical-fill-ink
                              hover:bg-critical-700 disabled:opacity-40">
                   {t('admin.scholarship.orgReject.submit')}
                 </button>
@@ -3110,7 +3115,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   {t('admin.scholarship.orgReject.back')}
                 </button>
                 <button type="button" onClick={doOrgReject} disabled={!!busy}
-                  className="flex-1 rounded-lg bg-critical-600 px-3 py-2 text-sm font-medium text-white
+                  className="flex-1 rounded-lg bg-critical-fill px-3 py-2 text-sm font-medium text-critical-fill-ink
                              hover:bg-critical-700 disabled:opacity-50">
                   {busy === 'orgReject' ? t('admin.scholarship.orgReject.running')
                     : t('admin.scholarship.orgReject.confirmYes')}

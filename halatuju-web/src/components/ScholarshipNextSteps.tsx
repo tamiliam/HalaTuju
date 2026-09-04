@@ -303,7 +303,7 @@ export default function ScholarshipNextSteps({
     quiz: (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${c.quiz_done ? 'bg-positive-500 text-white' : 'bg-ground-100 text-ground-400'}`} aria-hidden>
+          <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${c.quiz_done ? 'bg-positive-fill text-positive-fill-ink' : 'bg-ground-100 text-ground-400'}`} aria-hidden>
             {c.quiz_done ? '✓' : '○'}
           </span>
           <p className="font-medium text-ground-900">{t('scholarship.nextSteps.step1Title')}</p>

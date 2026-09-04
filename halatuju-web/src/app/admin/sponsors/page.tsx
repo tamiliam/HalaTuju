@@ -38,7 +38,7 @@ const statusBadge = (s: string) =>
       // above than to the rejected fallback below — so it takes the same tone with more weight,
       // the way `graduated` was distinguished from `on track` in F3. Orange was outside the
       // vocabulary and said neither thing.
-      : s === 'suspended' ? 'bg-caution-600 text-white'
+      : s === 'suspended' ? 'bg-caution-fill text-caution-fill-ink'
         : 'bg-critical-100 text-critical-600'
 
 const STATUS_OPTIONS = ['pending', 'approved', 'rejected', 'suspended']

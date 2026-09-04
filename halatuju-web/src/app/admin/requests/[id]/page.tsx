@@ -373,20 +373,20 @@ export default function AdminRequestDetailPage() {
           <div className="flex flex-wrap gap-2">
             {has('accept') && (
               <button disabled={busy} onClick={() => run(() => approveOrgRequest(id, opt))}
-                className="px-4 bg-positive-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-positive-700 disabled:opacity-50">
+                className="px-4 bg-positive-fill text-positive-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-positive-fill-hover disabled:opacity-50">
                 {t('admin.requests.action.accept')}
               </button>
             )}
             {has('defer') && (
               <button disabled={busy} onClick={() => run(() => deferOrgRequest(id, opt))}
-                className="px-4 bg-caution-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-caution-600 disabled:opacity-50">
+                className="px-4 bg-caution-fill text-caution-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-caution-fill-hover disabled:opacity-50">
                 {t('admin.requests.action.defer')}
               </button>
             )}
             {has('withdraw') && (
               <button disabled={busy}
                 onClick={() => { if (confirm(t('admin.requests.owner.withdrawConfirm'))) run(() => declineOrgRequest(id, {}, opt)) }}
-                className="px-4 bg-critical-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-critical-700 disabled:opacity-50">
+                className="px-4 bg-critical-fill text-critical-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-critical-fill-hover disabled:opacity-50">
                 {t('admin.requests.action.withdraw')}
               </button>
             )}
@@ -519,7 +519,7 @@ export default function AdminRequestDetailPage() {
                       <div className="mt-3 flex items-center gap-2">
                         <button disabled={busy}
                           onClick={() => { if (confirm(t('admin.requests.owner.analysisApproveConfirm'))) run(() => approveOrgRequestAnalysis(id, a.id, opt)) }}
-                          className="px-4 bg-positive-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-positive-700 disabled:opacity-50">
+                          className="px-4 bg-positive-fill text-positive-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-positive-fill-hover disabled:opacity-50">
                           {t('admin.requests.owner.analysisApprove')}
                         </button>
                         {/* Retire a draft the engineer got wrong. Nothing here has reached the
@@ -630,7 +630,7 @@ export default function AdminRequestDetailPage() {
           {has('done') && (
             <div className="border-t pt-4">
               <button disabled={busy} onClick={() => run(() => doneOrgRequest(id, opt))}
-                className="px-4 bg-positive-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-positive-700 disabled:opacity-50">
+                className="px-4 bg-positive-fill text-positive-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-positive-fill-hover disabled:opacity-50">
                 {t('admin.requests.action.done')}
               </button>
             </div>
@@ -644,7 +644,7 @@ export default function AdminRequestDetailPage() {
                 className="w-full px-3 py-2 border border-ground-300 rounded-lg" />
               <button disabled={busy || !declineReason.trim()}
                 onClick={() => { if (confirm(t('admin.requests.owner.declineConfirm'))) run(() => declineOrgRequest(id, { reason: declineReason }, opt)) }}
-                className="mt-2 px-4 bg-critical-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-critical-700 disabled:opacity-50">
+                className="mt-2 px-4 bg-critical-fill text-critical-fill-ink py-2 rounded-lg text-sm font-medium hover:bg-critical-fill-hover disabled:opacity-50">
                 {t('admin.requests.action.decline')}
               </button>
             </div>

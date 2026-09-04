@@ -98,7 +98,7 @@ function NavRow({ item, active, badge, open, chordHint, onNavigate }: {
               className="absolute left-[26px] top-1.5 h-[7px] w-[7px] rounded-full border-[1.5px] border-white bg-critical-600"
             />
           )}
-          <span className={`ml-auto inline-flex h-[17px] min-w-[17px] shrink-0 items-center justify-center rounded-full bg-critical-600 px-1 text-[9.5px] font-bold leading-none text-white ${fade(open)}`}>
+          <span className={`ml-auto inline-flex h-[17px] min-w-[17px] shrink-0 items-center justify-center rounded-full bg-critical-fill px-1 text-[9.5px] font-bold leading-none text-critical-fill-ink ${fade(open)}`}>
             {badge}
           </span>
         </>

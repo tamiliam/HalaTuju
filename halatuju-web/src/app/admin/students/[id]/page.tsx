@@ -285,7 +285,7 @@ export default function AdminStudentDetail() {
             <button
               onClick={handleDelete}
               disabled={deleteConfirm !== 'delete' || deleting}
-              className="px-5 py-2 border-2 border-critical-500 text-critical-600 rounded-xl text-sm font-medium hover:bg-critical-600 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-2 border-2 border-critical-500 text-critical-600 rounded-xl text-sm font-medium hover:bg-critical-fill-hover hover:text-critical-fill-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {deleting ? t('admin.deleting') : t('admin.deleteStudent')}
             </button>
