@@ -144,7 +144,7 @@ export function Topbar({
           <span className="relative">
             <Icon name="bell" size={17} />
             {attention.length > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full border-2 border-white bg-critical-600 px-0.5 text-[9px] font-bold leading-none text-white">
+              <span className="absolute -right-1 -top-1 inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full border-2 border-white bg-critical-fill px-0.5 text-[9px] font-bold leading-none text-critical-fill-ink">
                 {attention.length}
               </span>
             )}

@@ -201,7 +201,7 @@ export default function SourcesPage() {
               <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.phone')}</span>
               <input className={phoneInvalid(addForm.phone) ? inputBad : inputCls} inputMode="tel"
                 value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: formatPhone(e.target.value) })} />
-              {phoneInvalid(addForm.phone) && <span className="block text-xs text-critical-500 mt-1">{t('profile.invalidPhone')}</span>}
+              {phoneInvalid(addForm.phone) && <span className="block text-xs text-critical-600 mt-1">{t('profile.invalidPhone')}</span>}
             </label>
             <div className="flex items-center gap-3 pt-6">
               <Toggle on={addForm.show_in_apply} onClick={() => setAddForm({ ...addForm, show_in_apply: !addForm.show_in_apply })} label={t('admin.sources.activeInApply')} />
@@ -264,7 +264,7 @@ export default function SourcesPage() {
                       <span className="block text-sm text-ground-600 mb-1">{t('admin.sources.phone')}</span>
                       <input className={phoneInvalid(editForm.phone) ? inputBad : inputCls} inputMode="tel"
                         value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: formatPhone(e.target.value) })} />
-                      {phoneInvalid(editForm.phone) && <span className="block text-xs text-critical-500 mt-1">{t('profile.invalidPhone')}</span>}
+                      {phoneInvalid(editForm.phone) && <span className="block text-xs text-critical-600 mt-1">{t('profile.invalidPhone')}</span>}
                     </label>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mt-4">

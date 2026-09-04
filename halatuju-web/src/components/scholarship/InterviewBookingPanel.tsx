@@ -140,7 +140,7 @@ export default function InterviewBookingPanel({
                 className="mt-1 w-full rounded-lg border border-ground-300 px-3 py-2 text-sm" />
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <button type="button" onClick={cancel} disabled={busy}
-                  className="rounded-lg bg-critical-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-critical-700 disabled:opacity-50">
+                  className="rounded-lg bg-critical-fill px-3 py-1.5 text-sm font-medium text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
                   {t('scholarship.application.interview.cancelYes')}
                 </button>
                 <button type="button" onClick={() => { setError(''); setConfirmingCancel(false) }} disabled={busy}

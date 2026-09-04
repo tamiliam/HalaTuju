@@ -3,6 +3,24 @@
 Written at Layer 1 F7d (2026-09-02), which used it to walk all 25 surfaces in both modes and found
 **TD-224** — 263 failing elements in light mode, live in production.
 
+## Results, measured with this procedure
+
+| run | light (elements / distinct) | dark |
+|---|---|---|
+| F7d, 2026-09-02 — the finding | **263 / 55** | 54 / 11 |
+| **F7e, 2026-09-04 — after the fix** | **1 / 1** | **1 / 1** |
+
+The one remaining element in each mode is the decorative `·` separator (`text-ground-300 mx-1.5`,
+1.47 light / 3.04 dark). It carries no information and is excluded under "Reading the result"
+below — **stated here rather than quietly dropped**, so a later reader can disagree with the
+judgement rather than wonder whether it was made.
+
+⚠ **THIS PROCEDURE FOUND WHAT THE STATIC PASS STRUCTURALLY COULD NOT.** F7e's codemod matched the
+pair `bg-<tone>` + `text-white` within ONE LINE. `CourseCard`'s score badge holds its fill class
+and its `text-white` on lines twenty apart, so no line-scanning tool could ever pair them — the
+number on the merit bar measured **1.67**, and only the browser saw it. Run this before believing
+a repaint is finished.
+
 This is a **procedure, not a tool.** It needs a browser and a running dev server, so it cannot be a
 CI gate, and it needs no dependency the app does not already have. Keep it as a snippet.
 

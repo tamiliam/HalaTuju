@@ -34,7 +34,7 @@ export default function ProgrammePicker({
 
   if (loading) {
     return (
-      <input className="input text-ground-400" disabled value={t('scholarship.apply.plan.loading')} readOnly />
+      <input className="input text-ground-placeholder" disabled value={t('scholarship.apply.plan.loading')} readOnly />
     )
   }
   if (courses.length === 0) {

@@ -1,11 +1,24 @@
 import type { Config } from 'tailwindcss'
 
-/** One tone ramp wired to its CSS variables. Values (and the dark reversal) live in globals.css. */
-const toneRamp = (tone: string) => Object.fromEntries(
-  [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map(
-    (stop) => [stop, `rgb(var(--${tone}-${stop}) / <alpha-value>)`],
+/**
+ * One tone ramp wired to its CSS variables. Values (and the dark reversal) live in globals.css.
+ *
+ * ⚠ THE THREE `fill*` ENTRIES ARE ROLES, NOT STOPS (Layer 1 F7e) — `bg-positive-fill
+ * text-positive-fill-ink hover:bg-positive-fill-hover`, the same shape `--brand-fill` has carried
+ * since F7a. A filled control and a pale tinted panel want OPPOSITE things when the ground
+ * inverts, and no single stop can be both: `bg-positive-600 text-white` measured 3.30 in light
+ * and **1.40** in dark. Never spell a filled control as a stop again.
+ */
+const toneRamp = (tone: string) => ({
+  ...Object.fromEntries(
+    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map(
+      (stop) => [stop, `rgb(var(--${tone}-${stop}) / <alpha-value>)`],
+    ),
   ),
-)
+  fill: `rgb(var(--${tone}-fill) / <alpha-value>)`,
+  'fill-hover': `rgb(var(--${tone}-fill-hover) / <alpha-value>)`,
+  'fill-ink': `rgb(var(--${tone}-fill-ink) / <alpha-value>)`,
+})
 
 /**
  * The eight category swatches, three ROLES each (Layer 1 F2c).
@@ -85,6 +98,11 @@ const config: Config = {
           800: 'rgb(var(--ground-800) / <alpha-value>)',
           900: 'rgb(var(--ground-900) / <alpha-value>)',
           1000: 'rgb(var(--ground-1000) / <alpha-value>)',
+          // ⚠ A ROLE, not a stop — `placeholder:text-ground-placeholder`. It exists so the
+          // 400 stop could be corrected to the INK job it was actually doing in 395 of its
+          // 404 call sites (F7e). Placeholder text is the one muted thing that must NOT get
+          // darker: an empty field would start reading as a filled one.
+          placeholder: 'rgb(var(--ground-placeholder) / <alpha-value>)',
         },
         positive: toneRamp('positive'),
         info: toneRamp('info'),

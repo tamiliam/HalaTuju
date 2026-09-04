@@ -151,7 +151,7 @@ export default function StpmCourseDetailPage() {
                     <div className="flex justify-between items-center">
                       <span className="text-ground-500 text-sm">Avg. Merit</span>
                       <span className={`font-medium text-sm ${
-                        data.merit_score >= 80 ? 'text-positive-600' : data.merit_score >= 60 ? 'text-caution-600' : 'text-critical-600'
+                        data.merit_score >= 80 ? 'text-positive-700' : data.merit_score >= 60 ? 'text-caution-700' : 'text-critical-600'
                       }`}>
                         {data.merit_score.toFixed(1)}
                       </span>
@@ -320,17 +320,17 @@ export default function StpmCourseDetailPage() {
                           </div>
                         )}
                         {group.any_subject && group.subjects.length === 0 && !group.exclude.length && (
-                          <span className="text-[11px] text-positive-600 italic">
+                          <span className="text-[11px] text-positive-700 italic">
                             {t('stpm.anySpmSubject')}
                           </span>
                         )}
                         {group.any_subject && group.subjects.length === 0 && group.exclude.length > 0 && (
                           <div>
-                            <span className="text-[11px] text-positive-600 italic">
+                            <span className="text-[11px] text-positive-700 italic">
                               {t('stpm.anySpmSubject')}
                             </span>
                             <div className="mt-1.5">
-                              <span className="text-[10px] font-semibold text-critical-500 uppercase">
+                              <span className="text-[10px] font-semibold text-critical-600 uppercase">
                                 {t('stpm.excluding')}
                               </span>
                               <div className="flex flex-wrap gap-1 mt-0.5">
@@ -386,8 +386,8 @@ export default function StpmCourseDetailPage() {
 function CheckIcon({ color }: { color: 'gray' | 'blue' | 'green' }) {
   const styles = {
     gray: 'bg-ground-100 text-ground-500',
-    blue: 'bg-info-50 text-info-500',
-    green: 'bg-positive-50 text-positive-500',
+    blue: 'bg-info-50 text-info-600',
+    green: 'bg-positive-50 text-positive-700',
   }
   return (
     <span className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-full ${styles[color]} flex items-center justify-center`}>

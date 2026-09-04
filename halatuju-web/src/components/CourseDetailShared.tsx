@@ -65,8 +65,8 @@ export function CourseActions({ isSaved, isHovering, onSave, onHoverStart, onHov
           className={`w-full px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
             isSaved
               ? isHovering
-                ? 'bg-critical-500 text-white hover:bg-critical-600'
-                : 'bg-positive-500 text-white'
+                ? 'bg-critical-fill text-critical-fill-ink hover:bg-critical-fill-hover'
+                : 'bg-positive-fill text-positive-fill-ink'
               : 'bg-brand-fill text-brand-fill-ink hover:bg-brand-fill-hover'
           }`}
         >

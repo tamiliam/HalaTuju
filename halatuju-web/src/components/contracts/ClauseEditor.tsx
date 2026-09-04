@@ -374,7 +374,7 @@ export default function ClauseEditor(
                   )}
                   <span className="w-px h-5 bg-ground-200 mx-1" aria-hidden="true" />
                   <button type="button" title={t('admin.contracts.insertBelow')} onClick={() => insertAfter(i)}
-                    className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-positive-200 text-positive-600 bg-positive-50 hover:bg-positive-100 font-bold">＋</button>
+                    className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-positive-200 text-positive-700 bg-positive-50 hover:bg-positive-100 font-bold">＋</button>
                   <button type="button" title={t('admin.contracts.outdent')} onClick={() => outdent(i)} disabled={!canOutdent(levels, i)} className={iconBtn}>←</button>
                   <button type="button" title={t('admin.contracts.indent')} onClick={() => indent(i)} disabled={!canIndent(levels, i)} className={iconBtn}>→</button>
                   <button type="button" title={t('admin.contracts.moveUp')} onClick={() => move(i, -1)} disabled={i === 0} className={iconBtn}>↑</button>

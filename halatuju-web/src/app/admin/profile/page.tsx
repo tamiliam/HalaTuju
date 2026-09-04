@@ -134,7 +134,7 @@ export default function AdminProfilePage() {
 
   const card = 'bg-ground-0 rounded-xl p-6 shadow-sm border space-y-4'
   const labelCls = 'block text-sm text-ground-600 mb-1'
-  const req = <span className="text-critical-500" aria-hidden> *</span>  // compulsory-field marker
+  const req = <span className="text-critical-600" aria-hidden> *</span>  // compulsory-field marker
 
   return (
     <div className="max-w-3xl">

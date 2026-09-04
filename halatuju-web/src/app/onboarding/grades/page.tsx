@@ -480,14 +480,14 @@ function CoreSubjectGrade({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           {value ? (
-            <svg className="w-5 h-5 text-positive-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-positive-700 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           ) : (
             <div className="w-5 h-5 rounded-full border-2 border-ground-300 flex-shrink-0" />
           )}
           <span className="font-medium text-ground-900">{label}</span>
-          <span className="text-critical-500 text-sm">*</span>
+          <span className="text-critical-600 text-sm">*</span>
         </div>
         {value && (
           <button onClick={onClear} className="text-ground-400 hover:text-ground-600 p-1" aria-label={t('common.clear')}>
@@ -574,7 +574,7 @@ function CompactSubjectRow({
       {/* Remove button */}
       <button
         onClick={onRemove}
-        className="text-ground-400 hover:text-critical-500 p-1 flex-shrink-0"
+        className="text-ground-400 hover:text-critical-600 p-1 flex-shrink-0"
         aria-label={t('common.remove')}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

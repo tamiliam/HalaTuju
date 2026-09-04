@@ -110,13 +110,63 @@
   --ground-100: 243 244 246;
   --ground-200: 229 231 235;
   --ground-300: 209 213 219;
-  --ground-400: 156 163 175;
-  --ground-500: 107 114 128;
+  /* ⚠ 400 and 500 MOVED at F7e (2026-09-04) and the reason is measured, not aesthetic — see the
+     ROLE TABLE in the dark block below. Both are INK stops (404 and 614 call sites), and both
+     failed AA on a WELL: 400 read 2.31 and 500 read 4.39 against a bar of 4.5. They now clear it
+     on the tightest ground either sits on. **Do not lighten either back toward Tailwind's gray-400
+     / gray-500** — those are the values that were failing, product-wide, in the mode every visitor
+     has used since launch (TD-224). */
+  --ground-400: 101 109 122;  /* #656d7a — muted ink; 4.74 on a well, 5.22 on a card */
+  --ground-500: 88 95 107;    /* #585f6b — stronger muted ink; 5.85 on a well */
   --ground-600: 75 85 99;
   --ground-700: 55 65 81;
   --ground-800: 31 41 55;
   --ground-900: 17 24 39;
   --ground-1000: 0 0 0;
+
+  /* ⚠ PLACEHOLDER IS ITS OWN TOKEN NOW, AND THAT IS WHAT MADE F7e ONE EDIT INSTEAD OF 400.
+     `--ground-400` was NAMED for placeholder text and USED as muted ink in ~395 of its 404 call
+     sites; exactly THREE sites wanted the placeholder meaning. The token was named after the
+     smaller role, so the small role moved out and the stop was corrected to the job it was
+     actually doing. Deliberately UNCHANGED at #9ca3af in both modes, so placeholders look exactly
+     as they did — a placeholder is not content, and darkening it would make an empty field read
+     as a filled one. */
+  --ground-placeholder: 156 163 175;   /* #9ca3af */
+
+  /* ── THE FILLED CONTROL IS A ROLE FOR THE TONES TOO (Layer 1 F7e, 2026-09-04) ───────────────
+     F7a built exactly this for the brand and stopped there. The four tone ramps reverse in dark
+     by the same rule and were given neither `--*-fill` nor F7b's move of small text off `-500`,
+     so the pattern was named twice and generalised zero times. This is that bill.
+
+     What was live: `bg-positive-600 text-white` — the cockpit's **Accept** button — measured
+     **3.30** in light and **1.40** in dark. Step ticks and the course guide's score badges the
+     same. It failed in BOTH modes, and dark was worse.
+
+     ⚠ THE LIGHT STOPS DIFFER PER TONE, AND THAT IS THE POINT OF A ROLE. Green and amber are far
+     lighter than red and blue at the same index, so a uniform stop is a uniform number and not a
+     uniform RESULT. Chosen by measurement, white ink on the fill:
+       positive-700 5.02 · caution-700 5.02 · critical-600 4.83 · info-600 5.17
+     (`positive-600` was 3.30 and `caution-600` 3.19 — the two that were failing.)
+
+     ⚠ IN DARK THE ROLE SWAPS, exactly as `--brand-fill` does: a PALE fill with DARK ink. Going
+     darker instead would let white ink read and sink the fill into its own card — the F7a trap,
+     measured there at 2.52. `-600` in dark is already pale and passes generously (ink 9.35–12.63,
+     fill against its card 7.73–10.45), and it stays nearer the tone's identity than `-700` would.
+
+     ⚠ `var()` INDIRECTIONS, never literals — the same reason as the brand: a value written here
+     as a literal stops following any later retune of the ramp it came from. */
+  --positive-fill: var(--positive-700);
+  --positive-fill-hover: var(--positive-800);
+  --positive-fill-ink: 255 255 255;
+  --caution-fill: var(--caution-700);
+  --caution-fill-hover: var(--caution-800);
+  --caution-fill-ink: 255 255 255;
+  --critical-fill: var(--critical-600);
+  --critical-fill-hover: var(--critical-700);
+  --critical-fill-ink: 255 255 255;
+  --info-fill: var(--info-600);
+  --info-fill-hover: var(--info-700);
+  --info-fill-ink: 255 255 255;
 
   /* positive — Tailwind green */
   --positive-50: 240 253 244;
@@ -275,8 +325,17 @@
        0    the raised surface — a card, an input, a modal, a popover
        50   the page those sit ON
        100  a well or a hover inside a card
-       200  a border          300  a stronger border      400  placeholder text
-       500  muted text        600-1000  text, up to the strongest
+       200  a border          300  a stronger border
+       400  muted ink         500  stronger muted ink     600-1000  text, up to the strongest
+
+     ⚠ THIS TABLE USED TO SAY `400 placeholder text`, AND THE CODE DISAGREED WITH IT IN 395 OF 404
+     PLACES. F7e (2026-09-04) settled it in the code's favour: 400 is an INK stop, placeholder text
+     has its own `--ground-placeholder`, and both ink stops were moved to values that pass AA. The
+     table is rewritten rather than annotated because a role table that half the product ignores is
+     worse than no table.
+
+     ⚠ 300 IS A BORDER AND IS NOT REQUIRED TO PASS. It reads 2.13 on a dark well and that is fine —
+     WCAG's 4.5 bar is for TEXT. Do not "fix" it, and do not use it for ink.
 
      In light the raised surface is white — the EXTREME of the ramp, with everything else darker.
      Reverse that and the card becomes pure black on a #111827 page: every card reads as a HOLE
@@ -290,13 +349,37 @@
   --ground-100: 55 65 81;    /* #374151 — wells, hover, striped rows */
   --ground-200: 75 85 99;    /* #4b5563 — borders */
   --ground-300: 107 114 128; /* #6b7280 — stronger borders */
-  --ground-400: 156 163 175; /* #9ca3af — placeholder text */
-  --ground-500: 209 213 219; /* #d1d5db — muted text */
+  /* ⚠ 400 MOVED at F7e: #9ca3af read 4.06 on a dark WELL, so dark failed here too. The ticket
+     recorded this as a light-mode problem and the well case is bad in both modes. 500 already
+     cleared the bar (7.00) and is untouched. */
+  --ground-400: 180 186 196; /* #b4bac4 — muted ink; 5.28 on a well, 7.52 on a card */
+  --ground-500: 209 213 219; /* #d1d5db — stronger muted ink */
   --ground-600: 229 231 235;
   --ground-700: 243 244 246;
   --ground-800: 249 250 251;
   --ground-900: 255 255 255;
   --ground-1000: 255 255 255;
+
+  /* Same value as light, and deliberately: a placeholder is faint text on a raised surface in
+     both modes, and #9ca3af reads 5.78 on the dark card — comfortably legible without competing
+     with the content a filled field would show. */
+  --ground-placeholder: 156 163 175;   /* #9ca3af */
+
+  /* The tone fills, swapped for dark — a PALE fill carrying DARK ink, the same inversion
+     `--brand-fill` makes above. `-600` is already the pale end here because the ramp reverses;
+     ink measures 9.35–12.63 and the fill stands 7.73–10.45 clear of its own card. */
+  --positive-fill: var(--positive-600);
+  --positive-fill-hover: var(--positive-700);
+  --positive-fill-ink: var(--ground-50);
+  --caution-fill: var(--caution-600);
+  --caution-fill-hover: var(--caution-700);
+  --caution-fill-ink: var(--ground-50);
+  --critical-fill: var(--critical-600);
+  --critical-fill-hover: var(--critical-700);
+  --critical-fill-ink: var(--ground-50);
+  --info-fill: var(--info-600);
+  --info-fill-hover: var(--info-700);
+  --info-fill-ink: var(--ground-50);
 
   /* positive — Tailwind green */
   --positive-50: 20 83 45;
@@ -454,7 +537,7 @@
   .input {
     @apply w-full px-4 py-3 rounded-lg border border-ground-300 bg-ground-0 text-ground-900;
     @apply focus:outline-none focus:ring-2 focus:ring-brand-shape focus:border-transparent;
-    @apply placeholder:text-ground-400;
+    @apply placeholder:text-ground-placeholder;
   }
 
   /* Grade badge */

@@ -180,10 +180,29 @@ function MeritIndicator({
 
   const hasScores = studentMerit !== null && meritCutoff !== null
 
-  const barColor =
+  // ⚠ TWO CLASSES, BECAUSE THE BAR AND THE DOT ARE DIFFERENT KINDS OF THING (F7e, 2026-09-04).
+  // The DOT is a shape: it carries no words, so WCAG's bar for it is 3:1 and the plain stop is
+  // right. The BAR carries the student's score in white — that makes it a filled control, and on
+  // the stops below the number measured **1.67** on `caution-400` and **2.28** on `positive-500`.
+  //
+  // ⚠ THE STATIC CODEMOD COULD NOT SEE THIS and the browser sweep is what found it: the fill class
+  // and its `text-white` sit on different LINES, twenty lines apart, so nothing scanning a line
+  // for the pair `bg-<tone>` + `text-white` could ever pair them. This is the case that justifies
+  // the sweep existing at all — "measure the RENDERED result, not the declared one".
+  const barDot =
     label === 'High' ? 'bg-positive-500' :
     label === 'Fair' ? 'bg-caution-400' :
     'bg-critical-500'
+
+  const barFill =
+    label === 'High' ? 'bg-positive-fill' :
+    label === 'Fair' ? 'bg-caution-fill' :
+    'bg-critical-fill'
+
+  const barFillInk =
+    label === 'High' ? 'text-positive-fill-ink' :
+    label === 'Fair' ? 'text-caution-fill-ink' :
+    'text-critical-fill-ink'
 
   const textClass =
     label === 'High' ? 'text-positive-700' :
@@ -199,7 +218,7 @@ function MeritIndicator({
   if (!hasScores) {
     return (
       <div className="flex items-center gap-1.5">
-        <span className={`w-2 h-2 rounded-full inline-block flex-shrink-0 ${barColor}`} />
+        <span className={`w-2 h-2 rounded-full inline-block flex-shrink-0 ${barDot}`} />
         <span className={`text-xs font-medium ${textClass}`}>{displayLabel}</span>
       </div>
     )
@@ -214,11 +233,11 @@ function MeritIndicator({
       <div className="relative h-3 bg-ground-100 rounded-full mb-1">
         {/* Student score fill */}
         <div
-          className={`h-full rounded-full relative ${barColor}`}
+          className={`h-full rounded-full relative ${barFill}`}
           style={{ width: `${fillWidth}%` }}
         >
           {fillWidth >= 12 && (
-            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-white leading-none">
+            <span className={`absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold leading-none ${barFillInk}`}>
               {displayStudent ?? studentMerit}
             </span>
           )}

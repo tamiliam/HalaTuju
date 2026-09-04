@@ -133,7 +133,7 @@ export default function AppHeader() {
               >
                 {link.label}
                 {link.href === '/profile' && isAuthenticated && incompleteCount > 0 && (
-                  <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-critical-500 rounded-full">
+                  <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-critical-fill-ink bg-critical-fill rounded-full">
                     {incompleteCount}
                   </span>
                 )}
@@ -161,7 +161,7 @@ export default function AppHeader() {
                     {initials}
                   </div>
                   {incompleteCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold text-white bg-critical-500 rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold text-critical-fill-ink bg-critical-fill rounded-full flex items-center justify-center">
                       {incompleteCount}
                     </span>
                   )}
@@ -299,7 +299,7 @@ export default function AppHeader() {
                 >
                   {link.label}
                   {link.href === '/profile' && isAuthenticated && incompleteCount > 0 && (
-                    <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-critical-500 rounded-full">
+                    <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-critical-fill-ink bg-critical-fill rounded-full">
                       {incompleteCount}
                     </span>
                   )}

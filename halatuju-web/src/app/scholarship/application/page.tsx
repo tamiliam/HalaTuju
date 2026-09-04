@@ -157,7 +157,7 @@ export default function ScholarshipApplicationPage() {
     return (
       <div className="mb-6 rounded-2xl border border-positive-200 bg-positive-50 p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <span className="shrink-0 text-positive-600" aria-hidden>📄</span>
+          <span className="shrink-0 text-positive-700" aria-hidden>📄</span>
           <div className="flex-1">
             <h2 className="font-semibold text-ground-900">{t('scholarship.application.bursaryPanel.title')}</h2>
             <p className="mt-1 text-sm text-ground-700">{t('scholarship.application.bursaryPanel.body')}</p>

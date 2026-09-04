@@ -34,7 +34,7 @@ const money = (v: string) => Number(v).toLocaleString('en-MY', { minimumFraction
 const statusBadge = (s: string) =>
   s === 'approved' ? 'bg-positive-100 text-positive-700'
     : s === 'pending' ? 'bg-caution-100 text-caution-700'
-      : s === 'suspended' ? 'bg-caution-600 text-white'
+      : s === 'suspended' ? 'bg-caution-fill text-caution-fill-ink'
         : 'bg-critical-100 text-critical-600'
 
 const creditBadge = (s: string) =>
@@ -394,7 +394,7 @@ export default function AdminSponsorDetailPage() {
                       <div className="mt-1.5 flex flex-col gap-0.5 text-xs text-ground-500">
                         {creditChain(c, detail.finance_check_required).map((step) => (
                           <span key={step.key}>
-                            <span className={step.done ? 'text-positive-600 font-bold' : 'text-caution-600 font-bold'}>
+                            <span className={step.done ? 'text-positive-700 font-bold' : 'text-caution-700 font-bold'}>
                               {step.done ? '✓' : '◷'}
                             </span>{' '}
                             {step.done

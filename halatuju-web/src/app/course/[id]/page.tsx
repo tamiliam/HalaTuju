@@ -165,9 +165,9 @@ export default function CourseDetailPage() {
                       <span className={`font-medium text-sm ${
                         isMatGred
                           ? (isArtsStream
-                              ? (merit_cutoff <= 12 ? 'text-positive-600' : merit_cutoff <= 18 ? 'text-caution-600' : 'text-critical-600')
-                              : (merit_cutoff <= 18 ? 'text-positive-600' : 'text-caution-600'))
-                          : (merit_cutoff >= 80 ? 'text-positive-600' : merit_cutoff >= 60 ? 'text-caution-600' : 'text-critical-600')
+                              ? (merit_cutoff <= 12 ? 'text-positive-700' : merit_cutoff <= 18 ? 'text-caution-700' : 'text-critical-600')
+                              : (merit_cutoff <= 18 ? 'text-positive-700' : 'text-caution-700'))
+                          : (merit_cutoff >= 80 ? 'text-positive-700' : merit_cutoff >= 60 ? 'text-caution-700' : 'text-critical-600')
                       }`}>
                         {merit_cutoff.toFixed(1)}
                       </span>

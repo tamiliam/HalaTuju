@@ -191,7 +191,7 @@ export default function InterviewScheduleCard({
                 <p className="text-ground-800">{t('admin.scholarship.interview.schedule.rescheduleConfirm')}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <button type="button" onClick={startReschedule}
-                    className="rounded-lg bg-caution-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-caution-700">
+                    className="rounded-lg bg-caution-fill px-3 py-1.5 text-sm font-medium text-caution-fill-ink hover:bg-caution-fill-hover">
                     {t('admin.scholarship.interview.schedule.rescheduleYes')}
                   </button>
                   <button type="button" onClick={() => setConfirmingReschedule(false)}

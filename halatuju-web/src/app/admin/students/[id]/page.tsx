@@ -269,7 +269,7 @@ export default function AdminStudentDetail() {
                 <span className="text-lg">&#9888;&#65039;</span> {t('admin.dangerZone')}
                 <span className="text-[10px] text-critical-400 ml-1">[{t('admin.superAdmin')}]</span>
               </h2>
-              <p className="text-sm text-critical-500 mt-0.5">
+              <p className="text-sm text-critical-600 mt-0.5">
                 {t('admin.dangerWarning')}
               </p>
             </div>
@@ -285,7 +285,7 @@ export default function AdminStudentDetail() {
             <button
               onClick={handleDelete}
               disabled={deleteConfirm !== 'delete' || deleting}
-              className="px-5 py-2 border-2 border-critical-500 text-critical-600 rounded-xl text-sm font-medium hover:bg-critical-600 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-5 py-2 border-2 border-critical-500 text-critical-600 rounded-xl text-sm font-medium hover:bg-critical-fill-hover hover:text-critical-fill-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {deleting ? t('admin.deleting') : t('admin.deleteStudent')}
             </button>

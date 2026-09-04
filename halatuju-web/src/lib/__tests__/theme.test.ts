@@ -114,8 +114,18 @@ function assertConverted(name: string, files: string[], minFiles: number) {
       // ⚠ COMMENTS STRIPPED — `contrast.ts` explains this very rule in prose and quotes both sides
       // of it, so the unstripped version accused the sentence describing the invariant.
       const withWhite = files.filter((f) => /\b(?:text|stroke|border|ring)-white\b/.test(withoutComments(read(f))))
-      expect(withWhite.length).toBeGreaterThan(0)
+      // ⚠ THE FLOOR HAD TO CHANGE AT F7e, AND WHY IT CHANGED IS THE POINT. It was
+      // `toBeGreaterThan(0)` — a self-check that the guard had a population to guard — and F7e
+      // legitimately EMPTIED one of these groups by moving every filled control onto
+      // `text-<tone>-fill-ink`. A group with no white literal left is now a correct outcome, so
+      // the self-check moves to the thing that must be true instead: the ink WENT SOMEWHERE. It
+      // was converted to a role, not deleted, and never onto `ground-0`.
+      // (docs/lessons.md: when you remove a guard's exemption, pin that the population it
+      // protected did not simply disappear.)
+      const withFillInk = files.filter((f) => /-fill-ink\b/.test(withoutComments(read(f))))
+      expect(withWhite.length + withFillInk.length).toBeGreaterThan(0)
       for (const f of withWhite) expect(withoutComments(read(f))).not.toMatch(/\b(?:text|stroke)-ground-0\b/)
+      for (const f of withFillInk) expect(withoutComments(read(f))).not.toMatch(/\b(?:text|stroke)-ground-0\b/)
     })
   })
 }
@@ -529,6 +539,131 @@ describe('the two guards the owner ruled on', () => {
       expect(new Set(stops).size).toBe(stops.length)
     }
   })
+
+  // ── the ink stops must be READABLE, not merely distinct (Layer 1 F7e, 2026-09-04) ──────────
+  //
+  // ⚠ THIS FILE PASSED THROUGHOUT TD-224, AND TD-224 WAS 263 FAILING ELEMENTS LIVE IN LIGHT MODE.
+  // The distinctness test above asks whether two stops share a VALUE; nothing here asked whether
+  // a stop a person has to READ can be read. `contrast.py` did not cover it either — its pairs are
+  // all brand-versus-ground. **A gate is blind to every pair it does not name**, and this is the
+  // fourth time this arc has written that sentence, so this time the pairs are named.
+
+  /** WCAG relative luminance — the real curve, not the linear approximation used for ordering. */
+  const rel = (rgb: number[]) => {
+    const [r, g, b] = rgb.map((v) => {
+      const s = v / 255
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  const contrast = (a: number[], b: number[]) => {
+    const [hi, lo] = [rel(a), rel(b)].sort((x, y) => y - x)
+    return (hi + 0.05) / (lo + 0.05)
+  }
+  const rgbOf = (block: string, name: string) => {
+    const m = block.match(new RegExp(`--${name}:\\s*([\\d ]+);`))
+    if (!m) throw new Error(`no --${name}`)
+    return m[1].trim().split(/\s+/).map(Number)
+  }
+  const lightBlockOf = () => css.slice(css.indexOf(':root {'), css.indexOf(`[${THEME_ATTR}='dark']`))
+
+  it('keeps every INK stop above AA on the tightest ground it sits on, in BOTH modes', () => {
+    // ⚠ THE GROUND THAT MATTERS IS THE WELL (`ground-100`), NOT THE CARD. Muted ink appears on a
+    // card, on the page, and inside wells/striped rows/hover states — and the well is the closest
+    // of the three to the ink, so it is the one that decides. Measuring against the card is how
+    // `ground-500` sat at a comfortable-looking 4.83 while the chips it painted read 4.39.
+    //
+    // 300 is deliberately NOT in this list: it is a border, and WCAG's 4.5 bar is for text.
+    for (const [mode, block] of [['light', lightBlockOf()], ['dark', darkBlock]] as const) {
+      const well = rgbOf(block, 'ground-100')
+      for (const stop of ['400', '500', '600', '700', '800', '900']) {
+        const ratio = contrast(rgbOf(block, `ground-${stop}`), well)
+        expect(`${mode} ground-${stop} on a well: ${ratio.toFixed(2)}`)
+          .toBe(`${mode} ground-${stop} on a well: ${Math.max(ratio, 4.5).toFixed(2)}`)
+      }
+    }
+  })
+
+  it('keeps the ink ramp MONOTONIC, so a later tuning cannot invert two stops', () => {
+    // F7e moved 400 and 500 in light and 400 in dark. Without this, moving one stop past its
+    // neighbour is a silent reordering: `text-ground-500` would render LIGHTER than
+    // `text-ground-400`, and every "muted, but a bit stronger" pairing in the product inverts
+    // with nothing failing.
+    for (const [mode, block] of [['light', lightBlockOf()], ['dark', darkBlock]] as const) {
+      const inks = ['400', '500', '600', '700', '800', '900']
+        .map((s) => contrast(rgbOf(block, `ground-${s}`), rgbOf(block, 'ground-100')))
+      for (let i = 1; i < inks.length; i += 1) {
+        expect(`${mode} ${i}: ${inks[i] > inks[i - 1]}`).toBe(`${mode} ${i}: true`)
+      }
+    }
+  })
+
+  it('⚠ never lets a filled control be spelled as a tone STOP again', () => {
+    // THE DEFECT THIS SPRINT EXISTS FOR, made unspellable. `bg-positive-600 text-white` was the
+    // cockpit's Accept button: **3.30** in light and **1.40** in dark. F7a built exactly this
+    // role for the BRAND and stopped there; the four tone ramps reverse identically and were
+    // given neither it nor F7b's move of small text off `-500`. The pattern was named twice and
+    // generalised zero times, so this is the guard that makes the third time impossible.
+    //
+    // The pair `bg-<tone>-<mid stop>` + `text-white` IS the definition of a filled control. A
+    // tinted NOTICE (`bg-info-50` with dark ink) is a different thing and deliberately untouched.
+    const offenders: string[] = []
+    for (const f of walkFiles('src').filter((p) => /\.tsx?$/.test(p))) {
+      if (f.includes('__tests__')) continue
+      for (const line of withoutComments(read(f)).split('\n')) {
+        if (!line.includes('text-white')) continue
+        if (/bg-(?:positive|caution|critical|info)-(?:400|500|600|700|800)/.test(line)) {
+          offenders.push(`${f}: ${line.trim().slice(0, 120)}`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('⚠ keeps every tone FILL readable in BOTH modes, ink and edge alike', () => {
+    // Two bars, and a fill has to clear both: its INK needs 4.5 (it carries words) and the fill
+    // itself needs 3.0 against the card it sits on (it has to look like a control). F7a's whole
+    // finding was that these squeeze from opposite ends — moving `brand-400` let white ink read
+    // at 5.82 and dropped the button to 2.52 against its own card. Assert both, or "fixing" one
+    // silently breaks the other.
+    for (const [mode, block] of [['light', lightBlockOf()], ['dark', darkBlock]] as const) {
+      const card = rgbOf(block, 'ground-0')
+      for (const tone of ['positive', 'caution', 'critical', 'info']) {
+        // `--positive-fill: var(--positive-700)` — follow the indirection to the stop it names.
+        const stop = block.match(new RegExp(`--${tone}-fill:\\s*var\\(--${tone}-(\\d+)\\)`))?.[1]
+        expect(`${mode} ${tone} fill resolves: ${!!stop}`).toBe(`${mode} ${tone} fill resolves: true`)
+        const fill = rgbOf(block, `${tone}-${stop}`)
+        const inkRaw = block.match(new RegExp(`--${tone}-fill-ink:\\s*([^;]+);`))![1].trim()
+        const ink = inkRaw.startsWith('var(')
+          ? rgbOf(block, inkRaw.slice(6, -1))          // var(--ground-50) → ground-50
+          : inkRaw.split(/\s+/).map(Number)
+        const onFill = contrast(ink, fill)
+        const onCard = contrast(fill, card)
+        expect(`${mode} ${tone} ink: ${onFill.toFixed(2)}`)
+          .toBe(`${mode} ${tone} ink: ${Math.max(onFill, 4.5).toFixed(2)}`)
+        expect(`${mode} ${tone} edge: ${onCard.toFixed(2)}`)
+          .toBe(`${mode} ${tone} edge: ${Math.max(onCard, 3).toFixed(2)}`)
+      }
+    }
+  })
+
+  it('⚠ keeps PLACEHOLDER a separate token, and does NOT hold it to the ink bar', () => {
+    // The whole reason F7e was ~10 edits rather than ~400: `ground-400` was NAMED for placeholder
+    // text and USED as muted ink in 395 of its 404 call sites, so the SMALL role moved out.
+    // A placeholder is deliberately fainter than content — darkening it makes an empty field read
+    // as a filled one — so it is exempt from the bar above BY DESIGN, not by oversight.
+    for (const block of [lightBlockOf(), darkBlock]) {
+      const ph = rgbOf(block, 'ground-placeholder')
+      expect(ph).toEqual([156, 163, 175])
+      // …and it must not silently become the ink stop again.
+      expect(ph).not.toEqual(rgbOf(block, 'ground-400'))
+    }
+    // The three call sites that want it say so explicitly; nothing else may.
+    const strays = walkFiles('src')
+      .filter((f) => /\.(tsx?|css)$/.test(f))
+      .filter((f) => /placeholder:text-ground-(?!placeholder)/.test(withoutComments(read(f))))
+    expect(strays).toEqual([])
+  })
 })
 
 describe('the stylesheet is a hiding place too', () => {
@@ -846,7 +981,11 @@ describe('the F4 semantic corrections the codemod could not make', () => {
     // HOLD — nearer to `pending` than to `rejected` — so it is `caution` at a heavier weight, the
     // same move F3 made for `graduated`. `declined` (a reviewer's call) is `caution` against
     // `rejectedAfterReview` (the case's fate), which stays `critical`.
-    expect(read('src/app/admin/sponsors/page.tsx')).toMatch(/'bg-caution-600 text-white'/)
+    //
+    // ⚠ RESPELLED AT F7e, NOT RE-DECIDED. The CLAIM — a suspended sponsor is caution at FILLED
+    // weight — is unchanged and is the thing worth pinning. `bg-caution-600 text-white` was
+    // measured at 3.30 in light and 1.40 in dark, so the fill became a role. Assert the role.
+    expect(read('src/app/admin/sponsors/page.tsx')).toMatch(/'bg-caution-fill text-caution-fill-ink'/)
     expect(read('src/app/admin/organisation/reviewers/[id]/page.tsx')).toMatch(/declined: 'bg-caution-500'/)
     expect(read('src/app/admin/organisation/reviewers/[id]/page.tsx')).toMatch(/rejectedAfterReview: 'bg-critical-500'/)
   })
@@ -878,9 +1017,13 @@ describe('the F5 semantic corrections the codemod could not make', () => {
     // unrelated person's name is evidence the document may not belong to this household at all,
     // and orange used to hold them apart. Sharing a tone would have flattened the distinction the
     // officer most needs to see.
+    // ⚠ RESPELLED AT F7e, NOT RE-DECIDED. The generic warning moved `caution-600` -> `-700`
+    // because `-600` measured **3.19** on a card; `critical-600` already passed at 4.83 and did
+    // not move. The DISTINCTION — two different tones, so the officer can tell an unrelated name
+    // from a routine warning — is what this pins, and it is unchanged.
     const src = read(cockpit)
     expect(src).toMatch(/text-critical-600[^]{0,400}utilityNote\.unrelated/)
-    expect(src).toMatch(/text-caution-600[^]{0,120}vision_fields\.warnings/)
+    expect(src).toMatch(/text-caution-700[^]{0,120}vision_fields\.warnings/)
   })
 
   it('treats "how was this value produced" as a CATEGORY, and the AI briefing as INFO', () => {
@@ -896,7 +1039,9 @@ describe('the F5 semantic corrections the codemod could not make', () => {
   it('keeps the HOLD badge filled, the same as a suspended sponsor in F4', () => {
     // A circuit-breaker stopped the loop and a human has to look. It sits beside a grey `kind`
     // chip, so a tint would have read as its quiet neighbour.
-    expect(read(cockpit)).toMatch(/bg-caution-600 px-1\.5 py-0\.5 text-\[11px\] font-semibold text-white/)
+    // ⚠ Respelled onto the F7e fill role; the claim (FILLED, not tinted) is what is pinned.
+    expect(read(cockpit)).toMatch(
+      /bg-caution-fill px-1\.5 py-0\.5 text-\[11px\] font-semibold text-caution-fill-ink/)
   })
 })
 
@@ -952,7 +1097,11 @@ describe('the F3 semantic corrections the codemod could not make', () => {
     // student can tell apart. A category swatch would have been wrong (it IS a state); a second
     // tone would have lied about it. Same tone, filled instead of tinted.
     const src = read('src/app/scholarship/in-programme/page.tsx')
-    expect(src).toMatch(/graduated: 'bg-positive-600 text-white'/)
+    // ⚠ Respelled onto the F7e fill role. The WEIGHT contrast between the two — filled vs tinted,
+    // same tone — is the claim, and it is unchanged; `on_track` is a TINT and deliberately does
+    // not move (a tinted panel and a filled control want opposite things when the ground inverts,
+    // which is the whole reason the fill became a role).
+    expect(src).toMatch(/graduated: 'bg-positive-fill text-positive-fill-ink'/)
     expect(src).toMatch(/on_track: 'bg-positive-100 text-positive-700'/)
     expect(withoutComments(src)).not.toMatch(/indigo/)
   })

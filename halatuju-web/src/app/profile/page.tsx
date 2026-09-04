@@ -68,7 +68,7 @@ function countIncomplete(fields: (string | boolean | number | null | undefined)[
 
 function FieldValue({ value, t }: { value: string; t: (key: string) => string }) {
   if (!value) {
-    return <span className="text-sm text-caution-500 italic">{t('profile.notSet')}</span>
+    return <span className="text-sm text-caution-700 italic">{t('profile.notSet')}</span>
   }
   return <span className="text-sm text-ground-900">{value}</span>
 }
@@ -543,7 +543,7 @@ export default function ProfilePage() {
                 </div>
                 <h2 className="text-lg font-semibold text-ground-900">{t('profile.personalDetails')}</h2>
                 {identityIncomplete > 0 && (
-                  <span className="px-2 py-0.5 bg-caution-50 text-caution-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-caution-50 text-caution-700 text-xs font-medium rounded-full">
                     {identityIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -625,7 +625,7 @@ export default function ProfilePage() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.name')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('profile.name')} <span className="text-critical-600">*</span></label>
                   <input
                     type="text"
                     value={name}
@@ -635,7 +635,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('onboarding.gender')} <span className="text-critical-500">*</span></label>
+                    <label className="block text-sm font-medium text-ground-700 mb-1.5">{t('onboarding.gender')} <span className="text-critical-600">*</span></label>
                     <div className="flex gap-2">
                       {(['male', 'female'] as const).map(g => (
                         <button
@@ -712,7 +712,7 @@ export default function ProfilePage() {
                   <span className="text-sm text-ground-900 font-mono flex items-center gap-1.5">
                     {nric ? maskIc(nric) : '—'}
                     {nric && identityVerified && (
-                      <span className="px-1.5 py-0.5 bg-positive-50 text-positive-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                      <span className="px-1.5 py-0.5 bg-positive-50 text-positive-700 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                     )}
                     {/* A quiet marker that something needs their attention, so a student who
                         never opens the edit panel still learns the card disagrees. */}
@@ -727,7 +727,7 @@ export default function ProfilePage() {
                     <span className="text-sm text-ground-900 flex items-center gap-1.5">
                       {name}
                       {identityVerified && (
-                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-700 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                       )}
                     </span>
                   ) : (
@@ -769,7 +769,7 @@ export default function ProfilePage() {
                 </div>
                 <h2 className="text-lg font-semibold text-ground-900">{t('profile.contactDetails')}</h2>
                 {contactDetailsIncomplete > 0 && (
-                  <span className="px-2 py-0.5 bg-caution-50 text-caution-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-caution-50 text-caution-700 text-xs font-medium rounded-full">
                     {contactDetailsIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -865,7 +865,7 @@ export default function ProfilePage() {
                     )}
                   </div>
                   {contactPhoneVerified && (
-                    <p className="text-xs text-positive-600 mt-1.5 font-medium">✓ {t('profile.phoneVerified')}</p>
+                    <p className="text-xs text-positive-700 mt-1.5 font-medium">✓ {t('profile.phoneVerified')}</p>
                   )}
                   {!phoneVerifyEnabled && !contactPhoneVerified && (
                     <p className="text-xs text-ground-500 mt-1.5">{t('profile.phoneVerifyPaused')}</p>
@@ -943,9 +943,9 @@ export default function ProfilePage() {
                     <span className="text-sm text-ground-900 flex items-center gap-1.5">
                       {contactEmail}
                       {contactEmailVerified ? (
-                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-700 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                       ) : (
-                        <span className="text-caution-500 text-xs">{t('profile.notVerified')}</span>
+                        <span className="text-caution-700 text-xs">{t('profile.notVerified')}</span>
                       )}
                     </span>
                   ) : (
@@ -958,9 +958,9 @@ export default function ProfilePage() {
                     <span className="text-sm text-ground-900 flex items-center gap-1.5">
                       {contactPhone}
                       {contactPhoneVerified ? (
-                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                        <span className="px-1.5 py-0.5 bg-positive-50 text-positive-700 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
                       ) : (
-                        <span className="text-caution-500 text-xs">{t('profile.notVerified')}</span>
+                        <span className="text-caution-700 text-xs">{t('profile.notVerified')}</span>
                       )}
                     </span>
                   ) : (
@@ -987,7 +987,7 @@ export default function ProfilePage() {
                 </div>
                 <h2 className="text-lg font-semibold text-ground-900">{t('profile.contactLocation')}</h2>
                 {contactIncomplete > 0 && (
-                  <span className="px-2 py-0.5 bg-caution-50 text-caution-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-caution-50 text-caution-700 text-xs font-medium rounded-full">
                     {contactIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -1072,7 +1072,7 @@ export default function ProfilePage() {
                   <FieldLabel label={t('profile.address')} empty={!address && !postalCode && !city && !state} />
                   <span className="text-sm text-ground-900 text-right max-w-[60%]">
                     {[address, [postalCode, city].filter(Boolean).join(' '), state].filter(Boolean).join(', ') || (
-                      <span className="text-caution-500 italic">{t('profile.notSet')}</span>
+                      <span className="text-caution-700 italic">{t('profile.notSet')}</span>
                     )}
                   </span>
                 </div>
@@ -1091,7 +1091,7 @@ export default function ProfilePage() {
                 </div>
                 <h2 className="text-lg font-semibold text-ground-900">{t('profile.familyBackground')}</h2>
                 {familyIncomplete > 0 && (
-                  <span className="px-2 py-0.5 bg-caution-50 text-caution-600 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-caution-50 text-caution-700 text-xs font-medium rounded-full">
                     {familyIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -1117,7 +1117,7 @@ export default function ProfilePage() {
                     className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdIncomeInvalid ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500' : 'border-ground-300 focus:border-brand-shape focus:ring-brand-shape'}`}
                   />
                   {householdIncomeInvalid
-                    ? <p className="text-xs text-critical-500 mt-1">{t('profile.invalidHouseholdIncome')}</p>
+                    ? <p className="text-xs text-critical-600 mt-1">{t('profile.invalidHouseholdIncome')}</p>
                     : <p className="text-xs text-ground-400 mt-1">{t('profile.householdIncomeHelper')}</p>}
                 </div>
                 <div>
@@ -1131,7 +1131,7 @@ export default function ProfilePage() {
                     className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none ${householdSizeInvalid ? 'border-critical-400 focus:border-critical-500 focus:ring-critical-500' : 'border-ground-300 focus:border-brand-shape focus:ring-brand-shape'}`}
                   />
                   {householdSizeInvalid
-                    ? <p className="text-xs text-critical-500 mt-1">{t('profile.invalidHouseholdSize')}</p>
+                    ? <p className="text-xs text-critical-600 mt-1">{t('profile.invalidHouseholdSize')}</p>
                     : <p className="text-xs text-ground-400 mt-1">{t('profile.householdSizeHelper')}</p>}
                 </div>
                 {/* Structured family roster — the shared editor; while a B40
@@ -1206,7 +1206,7 @@ export default function ProfilePage() {
                 </div>
                 <h2 className="text-lg font-semibold text-ground-900">{t('profile.applicationTracking')}</h2>
                 {appIncomplete > 0 && (
-                  <span className="text-xs text-caution-600 bg-caution-50 px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-xs text-caution-700 bg-caution-50 px-2 py-0.5 rounded-full font-medium">
                     {appIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
@@ -1241,7 +1241,7 @@ export default function ProfilePage() {
                     }`}
                   />
                   {angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran) && (
-                    <p className="text-xs text-critical-500 mt-1">{t('profile.angkaGiliranInvalid')}</p>
+                    <p className="text-xs text-critical-600 mt-1">{t('profile.angkaGiliranInvalid')}</p>
                   )}
                   <p className="text-xs text-ground-400 mt-1">{t('profile.angkaGiliranHelper')}</p>
                 </div>
@@ -1252,7 +1252,7 @@ export default function ProfilePage() {
                 <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push('/onboarding/grades') }}
                   className="w-full flex justify-between items-center gap-3 text-left group">
                   <span className="text-sm font-medium text-ground-700">{t('profile.meritScore')}</span>
-                  <span className={`text-sm text-right ${meritScore != null ? 'text-ground-900 font-semibold' : 'text-caution-500'} group-hover:text-primary-600`}>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-ground-900 font-semibold' : 'text-caution-700'} group-hover:text-primary-600`}>
                     {meritScore != null ? meritScore : t('profile.meritTapAdd')}
                   </span>
                 </button>
@@ -1292,7 +1292,7 @@ export default function ProfilePage() {
                 <button type="button" onClick={() => { setOnboardingReturn('/profile'); router.push('/onboarding/grades') }}
                   className="w-full flex justify-between items-center gap-3 text-left group">
                   <span className="text-sm text-ground-500">{t('profile.meritScore')}</span>
-                  <span className={`text-sm text-right ${meritScore != null ? 'text-ground-900 font-semibold' : 'text-caution-500'} group-hover:text-primary-600`}>
+                  <span className={`text-sm text-right ${meritScore != null ? 'text-ground-900 font-semibold' : 'text-caution-700'} group-hover:text-primary-600`}>
                     {meritScore != null ? meritScore : t('profile.meritTapAdd')}
                   </span>
                 </button>
@@ -1301,7 +1301,7 @@ export default function ProfilePage() {
                 <button type="button" onClick={() => startEditing('application')}
                   className="w-full flex justify-between items-center gap-3 text-left group">
                   <span className="text-sm text-ground-500">{t('profile.pathway')}</span>
-                  <span className={`text-sm text-right ${(pathwayForm.chosenProgramme?.courseName || pathwayForm.chosenPathway) ? 'text-ground-900' : 'text-caution-500'} group-hover:text-primary-600`}>
+                  <span className={`text-sm text-right ${(pathwayForm.chosenProgramme?.courseName || pathwayForm.chosenPathway) ? 'text-ground-900' : 'text-caution-700'} group-hover:text-primary-600`}>
                     {pathwayForm.chosenProgramme?.courseName
                       || (pathwayForm.chosenPathway ? t(`scholarship.apply.plan.pathway.${pathwayForm.chosenPathway}`) : t('profile.pathwayTapAdd'))}
                   </span>
@@ -1352,7 +1352,7 @@ export default function ProfilePage() {
                     </select>
                     <button
                       onClick={() => handleRemoveCourse(course.course_id)}
-                      className="p-1 text-ground-300 hover:text-critical-500 transition-colors"
+                      className="p-1 text-ground-300 hover:text-critical-600 transition-colors"
                       title="Remove"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -187,7 +187,7 @@ function Field({ label, value, verifiedLabel, note, noteTone = 'amber' }: { labe
         {value === null || value === undefined || value === '' ? '—' : value}
         {verifiedLabel && <VerifiedTick label={verifiedLabel} />}
       </dd>
-      {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-ground-400' : 'text-caution-600'}`}>{note}</p>}
+      {note && <p className={`mt-0.5 text-xs ${noteTone === 'muted' ? 'text-ground-400' : 'text-caution-700'}`}>{note}</p>}
     </div>
   )
 }
@@ -1292,7 +1292,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     return (
                       <>
                         {app.merit_score}{' '}
-                        <span className={sy.status === 'off' ? 'text-caution-600' : 'text-ground-500'}>
+                        <span className={sy.status === 'off' ? 'text-caution-700' : 'text-ground-500'}>
                           ({t('admin.scholarship.docsDrawer.examYear', { year: sy.year })})
                         </span>
                       </>
@@ -1472,7 +1472,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
                   {isGreen && (
-                    <span className="ml-auto shrink-0 text-positive-600 text-sm font-bold"
+                    <span className="ml-auto shrink-0 text-positive-700 text-sm font-bold"
                       aria-label={t('admin.scholarship.verdict.status.verified')}>✓</span>
                   )}
                 </div>
@@ -1554,13 +1554,13 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                       income story), then the supporting confirmations. */}
                   {f.unresolved.map((it, i) => (
                     <div key={`u${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
-                      <span className="text-caution-600 shrink-0">•</span>
+                      <span className="text-caution-700 shrink-0">•</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
                   {f.evidence.slice(1).map((it, i) => (
                     <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
-                      <span className="text-positive-600 shrink-0">✓</span>
+                      <span className="text-positive-700 shrink-0">✓</span>
                       <span>{resolve(it)}</span>
                     </div>
                   ))}
@@ -1776,11 +1776,11 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                       return (
                         <li key={item.id} className="flex items-start gap-2.5 rounded-lg border border-ground-100 bg-ground-50 p-3">
                           {answered ? (
-                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-700" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                             </svg>
                           ) : (
-                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-caution-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Awaiting student">
+                            <svg className="mt-0.5 h-5 w-5 shrink-0 text-caution-700" viewBox="0 0 20 20" fill="currentColor" aria-label="Awaiting student">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clipRule="evenodd" />
                             </svg>
                           )}
@@ -1804,7 +1804,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                                     // It is caution at weight, not a fifth hue: the loop was
                                     // stopped and a human has to look, so it should not read as a
                                     // quiet neighbour of the grey `kind` chip beside it.
-                                    className="rounded bg-caution-600 px-1.5 py-0.5 text-[11px] font-semibold text-white align-middle"
+                                    className="rounded bg-caution-fill px-1.5 py-0.5 text-[11px] font-semibold text-caution-fill-ink align-middle"
                                   >
                                     {t('admin.scholarship.outstanding.hold')}
                                   </span>
@@ -1929,7 +1929,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
               </span>
               <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
-                className="text-critical-500 hover:underline text-xs shrink-0 disabled:opacity-50">
+                className="text-critical-600 hover:underline text-xs shrink-0 disabled:opacity-50">
                 {t('admin.scholarship.refRemove')}
               </button>
             </li>
@@ -2043,7 +2043,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   const f = findings[it.code]
                   return (
                     <div key={it.code} className="flex items-start gap-2.5 rounded-lg border border-ground-100 bg-ground-50 p-3">
-                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-500" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
+                      <svg className="mt-0.5 h-5 w-5 shrink-0 text-positive-700" viewBox="0 0 20 20" fill="currentColor" aria-label="Answered">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
                       </svg>
                       <div className="flex-1 min-w-0">
@@ -2112,7 +2112,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                               {t('admin.scholarship.caveats.delete')}
                             </button>
                             <button onClick={() => setF({ verdict: resolved ? '' : 'resolved' })}
-                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-positive-600 text-white hover:bg-positive-700' : 'border border-ground-300 text-ground-700 hover:bg-ground-100'}`}>
+                              className={`rounded px-2 py-1 text-xs font-medium ${resolved ? 'bg-positive-fill text-positive-fill-ink hover:bg-positive-fill-hover' : 'border border-ground-300 text-ground-700 hover:bg-ground-100'}`}>
                               {t('admin.scholarship.interview.verdict.resolved')}
                             </button>
                           </div>
@@ -2143,7 +2143,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   className="px-4 py-2 bg-brand-fill text-brand-fill-ink rounded-lg text-sm disabled:opacity-50">
                   {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
                 </button>
-                {interviewMsg && <span className="text-sm font-medium text-positive-600">{interviewMsg}</span>}
+                {interviewMsg && <span className="text-sm font-medium text-positive-700">{interviewMsg}</span>}
               </div>
             )}
           </>
@@ -2203,7 +2203,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             })
           }
           const factClass = (s: FactStatus) =>
-            s === 'verified' ? 'text-positive-600' : s === 'partial' ? 'text-caution-600'
+            s === 'verified' ? 'text-positive-700' : s === 'partial' ? 'text-caution-700'
               : s === 'not' ? 'text-critical-600' : 'text-ground-400'
           const subLabel = 'text-[10px] font-semibold uppercase tracking-widest text-ground-400 mb-1.5'
           // Line 2: the coloured fact-labels — only the facts THIS document provides. A results slip
@@ -2220,7 +2220,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             return null
           }
           const yearClass = (s: string) =>
-            s === 'current' ? 'text-positive-600' : s === 'off' ? 'text-caution-600' : 'text-ground-500'
+            s === 'current' ? 'text-positive-700' : s === 'off' ? 'text-caution-700' : 'text-ground-500'
           const factLine = (d: AdminApplicantDocument) => {
             const facts = documentFacts(d)
             const yc = yearChip(d)
@@ -2364,7 +2364,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     </p>
                   )}
                   {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
-                    <p className="text-[11px] text-caution-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
+                    <p className="text-[11px] text-caution-700 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                   )}
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
@@ -2481,7 +2481,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'pass'
-                        ? 'border-positive-500 bg-positive-500 text-white'
+                        ? 'border-positive-fill bg-positive-fill text-positive-fill-ink'
                         : 'border-ground-300 text-ground-600 hover:border-positive-400'
                     } disabled:opacity-50`}
                   >
@@ -2492,7 +2492,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                     disabled={!canWrite}
                     className={`rounded-full border px-3 py-1 text-xs font-medium ${
                       officerVerdict[fact] === 'fail'
-                        ? 'border-critical-500 bg-critical-500 text-white'
+                        ? 'border-critical-fill bg-critical-fill text-critical-fill-ink'
                         : 'border-ground-300 text-ground-600 hover:border-critical-400'
                     } disabled:opacity-50`}
                   >
@@ -2515,9 +2515,9 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   {i > 0 && ', '}
                   {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
                   <span className={
-                    sugg[f] === 'yes' ? 'text-positive-600 font-medium'
+                    sugg[f] === 'yes' ? 'text-positive-700 font-medium'
                     : sugg[f] === 'no' ? 'text-critical-600 font-medium'
-                    : 'text-caution-600 font-medium'
+                    : 'text-caution-700 font-medium'
                   }>
                     {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
                   </span>
@@ -2655,7 +2655,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <div className="flex items-center gap-2">
               <button onClick={doReopenDecision} disabled={!!busy || !reopenReason.trim()}
-                className="px-3 py-1.5 bg-critical-600 text-white rounded-lg text-sm disabled:opacity-50">
+                className="px-3 py-1.5 bg-critical-fill text-critical-fill-ink rounded-lg text-sm disabled:opacity-50">
                 {busy === 'reopen' ? t('common.loading') : t('admin.scholarship.recordVerdict.reopenConfirm')}
               </button>
               <button onClick={() => { setReopenOpen(false); setReopenReason('') }} disabled={!!busy}
@@ -2815,25 +2815,25 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 <button onClick={selectApprove} disabled={!!busy || !approveReady}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     officerVerdict.overall === 'accept'
-                      ? 'border-positive-600 bg-positive-600 text-white'
+                      ? 'border-positive-fill bg-positive-fill text-positive-fill-ink'
                       : 'border-positive-600 bg-ground-0 text-positive-700 hover:bg-positive-50'}`}>
                   {t('admin.scholarship.recordVerdict.approve')}
                 </button>
                 <button onClick={selectDecline} disabled={!!busy || !decisionReady}
                   className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${
                     officerVerdict.overall === 'decline'
-                      ? 'border-critical-600 bg-critical-600 text-white'
+                      ? 'border-critical-fill bg-critical-fill text-critical-fill-ink'
                       : 'border-critical-500 bg-ground-0 text-critical-700 hover:bg-critical-50'}`}>
                   {t('admin.scholarship.recordVerdict.decline')}
                 </button>
               </div>
               {/* One contextual hint: what's still missing before Save. */}
               {!decisionReady ? (
-                <p className="text-[11px] text-caution-600">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
+                <p className="text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.saveNeedsReady')}</p>
               ) : !officerVerdict.overall ? (
-                <p className="text-[11px] text-caution-600">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
+                <p className="text-[11px] text-caution-700">{t('admin.scholarship.recordVerdict.chooseOutcome')}</p>
               ) : officerVerdict.overall === 'accept' && !hasAssistance ? (
-                <p className="text-[11px] text-caution-600">{t(app.award_disqualifier
+                <p className="text-[11px] text-caution-700">{t(app.award_disqualifier
                   ? 'admin.scholarship.recordVerdict.approveNeedsReview'
                   : 'admin.scholarship.recordVerdict.approveNeedsAmount')}</p>
               ) : null}
@@ -2979,7 +2979,12 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   if (canQc) { setQcOverrideOpen(true); setQcOverrideReason('') }
                 }}
                 disabled={!!busy || (floorBlocked && !canQc)}
-                className={`rounded-lg border px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 ${isDeclineVerdict ? 'border-critical-600 bg-critical-600 hover:bg-critical-700' : 'border-positive-600 bg-positive-600 hover:bg-positive-700'}`}>
+                /* ⚠ THE INK MOVED INSIDE THE BRANCHES (F7e). It was one shared `text-white`
+                   outside the ternary, serving a decline button and an accept button; the codemod
+                   could only pick one tone for it and chose `positive`, which rendered correctly
+                   only because both tones resolve their ink to the same value today. A decline
+                   button carrying positive ink is a trap for whoever next tunes one tone. */
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium disabled:opacity-50 ${isDeclineVerdict ? 'border-critical-fill bg-critical-fill text-critical-fill-ink hover:bg-critical-fill-hover' : 'border-positive-fill bg-positive-fill text-positive-fill-ink hover:bg-positive-fill-hover'}`}>
                 {busy === 'qc' ? t('common.loading')
                   : t(isDeclineVerdict ? 'admin.scholarship.qcDecision.confirmDecline' : 'admin.scholarship.qcDecision.accept')}
               </button>
@@ -2997,7 +3002,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision('accept', qcOverrideReason)}
                   disabled={!!busy || !qcOverrideReason.trim()}
-                  className="rounded-lg bg-critical-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-critical-700 disabled:opacity-50">
+                  className="rounded-lg bg-critical-fill px-3 py-1.5 text-xs font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
                   {busy === 'qc' ? t('common.loading') : t('admin.scholarship.qcDecision.overrideConfirm')}
                 </button>
                 <button onClick={() => { setQcOverrideOpen(false); setQcOverrideReason('') }}
@@ -3027,7 +3032,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               )}
               <div className="flex items-center gap-2">
                 <button onClick={() => doQcDecision(qcRejectMode ? 'reject' : 'reopen')} disabled={!!busy || !qcComments.trim()}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${qcRejectMode ? 'bg-critical-600 hover:bg-critical-700' : 'bg-caution-600 hover:bg-caution-700'}`}>
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-caution-fill-ink disabled:opacity-50 ${qcRejectMode ? 'bg-critical-fill hover:bg-critical-fill-hover' : 'bg-caution-fill hover:bg-caution-fill-hover'}`}>
                   {busy === 'qc' ? t('common.loading')
                     : t(qcRejectMode ? 'admin.scholarship.qcDecision.rejectConfirm' : 'admin.scholarship.qcDecision.reopenConfirm')}
                 </button>
@@ -3086,7 +3091,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 {/* Mandatory reason enforced here AND at the endpoint (400 comments_required). */}
                 <button type="button" onClick={() => setRejectStep('confirm')}
                   disabled={!rejectComments.trim()}
-                  className="flex-1 rounded-lg bg-critical-600 px-3 py-2 text-sm font-medium text-white
+                  className="flex-1 rounded-lg bg-critical-fill px-3 py-2 text-sm font-medium text-critical-fill-ink
                              hover:bg-critical-700 disabled:opacity-40">
                   {t('admin.scholarship.orgReject.submit')}
                 </button>
@@ -3110,7 +3115,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   {t('admin.scholarship.orgReject.back')}
                 </button>
                 <button type="button" onClick={doOrgReject} disabled={!!busy}
-                  className="flex-1 rounded-lg bg-critical-600 px-3 py-2 text-sm font-medium text-white
+                  className="flex-1 rounded-lg bg-critical-fill px-3 py-2 text-sm font-medium text-critical-fill-ink
                              hover:bg-critical-700 disabled:opacity-50">
                   {busy === 'orgReject' ? t('admin.scholarship.orgReject.running')
                     : t('admin.scholarship.orgReject.confirmYes')}
@@ -3162,7 +3167,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             title={assignLocked ? t('admin.scholarship.assign.lockedHint')
               : firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
             onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
-            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-400"
+            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-ground-100 disabled:text-ground-placeholder"
           >
             <option value="">{t('admin.scholarship.unassigned')}</option>
             {/* Assignable options. The backend already returns the org-fenced, review-capable set
@@ -3197,7 +3202,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
           {assignLocked ? (
             <p className="text-xs text-ground-400">{t('admin.scholarship.assign.lockedHint')}</p>
           ) : firstAssignBlocked && (
-            <p className="text-xs text-caution-600">{t('admin.scholarship.assign.notReadyHint')}</p>
+            <p className="text-xs text-caution-700">{t('admin.scholarship.assign.notReadyHint')}</p>
           )}
         </div>
         )
@@ -3293,7 +3298,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
         const stateRow = (label: string, done: boolean) => (
           <div className="flex items-center justify-between rounded-lg border border-ground-200 px-3 py-2">
             <span className="text-sm text-ground-700">{label}</span>
-            <span className={done ? 'text-positive-600' : 'text-ground-300'} aria-hidden>
+            <span className={done ? 'text-positive-700' : 'text-ground-300'} aria-hidden>
               {done ? '✓' : '–'}
             </span>
           </div>
@@ -3319,7 +3324,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             {!hasAgreement && (
               <p className="text-xs text-ground-500">{t('admin.scholarship.bursary.awaitingSignature')}</p>
             )}
-            {bursaryMsg && <p className="text-xs text-caution-600">{bursaryMsg}</p>}
+            {bursaryMsg && <p className="text-xs text-caution-700">{bursaryMsg}</p>}
             <div className="flex flex-wrap items-center gap-2">
               {isSuper && (
                 <button
@@ -3472,7 +3477,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 </button>
               </div>
             )}
-            {disbMsg && <p className="text-xs text-caution-600">{disbMsg}</p>}
+            {disbMsg && <p className="text-xs text-caution-700">{disbMsg}</p>}
           </div>
         )
       })()}
@@ -3526,7 +3531,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                   {busy === 'close' ? t('common.loading') : t('admin.closure.close')}
                 </button>
               </div>
-              {closeMsg && <p className="text-xs text-caution-600">{closeMsg}</p>}
+              {closeMsg && <p className="text-xs text-caution-700">{closeMsg}</p>}
             </>
           ) : null}
         </div>

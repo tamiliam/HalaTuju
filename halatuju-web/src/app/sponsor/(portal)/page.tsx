@@ -92,7 +92,7 @@ export default function MyGivingPage() {
           <Stat label={t('sponsorPortal.impact.semesters')} value={String(impact.semesters_completed)}
             sub={t('sponsorPortal.impact.semestersBy')} />
           <Stat label={t('sponsorPortal.impact.graduated')} value={impact.students_graduated > 0 ? `${impact.students_graduated} 🎉` : '0'}
-            sub={t('sponsorPortal.impact.graduatedSub')} valueClass={impact.students_graduated > 0 ? 'text-positive-600' : 'text-ground-900'} />
+            sub={t('sponsorPortal.impact.graduatedSub')} valueClass={impact.students_graduated > 0 ? 'text-positive-700' : 'text-ground-900'} />
         </div>
       )}
 
@@ -265,7 +265,7 @@ function JourneyTracker({ onboarded, state, semesters, discontinued, t }: {
               {i > 0 && <div className={`flex-1 h-px mt-1 ${stages[i - 1].status === 'done' ? 'bg-positive-200' : 'bg-ground-200'}`} />}
               <div className="flex flex-col items-center">
                 <span className={`w-2.5 h-2.5 rounded-full ${withdrew ? 'bg-critical-500' : DOT[s.status]}`} />
-                <span className={`text-[9px] mt-1 ${withdrew ? 'text-critical-500 font-semibold' : 'text-ground-400'}`}>
+                <span className={`text-[9px] mt-1 ${withdrew ? 'text-critical-600 font-semibold' : 'text-ground-400'}`}>
                   {t(withdrew ? 'sponsorPortal.journey.withdrew' : `sponsorPortal.journey.${s.key}`)}
                 </span>
               </div>

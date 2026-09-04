@@ -198,7 +198,7 @@ export default function CourseDataDashboard() {
                 <td className="py-2">{t('admin.courseData.src.uptvet')}</td>
                 <td className="py-2 text-right">{coverage.tvet_have}</td>
                 <td className="py-2 text-right">{coverage.uptvet_available ?? dash}</td>
-                <td className={`py-2 text-right ${coverage.uptvet_gap ? 'text-caution-600 font-medium' : 'text-ground-400'}`}>
+                <td className={`py-2 text-right ${coverage.uptvet_gap ? 'text-caution-700 font-medium' : 'text-ground-400'}`}>
                   {coverage.uptvet_gap ?? dash}
                 </td>
               </tr>
@@ -225,9 +225,9 @@ export default function CourseDataDashboard() {
                   {t('admin.courseData.lastRun')}: {fmtDate(linkHealth.last_run_at)}
                 </p>
                 <ul className="text-sm space-y-1">
-                  <li className="flex justify-between"><span>{t('admin.courseData.alive')}</span><span className="text-positive-600">{linkHealth.summary.alive ?? dash}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.alive')}</span><span className="text-positive-700">{linkHealth.summary.alive ?? dash}</span></li>
                   <li className="flex justify-between"><span>{t('admin.courseData.broken')}</span><span className={brokenCount > 0 ? 'text-critical-600 font-medium' : 'text-ground-400'}>{brokenCount}</span></li>
-                  <li className="flex justify-between"><span>{t('admin.courseData.accessBlocked')}</span><span className={gatedCount > 0 ? 'text-caution-600' : 'text-ground-400'}>{gatedCount}</span></li>
+                  <li className="flex justify-between"><span>{t('admin.courseData.accessBlocked')}</span><span className={gatedCount > 0 ? 'text-caution-700' : 'text-ground-400'}>{gatedCount}</span></li>
                   <li className="flex justify-between"><span>{t('admin.courseData.couldntVerify')}</span><span className="text-ground-500">{unverifiedCount}</span></li>
                   {Number(linkHealth.summary.insecure) > 0 && (
                     <li className="flex justify-between text-ground-400"><span>{t('admin.courseData.insecure')}</span><span>{linkHealth.summary.insecure}</span></li>
@@ -275,7 +275,7 @@ export default function CourseDataDashboard() {
 
           {gatedGroups.length > 0 && (
             <div className="mb-5">
-              <h3 className="text-sm font-semibold text-caution-600 mb-1">
+              <h3 className="text-sm font-semibold text-caution-700 mb-1">
                 {t('admin.courseData.gatedHeader')} ({gatedCount})
               </h3>
               <p className="text-xs text-ground-400 mb-2">{t('admin.courseData.gatedHint')}</p>

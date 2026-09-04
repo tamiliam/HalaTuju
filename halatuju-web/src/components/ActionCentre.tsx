@@ -846,7 +846,7 @@ export default function ActionCentre({
   const awaitCard = (
     <div className="rounded-2xl border border-positive-200 bg-positive-50 p-6">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-positive-600 text-sm text-white">✓</span>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-positive-fill text-sm text-positive-fill-ink">✓</span>
         <h2 className="font-semibold text-ground-900">{t('scholarship.actionCentre.awaitTitle')}</h2>
       </div>
       <p className="mt-1 text-sm text-ground-700">
@@ -974,7 +974,7 @@ export default function ActionCentre({
       {/* Shortlisted (pre-submit) all-done banner. */}
       {!formLocked && open.length === 0 && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-positive-200 bg-positive-50 p-5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-positive-600 text-sm text-white">✓</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-positive-fill text-sm text-positive-fill-ink">✓</span>
           <p className="font-medium text-positive-900">{t('scholarship.actionCentre.allDone')}</p>
         </div>
       )}

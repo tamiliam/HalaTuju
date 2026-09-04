@@ -89,13 +89,13 @@ export default function SponsorDetailsForm() {
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <div>
           <label className="block text-sm font-medium text-ground-700 mb-1">
-            {t('sponsorAuth.fullName')} <span className="text-critical-500">*</span>
+            {t('sponsorAuth.fullName')} <span className="text-critical-600">*</span>
           </label>
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
         </div>
         <div>
           <label className="block text-sm font-medium text-ground-700 mb-1">
-            {t('sponsorAuth.country')} <span className="text-critical-500">*</span>
+            {t('sponsorAuth.country')} <span className="text-critical-600">*</span>
           </label>
           <select value={country} onChange={(e) => setCountry(e.target.value)} className={inputCls}>
             {COUNTRIES.map((c) => (
@@ -105,7 +105,7 @@ export default function SponsorDetailsForm() {
         </div>
         <div>
           <label className="block text-sm font-medium text-ground-700 mb-1">
-            {t('sponsorAuth.phone')} <span className="text-critical-500">*</span>
+            {t('sponsorAuth.phone')} <span className="text-critical-600">*</span>
           </label>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 px-3 py-2 border border-ground-300 rounded-lg bg-ground-50 text-sm text-ground-600 whitespace-nowrap">{flagOf(country)} +{dial}</span>
@@ -115,7 +115,7 @@ export default function SponsorDetailsForm() {
         </div>
         <div>
           <label className="block text-sm font-medium text-ground-700 mb-1">
-            {t('sponsorAuth.source')} <span className="text-critical-500">*</span>
+            {t('sponsorAuth.source')} <span className="text-critical-600">*</span>
           </label>
           <select value={source} onChange={(e) => setSource(e.target.value)} className={inputCls}>
             <option value="">{t('sponsorAuth.sourcePlaceholder')}</option>

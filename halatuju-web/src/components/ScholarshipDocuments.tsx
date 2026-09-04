@@ -134,7 +134,7 @@ function FileChip({
           <UploadTrigger docType={docType} busy={busy} onUpload={onUpload}
             label={busy ? t('scholarship.docs.uploading') : t('scholarship.docs.replace')} />
         )}
-        <button onClick={() => onDelete(doc.id)} className="text-sm text-critical-500 hover:underline">
+        <button onClick={() => onDelete(doc.id)} className="text-sm text-critical-600 hover:underline">
           {t('scholarship.docs.remove')}
         </button>
       </span>
@@ -210,7 +210,7 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
       </div>
       {suspect && (
         <div className="mt-2 flex items-start gap-2 rounded-xl border border-caution-200 bg-caution-50 px-3 py-2.5">
-          <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+          <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
           <p className="text-xs text-caution-800">{t('scholarship.docs.icCheck.notGenuine')}</p>
@@ -394,7 +394,7 @@ function GenuinenessNote({ doc, t }: { doc: ApplicantDocument; t: (key: string) 
   if (!s || s === 'genuine') return null   // show for any non-genuine canonical status (suspect / not_<type>)
   return (
     <div className="mt-2 flex items-start gap-2 rounded-xl border border-caution-200 bg-caution-50 px-3 py-2.5">
-      <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
+      <svg className="mt-0.5 h-4 w-4 shrink-0 text-caution-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
       </svg>
       <p className="text-xs text-caution-800">{t('scholarship.docs.genuineness.note')}</p>
@@ -825,7 +825,7 @@ function CollapsibleSection({
           done ? (open ? 'bg-positive-50' : 'bg-positive-50/70') : 'bg-ground-50/60'}`}
       >
         <span aria-hidden className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${
-          done ? 'bg-positive-600 text-white' : 'border border-ground-200 bg-ground-100 text-ground-400'}`}>
+          done ? 'bg-positive-fill text-positive-fill-ink' : 'border border-ground-200 bg-ground-100 text-ground-400'}`}>
           {done ? (
             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -909,7 +909,7 @@ function SingleDocCard({
   const title = (
     <>
       {titleOverride ?? t(`scholarship.docs.type.${docType}`)}
-      {required && <span className="text-critical-500"> *</span>}
+      {required && <span className="text-critical-600"> *</span>}
     </>
   )
 
@@ -978,7 +978,7 @@ function SingleDocCard({
           aria-expanded={open}
           className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${open ? 'bg-positive-50' : 'bg-positive-50/70'} focus:outline-none focus-visible:ring-2 focus-visible:ring-positive-500`}
         >
-          <span aria-hidden className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-positive-600 text-white">
+          <span aria-hidden className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-positive-fill text-positive-fill-ink">
             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -1125,7 +1125,7 @@ function IncomeProofCard({
                 </span>
                 <button
                   onClick={() => onDelete(d.id)}
-                  className="text-critical-500 hover:underline ml-2 shrink-0"
+                  className="text-critical-600 hover:underline ml-2 shrink-0"
                 >
                   {t('scholarship.docs.remove')}
                 </button>
@@ -1584,7 +1584,7 @@ function IncomeWizard({
                   shown ? 'border-positive-200 bg-positive-50/40' : 'border-dashed border-ground-200 bg-ground-0'}`}>
                   <div className="flex items-start gap-2">
                     <span aria-hidden className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full ${
-                      shown ? 'bg-positive-600 text-white' : 'border border-ground-300 text-ground-400'}`}>
+                      shown ? 'bg-positive-fill text-positive-fill-ink' : 'border border-ground-300 text-ground-400'}`}>
                       {shown ? (
                         <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                       ) : (

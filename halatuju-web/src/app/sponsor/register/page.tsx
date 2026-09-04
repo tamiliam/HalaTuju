@@ -128,29 +128,29 @@ export default function SponsorRegisterPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.fullName')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.fullName')} <span className="text-critical-600">*</span></label>
                   <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.email')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.email')} <span className="text-critical-600">*</span></label>
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
                   {emailInvalid && <p className="text-xs text-critical-600 mt-1">{t('sponsorAuth.emailInvalid')}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.password')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.password')} <span className="text-critical-600">*</span></label>
                   <div className="rounded-lg bg-info-50/70 border border-info-100 px-3 py-2 mb-2 text-xs text-ground-600">
                     <p className="font-medium text-ground-700 mb-1">{t('sponsorAuth.pwRulesTitle')}</p>
                     <ul className="space-y-0.5">
-                      <li className={pw.minLength ? 'text-positive-600' : ''}>{pw.minLength ? '✓' : '•'} {t('sponsorAuth.pwMinLength')}</li>
-                      <li className={pw.mixedCase ? 'text-positive-600' : ''}>{pw.mixedCase ? '✓' : '•'} {t('sponsorAuth.pwMixedCase')}</li>
-                      <li className={pw.hasNumber ? 'text-positive-600' : ''}>{pw.hasNumber ? '✓' : '•'} {t('sponsorAuth.pwNumber')}</li>
+                      <li className={pw.minLength ? 'text-positive-700' : ''}>{pw.minLength ? '✓' : '•'} {t('sponsorAuth.pwMinLength')}</li>
+                      <li className={pw.mixedCase ? 'text-positive-700' : ''}>{pw.mixedCase ? '✓' : '•'} {t('sponsorAuth.pwMixedCase')}</li>
+                      <li className={pw.hasNumber ? 'text-positive-700' : ''}>{pw.hasNumber ? '✓' : '•'} {t('sponsorAuth.pwNumber')}</li>
                     </ul>
                   </div>
                   <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} autoComplete="new-password" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.reenterPassword')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.reenterPassword')} <span className="text-critical-600">*</span></label>
                   <input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} className={inputCls} autoComplete="new-password" />
                   {password2.length > 0 && !pwMatch && (
                     <p className="text-xs text-critical-600 mt-1">{t('sponsorAuth.pwMismatch')}</p>
@@ -158,7 +158,7 @@ export default function SponsorRegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.country')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.country')} <span className="text-critical-600">*</span></label>
                   <select value={country} onChange={(e) => setCountry(e.target.value)} className={inputCls}>
                     {COUNTRIES.map((c) => (
                       <option key={c.iso2} value={c.iso2}>{flagOf(c.iso2)} {c.name} (+{c.dial})</option>
@@ -166,7 +166,7 @@ export default function SponsorRegisterPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.phone')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.phone')} <span className="text-critical-600">*</span></label>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-3 py-2 border border-ground-300 rounded-lg bg-ground-50 text-sm text-ground-600 whitespace-nowrap">
                       {flagOf(country)} +{dial}
@@ -178,7 +178,7 @@ export default function SponsorRegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.source')} <span className="text-critical-500">*</span></label>
+                  <label className="block text-sm font-medium text-ground-700 mb-1">{t('sponsorAuth.source')} <span className="text-critical-600">*</span></label>
                   <select value={source} onChange={(e) => setSource(e.target.value)} className={inputCls}>
                     <option value="">{t('sponsorAuth.sourcePlaceholder')}</option>
                     {SPONSOR_SOURCES.map((s) => <option key={s} value={s}>{t(`sponsorAuth.sourceOption.${s}`)}</option>)}

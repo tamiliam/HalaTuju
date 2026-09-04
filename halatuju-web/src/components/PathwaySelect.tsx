@@ -29,7 +29,7 @@ export default function PathwaySelect({
 
   if (loading) {
     return (
-      <select className="input text-ground-400" disabled>
+      <select className="input text-ground-placeholder" disabled>
         <option>{t('scholarship.apply.plan.loading')}</option>
       </select>
     )
