@@ -8749,3 +8749,132 @@ setting, and the response carries the actual state.
 
 **Revisit if:** an import or bulk-provisioning path ever needs to create a live programme in one
 step — that is a different caller with a different audit story, and should say so explicitly.
+
+---
+
+## `ground-400` is the muted-INK stop, and placeholders get their own token — Layer 1 F7e, 2026-09-04
+
+**Date:** 2026-09-04. **Decided by:** owner, on the record, from a re-measurement that
+contradicted the ticket.
+
+**Decision:** `--ground-400` is redefined as the **muted-ink** stop and moved to a value that
+clears 4.5 on the tightest ground it ever sits on, in both modes (light `#656d7a`, dark
+`#b4bac4`). A **new `--ground-placeholder`** keeps today's `#9ca3af` in both modes, and the
+three call sites that actually meant "placeholder" move onto it.
+
+**Alternatives considered:** (a) move the token only, as the roadmap framed it — one edit;
+(b) move ~150 call sites onto `ground-500`, as the roadmap's other half framed it.
+
+**Rationale, and why the framing itself was wrong:**
+
+- **(b) does not work.** `ground-500` on a **well** (`ground-100`) measures **4.39** against a
+  bar of 4.5. All ~400 edits would have been made and the chip cluster in TD-224 would still
+  have been failing. The well is the ground that decides — measuring against the *card* is how
+  `ground-500` looked comfortable at 4.83 while the chips it painted read 4.39.
+- **The count was wrong too:** 404 call sites across 102 files, not ~150.
+- **The token was NAMED for the smaller role.** `.input` spelled
+  `placeholder:text-ground-400`, and the dark block's own comment said *"placeholder text"* —
+  yet **395 of 404 sites use it as muted body text.** Splitting the small role out is ~10
+  edits and leaves no trap; (a) alone would have darkened every placeholder in the product,
+  making an empty field read as a filled one.
+
+**Trade-offs:** every muted label in the product is now visibly darker. That is the point of
+the sprint, and it is stated plainly rather than described as invisible. The ramp also has one
+role token sitting beside its numbered stops, which is a shape the codebase already carries
+(`--brand-fill`, `--brand-shape`, `category-N`).
+
+**⚠ Placeholder is EXEMPT from the ink bar, by design and not by oversight.** A placeholder is
+deliberately fainter than content. A guard in `theme.test.ts` pins the exemption *and* pins
+that the token cannot silently collapse back onto `ground-400`.
+
+**Revisit if:** a legibility complaint arrives about placeholder text specifically — that is
+the case the exemption trades against, and it has not been reported.
+
+---
+
+## The four tone ramps take F7a's fill role and F7b's text move — Layer 1 F7e, 2026-09-04
+
+**Date:** 2026-09-04. **Decided by:** owner ("yes — same sprint"), on the record.
+
+**Decision:** `--positive-fill` / `-fill-hover` / `-fill-ink` and the same three for `caution`,
+`critical` and `info`, built as **`var()` indirections onto a stop, never literals** — the
+`--brand-fill` pattern verbatim. Light resolves to `-700`/`-600`; dark resolves all four to
+`-600` with `var(--ground-50)` as ink. Separately, tone INK used as small **text** moves one
+stop darker.
+
+**Alternatives considered:** (a) move each tone fill down its ramp until white ink reads;
+(b) fix only the worst offender (the cockpit Accept button) and leave the rest.
+
+**Rationale:** (a) is the trap F7a already fell into and recorded — moving `brand-400` let
+white ink read at 5.82 and dropped the button to **2.52** against its own card. A fill is
+squeezed from two ends at once: its ink needs 4.5 and the fill itself needs 3.0 against the
+card, and no single stop can satisfy both across an inverting ground. (b) leaves the pattern
+ungeneralised for a third time — **it was named at F7a, named again at F7b, and generalised
+zero times**, which is precisely how TD-224 reached production.
+
+**⚠ TEXT ONLY on the ink move.** `bg-`, `border-`, `ring-`, `fill-` and `stroke-` are SHAPES
+whose WCAG bar is 3.0, and they were deliberately left alone. Moving a dot or a border would
+change how the product looks for no accessibility gain. `CourseCard`'s merit bar is now three
+separate class expressions for exactly this reason: the **dot** keeps its plain stop, the
+**bar** takes the fill role, and the **number on the bar** takes the fill ink.
+
+**Trade-offs:** ~46 filled controls change ink, and two F2b/F5 semantic guards had to be
+respelled. Each respelling carries a comment saying the CLAIM is unchanged and only the
+spelling moved — a suspended sponsor is still `caution` at filled weight; `graduated` is still
+filled against a tinted `on_track`.
+
+**Revisit if:** a tenant ever supplies tone colours. Today the tones are fixed platform tokens
+and only the brand is tenant-settable — which is also why `contrast.py` was not widened (below).
+
+---
+
+## `contrast.py` was NOT widened; the tone guard lives in `theme.test.ts` — Layer 1 F7e, 2026-09-04
+
+**Date:** 2026-09-04. **Decided by:** engineering, departing from the sprint plan.
+
+**Decision:** the F7e plan listed *"`contrast.py` gains a pair per tone fill and a pair for
+muted ink on each ground"* as a deliverable. It was **not** built. Five new guards went into
+`halatuju-web/src/lib/__tests__/theme.test.ts` instead, and `contrast.py`'s seven brand pairs
+are unchanged.
+
+**Rationale:** `contrast.py` is not a general contrast gate — it is the **validator for a
+tenant-supplied brand hex**, run when an `org_admin` picks a colour, and it answers *"can this
+colour be used?"*. The tone ramps and the ground ramp are **fixed platform tokens**; no tenant
+can set them, so there is no input for that validator to refuse. Adding tone pairs there would
+have made every tenant's colour submission re-measure constants that cannot vary with it —
+work that always passes, on a surface whose job is to sometimes fail.
+
+The pairs that DO need naming are properties of the **stylesheet**, so they are asserted where
+the stylesheet is read: `theme.test.ts` parses `globals.css`, follows each `var()` indirection
+to the stop it names, and measures. The lesson *"a gate is blind to every pair it does not
+name"* is honoured — this records **where** the pairs were named, not that they were skipped.
+
+**Trade-offs:** the arc's contrast assertions now live in two files rather than one, split by
+what varies (tenant input) versus what is fixed (platform tokens). That split is deliberate
+and is stated in both files' comments.
+
+**Revisit if:** tenants are ever given tone or ground colours. Then they become validator
+input and the pairs belong in `contrast.py` after all.
+
+---
+
+## TD-223 is deferred to F7f, against the roadmap's instruction — Layer 1 F7e, 2026-09-04
+
+**Date:** 2026-09-04. **Decided by:** engineering, in the plan, before building.
+
+**Decision:** links spelled `info` on F1–F3 surfaces and `brand` on F4–F6 surfaces are **not**
+unified in F7e. TD-223 becomes **F7f**.
+
+**Rationale:** the roadmap said to fold it in because it *"touches the same call sites"*.
+Measured: **89 sites across 49 files**, and the overlap with the tone-fill files is small. It
+would have taken F7e from ~48 files to ~90 — a different change with a different blast radius,
+in a sprint whose deliverable is already the largest remaining Layer 1 item.
+
+**Why deferring is safe rather than a decision postponed:** A2's contrast gate already carries
+a `link_on_card` pair asserting **brand**, and F7b re-pinned brand text at `-600`. The design
+of record already says which is right. F7f is unfinished **conversion**, with nothing left to
+decide.
+
+**Revisit if:** a tenant with a non-blue brand onboards before F7f runs — they are the only
+audience who can see the inconsistency, since both spellings render blue on the platform's own
+colour.

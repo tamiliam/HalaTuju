@@ -2,6 +2,78 @@
 
 All notable changes to this project will be documented in this file.
 
+## Layer 1 F7e — the contrast sprint - 2026-09-04
+
+**Sprint. SHIPPED AND DEPLOYED. TD-224 (high) is CLOSED.** `main` at `242b60fa`; only the WEB
+trigger fired (0 Python files changed); Cloud Build SUCCESS on `242b60f`; serving
+**halatuju-web-00824-v55** at 100%, api unchanged at `halatuju-api-00975-nrj`. All eight public
+routes 200; no error logs since the deploy; the served stylesheets were downloaded and read back
+rather than assumed. **NO MIGRATION, NO BACKEND** — 68 files, web only. Retro
+`docs/retrospective-2026-09-04-f7e-contrast.md`; decisions ×4; lessons ×8.
+jest 1692 -> **1697**; pytest **5844** (untouched); tsc **24** (baseline); lint **0**;
+i18n **4745 × 3** (no new keys); build clean.
+
+**⚠ THIS RELEASE IS VISIBLE.** Every muted label in the product darkens and ~46 filled controls
+change ink. That is the deliverable, not a side effect.
+
+**Measured in a browser over all 25 routes, in both modes** (`docs/contrast-sweep.md`):
+
+| mode | before | after |
+|---|---|---|
+| **light** | **263 elements / 55 distinct** | **1 / 1** |
+| dark | 54 / 11 | **1 / 1** |
+
+The survivor in each mode is the decorative `·` separator, excluded by the procedure's own rules
+and **said so** rather than quietly dropped.
+
+### Changed
+- **`--ground-400` is the muted-INK stop now** (light `#656d7a`, dark `#b4bac4`), clearing 4.5 on
+  a **well** — the tightest ground it sits on — in both modes. **The token was NAMED for its
+  smaller role:** `.input` spelled `placeholder:text-ground-400` and the dark block commented it
+  *"placeholder text"*, yet **395 of its 404 call sites are muted body text.** `--ground-500`
+  moved with it (`#585f6b`).
+- **The four TONE ramps got `--<tone>-fill` / `-fill-hover` / `-fill-ink`** — F7a's `--brand-fill`
+  pattern verbatim, as `var()` indirections onto a stop (never literals, so a tenant's inline
+  `:root` override still resolves). Light resolves to `-700`/`-600`; dark resolves all four to
+  `-600` with `var(--ground-50)` as ink. Worst site fixed: the cockpit's **Accept** button, 3.30
+  in light and **1.40** in dark.
+- **Tone INK as small text moved one stop darker** — F7b's move, generalised. On a card in light:
+  positive 2.28/3.30 -> **5.02**, caution 2.15/3.19 -> **5.02**, critical 3.76 -> **4.83**, info
+  3.68 -> **5.17**. `critical-600` and `info-600` already passed and did **not** move.
+- **⚠ TEXT ONLY.** `bg-`, `border-`, `ring-`, `fill-` and `stroke-` are SHAPES whose bar is 3.0 and
+  were deliberately left alone. `CourseCard`'s merit bar is three separate class expressions for
+  this reason: the **dot** keeps a plain stop, the **bar** takes the fill role, the **number on
+  the bar** takes the fill ink.
+- Two F2b/F5 semantic guards **respelled onto the roles, not re-decided** — a suspended sponsor is
+  still `caution` at filled weight; `graduated` is still filled against a tinted `on_track`. Each
+  carries a comment saying so.
+
+### Added
+- **`--ground-placeholder`** (`#9ca3af`, both modes) — a ROLE, not a stop. Placeholders look
+  exactly as they did, and are **exempt from the ink bar by design**: darkening one makes an empty
+  field read as a filled one. Three call sites moved onto it.
+- **Five guards in `theme.test.ts`**, each naming a pair the old guards did not: every ink stop
+  clears AA **on a well** in both modes (failure prints the actual ratio); the ink ramp stays
+  monotonic; **a filled control may never be spelled as a tone stop again**; every fill clears
+  both bars (ink 4.5 on the fill, fill 3.0 on the card); placeholder stays separate and exempt.
+- `docs/contrast-sweep.md` gained a before/after results table and the `CourseCard` case in bold.
+
+### Fixed
+- **The score number on a course card's merit bar** — **1.67** on `caution-400`. Its fill class
+  and its `text-white` sit **twenty lines apart**, so no line-scanning codemod could ever have
+  paired them. **Only the browser sweep saw it.**
+- The **"Awaiting QC"** chip (`bg-info-400 text-info-900`, 3.38 dark / 4.07 light). It carries
+  TONE ink rather than white, so the codemod's pair rule never matched it.
+
+### Deferred
+- **TD-223 (links `info` vs `brand`) is now F7f.** The roadmap said to fold it in because it
+  "touches the same call sites"; measured, it is **89 sites across 49 files** with small overlap,
+  taking the sprint from ~48 files to ~90. Nothing is left to decide — A2's `link_on_card` pair
+  already asserts brand — so F7f is unfinished conversion.
+- **`contrast.py` was NOT widened, deliberately.** It validates a tenant-supplied brand hex; the
+  tone and ground ramps are fixed platform tokens no tenant can set, so there is no input for it
+  to refuse. The pairs went where the stylesheet is read. See `docs/decisions.md`.
+
 ## S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT - 2026-09-04
 
 **Sprint. SHIPPED AND DEPLOYED.** `main` at `e07a09bb`; both Cloud Builds SUCCESS on `e07a09b`;

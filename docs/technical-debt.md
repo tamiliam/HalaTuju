@@ -2935,7 +2935,14 @@ product-wide call rather than a leftover of any one surface. F7d deliberately di
 that sprint's deliverable was the switch and the flip, and a link recolour across five sprints'
 worth of files is a different change with a different blast radius.
 
-**Status:** Open. Sized as part of **F7e** (see TD-224), which touches the same call sites.
+**Status:** Open. **DEFERRED OUT OF F7e AND RE-SIZED — it is now `F7f`.** The premise above
+("touches the same call sites") was measured at F7e's planning and is **false**: TD-223 is **89
+sites across 49 files**, and the overlap with F7e's tone-fill files is small. Folding it in would
+have taken F7e from ~48 files to ~90. Nothing is left to decide — A2's `link_on_card` pair already
+asserts **brand** — so F7f is unfinished conversion, not an open question.
+
+**Only a tenant with a non-blue brand can see this**, since both spellings render blue on the
+platform's own colour. That is the trigger to promote it.
 
 ---
 
@@ -2984,7 +2991,40 @@ ruling on whether `ground-400` moves or every call site moves to `ground-500`. M
 one edit and changes every muted label in the product; moving the call sites is ~150 edits and
 leaves the token as a trap for the next person. **That is an owner decision, not a repaint's.**
 
-**Status:** Open. **This is F7e**, and it is the largest remaining Layer 1 item.
+**Status:** ✅ **RESOLVED — Layer 1 F7e, 2026-09-04, DEPLOYED (`242b60fa`, web-00824-v55).**
+Re-measured with the same procedure over the same 25 routes in both modes:
+
+| mode | before | after |
+|---|---|---|
+| **light** | **263 / 55** | **1 / 1** |
+| dark | 54 / 11 | **1 / 1** |
+
+The one survivor in each mode is the decorative `·` separator, excluded by the procedure's own
+rules and **said so** in `docs/contrast-sweep.md` rather than quietly dropped.
+
+**⚠ THE TICKET'S OWN FRAMING OF THE OWNER DECISION WAS WRONG IN BOTH HALVES.** It offered "move
+`ground-400` (one edit)" or "move ~150 call sites to `ground-500`". Re-derived at F7e's planning:
+there are **404 call sites across 102 files**, and **`ground-500` on a well measures 4.39** against
+a bar of 4.5 — so option two would have failed *after* all ~400 edits. A third option existed
+because the sites were classified before a role was chosen: **`ground-400` was NAMED for its
+smaller role** (3 placeholder sites) and used as muted ink in ~395. The token became the muted-ink
+stop, a new `--ground-placeholder` took the small role, and it cost ~10 edits.
+
+**⚠ DARK FAILED TOO** — `ground-400` on a well measured **4.06** in dark. This ticket recorded it
+as a light-mode problem; both modes moved.
+
+**What shipped:** the four tone ramps got `--<tone>-fill` / `-fill-hover` / `-fill-ink` (F7a's
+pattern verbatim, `var()` indirections so a tenant override still resolves) and tone INK as small
+**text** moved one stop darker — shapes (`bg-`/`border-`/`ring-`) deliberately untouched at their
+3.0 bar. Five guards in `theme.test.ts` name the pairs: ink on a **well** in both modes, ramp
+monotonicity, a filled control may never be spelled as a tone stop, every fill clears both bars,
+and placeholder stays separate and exempt.
+
+**`contrast.py` was deliberately NOT widened** — it validates a tenant-supplied brand hex, and the
+tone/ground ramps are fixed platform tokens no tenant can set. See `docs/decisions.md`.
+
+Retro `docs/retrospective-2026-09-04-f7e-contrast.md`. **TD-223 was deferred out of this sprint
+and is now F7f** (see above).
 
 ---
 

@@ -441,15 +441,72 @@ of one lesson in three sprints (F7b: one bar hides the other kind; F7c: a folder
 **▶ ALSO FOUND:** the brand logo is drawn for a light ground and its icon half-disappears in dark
 (**TD-225** — artwork, and tenants supply their own, so it is the owner's call).
 
-#### F7e — the contrast sprint (NEW, raised by F7d's walk)
-Give the four TONE ramps the F7a/F7b treatment, and settle the muted-ink stops. See **TD-224**
-(high), and fold in **TD-223** (links `info` vs `brand`) which touches the same call sites.
-*Largest remaining Layer 1 item. ~44 call sites carrying white ink on a tone fill, across 22 files,
-plus four fill roles and a widened gate — F7a's size exactly.*
+#### ✅ F7e — SHIPPED **AND DEPLOYED** 2026-09-04. **TD-224 IS CLOSED. THE PRODUCT PASSES AA.**
 
-**⚠ ONE PART OF IT IS AN OWNER DECISION, NOT A REPAINT'S:** move `ground-400` (one edit, changes
-every muted label in the product) or move ~150 call sites to `ground-500` (and leave the token as a
-trap for the next person).
+Retro `docs/retrospective-2026-09-04-f7e-contrast.md`; decisions ×4; lessons ×8. NO migration,
+NO backend — web only, 68 files. jest 1692 → **1697**; pytest **5844** (untouched); tsc **24**
+(baseline); lint **0**; i18n **4745 × 3** (no new keys); build clean.
+
+**LIVE: `halatuju-web-00824-v55`** (build `242b60fa` SUCCESS; **only the WEB trigger fired**, 0
+Python files changed), api unchanged at `00975-nrj`. Eight public routes 200; no error logs; the
+served stylesheets were downloaded and read back rather than assumed.
+
+**▶ THE MEASUREMENT, same procedure and same 25 routes as F7d's walk:**
+
+| mode | before | after |
+|---|---|---|
+| **light** | **263 elements / 55 distinct** | **1 / 1** |
+| dark | 54 / 11 | **1 / 1** |
+
+The survivor in each mode is the decorative `·` separator, excluded by the procedure's own rules
+and **said so** in `docs/contrast-sweep.md` rather than quietly dropped.
+
+**▶ THE TICKET'S OWNER DECISION WAS WRONG IN BOTH HALVES, AND RE-DERIVING IT SAVED ~390 EDITS.**
+The scoping above offered "move `ground-400` (one edit)" or "move ~150 call sites to `ground-500`".
+Measured at planning: there are **404 call sites across 102 files**, and **`ground-500` on a well
+(`ground-100`) is 4.39** against a bar of 4.5 — so option two would have failed *after* all ~400
+edits. A third option existed because the sites were classified before a role was chosen (F7a's
+lesson): **`ground-400` was NAMED for its smaller role** — `.input` spelled
+`placeholder:text-ground-400` and the dark block commented it *"placeholder text"* — while **395
+of its 404 sites are muted body text.** The token became the muted-ink stop, a new
+`--ground-placeholder` took the small role, and it cost **~10 edits**.
+
+**▶ DARK FAILED TOO.** TD-224 recorded this as a light-mode problem; `ground-400` on a well in dark
+measured **4.06**. Both modes moved.
+
+**▶ F7a AND F7b'S BILL, PAID.** The four tone ramps got `--<tone>-fill` / `-fill-hover` /
+`-fill-ink` — the `--brand-fill` pattern verbatim, `var()` indirections so a tenant override still
+resolves — and tone INK as small **text** moved one stop darker. The cockpit's **Accept** button
+was `bg-positive-600 text-white`: **3.30** light, **1.40** dark. **Shapes were deliberately left
+alone** at their 3.0 bar.
+
+**▶ THE ONE ONLY A BROWSER COULD FIND.** `CourseCard`'s merit bar holds its fill class and its
+`text-white` **twenty lines apart**, so the codemod's one-line pair rule could never have matched
+them. The student's score measured **1.67**. The bar and its dot are now separate classes on
+purpose: a dot carries no words and keeps the plain stop.
+
+**▶ THE GATE WAS WIDENED WHERE WIDENING IT MEANS SOMETHING.** Five guards went into
+`theme.test.ts` (ink on a **well** in both modes, ramp monotonicity, "a filled control may never be
+spelled as a tone stop", every fill clears both bars, placeholder separate and exempt).
+**`contrast.py` was NOT widened, deliberately** — it validates a *tenant-supplied brand hex*, and
+the tone/ground ramps are fixed platform tokens no tenant can set, so pairs there would re-measure
+constants that can never fail. Recorded as a decision, not a gap.
+
+**▶ TD-223 WAS DEFERRED OUT — IT IS NOW F7f.** This block previously said to fold it in because it
+"touches the same call sites". Measured: **89 sites across 49 files**, small overlap, taking the
+sprint from ~48 files to ~90.
+
+#### F7f — the link colour (TD-223, low) — the last Layer 1 item
+
+Links are spelled `info` on F1–F3 surfaces and `brand` on F4–F6 surfaces, split by which sprint
+converted the file. **89 sites across 49 files.**
+
+**Nothing is left to decide.** A2's contrast gate carries a `link_on_card` pair asserting **brand**,
+and F7b re-pinned brand text at `-600`. This is unfinished conversion, not an open question.
+
+**Only a tenant with a non-blue brand can see it** — both spellings render blue on the platform's
+own colour. That is the trigger, and it is why this sat behind the contrast work rather than in
+front of it.
 
 ---
 

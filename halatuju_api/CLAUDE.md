@@ -550,7 +550,104 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-04, after S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT)
+## Next Sprint (as of 2026-09-04, after Layer 1 F7e — the contrast sprint)
+
+**SHIPPED AND DEPLOYED. TD-224 (high) is CLOSED.** `main` at `242b60fa`; **only the WEB trigger
+fired** (0 Python files changed); Cloud Build SUCCESS on `242b60f`; serving
+**halatuju-web-00824-v55** at 100%, api unchanged at **halatuju-api-00975-nrj**. All eight public
+routes 200; no error logs since; the served stylesheets were downloaded and read back rather than
+assumed. **NO MIGRATION, NO BACKEND** — 68 files, web only. Ledger unchanged and still reconciled
+(scholarship **149/149**, courses **73/73**). Retro
+`docs/retrospective-2026-09-04-f7e-contrast.md`; decisions ×4; lessons ×8.
+jest 1692 -> **1697**; pytest **5844** (untouched); tsc **24** (baseline); lint **0**;
+i18n **4745 × 3** (no new keys); build clean.
+
+**⚠ THIS RELEASE IS VISIBLE, AND THAT IS THE POINT.** Every muted label in the product darkens and
+~46 filled controls change ink. Do not describe it as invisible.
+
+**Measured in a browser over all 25 routes, in BOTH modes** (`docs/contrast-sweep.md`):
+**light 263 elements / 55 distinct -> 1 / 1; dark 54 / 11 -> 1 / 1.** The survivor in each mode is
+the decorative `·` separator, excluded by the procedure's own rules and **said so** rather than
+quietly dropped.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ `--ground-400` IS THE MUTED-INK STOP NOW** (light `#656d7a`, dark `#b4bac4`), clearing 4.5 on
+  a **well** (`ground-100`) — the tightest ground it sits on, and the one that decides. Measuring
+  against the *card* is how `ground-500` looked comfortable at 4.83 while the chips it painted read
+  **4.39** and failed.
+- **⚠ `--ground-placeholder` IS A ROLE AND IS EXEMPT FROM THE INK BAR, BY DESIGN.** A placeholder
+  must stay fainter than content — darkening one makes an empty field read as a filled one. It is
+  `#9ca3af` in both modes and it must not collapse back onto `ground-400`; a guard pins both.
+  **The token was NAMED for this smaller role and USED for the other one** — 3 placeholder sites
+  against ~395 muted-ink sites — which is the whole reason F7e cost ~10 edits and not ~400.
+- **⚠ A FILLED CONTROL IS A ROLE, NEVER A STOP** — `bg-<tone>-fill text-<tone>-fill-ink
+  hover:bg-<tone>-fill-hover` for all four tones, `var()` indirections so a tenant's inline `:root`
+  override still resolves. `bg-positive-600 text-white` measured **3.30** light / **1.40** dark. A
+  guard fails the build if any file pairs `bg-<tone>-<400..800>` with `text-white`.
+- **⚠ THE INK MOVE WAS TEXT ONLY.** `bg-`, `border-`, `ring-`, `fill-`, `stroke-` are SHAPES at a
+  3.0 bar and were left alone deliberately. `CourseCard`'s merit bar is **three** class expressions
+  for exactly this: dot = plain stop, bar = fill role, number-on-the-bar = fill ink.
+- **⚠ `contrast.py` WAS NOT WIDENED, AND THAT IS DELIBERATE.** It validates a **tenant-supplied
+  brand hex**; the tone and ground ramps are fixed platform tokens no tenant can set, so pairs
+  added there would re-measure constants that can never fail. The five new pairs live in
+  `theme.test.ts`, where the stylesheet is actually read. Revisit only if tenants are ever given
+  tone or ground colours.
+- Two F2b/F5 semantic guards were **respelled onto the roles, not re-decided** — each carries a
+  comment saying the CLAIM is unchanged.
+
+**▶ OWNER POST-CHECK (any account; use the theme switch in the header, and check BOTH modes):**
+1. The **footer** on any public page — the copyright line should read as text, not a smudge.
+2. The **officer cockpit** — the field labels beside each fact, and the **Accept** button.
+3. A **course card's merit bar** — the score number sitting on the coloured bar (it was 1.67).
+4. Any **placeholder** (the search box) — it must look **exactly as faint as before**. A
+   placeholder that now reads like a filled-in value is the one thing this sprint could have got
+   wrong.
+
+**▶ ALSO OUTSTANDING FROM S-ASSIGN (deployed 2026-09-04, `e07a09bb`) — post-check not yet done,
+as the BrightPath `org_admin` elanjelian@me.com, NOT the super account:** Sponsors -> open one:
+the acceptance panel lists BOTH gifts, the test gift reads "not open yet", Accept and Take back
+both work. Reviewers -> open one: **no gift line**, correctly (one ACTIVE gift). Invitations ->
+Sponsors: **no gift question**, correctly. Switching the test gift ON is the trigger that makes
+the last two start asking.
+
+**⚠ S-ASSIGN RULES THAT STILL MUST NOT BE TIDIED** (full detail in
+`docs/retrospective-2026-09-04-s-assign.md` + `.claude/ARCHITECTURE_MAP.md`):
+- **NULL MEANS EVERY GIFT on all three columns, and NOTHING was backfilled.** A backfill is correct
+  on the day it runs and rots on the next INSERT — exactly how migration `0123` left the 28/07
+  sponsor with zero memberships. Every reader must treat blank as an ANSWER.
+- **A gift scope is a NARROWING, never a fence.** The org boundary stays `_org_scoped`. A reviewer
+  on another gift is GREYED WITH THE GIFT NAMED, never dropped (the `paused` rule — bug #66).
+- **`DEFAULT_PROGRAMME_CODE` is DELETED**; `signup_programme_for` answers from evidence and **None
+  is a real answer**. **`sync_account_membership(sponsor, programme, …)` is REQUIRED AND
+  POSITIONAL** (the P2a discipline).
+- **TD-230: a source's gift reaches no student yet** — the apply form's list is still the
+  hard-coded `REFERRING_ORG_OPTIONS` constant. A test asserts that; do not read a value in that
+  column as proof the form is narrowed.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+**▶ NEXT — THREE CANDIDATES, OWNER PICKS:**
+1. **TD-229 — the contract template per gift** (medium). Already RULED (2026-09-04,
+   `decisions.md`): a `programme` FK on `ContractTemplate`, and "one ACTIVE per organisation"
+   becomes per GIFT. Not launch-blocking (`BURSARY_AGREEMENT_ENABLED` is OFF) but it blocks a
+   Sabah student ever signing anything. ⚠ `BursaryAgreement.template` is PROTECT — re-homing the
+   live template onto the flagship is a deliberate data step, not a default.
+2. **F7f — links `info` vs `brand` (TD-223, low).** Deferred out of F7e on measurement: **89 sites
+   across 49 files**, small overlap with the tone-fill work. **Nothing is left to decide** — A2's
+   `link_on_card` pair already asserts brand — so this is pure conversion. Only a tenant with a
+   non-blue brand can see the inconsistency today.
+3. **The Sabah apply link + the source list.** TD-230's trigger and PF-1's second half arrive
+   together: a second gift running its own intake needs `/scholarship/apply?p=<code>` publicised
+   AND the referring-school list to stop being a constant.
+
+**⚠ ALSO OPEN:** TD-225 (the brand logo half-disappears in dark — artwork, and tenants supply their
+own, so it is the owner's call); TD-228 (the ORGANISATION crumb filters nothing — trigger is a
+second ORGANISATION, not a second programme); TD-221 (the 24 `tsc` errors that make that gate a
+no-op); ms/ta first drafts, **+23 keys from S-ASSIGN** on top of the backlog.
+
+## Superseded — previous Next Sprint (as of 2026-09-04, after S-ASSIGN — invited by the ORGANISATION, assigned to a GIFT)
 
 **SHIPPED AND DEPLOYED.** `main` at `e07a09bb`, both Cloud Builds SUCCESS on `e07a09b`, serving
 **halatuju-api-00975-nrj** / **halatuju-web-00823-pc5** at 100%. **Migrations `courses/0073` +
