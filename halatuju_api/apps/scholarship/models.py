@@ -122,6 +122,40 @@ class ScholarshipCohort(models.Model):
         default=True, help_text="Currently accepting new applications",
     )
 
+    # ── The round's stated window (owner, 2026-09-06) ────────────────────────────────────────
+    #
+    # ⚠⚠ THESE DATES DESCRIBE. THEY DO NOT OPEN OR CLOSE ANYTHING. `is_open` is the switch and
+    # stays the switch; nothing reads these columns to decide whether a student may apply, and
+    # nothing may be written that does. Owner ruling, 2026-09-06, taken against the alternative
+    # of a scheduled job that opens on the date.
+    #
+    # Two reasons, and the second is the durable one:
+    #   1. `is_open` already means "real students can walk in" (decisions.md, Sabah S2b). A date
+    #      that ALSO opened would be a second switch that can disagree with the first, which is
+    #      the exact shape `lessons.md` warns about — except here the switch already exists, so
+    #      the date must not become a rival to it.
+    #   2. A clock can fire BEFORE SETUP IS FINISHED. Create a gift, type a start date, get
+    #      interrupted, and on that date the round opens with no rules set and no questions
+    #      configured. A person pressing Open cannot do that by accident.
+    #
+    # ⚠ NULL IS A REAL ANSWER, AND NOTHING WAS BACKFILLED. A round with no stated window is a
+    # normal round, not a broken one — every row that existed before this column (the live 2026
+    # intake among them) has NULL, and inventing dates for a round that already ran would be
+    # fiction on an audited row. Any reader must treat blank as "not stated", never as an error.
+    #
+    # If a timer is ever wanted, it is a job built ON TOP of these columns and argued on its own
+    # merits then; it is not a reinterpretation of them.
+    opens_on = models.DateField(
+        null=True, blank=True,
+        help_text='The date this round is STATED to open. Descriptive only — it opens nothing; '
+                  '`is_open` is the switch. NULL means no window was stated.',
+    )
+    closes_on = models.DateField(
+        null=True, blank=True,
+        help_text='The date this round is STATED to close. Descriptive only — it closes nothing. '
+                  'NULL means no window was stated.',
+    )
+
     # ── Shortlisting requirements (consumed by `shortlisting.evaluate`) ──────────────────────
     #
     # ⚠⚠ NULL MEANS THE TEST IS NOT APPLIED (Sabah S2a, owner 2026-09-02). Every one of these was

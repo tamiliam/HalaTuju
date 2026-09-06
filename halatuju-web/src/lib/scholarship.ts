@@ -753,10 +753,41 @@ export function rememberApplyProgramme(
   return (s?.getItem(APPLY_PROGRAMME_KEY) ?? '').trim()
 }
 
+/** Remember a code the student CHOSE, through the same seam as one they arrived with.
+ *
+ *  ⚠ SAME KEY ON PURPOSE. A pick from the chooser and a follow of an organisation's own `?p=`
+ *  link must be indistinguishable from here on — submit reads one value and neither the payload
+ *  nor the backend has any idea which way it was set, so there is exactly one routing path to be
+ *  right about.
+ */
+export function setApplyProgramme(code: string, storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  const clean = (code ?? '').trim()
+  if (clean) s?.setItem(APPLY_PROGRAMME_KEY, clean)
+}
+
 /** Forget it once the application is submitted — a later visit is a fresh decision. */
 export function clearApplyProgramme(storage?: StorageLike): void {
   const s = storage ?? safeSession()
   s?.removeItem(APPLY_PROGRAMME_KEY)
+}
+
+/** Must this student be ASKED which programme they mean, before they fill anything in?
+ *
+ *  ⚠ THE WHOLE POINT IS THE TIMING. `resolve_open_cohort` refuses to guess between two open
+ *  rounds — correctly; guessing once filed a student under the wrong foundation, funded from the
+ *  wrong money, with no error anywhere. But that refusal used to arrive as a 409 AT SUBMIT, after
+ *  the entire form was filled in. This is the same refusal, moved to before the first keystroke.
+ *
+ *  Yes only when BOTH are true: nothing is remembered (no `?p=`, no earlier pick) AND the server
+ *  actually offered a choice. One open round, or a link that named a programme, asks nothing —
+ *  which is every visitor today and stays the common case.
+ */
+export function needsProgrammeChoice(
+  remembered: string,
+  choices: readonly { code: string }[] | undefined,
+): boolean {
+  return !remembered.trim() && (choices?.length ?? 0) > 1
 }
 
 

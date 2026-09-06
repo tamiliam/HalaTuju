@@ -6576,11 +6576,58 @@ REQUIREMENT_FIELDS = (
 )
 
 
+def _window_from(data, current=(None, None)):
+    """Read `opens_on` / `closes_on` off a payload.
+
+    Returns ``(fields, error)`` — ``fields`` is a dict of only the keys the caller actually sent,
+    so a PATCH that mentions neither changes neither.
+
+    ⚠ THREE STATES PER FIELD, AND THE MIDDLE ONE IS THE POINT: absent (leave alone), empty string
+    or null (CLEAR it), or a date (set it). Without an explicit clear there is no way to withdraw
+    a window once stated, and a date somebody can only ever change is a trap — the same reasoning
+    as the nullable requirement thresholds (Sabah S2a).
+
+    ⚠ THE ORDER CHECK READS THE RESULT, NOT THE PAYLOAD. `current` carries what the row holds now,
+    so PATCHing only `closes_on` is still validated against the stored `opens_on`. Checking the
+    payload alone would let two valid-looking edits arrive in sequence and leave the row backwards.
+
+    ⚠ IT REFUSES, IT DOES NOT SWAP. A silent swap turns a typo into a stated fact that nobody was
+    told about, on a date students are shown.
+    """
+    from datetime import date as _date
+    fields, opens, closes = {}, current[0], current[1]
+    for key in ('opens_on', 'closes_on'):
+        if key not in data:
+            continue
+        raw = data.get(key)
+        if raw in (None, ''):
+            fields[key] = None
+        else:
+            try:
+                parsed = _date.fromisoformat(str(raw).strip())
+            except (TypeError, ValueError):
+                return None, key
+            fields[key] = parsed
+        if key == 'opens_on':
+            opens = fields[key]
+        else:
+            closes = fields[key]
+    if opens and closes and closes < opens:
+        return None, 'window_backwards'
+    return fields, None
+
+
 def _cohort_row(c):
     from .models import ScholarshipApplication
     return {
         'id': c.id, 'code': c.code, 'name': c.name, 'year': c.year,
         'is_open': c.is_open, 'is_active': c.is_active,
+        # ⚠ THE STATED WINDOW, AND IT IS DESCRIPTIVE (owner, 2026-09-06). Serialised beside
+        # `is_open` and never instead of it: `is_open` is what decides whether a student may
+        # apply, these two say when the round is MEANT to run. ISO or None — a round with no
+        # stated window is normal, so the client renders a dash, not an error.
+        'opens_on': c.opens_on.isoformat() if c.opens_on else None,
+        'closes_on': c.closes_on.isoformat() if c.closes_on else None,
         # org-fence: same reasoning — the cohort reached here was selected through
         # `programme__in=self._programmes_for(admin)`, so it is already inside the caller's org.
         'applications': ScholarshipApplication.objects.filter(cohort=c).count(),
@@ -6782,6 +6829,11 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
             return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        window, bad_window = _window_from(request.data)
+        if bad_window:
+            return Response({'error': bad_window, 'code': bad_window},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         # ⚠ BOTH THE PROGRAMME AND THE ORGANISATION ARE SET, and they must agree. The application
         # denormalises `owning_organisation` from its cohort, so a cohort carrying one and not the
         # other files students under the wrong fence (TD-177 is exactly this, in a test fixture).
@@ -6792,7 +6844,7 @@ class AdminIntakeYearListView(_ProgrammeScopedBase):
         # in; it gets its own deliberate action below.
         c = ScholarshipCohort.objects.create(
             programme=p, owning_organisation=p.organisation,
-            code=code, name=name, year=year, is_active=True, is_open=False, **reqs,
+            code=code, name=name, year=year, is_active=True, is_open=False, **reqs, **window,
         )
         logger.info('AUDIT intake_year_created cohort=%s programme=%s by=%s',
                     c.code, p.code, admin.email or '')
@@ -6827,6 +6879,13 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
                                 status=status.HTTP_400_BAD_REQUEST)
             c.name = name; changed.append('name')
 
+        window, bad_window = _window_from(request.data, (c.opens_on, c.closes_on))
+        if bad_window:
+            return Response({'error': bad_window, 'code': bad_window},
+                            status=status.HTTP_400_BAD_REQUEST)
+        for f, v in window.items():
+            setattr(c, f, v); changed.append(f)
+
         reqs, bad = _requirements_from(request.data)
         if bad:
             return Response({'error': 'bad_requirement', 'code': 'bad_requirement', 'field': bad},
@@ -6847,15 +6906,31 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
         if 'is_open' in request.data:
             want = bool(request.data.get('is_open'))
             if want:
-                # ⚠ ONE OPEN ROUND PER ORGANISATION, REFUSED HERE RATHER THAN DISCOVERED LATER.
-                # `services.resolve_open_cohort` RAISES when two rounds are open, because picking
-                # one would file a student under the wrong fence (PF-1). That refusal protects the
-                # student, but it arrives at the moment they press Apply. This one arrives at the
-                # moment the admin creates the ambiguity, which is where it can still be undone.
+                # ⚠⚠ ONE OPEN ROUND PER **GIFT PROGRAMME** — NOT PER ORGANISATION (owner,
+                # 2026-09-06: *"Only one round is open for a gift programme. But if the org has two
+                # programmes, there could be two open applications."*).
+                #
+                # This filter said `owning_organisation=` until 2026-09-06, which refused to open
+                # Sabah's round while the flagship's was open — an organisation running two gifts
+                # could only ever take applications for one of them. Do not put it back.
+                #
+                # ⚠ WHAT THE NARROWER RULE COSTS, so nobody re-widens it to "fix" the symptom:
+                # `services.resolve_open_cohort` counts ambiguity across ALL open rounds
+                # platform-wide, deliberately — *"which round?"* is equally unanswerable between
+                # two intakes of the same organisation. So with two rounds open, a student who
+                # arrives on a bare `/scholarship/apply` (no `?p=<code>`) gets refused. That
+                # refusal is CORRECT and must stay: guessing once filed a student under the wrong
+                # foundation, funded from the wrong money, with no error anywhere.
+                #
+                # What was wrong was WHEN it arrived — after the student had filled in the whole
+                # form. The apply page now ASKS which gift before the form (PF-1's own rule, moved
+                # earlier), and the 409 stays as an unreachable backstop.
+                #
+                # The refusal below still arrives at the moment the admin creates the ambiguity,
+                # which is where it can still be undone.
                 from .models import ScholarshipCohort
                 clash = (ScholarshipCohort.objects
-                         .filter(owning_organisation=c.programme.organisation,
-                                 is_open=True, is_active=True)
+                         .filter(programme=c.programme, is_open=True, is_active=True)
                          .exclude(pk=c.pk).values_list('code', flat=True).first())
                 if clash:
                     return Response({'error': 'another_year_open', 'code': 'another_year_open',

@@ -39,6 +39,10 @@ const programme = (over: Partial<api.AdminProgramme> = {}): api.AdminProgramme =
 const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => ({
   id: 10, code: 'bp-2026', name: 'Intake 2026', year: 2026, is_open: true, is_active: true,
   applications: 41,
+  // ⚠ NULL, AND THAT IS THE PRODUCTION SHAPE — every row predating these columns has no stated
+  // window, the live 2026 intake among them, and nothing was backfilled. The dates DESCRIBE; they
+  // open nothing, so a round without them is normal and this fixture stays a normal round.
+  opens_on: null, closes_on: null,
   // BrightPath's LIVE rule: four at A- plus one more at B+, stored as a strong TOTAL of five.
   requirements: {
     min_spm_a_count: 4, min_spm_bplus_count: 5, min_stpm_pngk: null,

@@ -73,10 +73,25 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
     }
   }
 
+  /** ⚠ CREATE NOW LANDS YOU ON THE NEW GIFT'S INTAKE YEAR (2026-09-06). It used to close the
+   *  dialog and stop — the owner's report was that the flow is "disconnected", and a create that
+   *  leaves you back on a list is exactly that: the next step exists, and nobody is taken to it.
+   *
+   *  It goes to the year rather than to Rules because the rules are COLUMNS ON THE YEAR ROW, so a
+   *  gift a minute old has nothing for them to write to.
+   *
+   *  ⚠ IT POINTS, IT DOES NOT DO. Nothing is created for them on arrival — landing somebody on a
+   *  screen is a suggestion; filling it in would be a guess about their gift (PF-1's rule).
+   */
   const create = async () => {
+    const wanted = code.trim().toLowerCase()
     const ok = await run(() => createAdminProgramme(
-      { code: code.trim().toLowerCase(), name_en: nameEn.trim() }, { token: token! }))
-    if (ok) { setOpen(false); setCode(''); setNameEn('') }
+      { code: wanted, name_en: nameEn.trim() }, { token: token! }))
+    if (ok) {
+      setOpen(false); setCode(''); setNameEn('')
+      select(wanted)
+      router.push('/admin/programme?tab=year')
+    }
   }
 
   /** Open a gift's own settings. The choice goes through the breadcrumb switcher's context, so

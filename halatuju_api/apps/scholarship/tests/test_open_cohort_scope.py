@@ -161,17 +161,23 @@ class TestIntakeStatusDoesNotNameAnotherTenantsRound(TestCase):
         self.org_a = _org('tenant-a')
         self.cohort_a = _cohort(self.org_a, 'a-2026')
 
+    # ⚠ `choices` JOINED THIS PAYLOAD AT THE GIFT-SETUP-FLOW SPRINT (2026-09-06) and these exact
+    # comparisons are kept exact ON PURPOSE — they are what would catch a future field leaking
+    # onto a PUBLIC, unauthenticated endpoint. An unambiguous answer carries an EMPTY list; the
+    # list is populated only where a student actually has to choose (below).
+
     def test_one_open_round_still_names_it(self):
         resp = self.client.get('/api/v1/scholarship/intake/')
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json(), {'open': True, 'cohort_name': 'Cohort a-2026'})
+        self.assertEqual(resp.json(),
+                         {'open': True, 'cohort_name': 'Cohort a-2026', 'choices': []})
 
     def test_a_closed_intake_still_reads_closed(self):
         self.cohort_a.is_open = False
         self.cohort_a.save(update_fields=['is_open'])
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/').json(),
-            {'open': False, 'cohort_name': ''},
+            {'open': False, 'cohort_name': '', 'choices': []},
         )
 
     def test_two_open_rounds_stay_OPEN_but_name_neither(self):
@@ -181,6 +187,20 @@ class TestIntakeStatusDoesNotNameAnotherTenantsRound(TestCase):
         body = self.client.get('/api/v1/scholarship/intake/').json()
         self.assertTrue(body['open'])
         self.assertEqual(body['cohort_name'], '')
+
+    def test_a_round_with_NO_programme_is_never_offered_as_a_choice(self):
+        """⚠ FOUND BY THIS SPRINT'S OWN TEST FAILING, and it is a real rule rather than a fixture
+        quirk: these cohorts carry no `programme`, and a choice IS a programme code (`?p=`). A
+        round with no programme has nothing to send, so offering it would hand the student a link
+        that resolves to nothing — worse than the refusal it was meant to replace.
+
+        Every production round has a programme (`0118`–`0124` backfilled all 143 applications), so
+        this is a guard against a malformed row, not a live shape.
+        """
+        _cohort(_org('tenant-b'), 'b-2026')
+        body = self.client.get('/api/v1/scholarship/intake/').json()
+        self.assertTrue(body['open'])          # applications ARE open …
+        self.assertEqual(body['choices'], [])  # … but nothing here can be pointed at
 
 
 # ── P2: the per-organisation apply link ──────────────────────────────────────────────────────
@@ -279,14 +299,59 @@ class TestApplyLinkEndToEnd(TestCase):
         self.assertNotIn('programme_code', app.intake_snapshot or {})
         self.assertNotIn('cohort_code', app.intake_snapshot or {})
 
+    def test_two_open_rounds_OFFER_the_choice_rather_than_leaving_it_to_submit(self):
+        """⚠ THE TIMING FIX, 2026-09-06. The refusal at submit is correct and stays — but a
+        student on a bare `/apply` used to meet it only AFTER filling in the whole form. This
+        endpoint already knew both rounds and threw them away; now it hands them over so the page
+        can ASK first. PF-1's rule is untouched: this OFFERS, it never picks.
+
+        Newly reachable because the owner's per-gift ruling (2026-09-06) lets one organisation run
+        two open rounds — until then, two open rounds meant two tenants.
+
+        The code is the PROGRAMME's, because that is what `?p=` carries and what the resolver
+        narrows on; a cohort code is year-specific and a link pinned to one would rot every intake.
+        """
+        body = self.client.get('/api/v1/scholarship/intake/').json()
+        self.assertTrue(body['open'])
+        self.assertEqual(body['cohort_name'], '')   # still names neither — unchanged
+        self.assertEqual(
+            sorted(c['code'] for c in body['choices']),
+            ['tenant-a-bursary', 'tenant-b-bursary'],
+        )
+        self.assertEqual(
+            sorted(c['name'] for c in body['choices']),
+            ['Cohort a-2026', 'Cohort b-2026'],
+        )
+        # ⚠ And NOTHING beyond what a student needs in order to choose. This endpoint is public
+        # and unauthenticated; an organisation name, an id or a count here would be a leak.
+        for choice in body['choices']:
+            self.assertEqual(set(choice), {'code', 'name'})
+
+    def test_a_choice_the_student_makes_routes_exactly_like_the_link_would(self):
+        """The whole point of handing back the programme code: picking from the list must be
+        indistinguishable from having followed that organisation's own apply link."""
+        chosen = next(c for c in self.client.get('/api/v1/scholarship/intake/').json()['choices']
+                      if c['code'] == 'tenant-b-bursary')
+        resp = self.client.post('/api/v1/scholarship/applications/',
+                                {'programme_code': chosen['code']}, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(ScholarshipApplication.objects.get().owning_organisation_id,
+                         self.org_b.id)
+
     def test_intake_status_answers_for_the_named_programme_only(self):
         body = self.client.get('/api/v1/scholarship/intake/?programme=tenant-b-bursary').json()
-        self.assertEqual(body, {'open': True, 'cohort_name': 'Cohort b-2026'})
+        self.assertEqual(body,
+                         {'open': True, 'cohort_name': 'Cohort b-2026', 'choices': []})
 
     def test_intake_status_hides_whether_an_unknown_programme_exists(self):
         """Public and unauthenticated — 'closed' rather than 404, or anyone could enumerate
-        which organisations are on the platform."""
+        which organisations are on the platform.
+
+        ⚠ AND `choices` STAYS EMPTY HERE, which is the same secret in a second place: listing the
+        open rounds to somebody who named a programme that does not exist would answer the very
+        question the 'closed' reading exists to refuse.
+        """
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/?programme=nope').json(),
-            {'open': False, 'cohort_name': ''},
+            {'open': False, 'cohort_name': '', 'choices': []},
         )

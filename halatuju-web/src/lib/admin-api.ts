@@ -3076,6 +3076,11 @@ export interface AdminIntakeYear {
   is_active: boolean
   applications: number
   requirements: ProgrammeRequirements
+  /** ⚠ THE ROUND'S STATED WINDOW, AND IT DESCRIBES — IT OPENS NOTHING (owner, 2026-09-06).
+   *  `is_open` is the switch and stays the switch; these two say when the round is MEANT to run.
+   *  `null` means no window was stated, which is a normal round — render a dash, not an error. */
+  opens_on: string | null
+  closes_on: string | null
 }
 
 export async function getAdminProgrammes(options?: ApiOptions) {
@@ -3112,7 +3117,8 @@ export async function getAdminIntakeYears(programmeId: number, options?: ApiOpti
  *  own deliberate press. Requirement keys may be omitted; a `null` unticks that test. */
 export async function createAdminIntakeYear(
   programmeId: number,
-  body: { code: string; name: string; year: number } & Partial<ProgrammeRequirements>,
+  body: { code: string; name: string; year: number; opens_on?: string | null; closes_on?: string | null }
+    & Partial<ProgrammeRequirements>,
   options?: ApiOptions,
 ) {
   return adminMutate<AdminIntakeYear>(
@@ -3121,7 +3127,8 @@ export async function createAdminIntakeYear(
 
 export async function updateAdminIntakeYear(
   id: number,
-  body: Partial<{ name: string; is_open: boolean }> & Partial<ProgrammeRequirements>,
+  body: Partial<{ name: string; is_open: boolean; opens_on: string | null; closes_on: string | null }>
+    & Partial<ProgrammeRequirements>,
   options?: ApiOptions,
 ) {
   return adminMutate<AdminIntakeYear>(

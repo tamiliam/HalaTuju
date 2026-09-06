@@ -28,6 +28,11 @@ const PATHS: Record<string, string> = {
   sources: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
   billing: 'M3 3v18h18M7 16v-5M12 16V8M17 16v-3',
   requests: 'M22 12h-6l-2 3h-4l-2-3H2M5.4 5.5L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.4-6.5A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.8 1.5z',
+  // Organisation → Settings. Sliders rather than the usual cog: the cog is the universal "system
+  // preferences" mark and this screen is the tenant's own choices (its colours, its identity), one
+  // level up from Programme → Configuration. Two rows with handles at different positions say
+  // "things you set" without claiming to be the machine's settings.
+  orgSettings: 'M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2M16 4v4M8 10v4M16 16v4',
   // programme
   // "What we ask for" — a checklist (Layer 0 Sprint 5).
   programmeConfig: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
@@ -41,6 +46,10 @@ const PATHS: Record<string, string> = {
   help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01',
   bell: 'M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
   guide: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z',
+  // FAQ. A speech bubble with a question mark — deliberately NOT `help`'s circled "?", which is
+  // the shell's help MENU. The Guide is a book, the FAQ is somebody asking; three neighbours in
+  // the utility group that must not read as the same thing.
+  faq: 'M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5zM10.3 9.3a1.8 1.8 0 0 1 3.5.6c0 1.2-1.8 1.8-1.8 1.8M12 15.5h.01',
   profile: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8',
   signOut: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   menu: 'M4 6h16M4 12h16M4 18h16',
@@ -50,8 +59,23 @@ const PATHS: Record<string, string> = {
   pin: 'M3 4h18v16H3zM9 4v16',
   pinned: 'M3 4h18v16H3zM9 4v16M5.5 8.5h1.5M5.5 12h1.5M5.5 15.5h1.5',
   chevron: 'M6 9l6 6 6-6',
+  // ⚠ THE FALLBACK, AND IT STAYS. `Icon` renders this when a name is unknown, so a menu row added
+  // without a glyph shows a dot instead of throwing inside the console shell — the right
+  // behaviour in production, and the wrong one in development, because it is SILENT.
+  //
+  // It stayed silent for three days: `orgSettings` shipped on 2026-09-03 with no glyph and `faq`
+  // had never had one, and both rendered as this dot until the owner noticed. Nothing failed,
+  // because nothing was looking.
+  //
+  // So the loudness lives in a TEST, not here: `icons.test.ts` asserts every id in the navigation
+  // registry has a glyph, deriving the list at runtime rather than restating it — a hand-written
+  // list is the thing that falls behind (docs/lessons.md, F6/F7c: a guard is blind to whatever is
+  // not in its scope). Do not "fix" this fallback by throwing; fix it by keeping that test.
   dot: 'M12 12h.01',
 }
+
+/** Names this set actually draws — the guard in `icons.test.ts` reads it. */
+export const ICON_NAMES: readonly string[] = Object.keys(PATHS)
 
 export type IconName = keyof typeof PATHS
 

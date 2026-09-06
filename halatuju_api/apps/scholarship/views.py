@@ -98,6 +98,27 @@ class WhatsAppInboundView(APIView):
         return HttpResponse(status=status.HTTP_200_OK)
 
 
+def _open_round_choices():
+    """Every open round, as the least a student needs to choose between them.
+
+    ⚠ THE `code` IS THE **PROGRAMME** CODE, not the cohort's. That is what `?p=` carries and what
+    `resolve_open_cohort` narrows on — a cohort code is year-specific (`b40-2026`) and a link
+    pinned to one would rot every intake, which is the whole reason the apply link names the
+    programme (PF-1 P2). A round whose programme is somehow missing is skipped rather than offered
+    with a code that would resolve to nothing.
+
+    ⚠ The NAME shown is the ROUND's (`ScholarshipCohort.name`, e.g. "BrightPath Bursary Programme
+    2026") — it is what the student's own screens already call the thing they are applying to.
+    """
+    from .models import ScholarshipCohort
+    rows = (ScholarshipCohort.objects
+            .filter(is_active=True, is_open=True, programme__is_active=True)
+            .select_related('programme')
+            .order_by('-year', 'code'))
+    return [{'code': c.programme.code, 'name': c.name}
+            for c in rows if c.programme_id and c.programme.code]
+
+
 class ScholarshipIntakeView(APIView):
     """
     GET /api/v1/scholarship/intake/  — PUBLIC. Whether NEW applications are open right
@@ -120,6 +141,22 @@ class ScholarshipIntakeView(APIView):
     An unknown or inactive programme reads closed rather than 404: this endpoint is public and
     unauthenticated, and distinguishing "no such programme" from "not open" would let anyone
     enumerate which tenants exist on the platform.
+
+    ── `choices` (2026-09-06) ──────────────────────────────────────────────────────────────────
+    ⚠ ON AMBIGUITY IT NOW LISTS THE OPEN ROUNDS, because it already knew them and threw them away.
+
+    Before the owner's per-gift ruling, two rounds could not be open at once, so ambiguity here was
+    a two-tenant edge case and a blank name was enough. Now an organisation may legitimately run
+    two intakes, and a student on a bare `/scholarship/apply` hits `AmbiguousOpenCohort` **at
+    submit** — after filling in the entire form. The refusal is right; its TIMING was not.
+
+    So the caller gets what it needs to ASK, before the form: `{code, name}` per open round, the
+    programme code being exactly what `?p=` carries. PF-1's rule is unchanged — nothing here picks;
+    it offers.
+
+    ⚠ WHAT IT DELIBERATELY DOES NOT LEAK: no organisation, no counts, no ids — only what a student
+    must read to choose. The list appears ONLY when the caller named no programme and there is
+    genuine ambiguity; a normal single-round visitor sees `choices: []` exactly as before.
     """
     permission_classes = [AllowAny]
 
@@ -128,10 +165,18 @@ class ScholarshipIntakeView(APIView):
         try:
             cohort = resolve_open_cohort(programme_code=programme_code)
         except AmbiguousOpenCohort:
-            # Only reachable WITHOUT a programme code (or with one running two open intakes):
-            # applications are open, but nothing here can say which round, so name none.
-            return Response({'open': True, 'cohort_name': ''})
-        return Response({'open': cohort is not None, 'cohort_name': cohort.name if cohort else ''})
+            # Applications ARE open; nothing here can say which round, so name none — and offer
+            # the choice instead of leaving the student to discover the problem at submit.
+            return Response({
+                'open': True,
+                'cohort_name': '',
+                'choices': _open_round_choices(),
+            })
+        return Response({
+            'open': cohort is not None,
+            'cohort_name': cohort.name if cohort else '',
+            'choices': [],
+        })
 
 
 class ApplicationListCreateView(APIView):

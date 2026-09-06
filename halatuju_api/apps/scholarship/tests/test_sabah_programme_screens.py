@@ -233,10 +233,19 @@ class TestIntakeYears(_Case):
         c.refresh_from_db()
         self.assertEqual(c.min_spm_a_count, 4)
 
-    def test_only_one_round_per_organisation_may_be_open(self):
-        # `resolve_open_cohort` RAISES on two open rounds, because picking one files a student
-        # under the wrong fence (PF-1). That refusal reaches the STUDENT at the moment they press
-        # Apply; this one reaches the ADMIN at the moment they create the ambiguity.
+    def test_only_one_round_per_GIFT_PROGRAMME_may_be_open(self):
+        """⚠ THIS ASSERTED "per ORGANISATION" UNTIL 2026-09-06, AND THE ORIGINAL REASON SURVIVES.
+
+        It was: `resolve_open_cohort` RAISES on two open rounds, because picking one files a
+        student under the wrong fence (PF-1); that refusal reaches the STUDENT at the moment they
+        press Apply, and this one reaches the ADMIN at the moment they create the ambiguity, which
+        is where it can still be undone. **All of that is still true and still the point.**
+
+        What changed is the SCOPE, on the owner's ruling: *"Only one round is open for a gift
+        programme. But if the org has two programmes, there could be two open applications."* The
+        org-wide filter meant an organisation running two gifts could take applications for only
+        one of them — see the counter-test below, which is the half that used to be impossible.
+        """
         open_one = ScholarshipCohort.objects.create(
             programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-open',
             name='Open', year=2026, is_active=True, is_open=True)
@@ -250,6 +259,29 @@ class TestIntakeYears(_Case):
         self.assertEqual(r.data['open_code'], open_one.code)
         other.refresh_from_db()
         self.assertFalse(other.is_open)
+
+    def test_TWO_GIFTS_of_one_organisation_may_BOTH_be_open(self):
+        """The owner's ruling, as the case that used to be refused.
+
+        Two gifts of the SAME organisation, each with its own round, both open at once. Before
+        2026-09-06 the second `is_open` was refused `another_year_open` — an organisation could
+        run two gifts and take applications for only one.
+        """
+        prog_b = Programme.objects.create(
+            organisation=self.org_a, code='sab-a-second-gift', name_en='Second gift',
+            is_active=True)
+        ScholarshipCohort.objects.create(
+            programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-first-open',
+            name='First gift 2026', year=2026, is_active=True, is_open=True)
+        second = ScholarshipCohort.objects.create(
+            programme=prog_b, owning_organisation=self.org_a, code='sab-b-round',
+            name='Second gift 2026', year=2026, is_active=True, is_open=False)
+
+        r = self._patch(self.admin_a, f'/api/v1/admin/scholarship/intake-years/{second.id}/',
+                        {'is_open': True})
+        self.assertEqual(r.status_code, 200)
+        second.refresh_from_db()
+        self.assertTrue(second.is_open)
 
     def test_a_year_under_an_INACTIVE_gift_cannot_be_opened(self):
         prog = Programme.objects.create(

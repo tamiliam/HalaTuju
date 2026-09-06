@@ -1087,7 +1087,10 @@
         "maxis": "Maxis",
         "sime_darby": "Sime Darby",
         "other": "மற்றவை"
-      }
+      },
+      "chooseTitle": "நீங்கள் எந்தத் திட்டத்திற்கு விண்ணப்பிக்கிறீர்கள்?",
+      "chooseBody": "இப்போது ஒன்றுக்கு மேற்பட்ட திட்டங்கள் திறந்துள்ளன, எனவே தொடங்குவதற்கு முன் எதைக் குறிக்கிறீர்கள் என்று எங்களிடம் சொல்லுங்கள்.",
+      "chooseCta": "தொடரவும்"
     },
     "nextSteps": {
       "title": "நீங்கள் தேர்வுசெய்யப்பட்டுள்ளீர்கள்!",
@@ -5664,20 +5667,23 @@
       "empty": "No intake years yet.",
       "noProgrammes": "Create a gift programme first",
       "loadFailed": "Could not load the intake years.",
-      "oneOpen": "Opening a round is what lets students apply. Only one round across your organisation may be open at a time.",
-      "oneOpenNamed": "{code} is taking applications. Only one round across your organisation may be open at a time, so close it before opening another.",
+      "oneOpen": "ஒரு சுற்றைத் திறப்பதுதான் மாணவர்களை விண்ணப்பிக்க அனுமதிக்கிறது. இந்தக் கொடைத் திட்டத்தின் ஒரு சுற்று மட்டுமே ஒரே நேரத்தில் திறந்திருக்க முடியும்.",
+      "oneOpenNamed": "{code} விண்ணப்பங்களைப் பெற்று வருகிறது. இந்தக் கொடைத் திட்டத்தின் ஒரு சுற்று மட்டுமே ஒரே நேரத்தில் திறந்திருக்க முடியும், எனவே மற்றொன்றைத் திறப்பதற்கு முன் அதை மூடவும்.",
       "reqTitle": "பட்டியலிடும் தேவைகள்",
       "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
       "col": {
         "year": "ஆண்டு",
         "name": "மாணவர்கள் காண்பது",
         "applications": "விண்ணப்பங்கள்",
-        "status": "நிலை"
+        "status": "நிலை",
+        "window": "எப்போது நடைபெறும்"
       },
       "field": {
         "year": "ஆண்டு",
         "code": "சுருக்கக் குறியீடு",
-        "name": "மாணவர்கள் காணப் போவது"
+        "name": "மாணவர்கள் காணப் போவது",
+        "opensOn": "திறக்கும் தேதி",
+        "closesOn": "மூடும் தேதி"
       },
       "req": {
         "spmA": "SPM - minimum grades at A- or better",
@@ -5697,8 +5703,13 @@
         "nameRequired": "Please give the intake year a name.",
         "anotherOpen": "Another round is already taking applications. Close it first.",
         "notActive": "Switch the gift programme on before opening a round.",
-        "generic": "That did not work. Nothing was changed."
-      }
+        "generic": "That did not work. Nothing was changed.",
+        "windowBackwards": "மூடும் தேதி திறக்கும் தேதிக்கு முன்பு இருக்கக் கூடாது.",
+        "badOpensOn": "சரியான திறக்கும் தேதியைக் கொடுக்கவும்.",
+        "badClosesOn": "சரியான மூடும் தேதியைக் கொடுக்கவும்."
+      },
+      "windowNote": "இந்தத் தேதிகள் இந்தச் சுற்று எப்போது நடைபெற வேண்டும் என்பதைக் குறிக்கின்றன. அவை அதைத் திறப்பதோ மூடுவதோ இல்லை — நீங்களே \"விண்ணப்பங்களைத் திற\" என்பதை அழுத்த வேண்டும். இன்னும் முடிவு செய்யவில்லை என்றால் வெறுமையாக விடுங்கள்.",
+      "goToRules": "அடுத்து: விதிகளை அமைக்கவும்"
     },
     "orgSettings": {
       "nav": "அமைப்புகள்",
@@ -5807,7 +5818,8 @@
       "liveWarning": "ஒரு விதியை மாற்றினால், நீங்கள் சேமித்த தருணத்திலிருந்து யார் தகுதி பெறுகிறார்கள் என்பது மாறும். \"நாங்கள் கேட்பவை\" போலன்றி, ஏற்கெனவே விண்ணப்பித்த மாணவர்களுக்கு இது நிலைநிறுத்தப்படவில்லை - எனவே மறுமதிப்பீடு புதிய விதியைப் பயன்படுத்தும். சேர்க்கை நடுவில் கவனமாக இருங்கள்.",
       "untickNote": "ஒரு சோதனையைப் பயன்படுத்துவதை நிறுத்த அதன் தேர்வை நீக்குங்கள். வெற்றுப் பெட்டி என்றால் அந்தச் சோதனை இயங்காது.",
       "noYear": "இந்தக் கொடைக்கு இன்னும் சேர்க்கை ஆண்டு இல்லை; விதிகள் ஆண்டின் மேல் இருக்கும். சேர்க்கை ஆண்டு தத்தலில் ஒன்றை உருவாக்கி அங்கே அமைக்கவும்.",
-      "saved": "சேமிக்கப்பட்டது"
+      "saved": "சேமிக்கப்பட்டது",
+      "goToYear": "ஒரு சேர்க்கை ஆண்டை உருவாக்கவும்"
     }
   }
 }
