@@ -17,7 +17,7 @@ export default function SandboxSurfacePage({ params }: { params: { surface: stri
     return (
       <div className="rounded-xl border border-ground-200 bg-ground-0 p-6">
         <p className="text-ground-900">No sandbox surface called “{params.surface}”.</p>
-        <Link href="/sandbox" className="mt-2 inline-block text-info-600 hover:underline">
+        <Link href="/sandbox" className="mt-2 inline-block text-primary-600 hover:underline">
           Back to the sandbox
         </Link>
       </div>

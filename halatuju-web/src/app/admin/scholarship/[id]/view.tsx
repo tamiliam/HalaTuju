@@ -2921,7 +2921,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 <div className="space-y-2 border-t border-ground-100 pt-3">
                   <button type="button" onClick={doNudge} disabled={!nb.enabled || !!busy}
                     className="w-full rounded-lg border border-info-300 px-3 py-2 text-sm font-medium
-                               text-info-700 hover:bg-info-50 disabled:opacity-50 disabled:hover:bg-transparent">
+                               text-primary-700 hover:bg-primary-50 disabled:opacity-50 disabled:hover:bg-transparent">
                     {busy === 'nudge'
                       ? t('admin.scholarship.blockers.nudge.sending')
                       : t(`admin.scholarship.blockers.nudge.${nb.label}`)}
@@ -3237,7 +3237,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               <p className="text-xs text-ground-500">{t('admin.sources.witness.assignedNext')}</p>
               <button type="button"
                 onClick={() => { setWitnessEditing(true); setWitnessMsg('') }}
-                className="text-sm font-medium text-info-600 hover:text-info-700 hover:underline">
+                className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline">
                 {t('admin.sources.witness.change')}
               </button>
             </>

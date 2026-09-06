@@ -142,7 +142,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
-          <span className="text-lg font-bold text-info-600">Partner</span>
+          <span className="text-lg font-bold text-primary-600">Partner</span>
         </div>
 
         <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
@@ -277,7 +277,7 @@ export default function AdminLoginPage() {
               </p>
               <button
                 onClick={() => { setStep('login'); setError(null) }}
-                className="text-info-600 hover:underline text-sm"
+                className="text-primary-600 hover:underline text-sm"
               >
                 {t('login.backToLogin')}
               </button>
@@ -286,7 +286,7 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-ground-500 hover:text-info-600 transition-colors">
+          <Link href="/" className="text-sm text-ground-500 hover:text-primary-600 transition-colors">
             {t('admin.backToHome')}
           </Link>
         </div>

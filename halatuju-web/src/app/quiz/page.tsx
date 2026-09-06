@@ -349,7 +349,7 @@ export default function QuizPage() {
                     `}
                   >
                     <span className="text-5xl leading-none">{ICON_EMOJI[option.icon] || '❓'}</span>
-                    <span className={`text-sm font-bold text-center leading-tight ${selected ? 'text-info-700' : 'text-ground-700'}`}>
+                    <span className={`text-sm font-bold text-center leading-tight ${selected ? 'text-primary-700' : 'text-ground-700'}`}>
                       {option.text}
                     </span>
                   </button>
@@ -366,7 +366,7 @@ export default function QuizPage() {
                     flex items-center gap-2 px-6 py-2.5 rounded-full border-2
                     transition-all duration-200
                     ${isOptionSelected(notSureIndex)
-                      ? 'border-info-500 bg-info-50 text-info-700 shadow-sm'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
                       : 'border-ground-200 bg-ground-0 text-ground-400 hover:border-info-200 hover:text-ground-500'}
                   `}
                 >

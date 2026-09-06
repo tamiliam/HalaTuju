@@ -253,7 +253,7 @@ export default function ScholarshipOnboardingPage() {
                     onClick={() => setLiving(opt)}
                     className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
                       living === opt
-                        ? 'border-info-600 bg-info-50 text-info-700'
+                        ? 'border-primary-600 bg-primary-50 text-primary-700'
                         : 'border-ground-300 text-ground-700 hover:bg-ground-50'
                     }`}
                   >
@@ -276,7 +276,7 @@ export default function ScholarshipOnboardingPage() {
                     onClick={() => setWantsMentor(val)}
                     className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium ${
                       wantsMentor === val
-                        ? 'border-info-600 bg-info-50 text-info-700'
+                        ? 'border-primary-600 bg-primary-50 text-primary-700'
                         : 'border-ground-300 text-ground-700 hover:bg-ground-50'
                     }`}
                   >

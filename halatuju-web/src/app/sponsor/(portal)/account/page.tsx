@@ -220,7 +220,7 @@ export default function AccountPage() {
         <section>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-ground-900">{t('sponsorPortal.statement.title')}</h2>
-            <button onClick={() => window.print()} className="px-3 py-1.5 text-sm font-semibold text-info-700 bg-info-50 hover:bg-info-100 rounded-xl">
+            <button onClick={() => window.print()} className="px-3 py-1.5 text-sm font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl">
               {t('sponsorPortal.statement.print')}
             </button>
           </div>

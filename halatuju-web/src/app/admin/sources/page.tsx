@@ -323,7 +323,7 @@ export default function SourcesPage() {
                   <span className="inline-block min-w-[1.75rem] text-center px-2 py-0.5 text-xs rounded-full bg-ground-100 text-ground-600">{s.student_count ?? 0}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => startEdit(s)} className="text-xs font-medium text-info-600 hover:text-info-800">{t('admin.sources.edit')}</button>
+                  <button onClick={() => startEdit(s)} className="text-xs font-medium text-primary-600 hover:text-primary-800">{t('admin.sources.edit')}</button>
                 </td>
               </tr>
             ))}

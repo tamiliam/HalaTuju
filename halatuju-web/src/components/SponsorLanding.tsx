@@ -54,7 +54,7 @@ export default function SponsorLanding({ count }: { count: number }) {
                   className="bg-brand-fill text-brand-fill-ink font-semibold px-6 py-3 rounded-xl hover:bg-brand-fill-hover transition-colors text-center w-full sm:w-auto">
                   {t('sponsorLanding.hero.becomeSponsor')} →
                 </Link>
-                <a href="#how" className="text-info-600 text-sm text-center sm:text-left font-medium">
+                <a href="#how" className="text-primary-600 text-sm text-center sm:text-left font-medium">
                   {t('sponsorLanding.hero.howItWorks')} ↓
                 </a>
               </div>
@@ -157,7 +157,7 @@ export default function SponsorLanding({ count }: { count: number }) {
             </Link>
             <p className="text-xs text-ground-500 mt-4">
               {t('sponsorLanding.cta.questions')}{' '}
-              <a href={`mailto:${b.sponsorEmail}`} className="text-info-600 underline">{b.sponsorEmail}</a>
+              <a href={`mailto:${b.sponsorEmail}`} className="text-primary-600 underline">{b.sponsorEmail}</a>
             </p>
           </div>
         </section>

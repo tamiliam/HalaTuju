@@ -110,7 +110,7 @@ export default function CourseDataDashboard() {
               </p>
               <a href={f.url.startsWith('http') ? f.url : `https://${f.url}`}
                  target="_blank" rel="noopener noreferrer"
-                 className="text-xs text-info-600 hover:underline break-all">
+                 className="text-xs text-primary-600 hover:underline break-all">
                 {f.url}{f.detail ? ` (${f.detail})` : ''}
               </a>
             </li>
@@ -258,7 +258,7 @@ export default function CourseDataDashboard() {
         <div className="bg-ground-0 rounded-lg p-6 shadow-sm border mb-8">
           <div className="flex items-center justify-between mb-1">
             <h2 className="font-semibold">{t('admin.courseData.problemLinks')}</h2>
-            <button onClick={downloadCsv} className="text-sm text-info-600 hover:underline">
+            <button onClick={downloadCsv} className="text-sm text-primary-600 hover:underline">
               {t('admin.courseData.downloadCsv')}
             </button>
           </div>

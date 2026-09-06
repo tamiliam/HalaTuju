@@ -360,7 +360,7 @@ export default function StpmQuizPage() {
                     <span className={question.options.length <= 3 ? 'text-3xl' : 'text-5xl leading-none'}>
                       {ICON_EMOJI[option.icon] || '\u2753'}
                     </span>
-                    <span className={`text-sm font-bold ${question.options.length <= 3 ? 'text-left' : 'text-center'} leading-tight ${selected ? 'text-info-700' : 'text-ground-700'}`}>
+                    <span className={`text-sm font-bold ${question.options.length <= 3 ? 'text-left' : 'text-center'} leading-tight ${selected ? 'text-primary-700' : 'text-ground-700'}`}>
                       {option.text}
                     </span>
                   </button>

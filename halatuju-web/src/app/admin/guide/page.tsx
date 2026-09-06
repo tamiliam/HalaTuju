@@ -105,7 +105,7 @@ export default function AdminManualPage() {
                     <li key={c.slug}>
                       <button type="button" onClick={() => openChapter(c.slug)}
                         className={`w-full rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${
-                          c.slug === chapter.slug ? 'bg-info-50 font-semibold text-info-700'
+                          c.slug === chapter.slug ? 'bg-primary-50 font-semibold text-primary-700'
                           : 'text-ground-600 hover:bg-ground-50 hover:text-ground-900'}`}>
                         {c.title}
                       </button>
@@ -160,16 +160,16 @@ export default function AdminManualPage() {
         {/* Prev / next */}
         <div className="mt-10 flex items-center justify-between border-t border-ground-100 pt-4 text-sm">
           {prev ? (
-            <button type="button" onClick={() => openChapter(prev.slug)} className="text-info-600 hover:underline">
+            <button type="button" onClick={() => openChapter(prev.slug)} className="text-primary-600 hover:underline">
               ← {prev.title}
             </button>
           ) : <span />}
           {next ? (
-            <button type="button" onClick={() => openChapter(next.slug)} className="text-info-600 hover:underline">
+            <button type="button" onClick={() => openChapter(next.slug)} className="text-primary-600 hover:underline">
               {next.title} →
             </button>
           ) : (
-            <Link href="/admin/faq" className="text-info-600 hover:underline">Questions? See the FAQ →</Link>
+            <Link href="/admin/faq" className="text-primary-600 hover:underline">Questions? See the FAQ →</Link>
           )}
         </div>
       </div>

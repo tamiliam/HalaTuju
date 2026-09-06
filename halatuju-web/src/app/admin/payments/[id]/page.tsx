@@ -200,7 +200,7 @@ export default function PaymentRunDetailPage() {
                     // Finance has no B40 route — a link here would 403. Plain text instead.
                     <span className="font-medium text-ground-900">{it.name || '—'}</span>
                   ) : (
-                    <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-info-600 hover:underline">{it.name || '—'} ↗</a>
+                    <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-600 hover:underline">{it.name || '—'} ↗</a>
                   )}
                 </td>
                 <td className="px-4 py-3.5">{it.nric || '—'}</td>
@@ -391,7 +391,7 @@ export default function PaymentRunDetailPage() {
                 <p className="truncate text-sm font-semibold text-ground-900">{run.reference}.csv</p>
                 <p className="text-xs text-ground-500">{t('admin.payments.exportedForVircle')}</p>
               </div>
-              {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-info-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
+              {run.drive_file_url && <a href={run.drive_file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary-600 hover:underline">{t('admin.payments.openInDrive')}</a>}
               <button onClick={downloadCsv} className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">{t('admin.payments.downloadCsv')}</button>
             </div>
           </div>

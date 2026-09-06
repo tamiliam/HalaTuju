@@ -163,7 +163,7 @@ export default function PaymentsLandingPage() {
             {visibleRuns.map((r) => (
               <tr key={r.id} className="hover:bg-info-50/40">
                 <td className="px-4 py-3">
-                  <Link href={`/admin/payments/${r.id}`} className="font-medium text-info-600 hover:underline">{r.reference}</Link>
+                  <Link href={`/admin/payments/${r.id}`} className="font-medium text-primary-600 hover:underline">{r.reference}</Link>
                 </td>
                 <td className="px-4 py-3 text-ground-600">{formatDate(r.payment_date)}</td>
                 <td className="px-4 py-3 text-ground-600">{monthLabel(r.period_month)}</td>
@@ -175,7 +175,7 @@ export default function PaymentsLandingPage() {
                 <td className="px-4 py-3 text-ground-700 tabular-nums">{r.students}</td>
                 <td className="px-4 py-3 text-ground-900 font-medium tabular-nums">RM {Number(r.total)}</td>
                 <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/payments/${r.id}`} className="text-ground-400 hover:text-info-600">›</Link>
+                  <Link href={`/admin/payments/${r.id}`} className="text-ground-400 hover:text-primary-600">›</Link>
                 </td>
               </tr>
             ))}

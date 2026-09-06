@@ -125,7 +125,7 @@ export default function SponsorDetailsForm() {
         <label className="flex items-start gap-2 text-sm text-ground-600">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
           <span>{t('sponsorAuth.consent')}{' '}
-            <Link href="/privacy" className="text-info-600 hover:underline">{t('sponsorAuth.privacyNotice')}</Link>.
+            <Link href="/privacy" className="text-primary-600 hover:underline">{t('sponsorAuth.privacyNotice')}</Link>.
           </span>
         </label>
         {error && <p className="text-sm text-critical-600">{error}</p>}

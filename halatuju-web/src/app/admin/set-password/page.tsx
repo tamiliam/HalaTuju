@@ -77,7 +77,7 @@ export default function AdminSetPasswordPage() {
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
-          <span className="text-lg font-bold text-info-600">Partner</span>
+          <span className="text-lg font-bold text-primary-600">Partner</span>
         </div>
 
         <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
@@ -91,7 +91,7 @@ export default function AdminSetPasswordPage() {
               <div className="bg-caution-50 border border-caution-200 rounded-lg p-4 mb-6">
                 <p className="text-caution-700 text-sm">{t('admin.setPasswordNoLink')}</p>
               </div>
-              <a href="/admin/login" className="text-info-600 hover:underline text-sm">
+              <a href="/admin/login" className="text-primary-600 hover:underline text-sm">
                 {t('login.backToLogin')}
               </a>
             </div>

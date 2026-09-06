@@ -37,7 +37,7 @@ export default function MyStudentDetailPage() {
   }, [token, id])
 
   const back = (
-    <Link href="/sponsor" className="text-sm font-medium text-info-600 hover:underline">
+    <Link href="/sponsor" className="text-sm font-medium text-primary-600 hover:underline">
       ← {t('sponsorPortal.myStudents.detail.back')}
     </Link>
   )

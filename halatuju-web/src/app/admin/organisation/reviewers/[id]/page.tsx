@@ -128,7 +128,7 @@ export default function AdminReviewerDetailPage() {
   return (
     <div className="space-y-3.5">
       <Link href="/admin/organisation/reviewers"
-        className="text-sm text-info-600 hover:text-info-800">
+        className="text-sm text-primary-600 hover:text-primary-800">
         ← {t('admin.reviewers.detail.back')}
       </Link>
 
@@ -173,7 +173,7 @@ export default function AdminReviewerDetailPage() {
                   // revoke — rides on the control itself. The label already scopes it ("Pause NEW
                   // cases"); this says what it leaves alone.
                   title={t(`admin.reviewers.detail.pauseNote${detail.paused ? 'Paused' : 'Active'}`)}
-                  className="font-medium text-info-600 hover:text-info-800 hover:underline disabled:opacity-50">
+                  className="font-medium text-primary-600 hover:text-primary-800 hover:underline disabled:opacity-50">
                   {t(`admin.reviewers.detail.${detail.paused ? 'unpause' : 'pause'}`)}
                 </button>
               </>)}
@@ -356,7 +356,7 @@ export default function AdminReviewerDetailPage() {
               <li key={r.id} className="px-4 sm:px-5 py-3.5">
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <Link href={`/admin/scholarship/${r.application_id}`}
-                    className="text-sm font-medium text-info-600 hover:text-info-800">
+                    className="text-sm font-medium text-primary-600 hover:text-primary-800">
                     {t('admin.reviewers.detail.application', { id: String(r.application_id) })}
                   </Link>
                   <span className="text-xs text-ground-500">

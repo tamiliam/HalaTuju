@@ -103,7 +103,7 @@ export default function SponsorTermsEditorPage() {
   return (
     <div className="max-w-5xl font-plex">
       <button type="button" onClick={() => router.push('/admin/sponsors?panel=terms')}
-        className="text-sm text-info-600 hover:text-info-800">
+        className="text-sm text-primary-600 hover:text-primary-800">
         {t('admin.sponsors.terms.backToList')}
       </button>
 
@@ -122,7 +122,7 @@ export default function SponsorTermsEditorPage() {
           <button key={tb} type="button" role="tab" aria-selected={tab === tb}
             onClick={() => setTab(tb)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-              tab === tb ? 'border-info-600 text-info-600' : 'border-transparent text-ground-500 hover:text-ground-800'}`}>
+              tab === tb ? 'border-primary-600 text-primary-600' : 'border-transparent text-ground-500 hover:text-ground-800'}`}>
             {t(`admin.sponsors.terms.tab.${tb}`)}
           </button>
         ))}

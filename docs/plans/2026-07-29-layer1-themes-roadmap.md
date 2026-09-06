@@ -496,7 +496,25 @@ constants that can never fail. Recorded as a decision, not a gap.
 "touches the same call sites". Measured: **89 sites across 49 files**, small overlap, taking the
 sprint from ~48 files to ~90.
 
-#### F7f — the link colour (TD-223, low) — the last Layer 1 item
+#### ✅ F7f — SHIPPED 2026-09-06 (worktree `.worktrees/layer1-f7f`). **TD-223 IS CLOSED. LAYER 1 IS COMPLETE** (A4 stays deferred by design).
+
+122 class edits across 51 files, jest 1697 green, build clean. NO migration. Family rename with
+stops preserved (`text-info-N` → `text-primary-N`, plus the paired `border`/`bg` classes on the
+same control), so light mode moves only from Tailwind's blue to the brand's own blue — the change
+a non-blue tenant would have SEEN is now impossible.
+
+**The scope grew slightly beyond "links", deliberately.** The classifier surfaced tabs, sort
+headers, ghost buttons and selected option cards spelled `info` — the same defect, because the
+product's own idiom (AppHeader, ActionCentre) already colours every interactive state with brand.
+One rule now holds product-wide: **the user acts on it → brand; it informs → tone.** Also finished
+two half-sets found on review: the "Partner"/"Sponsor" identity badges (6 sites — identity is
+brand, not information) and the quiz's selected-option cards (twins of onboarding's, converted in
+the same pass or the product would have disagreed with itself).
+
+**One site deliberately kept `info`:** `ClauseEditor.tsx:363` — a `<code>` chip naming a template
+token. It informs; it is not clicked.
+
+#### F7f — the original scoping, kept for the record
 
 Links are spelled `info` on F1–F3 surfaces and `brand` on F4–F6 surfaces, split by which sprint
 converted the file. **89 sites across 49 files.**

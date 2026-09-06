@@ -56,7 +56,7 @@ export default function ContractEditorPage() {
   return (
     <div className="max-w-5xl font-plex">
       <button type="button" onClick={() => router.push('/admin/contracts')}
-        className="text-sm text-info-600 hover:text-info-800">{t('admin.contracts.backToList')}</button>
+        className="text-sm text-primary-600 hover:text-primary-800">{t('admin.contracts.backToList')}</button>
 
       <div className="flex items-center gap-3 mt-2 mb-1">
         <h1 className="text-2xl font-bold text-ground-900">{tpl.version}</h1>
@@ -70,7 +70,7 @@ export default function ContractEditorPage() {
         {TABS.map((tb) => (
           <button key={tb} type="button" onClick={() => setTab(tb)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-              tab === tb ? 'border-info-600 text-info-600' : 'border-transparent text-ground-500 hover:text-ground-800'}`}>
+              tab === tb ? 'border-primary-600 text-primary-600' : 'border-transparent text-ground-500 hover:text-ground-800'}`}>
             {t(`admin.contracts.tab.${tb}`)}
           </button>
         ))}

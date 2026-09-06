@@ -80,8 +80,8 @@ function SortHeader({ col, sort, onSort, align, t }: {
     <th className={`px-4 py-3 ${align === 'right' ? 'text-right' : 'text-left'}`}
       aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
       <button type="button" onClick={() => onSort(col)}
-        className={`inline-flex items-center gap-1 font-semibold text-xs uppercase tracking-wider hover:text-info-600 ${
-          active ? 'text-info-600' : 'text-ground-600'}`}>
+        className={`inline-flex items-center gap-1 font-semibold text-xs uppercase tracking-wider hover:text-primary-600 ${
+          active ? 'text-primary-600' : 'text-ground-600'}`}>
         {t(SPONSOR_SORT_LABEL[col])}
         <span aria-hidden className="text-[9px] leading-none">
           {sortIndicator(active, sort.dir)}
@@ -197,7 +197,7 @@ export default function AdminSponsorsList() {
                 <tr key={s.id} className="hover:bg-info-50/40 transition-colors align-top">
                   <td className="px-4 py-3 border-l-[3px] border-l-blue-500">
                     {/* The name opens the whole record — everything the flat table could not show. */}
-                    <Link href={`/admin/sponsors/${s.id}`} className="font-medium text-info-600 hover:text-info-800">
+                    <Link href={`/admin/sponsors/${s.id}`} className="font-medium text-primary-600 hover:text-primary-800">
                       {s.name || '—'}
                     </Link>
                     <div className="text-xs text-ground-500 mt-0.5">{s.email || '—'}</div>

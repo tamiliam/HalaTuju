@@ -81,7 +81,7 @@ export default function SponsorTermsPage() {
           link lives here, where someone reading that reference can actually follow it. */}
       <p className="text-xs text-ground-500 border-t border-ground-200 pt-4">
         {t('sponsorPortal.terms.privacyNote')}{' '}
-        <Link href="/privacy" className="text-info-600 hover:underline">
+        <Link href="/privacy" className="text-primary-600 hover:underline">
           {t('sponsorAuth.privacyNotice')}
         </Link>.
       </p>

@@ -288,7 +288,7 @@ export default function AdminScholarshipList() {
               {apps.map((a) => (
                 <tr key={a.id} className="hover:bg-info-50/40 transition-colors">
                   <td className="px-4 py-3 border-l-[3px] border-l-blue-500">
-                    <Link href={`/admin/scholarship/${a.id}`} className="text-info-600 font-medium hover:underline">
+                    <Link href={`/admin/scholarship/${a.id}`} className="text-primary-600 font-medium hover:underline">
                       {a.name || '—'}
                     </Link>
                   </td>

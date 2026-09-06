@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Every link now wears the organisation's colour — 2026-09-06
+
+The last Layer 1 item (F7f, closing TD-223). Links — and every other control a person clicks —
+were blue in two different spellings, split by which repaint sprint converted the file. Both
+looked the same on our own blue, so nobody ever saw it; an organisation with a green brand would
+have seen half its links go green and half stay blue.
+
+One rule now holds everywhere: **something you act on carries the organisation's colour;
+something that informs keeps the platform's meaning colour.** 122 small edits across 51 files.
+No behaviour change, no database change. With this, the themes plan is complete — light, dark,
+and a tenant's own colour, end to end.
+
 ## Merit: a stream band scored out of two is filled with two - 2026-09-02
 
 **Small change (hotfix).** NO migration, backend only, 2 files. pytest 5844 -> **5851**; golden
