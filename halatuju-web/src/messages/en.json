@@ -547,6 +547,7 @@
     "streamSubjects": "Stream Subjects",
     "pickBest2Stream": "Pick your best 2 subjects",
     "pick4Stream": "Enter grades for your 4 stream subjects",
+    "pickStreamFirst": "Choose your stream above first, then pick the subjects you sat.",
     "electiveSubjects": "Elective Subjects",
     "pickBest2Elective": "Add any other subjects you took",
     "selectSubject": "— Select subject —",

@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## The grades page stops choosing a student's subjects for them - 2026-09-02
+
+**Small change (hotfix), web only.** NO migration, NO backend. 5 files. Worktree
+`.worktrees/grades-stream-slots`, branch `fix/grades-stream-slots` (another agent holds
+`gift-setup-flow` in the same repo). jest 1697 -> **1709**; tsc **24** (baseline, none in these
+files); `next lint` **0 errors**; i18n 4745 -> **4746 x 3**; `next build` clean. Both rules
+bite-checked, each injection verified as landed first.
+
+The upstream half of the 2026-09-02 merit fix. That one stopped the merit engine scoring a
+phantom subject; this one stops the phantom being written.
+
+**What it did.** `/onboarding/grades` opened on the **Science** stream and pre-filled its four
+stream slots from that pool. On save it kept whichever slots still named a subject —
+`aliranSubjects.filter(Boolean)`, which drops an EMPTY slot but keeps one naming a subject with no
+grade. An arts student who never touched Section 3 therefore SAVED Physics, Chemistry, Biology and
+Add Maths as subjects she sat. Nothing failed and nothing said so.
+
+**Three changes, one rule each:**
+- **No stream is selected on arrival.** Section 3 says "choose your stream above first" instead of
+  offering four dropdowns with an empty pool behind them.
+- **No slot is ever pre-filled** — on first load, and on a change of stream. Picking a stream says
+  which subjects are OFFERED, never which were sat.
+- **Only graded subjects are saved.** New `lib/gradeEntry.gradedOnly` is the one rule; the stream
+  list, the elective list and the live merit preview all go through it.
+
+**⚠ THE PRE-FILL AND THE SAVE ARE SEPARATE HOLES and both had to close.** Removing the pre-fill
+alone still lets a student open a dropdown, pick a subject, not grade it, and ship it.
+`gradedOnly` alone still shows an arts student four Science subjects to delete.
+
+**Nothing is owed for the 15 existing profiles.** The engine top-up already scores them correctly,
+and `auth-context` re-hydrates whatever the backend holds — so the next time any of them saves the
+grades page, the stale entries drop themselves. There is no backfill and none is possible: these
+lists ARE the record.
+
+### Fixed
+- `src/app/onboarding/grades/page.tsx` — no default stream, no pre-filled slots, `gradedOnly` on
+  save and on the merit preview, and a hint where the four rows used to sit.
+- `src/lib/gradeEntry.ts` (new) + `gradeEntry.test.ts` (+7) — the save rule, stated once.
+- `src/app/onboarding/grades/page.test.tsx` (new, +5) — **the first rendered test on a student
+  onboarding page**, because every claim here is about mount-time and post-click STATE, which a
+  source-shape guard cannot see. It asserts the dropdown VALUES, not the count of placeholder
+  options — every subject dropdown renders that placeholder whether or not it is filled, so a
+  count of four would have passed with the pre-fill still running.
+- `onboarding.pickStreamFirst` in en/ms/ta (ms + ta are **first drafts**).
+
 ## Every link now wears the organisation's colour — 2026-09-06
 
 The last Layer 1 item (F7f, closing TD-223). Links — and every other control a person clicks —
