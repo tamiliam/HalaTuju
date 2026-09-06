@@ -14,6 +14,7 @@ import {
   SPM_ALL_ELECTIVE_SUBJECTS,
   MAX_SPM_ELECTIVES,
 } from '@/lib/subjects'
+import { gradedOnly } from '@/lib/gradeEntry'
 import { KEY_STREAM, KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_PROFILE, KEY_MERIT, KEY_EXAM_TYPE, KEY_RESULTS_EXAM_TYPE } from '@/lib/storage'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
@@ -59,11 +60,15 @@ export default function GradesInputPage() {
   const router = useRouter()
   const { t, locale } = useT()
 
-  // Stream selection (merged into this page)
-  const [stream, setStream] = useState<string>('science')
+  // Stream selection (merged into this page).
+  // ⚠ NO DEFAULT — DO NOT PUT 'science' BACK. It used to start here, and the four stream slots
+  // below were pre-filled from that stream's pool, so an arts student who never touched Section 3
+  // still SAVED Physics/Chemistry/Biology/Add Maths as their stream subjects (see handleContinue).
+  // Measured on production 2026-09-02: 15 profiles carried a stream subject they had no grade for.
+  const [stream, setStream] = useState<string>('')
   const [grades, setGrades] = useState<Record<string, string>>({})
 
-  // Aliran: 4 dropdown slots (pre-populated from stream)
+  // Aliran: 4 dropdown slots, EMPTY until the student names each one (see the note on `stream`).
   const [aliranSubjects, setAliranSubjects] = useState<string[]>(['', '', '', ''])
 
   // Elektif: dynamic 0-2 slots
@@ -72,18 +77,15 @@ export default function GradesInputPage() {
   // Load saved data — filter grades to only currently-selected subjects
   useEffect(() => {
     const savedStream = localStorage.getItem(KEY_STREAM)
-    const activeStream = savedStream || 'science'
     if (savedStream) setStream(savedStream)
 
-    // Load aliran subjects (4 slots)
+    // Load aliran subjects (4 slots). A student with nothing saved starts with FOUR EMPTY slots —
+    // the pool is never used to guess on their behalf.
     let aliranLoaded = ['', '', '', '']
     const savedAliran = localStorage.getItem(KEY_ALIRAN)
     if (savedAliran) {
       const a = JSON.parse(savedAliran)
       aliranLoaded = [a[0] || '', a[1] || '', a[2] || '', a[3] || '']
-    } else {
-      const pool = SPM_STREAM_POOLS[activeStream] || []
-      aliranLoaded = [pool[0]?.id || '', pool[1]?.id || '', pool[2]?.id || '', pool[3]?.id || '']
     }
     setAliranSubjects(aliranLoaded)
 
@@ -124,18 +126,13 @@ export default function GradesInputPage() {
     })
   }
 
-  // Pre-populate stream subjects when stream changes — clear old grades
+  // Changing stream empties the stream slots and clears their grades. It does NOT re-fill them
+  // from the new pool — picking a stream says which subjects are OFFERED, never which were sat.
   const handleStreamChange = (newStream: string) => {
     aliranSubjects.forEach(id => { if (id) handleGradeClear(id) })
     setStream(newStream)
     localStorage.setItem(KEY_STREAM, newStream)
-    const pool = SPM_STREAM_POOLS[newStream] || []
-    setAliranSubjects([
-      pool[0]?.id || '',
-      pool[1]?.id || '',
-      pool[2]?.id || '',
-      pool[3]?.id || '',
-    ])
+    setAliranSubjects(['', '', '', ''])
   }
 
   // Generic handler for any aliran slot
@@ -227,7 +224,9 @@ export default function GradesInputPage() {
       try {
         // TD-063: pass the student's explicit stream picks so the live merit
         // uses the 30% weight for exactly those subjects (not a guessed stream).
-        const result = await calculateMerit(grades, coqScore, aliranSubjects.filter(Boolean))
+        // Same rule as the save (`gradedOnly`) so the number on screen is the number that gets
+        // stored — an ungraded slot is not a subject, here or there.
+        const result = await calculateMerit(grades, coqScore, gradedOnly(aliranSubjects, grades))
         setMeritResult({
           academicMerit: result.academic_merit,
           finalMerit: result.final_merit,
@@ -247,14 +246,13 @@ export default function GradesInputPage() {
   const handleContinue = () => {
     if (coreComplete) {
       localStorage.setItem(KEY_GRADES, JSON.stringify(grades))
-      localStorage.setItem(
-        KEY_ALIRAN,
-        JSON.stringify(aliranSubjects.filter(Boolean))
-      )
-      localStorage.setItem(
-        KEY_ELEKTIF,
-        JSON.stringify(elektifSlots.filter(Boolean))
-      )
+      // ⚠ SAVE ONLY SUBJECTS THAT CARRY A GRADE — `filter(Boolean)` is not enough. It drops an
+      // EMPTY slot; a slot naming a subject the student never graded survived it and was stored as
+      // a subject they sat. The merit engine then scored that subject at G in the 30% stream band
+      // (fixed at source in courses/engine.py, but a record claiming an unsat subject is wrong
+      // whatever reads it). `gradedOnly` is the one rule; both lists go through it.
+      localStorage.setItem(KEY_ALIRAN, JSON.stringify(gradedOnly(aliranSubjects, grades)))
+      localStorage.setItem(KEY_ELEKTIF, JSON.stringify(gradedOnly(elektifSlots, grades)))
       // Save computed merit so backend uses the same value
       if (meritResult) {
         localStorage.setItem(KEY_MERIT, String(meritResult.finalMerit))
@@ -349,7 +347,14 @@ export default function GradesInputPage() {
           </div>
           <p className="text-sm text-ground-500 mb-4 ml-8">{t('onboarding.pick4Stream')}</p>
           <div className="space-y-3">
-            {aliranSubjects.map((subjectId, index) => (
+            {/* No stream chosen yet → say so, rather than offer four dropdowns with nothing in
+                them. The pool is empty until Section 1 is answered (see `handleStreamChange`). */}
+            {!stream && (
+              <p className="rounded-xl border-2 border-dashed border-ground-300 bg-ground-0 px-4 py-4 text-sm text-ground-500">
+                {t('onboarding.pickStreamFirst')}
+              </p>
+            )}
+            {stream && aliranSubjects.map((subjectId, index) => (
               <CompactSubjectRow
                 key={index}
                 pool={streamPool}

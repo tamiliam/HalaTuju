@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## The grades page stops choosing a student's subjects for them - 2026-09-02
+
+**Small change (hotfix), web only.** NO migration, NO backend. 5 files. Worktree
+`.worktrees/grades-stream-slots`, branch `fix/grades-stream-slots` (another agent holds
+`gift-setup-flow` in the same repo). jest 1697 -> **1709**; tsc **24** (baseline, none in these
+files); `next lint` **0 errors**; i18n 4745 -> **4746 x 3**; `next build` clean. Both rules
+bite-checked, each injection verified as landed first.
+
+The upstream half of the 2026-09-02 merit fix. That one stopped the merit engine scoring a
+phantom subject; this one stops the phantom being written.
+
+**What it did.** `/onboarding/grades` opened on the **Science** stream and pre-filled its four
+stream slots from that pool. On save it kept whichever slots still named a subject —
+`aliranSubjects.filter(Boolean)`, which drops an EMPTY slot but keeps one naming a subject with no
+grade. An arts student who never touched Section 3 therefore SAVED Physics, Chemistry, Biology and
+Add Maths as subjects she sat. Nothing failed and nothing said so.
+
+**Three changes, one rule each:**
+- **No stream is selected on arrival.** Section 3 says "choose your stream above first" instead of
+  offering four dropdowns with an empty pool behind them.
+- **No slot is ever pre-filled** — on first load, and on a change of stream. Picking a stream says
+  which subjects are OFFERED, never which were sat.
+- **Only graded subjects are saved.** New `lib/gradeEntry.gradedOnly` is the one rule; the stream
+  list, the elective list and the live merit preview all go through it.
+
+**⚠ THE PRE-FILL AND THE SAVE ARE SEPARATE HOLES and both had to close.** Removing the pre-fill
+alone still lets a student open a dropdown, pick a subject, not grade it, and ship it.
+`gradedOnly` alone still shows an arts student four Science subjects to delete.
+
+**Nothing is owed for the 15 existing profiles.** The engine top-up already scores them correctly,
+and `auth-context` re-hydrates whatever the backend holds — so the next time any of them saves the
+grades page, the stale entries drop themselves. There is no backfill and none is possible: these
+lists ARE the record.
+
+### Fixed
+- `src/app/onboarding/grades/page.tsx` — no default stream, no pre-filled slots, `gradedOnly` on
+  save and on the merit preview, and a hint where the four rows used to sit.
+- `src/lib/gradeEntry.ts` (new) + `gradeEntry.test.ts` (+7) — the save rule, stated once.
+- `src/app/onboarding/grades/page.test.tsx` (new, +5) — **the first rendered test on a student
+  onboarding page**, because every claim here is about mount-time and post-click STATE, which a
+  source-shape guard cannot see. It asserts the dropdown VALUES, not the count of placeholder
+  options — every subject dropdown renders that placeholder whether or not it is filled, so a
+  count of four would have passed with the pre-fill still running.
+- `onboarding.pickStreamFirst` in en/ms/ta (ms + ta are **first drafts**).
+
 ## Every link now wears the organisation's colour — 2026-09-06
 
 The last Layer 1 item (F7f, closing TD-223). Links — and every other control a person clicks —
@@ -13,6 +58,54 @@ One rule now holds everywhere: **something you act on carries the organisation's
 something that informs keeps the platform's meaning colour.** 122 small edits across 51 files.
 No behaviour change, no database change. With this, the themes plan is complete — light, dark,
 and a tenant's own colour, end to end.
+
+## Merit: a stream band scored out of two is filled with two - 2026-09-02
+
+**Small change (hotfix).** NO migration, backend only, 2 files. pytest 5844 -> **5851**; golden
+masters intact (SPM 5319, STPM 2026); `makemigrations --check` clean. Bite-checked (top-up
+disabled -> 4 tests fail, verified as landed before the run).
+
+**Found by the owner** reading application #105: ten subjects, every one at A- or better, merit
+reading **69.4**.
+
+`prepare_merit_inputs` (`apps/courses/engine.py`) trusts the student's explicit stream designation
+(TD-063) and drops any designated subject they hold no grade for. When that left **exactly one**
+subject it carried on with one — and Sec2 is scored out of **two**, so half the 30% band scored a
+subject the student never sat, at G = 0. Zero left falls back to the pool heuristic and one or
+more than one were both handled; only "exactly one" was not.
+
+It now tops Sec2 up from the student's best remaining non-core graded subjects. **Topping up can
+only RAISE a score** — Sec2 weights a grade point at 5/6 against Sec3's 5/18, so promoting a
+subject out of Sec3 always gains more than its replacement below can lose; verified over all nine
+live carriers. Two or more designations are untouched, and a lone designation with nothing to
+promote keeps its one-item Sec2.
+
+**Upstream cause, NOT fixed here** (`halatuju-web/src/app/onboarding/grades/page.tsx`): the grades
+page pre-fills the four SCIENCE stream slots for everybody and, on save, keeps whichever slots
+still name a subject — GRADED OR NOT (`aliranSubjects.filter(Boolean)` drops empty slots only). A
+student who clears three, grades one, and types their real subjects into the ELECTIVE list below
+ships one usable stream subject. #105 is exactly that: `stream_subjects` is `["bio","addmath"]`
+against an accounts grade set, `elective_subjects` holds his five real ones. Two follow-ups belong
+in the lane: stop defaulting the stream to Science, and drop ungraded subjects on save.
+
+**Blast radius, measured on production before the change:** 15 profiles sit in the one-subject
+gap, **9 of them bursary applicants**, each losing **7-15 merit points** (#22 66.0→81.0, #76
+49.7→64.1, #90 65.4→77.9, #102 68.0→81.8, #105 69.4→84.4, #131 58.9→70.2, #133 71.6→82.9, #137
+51.1→64.9, #59 29.4→36.3). **NO backfill is owed and none is possible** — merit has no stored
+column (`serializers_admin._application_merit_score`: "there is no stored merit column"); all 15
+correct themselves the moment this deploys.
+
+**No shortlist decision moves.** The merit gate (`shortlisting._academic_ok`) runs only when a
+cohort sets `min_merit_score`, and the one live cohort (`b40-2026`) has it NULL — the academic
+floor counts A's. This changes what the officer list ranks by, what the cockpit displays, and the
+odds the public course guide shows (`eligibility_service.compute_student_merit` reads the same
+function).
+
+### Fixed
+- `prepare_merit_inputs` tops an explicit stream designation up to two graded subjects
+  (`apps/courses/engine.py`), with the reason written at the line so it is not "simplified" away.
+- `TestExplicitStreamToppedUpToTwo` (`apps/courses/tests/test_merit_pools.py`, +7) pins the
+  top-up, the never-lowers property, #105's real grade set, and both directions it must not touch.
 
 ## Layer 1 F7e — the contrast sprint - 2026-09-04
 

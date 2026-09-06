@@ -306,6 +306,30 @@ def prepare_merit_inputs(grades, stream_subjects=None):
     if explicit:
         # Trust the student's explicit designation (TD-063).
         stream_candidates = explicit
+        if len(stream_candidates) < 2:
+            # ⚠ TOP UP TO TWO — DO NOT REMOVE. Sec2 is scored out of TWO
+            # subjects, so a designation yielding only one leaves half the 30%
+            # band scoring a subject the student never sat, at G = 0 points.
+            #
+            # That is not a rare edge. The grades page pre-fills the four
+            # SCIENCE stream slots for everybody and, on save, keeps whichever
+            # slots still name a subject — GRADED OR NOT (grades/page.tsx,
+            # `aliranSubjects.filter(Boolean)`). A student who clears three of
+            # them and types their real subjects into the ELECTIVE list below
+            # ships exactly one usable stream subject. Measured on production
+            # 2026-09-02: 15 profiles, 9 of them bursary applicants, each
+            # losing 7-15 merit points on a score they can see.
+            #
+            # Topping up can only RAISE a merit score, never lower one: Sec2
+            # weights a grade point at 5/6 against Sec3's 5/18, so promoting a
+            # subject out of Sec3 always gains more than its replacement below
+            # can lose. Verified over all 9 live carriers.
+            spare = sorted(
+                (k for k in student_keys
+                 if k not in core_keys and k not in stream_candidates),
+                key=lambda k: MERIT_GRADE_POINTS.get(grades[k], 0), reverse=True,
+            )
+            stream_candidates = stream_candidates + spare[:2 - len(stream_candidates)]
     else:
         # Fallback: legacy count-heuristic over the pools.
         science_present = student_keys & SCIENCE_POOL

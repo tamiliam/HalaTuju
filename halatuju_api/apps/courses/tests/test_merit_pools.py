@@ -14,6 +14,7 @@ from django.test import SimpleTestCase
 
 from apps.courses.engine import (
     prepare_merit_inputs,
+    calculate_merit_score,
     SCIENCE_POOL,
     ARTS_POOL,
     TECHNICAL_POOL,
@@ -129,3 +130,82 @@ class TestExplicitStreamSubjects(SimpleTestCase):
         _s1, sec2, _s3 = prepare_merit_inputs(
             grades, stream_subjects=['math', 'phy', 'chem'])
         self.assertEqual(sorted(sec2), sorted(['A', 'B']))  # math excluded
+
+
+class TestExplicitStreamToppedUpToTwo(SimpleTestCase):
+    """Sec2 is scored out of TWO subjects. A designation that yields only one
+    used to leave the other half scoring a subject the student never sat, at
+    G = 0 — silently costing 7-15 merit points on 15 live profiles.
+
+    The cause is upstream: the grades page pre-fills the four SCIENCE stream
+    slots for everyone and saves whichever slots still name a subject, GRADED
+    OR NOT. A student who clears three, grades one, and types their real
+    subjects into the ELECTIVE list ships exactly one usable stream subject.
+    """
+
+    def test_one_designated_subject_is_topped_up(self):
+        # Only Add Maths is designated; the best remaining non-core subject
+        # joins it rather than the second Sec2 slot scoring zero.
+        grades = {**CORES, 'addmath': 'A-', 'poa': 'A', 'ekonomi': 'B'}
+        _s1, sec2, sec3 = prepare_merit_inputs(grades, stream_subjects=['addmath'])
+        self.assertEqual(len(sec2), 2)
+        self.assertEqual(sorted(sec2), sorted(['A', 'A-']))  # addmath + poa
+        self.assertEqual(sec3, ['B'])                        # ekonomi drops down
+
+    def test_a_designated_subject_with_no_grade_is_topped_up(self):
+        # The #105 shape: Biology sits in the saved stream list but was never
+        # sat, so the designation resolves to Add Maths alone.
+        grades = {**CORES, 'addmath': 'A-', 'poa': 'A', 'ekonomi': 'A'}
+        _s1, sec2, _s3 = prepare_merit_inputs(
+            grades, stream_subjects=['bio', 'addmath'])
+        self.assertEqual(len(sec2), 2)
+        self.assertEqual(sorted(sec2), sorted(['A', 'A-']))
+
+    def test_topping_up_never_lowers_the_merit_score(self):
+        # Sec2 weights a point at 5/6 against Sec3's 5/18, so promoting a
+        # subject out of Sec3 always gains more than its replacement loses.
+        grades = {**CORES, 'addmath': 'A-', 'poa': 'A', 'ekonomi': 'A',
+                  'sci': 'A', 'moral': 'A'}
+        one_only = calculate_merit_score(
+            [CORES['bm'], CORES['eng'], CORES['math'], CORES['history']],
+            ['A-'],                       # what the old code produced
+            ['A', 'A'], coq_score=0)
+        s1, sec2, sec3 = prepare_merit_inputs(grades, stream_subjects=['addmath'])
+        topped = calculate_merit_score(s1, sec2, sec3, coq_score=0)
+        self.assertGreater(topped['final_merit'], one_only['final_merit'])
+
+    def test_application_105_scores_as_the_ten_As_it_holds(self):
+        # Production application #105: ten subjects, every one at A- or better,
+        # reading 69.4 because 'bio' — never sat — held a Sec2 slot.
+        grades = {'bm': 'A-', 'eng': 'A', 'poa': 'A', 'sci': 'A', 'history': 'A',
+                  'math': 'A', 'moral': 'A', 'addmath': 'A-', 'b_tamil': 'A-',
+                  'ekonomi': 'A'}
+        s1, sec2, sec3 = prepare_merit_inputs(
+            grades, stream_subjects=['bio', 'addmath'])
+        merit = round(calculate_merit_score(s1, sec2, sec3, 7.49)['final_merit'], 1)
+        self.assertEqual(merit, 84.4)   # was 69.4
+
+    def test_two_designated_subjects_are_left_alone(self):
+        # The top-up must touch NOTHING when the student named two or more —
+        # their own picks stay Sec2 even when a stronger subject sits outside.
+        grades = {**CORES, 'phy': 'C', 'chem': 'C', 'ekonomi': 'A+'}
+        _s1, sec2, sec3 = prepare_merit_inputs(
+            grades, stream_subjects=['phy', 'chem'])
+        self.assertEqual(sorted(sec2), sorted(['C', 'C']))
+        self.assertEqual(sec3, ['A+'])
+
+    def test_all_designated_subjects_ungraded_still_falls_back(self):
+        # Nothing designated survives → the legacy pool heuristic, unchanged.
+        grades = {**CORES, 'ekonomi': 'A', 'poa': 'B'}
+        self.assertEqual(
+            prepare_merit_inputs(grades, stream_subjects=['bio']),
+            prepare_merit_inputs(grades),
+        )
+
+    def test_a_lone_designation_with_nothing_to_top_up_from(self):
+        # A student with only one non-core subject keeps a one-item Sec2 —
+        # there is nothing to promote, and the top-up must not invent one.
+        grades = {**CORES, 'addmath': 'A'}
+        _s1, sec2, sec3 = prepare_merit_inputs(grades, stream_subjects=['addmath'])
+        self.assertEqual(sec2, ['A'])
+        self.assertEqual(sec3, [])
