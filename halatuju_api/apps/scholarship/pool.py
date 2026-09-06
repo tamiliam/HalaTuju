@@ -337,31 +337,62 @@ def eligible_pool_queryset(model):
     )
 
 
-# A just-funded student LINGERS in the sponsor's view as a read-only "Funded" card for
-# POOL_FUNDED_GRACE_HOURS (owner 2026-07-21) — social proof of momentum — before dropping off.
+# A just-funded student LINGERS in the sponsor's view as a read-only "Funded" card — social proof
+# of momentum — before dropping off. How LONG is per-organisation configuration now
+# (`org_config` `pool_funded_grace_days`, Org Config Sprint A; platform default still
+# POOL_FUNDED_GRACE_HOURS, owner 2026-07-21).
 # These are the funded lifecycle states the grace window shows (keyed on awarded_at, stamped by
 # fund_student). 'closed' is excluded (a wrapped-up case, not a fresh win).
 RECENTLY_FUNDED_STATES = ('awarded', 'active', 'maintenance')
 
 
-def display_pool_queryset(model):
-    """The DISPLAY pool — what an approved sponsor SEES: every fundable (``recommended``) student
-    PLUS anyone funded within the last ``POOL_FUNDED_GRACE_HOURS`` (shown as a full-bar "Funded"
-    card, not fundable). Same anon-published + active-share-consent privacy gate as the fundable
-    set. The grace window is a pure query-time filter — a funded student simply falls out once the
-    window passes, so nothing schedules or writes to "hide" them. Used by the pool LIST + DETAIL
-    views only; fundability and the public count keep ``eligible_pool_queryset``."""
+def _funded_grace_window():
+    """The grace-window Q for the display pool, PER ORGANISATION (Org Config Sprint A).
+
+    The window is organisation configuration now (`org_config` key `pool_funded_grace_days`,
+    set on Organisation → Settings → Configuration; BrightPath's owner set 30 days on
+    2026-09-07). The platform default still delegates to `POOL_FUNDED_GRACE_HOURS` (48h = 2
+    days), so an organisation that never chose behaves exactly as before.
+
+    ⚠ THE DEFAULT ARM MUST BE SPELLED `~Q(id__in=…) | Q(isnull)`, NOT `~Q(id__in=…)` ALONE.
+    SQL's `NOT (col IN (…))` is NULL — i.e. false — for a NULL column, so the bare negation
+    silently drops every application whose `owning_organisation` is NULL (they exist; the
+    NOT-NULL tightening is still an open TD). A NULL-org application follows the platform
+    default; it must never vanish from the pool because somebody ELSE configured a window.
+    """
     from datetime import timedelta
-    from django.conf import settings
     from django.db.models import Q
     from django.utils import timezone
-    grace = getattr(settings, 'POOL_FUNDED_GRACE_HOURS', 48)
-    cutoff = timezone.now() - timedelta(hours=grace)
+    from apps.courses import org_config
+
+    now = timezone.now()
+    funded = Q(status__in=RECENTLY_FUNDED_STATES)
+    custom = org_config.custom_values('pool_funded_grace_days')
+    default_cutoff = now - timedelta(days=org_config.default('pool_funded_grace_days'))
+    if not custom:
+        return funded & Q(awarded_at__gte=default_cutoff)
+    window = (Q(awarded_at__gte=default_cutoff)
+              & (~Q(owning_organisation_id__in=list(custom))
+                 | Q(owning_organisation_id__isnull=True)))
+    for org_id, days in custom.items():
+        window |= Q(owning_organisation_id=org_id,
+                    awarded_at__gte=now - timedelta(days=days))
+    return funded & window
+
+
+def display_pool_queryset(model):
+    """The DISPLAY pool — what an approved sponsor SEES: every fundable (``recommended``) student
+    PLUS anyone funded within their organisation's grace window (shown as a full-bar "Funded"
+    card, not fundable; see ``_funded_grace_window``). Same anon-published + active-share-consent
+    privacy gate as the fundable set. The grace window is a pure query-time filter — a funded
+    student simply falls out once the window passes, so nothing schedules or writes to "hide"
+    them. Used by the pool LIST + DETAIL views only; fundability and the public count keep
+    ``eligible_pool_queryset``."""
+    from django.db.models import Q
     return (
         model.objects
         .filter(
-            Q(status='recommended')
-            | Q(status__in=RECENTLY_FUNDED_STATES, awarded_at__gte=cutoff),
+            Q(status='recommended') | _funded_grace_window(),
             sponsor_profile__anon_published=True,
             consents__consent_type=SHARE_CONSENT_TYPE,
             consents__is_active=True,

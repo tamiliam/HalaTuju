@@ -619,6 +619,41 @@ class OrganisationTheme(models.Model):
         return super().save(*args, **kwargs)
 
 
+class OrganisationConfiguration(models.Model):
+    """The values an organisation has CHANGED from the platform defaults (Org Config Sprint A).
+
+    One row per organisation; `values` holds ONLY the keys the organisation set, e.g.
+    `{"pool_funded_grace_days": 30}`. A missing key — or a missing row — means the platform
+    default, read live from Django settings. What may be stored (keys, types, bounds) is the
+    REGISTRY in `courses.org_config`; `save()` validates through it, so the fence is on the
+    model, not on an endpoint (the `OrganisationTheme` precedent — a shell caller cannot go
+    around it).
+
+    ⚠ STORE ONLY WHAT WAS CHANGED, NEVER A COPY OF THE DEFAULTS. A copied default is correct on
+    the day it is written and wrong the day the platform default moves — the same rot as a
+    backfill without its write path. Blank is an ANSWER: "follow the platform".
+    """
+    organisation = models.OneToOneField(
+        PartnerOrganisation, on_delete=models.CASCADE, related_name='configuration')
+    values = models.JSONField(default=dict)
+    updated_by_email = models.CharField(max_length=254, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'organisation_configurations'
+
+    def __str__(self):
+        return f'Configuration for {self.organisation.code}'
+
+    def save(self, *args, **kwargs):
+        # The seam every writer passes. Raises OrgConfigError (a ValueError) on an unknown key,
+        # a non-integer, or a value outside the registry's bounds.
+        from . import org_config
+        org_config.validate_values(self.values)
+        return super().save(*args, **kwargs)
+
+
 class PartnerAdmin(models.Model):
     """Admin user for a partner organisation. Separate from StudentProfile."""
     # Role categories. Kept ALONGSIDE is_super_admin (expand-contract): is_super_admin

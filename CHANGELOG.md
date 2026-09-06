@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## The organisation gets a Configuration tab, and the funded card learns to stay - 2026-09-07
+
+**Org Config Sprint A** (roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md`, owner-approved
+phased build). Worktree `.worktrees/org-config`, branch `feat/org-config-tab`.
+**Migration `courses/0074`** (one new table `organisation_configurations`, additive, RLS +
+service_role policy — MIGRATE-FIRST).
+
+**Why.** The sponsor page dropped an awarded student's card after 2 days
+(`POOL_FUNDED_GRACE_HOURS`, a platform env var). The owner wants 30 days — set on a screen, not
+hard-coded, and a home for every organisation-wide value that is hard-coded today.
+
+**What shipped:**
+- **`courses/org_config.py`** — the registry (key, bounds, unit, group, default), the storage
+  fence (run in `OrganisationConfiguration.save()`, the `OrganisationTheme` precedent), and the
+  read seam (`value` / `stored` / `custom_values`). Blank = platform default, read LIVE from
+  Django settings — an organisation with no row behaves byte-identically to before.
+- **First wired setting: `pool_funded_grace_days`** (1–90; platform default 2). ⚠ THE DEFAULT ARM
+  IN `pool._funded_grace_window` IS SPELLED `~Q(in) | Q(isnull)` DELIBERATELY — SQL's
+  `NOT (col IN …)` is NULL-false, so the bare negation silently drops every NULL-org application
+  the moment ANY organisation configures a window. A test pins it.
+- **`GET/PUT admin/scholarship/organisation/configuration/`** — org derived, cross-org 404
+  never 403, super names `?org=`, org_admin + super only; PUT all-or-nothing;
+  `AUDIT org_config_set` per changed key (old → new, 'default' = no stored value). A MIRROR of
+  the theme view's fence, not a subclass (inheriting would drag DELETE onto this route).
+  Classified in `test_org_fence.py` as `organisation-config-org-fenced`.
+- **Organisation → Settings grows the second tab** the one-tab shell was waiting for:
+  `OrganisationConfigurationTab` — one row per registry setting, blank box = default with the
+  default named beside it, Save asleep until a value differs (the nothing-to-save standard),
+  server refusals rendered by row. i18n `admin.orgSettings.config.*` en/ms/ta (ms/ta first drafts).
+
+**Gates:** +24 pytest (`test_org_config.py` — registry fence, per-org window incl. the NULL-org
+trap, endpoint fence, tab-to-pool end-to-end), full backend suite green; jest 1709 → **1722**
+(13 rendered tests on the tab); `next lint` 0 errors; i18n 4746 → **4763 × 3**; `next build`
+clean; `makemigrations --check` clean. Per-org filter bite-checked (disabled → 2 tests fail).
+
+**Deferred out of Sprint A → Sprint B:** `sponsor_email_max_cards`. Its two read sites render
+sponsor emails with no organisation in hand; threading the org through those senders is its own
+task, and a setting shown before it is wired would be decorative (the rule the sprint is built on).
+
+**At deploy, in order:** (1) apply `courses/0074` migrate-first via Supabase MCP (DDL in the
+migration docstring, RLS in the same step) + record the ledger row; (2) confirm Security Advisor
+clean; (3) push (api + web); (4) the owner — or an MCP write mirroring the endpoint's shape — sets
+BrightPath's `pool_funded_grace_days` to **30** on the new tab; a card funded within the last 30
+days reappears on the sponsor browse page immediately (pure query-time window, no backfill).
+
 ## The grades page stops choosing a student's subjects for them - 2026-09-02
 
 **Small change (hotfix), web only.** NO migration, NO backend. 5 files. Worktree

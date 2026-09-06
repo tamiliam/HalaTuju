@@ -5705,7 +5705,34 @@
       "title": "Organisation settings",
       "subtitle": "What your organisation decides for itself. These apply across every gift programme you run.",
       "tab": {
-        "colours": "Colours"
+        "colours": "Colours",
+        "configuration": "Configuration"
+      },
+      "config": {
+        "subtitle": "Values your organisation can tune. A blank field follows the platform default.",
+        "loadError": "The configuration could not be loaded. Please refresh.",
+        "organisationRequired": "Choose an organisation.",
+        "group": {
+          "sponsor_page": "Sponsor page"
+        },
+        "setting": {
+          "pool_funded_grace_days": {
+            "label": "Funded student card — days shown",
+            "desc": "How long a newly funded student's card stays on the sponsor browse page after being funded."
+          }
+        },
+        "unit": {
+          "days": "days"
+        },
+        "defaultNote": "Platform default: {n} {unit}",
+        "rowInvalid": "Enter a whole number between {min} and {max}, or leave blank for the default.",
+        "save": "Save changes",
+        "saved": "Saved. The change is live now.",
+        "refused": "The server refused the value for “{label}”. Check it and try again.",
+        "errorGeneric": "Could not save. Please try again.",
+        "invalid": "Fix the highlighted value first.",
+        "unsaved": "Unsaved changes",
+        "nothingToDo": "No unsaved changes"
       },
       "colours": {
         "subtitle": "Set the colour your students and sponsors see across the programme.",

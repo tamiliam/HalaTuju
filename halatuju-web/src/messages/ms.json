@@ -5705,7 +5705,34 @@
       "title": "Tetapan organisasi",
       "subtitle": "Apa yang ditetapkan oleh organisasi anda sendiri. Ini terpakai kepada setiap program pemberian yang anda jalankan.",
       "tab": {
-        "colours": "Warna"
+        "colours": "Warna",
+        "configuration": "Konfigurasi"
+      },
+      "config": {
+        "subtitle": "Nilai yang boleh dilaraskan oleh organisasi anda. Ruang kosong mengikut tetapan lalai platform.",
+        "loadError": "Konfigurasi tidak dapat dimuatkan. Sila muat semula.",
+        "organisationRequired": "Pilih organisasi.",
+        "group": {
+          "sponsor_page": "Halaman penaja"
+        },
+        "setting": {
+          "pool_funded_grace_days": {
+            "label": "Kad pelajar yang dibiayai — bilangan hari dipaparkan",
+            "desc": "Berapa lama kad pelajar yang baru dibiayai kekal pada halaman semakan penaja selepas dibiayai."
+          }
+        },
+        "unit": {
+          "days": "hari"
+        },
+        "defaultNote": "Lalai platform: {n} {unit}",
+        "rowInvalid": "Masukkan nombor bulat antara {min} dan {max}, atau biarkan kosong untuk lalai.",
+        "save": "Simpan perubahan",
+        "saved": "Disimpan. Perubahan berkuat kuasa sekarang.",
+        "refused": "Pelayan menolak nilai untuk “{label}”. Semak dan cuba lagi.",
+        "errorGeneric": "Tidak dapat disimpan. Sila cuba lagi.",
+        "invalid": "Betulkan nilai yang ditanda dahulu.",
+        "unsaved": "Perubahan belum disimpan",
+        "nothingToDo": "Tiada perubahan belum disimpan"
       },
       "colours": {
         "subtitle": "Tetapkan warna yang dilihat pelajar dan penaja anda di seluruh program.",

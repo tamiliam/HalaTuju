@@ -6230,6 +6230,144 @@ class AdminOrganisationThemeRevertView(AdminOrganisationThemeView):
         return Response(self._payload(org))
 
 
+class AdminOrganisationConfigurationView(_AdminBase):
+    """GET/PUT `admin/scholarship/organisation/configuration/` — the values an organisation tunes.
+
+    Org Config Sprint A (2026-09-07). The second tab of Organisation → Settings, beside Colours.
+    The tab shows a small registry of organisation-wide values (`courses.org_config.SETTINGS`);
+    a blank field means "follow the platform default", and the stored row holds ONLY what the
+    organisation changed. First (and so far only) setting: `pool_funded_grace_days` — how long a
+    just-funded student's card stays on the sponsor browse page.
+
+    ⚠ A SETTING APPEARS HERE ONLY WHEN CODE READS IT. The registry is the catalogue; the read
+    sites are the feature. Adding a row without its consumer is the "UI asserts what nothing
+    checks" defect — see `org_config`'s module docstring.
+
+    ⚠ THE ORGANISATION IS DERIVED, NEVER SENT — same fence, same 404-not-403, same refusal to
+    pick silently between two, mirroring `AdminOrganisationThemeView._organisation_for` next
+    door. (Deliberately NOT a subclass of the theme view: inheriting would drag its GET/PUT/
+    DELETE verbs onto this route, and a stray DELETE here must not discard a colour draft.)
+
+    Who may write: `super` and `org_admin` only — these values change what every sponsor of the
+    organisation sees, so they are the organisation's decision, held by its administrator.
+
+    PUT is ALL-OR-NOTHING: everything validates before anything is stored, and each changed key
+    writes an `AUDIT org_config_set` line carrying old → new ('default' = no stored value).
+    """
+
+    ROLES = ('org_admin',)
+
+    def _gate(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        if not self.has_role(admin, *self.ROLES):
+            return None, self._deny_role()
+        return admin, None
+
+    def _organisation_for(self, admin, code):
+        """Mirrors `AdminOrganisationThemeView._organisation_for` — see its docstring."""
+        from apps.courses.models import PartnerOrganisation
+        qs = PartnerOrganisation.objects.filter(is_active=True).tenants()
+        if not self.has_role(admin, 'super'):
+            org_id = admin.owning_organisation_id
+            qs = qs.filter(id=org_id) if org_id else qs.none()
+        if code:
+            org = qs.filter(code=code).first()
+            if org is None:
+                return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+            return org, None
+        orgs = list(qs.order_by('code')[:2])
+        if not orgs:
+            return None, Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        if len(orgs) > 1:
+            return None, Response(
+                {'error': 'organisation_required', 'code': 'organisation_required',
+                 'organisations': [o.code for o in qs.order_by('code')]},
+                status=status.HTTP_400_BAD_REQUEST)
+        return orgs[0], None
+
+    def _payload(self, org):
+        from apps.courses import org_config
+        rows = []
+        for key, spec in org_config.SETTINGS.items():
+            rows.append({
+                'key': key,
+                'group': spec['group'],
+                'unit': spec['unit'],
+                'min': spec['min'],
+                'max': spec['max'],
+                # None = "following the platform default" — the screen renders a blank box with
+                # the default beside it, never the default AS the value (a copied default rots).
+                'value': org_config.stored(org, key),
+                'default': org_config.default(key),
+            })
+        return {
+            'organisation': {'code': org.code, 'name': org.name},
+            'settings': rows,
+        }
+
+    def get(self, request):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
+        if err:
+            return err
+        return Response(self._payload(org))
+
+    def put(self, request):
+        from apps.courses import org_config
+        from apps.courses.models import OrganisationConfiguration
+
+        admin, err = self._gate(request)
+        if err:
+            return err
+        org, err = self._organisation_for(admin, (request.query_params.get('org') or '').strip())
+        if err:
+            return err
+
+        changes = request.data.get('values')
+        if not isinstance(changes, dict):
+            return Response({'error': 'bad_values', 'code': 'bad_values'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate EVERYTHING before writing ANYTHING (the programme-config rule): a half-applied
+        # save is worse than a refused one. `None` means "clear back to the platform default" and
+        # is valid for any known key; everything else goes through the registry's own fence.
+        to_set = {k: v for k, v in changes.items() if v is not None}
+        to_clear = [k for k, v in changes.items() if v is None]
+        try:
+            for key in to_clear:
+                if key not in org_config.SETTINGS:
+                    raise org_config.OrgConfigError('unknown_setting', key)
+            org_config.validate_values(to_set)
+        except org_config.OrgConfigError as exc:
+            code = exc.code
+            http = status.HTTP_404_NOT_FOUND if code == 'unknown_setting' else status.HTTP_400_BAD_REQUEST
+            return Response({'error': code, 'code': code, 'key': exc.key}, status=http)
+
+        row, _created = OrganisationConfiguration.objects.get_or_create(organisation=org)
+        values = dict(row.values or {})
+        for key in to_clear:
+            was = values.pop(key, None)
+            if was is not None:
+                logger.info('AUDIT org_config_set org=%s key=%s was=%s now=default by=%s',
+                            org.code, key, was, admin.email or '')
+        for key, new in to_set.items():
+            was = values.get(key)
+            if was == new:
+                continue
+            values[key] = new
+            logger.info('AUDIT org_config_set org=%s key=%s was=%s now=%s by=%s',
+                        org.code, key, 'default' if was is None else was, new,
+                        admin.email or '')
+        row.values = values
+        row.updated_by_email = admin.email or ''
+        row.save()
+        return Response(self._payload(org))
+
+
 class AdminProgrammeConfigurationView(_AdminBase):
     """GET/PUT `admin/scholarship/programme/configuration/` — what ONE programme asks for.
 

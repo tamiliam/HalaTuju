@@ -2981,6 +2981,48 @@ export async function revertOrganisationTheme(
     `/api/v1/admin/scholarship/organisation/theme/revert/${q}`, 'POST', {}, options)
 }
 
+// ── Org Config Sprint A: the organisation's tunable values ──────────────────
+
+/** One registry setting, for ONE organisation. */
+export interface OrganisationConfigSetting {
+  key: string
+  group: string
+  unit: string
+  min: number
+  max: number
+  /** ⚠ null = FOLLOWING THE PLATFORM DEFAULT. The server never returns a copied default as the
+   *  value — a copied default would go stale the day the platform default moves. */
+  value: number | null
+  /** The platform default, read live from the server's settings. */
+  default: number
+}
+
+export interface OrganisationConfiguration {
+  organisation: { code: string; name: string }
+  settings: OrganisationConfigSetting[]
+}
+
+/** GET the organisation's tunable values. `org` is optional for an org_admin (their one
+ *  organisation) and required for a super when more than one tenant exists
+ *  (`organisation_required`). */
+export async function getOrganisationConfiguration(
+  org?: string, options?: ApiOptions,
+): Promise<OrganisationConfiguration> {
+  const q = org ? `?org=${encodeURIComponent(org)}` : ''
+  return adminFetch(`/api/v1/admin/scholarship/organisation/configuration/${q}`, options)
+}
+
+/** Save changed values. Send ONLY the keys being changed; `null` clears a key back to the
+ *  platform default. The server validates everything before storing anything (all-or-nothing)
+ *  and refuses with `out_of_range` / `bad_value` / `unknown_setting` plus the offending `key`. */
+export async function saveOrganisationConfiguration(
+  values: Record<string, number | null>, org?: string, options?: ApiOptions,
+): Promise<OrganisationConfiguration> {
+  const q = org ? `?org=${encodeURIComponent(org)}` : ''
+  return adminMutate(
+    `/api/v1/admin/scholarship/organisation/configuration/${q}`, 'PUT', { values }, options)
+}
+
 export async function listReviewers(
   options?: ApiOptions,
 ): Promise<{ reviewers: AdminReviewer[]; programmes: AdminReviewerGift[] }> {

@@ -229,6 +229,11 @@ class TestFenceCoverageCompleteness(TestCase):
         # the coverage check enumerates subclasses, and a shared fence is still a fence per route.
         'AdminOrganisationThemePublishView': 'organisation-theme-org-fenced',
         'AdminOrganisationThemeRevertView': 'organisation-theme-org-fenced',
+        # Org Config Sprint A. Same derivation as the theme view (organisation from
+        # `admin.owning_organisation`; super names `?org=`; cross-org 404, never 403) — a
+        # MIRROR, not a subclass, so a stray verb on this route can never touch a colour draft.
+        # Payload = the registry's few tunable numbers for ONE organisation; no student data.
+        'AdminOrganisationConfigurationView': 'organisation-config-org-fenced',
         # base
         '_BursaryAdminBase': 'base — shared _agreement lookup',
         '_PaymentsBase': 'base — shared payments gate + org-fenced run lookup',
