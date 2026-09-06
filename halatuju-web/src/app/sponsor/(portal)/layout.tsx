@@ -163,7 +163,7 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
         <div className="container mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/sponsor" className="flex items-center gap-2 shrink-0">
             <BrandLogo width={100} height={36} />
-            <span className="text-sm font-semibold text-info-600">{t('sponsorAuth.badge')}</span>
+            <span className="text-sm font-semibold text-primary-600">{t('sponsorAuth.badge')}</span>
           </Link>
           <div className="flex items-center gap-0.5 sm:gap-1">
             {nav && (
@@ -173,7 +173,7 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
                     key={tb.href} href={tb.href}
                     aria-current={active(tb.href) ? 'page' : undefined}
                     className={`px-2.5 sm:px-3 py-2 text-sm font-medium rounded-lg ${
-                      active(tb.href) ? 'text-info-600 bg-info-50' : 'text-ground-600 hover:bg-ground-50'
+                      active(tb.href) ? 'text-primary-600 bg-primary-50' : 'text-ground-600 hover:bg-ground-50'
                     }`}
                   >
                     {tb.label}
@@ -193,7 +193,7 @@ function Chrome({ children, nav = false }: { children: ReactNode; nav?: boolean 
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
       {nav && (
         <footer className="container mx-auto px-4 sm:px-6 py-6 text-center text-xs text-ground-400">
-          <Link href="/sponsor/trust" className="text-ground-500 hover:text-info-600 underline">
+          <Link href="/sponsor/trust" className="text-ground-500 hover:text-primary-600 underline">
             {t('sponsorPortal.trust.footerLink')}
           </Link>
           <span className="mx-2">·</span>

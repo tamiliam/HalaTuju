@@ -36,7 +36,7 @@ export default function SponsorAuthCallbackPage() {
       <main className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-critical-600 mb-4">{error}</p>
-          <a href="/sponsor/login" className="text-info-600 hover:underline">{t('login.backToLogin')}</a>
+          <a href="/sponsor/login" className="text-primary-600 hover:underline">{t('login.backToLogin')}</a>
         </div>
       </main>
     )

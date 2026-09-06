@@ -146,7 +146,7 @@ export default function PartnerEmailsCard({ token, t }: {
                 <div className="col-start-2 sm:col-start-3 mt-2 sm:mt-0 self-center">
                   <button type="button" aria-expanded={open}
                     onClick={() => setOpenKind(open ? null : tpl.kind)}
-                    className="rounded-lg border border-ground-200 px-3 py-1.5 text-[13px] font-medium text-info-600 hover:bg-info-50">
+                    className="rounded-lg border border-ground-200 px-3 py-1.5 text-[13px] font-medium text-primary-600 hover:bg-primary-50">
                     {t('admin.sources.emails.wording')}{' '}
                     <span aria-hidden className={`inline-block text-[10px] transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
                   </button>

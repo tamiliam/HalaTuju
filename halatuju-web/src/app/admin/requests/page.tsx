@@ -285,7 +285,7 @@ export default function AdminRequestsPage() {
                 onDrop={onDropFiles}
                 className={`flex flex-col items-center justify-center gap-1 w-full rounded-lg border-2 border-dashed px-4 py-6 cursor-pointer transition-colors ${
                   dragging
-                    ? 'border-info-400 bg-info-50 text-info-700'
+                    ? 'border-primary-400 bg-primary-50 text-primary-700'
                     : 'border-ground-300 bg-ground-50 hover:border-info-300 hover:bg-info-50/40 text-ground-500'
                 }`}>
                 <span className="text-sm font-medium text-info-600">

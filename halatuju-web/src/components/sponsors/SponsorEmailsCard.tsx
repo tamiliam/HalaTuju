@@ -145,7 +145,7 @@ export default function SponsorEmailsCard({ token, t }: {
                 <div className="col-start-2 sm:col-start-3 mt-2 sm:mt-0 self-center">
                   <button type="button"
                     onClick={() => setOpenKind(open ? null : tpl.kind)}
-                    className="text-sm font-medium text-info-600 hover:text-info-800">
+                    className="text-sm font-medium text-primary-600 hover:text-primary-800">
                     {open ? t('admin.sources.cancel') : t('admin.sponsors.emails.edit')}
                   </button>
                 </div>

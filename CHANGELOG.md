@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## Every link now wears the organisation's colour — 2026-09-06
+
+The last Layer 1 item (F7f, closing TD-223). Links — and every other control a person clicks —
+were blue in two different spellings, split by which repaint sprint converted the file. Both
+looked the same on our own blue, so nobody ever saw it; an organisation with a green brand would
+have seen half its links go green and half stay blue.
+
+One rule now holds everywhere: **something you act on carries the organisation's colour;
+something that informs keeps the platform's meaning colour.** 122 small edits across 51 files.
+No behaviour change, no database change. With this, the themes plan is complete — light, dark,
+and a tenant's own colour, end to end.
+
 ## Layer 1 F7e — the contrast sprint - 2026-09-04
 
 **Sprint. SHIPPED AND DEPLOYED. TD-224 (high) is CLOSED.** `main` at `242b60fa`; only the WEB

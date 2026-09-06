@@ -26,7 +26,7 @@ export default function DocViewer({ doc, onClose }: { doc: ViewerDoc | null; onC
   if (!doc) return null
 
   const newTab = (
-    <a href={doc.url} target="_blank" rel="noreferrer" className="text-xs text-info-600 hover:underline">
+    <a href={doc.url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">
       {t('admin.scholarship.docsDrawer.viewer.newTab')} ↗
     </a>
   )

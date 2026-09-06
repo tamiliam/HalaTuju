@@ -106,7 +106,7 @@ export default function SponsorTermsWizard({ token, accountName, onAccepted }: {
               so the link lives in the chrome, at the moment someone is reading the reference. */}
           <p className="text-xs text-ground-500 border-t border-ground-200 pt-4">
             {t('sponsorPortal.terms.privacyNote')}{' '}
-            <Link href="/privacy" className="text-info-600 hover:underline">
+            <Link href="/privacy" className="text-primary-600 hover:underline">
               {t('sponsorAuth.privacyNotice')}
             </Link>.
           </p>

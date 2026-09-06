@@ -17,7 +17,7 @@ function Item({ item }: { item: QA }) {
     <details className="group rounded-xl border border-ground-200 bg-ground-0 transition-colors open:border-info-200 open:bg-info-50/30 hover:border-ground-300">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 font-medium text-ground-900 [&::-webkit-details-marker]:hidden">
         <span>{item.q}</span>
-        <svg className="h-5 w-5 shrink-0 text-ground-400 transition-transform duration-200 group-open:rotate-180 group-open:text-info-600"
+        <svg className="h-5 w-5 shrink-0 text-ground-400 transition-transform duration-200 group-open:rotate-180 group-open:text-primary-600"
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
         </svg>
@@ -65,7 +65,7 @@ export default function AdminFaqPage() {
           <h1 className="text-2xl font-bold text-ground-900">Frequently asked questions</h1>
           <p className="mt-1 text-sm text-ground-600">
             Short answers, grouped by role. Tap a question to expand it — and see the{' '}
-            <Link href="/admin/guide" className="font-medium text-info-600 hover:underline">Manual</Link> for a
+            <Link href="/admin/guide" className="font-medium text-primary-600 hover:underline">Manual</Link> for a
             full walkthrough.
           </p>
         </div>

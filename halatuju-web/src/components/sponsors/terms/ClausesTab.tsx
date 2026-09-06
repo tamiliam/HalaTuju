@@ -97,7 +97,7 @@ export default function ClausesTab({
               </span>
               {s.is_quiz_candidate && (
                 <>
-                  <button type="button" className="text-info-600 hover:underline"
+                  <button type="button" className="text-primary-600 hover:underline"
                     onClick={() => setOpen(open === s.order ? null : s.order)}>
                     {open === s.order
                       ? t('admin.sponsors.terms.hideQuiz')

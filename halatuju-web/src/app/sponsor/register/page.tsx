@@ -104,7 +104,7 @@ export default function SponsorRegisterPage() {
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
-          <span className="text-lg font-bold text-info-600">{t('sponsorAuth.badge')}</span>
+          <span className="text-lg font-bold text-primary-600">{t('sponsorAuth.badge')}</span>
         </div>
 
         <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
@@ -113,7 +113,7 @@ export default function SponsorRegisterPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-positive-100 text-positive-700 text-xl">✉️</div>
               <h1 className="text-xl font-bold text-ground-900 mt-3">{t('sponsorAuth.confirmTitle')}</h1>
               <p className="text-sm text-ground-600 mt-2">{t('sponsorAuth.confirmBody')} <strong>{email}</strong></p>
-              <Link href="/sponsor/login" className="inline-block mt-5 text-sm font-semibold text-info-600 hover:underline">
+              <Link href="/sponsor/login" className="inline-block mt-5 text-sm font-semibold text-primary-600 hover:underline">
                 {t('login.backToLogin')}
               </Link>
             </div>
@@ -188,7 +188,7 @@ export default function SponsorRegisterPage() {
                 <label className="flex items-start gap-2 text-sm text-ground-600">
                   <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
                   <span>{t('sponsorAuth.consent')}{' '}
-                    <Link href="/privacy" className="text-info-600 hover:underline">{t('sponsorAuth.privacyNotice')}</Link>.
+                    <Link href="/privacy" className="text-primary-600 hover:underline">{t('sponsorAuth.privacyNotice')}</Link>.
                   </span>
                 </label>
 
@@ -216,14 +216,14 @@ export default function SponsorRegisterPage() {
 
               <p className="text-center text-sm text-ground-500 mt-6">
                 {t('sponsorAuth.haveAccount')}{' '}
-                <Link href="/sponsor/login" className="font-semibold text-info-600 hover:underline">{t('sponsorAuth.signInLink')}</Link>
+                <Link href="/sponsor/login" className="font-semibold text-primary-600 hover:underline">{t('sponsorAuth.signInLink')}</Link>
               </p>
             </>
           )}
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-ground-500 hover:text-info-600 transition-colors">{t('sponsorAuth.backToHome')}</Link>
+          <Link href="/" className="text-sm text-ground-500 hover:text-primary-600 transition-colors">{t('sponsorAuth.backToHome')}</Link>
         </div>
       </div>
     </main>

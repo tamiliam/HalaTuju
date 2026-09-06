@@ -219,7 +219,7 @@ export default function AdminStudentList() {
                 <td className="px-4 py-3.5 border-l-[3px] border-l-blue-500">
                   <Link
                     href={`/admin/students/${s.supabase_user_id}`}
-                    className="text-info-600 font-medium hover:underline"
+                    className="text-primary-600 font-medium hover:underline"
                   >
                     {s.name || '\u2014'}
                   </Link>

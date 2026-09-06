@@ -2917,7 +2917,12 @@ described would have fixed the buttons and left every link unreadable, with a gr
 
 ---
 
-### [TD-223] Links are `info` on some surfaces and `brand` on others — low
+### ✅ [TD-223 — RESOLVED 2026-09-06, as Layer 1 F7f] Links are `info` on some surfaces and `brand` on others — low
+
+**Resolved:** 122 class edits across 51 files; every interactive element (links, tabs, sort
+headers, ghost buttons, selected options, the identity badges) now carries `primary-*`. Stops
+preserved, so the gate's `link_on_card` pin at `-600` holds untouched. One deliberate keep:
+`ClauseEditor.tsx:363`, a `<code>` token chip — informational. Roadmap F7f section has the detail.
 
 **Found:** Layer 1 F6 (2026-09-02), converting the public course guide. Carried into the register at
 F7d, which is the sprint that was supposed to settle it and did not.

@@ -19,7 +19,7 @@ export default function TrustPage() {
   if (!trust) {
     return (
       <div className="max-w-3xl">
-        <Link href="/sponsor" className="text-sm text-info-600 hover:underline">← {t('sponsorPortal.trust.back')}</Link>
+        <Link href="/sponsor" className="text-sm text-primary-600 hover:underline">← {t('sponsorPortal.trust.back')}</Link>
         <p className="text-center text-ground-500 mt-12">{t('common.loading')}</p>
       </div>
     )
@@ -34,7 +34,7 @@ export default function TrustPage() {
 
   return (
     <div className="max-w-4xl">
-      <Link href="/sponsor" className="text-sm text-info-600 hover:underline">← {t('sponsorPortal.trust.back')}</Link>
+      <Link href="/sponsor" className="text-sm text-primary-600 hover:underline">← {t('sponsorPortal.trust.back')}</Link>
       <h1 className="text-2xl font-bold text-ground-900 mt-3">{t('sponsorPortal.trust.title')}</h1>
       <p className="text-sm text-ground-500 mt-1 max-w-2xl">{t('sponsorPortal.trust.intro')}</p>
 

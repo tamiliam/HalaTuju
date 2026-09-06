@@ -87,7 +87,7 @@ export default function InvitationEmailsCard({ token, t }: {
               </div>
               <button type="button"
                 onClick={() => setOpenKind(openKind === tpl.kind ? null : tpl.kind)}
-                className="shrink-0 text-sm font-medium text-info-600 hover:text-info-700 hover:underline">
+                className="shrink-0 text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline">
                 {t(openKind === tpl.kind ? 'common.cancel' : 'admin.reviewers.emails.edit')}
               </button>
             </div>

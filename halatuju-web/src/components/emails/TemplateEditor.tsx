@@ -112,7 +112,7 @@ export default function TemplateEditor<T extends EditableTemplate>({
             <div className="flex flex-wrap gap-1.5">
               {template.placeholders.map((p) => (
                 <button key={p} type="button" onClick={() => dropIn(`{${p}}`)}
-                  className="rounded border border-ground-200 bg-info-50 px-1.5 py-0.5 font-mono text-[11px] text-info-700 hover:border-info-500">
+                  className="rounded border border-ground-200 bg-primary-50 px-1.5 py-0.5 font-mono text-[11px] text-primary-700 hover:border-primary-500">
                   {`{${p}}`}
                 </button>
               ))}

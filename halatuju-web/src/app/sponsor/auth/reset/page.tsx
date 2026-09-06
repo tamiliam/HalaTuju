@@ -73,7 +73,7 @@ export default function SponsorResetPasswordPage() {
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
-          <span className="text-lg font-bold text-info-600">{t('sponsorAuth.badge')}</span>
+          <span className="text-lg font-bold text-primary-600">{t('sponsorAuth.badge')}</span>
         </div>
 
         <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
@@ -85,7 +85,7 @@ export default function SponsorResetPasswordPage() {
             <div className="text-center">
               <h1 className="text-xl font-bold text-ground-900 mb-2">{t('sponsorAuth.resetPassword')}</h1>
               <p className="text-critical-600 text-sm mb-6">{t('sponsorAuth.resetLinkError')}</p>
-              <Link href="/sponsor/login" className="inline-block text-info-600 font-semibold hover:underline">
+              <Link href="/sponsor/login" className="inline-block text-primary-600 font-semibold hover:underline">
                 {t('sponsorAuth.requestNewLink')}
               </Link>
             </div>
@@ -130,7 +130,7 @@ export default function SponsorResetPasswordPage() {
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/sponsor/login" className="text-sm text-ground-500 hover:text-info-600 transition-colors">{t('login.backToLogin')}</Link>
+          <Link href="/sponsor/login" className="text-sm text-ground-500 hover:text-primary-600 transition-colors">{t('login.backToLogin')}</Link>
         </div>
       </div>
     </main>

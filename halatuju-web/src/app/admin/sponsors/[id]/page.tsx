@@ -193,7 +193,7 @@ export default function AdminSponsorDetailPage() {
 
   return (
     <div className="max-w-5xl font-plex flex flex-col gap-5">
-      <Link href="/admin/sponsors" className="text-xs text-ground-500 hover:text-info-600">
+      <Link href="/admin/sponsors" className="text-xs text-ground-500 hover:text-primary-600">
         ← {t('admin.sponsors.title')}
       </Link>
 
@@ -484,7 +484,7 @@ export default function AdminSponsorDetailPage() {
                       {/* The anonymous code the sponsor sees, so both sides mean the same
                           student; the arrow opens the full application. */}
                       <Link href={`/admin/scholarship/${s.application_id}`}
-                        className="font-mono text-[12.5px] text-info-600 hover:text-info-800">
+                        className="font-mono text-[12.5px] text-primary-600 hover:text-primary-800">
                         {s.ref} →
                       </Link>
                     </td>

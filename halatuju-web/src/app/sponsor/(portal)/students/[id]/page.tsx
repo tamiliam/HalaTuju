@@ -86,7 +86,7 @@ export default function StudentDetailPage() {
 
   return (
     <div className="max-w-4xl">
-      <Link href="/sponsor/students" className="text-sm text-info-600 hover:underline">← {t('sponsorPool.back')}</Link>
+      <Link href="/sponsor/students" className="text-sm text-primary-600 hover:underline">← {t('sponsorPool.back')}</Link>
 
       {unavailable ? (
         <p className="text-center text-ground-500 mt-12">{t('sponsorPool.notAvailable')}</p>

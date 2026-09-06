@@ -203,7 +203,7 @@ export default function InterviewScheduleCard({
             ) : (
               <div className="text-right">
                 <button type="button" onClick={() => setConfirmingReschedule(true)}
-                  className="text-xs text-info-600 hover:underline">
+                  className="text-xs text-primary-600 hover:underline">
                   {t('admin.scholarship.interview.schedule.reschedule')}
                 </button>
               </div>

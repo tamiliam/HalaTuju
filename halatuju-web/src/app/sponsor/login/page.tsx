@@ -84,7 +84,7 @@ export default function SponsorLoginPage() {
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <BrandLogo width={90} height={48} />
-          <span className="text-lg font-bold text-info-600">{t('sponsorAuth.badge')}</span>
+          <span className="text-lg font-bold text-primary-600">{t('sponsorAuth.badge')}</span>
         </div>
 
         <div className="bg-ground-0 rounded-2xl border border-ground-200 p-8 shadow-sm">
@@ -165,7 +165,7 @@ export default function SponsorLoginPage() {
 
               <p className="text-center text-sm text-ground-500 mt-6">
                 {t('sponsorAuth.noAccount')}{' '}
-                <Link href="/sponsor/register" className="font-semibold text-info-600 hover:underline">
+                <Link href="/sponsor/register" className="font-semibold text-primary-600 hover:underline">
                   {t('sponsorAuth.createAccount')}
                 </Link>
               </p>
@@ -206,7 +206,7 @@ export default function SponsorLoginPage() {
             <div className="text-center">
               <h1 className="text-2xl font-bold text-ground-900 mb-2">{t('sponsorAuth.checkEmail')}</h1>
               <p className="text-ground-600 mb-6">{t('sponsorAuth.resetSent')} <strong>{email}</strong></p>
-              <button onClick={() => { setStep('login'); setError(null) }} className="text-info-600 hover:underline text-sm">
+              <button onClick={() => { setStep('login'); setError(null) }} className="text-primary-600 hover:underline text-sm">
                 {t('login.backToLogin')}
               </button>
             </div>
@@ -214,7 +214,7 @@ export default function SponsorLoginPage() {
         </div>
 
         <div className="text-center mt-6">
-          <Link href="/" className="text-sm text-ground-500 hover:text-info-600 transition-colors">
+          <Link href="/" className="text-sm text-ground-500 hover:text-primary-600 transition-colors">
             {t('sponsorAuth.backToHome')}
           </Link>
         </div>

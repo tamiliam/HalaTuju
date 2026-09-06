@@ -153,7 +153,7 @@ export default function InterviewBookingPanel({
             <div className="mt-3 flex flex-wrap items-center gap-3">
               {reschedulable.length > 0 && (
                 <button type="button" onClick={toggleReschedule}
-                  className="text-sm text-info-600 hover:underline">
+                  className="text-sm text-primary-600 hover:underline">
                   {t(rescheduling
                     ? 'scholarship.application.interview.rescheduleKeep'
                     : 'scholarship.application.interview.reschedule')}
@@ -231,7 +231,7 @@ export default function InterviewBookingPanel({
             </div>
           ) : (
             <button type="button" onClick={() => { setError(''); setRequesting(true) }}
-              className="mt-4 block text-sm text-info-600 hover:underline">
+              className="mt-4 block text-sm text-primary-600 hover:underline">
               {t('scholarship.application.interview.altAsk')}
             </button>
           )}
@@ -267,7 +267,7 @@ export default function InterviewBookingPanel({
           </div>
         ) : (
           <button type="button" onClick={() => { setError(''); setMessaging(true) }}
-            className="block text-sm text-info-600 hover:underline">
+            className="block text-sm text-primary-600 hover:underline">
             {t('scholarship.application.interview.msgAsk')}
           </button>
         )}

@@ -115,7 +115,7 @@ export default function ReviewerEmailsCard({ token, t }: {
                 </p>
               </div>
               <button type="button" onClick={() => setOpenKind(openKind === tpl.kind ? null : tpl.kind)}
-                className="text-sm font-medium text-info-600 hover:text-info-700 hover:underline shrink-0">
+                className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline shrink-0">
                 {t(openKind === tpl.kind ? 'common.cancel' : 'admin.reviewers.emails.edit')}
               </button>
             </div>
@@ -179,7 +179,7 @@ export default function ReviewerEmailsCard({ token, t }: {
                   </div>
                   <button type="button"
                     onClick={() => setOpenSystem(openSystem === row.key ? null : row.key)}
-                    className="text-sm font-medium text-info-600 hover:text-info-700 hover:underline shrink-0">
+                    className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline shrink-0">
                     {t(openSystem === row.key
                       ? 'admin.reviewers.emails.system.hide'
                       : 'admin.reviewers.emails.system.show')}

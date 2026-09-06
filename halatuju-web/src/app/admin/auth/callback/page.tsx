@@ -119,7 +119,7 @@ export default function AdminAuthCallbackPage() {
           {detail && (
             <p className="mb-4 font-mono text-xs text-ground-400">{detail}</p>
           )}
-          <a href="/admin/login" className="text-info-600 hover:underline">
+          <a href="/admin/login" className="text-primary-600 hover:underline">
             {t('login.backToLogin')}
           </a>
         </div>
