@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## Merit: a stream band scored out of two is filled with two - 2026-09-02
+
+**Small change (hotfix).** NO migration, backend only, 2 files. pytest 5844 -> **5851**; golden
+masters intact (SPM 5319, STPM 2026); `makemigrations --check` clean. Bite-checked (top-up
+disabled -> 4 tests fail, verified as landed before the run).
+
+**Found by the owner** reading application #105: ten subjects, every one at A- or better, merit
+reading **69.4**.
+
+`prepare_merit_inputs` (`apps/courses/engine.py`) trusts the student's explicit stream designation
+(TD-063) and drops any designated subject they hold no grade for. When that left **exactly one**
+subject it carried on with one — and Sec2 is scored out of **two**, so half the 30% band scored a
+subject the student never sat, at G = 0. Zero left falls back to the pool heuristic and one or
+more than one were both handled; only "exactly one" was not.
+
+It now tops Sec2 up from the student's best remaining non-core graded subjects. **Topping up can
+only RAISE a score** — Sec2 weights a grade point at 5/6 against Sec3's 5/18, so promoting a
+subject out of Sec3 always gains more than its replacement below can lose; verified over all nine
+live carriers. Two or more designations are untouched, and a lone designation with nothing to
+promote keeps its one-item Sec2.
+
+**Upstream cause, NOT fixed here** (`halatuju-web/src/app/onboarding/grades/page.tsx`): the grades
+page pre-fills the four SCIENCE stream slots for everybody and, on save, keeps whichever slots
+still name a subject — GRADED OR NOT (`aliranSubjects.filter(Boolean)` drops empty slots only). A
+student who clears three, grades one, and types their real subjects into the ELECTIVE list below
+ships one usable stream subject. #105 is exactly that: `stream_subjects` is `["bio","addmath"]`
+against an accounts grade set, `elective_subjects` holds his five real ones. Two follow-ups belong
+in the lane: stop defaulting the stream to Science, and drop ungraded subjects on save.
+
+**Blast radius, measured on production before the change:** 15 profiles sit in the one-subject
+gap, **9 of them bursary applicants**, each losing **7-15 merit points** (#22 66.0→81.0, #76
+49.7→64.1, #90 65.4→77.9, #102 68.0→81.8, #105 69.4→84.4, #131 58.9→70.2, #133 71.6→82.9, #137
+51.1→64.9, #59 29.4→36.3). **NO backfill is owed and none is possible** — merit has no stored
+column (`serializers_admin._application_merit_score`: "there is no stored merit column"); all 15
+correct themselves the moment this deploys.
+
+**No shortlist decision moves.** The merit gate (`shortlisting._academic_ok`) runs only when a
+cohort sets `min_merit_score`, and the one live cohort (`b40-2026`) has it NULL — the academic
+floor counts A's. This changes what the officer list ranks by, what the cockpit displays, and the
+odds the public course guide shows (`eligibility_service.compute_student_merit` reads the same
+function).
+
+### Fixed
+- `prepare_merit_inputs` tops an explicit stream designation up to two graded subjects
+  (`apps/courses/engine.py`), with the reason written at the line so it is not "simplified" away.
+- `TestExplicitStreamToppedUpToTwo` (`apps/courses/tests/test_merit_pools.py`, +7) pins the
+  top-up, the never-lowers property, #105's real grade set, and both directions it must not touch.
+
 ## Layer 1 F7e — the contrast sprint - 2026-09-04
 
 **Sprint. SHIPPED AND DEPLOYED. TD-224 (high) is CLOSED.** `main` at `242b60fa`; only the WEB
