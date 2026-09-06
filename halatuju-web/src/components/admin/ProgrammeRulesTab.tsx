@@ -48,7 +48,9 @@ export function ruleYear(years: readonly AdminIntakeYear[]): AdminIntakeYear | n
     ?? [...years].sort((a, b) => b.year - a.year)[0]
 }
 
-export default function ProgrammeRulesTab() {
+/** `goToYear` switches the page to the Intake year tab. Optional so the component still mounts
+ *  standalone in tests; when absent the empty state falls back to prose alone. */
+export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void } = {}) {
   const { token } = useAdminAuth()
   const { t } = useT()
   const { programme, programmes, loading, mustChoose, select } = useSelectedProgramme()
@@ -132,10 +134,22 @@ export default function ProgrammeRulesTab() {
   // A gift with no round yet. Say what is missing and where it is made, rather than drawing six
   // empty boxes that would save nowhere. ⚠ Only once the YEARS have actually been asked for —
   // see `yearsLoading`.
+  //
+  // ⚠ IT CARRIES A BUTTON NOW (2026-09-06), AND THE SENTENCE ALONE WAS THE DEFECT. This box has
+  // always named the Intake year tab in prose; the owner's report was that the flow is
+  // "disconnected", and a dead end that TELLS you where to go is still a dead end — the person
+  // has to re-read it, find the tab and cross the screen. It points; it does not create a year
+  // for them (PF-1: suggesting is help, choosing is a guess).
   if (programme && !loading && !yearsLoading && years.length === 0) {
     return (
       <div className="mt-6">
         <InfoBox kind="info">{t('admin.rules.noYear')}</InfoBox>
+        {goToYear && (
+          <button type="button" onClick={goToYear} data-testid="rules-go-to-year"
+            className="mt-3 rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover">
+            {t('admin.rules.goToYear')}
+          </button>
+        )}
       </div>
     )
   }

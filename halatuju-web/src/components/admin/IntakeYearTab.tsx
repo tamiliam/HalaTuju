@@ -10,22 +10,33 @@
 // settings: it is part of what you configure about the gift, and it sits beside the rules that
 // live on the very same row. `/admin/programme/years` redirects here.
 //
-// Two things are deliberate and must not be "simplified":
+// ⚠ IT IS TAB ONE NOW (2026-09-06), and being a CHILD is why. The rules the next tab edits are
+// COLUMNS ON THIS ROW, so a gift created a minute ago has nothing for them to write to — opening a
+// brand-new gift on Rules landed a person on the one screen that could not work yet. Setup order
+// follows data order; the year exists first because everything else is stored on it.
+//
+// Three things are deliberate and must not be "simplified":
 //
 // ⚠ CREATING NEVER OPENS. The button says so. `is_open` defaults to TRUE on the model, so a form
 // that just created a row would let real students in with the same press. Opening is the moment an
 // intake becomes real, and it gets its own action.
 //
-// ⚠ ONE OPEN ROUND PER ORGANISATION, and the server refuses the second. `resolve_open_cohort`
-// already RAISES on two open rounds — because picking one files a student under the wrong fence
-// (PF-1) — but that refusal reaches the STUDENT at the moment they press Apply. This screen shows
-// which round is open before the admin creates the ambiguity.
+// ⚠ THE WINDOW DESCRIBES; IT OPENS NOTHING (owner, 2026-09-06). `opens_on`/`closes_on` say when
+// the round is MEANT to run and are shown to whoever reads this screen. A person still presses
+// Open. A clock would fire whether or not the gift's rules and questions had been finished.
+//
+// ⚠ ONE OPEN ROUND PER **GIFT PROGRAMME** — not per organisation (owner, 2026-09-06: *"if the org
+// has two programmes, there could be two open applications"*), and the server refuses a second
+// round of the SAME gift. `resolve_open_cohort` RAISES when it cannot tell which round a student
+// means — but that refusal reaches the STUDENT, so the apply page now asks them before the form.
+// This screen shows which round of this gift is open before the admin creates the ambiguity.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
+import { formatDate } from '@/lib/formatDate'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
 import RequirementFields from '@/components/admin/RequirementFields'
 import {
@@ -37,7 +48,11 @@ import { draftToRequirements, EMPTY_REQUIREMENTS, type RequirementDraft } from '
 
 const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
 
-export default function IntakeYearTab() {
+const EMPTY_FORM = { year: '', code: '', name: '', opens_on: '', closes_on: '' }
+
+/** `goToRules` switches the page to the Rules tab. Optional so the component still mounts
+ *  standalone in tests; when absent the onward pointer is simply not drawn. */
+export default function IntakeYearTab({ goToRules }: { goToRules?: () => void } = {}) {
   const { token } = useAdminAuth()
   const { t } = useT()
   const { programme, programmes, loading, mustChoose, select } = useSelectedProgramme()
@@ -46,7 +61,7 @@ export default function IntakeYearTab() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ year: '', code: '', name: '' })
+  const [form, setForm] = useState(EMPTY_FORM)
   const [draft, setDraft] = useState<RequirementDraft>(EMPTY_REQUIREMENTS)
 
   const programmeId = programme?.id ?? null
@@ -72,7 +87,13 @@ export default function IntakeYearTab() {
         : c === 'bad_year' ? 'badYear'
           : c === 'another_year_open' ? 'anotherOpen'
             : c === 'programme_not_active' ? 'notActive'
-              : c === 'name_required' ? 'nameRequired' : 'generic'
+              : c === 'name_required' ? 'nameRequired'
+                // The window, named per field so the message can point at the right box. The
+                // server REFUSES a backwards window rather than swapping the dates — a silent
+                // swap turns a typo into a stated fact nobody was told about.
+                : c === 'window_backwards' ? 'windowBackwards'
+                  : c === 'opens_on' ? 'badOpensOn'
+                    : c === 'closes_on' ? 'badClosesOn' : 'generic'
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setError('')
@@ -85,9 +106,16 @@ export default function IntakeYearTab() {
     if (programmeId === null) return
     const ok = await run(() => createAdminIntakeYear(programmeId, {
       code: form.code.trim().toLowerCase(), name: form.name.trim(), year: Number(form.year),
+      // ⚠ A BLANK BOX SENDS null, NOT '' — "no window stated" is a real answer and must reach the
+      // server as one. Sending an empty string would make an unstated window look like a failed
+      // parse; sending nothing at all would make it impossible to CLEAR one later.
+      opens_on: form.opens_on || null,
+      closes_on: form.closes_on || null,
       ...draftToRequirements(draft),
     }, { token: token! }))
-    if (ok) { setOpen(false); setForm({ year: '', code: '', name: '' }); setDraft(EMPTY_REQUIREMENTS) }
+    if (ok) {
+      setOpen(false); setForm(EMPTY_FORM); setDraft(EMPTY_REQUIREMENTS)
+    }
   }
 
   const inputCls = 'w-full rounded-lg border border-ground-300 px-3 py-2 text-sm'
@@ -123,7 +151,7 @@ export default function IntakeYearTab() {
             <table className="w-full text-sm">
               <thead className="border-b border-ground-200 bg-ground-50">
                 <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
-                  {(['year', 'name', 'applications', 'status'] as const).map((k) => (
+                  {(['year', 'name', 'window', 'applications', 'status'] as const).map((k) => (
                     <th key={k} className="px-4 py-3 font-semibold">{t(`admin.years.col.${k}`)}</th>
                   ))}
                 </tr>
@@ -133,6 +161,14 @@ export default function IntakeYearTab() {
                   <tr key={y.id} data-testid={`year-${y.code}`}>
                     <td className="px-4 py-3 tabular-nums text-ground-700">{y.year}</td>
                     <td className="px-4 py-3 text-ground-700">{y.name}</td>
+                    {/* ⚠ A ROUND WITH NO STATED WINDOW IS NORMAL, NOT BROKEN — it renders a dash,
+                        never an error. Every row that predates this column has NULL, including
+                        the live 2026 intake, and nothing was backfilled. */}
+                    <td className="px-4 py-3 tabular-nums text-ground-600">
+                      {y.opens_on || y.closes_on
+                        ? `${formatDate(y.opens_on) || '—'} – ${formatDate(y.closes_on) || '—'}`
+                        : '—'}
+                    </td>
                     <td className="px-4 py-3 tabular-nums text-ground-700">{y.applications}</td>
                     <td className="px-4 py-3">
                       <span className="flex flex-wrap items-center gap-3">
@@ -151,7 +187,7 @@ export default function IntakeYearTab() {
                   </tr>
                 ))}
                 {years.length === 0 && (
-                  <tr><td colSpan={4} className="px-4 py-8 text-center text-ground-400">
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-ground-400">
                     {t('admin.years.empty')}
                   </td></tr>
                 )}
@@ -166,6 +202,16 @@ export default function IntakeYearTab() {
                 : t('admin.years.oneOpen')}
             </InfoBox>
           </div>
+
+          {/* ⚠ THE ONWARD POINTER, and it only appears once a year EXISTS — the rules live on that
+              row, so before it there is nowhere for them to go. It POINTS; it never fills anything
+              in (PF-1's rule on a screen: suggesting is help, choosing is a guess). */}
+          {goToRules && years.length > 0 && (
+            <button type="button" onClick={goToRules} data-testid="year-go-to-rules"
+              className="mt-4 rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-800 hover:bg-ground-50">
+              {t('admin.years.goToRules')}
+            </button>
+          )}
         </>
       )}
 
@@ -202,6 +248,30 @@ export default function IntakeYearTab() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className={`mt-1 ${inputCls}`} />
             </div>
+
+            {/* ⚠ THE WINDOW SAYS WHEN THE ROUND RUNS. IT DOES NOT OPEN IT (owner, 2026-09-06).
+                The note below is not decoration — it is the whole ruling, on the screen where
+                somebody would otherwise assume a start date starts something. Both boxes are
+                optional: a round with no stated window is a normal round. */}
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="y-opens" className="block text-sm font-medium text-ground-700">
+                  {t('admin.years.field.opensOn')}
+                </label>
+                <input id="y-opens" type="date" value={form.opens_on}
+                  onChange={(e) => setForm({ ...form, opens_on: e.target.value })}
+                  className={`mt-1 ${inputCls}`} />
+              </div>
+              <div>
+                <label htmlFor="y-closes" className="block text-sm font-medium text-ground-700">
+                  {t('admin.years.field.closesOn')}
+                </label>
+                <input id="y-closes" type="date" value={form.closes_on}
+                  onChange={(e) => setForm({ ...form, closes_on: e.target.value })}
+                  className={`mt-1 ${inputCls}`} />
+              </div>
+            </div>
+            <p className="mt-1.5 text-xs text-ground-600">{t('admin.years.windowNote')}</p>
 
             <hr className="mt-5 border-ground-100" />
             <p className="mt-4 text-sm font-semibold text-ground-700">{t('admin.years.reqTitle')}</p>

@@ -224,9 +224,13 @@ export default function ProgrammeConfigTab() {
             </InfoBox>
           </div>
 
+          {/* ⚠ QUESTIONS BEFORE DOCUMENTS (owner, 2026-09-06). Order only — no write, no state and
+              no rule changes with it; `changes()` computes a diff over the whole draft and does not
+              read this array. It follows the student's own journey: they answer before they are
+              asked to go and find paperwork. */}
           {[
-            { key: 'documents', rows: docs, title: 'sectionDocuments', hint: 'documentsHint' },
             { key: 'questions', rows: qs, title: 'sectionQuestions', hint: 'questionsHint' },
+            { key: 'documents', rows: docs, title: 'sectionDocuments', hint: 'documentsHint' },
           ].map(({ key, rows, title, hint }) => (
             <section key={key} className="mt-6 rounded-2xl border border-ground-200 bg-ground-0 shadow-sm"
               aria-labelledby={`section-${key}`}>

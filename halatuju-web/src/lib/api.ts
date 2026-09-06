@@ -1584,9 +1584,24 @@ export async function getMyScholarshipApplications(
   return apiRequest('/api/v1/scholarship/applications/', options)
 }
 
+/** One open round a student may choose between. `code` is the PROGRAMME code — what `?p=` carries
+ *  and what the server routes on. A cohort code is year-specific and would rot every intake. */
+export interface IntakeChoice {
+  code: string
+  name: string
+}
+
 /** PUBLIC — whether NEW applications are open (drives the landing Apply button + the
- *  apply page). Existing applicants continue via their own application regardless. */
-export async function getScholarshipIntake(): Promise<{ open: boolean; cohort_name: string }> {
+ *  apply page). Existing applicants continue via their own application regardless.
+ *
+ *  ⚠ `choices` IS POPULATED ONLY WHEN THE SERVER CANNOT SAY WHICH ROUND — several are open and
+ *  nothing named one. It is how the apply page ASKS before the form instead of letting the
+ *  student discover the refusal at submit. Empty in every other case, including today's. */
+export async function getScholarshipIntake(): Promise<{
+  open: boolean
+  cohort_name: string
+  choices?: IntakeChoice[]
+}> {
   return apiRequest('/api/v1/scholarship/intake/')
 }
 

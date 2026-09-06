@@ -68,11 +68,11 @@ beforeEach(() => {
 })
 
 /**
- * ⚠ THE PAGE OPENS ON RULES NOW (shape sprint, 2026-09-03), so every "what we ask for" assertion
- * has to walk there first. That is not test friction to route around — the tab ORDER is an owner
- * decision ("I see the rules as a configuration item, and it precedes what we ask for"), so a
- * helper that silently mounted the config tab in isolation would let the order drift with nothing
- * noticing. It clicks the tab a person would click.
+ * ⚠ THE PAGE OPENS ON INTAKE YEAR (gift setup flow, 2026-09-06 — it was Rules from the shape
+ * sprint, 2026-09-03), so every "what we ask for" assertion has to walk there first. That is not
+ * test friction to route around — the tab ORDER is an owner decision, twice over, so a helper
+ * that silently mounted the config tab in isolation would let it drift with nothing noticing. It
+ * clicks the tab a person would click.
  */
 const loaded = async () => {
   render(<AdminProgrammeConfigPage />)
@@ -180,19 +180,28 @@ describe('the tabbed shell', () => {
   // page title and the tabs, that was FOUR restatements above the first control. The headings are
   // deleted and their keys with them; the subtitle is now each tab's own marker.
   //
-  // ⚠ THREE TABS SINCE 2026-09-03, AND THE ORDER IS THE OWNER'S. Rules first, because who
-  // qualifies precedes what they are asked to send; Colours LEFT the screen entirely (it writes a
-  // tenant-wide row and now lives under Organisation → Settings). Four sidebar rows collapsed into
-  // this one screen, so the tab list is the artefact that has to be right.
-  it('opens on Rules, and offers exactly the three tabs in the owner order', () => {
+  // ⚠⚠ THIS ASSERTED `['tab-rules', 'tab-config', 'tab-year']` UNTIL 2026-09-06, AND THE REASON
+  // IT GAVE WAS NOT WRONG — it is carried forward here rather than deleted with the assertion:
+  //
+  //   *"Rules first, because who qualifies precedes what they are asked to send."*
+  //
+  // That is true of READING a gift already running, and it stays true. It is not true of SETTING
+  // ONE UP, which is what this screen is reached by: **the rules are COLUMNS ON THE INTAKE YEAR**,
+  // so a gift created a minute ago has nothing for them to write to, and opening it on Rules
+  // landed a person on the one screen that could not work yet. Setup order follows DATA order.
+  //
+  // Colours still LEFT the screen entirely (it writes a tenant-wide row and lives under
+  // Organisation → Settings). Four sidebar rows collapsed into this one screen, so the tab list is
+  // the artefact that has to be right.
+  it('opens on Intake year, and offers exactly the three tabs in the owner order', () => {
     render(<AdminProgrammeConfigPage />)
     expect(screen.getByText('admin.programme.title')).toBeTruthy()
     expect(screen.getByText('admin.programme.subtitle')).toBeTruthy()
 
     const tabs = screen.getAllByRole('tab').map((el) => el.getAttribute('data-testid'))
-    expect(tabs).toEqual(['tab-rules', 'tab-config', 'tab-year'])
-    expect(screen.getByTestId('tab-rules').getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByTestId('tab-config').getAttribute('aria-selected')).toBe('false')
+    expect(tabs).toEqual(['tab-year', 'tab-rules', 'tab-config'])
+    expect(screen.getByTestId('tab-year').getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByTestId('tab-rules').getAttribute('aria-selected')).toBe('false')
   })
 
   it('no longer carries Colours — that writes a tenant-wide row, not this gift', () => {
@@ -242,5 +251,64 @@ describe('the tabbed shell', () => {
     expect(screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent))
       .toEqual(['admin.programme.title'])
     expect(tabs).toBeTruthy()
+  })
+})
+
+/**
+ * The setup TRAIL (gift setup flow, 2026-09-06).
+ *
+ * The owner's report was that the flow is "disconnected": pressing Create left you on a list, and
+ * opening a brand-new gift landed you on Rules — the one tab that cannot work before an intake
+ * year exists, since the rules ARE columns on that row. It said so in prose and offered no button.
+ *
+ * These pin the two ends a person actually walks: arriving on the tab a caller pointed at, and
+ * being offered the way out of the empty state instead of being told to go and find it.
+ */
+describe('the setup trail', () => {
+  const at = (search: string) => {
+    window.history.replaceState({}, '', `/admin/programme${search}`)
+  }
+
+  afterEach(() => at(''))
+
+  it('opens on the tab `?tab=` names, so anything can point at one', () => {
+    at('?tab=config')
+    render(<AdminProgrammeConfigPage />)
+    expect(screen.getByTestId('tab-config').getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByTestId('tab-year').getAttribute('aria-selected')).toBe('false')
+  })
+
+  it('ignores a `?tab=` that names nothing, rather than rendering an empty panel', () => {
+    at('?tab=colours')
+    render(<AdminProgrammeConfigPage />)
+    expect(screen.getByTestId('tab-year').getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('⚠ offers a BUTTON out of the Rules empty state, not just a sentence naming the tab', async () => {
+    // The message has always named the Intake year tab in words. A dead end that TELLS you where
+    // to go is still a dead end — the person has to re-read it, find the tab and cross the screen.
+    render(<AdminProgrammeConfigPage />)
+    fireEvent.click(screen.getByTestId('tab-rules'))
+    await waitFor(() => expect(screen.getByText('admin.rules.noYear')).toBeTruthy())
+
+    fireEvent.click(screen.getByTestId('rules-go-to-year'))
+    expect(screen.getByTestId('tab-year').getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('⚠ points ONWARD to Rules only once a year exists — before that there is nowhere to go', async () => {
+    render(<AdminProgrammeConfigPage />)
+    await waitFor(() => expect(screen.getByTestId('tab-year').getAttribute('aria-selected')).toBe('true'))
+    // No years in the default fixture → no onward pointer, because the rules live on a year row.
+    expect(screen.queryByTestId('year-go-to-rules')).toBeNull()
+  })
+})
+
+describe('what we ask for, in the order a student meets it', () => {
+  it('⚠ renders QUESTIONS before DOCUMENTS (owner, 2026-09-06)', async () => {
+    await loaded()
+    const headings = Array.from(document.querySelectorAll('[id^=section-]'))
+      .map((el) => el.id)
+    // Order only — no write and no rule moves with it; the Save diff reads the draft, not this.
+    expect(headings).toEqual(['section-questions', 'section-documents'])
   })
 })

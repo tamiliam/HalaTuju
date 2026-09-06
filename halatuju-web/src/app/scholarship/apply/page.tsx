@@ -17,6 +17,7 @@ import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
   getScholarshipIntake,
+  type IntakeChoice,
   claimNric,
   checkEligibility,
   calculatePathways,
@@ -49,6 +50,8 @@ import {
   stashApplyForm,
   rememberApplyProgramme,
   clearApplyProgramme,
+  setApplyProgramme,
+  needsProgrammeChoice,
   popApplyStash,
   clearApplyReturn,
   REFERRING_ORG_OPTIONS,
@@ -108,6 +111,10 @@ export default function ScholarshipApplyPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('personal')
+  // Populated ONLY when several rounds are open and nothing named one; empty in every other
+  // case, including every visitor today. See the intake effect below.
+  const [choices, setChoices] = useState<IntakeChoice[]>([])
+  const [chosen, setChosen] = useState('')
   // Income field shows raw digits while focused (easy to edit) and a formatted
   // "3,000.00" when blurred. The stored value (form.householdIncome) stays raw.
   const [incomeFocused, setIncomeFocused] = useState(false)
@@ -161,7 +168,16 @@ export default function ScholarshipApplyPage() {
   // continue via /scholarship/application, not here.
   useEffect(() => {
     let active = true
-    getScholarshipIntake().then(r => { if (active && !r.open) router.replace('/scholarship') }).catch(() => {})
+    getScholarshipIntake().then(r => {
+      if (!active) return
+      if (!r.open) { router.replace('/scholarship'); return }
+      // ⚠ ASK BEFORE THE FORM, NOT AT SUBMIT. With several rounds open and nothing naming one,
+      // `resolve_open_cohort` refuses to guess — rightly — but that refusal used to arrive as a
+      // 409 after the whole form was filled in. Same refusal, moved to the front door.
+      if (needsProgrammeChoice(rememberApplyProgramme(window.location.search), r.choices)) {
+        setChoices(r.choices ?? [])
+      }
+    }).catch(() => {})
     return () => { active = false }
   }, [router])
 
@@ -437,6 +453,55 @@ export default function ScholarshipApplyPage() {
           <p className="text-xs text-ground-400 mt-3 text-center">{t('scholarship.apply.gate.helper')}</p>
         </div>
       </>
+    )
+  }
+
+  // ── Which programme? Asked ONLY when several rounds are open and nothing named one ──
+  //
+  // ⚠ THIS IS PF-1'S REFUSAL, MOVED EARLIER — NOT A RELAXATION OF IT. The server still refuses to
+  // guess between two open rounds, because guessing once filed a student under the wrong
+  // foundation, funded from the wrong money, with no error anywhere. What changed is WHEN the
+  // student meets it: as a question before the first keystroke, instead of a 409 after filling in
+  // the whole form.
+  //
+  // ⚠ IT OFFERS; IT NEVER PRE-SELECTS. Defaulting to the first round would be the same guess in a
+  // friendlier costume — and it would be OUR guess recorded as the student's choice.
+  //
+  // Unreachable for every visitor today (one open round), and it stays unreachable for anyone who
+  // follows an organisation's own `?p=` link.
+  if (choices.length > 1) {
+    return wrap(
+      <div className="bg-ground-0 border rounded-2xl p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-ground-900">
+          {t('scholarship.apply.chooseTitle')}
+        </h2>
+        <p className="mt-1 text-sm text-ground-600">{t('scholarship.apply.chooseBody')}</p>
+        <div className="mt-4 space-y-2">
+          {choices.map((c) => (
+            <label key={c.code}
+              className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm ${
+                chosen === c.code
+                  ? 'border-brand-shape bg-primary-50 text-ground-900'
+                  : 'border-ground-300 text-ground-700 hover:bg-ground-50'}`}>
+              <input type="radio" name="apply-programme" value={c.code}
+                checked={chosen === c.code}
+                onChange={() => setChosen(c.code)}
+                className="h-4 w-4 accent-primary-600" />
+              {c.name}
+            </label>
+          ))}
+        </div>
+        <button type="button" disabled={!chosen} data-testid="apply-choose-continue"
+          onClick={() => {
+            // Stored through the SAME seam a `?p=` link writes, so submit cannot tell the two
+            // apart and there is exactly one routing path to be right about.
+            setApplyProgramme(chosen)
+            setChoices([])
+          }}
+          className="mt-5 w-full rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+          {t('scholarship.apply.chooseCta')}
+        </button>
+      </div>
     )
   }
 
