@@ -82,13 +82,25 @@ const SPRINT_D: api.OrganisationConfigSetting[] = [
     min: 1, max: 168, value: null, default: 12 },
 ]
 
+// The Sprint E registry rows — documents.
+const SPRINT_E: api.OrganisationConfigSetting[] = [
+  { key: 'max_doc_size_mb', group: 'documents', unit: 'megabytes',
+    min: 1, max: 25, value: null, default: 8 },
+  { key: 'max_docs_per_application', group: 'documents', unit: 'documents',
+    min: 5, max: 200, value: null, default: 40 },
+  { key: 'max_other_docs', group: 'documents', unit: 'documents',
+    min: 1, max: 50, value: null, default: 10 },
+  { key: 'doc_stage_max_attempts', group: 'documents', unit: 'attempts',
+    min: 1, max: 10, value: null, default: 3 },
+]
+
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {
   return {
     organisation: { code: 'alpha', name: 'Alpha Foundation' },
     settings: [{
       key: KEY, group: 'sponsor_page', unit: 'days', min: 1, max: 90,
       value: null, default: 2, ...over,
-    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D],
+    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E],
   }
 }
 
@@ -239,10 +251,22 @@ describe('the Sprint B rows render, grouped and ordered', () => {
     // ("days" vs "questions") — the owner read it as untidy on 2026-09-07. The width class is
     // the alignment; losing it brings the drift back.
     await mount()
-    for (const s of [{ key: KEY }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D]) {
+    for (const s of [{ key: KEY }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E]) {
       const unit = screen.getByTestId(`config-${s.key}-unit`)
       expect(unit.className).toContain('w-24')
     }
+  })
+
+  it('draws the Sprint E rows, with Documents after Interviews', async () => {
+    await mount()
+    for (const s of SPRINT_E) {
+      expect(screen.getByTestId(`config-${s.key}`)).toBeTruthy()
+    }
+    const text = document.body.textContent || ''
+    const interviews = text.indexOf('admin.orgSettings.config.group.interviews')
+    const documents = text.indexOf('admin.orgSettings.config.group.documents')
+    expect(interviews).toBeGreaterThanOrEqual(0)
+    expect(documents).toBeGreaterThan(interviews)
   })
 
   it('draws the Sprint D rows, with Interviews after Reviewers & staff', async () => {

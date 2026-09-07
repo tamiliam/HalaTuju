@@ -964,3 +964,145 @@ class TestPerOrgInterviewRules(TestCase):
             refused = client.post(url, {'slots': [late]}, format='json')
         self.assertEqual(refused.status_code, 400)
         self.assertEqual(refused.json()['code'], 'invalid_slot_time')
+
+
+class TestSprintERegistry(TestCase):
+    """The four Sprint E keys exist, every default DELEGATES to the platform's live home, and the
+    MB↔bytes conversion lives in exactly one place."""
+
+    SPRINT_E = {
+        'max_doc_size_mb': 'megabytes',
+        'max_docs_per_application': 'documents',
+        'max_other_docs': 'documents',
+        'doc_stage_max_attempts': 'attempts',
+    }
+
+    def test_every_key_is_registered_with_its_group_and_unit(self):
+        for key, unit in self.SPRINT_E.items():
+            spec = org_config.SETTINGS[key]
+            self.assertEqual((spec['group'], spec['unit']), ('documents', unit), key)
+            self.assertEqual(set(spec) - {'allowed'},
+                             {'group', 'unit', 'min', 'max', 'default'}, key)
+
+    @override_settings(MAX_DOC_SIZE_BYTES=12 * 1024 * 1024, MAX_DOCS_PER_APPLICATION=60,
+                       MAX_OTHER_DOCS=4, DOC_STAGE_MAX_ATTEMPTS=5)
+    def test_defaults_delegate_to_the_live_platform_homes(self):
+        self.assertEqual(org_config.default('max_doc_size_mb'), 12)
+        self.assertEqual(org_config.default('max_docs_per_application'), 60)
+        self.assertEqual(org_config.default('max_other_docs'), 4)
+        self.assertEqual(org_config.default('doc_stage_max_attempts'), 5)
+
+    @override_settings(MAX_DOC_SIZE_BYTES=int(8.7 * 1024 * 1024))
+    def test_a_platform_size_that_is_not_whole_megabytes_rounds_DOWN(self):
+        # The number on screen must never promise more than the server accepts.
+        self.assertEqual(org_config.default('max_doc_size_mb'), 8)
+
+    def test_the_megabyte_to_byte_conversion_has_exactly_one_home(self):
+        org = PartnerOrganisation.objects.create(code='se-mb', name='MB Org')
+        _configure(org, 'max_doc_size_mb', 20)
+        self.assertEqual(org_config.max_doc_size_bytes(org), 20 * 1024 * 1024)
+        # A tenant that tuned nothing keeps the platform's 8 MB, converted the same way.
+        self.assertEqual(org_config.max_doc_size_bytes(None), 8 * 1024 * 1024)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestPerOrgDocumentLimits(TestCase):
+    """The three upload caps and the re-upload circuit-breaker resolve PER APPLICATION, and the
+    student's uploader is SERVED the numbers rather than keeping its own copy."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='se-org', name='Docs Org')
+        cls.cohort = _org_cohort('se-a', cls.org)
+        cls.null_cohort = _org_cohort('se-null', None)
+
+    def _app(self, cohort, uid):
+        from apps.courses.models import StudentProfile
+        # ⚠ An NRIC is required or `SupabaseAuthMiddleware` refuses every student route with
+        # 403 `nric_required` before the view is reached.
+        profile = StudentProfile.objects.create(
+            supabase_user_id=uid, name='Kavi', nric=f'0501{uid[-6:]:>06}'[:12])
+        return ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='shortlisted', notify_email='stu@x.com')
+
+    def _client(self, uid):
+        c = APIClient()
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+        return c
+
+    def test_the_list_serves_the_organisations_limits(self):
+        _configure(self.org, 'max_doc_size_mb', 20)
+        _configure(self.org, 'max_docs_per_application', 12)
+        _configure(self.org, 'max_other_docs', 2)
+        self._app(self.cohort, 'se-stu')
+        body = self._client('se-stu').get('/api/v1/scholarship/documents/').json()
+        self.assertEqual(body['limits'], {'max_doc_size_mb': 20,
+                                          'max_docs_per_application': 12,
+                                          'max_other_docs': 2})
+        # A tenant that tuned nothing is served the platform defaults, not a blank.
+        self._app(self.null_cohort, 'se-null-stu')
+        plain = self._client('se-null-stu').get('/api/v1/scholarship/documents/').json()
+        self.assertEqual(plain['limits'],
+                         {'max_doc_size_mb': 8, 'max_docs_per_application': 40,
+                          'max_other_docs': 10})
+
+    def test_the_size_refusal_uses_the_organisations_cap_and_reports_it(self):
+        _configure(self.org, 'max_doc_size_mb', 2)
+        self._app(self.cohort, 'se-size')
+        r = self._client('se-size').post('/api/v1/scholarship/documents/', {
+            'doc_type': 'ic', 'storage_path': 'b40/se/ic.jpg', 'original_filename': 'ic.jpg',
+            'content_type': 'image/jpeg', 'size': 3 * 1024 * 1024}, format='json')
+        self.assertEqual(r.status_code, 400)
+        body = r.json()
+        self.assertEqual(body['error'], 'file_too_large')
+        # The refusal names the SAME number the uploader was served — the message the student
+        # reads is built from this, so a mismatch here is a contradiction on screen.
+        self.assertEqual(body['max_mb'], 2)
+
+    def test_the_other_and_total_caps_are_the_organisations(self):
+        from apps.scholarship.models import ApplicantDocument
+        _configure(self.org, 'max_other_docs', 1)
+        _configure(self.org, 'max_docs_per_application', 5)
+        app = self._app(self.cohort, 'se-caps')
+        ApplicantDocument.objects.create(
+            application=app, doc_type='other', storage_path='b40/se/o1.jpg',
+            original_filename='o1.jpg', content_type='image/jpeg', size=10, request_code='r1')
+        client = self._client('se-caps')
+        refused = client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'other', 'storage_path': 'b40/se/o2.jpg', 'original_filename': 'o2.jpg',
+            'content_type': 'image/jpeg', 'size': 10, 'request_code': 'r2'}, format='json')
+        self.assertEqual((refused.status_code, refused.json()['error'], refused.json()['max']),
+                         (400, 'other_doc_limit_reached', 1))
+        # Fill the total (5 live docs), so the next NEW slot is refused on the total cap.
+        for n, dt in enumerate(('ic', 'bc', 'epf', 'salary_slip')):
+            ApplicantDocument.objects.create(
+                application=app, doc_type=dt, storage_path=f'b40/se/{dt}.jpg',
+                original_filename=f'{dt}.jpg', content_type='image/jpeg', size=10)
+        full = client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'parent_ic', 'storage_path': 'b40/se/pic.jpg',
+            'original_filename': 'pic.jpg', 'content_type': 'image/jpeg', 'size': 10},
+            format='json')
+        self.assertEqual((full.status_code, full.json()['error'], full.json()['max']),
+                         (400, 'doc_limit_reached', 5))
+
+    def test_the_reupload_breaker_trips_on_the_organisations_count(self):
+        from apps.scholarship.models import ApplicantDocument, ResolutionItem
+        from apps.scholarship.views import _stage_attempts_exhausted
+        from django.conf import settings as django_settings
+        _configure(self.org, 'doc_stage_max_attempts', 2)
+        app = self._app(self.cohort, 'se-breaker')
+        doc = ApplicantDocument.objects.create(
+            application=app, doc_type='ic', storage_path='b40/se/ic2.jpg',
+            original_filename='ic.jpg', content_type='image/jpeg', size=10)
+        ResolutionItem.objects.create(
+            application=app, code='ic_unreadable', status='open', params={'attempts': 1})
+        # Org says 2: this (the 2nd) failure is the last one we ask about.
+        self.assertTrue(_stage_attempts_exhausted(app, doc, django_settings))
+        # The platform's 3 would still be looping at this point — proving the read is per-org.
+        other = self._app(self.null_cohort, 'se-breaker-null')
+        other_doc = ApplicantDocument.objects.create(
+            application=other, doc_type='ic', storage_path='b40/se/ic3.jpg',
+            original_filename='ic.jpg', content_type='image/jpeg', size=10)
+        ResolutionItem.objects.create(
+            application=other, code='ic_unreadable', status='open', params={'attempts': 1})
+        self.assertFalse(_stage_attempts_exhausted(other, other_doc, django_settings))

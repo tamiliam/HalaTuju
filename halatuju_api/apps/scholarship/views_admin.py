@@ -5454,7 +5454,8 @@ class AdminOrgRequestAttachmentSignUploadView(_OrgRequestsBase):
 
 class AdminOrgRequestAttachmentCreateView(_OrgRequestsBase):
     """POST <pk>/attachments/ — record an attachment row after the PUT. org_admin (own org) + super.
-    Validates: non-terminal request, IMAGE allowlist (no pdf), size ≤ MAX_DOC_SIZE_BYTES, count cap,
+    Validates: non-terminal request, IMAGE allowlist (no pdf), size ≤ the organisation's
+    `max_doc_size_mb` (Org Config Sprint E — same cap its students answer to), count cap,
     and the storage_path prefix must match THIS request (a foreign path is rejected)."""
 
     def post(self, request, pk):
@@ -5487,9 +5488,13 @@ class AdminOrgRequestAttachmentCreateView(_OrgRequestsBase):
         if not org_requests.is_allowed_attachment(content_type, original_filename):
             return Response({'error': 'unsupported_format', 'code': 'unsupported_format'},
                             status=status.HTTP_400_BAD_REQUEST)
-        if size > settings.MAX_DOC_SIZE_BYTES:
+        # The size cap is the ORGANISATION's here too (Org Config Sprint E) — this attachment
+        # belongs to that organisation's own support request, so it answers to the same number
+        # its students' uploads do.
+        from apps.courses import org_config
+        if size > org_config.max_doc_size_bytes(req.organisation):
             return Response({'error': 'file_too_large', 'code': 'file_too_large',
-                             'max_mb': settings.MAX_DOC_SIZE_BYTES // (1024 * 1024)},
+                             'max_mb': org_config.value(req.organisation, 'max_doc_size_mb')},
                             status=status.HTTP_400_BAD_REQUEST)
         # Count cap at record too (another attachment may have landed since sign).
         if req.attachments.count() >= org_requests.MAX_ATTACHMENTS:

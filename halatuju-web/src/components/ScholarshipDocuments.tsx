@@ -34,10 +34,8 @@ import { earningMembers, sameMemberSet } from '@/lib/familyRoster'
 import DocumentHelpCoach from './DocumentHelpCoach'
 import IncomeClusterCoach from './IncomeClusterCoach'
 import { clusterAnchorKey, clusterDocKey } from '@/lib/documentHelp'
+import { limitsFrom, type ResolvedDocumentLimits } from '@/lib/documentLimits'
 
-// Per-file size cap (mirrors the server's MAX_DOC_SIZE_BYTES default — server is
-// authoritative; this gives the student instant feedback before any upload).
-const MAX_DOC_SIZE_BYTES = 8 * 1024 * 1024
 
 // Busy/filter key for a doc card. Salary-route income docs are scoped to a household
 // member, so two members' salary slips don't share one busy spinner or file list.
@@ -1710,12 +1708,17 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   // sees a needless guardian-letter slot).
   const [isMinor, setIsMinor] = useState(false)
   const [guardianRel, setGuardianRel] = useState('')
+  // The organisation's upload limits, as SERVED with the document list — never a copy held
+  // here (Org Config Sprint E). Starts at the platform default so the very first render, before
+  // the list lands, still refuses an absurd file rather than letting it upload unchecked.
+  const [limits, setLimits] = useState<ResolvedDocumentLimits>(() => limitsFrom(null))
 
   const refresh = useCallback(async () => {
     if (!token) return
     try {
       const r = await listDocuments({ token })
       setDocs(r.documents)
+      setLimits(limitsFrom(r.limits))
     } catch { /* ignore */ }
   }, [token])
 
@@ -1732,8 +1735,8 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   const handleUpload = async (docType: string, file: File, member = '') => {
     if (!token) return
     // Guardrail: per-file size cap — instant feedback, no wasted upload.
-    if (file.size > MAX_DOC_SIZE_BYTES) {
-      setError(t('scholarship.docs.file_too_large'))
+    if (file.size > limits.maxDocSizeBytes) {
+      setError(t('scholarship.docs.file_too_large', { mb: String(limits.maxDocSizeMb) }))
       return
     }
     // Guardrail: images + PDF only (TD-080) — instant feedback, mirrors the API allowlist.
@@ -1757,7 +1760,11 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       const code = (e as { code?: string })?.code
       setError(
         code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
-        : code === 'file_too_large' ? t('scholarship.docs.file_too_large')
+        : code === 'file_too_large' ? t('scholarship.docs.file_too_large',
+          // The server's OWN number on the refusal (a 400 body lands on `fieldErrors`),
+          // so a stale served limit cannot make the message contradict the rejection.
+          { mb: String((e as { fieldErrors?: { max_mb?: number } })?.fieldErrors?.max_mb
+                       ?? limits.maxDocSizeMb) })
         : code === 'unsupported_format' ? t('scholarship.docs.unsupportedFormat')
         : code === 'upload_incomplete' ? t('scholarship.docs.uploadIncomplete')
         : t('scholarship.docs.uploadError'),

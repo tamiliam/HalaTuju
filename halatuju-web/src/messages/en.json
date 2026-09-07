@@ -1540,7 +1540,7 @@
         "unreadable": "We couldn't read this document clearly — our team will check it manually.",
         "review_manually": "Received — our team will review this document."
       },
-      "file_too_large": "Each file must be under 8 MB. Please upload a smaller or clearer photo.",
+      "file_too_large": "Each file must be under {mb} MB. Please upload a smaller or clearer photo.",
       "doc_limit_reached": "You've reached the maximum number of documents. Please remove any you no longer need.",
       "match": {
         "good": "Looks good — we found the expected name on this document.",
@@ -5752,7 +5752,8 @@
           "sponsor_page": "Sponsor page",
           "student_comms": "Student communications",
           "reviewers_staff": "Reviewers & staff",
-          "interviews": "Interviews"
+          "interviews": "Interviews",
+          "documents": "Documents"
         },
         "setting": {
           "pool_funded_grace_days": {
@@ -5819,6 +5820,22 @@
             "label": "Earliest booking — hours ahead",
             "desc": "How far ahead the soonest offered time must be, so a student has time to read the email, pick a time and prepare."
           },
+          "max_doc_size_mb": {
+            "label": "Biggest file — MB",
+            "desc": "The largest single upload a student or your staff may send. A phone photo is usually 2-5 MB."
+          },
+          "max_docs_per_application": {
+            "label": "Documents per application",
+            "desc": "How many documents one application may hold at a time. Replacing a document does not count as a new one."
+          },
+          "max_other_docs": {
+            "label": "\"Other\" documents per application",
+            "desc": "How many extra documents a reviewer may request beyond the standard list. These are counted within the total above."
+          },
+          "doc_stage_max_attempts": {
+            "label": "Tries before we stop asking",
+            "desc": "After this many unreadable re-uploads of the same document, we stop asking the student again and hold it for an officer to look at."
+          },
           "interview_reschedule_cutoff_hours": {
             "label": "Change or cancel until — hours before",
             "desc": "How close to the start a student may still pick a different time or cancel. The confirmation email promises this same number."
@@ -5830,7 +5847,10 @@
           "minutes": "minutes",
           "cards": "cards",
           "questions": "questions",
-          "time_of_day": "(hh:mm)"
+          "time_of_day": "(hh:mm)",
+          "megabytes": "MB",
+          "documents": "documents",
+          "attempts": "attempts"
         },
         "defaultNote": "Platform default: {n} {unit}",
         "defaultNoteClock": "Platform default: {n} (Malaysian time)",
