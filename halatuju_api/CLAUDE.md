@@ -599,8 +599,15 @@ step). Feature switches, per-GIFT values and platform internals stay OUT of this
 
 ## Superseded — previous Next Sprint (as of 2026-09-07, after the gift card & copy pass)
 
-**SHIPPED, NOT DEPLOYED (the owner gates the deploy).** Worktree `.worktrees/gift-copy`, branch
-`feat/gift-card-and-copy`, based on `origin/main` at `9b0a454e`. **NO MIGRATION** — api + web,
+**SHIPPED AND DEPLOYED 2026-09-07.** Commit `3466661c` + merge `cddb0243`; it rode out on a
+concurrent push (Org Config Sprint E), so **no build carries its own SHA** — the ones that shipped it
+are both **`ca21124`, api and web, SUCCESS**, established by ANCESTRY rather than by matching a SHA
+(second time in one day; check ancestry, not the SHA column). Serving **halatuju-api-00993-4x9** /
+**halatuju-web-00842-48z**. The served admin bundle was read back: it carries `lifecycle`,
+`Archived` and "One intake round per year", and **no** `switchOff` or `goToRules`. All public routes
+200, `Server: Google Frontend`, no error logs.
+Worktree `.worktrees/gift-copy` kept until the owner's post-check; its `node_modules` junction is
+already removed. Based on `origin/main` at `9b0a454e`. **NO MIGRATION** — api + web,
 11 files. Retro `docs/retrospective-2026-09-07-gift-card-and-copy.md`; decisions ×4; lessons ×4.
 pytest **5954**; jest **1777**; tsc **24** (baseline); lint **0**; i18n **4839 × 3**;
 `next build` exit 0; `makemigrations --check` clean. Three bite-checks, injections verified first.
