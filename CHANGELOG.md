@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: a refusal that pointed at a door that does not exist - 2026-09-07
+
+**Small change (copy + one guard). NO migration, web only.** The gift-delete refusal read *"This
+gift has intake years. **Delete them first**, or keep the gift…"* — and **there is no way to delete
+an intake year**: no endpoint, no button. The advice pointed at a door that does not exist, and
+behind it sat a real trap — a gift created with one stray year could never be deleted, and neither
+could the year. Found by reading my own copy back after the owner's post-check had passed.
+
+Owner chose the wording fix over building year-deletion (**TD-232** carries the dead end and its
+trigger). The message now states the refusal and offers the action that DOES exist: switch the gift
+off. en/ms/ta.
+
+**⚠ THE GUARD IS A PAIRING, NOT A BANNED WORD** — the instruction is only false while the capability
+is missing, so `deleteRefusalCopy.test.ts` READS THE CODE for a year-delete path and only then
+checks the copy. The day somebody builds it, the premise flips and the guard retires itself.
+
+**⚠ AND THE BITE-CHECK CAUGHT THE GUARD BEING DEAD.** Its first version scanned all of `src` —
+including ITSELF — and the identifier it searches for is written in its own pattern, so it always
+"found" the capability, always took the early return, and **passed against the exact wording it was
+written to reject**. Excluded BY PATH, never by skipping `__tests__` (a real call site beside a test
+must still count). Second instance of this project's "a source-scanning guard accuses itself" lesson.
+
+jest 1741 → **1746**; tsc **24**; lint **0**; i18n **4804 × 3**; build clean.
+pytest unchanged at **5914** — no Python touched.
+
 ## The gift setup flow — the cycle starts where the data starts - 2026-09-07
 
 **Sprint. SHIPPED AND DEPLOYED, three deploys** (the second and third were the owner's live-review

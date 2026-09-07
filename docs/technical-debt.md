@@ -3215,3 +3215,44 @@ two agree on the same fixture. Not a rewrite — a second caller of one rule.
 moment to draw.
 
 (Logged 2026-09-07, gift setup flow.)
+
+---
+
+### [TD-232] An intake year cannot be deleted, so a gift that has one is stuck for ever — low
+
+**Found:** 2026-09-07, reading back the gift-delete refusal after the owner's post-check passed.
+The copy said *"This gift has intake years. **Delete them first**, or keep the gift…"* — advice
+pointing at a control that does not exist.
+
+**What.** There is **no way to delete an intake year**: no endpoint on
+`AdminIntakeYearDetailView` (PATCH only), and no affordance on the Intake year tab. `ScholarshipCohort`
+is `on_delete=PROTECT` from the gift, so:
+
+> create a gift → add an intake year by mistake → **neither can ever be removed.**
+
+The gift can be switched off, which retires it from every live path, so nothing is broken — but the
+Overview keeps a row nobody can clear, and "tidy up the thing I just made wrong" is exactly what the
+delete feature exists for.
+
+**Blast radius today: none on real data.** BrightPath's flagship is held by 143 applications and
+would be undeletable whatever this ticket does. It bites on a **test** gift, which is the case the
+owner was working in when they asked for deletion at all.
+
+**Owner ruling, 2026-09-07:** fix the WORDING now, not the capability (option A of two put to them).
+The message no longer instructs an impossible action; it states the refusal and offers the action
+that does exist (switch the gift off). `deleteRefusalCopy.test.ts` pins the pairing and **retires
+itself** the day a year-delete path appears.
+
+**Shape of the fix, when it is wanted.** The same shape the gift delete already has, one level
+down: a `DELETE` on the intake year, refused when **applications** exist under it (the only PROTECT
+relation pointing at a cohort that matters here), a typed confirmation, and an audit line. The
+existing `programme_delete_blocker` is the pattern — one function read by both the row and the
+refusal, so a disabled button and a server NO cannot drift apart.
+
+⚠ **Do not "simplify" it by cascading.** A year holds the rules the decision engine read and every
+application filed under it; deleting one with history is an archive question, not a delete.
+
+**The trigger:** somebody wanting to remove a gift they created by mistake AND gave a year to —
+or a second organisation onboarding and leaving test rows behind on their Overview.
+
+(Logged 2026-09-07, small-change lane.)

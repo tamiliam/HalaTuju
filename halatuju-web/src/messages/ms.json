@@ -5654,7 +5654,7 @@
         "hasOpenYear": "This programme is taking applications. Close its intake year first.",
         "noOrg": "Your account is not tied to an organisation.",
         "generic": "That did not work. Nothing was changed.",
-        "hasIntakeYears": "Hadiah ini mempunyai tahun pengambilan. Padamkannya dahulu, atau kekalkan hadiah ini — tahun itu memegang syarat dan sebarang permohonan di bawahnya.",
+        "hasIntakeYears": "Hadiah ini mempunyai tahun pengambilan, jadi ia tidak boleh dipadam — tahun itu memegang syarat dan sebarang permohonan di bawahnya. Matikan hadiah ini jika anda sudah selesai dengannya.",
         "hasApplications": "Pelajar telah memohon kepada hadiah ini, jadi ia tidak boleh dipadam.",
         "hasBenefactors": "Penderma telah diterima ke dalam hadiah ini, jadi ia tidak boleh dipadam.",
         "hasMoney": "Wang telah direkodkan terhadap hadiah ini, jadi ia tidak boleh dipadam.",
