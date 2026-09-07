@@ -41,6 +41,61 @@ retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
 the payload serving a platform constant, the cross-field rule disabled, and the browser
 ignoring the served rules - each failed its owning test, each restored by writing the original
 back. i18n +16 keys x3 (ms/ta first drafts).
+## Fix: the #20 sweep settles an income slot the way the platform does - 2026-09-08
+
+The report the previous change made runnable was read before anything was written, and it said
+something nobody expected: application 73's untagged WhatsApp photo would **replace the live copy**
+— a document scored `not_salary`, taking the slot from a genuine payslip, on a real student's
+record. The command's own docstring, its test and the 24-August changelog all predicted the
+opposite. They were predictions; this was the run.
+
+- **Cause: the sweep copied HALF of a two-step decision.** At upload an income document goes
+  through `promotion.should_promote` and THEN `income_engine.dedupe_income_proof`; the de-dup is
+  what makes the promote proxy safe for these types. The sweep had only the first. The two lead
+  with different things — `doc_quality` with `usable`, the de-dup with **genuineness** — and on
+  this pair they disagree: the genuine payslip's OCR misread one digit of the earner's IC, so it
+  reads NOT usable, while the photo read no name and no IC at all, so nothing contradicts it and
+  it reads usable.
+- **STR / salary / EPF now settle by `dedupe_income_proof`, which is also the writer** — no second
+  copy of the decision. `parent_ic` is not a de-duped type and keeps the promote rule.
+- **New `income_engine.income_dedup_rank`** — the de-dup's ranking, extracted so the report and
+  the write ask one function the same question, with the reason genuineness leads written at it.
+- **Report and write cannot disagree**: `_dedup_outcome` predicts with the tag applied in memory
+  only, using that same rank, and copies the de-dup's scope (salary/EPF per member, STR and the
+  utility bills household-wide).
+
+Bite-checked: with the de-dup branch disabled the new regression test fails. ⚠ Its first version
+passed under that bite — the fixture had no `parent_ic`, so nothing compared the payslip's IC
+number and the inversion could not arise. **A silent bite meant the fixture was too kind, not that
+the guard was fine.** apps/scholarship 4580 passed. +1 test, no schema change.
+
+## Fix: the repair for BrightPath #20 can finally be run - 2026-09-08
+
+`backfill_untagged_income_docs` shipped on 24 August with the upload guard it repairs behind, and
+was never run. It could not be: it writes to the production database, which is reachable only from
+the service, and it was **not in the cron registry** — the one path a command has to the live data.
+So the five documents it exists to file have sat untagged for a fortnight while the guard has been
+correctly tagging every new upload.
+
+- **Registered as cron job `backfill-untagged-income-docs`.** The endpoint calls a command with NO
+  arguments, so `--apply` is unreachable there; the write is switched on by
+  **`INCOME_DOC_TAG_APPLY=1`** on the service (set it, run the job, UNSET it — the
+  `backfill_requirements_snapshots` pattern). Absent variable = report only, so a job scheduled for
+  a report can never write.
+- **No behaviour changes on deploy.** This wires a report-only command to a switch; nothing runs by
+  itself, and the repair is a deliberate two-step the owner drives.
+- Reads STORED fields only — no Vision, no Gemini, no re-extraction.
+
+**⚠ The class: a repair command that cannot reach the data it repairs is not a repair.** The
+forward fix (the upload guard) went live and the backward repair silently did not, which is the
+third instance of the small-change lane's "the backward repair is the half that gets forgotten"
+rail — here it was not forgotten but *unreachable*, which looks identical from the outside. A
+test now pins the job NAME the runbook types, so a rename cannot strand it again.
+
+Measured on production before the change: **5 live income documents with a blank
+`household_member`, on 2 applications** (73 × 1, 88 × 4) — the same five the command's own
+docstring names. Both bites landed and bit (env arm disabled → 1 test fails; registry key renamed
+→ 1 test fails). +2 tests.
 
 ## Org Config Sprint C: the reviewers & staff clocks become organisation-tunable - 2026-09-07
 

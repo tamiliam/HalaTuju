@@ -2436,6 +2436,23 @@ def _dedup_clean_rank(doc):
     return 1
 
 
+def income_dedup_rank(doc):
+    """Which live copy of an income proof KEEPS the slot — HIGHER wins. Pure; reads stored fields.
+
+    ⚠ GENUINENESS LEADS, and that is the whole point: a non-genuine copy may never supersede a
+    genuine one. It is deliberately a DIFFERENT order from ``promotion.doc_quality``, which leads
+    with ``usable`` — and the difference is not academic. Application 73 holds a genuine payslip
+    whose OCR misread one digit of the earner's IC (so it reads NOT usable) beside a WhatsApp photo
+    scored ``not_salary`` that read no identity at all (so nothing contradicts, and it reads
+    usable). By ``doc_quality`` the photo wins; by this rank the payslip does. At upload both run —
+    promotion first, then ``dedupe_income_proof`` — so the de-dup is what makes the promote proxy
+    safe for these types, and any OTHER caller settling an income slot must run this one too.
+    """
+    return (_doc_genuine_rank(doc), _dedup_clean_rank(doc),
+            1 if _income_doc_recency(doc) else 0,
+            _income_doc_recency(doc) or (0, 0), doc.id)
+
+
 def dedupe_income_proof(application, member, doc_type):
     """Collapse LIVE copies of ``doc_type`` to a SINGLE best live doc, superseding the rest into
     Old / Replaced. Ranks by (genuine, has-a-date, recency, id): a genuine copy is never superseded
@@ -2461,9 +2478,7 @@ def dedupe_income_proof(application, member, doc_type):
     live = list(q)
     if len(live) < 2:
         return []
-    live.sort(key=lambda d: (_doc_genuine_rank(d), _dedup_clean_rank(d),
-                             1 if _income_doc_recency(d) else 0,
-                             _income_doc_recency(d) or (0, 0), d.id), reverse=True)
+    live.sort(key=income_dedup_rank, reverse=True)
     keep, losers = live[0], live[1:]
     # Preserve recipient attribution: if the kept STR copy is blank-tagged but a superseded sibling
     # names the recipient, inherit it so the cockpit still shows e.g. "Mother's STR proof".
