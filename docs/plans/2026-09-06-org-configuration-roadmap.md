@@ -97,9 +97,12 @@ inconsistency turned out to be FOUR dead fallbacks, all retired by the one deleg
 of COPY also read the rules out as fixed words ("Available times (8:00am–9:30pm, 30-min)", "about
 30 minutes") and are now interpolated in all three languages, with a jest guard.
 
-### Sprint E — documents  *(low; no migration)*
-`max_doc_size_mb` (8), `max_docs_per_application` (40), `max_other_docs` (10),
-`doc_stage_max_attempts` (3).
+### ✔ Sprint E — documents  *(SHIPPED 2026-09-07; no migration)*
+`max_doc_size_mb` (8, ceiling 25 — checked against the `b40-documents` bucket, which sets no
+file-size limit of its own), `max_docs_per_application` (40), `max_other_docs` (10),
+`doc_stage_max_attempts` (3). `org_config.max_doc_size_bytes()` is the one MB→bytes conversion;
+both upload doors read it. The uploader's own `MAX_DOC_SIZE_BYTES` mirror is gone (served on the
+document list), and "under 8 MB" is parameterised in three languages.
 
 ### Sprint F — agreements  *(medium; no migration; legal-adjacent)*
 `sign_accept_deadline_days` (30), `sign_reminder_days` (3), foundation signatory
@@ -126,4 +129,7 @@ engine and the tab already exist — a later sprint is registry entries + wired 
       `feat/org-config-sprint-d`; the six interview settings; the picker's lock-step copy
       deleted in favour of the served payload; retro
       `docs/retrospective-2026-09-07-org-config-sprint-d.md`)
-- [ ] E · [ ] F
+- [x] Sprint E — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-sprint-e`, branch
+      `feat/org-config-sprint-e`; the four document limits; retro
+      `docs/retrospective-2026-09-07-org-config-sprint-e.md`)
+- [ ] F

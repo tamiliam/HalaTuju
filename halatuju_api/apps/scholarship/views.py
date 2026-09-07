@@ -690,10 +690,16 @@ def _open_doc_request_items(app, doc_type):
 
 
 def _stage_attempts_exhausted(app, doc, settings):
-    """True when THIS not-usable upload is the K-th failed attempt (``DOC_STAGE_MAX_ATTEMPTS``) for
-    this doc_type — time to stop looping the student. Reads the PRE-increment count
-    (``_note_unresolved_attempts`` stamps the +1 AFTER the decision, so we count prior failures)."""
-    k = getattr(settings, 'DOC_STAGE_MAX_ATTEMPTS', 3)
+    """True when THIS not-usable upload is the K-th failed attempt for this doc_type — time to
+    stop looping the student. Reads the PRE-increment count (``_note_unresolved_attempts`` stamps
+    the +1 AFTER the decision, so we count prior failures).
+
+    K is the APPLICATION's organisation's `doc_stage_max_attempts` (Org Config Sprint E). The
+    `settings` argument is kept — callers pass it and it still carries the doc-assist knobs —
+    but it is no longer where this number comes from.
+    """
+    from apps.courses import org_config
+    k = org_config.value(app.owning_organisation, 'doc_stage_max_attempts')
     prior = max((int((i.params or {}).get('attempts') or 0)
                  for i in _open_doc_request_items(app, doc.doc_type)), default=0)
     return (prior + 1) >= k
@@ -937,7 +943,21 @@ class DocumentListCreateView(APIView):
         # version history for the officer view, never shown back to the student.
         docs = (ApplicantDocument.objects.filter(application=app, superseded_at__isnull=True)
                 if app else ApplicantDocument.objects.none())
-        return Response({'documents': ApplicantDocumentSerializer(docs, many=True).data})
+        # ⚠ THE LIMITS ARE SERVED, NEVER MIRRORED (Org Config Sprint E). The uploader used to
+        # hold its own `8 * 1024 * 1024` so it could warn before a doomed upload; that number is
+        # the ORGANISATION's now, so it rides here — the same read the POST below refuses on.
+        # `app` is None before shortlisting, and `org_config.value(None, …)` is the platform
+        # default, so an uploader with no application still draws a sane limit.
+        from apps.courses import org_config
+        org = app.owning_organisation if app else None
+        return Response({
+            'documents': ApplicantDocumentSerializer(docs, many=True).data,
+            'limits': {
+                'max_doc_size_mb': org_config.value(org, 'max_doc_size_mb'),
+                'max_docs_per_application': org_config.value(org, 'max_docs_per_application'),
+                'max_other_docs': org_config.value(org, 'max_other_docs'),
+            },
+        })
 
     # EVERY document is single-instance: a re-upload REPLACES the existing copy in the
     # same slot (DB row + Supabase blob), keeping things simple — one IC, one salary slip,
@@ -961,11 +981,18 @@ class DocumentListCreateView(APIView):
                                   serializer.validated_data.get('original_filename')):
             return Response({'error': 'unsupported_format', 'code': 'unsupported_format'},
                             status=status.HTTP_400_BAD_REQUEST)
+        # `_settings` is still needed further down this method (the doc-assist knobs at the
+        # extract step); only the three CAPS moved to the registry.
         from django.conf import settings as _settings
+        from apps.courses import org_config
         # Guardrail 1: per-file size cap (the bytes go client→Storage via signed
-        # URL, so this validates the reported size).
-        if (serializer.validated_data.get('size') or 0) > _settings.MAX_DOC_SIZE_BYTES:
-            return Response({'error': 'file_too_large', 'max_mb': _settings.MAX_DOC_SIZE_BYTES // (1024 * 1024)},
+        # URL, so this validates the reported size). Org Config Sprint E: the cap is the
+        # ORGANISATION's, and `max_doc_size_bytes` is the only MB→bytes conversion — the
+        # refusal reports the same number the uploader was served.
+        _org = app.owning_organisation
+        if (serializer.validated_data.get('size') or 0) > org_config.max_doc_size_bytes(_org):
+            return Response({'error': 'file_too_large',
+                             'max_mb': org_config.value(_org, 'max_doc_size_mb')},
                             status=status.HTTP_400_BAD_REQUEST)
         new_member = serializer.validated_data.get('household_member', '') or ''
         # A reviewer-requested upload carries the officer ResolutionItem code — it makes this
@@ -1006,13 +1033,15 @@ class DocumentListCreateView(APIView):
         # LIVE docs only — superseded history rows are retained but must not fill the quota.
         replaces = single and ApplicantDocument.objects.filter(**slot_filter).exists()
         # 'other' (reviewer-requested extra) cap — a NEW 'other' slot beyond the cap is rejected.
+        _max_other = org_config.value(_org, 'max_other_docs')
         if new_doc_type == 'other' and not replaces and ApplicantDocument.objects.filter(
-                application=app, doc_type='other', superseded_at__isnull=True).count() >= _settings.MAX_OTHER_DOCS:
-            return Response({'error': 'other_doc_limit_reached', 'max': _settings.MAX_OTHER_DOCS},
+                application=app, doc_type='other', superseded_at__isnull=True).count() >= _max_other:
+            return Response({'error': 'other_doc_limit_reached', 'max': _max_other},
                             status=status.HTTP_400_BAD_REQUEST)
+        _max_docs = org_config.value(_org, 'max_docs_per_application')
         if not replaces and ApplicantDocument.objects.filter(
-                application=app, superseded_at__isnull=True).count() >= _settings.MAX_DOCS_PER_APPLICATION:
-            return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
+                application=app, superseded_at__isnull=True).count() >= _max_docs:
+            return Response({'error': 'doc_limit_reached', 'max': _max_docs},
                             status=status.HTTP_400_BAD_REQUEST)
         # Guardrail 3 (orphan-row prevention, app #80 EPF 2026-06-27): the bytes are PUT
         # client→Storage via the signed URL BEFORE this POST. If that PUT silently failed, we'd

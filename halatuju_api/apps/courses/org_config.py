@@ -130,6 +130,27 @@ def _default_interview_reschedule_cutoff_hours():
     return int(getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12))
 
 
+def _default_max_doc_size_mb():
+    # The platform value has always lived in BYTES (`MAX_DOC_SIZE_BYTES`, default 8 MB). The
+    # owner's unit for the tab is MB, so the registry speaks MB and the read seam converts —
+    # the same shape as `pool_funded_grace_days` (days on the tab, hours in the platform).
+    # Integer division: a platform value that is not a whole MB rounds DOWN, so the number on
+    # screen never promises more than the server accepts.
+    return int(getattr(settings, 'MAX_DOC_SIZE_BYTES', 8 * 1024 * 1024)) // (1024 * 1024)
+
+
+def _default_max_docs_per_application():
+    return int(getattr(settings, 'MAX_DOCS_PER_APPLICATION', 40))
+
+
+def _default_max_other_docs():
+    return int(getattr(settings, 'MAX_OTHER_DOCS', 10))
+
+
+def _default_doc_stage_max_attempts():
+    return int(getattr(settings, 'DOC_STAGE_MAX_ATTEMPTS', 3))
+
+
 # key → {group, unit, min, max, default}, plus two OPTIONAL keys:
 #   * `allowed` — the only values this setting may take (rendered as a menu, not a box). Use it
 #     when the range is not the real constraint: a slot step of 45 leaves `minute % step` no
@@ -305,6 +326,46 @@ SETTINGS = {
         'max': 168,
         'default': _default_interview_reschedule_cutoff_hours,
     },
+    # ── documents (Sprint E) ──
+    # The biggest single upload. Stored in MB; `max_doc_size_bytes()` is the ONE conversion.
+    # Ceiling 25 (owner 2026-09-07): the `b40-documents` bucket sets no file-size limit of its
+    # own, so the real wall is the Supabase project ceiling (50 MB) — 25 leaves room for a long
+    # payslip photo and stays well inside it. Read at BOTH upload doors (the student's and the
+    # organisation-request attachment's) and SERVED to the student's uploader.
+    'max_doc_size_mb': {
+        'group': 'documents',
+        'unit': 'megabytes',
+        'min': 1,
+        'max': 25,
+        'default': _default_max_doc_size_mb,
+    },
+    # How many LIVE documents one application may hold. A superseded copy does not count —
+    # re-uploading into a slot replaces it — so this bounds slots in use, not uploads ever made.
+    'max_docs_per_application': {
+        'group': 'documents',
+        'unit': 'documents',
+        'min': 5,
+        'max': 200,
+        'default': _default_max_docs_per_application,
+    },
+    # …of which how many may be 'other' (reviewer-requested extras). Each lands in its own
+    # request-keyed slot, so without this a reviewer could ask for unbounded extras.
+    'max_other_docs': {
+        'group': 'documents',
+        'unit': 'documents',
+        'min': 1,
+        'max': 50,
+        'default': _default_max_other_docs,
+    },
+    # The stage-judge circuit-breaker (owner 2026-07-09): after this many not-usable re-uploads
+    # of one named document, stop looping the student and hold it for an officer instead.
+    'doc_stage_max_attempts': {
+        'group': 'documents',
+        'unit': 'attempts',
+        'min': 1,
+        'max': 10,
+        'default': _default_doc_stage_max_attempts,
+    },
 }
 
 # Cross-field rules: (earlier key, later key, code). A single key's bounds cannot express
@@ -382,6 +443,18 @@ def value(organisation, key):
     """What the product should USE: the organisation's stored value, else the platform default."""
     v = stored(organisation, key)
     return default(key) if v is None else v
+
+
+def max_doc_size_bytes(organisation):
+    """The per-file upload cap in BYTES for one organisation.
+
+    ⚠ THE ONE PLACE MB BECOMES BYTES. Every door that weighs an upload calls this; none of them
+    carries its own `* 1024 * 1024`, because a second conversion is how one door starts refusing
+    a file another door accepted. The value on the tab is MB (the owner's unit) and the wire
+    talks bytes — this function is the join, and `views.py` reports the MB back on a refusal by
+    dividing here-and-nowhere-else.
+    """
+    return value(organisation, 'max_doc_size_mb') * 1024 * 1024
 
 
 def custom_values(key):

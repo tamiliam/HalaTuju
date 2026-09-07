@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## Org Config Sprint E: the document limits become organisation-tunable - 2026-09-07
+
+Four settings join Organisation > Settings > Configuration under a new **Documents** group
+(registry entries + wired read sites + rows - **no migration**). Roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D + E done);
+retro `docs/retrospective-2026-09-07-org-config-sprint-e.md`.
+
+- **`max_doc_size_mb` (8, ceiling 25)** - the tab speaks MB (the owner's unit) while the wire
+  speaks bytes, and `org_config.max_doc_size_bytes()` is the ONE conversion. Both upload doors
+  read it: the student's document POST and the organisation's own support-request attachment.
+  A platform value that is not a whole MB rounds DOWN, so the number on screen never promises
+  more than the server accepts. Ceiling 25 confirmed against storage: the `b40-documents` bucket
+  sets no file-size limit of its own, so the real wall is the Supabase project's 50 MB.
+- **`max_docs_per_application` (40)** and **`max_other_docs` (10)** - both count LIVE documents
+  only; a re-upload replaces a slot and never fills the quota. Unchanged behaviour, now per
+  organisation.
+- **`doc_stage_max_attempts` (3)** - the re-upload circuit-breaker (owner 2026-07-09) reads the
+  APPLICATION's organisation, not a platform global.
+- **The uploader's mirror is GONE.** `ScholarshipDocuments` held its own
+  `MAX_DOC_SIZE_BYTES = 8 * 1024 * 1024` so it could warn before a doomed upload. The document
+  list now SERVES the resolved limits and `documentLimits.limitsFrom` reads them with a
+  per-field fallback; a nonsense size (0, negative) is refused on its own rather than producing
+  a limit that rejects every file.
+- **"Each file must be under 8 MB" is parameterised** in all three languages, and the refusal
+  path prefers the server's OWN `max_mb` from the 400 body - so a stale served limit cannot make
+  the message contradict the rejection. A jest guard fails if a number goes back into the string.
+
++8 pytest (5948 -> 5956) and +7 jest (1769 -> 1776). Four bite-checks: the size cap de-orged,
+the payload serving a literal, the breaker re-globalled, and the browser ignoring the served
+size - each failed its owning test, each restored by writing the original back. i18n +12 keys x3
+(ms/ta first drafts).
+
 ## Fix: the interview clock boxes are plain HH:MM boxes, not a native time picker - 2026-09-07
 
 The owner's live review of Org Config Sprint D found the clock rows unusable, and all four

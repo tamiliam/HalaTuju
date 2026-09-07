@@ -1540,7 +1540,7 @@
         "unreadable": "Kami tidak dapat membaca dokumen ini dengan jelas — pasukan kami akan menyemaknya secara manual.",
         "review_manually": "Diterima — pasukan kami akan menyemak dokumen ini."
       },
-      "file_too_large": "Setiap fail mestilah di bawah 8 MB. Sila muat naik gambar yang lebih kecil atau lebih jelas.",
+      "file_too_large": "Setiap fail mestilah di bawah {mb} MB. Sila muat naik gambar yang lebih kecil atau lebih jelas.",
       "doc_limit_reached": "Anda telah mencapai bilangan dokumen maksimum. Sila buang mana-mana yang anda tidak perlukan lagi.",
       "match": {
         "good": "Nampak baik — kami jumpa nama yang dijangka pada dokumen ini.",
@@ -5742,7 +5742,8 @@
           "sponsor_page": "Halaman penaja",
           "student_comms": "Komunikasi pelajar",
           "reviewers_staff": "Penilai & kakitangan",
-          "interviews": "Temu duga"
+          "interviews": "Temu duga",
+          "documents": "Dokumen"
         },
         "setting": {
           "pool_funded_grace_days": {
@@ -5809,6 +5810,22 @@
             "label": "Tempahan terawal — jam lebih awal",
             "desc": "Berapa awal waktu terawal yang ditawarkan mesti berada, supaya pelajar sempat membaca e-mel, memilih waktu dan bersiap."
           },
+          "max_doc_size_mb": {
+            "label": "Fail terbesar — MB",
+            "desc": "Saiz muat naik tunggal terbesar yang boleh dihantar oleh pelajar atau kakitangan anda. Gambar telefon biasanya 2-5 MB."
+          },
+          "max_docs_per_application": {
+            "label": "Dokumen bagi setiap permohonan",
+            "desc": "Berapa banyak dokumen boleh ada dalam satu permohonan pada satu masa. Menggantikan dokumen tidak dikira sebagai dokumen baharu."
+          },
+          "max_other_docs": {
+            "label": "Dokumen \"lain\" bagi setiap permohonan",
+            "desc": "Berapa banyak dokumen tambahan boleh diminta oleh penilai selain senarai standard. Ia dikira dalam jumlah keseluruhan di atas."
+          },
+          "doc_stage_max_attempts": {
+            "label": "Percubaan sebelum kami berhenti bertanya",
+            "desc": "Selepas sebanyak ini muat naik semula yang tidak boleh dibaca bagi dokumen yang sama, kami berhenti bertanya kepada pelajar dan menyimpannya untuk semakan pegawai."
+          },
           "interview_reschedule_cutoff_hours": {
             "label": "Tukar atau batal sehingga — jam sebelum",
             "desc": "Sehampir mana dengan waktu mula pelajar masih boleh memilih waktu lain atau membatalkan. E-mel pengesahan menjanjikan nombor yang sama."
@@ -5820,7 +5837,10 @@
           "minutes": "minit",
           "cards": "kad",
           "questions": "soalan",
-          "time_of_day": "(hh:mm)"
+          "time_of_day": "(hh:mm)",
+          "megabytes": "MB",
+          "documents": "dokumen",
+          "attempts": "percubaan"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
         "defaultNoteClock": "Lalai platform: {n} (waktu Malaysia)",

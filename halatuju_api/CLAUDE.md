@@ -550,7 +550,54 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after Org Config Sprint D — the interview grid)
+## Next Sprint (as of 2026-09-07, after Org Config Sprint E — the document limits)
+
+**SHIPPED.** Worktree `.worktrees/org-config-sprint-e`, branch `feat/org-config-sprint-e` (base =
+the clock-box fix, `9b0a454e`). **NO MIGRATION.** Retro
+`docs/retrospective-2026-09-07-org-config-sprint-e.md`; roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A ✔ B ✔ C ✔ D ✔ E ✔ · **F is the last one**).
+Gates: pytest **5956** (+8; `test_org_config.py` 56 → 64); jest **1776** (+7); lint **0**;
+tsc **24** (baseline); i18n **4845 × 3** (+12, ms/ta first drafts); `next build` compiled;
+`makemigrations --check` clean. Four bite-checks landed.
+
+**Four settings joined the tab under a new Documents group:** `max_doc_size_mb` 8 (ceiling 25) ·
+`max_docs_per_application` 40 · `max_other_docs` 10 · `doc_stage_max_attempts` 3.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ `org_config.max_doc_size_bytes()` IS THE ONLY MB→BYTES CONVERSION.** The tab speaks MB (the
+  owner's unit); the wire speaks bytes. Both upload doors call this one function — the student's
+  document POST and `AdminOrgRequestAttachmentCreateView`. Do not add a second `* 1024 * 1024`
+  anywhere: that is how one door starts refusing a file the other accepted. The refusal reports
+  MB by reading the registry, never by dividing again.
+- **The MB default rounds DOWN** (`MAX_DOC_SIZE_BYTES // 1MB`). `MAX_DOC_SIZE_BYTES` is
+  env-overridable and need not be whole MB; the screen must never promise more than the server
+  takes. A test pins 8.7 MB → 8.
+- **⚠ THE UPLOADER'S MIRROR IS GONE.** `ScholarshipDocuments` held its own
+  `MAX_DOC_SIZE_BYTES = 8 * 1024 * 1024`. The document LIST now serves `limits` and
+  `documentLimits.limitsFrom` reads them with a PER-FIELD fallback — a nonsense size (0 or
+  negative) falls back on its own rather than producing a limit that rejects every file. The
+  constants there are the platform default only.
+- **The copy is a read site.** "Each file must be under {mb} MB" interpolates in all three
+  languages, and the catch path prefers the server's OWN `max_mb` (a 400 body lands on
+  `fieldErrors`), so a stale served limit cannot contradict the rejection. A jest guard fails if
+  a bare number goes back in.
+- **The ceiling was checked against storage, not guessed:** `b40-documents` sets no
+  `file_size_limit`, so the wall is the Supabase project default (50 MB). 25 sits inside it.
+- **Test note:** every student endpoint sits behind `SupabaseAuthMiddleware`'s NRIC gate — a
+  fixture profile with no `nric` gets 403 `nric_required` before the view runs.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):** Organisation →
+Settings → Configuration now shows FIVE groups; the new **Documents** has 4 rows, all blank with
+the platform default named underneath. ms/ta strings are my first drafts.
+
+**▶ NEXT = Sprint F, the last of the arc:** agreements — `sign_accept_deadline_days` (30),
+`sign_reminder_days` (3), and the foundation signatory name/title/notify email (tenant identity
+currently in platform env vars). **Legal-adjacent and it prints into the agreement PDF**, so the
+owner reviews the rendered output before it is called done. Also still standing: TD-229
+(contract template per gift), TD-230 / the Sabah apply link, TD-233 (interview duration vs slot
+step). Feature switches, per-GIFT values and platform internals stay OUT of this tab.
+
+## Superseded — previous Next Sprint (as of 2026-09-07, after Org Config Sprint D — the interview grid)
 
 **SHIPPED.** Worktree `.worktrees/org-config-sprint-d`, branch `feat/org-config-sprint-d` (base =
 the Sprint C close, `5a677f91`). **NO MIGRATION** — registry entries + wired read sites + rows on

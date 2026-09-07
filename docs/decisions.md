@@ -9200,3 +9200,46 @@ avoids an awkward number position. Accepted.
 
 **Revisit if:** a value becomes tunable and its copy genuinely cannot carry the number (a legal
 phrase, say). Then the copy must stop CLAIMING the number rather than state a stale one.
+
+## The MB↔bytes conversion for the upload cap has exactly one home — Org Config Sprint E, 2026-09-07
+
+**Decision:** `max_doc_size_mb` is stored and shown in MB (the owner's unit); `org_config.
+max_doc_size_bytes(organisation)` is the single function that turns it into bytes, and every door
+that weighs an upload calls it. A refusal reports MB by reading the registry value, never by
+dividing the byte count again. The platform default converts with integer division, rounding DOWN.
+
+**Alternatives considered:** (a) store bytes and let the tab divide for display — the owner would
+then be typing a number the registry bounds in bytes, and every bound (min/max) would read as
+8388608; (b) let each read site convert — two multiplications that agree today and diverge the
+first time one of them is "simplified".
+
+**Rationale:** the same shape as `pool_funded_grace_days` (days on the tab, hours in the platform),
+which is the established precedent for a setting whose display unit differs from its storage unit.
+Rounding DOWN matters because `MAX_DOC_SIZE_BYTES` is env-overridable and need not be whole MB: an
+8.7 MB platform value shows as 8, so the screen never promises more than the server accepts.
+
+**Trade-offs:** an organisation cannot express a sub-MB cap (min 1 MB). Accepted — a limit finer
+than a megabyte is not a thing an administrator has an opinion about.
+
+**Revisit if:** a second byte-valued setting appears (an export size, say). Then the conversion
+belongs in a small helper taking the key, not one function per setting.
+
+## The upload ceiling is bounded by what storage will accept, and that was verified — Org Config Sprint E, 2026-09-07
+
+**Decision:** the registry caps `max_doc_size_mb` at 25. Chosen after reading `storage.buckets` on
+production: `b40-documents` carries no `file_size_limit`, so the effective wall is the Supabase
+project default of 50 MB.
+
+**Alternatives considered:** 15 MB (offered to the owner as the cheaper option — tighter storage
+and AI-read costs, but no room for a scanned multi-page PDF); no ceiling beyond the registry's own
+sanity bound (rejected: the tab would let an organisation promise an upload the storage layer then
+refuses, and the failure would surface as a dead PUT with no owner).
+
+**Rationale:** the owner picked 25 with the cost trade-off stated. A B40 phone photo is 2–5 MB, so
+the ceiling costs nothing unless an organisation deliberately raises its own limit.
+
+**Trade-offs:** if the Supabase project's file-size limit is ever lowered below 25 MB, the registry
+max becomes a promise the storage will not keep — and nothing in the code would notice.
+
+**Revisit if:** the bucket gains a `file_size_limit`, or the project's storage plan changes. The
+check is one query: `SELECT id, file_size_limit FROM storage.buckets`.

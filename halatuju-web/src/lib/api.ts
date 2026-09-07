@@ -2036,7 +2036,18 @@ export async function recordDocument(
   })
 }
 
-export async function listDocuments(options?: ApiOptions): Promise<{ documents: ApplicantDocument[] }> {
+/** The organisation's upload limits, SERVED with the document list (Org Config Sprint E).
+ *  Optional so a payload cached from an older build still types — read them through
+ *  `documentLimits.limitsFrom`, which falls back per field. */
+export interface DocumentLimits {
+  max_doc_size_mb?: number
+  max_docs_per_application?: number
+  max_other_docs?: number
+}
+
+export async function listDocuments(
+  options?: ApiOptions,
+): Promise<{ documents: ApplicantDocument[]; limits?: DocumentLimits }> {
   return apiRequest('/api/v1/scholarship/documents/', options)
 }
 
