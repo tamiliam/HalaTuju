@@ -2202,9 +2202,17 @@ No migration. Retro `docs/retrospective-2026-08-24-rating-gated-submit.md`; deci
    `income_engine.dedupe_income_proof`, which is also the writer, ranked by the new
    `income_dedup_rank`.
 3. **ms/ta for `decision.notSubmittedIncomplete` / `notSubmittedStatus`** are my first drafts.
-4. **The completion report for #20** — **STAGED 2026-09-08 as DRAFT analysis 48**, awaiting the
-   owner's approval in the cockpit; then #20 → `done` (terminal, so approve FIRST). Analysis 41
-   said *no charge*; 4.0h planned, two sittings, quote stands withdrawn.
+4. ~~**The completion report for #20**~~ — **DONE 2026-09-08.** Analysis **48** approved and posted
+   as comment **72**, then **#20 → `done`** (in that order — `done` is terminal and refuses a
+   post). Analysis 41's *no charge* stands; 4.0h planned over two sittings, quote withdrawn.
+   ⚠ Draft **47** is a withdrawn duplicate of 48 (an accidental second `--apply`); retired through
+   `withdraw_analysis`, which exists for exactly this and was last needed on request #10.
+   ⚠ **Nothing on application 88's screens changed, correctly** — the owner checked and asked why.
+   Two readers were already inferring the owner of a blank-tagged doc: `resolved_member` (computed
+   per page load from the name on the document) and `_cluster_docs`'s STR-route blank-as-earner
+   fallback. The repair wrote the answer DOWN. That matters because the fallback is explicitly
+   migration-era (*"once tightened it reads the member tag only"*) and because a blank tag is a
+   permanently-empty slot anything wins by default — which is what actually bit on app 73.
 5. **Application 73 was advanced to QC BY HAND** (2026-08-24, `verified_by=tamiliam@gmail.com` — not
    Kaneswaran, who decided the case but never pressed the button). Suresh can QC it now.
 
