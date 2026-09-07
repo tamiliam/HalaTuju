@@ -50,9 +50,7 @@ const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
 
 const EMPTY_FORM = { year: '', code: '', name: '', opens_on: '', closes_on: '' }
 
-/** `goToRules` switches the page to the Rules tab. Optional so the component still mounts
- *  standalone in tests; when absent the onward pointer is simply not drawn. */
-export default function IntakeYearTab({ goToRules }: { goToRules?: () => void } = {}) {
+export default function IntakeYearTab() {
   const { token } = useAdminAuth()
   const { t } = useT()
   const { programme, programmes, loading, mustChoose, select } = useSelectedProgramme()
@@ -203,15 +201,15 @@ export default function IntakeYearTab({ goToRules }: { goToRules?: () => void } 
             </InfoBox>
           </div>
 
-          {/* ⚠ THE ONWARD POINTER, and it only appears once a year EXISTS — the rules live on that
-              row, so before it there is nowhere for them to go. It POINTS; it never fills anything
-              in (PF-1's rule on a screen: suggesting is help, choosing is a guess). */}
-          {goToRules && years.length > 0 && (
-            <button type="button" onClick={goToRules} data-testid="year-go-to-rules"
-              className="mt-4 rounded-lg border border-ground-300 px-4 py-2 text-sm font-medium text-ground-800 hover:bg-ground-50">
-              {t('admin.years.goToRules')}
-            </button>
-          )}
+          {/* ⚠ THE ONWARD POINTER IS GONE, DELIBERATELY (owner, 2026-09-07: *"Why is it there?"*).
+              I added it as the second half of a setup trail and got the CONDITION backwards: it
+              appeared once a year EXISTED, so it appeared for ever — on a gift running its second
+              intake it still read "Next: set the rules", like unfinished homework that never
+              clears. Its twin on the Rules tab is correct and stays, because it appears only when
+              there is NO year: a real dead end, unblocked once.
+
+              And it was redundant even when it was right — the Rules tab is one click away,
+              directly above it. Do not restore this without a condition that can turn OFF. */}
         </>
       )}
 

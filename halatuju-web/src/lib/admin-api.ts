@@ -3083,6 +3083,18 @@ export interface AdminProgramme {
   name_ms: string
   name_ta: string
   is_active: boolean
+  /**
+   * Where the gift is in its life — the badge on its card.
+   *
+   * ⚠ SERVED, NOT DERIVED HERE (owner ruling, 2026-09-07). `draft` and `archived` are BOTH
+   * `is_active: false`; the server splits them on whether anybody has ever applied. The card
+   * carries an `applications` count, so this COULD be worked out in the browser — do not. It is
+   * the same rule the Delete control reads, and two copies of it would put a **Draft** badge
+   * beside a Delete button greyed because students applied.
+   *
+   * `is_active` stays beside it because it is what the PATCH writes; `lifecycle` is how it READS.
+   */
+  lifecycle: 'draft' | 'active' | 'archived'
   intake_years: number
   applications: number
   /** The year currently taking applications, or null. A PROGRAMME is never open — a year is. */

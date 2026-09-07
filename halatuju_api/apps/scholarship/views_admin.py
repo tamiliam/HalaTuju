@@ -6570,6 +6570,52 @@ class AdminProgrammeConfigurationView(_AdminBase):
 # ⚠ THESE SCREENS ARE NOT A SECOND SECURITY BOUNDARY. A programme narrows INSIDE the org wall; it
 # never replaces it (`Programme` docstring). Nothing here authorises anything.
 
+def programme_student_queryset(p):
+    """Every student this gift has ever taken — the ONE answer to that question.
+
+    ⚠ IT REACHES THROUGH THE COHORT, NOT JUST THE COLUMN.
+    `ScholarshipApplication.programme` is copied from the cohort at first save and is **set-once**
+    (deliberately — a cohort moved between gifts must not re-home somebody's money). So a cohort
+    that has moved leaves its old applications pointing at the OLD gift, and `filter(programme=p)`
+    alone would call this gift empty while its own round still held people.
+
+    ⚠ TWO READERS, AND THEY MUST NOT DRIFT: `programme_delete_blocker` (may this gift be deleted?)
+    and `programme_lifecycle` (is a switched-off gift a DRAFT or an ARCHIVE?). Both are asking the
+    same question — "has anybody ever applied?" — and a disagreement would put a **Draft** badge on
+    a gift whose Delete button is greyed because students applied.
+    """
+    from .models import ScholarshipApplication
+    # org-fence: `p` reached every caller through `_programmes_for` / `_programme_or_404`, so it is
+    # already inside the caller's organisation and the join cannot widen past it.
+    return ScholarshipApplication.objects.filter(
+        Q(programme=p) | Q(cohort__programme=p)).distinct()
+
+
+def programme_lifecycle(p, has_students):
+    """Where a gift is in its life: `active` · `draft` · `archived`.
+
+    ⚠⚠ SERVED, NOT DERIVED IN THE BROWSER (owner ruling, 2026-09-07). The card carries an
+    `applications` count, so a client COULD work this out — and that is exactly the mistake
+    `delete_blocked_by` exists to avoid. It lives here so the rule has one home beside the other
+    gift rules, and so it can be tested in Python.
+
+    ⚠ THE THIRD STATE IS WORKED OUT, NOT STORED — the owner chose that (option A of two, 2026-09-07)
+    over a migration. The database knows only on/off; `is_active` false splits by whether anybody
+    ever applied. **The known edge:** a gift switched on, applied to by nobody, then switched off
+    reads DRAFT rather than ARCHIVED. Accepted, because the alternative is a stored column and a
+    production data step for a distinction nothing acts on yet.
+
+    ⚠ WHY THE SPLIT MATTERS AT ALL. "Inactive" was doing two jobs that look identical on screen and
+    are nothing alike: a gift still being SET UP (born switched off — every gift starts here) and a
+    gift that has FINISHED (retired, holding real students). The owner's report was that the control
+    read as a duplicate of the intake year's Open/Close; naming the three states is what separates
+    a lifecycle from an applications switch.
+    """
+    if p.is_active:
+        return 'active'
+    return 'archived' if has_students else 'draft'
+
+
 def programme_delete_blocker(p):
     """What is holding this gift, as ``(code, count)`` — or ``(None, 0)`` if nothing is.
 
@@ -6601,14 +6647,11 @@ def programme_delete_blocker(p):
     the database refuses regardless. This only names WHICH, in the order a person is most likely to
     be able to act on — students, before money they cannot undo.
     """
-    from .models import (Donation, PaymentRun, ScholarshipApplication,
-                         SponsorProgrammeMembership)
+    from .models import Donation, PaymentRun, SponsorProgrammeMembership
     holders = (
         # org-fence: every query filters on `p`, which every caller reached through the fence
         # (`_programmes_for` / `_programme_or_404`) — already inside the caller's organisation.
-        # The OR arm catches an application whose set-once `programme` predates a cohort move.
-        ('has_applications', ScholarshipApplication.objects.filter(
-            Q(programme=p) | Q(cohort__programme=p)).distinct()),
+        ('has_applications', programme_student_queryset(p)),
         # org-fence: as above — narrowed by the already-fenced `p`.
         ('has_benefactors', SponsorProgrammeMembership.objects.filter(programme=p)),
         # org-fence: as above.
@@ -6634,6 +6677,11 @@ def _programme_row(p):
         'id': p.id, 'code': p.code,
         'name_en': p.name_en, 'name_ms': p.name_ms, 'name_ta': p.name_ta,
         'is_active': p.is_active,
+        # ⚠ THE BADGE'S ANSWER, SERVED. `is_active` stays beside it because it is what the PATCH
+        # writes — the control still flips a boolean; `lifecycle` is only how it READS. Do not
+        # re-derive this from `applications` in the browser (the `delete_blocked_by` rule).
+        'lifecycle': programme_lifecycle(
+            p, programme_student_queryset(p).exists()),
         # ⚠ SERVED, NOT GUESSED. The Delete control is disabled from THIS, and the delete endpoint
         # refuses from the same function — so the button and the refusal cannot disagree. `null`
         # means nothing is holding it and it may be deleted.
