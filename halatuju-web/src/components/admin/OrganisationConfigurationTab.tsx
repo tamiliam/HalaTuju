@@ -189,7 +189,12 @@ export default function OrganisationConfigurationTab() {
                           aria-label={label(s.key)}
                           data-testid={`config-${s.key}`}
                           className="w-24 rounded-lg border border-ground-200 bg-ground-0 px-3 py-2 text-right text-sm tabular-nums text-ground-900" />
-                        <span className="text-sm text-ground-500">
+                        {/* Fixed-width unit column: with a natural-width label the right-aligned
+                            pair shifts the BOX by the unit's length ("days" vs "questions"), so
+                            the boxes never line up down the page (owner, 2026-09-07). w-24 also
+                            fits the longest ta unit. */}
+                        <span className="w-24 shrink-0 text-left text-sm text-ground-500"
+                          data-testid={`config-${s.key}-unit`}>
                           {t(`admin.orgSettings.config.unit.${s.unit}`)}
                         </span>
                       </div>

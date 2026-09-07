@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Small change: the Configuration tab's boxes line up - 2026-09-07
+
+Owner live review of Sprint B: the value boxes drifted left/right because the unit label after
+each ("days" vs "questions") had its natural width inside a right-aligned pair. The unit now sits
+in a fixed-width column (`w-24`, wide enough for the longest Tamil unit), so every box shares one
+edge. A rendered test pins the width class on every row. The owner's second observation — the
+grey shades differ between boxes — is the DESIGN: a dark number is a value the organisation set;
+a faint number is a blank box showing the platform default as a placeholder, kept fainter by the
+F7e `--ground-placeholder` ruling (darkening it would make an empty field read as filled).
+Web only, no i18n, no migration. jest 1734 → 1735; lint 0; build clean.
+
 ## The Configuration tab learns student comms, and the sponsor email learns whose cap it wears - 2026-09-07
 
 **Org Config Sprint B** (roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md`). Worktree
