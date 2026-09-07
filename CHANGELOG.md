@@ -41,6 +41,26 @@ retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
 the payload serving a platform constant, the cross-field rule disabled, and the browser
 ignoring the served rules - each failed its owning test, each restored by writing the original
 back. i18n +16 keys x3 (ms/ta first drafts).
+## Consolidation review, and a guard that every repair has a door - 2026-09-08
+
+The eleven-entry small-change review (`docs/consolidation-log.md`, 19 Aug → 8 Sep). One guardrail
+landed, two clusters promoted, and the technical-debt index regenerated.
+
+- **`test_repair_commands_have_a_door.py`** — every `backfill_*` / `repair_*` command in either app
+  must be registered in `CronRunView.JOBS` or listed in `NO_DOOR` with its reason. **Bite-checked**
+  by planting a stranded command. It scans by NAME, so the next repair is covered with nobody
+  remembering to add it. Written because #20's repair was finished, correct and unreachable for a
+  fortnight, with nothing broken and no test failing.
+- **TD-233** — the thirteen existing door-less repair commands, seeded into `NO_DOOR` honestly
+  rather than quietly blessed. Each needs one of three answers: spent · needs a door · local by
+  nature. ⚠ Not to be cleared by exporting production credentials to a laptop (TD-206).
+- **TD-234** — the income rule has four homes and three name documents by hand. Three copies of the
+  pre-25-July rule surfaced in six weeks, each on a live student. **No guard invented**: the
+  instances no longer share a shape, so it is a watch with a written trigger.
+- **The register was stale in two places** — TD-222 and TD-224 were closed by Layer 1 F7a and F7e
+  and the register was never told. Marked. The index's own count could not be reproduced from the
+  previous regeneration's figure, so the method actually run is now written down beside it.
+
 ## Fix: the #20 sweep settles an income slot the way the platform does - 2026-09-08
 
 The report the previous change made runnable was read before anything was written, and it said

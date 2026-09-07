@@ -9,9 +9,11 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-08-24** it holds **196 distinct ids through TD-220, of which 110 are open** —
-see the Open Items Index below, which carries the significant ones and a note on how that count was
-reached (a naive parse over-reports by 17).
+a running log; as of **2026-09-08** it runs to **TD-234**, with **126 ids carrying a defining entry
+and 63 of those showing no resolution marker** — see the Open Items Index below, which carries the
+significant ones and the exact method behind those figures. ⚠ The older claim here (*"196 distinct
+through TD-220, of which 110 are open"*) could not be reproduced at the 2026-09-08 regeneration and
+has been replaced rather than carried forward.
 
 > **Status is per-entry, not a master count.** Each entry carries its own `✅ RESOLVED` heading or
 > `**Status:**` line — those are authoritative (a single hand-maintained tally rots, as the old "49/52"
@@ -29,11 +31,17 @@ reached (a naive parse over-reports by 17).
 
 ---
 
-## Open Items Index (curated, regenerated 2026-08-19)
+## Open Items Index (curated, regenerated 2026-09-08)
 
-**109 open of 195 distinct TD ids**, counted mechanically and then corrected by reading — see the
-counting note below before trusting or repeating that number. This list is the **significant**
-pending items, not all 109; the per-entry marker in the body remains authoritative.
+**126 entries carry a defining line; 63 of those show no resolution marker on it**, and 14 of the
+63 mention RESOLVED further down and would need reading to settle. This list is the **significant**
+pending items, not all 63; the per-entry marker in the body remains authoritative.
+
+> ⚠ **The previous regeneration (2026-08-19) said "109 open of 195 distinct" and I could not
+> reproduce 195 by any parse.** 230 distinct ids are MENTIONED in the register; only **126** have a
+> defining entry (a `### [TD-NNN]` heading or a `- **TD-NNN**` bullet). The gap is ids that appear
+> only inside another entry's prose. Recording the discrepancy rather than restating the old figure:
+> the next regeneration should start from the method below, not from either number.
 
 ### Go-live gates — legal, money, or an owner decision (not just code)
 - **TD-075** — real payment + disbursement rails (toyyibPay, tranches, lapse cron). The whole
@@ -61,6 +69,19 @@ pending items, not all 109; the per-entry marker in the body remains authoritati
   instance of the "UI asserts what nothing checks" watch** — read the 2026-08-19 consolidation
   review before generalising from it.
 
+### Promoted by the 2026-09-08 consolidation review
+- **TD-233** — **thirteen `backfill_*` / `repair_*` commands have no route to production.** The
+  guard that stops a fourteenth is landed and bite-checked; this is the backlog it seeded. Each of
+  the thirteen needs one of three answers: spent · needs a door · local by nature. ⚠ Do not clear it
+  by exporting production credentials to a laptop — that practice is what TD-206 retired.
+- **TD-234** — **the income rule has four homes and three name documents by hand.** Three separate
+  copies of the pre-25-July rule were found in six weeks, each on a live student (the frozen gate,
+  the cockpit display, the de-dup sweep). No mechanical guard was invented, deliberately: the
+  instances no longer share a shape. **Trigger: a fourth instance, or the next change to what
+  counts as income evidence.**
+- **TD-221** — the 24 pre-existing `tsc` errors that make that gate a no-op. Filed low, but it is
+  the reason `next build` has had to catch what `tsc` should have, twice.
+
 ### Live defects with a user on the other side
 - **TD-207** — **password reset is broken for every admin who has already onboarded**, reviewers and
   org_admins included. Do not fix it by flipping the flag per person; that is the workaround already
@@ -72,6 +93,15 @@ pending items, not all 109; the per-entry marker in the body remains authoritati
 - **TD-149** — no student path to change a bank account once confirmed. **TD-145** — a wrong *public*
   university offer goes uncaught when the declared institution is blank. **TD-150** — the course
   matcher binds the wrong public `course_id` for poly-IT synthetic majors.
+- **TD-227** — a rejection can be recorded by someone who was never assigned, with no reason given.
+
+### Closed since the last regeneration (2026-08-19 → 2026-09-08)
+**TD-222** (contrast gate light-only) and **TD-224** (muted text fails AA product-wide) were closed
+by Layer 1 F7a and F7e and **the register was never told** — both marked at this review. **TD-223**
+(links `info` vs `brand`) closed as F7f; **TD-232** (an intake year cannot be deleted) closed the
+day it was raised, by an owner ruling that superseded the ticket's own premise. ⚠ Two of those four
+sat stale for days: **a sprint that closes a TD has to say so IN the register**, not only in its
+retro and the project file.
 
 ### Two clusters worth seeing as clusters, not as fourteen items
 - **Never verified in a browser — 7 items** (TD-070, TD-092, TD-112, TD-184, TD-188, TD-194,
@@ -102,6 +132,14 @@ deleting in a batch the next time somebody is in that file with a reason.
 > closed and 23 are false positives**, where the marker belongs to the NEXT entry that ran together
 > with it. The curated index above also has to be excluded from the parse, or its pointer bullets
 > are counted a second time as definitions. Read, then count.
+>
+> **THE METHOD, as run on 2026-09-08 — inherit this rather than re-deriving it.** Exclude the
+> curated index block (from its heading to the next `##`). A DEFINING line is `### …[TD-NNN…` or
+> `- **TD-NNN`; anything else is a mention. That gives **126 defined ids** (230 are mentioned) and
+> **63 with no resolution marker on a defining line**, of which **14** also say RESOLVED inside
+> their body and need a human read to settle. **I could not reproduce the 2026-08-19 figure of
+> "195 distinct"** by any parse — recorded rather than repeated, because a number nobody can
+> re-derive is worse than one nobody has. If a later regeneration reconciles it, say how.
 
 ## API Response Format Consistency
 
@@ -2868,7 +2906,12 @@ kind of drift the sandbox fixtures were typed to catch.
 
 **Estimate:** ~1.5h.
 
-### [TD-222] The contrast gate covers LIGHT mode only, because the dark brand ramp cannot pass it — medium
+### ✅ [TD-222 — RESOLVED 2026-09-02, as Layer 1 F7a] The contrast gate covers LIGHT mode only, because the dark brand ramp cannot pass it — medium
+
+**Resolution:** F7a moved the dark shade end of the ramp and made the filled control a ROLE
+(`--brand-fill` / `-hover` / `-ink`), so the gate runs in BOTH modes (`failures_all_modes`, every
+check row mode-qualified). Marked here at the 2026-09-08 consolidation review — the sprint closed
+it and the register was never told, which is the staleness this regeneration exists to catch.
 
 **Found:** Layer 1 A2 (2026-09-01), building the contrast gate and measuring it against the
 platform's own colour in both modes.
@@ -2951,7 +2994,12 @@ platform's own colour. That is the trigger to promote it.
 
 ---
 
-### [TD-224] Small muted text fails AA across the product — **in LIGHT mode, live today** — high
+### ✅ [TD-224 — RESOLVED 2026-09-04, as Layer 1 F7e] Small muted text fails AA across the product — **in LIGHT mode, live today** — high
+
+**Resolution:** `--ground-400` became the muted-ink stop, measured against the TIGHTEST ground the
+ink sits on; light went 263 failing elements / 55 distinct → 1 / 1, dark 54 / 11 → 1 / 1 (the
+survivor is the decorative separator, excluded by the procedure's own rules). Marked here at the
+2026-09-08 consolidation review — the sprint closed it and the register was never told.
 
 **Found:** Layer 1 F7d (2026-09-02), walking all 25 surfaces in both modes with a composited
 contrast sweep (procedure: `docs/contrast-sweep.md`).
@@ -3275,3 +3323,81 @@ application filed under it; deleting one with history is an archive question, no
 or a second organisation onboarding and leaving test rows behind on their Overview.
 
 (Logged 2026-09-07, small-change lane.)
+
+---
+
+### [TD-233] Thirteen repair commands have no route to the data they repair — medium
+
+**Found:** the 2026-09-08 consolidation review, generalising from BrightPath #20.
+
+**What:** `backfill_untagged_income_docs` was written, tested and shipped on 24 August and could
+not be run for a fortnight. It writes to production; production is reachable only from the running
+service; the only route a management command has to the service is `CronRunView.JOBS`, and it was
+never registered. Nothing was broken and nothing failed — a door was simply missing, and from the
+outside "finished and unreachable" is indistinguishable from "finished".
+
+**The guard is landed** (`apps/scholarship/tests/test_repair_commands_have_a_door.py`, bite-checked
+by planting a stranded command): every `backfill_*` / `repair_*` in either app must be registered
+or declared in `NO_DOOR` with its reason. That stops the next one. **This ticket is the backlog it
+seeded:** thirteen existing commands sit in `NO_DOOR` under one honest collective reason — they
+predate the guard, and each ran (or was meant to run) from a local checkout with production `DB_*`
+exported onto the laptop, the practice **TD-206** retired.
+
+    backfill_admin_seen · backfill_institution · backfill_invitations · backfill_nric_locks
+    backfill_offer_pathways · backfill_pismp_tags · backfill_pre_u_track
+    backfill_referral_attribution · backfill_reminder_anchors · backfill_results_exam_type
+    backfill_spm_field_key · repair_chosen_programme · repair_interview_credit
+
+**What this ticket is, precisely:** read the thirteen and put each in one of three states —
+**spent** (ran to completion, a repeat is a no-op, delete or mark it), **needs a door** (register
+it), or **local by nature** (a catalogue tool that never touches live student rows). Cheap per
+command; only tedious in aggregate. **The value is not tidiness** — it is that today nobody can say
+which of the thirteen still has work outstanding, and #20 is the proof that "we would have noticed"
+is false.
+
+⚠ **Do NOT clear it by exporting production credentials to a laptop and running them.** That is the
+practice this ticket exists downstream of; the answer is a door, or a decision that none is needed.
+
+(Logged 2026-09-08, consolidation review.)
+
+---
+
+### [TD-234] The income rule has four homes, and three of them name documents by hand — medium
+
+**Found:** the 2026-09-08 consolidation review, reading the three BrightPath #21 fixes together.
+
+**What:** the owner ruled on 2026-07-25 that income may be shown **any one way** — a payslip, a
+readable EPF, a declared amount plus a supporting letter, or a non-breached STR. The rule moved on
+the server. Over the following six weeks, THREE separate copies of it were found still describing
+the older, narrower version, each by a different route and each on a live student:
+
+1. **The frozen gate.** `application_completeness` grandfathers a submitted student onto a 5-June
+   copy of the bar, held as a set of three DOCUMENT TYPES. The fourth way has no document type of
+   its own, so application 144 proved her mother's income and read incomplete.
+2. **The display.** `docTypeToFact` filed `income_support_doc` under `other`; the per-earner slot
+   asked for `salary_slip` **by name** and printed a red *Missing*; `INCOME_MEMBER_DOCS` excluded
+   it. Her only income evidence sat in the junk drawer beneath a red demand for a document the
+   system does not require.
+3. **The sweep.** `backfill_untagged_income_docs` settled a slot with `promotion.should_promote`
+   alone, where the platform runs promote AND THEN `dedupe_income_proof` — a *not_salary* photo
+   would have taken a genuine payslip's slot (#20, caught by reading the report).
+
+Each was fixed locally and correctly. **The class is not "three bugs" — it is that the rule has
+more than one home and only one home is ever updated.**
+
+**Why no mechanical guard was landed for it this round.** The three homes are in two languages and
+answer three different questions (may she submit · what shall we draw · which copy is live), so
+the cheap cross-check does not exist; and the previous review's standing caution applies — a class
+whose instances no longer share a shape gets a **watch**, not an invented guard that would pass
+while the next variant walks past it. What IS recorded, in the lane's log and in each fix: **when
+an income or eligibility rule changes, sweep for every surface that names a specific document.**
+
+**Shape of the fix, when it is wanted:** one served answer for "what counts as income evidence"
+(the backend already computes it — `income_engine.any_member_income_evidenced` is the fourth arm),
+with the cockpit reading it rather than listing types. That is the serve-don't-mirror rule Org
+Config Sprint C proved twice; it is a sprint, not a patch.
+
+**The trigger:** a FOURTH instance, or the next change to what counts as income evidence —
+whichever comes first.
+
+(Logged 2026-09-08, consolidation review.)

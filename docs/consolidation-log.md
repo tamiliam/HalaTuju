@@ -5,29 +5,70 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_(cleared at the 2026-08-19 review — counter reset; the 14 reviewed entries are listed in that review)_
-- 2026-08-19 fix: partner and sponsor mail bills the organisation, not the platform — the other 62 of the 125, on the owner's ruling that sponsoring is org work (the nav registry had said so all along); neither attributed to the obvious object, both refuse when the owner is not single (billing — `usage.sole_organisation_id`, `partner_notify._owning_org_id`, `sponsor_notify._sponsor_org_id` + the legacy alert path, `test_usage_attribution.py` +10)
-
-- 2026-08-27 fix: eWallet ID form takes the last 5 digits, not 4 — Vircle's sequence rolled past 800040017xxxx (newest wallet …79897) and three students could not enter their id at all (`settings/base.py` prefix 800040017→80004001 + band 7–9, `payments.py`, `ActionCentre.tsx`, en/ms/ta hints, `test_payments.py` fixtures + regression)
-
-- 2026-09-02 fix: `/admin/programme` is the Configuration page, and said so four times — the sidebar item was named after ONE of its two tabs ("What we ask for", so clicking it landed you on a page that also holds Colours), the `<h1>` repeated the sidebar GROUP ("Programme"), and each tab opened with an `<h2>` restating its own tab label. Title and nav → "Configuration"; both tab headings deleted with their keys; the config subtitle now names the three states the control actually offers (`ProgrammeConfigTab.tsx`, `ProgrammeColoursTab.tsx`, en/ms/ta, `page.test.tsx` re-anchored onto subtitles + a bite-checked guard that no tab may add a heading). 6 files, copy and two deleted elements; no model, no endpoint, no new surface — over the ~5-file line only because one JSON edit lands in three languages.
-
-- 2026-09-02 fix: a stream band scored out of two is filled with two — `prepare_merit_inputs` dropped a designated stream subject the student holds no grade for, and when that left exactly ONE it carried on with one, scoring the other half of the 30% band at G = 0. Owner found it on #105: ten subjects, all A- or better, merit 69.4. Cause is upstream (the grades page pre-fills the four SCIENCE slots for everyone and saves whichever still name a subject, graded or not), so the engine top-up is the backstop and two form fixes are owed. Merit has no stored column, so all 15 affected profiles — 9 of them bursary applicants, losing 7–15 points each — correct on deploy; no shortlist decision moves (`min_merit_score` is NULL on the live cohort). 2 files (`apps/courses/engine.py`, `test_merit_pools.py` +7), bite-checked.
-
-- 2026-09-02 fix: the grades page stops choosing a student's subjects for them — the upstream half of the same day's merit fix. `/onboarding/grades` opened on the SCIENCE stream, pre-filled its four stream slots from that pool, and on save kept any slot that named a subject whether or not it had a grade. Three rules now: no default stream, no pre-filled slot (on load or on stream change), and `lib/gradeEntry.gradedOnly` as the single save rule (stream list, elective list, merit preview). Both holes had to close — removing the pre-fill still lets an ungraded pick ship; filtering alone still shows an arts student four Science subjects to delete. No backfill owed: these lists are the record and self-heal on the next save. 5 files, web only, both rules bite-checked. **First rendered test on a student onboarding page** — the claims are mount-time state, invisible to a source-shape guard.
-
-- 2026-09-07 fix: a frozen copy of the income bar could not see how income is proved now (BrightPath #21) — `application_completeness` grandfathers an already-submitted student onto a 5-June-2026 copy of the bar so a later edit can never un-submit them on newer rules; that copy is a set of three DOCUMENT TYPES, and the 25-July "income shown any one way" widening added a fourth way with no document of its own (declared amount + support letter). Application 144 proved her mother's income that way and read incomplete, stuck at Interview with every officer verdict recorded and Accept returning `incomplete_profile`. New `income_engine.any_member_income_evidenced` ORed onto the old set — never replacing it, because a fail in this branch un-submits. Measured on production: exactly ONE row's answer moves, and she is the only submitted application lacking all three legacy types. 3 files, both directions bite-checked. **The class to watch: freezing a rule protects the grandfathered from a tightening and blinds them to a loosening — whenever a live bar widens, ask whether its frozen twin needs the same arm.**
-
-- 2026-09-07 fix: the income panel asks for income, not for a salary slip — the DISPLAY half of the same day's #21 fix, found by the owner within hours of it shipping. The server learned on 25 July that income may be shown four ways; three cockpit surfaces never did. `docTypeToFact` filed `income_support_doc` under `other` as a "reviewer-requested extra"; the per-earner slot asked for `salary_slip` BY NAME and printed a red Missing; the label list excluded it. On application 144 that put her only income evidence in the junk drawer while the panel above demanded, in red, a document the system does not require. The slot is now one income slot satisfied any one way, naming what is in it and saying "income evidence" only when nothing is. ⚠ `incomeDocLayout` has NO CALLER — the cockpit renders `incomeSubSections`; both fixed so a dead function cannot state a superseded rule, but only one of them is on a screen. 6 files, web only, both directions bite-checked; 4 stale tests updated deliberately. **Second instance in one day of the same class: a rule widened on the server and its copies elsewhere did not follow. The first was a frozen gate; this was the display. When an income/eligibility rule changes, sweep for EVERY surface that names a specific document.**
-- 2026-09-07 fix: a refusal that pointed at a door that does not exist — the gift-delete message told people to “delete the intake years first” and nothing can delete an intake year; reworded en/ms/ta + a guard that READS THE CODE for the capability before checking the copy, so it retires itself when year-deletion is built. ⚠ The bite-check caught the guard scanning ITSELF and passing against the very wording it rejects (copy — 3 message files, `deleteRefusalCopy.test.ts`; TD-232 carries the dead end)
-
-- 2026-09-07 fix: a half-completed Approve no longer locks the reviewer out of her own case (BrightPath #21, third and last piece) — one Approve press saves the verdict THEN submits the case, and saving the verdict is what makes the Recommendation panel read-only, so a second half that did not run left the reviewer with no button. The only exit was Reopen: super-only AND recorded as a correction against a reviewer who did nothing wrong. Application 144 sat that way 1–7 Sep. New `isStuckAfterVerdict` keeps the panel editable in exactly that state, keyed on `verified_at` (the record of whether the accept ran) rather than the status; a decline is untouched; the panel now states the verdict is already saved, with its date. ⚠ **No live case is left to eyeball** — 144 was advanced by hand — so a bite-checked SOURCE guard pins the wiring, the cockpit having no mount harness. Also DELETED `incomeDocLayout` with its tests (exported, tested, called by nothing; found when a fix to it alone passed every gate and changed no screen). 7 files, web only. **Third instance in one day of the same class, and the sharpest: the two-step action. For any multi-call action, ask what the FIRST call writes and whether that write disables the control the SECOND call needs — the 2026-08-18 lesson said the effective gate is the first call that writes; this says the effective TRAP is too.**
-
-- 2026-09-08 fix: the repair for BrightPath #20 can finally be run — `backfill_untagged_income_docs` shipped 24 Aug and was never run because it *could not be*: it writes to the production database (reachable only from the service) and was missing from the cron registry, the one path a command has to live data. Registered as `backfill-untagged-income-docs`, with the write switched on by `INCOME_DOC_TAG_APPLY=1` (the endpoint passes no arguments, so `--apply` is unreachable there); an unset variable can only under-write. Measured on production: 5 blank-tagged live income documents on 2 applications, exactly the set the command names. 4 files, no schema change, both bites landed. **The class: the forward fix deployed and the backward repair did not — not forgotten, UNREACHABLE, which looks the same from outside. A test now pins the job NAME the runbook types.**
-
-- 2026-09-08 fix: the #20 sweep settles an income slot the way the platform does — the live REPORT (read before any write) said application 73's untagged WhatsApp photo would replace the live copy: a `not_salary` document taking the slot from a genuine payslip. The sweep had copied HALF a two-step decision — at upload `promotion.should_promote` runs and then `dedupe_income_proof`, and the de-dup is what makes the promote proxy safe for income types. They lead with different things (`usable` vs GENUINENESS) and disagree here: the genuine payslip's OCR misread one digit of the earner's IC so it reads not-usable, while the photo read no identity at all so nothing contradicts it. STR/salary/EPF now settle by the de-dup, which is also the writer; new `income_dedup_rank` gives the report and the write one function. 4 files, no schema change. ⚠ The first regression test PASSED under the bite — its fixture had no `parent_ic`, so the comparison never happened. **A silent bite means the fixture may be too kind, not that the guard is fine.**
+_(cleared at the 2026-09-08 review — counter reset; the 11 reviewed entries are listed in that review)_
 
 ## Reviews
+
+### 2026-09-08 — Consolidation review (11 small changes, 19 Aug → 8 Sep)
+
+**Reflect.** Eleven entries over three weeks, and they cluster hard. **Three are BrightPath #21**
+(the frozen income gate, the cockpit display, the Approve lock-out — all on 7 Sep); **two are
+BrightPath #20** (the repair that could not be run, and the correction its own report caught);
+**two are the merit/grades pair** on 2 Sep (an engine backstop and the form fault upstream of it);
+the remaining four are one-offs — billing attribution, the eWallet ID band, and two copy fixes.
+
+Most were genuine fixes. Two were symptoms of something the previous review had already named:
+the billing-attribution entry is the **fourth** instance of *"complete for the callers that existed
+when it was written"*, and #20's repair is a new variant of *"the backward repair is the half that
+gets forgotten"* — new because the repair was NOT forgotten. It was written, tested, shipped, and
+had nowhere to run.
+
+**Cohere — the clusters.**
+
+- **The income rule has more than one home (3 entries: the #21 gate, the #21 display, the #20
+  sweep).** The owner widened "income may be shown any one way" on 25 July. Over six weeks, three
+  separate copies of the older narrower rule surfaced, each by a different route and each on a live
+  student. Each fix was locally right. The class is the duplication, not the three bugs.
+  **Promoted to TD-234** with its trigger written down (a fourth instance, or the next change to
+  what counts as income evidence).
+- **BrightPath #20 and #21 rode the small lane as five entries.** Both were customer-raised defects
+  and each fix was genuinely small, so the lane was the right call per step 1 — but it is worth
+  seeing that ONE request produced three same-day entries. Not promoted: they were three distinct
+  faults on one report, and the coherence they lack is covered by TD-234 above.
+- **The merit pair (2 entries, same day)** is the healthy shape, not drift: an engine backstop AND
+  the upstream form fix, shipped together with the reason each alone is insufficient recorded in
+  both. Nothing to promote.
+
+**Anticipate — the guardrail landed this round.**
+
+- **Every repair must have a route to the data it repairs.**
+  `apps/scholarship/tests/test_repair_commands_have_a_door.py` scans both apps for
+  `backfill_*` / `repair_*` and fails unless each is registered in `CronRunView.JOBS` or listed in
+  `NO_DOOR` with its reason. **Bite-checked by planting a stranded command.** It self-applies by
+  NAME, so the next one is covered with nobody remembering. This converts #20's fortnight — a
+  finished, correct, unreachable repair, with nothing broken and no test failing — from a thing we
+  noticed by accident into a mechanical catch. The thirteen existing door-less commands are seeded
+  into `NO_DOOR` honestly and carried as **TD-233**; the guard's job is that a fourteenth cannot be
+  added without a decision.
+- **No guard was invented for the income cluster, deliberately.** Its three instances are in two
+  languages and answer three different questions, so the cheap cross-check does not exist. The
+  previous review's caution applies — a class whose instances no longer share a shape gets a watch,
+  not a guard that passes while the next variant walks past. **This is the second class to be given
+  a watch rather than a guardrail**; if a third arrives, the pattern itself is worth a look.
+
+**One process finding, cheap and worth keeping.** #20's repair was READ IN REPORT MODE before it
+was allowed to write, and that is the only reason a `not_salary` photo did not take a genuine
+payslip's slot on a live record. Every prediction on file — the command's docstring, its test, the
+24-August changelog — said the opposite would happen. **A prediction written when the code was
+written is a claim; the run is the result.** Recorded in `docs/lessons.md`.
+
+**Close out.** Pending cleared (counter reset). Guardrail landed in-cycle and bite-checked.
+**TD-233** and **TD-234** raised. The Open Items Index in `docs/technical-debt.md` was regenerated
+and, in the process, **TD-222 and TD-224 were found closed-but-unmarked** — both closed by Layer 1
+sprints that told their retro and the project file and not the register. Marked, and the omission
+noted in the index so the next sprint closing a TD says so in the register itself. The index's
+own count could not be reproduced from the previous regeneration's figure; the method actually run
+is now written down beside it.
 
 ### 2026-08-19 — Consolidation review (14 small changes, 25 Jul → 18 Aug)
 
