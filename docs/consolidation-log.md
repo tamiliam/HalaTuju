@@ -29,12 +29,12 @@ had nowhere to run.
   sweep).** The owner widened "income may be shown any one way" on 25 July. Over six weeks, three
   separate copies of the older narrower rule surfaced, each by a different route and each on a live
   student. Each fix was locally right. The class is the duplication, not the three bugs.
-  **Promoted to TD-234** with its trigger written down (a fourth instance, or the next change to
+  **Promoted to TD-235** with its trigger written down (a fourth instance, or the next change to
   what counts as income evidence).
 - **BrightPath #20 and #21 rode the small lane as five entries.** Both were customer-raised defects
   and each fix was genuinely small, so the lane was the right call per step 1 — but it is worth
   seeing that ONE request produced three same-day entries. Not promoted: they were three distinct
-  faults on one report, and the coherence they lack is covered by TD-234 above.
+  faults on one report, and the coherence they lack is covered by TD-235 above.
 - **The merit pair (2 entries, same day)** is the healthy shape, not drift: an engine backstop AND
   the upstream form fix, shipped together with the reason each alone is insufficient recorded in
   both. Nothing to promote.
@@ -48,7 +48,7 @@ had nowhere to run.
   NAME, so the next one is covered with nobody remembering. This converts #20's fortnight — a
   finished, correct, unreachable repair, with nothing broken and no test failing — from a thing we
   noticed by accident into a mechanical catch. The thirteen existing door-less commands are seeded
-  into `NO_DOOR` honestly and carried as **TD-233**; the guard's job is that a fourteenth cannot be
+  into `NO_DOOR` honestly and carried as **TD-234**; the guard's job is that a fourteenth cannot be
   added without a decision.
 - **No guard was invented for the income cluster, deliberately.** Its three instances are in two
   languages and answer three different questions, so the cheap cross-check does not exist. The
@@ -62,8 +62,21 @@ payslip's slot on a live record. Every prediction on file — the command's docs
 24-August changelog — said the opposite would happen. **A prediction written when the code was
 written is a claim; the run is the result.** Recorded in `docs/lessons.md`.
 
-**Close out.** Pending cleared (counter reset). Guardrail landed in-cycle and bite-checked.
-**TD-233** and **TD-234** raised. The Open Items Index in `docs/technical-debt.md` was regenerated
+**A second guardrail, forced by the review's own push.** Staging this review collided with the
+other agent working the same repo: we both raised a ticket within hours, both took the next free
+number by reading the register, and both got **TD-233**. Ids are allocated by reading a file, and
+the file each of us read was correct when we read it. It surfaced only because the push happened to
+be refused as a non-fast-forward — with a different edit order it would have auto-merged silently
+and the register would carry two TD-233s for ever. Mine renumbered (**TD-234**, **TD-235**; theirs
+was pushed first and stays), and `test_technical_debt_register.py` now fails on a duplicate defining
+heading. **It immediately found two collisions from 2026-07-03 that nobody had noticed in two
+months** (TD-151 and TD-152 each name two different tickets); they are DECLARED, not renumbered —
+two months of citations point at those numbers. ⚠ **My first version of that scan ignored the
+register's own counting note and failed on 19 false duplicates, my own two among them.** The note
+had said, in as many words, to exclude the index and to distrust the bullet era.
+
+**Close out.** Pending cleared (counter reset). Both guardrails landed in-cycle and bite-checked.
+**TD-234** and **TD-235** raised. The Open Items Index in `docs/technical-debt.md` was regenerated
 and, in the process, **TD-222 and TD-224 were found closed-but-unmarked** — both closed by Layer 1
 sprints that told their retro and the project file and not the register. Marked, and the omission
 noted in the index so the next sprint closing a TD says so in the register itself. The index's

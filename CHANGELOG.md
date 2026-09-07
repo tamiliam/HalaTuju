@@ -51,12 +51,20 @@ landed, two clusters promoted, and the technical-debt index regenerated.
   by planting a stranded command. It scans by NAME, so the next repair is covered with nobody
   remembering to add it. Written because #20's repair was finished, correct and unreachable for a
   fortnight, with nothing broken and no test failing.
-- **TD-233** — the thirteen existing door-less repair commands, seeded into `NO_DOOR` honestly
+- **TD-234** — the thirteen existing door-less repair commands, seeded into `NO_DOOR` honestly
   rather than quietly blessed. Each needs one of three answers: spent · needs a door · local by
   nature. ⚠ Not to be cleared by exporting production credentials to a laptop (TD-206).
-- **TD-234** — the income rule has four homes and three name documents by hand. Three copies of the
+- **TD-235** — the income rule has four homes and three name documents by hand. Three copies of the
   pre-25-July rule surfaced in six weeks, each on a live student. **No guard invented**: the
   instances no longer share a shape, so it is a watch with a written trigger.
+- **`test_technical_debt_register.py`** — no two tickets may define the same TD number. Written
+  because staging this review collided with the other agent: we both read the register, both took
+  the next free number, and both got TD-233. It surfaced only because the push was refused as a
+  non-fast-forward; a different edit order would have auto-merged silently. Mine renumbered
+  (TD-234, TD-235 — theirs was pushed first and stays). **The guard immediately found two
+  collisions from 2026-07-03** that nobody had noticed in two months: TD-151 and TD-152 each name
+  two different tickets. Declared, not renumbered — two months of citations point at those numbers.
+  ⚠ Its first version ignored the register's own counting note and failed on 19 false duplicates.
 - **The register was stale in two places** — TD-222 and TD-224 were closed by Layer 1 F7a and F7e
   and the register was never told. Marked. The index's own count could not be reproduced from the
   previous regeneration's figure, so the method actually run is now written down beside it.

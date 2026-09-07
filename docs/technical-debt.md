@@ -9,7 +9,7 @@
 ## Executive Summary
 
 **Original audit (2026-03-14): 52 issues** (High: 8, Medium: 22, Low: 22). The register has since grown
-a running log; as of **2026-09-08** it runs to **TD-234**, with **126 ids carrying a defining entry
+a running log; as of **2026-09-08** it runs to **TD-235**, with **126 ids carrying a defining entry
 and 63 of those showing no resolution marker** — see the Open Items Index below, which carries the
 significant ones and the exact method behind those figures. ⚠ The older claim here (*"196 distinct
 through TD-220, of which 110 are open"*) could not be reproduced at the 2026-09-08 regeneration and
@@ -70,11 +70,11 @@ pending items, not all 63; the per-entry marker in the body remains authoritativ
   review before generalising from it.
 
 ### Promoted by the 2026-09-08 consolidation review
-- **TD-233** — **thirteen `backfill_*` / `repair_*` commands have no route to production.** The
+- **TD-234** — **thirteen `backfill_*` / `repair_*` commands have no route to production.** The
   guard that stops a fourteenth is landed and bite-checked; this is the backlog it seeded. Each of
   the thirteen needs one of three answers: spent · needs a door · local by nature. ⚠ Do not clear it
   by exporting production credentials to a laptop — that practice is what TD-206 retired.
-- **TD-234** — **the income rule has four homes and three name documents by hand.** Three separate
+- **TD-235** — **the income rule has four homes and three name documents by hand.** Three separate
   copies of the pre-25-July rule were found in six weeks, each on a live student (the frozen gate,
   the cockpit display, the de-dup sweep). No mechanical guard was invented, deliberately: the
   instances no longer share a shape. **Trigger: a fourth instance, or the next change to what
@@ -140,6 +140,15 @@ deleting in a batch the next time somebody is in that file with a reason.
 > their body and need a human read to settle. **I could not reproduce the 2026-08-19 figure of
 > "195 distinct"** by any parse — recorded rather than repeated, because a number nobody can
 > re-derive is worse than one nobody has. If a later regeneration reconciles it, say how.
+>
+> ⚠ **TWO NUMBERS ARE CLAIMED BY TWO TICKETS EACH, both from 2026-07-03**, found when the
+> duplicate-id guard was written on 2026-09-08 and nobody had noticed in two months.
+> **TD-151** = *document-extraction robustness* (open, the cluster promoted on 2026-08-19) **and**
+> *booked interviews kept phantom holds* (resolved). **TD-152** = *the bursary agreement is a
+> named-personal-donor contract* (accepted interim) **and** *no student channel inside the 12h
+> cutoff* (resolved). **Neither is renumbered** — each has been cited for two months, and rewriting
+> history to satisfy a new test is how a citation quietly starts pointing at the wrong ticket. This
+> index means the FIRST of each pair. When you cite either number, say which.
 
 ## API Response Format Consistency
 
@@ -3364,7 +3373,7 @@ or a second organisation onboarding and leaving test rows behind on their Overvi
 
 ---
 
-### [TD-233] Thirteen repair commands have no route to the data they repair — medium
+### [TD-234] Thirteen repair commands have no route to the data they repair — medium
 
 **Found:** the 2026-09-08 consolidation review, generalising from BrightPath #20.
 
@@ -3400,7 +3409,7 @@ practice this ticket exists downstream of; the answer is a door, or a decision t
 
 ---
 
-### [TD-234] The income rule has four homes, and three of them name documents by hand — medium
+### [TD-235] The income rule has four homes, and three of them name documents by hand — medium
 
 **Found:** the 2026-09-08 consolidation review, reading the three BrightPath #21 fixes together.
 

@@ -19,7 +19,7 @@ yet on the project is not kept.
 
 ⚠ `NO_DOOR` IS A LEDGER, NOT AN EXEMPTION LIST. Adding a name to it is a decision to be read, and
 the reason is the check. The thirteen seeded entries are honest about their state rather than
-quietly blessed — see TD-233, which carries them.
+quietly blessed — see TD-234, which carries them.
 """
 import os
 
@@ -37,22 +37,22 @@ _API_ROOT = os.path.abspath(os.path.join(_HERE, os.pardir, os.pardir, os.pardir)
 # ⚠ The collective reason for the first thirteen: they predate this guard, and each ran (or was
 # meant to run) from a local checkout with production `DB_*` exported onto the laptop — the
 # practice TD-206 retired precisely because a manual mitigation fails on the day somebody forgets.
-# They have NOT been audited one by one for remaining work; TD-233 carries that. The guard's job is
+# They have NOT been audited one by one for remaining work; TD-234 carries that. The guard's job is
 # that the FOURTEENTH cannot be added without somebody deciding.
 NO_DOOR = {
-    'backfill_admin_seen': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'backfill_institution': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'backfill_invitations': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'backfill_nric_locks': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'backfill_offer_pathways': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'backfill_pismp_tags': 'TD-233 — catalogue rows; predates the guard.',
-    'backfill_pre_u_track': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'backfill_referral_attribution': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'backfill_reminder_anchors': 'TD-233 — launch one-off, spent; predates the guard.',
-    'backfill_results_exam_type': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'backfill_spm_field_key': 'TD-233 — catalogue rows; predates the guard.',
-    'repair_chosen_programme': 'TD-233 — predates the guard; ran locally with exported prod creds.',
-    'repair_interview_credit': 'TD-233 — predates the guard; ran locally with exported prod creds.',
+    'backfill_admin_seen': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_institution': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_invitations': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_nric_locks': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_offer_pathways': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_pismp_tags': 'TD-234 — catalogue rows; predates the guard.',
+    'backfill_pre_u_track': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_referral_attribution': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_reminder_anchors': 'TD-234 — launch one-off, spent; predates the guard.',
+    'backfill_results_exam_type': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'backfill_spm_field_key': 'TD-234 — catalogue rows; predates the guard.',
+    'repair_chosen_programme': 'TD-234 — predates the guard; ran locally with exported prod creds.',
+    'repair_interview_credit': 'TD-234 — predates the guard; ran locally with exported prod creds.',
 }
 
 
