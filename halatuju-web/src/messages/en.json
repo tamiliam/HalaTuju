@@ -32,7 +32,8 @@
     "clear": "Clear",
     "remove": "Remove",
     "dismiss": "Dismiss",
-    "menu": "Menu"
+    "menu": "Menu",
+    "unsavedChanges": "Unsaved changes"
   },
   "header": {
     "myProfile": "My Profile",
@@ -5510,7 +5511,6 @@
         "alwaysRequired": "Always required",
         "heavyNote": "Not one upload — the whole household-income section. Switching this off would remove the family's income questions, every earner's payslip and IC, and the utility bills together.",
         "summary": "Your programme asks for {required} and offers {optional} of {total} items.",
-        "unchanged": "Nothing changed yet.",
         "changed": "{n} change(s) not yet saved.",
         "discard": "Discard",
         "save": "Save changes",
@@ -5705,7 +5705,8 @@
         "name": "What students see",
         "applications": "Applications",
         "status": "Status",
-        "window": "When it runs"
+        "window": "When it runs",
+        "actions": "Actions"
       },
       "field": {
         "year": "Year",
@@ -5737,7 +5738,21 @@
         "badOpensOn": "Enter a valid opening date.",
         "badClosesOn": "Enter a valid closing date."
       },
-      "windowNote": "These dates record when the round is intended to run. They do not open or close it; opening remains a separate action. Leave them blank if the schedule is not yet decided."
+      "windowNote": "These dates record when the round is intended to run. They do not open or close it; opening remains a separate action. Leave them blank if the schedule is not yet decided.",
+      "edit": "Edit",
+      "editTitle": "Edit intake round",
+      "editFixed": "The year ({year}) and the short code ({code}) are fixed once a round is created.",
+      "win": {
+        "before": "Not started yet",
+        "during": "Within the stated window",
+        "after": "The window has ended"
+      },
+      "confirmOpenTitle": "Open outside the stated window?",
+      "confirmOpenBefore": "This round is not due to open until {date}.",
+      "confirmOpenAfter": "This round was due to close on {date}.",
+      "confirmOpenGeneric": "This round falls outside its stated window.",
+      "confirmOpenNote": "The dates only record the schedule, so you can open it now. Students can apply as soon as it is open.",
+      "confirmOpenYes": "Open applications anyway"
     },
     "orgSettings": {
       "nav": "Settings",
@@ -5873,9 +5888,7 @@
         "refused": "The server refused the value for “{label}”. Check it and try again.",
         "refusedWindow": "“{label}” must be after the time the booking window opens. Nothing was saved.",
         "errorGeneric": "Could not save. Please try again.",
-        "invalid": "Fix the highlighted value first.",
-        "unsaved": "Unsaved changes",
-        "nothingToDo": "No unsaved changes"
+        "invalid": "Fix the highlighted value first."
       },
       "colours": {
         "subtitle": "Set the colour your students and sponsors see across the programme.",
@@ -5926,9 +5939,7 @@
         "draftDiscarded": "Draft discarded. Nothing that applicants see has changed.",
         "published": "Published. Applicants see this colour now.",
         "reverted": "Reverted. Applicants see the previous colour again.",
-        "unsaved": "Changed, not saved yet",
         "draftWaiting": "Draft ready to publish",
-        "nothingToDo": "Nothing to save",
         "saveDraft": "Save draft",
         "publish": "Publish",
         "saveFirst": "Save the draft before publishing it",

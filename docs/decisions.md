@@ -1,5 +1,60 @@
 # Architectural Decisions — HalaTuju
 
+## The window still opens nothing - the owner reversed their own ruling and then kept it, 2026-09-07
+**Decision:** `opens_on`/`closes_on` continue to DESCRIBE when an intake round is meant to run.
+A person still presses Open. What changed is that the dates now say where today sits, and opening
+a round outside its own stated window asks for confirmation first.
+
+**How it arrived:** the owner's ask was explicit - *"'Open Applications' should be controlled by
+the dates. And, even if we want to open it outside the window, it probably should be a row edit
+where we edit the closed."* That reverses the ruling they made on 2026-09-06, one day earlier. It
+was put back to them naming the ruling, its reason, and two gaps a clock would hit today; they
+answered "go with A" and the ruling stands.
+
+**Why the original reason survives:** a clock opens a round whether or not the gift's rules and
+its questions have been finished, so real students would apply against a half-built form. The
+human press is the last check that the gift is actually ready.
+
+**Two facts that would have to be settled first, if the clock is ever built:** (a) **every existing
+round has NULL dates**, including the live 2026 intake - nothing was backfilled - so a
+dates-driven rule needs a policy for blank before it can be switched on; (b) **nothing runs on a
+schedule for this**, so it needs a daily job that does not yet exist.
+
+**What was built instead (option A):** the dates speak (`windowState` -> a plain-words line under
+the range) and they warn (a confirmation before opening outside the window, which is always
+allowed). That answers the complaint underneath the ask - dates printed on a screen that decided
+nothing read as furniture, the same defect that killed "Next: set the rules" the day before -
+without handing the door key to a clock.
+
+**Alternatives considered:** (a) **build the clock** - what was asked for, declined with the reason
+above and the two gaps; (b) **leave the dates silent and only add row editing** - fixes the
+mechanics and not the complaint; the dates would still say nothing.
+
+**Revisit if:** the owner asks again having read this, or a tenant runs enough rounds that opening
+them by hand is a real cost. The guard to build first is "a gift with no rules and no questions
+cannot open itself", not the scheduler.
+
+## A greyed Save button is the message; the sentence beside it is noise, 2026-09-07
+**Decision:** a save bar renders NOTHING when there is nothing to save. The reason travels as a
+`title` on the sleeping button. `components/admin/SaveBar.tsx` is the one home for the layout.
+
+**Why:** the owner, reading the Configuration tabs side by side - *"there is no need to say
+'Nothing to save' as the colour of the button is supposed to convey that message, right?"* Measured
+before agreeing: eleven save controls in the console already did exactly that, and the four
+Configuration tabs between them printed FOUR different idle sentences, one of them beside a button
+on the left with no bar at all. The visible sentence was the deviation, not the standard.
+
+**What this does NOT change:** request #6's ruling (2026-08-01) that a Save with no edit behind it
+must SLEEP. That is untouched and still tested per tab. Only the repetition of it in prose is gone.
+
+**What the bar deliberately does not own:** the `dirty` computation and the outcome union stay
+per-tab. The dangerous direction is a Save wrongly asleep, and one shared dirtiness rule across
+four unrelated shapes of state is how a tab starts sleeping through an edit.
+
+**Alternatives considered:** (a) **unify the four sentences into one** - keeps a line that says
+nothing on every screen in the console; (b) **drop the tooltip too** - the state would then be
+carried only by opacity, which is the one thing a colour-blind or low-contrast reader loses first.
+
 ## A gift scope is NULL-means-everything, with no backfill — S-ASSIGN, 2026-09-04
 **Decision:** `PartnerAdmin.programme`, `PartnerOrganisation.programme` and
 `Invitation.programme` are all nullable, and **NULL means EVERY gift**. Nothing is backfilled:

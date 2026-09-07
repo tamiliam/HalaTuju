@@ -32,7 +32,8 @@
     "clear": "Kosongkan",
     "remove": "Buang",
     "dismiss": "Tutup",
-    "menu": "Menu"
+    "menu": "Menu",
+    "unsavedChanges": "Perubahan belum disimpan"
   },
   "header": {
     "myProfile": "Profil Saya",
@@ -5510,7 +5511,6 @@
         "alwaysRequired": "Sentiasa wajib",
         "heavyNote": "Bukan satu muat naik — keseluruhan bahagian pendapatan isi rumah. Mematikannya akan membuang soalan pendapatan keluarga, slip gaji dan IC setiap pencari nafkah, serta bil utiliti sekaligus.",
         "summary": "Program anda meminta {required} dan menawarkan {optional} daripada {total} item.",
-        "unchanged": "Belum ada perubahan.",
         "changed": "{n} perubahan belum disimpan.",
         "discard": "Buang",
         "save": "Simpan perubahan",
@@ -5705,7 +5705,8 @@
         "name": "Apa yang pelajar lihat",
         "applications": "Permohonan",
         "status": "Status",
-        "window": "Bila ia berjalan"
+        "window": "Bila ia berjalan",
+        "actions": "Tindakan"
       },
       "field": {
         "year": "Tahun",
@@ -5737,7 +5738,21 @@
         "badOpensOn": "Masukkan tarikh pembukaan yang sah.",
         "badClosesOn": "Masukkan tarikh penutupan yang sah."
       },
-      "windowNote": "Tarikh ini merekodkan bila pusingan dijangka berjalan. Ia tidak membuka atau menutup pusingan; pembukaan kekal sebagai tindakan berasingan. Biarkan kosong jika jadual belum ditetapkan."
+      "windowNote": "Tarikh ini merekodkan bila pusingan dijangka berjalan. Ia tidak membuka atau menutup pusingan; pembukaan kekal sebagai tindakan berasingan. Biarkan kosong jika jadual belum ditetapkan.",
+      "edit": "Sunting",
+      "editTitle": "Sunting pusingan pengambilan",
+      "editFixed": "Tahun ({year}) dan kod ringkas ({code}) kekal setelah pusingan dicipta.",
+      "win": {
+        "before": "Belum bermula",
+        "during": "Dalam tempoh yang dinyatakan",
+        "after": "Tempoh telah tamat"
+      },
+      "confirmOpenTitle": "Buka di luar tempoh yang dinyatakan?",
+      "confirmOpenBefore": "Pusingan ini tidak dijadualkan dibuka sehingga {date}.",
+      "confirmOpenAfter": "Pusingan ini dijadualkan ditutup pada {date}.",
+      "confirmOpenGeneric": "Pusingan ini berada di luar tempoh yang dinyatakan.",
+      "confirmOpenNote": "Tarikh hanya merekodkan jadual, jadi anda boleh membukanya sekarang. Pelajar boleh memohon sebaik sahaja ia dibuka.",
+      "confirmOpenYes": "Tetap buka permohonan"
     },
     "orgSettings": {
       "nav": "Tetapan",
@@ -5873,9 +5888,7 @@
         "refused": "Pelayan menolak nilai untuk “{label}”. Semak dan cuba lagi.",
         "refusedWindow": "“{label}” mesti selepas waktu tempoh tempahan dibuka. Tiada apa-apa disimpan.",
         "errorGeneric": "Tidak dapat disimpan. Sila cuba lagi.",
-        "invalid": "Betulkan nilai yang ditanda dahulu.",
-        "unsaved": "Perubahan belum disimpan",
-        "nothingToDo": "Tiada perubahan belum disimpan"
+        "invalid": "Betulkan nilai yang ditanda dahulu."
       },
       "colours": {
         "subtitle": "Tetapkan warna yang dilihat pelajar dan penaja anda di seluruh program.",
@@ -5926,9 +5939,7 @@
         "draftDiscarded": "Draf dibuang. Tiada apa-apa yang dilihat pemohon berubah.",
         "published": "Diterbitkan. Pemohon melihat warna ini sekarang.",
         "reverted": "Dikembalikan. Pemohon melihat warna sebelumnya semula.",
-        "unsaved": "Diubah, belum disimpan",
         "draftWaiting": "Draf sedia untuk diterbitkan",
-        "nothingToDo": "Tiada apa-apa untuk disimpan",
         "saveDraft": "Simpan draf",
         "publish": "Terbitkan",
         "saveFirst": "Simpan draf sebelum menerbitkannya",

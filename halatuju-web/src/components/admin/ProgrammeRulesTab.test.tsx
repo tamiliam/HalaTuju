@@ -158,11 +158,32 @@ describe('the Save rule', () => {
     withYears([year()])
     await loaded()
     expect(save().disabled).toBe(true)
-    expect(screen.getByText('common.nothingToSave')).toBeTruthy()
 
     fireEvent.change(box('rules-a'), { target: { value: '5' } })
     expect(save().disabled).toBe(false)
+  })
+
+  // ⚠ THE CLAIM MOVED, IT DID NOT GO (owner, 2026-09-07: *"there is no need to say 'Nothing to
+  // save' as the colour of the button is supposed to convey that message"*). This tab was the only
+  // one of four printing that sentence in full beside the button; the other three carried it as a
+  // hover title. So the sentence must be ABSENT and the tooltip must be PRESENT — asserting only
+  // the absence would pass just as well if the reason had been thrown away entirely.
+  it('says nothing when idle, and carries the reason as a tooltip instead', async () => {
+    withYears([year()])
+    await loaded()
     expect(screen.queryByText('common.nothingToSave')).toBeNull()
+    expect(screen.getByTestId('save-outcome').textContent).toBe('')
+    expect(save().title).toBe('common.nothingToSave')
+
+    fireEvent.change(box('rules-a'), { target: { value: '5' } })
+    expect(save().title).toBe('')
+    expect(screen.getByTestId('save-outcome').textContent).toBe('common.unsavedChanges')
+  })
+
+  it('puts the save in the shared bar, not loose beside the fields', async () => {
+    withYears([year()])
+    await loaded()
+    expect(screen.getByTestId('save-bar').contains(save())).toBe(true)
   })
 
   it('sleeps again when the edit is put back', async () => {

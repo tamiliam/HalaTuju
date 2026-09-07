@@ -104,10 +104,11 @@ describe('the screen says what applicants are seeing', () => {
 })
 
 describe('saving a draft', () => {
-  it('is asleep with nothing changed', async () => {
+  // ⚠ IDLE SAYS NOTHING (owner, 2026-09-07) — see `SaveBar`. The greyed button is the message.
+  it('is asleep with nothing changed, and says nothing about it', async () => {
     await mount()
     expect(btn('save-draft').disabled).toBe(true)
-    expect(outcome()).toBe('admin.orgSettings.colours.nothingToDo')
+    expect(outcome()).toBe('')
   })
 
   it('wakes on a readable change and sends the colour', async () => {

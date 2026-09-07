@@ -995,6 +995,14 @@ Four sprints replaced a hardcoded top bar with a data-driven shell. Two files ca
   the shell**, owner decision), `StaffAdmin` (shared by the four organisation pages).
   - **⚠ Every component in `StaffAdmin.tsx` must stay at MODULE scope.** One declared inside its
     parent remounts the subtree and steals focus from the invite inputs each keystroke.
+  - **`SaveBar` — the ONE save bar (2026-09-07).** Sticky grey bar, status left, buttons **right**,
+    `SAVE_BAR_PRIMARY` / `SAVE_BAR_SECONDARY` for the buttons, and **idle renders nothing**. Used
+    by all four configuration tabs (Rules · What we ask for · Organisation Configuration ·
+    Colours). Before it there were three layouts and four different idle sentences while eleven
+    other save controls in the console carried that fact as a hover `title` on a greyed button.
+    **⚠ It does NOT own whether the button sleeps** — each tab keeps its own `dirty` and its own
+    closed outcome union, because a Save wrongly ASLEEP strands real work (request #6) and one
+    shared dirtiness rule over four shapes of state is how that starts.
   - `admin/layout.tsx` is a guard and nothing else (220 → 60 lines).
 
 Reserved nav slots render disabled with a "soon" pill; a test enforces both directions — a slot has
