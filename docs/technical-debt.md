@@ -3192,11 +3192,15 @@ i.e. the same trigger as the Sabah apply link, not before.
 **Found:** gift setup flow (2026-09-07), adding `delete_blocked_by` so the Delete control could be
 disabled with a reason rather than refusing after the phrase was typed.
 
-**What.** `_programme_row` calls `programme_delete_blocker(p)`, which counts intake years,
-applications, sponsor memberships, donations and payment runs — **per programme**, and the list
-endpoint calls `_programme_row` for each. Three gifts is fifteen counts plus the two the row
-already ran. It short-circuits on the first holder, so the common case (a live gift held by its
-applications) costs two, not five.
+**What.** `_programme_row` calls `programme_delete_blocker(p)`, which counts applications, sponsor
+memberships, donations and payment runs — **per programme**, and the list endpoint calls
+`_programme_row` for each. It short-circuits on the first holder, so the common case (a live gift
+held by its applications) costs one, not four.
+
+**Amended 2026-09-07 (the gift-delete-rule sprint):** it was FIVE counts; the intake-year one was
+dropped when the owner ruled that a year does not hold a gift, so it is now four, and the
+applications count leads. The title's "five" is kept as the row's name. The shape argument below is
+unchanged and is the reason it is still counts rather than annotations.
 
 **Why it shipped this way, and why the shape is right.** The alternative is five `Exists()`
 annotations on the list query — faster, and it would put the rule in TWO places: the annotation and
@@ -3218,7 +3222,21 @@ moment to draw.
 
 ---
 
-### [TD-232] An intake year cannot be deleted, so a gift that has one is stuck for ever — low
+### [TD-232] An intake year cannot be deleted, so a gift that has one is stuck for ever — low — **RESOLVED 2026-09-07**
+
+**⚠ RESOLVED BY REVERSING THE PREMISE, NOT BY BUILDING WHAT IS SCOPED BELOW.** The owner read this
+ticket back and rejected the rule it was written under: *"I don't [want] the ability to delete a
+gift programme that has students, and not merely intake years."* So an intake year is no longer a
+delete blocker at all — students are the line — and an EMPTY year is deleted along with the gift in
+one transaction. There is still no way to delete a year on its own, and it no longer traps anybody.
+See the 2026-09-07 gift-delete-rule sprint (`docs/retrospective-2026-09-07-gift-delete-rule.md`).
+
+**What survives from below, if a year-delete is ever wanted for its own sake** (renaming a round,
+clearing a mistyped year on a gift with students): the shape in "Shape of the fix" still stands, and
+so does the ⚠ against cascading. Nothing is blocked on it.
+
+_Original entry, kept because the reasoning it records is what the owner corrected:_
+
 
 **Found:** 2026-09-07, reading back the gift-delete refusal after the owner's post-check passed.
 The copy said *"This gift has intake years. **Delete them first**, or keep the gift…"* — advice
@@ -3238,10 +3256,11 @@ delete feature exists for.
 would be undeletable whatever this ticket does. It bites on a **test** gift, which is the case the
 owner was working in when they asked for deletion at all.
 
-**Owner ruling, 2026-09-07:** fix the WORDING now, not the capability (option A of two put to them).
-The message no longer instructs an impossible action; it states the refusal and offers the action
-that does exist (switch the gift off). `deleteRefusalCopy.test.ts` pins the pairing and **retires
-itself** the day a year-delete path appears.
+**Owner ruling, 2026-09-07 — SUPERSEDED the same day, see the RESOLVED note at the top.** It read:
+fix the WORDING now, not the capability (option A of two put to them). Both options I put took the
+BLOCKING RULE as given and only argued about what to do inside it; the owner's answer was that the
+rule itself was wrong. **The wording fix and its `deleteRefusalCopy.test.ts` guard are both deleted**
+— the copy they governed no longer exists.
 
 **Shape of the fix, when it is wanted.** The same shape the gift delete already has, one level
 down: a `DELETE` on the intake year, refused when **applications** exist under it (the only PROTECT

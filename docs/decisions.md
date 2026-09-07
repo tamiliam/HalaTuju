@@ -9078,3 +9078,72 @@ clearer message, so refusing on a parse failure would lock somebody out over our
 **Revisit if:** a value is needed by a client surface that fetches NEITHER the role payload nor a
 list carrying the row — that is the point at which (b) earns its keep rather than duplicating
 work. Sprint D's booking window is the next test of this rule.
+
+---
+
+## An intake year does not hold a gift; a student does — gift-delete rule, 2026-09-07
+
+**Decision:** `programme_delete_blocker` no longer counts intake years. A gift is held by
+applications, benefactors, money and payment runs. An **empty** intake year is deleted along with
+the gift, explicitly, inside one `transaction.atomic()` in the delete handler. `ScholarshipCohort`
+stays `on_delete=PROTECT` on the model.
+
+**Alternatives considered:**
+(a) keep the year as a blocker and build a separate DELETE for an intake year, so a person clears
+the years first — the shape TD-232 scoped;
+(b) relax `ScholarshipCohort.programme` to `CASCADE` and let the database take the years;
+(c) the shipped rule: block on students, clear empty years in the handler.
+
+**Rationale.** The owner's words were *"I don't [want] the ability to delete a gift programme that
+has students, and not merely intake years."* A year on its own is the rules somebody typed a minute
+ago — it is not history, and treating it as history made a gift created by mistake permanent,
+because a year cannot be deleted on its own either. **(a)** answers that with a second destructive
+control to build, guard and explain, for a two-step version of one intention. **(b)** is one word
+and is the dangerous one: `CASCADE` would apply to every path that could ever delete a programme,
+so a future bulk operation on a gift WITH students would take their rounds with it silently. **(c)**
+keeps `PROTECT` as the model's standing answer and puts the exception exactly where the exception is
+justified — a handler that has already proved, one line earlier, that no application exists under
+this gift by cohort as well as by column.
+
+**⚠ AND THE BLOCKER HAD TO WIDEN AS THE PRICE OF THIS.** `ScholarshipApplication.programme` is
+denormalised from the cohort at first save and is **set-once** (deliberately — a cohort move must
+not re-home somebody's money). So a cohort moved between gifts leaves its applications pointing at
+the OLD gift, and `filter(programme=p)` would have called the new gift empty while its own year
+still held students. The query is now `Q(programme=p) | Q(cohort__programme=p)`. Deleting the years
+is what made this load-bearing: while a year blocked, the stale column could not do any harm.
+
+**Trade-offs.** There is still no way to delete an intake year on its own — renaming or clearing a
+mistyped round on a gift that HAS students is still not possible, and TD-232's scoped shape is kept
+against that day. The delete now removes more than it used to, so the dialog has to say so and name
+the count; a person who wanted to keep a year's rules and drop only the gift cannot.
+
+**Revisit if:** somebody needs to remove one round from a live gift, or an intake year acquires a
+relation that makes an empty one worth keeping (an audit trail of the rules a round advertised, say)
+— at that point the years stop being "just the rules" and the handler's assumption stops holding.
+
+---
+
+## The refusal-copy guard is deleted rather than repointed — gift-delete rule, 2026-09-07
+
+**Decision:** `deleteRefusalCopy.test.ts` is removed, not rewritten. Its claim — *the copy must not
+tell somebody to delete the intake years while nothing can* — was pinned to a string that no longer
+exists, because the refusal it belonged to no longer fires.
+
+**Alternatives considered:** repoint it at the new copy; keep it dormant as documentation of the
+trap; delete it and re-home the claim.
+
+**Rationale.** The guard was a PAIRING: it read the code for a year-delete capability and only then
+checked the copy. That pairing is now unresolvable in an unhelpful direction — the capability is
+still absent, so the guard would keep asserting against a message the product never sends. What is
+worth guarding after this sprint is the opposite claim, and it is a behaviour rather than a phrase:
+**Delete must stay LIVE for a gift that has years and no students.** That now lives in a rendered
+test (`GiftProgrammes.test.tsx`) and in a backend test on the served row — both of which fail if
+anybody puts `has_intake_years` back.
+
+**Trade-offs:** the specific lesson the guard carried in its docblock — *a refusal must not instruct
+an action the product cannot perform* — leaves the test suite. It is in `lessons.md` and in this
+file, which is the right home for a claim about how to write, and the wrong home for one that could
+be mechanically checked. Nothing mechanically checks that class of dishonesty now.
+
+**Revisit if:** a second refusal is found instructing an impossible action. Two instances is the
+point at which the pairing deserves a general guard rather than one written per string.

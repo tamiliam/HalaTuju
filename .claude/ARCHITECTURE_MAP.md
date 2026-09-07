@@ -249,14 +249,24 @@ two programmes, there could be two open applications"*). The admin guard filters
 The apply side is unchanged and still refuses to GUESS between two open rounds — but the refusal
 now arrives as a QUESTION before the form (`intake/` returns `choices`), not a 409 at submit.
 
-⚠ **DELETING A GIFT: THE RULE IS THE MODEL'S.** Every relation meaning a gift has become something
-is `on_delete=PROTECT` — intake years, applications, sponsor memberships, donations, payment runs.
-`programme_delete_blocker()` names WHICH, and is read by BOTH the list row (so the Delete button is
-disabled with the reason showing) and the delete handler (so it refuses). One function, two
-readers — two copies would drift, and the drift is a button that looked safe. Confirmation is the
-typed phrase `delete <code>`, checked server-side. `ProgrammeApplicationItem` is CASCADE (the
-gift's own configuration); invitations, sources and reviewers are SET_NULL — a narrowing whose gift
-is gone falls back to "every gift".
+⚠ **DELETING A GIFT: STUDENTS HOLD IT, INTAKE YEARS DO NOT** (owner ruling, 2026-09-07: *"I don't
+[want] the ability to delete a gift programme that has students, and not merely intake years."*).
+`programme_delete_blocker()` counts applications, sponsor memberships, donations and payment runs —
+**not** intake years — and is read by BOTH the list row (so the Delete button is disabled with the
+reason showing) and the delete handler (so it refuses). One function, two readers; two copies would
+drift, and the drift is a button that looked safe. Confirmation is the typed phrase `delete <code>`,
+checked server-side.
+
+- **An EMPTY intake year is deleted WITH the gift**, explicitly, in one `transaction.atomic()` in
+  the handler. `ScholarshipCohort.programme` stays `on_delete=PROTECT` on the model — it is the
+  standing answer for every other path, and a year holding an application is still refused. Do not
+  relax it to CASCADE. (This closed TD-232: a gift given one stray year used to be permanent,
+  because a year cannot be deleted on its own — and still cannot.)
+- **The applications query reaches through the cohort** — `Q(programme=p) | Q(cohort__programme=p)`.
+  `ScholarshipApplication.programme` is set-once, so a cohort moved between gifts leaves its old
+  applications pointing at the old gift; the column alone would call the new gift empty.
+- `ProgrammeApplicationItem` is CASCADE (the gift's own configuration); invitations, sources and
+  reviewers are SET_NULL — a narrowing whose gift is gone falls back to "every gift".
 
 ⚠ **THE SHELL'S SCOPE LIST IS FETCHED ONCE PER SESSION AND MUST BE REFRESHED AFTER A CREATE.**
 `ProgrammeScopeProvider` refuses to resolve a code it does not recognise (correctly — accepting one

@@ -550,7 +550,76 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after Org Config Sprint C — the reviewers & staff clocks)
+## Next Sprint (as of 2026-09-07, after the gift-delete rule — students hold a gift, not years)
+
+**SHIPPED, NOT DEPLOYED (the owner gates the deploy).** Worktree `.worktrees/gift-delete-rule`,
+branch `feat/gift-delete-rule`, based on `origin/main` at `5a677f91`. **NO MIGRATION** — api + web,
+9 files. Retro `docs/retrospective-2026-09-07-gift-delete-rule.md`; decisions ×2; lessons ×3;
+**TD-232 CLOSED**. pytest **5926** (+2); jest **1754** (a 5-test file out, a 5-test file in);
+tsc **24** (baseline); lint **0**; i18n **4816 × 3** (one key out, one in); `next build` clean;
+`makemigrations --check` clean. Three bite-checks, each injection verified as landed first.
+
+**⚠ THE OWNER REVERSED A RULE I HAD MADE THE SAME DAY.** The gift setup flow shipped with intake
+years checked FIRST in `programme_delete_blocker`, so a gift created by mistake and given one year
+was permanent (a year cannot be deleted on its own). I logged that as TD-232 and offered two ways
+out; both took the blocking rule as given. The owner's answer: *"I don't [want] the ability to
+delete a gift programme that has students, and not merely intake years."*
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ AN INTAKE YEAR IS NOT A HOLDER.** The list is applications, benefactors, money, payment runs.
+  Do not put `has_intake_years` back — four tests fail if you do, one of them the rendered one that
+  asserts the Delete button stays LIVE for a gift with years and no students.
+- **⚠ THE EMPTY YEARS ARE CLEARED IN THE HANDLER, NOT BY A `CASCADE` ON THE MODEL.**
+  `ScholarshipCohort.programme` stays `PROTECT` deliberately: it is the standing answer for every
+  OTHER path that could ever delete a programme, and a future bulk operation on a gift WITH students
+  must not quietly take their rounds. The exception lives exactly where it is justified — one line
+  after the blocker has proved no application exists under this gift.
+- **⚠ ONE `transaction.atomic()`, YEARS FIRST.** A gift left standing with its rules gone is worse
+  than either outcome alone; `atomic` is what makes "the years go with it" a fact rather than a
+  sequence.
+- **⚠ THE APPLICATIONS QUERY REACHES THROUGH THE COHORT** —
+  `Q(programme=p) | Q(cohort__programme=p)`. `ScholarshipApplication.programme` is denormalised from
+  the cohort at first save and is **set-once**, so a cohort moved between gifts leaves its old
+  applications pointing at the OLD gift. Filtering on the column alone would call the gift empty
+  while its own round held students, and `PROTECT` would refuse AFTER the phrase was typed in full.
+  This was harmless while the years blocked; removing that check is what made it load-bearing.
+- **⚠ THE DIALOG NAMES THE YEAR COUNT** (`deleteYears`). They are the one thing being removed that
+  the reader cannot see from the dialog, and they no longer block — silence would mean pressing
+  Delete and quietly losing rules. Shown only when there is at least one.
+- **⚠ `deleteRefusalCopy.test.ts` AND THE `hasIntakeYears` STRING ARE DELETED, NOT REPOINTED.** The
+  guard was written against a phrase; the phrase is gone because the refusal is gone. The claim now
+  lives as behaviour — `GiftProgrammes.test.tsx` (rendered) plus the served-row backend test.
+
+**▶ AT DEPLOY: push (api + web rebuild — Python changed).** No migrate-first, no env vars, no data
+step. **Nothing a student sees changes**; what an org_admin sees on Organisation → Overview does.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. **A gift with intake years and no students has a LIVE Delete button.** It was grey before; this
+   is the whole ruling.
+2. **Its dialog says how many years go with it**, above the typed phrase.
+3. **BrightPath Bursary's Delete is still grey**, reading *"Students have applied to this gift…"* —
+   the one thing this sprint could have got wrong in the dangerous direction.
+4. **ms and ta are first drafts** for the one new string.
+
+**▶ NEXT — OWNER PICKS. Nothing here is blocking:**
+1. **Org Config D–F** — the other agent's roadmap, `docs/plans/2026-09-06-org-configuration-roadmap.md`
+   (A ✔ B ✔ C ✔). D interviews (⚠ its `interviewSlots.ts` FE mirror must be SERVED), E documents,
+   F agreements.
+2. **TD-229 — the contract template per gift** (medium). Ruled 2026-09-04, not built. Not
+   launch-blocking (`BURSARY_AGREEMENT_ENABLED` is OFF) but it blocks a Sabah student ever signing.
+3. **The Sabah apply link + the source list** (TD-230) — half-built; the apply page can already ASK
+   which gift when several are open, so what remains is publicising `/scholarship/apply?p=<code>`
+   and retiring the hard-coded `REFERRING_ORG_OPTIONS`.
+
+**⚠ ALSO OPEN:** TD-231 (now four counts per gift, not five — the intake-year one went with this
+sprint); TD-225 (brand logo in dark — artwork, owner's call); TD-228 (the ORGANISATION crumb filters
+nothing); TD-221 (the 24 `tsc` errors that make that gate a no-op). **TD-232 is closed.**
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded - previous Next Sprint (as of 2026-09-07, after Org Config Sprint C — the reviewers & staff clocks)
 
 **SHIPPED.** Worktree `.worktrees/org-config-c`, branch `feat/org-config-sprint-c` (base = the
 gift-setup-flow close, `cd9c0959`). **NO MIGRATION** — registry entries + wired read sites + rows

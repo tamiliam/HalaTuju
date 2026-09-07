@@ -6562,19 +6562,32 @@ def programme_delete_blocker(p):
     money or payment runs. A button disabled on what the client happens to know would go green for
     a gift held by a donation and refuse after the typing — rarer, and more surprising.
 
+    ⚠⚠ AN INTAKE YEAR IS NOT A HOLDER, AND THAT IS THE OWNER'S RULING (2026-09-07): *"I don't
+    [want] the ability to delete a gift programme that has students, and not merely intake years."*
+    A year on its own holds nothing but the rules somebody typed a minute ago; **STUDENTS** are what
+    make a gift undeletable. It used to be checked FIRST, so a gift created by mistake and given one
+    stray year could never be removed, and neither could the year (TD-232). An empty year now goes
+    WITH the gift, in the delete handler, inside one transaction.
+
+    ⚠ SO THE APPLICATION QUERY MUST REACH THROUGH THE COHORT, not only the denormalised column.
+    `ScholarshipApplication.programme` is copied from the cohort at first save and is **set-once**,
+    so a cohort moved between gifts leaves its old applications pointing at the old gift. Filtering
+    on `programme=p` alone would then call this gift empty while its own year still held somebody
+    else's students — and the DB's `PROTECT` would refuse after the phrase had been typed in full.
+
     ⚠ THE RULE IS THE MODEL'S, NOT THIS FUNCTION'S. Every relation below is `on_delete=PROTECT`:
     the database refuses regardless. This only names WHICH, in the order a person is most likely to
-    be able to act on — a stray intake year they can delete, before money they cannot undo.
+    be able to act on — students, before money they cannot undo.
     """
-    from .models import (Donation, PaymentRun, ScholarshipApplication, ScholarshipCohort,
+    from .models import (Donation, PaymentRun, ScholarshipApplication,
                          SponsorProgrammeMembership)
     holders = (
         # org-fence: every query filters on `p`, which every caller reached through the fence
         # (`_programmes_for` / `_programme_or_404`) — already inside the caller's organisation.
-        ('has_intake_years', ScholarshipCohort.objects.filter(programme=p)),
+        # The OR arm catches an application whose set-once `programme` predates a cohort move.
+        ('has_applications', ScholarshipApplication.objects.filter(
+            Q(programme=p) | Q(cohort__programme=p)).distinct()),
         # org-fence: as above — narrowed by the already-fenced `p`.
-        ('has_applications', ScholarshipApplication.objects.filter(programme=p)),
-        # org-fence: as above.
         ('has_benefactors', SponsorProgrammeMembership.objects.filter(programme=p)),
         # org-fence: as above.
         ('has_money', Donation.objects.filter(programme=p)),
@@ -6808,16 +6821,29 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         """DELETE one gift — only ever a gift that never became anything.
 
         ⚠⚠ THE RULE IS ALREADY WRITTEN IN THE MODEL, AND THIS ENDPOINT ONLY SURFACES IT. Every
-        relation that means a gift has BECOME something is `on_delete=PROTECT`: its intake years,
-        its applications, the benefactors accepted into it, the money recorded against it, and the
-        payment runs that paid from it. The database would refuse regardless; what this adds is a
-        refusal that SAYS WHICH of those is holding it, at the moment somebody asks, instead of a
-        500 from a constraint.
+        relation that means a gift has BECOME something is `on_delete=PROTECT`: its applications,
+        the benefactors accepted into it, the money recorded against it, and the payment runs that
+        paid from it. The database would refuse regardless; what this adds is a refusal that SAYS
+        WHICH of those is holding it, at the moment somebody asks, instead of a 500 from a
+        constraint.
 
         So the honest line is: **a gift that has ever taken a student or a ringgit cannot be
         deleted.** What can be deleted is the one you created by mistake a minute ago.
 
-        ⚠ WHAT DOES GO WITH IT, deliberately: `ProgrammeApplicationItem` is CASCADE — those rows
+        ⚠⚠ AND ITS EMPTY INTAKE YEARS GO WITH IT — the owner's ruling, 2026-09-07: *"I don't [want]
+        the ability to delete a gift programme that has students, and not merely intake years."* A
+        year on its own is the rules somebody typed a minute ago; students are what make a gift
+        undeletable. A year is `PROTECT` from the gift, so this handler clears the years EXPLICITLY,
+        in the same transaction, rather than the MODEL being relaxed to `CASCADE`. Both halves of
+        that matter: `PROTECT` stays the backstop for every other path that might ever delete a
+        programme, and a year that is NOT empty is still refused — `programme_delete_blocker` has
+        already established that no application exists under this gift, by cohort as well as by
+        column, so the years removed here can only be rules nobody has used.
+
+        This is what closes TD-232: a gift created by mistake and given one stray year used to be
+        stuck for ever, and so was the year (there is still no way to delete a year on its own).
+
+        ⚠ WHAT ELSE GOES WITH IT, deliberately: `ProgrammeApplicationItem` is CASCADE — those rows
         are the gift's own configuration, meaningless without it. And `Invitation`,
         `PartnerOrganisation.programme` and `PartnerAdmin.programme` are SET_NULL, which is exactly
         right: those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift"
@@ -6852,9 +6878,20 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
             return Response({'error': blocked_by, 'code': blocked_by, 'count': count},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        from .models import ScholarshipCohort
         code, name = p.code, p.name_en
         try:
-            p.delete()
+            # ⚠ ONE TRANSACTION, YEARS FIRST. If the gift's delete were to fail after the years had
+            # gone, an untouched gift would be left with its rules missing — which is worse than
+            # either outcome on its own. `atomic` is what makes "the years go with it" true rather
+            # than "the years go, and then we try".
+            with transaction.atomic():
+                # org-fence: `p` was reached through `_programme_or_404`, so these are this
+                # organisation's own years; the blocker above proved none of them holds a student.
+                years = ScholarshipCohort.objects.filter(programme=p)
+                year_count = years.count()
+                years.delete()
+                p.delete()
         except ProtectedError:
             # The backstop, and it should be unreachable: a relation added later without a check
             # above lands here rather than as a 500. Deliberately generic — this arm knows only
@@ -6862,7 +6899,11 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
             return Response({'error': 'in_use', 'code': 'in_use'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        logger.info('AUDIT programme_deleted code=%s name=%s by=%s', code, name, admin.email or '')
+        # The year count is ON the audit line because it is the part a person cannot see afterwards:
+        # the gift's own row is gone either way, but "and it took three years with it" is the fact
+        # somebody reading this log later would otherwise have to guess at.
+        logger.info('AUDIT programme_deleted code=%s name=%s years=%s by=%s',
+                    code, name, year_count, admin.email or '')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
