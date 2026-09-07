@@ -1612,7 +1612,8 @@
         "mismatch": "Tidak sepadan — semak semula",
         "checkNumber": "Nama sepadan — semak nombor KP",
         "checkNumberOneDigit": "Nama sepadan — nombor KP berbeza satu digit (mungkin salah baca imbasan)",
-        "reviewing": "Kami akan semak ini"
+        "reviewing": "Kami akan semak ini",
+        "checkName": "Ejaan berbeza — nombor KP yang sama"
       },
       "strCheck": {
         "recipient": "Nama",

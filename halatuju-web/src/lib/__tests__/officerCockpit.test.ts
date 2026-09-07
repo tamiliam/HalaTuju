@@ -442,6 +442,19 @@ describe('documentFacts', () => {
       .toEqual(['child', 'mother', 'father'])
   })
 
+  // BrightPath #19. `check_name` means the names differ while the IC NUMBER matches EXACTLY —
+  // a Tamil name transliterated two ways, not a different woman. It must render AMBER, so a
+  // person reads the row; red is what told a student to fetch a corrected certificate she
+  // cannot obtain. A genuine `mismatch` (no number agreement) stays red.
+  it('a differently-spelt mother with the same IC number is AMBER, not red', () => {
+    const bc = (mother_status: string) => documentFacts(doc({
+      doc_type: 'birth_certificate',
+      bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status, father_name: '', father_status: 'match', bc_number: '' },
+    })).find((f) => f.key === 'mother')?.status
+    expect(bc('check_name')).toBe('partial')
+    expect(bc('mismatch')).toBe('not')
+  })
+
   it('utility bill → Address, Current, Reasonable (Outstanding only when arrears > charge)', () => {
     const util = (o: Partial<NonNullable<AdminApplicantDocument['utility_check']>>) =>
       ({ name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: '',

@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: a matching IC number now vouches for a differently-spelt name (BrightPath #19) - 2026-09-08
+
+Lina's birth certificate and her mother's MyKad carry **the same twelve digits** and two spellings of
+one Tamil name. We read that as a red "the names do not match", asked her for a corrected birth
+certificate she cannot obtain, and she sent us a JPN letter attesting that both spellings are the
+same woman — which the machine could not read either.
+
+- **`income_engine._combine_relationship` gains `check_name`.** Name differs + NRIC matches
+  **exactly** → amber "Spelt differently — same IC number", not red. It is the MIRROR of the rule
+  already in that function, which forgives a misread NUMBER when the name agrees. The number is the
+  stronger of the two: twelve government-issued digits against a transliteration that varies so
+  routinely that JPN issues letters about it.
+- **⚠ AMBER, NEVER GREEN, and only on an exact number match** — never `nric_close`, whose meaning is
+  "these digits are not the same". A person still reads the row.
+- **Blast radius measured, not estimated: 2 of 62 live mother rows move** (144 and 84 — the second
+  is our OWN OCR reading a MyKad as "KAVITA N. SURE NIAM"). The two genuinely-different-person reds
+  stay red: a different woman on #5, a father's IC in the mother slot on #9. Neither number matches.
+- **`officerCockpit.factStatus` and `ScholarshipDocuments.relPill` render it as partial**, with one
+  new string in en/ms/ta (ms/ta my first drafts).
+
+⚠ **THE SECOND FAULT ON THIS RECORD IS NOT FIXED, DELIBERATELY.** Lina's certificate never reached
+the name check at all: `_pdf_first_page_png` reads **page 1 only** of a scanned PDF, and hers is a
+merged scan whose certificate sits on a later page — so doc 2390 reads `not_birth_certificate` with
+no fields. Reading every page of a scanned PDF is its own decision (cost per page, which page wins)
+and was offered to the owner as the alternative to this change. They chose this one.
+
 ## Fix: Resend on a donor invitation now actually sends (BrightPath #16) - 2026-09-08
 
 *"When I click resend, I cannot tell if it worked."* It did not. The link was drawn on donor rows,
