@@ -2156,8 +2156,9 @@ itself pinned for this purpose (the payload test now asserts `{documents, questi
 
 **▶ AT DEPLOY: push after merging to main. No migrate-first, no env vars, no i18n.**
 Post-check: a student payload carries `requirements.questions`; the wizard renders unchanged
-for BrightPath. **Owner still owes the #20 follow-up** — `backfill_untagged_income_docs` on the
-live service (report, then `--apply`; 5 docs / 2 applications) — see the superseded block below.
+for BrightPath. ~~**Owner still owes the #20 follow-up**~~ — the backfill RAN on the live service
+**2026-09-08** (5 docs / 2 applications; 0 blank-tagged income docs remain). See the superseded
+block below for the cron job it needed and the defect its own report caught.
 
 ## Superseded — previous Next Sprint (as of 2026-08-24, after BrightPath #20 — the rating-gated submit)
 
@@ -2188,12 +2189,22 @@ No migration. Retro `docs/retrospective-2026-08-24-rating-gated-submit.md`; deci
 
 **▶ OWNER, OUTSTANDING:**
 1. **DEPLOY** — both services. Nothing is live yet.
-2. **RUN `python manage.py backfill_untagged_income_docs`** on the live service (report first, then
-   `--apply`). Expect **5 documents on 2 applications** — #73's blurry payslip → Replaced, #88's
-   four legacy pre-tagging copies → tagged, keeping their slots.
+2. ~~**RUN `backfill_untagged_income_docs`**~~ — **DONE 2026-09-08.** ⚠ It could not be run when
+   this was written: it writes to production, reachable only from the service, and was **missing
+   from `CronRunView.JOBS`**. Registered as **`backfill-untagged-income-docs`**, write switched on
+   by **`INCOME_DOC_TAG_APPLY=1`** on the service (set it, run the job, UNSET it). Run on live:
+   **5 documents on 2 applications**, 0 blank-tagged income docs left platform-wide.
+   ⚠ **The report was READ BEFORE THE WRITE and one line was wrong** — the sweep had copied
+   `promotion.should_promote` WITHOUT the `dedupe_income_proof` that runs after it at upload, so a
+   `not_salary` photo would have taken app 73's slot from the genuine payslip (`doc_quality` leads
+   with `usable`, the de-dup with GENUINENESS; the payslip's one-digit IC misread reads not-usable
+   while a doc that read no identity reads usable). Fixed before applying — income proofs settle by
+   `income_engine.dedupe_income_proof`, which is also the writer, ranked by the new
+   `income_dedup_rank`.
 3. **ms/ta for `decision.notSubmittedIncomplete` / `notSubmittedStatus`** are my first drafts.
-4. **The completion report for #20** is owed to BrightPath — analysis 41 said *no charge*, so state
-   the hours spent and that the quote stands withdrawn.
+4. **The completion report for #20** — **STAGED 2026-09-08 as DRAFT analysis 48**, awaiting the
+   owner's approval in the cockpit; then #20 → `done` (terminal, so approve FIRST). Analysis 41
+   said *no charge*; 4.0h planned, two sittings, quote stands withdrawn.
 5. **Application 73 was advanced to QC BY HAND** (2026-08-24, `verified_by=tamiliam@gmail.com` — not
    Kaneswaran, who decided the case but never pressed the button). Suresh can QC it now.
 
