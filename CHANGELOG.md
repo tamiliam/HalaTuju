@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## The console's one save bar, and an intake round you can edit - 2026-09-07
+
+The owner's second live review of Programme -> Configuration, taken before the gift-switcher
+sprint: *"I want consistency across the platform."* Four findings; three were one defect wearing
+four faces, and the fourth reversed a ruling made the day before and then un-reversed it.
+
+- **⚠ FOUR TABS, THREE SAVE-BAR LAYOUTS AND FOUR IDLE SENTENCES.** Measured before anything was
+  built: Organisation -> Configuration said "No unsaved changes", Colours said "Nothing to save",
+  "What we ask for" said "Nothing changed yet.", and the Rules tab said "Nothing to save - no
+  changes have been made" **beside a button on the LEFT with no bar at all**. Eleven other save
+  controls in the console already carried that fact as a HOVER TITLE on a greyed button - so the
+  visible sentence was a one-off, not the standard, and the owner's reading was right on both
+  counts. New `components/admin/SaveBar.tsx` is the one home: sticky grey bar, status left, buttons
+  right, and **idle renders nothing at all**.
+- **⚠ WHAT THE BAR DOES NOT OWN: whether the button sleeps.** Each tab keeps its own `dirty`
+  computation and its own closed outcome union. Deliberate - the dangerous direction is the
+  opposite of the reported bug (request #6, 2026-08-01: a Save wrongly ASLEEP strands real work),
+  and one shared "is this dirty?" across four unrelated shapes of state is how a tab starts
+  sleeping through an edit. The bar owns the LAYOUT and the SILENCE.
+- **The one-open-round caution moved ABOVE the intake-year table.** It was the only banner on the
+  four Configuration screens rendering under the thing it governs.
+- **⚠ AN INTAKE ROUND CAN NOW BE EDITED - its name and its window, and NOT its year or short code.**
+  `AdminIntakeYearDetailView.patch` has accepted all three since the gift-setup sprint and no
+  screen ever called it, so this is web-only: **no backend change, no migration**. The year and the
+  code are the two the endpoint has never taken (the code is the round's permanent identifier, the
+  year is what the list sorts on), and the dialog says so rather than drawing a box the server
+  would ignore.
+- **⚠ THE WINDOW STILL OPENS NOTHING, AND THE OWNER RE-AFFIRMED THAT AFTER ASKING FOR THE
+  OPPOSITE.** The ask was *"'Open Applications' should be controlled by the dates"*, which reverses
+  the 2026-09-06 ruling. Put back to them with the reason that ruling carried - a clock fires
+  whether or not the gift's rules and questions are finished - plus two gaps a clock would hit
+  today (every existing round has NULL dates and nothing runs on a schedule for this), they chose
+  option A and kept it. **Do not build the clock without re-opening that conversation.**
+- **So the dates SPEAK and they WARN.** `windowState` puts a plain-words line under the range
+  ("Not started yet" / "Within the stated window" / "The window has ended"), and opening a round
+  outside its own stated window asks first. **It asks; it does not refuse** - the server accepts an
+  out-of-window open deliberately, so a confirmation nobody could get past would be a client-side
+  gate the server does not hold. A test pins the going-ahead, not only the asking.
+- **`windowState` is DERIVED IN THE BROWSER, and that does not breach "serve, don't derive".** That
+  rule bans a screen PREDICTING A SERVER REFUSAL. There is no refusal here - this compares two
+  dates the row already carries against today, and no server answer exists for it to contradict.
+- Five i18n keys retired (the four idle sentences plus two "unsaved" variants collapsed onto one
+  shared `common.unsavedChanges`); thirteen added. Parity **4865 x 3**, ms/ta first drafts.
+
+NO migration. **web only.** jest 1810; tsc 24 (baseline); lint 0; i18n 4865 x 3; `next build`
+exit 0. Three bite-checks, each injection verified as landed first.
+
 ## Fix: the sponsors table drops the Role column instead of dashing it - 2026-09-08
 
 Owner, looking at the live Invitations page while testing #17: *"what is the purpose of the role

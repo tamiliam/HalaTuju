@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InfoBox from '@/components/InfoBox'
+import SaveBar, { SAVE_BAR_PRIMARY } from '@/components/admin/SaveBar'
 import {
   getOrganisationConfiguration, saveOrganisationConfiguration,
   type OrganisationConfigSetting, type OrganisationConfiguration,
@@ -164,8 +165,10 @@ export default function OrganisationConfigurationTab() {
       case 'error': return t('admin.orgSettings.config.errorGeneric')
       default:
         if (invalid) return t('admin.orgSettings.config.invalid')
-        if (edited) return t('admin.orgSettings.config.unsaved')
-        return t('admin.orgSettings.config.nothingToDo')
+        if (edited) return t('common.unsavedChanges')
+        // ⚠ NOTHING, not "No unsaved changes" (owner, 2026-09-07). The greyed button says it, and
+        // this line was one of four different sentences saying it across four tabs.
+        return null
     }
   }
 
@@ -291,15 +294,14 @@ export default function OrganisationConfigurationTab() {
             </section>
           ))}
 
-          <div className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ground-200 bg-ground-50 px-5 py-3">
-            <p className="text-sm text-ground-700" data-testid="config-outcome">{statusLine()}</p>
+          <SaveBar status={statusLine()} testId="config-outcome">
             <button type="button" data-testid="save-config" disabled={!canSave}
               onClick={() => void onSave()}
               title={!edited ? t('common.nothingToSave') : undefined}
-              className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              className={SAVE_BAR_PRIMARY}>
               {t('admin.orgSettings.config.save')}
             </button>
-          </div>
+          </SaveBar>
         </>
       )}
     </>

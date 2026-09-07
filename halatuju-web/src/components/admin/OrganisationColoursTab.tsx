@@ -38,6 +38,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InfoBox from '@/components/InfoBox'
+import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admin/SaveBar'
 import { PLATFORM, brandRamp } from '@/lib/branding'
 import { PAIRS, checkColourBothModes, isHexColour } from '@/lib/contrast'
 import {
@@ -175,9 +176,12 @@ export default function OrganisationColoursTab() {
       default:
         if (!valid) return t('admin.orgSettings.colours.badHex')
         if (failing.length > 0) return t('admin.orgSettings.colours.cannotSave')
-        if (edited) return t('admin.orgSettings.colours.unsaved')
+        if (edited) return t('common.unsavedChanges')
+        // A draft waiting to be published is NOT idle — there is a real thing to do, and the
+        // Publish button beside it does not say what it would publish. That line stays.
         if (theme?.draft) return t('admin.orgSettings.colours.draftWaiting')
-        return t('admin.orgSettings.colours.nothingToDo')
+        // ⚠ NOTHING, not "Nothing to save" (owner, 2026-09-07). See `SaveBar`'s idle rule.
+        return null
     }
   }
 
@@ -334,14 +338,12 @@ export default function OrganisationColoursTab() {
 
           {/* ── the toolbar. FOUR verbs; the two that change what applicants see are on the
                  right, and only ONE of them is the brand-filled button. ───────────────────── */}
-          <div className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ground-200 bg-ground-50 px-5 py-3">
-            <p className="text-sm text-ground-700" data-testid="colours-outcome">{statusLine()}</p>
-            <div className="flex flex-wrap gap-2">
+          <SaveBar status={statusLine()} testId="colours-outcome">
               <button type="button" data-testid="revert-colours" disabled={!canRevert}
                 onClick={() => void run(
                   () => revertOrganisationTheme(org, { token: token as string }),
                   { kind: 'reverted' })}
-                className="rounded-lg border border-ground-300 bg-ground-0 px-4 py-2 text-sm font-medium text-ground-700 disabled:opacity-50">
+                className={SAVE_BAR_SECONDARY}>
                 {theme.previous_colour
                   ? t('admin.orgSettings.colours.revertTo', { colour: theme.previous_colour })
                   : t('admin.orgSettings.colours.revertToDefault')}
@@ -357,7 +359,7 @@ export default function OrganisationColoursTab() {
                     setOutcome({ kind: 'idle' })
                   }
                 }}
-                className="rounded-lg border border-ground-300 bg-ground-0 px-4 py-2 text-sm font-medium text-ground-700 disabled:opacity-50">
+                className={SAVE_BAR_SECONDARY}>
                 {t('admin.orgSettings.colours.discard')}
               </button>
               <button type="button" data-testid="save-draft" disabled={!canSaveDraft}
@@ -373,11 +375,10 @@ export default function OrganisationColoursTab() {
                   () => publishOrganisationTheme(org, { token: token as string }),
                   { kind: 'published' })}
                 title={edited ? t('admin.orgSettings.colours.saveFirst') : undefined}
-                className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+                className={SAVE_BAR_PRIMARY}>
                 {t('admin.orgSettings.colours.publish')}
               </button>
-            </div>
-          </div>
+          </SaveBar>
         </>
       )}
     </>

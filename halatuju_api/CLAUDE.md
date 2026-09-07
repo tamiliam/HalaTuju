@@ -550,7 +550,98 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after Org Config Sprint F — the agreement clocks; THE ARC IS DONE)
+## Next Sprint (as of 2026-09-07, after the Configuration consistency pass)
+
+**SHIPPED.** Worktree `.worktrees/config-consistency`, branch `feat/config-consistency` (base =
+`origin/main` at `acac48e2`, the Sprint F close). **NO MIGRATION, NO BACKEND — web only**, 14
+files. Retro `docs/retrospective-2026-09-07-config-consistency.md`; decisions ×2; lessons ×4.
+Gates, ALL RUN INSIDE THE WORKTREE: jest **1810** (+16); tsc **24** (baseline); lint **0**;
+i18n **4865 × 3** (five keys retired, thirteen added; ms/ta first drafts); `next build` exit 0.
+Three bite-checks landed.
+
+**⚠ THE OWNER READ THE CONFIGURATION SCREENS SIDE BY SIDE AND FOUND FOUR THINGS** (*"I want
+consistency across the platform"*). Three were one defect wearing four faces; the fourth reversed
+a ruling they had made the day before, and was then un-reversed.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ `components/admin/SaveBar.tsx` IS THE ONE HOME FOR A SAVE BAR.** Sticky grey bar, status
+  left, buttons **right**, `SAVE_BAR_PRIMARY` / `SAVE_BAR_SECONDARY` for the buttons. **IDLE
+  RENDERS NOTHING AT ALL.** Measured before it was built: four tabs, three layouts, four different
+  idle sentences — while **eleven** other save controls in the console already carried that fact as
+  a hover `title` on a greyed button and **none** printed it. The Rules tab was the deviation (no
+  bar, button on the LEFT, the sentence in full). Do not put an idle line back on any of the four.
+- **⚠ THE BAR DOES NOT OWN WHETHER THE BUTTON SLEEPS**, and must not be "completed" to. Each tab
+  keeps its own `dirty` and its own closed outcome union: the dangerous direction is a Save wrongly
+  ASLEEP (request #6, 2026-08-01 — it strands real work), and one shared dirtiness rule across four
+  unrelated shapes of state is how a tab starts sleeping through an edit. Request #6's ruling is
+  intact and still tested per tab; only the prose repeating it is gone.
+- **⚠ THE INTAKE-YEAR CAUTION IS ABOVE THE TABLE** — it was the only banner on the four screens
+  rendering under the thing it governs.
+- **⚠ AN INTAKE ROUND IS EDITABLE: NAME AND WINDOW ONLY.** `AdminIntakeYearDetailView.patch` has
+  accepted both since the gift-setup sprint and **no screen ever called it** — hence no backend
+  change. The **year and short code are deliberately NOT offered**: the endpoint has never taken
+  either (the code is the round's permanent identifier, the year is what the list sorts on), and
+  the dialog names them as fixed rather than drawing a box the server would silently ignore.
+- **⚠ CLEARING A DATE SENDS `null`, NOT `''`.** `_window_from` reads absent / empty / a date as
+  three different instructions; `null` is the one that WITHDRAWS a stated window. Without it a
+  schedule could be changed but never taken back. A test pins it.
+- **⚠ THE WINDOW STILL OPENS NOTHING — THE OWNER ASKED FOR THE OPPOSITE AND THEN KEPT THE RULING.**
+  The ask was *"'Open Applications' should be controlled by the dates"*, reversing 2026-09-06. It
+  was put back to them with that ruling's reason (a clock fires whether or not the gift's rules and
+  questions are finished) plus two gaps a clock would hit today — **every existing round has NULL
+  dates**, and **nothing runs on a schedule for this**. They chose option A. **Do not build the
+  clock without re-opening that conversation**, and if it is ever built, the guard to write first
+  is "a gift with no rules and no questions cannot open itself", not the scheduler.
+- **⚠ SO THE DATES SPEAK AND THEY WARN.** `windowState` (in `lib/intakeYears.ts`) puts a
+  plain-words line under the range; opening outside the stated window asks first. **IT ASKS; IT
+  DOES NOT REFUSE** — the server accepts an out-of-window open deliberately, so a confirmation
+  nobody could get past would be a client-side gate the server does not hold. The load-bearing test
+  is the one that CLICKS THROUGH the dialog, not the one that sees it.
+- **⚠ `windowState` DERIVES IN THE BROWSER AND THAT IS NOT A "serve, don't derive" BREACH.** That
+  rule bans a screen PREDICTING A SERVER REFUSAL. There is no refusal here — it compares two dates
+  the row already carries against today, and no server answer exists for it to contradict.
+- **A round with NO stated window renders a bare dash and no state line.** That is the production
+  shape (nothing was backfilled, the live 2026 intake included) and it must never read as an error.
+
+**▶ AT DEPLOY: push (WEB ONLY — no Python changed, so expect the api trigger not to fire; confirm
+with `gcloud builds list` rather than assuming).** No migrate-first, no env vars, no data step.
+**Nothing a student sees changes**; the org_admin's Configuration and Organisation → Settings
+screens do.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. **Programme → Configuration → Intake year** — the amber caution is now **above** the table.
+2. Each round has an **Edit** link: name and both dates, year and short code named as fixed.
+   Clearing both dates and saving withdraws the window.
+3. Give a round a window in the past, then press **Open applications** — it asks first, then lets
+   you.
+4. **Rules** and **What we ask for** — the Save sits in a grey bar at the bottom **on the right**,
+   and says nothing until there is something to say. Hovering a greyed Save still explains why.
+5. **ms and ta are first drafts** for everything new.
+6. **Not click-tested in a browser** — admin Google sign-in still fails on localhost (TD-182) and
+   these tabs have no sandbox surface.
+
+**▶ NEXT = THE GIFT SWITCHER (the owner's item 3), ON ITS OWN.** Unchanged by this sprint. Two
+faults, and the second is worse than "unfiltered":
+- **The switcher filters nothing.** `useProgrammeScope` / `useSelectedProgramme` are read by
+  `/admin/programme`'s three tabs and the Overview list **and nothing else** — Applications,
+  Reviewers, Sources, Payments and Sponsors all ignore the chosen gift (TD-193 / TD-228).
+- **⚠ THE APPLICATIONS HEADING ACTIVELY LIES.** `admin.scholarship.title` is
+  `'{programmeName} Applicants'` and `programmeName` is one of the five **BRANDING auto-tokens**
+  `t()` injects — the tenant's flagship name, not the selected gift. So it reads "BrightPath
+  Bursary Applicants" while the crumb says Test Programme, over 143 people who are not Test
+  Programme's. **Fix the heading first** (a correctness problem, not a missing feature), then
+  filter the lists via `?programme=<code>` re-fenced server-side. Do NOT relocate the fence into
+  the client.
+
+**⚠ ALSO OPEN:** archiving a gift blocks creating a payment run for it (named to the owner, not
+fixed); TD-229 (contract template per gift); TD-230 (Sabah apply link + source list); TD-231;
+TD-225; TD-221.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-07, after Org Config Sprint F — the agreement clocks; THE ARC IS DONE)
 
 **SHIPPED.** Worktree `.worktrees/org-config-sprint-f`, branch `feat/org-config-sprint-f`.
 **NO MIGRATION.** Retro `docs/retrospective-2026-09-07-org-config-sprint-f.md`; roadmap

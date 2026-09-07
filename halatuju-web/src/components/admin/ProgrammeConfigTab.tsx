@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import InfoBox from '@/components/InfoBox'
+import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admin/SaveBar'
 import {
   getProgrammeConfiguration, saveProgrammeConfiguration,
   type ProgrammeConfigItem, type ProgrammeConfiguration, type ProgrammeItemState,
@@ -256,36 +257,55 @@ export default function ProgrammeConfigTab() {
             </Link>
           </p>
 
-          {/* Footer toolbar — a neutral tint (the mock's pale blue read as an info panel). */}
-          <div className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ground-200 bg-ground-50 px-5 py-3">
-            <div className="text-sm text-ground-700">
-              <p>
-                {t('admin.programme.config.summary', {
-                  required: String(tDocs.required + tQs.required),
-                  optional: String(tDocs.optional + tQs.optional),
-                  total: String(all),
-                })}
-              </p>
-              <p className="text-xs text-ground-500" data-testid="save-outcome">
-                {outcome.kind === 'saved' ? t('admin.programme.config.saved')
-                  : outcome.kind === 'core' ? t('admin.programme.config.errorCore', { item: outcome.item })
-                    : outcome.kind === 'error' ? t('admin.programme.config.errorGeneric')
-                      : nothingToSave ? t('admin.programme.config.unchanged')
-                        : t('admin.programme.config.changed', { n: String(pending.length) })}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={discard} disabled={nothingToSave || saving}
-                className="rounded-lg border border-ground-300 bg-ground-0 px-4 py-2 text-sm font-medium text-ground-700 disabled:opacity-50">
-                {t('admin.programme.config.discard')}
-              </button>
-              <button type="button" onClick={save} disabled={nothingToSave || saving}
-                title={nothingToSave ? t('common.nothingToSave') : undefined}
-                className="rounded-lg bg-brand-fill px-4 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
-                {saving ? t('admin.programme.config.saving') : t('admin.programme.config.save')}
-              </button>
-            </div>
-          </div>
+          {/* ⚠ THE SHARED BAR (owner, 2026-09-07: this tab was the *"another variation"*). Its
+              layout was already right; what differed was the SENTENCE — it said "Nothing changed
+              yet." where two neighbours said two other things and a third printed a whole clause.
+              The summary line stays: it is not a save status, it is what the gift currently asks
+              for, and it is true whether or not anything is pending. */}
+          <SaveBar
+            testId="save-status"
+            status={(
+              <>
+                <p data-testid="config-summary">
+                  {t('admin.programme.config.summary', {
+                    required: String(tDocs.required + tQs.required),
+                    optional: String(tDocs.optional + tQs.optional),
+                    total: String(all),
+                  })}
+                </p>
+                {/* ⚠ Idle-and-clean renders NO SECOND LINE AT ALL — not an empty one. Every other
+                    outcome keeps its line, so the closed union stays total (#20's rule); silence
+                    is only ever for "there is nothing to say", never for "a branch nobody wrote a
+                    message for". A test asserts the element is ABSENT when idle. */}
+                {outcome.kind === 'saved' ? (
+                  <p className="text-xs text-positive-700" data-testid="save-outcome">
+                    {t('admin.programme.config.saved')}
+                  </p>
+                ) : outcome.kind === 'core' ? (
+                  <p className="text-xs text-critical-600" data-testid="save-outcome">
+                    {t('admin.programme.config.errorCore', { item: outcome.item })}
+                  </p>
+                ) : outcome.kind === 'error' ? (
+                  <p className="text-xs text-critical-600" data-testid="save-outcome">
+                    {t('admin.programme.config.errorGeneric')}
+                  </p>
+                ) : nothingToSave ? null : (
+                  <p className="text-xs text-ground-500" data-testid="save-outcome">
+                    {t('admin.programme.config.changed', { n: String(pending.length) })}
+                  </p>
+                )}
+              </>
+            )}>
+            <button type="button" onClick={discard} disabled={nothingToSave || saving}
+              className={SAVE_BAR_SECONDARY}>
+              {t('admin.programme.config.discard')}
+            </button>
+            <button type="button" onClick={save} disabled={nothingToSave || saving}
+              title={nothingToSave ? t('common.nothingToSave') : undefined}
+              className={SAVE_BAR_PRIMARY}>
+              {saving ? t('admin.programme.config.saving') : t('admin.programme.config.save')}
+            </button>
+          </SaveBar>
         </>
       )}
     </>

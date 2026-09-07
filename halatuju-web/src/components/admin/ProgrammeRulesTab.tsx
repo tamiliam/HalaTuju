@@ -28,6 +28,7 @@ import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
 import RequirementFields from '@/components/admin/RequirementFields'
+import SaveBar, { SAVE_BAR_PRIMARY } from '@/components/admin/SaveBar'
 import {
   getAdminIntakeYears, updateAdminIntakeYear, type AdminIntakeYear,
 } from '@/lib/admin-api'
@@ -103,6 +104,21 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
     [draft, saved],
   )
 
+  /**
+   * What the bar says. ⚠ IDLE-AND-CLEAN RETURNS `null` — the greyed button already carries that
+   * fact, and the console's four save bars used to repeat it in four different sentences. Every
+   * OTHER state has a line, which is the half of the closed-union rule that must not be lost.
+   */
+  const statusLine = () => {
+    if (outcome.kind === 'saved') {
+      return <span className="font-medium text-positive-700">{t('admin.rules.saved')}</span>
+    }
+    if (outcome.kind === 'error') {
+      return <span className="font-medium text-critical-600">{outcome.message}</span>
+    }
+    return dirty ? t('common.unsavedChanges') : null
+  }
+
   const save = async () => {
     if (!year || !token) return
     setBusy(true); setOutcome({ kind: 'idle' })
@@ -176,21 +192,17 @@ export default function ProgrammeRulesTab({ goToYear }: { goToYear?: () => void 
 
       <p className="mt-3 text-xs text-ground-500">{t('admin.rules.untickNote')}</p>
 
-      <div className="mt-5 flex items-center gap-4">
+      {/* ⚠ THE SHARED BAR, AND THIS TAB WAS THE REASON IT EXISTS. It shipped with the button on
+          the LEFT, no bar, and "Nothing to save — no changes have been made" printed beside it in
+          full while the other three tabs carried that same fact as a hover title. The sentence is
+          gone; the button still sleeps, which is the half of request #6's ruling that matters. */}
+      <SaveBar status={statusLine()}>
         <button type="button" onClick={save} disabled={busy || !dirty || !year}
-          className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+          title={!dirty ? t('common.nothingToSave') : undefined}
+          className={SAVE_BAR_PRIMARY}>
           {t('common.save')}
         </button>
-        {!dirty && !busy && (
-          <span className="text-sm text-ground-500">{t('common.nothingToSave')}</span>
-        )}
-        {outcome.kind === 'saved' && (
-          <span className="text-sm font-medium text-positive-700">{t('admin.rules.saved')}</span>
-        )}
-        {outcome.kind === 'error' && (
-          <span className="text-sm font-medium text-critical-600">{outcome.message}</span>
-        )}
-      </div>
+      </SaveBar>
     </div>
   )
 }

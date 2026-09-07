@@ -161,10 +161,14 @@ describe('a blank box means the platform default', () => {
 })
 
 describe('saving', () => {
-  it('is asleep with nothing changed', async () => {
+  // ⚠ IDLE SAYS NOTHING (owner, 2026-09-07). It used to say "No unsaved changes" while three
+  // sibling tabs said three other things; the greyed button carries that fact and the tooltip
+  // carries the words.
+  it('is asleep with nothing changed, and says nothing about it', async () => {
     await mount()
     expect(save().disabled).toBe(true)
-    expect(outcome()).toBe('admin.orgSettings.config.nothingToDo')
+    expect(outcome()).toBe('')
+    expect(save().title).toBe('common.nothingToSave')
   })
 
   it('wakes on a real edit and sends ONLY the changed key', async () => {
@@ -172,7 +176,7 @@ describe('saving', () => {
     await mount()
     type('30')
     expect(save().disabled).toBe(false)
-    expect(outcome()).toBe('admin.orgSettings.config.unsaved')
+    expect(outcome()).toBe('common.unsavedChanges')
     fireEvent.click(save())
     await waitFor(() => expect(outcome()).toBe('admin.orgSettings.config.saved'))
     expect(mockApi.saveOrganisationConfiguration).toHaveBeenCalledWith(

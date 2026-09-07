@@ -21,9 +21,25 @@
 // that just created a row would let real students in with the same press. Opening is the moment an
 // intake becomes real, and it gets its own action.
 //
-// ⚠ THE WINDOW DESCRIBES; IT OPENS NOTHING (owner, 2026-09-06). `opens_on`/`closes_on` say when
-// the round is MEANT to run and are shown to whoever reads this screen. A person still presses
-// Open. A clock would fire whether or not the gift's rules and questions had been finished.
+// ⚠ THE WINDOW DESCRIBES; IT OPENS NOTHING (owner, 2026-09-06, RE-AFFIRMED 2026-09-07). Both
+// halves of that are load-bearing and they arrived a day apart.
+//   · It opens nothing: a person still presses Open, because a clock would fire whether or not the
+//     gift's rules and questions had been finished — real students applying against a half-built
+//     form. On 2026-09-07 the owner asked for dates that DO control opening; the ruling they made
+//     the day before was put back to them with that reason, plus two gaps a clock would hit today
+//     (every existing round has NULL dates, and nothing runs on a schedule for this), and they
+//     chose to keep it. Do not build the clock without re-opening that conversation.
+//   · It DESCRIBES, and until 2026-09-07 it did not even do that — the dates printed as a bare
+//     range that said nothing, which the owner read as furniture, the same complaint that killed
+//     "Next: set the rules". So the dates now SPEAK (`windowState` puts a plain-words line under
+//     the range) and they WARN (opening outside the stated window asks first). They still decide
+//     nothing, and the server still accepts an out-of-window open without argument.
+//
+// ⚠ A ROUND'S YEAR AND SHORT CODE ARE FIXED; ITS NAME AND WINDOW ARE NOT. The edit dialog offers
+// exactly what `AdminIntakeYearDetailView.patch` accepts. The code is the round's permanent
+// identifier (applications and links hang off it) and the year is what the list sorts on — the
+// endpoint has never taken either, and the dialog says so on screen rather than offering a box
+// that would be silently ignored.
 //
 // ⚠ ONE OPEN ROUND PER **GIFT PROGRAMME** — not per organisation (owner, 2026-09-06: *"if the org
 // has two programmes, there could be two open applications"*), and the server refuses a second
@@ -44,11 +60,51 @@ import {
 } from '@/lib/admin-api'
 // ⚠ In `lib`, not beside the page: a page module may carry NO export beyond its default, and
 // `next build` is the only gate that says so (Layer 1 F7c, three times).
-import { draftToRequirements, EMPTY_REQUIREMENTS, type RequirementDraft } from '@/lib/intakeYears'
+import {
+  draftToRequirements, EMPTY_REQUIREMENTS, outsideWindow, todayIso, windowState,
+  type RequirementDraft, type WindowState,
+} from '@/lib/intakeYears'
 
 const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
 
 const EMPTY_FORM = { year: '', code: '', name: '', opens_on: '', closes_on: '' }
+
+const EMPTY_EDIT = { name: '', opens_on: '', closes_on: '' }
+
+/**
+ * The "When it runs" cell: the stated dates, and what they MEAN today.
+ *
+ * ⚠ A ROUND WITH NO STATED WINDOW IS NORMAL, NOT BROKEN — it renders a dash and nothing else,
+ * never an error and never a state line. Every row that predates this column has NULL, including
+ * the live 2026 intake, and nothing was backfilled.
+ *
+ * ⚠ THE RANGE STAYS ABOVE THE PLAIN-WORDS LINE, both of them. The line alone would lose the dates
+ * an admin came to read; the dates alone were what the owner reported as furniture. The line is
+ * muted because it is derived — the dates are the record.
+ *
+ * ⚠ AT MODULE SCOPE, not inside the tab's body. A component defined inside another component is a
+ * new type on every render, so React unmounts and remounts its subtree — the identical defect that
+ * made the requirement inputs lose focus on each keystroke (2026-09-03) and the invite form before
+ * that (2026-07-21).
+ */
+function WindowCell({ year, today, t }: {
+  year: AdminIntakeYear
+  today: string
+  t: (k: string, p?: Record<string, string>) => string
+}) {
+  const state: WindowState = windowState(year, today)
+  if (state.kind === 'none') return <span className="tabular-nums">—</span>
+  return (
+    <span className="block" data-testid={`window-${year.code}`}>
+      <span className="block tabular-nums">
+        {`${formatDate(year.opens_on) || '—'} – ${formatDate(year.closes_on) || '—'}`}
+      </span>
+      <span className="mt-0.5 block text-xs text-ground-500" data-window-state={state.kind}>
+        {t(`admin.years.win.${state.kind}`)}
+      </span>
+    </span>
+  )
+}
 
 export default function IntakeYearTab() {
   const { token } = useAdminAuth()
@@ -61,8 +117,16 @@ export default function IntakeYearTab() {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [draft, setDraft] = useState<RequirementDraft>(EMPTY_REQUIREMENTS)
+  /** The round being edited, and the boxes for it. Null = the dialog is shut. */
+  const [editing, setEditing] = useState<AdminIntakeYear | null>(null)
+  const [edit, setEdit] = useState(EMPTY_EDIT)
+  /** A round the admin has asked to open AGAINST its own stated schedule, held for a confirm. */
+  const [confirmOpen, setConfirmOpen] = useState<AdminIntakeYear | null>(null)
 
   const programmeId = programme?.id ?? null
+  // Read ONCE per render rather than per row, so every row on the page is judged against the same
+  // day. Two rows disagreeing across a midnight tick would be a very hard bug to believe.
+  const today = todayIso()
 
   const load = useCallback(async () => {
     if (!token || programmeId === null) { setYears([]); return }
@@ -116,6 +180,36 @@ export default function IntakeYearTab() {
     }
   }
 
+  const startEdit = (y: AdminIntakeYear) => {
+    setError('')
+    setEditing(y)
+    // ⚠ A BLANK BOX IS A REAL STATE HERE TOO. A round with no stated window loads two empty boxes
+    // and, cleared, sends null — `_window_from` reads absent / empty / a date as three different
+    // instructions, so a window can be WITHDRAWN, not only changed.
+    setEdit({ name: y.name, opens_on: y.opens_on || '', closes_on: y.closes_on || '' })
+  }
+
+  const saveEdit = async () => {
+    if (!editing) return
+    const ok = await run(() => updateAdminIntakeYear(editing.id, {
+      name: edit.name.trim(),
+      opens_on: edit.opens_on || null,
+      closes_on: edit.closes_on || null,
+    }, { token: token! }))
+    if (ok) setEditing(null)
+  }
+
+  const setOpenState = (y: AdminIntakeYear, want: boolean) =>
+    run(() => updateAdminIntakeYear(y.id, { is_open: want }, { token: token! }))
+
+  /** Closing never asks. Opening asks only when it goes against the round's OWN stated schedule —
+   *  and the answer is always allowed, because the schedule describes and the person decides. */
+  const pressOpenToggle = (y: AdminIntakeYear) => {
+    if (y.is_open) { void setOpenState(y, false); return }
+    if (outsideWindow(windowState(y, today))) { setError(''); setConfirmOpen(y); return }
+    void setOpenState(y, true)
+  }
+
   const inputCls = 'w-full rounded-lg border border-ground-300 px-3 py-2 text-sm'
     + ' focus:border-brand-shape focus:ring-2 focus:ring-brand-shape outline-none'
 
@@ -145,11 +239,23 @@ export default function IntakeYearTab() {
 
       {programme && (
         <>
+          {/* ⚠ THE RULE COMES BEFORE THE THING IT GOVERNS (owner, 2026-09-07: *"should be on top,
+              I think like other pages"*). It sat UNDER the table and was the only banner on the
+              four Configuration screens that did — the Rules tab and "What we ask for" both open
+              with theirs. A caution read after the control it constrains has already lost. */}
+          <div className="mt-4">
+            <InfoBox kind="warning">
+              {openElsewhere
+                ? t('admin.years.oneOpenNamed', { code: openElsewhere.name })
+                : t('admin.years.oneOpen')}
+            </InfoBox>
+          </div>
+
           <div className="mt-4 overflow-hidden rounded-2xl border border-ground-200 bg-ground-0 shadow-sm">
             <table className="w-full text-sm">
               <thead className="border-b border-ground-200 bg-ground-50">
                 <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
-                  {(['year', 'name', 'window', 'applications', 'status'] as const).map((k) => (
+                  {(['year', 'name', 'window', 'applications', 'status', 'actions'] as const).map((k) => (
                     <th key={k} className="px-4 py-3 font-semibold">{t(`admin.years.col.${k}`)}</th>
                   ))}
                 </tr>
@@ -159,13 +265,8 @@ export default function IntakeYearTab() {
                   <tr key={y.id} data-testid={`year-${y.code}`}>
                     <td className="px-4 py-3 tabular-nums text-ground-700">{y.year}</td>
                     <td className="px-4 py-3 text-ground-700">{y.name}</td>
-                    {/* ⚠ A ROUND WITH NO STATED WINDOW IS NORMAL, NOT BROKEN — it renders a dash,
-                        never an error. Every row that predates this column has NULL, including
-                        the live 2026 intake, and nothing was backfilled. */}
-                    <td className="px-4 py-3 tabular-nums text-ground-600">
-                      {y.opens_on || y.closes_on
-                        ? `${formatDate(y.opens_on) || '—'} – ${formatDate(y.closes_on) || '—'}`
-                        : '—'}
+                    <td className="px-4 py-3 text-ground-600">
+                      <WindowCell year={y} today={today} t={t} />
                     </td>
                     <td className="px-4 py-3 tabular-nums text-ground-700">{y.applications}</td>
                     <td className="px-4 py-3">
@@ -175,30 +276,29 @@ export default function IntakeYearTab() {
                           {t(y.is_open ? 'admin.years.open' : 'admin.years.closed')}
                         </span>
                         <button type="button" disabled={busy}
-                          onClick={() => run(() => updateAdminIntakeYear(
-                            y.id, { is_open: !y.is_open }, { token: token! }))}
+                          data-testid={`toggle-${y.code}`}
+                          onClick={() => pressOpenToggle(y)}
                           className="text-xs font-medium text-primary-600 hover:underline disabled:opacity-50">
                           {t(y.is_open ? 'admin.years.close' : 'admin.years.openIt')}
                         </button>
                       </span>
                     </td>
+                    <td className="px-4 py-3">
+                      <button type="button" disabled={busy}
+                        data-testid={`edit-${y.code}`} onClick={() => startEdit(y)}
+                        className="text-xs font-medium text-primary-600 hover:underline disabled:opacity-50">
+                        {t('admin.years.edit')}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {years.length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-ground-400">
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-ground-400">
                     {t('admin.years.empty')}
                   </td></tr>
                 )}
               </tbody>
             </table>
-          </div>
-
-          <div className="mt-4">
-            <InfoBox kind="warning">
-              {openElsewhere
-                ? t('admin.years.oneOpenNamed', { code: openElsewhere.name })
-                : t('admin.years.oneOpen')}
-            </InfoBox>
           </div>
 
           {/* ⚠ THE ONWARD POINTER IS GONE, DELIBERATELY (owner, 2026-09-07: *"Why is it there?"*).
@@ -292,6 +392,113 @@ export default function IntakeYearTab() {
                   || !CODE_OK.test(form.code.trim().toLowerCase())}
                 className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {t('admin.years.createClosed')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit a round ──────────────────────────────────────────────────────────────────────
+          Name and window only. See the header note: the year and the short code are what the
+          endpoint has never accepted, and offering a box the server ignores is worse than not
+          offering one. Opening and closing stay on the row — this dialog changes the SCHEDULE,
+          never the state. */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          onClick={() => !busy && setEditing(null)}>
+          <div className="my-8 w-full max-w-lg rounded-2xl bg-ground-0 p-6 shadow-xl"
+            data-testid="edit-year-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-ground-900">{t('admin.years.editTitle')}</h2>
+            <p className="mt-1 text-sm text-ground-600">
+              {t('admin.years.editFixed', { year: String(editing.year), code: editing.code })}
+            </p>
+
+            <div className="mt-4">
+              <label htmlFor="e-name" className="block text-sm font-medium text-ground-700">
+                {t('admin.years.field.name')}
+              </label>
+              <input id="e-name" value={edit.name}
+                onChange={(e) => setEdit({ ...edit, name: e.target.value })}
+                className={`mt-1 ${inputCls}`} />
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="e-opens" className="block text-sm font-medium text-ground-700">
+                  {t('admin.years.field.opensOn')}
+                </label>
+                <input id="e-opens" type="date" value={edit.opens_on}
+                  onChange={(e) => setEdit({ ...edit, opens_on: e.target.value })}
+                  className={`mt-1 ${inputCls}`} />
+              </div>
+              <div>
+                <label htmlFor="e-closes" className="block text-sm font-medium text-ground-700">
+                  {t('admin.years.field.closesOn')}
+                </label>
+                <input id="e-closes" type="date" value={edit.closes_on}
+                  onChange={(e) => setEdit({ ...edit, closes_on: e.target.value })}
+                  className={`mt-1 ${inputCls}`} />
+              </div>
+            </div>
+            <p className="mt-1.5 text-xs text-ground-600">{t('admin.years.windowNote')}</p>
+
+            {error && <p className="mt-3 text-sm text-critical-600">{error}</p>}
+
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button type="button" onClick={() => setEditing(null)} disabled={busy}
+                className="text-sm font-medium text-ground-500 hover:text-ground-700">
+                {t('common.cancel')}
+              </button>
+              <button type="button" onClick={saveEdit} data-testid="save-edit"
+                disabled={busy || !edit.name.trim()}
+                className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+                {t('common.save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Opening against the round's own schedule ──────────────────────────────────────────
+          ⚠ THIS ASKS; IT DOES NOT REFUSE. The server accepts an out-of-window open deliberately
+          (the window describes, the person decides), so this must never grow into a gate — that
+          would be a client-side rule the server does not hold, which is how a button starts
+          lying. It exists because a schedule nobody is reminded of is a schedule nobody keeps. */}
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          onClick={() => !busy && setConfirmOpen(null)}>
+          <div className="my-8 w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
+            data-testid="confirm-open-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-ground-900">
+              {t('admin.years.confirmOpenTitle')}
+            </h2>
+            <p className="mt-2 text-sm text-ground-600">
+              {(() => {
+                const s = windowState(confirmOpen, today)
+                return s.kind === 'before'
+                  ? t('admin.years.confirmOpenBefore', { date: formatDate(s.opensOn) })
+                  : s.kind === 'after'
+                    ? t('admin.years.confirmOpenAfter', { date: formatDate(s.closesOn) })
+                    // Unreachable: nothing opens this dialog for a round inside its window. Kept
+                    // so the branch is total rather than rendering an empty paragraph.
+                    : t('admin.years.confirmOpenGeneric')
+              })()}
+            </p>
+            <p className="mt-2 text-sm text-ground-600">{t('admin.years.confirmOpenNote')}</p>
+
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button type="button" onClick={() => setConfirmOpen(null)} disabled={busy}
+                className="text-sm font-medium text-ground-500 hover:text-ground-700">
+                {t('common.cancel')}
+              </button>
+              <button type="button" data-testid="confirm-open-yes" disabled={busy}
+                onClick={() => {
+                  const y = confirmOpen
+                  setConfirmOpen(null)
+                  void setOpenState(y, true)
+                }}
+                className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+                {t('admin.years.confirmOpenYes')}
               </button>
             </div>
           </div>

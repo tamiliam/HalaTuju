@@ -119,7 +119,14 @@ describe('the Save rule is a computed diff', () => {
   it('sleeps with nothing changed, wakes on a real edit, sleeps again on discard', async () => {
     await loaded()
     expect(saveButton().disabled).toBe(true)
-    expect(screen.getByTestId('save-outcome').textContent).toBe('admin.programme.config.unchanged')
+    // ⚠ IDLE ADDS NO LINE AT ALL (owner, 2026-09-07). The bar still carries the SUMMARY — that is
+    // what the gift asks for, not a save status — but "Nothing changed yet." is gone; the greyed
+    // button says it, and it was the third of four different sentences saying the same thing.
+    expect(screen.queryByTestId('save-outcome')).toBeNull()
+    expect(screen.getByTestId('config-summary').textContent)
+      .toContain('admin.programme.config.summary')
+    expect(saveButton().title).toBe('common.nothingToSave')
+
     fireEvent.click(control('document:water_bill', 'required'))
     expect(saveButton().disabled).toBe(false)
     expect(screen.getByTestId('save-outcome').textContent).toBe('admin.programme.config.changed|1')
