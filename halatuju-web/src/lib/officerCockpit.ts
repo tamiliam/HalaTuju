@@ -741,10 +741,14 @@ export function documentPill(doc: AdminApplicantDocument): DocumentPill {
 }
 
 // ── Income section layout (route + selection aware) ──────────────────────────
-// The income documents are shown COMPULSORY-on-top → OPTIONAL-at-the-bottom, and a
-// compulsory doc that isn't uploaded shows as a "Missing" placeholder. The required
-// slots are derived the same way the gate/wizard derive them (workingMembers +
-// relationshipDocFor), so the cockpit can't disagree with what the student is asked for.
+// A compulsory income document that isn't uploaded shows as a "Missing" placeholder, and the
+// required slots are derived the same way the gate and the student wizard derive them
+// (workingMembers + relationshipDocFor), so the cockpit can't disagree with what the student was
+// actually asked for. The one function that builds them is `incomeSubSections`, below.
+//
+// (A second builder, `incomeDocLayout`, lived here until 2026-09-07 with no caller but its own
+// tests. It was found while fixing the panel, having quietly stated a rule superseded in July —
+// a fix applied to it alone would have passed every gate and changed nothing on screen.)
 
 import { workingMembers, relationshipDocFor, MEMBER_ORDER, type WorkingMember } from '@/lib/incomeWizard'
 
@@ -754,93 +758,10 @@ export interface IncomeSlot {
   doc: AdminApplicantDocument | null   // the uploaded doc, or null = missing → placeholder
 }
 
-export interface IncomeLayout {
-  required: IncomeSlot[]
-  optional: AdminApplicantDocument[]
-}
-
 interface IncomeAnswerSource {
   income_route?: string | null
   income_earner?: string | null
   income_working_members?: string[] | null
-}
-
-/**
- * Order the income documents for the officer panel: the route's compulsory slots
- * first (STR: STR doc → earner IC → relationship doc; salary: per member IC → salary
- * slip → relationship doc), each carrying its uploaded doc or null (→ placeholder),
- * then any remaining uploaded income docs as OPTIONAL.
- *
- * ⚠ NO CALLER OUTSIDE THIS FILE'S TESTS (checked 2026-09-07). The cockpit renders
- * `incomeSubSections` instead. It is kept in step with the live rule rather than left to rot,
- * because a dead function stating a SUPERSEDED rule is worse than one stating none — but do not
- * mistake a change here for a change on screen. Delete it, with its tests, when somebody has a
- * moment; nothing depends on it.
- */
-export function incomeDocLayout(app: IncomeAnswerSource, incomeDocs: AdminApplicantDocument[]): IncomeLayout {
-  const route = app.income_route || ''
-  const find = (dt: string, member: string) =>
-    incomeDocs.find((d) => d.doc_type === dt && (d.household_member || '') === member) || null
-  const required: IncomeSlot[] = []
-  if (route === 'str') {
-    const earner = app.income_earner || ''
-    // Slot model (TD-115): the STR earner's docs may be tagged with the earner OR carry the
-    // legacy blank tag during the migration — match either so a backfilled IC/STR isn't read
-    // as "missing". The relationship doc (applicant BC / guardian letter) is a single doc.
-    const findE = (dt: string) =>
-      incomeDocs.find((d) => d.doc_type === dt && [earner, ''].includes(d.household_member || '')) || null
-    required.push({ docType: 'str', member: earner, doc: findE('str') })
-    required.push({ docType: 'parent_ic', member: earner, doc: findE('parent_ic') })
-    const rel = relationshipDocFor(earner)
-    if (rel) required.push({ docType: rel, member: '', doc: findE(rel) })
-  } else if (route === 'salary') {
-    // ⚠ ONE INCOME SLOT PER EARNER, SATISFIED ANY ONE WAY — NOT A SALARY-SLIP SLOT.
-    // This asked for `salary_slip` per member and printed a red "Missing" when it was absent.
-    // Since 2026-07-25 the gate (`income_engine.member_income_evidenced`) accepts a payslip OR a
-    // readable EPF statement OR a declared amount backed by an `income_support_doc`, so the panel
-    // was demanding, in red, a document the system does not require — on application 144 it
-    // printed "Mother's Salary slip — Missing" while her signed income letter sat in the OTHER
-    // group two sections below. The slot now shows WHAT IS THERE and names its own type, and
-    // reads "income evidence" only when NOTHING is there — because at that point any of the three
-    // would do and naming one of them would be a lie about what is being asked for.
-    // The declared amount itself is not visible here; the letter standing in for it is.
-    const claimed = new Set<number>()
-    const take = (d: AdminApplicantDocument | null) => {
-      if (!d || claimed.has(d.id)) return null
-      claimed.add(d.id)
-      return d
-    }
-    // A support letter may be tagged to the member OR left household-level (untagged) — the
-    // backend tolerates both, so this must too. Prefer the member's own; fall back to an
-    // untagged one, and never let two earners claim the same letter.
-    const findSupport = (m: string) =>
-      take(find('income_support_doc', m))
-      || take(incomeDocs.find((d) => d.doc_type === 'income_support_doc'
-                                    && !(d.household_member || '')) || null)
-    for (const m of workingMembers(app.income_working_members as WorkingMember[] | null)) {
-      required.push({ docType: 'parent_ic', member: m, doc: find('parent_ic', m) })
-      const evidence = take(find('salary_slip', m)) || take(find('epf', m)) || findSupport(m)
-      required.push({
-        docType: evidence ? evidence.doc_type : 'income_evidence',
-        member: m,
-        doc: evidence,
-      })
-      const rel = relationshipDocFor(m)
-      if (rel && !required.some((s) => s.docType === rel)) {
-        required.push({ docType: rel, member: '', doc: find(rel, '') })   // BC / letter — single, untagged
-      }
-    }
-  }
-  const usedIds = new Set(required.map((s) => s.doc?.id).filter((id): id is number => id != null))
-  // Canonical optional order — income corroboration first (salary slip → EPF), then the
-  // relationship proofs (BC / guardianship letter — e.g. a mononym student's father link),
-  // then utility credibility bills. Mirrors the student wizard's order.
-  const OPTIONAL_ORDER = ['salary_slip', 'epf', 'birth_certificate', 'guardianship_letter',
-                          'water_bill', 'electricity_bill']
-  const rank = (dt: string) => { const i = OPTIONAL_ORDER.indexOf(dt); return i < 0 ? 99 : i }
-  const optional = incomeDocs.filter((d) => !usedIds.has(d.id))
-    .sort((a, b) => rank(a.doc_type) - rank(b.doc_type))
-  return { required, optional }
 }
 
 // ── Income sub-sections (STR ROUTE / SALARY ROUTE / UTILITY) ──────────────────────────
@@ -1093,6 +1014,37 @@ export const DECISION_FACTS = ['identity', 'academic', 'pathway', 'income'] as c
  */
 export function isClearAccept(completenessComplete: boolean, status: string): boolean {
   return !!completenessComplete && LIVE_STATES.includes(status)
+}
+
+/**
+ * A verdict was RECORDED but the case never MOVED — the half-completed Approve.
+ *
+ * ⚠ THIS EXISTS BECAUSE THE FIRST HALF OF AN APPROVE LOCKS THE PANEL THE SECOND HALF NEEDS.
+ * One press does two things: `record-verdict` saves the decision, then `verify-accept` submits
+ * the case to QC. Saving a verdict sets `verdict_decided_at`, and that is what makes the
+ * Recommendation card read-only — so when the second step does not run (the profile read
+ * incomplete, or the accept call failed), the reviewer is left looking at a locked panel with
+ * no Approve button and no way to finish. The ONLY exit was Reopen, which is super-only AND is
+ * recorded as a correction against the reviewer, asking what she got wrong. She got nothing
+ * wrong. Application 144 sat like that from 1 to 7 September, and its reviewer could not have
+ * freed it herself. (BrightPath #21, found by the owner 2026-09-07.)
+ *
+ * ⚠ IT IS KEYED ON `verified_at`, NOT ON THE STATUS, because that field is what `verify-accept`
+ * stamps — it is the record of whether the second half ever ran. A status check alone would
+ * also unlock a case that moved on and came back by some other route.
+ *
+ * A DECLINE is unaffected: it leaves the case `rejected`, which is not a live state.
+ */
+export function isStuckAfterVerdict(
+  opts: {
+    status: string | null | undefined
+    verdictDecidedAt?: string | null
+    verifiedAt?: string | null
+  },
+): boolean {
+  if (!opts.verdictDecidedAt) return false   // no verdict recorded — nothing half-done
+  if (opts.verifiedAt) return false          // the accept DID run — the case moved
+  return LIVE_STATES.includes(opts.status || '')
 }
 
 /**
