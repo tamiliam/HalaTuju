@@ -181,6 +181,17 @@ describe('the Sprint B rows render, grouped and ordered', () => {
     expect(sponsor).toBeGreaterThanOrEqual(0)
     expect(comms).toBeGreaterThan(sponsor)
   })
+
+  it('every unit label sits in a fixed-width column so the boxes align down the page', async () => {
+    // With a natural-width unit the right-aligned pair shifts each BOX by the unit's length
+    // ("days" vs "questions") — the owner read it as untidy on 2026-09-07. The width class is
+    // the alignment; losing it brings the drift back.
+    await mount()
+    for (const s of [{ key: KEY }, ...SPRINT_B]) {
+      const unit = screen.getByTestId(`config-${s.key}-unit`)
+      expect(unit.className).toContain('w-24')
+    }
+  })
 })
 
 describe('a super with several tenants', () => {
