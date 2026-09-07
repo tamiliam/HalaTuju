@@ -2178,7 +2178,11 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
             'statement_of_intent', 'photo', 'bank_statement', 'other'])
           // Income-earner docs are person-qualified from their slot ("Mother's STR proof",
           // "Father's salary slip"); the IC keeps its own possessive ("Mother's IC").
-          const INCOME_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf'])
+          // `income_support_doc` is here because it is that earner's INCOME EVIDENCE (2026-07-25's
+          // fourth way), so it must read "Mother's income letter" like her payslip would — not a
+          // bare type name that gives no clue whose income it proves.
+          const INCOME_MEMBER_DOCS = new Set(['parent_ic', 'str', 'salary_slip', 'epf',
+                                              'income_support_doc'])
           const docLabel = (d: AdminApplicantDocument) => {
             if (INCOME_MEMBER_DOCS.has(d.doc_type)) {
               const m = earnerMemberFor(d.doc_type, d.household_member || '',

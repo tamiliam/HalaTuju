@@ -116,6 +116,25 @@ describe('groupDocumentsByFact', () => {
     expect(groups.other).toHaveLength(0)
   })
 
+  it('places the income support letter in INCOME, not the other bucket', () => {
+    // It sat in `other` beneath a comment calling it a "reviewer-requested extra" — true when
+    // written, false since 2026-07-25, when a declared amount plus this letter became one of the
+    // four ways income may be proved. On application 144 that filed the mother's only income
+    // evidence in the junk drawer while the income panel above printed her salary slip as
+    // Missing (BrightPath #21).
+    const groups = groupDocumentsByFact([doc({ doc_type: 'income_support_doc' })])
+    expect(groups.income).toHaveLength(1)
+    expect(groups.other).toHaveLength(0)
+  })
+
+  it('leaves bank statements and reviewer-requested extras in other', () => {
+    // The widening is one document type, not the whole bucket.
+    const groups = groupDocumentsByFact(['bank_statement', 'reference_letter', 'other']
+      .map((t, i) => doc({ id: i, doc_type: t })))
+    expect(groups.other).toHaveLength(3)
+    expect(groups.income).toHaveLength(0)
+  })
+
   it('orders academic: SPM results slip on top, semester (CGPA) slip below', () => {
     const groups = groupDocumentsByFact(['semester_result', 'results_slip']
       .map((t, i) => doc({ id: i, doc_type: t })))
@@ -130,10 +149,13 @@ describe('groupDocumentsByFact', () => {
       'school_leaving_cert', 'statement_of_intent', 'photo'])
   })
 
-  it('places income_support_doc / bank_statement / reference_letter / other in other', () => {
-    const groups = groupDocumentsByFact(['income_support_doc', 'bank_statement', 'reference_letter', 'other']
+  it('places bank_statement / reference_letter / other in other', () => {
+    // UPDATED DELIBERATELY 2026-09-07: `income_support_doc` was in this list and has moved to
+    // INCOME — it is one of the four ways income may be proved (see the test below). The rest of
+    // the bucket is unchanged, which is the point of keeping this assertion narrow.
+    const groups = groupDocumentsByFact(['bank_statement', 'reference_letter', 'other']
       .map((t, i) => doc({ id: i, doc_type: t })))
-    expect(groups.other).toHaveLength(4)
+    expect(groups.other).toHaveLength(3)
     expect(groups.additional).toHaveLength(0)
   })
 
@@ -750,10 +772,12 @@ describe('incomeDocLayout', () => {
       [fIc, fSlip, water],
     )
     expect(layout.required.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
+      // UPDATED DELIBERATELY 2026-09-07: the slot is income evidence any one way, so an EMPTY
+      // one is no longer called a salary slip. A filled one still names what is in it.
       ['parent_ic', 'father', 1],
       ['salary_slip', 'father', 2],
       ['parent_ic', 'mother', null],
-      ['salary_slip', 'mother', null],
+      ['income_evidence', 'mother', null],
       ['birth_certificate', '', null],   // mother needs a BC (untagged), not uploaded
     ])
     expect(layout.optional.map((d) => d.id)).toEqual([9])   // the water bill
@@ -785,13 +809,73 @@ describe('incomeSubSections', () => {
       { income_route: 'salary', income_working_members: ['father', 'mother'] }, [fIc, water])
     expect(sub.str).toBeNull()
     expect(sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
-      ['salary_slip', 'father', null],   // spec order: salary slip → IC → EPF
+      // UPDATED DELIBERATELY 2026-09-07: an EMPTY income slot is no longer called a salary slip.
+      // Since 2026-07-25 a payslip, an EPF statement or a declared amount with a support letter
+      // all satisfy it, so naming one of the three in a red "Missing" row misstated the ask.
+      ['income_evidence', 'father', null],   // spec order: income evidence → IC → EPF
       ['parent_ic', 'father', 1],
-      ['salary_slip', 'mother', null],
+      ['income_evidence', 'mother', null],
       ['parent_ic', 'mother', null],
       ['birth_certificate', '', null],   // mother needs a BC
     ])
     expect(ids(sub.utility)).toEqual([9])
+  })
+
+  // ── income shown ANY ONE WAY (BrightPath #21, application 144) ──────────────
+  //
+  // The gate accepted this household on 7 September and the panel still printed
+  // "Mother's Salary slip — Missing" in red while her signed income letter sat in the OTHER
+  // group. These pin the slot to the RULE rather than to one document.
+
+  it("a support letter IS the mother's income evidence — no Missing row (application 144)", () => {
+    const mIc = doc({ id: 1, doc_type: 'parent_ic', household_member: 'mother' })
+    const letter = doc({ id: 2, doc_type: 'income_support_doc', household_member: 'mother' })
+    const bc = doc({ id: 3, doc_type: 'birth_certificate' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['mother'] }, [mIc, letter, bc])
+    expect(sub.salary.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
+      ['income_support_doc', 'mother', 2],   // the letter, named as itself, in HER cluster
+      ['parent_ic', 'mother', 1],
+      ['birth_certificate', '', 3],
+    ])
+    // The whole point: nothing about her income reads as missing.
+    expect(sub.salary.some((s) => s.doc === null)).toBe(false)
+  })
+
+  it('an EPF statement alone satisfies the slot, and is not then listed a second time', () => {
+    const epf = doc({ id: 4, doc_type: 'epf', household_member: 'father' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['father'] }, [epf])
+    const epfRows = sub.salary.filter((s) => s.doc?.id === 4)
+    expect(epfRows.length).toBe(1)
+    expect(epfRows[0].docType).toBe('epf')
+    expect(sub.salary.some((s) => s.docType === 'income_evidence')).toBe(false)
+  })
+
+  it('a payslip still outranks an EPF, which then shows below as supporting evidence', () => {
+    const slip = doc({ id: 5, doc_type: 'salary_slip', household_member: 'father' })
+    const epf = doc({ id: 6, doc_type: 'epf', household_member: 'father' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['father'] }, [slip, epf])
+    expect(sub.salary.map((s) => [s.docType, s.doc?.id ?? null])).toEqual([
+      ['salary_slip', 5],
+      ['parent_ic', null],
+      ['epf', 6],
+    ])
+  })
+
+  it('ONE untagged household letter cannot prove TWO earners', () => {
+    // A single household-level letter names one wage. If both parents rested on it, the panel
+    // would report two incomes evidenced where the family supplied evidence for one.
+    const letter = doc({ id: 7, doc_type: 'income_support_doc', household_member: '' })
+    const sub = incomeSubSections(
+      { income_route: 'salary', income_working_members: ['father', 'mother'] }, [letter])
+    const evidenceRows = sub.salary.filter(
+      (s) => s.docType === 'income_support_doc' || s.docType === 'income_evidence')
+    expect(evidenceRows.map((s) => [s.member, s.doc?.id ?? null])).toEqual([
+      ['father', 7],            // the first earner claims it
+      ['mother', null],         // the second still needs her own — correctly Missing
+    ])
   })
 
   it('STR route with an STR doc: STR sub shows the cluster; SALARY holds supplementary salary docs', () => {
@@ -924,7 +1008,11 @@ describe('incomeSubSections', () => {
       str_check: strCheck({ current_status: 'wrong_type' }) })
     const sub = incomeSubSections(
       { income_route: 'salary', income_working_members: ['father'] }, [str])
-    expect(sub.salary.some((s) => s.docType === 'salary_slip' && s.doc === null)).toBe(true)  // Missing kept
+    // UPDATED DELIBERATELY 2026-09-07: the empty slot is now named `income_evidence`, because
+    // a payslip, an EPF or a declared amount with a support letter would each satisfy it. THE
+    // CLAIM THIS TEST MAKES IS UNCHANGED — a breached STR still drops the family into full
+    // salary-route documentation, and the Missing row is still kept.
+    expect(sub.salary.some((s) => s.docType === 'income_evidence' && s.doc === null)).toBe(true)
   })
 
   it('#63 regression: a salary-route family WITH STR docs still shows them (never hidden)', () => {
@@ -981,8 +1069,11 @@ describe('incomeSubSections', () => {
     const sub = incomeSubSections(
       { income_route: 'salary', income_working_members: ['guardian'] }, [gIc, letter, gEpf])
     const types = sub.salary.map((s) => s.docType)
-    // salary slip (placeholder) → IC → guardianship letter → EPF
-    expect(types).toEqual(['salary_slip', 'parent_ic', 'guardianship_letter', 'epf'])
+    // UPDATED DELIBERATELY 2026-09-07: she has an EPF and no payslip, so the EPF now IS her
+    // income evidence and takes the top slot instead of sitting under an empty "salary slip"
+    // placeholder. It appears ONCE, not twice. The claim this test exists for is unchanged and
+    // still asserted below: the guardianship letter sits directly under the guardian's IC.
+    expect(types).toEqual(['epf', 'parent_ic', 'guardianship_letter'])
     const icAt = types.indexOf('parent_ic')
     expect(types[icAt + 1]).toBe('guardianship_letter')   // directly below the IC
   })

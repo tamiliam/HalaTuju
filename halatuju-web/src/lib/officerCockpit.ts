@@ -106,6 +106,15 @@ function docTypeToFact(docType: string): DocFact {
     case 'str':
     case 'epf':
     case 'salary_slip':
+    // ⚠ THE SUPPORT LETTER IS INCOME EVIDENCE, NOT AN EXTRA — DO NOT MOVE IT BACK TO 'other'.
+    // It was filed under 'other' until 2026-09-07, beneath a comment calling it a
+    // "reviewer-requested extra". That was true when it was written and stopped being true on
+    // 2026-07-25, when `income_engine.member_income_evidenced` made a DECLARED amount backed by
+    // this letter one of the four ways a family may prove what it earns. An informally-employed
+    // parent has no payslip and no EPF — the letter IS their income document, and filing it in
+    // the junk drawer hid the only evidence there was while the panel above it printed the
+    // salary slip as "Missing" in red. Found on application 144 (BrightPath #21).
+    case 'income_support_doc':
     case 'birth_certificate':
     case 'guardianship_letter':
     case 'water_bill':
@@ -116,8 +125,7 @@ function docTypeToFact(docType: string): DocFact {
     case 'photo':
     case 'school_leaving_cert':
       return 'additional'
-    // Everything else — reviewer-requested extras, income-support/bank/reference docs.
-    case 'income_support_doc':
+    // Everything else — reviewer-requested extras, bank/reference docs.
     case 'bank_statement':
     case 'reference_letter':
     case 'other':
@@ -762,6 +770,12 @@ interface IncomeAnswerSource {
  * first (STR: STR doc → earner IC → relationship doc; salary: per member IC → salary
  * slip → relationship doc), each carrying its uploaded doc or null (→ placeholder),
  * then any remaining uploaded income docs as OPTIONAL.
+ *
+ * ⚠ NO CALLER OUTSIDE THIS FILE'S TESTS (checked 2026-09-07). The cockpit renders
+ * `incomeSubSections` instead. It is kept in step with the live rule rather than left to rot,
+ * because a dead function stating a SUPERSEDED rule is worse than one stating none — but do not
+ * mistake a change here for a change on screen. Delete it, with its tests, when somebody has a
+ * moment; nothing depends on it.
  */
 export function incomeDocLayout(app: IncomeAnswerSource, incomeDocs: AdminApplicantDocument[]): IncomeLayout {
   const route = app.income_route || ''
@@ -780,9 +794,37 @@ export function incomeDocLayout(app: IncomeAnswerSource, incomeDocs: AdminApplic
     const rel = relationshipDocFor(earner)
     if (rel) required.push({ docType: rel, member: '', doc: findE(rel) })
   } else if (route === 'salary') {
+    // ⚠ ONE INCOME SLOT PER EARNER, SATISFIED ANY ONE WAY — NOT A SALARY-SLIP SLOT.
+    // This asked for `salary_slip` per member and printed a red "Missing" when it was absent.
+    // Since 2026-07-25 the gate (`income_engine.member_income_evidenced`) accepts a payslip OR a
+    // readable EPF statement OR a declared amount backed by an `income_support_doc`, so the panel
+    // was demanding, in red, a document the system does not require — on application 144 it
+    // printed "Mother's Salary slip — Missing" while her signed income letter sat in the OTHER
+    // group two sections below. The slot now shows WHAT IS THERE and names its own type, and
+    // reads "income evidence" only when NOTHING is there — because at that point any of the three
+    // would do and naming one of them would be a lie about what is being asked for.
+    // The declared amount itself is not visible here; the letter standing in for it is.
+    const claimed = new Set<number>()
+    const take = (d: AdminApplicantDocument | null) => {
+      if (!d || claimed.has(d.id)) return null
+      claimed.add(d.id)
+      return d
+    }
+    // A support letter may be tagged to the member OR left household-level (untagged) — the
+    // backend tolerates both, so this must too. Prefer the member's own; fall back to an
+    // untagged one, and never let two earners claim the same letter.
+    const findSupport = (m: string) =>
+      take(find('income_support_doc', m))
+      || take(incomeDocs.find((d) => d.doc_type === 'income_support_doc'
+                                    && !(d.household_member || '')) || null)
     for (const m of workingMembers(app.income_working_members as WorkingMember[] | null)) {
       required.push({ docType: 'parent_ic', member: m, doc: find('parent_ic', m) })
-      required.push({ docType: 'salary_slip', member: m, doc: find('salary_slip', m) })
+      const evidence = take(find('salary_slip', m)) || take(find('epf', m)) || findSupport(m)
+      required.push({
+        docType: evidence ? evidence.doc_type : 'income_evidence',
+        member: m,
+        doc: evidence,
+      })
       const rel = relationshipDocFor(m)
       if (rel && !required.some((s) => s.docType === rel)) {
         required.push({ docType: rel, member: '', doc: find(rel, '') })   // BC / letter — single, untagged
@@ -907,8 +949,30 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
   const pushSlot = (docType: string, member: string, doc: AdminApplicantDocument | null) => {
     if (doc || salaryRequired) salary.push({ docType, member, doc })
   }
+  // ⚠ ONE INCOME SLOT PER EARNER, SATISFIED ANY ONE WAY — NOT A SALARY-SLIP SLOT.
+  // This asked for `salary_slip` by name and rendered a red "Missing" when it was absent, which
+  // stopped being the rule on 2026-07-25: `income_engine.member_income_evidenced` accepts a
+  // payslip OR a readable EPF statement OR a declared amount backed by an `income_support_doc`.
+  // An informally-employed parent has no payslip and no EPF, so the panel was demanding, in red,
+  // a document the system does not require — application 144's mother, a self-employed trader
+  // with a signed and endorsed income letter on file (BrightPath #21).
+  // The slot names WHAT IS THERE, and says "income evidence" only when NOTHING is: at that point
+  // any of the three would satisfy it, so naming one of them misstates what is being asked for.
+  const claimedSupport = new Set<number>()
+  const supportFor = (m: string) => {
+    // Tagged to this member, else a household-level (untagged) letter — the backend tolerates
+    // both. Claimed once, so two earners can never both rest on the same single letter.
+    const own = find('income_support_doc', m)
+    const shared = incomeDocs.find((d) => d.doc_type === 'income_support_doc' && !memberOf(d))
+    const pick = own || (shared && !claimedSupport.has(shared.id) ? shared : null)
+    if (pick) claimedSupport.add(pick.id)
+    return pick || null
+  }
   for (const m of salaryMembers) {
-    pushSlot('salary_slip', m, find('salary_slip', m))
+    const slip = find('salary_slip', m)
+    const epfDoc = find('epf', m)
+    const evidence = slip || epfDoc || supportFor(m)
+    pushSlot(evidence ? evidence.doc_type : 'income_evidence', m, evidence)
     if (m !== strParent) {
       pushSlot('parent_ic', m, find('parent_ic', m))
       // Relationship proof sits DIRECTLY BELOW the person's IC (guardian → guardianship letter,
@@ -919,8 +983,10 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
         pushSlot(rel, '', find(rel, ''))
       }
     }
-    const epf = find('epf', m)
-    if (epf) salary.push({ docType: 'epf', member: m, doc: epf })
+    // The EPF still shows as supporting evidence BELOW the IC — unless it was already used as
+    // this member's income evidence above (no payslip), in which case showing it twice would
+    // read as two documents.
+    if (epfDoc && epfDoc !== evidence) salary.push({ docType: 'epf', member: m, doc: epfDoc })
   }
   mark(salary)
   // Catch-all: EVERY income doc not already placed is appended here (known types ordered, others
@@ -941,7 +1007,7 @@ export function incomeSubSections(app: IncomeAnswerSource, incomeDocs: AdminAppl
 // tints the badge by the doc's verdict. Emoji (the cockpit has no icon library).
 const DOC_ICON: Record<string, string> = {
   ic: '🪪', parent_ic: '🪪', results_slip: '🎓', offer_letter: '🏫',
-  str: '💵', salary_slip: '🧾', epf: '🏦', water_bill: '💧',
+  str: '💵', salary_slip: '🧾', epf: '🏦', income_support_doc: '✉️', water_bill: '💧',
   electricity_bill: '⚡', birth_certificate: '👶', guardianship_letter: '📜',
   statement_of_intent: '✍️', photo: '🖼️',
 }
