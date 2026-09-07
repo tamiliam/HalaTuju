@@ -5652,9 +5652,22 @@
         "nameRequired": "Please give the programme a name.",
         "hasOpenYear": "This programme is taking applications. Close its intake year first.",
         "noOrg": "Your account is not tied to an organisation.",
-        "generic": "That did not work. Nothing was changed."
+        "generic": "That did not work. Nothing was changed.",
+        "hasIntakeYears": "This gift has intake years. Delete them first, or keep the gift — a year holds the rules and any applications made under it.",
+        "hasApplications": "Students have applied to this gift, so it cannot be deleted.",
+        "hasBenefactors": "Benefactors have been accepted into this gift, so it cannot be deleted.",
+        "hasMoney": "Money has been recorded against this gift, so it cannot be deleted.",
+        "hasPaymentRuns": "This gift has paid students, so it cannot be deleted.",
+        "inUse": "Something still depends on this gift, so it cannot be deleted.",
+        "confirmMismatch": "That does not match the short code. Nothing was deleted."
       },
-      "openSettings": "Open its settings"
+      "openSettings": "Open its settings",
+      "delete": "Delete",
+      "deleteTitle": "Delete {name}?",
+      "deleteBody": "This removes the gift programme and the settings that belong to it — its rules and what it asks students for. It cannot be undone.",
+      "deleteKeeps": "Invitations, sources and reviewers you had narrowed to this gift are kept — they go back to covering every gift.",
+      "deleteConfirmLabel": "Type {code} to confirm",
+      "deleteCta": "Delete this gift programme"
     },
     "years": {
       "subtitle": "one round of students per year.",

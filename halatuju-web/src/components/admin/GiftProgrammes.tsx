@@ -18,7 +18,8 @@ import { useT } from '@/lib/i18n'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import InfoBox from '@/components/InfoBox'
 import {
-  getAdminProgrammes, createAdminProgramme, updateAdminProgramme, type AdminProgramme,
+  getAdminProgrammes, createAdminProgramme, updateAdminProgramme, deleteAdminProgramme,
+  type AdminProgramme,
 } from '@/lib/admin-api'
 
 const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
@@ -26,7 +27,7 @@ const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
 export default function GiftProgrammes({ token }: { token: string | null }) {
   const { t } = useT()
   const router = useRouter()
-  const { select } = useProgrammeScope()
+  const { select, reload } = useProgrammeScope()
 
   const [rows, setRows] = useState<AdminProgramme[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,6 +36,10 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
   const [open, setOpen] = useState(false)
   const [code, setCode] = useState('')
   const [nameEn, setNameEn] = useState('')
+  // The gift whose deletion is being confirmed, and the code typed to confirm it. Null = no
+  // dialog. Held as the RECORD, not an id, so the dialog can name what is about to go.
+  const [deleting, setDeleting] = useState<AdminProgramme | null>(null)
+  const [confirmText, setConfirmText] = useState('')
 
   const load = useCallback(async () => {
     if (!token) return
@@ -57,7 +62,17 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
       : c === 'code_taken' ? 'codeTaken'
         : c === 'name_required' ? 'nameRequired'
           : c === 'has_open_year' ? 'hasOpenYear'
-            : c === 'no_org' ? 'noOrg' : 'generic'
+            : c === 'no_org' ? 'noOrg'
+              // Why a gift cannot be deleted, named. Each is a relation the model PROTECTS: the
+              // gift has become something, and the reader is owed which thing rather than a
+              // blanket "that did not work".
+              : c === 'has_intake_years' ? 'hasIntakeYears'
+                : c === 'has_applications' ? 'hasApplications'
+                  : c === 'has_benefactors' ? 'hasBenefactors'
+                    : c === 'has_money' ? 'hasMoney'
+                      : c === 'has_payment_runs' ? 'hasPaymentRuns'
+                        : c === 'in_use' ? 'inUse'
+                          : c === 'confirm_mismatch' ? 'confirmMismatch' : 'generic'
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setError('')
@@ -89,6 +104,15 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
       { code: wanted, name_en: nameEn.trim() }, { token: token! }))
     if (ok) {
       setOpen(false); setCode(''); setNameEn('')
+      // ⚠ REFRESH THE SHELL'S LIST **BEFORE** SELECTING, AND AWAIT IT. The scopes are fetched once
+      // per console session, so a gift created just now is not in that list yet — and
+      // `programmeScope` refuses to resolve a code it does not recognise. Selecting first left the
+      // owner on a screen that asked which gift, forever, with every click a no-op (2026-09-07).
+      //
+      // ⚠ THE ORDER IS THE FIX. Do not "simplify" this by selecting first and letting the reload
+      // catch up: the page would mount against the stale list, ask, and only heal on the next
+      // render — which is the same dead screen for as long as the fetch takes.
+      await reload()
       select(wanted)
       router.push('/admin/programme?tab=year')
     }
@@ -162,6 +186,16 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                 className="text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
                 {t(p.is_active ? 'admin.programmes.switchOff' : 'admin.programmes.switchOn')}
               </button>
+              {/* ⚠ ALWAYS OFFERED, NEVER HIDDEN ON A GUESS. Whether a gift can be deleted is the
+                  SERVER's answer — it counts the years, applications, benefactors, money and
+                  payment runs holding it. Hiding the control for a gift that has any of those
+                  would explain nothing; the refusal names what is holding it, which is the thing
+                  the reader actually needs. Same rule as Switch off, one row up. */}
+              <button type="button" disabled={busy} data-testid={`delete-${p.code}`}
+                onClick={() => { setError(''); setConfirmText(''); setDeleting(p) }}
+                className="text-sm font-medium text-critical-600 hover:underline disabled:opacity-50">
+                {t('admin.programmes.delete')}
+              </button>
             </div>
           </div>
         ))}
@@ -174,6 +208,56 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
       </div>
 
       <p className="mt-4 text-xs text-ground-500">{t('admin.programmes.durableNote')}</p>
+
+      {/* ⚠ THE TYPED CODE IS THE POINT. A second "are you sure?" is answered by the same reflex
+          that pressed the first button; typing the gift's own code cannot be. The SERVER checks it
+          too — this dialog explains the guard, it is not the guard. */}
+      {deleting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !busy && setDeleting(null)}>
+          <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-critical-700">
+              {t('admin.programmes.deleteTitle', { name: deleting.name_en })}
+            </h2>
+            <p className="mt-2 text-sm text-ground-700">{t('admin.programmes.deleteBody')}</p>
+            <div className="mt-3">
+              <InfoBox kind="warning">{t('admin.programmes.deleteKeeps')}</InfoBox>
+            </div>
+
+            <label htmlFor="p-confirm" className="mt-4 block text-sm font-medium text-ground-700">
+              {t('admin.programmes.deleteConfirmLabel', { code: deleting.code })}
+            </label>
+            <input id="p-confirm" value={confirmText} autoComplete="off"
+              onChange={(e) => setConfirmText(e.target.value)}
+              className={`mt-1 ${inputCls}`} />
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button type="button" onClick={() => setDeleting(null)} disabled={busy}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
+                {t('common.cancel')}
+              </button>
+              <button type="button" data-testid="delete-confirm"
+                // Trimmed + lower-cased to match the server's own comparison, so the button is
+                // never asleep on a difference the server would have accepted.
+                disabled={busy || confirmText.trim().toLowerCase() !== deleting.code.toLowerCase()}
+                onClick={async () => {
+                  const ok = await run(() => deleteAdminProgramme(
+                    deleting.id, confirmText.trim().toLowerCase(), { token: token! }))
+                  if (ok) {
+                    setDeleting(null); setConfirmText('')
+                    // The shell's own list must forget it too, or the breadcrumb keeps offering a
+                    // gift that no longer exists.
+                    await reload()
+                  }
+                }}
+                className="rounded-lg bg-critical-fill px-4 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
+                {t('admin.programmes.deleteCta')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"

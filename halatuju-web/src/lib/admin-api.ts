@@ -1242,6 +1242,12 @@ async function adminMutate<T>(path: string, method: string, body: unknown, optio
     err.body = b
     throw err
   }
+  // ⚠ A SUCCESSFUL DELETE ANSWERS 204 WITH NO BODY, and `res.json()` throws on an empty one — so
+  // the call would have failed on the happy path only, which is the worst shape of bug: the write
+  // lands, the caller sees an error, and a person presses again. Every existing caller returns a
+  // body and is unaffected. Widened here rather than making one endpoint answer 200-with-a-body,
+  // because the next DELETE would meet the same wall.
+  if (res.status === 204) return undefined as T
   return res.json()
 }
 
@@ -3104,6 +3110,26 @@ export async function updateAdminProgramme(
 ) {
   return adminMutate<AdminProgramme>(
     `/api/v1/admin/scholarship/programmes/${id}/`, 'PATCH', body, options)
+}
+
+/**
+ * Delete a gift that never became anything.
+ *
+ * ⚠ `confirm` MUST BE THE GIFT'S OWN CODE, and the SERVER checks it — this is not a client
+ * courtesy. A destructive verb any caller can fire with an empty body is one mis-wired button
+ * away from deleting somebody's gift.
+ *
+ * ⚠ IT REFUSES WITH A NAMED REASON rather than a generic failure: `has_intake_years`,
+ * `has_applications`, `has_benefactors`, `has_money`, `has_payment_runs`. Those are the relations
+ * the model already protects — a gift that has taken a student or a ringgit cannot be deleted.
+ */
+export async function deleteAdminProgramme(
+  id: number,
+  confirm: string,
+  options?: ApiOptions,
+) {
+  return adminMutate<void>(
+    `/api/v1/admin/scholarship/programmes/${id}/`, 'DELETE', { confirm }, options)
 }
 
 export async function getAdminIntakeYears(programmeId: number, options?: ApiOptions) {

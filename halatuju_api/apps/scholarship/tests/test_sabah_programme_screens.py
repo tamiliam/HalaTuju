@@ -54,6 +54,10 @@ class _Case(TestCase):
         self._as(admin)
         return self.client.patch(url, body, format='json')
 
+    def _delete(self, admin, url, body=None):
+        self._as(admin)
+        return self.client.delete(url, body or {}, format='json')
+
     def _get(self, admin, url):
         self._as(admin)
         return self.client.get(url)
@@ -330,3 +334,96 @@ class TestIntakeYears(_Case):
                         {'name': 'Stolen'})
         self.assertEqual(r.status_code, 404)
         self.assertEqual(self._get(self.admin_a, self._years(self.prog_b)).status_code, 404)
+
+
+class TestDeletingAGift(_Case):
+    """Deleting a gift programme (owner request, live use 2026-09-07).
+
+    ⚠⚠ THE RULE IS ALREADY WRITTEN IN THE MODEL, AND THE ENDPOINT ONLY SURFACES IT. Every relation
+    that means a gift has BECOME something is `on_delete=PROTECT` — intake years, applications, the
+    benefactors accepted into it, money recorded against it, payment runs. So the honest line is:
+    **a gift that has ever taken a student or a ringgit cannot be deleted.** What can be deleted is
+    the one somebody created by mistake a minute ago.
+
+    These tests are the reason the refusal NAMES what is holding it. The database would refuse
+    either way; a person told "that did not work" learns nothing and presses again.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.spare = Programme.objects.create(
+            organisation=self.org_a, code='sab-a-spare', name_en='A Spare', is_active=False)
+        self.url = f'{PROGRAMMES}{self.spare.id}/'
+
+    # ── the typed confirmation ───────────────────────────────────────────────────────────────
+
+    def test_it_refuses_without_the_gifts_own_code_typed(self):
+        """⚠ SERVER-SIDE, NOT A CLIENT COURTESY. A destructive verb any caller can fire with an
+        empty body is one mis-wired button away from deleting somebody's gift."""
+        for body in ({}, {'confirm': ''}, {'confirm': 'yes'}, {'confirm': 'sab-a-flagship'}):
+            r = self._delete(self.admin_a, self.url, body)
+            self.assertEqual(r.status_code, 400, body)
+            self.assertEqual(r.data['code'], 'confirm_mismatch')
+        self.assertTrue(Programme.objects.filter(pk=self.spare.pk).exists())
+
+    def test_the_typed_code_is_read_forgivingly(self):
+        # Case and stray spaces are typing, not intent. The CODE still has to be right.
+        r = self._delete(self.admin_a, self.url, {'confirm': '  SAB-A-SPARE '})
+        self.assertEqual(r.status_code, 204)
+
+    # ── what makes a gift undeletable ────────────────────────────────────────────────────────
+
+    def test_an_intake_year_holds_it_and_the_refusal_SAYS_SO(self):
+        ScholarshipCohort.objects.create(
+            programme=self.spare, owning_organisation=self.org_a, code='sab-a-spare-2027',
+            name='Spare 2027', year=2027, is_active=True, is_open=False)
+        r = self._delete(self.admin_a, self.url, {'confirm': 'sab-a-spare'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'has_intake_years')
+        self.assertEqual(r.data['count'], 1)
+        self.assertTrue(Programme.objects.filter(pk=self.spare.pk).exists())
+
+    def test_a_gift_with_nothing_attached_goes(self):
+        r = self._delete(self.admin_a, self.url, {'confirm': 'sab-a-spare'})
+        self.assertEqual(r.status_code, 204)
+        self.assertFalse(Programme.objects.filter(pk=self.spare.pk).exists())
+
+    def test_its_OWN_configuration_goes_with_it_and_nothing_else_does(self):
+        """⚠ CASCADE vs SET_NULL, and the difference is the whole design.
+
+        `ProgrammeApplicationItem` rows ARE the gift's configuration — meaningless without it, so
+        they go. An `Invitation` narrowed to this gift is a NARROWING, and a narrowing whose gift
+        is gone falls back to "every gift" (the S-ASSIGN rule: NULL means every gift). Nobody
+        loses an invitation because somebody deleted a gift they had scoped it to.
+        """
+        from apps.scholarship.models import (ApplicationItem, Invitation,
+                                             ProgrammeApplicationItem)
+        item = ApplicationItem.objects.create(
+            kind='document', code='ic', label_key='scholarship.docs.type.ic',
+            default_state='required', is_core=True)
+        ProgrammeApplicationItem.objects.create(
+            programme=self.spare, item=item, state='required')
+        inv = Invitation.objects.create(
+            organisation=self.org_a, programme=self.spare, audience='staff',
+            role='reviewer', email='someone@example.invalid',
+            invited_by=self.admin_a, code='del-test-code')
+
+        r = self._delete(self.admin_a, self.url, {'confirm': 'sab-a-spare'})
+        self.assertEqual(r.status_code, 204)
+
+        self.assertFalse(ProgrammeApplicationItem.objects.filter(programme_id=self.spare.pk).exists())
+        inv.refresh_from_db()
+        self.assertIsNone(inv.programme_id)   # kept, and back to covering every gift
+
+    # ── the fence, and who may do it ─────────────────────────────────────────────────────────
+
+    def test_another_tenants_gift_is_404_never_403(self):
+        r = self._delete(self.admin_a, f'{PROGRAMMES}{self.prog_b.id}/',
+                         {'confirm': 'sab-b-flagship'})
+        self.assertEqual(r.status_code, 404)
+        self.assertTrue(Programme.objects.filter(pk=self.prog_b.pk).exists())
+
+    def test_a_reviewer_may_not_delete_anything(self):
+        r = self._delete(self.reviewer_a, self.url, {'confirm': 'sab-a-spare'})
+        self.assertEqual(r.status_code, 403)
+        self.assertTrue(Programme.objects.filter(pk=self.spare.pk).exists())

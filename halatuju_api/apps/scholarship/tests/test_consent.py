@@ -634,6 +634,84 @@ class TestIncomeGateV2(TestCase):
         # Lenient (old) bar for a submitted app → stays done, so revert never fires.
         self.assertTrue(application_completeness(app)['documents_done'])
 
+    # ── the grandfathered bar drifted from the live one (BrightPath #21) ─────
+    #
+    # The frozen copy asked for one of three DOCUMENT TYPES. On 2026-07-25 income became
+    # showable a fourth way — a declared amount + a support letter — which has no document
+    # type, so the frozen copy could not see it. Application 144 proved her income that way,
+    # was marked incomplete, and stuck at Interview with every officer verdict already
+    # recorded. These four tests pin the fix AND the two things it must not become.
+
+    def _support_letter(self, app, member, *, read=True):
+        """An income_support_doc that READ (student_verdict 'ok') — mere presence has not
+        counted since V1 finding #2, so a test that just creates the row proves nothing."""
+        from apps.scholarship.models import ApplicantDocument
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='income_support_doc',
+            storage_path=f'x/income_support_doc/{member}', household_member=member,
+            vision_fields={'fields': {'kind': 'community_letter', 'amount': 'RM3500'},
+                           'student_verdict': 'ok' if read else 'wrong_doc'})
+
+    def test_grandfathered_declared_plus_support_letter_is_income_shown(self):
+        """Application 144's exact shape: submitted, salary route, mother declared at RM3,500
+        with a community letter, and NOT one of str/salary_slip/epf on file. Before the fix she
+        read incomplete and could not be accepted to QC."""
+        from apps.scholarship.services import application_completeness
+        app = self._app(route='salary', members=['mother'], submitted=True)
+        app.income_declared = {'mother': 3500}
+        app.save()
+        for dt in ('ic', 'results_slip'):
+            self._doc(app, dt)
+        self._doc(app, 'parent_ic', member='mother')
+        self._support_letter(app, 'mother')
+        self.assertTrue(application_completeness(app)['documents_done'])
+
+    def test_grandfathered_declared_alone_is_not_income_shown(self):
+        """A declared amount with NO letter behind it stays unproven — the same rule the live
+        bar keeps (`member_income_evidenced`). The widening adds one way, not a free pass."""
+        from apps.scholarship.services import application_completeness
+        app = self._app(route='salary', members=['mother'], submitted=True)
+        app.income_declared = {'mother': 3500}
+        app.save()
+        for dt in ('ic', 'results_slip'):
+            self._doc(app, dt)
+        self._doc(app, 'parent_ic', member='mother')
+        self.assertFalse(application_completeness(app)['documents_done'])
+        # ... and an UNREAD letter is no better than none (V1 finding #2).
+        self._support_letter(app, 'mother', read=False)
+        self.assertFalse(application_completeness(app)['documents_done'])
+
+    def test_grandfathered_new_arm_can_only_unblock(self):
+        """⚠ THE DANGEROUS DIRECTION. `revert_if_profile_incomplete` UN-SUBMITS on a fail, so a
+        widening that accidentally narrows would eject already-submitted students. Every set the
+        frozen three-document rule accepted must still pass — here with no working member, no
+        declared amount and no letter, i.e. nothing the new arm could ever answer for."""
+        from apps.scholarship.services import application_completeness
+        for legacy in ('str', 'salary_slip', 'epf'):
+            app = self._app(route='', submitted=True)
+            for dt in ('ic', 'results_slip', 'parent_ic', legacy):
+                self._doc(app, dt)
+            self.assertTrue(application_completeness(app)['documents_done'],
+                            f'grandfathered bar stopped accepting {legacy}')
+
+    def test_grandfathered_arm_does_not_require_a_proven_relationship(self):
+        """⚠ IT MUST NOT BE TIGHTENED TO `member_cluster_complete`. That predicate also demands
+        the earner's IC link to the student — for a mother, through the birth certificate.
+        Applicant 144's birth certificate scored `not_birth_certificate` with every field blank,
+        so her cluster is not complete and this branch must not ask that it be: the relationship
+        is the reviewer's judgement at interview, not a precondition for reaching the reviewer."""
+        from apps.scholarship.services import application_completeness
+        from apps.scholarship.income_engine import member_cluster_complete
+        app = self._app(route='salary', members=['mother'], submitted=True)
+        app.income_declared = {'mother': 3500}
+        app.save()
+        for dt in ('ic', 'results_slip'):
+            self._doc(app, dt)
+        self._doc(app, 'parent_ic', member='mother')      # no birth certificate at all
+        self._support_letter(app, 'mother')
+        self.assertFalse(member_cluster_complete(app, 'mother'))
+        self.assertTrue(application_completeness(app)['documents_done'])
+
 
 class TestOfferValidityGate(TestCase):
     """Owner policy: only a genuine OFFICIAL public offer lets a student submit. A conditional /
