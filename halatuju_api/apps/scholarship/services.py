@@ -871,8 +871,38 @@ def reconcile_income_route(application, *, by='auto'):
 
 
 # How long after submission to hold the "we have a few questions" email, so it reads as
-# a human review rather than an instant bot reply (the owner's call).
+# a human review rather than an instant bot reply (the owner's call). PLATFORM default —
+# an organisation can tune its own delay via org_config `query_email_delay_hours`
+# (Organisation → Settings → Configuration; Org Config Sprint B), whose registry default
+# reads THIS constant, so this stays the one home for the platform number.
 QUERY_EMAIL_DELAY_HOURS = 2
+
+
+def _query_email_due_window(now):
+    """The submitted-long-enough Q for `send_due_query_emails`, PER ORGANISATION.
+
+    ⚠ THE DEFAULT ARM MUST BE SPELLED `~Q(id__in=…) | Q(isnull)` — SQL's `NOT (col IN …)` is
+    NULL-false, so a bare negation silently drops every NULL-org application the moment ANY
+    organisation configures a delay (the `pool._funded_grace_window` spelling, copied on
+    purpose). The filter must stay in SQL: the sweep's loop calls `sync_check2_queries`, which
+    CREATES items, so a too-early application let through the queryset would be asked early
+    even if the send itself were skipped.
+    """
+    from datetime import timedelta
+    from django.db.models import Q
+    from apps.courses import org_config
+
+    custom = org_config.custom_values('query_email_delay_hours')
+    default_cutoff = now - timedelta(hours=org_config.default('query_email_delay_hours'))
+    if not custom:
+        return Q(profile_completed_at__lte=default_cutoff)
+    window = (Q(profile_completed_at__lte=default_cutoff)
+              & (~Q(owning_organisation_id__in=list(custom))
+                 | Q(owning_organisation_id__isnull=True)))
+    for org_id, hours in custom.items():
+        window |= Q(owning_organisation_id=org_id,
+                    profile_completed_at__lte=now - timedelta(hours=hours))
+    return window
 
 
 def bump_query_notify_on_new_item(application):
@@ -895,23 +925,23 @@ def bump_query_notify_on_new_item(application):
 
 
 def send_due_query_emails(now=None):
-    """Frequent sweep (hourly): ~``QUERY_EMAIL_DELAY_HOURS`` after a student submits,
+    """Frequent sweep (hourly): the organisation's query-email delay after a student submits
+    (org_config ``query_email_delay_hours``; platform default ``QUERY_EMAIL_DELAY_HOURS``),
     email them ONCE that a few clarify questions are waiting in their Action Centre — but
     only if questions are actually open (if they answered everything in the form, none).
     The delay is deliberate so it feels like someone reviewed the application. Idempotent
     via ``query_raised_notified_at``. Returns ``{'sent': n}``."""
-    from datetime import timedelta
     from django.conf import settings as _settings
     from .check2_queries import sync_check2_queries
     from .emails import send_query_raised_email
     if not getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False):
         return {'sent': 0}   # student queries held until the questions are reviewed
     now = now or timezone.now()
-    cutoff = now - timedelta(hours=QUERY_EMAIL_DELAY_HOURS)
     sent = 0
     qs = (ScholarshipApplication.objects
-          .filter(status__in=QUERY_SLA_ACTIVE_STATUSES,
-                  profile_completed_at__isnull=False, profile_completed_at__lte=cutoff,
+          .filter(_query_email_due_window(now),
+                  status__in=QUERY_SLA_ACTIVE_STATUSES,
+                  profile_completed_at__isnull=False,
                   query_raised_notified_at__isnull=True)
           .select_related('cohort', 'profile'))
     from .resolution import STUDENT_DOC_REQUEST_CODES

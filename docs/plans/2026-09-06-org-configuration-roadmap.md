@@ -106,5 +106,10 @@ engine and the tab already exist — a later sprint is registry entries + wired 
 
 ## Status
 
-- [ ] Sprint A — in progress (worktree `.worktrees/org-config`, branch `feat/org-config-tab`)
-- [ ] Sprint B · [ ] C · [ ] D · [ ] E · [ ] F
+- [x] Sprint A — SHIPPED + DEPLOYED 2026-09-07 (`main` 85d079a6; retro
+      `docs/retrospective-2026-09-07-org-config-sprint-a.md`; BrightPath set 30 days, live)
+- [x] Sprint B — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-b`, branch
+      `feat/org-config-sprint-b`; the four student-comms settings + the deferred
+      `sponsor_email_max_cards`, threaded through the sponsor email senders; retro
+      `docs/retrospective-2026-09-07-org-config-sprint-b.md`)
+- [ ] C · [ ] D · [ ] E · [ ] F

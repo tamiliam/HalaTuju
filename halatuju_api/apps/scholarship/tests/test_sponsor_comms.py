@@ -405,7 +405,7 @@ class TestRendering(CommsBase):
     def test_the_card_cap_announces_itself(self):
         """A silent truncation reads as "that is everyone" — the chase table learned this too."""
         cards = [{'ref': f'S-{i:06d}', 'course': 'Course', 'amount': '3000'}
-                 for i in range(sponsor_comms.MAX_CARDS + 3)]
+                 for i in range(sponsor_comms.max_cards() + 3)]
         html, text = sponsor_comms.student_cards_blocks(cards)
         self.assertIn('and 3 more', text)
         self.assertIn('and 3 more', html)

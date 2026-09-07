@@ -550,7 +550,67 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after Org Config Sprint A — the Configuration tab)
+## Next Sprint (as of 2026-09-07, after Org Config Sprint B — student comms on the tab)
+
+**SHIPPED AND DEPLOYED.** Worktree `.worktrees/org-config-b`, branch `feat/org-config-sprint-b`
+merged to `main`. **NO MIGRATION** — Sprint A built the store/endpoint/tab; B is registry entries +
+wired read sites + rows, the exact shape the roadmap promised. Retro
+`docs/retrospective-2026-09-07-org-config-sprint-b.md`; roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A ✔ B ✔ · C/D/E/F open).
+pytest full suite green (+11 in `test_org_config.py`, 35 there now); jest 1737 → **1738**;
+lint **0**; tsc **24** (baseline); i18n 4775 → **4790 × 3**; `next build` clean.
+Four bite-checks landed (clarify cap, both sweep windows, both sponsor render sites).
+
+**Five settings joined the Configuration tab** — the four student-comms values
+(`query_email_delay_hours` 2 · `nudge_auto_delay_minutes` 30 · `nudge_cooldown_hours` 24 ·
+`max_clarify_open` 3) plus the Sprint-A-deferred `sponsor_email_max_cards` (5).
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **Every registry default DELEGATES to the platform's live home** — three env-tunables via
+  `getattr(settings, …)`, and TWO module constants (`services.QUERY_EMAIL_DELAY_HOURS`,
+  `check2_queries.MAX_CLARIFY`) imported LAZILY inside the default callables (org_config is in
+  apps.courses; a load-time import of apps.scholarship is circular). The constants stay put as the
+  one platform home each — inlining a literal in org_config splits the home the other way.
+- **Two sweeps carry per-org SQL windows** copying the pool spelling verbatim:
+  `services._query_email_due_window` and `nudge._nudge_due_window` — default arm
+  `~Q(owning_organisation_id__in=…) | Q(isnull)`, one OR-arm per configured org. **The filter must
+  stay in SQL in both**: the query sweep's loop calls `sync_check2_queries`, which CREATES items
+  (a too-early row would be asked early even with the send skipped), and the nudge cutoff is the
+  sweep's ONLY delay gate.
+- **⚠ THE `| Q(isnull=True)` ARM LOOKS REDUNDANT HERE AND STAYS.** The bite-check on it produced
+  SILENCE: Django's compiler already NULL-guards a negated `__in` on a LOCAL column
+  (`NOT (col IN … AND col IS NOT NULL)`). Kept because that is an ORM implementation detail, the
+  pool spelling is the house pattern, and the protection changes shape the moment a window crosses
+  a JOIN. The finding is in the retro — do not "simplify" the arm away, and do not expect a
+  behaviour test to pin it.
+- **`sponsor_comms.MAX_CARDS` IS DELETED, DELIBERATELY.** It was a second literal 5 beside
+  `SPONSOR_EMAIL_MAX_CARDS` — the drift waiting to happen. Both render sites (the pre-template
+  `emails._sponsor_email_max_cards(org)` and the template block
+  `sponsor_comms.student_cards_blocks(…, organisation)`) now read the ONE registry entry.
+- **The batch's organisation is derived only when it is SOLE** —
+  `sponsor_notifications._sole_batch_organisation`: one org id and no NULL, else None → platform
+  default. A mixed batch must NOT borrow one tenant's cap for another tenant's students; None is a
+  real answer (the `signup_programme_for` rule). Threaded
+  `send_student_alert(organisation=…)` through BOTH the legacy sender and the `deliver` context
+  (where `organisation` is internal context — it fills no placeholder).
+- **`check2_queries.max_clarify(application)` is the ONE reader of the cap** — it drives both the
+  sync's create loop AND `clarify_overflow_count`'s "N waiting" note, so the two can never
+  disagree. Doc requests + the one-tap confirms stay OUTSIDE the cap whatever the value, and
+  `reporting_date_unknown` keeps its carve-out.
+- **Both `--dry-run` commands filter through the SAME shared windows** — their own copies of the
+  platform cutoff would lie for a configured organisation. A dry-run flag is a read site too.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):** Organisation →
+Settings → Configuration now shows TWO groups — Sponsor page (2 rows) and Student communications
+(4 rows), every box blank with the platform default named underneath. Change nothing unless you
+want to. ms/ta strings are my first drafts.
+
+**▶ NEXT = the roadmap's remaining sprints, owner picks the order:** C reviewers & staff ·
+D interviews (⚠ `interviewSlots.ts` mirrors the booking-window constants in the FE — that sprint
+must serve them instead) · E documents · F agreements. Feature switches, per-GIFT values and
+platform internals stay OUT of this tab (binding rules; re-argue only with the owner).
+
+## Superseded — previous Next Sprint (as of 2026-09-07, after Org Config Sprint A — the Configuration tab)
 
 **SHIPPED AND DEPLOYED.** `main` at `85d079a6` (merge of `feat/org-config-tab`, worktree
 `.worktrees/org-config`; the concurrent gift-setup-flow work rode in via the pre-push merge).

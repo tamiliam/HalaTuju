@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Configuration tab learns student comms, and the sponsor email learns whose cap it wears - 2026-09-07
+
+**Org Config Sprint B** (roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md`). Worktree
+`.worktrees/org-config-b`, branch `feat/org-config-sprint-b`. **NO migration** — registry entries +
+wired read sites + rows on the existing tab, exactly the shape the roadmap promised.
+
+**What shipped:**
+- **Five new org-tunable settings** in `courses/org_config.py`, every default delegating to the
+  platform's live home (env-tunable settings, or the module constants imported lazily):
+  - `sponsor_email_max_cards` (sponsor page; default 5) — the setting Sprint A DEFERRED because
+    its render sites carried no organisation. The organisation is now threaded through both:
+    `sponsor_notifications._sole_batch_organisation` (a mixed/NULL batch = None = platform
+    default) → `sponsor_notify.send_student_alert` → the pre-template sender
+    (`emails._sponsor_email_max_cards(org)`) AND the template block
+    (`sponsor_comms.student_cards_blocks(…, organisation)`). **`sponsor_comms.MAX_CARDS` is
+    deleted** — one registry default now drives both render sites, which could otherwise drift.
+  - `query_email_delay_hours` (student comms; default 2) — `services.send_due_query_emails` filters
+    through a per-org SQL window (`_query_email_due_window`).
+  - `nudge_auto_delay_minutes` (30) + `nudge_cooldown_hours` (24) — `nudge.nudge_state`/`send_nudge`
+    read per application; the auto sweep filters through `nudge._nudge_due_window`.
+  - `max_clarify_open` (3) — `check2_queries.max_clarify(application)` drives both the sync cap and
+    the officer's "N waiting" overflow note. Doc requests + one-tap confirms stay OUTSIDE the cap.
+- **Both sweep windows copy the `pool._funded_grace_window` spelling** — default arm
+  `~Q(in) | Q(isnull)` + one OR-arm per configured organisation. (Finding: Django already
+  NULL-guards a negated `__in` on a LOCAL column, so the isnull arm is belt-and-braces here — kept
+  deliberately; see the retro.)
+- **Both dry-run commands** (`send_due_query_emails`, `send_application_nudges`) now filter through
+  the SAME shared windows — their own copies of the platform-only cutoff would have lied for any
+  configured organisation.
+- **FE:** the tab renders the new rows registry-driven; `GROUP_ORDER` gains `student_comms`; i18n
+  +15 keys × en/ms/ta (ms/ta first drafts).
+
+**Gates:** pytest full suite green (+11 in `test_org_config.py`, now 35 there); jest 1737 →
+**1738**; `next lint` 0 errors; tsc 24 (baseline); i18n 4775 → **4790 × 3**; `next build` clean;
+no migration. Four bite-checks landed (cap, both sweep windows, both sponsor render sites);
+retro `docs/retrospective-2026-09-07-org-config-sprint-b.md`.
+
 ## The organisation gets a Configuration tab, and the funded card learns to stay - 2026-09-07
 
 **Org Config Sprint A** (roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md`, owner-approved

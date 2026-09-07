@@ -16,7 +16,7 @@ from django.db import connection
 from django.utils import timezone
 
 from apps.scholarship.models import ScholarshipApplication
-from apps.scholarship.nudge import _auto_delay, send_application_nudges
+from apps.scholarship.nudge import _nudge_due_window, send_application_nudges
 
 
 class Command(BaseCommand):
@@ -32,11 +32,12 @@ class Command(BaseCommand):
         db = connection.settings_dict
         self.stdout.write(f"DB: {db.get('ENGINE')} -> {db.get('HOST') or db.get('NAME')}")
         if options['dry_run']:
-            cutoff = timezone.now() - _auto_delay()
+            # The SAME per-organisation window the real sweep uses — a dry run that re-spells
+            # the platform-only cutoff would lie for any organisation with its own delay.
             qs = (ScholarshipApplication.objects
-                  .filter(status='shortlisted', profile_completed_at__isnull=True,
-                          nudge_sent_at__isnull=True,
-                          consents__is_active=True, consents__granted_at__lte=cutoff)
+                  .filter(_nudge_due_window(timezone.now()),
+                          status='shortlisted', profile_completed_at__isnull=True,
+                          nudge_sent_at__isnull=True, consents__is_active=True)
                   .select_related('profile').distinct())
             for app in qs:
                 self.stdout.write(f"  [dry-run] would nudge app #{app.pk} -> {app.notify_email or '(no email)'}")

@@ -1543,13 +1543,17 @@ def _sponsor_card_html(card, lang, frontend, tax):
     )
 
 
-def _sponsor_email_max_cards():
+def _sponsor_email_max_cards(organisation=None):
     """A notification email shows at most this many students (a teaser — the 'See all
-    students' button leads to the full pool). Owner 2026-07-18: keep it to 5."""
-    return int(getattr(settings, 'SPONSOR_EMAIL_MAX_CARDS', 5) or 5)
+    students' button leads to the full pool). Organisation-tunable since Org Config Sprint B
+    (`sponsor_email_max_cards`; the registry default reads `SPONSOR_EMAIL_MAX_CARDS`, 5 —
+    owner 2026-07-18). None (or a mixed-organisation batch) = platform default."""
+    from apps.courses import org_config
+    return org_config.value(organisation, 'sponsor_email_max_cards')
 
 
-def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=''):
+def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name='',
+                         organisation=None):
     if not to_email or not cards:
         return False
     import html as _h
@@ -1559,7 +1563,7 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=
     tax = _tax_name_map()
     all_cards = list(cards)
     full_n = len(all_cards)                            # the whole batch — drives the subject/intro count
-    cards = all_cards[:_sponsor_email_max_cards()]     # cap the BODY to 5; the button shows the rest
+    cards = all_cards[:_sponsor_email_max_cards(organisation)]  # cap the BODY; the button shows the rest
     greeting = (_SPONSOR_GREETING[lang].format(name=name.strip())
                 if (name or '').strip() else _SPONSOR_GREETING_GENERIC[lang])
     intro = intro_map[lang]['one' if full_n == 1 else 'many']
@@ -1596,18 +1600,20 @@ def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map, name=
     )
 
 
-def send_sponsor_new_student_email(to_email, cards, lang='en', name=''):
+def send_sponsor_new_student_email(to_email, cards, lang='en', name='', organisation=None):
     """F3 real-time: alert a sponsor that newly-published student(s) are waiting.
-    ``cards`` = a list of SponsorPoolDetailSerializer dicts (allowlist-safe)."""
+    ``cards`` = a list of SponsorPoolDetailSerializer dicts (allowlist-safe).
+    ``organisation`` = the batch's sole organisation (picks its card cap), else None."""
     return _send_sponsor_notify(to_email, SPONSOR_NEW_SUBJECTS, cards, 'realtime', lang,
-                                _SPONSOR_NEW_INTRO, name=name)
+                                _SPONSOR_NEW_INTRO, name=name, organisation=organisation)
 
 
-def send_sponsor_digest_email(to_email, cards, lang='en', name=''):
+def send_sponsor_digest_email(to_email, cards, lang='en', name='', organisation=None):
     """F3 weekly: a digest of students published since the sponsor's last digest.
-    ``cards`` = a list of SponsorPoolDetailSerializer dicts (allowlist-safe)."""
+    ``cards`` = a list of SponsorPoolDetailSerializer dicts (allowlist-safe).
+    ``organisation`` = the batch's sole organisation (picks its card cap), else None."""
     return _send_sponsor_notify(to_email, SPONSOR_DIGEST_SUBJECTS, cards, 'weekly', lang,
-                                _SPONSOR_DIGEST_INTRO, name=name)
+                                _SPONSOR_DIGEST_INTRO, name=name, organisation=organisation)
 
 
 def _decline_html(text_body):

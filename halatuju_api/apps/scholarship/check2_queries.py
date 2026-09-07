@@ -178,8 +178,17 @@ _CLARIFY_ORDER = [
 ]
 
 # The student is not the reviewer: a long list suppresses responses. Cap to the few
-# most material (design §4).
+# most material (design §4). PLATFORM default — an organisation can tune its own cap via
+# org_config `max_clarify_open` (Org Config Sprint B), whose registry default reads THIS
+# constant; read the live cap through `max_clarify(application)`, never this name directly.
 MAX_CLARIFY = 3
+
+
+def max_clarify(application):
+    """The clarify cap for THIS application's organisation (blank org = platform default).
+    Doc requests and the one-tap confirms stay OUTSIDE the cap whatever the value."""
+    from apps.courses import org_config
+    return org_config.value(application.owning_organisation, 'max_clarify_open')
 
 # ── Layer 0 (2026-08-30): a Check-2 ask is governed by the catalogue item it chases ──
 #
@@ -408,7 +417,7 @@ def _clarify_params(application, code):
 
 
 def clarify_overflow_count(application):
-    """V3 (#7): how many clarify-able gaps are currently CROWDED OUT by the ``MAX_CLARIFY`` cap
+    """V3 (#7): how many clarify-able gaps are currently CROWDED OUT by the clarify cap
     — surfaced as a cockpit note ("N more queries waiting") so a capped-out higher-priority query
     is visible to the officer. 0 before submit, once querying is locked, or when nothing is
     crowded out. ``reporting_date_unknown`` is uncapped, so it never counts as crowded out."""
@@ -419,7 +428,7 @@ def clarify_overflow_count(application):
     existing = {r.code: r for r in
                 application.resolution_items.filter(source='check2', kind='clarify')}
     open_now = sum(1 for r in existing.values() if r.status == 'open')
-    slots = max(MAX_CLARIFY - open_now, 0)
+    slots = max(max_clarify(application) - open_now, 0)
     # "Waiting" = a clarify-able gap that could STILL be asked but is crowded out by the cap. A
     # clarify is once-ever: once an item exists (open OR already answered / waived) it is NEVER
     # re-raised (see sync_check2_queries: `code in existing → skip`). So only a gap with NO item yet
@@ -439,8 +448,8 @@ def sync_check2_queries(application):
       - an answered (resolved) item → left as-is (never re-asked)
 
     Gated on submission (``profile_completed_at``), same as the verdict queue. Returns
-    the open Check-2 items. The cap counts every clarify code ever raised, so the
-    student is never asked more than ``MAX_CLARIFY`` distinct questions in total.
+    the open Check-2 items. The clarify cap is the organisation's (``max_clarify`` —
+    org_config ``max_clarify_open``, platform default ``MAX_CLARIFY``).
     """
     if application.profile_completed_at is None:
         return ResolutionItem.objects.none()
@@ -514,12 +523,13 @@ def sync_check2_queries(application):
     # input of equal standing). No NEW clarify is raised outside the Completed stage. A
     # crowded-out higher-priority gap is surfaced to the officer via clarify_overflow_count().
     raised = sum(1 for r in existing.values() if r.kind == 'clarify' and r.status == 'open')
+    cap = max_clarify(application)
     if may_ask:
         for code in _CLARIFY_ORDER:
             if code not in gaps or code in existing:
                 continue
             uncapped = (code == 'reporting_date_unknown')
-            if not uncapped and raised >= MAX_CLARIFY:
+            if not uncapped and raised >= cap:
                 continue          # crowded out — the cockpit note flags it; keep scanning for the
                                   # uncapped reporting_date_unknown, which must never be crowded out
             try:

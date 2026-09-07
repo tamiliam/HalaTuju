@@ -31,7 +31,7 @@ import {
 } from '@/lib/admin-api'
 
 /** Groups render in this order; a group appears only when the registry has a row in it. */
-const GROUP_ORDER = ['sponsor_page']
+const GROUP_ORDER = ['sponsor_page', 'student_comms']
 
 type Outcome =
   | { kind: 'idle' }

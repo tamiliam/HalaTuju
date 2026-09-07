@@ -19,12 +19,21 @@ from django.conf import settings
 from django.utils import timezone
 
 
-def _auto_delay():
-    return timedelta(minutes=getattr(settings, 'NUDGE_AUTO_DELAY_MINUTES', 30))
+def _auto_delay(application=None):
+    """The one-time auto-nudge delay — organisation-tunable since Org Config Sprint B
+    (`nudge_auto_delay_minutes`; the registry default reads `NUDGE_AUTO_DELAY_MINUTES`, 30).
+    `application=None` (or a NULL-org application) means the platform default."""
+    from apps.courses import org_config
+    org = getattr(application, 'owning_organisation', None)
+    return timedelta(minutes=org_config.value(org, 'nudge_auto_delay_minutes'))
 
 
-def _cooldown():
-    return timedelta(hours=getattr(settings, 'NUDGE_COOLDOWN_HOURS', 24))
+def _cooldown(application=None):
+    """The manual re-nudge cooldown — organisation-tunable (`nudge_cooldown_hours`; the
+    registry default reads `NUDGE_COOLDOWN_HOURS`, 24)."""
+    from apps.courses import org_config
+    org = getattr(application, 'owning_organisation', None)
+    return timedelta(hours=org_config.value(org, 'nudge_cooldown_hours'))
 
 
 def _consent_granted_at(application):
@@ -73,10 +82,10 @@ def nudge_state(application, now=None):
         # Before the one-time AUTO nudge fires, the manual button is deliberately blocked (so an
         # org admin can't double-send just ahead of the automatic one). It unlocks once the auto
         # has gone out. available_at = when the auto is due (consent granted + delay).
-        auto_at = _consent_granted_at(application) + _auto_delay()
+        auto_at = _consent_granted_at(application) + _auto_delay(application)
         return {'applicable': True, 'sent_at': None, 'available': False,
                 'available_at': auto_at.isoformat()}
-    cd_end = sent + _cooldown()
+    cd_end = sent + _cooldown(application)
     available = now >= cd_end
     return {'applicable': True, 'sent_at': sent.isoformat(), 'available': available,
             'available_at': None if available else cd_end.isoformat()}
@@ -108,18 +117,42 @@ def send_nudge(application, *, manual, now=None):
     return bool(sent)
 
 
+def _nudge_due_window(now):
+    """The consented-long-enough Q for the auto-nudge sweep, PER ORGANISATION
+    (org_config `nudge_auto_delay_minutes`; Org Config Sprint B).
+
+    ⚠ THE DEFAULT ARM MUST BE SPELLED `~Q(id__in=…) | Q(isnull)` — SQL's `NOT (col IN …)` is
+    NULL-false, so a bare negation silently drops every NULL-org application the moment ANY
+    organisation configures a delay (the `pool._funded_grace_window` spelling, copied on
+    purpose). It must stay in SQL: this cutoff is the sweep's ONLY delay gate — `send_nudge`
+    re-checks applicability but never the delay."""
+    from django.db.models import Q
+    from apps.courses import org_config
+
+    custom = org_config.custom_values('nudge_auto_delay_minutes')
+    default_cutoff = now - timedelta(minutes=org_config.default('nudge_auto_delay_minutes'))
+    if not custom:
+        return Q(consents__granted_at__lte=default_cutoff)
+    window = (Q(consents__granted_at__lte=default_cutoff)
+              & (~Q(owning_organisation_id__in=list(custom))
+                 | Q(owning_organisation_id__isnull=True)))
+    for org_id, minutes in custom.items():
+        window |= Q(owning_organisation_id=org_id,
+                    consents__granted_at__lte=now - timedelta(minutes=minutes))
+    return window
+
+
 def send_application_nudges(now=None):
     """Cron sweep — the ONE-TIME automatic nudge. Every shortlisted, consented-but-unsubmitted
-    application whose consent was given at least the auto-delay ago AND which has never been
-    nudged gets exactly one email. Idempotent + burst-proof: ``nudge_sent_at`` is stamped on
-    send, so the same student is never swept twice. Returns ``{'nudged': n}``."""
+    application whose consent was given at least the organisation's auto-delay ago AND which has
+    never been nudged gets exactly one email. Idempotent + burst-proof: ``nudge_sent_at`` is
+    stamped on send, so the same student is never swept twice. Returns ``{'nudged': n}``."""
     from .models import ScholarshipApplication
     now = now or timezone.now()
-    cutoff = now - _auto_delay()
     qs = (ScholarshipApplication.objects
-          .filter(status='shortlisted', profile_completed_at__isnull=True,
-                  nudge_sent_at__isnull=True,
-                  consents__is_active=True, consents__granted_at__lte=cutoff)
+          .filter(_nudge_due_window(now),
+                  status='shortlisted', profile_completed_at__isnull=True,
+                  nudge_sent_at__isnull=True, consents__is_active=True)
           .select_related('profile').distinct())
     nudged = 0
     for app in qs:

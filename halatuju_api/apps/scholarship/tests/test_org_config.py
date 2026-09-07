@@ -330,3 +330,257 @@ class TestOrganisationConfigurationEndpoint(TestCase):
         ids = list(pool.display_pool_queryset(ScholarshipApplication)
                    .values_list('id', flat=True))
         self.assertIn(app.id, ids)
+
+
+# ═══ Sprint B — student comms + the deferred sponsor-email card cap ══════════
+
+
+class TestSprintBRegistry(TestCase):
+    """The five Sprint B keys exist, and every default DELEGATES to the platform's live home."""
+
+    SPRINT_B = {
+        'sponsor_email_max_cards': ('sponsor_page', 'cards'),
+        'query_email_delay_hours': ('student_comms', 'hours'),
+        'nudge_auto_delay_minutes': ('student_comms', 'minutes'),
+        'nudge_cooldown_hours': ('student_comms', 'hours'),
+        'max_clarify_open': ('student_comms', 'questions'),
+    }
+
+    def test_every_key_is_registered_with_its_group_and_unit(self):
+        for key, (group, unit) in self.SPRINT_B.items():
+            spec = org_config.SETTINGS[key]
+            self.assertEqual((spec['group'], spec['unit']), (group, unit), key)
+            # The full spec shape the endpoint payload builder relies on, for EVERY key.
+            self.assertEqual(set(spec), {'group', 'unit', 'min', 'max', 'default'})
+
+    @override_settings(SPONSOR_EMAIL_MAX_CARDS=7, NUDGE_AUTO_DELAY_MINUTES=45,
+                       NUDGE_COOLDOWN_HOURS=6)
+    def test_defaults_delegate_to_the_live_platform_homes(self):
+        # Settings-backed defaults follow an env change with no deploy…
+        self.assertEqual(org_config.default('sponsor_email_max_cards'), 7)
+        self.assertEqual(org_config.default('nudge_auto_delay_minutes'), 45)
+        self.assertEqual(org_config.default('nudge_cooldown_hours'), 6)
+        # …and constant-backed defaults read the module constant, the one platform home.
+        from apps.scholarship.check2_queries import MAX_CLARIFY
+        from apps.scholarship.services import QUERY_EMAIL_DELAY_HOURS
+        self.assertEqual(org_config.default('query_email_delay_hours'), QUERY_EMAIL_DELAY_HOURS)
+        self.assertEqual(org_config.default('max_clarify_open'), MAX_CLARIFY)
+
+
+def _org_cohort(code, org):
+    """A cohort carrying `owning_organisation` (the source the application copies from)."""
+    programme = None
+    if org is not None:
+        programme = Programme.objects.create(
+            code=f'{code}-gift', organisation=org, name_en=f'{code} Gift')
+    return ScholarshipCohort.objects.create(
+        code=code, name=f'B40 {code}', year=2026,
+        programme=programme, owning_organisation=org)
+
+
+def _configure(org, key, value):
+    row, _ = OrganisationConfiguration.objects.get_or_create(organisation=org)
+    row.values = {**(row.values or {}), key: value}
+    row.save()
+    org.refresh_from_db()
+
+
+class TestPerOrgClarifyCap(TestCase):
+    """`max_clarify_open` narrows (or widens) the Check-2 clarify cap PER ORGANISATION."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='cc-org', name='Clarify Org')
+        cls.cohort = _org_cohort('cc-a', cls.org)
+        cls.null_cohort = _org_cohort('cc-null', None)
+
+    def _gappy_app(self, cohort, suffix):
+        # The test_check2_queries "force all four gaps" shape: no course pick, legacy-only
+        # siblings, no funding device tick → more clarify-able gaps than any cap here.
+        from apps.courses.models import StudentProfile
+        from apps.scholarship.models import ApplicantDocument
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'occ-{suffix}', name='Priya Devi', nric='030101-14-1234',
+            household_income=1200, household_size=3)
+        app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='profile_complete',
+            profile_completed_at=timezone.now(),
+            aspirations='I want to teach.', field_of_study='',
+            siblings_in_tertiary=None, siblings_studying_count=2,
+            chosen_pathway='stpm', pathway_certainty='sure',
+            father_occupation='gov', mother_occupation='homemaker')
+        ApplicantDocument.objects.create(
+            application=app, doc_type='salary_slip', household_member='father',
+            storage_path='x/slip')
+        return app
+
+    def _open_clarifies(self, app):
+        return app.resolution_items.filter(source='check2', kind='clarify',
+                                           status='open').count()
+
+    def test_a_configured_cap_narrows_the_sync_and_feeds_the_overflow_note(self):
+        from apps.scholarship.check2_queries import clarify_overflow_count, sync_check2_queries
+        app = self._gappy_app(self.cohort, 'k1')
+        _configure(self.org, 'max_clarify_open', 1)
+        sync_check2_queries(app)
+        self.assertEqual(self._open_clarifies(app), 1)
+        # The crowded-out gaps surface to the officer against the SAME per-org cap.
+        self.assertGreater(clarify_overflow_count(app), 0)
+
+    def test_a_null_org_application_keeps_the_platform_cap(self):
+        # One tenant's cap must never ration a NULL-org (or neighbouring) application.
+        from apps.scholarship.check2_queries import MAX_CLARIFY, sync_check2_queries
+        _configure(self.org, 'max_clarify_open', 1)
+        other = self._gappy_app(self.null_cohort, 'k2')
+        sync_check2_queries(other)
+        self.assertEqual(self._open_clarifies(other), MAX_CLARIFY)
+
+
+class TestPerOrgNudgeDelays(TestCase):
+    """`nudge_auto_delay_minutes` + `nudge_cooldown_hours` govern the nudge PER ORGANISATION."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='nn-org', name='Nudge Org')
+        cls.cohort = _org_cohort('nn-a', cls.org)
+        cls.null_cohort = _org_cohort('nn-null', None)
+
+    def setUp(self):
+        from unittest import mock
+        p = mock.patch('apps.scholarship.nudge._has_blockers', return_value=False)
+        p.start(); self.addCleanup(p.stop)
+
+    def _consented_app(self, cohort, suffix, *, minutes_ago):
+        from apps.courses.models import StudentProfile
+        from apps.scholarship.models import Consent
+        profile = StudentProfile.objects.create(supabase_user_id=f'onn-{suffix}', name='Janu')
+        app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='shortlisted', notify_email='stu@x.com')
+        c = Consent.objects.create(application=app, version='t', granted_by='guardian',
+                                   guardian_name='Parent', is_active=True)
+        Consent.objects.filter(pk=c.pk).update(
+            granted_at=timezone.now() - timedelta(minutes=minutes_ago))
+        return app
+
+    def test_nudge_state_reports_the_organisation_s_auto_due_time(self):
+        from datetime import datetime
+        from apps.scholarship import nudge as nudge_mod
+        _configure(self.org, 'nudge_auto_delay_minutes', 60)
+        app = self._consented_app(self.cohort, 'd1', minutes_ago=5)
+        st = nudge_mod.nudge_state(app)
+        due = datetime.fromisoformat(st['available_at'])
+        granted = app.consents.get().granted_at
+        self.assertAlmostEqual((due - granted).total_seconds(), 3600, delta=5)
+
+    def test_the_cooldown_follows_the_organisation(self):
+        from apps.scholarship import nudge as nudge_mod
+        _configure(self.org, 'nudge_cooldown_hours', 1)
+        app = self._consented_app(self.cohort, 'd2', minutes_ago=300)
+        app.nudge_sent_at = timezone.now() - timedelta(hours=2)
+        app.save(update_fields=['nudge_sent_at'])
+        self.assertTrue(nudge_mod.nudge_state(app)['available'])       # 2h > the org's 1h
+        other = self._consented_app(self.null_cohort, 'd3', minutes_ago=300)
+        other.nudge_sent_at = timezone.now() - timedelta(hours=2)
+        other.save(update_fields=['nudge_sent_at'])
+        self.assertFalse(nudge_mod.nudge_state(other)['available'])    # platform 24h holds
+
+    def test_the_auto_sweep_honours_each_organisation_and_the_null_org_trap(self):
+        # Configured org waits 120 min; the platform default (30) sweeps everyone else —
+        # INCLUDING a NULL-org application (the `~Q(in) | Q(isnull)` spelling, pinned).
+        from apps.scholarship import nudge as nudge_mod
+        _configure(self.org, 'nudge_auto_delay_minutes', 120)
+        waiting = self._consented_app(self.cohort, 's1', minutes_ago=45)
+        nullorg = self._consented_app(self.null_cohort, 's2', minutes_ago=45)
+        nudge_mod.send_application_nudges()
+        waiting.refresh_from_db(); nullorg.refresh_from_db()
+        self.assertIsNone(waiting.nudge_sent_at)       # the org's 120-min delay holds
+        self.assertIsNotNone(nullorg.nudge_sent_at)    # NULL org = platform default, never dropped
+
+
+@override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
+class TestPerOrgQueryEmailDelay(TestCase):
+    """`query_email_delay_hours` holds the "a few questions" email PER ORGANISATION."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='qq-org', name='Query Org')
+        cls.cohort = _org_cohort('qq-a', cls.org)
+        cls.null_cohort = _org_cohort('qq-null', None)
+
+    def _submitted_app(self, cohort, suffix, *, hours_ago):
+        # The gappy shape guarantees ≥1 open clarify, so the sweep has something to announce.
+        from apps.courses.models import StudentProfile
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'oqq-{suffix}', name='Priya Devi',
+            household_income=1200, household_size=3)
+        return ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='profile_complete',
+            notify_email='stu@x.com',
+            profile_completed_at=timezone.now() - timedelta(hours=hours_ago),
+            aspirations='I want to teach.', field_of_study='',
+            siblings_in_tertiary=0, siblings_in_school=0,
+            chosen_pathway='stpm', pathway_certainty='sure',
+            father_occupation='gov', mother_occupation='homemaker')
+
+    def test_the_sweep_honours_each_organisation_and_the_null_org_trap(self):
+        from apps.scholarship import services
+        _configure(self.org, 'query_email_delay_hours', 8)
+        held = self._submitted_app(self.cohort, 'q1', hours_ago=3)     # 3h < the org's 8h
+        due = self._submitted_app(self.null_cohort, 'q2', hours_ago=3)  # 3h > the platform 2h
+        services.send_due_query_emails()
+        held.refresh_from_db(); due.refresh_from_db()
+        self.assertIsNone(held.query_raised_notified_at)
+        self.assertIsNotNone(due.query_raised_notified_at)             # NULL org never dropped
+        # Once the org's own delay HAS passed, the held student is announced too.
+        ScholarshipApplication.objects.filter(pk=held.pk).update(
+            profile_completed_at=timezone.now() - timedelta(hours=9))
+        held.refresh_from_db()
+        services.send_due_query_emails()
+        held.refresh_from_db()
+        self.assertIsNotNone(held.query_raised_notified_at)
+
+
+class TestPerOrgSponsorEmailCap(TestCase):
+    """`sponsor_email_max_cards` — ONE value drives BOTH sponsor-email render sites."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='sc-org', name='Cap Org')
+
+    @staticmethod
+    def _cards(n):
+        return [{'id': i, 'ref': f'S-{i:06d}', 'course': 'Course', 'amount': '3000'}
+                for i in range(n)]
+
+    def test_the_template_block_caps_per_organisation_and_says_so(self):
+        from apps.scholarship import sponsor_comms
+        _configure(self.org, 'sponsor_email_max_cards', 2)
+        _html, text = sponsor_comms.student_cards_blocks(self._cards(5), organisation=self.org)
+        self.assertIn('and 3 more', text)
+        # No organisation in hand → the platform default (5) — nothing dropped here.
+        _html, text = sponsor_comms.student_cards_blocks(self._cards(5))
+        self.assertNotIn('more waiting', text)
+
+    def test_the_pre_template_sender_caps_per_organisation(self):
+        from django.core import mail
+        from apps.scholarship.emails import send_sponsor_new_student_email
+        _configure(self.org, 'sponsor_email_max_cards', 2)
+        send_sponsor_new_student_email('s@x.com', self._cards(4), lang='en',
+                                       organisation=self.org)
+        body = mail.outbox[-1].body
+        self.assertIn('S-000001', body)
+        self.assertNotIn('S-000002', body)     # the third card is beyond the org's cap of 2
+
+    def test_the_batch_organisation_is_derived_only_when_it_is_sole(self):
+        from apps.scholarship.sponsor_notifications import _sole_batch_organisation
+
+        class _App:
+            def __init__(self, org):
+                self.owning_organisation = org
+                self.owning_organisation_id = getattr(org, 'id', None)
+
+        other = PartnerOrganisation.objects.create(code='sc-org-2', name='Cap Org 2')
+        self.assertEqual(_sole_batch_organisation([_App(self.org), _App(self.org)]), self.org)
+        self.assertIsNone(_sole_batch_organisation([_App(self.org), _App(other)]))
+        # A NULL-org application makes the batch UNKNOWN, never "the other apps' org".
+        self.assertIsNone(_sole_batch_organisation([_App(self.org), _App(None)]))

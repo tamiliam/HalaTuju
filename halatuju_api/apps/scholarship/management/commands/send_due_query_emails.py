@@ -1,17 +1,16 @@
 """
 Check 2 STEP 2 — send the delayed "we have a few questions" email.
 
-~2 hours after a student submits (``QUERY_EMAIL_DELAY_HOURS``), email them once that
-clarify questions are waiting in their Action Centre — only if questions are actually
-open. The delay makes it read like a human reviewed the application, not a bot.
+The organisation's query-email delay after a student submits (org_config
+``query_email_delay_hours``; platform default ``QUERY_EMAIL_DELAY_HOURS`` = 2h), email them
+once that clarify questions are waiting in their Action Centre — only if questions are
+actually open. The delay makes it read like a human reviewed the application, not a bot.
 
 Schedule this FREQUENTLY (e.g. hourly via Cloud Scheduler -> the cron endpoint) so the
-~2-hour target is honoured.
+delay target is honoured.
 
     python manage.py send_due_query_emails [--dry-run]
 """
-from datetime import timedelta
-
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.utils import timezone
@@ -19,7 +18,7 @@ from django.utils import timezone
 from apps.scholarship.check2_queries import sync_check2_queries
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.services import (
-    QUERY_EMAIL_DELAY_HOURS, QUERY_SLA_ACTIVE_STATUSES, send_due_query_emails,
+    QUERY_SLA_ACTIVE_STATUSES, _query_email_due_window, send_due_query_emails,
 )
 
 
@@ -37,11 +36,13 @@ class Command(BaseCommand):
         self.stdout.write(f"DB: {db.get('ENGINE')} -> {db.get('HOST') or db.get('NAME')}")
 
         if options['dry_run']:
+            # The SAME per-organisation window the real sweep uses — a dry run that re-spells
+            # the platform-only cutoff would lie for any organisation with its own delay.
             now = timezone.now()
-            cutoff = now - timedelta(hours=QUERY_EMAIL_DELAY_HOURS)
             qs = (ScholarshipApplication.objects
-                  .filter(status__in=QUERY_SLA_ACTIVE_STATUSES,
-                          profile_completed_at__isnull=False, profile_completed_at__lte=cutoff,
+                  .filter(_query_email_due_window(now),
+                          status__in=QUERY_SLA_ACTIVE_STATUSES,
+                          profile_completed_at__isnull=False,
                           query_raised_notified_at__isnull=True)
                   .select_related('cohort', 'profile'))
             n = 0

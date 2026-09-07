@@ -62,8 +62,14 @@ STRUCTURAL_TOKENS = ('student_cards',)
 
 # How many cards a body renders before it says so. The pre-template email capped at five
 # SILENTLY; a cap that does not announce itself reads as "that is everyone" (the chase table
-# learned this the same way).
-MAX_CARDS = 5
+# learned this the same way). Since Org Config Sprint B the number is organisation-tunable
+# (`sponsor_email_max_cards`), and ONE registry default drives BOTH render sites — this
+# module used to carry its own literal 5 beside `emails._sponsor_email_max_cards`, which is
+# exactly how the two would have drifted.
+def max_cards(organisation=None):
+    """The card cap for one organisation's batch; None (or a mixed batch) = platform default."""
+    from apps.courses import org_config
+    return org_config.value(organisation, 'sponsor_email_max_cards')
 
 NO_NAME_GREETING = 'there'
 
@@ -150,7 +156,7 @@ def _money(value):
     return str(Decimal(str(value)).quantize(Decimal('0.01')))
 
 
-def student_cards_blocks(cards, lang='en'):
+def student_cards_blocks(cards, lang='en', organisation=None):
     """The `{student_cards}` block as `(html, text)`, reusing the SAME card builders the
     pre-template emails used — the artwork thumbnail, programme, institution, facts and blurb.
 
@@ -158,12 +164,13 @@ def student_cards_blocks(cards, lang='en'):
     import would tie this pure module to it (and invite a cycle the first time `emails` wants
     something from here).
 
-    Capped at `MAX_CARDS`, and the cap SAYS SO. The old email truncated at five in silence.
+    Capped at `max_cards(organisation)`, and the cap SAYS SO. The old email truncated in silence.
     """
     from .emails import _sponsor_card_html, _sponsor_card_text, _tax_name_map, _P
 
+    cap = max_cards(organisation)
     rows = list(cards or [])
-    shown, dropped = rows[:MAX_CARDS], max(0, len(rows) - MAX_CARDS)
+    shown, dropped = rows[:cap], max(0, len(rows) - cap)
     frontend, tax = _P.frontend_url, _tax_name_map()
 
     html = ''.join(_sponsor_card_html(c, lang, frontend, tax) for c in shown)
@@ -180,7 +187,11 @@ def _blocks_for(context):
     """`{token: (html, text)}` for the structural tokens this context supplies."""
     if 'cards' not in context:
         return {}
-    return {'student_cards': student_cards_blocks(context['cards'], context.get('lang', 'en'))}
+    # `organisation` is INTERNAL context (the batch's sole organisation, or None) — it fills no
+    # placeholder; it only picks the org's card cap.
+    return {'student_cards': student_cards_blocks(
+        context['cards'], context.get('lang', 'en'),
+        organisation=context.get('organisation'))}
 
 
 def _scalars(context):

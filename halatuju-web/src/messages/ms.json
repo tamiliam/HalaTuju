@@ -5724,16 +5724,41 @@
         "loadError": "Konfigurasi tidak dapat dimuatkan. Sila muat semula.",
         "organisationRequired": "Pilih organisasi.",
         "group": {
-          "sponsor_page": "Halaman penaja"
+          "sponsor_page": "Halaman penaja",
+          "student_comms": "Komunikasi pelajar"
         },
         "setting": {
           "pool_funded_grace_days": {
             "label": "Kad pelajar yang dibiayai — bilangan hari dipaparkan",
             "desc": "Berapa lama kad pelajar yang baru dibiayai kekal pada halaman semakan penaja selepas dibiayai."
+          },
+          "sponsor_email_max_cards": {
+            "label": "E-mel penaja — bilangan kad pelajar dipaparkan",
+            "desc": "Berapa banyak kad pelajar yang dipaparkan dalam e-mel pemberitahuan penaja sebelum ia menyatakan \"dan N lagi\". Butang dalam e-mel sentiasa membawa ke senarai penuh."
+          },
+          "query_email_delay_hours": {
+            "label": "E-mel soalan — jam ditangguhkan",
+            "desc": "Berapa lama selepas pelajar menghantar permohonan sebelum e-mel \"kami ada beberapa soalan\" dihantar. Penangguhan ini menjadikannya seperti semakan manusia, bukan balasan segera."
+          },
+          "nudge_auto_delay_minutes": {
+            "label": "Peringatan automatik — minit selepas keizinan",
+            "desc": "Berapa lama selepas keizinan penjaga sebelum e-mel sekali sahaja \"anda belum menghantar\" dihantar kepada pelajar yang belum menekan Hantar."
+          },
+          "nudge_cooldown_hours": {
+            "label": "Peringatan manual — jam bertenang",
+            "desc": "Berapa lama kakitangan perlu menunggu selepas mana-mana peringatan sebelum butang peringatan manual aktif semula."
+          },
+          "max_clarify_open": {
+            "label": "Soalan penjelasan — terbuka serentak",
+            "desc": "Berapa banyak soalan penjelasan yang boleh terbuka serentak untuk seorang pelajar. Permintaan dokumen dan pengesahan satu ketukan tidak dikira."
           }
         },
         "unit": {
-          "days": "hari"
+          "days": "hari",
+          "hours": "jam",
+          "minutes": "minit",
+          "cards": "kad",
+          "questions": "soalan"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
         "rowInvalid": "Masukkan nombor bulat antara {min} dan {max}, atau biarkan kosong untuk lalai.",

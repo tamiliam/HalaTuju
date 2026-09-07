@@ -41,6 +41,34 @@ def _default_pool_funded_grace_days():
     return hours / 24.0
 
 
+def _default_sponsor_email_max_cards():
+    # The one platform home has always been the env-tunable `SPONSOR_EMAIL_MAX_CARDS` (owner
+    # 2026-07-18: keep it to 5). `sponsor_comms` used to carry its OWN literal 5 beside it;
+    # Sprint B collapsed both render sites onto this single default so they can never disagree.
+    return int(getattr(settings, 'SPONSOR_EMAIL_MAX_CARDS', 5) or 5)
+
+
+def _default_query_email_delay_hours():
+    # The platform value is a module constant, not a Django setting — imported lazily because
+    # `services` lives in apps.scholarship and importing it at module load would be circular.
+    from apps.scholarship.services import QUERY_EMAIL_DELAY_HOURS
+    return QUERY_EMAIL_DELAY_HOURS
+
+
+def _default_nudge_auto_delay_minutes():
+    return int(getattr(settings, 'NUDGE_AUTO_DELAY_MINUTES', 30))
+
+
+def _default_nudge_cooldown_hours():
+    return int(getattr(settings, 'NUDGE_COOLDOWN_HOURS', 24))
+
+
+def _default_max_clarify_open():
+    # Module constant (design §4: a long list suppresses student responses) — lazy import, as above.
+    from apps.scholarship.check2_queries import MAX_CLARIFY
+    return MAX_CLARIFY
+
+
 # key → {group, unit, min, max, default}. `default` is a CALLABLE, evaluated per read, because
 # several platform defaults are env vars that can change without a deploy.
 SETTINGS = {
@@ -53,6 +81,55 @@ SETTINGS = {
         'min': 1,
         'max': 90,
         'default': _default_pool_funded_grace_days,
+    },
+    # How many student cards a sponsor notification email shows before "and N more" (a teaser —
+    # the button leads to the full pool). ONE value drives BOTH render sites: the pre-template
+    # sender (`emails._send_sponsor_notify`) and the template block
+    # (`sponsor_comms.student_cards_blocks`). Deferred out of Sprint A because neither carried
+    # an organisation; Sprint B threads it through the batch's applications.
+    'sponsor_email_max_cards': {
+        'group': 'sponsor_page',
+        'unit': 'cards',
+        'min': 1,
+        'max': 20,
+        'default': _default_sponsor_email_max_cards,
+    },
+    # ── student comms (Sprint B) ──
+    # How long after submission the "we have a few questions" email is held, so it reads as a
+    # human review rather than an instant bot reply (`services.send_due_query_emails`).
+    'query_email_delay_hours': {
+        'group': 'student_comms',
+        'unit': 'hours',
+        'min': 1,
+        'max': 168,
+        'default': _default_query_email_delay_hours,
+    },
+    # The one-time automatic "you haven't submitted yet" nudge fires this long after consent
+    # (`nudge._auto_delay` — the highest-chance moment is while the student is still at their
+    # device, hence a minutes-scale value).
+    'nudge_auto_delay_minutes': {
+        'group': 'student_comms',
+        'unit': 'minutes',
+        'min': 5,
+        'max': 1440,
+        'default': _default_nudge_auto_delay_minutes,
+    },
+    # How long an org admin's MANUAL re-nudge is rate-limited after any nudge (`nudge._cooldown`).
+    'nudge_cooldown_hours': {
+        'group': 'student_comms',
+        'unit': 'hours',
+        'min': 1,
+        'max': 168,
+        'default': _default_nudge_cooldown_hours,
+    },
+    # How many Check-2 clarify questions may be OPEN at once (`check2_queries`). Doc requests and
+    # the one-tap confirms sit OUTSIDE this cap by design — only typed-answer questions count.
+    'max_clarify_open': {
+        'group': 'student_comms',
+        'unit': 'questions',
+        'min': 1,
+        'max': 10,
+        'default': _default_max_clarify_open,
     },
 }
 

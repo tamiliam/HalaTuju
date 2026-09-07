@@ -5724,16 +5724,41 @@
         "loadError": "The configuration could not be loaded. Please refresh.",
         "organisationRequired": "Choose an organisation.",
         "group": {
-          "sponsor_page": "Sponsor page"
+          "sponsor_page": "Sponsor page",
+          "student_comms": "Student communications"
         },
         "setting": {
           "pool_funded_grace_days": {
             "label": "Funded student card — days shown",
             "desc": "How long a newly funded student's card stays on the sponsor browse page after being funded."
+          },
+          "sponsor_email_max_cards": {
+            "label": "Sponsor email — student cards shown",
+            "desc": "How many student cards a sponsor notification email shows before it says \"and N more\". The button in the email always leads to the full list."
+          },
+          "query_email_delay_hours": {
+            "label": "Questions email — hours held",
+            "desc": "How long after a student submits before the \"we have a few questions\" email goes out. The delay makes it read as a human review, not an instant reply."
+          },
+          "nudge_auto_delay_minutes": {
+            "label": "Auto nudge — minutes after consent",
+            "desc": "How long after a guardian's consent before the one-time \"you haven't submitted yet\" email goes to a student who never pressed Submit."
+          },
+          "nudge_cooldown_hours": {
+            "label": "Manual nudge — cooldown hours",
+            "desc": "How long staff must wait after any nudge before the cockpit's manual re-nudge button wakes again."
+          },
+          "max_clarify_open": {
+            "label": "Clarify questions — open at once",
+            "desc": "How many clarify questions a student can have open at the same time. Document requests and one-tap confirmations are never counted."
           }
         },
         "unit": {
-          "days": "days"
+          "days": "days",
+          "hours": "hours",
+          "minutes": "minutes",
+          "cards": "cards",
+          "questions": "questions"
         },
         "defaultNote": "Platform default: {n} {unit}",
         "rowInvalid": "Enter a whole number between {min} and {max}, or leave blank for the default.",

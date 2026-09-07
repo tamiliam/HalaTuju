@@ -36,19 +36,35 @@ const mockApi = api as jest.Mocked<typeof api>
 
 const KEY = 'pool_funded_grace_days'
 
+// The Sprint B registry rows, as the server payload carries them. They ride in every fixture so
+// the tri-language walk below covers them and the group ordering is exercised as rendered.
+const SPRINT_B: api.OrganisationConfigSetting[] = [
+  { key: 'sponsor_email_max_cards', group: 'sponsor_page', unit: 'cards',
+    min: 1, max: 20, value: null, default: 5 },
+  { key: 'query_email_delay_hours', group: 'student_comms', unit: 'hours',
+    min: 1, max: 168, value: null, default: 2 },
+  { key: 'nudge_auto_delay_minutes', group: 'student_comms', unit: 'minutes',
+    min: 5, max: 1440, value: null, default: 30 },
+  { key: 'nudge_cooldown_hours', group: 'student_comms', unit: 'hours',
+    min: 1, max: 168, value: null, default: 24 },
+  { key: 'max_clarify_open', group: 'student_comms', unit: 'questions',
+    min: 1, max: 10, value: null, default: 3 },
+]
+
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {
   return {
     organisation: { code: 'alpha', name: 'Alpha Foundation' },
     settings: [{
       key: KEY, group: 'sponsor_page', unit: 'days', min: 1, max: 90,
       value: null, default: 2, ...over,
-    }],
+    }, ...SPRINT_B],
   }
 }
 
 async function mount() {
   render(<OrganisationConfigurationTab />)
-  await waitFor(() => expect(screen.getByTestId('config-rows')).toBeTruthy())
+  // One `config-rows` list per GROUP — two groups since Sprint B, so getAll.
+  await waitFor(() => expect(screen.getAllByTestId('config-rows').length).toBeGreaterThan(0))
 }
 
 const box = () => screen.getByTestId(`config-${KEY}`) as HTMLInputElement
@@ -69,8 +85,11 @@ describe('a blank box means the platform default', () => {
     await mount()
     expect(box().value).toBe('')
     expect(box().placeholder).toBe('2')
-    // The note interpolates {n} and {unit} — the harness renders vars after a pipe.
-    expect(screen.getByText(/admin\.orgSettings\.config\.defaultNote\|2,/)).toBeTruthy()
+    // The note interpolates {n} and {unit} — the harness renders vars after a pipe. Pinned to
+    // the DAYS unit: the query-delay row also defaults to 2, in hours.
+    expect(screen.getByText(
+      /admin\.orgSettings\.config\.defaultNote\|2,admin\.orgSettings\.config\.unit\.days/,
+    )).toBeTruthy()
   })
 
   it('renders the stored value when the organisation has chosen one', async () => {
@@ -150,6 +169,20 @@ describe('saving', () => {
   })
 })
 
+describe('the Sprint B rows render, grouped and ordered', () => {
+  it('draws every new box, with Student communications after Sponsor page', async () => {
+    await mount()
+    for (const s of SPRINT_B) {
+      expect(screen.getByTestId(`config-${s.key}`)).toBeTruthy()
+    }
+    const text = document.body.textContent || ''
+    const sponsor = text.indexOf('admin.orgSettings.config.group.sponsor_page')
+    const comms = text.indexOf('admin.orgSettings.config.group.student_comms')
+    expect(sponsor).toBeGreaterThanOrEqual(0)
+    expect(comms).toBeGreaterThan(sponsor)
+  })
+})
+
 describe('a super with several tenants', () => {
   it('is asked to choose, and choosing re-loads for that organisation', async () => {
     const err = Object.assign(new Error('choose'), {
@@ -161,7 +194,7 @@ describe('a super with several tenants', () => {
     render(<OrganisationConfigurationTab />)
     await waitFor(() => expect(screen.getByText('beta')).toBeTruthy())
     fireEvent.click(screen.getByText('beta'))
-    await waitFor(() => expect(screen.getByTestId('config-rows')).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByTestId('config-rows').length).toBeGreaterThan(0))
     expect(mockApi.getOrganisationConfiguration).toHaveBeenLastCalledWith('beta', { token: 'tok' })
   })
 })

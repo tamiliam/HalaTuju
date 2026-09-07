@@ -194,11 +194,15 @@ def send_referral_invite(referral, *, inviter_name='', invite_link='', lang='en'
     }, to_email=referral.invitee_email)
 
 
-def send_student_alert(sponsor, cards, *, weekly=False, lang='en'):
+def send_student_alert(sponsor, cards, *, weekly=False, lang='en', organisation=None):
     """The new-student alert (`new_students`) or the Monday digest (`weekly_digest`).
 
     Uses the pre-S3 hardcoded email until the PLATFORM gate opens — see the note above. After
     that the template governs, so switching it off really does stop it.
+
+    `organisation` = the batch's SOLE organisation (Org Config Sprint B: it picks that org's
+    `sponsor_email_max_cards` card cap). A mixed or unknown batch passes None and follows the
+    platform default — a guess would apply one tenant's cap to another tenant's students.
     """
     if not cards:
         return False
@@ -209,9 +213,11 @@ def send_student_alert(sponsor, cards, *, weekly=False, lang='en'):
         # The legacy pre-S3 path bypasses `deliver`, so it needs the context of its own —
         # 7 `send_sponsor_digest_email` rows are on the platform row from exactly here.
         with usage.usage_context(organisation_id=_sponsor_org_id(sponsor)):
-            return bool(sender(sponsor.email, cards, name=sponsor.name))
+            return bool(sender(sponsor.email, cards, name=sponsor.name,
+                               organisation=organisation))
     return _safe(kind, sponsor, {
         'cards': list(cards),
         'count': len(cards),
         'lang': lang,
+        'organisation': organisation,   # internal — fills no placeholder, picks the card cap
     })

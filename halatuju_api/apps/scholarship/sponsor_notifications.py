@@ -41,6 +41,19 @@ def _serialise_cards(apps, sponsor):
     ).data
 
 
+def _sole_batch_organisation(apps):
+    """The ONE organisation every application in this batch belongs to, or None.
+
+    Org Config Sprint B: the batch's organisation picks its `sponsor_email_max_cards` card
+    cap. A mixed batch (or one carrying a NULL-org application) answers None — the platform
+    default — because applying one tenant's cap to another tenant's students would be a
+    guess, and None is a real answer (the `signup_programme_for` rule)."""
+    org_ids = {a.owning_organisation_id for a in apps}
+    if len(org_ids) == 1 and None not in org_ids:
+        return apps[0].owning_organisation
+    return None
+
+
 def send_sponsor_realtime():
     """Alert every approved ``realtime`` sponsor about students published since the
     last run (pool-eligible + not yet real-time-notified). One batched email per
@@ -68,7 +81,9 @@ def send_sponsor_realtime():
         theirs = [a for a in new_apps if a.programme_id in set(pool.approved_programme_ids(s))]
         if not theirs:
             continue
-        if sponsor_notify.send_student_alert(s, _serialise_cards(theirs, s)):
+        if sponsor_notify.send_student_alert(
+                s, _serialise_cards(theirs, s),
+                organisation=_sole_batch_organisation(theirs)):
             sent += 1
 
     # Stamp the whole batch as real-time-notified (whether or not any sponsor is
@@ -104,7 +119,9 @@ def send_sponsor_digests():
         apps = list(qs)
         if not apps:
             continue
-        sponsor_notify.send_student_alert(s, _serialise_cards(apps, s), weekly=True)
+        sponsor_notify.send_student_alert(
+            s, _serialise_cards(apps, s), weekly=True,
+            organisation=_sole_batch_organisation(apps))
         sent += 1
         # Advance the clock whether or not the best-effort send succeeded, so the
         # sponsor is never sent the same digest twice (the students remain browsable
