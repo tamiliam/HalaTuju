@@ -3489,7 +3489,7 @@
         "giftError": {
           "programme_required": "Choose a gift first.",
           "bad_status": "That is not a status we can set.",
-          "account_not_approved": "Approve this benefactor\u2019s account first. An account that is still waiting cannot be accepted into a gift.",
+          "account_not_approved": "Approve this benefactor’s account first. An account that is still waiting cannot be accepted into a gift.",
           "not_found": "That gift is not one of yours.",
           "unknown": "That did not go through. Nothing was changed."
         },
@@ -5666,7 +5666,7 @@
       "deleteTitle": "Delete {name}?",
       "deleteBody": "This removes the gift programme and the settings that belong to it — its rules and what it asks students for. It cannot be undone.",
       "deleteKeeps": "Invitations, sources and reviewers you had narrowed to this gift are kept — they go back to covering every gift.",
-      "deleteConfirmLabel": "Type {code} to confirm",
+      "deleteConfirmLabel": "Type {phrase} to confirm",
       "deleteCta": "Delete this gift programme"
     },
     "years": {

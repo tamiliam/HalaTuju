@@ -186,17 +186,34 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                 className="text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
                 {t(p.is_active ? 'admin.programmes.switchOff' : 'admin.programmes.switchOn')}
               </button>
-              {/* ⚠ ALWAYS OFFERED, NEVER HIDDEN ON A GUESS. Whether a gift can be deleted is the
-                  SERVER's answer — it counts the years, applications, benefactors, money and
-                  payment runs holding it. Hiding the control for a gift that has any of those
-                  would explain nothing; the refusal names what is holding it, which is the thing
-                  the reader actually needs. Same rule as Switch off, one row up. */}
-              <button type="button" disabled={busy} data-testid={`delete-${p.code}`}
+              {/* ⚠ DISABLED WHEN THE SERVER SAYS IT IS HELD — SHOWN, NEVER HIDDEN (owner,
+                  2026-09-07: *"I feel it should be prevented at the button stage, and not wait
+                  until typed to check."*). They were afraid to test Delete on the live flagship,
+                  and that fear is the finding: a destructive control you cannot tell is safe to
+                  press is one people avoid, so they cannot tidy up either.
+                  ⚠ THE ANSWER IS `delete_blocked_by` FROM THE PAYLOAD, never derived from the two
+                  counts on this card — those know nothing about benefactors, money or payment
+                  runs. Hidden would explain nothing; disabled-with-the-reason explains everything.
+                  The server still refuses, and from the same function that filled this field. */}
+              <button type="button" data-testid={`delete-${p.code}`}
+                disabled={busy || p.delete_blocked_by !== null}
+                title={p.delete_blocked_by
+                  ? t(`admin.programmes.error.${errKey(p.delete_blocked_by)}`) : undefined}
                 onClick={() => { setError(''); setConfirmText(''); setDeleting(p) }}
-                className="text-sm font-medium text-critical-600 hover:underline disabled:opacity-50">
+                className="text-sm font-medium text-critical-600 hover:underline disabled:cursor-not-allowed disabled:text-ground-400 disabled:no-underline">
                 {t('admin.programmes.delete')}
               </button>
             </div>
+            {/* ⚠ THE REASON IS VISIBLE TEXT, not only the button's `title`. A tooltip needs a hover
+                that a touch screen has no way to give, so on a phone the control would simply be
+                dead with no explanation — which is the thing being fixed, not a smaller version
+                of it. */}
+            {p.delete_blocked_by && (
+              <p className="mt-2 text-right text-xs text-ground-500"
+                data-testid={`delete-blocked-${p.code}`}>
+                {t(`admin.programmes.error.${errKey(p.delete_blocked_by)}`)}
+              </p>
+            )}
           </div>
         ))}
         {!loading && rows.length === 0 && (
@@ -225,8 +242,11 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
               <InfoBox kind="warning">{t('admin.programmes.deleteKeeps')}</InfoBox>
             </div>
 
+            {/* ⚠ THE PHRASE CARRIES THE VERB — `delete <code>`, not the bare code (owner,
+                2026-09-07). The code is printed on the card AND in this very label, so typing it
+                alone is closer to copying what is on screen than to stating an intention. */}
             <label htmlFor="p-confirm" className="mt-4 block text-sm font-medium text-ground-700">
-              {t('admin.programmes.deleteConfirmLabel', { code: deleting.code })}
+              {t('admin.programmes.deleteConfirmLabel', { phrase: `delete ${deleting.code}` })}
             </label>
             <input id="p-confirm" value={confirmText} autoComplete="off"
               onChange={(e) => setConfirmText(e.target.value)}
@@ -238,12 +258,14 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                 {t('common.cancel')}
               </button>
               <button type="button" data-testid="delete-confirm"
-                // Trimmed + lower-cased to match the server's own comparison, so the button is
-                // never asleep on a difference the server would have accepted.
-                disabled={busy || confirmText.trim().toLowerCase() !== deleting.code.toLowerCase()}
+                // Whitespace-collapsed + lower-cased to match the server's own comparison exactly,
+                // so this button is never asleep on a difference the server would have accepted.
+                disabled={busy || confirmText.trim().replace(/\s+/g, ' ').toLowerCase()
+                  !== `delete ${deleting.code}`.toLowerCase()}
                 onClick={async () => {
                   const ok = await run(() => deleteAdminProgramme(
-                    deleting.id, confirmText.trim().toLowerCase(), { token: token! }))
+                    deleting.id, confirmText.trim().replace(/\s+/g, ' ').toLowerCase(),
+                    { token: token! }))
                   if (ok) {
                     setDeleting(null); setConfirmText('')
                     // The shell's own list must forget it too, or the breadcrumb keeps offering a

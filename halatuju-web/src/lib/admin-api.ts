@@ -3071,6 +3071,20 @@ export interface AdminProgramme {
   applications: number
   /** The year currently taking applications, or null. A PROGRAMME is never open — a year is. */
   open_year: number | null
+  /**
+   * What is holding this gift, so the Delete control can be DISABLED with the reason showing —
+   * or `null` when nothing is and it may be deleted.
+   *
+   * ⚠ SERVED, NEVER DERIVED HERE. This payload carries `intake_years` and `applications`; it has
+   * never carried benefactors, money or payment runs. A button disabled on what the client happens
+   * to know would go green for a gift held by a donation and refuse only after the phrase was
+   * typed — rarer than the bug it replaces, and more surprising. The delete endpoint refuses from
+   * the SAME function that fills this, so the two cannot disagree.
+   */
+  delete_blocked_by:
+    | 'has_intake_years' | 'has_applications' | 'has_benefactors'
+    | 'has_money' | 'has_payment_runs' | null
+  delete_blocked_count: number
 }
 
 export interface AdminIntakeYear {

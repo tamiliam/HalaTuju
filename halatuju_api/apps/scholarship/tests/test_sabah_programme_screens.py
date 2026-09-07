@@ -360,7 +360,9 @@ class TestDeletingAGift(_Case):
     def test_it_refuses_without_the_gifts_own_code_typed(self):
         """⚠ SERVER-SIDE, NOT A CLIENT COURTESY. A destructive verb any caller can fire with an
         empty body is one mis-wired button away from deleting somebody's gift."""
-        for body in ({}, {'confirm': ''}, {'confirm': 'yes'}, {'confirm': 'sab-a-flagship'}):
+        for body in ({}, {'confirm': ''}, {'confirm': 'yes'},
+                     {'confirm': 'sab-a-spare'},           # the bare code is NOT enough now
+                     {'confirm': 'delete sab-a-flagship'}):  # right shape, wrong gift
             r = self._delete(self.admin_a, self.url, body)
             self.assertEqual(r.status_code, 400, body)
             self.assertEqual(r.data['code'], 'confirm_mismatch')
@@ -368,7 +370,7 @@ class TestDeletingAGift(_Case):
 
     def test_the_typed_code_is_read_forgivingly(self):
         # Case and stray spaces are typing, not intent. The CODE still has to be right.
-        r = self._delete(self.admin_a, self.url, {'confirm': '  SAB-A-SPARE '})
+        r = self._delete(self.admin_a, self.url, {'confirm': '  DELETE   SAB-A-SPARE '})
         self.assertEqual(r.status_code, 204)
 
     # ── what makes a gift undeletable ────────────────────────────────────────────────────────
@@ -377,14 +379,14 @@ class TestDeletingAGift(_Case):
         ScholarshipCohort.objects.create(
             programme=self.spare, owning_organisation=self.org_a, code='sab-a-spare-2027',
             name='Spare 2027', year=2027, is_active=True, is_open=False)
-        r = self._delete(self.admin_a, self.url, {'confirm': 'sab-a-spare'})
+        r = self._delete(self.admin_a, self.url, {'confirm': 'delete sab-a-spare'})
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data['code'], 'has_intake_years')
         self.assertEqual(r.data['count'], 1)
         self.assertTrue(Programme.objects.filter(pk=self.spare.pk).exists())
 
     def test_a_gift_with_nothing_attached_goes(self):
-        r = self._delete(self.admin_a, self.url, {'confirm': 'sab-a-spare'})
+        r = self._delete(self.admin_a, self.url, {'confirm': 'delete sab-a-spare'})
         self.assertEqual(r.status_code, 204)
         self.assertFalse(Programme.objects.filter(pk=self.spare.pk).exists())
 
@@ -408,7 +410,7 @@ class TestDeletingAGift(_Case):
             role='reviewer', email='someone@example.invalid',
             invited_by=self.admin_a, code='del-test-code')
 
-        r = self._delete(self.admin_a, self.url, {'confirm': 'sab-a-spare'})
+        r = self._delete(self.admin_a, self.url, {'confirm': 'delete sab-a-spare'})
         self.assertEqual(r.status_code, 204)
 
         self.assertFalse(ProgrammeApplicationItem.objects.filter(programme_id=self.spare.pk).exists())
@@ -419,11 +421,50 @@ class TestDeletingAGift(_Case):
 
     def test_another_tenants_gift_is_404_never_403(self):
         r = self._delete(self.admin_a, f'{PROGRAMMES}{self.prog_b.id}/',
-                         {'confirm': 'sab-b-flagship'})
+                         {'confirm': 'delete sab-b-flagship'})
         self.assertEqual(r.status_code, 404)
         self.assertTrue(Programme.objects.filter(pk=self.prog_b.pk).exists())
 
     def test_a_reviewer_may_not_delete_anything(self):
-        r = self._delete(self.reviewer_a, self.url, {'confirm': 'sab-a-spare'})
+        r = self._delete(self.reviewer_a, self.url, {'confirm': 'delete sab-a-spare'})
         self.assertEqual(r.status_code, 403)
         self.assertTrue(Programme.objects.filter(pk=self.spare.pk).exists())
+
+    # ── the button and the refusal are ONE rule ──────────────────────────
+
+    def test_the_row_SAYS_whether_it_can_be_deleted_so_the_button_need_not_guess(self):
+        """⚠ THE OWNER ASKED FOR THIS AND THE REASON IS THE INTERESTING PART (2026-09-07):
+        *"I didn't want to test the brightpath... as it is risky. I feel it should be prevented at
+        the button stage."* A destructive control you cannot tell is safe to press is one people
+        avoid — so they cannot tidy up either.
+
+        ⚠ IT MUST BE SERVED, NOT DERIVED ON THE CLIENT. The row carries `intake_years` and
+        `applications`; it has never carried benefactors, money or payment runs. A button disabled
+        on what the client happens to know would go green for a gift held by a donation.
+        """
+        r = self._get(self.admin_a, PROGRAMMES)
+        by_code = {p['code']: p for p in r.data['programmes']}
+        self.assertIsNone(by_code['sab-a-spare']['delete_blocked_by'])
+        self.assertEqual(by_code['sab-a-spare']['delete_blocked_count'], 0)
+
+        ScholarshipCohort.objects.create(
+            programme=self.spare, owning_organisation=self.org_a, code='sab-a-spare-2028',
+            name='Spare 2028', year=2028, is_active=True, is_open=False)
+        row = {p['code']: p for p in self._get(self.admin_a, PROGRAMMES).data['programmes']}
+        self.assertEqual(row['sab-a-spare']['delete_blocked_by'], 'has_intake_years')
+        self.assertEqual(row['sab-a-spare']['delete_blocked_count'], 1)
+
+    def test_what_the_row_SAYS_and_what_the_delete_REFUSES_are_the_same_answer(self):
+        """⚠ ONE FUNCTION, TWO READERS. Two copies of "what holds a gift" would drift, and the
+        drift shows up as the worst shape there is: a button that looked safe, a phrase typed out
+        in full, and only then a refusal. This is the test that keeps them welded."""
+        ScholarshipCohort.objects.create(
+            programme=self.spare, owning_organisation=self.org_a, code='sab-a-spare-2029',
+            name='Spare 2029', year=2029, is_active=True, is_open=False)
+
+        row = {p['code']: p for p in self._get(self.admin_a, PROGRAMMES).data['programmes']}
+        said = row['sab-a-spare']['delete_blocked_by']
+
+        r = self._delete(self.admin_a, self.url, {'confirm': 'delete sab-a-spare'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], said)

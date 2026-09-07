@@ -5666,7 +5666,7 @@
       "deleteTitle": "Padam {name}?",
       "deleteBody": "Ini membuang program hadiah itu dan tetapannya — syaratnya dan apa yang dimintanya daripada pelajar. Ia tidak boleh dibatalkan.",
       "deleteKeeps": "Jemputan, sumber dan penyemak yang anda hadkan kepada hadiah ini akan dikekalkan — ia kembali meliputi semua hadiah.",
-      "deleteConfirmLabel": "Taip {code} untuk mengesahkan",
+      "deleteConfirmLabel": "Taip {phrase} untuk mengesahkan",
       "deleteCta": "Padam program hadiah ini"
     },
     "years": {

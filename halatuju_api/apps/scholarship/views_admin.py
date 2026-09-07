@@ -6548,16 +6548,62 @@ class AdminProgrammeConfigurationView(_AdminBase):
 # ⚠ THESE SCREENS ARE NOT A SECOND SECURITY BOUNDARY. A programme narrows INSIDE the org wall; it
 # never replaces it (`Programme` docstring). Nothing here authorises anything.
 
+def programme_delete_blocker(p):
+    """What is holding this gift, as ``(code, count)`` — or ``(None, 0)`` if nothing is.
+
+    ⚠⚠ ONE FUNCTION, TWO READERS, AND THAT IS THE WHOLE POINT (owner, 2026-09-07). The list row
+    calls it so the Delete button can be DISABLED with the reason showing, and the delete handler
+    calls it to REFUSE. If these were two pieces of code they would drift, and the drift would show
+    up as the worst possible shape: a button that looks safe, a phrase typed out in full, and only
+    then a refusal.
+
+    ⚠ THE CLIENT CANNOT WORK THIS OUT FOR ITSELF, which is why it is served rather than derived.
+    The list payload carries `intake_years` and `applications`; it has never carried benefactors,
+    money or payment runs. A button disabled on what the client happens to know would go green for
+    a gift held by a donation and refuse after the typing — rarer, and more surprising.
+
+    ⚠ THE RULE IS THE MODEL'S, NOT THIS FUNCTION'S. Every relation below is `on_delete=PROTECT`:
+    the database refuses regardless. This only names WHICH, in the order a person is most likely to
+    be able to act on — a stray intake year they can delete, before money they cannot undo.
+    """
+    from .models import (Donation, PaymentRun, ScholarshipApplication, ScholarshipCohort,
+                         SponsorProgrammeMembership)
+    holders = (
+        # org-fence: every query filters on `p`, which every caller reached through the fence
+        # (`_programmes_for` / `_programme_or_404`) — already inside the caller's organisation.
+        ('has_intake_years', ScholarshipCohort.objects.filter(programme=p)),
+        # org-fence: as above — narrowed by the already-fenced `p`.
+        ('has_applications', ScholarshipApplication.objects.filter(programme=p)),
+        # org-fence: as above.
+        ('has_benefactors', SponsorProgrammeMembership.objects.filter(programme=p)),
+        # org-fence: as above.
+        ('has_money', Donation.objects.filter(programme=p)),
+        # org-fence: as above.
+        ('has_payment_runs', PaymentRun.objects.filter(programme=p)),
+    )
+    for code, qs in holders:
+        count = qs.count()
+        if count:
+            return code, count
+    return None, 0
+
+
 def _programme_row(p):
     """One gift, with the two counts the list screen shows. Deliberately not a serializer: the
     shape is three joins wide and exists only here."""
     from .models import ScholarshipCohort, ScholarshipApplication
     cohorts = ScholarshipCohort.objects.filter(programme=p)
     open_year = cohorts.filter(is_open=True, is_active=True).values_list('year', flat=True).first()
+    blocked_by, blocked_count = programme_delete_blocker(p)
     return {
         'id': p.id, 'code': p.code,
         'name_en': p.name_en, 'name_ms': p.name_ms, 'name_ta': p.name_ta,
         'is_active': p.is_active,
+        # ⚠ SERVED, NOT GUESSED. The Delete control is disabled from THIS, and the delete endpoint
+        # refuses from the same function — so the button and the refusal cannot disagree. `null`
+        # means nothing is holding it and it may be deleted.
+        'delete_blocked_by': blocked_by,
+        'delete_blocked_count': blocked_count,
         'intake_years': cohorts.count(),
         # Counted on a programme ALREADY narrowed to the caller's own `owning_organisation`, so it
         # cannot be handed another tenant's programme in the first place.
@@ -6789,32 +6835,22 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         if err:
             return err
 
-        if (request.data.get('confirm') or '').strip().lower() != p.code.lower():
+        # ⚠ THE PHRASE CARRIES THE VERB — `delete <code>`, not the bare code (owner, 2026-09-07).
+        # The code is printed on the card AND in the dialog's own label, so typing it alone is
+        # closer to copying what is already on screen than to stating an intention. "delete test2"
+        # cannot be produced by reflex, and it says what it does.
+        want = f'delete {p.code}'.lower()
+        if ' '.join((request.data.get('confirm') or '').split()).lower() != want:
             return Response({'error': 'confirm_mismatch', 'code': 'confirm_mismatch'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        from .models import (Donation, PaymentRun, ScholarshipApplication, ScholarshipCohort,
-                             SponsorProgrammeMembership)
-        # Ordered so the reason a person is most likely to be able to ACT on comes first: a stray
-        # intake year they can delete, before money they cannot undo.
-        holders = (
-            # org-fence: every query here filters on `p`, reached through `_programme_or_404`,
-            # which selects from `self._programmes_for(admin)` — already inside the caller's org.
-            ('has_intake_years', ScholarshipCohort.objects.filter(programme=p)),
-            # org-fence: as above — narrowed by `p`, which the fence already resolved.
-            ('has_applications', ScholarshipApplication.objects.filter(programme=p)),
-            # org-fence: as above.
-            ('has_benefactors', SponsorProgrammeMembership.objects.filter(programme=p)),
-            # org-fence: as above.
-            ('has_money', Donation.objects.filter(programme=p)),
-            # org-fence: as above.
-            ('has_payment_runs', PaymentRun.objects.filter(programme=p)),
-        )
-        for code, qs in holders:
-            count = qs.count()
-            if count:
-                return Response({'error': code, 'code': code, 'count': count},
-                                status=status.HTTP_400_BAD_REQUEST)
+        # ⚠ THE SAME FUNCTION THE LIST ROW READS, so the disabled button and this refusal can never
+        # disagree. Two copies of "what holds a gift" would drift, and the drift shows up as a
+        # button that looked safe and a refusal after the phrase was typed out in full.
+        blocked_by, count = programme_delete_blocker(p)
+        if blocked_by:
+            return Response({'error': blocked_by, 'code': blocked_by, 'count': count},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         code, name = p.code, p.name_en
         try:
