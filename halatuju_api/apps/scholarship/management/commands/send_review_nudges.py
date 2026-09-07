@@ -2,11 +2,12 @@
 
 Run frequently (e.g. daily) via the internal cron endpoint job 'review-nudges'. For every
 assigned application with no recorded verdict yet, the verdict is due at
-``assigned_at + REVIEW_SLA_DAYS``. We:
+``assigned_at + review_sla_days`` — per the application's OWNING ORGANISATION via
+``org_config`` (Org Config Sprint C; blank org config = the platform's REVIEW_* settings). We:
 
-  • nudge the assigned reviewer REVIEW_NUDGE_SOON_DAYS before the due date (approaching),
+  • nudge the assigned reviewer review_nudge_soon_days before the due date (approaching),
   • nudge them again once it's overdue (at/after the due date),
-  • escalate REVIEW_ESCALATE_GRACE_DAYS after the due date to the application's OWNING
+  • escalate review_escalate_grace_days after the due date to the application's OWNING
     ORGANISATION admin(s) + the assigned reviewer — NOT platform super-admins. A super is the
     platform owner, not an operator inside a tenant org; escalating a tenant's review SLA to the
     org's own org_admin(s) keeps the operation inside the organisation. If an org has no active
@@ -24,6 +25,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from apps.courses import org_config
 from apps.courses.models import PartnerAdmin
 from apps.scholarship import emails, usage
 from apps.scholarship.models import ScholarshipApplication
@@ -41,17 +43,30 @@ class Command(BaseCommand):
             self.stdout.write('REVIEW_NUDGES_ENABLED is off — no review nudges sent.')
             return
         now = timezone.now()
-        sla_days = getattr(settings, 'REVIEW_SLA_DAYS', 10)
-        soon_days = getattr(settings, 'REVIEW_NUDGE_SOON_DAYS', 2)
-        grace_days = getattr(settings, 'REVIEW_ESCALATE_GRACE_DAYS', 3)
 
         qs = (ScholarshipApplication.objects
               .filter(assigned_to__isnull=False, assigned_at__isnull=False,
                       verdict_decided_at__isnull=True)
               .exclude(status__in=_TERMINAL)
-              .select_related('profile', 'assigned_to'))
+              .select_related('profile', 'assigned_to', 'owning_organisation'))
 
         org_admin_cache = {}  # org_id -> [email, ...] (org_admins are stable across the sweep)
+
+        # The three clocks are per-ORGANISATION now (Org Config Sprint C): every date below is
+        # computed per application from its owning organisation. Cached per org id, like
+        # org_admin_cache — the config rows are stable across one sweep.
+        org_days_cache = {}   # org_id (None ok) -> (sla_days, soon_days, grace_days)
+
+        def review_days_for(app):
+            org = app.owning_organisation
+            org_id = app.owning_organisation_id
+            if org_id not in org_days_cache:
+                org_days_cache[org_id] = (
+                    org_config.value(org, 'review_sla_days'),
+                    org_config.value(org, 'review_nudge_soon_days'),
+                    org_config.value(org, 'review_escalate_grace_days'),
+                )
+            return org_days_cache[org_id]
 
         def escalation_recipients(app, reviewer_email):
             """The org's own admin(s) + the assigned reviewer — never platform super-admins."""
@@ -77,6 +92,7 @@ class Command(BaseCommand):
             # A cron has no request context, so without this the meter records org-NULL and the
             # tenant is under-charged. usage_context never raises and is display-free.
             with usage.usage_context(application=app):
+                sla_days, soon_days, grace_days = review_days_for(app)
                 due = app.assigned_at + timedelta(days=sla_days)
                 ref = pool_ref(app.id)
                 applicant_name = getattr(app.profile, 'name', '') if app.profile else ''

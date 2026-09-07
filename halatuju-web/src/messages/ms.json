@@ -5739,7 +5739,8 @@
         "organisationRequired": "Pilih organisasi.",
         "group": {
           "sponsor_page": "Halaman penaja",
-          "student_comms": "Komunikasi pelajar"
+          "student_comms": "Komunikasi pelajar",
+          "reviewers_staff": "Penilai & kakitangan"
         },
         "setting": {
           "pool_funded_grace_days": {
@@ -5765,6 +5766,26 @@
           "max_clarify_open": {
             "label": "Soalan penjelasan — terbuka serentak",
             "desc": "Berapa banyak soalan penjelasan yang boleh terbuka serentak untuk seorang pelajar. Permintaan dokumen dan pengesahan satu ketukan tidak dikira."
+          },
+          "review_sla_days": {
+            "label": "Keputusan perlu — hari selepas tugasan",
+            "desc": "Berapa hari penilai ada untuk merekod keputusan selepas kes ditugaskan. Menentukan tarikh akhir dalam e-mel tugasan, e-mel peringatan dan peringatan temu duga penilai."
+          },
+          "review_nudge_soon_days": {
+            "label": "Peringatan penilai — hari sebelum tarikh akhir",
+            "desc": "Berapa hari sebelum tarikh akhir keputusan e-mel peringatan \"hampir tiba\" sampai kepada penilai."
+          },
+          "review_escalate_grace_days": {
+            "label": "Eskalasi — hari selepas tarikh akhir",
+            "desc": "Berapa hari selepas tarikh akhir keputusan tertunggak dinaikkan kepada pentadbir organisasi."
+          },
+          "temp_password_ttl_days": {
+            "label": "Kata laluan sementara — hari sah",
+            "desc": "Berapa lama kata laluan sementara yang die-melkan kepada kakitangan baru kekal boleh digunakan sebelum tamat tempoh. Tempoh jemputan mengikut jam yang sama."
+          },
+          "admin_dormant_days": {
+            "label": "Tidak aktif selepas — hari tanpa log masuk",
+            "desc": "Berapa hari tanpa membuka konsol sebelum halaman Jemputan melabelkan kakitangan sebagai tidak aktif. Label sahaja — tidak menyekat sesiapa."
           }
         },
         "unit": {

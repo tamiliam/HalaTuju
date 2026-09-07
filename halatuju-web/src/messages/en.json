@@ -5739,7 +5739,8 @@
         "organisationRequired": "Choose an organisation.",
         "group": {
           "sponsor_page": "Sponsor page",
-          "student_comms": "Student communications"
+          "student_comms": "Student communications",
+          "reviewers_staff": "Reviewers & staff"
         },
         "setting": {
           "pool_funded_grace_days": {
@@ -5765,6 +5766,26 @@
           "max_clarify_open": {
             "label": "Clarify questions — open at once",
             "desc": "How many clarify questions a student can have open at the same time. Document requests and one-tap confirmations are never counted."
+          },
+          "review_sla_days": {
+            "label": "Verdict due — days after assignment",
+            "desc": "How many days a reviewer has to record a verdict after a case is assigned. Drives the due date in the assignment email, the reminder emails and the reviewer's interview reminder."
+          },
+          "review_nudge_soon_days": {
+            "label": "Reviewer reminder — days before due",
+            "desc": "How many days before the verdict due date the \"due soon\" reminder email reaches the reviewer."
+          },
+          "review_escalate_grace_days": {
+            "label": "Escalation — days after due",
+            "desc": "How many days after the due date an overdue verdict is escalated to the organisation's admins."
+          },
+          "temp_password_ttl_days": {
+            "label": "Temporary password — days valid",
+            "desc": "How long a newly invited staff member's emailed temporary password stays usable before it expires. The invitation's own expiry follows the same clock."
+          },
+          "admin_dormant_days": {
+            "label": "Dormant after — days without sign-in",
+            "desc": "How many days without opening the console before the Invitations page describes a staff member as dormant. A label only — it never blocks anyone."
           }
         },
         "unit": {

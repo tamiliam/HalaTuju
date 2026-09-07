@@ -15,7 +15,13 @@ export type InvitationStatus = 'invited' | 'expired' | 'no_reply' | 'accepted' |
 /** What a PERSON is doing. Derived here; see `standingOf` for the precedence and why. */
 export type Standing = 'revoked' | 'paused' | 'dormant' | 'active' | 'notRecorded'
 
-/** Days without opening the console before somebody reads as dormant. Descriptive, never a gate. */
+/**
+ * Days without opening the console before somebody reads as dormant. Descriptive, never a gate.
+ *
+ * ⚠ FALLBACK ONLY since Org Config Sprint C: the server resolves `admin_dormant_days` per staff
+ * ROW (`a.dormant_days` — a super's list spans organisations, so one page-wide number would be
+ * wrong) and this constant covers only a payload predating the field. Do not read it directly.
+ */
 export const DORMANT_DAYS = 90
 
 /**
@@ -34,7 +40,24 @@ export function standingOf(a: AdminItem, now: Date = new Date()): Standing {
   if (a.paused) return 'paused'
   if (!a.last_seen_at) return 'notRecorded'
   const days = (now.getTime() - new Date(a.last_seen_at).getTime()) / 86_400_000
-  return days > DORMANT_DAYS ? 'dormant' : 'active'
+  return days > (a.dormant_days ?? DORMANT_DAYS) ? 'dormant' : 'active'
+}
+
+/**
+ * Has an UNCHANGED temporary password outlived its TTL? The login page's friendly gate.
+ *
+ * ⚠ `ttlDays` comes from the role payload (`temp_password_ttl_days`, org-resolved — Org Config
+ * Sprint C), never a constant: the cron that rotates the password dead reads the same per-org
+ * number, and the two must refuse together. An unreadable date reads as NOT expired — the cron
+ * is the hard boundary; this gate only exists for a clearer message.
+ */
+export function tempPasswordExpired(
+  issuedAt: string | null | undefined, ttlDays: number, now: Date = new Date()
+): boolean {
+  if (!issuedAt) return false
+  const issuedMs = Date.parse(issuedAt)
+  if (!Number.isFinite(issuedMs)) return false
+  return now.getTime() - issuedMs > ttlDays * 86_400_000
 }
 
 /** Somebody whose invitation is still unanswered — the top table's membership rule. */

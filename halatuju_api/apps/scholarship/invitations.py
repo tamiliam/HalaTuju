@@ -11,17 +11,20 @@ today, sitting in Supabase metadata that nothing reads back.
 """
 import secrets
 
-from django.conf import settings
 from django.utils import timezone
 
 from .models import Invitation
 
 #: How long a staff invitation is good for. ⚠ MUST TRACK THE TEMP-PASSWORD TTL: the login gate
-#: refuses an unchanged temp password past `PARTNER_TEMP_PASSWORD_TTL_DAYS`, so a different number
-#: here would let the screen say "still valid" about a password the login already rejects. Derived,
-#: never copied.
-def staff_ttl_days():
-    return int(getattr(settings, 'PARTNER_TEMP_PASSWORD_TTL_DAYS', 7))
+#: refuses an unchanged temp password past the TTL, so a different number here would let the
+#: screen say "still valid" about a password the login already rejects. Derived, never copied —
+#: since Org Config Sprint C the ONE home is the `temp_password_ttl_days` registry entry
+#: (org-tunable; blank = the platform's `PARTNER_TEMP_PASSWORD_TTL_DAYS`), keyed on the SAME
+#: organisation the invitee will belong to, which is also what the expiry cron and the login
+#: gate key on for the resulting `PartnerAdmin` row.
+def staff_ttl_days(organisation=None):
+    from apps.courses import org_config
+    return int(org_config.value(organisation, 'temp_password_ttl_days'))
 
 
 #: A sponsor or source-partner invitee has consented to nothing, so their name and address are PII
@@ -29,9 +32,13 @@ def staff_ttl_days():
 PII_RETENTION_DAYS = 60
 
 #: How long since somebody last opened the console before the screen calls them dormant. Descriptive
-#: only — it is NEVER a permission state, and it must not look like paused or revoked.
-def dormant_days():
-    return int(getattr(settings, 'ADMIN_DORMANT_DAYS', 90))
+#: only — it is NEVER a permission state, and it must not look like paused or revoked. Org-tunable
+#: since Org Config Sprint C; `AdminListView` serves the resolved number per staff ROW (a super's
+#: list spans organisations, so one number for the whole page would be wrong), and the front end
+#: reads the served value instead of its old hard-coded 90.
+def dormant_days(organisation=None):
+    from apps.courses import org_config
+    return int(org_config.value(organisation, 'admin_dormant_days'))
 
 
 def _new_code():
@@ -170,7 +177,9 @@ def create_or_refresh(*, audience, email, name='', role='', organisation=None, i
     now = now or timezone.now()
     from datetime import timedelta
     email = (email or '').strip().lower()
-    days = staff_ttl_days() if ttl_days is None else ttl_days
+    # The invitation's expiry follows the TTL of the organisation the invitee is joining, so the
+    # screen's "expired" and the login gate's refusal move together per org (Sprint C).
+    days = staff_ttl_days(organisation) if ttl_days is None else ttl_days
     expires = now + timedelta(days=days)
 
     inv = open_invitation(audience, email)

@@ -5,7 +5,7 @@
  * would agree with a broken rule — the billing-month lesson, which cost eight hours of red tests
  * for exactly that reason.
  */
-import { DORMANT_DAYS, isOutstanding, outstanding, sendState, standingOf } from '../invitations'
+import { DORMANT_DAYS, isOutstanding, outstanding, sendState, standingOf, tempPasswordExpired } from '../invitations'
 import type { AdminItem } from '../admin-api'
 
 const person = (over: Partial<AdminItem>): AdminItem => ({
@@ -39,6 +39,17 @@ describe('what a person is doing', () => {
 
   it('does not call somebody dormant on the threshold day itself', () => {
     expect(standingOf(person({ last_seen_at: daysAgo(DORMANT_DAYS) }), NOW)).toBe('active')
+  })
+
+  it('reads the SERVED per-row threshold before the fallback constant (Org Config Sprint C)', () => {
+    // The server resolves `admin_dormant_days` for each person's own organisation. 31 days away
+    // is dormant under a served 30 — and still active under the 90-day fallback, which is the
+    // whole point: the served number decides, the constant only covers an old payload.
+    expect(standingOf(person({ last_seen_at: daysAgo(31), dormant_days: 30 }), NOW))
+      .toBe('dormant')
+    expect(standingOf(person({ last_seen_at: daysAgo(31) }), NOW)).toBe('active')
+    expect(standingOf(person({ last_seen_at: daysAgo(31), dormant_days: 60 }), NOW))
+      .toBe('active')
   })
 
   it('says NOT RECORDED, never "never signed in", when the column is empty', () => {
@@ -92,5 +103,21 @@ describe('what happened to the email', () => {
 
   it('reports nothing recorded when there is no invitation at all', () => {
     expect(sendState(person({ invitation: null }))).toBe('notRecorded')
+  })
+})
+
+describe('the temp-password gate (login page)', () => {
+  // ⚠ ttlDays comes from the role payload (org-resolved, Org Config Sprint C) — these fixed
+  // inputs pin that the helper honours WHATEVER number it is handed, so serving 3 refuses at 4
+  // days even though the platform's own TTL is 7.
+  it('refuses an unchanged temp password older than the served TTL', () => {
+    expect(tempPasswordExpired(daysAgo(4), 3, NOW)).toBe(true)
+    expect(tempPasswordExpired(daysAgo(4), 7, NOW)).toBe(false)
+  })
+
+  it('is not expired with no issue date or an unreadable one — the cron is the hard boundary', () => {
+    expect(tempPasswordExpired(null, 7, NOW)).toBe(false)
+    expect(tempPasswordExpired(undefined, 7, NOW)).toBe(false)
+    expect(tempPasswordExpired('not-a-date', 7, NOW)).toBe(false)
   })
 })

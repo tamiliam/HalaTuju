@@ -113,7 +113,10 @@ class Command(BaseCommand):
                 # the due date in the reviewer reminder iff a verdict isn't recorded yet.
                 verdict_due = ''
                 if app.assigned_at and app.verdict_decided_at is None:
-                    _sla = getattr(settings, 'REVIEW_SLA_DAYS', 10)
+                    # Per-organisation SLA (Org Config Sprint C) — the SAME clock the nudge
+                    # sweep and the assignment email compute, so the three can never disagree.
+                    from apps.courses import org_config
+                    _sla = org_config.value(app.owning_organisation, 'review_sla_days')
                     verdict_due = (app.assigned_at
                                    + timedelta(days=_sla)).date().strftime('%d %b %Y')
 

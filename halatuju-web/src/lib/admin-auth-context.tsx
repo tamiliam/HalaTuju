@@ -25,6 +25,9 @@ interface AdminRole {
   /** False only for a reviewer who hasn't filled their compulsory profile fields yet — the
    *  admin layout then holds them on /admin/profile until it flips true. True for everyone else. */
   reviewer_profile_complete?: boolean
+  /** The caller's org-resolved temp-password TTL (Org Config Sprint C). The login gate reads
+   *  THIS — never a hard-coded mirror of the platform's 7. */
+  temp_password_ttl_days?: number
 }
 
 interface AdminAuthContextValue {

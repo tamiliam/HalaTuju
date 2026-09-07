@@ -31,7 +31,8 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Rotate partner temp passwords still unchanged after PARTNER_TEMP_PASSWORD_TTL_DAYS (default 7)."
+    help = ("Rotate partner temp passwords still unchanged past their organisation's "
+            "temp_password_ttl_days (org_config; platform default PARTNER_TEMP_PASSWORD_TTL_DAYS, 7).")
 
     def handle(self, *args, **options):
         url = getattr(settings, 'SUPABASE_URL', '') or ''
@@ -39,15 +40,31 @@ class Command(BaseCommand):
         if not url or not key:
             self.stdout.write('expire_temp_passwords: Supabase not configured — inert')
             return
-        days = int(getattr(settings, 'PARTNER_TEMP_PASSWORD_TTL_DAYS', 7))
-        cutoff = timezone.now() - datetime.timedelta(days=days)
+        now = timezone.now()
         headers = _service_headers(key)
+
+        # The TTL is per-ORGANISATION now (Org Config Sprint C, `temp_password_ttl_days`; blank
+        # config = the platform's PARTNER_TEMP_PASSWORD_TTL_DAYS). The cutoff is therefore
+        # computed per admin from their owning organisation — the SAME key the login gate and the
+        # invitation's own expiry read, so all three clocks move together. Cached per org id.
+        from apps.courses import org_config
+        ttl_cache = {}  # org_id (None ok) -> ttl days
+
+        def ttl_for(admin):
+            org_id = admin.owning_organisation_id
+            if org_id not in ttl_cache:
+                ttl_cache[org_id] = int(org_config.value(
+                    admin.owning_organisation, 'temp_password_ttl_days'))
+            return ttl_cache[org_id]
 
         checked = expired = 0
         # Only accounts WE created carry a temp password (a Google / already-registered invitee has
         # supabase_user_id=None and never had one).
-        for admin in PartnerAdmin.objects.filter(supabase_user_id__isnull=False, is_active=True):
+        for admin in (PartnerAdmin.objects
+                      .filter(supabase_user_id__isnull=False, is_active=True)
+                      .select_related('owning_organisation')):
             checked += 1
+            cutoff = now - datetime.timedelta(days=ttl_for(admin))
             uid = admin.supabase_user_id
             try:
                 r = http_requests.get(f'{url}/auth/v1/admin/users/{uid}', headers=headers, timeout=15)
@@ -88,4 +105,5 @@ class Command(BaseCommand):
             except Exception:  # noqa: BLE001
                 logger.warning('expire_temp_passwords: rotate errored for %s', uid, exc_info=True)
 
-        self.stdout.write(f'expire_temp_passwords: checked {checked}, expired {expired} (TTL {days}d)')
+        ttls = ', '.join(f'{v}d' for v in sorted(set(ttl_cache.values()))) or '-'
+        self.stdout.write(f'expire_temp_passwords: checked {checked}, expired {expired} (TTLs {ttls})')

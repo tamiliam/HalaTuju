@@ -752,10 +752,14 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     # assignment (not an unassign); the no-op short-circuit above means an unchanged
     # assignee never reaches here, so we never re-send. Best-effort.
     if reviewer is not None and getattr(reviewer, 'email', ''):
-        from django.conf import settings as _settings
+        from apps.courses import org_config
         from .emails import send_reviewer_assigned_email
         from .pool import pool_ref
-        review_days = getattr(_settings, 'REVIEW_SLA_DAYS', 7)
+        # Per-organisation SLA (Org Config Sprint C). This read used to carry its own dead
+        # default of 7 against the sweep's 10 — base.py always defined the setting so it never
+        # fired, but the review-by date in this email and the nudge sweep's due date now come
+        # from the ONE delegation and cannot drift.
+        review_days = org_config.value(application.owning_organisation, 'review_sla_days')
         review_by = ((application.assigned_at or now) + timedelta(days=review_days)).date()
         with _usage.usage_context(application=application):
             send_reviewer_assigned_email(
