@@ -3222,6 +3222,44 @@ moment to draw.
 
 ---
 
+### [TD-233] An interview longer than the slot step can overlap a reviewer's own proposals — low
+
+**Found:** Org Config Sprint D (2026-09-07), making the interview length and the slot step
+organisation-tunable.
+
+**What.** Conflict-blocking compares START times only — `scheduling.held_starts` returns the set of
+starts a reviewer holds, and `propose_slots` refuses a proposal whose start is in that set. That is
+exact while every interview is one step long: two 30-minute interviews on a 30-minute grid can only
+clash by starting together. It stops being exact the moment an organisation sets
+`interview_duration_min` above `interview_slot_step_min` — a 60-minute interview at 10:00 and
+another at 10:30 have different starts, so both are allowed, and the reviewer is double-booked for
+half an hour.
+
+**Why it shipped this way.** The owner was told before the sprint began and chose to ship it as a
+documented limit rather than a guard. Two reasons hold it: a 45-minute interview on a 30-minute
+grid is a legitimate configuration that a naive `duration <= step` fence would refuse, and no
+organisation has tuned either value yet — the platform default is 30 and 30, where the gap cannot
+open.
+
+**Why it does not bite today.** Every organisation follows the platform default (30 / 30), and a
+blank box means the platform default, live. The gap requires an org to deliberately set a duration
+above its own step.
+
+**The fix when it does:** overlap-aware holding — `held_starts` becomes `held_intervals` (start
+plus the slot's own `duration_min`, which is already stored per row) and the propose guard tests
+for interval intersection rather than set membership. The re-pick menu and the student's booking
+guard read the same helper, so it is one change with three callers, not three rules. A cheaper
+half-measure — refusing a duration above the step at the registry — is NOT the fix: it forbids a
+legitimate configuration to avoid an implementation limit.
+
+**The trigger:** the first organisation that sets `interview_duration_min` above
+`interview_slot_step_min`. Worth a look at the config audit log rather than waiting for a reviewer
+to report a clash.
+
+(Logged 2026-09-07, Org Config Sprint D.)
+
+---
+
 ### [TD-232] An intake year cannot be deleted, so a gift that has one is stuck for ever — low — **RESOLVED 2026-09-07**
 
 **⚠ RESOLVED BY REVERSING THE PREMISE, NOT BY BUILDING WHAT IS SCOPED BELOW.** The owner read this
