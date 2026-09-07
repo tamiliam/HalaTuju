@@ -1629,6 +1629,14 @@ export interface InterviewSchedule {
   booked_slot_id: number | null
   slots: InterviewSlot[]
   reschedule_cutoff_hours: number
+  /** The organisation's booking grid, SERVED (Org Config Sprint D). The student panel reads
+   *  only the cutoff today, but the field list must match the payload it actually receives —
+   *  the admin mirror of this interface is in `admin-api.ts`. */
+  slot_window_start_min?: number
+  slot_window_end_min?: number
+  slot_step_min?: number
+  slot_min_lead_hours?: number
+  interview_duration_min?: number
   alternatives_requested?: boolean
   alternatives_note?: string
   messages?: InterviewMessage[]

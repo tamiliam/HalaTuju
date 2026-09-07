@@ -332,6 +332,13 @@ export const sandboxCockpitApplication: AdminScholarshipDetail = {
     booked_slot_id: 31,
     slots: [],
     reschedule_cutoff_hours: 24,
+    // The booking grid as the server serves it (Org Config Sprint D) — the sandbox tenant
+    // deliberately runs a NON-default window so the picker's served path is what is on show.
+    slot_window_start_min: 9 * 60,
+    slot_window_end_min: 18 * 60,
+    slot_step_min: 30,
+    slot_min_lead_hours: 24,
+    interview_duration_min: 30,
   },
   decision_reopened_at: null,
   decision_reopen_reason: '',

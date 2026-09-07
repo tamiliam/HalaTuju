@@ -13,6 +13,7 @@ What matters here, in order:
    super only) and PUT is all-or-nothing.
 """
 from datetime import timedelta
+from unittest import mock
 
 import jwt
 from django.test import TestCase, override_settings
@@ -217,9 +218,14 @@ class TestOrganisationConfigurationEndpoint(TestCase):
         self._auth('oa-a')
         body = self.client.get(URL).json()
         self.assertEqual(set(body), {'organisation', 'settings'})
+        # `allowed` joined the row in Sprint D and is None for every setting whose vocabulary
+        # is a range — the field is always PRESENT so the browser never has to guess.
         self.assertEqual(
             set(self._row(body)),
-            {'key', 'group', 'unit', 'min', 'max', 'value', 'default'})
+            {'key', 'group', 'unit', 'min', 'max', 'value', 'default', 'allowed'})
+        self.assertIsNone(self._row(body)['allowed'])
+        step = next(s for s in body['settings'] if s['key'] == 'interview_slot_step_min')
+        self.assertEqual(step['allowed'], [5, 10, 15, 20, 30, 60])
 
     # ── writing ──────────────────────────────────────────────────────────────
     def test_a_valid_value_is_stored_and_only_that_key_is_stored(self):
@@ -778,3 +784,183 @@ class TestPerOrgStaffClocks(TestCase):
         self.assertTrue(any('sc-oa' in u for u in rotated_urls))
         self.assertTrue(any('sc-rev' in u for u in rotated_urls))
         self.assertFalse(any('sc-null' in u for u in rotated_urls))
+
+
+class TestSprintDRegistry(TestCase):
+    """The six Sprint D keys exist, every default DELEGATES to the platform's live home, and the
+    two ENGINE additions this sprint needed hold: a listed vocabulary, and a cross-field rule."""
+
+    SPRINT_D = {
+        'interview_duration_min': 'minutes',
+        'interview_window_start_min': 'time_of_day',
+        'interview_window_end_min': 'time_of_day',
+        'interview_slot_step_min': 'minutes',
+        'interview_min_lead_hours': 'hours',
+        'interview_reschedule_cutoff_hours': 'hours',
+    }
+
+    def test_every_key_is_registered_with_its_group_and_unit(self):
+        for key, unit in self.SPRINT_D.items():
+            spec = org_config.SETTINGS[key]
+            self.assertEqual((spec['group'], spec['unit']), ('interviews', unit), key)
+            # `allowed` is OPTIONAL — everything else is the shape the payload builder relies on.
+            self.assertEqual(set(spec) - {'allowed'},
+                             {'group', 'unit', 'min', 'max', 'default'}, key)
+
+    @override_settings(INTERVIEW_DURATION_MIN=25, INTERVIEW_RESCHEDULE_CUTOFF_HOURS=6)
+    def test_defaults_delegate_to_the_live_platform_homes(self):
+        # Settings-backed defaults follow an env change with no deploy…
+        self.assertEqual(org_config.default('interview_duration_min'), 25)
+        self.assertEqual(org_config.default('interview_reschedule_cutoff_hours'), 6)
+        # …and the grid's defaults read `scheduling`'s module constants, the one platform home.
+        from apps.scholarship import scheduling
+        self.assertEqual(org_config.default('interview_window_start_min'),
+                         scheduling.SLOT_WINDOW_START_MIN)
+        self.assertEqual(org_config.default('interview_window_end_min'),
+                         scheduling.SLOT_WINDOW_END_MIN)
+        self.assertEqual(org_config.default('interview_slot_step_min'), scheduling.SLOT_STEP_MIN)
+        self.assertEqual(org_config.default('interview_min_lead_hours'),
+                         scheduling.SLOT_MIN_LEAD_HOURS)
+
+    def test_a_step_that_does_not_divide_an_hour_is_refused(self):
+        # 45 is inside min/max and still a lie: `slot_in_window` reads `minute % step`, which
+        # cannot describe a 45-minute grid across an hour boundary.
+        with self.assertRaises(org_config.OrgConfigError) as caught:
+            org_config.validate_values({'interview_slot_step_min': 45})
+        self.assertEqual(caught.exception.code, 'not_allowed')
+        org_config.validate_values({'interview_slot_step_min': 30})
+
+    def test_a_window_that_closes_before_it_opens_is_refused(self):
+        with self.assertRaises(org_config.OrgConfigError) as caught:
+            org_config.validate_values({'interview_window_start_min': 18 * 60,
+                                        'interview_window_end_min': 9 * 60})
+        self.assertEqual((caught.exception.code, caught.exception.key),
+                         ('window_inverted', 'interview_window_end_min'))
+        # …and the rule resolves the ABSENT side from the platform default, so storing one end
+        # alone cannot invert the pair either (closing at 07:00 against a 08:00 default open).
+        with self.assertRaises(org_config.OrgConfigError):
+            org_config.validate_values({'interview_window_end_min': 7 * 60})
+        org_config.validate_values({'interview_window_end_min': 20 * 60})
+
+    def test_the_model_fence_refuses_an_inverted_window_too(self):
+        # The endpoint is not the fence — a shell caller meets the same rule (the Sprint A rule).
+        org = PartnerOrganisation.objects.create(code='sd-fence', name='Fence Org')
+        row = OrganisationConfiguration(organisation=org, values={
+            'interview_window_start_min': 20 * 60, 'interview_window_end_min': 10 * 60})
+        with self.assertRaises(org_config.OrgConfigError):
+            row.save()
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestPerOrgInterviewRules(TestCase):
+    """The interview grid, the notice and the cutoff resolve PER APPLICATION, and the browser is
+    SERVED the resolved numbers rather than keeping its own copy of them."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='sd-org', name='Interview Org')
+        cls.cohort = _org_cohort('sd-a', cls.org)
+        cls.null_cohort = _org_cohort('sd-null', None)
+        cls.reviewer = PartnerAdmin.objects.create(
+            supabase_user_id='sd-rev', role='reviewer', is_active=True,
+            owning_organisation=cls.org, name='Reviewer SD', email='sd-rev@x.com')
+
+    def _app(self, cohort, suffix):
+        from apps.courses.models import StudentProfile
+        profile = StudentProfile.objects.create(supabase_user_id=f'osd-{suffix}', name='Kavi')
+        return ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='profile_complete',
+            notify_email='stu@x.com', assigned_to=self.reviewer)
+
+    @staticmethod
+    def _myt(day, hour, minute=0):
+        from zoneinfo import ZoneInfo
+        from datetime import datetime
+        return datetime(2026, 10, day, hour, minute, tzinfo=ZoneInfo('Asia/Kuala_Lumpur'))
+
+    def test_the_window_and_step_are_the_organisations(self):
+        from apps.scholarship import scheduling
+        _configure(self.org, 'interview_window_start_min', 10 * 60)
+        _configure(self.org, 'interview_window_end_min', 16 * 60)
+        _configure(self.org, 'interview_slot_step_min', 60)
+        nine = self._myt(6, 9)
+        ten_thirty = self._myt(6, 10, 30)
+        eleven = self._myt(6, 11)
+        # Ours: 09:00 is before the window, 10:30 is off the hourly step, 11:00 is good.
+        self.assertFalse(scheduling.slot_in_window(nine, self.org))
+        self.assertFalse(scheduling.slot_in_window(ten_thirty, self.org))
+        self.assertTrue(scheduling.slot_in_window(eleven, self.org))
+        # A tenant that tuned nothing keeps the platform grid, where all three are fine.
+        for dt in (nine, ten_thirty, eleven):
+            self.assertTrue(scheduling.slot_in_window(dt, None), dt)
+
+    def test_the_minimum_notice_is_the_organisations(self):
+        from apps.scholarship import scheduling
+        _configure(self.org, 'interview_min_lead_hours', 48)
+        now = timezone.now()
+        in_30h = now + timedelta(hours=30)
+        self.assertFalse(scheduling.meets_min_lead(in_30h, now, self.org))
+        self.assertTrue(scheduling.meets_min_lead(in_30h, now, None))   # platform 24h
+
+    def test_proposed_slots_carry_the_organisations_interview_length(self):
+        from apps.scholarship import scheduling
+        _configure(self.org, 'interview_duration_min', 60)
+        app = self._app(self.cohort, 'd1')
+        starts = [timezone.now() + timedelta(days=n) for n in (3, 4, 5)]
+        created = scheduling.propose_slots(app, reviewer=self.reviewer, starts=starts)
+        self.assertEqual({s.duration_min for s in created}, {60})
+        # The platform default (30) still applies to a tenant that tuned nothing. Different
+        # times — the same reviewer already HOLDS the three above (`reviewer_conflict`).
+        other = self._app(self.null_cohort, 'd2')
+        later = [timezone.now() + timedelta(days=n) for n in (10, 11, 12)]
+        created = scheduling.propose_slots(other, reviewer=self.reviewer, starts=later)
+        self.assertEqual({s.duration_min for s in created}, {30})
+
+    def test_the_payload_serves_the_grid_the_picker_must_not_mirror(self):
+        from apps.scholarship.serializers_admin import interview_schedule_payload
+        _configure(self.org, 'interview_window_start_min', 10 * 60)
+        _configure(self.org, 'interview_window_end_min', 16 * 60)
+        _configure(self.org, 'interview_slot_step_min', 15)
+        _configure(self.org, 'interview_min_lead_hours', 48)
+        _configure(self.org, 'interview_reschedule_cutoff_hours', 3)
+        _configure(self.org, 'interview_duration_min', 60)
+        payload = interview_schedule_payload(self._app(self.cohort, 'd3'))
+        self.assertEqual(
+            {k: payload[k] for k in ('slot_window_start_min', 'slot_window_end_min',
+                                     'slot_step_min', 'slot_min_lead_hours',
+                                     'reschedule_cutoff_hours', 'interview_duration_min')},
+            {'slot_window_start_min': 600, 'slot_window_end_min': 960, 'slot_step_min': 15,
+             'slot_min_lead_hours': 48, 'reschedule_cutoff_hours': 3,
+             'interview_duration_min': 60})
+        # The student's payload is the SAME seam — one serve, both screens.
+        platform = interview_schedule_payload(self._app(self.null_cohort, 'd4'))
+        self.assertEqual(platform['slot_window_start_min'], 8 * 60)
+        self.assertEqual(platform['slot_step_min'], 30)
+
+    def test_the_cutoff_the_email_promises_is_the_cutoff_the_service_enforces(self):
+        """One number, two surfaces: `_cutoff_ok` refuses on it and the booked email prints it."""
+        from apps.scholarship import emails, scheduling
+        _configure(self.org, 'interview_reschedule_cutoff_hours', 48)
+        start = timezone.now() + timedelta(hours=30)
+        self.assertFalse(scheduling._cutoff_ok(start, timezone.now(), self.org))
+        self.assertTrue(scheduling._cutoff_ok(start, timezone.now(), None))   # platform 12h
+        sent = {}
+        with mock.patch.object(emails, '_send_html',
+                               side_effect=lambda *a, **k: sent.update(html=a[2]) or True):
+            emails.send_interview_booked_email(
+                'stu@x.com', student_name='Kavi', reviewer_name='Bala', start=start,
+                english_only=True, duration_min=30, reschedule_cutoff_hours=48)
+        self.assertIn('48', sent.get('html', ''))
+
+    def test_the_propose_endpoint_refuses_outside_the_organisations_window(self):
+        from django.test import override_settings as _os
+        _configure(self.org, 'interview_window_end_min', 16 * 60)
+        app = self._app(self.cohort, 'd5')
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("sd-rev")}')
+        url = f'/api/v1/admin/scholarship/applications/{app.id}/interview-slots/'
+        late = (timezone.localtime(timezone.now()) + timedelta(days=7)).strftime('%Y-%m-%dT20:00')
+        with _os(INTERVIEW_SCHEDULING_ENABLED=True):
+            refused = client.post(url, {'slots': [late]}, format='json')
+        self.assertEqual(refused.status_code, 400)
+        self.assertEqual(refused.json()['code'], 'invalid_slot_time')

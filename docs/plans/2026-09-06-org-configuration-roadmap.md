@@ -86,11 +86,16 @@ behaves exactly as before; suite green; deployed.
 `review_sla_days` (10), `review_nudge_soon_days` (2), `review_escalate_grace_days` (4),
 `temp_password_ttl_days` (7), `admin_dormant_days` (90).
 
-### Sprint D — interviews  *(medium-high; no migration)*
-`interview_duration_min` (30 — also settles the live 30-vs-45 fallback inconsistency in
-`emails.py`/`scheduling.py`), booking window start/end/step, `slot_min_lead_hours` (24),
-`reschedule_cutoff_hours` (12). ⚠ `interviewSlots.ts` mirrors the window constants in the FE —
-this sprint must serve them to the FE instead of the lock-step copy.
+### ✔ Sprint D — interviews  *(SHIPPED 2026-09-07; no migration)*
+`interview_duration_min` (30), `interview_window_start_min` (08:00) / `interview_window_end_min`
+(21:30) / `interview_slot_step_min` (30), `interview_min_lead_hours` (24),
+`interview_reschedule_cutoff_hours` (12). The `interviewSlots.ts` lock-step copy is GONE — the
+shared interview payload serves the resolved grid to both the reviewer's picker and the student's
+panel. Two engine additions this needed: `allowed` (a listed vocabulary, rendered as a menu) and
+`_ORDERED_PAIRS` (a cross-field rule: the window must open before it closes). The 30-vs-45
+inconsistency turned out to be FOUR dead fallbacks, all retired by the one delegation. Two pieces
+of COPY also read the rules out as fixed words ("Available times (8:00am–9:30pm, 30-min)", "about
+30 minutes") and are now interpolated in all three languages, with a jest guard.
 
 ### Sprint E — documents  *(low; no migration)*
 `max_doc_size_mb` (8), `max_docs_per_application` (40), `max_other_docs` (10),
@@ -117,4 +122,8 @@ engine and the tab already exist — a later sprint is registry entries + wired 
       dormancy threshold are now SERVED to the FE — the first exercise of the rule Sprint D's
       `interviewSlots.ts` warning states; retro
       `docs/retrospective-2026-09-07-org-config-sprint-c.md`)
-- [ ] D · [ ] E · [ ] F
+- [x] Sprint D — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-sprint-d`, branch
+      `feat/org-config-sprint-d`; the six interview settings; the picker's lock-step copy
+      deleted in favour of the served payload; retro
+      `docs/retrospective-2026-09-07-org-config-sprint-d.md`)
+- [ ] E · [ ] F

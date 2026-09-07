@@ -15,7 +15,7 @@
  */
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
-import OrganisationConfigurationTab from './OrganisationConfigurationTab'
+import OrganisationConfigurationTab, { hhmmToMinutes, minutesToHhmm } from './OrganisationConfigurationTab'
 import * as api from '@/lib/admin-api'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
@@ -65,14 +65,38 @@ const SPRINT_C: api.OrganisationConfigSetting[] = [
     min: 7, max: 365, value: null, default: 90 },
 ]
 
+// The Sprint D registry rows — interviews. Two shapes the tab had never drawn before: a CLOCK
+// row (stored as minutes past midnight, typed as HH:MM) and a row whose vocabulary is a LIST.
+const SPRINT_D: api.OrganisationConfigSetting[] = [
+  { key: 'interview_duration_min', group: 'interviews', unit: 'minutes',
+    min: 10, max: 180, value: null, default: 30 },
+  { key: 'interview_window_start_min', group: 'interviews', unit: 'time_of_day',
+    min: 0, max: 1439, value: null, default: 480 },
+  { key: 'interview_window_end_min', group: 'interviews', unit: 'time_of_day',
+    min: 0, max: 1439, value: null, default: 1290 },
+  { key: 'interview_slot_step_min', group: 'interviews', unit: 'minutes',
+    min: 5, max: 60, value: null, default: 30, allowed: [5, 10, 15, 20, 30, 60] },
+  { key: 'interview_min_lead_hours', group: 'interviews', unit: 'hours',
+    min: 1, max: 168, value: null, default: 24 },
+  { key: 'interview_reschedule_cutoff_hours', group: 'interviews', unit: 'hours',
+    min: 1, max: 168, value: null, default: 12 },
+]
+
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {
   return {
     organisation: { code: 'alpha', name: 'Alpha Foundation' },
     settings: [{
       key: KEY, group: 'sponsor_page', unit: 'days', min: 1, max: 90,
       value: null, default: 2, ...over,
-    }, ...SPRINT_B, ...SPRINT_C],
+    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D],
   }
+}
+
+/** Replace one Sprint D row in the fixture (to give a clock row a stored value, say). */
+function configWith(key: string, over: Partial<api.OrganisationConfigSetting>) {
+  const cfg = config()
+  cfg.settings = cfg.settings.map((s) => (s.key === key ? { ...s, ...over } : s))
+  return cfg
 }
 
 async function mount() {
@@ -215,10 +239,94 @@ describe('the Sprint B rows render, grouped and ordered', () => {
     // ("days" vs "questions") — the owner read it as untidy on 2026-09-07. The width class is
     // the alignment; losing it brings the drift back.
     await mount()
-    for (const s of [{ key: KEY }, ...SPRINT_B, ...SPRINT_C]) {
+    for (const s of [{ key: KEY }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D]) {
       const unit = screen.getByTestId(`config-${s.key}-unit`)
       expect(unit.className).toContain('w-24')
     }
+  })
+
+  it('draws the Sprint D rows, with Interviews after Reviewers & staff', async () => {
+    await mount()
+    for (const s of SPRINT_D) {
+      expect(screen.getByTestId(`config-${s.key}`)).toBeTruthy()
+    }
+    const text = document.body.textContent || ''
+    const staff = text.indexOf('admin.orgSettings.config.group.reviewers_staff')
+    const interviews = text.indexOf('admin.orgSettings.config.group.interviews')
+    expect(staff).toBeGreaterThanOrEqual(0)
+    expect(interviews).toBeGreaterThan(staff)
+  })
+})
+
+describe('a clock row types a time, and stores a number', () => {
+  const clock = () => screen.getByTestId('config-interview_window_start_min') as HTMLInputElement
+
+  it('is a time box showing the default as HH:MM, not 480', async () => {
+    await mount()
+    expect(clock().type).toBe('time')
+    expect(clock().value).toBe('')
+    expect(clock().placeholder).toBe('08:00')
+    // The note beside it names the default in the same shape the box would show.
+    const row = clock().closest('li') as HTMLElement
+    expect(within(row).getByText(/defaultNote\|08:00/)).toBeTruthy()
+  })
+
+  it('renders a stored value as HH:MM and sends back minutes past midnight', async () => {
+    mockApi.getOrganisationConfiguration.mockResolvedValue(
+      configWith('interview_window_start_min', { value: 630 }))
+    mockApi.saveOrganisationConfiguration.mockResolvedValue(config())
+    await mount()
+    expect(clock().value).toBe('10:30')
+    fireEvent.change(clock(), { target: { value: '09:15' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.config.saved'))
+    expect(mockApi.saveOrganisationConfiguration).toHaveBeenCalledWith(
+      { interview_window_start_min: 555 }, undefined, { token: 'tok' })
+  })
+
+  it('converts both ways, and refuses what is not a time', () => {
+    // The pure pair, tested directly: a `type="time"` box will not let jsdom (or a person)
+    // enter "half nine", but a pasted or autofilled value can still arrive as anything.
+    expect(minutesToHhmm(0)).toBe('00:00')
+    expect(minutesToHhmm(1290)).toBe('21:30')
+    expect(hhmmToMinutes('21:30')).toBe(1290)
+    expect(hhmmToMinutes('9:05')).toBe(545)
+    for (const bad of ['', 'abc', '25:00', '10:75', '10.30', '1030']) {
+      expect(hhmmToMinutes(bad)).toBeNull()
+    }
+  })
+
+  it('names the opening time when the server refuses an inverted window', async () => {
+    const err = Object.assign(new Error('bad'), {
+      body: { code: 'window_inverted', key: 'interview_window_end_min' },
+    })
+    mockApi.saveOrganisationConfiguration.mockRejectedValue(err)
+    await mount()
+    fireEvent.change(clock(), { target: { value: '09:15' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(outcome()).toContain('admin.orgSettings.config.refusedWindow'))
+  })
+})
+
+describe('a row whose vocabulary is a list is a menu, not a box', () => {
+  const step = () => screen.getByTestId('config-interview_slot_step_min') as HTMLSelectElement
+
+  it('offers exactly the allowed values plus the follow-the-default choice', async () => {
+    await mount()
+    expect(step().tagName).toBe('SELECT')
+    expect(Array.from(step().options).map((o) => o.value)).toEqual(
+      ['', '5', '10', '15', '20', '30', '60'])
+    expect(step().value).toBe('')
+  })
+
+  it('sends the chosen value', async () => {
+    mockApi.saveOrganisationConfiguration.mockResolvedValue(config())
+    await mount()
+    fireEvent.change(step(), { target: { value: '15' } })
+    fireEvent.click(save())
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.config.saved'))
+    expect(mockApi.saveOrganisationConfiguration).toHaveBeenCalledWith(
+      { interview_slot_step_min: 15 }, undefined, { token: 'tok' })
   })
 })
 

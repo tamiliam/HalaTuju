@@ -65,8 +65,17 @@ def _calendar_service():
         return None
 
 
+def _default_duration_min():
+    """Last resort only — every caller passes the slot's own `duration_min` (a NOT NULL column
+    set from the organisation's setting at propose time). Reads the ONE registry default rather
+    than carrying a literal, which is how this file used to promise a 45-minute calendar block
+    for a 30-minute interview (Org Config Sprint D)."""
+    from apps.courses import org_config
+    return org_config.default('interview_duration_min')
+
+
 def _event_body(*, summary, description, start, duration_min, attendee_emails, with_meet):
-    end = start + timedelta(minutes=duration_min or 45)
+    end = start + timedelta(minutes=duration_min or _default_duration_min())
     body = {
         'summary': summary,
         'description': description or '',
@@ -130,7 +139,7 @@ def update_event(event_id, *, start, duration_min):
     if service is None:
         return False
     try:
-        end = start + timedelta(minutes=duration_min or 45)
+        end = start + timedelta(minutes=duration_min or _default_duration_min())
         service.events().patch(
             calendarId='primary', eventId=event_id,
             body={'start': {'dateTime': start.isoformat()},

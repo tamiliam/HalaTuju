@@ -1889,7 +1889,7 @@
       "homeCta": "Kembali ke utama",
       "interview": {
         "title": "Temu duga anda",
-        "pickIntro": "Penemu duga anda telah mencadangkan masa berikut. Pilih yang sesuai untuk anda — ia panggilan video ringkas (kira-kira 30 minit).",
+        "pickIntro": "Penemu duga anda telah mencadangkan masa berikut. Pilih yang sesuai untuk anda — ia panggilan video ringkas (kira-kira {minutes} minit).",
         "book": "Tempah masa ini",
         "selectFirst": "Sila pilih masa dahulu.",
         "booked": "Temu duga anda ditempah pada",
@@ -3923,7 +3923,7 @@
           "noLink": "Tiada pautan lagi — ia dijana apabila pelajar menempah.",
           "cancelledNote": "Pelajar telah membatalkan — cadangkan masa baharu.",
           "cancelReasonLabel": "Sebab yang diberikan:",
-          "availableTimes": "Masa tersedia (8:00 pagi–9:30 malam, 30 minit)",
+          "availableTimes": "Masa tersedia ({from}–{to}, {step} minit)",
           "noneToday": "Tiada lagi masa tersedia hari ini — pilih tarikh lain.",
           "selectedCount": "Dipilih ({n} daripada {max})",
           "busyOther": "Anda ada temu duga pelajar lain pada masa ini",
@@ -5741,7 +5741,8 @@
         "group": {
           "sponsor_page": "Halaman penaja",
           "student_comms": "Komunikasi pelajar",
-          "reviewers_staff": "Penilai & kakitangan"
+          "reviewers_staff": "Penilai & kakitangan",
+          "interviews": "Temu duga"
         },
         "setting": {
           "pool_funded_grace_days": {
@@ -5787,6 +5788,30 @@
           "admin_dormant_days": {
             "label": "Tidak aktif selepas — hari tanpa log masuk",
             "desc": "Berapa hari tanpa membuka konsol sebelum halaman Jemputan melabelkan kakitangan sebagai tidak aktif. Label sahaja — tidak menyekat sesiapa."
+          },
+          "interview_duration_min": {
+            "label": "Tempoh temu duga — minit",
+            "desc": "Berapa lama satu temu duga berlangsung. Menetapkan waktu tamat pada jemputan kalendar yang diterima pelajar dan penilai."
+          },
+          "interview_window_start_min": {
+            "label": "Tempoh tempahan dibuka",
+            "desc": "Waktu paling awal sesuatu temu duga boleh bermula, mengikut waktu Malaysia. Penilai tidak boleh menawarkan waktu sebelum ini."
+          },
+          "interview_window_end_min": {
+            "label": "Tempoh tempahan ditutup",
+            "desc": "Waktu paling lewat sesuatu temu duga boleh bermula, mengikut waktu Malaysia. Mesti selepas waktu dibuka."
+          },
+          "interview_slot_step_min": {
+            "label": "Waktu ditawarkan setiap — minit",
+            "desc": "Jarak antara waktu yang boleh ditawarkan penilai, contohnya setiap 30 minit. Hanya nilai yang membahagi satu jam dibenarkan."
+          },
+          "interview_min_lead_hours": {
+            "label": "Tempahan terawal — jam lebih awal",
+            "desc": "Berapa awal waktu terawal yang ditawarkan mesti berada, supaya pelajar sempat membaca e-mel, memilih waktu dan bersiap."
+          },
+          "interview_reschedule_cutoff_hours": {
+            "label": "Tukar atau batal sehingga — jam sebelum",
+            "desc": "Sehampir mana dengan waktu mula pelajar masih boleh memilih waktu lain atau membatalkan. E-mel pengesahan menjanjikan nombor yang sama."
           }
         },
         "unit": {
@@ -5794,13 +5819,16 @@
           "hours": "jam",
           "minutes": "minit",
           "cards": "kad",
-          "questions": "soalan"
+          "questions": "soalan",
+          "time_of_day": "(waktu Malaysia)"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
         "rowInvalid": "Masukkan nombor bulat antara {min} dan {max}, atau biarkan kosong untuk lalai.",
+        "rowInvalidClock": "Masukkan waktu seperti 08:00, atau biarkan kosong untuk lalai.",
         "save": "Simpan perubahan",
         "saved": "Disimpan. Perubahan berkuat kuasa sekarang.",
         "refused": "Pelayan menolak nilai untuk “{label}”. Semak dan cuba lagi.",
+        "refusedWindow": "“{label}” mesti selepas waktu tempoh tempahan dibuka. Tiada apa-apa disimpan.",
         "errorGeneric": "Tidak dapat disimpan. Sila cuba lagi.",
         "invalid": "Betulkan nilai yang ditanda dahulu.",
         "unsaved": "Perubahan belum disimpan",

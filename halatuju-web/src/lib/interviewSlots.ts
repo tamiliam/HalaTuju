@@ -1,19 +1,58 @@
-/** The single source of truth for interview slot rules (reviewer propose + student
- *  booking both read this).
+/** The shape of the interview slot rules the reviewer's picker draws from.
  *
  *  Everyone in this programme is in one timezone (Asia/Kuala_Lumpur). Times are
  *  proposed as a naive local string `YYYY-MM-DDThh:mm` which the backend reads as
  *  MYT (see interviewTime.ts) — so the chip values are built in that exact shape.
  *
- *  Window: 08:00–21:30 (last start), 30-minute steps → 28 slots/day. Mirrored
- *  server-side in `apps/scholarship/scheduling.py` (_slot_in_window); keep the two
- *  in lock-step if either changes. */
+ *  ⚠ THE RULES ARE SERVED, NOT MIRRORED (Org Config Sprint D). The window, the step and the
+ *  minimum notice are the ORGANISATION's — they arrive on the interview payload
+ *  (`slotRulesFrom`), resolved by `apps/scholarship/scheduling.py` for that application's
+ *  tenant. The constants below are the PLATFORM DEFAULT ONLY: they exist so a payload that
+ *  predates the fields still draws a sane grid, and so the pure helpers can be called without
+ *  a payload in hand. Do not read them where a payload is available — that re-creates the
+ *  lock-step copy this sprint deleted, and a copy cannot be per-organisation. */
 export const SLOT_WINDOW_START_MIN = 8 * 60        // 08:00
 export const SLOT_WINDOW_END_MIN = 21 * 60 + 30    // 21:30 (latest start)
 export const SLOT_STEP_MIN = 30
 // Minimum scheduling notice: the earliest proposable slot is this far ahead, so the student
-// has time to see the email, pick, and prepare. Mirrored in scheduling.py. (owner: 24h)
+// has time to see the email, pick, and prepare. (owner: 24h)
 export const MIN_LEAD_HOURS = 24
+
+export interface SlotRules {
+  windowStartMin: number
+  windowEndMin: number
+  stepMin: number
+  minLeadHours: number
+}
+
+/** The platform default grid — what an organisation that has tuned nothing gets. */
+export const DEFAULT_SLOT_RULES: SlotRules = {
+  windowStartMin: SLOT_WINDOW_START_MIN,
+  windowEndMin: SLOT_WINDOW_END_MIN,
+  stepMin: SLOT_STEP_MIN,
+  minLeadHours: MIN_LEAD_HOURS,
+}
+
+/** Read the served rules off an interview payload, falling back per FIELD.
+ *
+ *  Per field, not per object: a payload from a build that served only some of them still
+ *  contributes what it has, and a nonsense value (0 step → an endless loop below) is
+ *  refused on its own rather than discarding the three good numbers beside it. */
+export function slotRulesFrom(served?: {
+  slot_window_start_min?: number
+  slot_window_end_min?: number
+  slot_step_min?: number
+  slot_min_lead_hours?: number
+} | null): SlotRules {
+  const num = (v: number | undefined, fallback: number, min = 1) =>
+    (typeof v === 'number' && Number.isFinite(v) && v >= min ? v : fallback)
+  return {
+    windowStartMin: num(served?.slot_window_start_min, SLOT_WINDOW_START_MIN, 0),
+    windowEndMin: num(served?.slot_window_end_min, SLOT_WINDOW_END_MIN, 0),
+    stepMin: num(served?.slot_step_min, SLOT_STEP_MIN),
+    minLeadHours: num(served?.slot_min_lead_hours, MIN_LEAD_HOURS),
+  }
+}
 // On a reviewer RESCHEDULE the candidate has already waited through the original notice, so the
 // 24h floor is relaxed to a short lead — the reviewer can offer nearer slots. (TD-137, owner 2026-06-21.)
 // The backend (`propose_slots`) already accepts any future slot, so this is a UI-only relaxation.
@@ -21,10 +60,11 @@ export const RESCHEDULE_MIN_LEAD_HOURS = 2
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/** Every allowed "HH:MM" start label for a day, e.g. ["08:00","08:30",…,"21:30"]. */
-export function allSlotTimes(): string[] {
+/** Every allowed "HH:MM" start label for a day, e.g. ["08:00","08:30",…,"21:30"].
+ *  Pass the organisation's served rules; omitting them uses the platform default grid. */
+export function allSlotTimes(rules: SlotRules = DEFAULT_SLOT_RULES): string[] {
   const out: string[] = []
-  for (let m = SLOT_WINDOW_START_MIN; m <= SLOT_WINDOW_END_MIN; m += SLOT_STEP_MIN) {
+  for (let m = rules.windowStartMin; m <= rules.windowEndMin; m += rules.stepMin) {
     out.push(`${pad(Math.floor(m / 60))}:${pad(m % 60)}`)
   }
   return out
@@ -54,12 +94,21 @@ export interface DaySlot {
 
 /** The slots for a given date. Times before the minimum-lead cutoff are flagged so the
  *  UI can drop them. `value` is the naive-MYT string the backend expects. */
-export function daySlots(dateStr: string, now: Date = new Date(), leadHours: number = MIN_LEAD_HOURS): DaySlot[] {
+export function daySlots(dateStr: string, now: Date = new Date(), leadHours: number = MIN_LEAD_HOURS,
+                         rules: SlotRules = DEFAULT_SLOT_RULES): DaySlot[] {
   const earliest = earliestStart(now, leadHours).getTime()
-  return allSlotTimes().map((label) => {
+  return allSlotTimes(rules).map((label) => {
     const value = `${dateStr}T${label}`
     return { value, label, tooEarly: new Date(value).getTime() < earliest }
   })
+}
+
+/** Minutes past midnight → the "HH:MM" the rest of this module speaks (600 → "10:00"). The
+ *  served window bounds arrive as minutes and every label helper here takes "HH:MM", so this
+ *  is the one join between the two. */
+export function minuteLabel(mins: number): string {
+  const m = Math.max(0, Math.min(1439, Math.round(mins)))
+  return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`
 }
 
 /** "09:30" → "9:30am", "14:00" → "2:00pm", "21:30" → "9:30pm" (Calendly-style). */
