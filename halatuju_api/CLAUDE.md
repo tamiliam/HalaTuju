@@ -550,7 +550,54 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-04, after Layer 1 F7e — the contrast sprint)
+## Next Sprint (as of 2026-09-07, after Org Config Sprint A — the Configuration tab)
+
+**SHIPPED AND DEPLOYED.** `main` at `85d079a6` (merge of `feat/org-config-tab`, worktree
+`.worktrees/org-config`; the concurrent gift-setup-flow work rode in via the pre-push merge).
+**Migration `courses/0074` APPLIED MIGRATE-FIRST and its ledger row recorded BEFORE the push**
+(one new table `organisation_configurations`, RLS + one service_role policy; Security Advisor
+clean — no new finding). Retro `docs/retrospective-2026-09-07-org-config-sprint-a.md`; roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (Sprint A of A–F, owner-approved phased).
+pytest **5875** (full suite, +24); jest 1709 → **1737** (merged tree); lint **0**;
+i18n **4775 × 3**; `next build` clean. Per-org filter bite-checked (disabled → 2 tests fail).
+
+**Why:** the sponsor page dropped an awarded student's card after 2 days (`POOL_FUNDED_GRACE_HOURS`).
+Owner 2026-09-06: make it 30 days, configurable on a NEW Organisation → Settings → Configuration
+tab — and make that tab the home for organisation-wide values that are hard-coded today.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`courses/org_config.py` is the ONE home** — registry (key, bounds, unit, group, default),
+  storage fence (runs in `OrganisationConfiguration.save()`, the theme precedent), read seam
+  (`value`/`stored`/`custom_values`). **A setting appears on the tab ONLY when code reads it.**
+- **Blank = platform default, read LIVE from Django settings.** The stored row holds ONLY what
+  the organisation changed — never a copied default (a copied default rots when the platform
+  default moves).
+- **⚠ `pool._funded_grace_window` SPELLS ITS DEFAULT ARM `~Q(in) | Q(isnull)` DELIBERATELY.**
+  SQL's `NOT (col IN …)` is NULL-false, so a bare negation drops every NULL-org application the
+  moment ANY organisation configures a window. A test pins it. Copy that spelling into any future
+  per-org queryset split.
+- **`AdminOrganisationConfigurationView` is a MIRROR of the theme view's fence, NOT a subclass** —
+  inheriting would drag DELETE onto this route and discard a colour draft. Org derived, cross-org
+  404 never 403, org_admin + super, PUT all-or-nothing, `AUDIT org_config_set` per changed key.
+- **BrightPath's `pool_funded_grace_days` = 30, LIVE** (row written via audited MCP insert,
+  2026-09-07, `updated_by_email tamiliam@gmail.com`). A card funded within 30 days shows on the
+  sponsor browse page; the window is query-time, no backfill, no cron.
+- **`sponsor_email_max_cards` was DEFERRED out of Sprint A** — its two email-render sites carry
+  no organisation; threading it is Sprint B's first task. Do not add the row before the wiring.
+- **Fixture gotcha:** an application's `owning_organisation` copies from the COHORT's own
+  `owning_organisation` FK, not from `programme.organisation`.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):** Organisation →
+Settings now has TWO tabs; Configuration shows "Funded student card — days shown" = **30**
+(platform default 2 named underneath). ms/ta strings are my first drafts.
+
+**▶ NEXT = the roadmap's Sprint B onward, one group per sprint, owner picks the order:**
+B student comms (+ the deferred `sponsor_email_max_cards`) · C reviewers & staff · D interviews ·
+E documents · F agreements. Each is registry entries + wired read sites + rows on the existing
+tab — no new shell. Feature on/off switches, per-GIFT values and platform internals stay OUT of
+this tab (roadmap's binding rules; re-argue only with the owner).
+
+## Superseded — previous Next Sprint (as of 2026-09-04, after Layer 1 F7e — the contrast sprint)
 
 **SHIPPED AND DEPLOYED. TD-224 (high) is CLOSED.** `main` at `242b60fa`; **only the WEB trigger
 fired** (0 Python files changed); Cloud Build SUCCESS on `242b60f`; serving
