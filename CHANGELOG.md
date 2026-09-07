@@ -32,9 +32,10 @@ warning states. Four bite-checks (sweep de-orged, invitation TTL unthreaded, cro
 re-globalled, `standingOf` re-hardcoded) - each failed its owning test, each restored by
 writing the original back.
 
-pytest **5924** (+10; `test_org_config.py` 35 -> 45) - jest **1745** (+4) - lint **0** -
-tsc **24** (baseline) - i18n **4815 x 3** (+12 keys; ms/ta first drafts) - `next build` clean -
-`makemigrations --check` clean.
+Merged tree (carries the concurrent approve-lockout cockpit fix `260927dc`): pytest **5924**
+(+10; `test_org_config.py` 35 -> 45) - jest **1749** (+4 of those are this sprint's) -
+lint **0** - tsc **24** (baseline) - i18n **4816 x 3** (+12 keys are this sprint's; ms/ta first
+drafts) - `next build` clean - `makemigrations --check` clean.
 ## Fix: a half-completed Approve no longer locks the reviewer out of her own case - 2026-09-07
 
 One Approve press does two things in order: `record-verdict` saves the decision, then

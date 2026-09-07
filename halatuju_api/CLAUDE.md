@@ -557,9 +557,10 @@ gift-setup-flow close, `cd9c0959`). **NO MIGRATION** — registry entries + wire
 on the existing tab, the roadmap's promised shape. Retro
 `docs/retrospective-2026-09-07-org-config-sprint-c.md`; roadmap
 `docs/plans/2026-09-06-org-configuration-roadmap.md` (A ✔ B ✔ C ✔ · D/E/F open).
-pytest **5924** (full `apps/` suite, +10; `test_org_config.py` 35 → 45); jest **1745** (+4);
-lint **0**; tsc **24** (baseline); i18n **4815 × 3** (+12 keys, ms/ta first drafts);
-`next build` clean; `makemigrations --check` clean. Four bite-checks landed (sweep de-orged,
+Merged tree (carries the concurrent approve-lockout cockpit fix `260927dc`):
+pytest **5924** (full `apps/` suite, +10; `test_org_config.py` 35 → 45); jest **1749** (+4 of
+those are this sprint's); lint **0**; tsc **24** (baseline); i18n **4816 × 3** (+12 keys are
+this sprint's, ms/ta first drafts); `next build` clean; `makemigrations --check` clean. Four bite-checks landed (sweep de-orged,
 invitation TTL unthreaded, cron cutoff re-globalled, FE standing rule re-hardcoded).
 
 **Five settings joined the tab under a new Reviewers & staff group** (all in days):
