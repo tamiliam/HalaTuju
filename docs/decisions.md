@@ -9035,3 +9035,46 @@ give, so on a phone the control would be dead with no explanation, which is the 
 
 **Revisit if:** the count queries become a cost (TD-231). The fix there keeps the one rule and gives
 it a list-shaped sibling; it does not move the rule into the client.
+
+## An organisation-tunable number is SERVED to the browser, never mirrored — Org Config Sprint C, 2026-09-07
+
+**Decided by:** engineering, applying the rule the roadmap already states as a warning against
+Sprint D (*"`interviewSlots.ts` mirrors the booking-window constants in the FE — that sprint must
+serve them instead"*). Sprint C hit the same shape twice and is the first sprint to execute it.
+
+**Decision:** when a value becomes organisation-tunable, the server resolves it and puts the
+ANSWER on a payload the client already fetches. The client computes nothing and keeps no copy.
+Two applications this sprint:
+
+- **`temp_password_ttl_days`** → `GET /api/v1/admin/role/` (the call the admin auth context
+  already makes, and which the login page already awaits *before* the gate runs). The page's
+  `const TTL_MS = 7 * 24 * 60 * 60 * 1000` and its "keep in step with
+  `PARTNER_TEMP_PASSWORD_TTL_DAYS`" comment are deleted.
+- **`admin_dormant_days`** → `AdminListView`, **per staff ROW**, not once per page.
+
+**Alternatives considered:** (a) leave the constant and keep it in step by hand, as the comment
+asked; (b) add a small "platform config" endpoint the client calls once and caches; (c) serve
+`admin_dormant_days` once per page rather than per row.
+
+**Why not (a).** A hand-kept mirror is correct only until the two numbers can legitimately differ.
+Once the value is per-organisation there is no single number to mirror — the constant is not
+merely stale-able, it is **unanswerable**, and the failure is silent in the worst direction: the
+screen would say "still valid" about a password the cron had already rotated dead.
+
+**Why not (b).** A second fetch to learn a number that rides free on a payload already in flight,
+plus a cache to keep in step with a role change. The role payload is per-caller and already
+org-resolved; that is exactly the scope the value has.
+
+**⚠ WHY NOT (c), WHICH IS THE TEMPTING ONE.** A super's staff list spans organisations. One
+page-wide threshold would label a Sabah reviewer by BrightPath's number — a wrong word beside a
+real person's name, on the page whose whole job is saying who is waiting and who has gone quiet.
+The cost of per-row is one cached lookup per distinct organisation.
+
+**Trade-offs:** the FE constant survives as a fallback for a payload predating the field, so it is
+not deleted and must not be read directly — a comment and a test say so. `tempPasswordExpired`
+fails OPEN on an unreadable date: the cron is the hard boundary and this gate exists only for the
+clearer message, so refusing on a parse failure would lock somebody out over our own bad data.
+
+**Revisit if:** a value is needed by a client surface that fetches NEITHER the role payload nor a
+list carrying the row — that is the point at which (b) earns its keep rather than duplicating
+work. Sprint D's booking window is the next test of this rule.

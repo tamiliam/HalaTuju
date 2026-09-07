@@ -51,7 +51,7 @@ funded-card window; later sprints migrate the other groups one at a time.
 
 ## Sprints
 
-### Sprint A — the engine, the tab, and the sponsor-page group  *(medium; ONE migration)*
+### ✔ Sprint A — the engine, the tab, and the sponsor-page group  *(SHIPPED 2026-09-07)*
 **Goal:** the owner can open Organisation → Settings → Configuration and set the funded-card
 window to 30 days, and the sponsor page obeys.
 **Scope:**
@@ -78,11 +78,11 @@ window to 30 days, and the sponsor page obeys.
 **Acceptance:** BrightPath sets 30; a student funded 3 weeks ago still shows; an org with no row
 behaves exactly as before; suite green; deployed.
 
-### Sprint B — student communications  *(low-medium; no migration)*
+### ✔ Sprint B — student communications  *(SHIPPED 2026-09-07)*
 `query_email_delay_hours` (2), `nudge_auto_delay_minutes` (30), `nudge_cooldown_hours` (24),
 `max_clarify_open` (3). Registry entries + wiring + rows on the existing tab.
 
-### Sprint C — reviewers & staff  *(medium; no migration)*
+### ✔ Sprint C — reviewers & staff  *(SHIPPED 2026-09-07; no migration)*
 `review_sla_days` (10), `review_nudge_soon_days` (2), `review_escalate_grace_days` (4),
 `temp_password_ttl_days` (7), `admin_dormant_days` (90).
 
