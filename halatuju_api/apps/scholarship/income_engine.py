@@ -1103,6 +1103,36 @@ def member_income_evidenced(application, member) -> bool:
     return False
 
 
+def any_member_income_evidenced(application) -> bool:
+    """True when AT LEAST ONE working member's income is SHOWN any one way
+    (``member_income_evidenced``). Deliberately WEAKER than ``member_cluster_complete``: it asks only
+    *has this household shown what it earns?*, not *is the earner's relationship to the student
+    proven?*.
+
+    It exists for ONE caller — the GRANDFATHERED branch of ``services.application_completeness``
+    (BrightPath request #21). That branch is a 5-June-2026 copy of the income bar, frozen as
+    ``bool(present & {'str', 'salary_slip', 'epf'})`` — three DOCUMENT TYPES. On 25 July 2026 the
+    live rule became "income shown ANY ONE WAY", which added a fourth way with no document of its
+    own: a DECLARED average amount backed by an ``income_support_doc`` (a school / ketua-kampung /
+    penghulu / employer letter). The frozen copy cannot see that fourth way, so a household that
+    proved its income the modern way was told its profile was incomplete — application 144 sat at
+    Interview with every officer verdict recorded and could not be accepted (measured on production
+    2026-09-07: she was the ONLY submitted application lacking all three legacy proof types).
+
+    ⚠ THIS IS AN OR-ARM, NEVER A REPLACEMENT — see the call site. Every document set the frozen
+    rule accepted must keep passing, or a fix for one stuck student un-submits a cohort. Widening
+    here can only ever UNBLOCK; it can never newly block.
+
+    ⚠ AND IT MUST NOT BECOME ``member_cluster_complete``. That predicate also demands the earner's
+    IC read cleanly AND link to the student (for a mother, through the birth certificate). Applicant
+    144's birth certificate scored ``not_birth_certificate`` with every field blank, so her cluster
+    is NOT complete and never will be until that document is re-read — and the relationship is the
+    REVIEWER's judgement at interview, not a precondition for the reviewer being allowed to work the
+    case. Tightening this to the cluster rule re-traps her."""
+    return any(member_income_evidenced(application, m)
+               for m in effective_working_members(application, any_route=True))
+
+
 def member_cluster_complete(application, member):
     """True when this working member's salary-route income cluster is COMPLETE and COHERENT on its
     own — the unit behind the "one complete, clean earner cluster is enough to submit" gate (owner

@@ -2064,9 +2064,14 @@ def application_completeness(application):
     # submitted application — ic + results_slip + offer_letter (now compulsory for all)
     # + the route's compulsory income docs (income_doc_blockers, sourced from the wizard
     # requirement engine). GRANDFATHER: an already-submitted app (profile_completed_at
-    # set) keeps the OLD, looser bar (any one of str/salary/epf, no offer letter) so a
-    # later edit never trips revert_if_profile_incomplete on the new rules — those 6 are
-    # resolved at Check 2 / interview instead.
+    # set) keeps the OLD, looser bar (any one of str/salary/epf, OR income shown the
+    # 25-July-2026 way; no offer letter) so a later edit never trips
+    # revert_if_profile_incomplete on the new rules — those 6 are resolved at Check 2 /
+    # interview instead.
+    # ⚠ THE GRANDFATHERED BAR IS A FROZEN COPY AND IT DRIFTS. Freezing a rule protects
+    # already-submitted students from a TIGHTENING; it also blinds them to a LOOSENING,
+    # and a loosening is exactly what "income shown any one way" was. Whenever the live
+    # income bar widens, ask whether this copy needs the same arm.
     if application.profile_completed_at is None:
         # A results slip in a different name is unusable (we can't attribute the results
         # to the student), so it does NOT satisfy the bar — the student must re-upload the
@@ -2091,9 +2096,21 @@ def application_completeness(application):
             and not income_doc_blockers(application)
         )
     else:
+        # ⚠ THE SECOND INCOME ARM IS AN OR, AND IT MUST STAY ONE — DO NOT "TIDY" IT INTO ONE CALL.
+        # The literal three-document set is the bar this branch has enforced since 5 June 2026 and
+        # every already-submitted application was judged against it; dropping it would newly FAIL a
+        # household that had passed, and `revert_if_profile_incomplete` un-submits on a fail. So the
+        # arm can only ADD. What it adds is the fourth way income has been showable since 25 July
+        # 2026 — a declared amount backed by a support letter — which has no document type of its
+        # own and so is invisible to a set of doc_types (BrightPath #21; see
+        # `income_engine.any_member_income_evidenced` for the whole story).
+        # Local import, like every other income_engine caller in this module (circular at import time).
+        from .income_engine import any_member_income_evidenced
+        income_shown = (bool(present & {'str', 'salary_slip', 'epf'})
+                        or any_member_income_evidenced(application))
         documents_done = (
             {'ic', 'results_slip', 'parent_ic'}.issubset(present)
-            and bool(present & {'str', 'salary_slip', 'epf'})
+            and income_shown
         )
     # `consent` is a CORE catalogue item (a legal requirement, not a programme preference):
     # `requirements.resolve` floors it at 'required' whatever an organisation writes, so

@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: a frozen copy of the income bar could not see how income is proved now - 2026-09-07
+
+**BrightPath request #21** (triaged bug / small_change). `application_completeness` judges an
+already-submitted student against a bar frozen on 5 June 2026 — three document types,
+`str` / `salary_slip` / `epf` — so a later edit can never trip `revert_if_profile_incomplete` on
+rules written after they applied. On 25 July 2026 the live bar gained a fourth way to show income:
+a declared average amount backed by an `income_support_doc` (a school / ketua-kampung / penghulu /
+employer letter). That way has no document type of its own, so the frozen copy is blind to it.
+
+Application 144 proved her mother's RM3,500 exactly that way, and read as incomplete. She sat at
+Interview with all four officer verdicts recorded and Accept returning `400 incomplete_profile`.
+Measured on production before the change: **she is the only submitted application on the platform
+lacking all three legacy proof types**, so exactly one row's answer moves.
+
+- **`income_engine.any_member_income_evidenced`** — true when at least one working member's income
+  is shown any one way. Deliberately weaker than `member_cluster_complete`, which also demands the
+  earner's IC link to the student; #144's birth certificate scored `not_birth_certificate` with
+  every field blank, and that relationship is the reviewer's judgement at interview, not a
+  precondition for reaching the reviewer.
+- **The grandfathered branch ORs the new arm onto the old set — it does not replace it.** The
+  literal three-document rule is what every already-submitted application was judged against, and
+  a fail here un-submits a student. The arm can only ADD.
+- 4 tests, both directions bite-checked: disabling the arm fails the two unblock tests; making it a
+  replacement fails the two can-only-unblock tests.
+
 ## The organisation gets a Configuration tab, and the funded card learns to stay - 2026-09-07
 
 **Org Config Sprint A** (roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md`, owner-approved
