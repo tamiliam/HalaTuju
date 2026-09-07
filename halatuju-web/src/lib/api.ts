@@ -1790,7 +1790,12 @@ export interface ApplicantDocument {
   guardianship_check?: GuardianshipCheck | null
 }
 
-type RelStatus = 'match' | 'mismatch' | 'no_ref'
+// The three AMBER buckets are the corroboration rules in `income_engine._combine_relationship`,
+// and this type had drifted behind them: `check` / `check_near` (the name agrees, the NRIC does
+// not — a misread digit off a security-printed JPN document) and, from BrightPath #19,
+// `check_name` (the NRIC matches EXACTLY, the name is spelt differently — a transliteration, not
+// a different person). All three render partial, never green and never red.
+type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name'
 
 export interface BcCheck {
   child_name: string

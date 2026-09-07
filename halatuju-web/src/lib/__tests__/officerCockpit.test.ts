@@ -447,7 +447,7 @@ describe('documentFacts', () => {
   // person reads the row; red is what told a student to fetch a corrected certificate she
   // cannot obtain. A genuine `mismatch` (no number agreement) stays red.
   it('a differently-spelt mother with the same IC number is AMBER, not red', () => {
-    const bc = (mother_status: string) => documentFacts(doc({
+    const bc = (mother_status: 'check_name' | 'mismatch') => documentFacts(doc({
       doc_type: 'birth_certificate',
       bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status, father_name: '', father_status: 'match', bc_number: '' },
     })).find((f) => f.key === 'mother')?.status
