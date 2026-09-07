@@ -2,6 +2,85 @@
 
 All notable changes to this project will be documented in this file.
 
+## The gift setup flow — the cycle starts where the data starts - 2026-09-07
+
+**Sprint. SHIPPED AND DEPLOYED, three deploys** (the second and third were the owner's live-review
+rounds finding real defects, not re-attempts). `main` at `ac46f7a6`; both Cloud Builds SUCCESS on
+each; serving **halatuju-api-00982-2cx** / **halatuju-web-00833-qq2**. All public routes 200; no
+error logs. **Migration `scholarship/0150` APPLIED MIGRATE-FIRST and verified BEFORE the push**
+(two additive nullable date columns); ledger reconciled at close: **scholarship 150/150, courses
+74/74, no gaps**. Retro `docs/retrospective-2026-09-07-gift-setup-flow.md`; decisions ×5;
+lessons ×6; **TD-231** raised.
+pytest 5844 → **5914**; jest 1697 → **1741**; tsc **24** (baseline); lint **0**;
+i18n 4745 → **4804 × 3**; build clean. **Six guards bite-checked**, each injection verified as
+landed first.
+
+**⚠ Figures are measured on the MERGED tree** — three other agents shipped into `main` during this
+sprint (Layer 1 F7f, the grades-stream fix, Org Config Sprint A, the income-panel fix) and the
+totals include theirs.
+
+**The owner's report, verbatim:** *"Pls investigate if this flow is there. We do not want a
+disconnected flow."* It was not.
+
+### Fixed
+- **Two sidebar rows had no icon, not one.** `orgSettings` (added 2026-09-03) and `faq` both fell
+  back to `PATHS.dot` — silently, because a missing glyph must not throw inside the shell that
+  renders every admin page. `navigation.test.ts` mentioned icons **zero times**, so the next new row
+  would have done the same. Both drawn, and `icons.test.ts` now asserts every registry id has one,
+  **deriving both sides at runtime** (a hand-written list is the thing that falls behind).
+- **The setup flow dead-ended on its first screen.** Create closed the dialog and stopped; "Open its
+  settings" always opened **Rules** — and **the rules are COLUMNS ON THE INTAKE YEAR**, so a gift
+  created a minute ago had nothing for them to write to and got a grey box naming a tab, in prose,
+  with no button and no `?tab=` deep link for anything to point at.
+- **⚠ THE GIFT YOU JUST CREATED WAS UNREACHABLE (found by the owner, live).** The shell fetches its
+  scope list **once per console session**, so a gift created during that session was not in it —
+  and `programmeScope` correctly refused to resolve a code it did not recognise. The screen asked
+  *which gift* forever, with every click a no-op. **The list was stale; the guard was right.**
+  `useProgrammeScope().reload()` re-fetches, and `create` **awaits it before selecting**. Do not
+  loosen the guard: accepting an unknown code is the 2026-09-03 defect, and falling back to "the
+  only gift" is the same defect wearing a hat.
+
+### Changed
+- **Tabs are `Intake year · Rules · What we ask for`** — reversed from 2026-09-03, whose reason
+  (*"who qualifies precedes what they are asked to send"*) is TRUE of reading a gift already running
+  and is carried forward verbatim in the comment and the test. Setup order follows DATA order.
+- **Questions render before Documents.** Order only; no write and no rule moves with it.
+- **⚠ ONE OPEN ROUND PER GIFT PROGRAMME, not per organisation** (owner: *"if the org has two
+  programmes, there could be two open applications"*). The guard filtered on `owning_organisation`,
+  so an organisation running two gifts could take applications for one of them only.
+
+### Added
+- **`opens_on` / `closes_on` on the intake year** (migration `0150`). **⚠ THESE DATES DESCRIBE. THEY
+  OPEN NOTHING** — `is_open` is the switch and stays the switch (owner ruling). A clock would fire
+  whether or not the gift's rules and questions had been finished. **NULL means no window stated,
+  and NOTHING was backfilled**: inventing dates for the 2026 round, which already ran, would be
+  fiction on an audited row. The order check reads the RESULT, not the payload, and **refuses** a
+  backwards window rather than swapping it.
+- **The apply page ASKS which gift, before the form.** `GET /scholarship/intake/` now returns
+  `choices` when it cannot name a round. The 409 `programme_required` was correct and stays — but it
+  arrived **after the student had filled in the entire form**. This is PF-1's own rule (*never pick,
+  ask*) moved to the front door; the answer is stored through the same seam a `?p=` link writes, so
+  submit cannot tell the two apart.
+- **Deleting a gift**, with a typed phrase (`delete <code>`, checked server-side) — owner request.
+  **⚠ THE RULE IS THE MODEL'S:** every relation meaning a gift has become something is
+  `on_delete=PROTECT` (intake years, applications, benefactors, money, payment runs), so **a gift
+  that has ever taken a student or a ringgit cannot be deleted**; the endpoint's contribution is
+  naming WHICH. Its own configuration CASCADEs; invitations, sources and reviewers are SET_NULL —
+  a narrowing whose gift is gone falls back to "every gift".
+- **The Delete button is disabled by the SERVER's answer** (`delete_blocked_by`), with the reason as
+  visible text. The owner would not test Delete on the live flagship *because they could not tell it
+  was safe* — a destructive control nobody dares press cannot be used to tidy up either.
+  **⚠ ONE FUNCTION, TWO READERS:** `programme_delete_blocker` fills the row AND decides the refusal,
+  because two copies would drift and the drift is a button that looked safe. Deriving it from the
+  card's own counts would have gone GREEN for a gift held by a donation.
+- `adminMutate` tolerates **204 No Content** — a successful DELETE would have thrown on the happy
+  path only: the write lands, the caller sees an error, a person presses again.
+
+### Deferred
+- **TD-231** — `programme_delete_blocker` runs up to five counts per gift on the list. Correct while
+  the numbers are small; the fix keeps the one rule and gives it a list-shaped sibling rather than
+  moving it into the client. Trigger: an organisation running more than ~10 gifts.
+
 ## Fix: the income panel asks for income, not for a salary slip - 2026-09-07
 
 The morning's `#21` fix taught the SERVER that income may be shown any one of four ways. The

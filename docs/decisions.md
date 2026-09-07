@@ -8878,3 +8878,160 @@ decide.
 **Revisit if:** a tenant with a non-blue brand onboards before F7f runs — they are the only
 audience who can see the inconsistency, since both spellings render blue on the platform's own
 colour.
+
+---
+
+## The intake year's dates DESCRIBE; they open nothing — gift setup flow, 2026-09-06
+
+**Decided by:** owner, on the record, against the alternative put to them.
+
+**Decision:** `ScholarshipCohort.opens_on` / `closes_on` state when a round is MEANT to run and are
+shown on screen. **`is_open` remains the only thing that decides whether a student may apply**, and
+it is flipped by a person. Nothing reads the dates to open or close anything.
+
+**Alternatives considered:** a scheduled job that opens the round on `opens_on` and closes it on
+`closes_on` — the shape most people expect from two date fields.
+
+**Rationale.** Two reasons, and the second is the durable one:
+
+1. `is_open` already means "real students can walk in" (Sabah S2b). A date that ALSO opened would be
+   a second switch that can disagree with the first, which is the exact shape `lessons.md` warns
+   about — except here the switch already exists, so the date must not become a rival to it.
+2. **A clock can fire before setup is finished.** Create a gift, type a start date, get interrupted,
+   and on that date the round opens with no rules set and no questions configured. A person pressing
+   Open cannot do that by accident. This is the reason that survives scrutiny and the one the code
+   comments carry.
+
+**⚠ AN ARGUMENT I MADE AND WITHDREW, recorded so it is not re-made.** I also argued that two gifts
+with overlapping dates would force a background job to pick one at 3am under the one-open-round
+rule. The owner corrected the premise — that rule is per GIFT, not per organisation — so the clash
+cannot happen and the argument is void. It is not part of this decision.
+
+**Trade-offs:** somebody must remember to press Open on the day. Accepted: the dates are shown, and
+forgetting is visible, whereas an unwanted automatic opening is not.
+
+**Revisit if:** the owner wants the round to open itself. That is a scheduled job built ON TOP of
+these columns, argued on its own merits then — additive, not a reinterpretation of them. NULL stays
+a real answer either way.
+
+---
+
+## One open round per GIFT PROGRAMME, not per organisation — gift setup flow, 2026-09-06
+
+**Decided by:** owner, correcting the built behaviour: *"Only one round is open for a gift
+programme. But if the org has two programmes, there could be two open applications."*
+
+**Decision:** the `another_year_open` guard filters on `programme=`, not `owning_organisation=`.
+
+**What it was.** Org-wide, since Sabah S2b. An organisation running two gifts could take
+applications for **one of them only** — with no message explaining why the second was refused.
+
+**Rationale.** A gift is the durable thing an organisation runs; its intake year is the round
+beneath it. Two gifts are two separate promises to two sets of students, and nothing about one
+should stop the other opening. The org-wide rule was a conservative reading of PF-1 applied one
+level too high.
+
+**⚠ WHAT THE NARROWER RULE COSTS, and why it is still right.** `resolve_open_cohort` counts
+ambiguity across ALL open rounds platform-wide — deliberately: *"which round?"* is equally
+unanswerable between two intakes of the same organisation. So with two open, a student arriving on
+a bare `/scholarship/apply` (no `?p=`) cannot be routed. **That refusal stays** — guessing once
+filed a student under the wrong foundation, funded from the wrong money, with no error anywhere.
+What changed is only WHEN it reaches them (next entry).
+
+**Revisit if:** never on its own. Widening it back would silently cap an organisation at one live
+intake.
+
+---
+
+## The apply page ASKS which gift, before the form — gift setup flow, 2026-09-06
+
+**Decided by:** engineering, as the necessary other half of the ruling above.
+
+**Decision:** `GET /scholarship/intake/` returns `choices` — `{code, name}` per open round — when
+and only when it cannot name one. With no remembered `?p=` and several rounds open, the apply page
+asks before the form and stores the answer through **the same seam a `?p=` link writes**.
+
+**Alternatives considered:** leave the 409 at submit; or pick the newest round.
+
+**Why not.** The 409 arrived **after the student had filled in the entire form** — the refusal was
+right, its timing was cruel. Picking is the thing PF-1 exists to forbid.
+
+**Rationale.** This is PF-1's own rule (*never pick, ask*) moved to the front door. The endpoint
+already knew both rounds and threw them away. Storing the pick on the existing key means submit
+cannot tell a chosen gift from a linked one — **one routing path to be right about, not two**.
+
+**⚠ WHAT IT DELIBERATELY DOES NOT CARRY:** no organisation, no ids, no counts — only what a student
+must read to choose. The endpoint is public and unauthenticated, and `choices` stays empty for a
+caller who named a programme that does not exist, because listing them would answer the very
+question the "closed" reading exists to refuse.
+
+**Revisit if:** the product ever wants a public directory of open programmes. Then this becomes a
+deliberate listing rather than a disambiguation, and it should say so.
+
+---
+
+## A gift may be deleted, and the rule is the model's — gift setup flow, 2026-09-07
+
+**Decided by:** owner (*"There should be a way to delete programmes… with sufficient warning, and
+deletion should be a typed word or sth"*); the refusal rules were read off the model rather than
+invented.
+
+**Decision:** `DELETE admin/scholarship/programmes/<pk>/`, org-fenced, `org_admin`/`super`, guarded
+by a **typed phrase** (`delete <code>`, checked server-side) and refused when anything holds the
+gift.
+
+**⚠ THE RULES WERE ALREADY WRITTEN.** Every relation meaning a gift has BECOME something is
+`on_delete=PROTECT`: intake years, applications, sponsor memberships, donations, payment runs. The
+database would refuse regardless; the endpoint's contribution is a refusal that **names which**, at
+the moment somebody asks, instead of a 500 from a constraint. So the line is: **a gift that has ever
+taken a student or a ringgit cannot be deleted.**
+
+**What goes with it, deliberately.** `ProgrammeApplicationItem` is CASCADE — those rows are the
+gift's own configuration, meaningless without it. `Invitation`, `PartnerOrganisation.programme` and
+`PartnerAdmin.programme` are SET_NULL, which is exactly right: they are NARROWINGS, and a narrowing
+whose gift is gone falls back to "every gift" (the S-ASSIGN rule). Nobody loses an invitation or a
+reviewer because a gift they had scoped it to was deleted.
+
+**Why a typed PHRASE rather than the bare code** (owner, 2026-09-07): the code is printed on the
+card and in the dialog's own label, so typing it is closer to copying what is on screen than to
+stating an intention. `delete test2` cannot be produced by reflex.
+
+**Trade-offs:** an organisation cannot delete a gift that took one application and then stopped.
+Accepted — that gift is a record, and `is_active=False` retires it without destroying it.
+
+**Revisit if:** a real need appears to remove a gift with history. That is an archive/anonymise
+question, not a delete, and it should be designed as one.
+
+---
+
+## The Delete button's answer is SERVED, not derived on the client — gift setup flow, 2026-09-07
+
+**Decided by:** owner asked for it (*"it should be prevented at the button stage, and not wait until
+typed to check"*); the mechanism is engineering's.
+
+**Decision:** the programme list row carries `delete_blocked_by` / `delete_blocked_count`, computed
+by `programme_delete_blocker()` — **the same function the delete endpoint refuses from**. The button
+is disabled from that value, with the reason as **visible text**.
+
+**Alternatives considered:** (a) leave it, and let the refusal explain after the typing; (b) disable
+the button from the counts the row already carries.
+
+**Why not (a).** The owner would not test Delete on the live flagship *because they could not tell
+it was safe*. A destructive control nobody dares press is one that also cannot be used to tidy up —
+the fear is the finding, not a comment on the guard.
+
+**⚠ WHY NOT (b), WHICH IS THE TEMPTING ONE.** The row carries `intake_years` and `applications`. It
+has **never** carried benefactors, money or payment runs. A button disabled on what the client
+happens to know would go **green** for a gift held by a donation and refuse only after the phrase
+was typed — rarer than the bug it replaces, and more surprising.
+
+**⚠ ONE FUNCTION, TWO READERS, and that is the load-bearing part.** Two copies of "what holds a
+gift" would drift, and the drift shows up as exactly the shape being fixed. A test asserts the row's
+answer and the refusal's code are the same value; bite-checked.
+
+**Why disabled-and-explained rather than hidden:** hiding explains nothing. And the reason is
+rendered as text, not only as the button's `title` — a tooltip needs a hover a touch screen cannot
+give, so on a phone the control would be dead with no explanation, which is the same bug smaller.
+
+**Revisit if:** the count queries become a cost (TD-231). The fix there keeps the one rule and gives
+it a list-shaped sibling; it does not move the rule into the client.

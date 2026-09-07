@@ -228,15 +228,41 @@ out of 100 and applies to **SPM applicants only**; `shortlisting.spm_merit` deli
 reuse `serializers_admin._application_merit_score`, whose `held_qualification` docstring says
 **"NOT A GATE, AND MUST NOT BECOME ONE"**.
 
-**The screens that write them** (Sabah S2b, re-shaped 2026-09-03). The gifts an organisation runs
-are a SECTION of `Organisation → Overview` (`components/admin/GiftProgrammes.tsx`); everything you
-SET about one gift is `Programme → Configuration` (`app/admin/programme/page.tsx`), three tabs in
-this order: **Rules · What we ask for · Intake year**. Endpoints in `views_admin.py` under
+**The screens that write them** (Sabah S2b, re-shaped 2026-09-03, sequenced 2026-09-06). The gifts
+an organisation runs are a SECTION of `Organisation → Overview`
+(`components/admin/GiftProgrammes.tsx`); everything you SET about one gift is
+`Programme → Configuration` (`app/admin/programme/page.tsx`), three tabs in this order:
+**Intake year · Rules · What we ask for**. Endpoints in `views_admin.py` under
 `_ProgrammeScopedBase`, fenced on the programme's `organisation_id` (cross-tenant → 404).
 `/admin/organisation/programmes` and `/admin/programme/years` are permanent redirects.
 
-A gift is created INACTIVE and a year CLOSED whatever the client sends; only ONE round per
-organisation may be open.
+⚠ **THE TAB ORDER FOLLOWS THE DATA, AND IT WAS REVERSED ON 2026-09-06.** It was Rules first
+("who qualifies precedes what they are asked to send" — still true of READING a gift already
+running). It is not true of SETTING ONE UP: **the rules are COLUMNS ON THE INTAKE YEAR**, so a gift
+created a minute ago has nothing for them to write to, and opening it on Rules landed a person on
+the one screen that could not work. `?tab=` deep-links a tab; Create lands on `?tab=year`.
+
+A gift is created INACTIVE and a year CLOSED whatever the client sends.
+
+⚠ **ONE OPEN ROUND PER GIFT PROGRAMME — not per organisation** (owner, 2026-09-06: *"if the org has
+two programmes, there could be two open applications"*). The admin guard filters on `programme=`.
+The apply side is unchanged and still refuses to GUESS between two open rounds — but the refusal
+now arrives as a QUESTION before the form (`intake/` returns `choices`), not a 409 at submit.
+
+⚠ **DELETING A GIFT: THE RULE IS THE MODEL'S.** Every relation meaning a gift has become something
+is `on_delete=PROTECT` — intake years, applications, sponsor memberships, donations, payment runs.
+`programme_delete_blocker()` names WHICH, and is read by BOTH the list row (so the Delete button is
+disabled with the reason showing) and the delete handler (so it refuses). One function, two
+readers — two copies would drift, and the drift is a button that looked safe. Confirmation is the
+typed phrase `delete <code>`, checked server-side. `ProgrammeApplicationItem` is CASCADE (the
+gift's own configuration); invitations, sources and reviewers are SET_NULL — a narrowing whose gift
+is gone falls back to "every gift".
+
+⚠ **THE SHELL'S SCOPE LIST IS FETCHED ONCE PER SESSION AND MUST BE REFRESHED AFTER A CREATE.**
+`ProgrammeScopeProvider` refuses to resolve a code it does not recognise (correctly — accepting one
+showed the owner a different programme's settings on 2026-09-03). A gift created mid-session was
+not in the list, so the screen asked forever with every click a no-op. `useProgrammeScope().reload()`
+re-fetches; `GiftProgrammes.create` AWAITS it BEFORE selecting. Fix the LIST, never the guard.
 
 ⚠ **AN INACTIVE GIFT MUST STAY REACHABLE.** A gift is created inactive and CONFIGURED before it is
 switched on, so that is the state an org_admin most often stands inside. Two endpoints filtered

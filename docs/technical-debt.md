@@ -3184,3 +3184,34 @@ never mentions `show_in_apply`; the day somebody wires it, that test fails and f
 **The trigger:** a second gift running its own intake with a different set of referring schools —
 i.e. the same trigger as the Sabah apply link, not before.
 (Logged 2026-09-04, S-ASSIGN.)
+
+---
+
+### [TD-231] The gift list runs five count queries per gift — low
+
+**Found:** gift setup flow (2026-09-07), adding `delete_blocked_by` so the Delete control could be
+disabled with a reason rather than refusing after the phrase was typed.
+
+**What.** `_programme_row` calls `programme_delete_blocker(p)`, which counts intake years,
+applications, sponsor memberships, donations and payment runs — **per programme**, and the list
+endpoint calls `_programme_row` for each. Three gifts is fifteen counts plus the two the row
+already ran. It short-circuits on the first holder, so the common case (a live gift held by its
+applications) costs two, not five.
+
+**Why it shipped this way, and why the shape is right.** The alternative is five `Exists()`
+annotations on the list query — faster, and it would put the rule in TWO places: the annotation and
+`programme_delete_blocker`, which the delete endpoint also calls. That drift is precisely what this
+sprint's design refuses: *one function, two readers*, because two copies produce a button that
+looks safe and a refusal after the typing. Correctness first while the numbers are small.
+
+**Why it does not bite today.** BrightPath runs three gifts. The endpoint is org-fenced, so a
+caller only ever sees their own organisation's, and the org with the most is the one being counted.
+
+**The fix when it does:** keep `programme_delete_blocker` as the single rule and give it a
+list-shaped sibling that annotates the same five relations in one query, with a test asserting the
+two agree on the same fixture. Not a rewrite — a second caller of one rule.
+
+**The trigger:** an organisation running more than ~10 gifts, or the Overview taking a visible
+moment to draw.
+
+(Logged 2026-09-07, gift setup flow.)
