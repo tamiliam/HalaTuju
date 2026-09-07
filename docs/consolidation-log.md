@@ -7,6 +7,8 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 _(cleared at the 2026-09-08 review — counter reset; the 11 reviewed entries are listed in that review)_
 
+- 2026-09-08 fix: Enter in the invitation note no longer sends it (BrightPath #17) — the note was a single-line `<input>` inside the form whose main action is Send invite, so the browser's own "Enter means I have finished" posted a half-written note to a DONOR, unrecoverable. Now a `<textarea>`; nothing else on the form moved. The email already carried line breaks and that is pinned rather than assumed (plain text + `email_templates.render` fills blocks without collapsing) — two tests, one on the built-in body and one on a stored `PartnerEmailTemplate`, because production has a seeded row and the stored path is the one that sends. 3 files, no schema change, no new i18n keys. ⚠ **The first rendered test was VACUOUS and is deleted**: "press Enter, assert nothing was sent" passes against the broken input too, because jsdom does not implement implicit form submission. Caught by injecting the old `<input>` and watching the file stay green. **Second silent bite in one day** — the other was #20's fixture with no `parent_ic`. What is asserted now is the pair that decides the behaviour: a textarea, inside the form.
+
 ## Reviews
 
 ### 2026-09-08 — Consolidation review (11 small changes, 19 Aug → 8 Sep)

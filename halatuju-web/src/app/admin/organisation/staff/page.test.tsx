@@ -190,6 +190,38 @@ describe('which gift a sponsor is invited into', () => {
       { email: 'donor@example.org', name: 'Donor', note: '' }, { token: 'tok' }))
   })
 
+  it('⚠ the note is a TEXTAREA inside the form, which is what stops Enter sending (#17)', async () => {
+    // BrightPath #17, and the reason it was urgent: the note used to be a single-line box inside
+    // this form, so Enter did the form's main action — posting an invitation to a DONOR, half
+    // written, with no way to take it back.
+    //
+    // ⚠ THIS PINS THE TAG, NOT THE KEYSTROKE, AND THE FIRST VERSION OF THIS TEST DID THE
+    // OPPOSITE AND WAS VACUOUS. "Press Enter, assert nothing was sent" PASSES against the broken
+    // single-line box too: implicit form submission is a browser behaviour and **jsdom does not
+    // implement it**, so no rendered test in this suite can ever observe the defect directly. It
+    // was caught by injecting the old <input> and watching this file stay green. What decides the
+    // real behaviour is the pair below — a textarea, inside the form — so that is what is
+    // asserted. If this ever moves to a real-browser suite, assert the send there instead.
+    await loaded()
+    await pick('sponsors')
+    const note = screen.getByPlaceholderText('admin.invitations.notePlaceholder')
+    expect(note.tagName).toBe('TEXTAREA')
+    expect(note.closest('form')).not.toBeNull()
+  })
+
+  it('sends a multi-line note as typed, with the breaks intact', async () => {
+    mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
+    await loaded()
+    await pick('sponsors')
+    inviteSponsorNamed()
+    fireEvent.change(screen.getByPlaceholderText('admin.invitations.notePlaceholder'),
+      { target: { value: 'Dear Ravi,\n\nWe would value your support.' } })
+    fireEvent.click(screen.getByText('admin.sendInvite'))
+    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
+      { email: 'donor@example.org', name: 'Donor',
+        note: 'Dear Ravi,\n\nWe would value your support.' }, { token: 'tok' }))
+  })
+
   it('asks once there are two, and starts BLANK — never a silent default', async () => {
     giftChoices = [
       { id: 7, code: 'flagship', name: 'BrightPath Bursary' },
