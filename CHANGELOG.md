@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: the income panel asks for income, not for a salary slip - 2026-09-07
+
+The morning's `#21` fix taught the SERVER that income may be shown any one of four ways. The
+officer cockpit was never told. Found by the owner on application 144, whose panel printed
+**"Mother's Salary slip — Missing"** in red while her signed, endorsed income letter sat two
+sections lower under OTHER — the only income evidence she has, filed in the junk drawer.
+
+One cause, three symptoms, all in the display layer:
+
+- **`docTypeToFact` filed `income_support_doc` under `other`**, beneath a comment calling it a
+  "reviewer-requested extra". True when written; false since 2026-07-25. It is INCOME now.
+- **The per-earner slot asked for `salary_slip` by name.** It is one income slot satisfied any one
+  way — a payslip, a readable EPF, or a declared amount backed by a support letter. It names what
+  is in it, and reads "income evidence" only when nothing is, because at that point any of the
+  three would do and naming one misstates the ask. An EPF used as the evidence is no longer also
+  listed below itself.
+- **The label list excluded it**, so it could not read "Mother's income letter".
+
+⚠ **`incomeDocLayout` HAS NO CALLER** (checked). The cockpit renders `incomeSubSections`. Both were
+corrected so a dead function cannot state a superseded rule, but a change there changes no screen.
+
+⚠ **ONE UNTAGGED HOUSEHOLD LETTER CANNOT PROVE TWO EARNERS** — it is claimed once. Otherwise a
+family supplying evidence for one wage would read as having evidenced two.
+
+Four stale tests updated deliberately, each carrying why and confirming its own claim is unchanged;
+6 added, both directions bite-checked. jest 1734 -> **1740**; tsc **24** (baseline, none new);
+lint **0**; i18n 4803 -> **4804 x 3**; build clean. Web only, no migration, nothing a student sees.
+
 ## Small change: the Configuration tab's boxes line up - 2026-09-07
 
 Owner live review of Sprint B: the value boxes drifted left/right because the unit label after
