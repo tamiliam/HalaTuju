@@ -230,8 +230,15 @@ export default function OrganisationConfigurationTab() {
                             ))}
                           </select>
                         ) : (
-                          <input type={isClock(s) ? 'time' : 'text'}
-                            inputMode={isClock(s) ? undefined : 'numeric'}
+                          // ⚠ A CLOCK ROW IS A TEXT BOX, NOT `type="time"` (owner, 2026-09-07).
+                          // A native time input renders in the BROWSER's locale, and on a
+                          // 12-hour browser it grows an AM/PM segment: 21:30 cannot be typed at
+                          // all (the hour caps at 12), and while that segment is empty the input
+                          // reports NO VALUE — so the box looked filled, Save stayed asleep, and
+                          // there was nothing on screen to say why. There is no attribute that
+                          // forces 24-hour. A plain box typed as HH:MM behaves the same in every
+                          // browser and is what `hhmmToMinutes` already reads.
+                          <input type="text" inputMode="numeric"
                             spellCheck={false} autoComplete="off"
                             value={draft[s.key] ?? ''}
                             onChange={(e) => {
@@ -254,10 +261,16 @@ export default function OrganisationConfigurationTab() {
                       </div>
                       {parsed.ok ? (
                         <p className="mt-1 text-xs text-ground-400">
-                          {t('admin.orgSettings.config.defaultNote', {
-                            n: isClock(s) ? minutesToHhmm(s.default) : String(s.default),
-                            unit: t(`admin.orgSettings.config.unit.${s.unit}`),
-                          })}
+                          {/* A clock row's note has its own line: the column beside the box says
+                              what SHAPE to type (hh:mm) while the note says which CLOCK the
+                              default is on (Malaysian time). One string cannot do both. */}
+                          {isClock(s)
+                            ? t('admin.orgSettings.config.defaultNoteClock',
+                              { n: minutesToHhmm(s.default) })
+                            : t('admin.orgSettings.config.defaultNote', {
+                              n: String(s.default),
+                              unit: t(`admin.orgSettings.config.unit.${s.unit}`),
+                            })}
                         </p>
                       ) : (
                         <p className="mt-1 text-xs text-critical-700" data-testid={`config-${s.key}-invalid`}>

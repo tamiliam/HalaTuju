@@ -5820,9 +5820,10 @@
           "minutes": "minit",
           "cards": "kad",
           "questions": "soalan",
-          "time_of_day": "(waktu Malaysia)"
+          "time_of_day": "(hh:mm)"
         },
         "defaultNote": "Lalai platform: {n} {unit}",
+        "defaultNoteClock": "Lalai platform: {n} (waktu Malaysia)",
         "rowInvalid": "Masukkan nombor bulat antara {min} dan {max}, atau biarkan kosong untuk lalai.",
         "rowInvalidClock": "Masukkan waktu seperti 08:00, atau biarkan kosong untuk lalai.",
         "save": "Simpan perubahan",
