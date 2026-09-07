@@ -5621,7 +5621,9 @@
           "invite_source": "Belum dihantar. Ini ialah teks yang akan diterima oleh organisasi sumber apabila mereka boleh log masuk dan mengikuti pelajar mereka sendiri.",
           "invite_sponsor": "Dihantar apabila anda menjemput seseorang menjadi penderma. Ia memautkan mereka ke pendaftaran biasa, di mana mereka tetap memberi persetujuan dan disaring."
         }
-      }
+      },
+      "resent": "Jemputan dihantar semula.",
+      "resendFailed": "Kami tidak dapat menghantarnya. Baris di bawah menunjukkan apa yang berlaku."
     },
     "soon": "Akan datang",
     "programmes": {

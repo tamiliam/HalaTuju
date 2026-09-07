@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: Resend on a donor invitation now actually sends (BrightPath #16) - 2026-09-08
+
+*"When I click resend, I cannot tell if it worked."* It did not. The link was drawn on donor rows,
+checked for a staff account, found none and returned **in silence** — no request, no record, no
+message. Revoke hides itself correctly on those rows; Resend was meant to be treated the same way
+and only half of it was built. Triaged bug / small change, so no charge.
+
+- **Wired to `create_or_refresh`, which is what a resend already was.** Re-issuing an invitation to
+  the same address finds the open row, moves its expiry, sends the letter and records whether it
+  went. No new endpoint, and there should not be one.
+- **It reports both ways** — a banner saying it went, or saying it did not, and the reloaded row
+  carries the failure reason the staff rows already showed.
+- **No note** (owner's call): the personal note is used once at send time and is not stored, so a
+  resend cannot repeat it. Storing it would be a migration, which is more than this is worth.
+- **No `programme_id`, deliberately.** `create_or_refresh` leaves the existing gift alone when none
+  is named and overwrites it when one is — so passing the form's current gift would silently
+  re-home a benefactor.
+
+⚠ **THIS CORRECTS OUR OWN POSTED ANALYSIS.** The 18 August comment told BrightPath that resending a
+donor invitation *"does not exist today — not behind the broken link, not anywhere else"*, and
+priced 2.0h to build it. Wrong: it exists, and typing the address into the invite form again has
+always done it. The analysis was written from the button inwards and never read
+`create_or_refresh`'s docstring, which says idempotent-and-refreshes in its second line. **Read the
+engine before pricing the absence of one.**
+
+jest **1792**; tsc 24 (baseline); lint 0; i18n **4858 × 3** (+2 keys, ms/ta my first drafts);
+`next build` clean. Both directions bite-checked. First change built in its own worktree.
+
 ## Fix: the sponsors table drops the Role column instead of dashing it - 2026-09-08
 
 Owner, looking at the live Invitations page while testing #17: *"what is the purpose of the role

@@ -5621,7 +5621,9 @@
           "invite_source": "Not sent yet. This is the wording a source organisation will receive once they can sign in and follow their own students.",
           "invite_sponsor": "Sent when you invite somebody to become a donor. It links them to the ordinary sign-up, where they still give consent and are vetted."
         }
-      }
+      },
+      "resent": "Invitation sent again.",
+      "resendFailed": "We could not send it. The row below shows what happened."
     },
     "soon": "Soon",
     "programmes": {

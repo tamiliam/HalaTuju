@@ -55,7 +55,10 @@ export default function OrganisationInvitationsPage() {
   const canManage = r === 'super' || r === 'org_admin'
   const mayView = canAccess('/admin/organisation/staff', r)
 
-  const { message, busy, busyId, invite, resend, toggle } = useStaffAdmin(token)
+  const { message, setMessage, busy, busyId, invite, resend, toggle } = useStaffAdmin(token)
+  // Which SPONSOR row is mid-resend. The staff actions carry their own `busyId` from the hook;
+  // a sponsor invitation has no staff account, so it needs its own.
+  const [resendingId, setResendingId] = useState<number | null>(null)
 
   const [panel, setPanel] = useState<'invitations' | 'emails'>('invitations')
   const [kind, setKind] = useState<InvitationKind>('admins')
@@ -103,6 +106,42 @@ export default function OrganisationInvitationsPage() {
     }
     if (ok) { setSName(''); setSEmail(''); setNote(''); setSProgramme('') }
     void load()
+  }
+
+  /**
+   * Send a DONOR their invitation again (BrightPath #16).
+   *
+   * ⚠ THERE IS NO SEPARATE RESEND ENDPOINT AND THERE SHOULD NOT BE. `create_or_refresh` is
+   * idempotent on an open invitation to the same address: inviting again finds the existing row,
+   * moves its expiry, sends the letter and records whether it went. That is a resend, and it is
+   * what typing the address into the form above already did. Until now the Resend link on a donor
+   * row was drawn and wired to nothing — it checked for a staff account, found none, and returned
+   * in silence, which is why the owner could not tell whether it had worked.
+   *
+   * ⚠ NO NOTE IS SENT, BY DECISION (owner, 2026-09-08). The personal note is used once at send
+   * time and is not stored — there is no column for it — so a resend cannot repeat it. Passing
+   * nothing is the honest option; the letter stands on its own. Storing it would be a migration,
+   * which is more than this is worth.
+   *
+   * ⚠ NO `programme_id` EITHER, and that is load-bearing rather than an omission: `create_or_refresh`
+   * leaves the existing gift alone when none is named, and overwrites it when one is. A resend must
+   * not silently re-home a benefactor into whichever gift the form happens to be showing.
+   */
+  const resendSponsor = async (row: InvitationRow) => {
+    if (!token) return
+    setResendingId(row.id)
+    setMessage(null)
+    try {
+      await inviteSponsor({ email: row.email, name: row.name }, { token })
+      setMessage({ type: 'success', text: t('admin.invitations.resent') })
+    } catch {
+      // The endpoint answers 502 when the letter did not go, and records the reason on the row —
+      // so the banner says it failed and the reloaded row says why. Both, not one.
+      setMessage({ type: 'warning', text: t('admin.invitations.resendFailed') })
+    } finally {
+      setResendingId(null)
+      void load()
+    }
   }
 
   const rows = data?.invitations ?? []
@@ -225,7 +264,7 @@ export default function OrganisationInvitationsPage() {
           </div>
         ) : (
           <InvitationsTable
-            rows={rows} canAct={canManage} busyId={busyId}
+            rows={rows} canAct={canManage} busyId={busyId ?? resendingId}
             /* ⚠ ONLY THE STAFF KINDS CARRY A ROLE. Admins holds Admin · Finance · Org admin and
                Reviewers holds Reviewer · QC, so the column separates things there. A sponsor
                invitation creates no account and has no role, so on that table the column could
@@ -236,8 +275,14 @@ export default function OrganisationInvitationsPage() {
             /* `resend` and `toggle` act on the ACCOUNT, so they take the staff row behind the
                invitation. Both read only `id` and `is_active`; a sponsor invitation has no
                account, and the table never offers these for one. */
+            /* ⚠ TWO KINDS OF RESEND BEHIND ONE LINK, and the fork is the account. A STAFF
+               invitation resends through the account (it also rotates the temporary password, so
+               it must go through `resend`); a DONOR invitation has no account and resends by
+               re-issuing the invitation itself. Before #16 only the first arm existed, so the
+               link on a donor row fell off the end of an `if` and did nothing at all. */
             onResend={canManage ? (row: InvitationRow) => {
               if (row.admin_id) void resend(asStaffRow(row)).then(load)
+              else void resendSponsor(row)
             } : undefined}
             onRevoke={canManage ? (row: InvitationRow) => {
               if (row.admin_id) void toggle(asStaffRow(row)).then(load)
