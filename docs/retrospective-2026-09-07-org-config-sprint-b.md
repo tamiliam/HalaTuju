@@ -82,10 +82,13 @@ finding is recorded as the reason the arm carries a comment rather than a behavi
 
 ## Gates
 
-- pytest full suite: **5891** passed (5875 → +16: 11 new in `test_org_config.py` — 35 there now —
-  and the rest collected elsewhere unchanged).
-- jest **1738** (1737 → +1); `next lint` 0 errors; `tsc` 24 (baseline, test files only);
-  i18n **4790 × 3**; `next build` clean. No migration, `makemigrations --check` clean.
+- On MY tree: pytest **5901** (full `apps/` suite, all passed; +11 new in `test_org_config.py` —
+  35 there now); jest **1738**; i18n **4790 × 3**.
+- On the MERGED tree (origin/main moved twice mid-sprint — the gift-create fix `81acc5e7` and
+  BrightPath #21 `a5292b2e`; merged as `bce1e09c`, one additive CHANGELOG conflict): pytest
+  **5912**, jest **1734** (their FE rework net-removed a few tests), `next lint` 0 errors,
+  `tsc` 24 (baseline, test files only), i18n **4803 × 3**, `next build` clean.
+- No migration; `makemigrations --check` clean.
 
 ## Lessons
 

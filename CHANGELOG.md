@@ -34,10 +34,11 @@ wired read sites + rows on the existing tab, exactly the shape the roadmap promi
 - **FE:** the tab renders the new rows registry-driven; `GROUP_ORDER` gains `student_comms`; i18n
   +15 keys × en/ms/ta (ms/ta first drafts).
 
-**Gates:** pytest full suite green (+11 in `test_org_config.py`, now 35 there); jest 1737 →
-**1738**; `next lint` 0 errors; tsc 24 (baseline); i18n 4775 → **4790 × 3**; `next build` clean;
-no migration. Four bite-checks landed (cap, both sweep windows, both sponsor render sites);
-retro `docs/retrospective-2026-09-07-org-config-sprint-b.md`.
+**Gates (merged tree, incl. the concurrent gift-create fix + BrightPath #21):** pytest **5912**
+(full `apps/` suite; +11 new in `test_org_config.py`, now 35 there); jest **1734**; `next lint`
+0 errors; tsc 24 (baseline); i18n **4803 × 3**; `next build` clean; no migration. Four
+bite-checks landed (cap, both sweep windows, both sponsor render sites); retro
+`docs/retrospective-2026-09-07-org-config-sprint-b.md`.
 
 ## Fix: a frozen copy of the income bar could not see how income is proved now - 2026-09-07
 

@@ -557,8 +557,9 @@ merged to `main`. **NO MIGRATION** — Sprint A built the store/endpoint/tab; B 
 wired read sites + rows, the exact shape the roadmap promised. Retro
 `docs/retrospective-2026-09-07-org-config-sprint-b.md`; roadmap
 `docs/plans/2026-09-06-org-configuration-roadmap.md` (A ✔ B ✔ · C/D/E/F open).
-pytest full suite green (+11 in `test_org_config.py`, 35 there now); jest 1737 → **1738**;
-lint **0**; tsc **24** (baseline); i18n 4775 → **4790 × 3**; `next build` clean.
+Merged tree (carries the concurrent gift-create fix `81acc5e7` + BrightPath #21 `a5292b2e`):
+pytest **5912** (full `apps/` suite; +11 of those are new in `test_org_config.py`, 35 there now);
+jest **1734**; lint **0**; tsc **24** (baseline); i18n **4803 × 3**; `next build` clean.
 Four bite-checks landed (clarify cap, both sweep windows, both sponsor render sites).
 
 **Five settings joined the Configuration tab** — the four student-comms values
