@@ -48,10 +48,24 @@ export interface ProgrammeScope {
   /** True when there is more than one to choose between — the page should say so. */
   ambiguous: boolean
   select: (code: string) => void
+  /**
+   * Re-fetch the list of gifts this caller may open.
+   *
+   * ⚠ WHY THIS HAD TO EXIST (owner, live use, 2026-09-07). The shell fetches the scopes ONCE per
+   * console session, so a gift CREATED during that session was unknown to this list — and the
+   * guard below then did exactly its job: refused to resolve a code it did not recognise. The
+   * result was a screen that asked which gift, forever, with every click a no-op.
+   *
+   * ⚠ THE FIX IS TO REFRESH THE LIST, NEVER TO LOOSEN THE GUARD. Accepting an unknown code is the
+   * 2026-09-03 defect (it showed the owner a different programme's settings); falling back to the
+   * only gift is the same defect wearing a hat. Stale data is the bug — the refusal is correct.
+   */
+  reload: () => Promise<void>
 }
 
 const EMPTY: ProgrammeScope = {
   choices: [], chosen: '', programme: null, ambiguous: false, select: () => {},
+  reload: async () => {},
 }
 
 const Ctx = createContext<ProgrammeScope>(EMPTY)
@@ -62,9 +76,15 @@ const Ctx = createContext<ProgrammeScope>(EMPTY)
  * did before this existed.
  */
 export function ProgrammeScopeProvider(
-  { choices, children }: { choices: readonly ProgrammeChoice[]; children: ReactNode },
+  { choices, children, onReload }: {
+    choices: readonly ProgrammeChoice[]
+    children: ReactNode
+    /** Ask the shell to re-fetch the scopes. Optional so a harness can mount without one. */
+    onReload?: () => Promise<void>
+  },
 ) {
   const [picked, setPicked] = useState('')
+  const reload = useCallback(async () => { await onReload?.() }, [onReload])
 
   const value = useMemo<ProgrammeScope>(() => {
     /*
@@ -92,8 +112,9 @@ export function ProgrammeScopeProvider(
       programme: choices.find((c) => c.code === chosen) ?? null,
       ambiguous: choices.length > 1,
       select: setPicked,
+      reload,
     }
-  }, [choices, picked])
+  }, [choices, picked, reload])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

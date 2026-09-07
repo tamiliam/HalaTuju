@@ -10,6 +10,7 @@ import re
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import ProtectedError
 from django.db.models import Count, Exists, Max, OuterRef, Q, Sum
 from django.utils import timezone
 from rest_framework import status
@@ -6756,6 +6757,77 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
             logger.info('AUDIT programme_updated code=%s fields=%s by=%s',
                         p.code, ','.join(changed), admin.email or '')
         return Response(_programme_row(p))
+
+    def delete(self, request, pk):
+        """DELETE one gift — only ever a gift that never became anything.
+
+        ⚠⚠ THE RULE IS ALREADY WRITTEN IN THE MODEL, AND THIS ENDPOINT ONLY SURFACES IT. Every
+        relation that means a gift has BECOME something is `on_delete=PROTECT`: its intake years,
+        its applications, the benefactors accepted into it, the money recorded against it, and the
+        payment runs that paid from it. The database would refuse regardless; what this adds is a
+        refusal that SAYS WHICH of those is holding it, at the moment somebody asks, instead of a
+        500 from a constraint.
+
+        So the honest line is: **a gift that has ever taken a student or a ringgit cannot be
+        deleted.** What can be deleted is the one you created by mistake a minute ago.
+
+        ⚠ WHAT DOES GO WITH IT, deliberately: `ProgrammeApplicationItem` is CASCADE — those rows
+        are the gift's own configuration, meaningless without it. And `Invitation`,
+        `PartnerOrganisation.programme` and `PartnerAdmin.programme` are SET_NULL, which is exactly
+        right: those are NARROWINGS, and a narrowing whose gift is gone falls back to "every gift"
+        (the S-ASSIGN rule — NULL means every gift). Nobody loses an invitation or a reviewer.
+
+        ⚠ THE TYPED CONFIRMATION IS SERVER-SIDE, not a client courtesy. `confirm` must equal the
+        gift's own code. A destructive verb that any client can fire with an empty body is one
+        mis-wired button away from deleting somebody's gift, and the browser dialog is not the
+        guard — it is the explanation of the guard.
+        """
+        admin, err = self._gate(request)
+        if err:
+            return err
+        p, err = self._programme_or_404(admin, pk)
+        if err:
+            return err
+
+        if (request.data.get('confirm') or '').strip().lower() != p.code.lower():
+            return Response({'error': 'confirm_mismatch', 'code': 'confirm_mismatch'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        from .models import (Donation, PaymentRun, ScholarshipApplication, ScholarshipCohort,
+                             SponsorProgrammeMembership)
+        # Ordered so the reason a person is most likely to be able to ACT on comes first: a stray
+        # intake year they can delete, before money they cannot undo.
+        holders = (
+            # org-fence: every query here filters on `p`, reached through `_programme_or_404`,
+            # which selects from `self._programmes_for(admin)` — already inside the caller's org.
+            ('has_intake_years', ScholarshipCohort.objects.filter(programme=p)),
+            # org-fence: as above — narrowed by `p`, which the fence already resolved.
+            ('has_applications', ScholarshipApplication.objects.filter(programme=p)),
+            # org-fence: as above.
+            ('has_benefactors', SponsorProgrammeMembership.objects.filter(programme=p)),
+            # org-fence: as above.
+            ('has_money', Donation.objects.filter(programme=p)),
+            # org-fence: as above.
+            ('has_payment_runs', PaymentRun.objects.filter(programme=p)),
+        )
+        for code, qs in holders:
+            count = qs.count()
+            if count:
+                return Response({'error': code, 'code': code, 'count': count},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        code, name = p.code, p.name_en
+        try:
+            p.delete()
+        except ProtectedError:
+            # The backstop, and it should be unreachable: a relation added later without a check
+            # above lands here rather than as a 500. Deliberately generic — this arm knows only
+            # that something protects it, which is exactly why the named checks exist.
+            return Response({'error': 'in_use', 'code': 'in_use'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        logger.info('AUDIT programme_deleted code=%s name=%s by=%s', code, name, admin.email or '')
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 def _requirements_from(data):
