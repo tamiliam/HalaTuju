@@ -3096,9 +3096,14 @@ export interface AdminProgramme {
    * to know would go green for a gift held by a donation and refuse only after the phrase was
    * typed — rarer than the bug it replaces, and more surprising. The delete endpoint refuses from
    * the SAME function that fills this, so the two cannot disagree.
+   *
+   * ⚠ AN INTAKE YEAR IS NOT ON THIS LIST, and its absence is the owner's ruling (2026-09-07):
+   * students hold a gift, a year on its own does not. An EMPTY year is deleted along with the
+   * gift. Do not add `has_intake_years` back by reading `intake_years > 0` here — that is exactly
+   * the derived-from-the-card mistake the paragraph above refuses.
    */
   delete_blocked_by:
-    | 'has_intake_years' | 'has_applications' | 'has_benefactors'
+    | 'has_applications' | 'has_benefactors'
     | 'has_money' | 'has_payment_runs' | null
   delete_blocked_count: number
 }
@@ -3149,9 +3154,12 @@ export async function updateAdminProgramme(
  * courtesy. A destructive verb any caller can fire with an empty body is one mis-wired button
  * away from deleting somebody's gift.
  *
- * ⚠ IT REFUSES WITH A NAMED REASON rather than a generic failure: `has_intake_years`,
- * `has_applications`, `has_benefactors`, `has_money`, `has_payment_runs`. Those are the relations
- * the model already protects — a gift that has taken a student or a ringgit cannot be deleted.
+ * ⚠ IT REFUSES WITH A NAMED REASON rather than a generic failure: `has_applications`,
+ * `has_benefactors`, `has_money`, `has_payment_runs`. Those are the relations the model already
+ * protects — a gift that has taken a student or a ringgit cannot be deleted.
+ *
+ * ⚠ THE GIFT'S EMPTY INTAKE YEARS ARE DELETED WITH IT (owner, 2026-09-07). A year is rules, not
+ * students, so it never refuses; one that holds an application is caught as `has_applications`.
  */
 export async function deleteAdminProgramme(
   id: number,

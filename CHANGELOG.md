@@ -97,6 +97,42 @@ Measured on production before the change: **5 live income documents with a blank
 docstring names. Both bites landed and bit (env arm disabled → 1 test fails; registry key renamed
 → 1 test fails). +2 tests.
 
+## Students hold a gift, not intake years - 2026-09-07
+
+**NO migration. api + web.** The owner read TD-232 back and said the rule was wrong: *"I don't
+[want] the ability to delete a gift programme that has students, and not merely intake years."*
+Retro `docs/retrospective-2026-09-07-gift-delete-rule.md`. **This CLOSES TD-232.**
+
+- **An intake year is no longer a delete blocker.** It was checked FIRST, so a gift created by
+  mistake and given one stray year could never be removed - and neither could the year, because
+  there is no way to delete one on its own. The blocker list is now applications, benefactors,
+  money, payment runs; **students are the line**.
+- **An empty year is deleted WITH the gift**, in ONE `transaction.atomic()` in the delete handler,
+  years first. The MODEL is untouched: `ScholarshipCohort.programme` stays `PROTECT`, so it is
+  still the backstop for every other path that could ever delete a programme, and a year holding
+  an application is still refused. Relaxing it to `CASCADE` would have made a gift with students
+  silently take their years with it.
+- **⚠ THE APPLICATION QUERY NOW REACHES THROUGH THE COHORT** -
+  `Q(programme=p) | Q(cohort__programme=p)`. `ScholarshipApplication.programme` is denormalised
+  from the cohort at first save and is **set-once**, so a cohort moved between gifts leaves its old
+  applications pointing at the OLD gift. Filtering on the column alone would have called this gift
+  empty while its own year still held somebody, and the database's `PROTECT` would then have
+  refused AFTER the phrase was typed out in full - the exact shape the served blocker exists to
+  prevent. Bite-checked: dropping the OR arm fails the test written for it.
+- **The dialog says the years go, and how many** (`deleteYears`, en/ms/ta). They are the one thing
+  being removed that the reader cannot see from the dialog, and they no longer block - so silence
+  would mean pressing Delete and quietly losing rules they had set up. Shown only when there is at
+  least one.
+- **The `hasIntakeYears` refusal string and `deleteRefusalCopy.test.ts` are DELETED** - the copy
+  they governed no longer exists, and a guard whose premise is gone is worse than no guard. The
+  claim it protected now lives where it belongs: a rendered test asserting Delete stays LIVE for a
+  gift that has years but no students, plus a backend test asserting the same of the served row.
+
+pytest 5924 -> **5926**; jest **1754** (a 5-test file out, a 5-test file in); tsc **24**
+(baseline); lint **0**; i18n **4816 x 3** (one key out, one in); `next build` clean;
+`makemigrations --check` clean. Three bite-checks, each injection verified as landed first.
+ms and ta are first drafts.
+
 ## Org Config Sprint C: the reviewers & staff clocks become organisation-tunable - 2026-09-07
 
 Five settings join Organisation > Settings > Configuration under a new **Reviewers & staff**

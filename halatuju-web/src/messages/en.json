@@ -5655,7 +5655,6 @@
         "hasOpenYear": "This programme is taking applications. Close its intake year first.",
         "noOrg": "Your account is not tied to an organisation.",
         "generic": "That did not work. Nothing was changed.",
-        "hasIntakeYears": "This gift has intake years, so it cannot be deleted — a year holds the rules and any applications made under it. Switch the gift off instead if you have finished with it.",
         "hasApplications": "Students have applied to this gift, so it cannot be deleted.",
         "hasBenefactors": "Benefactors have been accepted into this gift, so it cannot be deleted.",
         "hasMoney": "Money has been recorded against this gift, so it cannot be deleted.",
@@ -5667,6 +5666,7 @@
       "delete": "Delete",
       "deleteTitle": "Delete {name}?",
       "deleteBody": "This removes the gift programme and the settings that belong to it — its rules and what it asks students for. It cannot be undone.",
+      "deleteYears": "Its intake years go with it — {count} in all. None of them holds a student, so nothing a student sent you is affected.",
       "deleteKeeps": "Invitations, sources and reviewers you had narrowed to this gift are kept — they go back to covering every gift.",
       "deleteConfirmLabel": "Type {phrase} to confirm",
       "deleteCta": "Delete this gift programme"
