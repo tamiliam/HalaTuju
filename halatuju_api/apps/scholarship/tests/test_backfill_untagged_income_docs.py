@@ -88,6 +88,48 @@ class TestBackfillUntaggedIncomeDocs(TestCase):
         self.assertIsNotNone(loser.superseded_at)
         self.assertIsNotNone(loser.superseded_by_id)
 
+    def test_a_not_salary_photo_can_never_take_the_slot_from_a_genuine_payslip(self):
+        """Application 73's REAL shape, found by reading the live report before writing anything.
+
+        The live payslip is a genuine scan whose OCR misread one digit of the earner's IC, so
+        `doc_match_verdict` calls it NOT usable. The untagged copy is a WhatsApp photo scored
+        `not_salary` that read no name and no IC at all — so nothing contradicts, and it reads
+        usable. `promotion.doc_quality` leads with `usable`, so by that rule alone the photo takes
+        the slot from the real payslip. It must not: for the income proofs the de-dup's rank is the
+        answer, and that leads with GENUINENESS.
+        """
+        app = self._app('u-notsalary')
+        # The earner's IC is on file, so the payslip's IC number is actually compared. Live it was
+        # a ONE-DIGIT OCR misread; a plainly different number is used here so the fixture does not
+        # ride on how near a near-miss may be.
+        ic = self._doc(app, member='father', kind='parent_ic', name='father-ic.jpg')
+        ic.vision_name = 'RAVI A/L PERIAKARUPPAN'
+        ic.vision_nric = '751206-08-5941'
+        ic.vision_run_at = timezone.now()
+        ic.save(update_fields=['vision_name', 'vision_nric', 'vision_run_at'])
+        good = self._doc(app, member='father', name='Scanned.pdf')
+        good.vision_fields = {'authenticity': {'status': 'genuine'},
+                              'fields': {'name': 'RAVI A/L PERIAKARUPPAN', 'nric': '640101-01-1234',
+                                         'gross_income': '2375.73', 'period': 'March 2026'},
+                              'student_verdict': 'ok'}
+        good.vision_run_at = timezone.now()
+        good.save(update_fields=['vision_fields', 'vision_run_at'])
+        junk = self._doc(app, name='IMG-WA0071.jpg')
+        junk.vision_fields = {'authenticity': {'status': 'not_salary'},
+                              'fields': {'name': '', 'nric': '', 'period': 'June 2026'},
+                              'student_verdict': 'ok'}          # nothing to contradict → 'usable'
+        junk.vision_run_at = timezone.now()
+        junk.save(update_fields=['vision_fields', 'vision_run_at'])
+
+        out = self._run('--apply')
+        good.refresh_from_db()
+        junk.refresh_from_db()
+        self.assertEqual(junk.household_member, 'father')       # still tagged...
+        self.assertIsNone(good.superseded_at)                   # ...but the real payslip stays live
+        self.assertIsNotNone(junk.superseded_at)
+        self.assertEqual(junk.superseded_by_id, good.id)
+        self.assertIn(f'goes to Replaced behind #{good.id}', out)   # the report SAID so first
+
     def test_a_salary_route_blank_is_left_alone(self):
         """Undecidable is not a licence to guess. On the salary route several members may each hold
         documents, so the blank must stand — and be REPORTED, so it is visible rather than silent."""

@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: the #20 sweep settles an income slot the way the platform does - 2026-09-08
+
+The report the previous change made runnable was read before anything was written, and it said
+something nobody expected: application 73's untagged WhatsApp photo would **replace the live copy**
+— a document scored `not_salary`, taking the slot from a genuine payslip, on a real student's
+record. The command's own docstring, its test and the 24-August changelog all predicted the
+opposite. They were predictions; this was the run.
+
+- **Cause: the sweep copied HALF of a two-step decision.** At upload an income document goes
+  through `promotion.should_promote` and THEN `income_engine.dedupe_income_proof`; the de-dup is
+  what makes the promote proxy safe for these types. The sweep had only the first. The two lead
+  with different things — `doc_quality` with `usable`, the de-dup with **genuineness** — and on
+  this pair they disagree: the genuine payslip's OCR misread one digit of the earner's IC, so it
+  reads NOT usable, while the photo read no name and no IC at all, so nothing contradicts it and
+  it reads usable.
+- **STR / salary / EPF now settle by `dedupe_income_proof`, which is also the writer** — no second
+  copy of the decision. `parent_ic` is not a de-duped type and keeps the promote rule.
+- **New `income_engine.income_dedup_rank`** — the de-dup's ranking, extracted so the report and
+  the write ask one function the same question, with the reason genuineness leads written at it.
+- **Report and write cannot disagree**: `_dedup_outcome` predicts with the tag applied in memory
+  only, using that same rank, and copies the de-dup's scope (salary/EPF per member, STR and the
+  utility bills household-wide).
+
+Bite-checked: with the de-dup branch disabled the new regression test fails. ⚠ Its first version
+passed under that bite — the fixture had no `parent_ic`, so nothing compared the payslip's IC
+number and the inversion could not arise. **A silent bite meant the fixture was too kind, not that
+the guard was fine.** apps/scholarship 4580 passed. +1 test, no schema change.
+
 ## Fix: the repair for BrightPath #20 can finally be run - 2026-09-08
 
 `backfill_untagged_income_docs` shipped on 24 August with the upload guard it repairs behind, and
