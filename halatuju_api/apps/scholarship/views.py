@@ -2006,6 +2006,11 @@ class CronRunView(APIView):
         # before `requirements_snapshot` existed. Report-only unless REQUIREMENTS_SNAPSHOT_APPLY=1
         # is set on the service; idempotent, so a repeat is a no-op.
         'backfill-requirements-snapshots': 'backfill_requirements_snapshots',
+        # one-off (request #20): tag the income documents left with a blank `household_member`,
+        # and settle the slot each one lands in. Reads STORED fields only — no re-extraction.
+        # Report-only unless INCOME_DOC_TAG_APPLY=1 is set on the service; idempotent, so a
+        # repeat is a no-op.
+        'backfill-untagged-income-docs': 'backfill_untagged_income_docs',
     }
 
     def post(self, request, job):

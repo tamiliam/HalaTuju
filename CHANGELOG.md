@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: the repair for BrightPath #20 can finally be run - 2026-09-08
+
+`backfill_untagged_income_docs` shipped on 24 August with the upload guard it repairs behind, and
+was never run. It could not be: it writes to the production database, which is reachable only from
+the service, and it was **not in the cron registry** — the one path a command has to the live data.
+So the five documents it exists to file have sat untagged for a fortnight while the guard has been
+correctly tagging every new upload.
+
+- **Registered as cron job `backfill-untagged-income-docs`.** The endpoint calls a command with NO
+  arguments, so `--apply` is unreachable there; the write is switched on by
+  **`INCOME_DOC_TAG_APPLY=1`** on the service (set it, run the job, UNSET it — the
+  `backfill_requirements_snapshots` pattern). Absent variable = report only, so a job scheduled for
+  a report can never write.
+- **No behaviour changes on deploy.** This wires a report-only command to a switch; nothing runs by
+  itself, and the repair is a deliberate two-step the owner drives.
+- Reads STORED fields only — no Vision, no Gemini, no re-extraction.
+
+**⚠ The class: a repair command that cannot reach the data it repairs is not a repair.** The
+forward fix (the upload guard) went live and the backward repair silently did not, which is the
+third instance of the small-change lane's "the backward repair is the half that gets forgotten"
+rail — here it was not forgotten but *unreachable*, which looks identical from the outside. A
+test now pins the job NAME the runbook types, so a rename cannot strand it again.
+
+Measured on production before the change: **5 live income documents with a blank
+`household_member`, on 2 applications** (73 × 1, 88 × 4) — the same five the command's own
+docstring names. Both bites landed and bit (env arm disabled → 1 test fails; registry key renamed
+→ 1 test fails). +2 tests.
+
 ## Org Config Sprint C: the reviewers & staff clocks become organisation-tunable - 2026-09-07
 
 Five settings join Organisation > Settings > Configuration under a new **Reviewers & staff**

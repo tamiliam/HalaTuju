@@ -10,6 +10,7 @@ unreadable copy cannot take the slot from a good one, and that a genuinely undec
 blank rather than guessed at.
 """
 from io import StringIO
+from unittest import mock
 
 from django.core.management import call_command
 from django.test import TestCase
@@ -97,6 +98,31 @@ class TestBackfillUntaggedIncomeDocs(TestCase):
         self.assertEqual(blank.household_member, '')
         self.assertIn('owner not determinable', out)
         self.assertIn('1 left blank as undecidable', out)
+
+    def test_the_env_var_is_the_apply_flag_on_the_live_service(self):
+        """The cron endpoint calls a command with NO arguments, so `--apply` is unreachable there.
+        The env var is how the write is switched on — and its ABSENCE must leave report-only, or a
+        job scheduled for a report would silently write."""
+        app = self._app('u-env')
+        blank = self._doc(app, kind='str', name='legacy.jpg')
+        with mock.patch.dict('os.environ', {}, clear=False):
+            import os
+            os.environ.pop('INCOME_DOC_TAG_APPLY', None)
+            self._run()
+            blank.refresh_from_db()
+            self.assertEqual(blank.household_member, '')   # unset → still a report
+            os.environ['INCOME_DOC_TAG_APPLY'] = '1'
+            self._run()
+        blank.refresh_from_db()
+        self.assertEqual(blank.household_member, 'father')
+
+    def test_the_cron_endpoint_can_reach_it(self):
+        """⚠ THIS COMMAND CANNOT RUN FROM A CHECKOUT — the production database is reachable only
+        from the service. A registry entry is therefore not a convenience; it is the ONLY way the
+        repair ever happens. Pin the job NAME the runbook types, not just that some entry exists."""
+        from apps.scholarship.views import CronRunView
+        self.assertEqual(CronRunView.JOBS.get('backfill-untagged-income-docs'),
+                         'backfill_untagged_income_docs')
 
     def test_it_resolves_by_name_before_falling_back_to_the_earner(self):
         """The two rules are ORDERED, and the order is the upload guard's. A readable name decides

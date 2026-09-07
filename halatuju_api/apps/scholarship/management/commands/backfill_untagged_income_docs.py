@@ -17,6 +17,12 @@ one here either.
 
     python manage.py backfill_untagged_income_docs            # report only
     python manage.py backfill_untagged_income_docs --apply
+
+⚠ IT MUST RUN ON THE LIVE SERVICE, not from a checkout — the only place the production database
+is reachable. It is registered as cron job ``backfill-untagged-income-docs``; the endpoint calls a
+command with NO arguments, so the write is switched on there by ``INCOME_DOC_TAG_APPLY=1``
+(set it, run the job, UNSET it — the ``backfill_requirements_snapshots`` pattern). Locally the
+flag is the honest way. It reads STORED fields only: no Vision, no Gemini, no re-extraction.
 """
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
@@ -38,7 +44,10 @@ class Command(BaseCommand):
                             help='Write the tags and slot decisions. Without it, report only.')
 
     def handle(self, *args, **options):
-        apply = options['apply']
+        # The cron endpoint passes no arguments, so on the live service the env var IS the flag.
+        # Report-only stays the default in both places: an unset var can only under-write.
+        import os
+        apply = options['apply'] or os.environ.get('INCOME_DOC_TAG_APPLY') == '1'
         db = connection.settings_dict
         self.stdout.write(f"DB: {db.get('ENGINE')} -> {db.get('HOST') or db.get('NAME')}")
 
