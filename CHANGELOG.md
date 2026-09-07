@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## The gift card says one thing once, and the console stops chatting - 2026-09-07
+
+**NO migration. api + web.** Three owner findings from a live review, all on the same screens.
+Retro `docs/retrospective-2026-09-07-gift-card-and-copy.md`.
+
+- **⚠ "Switch off" LOOKED LIKE A DUPLICATE OF THE INTAKE YEAR'S OPEN/CLOSE, AND THE OWNER WAS RIGHT
+  ABOUT WHAT THEY COULD SEE.** Both guards were checked: a round cannot open on a gift that is off,
+  and a gift cannot be switched off while a round is open. So the pair (off + open) is
+  **unreachable**, and for a student trying to apply the ROUND does all the work. The gift switch
+  answers a different question with no other answer — *is this a gift the organisation runs?* — and
+  four things ask it: creating a payment run, the sponsor-invitation picker, the source picker, and
+  which gift a new sponsor is filed under. BrightPath Bursary today has every round closed and is
+  still paying 47 students.
+- **The state moved into the badge, and the badge became the control.** **Draft · Live · Archived**,
+  served as `lifecycle` on the row. The action row is two verbs now: **Settings** and **Delete**.
+- **⚠ THE THIRD STATE IS DERIVED, NOT STORED** (owner's option A of two). `is_active` false splits on
+  whether anybody ever applied — so "still being set up" and "finished, holding 41 students" stop
+  rendering identically. **Known edge, accepted:** a gift switched on, applied to by nobody, then
+  switched off reads DRAFT. **The API is unchanged** — this still PATCHes `is_active`.
+- **⚠ NO RED.** The owner's sketch said green/red/blue; red in this product means *something is
+  wrong*, and a gift on its first day is not an error. **Green / grey / blue**, with a test that
+  fails if draft goes red.
+- **The delete refusal is NARROWED, not removed** (owner: *"REMOVE. Redundant."*). "Students have
+  applied" is hidden — the APPLICATIONS column says 41 directly above it. **The other four reasons
+  stay**: benefactors, money, payment runs and `in_use` appear NOWHERE on the card, so removing the
+  sentence outright restores a dead button with no explanation. A test pins each half.
+- **"Next: set the rules" is DELETED.** Its condition was "a year exists", so it showed for ever —
+  on a gift running its second intake it read as unfinished homework. Its twin on the Rules tab is
+  correct and stays: it appears only when there is NO year, a real dead end.
+- **~40 strings re-voiced formal across the four configuration screens** (en/ms/ta). *"one round of
+  students per year."* -> "One intake round per year."; *"That did not work. Nothing was changed."*
+  -> "The change could not be saved. No changes were made."; *"A gift programme never lapses. Its
+  intake years come and go beneath it."* -> "A gift programme does not expire. Its intake years are
+  opened and closed beneath it." "Open its settings" -> **Settings**.
+
+pytest **5954**; jest **1777**; tsc **24** (baseline); lint **0**; i18n **4839 x 3**;
+`next build` exit 0; `makemigrations --check` clean. Three bite-checks, each injection verified as
+landed first. ms and ta are first drafts.
+
 ## Fix: the interview clock boxes are plain HH:MM boxes, not a native time picker - 2026-09-07
 
 The owner's live review of Org Config Sprint D found the clock rows unusable, and all four

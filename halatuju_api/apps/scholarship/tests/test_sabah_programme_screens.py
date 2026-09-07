@@ -120,6 +120,81 @@ class TestProgrammes(_Case):
         self.assertEqual(r.data['code'], 'has_open_year')
 
 
+class TestTheLifecycleBadge(_Case):
+    """Draft · Active · Archived — the owner's ruling of 2026-09-07.
+
+    ⚠⚠ "INACTIVE" WAS DOING TWO JOBS THAT LOOK IDENTICAL AND ARE NOT: a gift still being SET UP
+    (every gift is born switched off) and a gift that has FINISHED (retired, holding real students).
+    The owner read the card and said the switch beside it looked like a duplicate of the intake
+    year's Open/Close; separating those two states is what makes it a LIFECYCLE rather than a second
+    applications control.
+
+    ⚠ THE THIRD STATE IS WORKED OUT, NOT STORED (option A of two put to the owner) — no migration.
+    `is_active` false splits on whether anybody ever applied.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.spare = Programme.objects.create(
+            organisation=self.org_a, code='sab-a-life', name_en='A Life', is_active=False)
+
+    def _row(self, code):
+        rows = {p['code']: p for p in self._get(self.admin_a, PROGRAMMES).data['programmes']}
+        return rows[code]
+
+    def _student_under(self, programme, suffix):
+        from apps.courses.models import StudentProfile
+        from apps.scholarship.models import ScholarshipApplication
+        cohort = ScholarshipCohort.objects.create(
+            programme=programme, owning_organisation=self.org_a, code=f'life-{suffix}',
+            name=f'Life {suffix}', year=2027, is_active=True, is_open=False)
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'sab-life-{suffix}', name='Priya Devi',
+            household_income=1200, household_size=3)
+        return ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='profile_complete',
+            notify_email=f'{suffix}@example.invalid')
+
+    def test_a_gift_born_switched_off_reads_DRAFT(self):
+        # The state EVERY gift starts in — creating one leaves it inactive, deliberately.
+        self.assertEqual(self._row('sab-a-life')['lifecycle'], 'draft')
+
+    def test_switching_it_on_reads_ACTIVE(self):
+        self._patch(self.admin_a, f'{PROGRAMMES}{self.spare.id}/', {'is_active': True})
+        self.assertEqual(self._row('sab-a-life')['lifecycle'], 'active')
+
+    def test_a_switched_off_gift_THAT_TOOK_STUDENTS_reads_ARCHIVED(self):
+        """The whole point of the split: this is a retired gift, not one being set up."""
+        self._student_under(self.spare, 'arch')
+        self.assertEqual(self._row('sab-a-life')['lifecycle'], 'archived')
+
+    def test_an_INTAKE_YEAR_alone_does_not_make_it_archived(self):
+        """⚠ A year is rules, not students — the same line the delete rule draws (2026-09-07).
+        A gift set up to the point of having a round, then switched off again, is still a DRAFT."""
+        ScholarshipCohort.objects.create(
+            programme=self.spare, owning_organisation=self.org_a, code='life-empty',
+            name='Life Empty', year=2028, is_active=True, is_open=False)
+        row = self._row('sab-a-life')
+        self.assertEqual(row['intake_years'], 1)
+        self.assertEqual(row['lifecycle'], 'draft')
+
+    def test_the_badge_and_the_DELETE_RULE_read_the_same_question(self):
+        """⚠ ONE QUERY, TWO READERS. If these ever disagree the card shows a **Draft** badge beside
+        a Delete button greyed because students applied — which is the drift the served
+        `delete_blocked_by` was built to prevent, one field along."""
+        self._student_under(self.spare, 'weld')
+        row = self._row('sab-a-life')
+        self.assertEqual(row['lifecycle'], 'archived')
+        self.assertEqual(row['delete_blocked_by'], 'has_applications')
+
+    def test_a_student_reached_only_through_the_cohort_still_counts(self):
+        """The set-once column again: a moved cohort must not make a retired gift read as a draft."""
+        from apps.scholarship.models import ScholarshipApplication
+        app = self._student_under(self.spare, 'stale')
+        ScholarshipApplication.objects.filter(pk=app.pk).update(programme=self.prog_a)
+        self.assertEqual(self._row('sab-a-life')['lifecycle'], 'archived')
+
+
 class TestAnInactiveGiftIsReachable(_Case):
     """⚠ A GIFT IS CREATED INACTIVE AND MUST BE CONFIGURED BEFORE IT IS SWITCHED ON.
 

@@ -550,7 +550,84 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after Org Config Sprint D — the interview grid)
+## Next Sprint (as of 2026-09-07, after the gift card & copy pass)
+
+**SHIPPED, NOT DEPLOYED (the owner gates the deploy).** Worktree `.worktrees/gift-copy`, branch
+`feat/gift-card-and-copy`, based on `origin/main` at `9b0a454e`. **NO MIGRATION** — api + web,
+11 files. Retro `docs/retrospective-2026-09-07-gift-card-and-copy.md`; decisions ×4; lessons ×4.
+pytest **5954**; jest **1777**; tsc **24** (baseline); lint **0**; i18n **4839 × 3**;
+`next build` exit 0; `makemigrations --check` clean. Three bite-checks, injections verified first.
+
+**⚠ THE OWNER READ THE SCREENS AND FOUND FOUR THINGS.** Three are in this sprint; the fourth
+(item 3 — the gift switcher) is the NEXT one, on its own, and is described at the bottom.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ THE GIFT'S STATE IS A BADGE AND THE BADGE IS THE CONTROL.** "Switch off" is gone from the
+  action row, which is two verbs now: **Settings · Delete**. The owner's report was that it read as
+  a duplicate of the intake year's Open/Close — and on what is visible they were right: a round
+  cannot open on an inactive gift, an active gift cannot be switched off while a round is open, so
+  *(off + open)* is **UNREACHABLE** and the round does all the work on the apply path. **Do not
+  conclude the switch is redundant.** It answers a question nothing else answers — *is this a gift
+  the organisation runs?* — read by payment-run creation, the sponsor-invitation picker, the source
+  picker and `signup_programme_for`. BrightPath has every round closed and pays 47 students.
+- **⚠ THREE STATES: Draft · Live · Archived, and `lifecycle` IS SERVED.** "Inactive" was doing two
+  jobs that rendered identically — being set up, versus finished. Derived from `is_active` + whether
+  anybody ever applied (owner's option A over a migration); **the API is unchanged**, the control
+  still PATCHes `is_active`. **Known edge, accepted:** switched on, applied to by nobody, switched
+  off → reads Draft. **Do not re-derive `lifecycle` in the browser** — it shares
+  `programme_student_queryset` with the delete rule, and two copies would put a *Draft* badge beside
+  a Delete button greyed because students applied.
+- **⚠ NO RED.** Green / grey / blue. The owner's sketch said green/red/blue; `critical` in this
+  product means something is WRONG, and a gift on its first day is the normal state of every gift.
+  A test fails if draft goes red.
+- **⚠ THE DELETE REFUSAL IS NARROWED, NOT REMOVED** (owner: *"REMOVE. Redundant."*). Hidden only for
+  `has_applications`, because the APPLICATIONS column states it directly above. **The other four —
+  benefactors, money, payment runs, `in_use` — appear NOWHERE on the card**, so removing the
+  sentence outright restores a dead button with no explanation. `redundantWithCard` is the rule;
+  both halves have a test.
+- **⚠ "Next: set the rules" IS DELETED AND MUST NOT RETURN BY SYMMETRY.** Its condition was "a year
+  exists", so it never cleared. The Rules tab's twin fires on the ABSENCE of a year — a real dead
+  end — and stays. A pointer whose condition cannot turn off is furniture.
+- **~40 strings re-voiced formal** across the four configuration screens, en/ms/ta.
+
+**⚠ FOUND, NAMED TO THE OWNER, NOT FIXED:** archiving a gift blocks creating a payment run for it,
+so retiring one while students are still owed money removes the way to pay them. Existing runs are
+unaffected. The menu names where the switch lands; it does not warn about this.
+
+**▶ AT DEPLOY: push (api + web rebuild — Python changed).** No migrate-first, no env vars, no data
+step. **Nothing a student sees changes**; the org_admin's Overview and Configuration screens do.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Overview shows a **badge per gift** — Live (green) / Draft (grey) / Archived (blue). Press one:
+   it opens and offers the single move that makes sense from that state.
+2. The action row is **Settings · Delete**; "Switch off" is gone from it.
+3. **BrightPath Bursary's Delete is still grey, and the sentence under it is gone** — the
+   APPLICATIONS column already says 143.
+4. **No "Next: set the rules"** below the intake-year table.
+5. **ms and ta are first drafts** for everything changed.
+
+**▶ NEXT = THE GIFT SWITCHER (the owner's item 3), ON ITS OWN.** Two faults, and the second is worse
+than "unfiltered":
+- **The switcher filters nothing.** `useProgrammeScope` / `useSelectedProgramme` are read by
+  `/admin/programme`'s three tabs and the Overview list **and nothing else** — Applications,
+  Reviewers, Sources, Payments and Sponsors all ignore the chosen gift. Known as TD-193 / TD-228,
+  parked while one gift existed. A second gift exists now.
+- **⚠ THE APPLICATIONS HEADING ACTIVELY LIES.** `admin.scholarship.title` is
+  `'{programmeName} Applicants'`, and `programmeName` is one of the five **BRANDING auto-tokens**
+  `t()` injects — the tenant's flagship name, not the selected gift. So it reads "BrightPath Bursary
+  Applicants" while the crumb says Test Programme, over 143 people who are not Test Programme's.
+  **Fix the heading first** (it is a correctness problem, not a missing feature), then filter the
+  lists — each endpoint takes `?programme=<code>` re-fenced server-side, the shape the console-shape
+  sprint established. Do NOT relocate the fence into the client.
+
+**⚠ ALSO OPEN:** Org Config E documents / F agreements (the roadmap's last two); TD-229 (contract
+template per gift); TD-230 (Sabah apply link + source list); TD-231; TD-225; TD-221.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded - previous Next Sprint (as of 2026-09-07, after Org Config Sprint D — the interview grid)
 
 **SHIPPED.** Worktree `.worktrees/org-config-sprint-d`, branch `feat/org-config-sprint-d` (base =
 the Sprint C close, `5a677f91`). **NO MIGRATION** — registry entries + wired read sites + rows on

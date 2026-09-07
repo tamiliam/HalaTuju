@@ -104,13 +104,17 @@ export default function AdminProgrammePage() {
         ))}
       </div>
 
-      {/* ⚠ THE TRAIL. A tab may POINT at the next one; it may never DO the next one for you.
-          PF-1's rule on a screen: `ProgrammeRulesTab` with no year offers a button to the Intake
-          year tab rather than creating a year, and `IntakeYearTab` offers Rules once a year
-          exists rather than filling them in. Suggesting is help; choosing is a guess about
-          somebody's money. */}
+      {/* ⚠ A TAB MAY POINT AT THE NEXT ONE; IT MAY NEVER DO THE NEXT ONE FOR YOU. PF-1's rule on a
+          screen: `ProgrammeRulesTab` with no year offers a button to the Intake year tab rather
+          than creating a year for you. Suggesting is help; choosing is a guess about somebody's
+          money.
+
+          ⚠ THE POINTER ONLY EXISTS IN THAT ONE DIRECTION NOW (owner, 2026-09-07). The Intake year
+          tab used to carry a matching "Next: set the rules" button, but its condition was
+          "a year exists" — so it never went away, and on a gift running its second intake it read
+          as unfinished work. A pointer is for a DEAD END, not for a step somebody has passed. */}
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'year' ? <IntakeYearTab goToRules={() => setTab('rules')} />
+        {tab === 'year' ? <IntakeYearTab />
           : tab === 'rules' ? <ProgrammeRulesTab goToYear={() => setTab('year')} />
             : <ProgrammeConfigTab />}
       </div>

@@ -17,12 +17,83 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import InfoBox from '@/components/InfoBox'
+import { Menu, MenuHeading, MenuItem } from '@/components/admin/Menu'
 import {
   getAdminProgrammes, createAdminProgramme, updateAdminProgramme, deleteAdminProgramme,
   type AdminProgramme,
 } from '@/lib/admin-api'
 
 const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
+
+/** Is the server's delete refusal already legible from the card above it? (owner, 2026-09-07)
+ *
+ *  ⚠ ONLY `has_applications`, and only because the card carries an APPLICATIONS column. The other
+ *  four reasons — benefactors, money, payment runs, `in_use` — appear nowhere on this card, so
+ *  their sentence must stay or the greyed button explains nothing. */
+const redundantWithCard = (p: AdminProgramme) => p.delete_blocked_by === 'has_applications'
+
+/** The colour of each state. ⚠ RED IS DELIBERATELY ABSENT.
+ *
+ *  The owner's sketch asked for green / red / blue. In this product red means *something is wrong*
+ *  — a blocked delete, a failed check on a student's file — and a gift still being set up is the
+ *  normal state of every gift on its first day. Painting it red would report a problem where there
+ *  is none, and would spend the one colour that has to keep meaning trouble. Grey says "not live
+ *  yet" without saying "broken". (Owner told, 2026-09-07.) */
+const BADGE_TONE: Record<AdminProgramme['lifecycle'], string> = {
+  active: 'bg-positive-100 text-positive-800',
+  draft: 'bg-ground-100 text-ground-600',
+  archived: 'bg-info-100 text-info-800',
+}
+
+/**
+ * The gift's state, and the control that changes it.
+ *
+ * ⚠⚠ THE BADGE **IS** THE CONTROL, and that is the owner's ruling (2026-09-07). It used to be a
+ * label with a separate "Switch off" link two lines below, in a row of verbs, directly under a
+ * column headed "Taking applications" — so it read as a second copy of the intake year's
+ * Open/Close. It is not: a year decides whether students may apply right now; this decides whether
+ * the gift is a thing the organisation runs at all. Showing the state once, where a state belongs,
+ * is the fix.
+ *
+ * ⚠ THE API IS UNCHANGED — this still PATCHes `is_active`. `draft` and `archived` are both "off";
+ * which one you land in is decided by the server from whether anybody ever applied. So switching a
+ * live gift off returns it to **Draft** if nobody has applied and **Archived** if somebody has,
+ * and the menu item says which before you press it.
+ */
+function LifecycleBadge({ programme: p, busy, onChange }: {
+  programme: AdminProgramme
+  busy: boolean
+  onChange: (p: AdminProgramme, makeActive: boolean) => void
+}) {
+  const { t } = useT()
+  const label = t(`admin.programmes.lifecycle.${p.lifecycle}`)
+  // From every state there is exactly ONE move worth offering, so the menu is short by nature.
+  // Off → live is always "make it live"; live → off is named by where it will LAND, which the
+  // server decides on the same rule the badge reads.
+  const action = p.is_active
+    ? { makeActive: false, key: p.applications > 0 ? 'archive' : 'toDraft' }
+    : { makeActive: true, key: 'makeLive' }
+
+  return (
+    <Menu
+      label={t('admin.programmes.lifecycle.change', { name: p.name_en })}
+      align="left"
+      width="w-64"
+      trigger={
+        <span data-testid={`lifecycle-${p.code}`}
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE_TONE[p.lifecycle]}`}>
+          {label}
+          <span aria-hidden className="text-[9px] leading-none opacity-70">▾</span>
+        </span>
+      }
+    >
+      <MenuHeading>{t(`admin.programmes.lifecycle.means.${p.lifecycle}`)}</MenuHeading>
+      <MenuItem onClick={() => !busy && onChange(p, action.makeActive)}>
+        {t(`admin.programmes.lifecycle.${action.key}`)}
+      </MenuItem>
+    </Menu>
+  )
+}
 
 export default function GiftProgrammes({ token }: { token: string | null }) {
   const { t } = useT()
@@ -119,6 +190,13 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
     }
   }
 
+  /** Move a gift between draft/live/archived. Still a PATCH of `is_active` — the third state is
+   *  the server's reading of that boolean, not a third value on the wire. The server refuses to
+   *  switch a gift off while one of its rounds is taking applications, and that refusal renders in
+   *  the same error banner as every other write here. */
+  const setLifecycle = (p: AdminProgramme, makeActive: boolean) =>
+    run(() => updateAdminProgramme(p.id, { is_active: makeActive }, { token: token! }))
+
   /** Open a gift's own settings. The choice goes through the breadcrumb switcher's context, so
    *  the crumb and the page agree about which gift you just stepped into. */
   const openSettings = (p: AdminProgramme) => {
@@ -150,10 +228,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
             data-testid={`programme-${p.code}`}>
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-semibold text-ground-900">{p.name_en}</h3>
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                p.is_active ? 'bg-positive-100 text-positive-800' : 'bg-ground-100 text-ground-600'}`}>
-                {t(p.is_active ? 'admin.programmes.active' : 'admin.programmes.notActive')}
-              </span>
+              <LifecycleBadge programme={p} busy={busy} onChange={setLifecycle} />
             </div>
             <p className="mt-0.5 font-mono text-xs text-ground-400">{p.code}</p>
 
@@ -174,18 +249,16 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
               ))}
             </dl>
 
+            {/* ⚠ TWO VERBS, AND THE STATE IS NOT ONE OF THEM (owner, 2026-09-07). "Switch off" used
+                to sit here beside Delete, one line under a column reading "Taking applications" —
+                which made it read as a duplicate of the intake year's Open/Close. It is not: the
+                year decides whether students may apply RIGHT NOW, the gift's state decides whether
+                it is a thing this organisation runs at all. A state belongs in the badge that
+                already shows it, so the control moved there and this row is verbs only. */}
             <div className="mt-4 flex items-center justify-end gap-4 border-t border-ground-100 pt-3">
               <button type="button" onClick={() => openSettings(p)}
                 className="text-sm font-medium text-primary-600 hover:underline">
                 {t('admin.programmes.openSettings')}
-              </button>
-              {/* Switching a gift on is deliberate and separate from creating it. Switching one OFF
-                  is refused by the server while a year is taking applications — the message says so
-                  rather than the button hiding, because hiding it explains nothing. */}
-              <button type="button" disabled={busy}
-                onClick={() => run(() => updateAdminProgramme(p.id, { is_active: !p.is_active }, { token: token! }))}
-                className="text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
-                {t(p.is_active ? 'admin.programmes.switchOff' : 'admin.programmes.switchOn')}
               </button>
               {/* ⚠ DISABLED WHEN THE SERVER SAYS IT IS HELD — SHOWN, NEVER HIDDEN (owner,
                   2026-09-07: *"I feel it should be prevented at the button stage, and not wait
@@ -208,8 +281,16 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
             {/* ⚠ THE REASON IS VISIBLE TEXT, not only the button's `title`. A tooltip needs a hover
                 that a touch screen has no way to give, so on a phone the control would simply be
                 dead with no explanation — which is the thing being fixed, not a smaller version
-                of it. */}
-            {p.delete_blocked_by && (
+                of it.
+
+                ⚠ BUT IT IS HIDDEN FOR THE ONE REASON THE CARD ALREADY STATES (owner, 2026-09-07:
+                *"REMOVE. Redundant."*). "Students have applied to this gift" adds nothing beside an
+                APPLICATIONS column reading 143. **The other four are NOT on this card** —
+                benefactors, money, payment runs and the generic `in_use` — so removing the line
+                outright would put back a dead button with no explanation, which is the defect this
+                sentence was written for. `redundantWithCard` is the whole rule; extend it only when
+                a reason's evidence is genuinely visible above it. */}
+            {p.delete_blocked_by && !redundantWithCard(p) && (
               <p className="mt-2 text-right text-xs text-ground-500"
                 data-testid={`delete-blocked-${p.code}`}>
                 {t(`admin.programmes.error.${errKey(p.delete_blocked_by)}`)}
