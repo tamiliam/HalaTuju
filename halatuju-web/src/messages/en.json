@@ -4452,6 +4452,7 @@
         "approveNeedsAmount": "Set a recommended assistance amount before approving.",
         "approveNeedsReview": "The system recommends no amount. Settle the pathway/income, or override the amount, before recommending.",
         "chooseOutcome": "Choose Recommend or Decline.",
+        "savedNotSubmitted": "Your verdict was saved on {date}, but this case has not moved to QC yet. Press Approve again to submit it.",
         "saveNeedsReady": "Submit your findings, rate the AI and add your conclusion.",
         "reasonPlaceholder": "Make your case: why this student deserves to be sponsored — or does NOT meet the {programmeName} requirements.",
         "save": "Save & generate final profile",
