@@ -609,8 +609,14 @@ switches, per-GIFT values and platform internals stay OUT of this tab (binding r
 
 ## Superseded — previous Next Sprint (as of 2026-09-07, after the gift-delete rule — students hold a gift, not years)
 
-**SHIPPED, NOT DEPLOYED (the owner gates the deploy).** Worktree `.worktrees/gift-delete-rule`,
-branch `feat/gift-delete-rule`, based on `origin/main` at `5a677f91`. **NO MIGRATION** — api + web,
+**SHIPPED AND DEPLOYED 2026-09-07.** Merge `6f30611b`; it rode out on a concurrent Org Config
+Sprint D push rather than one of mine, so the builds to check are **`3c514bb` (web, SUCCESS) and
+`d4f4e70` (api, SUCCESS)** — both contain it, verified by ancestry rather than by matching a SHA.
+Serving **halatuju-api-00989-vpz** / **halatuju-web-00837-drb**. The served admin bundle was read
+back: it carries `deleteYears` and **no** `hasIntakeYears`. All public routes 200,
+`Server: Google Frontend`, no error logs.
+Worktree `.worktrees/gift-delete-rule` removed; branch `feat/gift-delete-rule` kept until the
+owner's post-check. Based on `origin/main` at `5a677f91`. **NO MIGRATION** — api + web,
 9 files. Retro `docs/retrospective-2026-09-07-gift-delete-rule.md`; decisions ×2; lessons ×3;
 **TD-232 CLOSED**. pytest **5926** (+2); jest **1754** (a 5-test file out, a 5-test file in);
 tsc **24** (baseline); lint **0**; i18n **4816 × 3** (one key out, one in); `next build` clean;
