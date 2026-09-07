@@ -190,6 +190,40 @@ describe('which gift a sponsor is invited into', () => {
       { email: 'donor@example.org', name: 'Donor', note: '' }, { token: 'tok' }))
   })
 
+  it('⚠ Resend on a donor row actually sends, and says so (BrightPath #16)', async () => {
+    // The defect: the link was drawn, checked for a staff account, found none and returned in
+    // silence. No request, no record, no message — which is why the owner could not tell whether
+    // it had worked and was "inclined to repeat it".
+    mockApi.inviteSponsor.mockResolvedValue({ id: 1, emailed: true })
+    await loaded()
+    await pick('sponsors')
+    fireEvent.click(screen.getAllByText('admin.resend')[0])
+    // Re-issuing the invitation IS the resend: create_or_refresh finds the open row, moves its
+    // expiry, sends and records. No note (it is not stored) and no programme_id (naming one would
+    // re-home the benefactor into whichever gift the form is showing).
+    await waitFor(() => expect(mockApi.inviteSponsor).toHaveBeenCalledWith(
+      { email: 's@example.org', name: 'Donor' }, { token: 'tok' }))
+    expect(await screen.findByText('admin.invitations.resent')).toBeTruthy()
+  })
+
+  it('⚠ and says so when it did NOT go, rather than looking successful', async () => {
+    // The endpoint answers 502 when the letter failed. Silence here would rebuild the original
+    // defect in a new place: an action that reports nothing reads as an action that worked.
+    mockApi.inviteSponsor.mockRejectedValue(new Error('smtp down'))
+    await loaded()
+    await pick('sponsors')
+    fireEvent.click(screen.getAllByText('admin.resend')[0])
+    expect(await screen.findByText('admin.invitations.resendFailed')).toBeTruthy()
+  })
+
+  it('⚠ a STAFF row still resends through the account, which also rotates its password', async () => {
+    // The other arm of the same link. A staff resend must NOT become a re-invitation: it goes
+    // through the account so the temporary-password clock moves with it.
+    await loaded()
+    fireEvent.click(screen.getAllByText('admin.resend')[0])
+    await waitFor(() => expect(mockApi.inviteSponsor).not.toHaveBeenCalled())
+  })
+
   it('⚠ shows NO Role column on the sponsors table — it could only ever print a dash', async () => {
     // Owner, 2026-09-08, looking at the live table: "what is the purpose of the role column?" A
     // sponsor invitation creates no account and carries no role, so every row read "—" for ever.
