@@ -16,13 +16,28 @@ import type { InvitationRow } from '@/lib/admin-api'
  * ⚠ THE ACTION IS CONTEXTUAL, and that is what lets one table serve both purposes. Somebody still
  * waiting gets **Resend**; somebody who has arrived gets **Revoke**. A sponsor invitation gets
  * neither — it provisions no account, so there is nothing of theirs for us to revoke.
+ *
+ * ⚠ **ROLE IS THE SAME STORY, AND THE COLUMN IS DROPPED RATHER THAN DASHED** (owner, 2026-09-08,
+ * on seeing a live sponsors table). The two staff tables each hold several roles — Admin · Finance ·
+ * Org admin, and Reviewer · QC — so there the column separates things. A SPONSOR invitation carries
+ * no role because it creates no account: it emails a link to the ordinary public registration. So
+ * that column could only ever print "—", for every row, for ever. A permanent column of dashes is
+ * not neutral: it reads as a value we failed to fetch, and it invited exactly that question.
+ *
+ * ⚠ **`showRole` IS PASSED, NOT DERIVED FROM THE ROWS.** "Do these invitations have roles" is a
+ * fact about the KIND, and reading it off whichever rows happen to be loaded would hide the column
+ * on a staff table the day one arrives with a blank role — a real value gone missing, reported as
+ * nothing at all.
  */
-export default function InvitationsTable({ rows, canAct, busyId, onResend, onRevoke }: {
+export default function InvitationsTable({ rows, canAct, busyId, onResend, onRevoke,
+                                           showRole = true }: {
   rows: InvitationRow[]
   canAct?: boolean
   busyId?: number | null
   onResend?: (r: InvitationRow) => void
   onRevoke?: (r: InvitationRow) => void
+  /** Whether this kind's invitations carry a staff role. False for sponsors and sources. */
+  showRole?: boolean
 }) {
   const { t } = useT()
   const paged = usePagedRows(rows)
@@ -49,7 +64,8 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
         <table className="w-full min-w-[640px] text-sm">
           <thead className="border-b bg-ground-50">
             <tr>
-              {['nameHeader', 'emailHeader', 'roleHeader', 'statusHeader', 'actionHeader'].map((h) => (
+              {['nameHeader', 'emailHeader', ...(showRole ? ['roleHeader'] : []),
+                'statusHeader', 'actionHeader'].map((h) => (
                 <th key={h} className="px-4 py-3 text-left font-medium text-ground-600">
                   {t(`admin.${h}`)}
                 </th>
@@ -71,9 +87,13 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
                     )}
                   </td>
                   <td className="px-4 py-3 text-ground-500">{r.email}</td>
-                  <td className="px-4 py-3">
-                    {r.role ? t(`admin.role.${r.role}`) : '—'}
-                  </td>
+                  {showRole && (
+                    <td className="px-4 py-3">
+                      {/* A staff row always has a role; the dash is the "we hold no answer" case,
+                          which is why the whole column goes when the kind never has one. */}
+                      {r.role ? t(`admin.role.${r.role}`) : '—'}
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${
                       r.status === 'expired' ? 'bg-caution-100 text-caution-700'

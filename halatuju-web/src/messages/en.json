@@ -5494,9 +5494,9 @@
     "programme": {
       "config": {
         "nav": "Configuration",
-        "subtitle": "Mark each item Required, Optional, or Don't ask. Changes reach new applications straight away; anyone who has already submitted keeps the form they filled in.",
+        "subtitle": "Set each item to Required, Optional or Not asked. Changes apply to new applications immediately. Applications already submitted retain the form as it stood at submission.",
         "liveWarning": "{n} students are part-way through an application right now. Anything you make required will be asked of them too — they'll see it the next time they open their application.",
-        "liveWarningNone": "Nobody is part-way through an application right now, so a change reaches new applicants only.",
+        "liveWarningNone": "No applications are in progress, so changes affect new applicants only.",
         "sectionDocuments": "Documents",
         "sectionQuestions": "Questions",
         "documentsHint": "What an applicant uploads. A locked row is required by the platform for every programme.",
@@ -5516,10 +5516,10 @@
         "saving": "Saving…",
         "saved": "Saved.",
         "errorCore": "{item} is always required and cannot be switched off. Nothing was saved.",
-        "errorGeneric": "Could not save your changes. Nothing was saved — please try again.",
+        "errorGeneric": "The configuration could not be saved. No changes were made.",
         "loadError": "Could not load the programme's configuration.",
         "programmeRequired": "Choose a programme to configure.",
-        "requestLink": "Need a document or question that isn't listed? Ask for it in Requests.",
+        "requestLink": "To add a document or question that is not listed, raise it in Requests.",
         "desc": {
           "document": {
             "ic": "Every applicant is checked against their IC — the programme can't run without it.",
@@ -5559,7 +5559,7 @@
         "anything_else": "Anything else"
       },
       "title": "Configuration",
-      "subtitle": "What your programme asks for, and how it looks.",
+      "subtitle": "Configure what this programme requires from applicants.",
       "tab": {
         "config": "What we ask for",
         "rules": "Rules",
@@ -5626,18 +5626,15 @@
     "soon": "Soon",
     "programmes": {
       "title": "Gift programmes",
-      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
+      "subtitle": "The gift programmes this organisation runs. Each has its own criteria, funds and intake years.",
       "new": "New gift programme",
       "create": "Create",
-      "active": "Active",
-      "notActive": "Not active yet",
+      "notActive": "Not live",
       "none": "None",
-      "switchOn": "Switch on",
-      "switchOff": "Switch off",
-      "empty": "No gift programmes yet.",
-      "loadFailed": "Could not load your gift programmes.",
-      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
-      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
+      "empty": "No gift programmes have been created.",
+      "loadFailed": "The gift programmes could not be loaded.",
+      "durableNote": "A gift programme does not expire. Its intake years are opened and closed beneath it.",
+      "codeWarning": "The short code forms part of the link applicants use, so it cannot be changed after creation.",
       "col": {
         "years": "Intake years",
         "applications": "Applications",
@@ -5646,46 +5643,60 @@
       "field": {
         "name": "Name",
         "code": "Short code",
-        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
+        "codeHint": "Lower-case letters, numbers and hyphens. Used in the web address."
       },
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
         "codeTaken": "That short code is already in use. Please choose another.",
-        "nameRequired": "Please give the programme a name.",
-        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
-        "noOrg": "Your account is not tied to an organisation.",
-        "generic": "That did not work. Nothing was changed.",
+        "nameRequired": "Enter a name for the programme.",
+        "hasOpenYear": "This programme is accepting applications. Close its intake year first.",
+        "noOrg": "This account is not linked to an organisation.",
+        "generic": "The change could not be saved. No changes were made.",
         "hasApplications": "Students have applied to this gift, so it cannot be deleted.",
         "hasBenefactors": "Benefactors have been accepted into this gift, so it cannot be deleted.",
         "hasMoney": "Money has been recorded against this gift, so it cannot be deleted.",
         "hasPaymentRuns": "This gift has paid students, so it cannot be deleted.",
-        "inUse": "Something still depends on this gift, so it cannot be deleted.",
-        "confirmMismatch": "That does not match the short code. Nothing was deleted."
+        "inUse": "A record still depends on this gift, so it cannot be deleted.",
+        "confirmMismatch": "That does not match the required phrase. Nothing was deleted."
       },
-      "openSettings": "Open its settings",
+      "openSettings": "Settings",
       "delete": "Delete",
       "deleteTitle": "Delete {name}?",
-      "deleteBody": "This removes the gift programme and the settings that belong to it — its rules and what it asks students for. It cannot be undone.",
+      "deleteBody": "This removes the gift programme and the settings held against it — its criteria and what it requires from applicants. It cannot be undone.",
       "deleteYears": "Its intake years go with it — {count} in all. None of them holds a student, so nothing a student sent you is affected.",
-      "deleteKeeps": "Invitations, sources and reviewers you had narrowed to this gift are kept — they go back to covering every gift.",
+      "deleteKeeps": "Invitations, sources and reviewers narrowed to this gift are retained and revert to covering every gift.",
       "deleteConfirmLabel": "Type {phrase} to confirm",
-      "deleteCta": "Delete this gift programme"
+      "deleteCta": "Delete this gift programme",
+      "lifecycle": {
+        "draft": "Draft",
+        "active": "Live",
+        "archived": "Archived",
+        "change": "Change the state of {name}",
+        "makeLive": "Make it live",
+        "archive": "Archive it",
+        "toDraft": "Return to draft",
+        "means": {
+          "draft": "Being set up. Students cannot apply.",
+          "active": "Live. A round may be opened.",
+          "archived": "Retired. Students cannot apply."
+        }
+      }
     },
     "years": {
-      "subtitle": "one round of students per year.",
+      "subtitle": "One intake round per year.",
       "new": "New intake year",
-      "createClosed": "Create - do not open yet",
+      "createClosed": "Create as closed",
       "open": "Open",
       "closed": "Closed",
       "openIt": "Open applications",
       "close": "Close",
       "empty": "No intake years yet.",
-      "noProgrammes": "Create a gift programme first",
-      "loadFailed": "Could not load the intake years.",
-      "oneOpen": "Opening a round is what lets students apply. Only one round of this gift programme may be open at a time.",
-      "oneOpenNamed": "{code} is taking applications. Only one round of this gift programme may be open at a time, so close it before opening another.",
+      "noProgrammes": "A gift programme must exist before an intake year can be created.",
+      "loadFailed": "The intake years could not be loaded.",
+      "oneOpen": "Applications are accepted only while a round is open. One round per gift programme may be open at a time.",
+      "oneOpenNamed": "{code} is currently accepting applications. One round per gift programme may be open at a time; close it before opening another.",
       "reqTitle": "Shortlisting requirements",
-      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
+      "reqHint": "Select the tests this programme applies and set a value for each. A test that is not selected is not applied.",
       "col": {
         "year": "Year",
         "name": "What students see",
@@ -5696,7 +5707,7 @@
       "field": {
         "year": "Year",
         "code": "Short code",
-        "name": "What students will see",
+        "name": "What students see",
         "opensOn": "Opens on",
         "closesOn": "Closes on"
       },
@@ -5714,17 +5725,16 @@
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
         "codeTaken": "That short code is already in use. Please choose another.",
-        "badYear": "Please give a year.",
-        "nameRequired": "Please give the intake year a name.",
-        "anotherOpen": "Another round is already taking applications. Close it first.",
-        "notActive": "Switch the gift programme on before opening a round.",
-        "generic": "That did not work. Nothing was changed.",
+        "badYear": "Enter a year.",
+        "nameRequired": "Enter a name for the intake year.",
+        "anotherOpen": "Another round is already accepting applications. Close it first.",
+        "notActive": "The gift programme must be live before a round can open.",
+        "generic": "The change could not be saved. No changes were made.",
         "windowBackwards": "The closing date cannot come before the opening date.",
-        "badOpensOn": "Please give a valid opening date.",
-        "badClosesOn": "Please give a valid closing date."
+        "badOpensOn": "Enter a valid opening date.",
+        "badClosesOn": "Enter a valid closing date."
       },
-      "windowNote": "These dates say when the round is meant to run. They do not open or close it — you still press Open applications yourself. Leave them blank if you have not decided.",
-      "goToRules": "Next: set the rules"
+      "windowNote": "These dates record when the round is intended to run. They do not open or close it; opening remains a separate action. Leave them blank if the schedule is not yet decided."
     },
     "orgSettings": {
       "nav": "Settings",
@@ -5932,11 +5942,11 @@
       "chooseHint": "You run more than one, so we will not guess. Choose one - you can also switch it from the trail at the top of the page."
     },
     "rules": {
-      "subtitle": "Who qualifies for this gift. A test you do not tick is not applied at all.",
-      "editing": "These are the rules for {year} - {name}.",
-      "liveWarning": "Changing a rule changes who qualifies, from the moment you save. It is NOT frozen for students who have already applied - unlike \"What we ask for\" - so a fresh run would judge them by the new rule. Take care mid-intake.",
-      "untickNote": "Untick a test to stop applying it. An empty box means the test does not run at all.",
-      "noYear": "This gift has no intake year yet, and the rules live on the year. Create one on the Intake year tab and set them there.",
+      "subtitle": "The criteria for this gift. A test that is not selected is not applied.",
+      "editing": "Criteria for {year} — {name}.",
+      "liveWarning": "A change to the criteria takes effect on save and applies to every application, including those already submitted. Unlike \"What we ask for\", the criteria are not frozen at submission, so a re-run would assess earlier applicants against the new value. Take care during an open intake.",
+      "untickNote": "Clear a test to stop applying it. An empty value means the test is not applied.",
+      "noYear": "This gift has no intake year. The criteria are held on the intake year, so create one first.",
       "saved": "Saved",
       "goToYear": "Create an intake year"
     }

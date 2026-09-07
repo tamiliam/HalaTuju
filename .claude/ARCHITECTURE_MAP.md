@@ -249,6 +249,22 @@ two programmes, there could be two open applications"*). The admin guard filters
 The apply side is unchanged and still refuses to GUESS between two open rounds — but the refusal
 now arrives as a QUESTION before the form (`intake/` returns `choices`), not a 409 at submit.
 
+⚠ **A GIFT'S STATE IS Draft · Live · Archived, AND THE BADGE IS THE CONTROL** (owner, 2026-09-07).
+Served as `lifecycle` on the row; **derived**, not stored — `is_active` plus whether anybody has ever
+applied (`programme_student_queryset`, the same seam the delete rule reads). The API is unchanged:
+the control still PATCHes `is_active`. "Switch on / Switch off" is gone from the card's action row,
+which is now two verbs — Settings and Delete.
+
+- **It is NOT a duplicate of the intake year's Open/Close, though it read as one.** A round cannot
+  open on an inactive gift and an active gift cannot be switched off while a round is open, so
+  *(off + open)* is unreachable and the ROUND decides whether students may apply. The gift's state
+  decides whether it is a gift the organisation runs at all — read by payment-run creation, the
+  sponsor-invitation picker, the source picker and `signup_programme_for`.
+- **Red is not in the palette here.** Green / grey / blue; `critical` means something is wrong, and a
+  gift being set up is the normal state of every gift on its first day.
+- ⚠ **Archiving a gift blocks creating a payment run for it.** Existing runs are unaffected. Not
+  warned about on screen (named to the owner 2026-09-07).
+
 ⚠ **DELETING A GIFT: STUDENTS HOLD IT, INTAKE YEARS DO NOT** (owner ruling, 2026-09-07: *"I don't
 [want] the ability to delete a gift programme that has students, and not merely intake years."*).
 `programme_delete_blocker()` counts applications, sponsor memberships, donations and payment runs —

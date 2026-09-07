@@ -5494,9 +5494,9 @@
     "programme": {
       "config": {
         "nav": "Konfigurasi",
-        "subtitle": "Tandakan setiap item sebagai Wajib, Pilihan, atau Jangan tanya. Perubahan sampai kepada permohonan baharu serta-merta; sesiapa yang sudah menghantar kekal dengan borang yang diisi mereka.",
+        "subtitle": "Tetapkan setiap item kepada Diperlukan, Pilihan atau Tidak ditanya. Perubahan berkuat kuasa serta-merta bagi permohonan baharu. Permohonan yang telah dihantar mengekalkan borang seperti pada masa penghantaran.",
         "liveWarning": "{n} pelajar sedang mengisi permohonan sekarang. Apa sahaja yang anda jadikan wajib akan diminta daripada mereka juga — mereka akan melihatnya apabila membuka permohonan mereka semula.",
-        "liveWarningNone": "Tiada sesiapa sedang mengisi permohonan sekarang, jadi perubahan hanya sampai kepada pemohon baharu.",
+        "liveWarningNone": "Tiada permohonan sedang dalam proses, jadi perubahan hanya menjejaskan pemohon baharu.",
         "sectionDocuments": "Dokumen",
         "sectionQuestions": "Soalan",
         "documentsHint": "Apa yang dimuat naik pemohon. Baris berkunci diwajibkan oleh platform untuk setiap program.",
@@ -5516,10 +5516,10 @@
         "saving": "Menyimpan…",
         "saved": "Disimpan.",
         "errorCore": "{item} sentiasa wajib dan tidak boleh dimatikan. Tiada apa-apa disimpan.",
-        "errorGeneric": "Perubahan anda tidak dapat disimpan. Tiada apa-apa disimpan — sila cuba lagi.",
+        "errorGeneric": "Konfigurasi tidak dapat disimpan. Tiada perubahan dibuat.",
         "loadError": "Konfigurasi program tidak dapat dimuatkan.",
         "programmeRequired": "Pilih program untuk dikonfigurasi.",
-        "requestLink": "Perlukan dokumen atau soalan yang tiada dalam senarai? Minta melalui Permintaan.",
+        "requestLink": "Untuk menambah dokumen atau soalan yang tidak disenaraikan, kemukakannya dalam Permintaan.",
         "desc": {
           "document": {
             "ic": "Setiap pemohon disemak terhadap IC mereka — program tidak dapat berjalan tanpanya.",
@@ -5559,7 +5559,7 @@
         "anything_else": "Apa-apa lagi"
       },
       "title": "Konfigurasi",
-      "subtitle": "Apa yang program anda minta, dan rupanya.",
+      "subtitle": "Konfigurasikan perkara yang diperlukan oleh program ini daripada pemohon.",
       "tab": {
         "config": "Apa yang kami minta",
         "rules": "Peraturan",
@@ -5626,18 +5626,15 @@
     "soon": "Akan datang",
     "programmes": {
       "title": "Program hadiah",
-      "subtitle": "The gifts your organisation runs. Each one has its own requirements, its own money and its own intake years.",
+      "subtitle": "Program hadiah yang dikendalikan oleh organisasi ini. Setiap satu mempunyai kriteria, dana dan tahun pengambilannya sendiri.",
       "new": "Program hadiah baharu",
       "create": "Cipta",
-      "active": "Aktif",
       "notActive": "Belum aktif",
       "none": "Tiada",
-      "switchOn": "Hidupkan",
-      "switchOff": "Matikan",
-      "empty": "No gift programmes yet.",
-      "loadFailed": "Could not load your gift programmes.",
-      "durableNote": "A gift programme never lapses. Its intake years come and go beneath it.",
-      "codeWarning": "The short code appears in the link students apply through, so it cannot be changed later.",
+      "empty": "Tiada program hadiah telah dicipta.",
+      "loadFailed": "Program hadiah tidak dapat dimuatkan.",
+      "durableNote": "Program hadiah tidak luput. Tahun pengambilannya dibuka dan ditutup di bawahnya.",
+      "codeWarning": "Kod ringkas menjadi sebahagian daripada pautan yang digunakan pemohon, jadi ia tidak boleh diubah selepas dicipta.",
       "col": {
         "years": "Tahun pengambilan",
         "applications": "Permohonan",
@@ -5646,46 +5643,60 @@
       "field": {
         "name": "Nama",
         "code": "Kod ringkas",
-        "codeHint": "Lower case letters, numbers and hyphens. Used in the web address."
+        "codeHint": "Huruf kecil, nombor dan tanda sempang. Digunakan dalam alamat web."
       },
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
         "codeTaken": "That short code is already in use. Please choose another.",
-        "nameRequired": "Please give the programme a name.",
-        "hasOpenYear": "This programme is taking applications. Close its intake year first.",
-        "noOrg": "Your account is not tied to an organisation.",
-        "generic": "That did not work. Nothing was changed.",
+        "nameRequired": "Masukkan nama bagi program ini.",
+        "hasOpenYear": "Program ini sedang menerima permohonan. Tutup tahun pengambilannya terlebih dahulu.",
+        "noOrg": "Akaun ini tidak dipautkan kepada mana-mana organisasi.",
+        "generic": "Perubahan tidak dapat disimpan. Tiada perubahan dibuat.",
         "hasApplications": "Pelajar telah memohon kepada hadiah ini, jadi ia tidak boleh dipadam.",
         "hasBenefactors": "Penderma telah diterima ke dalam hadiah ini, jadi ia tidak boleh dipadam.",
         "hasMoney": "Wang telah direkodkan terhadap hadiah ini, jadi ia tidak boleh dipadam.",
         "hasPaymentRuns": "Hadiah ini telah membayar pelajar, jadi ia tidak boleh dipadam.",
-        "inUse": "Sesuatu masih bergantung pada hadiah ini, jadi ia tidak boleh dipadam.",
-        "confirmMismatch": "Itu tidak sepadan dengan kod ringkas. Tiada apa-apa yang dipadam."
+        "inUse": "Terdapat rekod yang masih bergantung pada hadiah ini, jadi ia tidak boleh dipadam.",
+        "confirmMismatch": "Ia tidak sepadan dengan frasa yang diperlukan. Tiada apa-apa dipadam."
       },
-      "openSettings": "Buka tetapannya",
+      "openSettings": "Tetapan",
       "delete": "Padam",
       "deleteTitle": "Padam {name}?",
-      "deleteBody": "Ini membuang program hadiah itu dan tetapannya — syaratnya dan apa yang dimintanya daripada pelajar. Ia tidak boleh dibatalkan.",
+      "deleteBody": "Ini memadam program hadiah dan tetapan yang disimpan padanya — kriterianya dan apa yang diperlukan daripada pemohon. Tindakan ini tidak boleh dibatalkan.",
       "deleteYears": "Tahun pengambilannya turut dipadam — {count} kesemuanya. Tiada satu pun memegang pelajar, jadi tiada apa-apa yang dihantar oleh pelajar terjejas.",
-      "deleteKeeps": "Jemputan, sumber dan penyemak yang anda hadkan kepada hadiah ini akan dikekalkan — ia kembali meliputi semua hadiah.",
+      "deleteKeeps": "Jemputan, sumber dan penyemak yang dihadkan kepada hadiah ini akan dikekalkan dan kembali meliputi semua hadiah.",
       "deleteConfirmLabel": "Taip {phrase} untuk mengesahkan",
-      "deleteCta": "Padam program hadiah ini"
+      "deleteCta": "Padam program hadiah ini",
+      "lifecycle": {
+        "draft": "Draf",
+        "active": "Aktif",
+        "archived": "Diarkibkan",
+        "change": "Tukar keadaan {name}",
+        "makeLive": "Jadikan aktif",
+        "archive": "Arkibkan",
+        "toDraft": "Kembali kepada draf",
+        "means": {
+          "draft": "Sedang disediakan. Pelajar tidak boleh memohon.",
+          "active": "Aktif. Sesuatu pusingan boleh dibuka.",
+          "archived": "Bersara. Pelajar tidak boleh memohon."
+        }
+      }
     },
     "years": {
-      "subtitle": "one round of students per year.",
+      "subtitle": "Satu pusingan pengambilan setahun.",
       "new": "Tahun pengambilan baharu",
-      "createClosed": "Cipta - jangan buka lagi",
+      "createClosed": "Cipta sebagai ditutup",
       "open": "Dibuka",
       "closed": "Ditutup",
       "openIt": "Buka permohonan",
       "close": "Tutup",
       "empty": "No intake years yet.",
-      "noProgrammes": "Create a gift programme first",
-      "loadFailed": "Could not load the intake years.",
-      "oneOpen": "Membuka pusingan membolehkan pelajar memohon. Hanya satu pusingan bagi program hadiah ini boleh dibuka pada satu masa.",
-      "oneOpenNamed": "{code} sedang menerima permohonan. Hanya satu pusingan bagi program hadiah ini boleh dibuka pada satu masa, jadi tutupkannya sebelum membuka yang lain.",
+      "noProgrammes": "Program hadiah perlu wujud sebelum tahun pengambilan boleh dicipta.",
+      "loadFailed": "Tahun pengambilan tidak dapat dimuatkan.",
+      "oneOpen": "Permohonan hanya diterima semasa sesuatu pusingan dibuka. Satu pusingan bagi setiap program hadiah boleh dibuka pada satu masa.",
+      "oneOpenNamed": "{code} sedang menerima permohonan. Satu pusingan bagi setiap program hadiah boleh dibuka pada satu masa; tutupnya sebelum membuka yang lain.",
       "reqTitle": "Syarat penyenaraian pendek",
-      "reqHint": "Tick the tests this programme applies and give each a value. An unticked test is not applied.",
+      "reqHint": "Pilih ujian yang dikenakan oleh program ini dan tetapkan nilai bagi setiap satu. Ujian yang tidak dipilih tidak dikenakan.",
       "col": {
         "year": "Tahun",
         "name": "Apa yang pelajar lihat",
@@ -5696,7 +5707,7 @@
       "field": {
         "year": "Tahun",
         "code": "Kod ringkas",
-        "name": "Apa yang pelajar akan lihat",
+        "name": "Apa yang pelajar lihat",
         "opensOn": "Dibuka pada",
         "closesOn": "Ditutup pada"
       },
@@ -5714,17 +5725,16 @@
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
         "codeTaken": "That short code is already in use. Please choose another.",
-        "badYear": "Please give a year.",
-        "nameRequired": "Please give the intake year a name.",
-        "anotherOpen": "Another round is already taking applications. Close it first.",
-        "notActive": "Switch the gift programme on before opening a round.",
-        "generic": "That did not work. Nothing was changed.",
+        "badYear": "Masukkan tahun.",
+        "nameRequired": "Masukkan nama bagi tahun pengambilan.",
+        "anotherOpen": "Pusingan lain sudah menerima permohonan. Tutupnya terlebih dahulu.",
+        "notActive": "Program hadiah mesti aktif sebelum sesuatu pusingan boleh dibuka.",
+        "generic": "Perubahan tidak dapat disimpan. Tiada perubahan dibuat.",
         "windowBackwards": "Tarikh tutup tidak boleh sebelum tarikh buka.",
-        "badOpensOn": "Sila berikan tarikh buka yang sah.",
-        "badClosesOn": "Sila berikan tarikh tutup yang sah."
+        "badOpensOn": "Masukkan tarikh pembukaan yang sah.",
+        "badClosesOn": "Masukkan tarikh penutupan yang sah."
       },
-      "windowNote": "Tarikh ini menyatakan bila pusingan ini sepatutnya berjalan. Ia tidak membukanya atau menutupnya — anda masih perlu menekan Buka permohonan sendiri. Biarkan kosong jika anda belum memutuskan.",
-      "goToRules": "Seterusnya: tetapkan syarat"
+      "windowNote": "Tarikh ini merekodkan bila pusingan dijangka berjalan. Ia tidak membuka atau menutup pusingan; pembukaan kekal sebagai tindakan berasingan. Biarkan kosong jika jadual belum ditetapkan."
     },
     "orgSettings": {
       "nav": "Tetapan",
@@ -5932,11 +5942,11 @@
       "chooseHint": "Anda menjalankan lebih daripada satu, jadi kami tidak akan meneka. Pilih satu - anda juga boleh menukarnya dari jejak di bahagian atas halaman."
     },
     "rules": {
-      "subtitle": "Siapa yang layak untuk pemberian ini. Ujian yang tidak ditanda tidak dikenakan langsung.",
-      "editing": "Ini ialah peraturan bagi {year} - {name}.",
-      "liveWarning": "Menukar peraturan menukar siapa yang layak, sebaik sahaja anda simpan. Ia TIDAK dibekukan untuk pelajar yang sudah memohon - tidak seperti \"Apa yang kami minta\" - jadi penilaian semula akan menggunakan peraturan baharu. Berhati-hati di pertengahan pengambilan.",
-      "untickNote": "Nyahtanda sesuatu ujian untuk berhenti mengenakannya. Kotak kosong bermakna ujian itu tidak dijalankan langsung.",
-      "noYear": "Pemberian ini belum mempunyai tahun pengambilan, dan peraturan disimpan pada tahun itu. Cipta satu di tab Tahun pengambilan dan tetapkannya di sana.",
+      "subtitle": "Kriteria bagi hadiah ini. Ujian yang tidak dipilih tidak dikenakan.",
+      "editing": "Kriteria bagi {year} — {name}.",
+      "liveWarning": "Perubahan kriteria berkuat kuasa apabila disimpan dan terpakai kepada semua permohonan, termasuk yang telah dihantar. Tidak seperti \"Apa yang kami minta\", kriteria tidak dibekukan pada masa penghantaran, jadi penilaian semula akan menilai pemohon terdahulu mengikut nilai baharu. Berhati-hati semasa pengambilan sedang dibuka.",
+      "untickNote": "Kosongkan ujian untuk berhenti mengenakannya. Nilai kosong bermaksud ujian itu tidak dikenakan.",
+      "noYear": "Hadiah ini tiada tahun pengambilan. Kriteria disimpan pada tahun pengambilan, jadi ciptakan satu terlebih dahulu.",
       "saved": "Disimpan",
       "goToYear": "Cipta tahun pengambilan"
     }

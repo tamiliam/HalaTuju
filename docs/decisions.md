@@ -9201,6 +9201,128 @@ avoids an awkward number position. Accepted.
 **Revisit if:** a value becomes tunable and its copy genuinely cannot carry the number (a legal
 phrase, say). Then the copy must stop CLAIMING the number rather than state a stale one.
 
+---
+
+## The gift's state is a badge, not a verb — gift card & copy, 2026-09-07
+
+**Decision:** the gift's lifecycle badge IS the control that changes it. **Draft · Live · Archived**,
+colour-coded green/grey/blue, served from the API as `lifecycle`. "Switch on / Switch off" is gone
+from the action row, which now holds two verbs: Settings and Delete.
+
+**Alternatives considered:**
+(a) leave it — rename the link and explain the difference in copy;
+(b) the owner's first sketch — put **Status** in the action row between Settings and Delete;
+(c) delete the gift switch entirely and derive "live" from something else;
+(d) the shipped shape — the badge that already showed the state becomes the control.
+
+**Rationale.** The owner's report was that "Switch off" read as a duplicate of the intake year's
+Open/Close. **They were right about what was visible and wrong about the underlying system, and both
+halves matter.** Checking the two guards showed the pair *(gift off + round open)* is unreachable —
+a round cannot open on an inactive gift, and an active gift cannot be switched off while a round is
+open — so for the apply path the ROUND genuinely does all the work and `programme__is_active` is
+belt-and-braces there. But the gift switch answers a question nothing else answers — *is this a gift
+the organisation runs at all?* — and four surfaces read it: payment-run creation, the sponsor
+invitation picker, the source picker, and `signup_programme_for`. BrightPath Bursary today has every
+round closed and is still paying 47 students, so "not taking applications" and "not a live gift" are
+not the same state.
+
+So the fault was **presentation**: a lifecycle control had been placed in a row of verbs, directly
+under a column headed "Taking applications". **(a)** leaves two things about state on one card. **(b)**
+is what the owner asked for and would have shown the state twice — the badge above and the control
+below — which is the doubling they objected to; put to them, they took (d). **(c)** is genuinely
+simpler and was refused on cost: every gift is BORN switched off, so deleting the switch means a gift
+is live the second it is created, and the four surfaces above each need a new rule.
+
+**⚠ AND THE THIRD STATE IS WHAT MAKES THE SPLIT WORTH ANYTHING.** "Inactive" was doing two jobs that
+render identically: a gift still being SET UP, and a gift that has FINISHED. Naming them separately is
+the difference between a lifecycle and a second applications switch.
+
+**Trade-offs.** `lifecycle` is DERIVED, not stored (the owner's option A over a migration): `is_active`
+false splits on whether anybody ever applied. A gift switched on, applied to by nobody, then switched
+off reads **Draft** rather than Archived — accepted, because the alternative is a column and a
+production data step for a distinction nothing acts on yet. A clickable badge is also less obviously
+interactive than a link; it carries a caret and an accessible name, and the rendered test presses it.
+
+**⚠ Not fixed here, and named to the owner:** archiving a gift blocks creating a payment run for it,
+so retiring one while students are still owed money silently removes the way to pay them. Existing
+runs are unaffected. The menu names where the switch will land; it does not yet warn about that.
+
+**Revisit if:** "archived" needs to mean more than "retired" — hidden from lists, excluded from
+exports, reported on. That is the trigger for the stored column option B declined here.
+
+---
+
+## Red is reserved for trouble, so a draft gift is grey — gift card & copy, 2026-09-07
+
+**Decision:** the lifecycle badge is **Live = green (positive) · Draft = grey (ground) ·
+Archived = blue (info)**. The owner's sketch asked for green / red / blue.
+
+**Alternatives considered:** the owner's green/red/blue; amber for draft; grey for both draft and
+archived.
+
+**Rationale.** This product spent a whole sprint (F7e) making its tone vocabulary mean something:
+`critical` marks a blocked delete, a failed check on a student's file, a document that cannot be
+read. A gift being set up is the **normal state of every gift on its first day** — it is born
+switched off. Painting it red reports a problem where there is none and spends the one colour that
+has to keep meaning trouble. Grey says "not live yet" without saying "broken". Amber was considered
+and rejected for the same reason one step down: `caution` means *look at this*, and a draft needs no
+looking at. Blue for archived is `info` — a fact about the past, not a warning.
+
+**Trade-offs.** Grey is quieter than the owner asked for, so a draft gift is less eye-catching in a
+long list. Accepted: the badge is beside the gift's own name, and the card already reads "Taking
+applications: None".
+
+**Revisit if:** a state is added that genuinely IS a problem — a gift misconfigured to the point of
+refusing applicants, say. That one earns red.
+
+---
+
+## A refusal is hidden only where the card already proves it — gift card & copy, 2026-09-07
+
+**Decision:** the delete-refusal sentence is suppressed when the reason is `has_applications`, and
+kept for the other four (`has_benefactors`, `has_money`, `has_payment_runs`, `in_use`).
+
+**Alternatives considered:** remove the line entirely (the owner's words: *"REMOVE. Redundant."*);
+keep it always; add the missing four facts to the card so all five become redundant.
+
+**Rationale.** The owner is right about the case they were looking at: "Students have applied to this
+gift" sits directly under an APPLICATIONS column reading 41, and adds nothing. But that sentence
+covers **five** reasons and only one is visible on the card. Removing it outright means a gift greyed
+because **money is recorded against it** shows a dead button with no explanation — which is precisely
+the defect the sentence was added for the previous day, after the owner said a destructive control
+should be *"prevented at the button stage"*. Adding the other four facts to the card was rejected as
+the wrong trade: four rarely-used counters on every row, to delete one sentence.
+
+**Trade-offs.** The rule is a small asymmetry somebody could read as an oversight, so it lives in a
+named predicate (`redundantWithCard`) with the reason at its definition, and both halves have a test —
+one asserting the sentence is gone for applications, one asserting it survives for money.
+
+**Revisit if:** the card gains a benefactors or money column. Each new column moves one reason into
+the redundant set, and the predicate is where that is recorded.
+
+---
+
+## A pointer is for a dead end, not for a step somebody has passed — gift card & copy, 2026-09-07
+
+**Decision:** the Intake year tab's "Next: set the rules" button is deleted. The Rules tab's matching
+"Create an intake year" button stays.
+
+**Alternatives considered:** keep it; show it only until the criteria are first saved; delete it.
+
+**Rationale.** I added both a day earlier as two halves of one setup trail, and got the condition
+backwards on one of them. The Rules pointer appears when there is **no** intake year — a genuine dead
+end, because the criteria are columns on the year row, so that tab cannot work until a year exists. It
+unblocks once and then never returns. The Intake year pointer appeared when a year **did** exist,
+which is to say for ever: on a gift running its second intake it still read "Next: set the rules",
+like unfinished homework that never clears. It was also redundant — the Rules tab is one click above
+it. The middle option (hide once the criteria are saved) was rejected as a third piece of state to
+maintain on a screen the owner had just called cluttered.
+
+**Trade-offs.** A first-time setup now has one fewer nudge between creating a year and setting the
+criteria. The tab strip is directly above and the Rules tab is the next one along.
+
+**Revisit if:** first-time setup is measured and people stop at the year. The fix then is a condition
+that can turn OFF — not this button back.
 ## The MB↔bytes conversion for the upload cap has exactly one home — Org Config Sprint E, 2026-09-07
 
 **Decision:** `max_doc_size_mb` is stored and shown in MB (the owner's unit); `org_config.

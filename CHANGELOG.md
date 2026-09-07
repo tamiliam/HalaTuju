@@ -38,97 +38,27 @@ de-orged, the reminder interval hoisted back above the loop, and a signatory key
 registry - each failed its owning test, each restored. i18n +5 keys x3 (ms/ta first drafts).
 
 ## Org Config Sprint E: the document limits become organisation-tunable - 2026-09-07
+## Fix: the sponsors table drops the Role column instead of dashing it - 2026-09-08
 
-Four settings join Organisation > Settings > Configuration under a new **Documents** group
-(registry entries + wired read sites + rows - **no migration**). Roadmap
-`docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D + E done);
-retro `docs/retrospective-2026-09-07-org-config-sprint-e.md`.
+Owner, looking at the live Invitations page while testing #17: *"what is the purpose of the role
+column?"* On the Sponsors table it had none. **A sponsor invitation carries no role because it
+creates no account** — it emails a link to the ordinary public registration — so that column could
+only ever print "—", for every row, for ever. Confirmed against production: every sponsor
+invitation on file has an empty role, and always will.
 
-- **`max_doc_size_mb` (8, ceiling 25)** - the tab speaks MB (the owner's unit) while the wire
-  speaks bytes, and `org_config.max_doc_size_bytes()` is the ONE conversion. Both upload doors
-  read it: the student's document POST and the organisation's own support-request attachment.
-  A platform value that is not a whole MB rounds DOWN, so the number on screen never promises
-  more than the server accepts. Ceiling 25 confirmed against storage: the `b40-documents` bucket
-  sets no file-size limit of its own, so the real wall is the Supabase project's 50 MB.
-- **`max_docs_per_application` (40)** and **`max_other_docs` (10)** - both count LIVE documents
-  only; a re-upload replaces a slot and never fills the quota. Unchanged behaviour, now per
-  organisation.
-- **`doc_stage_max_attempts` (3)** - the re-upload circuit-breaker (owner 2026-07-09) reads the
-  APPLICATION's organisation, not a platform global.
-- **The uploader's mirror is GONE.** `ScholarshipDocuments` held its own
-  `MAX_DOC_SIZE_BYTES = 8 * 1024 * 1024` so it could warn before a doomed upload. The document
-  list now SERVES the resolved limits and `documentLimits.limitsFrom` reads them with a
-  per-field fallback; a nonsense size (0, negative) is refused on its own rather than producing
-  a limit that rejects every file.
-- **"Each file must be under 8 MB" is parameterised** in all three languages, and the refusal
-  path prefers the server's OWN `max_mb` from the 400 body - so a stale served limit cannot make
-  the message contradict the rejection. A jest guard fails if a number goes back into the string.
+- **`InvitationsTable` takes `showRole`**, and the page passes it by KIND: true for Admins (Admin ·
+  Finance · Org admin) and Reviewers (Reviewer · QC), where the column separates things; false for
+  Sponsors and Source.
+- **Passed, never derived from the rows.** "Do these invitations have roles" is a fact about the
+  kind. Reading it off whichever rows are loaded would hide the column on a staff table the day one
+  arrives with a blank role — a real missing value, reported as nothing at all.
+- **A dash is not neutral.** It reads as a value we failed to fetch, which is exactly the question
+  it prompted.
 
-+8 pytest (5948 -> 5956) and +7 jest (1769 -> 1776). Four bite-checks: the size cap de-orged,
-the payload serving a literal, the breaker re-globalled, and the browser ignoring the served
-size - each failed its owning test, each restored by writing the original back. i18n +12 keys x3
-(ms/ta first drafts).
+Both directions bite-checked — forced false, the staff-table test fails; forced true, the sponsors
+test fails. jest **1781**; tsc 24 (baseline); lint 0; i18n 4839 × 3 (no new keys); `next build`
+clean on a retry after a concurrent build in the same checkout locked `.next`.
 
-## Fix: the interview clock boxes are plain HH:MM boxes, not a native time picker - 2026-09-07
-
-The owner's live review of Org Config Sprint D found the clock rows unusable, and all four
-symptoms had one cause: `<input type="time">` renders in the BROWSER's locale, and on a 12-hour
-browser it grows an AM/PM segment.
-
-- **Save never woke up.** While the AM/PM segment is empty the input reports NO VALUE, so the box
-  looked filled, the draft stayed empty, and nothing on screen said why. Nothing was ever saved,
-  so there is no stored value to correct.
-- **21:30 could not be typed** - the hour segment caps at 12, so it became 02:30.
-- **The stray dash** after the minutes was that empty AM/PM segment.
-- There is no attribute that forces a native time input to 24 hours. The row is now a plain text
-  box typed as HH:MM, which behaves identically in every browser and is what `hhmmToMinutes`
-  already read.
-- **The unit column beside a clock box now says `(hh:mm)`** - what SHAPE to type - while the note
-  underneath keeps `Platform default: 21:30 (Malaysian time)` - which CLOCK the default is on
-  (owner's wording). One string could not carry both, so clock rows have their own note key.
-
-+2 jest (1767 -> 1769), including the bite-check's owning test: putting `type="time"` back fails
-two of them.
-
-## Org Config Sprint D: the interview grid becomes organisation-tunable - 2026-09-07
-
-Six settings join Organisation > Settings > Configuration under a new **Interviews** group
-(registry entries + wired read sites + rows - **no migration**). Roadmap
-`docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D done);
-retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
-
-- **The picker's lock-step copy is GONE.** `interviewSlots.ts` carried its own window, step and
-  notice under a comment telling the next person to keep them equal to `scheduling.py`. Those
-  values are the ORGANISATION's now, so equality is not a thing a copy can hold: the interview
-  payload - the ONE seam both the reviewer's propose grid and the student's booking panel read -
-  SERVES the resolved four, and the constants survive only as the platform fallback for a
-  payload that predates the fields.
-- **`interview_duration_min` (30)** settles a four-way dead default: `emails.py`,
-  `scheduling.py` and both `meeting.py` event builders fell back to **45** while
-  `settings/base.py` says 30 ("matches the 'about 30 minutes' copy"). None could fire, and one
-  deleted settings line would have put a 45-minute block on a student's calendar against a
-  30-minute promise.
-- **`interview_window_start_min` / `interview_window_end_min`** (08:00 / 21:30, stored as
-  minutes past midnight) - typed on the tab as **HH:MM clock boxes**, which is the engine's
-  first new input shape (owner's choice, 2026-09-07). A window that closes before it opens is
-  refused by a CROSS-FIELD rule that resolves the absent side from the platform default, so
-  storing one end alone cannot invert the pair either.
-- **`interview_slot_step_min` (30)** is the engine's first setting whose vocabulary is a LIST
-  rather than a range - only divisors of 60, rendered as a menu, because `slot_in_window` reads
-  `minute % step` and a 45-minute grid has no honest reading across an hour boundary.
-- **`interview_min_lead_hours` (24)** and **`interview_reschedule_cutoff_hours` (12)** - the
-  cutoff is now resolved per organisation at BOTH surfaces that must agree: the refusal
-  (`scheduling._cutoff_ok`, on book and cancel) and the promise (the booked-interview email's
-  "you can change or cancel up to N hours before").
-- **Two sentences that read the rules out as fixed words were parameterised** in all three
-  languages: the reviewer's "Available times (8:00am-9:30pm, 30-min)" caption and the student's
-  "it's a short video call (about 30 minutes)". Copy is invisible to a type-check, so a jest
-  guard now fails if a number goes back into either.
-
-+11 pytest (5924 -> 5935) and +13 jest (1754 -> 1767). Four bite-checks: the window de-orged,
-the payload serving a platform constant, the cross-field rule disabled, and the browser
-ignoring the served rules - each failed its owning test, each restored by writing the original
-back. i18n +16 keys x3 (ms/ta first drafts).
 ## Fix: Enter in the invitation note no longer sends it (BrightPath #17) - 2026-09-08
 
 The note on the sponsor invitation form was a single-line `<input>` inside the form whose main
@@ -237,6 +167,137 @@ Measured on production before the change: **5 live income documents with a blank
 docstring names. Both bites landed and bit (env arm disabled → 1 test fails; registry key renamed
 → 1 test fails). +2 tests.
 
+## Org Config Sprint E: the document limits become organisation-tunable - 2026-09-07
+
+Four settings join Organisation > Settings > Configuration under a new **Documents** group
+(registry entries + wired read sites + rows - **no migration**). Roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D + E done);
+retro `docs/retrospective-2026-09-07-org-config-sprint-e.md`.
+
+- **`max_doc_size_mb` (8, ceiling 25)** - the tab speaks MB (the owner's unit) while the wire
+  speaks bytes, and `org_config.max_doc_size_bytes()` is the ONE conversion. Both upload doors
+  read it: the student's document POST and the organisation's own support-request attachment.
+  A platform value that is not a whole MB rounds DOWN, so the number on screen never promises
+  more than the server accepts. Ceiling 25 confirmed against storage: the `b40-documents` bucket
+  sets no file-size limit of its own, so the real wall is the Supabase project's 50 MB.
+- **`max_docs_per_application` (40)** and **`max_other_docs` (10)** - both count LIVE documents
+  only; a re-upload replaces a slot and never fills the quota. Unchanged behaviour, now per
+  organisation.
+- **`doc_stage_max_attempts` (3)** - the re-upload circuit-breaker (owner 2026-07-09) reads the
+  APPLICATION's organisation, not a platform global.
+- **The uploader's mirror is GONE.** `ScholarshipDocuments` held its own
+  `MAX_DOC_SIZE_BYTES = 8 * 1024 * 1024` so it could warn before a doomed upload. The document
+  list now SERVES the resolved limits and `documentLimits.limitsFrom` reads them with a
+  per-field fallback; a nonsense size (0, negative) is refused on its own rather than producing
+  a limit that rejects every file.
+- **"Each file must be under 8 MB" is parameterised** in all three languages, and the refusal
+  path prefers the server's OWN `max_mb` from the 400 body - so a stale served limit cannot make
+  the message contradict the rejection. A jest guard fails if a number goes back into the string.
+
++8 pytest (5948 -> 5956) and +7 jest (1769 -> 1776). Four bite-checks: the size cap de-orged,
+the payload serving a literal, the breaker re-globalled, and the browser ignoring the served
+size - each failed its owning test, each restored by writing the original back. i18n +12 keys x3
+(ms/ta first drafts).
+
+## The gift card says one thing once, and the console stops chatting - 2026-09-07
+
+**NO migration. api + web.** Three owner findings from a live review, all on the same screens.
+Retro `docs/retrospective-2026-09-07-gift-card-and-copy.md`.
+
+- **⚠ "Switch off" LOOKED LIKE A DUPLICATE OF THE INTAKE YEAR'S OPEN/CLOSE, AND THE OWNER WAS RIGHT
+  ABOUT WHAT THEY COULD SEE.** Both guards were checked: a round cannot open on a gift that is off,
+  and a gift cannot be switched off while a round is open. So the pair (off + open) is
+  **unreachable**, and for a student trying to apply the ROUND does all the work. The gift switch
+  answers a different question with no other answer — *is this a gift the organisation runs?* — and
+  four things ask it: creating a payment run, the sponsor-invitation picker, the source picker, and
+  which gift a new sponsor is filed under. BrightPath Bursary today has every round closed and is
+  still paying 47 students.
+- **The state moved into the badge, and the badge became the control.** **Draft · Live · Archived**,
+  served as `lifecycle` on the row. The action row is two verbs now: **Settings** and **Delete**.
+- **⚠ THE THIRD STATE IS DERIVED, NOT STORED** (owner's option A of two). `is_active` false splits on
+  whether anybody ever applied — so "still being set up" and "finished, holding 41 students" stop
+  rendering identically. **Known edge, accepted:** a gift switched on, applied to by nobody, then
+  switched off reads DRAFT. **The API is unchanged** — this still PATCHes `is_active`.
+- **⚠ NO RED.** The owner's sketch said green/red/blue; red in this product means *something is
+  wrong*, and a gift on its first day is not an error. **Green / grey / blue**, with a test that
+  fails if draft goes red.
+- **The delete refusal is NARROWED, not removed** (owner: *"REMOVE. Redundant."*). "Students have
+  applied" is hidden — the APPLICATIONS column says 41 directly above it. **The other four reasons
+  stay**: benefactors, money, payment runs and `in_use` appear NOWHERE on the card, so removing the
+  sentence outright restores a dead button with no explanation. A test pins each half.
+- **"Next: set the rules" is DELETED.** Its condition was "a year exists", so it showed for ever —
+  on a gift running its second intake it read as unfinished homework. Its twin on the Rules tab is
+  correct and stays: it appears only when there is NO year, a real dead end.
+- **~40 strings re-voiced formal across the four configuration screens** (en/ms/ta). *"one round of
+  students per year."* -> "One intake round per year."; *"That did not work. Nothing was changed."*
+  -> "The change could not be saved. No changes were made."; *"A gift programme never lapses. Its
+  intake years come and go beneath it."* -> "A gift programme does not expire. Its intake years are
+  opened and closed beneath it." "Open its settings" -> **Settings**.
+
+pytest **5954**; jest **1777**; tsc **24** (baseline); lint **0**; i18n **4839 x 3**;
+`next build` exit 0; `makemigrations --check` clean. Three bite-checks, each injection verified as
+landed first. ms and ta are first drafts.
+
+## Fix: the interview clock boxes are plain HH:MM boxes, not a native time picker - 2026-09-07
+
+The owner's live review of Org Config Sprint D found the clock rows unusable, and all four
+symptoms had one cause: `<input type="time">` renders in the BROWSER's locale, and on a 12-hour
+browser it grows an AM/PM segment.
+
+- **Save never woke up.** While the AM/PM segment is empty the input reports NO VALUE, so the box
+  looked filled, the draft stayed empty, and nothing on screen said why. Nothing was ever saved,
+  so there is no stored value to correct.
+- **21:30 could not be typed** - the hour segment caps at 12, so it became 02:30.
+- **The stray dash** after the minutes was that empty AM/PM segment.
+- There is no attribute that forces a native time input to 24 hours. The row is now a plain text
+  box typed as HH:MM, which behaves identically in every browser and is what `hhmmToMinutes`
+  already read.
+- **The unit column beside a clock box now says `(hh:mm)`** - what SHAPE to type - while the note
+  underneath keeps `Platform default: 21:30 (Malaysian time)` - which CLOCK the default is on
+  (owner's wording). One string could not carry both, so clock rows have their own note key.
+
++2 jest (1767 -> 1769), including the bite-check's owning test: putting `type="time"` back fails
+two of them.
+
+## Org Config Sprint D: the interview grid becomes organisation-tunable - 2026-09-07
+
+Six settings join Organisation > Settings > Configuration under a new **Interviews** group
+(registry entries + wired read sites + rows - **no migration**). Roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D done);
+retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
+
+- **The picker's lock-step copy is GONE.** `interviewSlots.ts` carried its own window, step and
+  notice under a comment telling the next person to keep them equal to `scheduling.py`. Those
+  values are the ORGANISATION's now, so equality is not a thing a copy can hold: the interview
+  payload - the ONE seam both the reviewer's propose grid and the student's booking panel read -
+  SERVES the resolved four, and the constants survive only as the platform fallback for a
+  payload that predates the fields.
+- **`interview_duration_min` (30)** settles a four-way dead default: `emails.py`,
+  `scheduling.py` and both `meeting.py` event builders fell back to **45** while
+  `settings/base.py` says 30 ("matches the 'about 30 minutes' copy"). None could fire, and one
+  deleted settings line would have put a 45-minute block on a student's calendar against a
+  30-minute promise.
+- **`interview_window_start_min` / `interview_window_end_min`** (08:00 / 21:30, stored as
+  minutes past midnight) - typed on the tab as **HH:MM clock boxes**, which is the engine's
+  first new input shape (owner's choice, 2026-09-07). A window that closes before it opens is
+  refused by a CROSS-FIELD rule that resolves the absent side from the platform default, so
+  storing one end alone cannot invert the pair either.
+- **`interview_slot_step_min` (30)** is the engine's first setting whose vocabulary is a LIST
+  rather than a range - only divisors of 60, rendered as a menu, because `slot_in_window` reads
+  `minute % step` and a 45-minute grid has no honest reading across an hour boundary.
+- **`interview_min_lead_hours` (24)** and **`interview_reschedule_cutoff_hours` (12)** - the
+  cutoff is now resolved per organisation at BOTH surfaces that must agree: the refusal
+  (`scheduling._cutoff_ok`, on book and cancel) and the promise (the booked-interview email's
+  "you can change or cancel up to N hours before").
+- **Two sentences that read the rules out as fixed words were parameterised** in all three
+  languages: the reviewer's "Available times (8:00am-9:30pm, 30-min)" caption and the student's
+  "it's a short video call (about 30 minutes)". Copy is invisible to a type-check, so a jest
+  guard now fails if a number goes back into either.
+
++11 pytest (5924 -> 5935) and +13 jest (1754 -> 1767). Four bite-checks: the window de-orged,
+the payload serving a platform constant, the cross-field rule disabled, and the browser
+ignoring the served rules - each failed its owning test, each restored by writing the original
+back. i18n +16 keys x3 (ms/ta first drafts).
 ## Students hold a gift, not intake years - 2026-09-07
 
 **NO migration. api + web.** The owner read TD-232 back and said the rule was wrong: *"I don't
