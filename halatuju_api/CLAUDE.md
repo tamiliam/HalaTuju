@@ -552,7 +552,16 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-07, after the Configuration consistency pass)
 
-**SHIPPED.** Worktree `.worktrees/config-consistency`, branch `feat/config-consistency` (base =
+**SHIPPED AND DEPLOYED 2026-09-08.** Commit `874fe6a5` + merge `3d6176dd`. **Only the WEB build
+fired** (`3d6176d`, SUCCESS) — no Python changed, the fifth observation agreeing that the api
+trigger follows PYTHON, not the `halatuju_api/**` glob; api stayed on its previous revision.
+Serving **halatuju-web-00845-66c** at 100%. The served admin bundle was read back (1.68 MB of
+deployed JS, not the build log): it carries `save-bar`, `edit-year-dialog`, `confirm-open-dialog`,
+"The window has ended" and "Unsaved changes", and **none** of the three retired idle sentences.
+All public routes 200; no error logs since the deploy.
+⚠ `common.nothingToSave` IS STILL IN THE BUNDLE AND THAT IS CORRECT — it is the hover title on a
+sleeping Save button. A live check that greps for its absence is checking the wrong thing.
+Worktree `.worktrees/config-consistency`, branch `feat/config-consistency` (base =
 `origin/main` at `acac48e2`, the Sprint F close). **NO MIGRATION, NO BACKEND — web only**, 14
 files. Retro `docs/retrospective-2026-09-07-config-consistency.md`; decisions ×2; lessons ×4.
 Gates, ALL RUN INSIDE THE WORKTREE: jest **1810** (+16); tsc **24** (baseline); lint **0**;
@@ -603,10 +612,8 @@ a ruling they had made the day before, and was then un-reversed.
 - **A round with NO stated window renders a bare dash and no state line.** That is the production
   shape (nothing was backfilled, the live 2026 intake included) and it must never read as an error.
 
-**▶ AT DEPLOY: push (WEB ONLY — no Python changed, so expect the api trigger not to fire; confirm
-with `gcloud builds list` rather than assuming).** No migrate-first, no env vars, no data step.
-**Nothing a student sees changes**; the org_admin's Configuration and Organisation → Settings
-screens do.
+**✅ DEPLOYED 2026-09-08.** No migrate-first, no env vars, no data step. **Nothing a student sees
+changes**; the org_admin's Configuration and Organisation → Settings screens do.
 
 **▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
 1. **Programme → Configuration → Intake year** — the amber caution is now **above** the table.
