@@ -5820,9 +5820,10 @@
           "minutes": "minutes",
           "cards": "cards",
           "questions": "questions",
-          "time_of_day": "(Malaysian time)"
+          "time_of_day": "(hh:mm)"
         },
         "defaultNote": "Platform default: {n} {unit}",
+        "defaultNoteClock": "Platform default: {n} (Malaysian time)",
         "rowInvalid": "Enter a whole number between {min} and {max}, or leave blank for the default.",
         "rowInvalidClock": "Enter a time like 08:00, or leave blank for the default.",
         "save": "Save changes",

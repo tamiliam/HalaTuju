@@ -261,14 +261,41 @@ describe('the Sprint B rows render, grouped and ordered', () => {
 describe('a clock row types a time, and stores a number', () => {
   const clock = () => screen.getByTestId('config-interview_window_start_min') as HTMLInputElement
 
-  it('is a time box showing the default as HH:MM, not 480', async () => {
+  it('is a PLAIN box showing the default as HH:MM, not 480 and not type="time"', async () => {
+    // ⚠ `type="time"` is what shipped first and it was wrong (owner, 2026-09-07): a native time
+    // input follows the BROWSER's locale, so on a 12-hour browser it grows an AM/PM segment,
+    // 21:30 cannot be typed, and an empty AM/PM makes the input report NO value — a filled-looking
+    // box with a sleeping Save button and nothing on screen explaining it.
     await mount()
-    expect(clock().type).toBe('time')
+    expect(clock().type).toBe('text')
     expect(clock().value).toBe('')
     expect(clock().placeholder).toBe('08:00')
-    // The note beside it names the default in the same shape the box would show.
+    // The note beside it names the default in the same shape the box takes, and says which clock.
     const row = clock().closest('li') as HTMLElement
-    expect(within(row).getByText(/defaultNote\|08:00/)).toBeTruthy()
+    expect(within(row).getByText(/defaultNoteClock\|08:00/)).toBeTruthy()
+  })
+
+  it('takes a full 24-hour time — the one the picker refused', async () => {
+    mockApi.saveOrganisationConfiguration.mockResolvedValue(config())
+    await mount()
+    const end = screen.getByTestId('config-interview_window_end_min') as HTMLInputElement
+    expect(end.placeholder).toBe('21:30')
+    fireEvent.change(end, { target: { value: '21:30' } })
+    expect(save().disabled).toBe(false)
+    fireEvent.click(save())
+    await waitFor(() => expect(outcome()).toBe('admin.orgSettings.config.saved'))
+    expect(mockApi.saveOrganisationConfiguration).toHaveBeenCalledWith(
+      { interview_window_end_min: 1290 }, undefined, { token: 'tok' })
+  })
+
+  it('says what a valid answer looks like when the typing is not a time', async () => {
+    await mount()
+    for (const bad of ['2130', '9.30pm', '25:00', 'abc']) {
+      fireEvent.change(clock(), { target: { value: bad } })
+      expect(save().disabled).toBe(true)
+      expect(screen.getByTestId('config-interview_window_start_min-invalid')).toBeTruthy()
+    }
+    expect(outcome()).toBe('admin.orgSettings.config.invalid')
   })
 
   it('renders a stored value as HH:MM and sends back minutes past midnight', async () => {

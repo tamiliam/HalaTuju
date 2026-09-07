@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: the interview clock boxes are plain HH:MM boxes, not a native time picker - 2026-09-07
+
+The owner's live review of Org Config Sprint D found the clock rows unusable, and all four
+symptoms had one cause: `<input type="time">` renders in the BROWSER's locale, and on a 12-hour
+browser it grows an AM/PM segment.
+
+- **Save never woke up.** While the AM/PM segment is empty the input reports NO VALUE, so the box
+  looked filled, the draft stayed empty, and nothing on screen said why. Nothing was ever saved,
+  so there is no stored value to correct.
+- **21:30 could not be typed** - the hour segment caps at 12, so it became 02:30.
+- **The stray dash** after the minutes was that empty AM/PM segment.
+- There is no attribute that forces a native time input to 24 hours. The row is now a plain text
+  box typed as HH:MM, which behaves identically in every browser and is what `hhmmToMinutes`
+  already read.
+- **The unit column beside a clock box now says `(hh:mm)`** - what SHAPE to type - while the note
+  underneath keeps `Platform default: 21:30 (Malaysian time)` - which CLOCK the default is on
+  (owner's wording). One string could not carry both, so clock rows have their own note key.
+
++2 jest (1767 -> 1769), including the bite-check's owning test: putting `type="time"` back fails
+two of them.
+
 ## Org Config Sprint D: the interview grid becomes organisation-tunable - 2026-09-07
 
 Six settings join Organisation > Settings > Configuration under a new **Interviews** group
