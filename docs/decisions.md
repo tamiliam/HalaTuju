@@ -9147,3 +9147,56 @@ be mechanically checked. Nothing mechanically checks that class of dishonesty no
 
 **Revisit if:** a second refusal is found instructing an impossible action. Two instances is the
 point at which the pairing deserves a general guard rather than one written per string.
+
+## An org-tunable value that the browser NEEDS is served on a payload it already fetches — never on a new call, and never as a lock-step copy — Org Config Sprint D, 2026-09-07
+
+**Decision:** The interview booking grid (window start/end, step, minimum notice, plus the
+duration and the reschedule cutoff) is resolved server-side per application and added to
+`interview_schedule_payload`, the ONE payload both the reviewer's cockpit and the student's
+booking panel already read. `interviewSlots.ts` keeps the values only as a per-field fallback for
+a payload that predates the fields, and the "keep in lock-step" comment is deleted.
+
+**Alternatives considered:** (a) leave the FE constants and add a "keep them equal" test — a test
+can only assert equality against ONE organisation's numbers, which is exactly what stops being
+true; (b) a dedicated `GET /interview-rules/` the picker calls on mount — a second round trip, a
+second thing to fence, and a window in which the grid drawn and the grid enforced differ;
+(c) inject them at build time — they would then be per-DEPLOY, not per-tenant.
+
+**Rationale:** the payload is already fetched, already organisation-scoped (it takes the
+application), and already served to both audiences from one function. Adding fields to it makes
+the picker's grid and the propose endpoint's refusal read the same numbers by construction. This
+is the third use of the rule Sprint C established (role payload, staff list rows, now the
+interview payload) and the first where the mirror had been ANNOUNCED in a comment — which is
+evidence that a comment asking for lock-step is a defect report, not a safeguard.
+
+**Trade-offs:** the FE helpers now take a rules argument, so their signatures grew a parameter
+(defaulted, so the pure tests still read plainly). A payload from an older cached build draws the
+platform grid rather than the organisation's — accepted, because the propose endpoint refuses
+anything outside the real window, so the worst case is a chip that is rejected, not a booking
+that is wrong.
+
+**Revisit if:** a third screen needs the rules without an application in hand. That caller has no
+tenant either, and the answer would be an organisation-scoped endpoint, not a constant.
+
+## The message files are read sites: copy that states a tunable value must interpolate it — Org Config Sprint D, 2026-09-07
+
+**Decision:** Two sentences that read the interview rules out as fixed words — the reviewer's
+"Available times (8:00am–9:30pm, 30-min)" and the student's "it's a short video call (about 30
+minutes)" — are parameterised in all three languages and fed from the same served values the
+screen uses. A jest guard fails if a bare number goes back into either.
+
+**Alternatives considered:** leave the copy and accept it as approximate ("about 30 minutes" is
+hedged, after all). Rejected: the caption is not hedged at all, and it would sit directly above a
+picker showing different hours — the screen would contradict itself in one glance.
+
+**Rationale:** a sentence that states a value is a CONSUMER of that value. It is the only kind of
+consumer that no compiler, no type and no component test will ever flag, so it is the one that
+survives a migration of the rule and turns into a false promise. Making the copy interpolate puts
+it on the same seam as the behaviour.
+
+**Trade-offs:** three locale files must agree on the placeholder set (the existing
+placeholder-parity test covers that), and a translator can no longer write a fluent sentence that
+avoids an awkward number position. Accepted.
+
+**Revisit if:** a value becomes tunable and its copy genuinely cannot carry the number (a legal
+phrase, say). Then the copy must stop CLAIMING the number rather than state a stale one.
