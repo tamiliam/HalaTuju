@@ -696,16 +696,17 @@ def current_offer(application):
 
 def arm_sign_deadline(application, *, now=None):
     """Offer-lapse rework (go-live transition): ARM the accept clock on this application's open
-    offer — ``accept_deadline = now + SIGN_ACCEPT_DEADLINE_DAYS``. Called when the sign-invitation
+    offer — ``accept_deadline = now + the organisation's `sign_accept_deadline_days``` (Org Config
+    Sprint F; platform default 30). Called when the sign-invitation
     email is actually sent (see the ``send_sign_invitation_emails`` command), so the student then
     has that window to sign before the offer may lapse. No-op (returns None) if there is no open
     offer. Re-arming an already-armed offer simply resets the window (a resend extends the clock)."""
-    from django.conf import settings as _settings
+    from apps.courses import org_config
     sp = current_offer(application)
     if sp is None:
         return None
     now = now or timezone.now()
-    days = getattr(_settings, 'SIGN_ACCEPT_DEADLINE_DAYS', 30)
+    days = org_config.value(application.owning_organisation, 'sign_accept_deadline_days')
     sp.accept_deadline = now + timezone.timedelta(days=days)
     sp.save(update_fields=['accept_deadline', 'updated_at'])
     return sp.accept_deadline

@@ -497,12 +497,13 @@ GUARANTOR_PHONE_VERIFY_TTL_SECONDS = int(os.environ.get('GUARANTOR_PHONE_VERIFY_
 # tested end-to-end. Awarded students are instead invited into it by a separate email later;
 # until then they only see the bank-details task. Flip to 1 to expose the panel.
 AWARD_ACCEPTANCE_ENABLED = os.environ.get('AWARD_ACCEPTANCE_ENABLED', '').lower() in ('1', 'true', 'yes')
-# The Foundation's interim signatory (placeholder "Suresh" until the real officer is set
-# via env var). The donor is never named — this is the FOUNDATION counterparty only.
-FOUNDATION_SIGNATORY_NAME = os.environ.get('FOUNDATION_SIGNATORY_NAME', 'Suresh')
-FOUNDATION_SIGNATORY_TITLE = os.environ.get(
-    'FOUNDATION_SIGNATORY_TITLE', 'For and on behalf of the Foundation (interim signatory)')
-FOUNDATION_SIGNATORY_NRIC = os.environ.get('FOUNDATION_SIGNATORY_NRIC', '')
+# ⚠ THE FOUNDATION SIGNATORY IS NOT A SETTING (deleted Org Config Sprint F, 2026-09-07).
+# `FOUNDATION_SIGNATORY_NAME` / `_TITLE` / `_NRIC` lived here until Sprint 5 moved the party
+# details onto `ContractTemplate` (`counterparty_name` / `counterparty_title` /
+# `counterparty_nric`), which is owned by one organisation and is what actually prints on the
+# agreement. They were read by NOTHING afterwards and set on nothing in production — three
+# settings that looked like the way to correct a name on a signed agreement and could not.
+# To change the signatory, edit the organisation's contract template.
 # Who gets the "a bursary agreement is awaiting the Foundation's countersignature" nudge.
 # Comma-separated override; if unset, the chain falls back to the active super admins,
 # then to ADMIN_NOTIFY_EMAIL. (See bursary.foundation_notify_emails.)

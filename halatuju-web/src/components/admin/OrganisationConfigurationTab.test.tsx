@@ -94,13 +94,22 @@ const SPRINT_E: api.OrganisationConfigSetting[] = [
     min: 1, max: 10, value: null, default: 3 },
 ]
 
+// The Sprint F registry rows — agreements. The FOUNDATION SIGNATORY is deliberately not here:
+// it lives on the organisation's contract template, which is what prints on the agreement.
+const SPRINT_F: api.OrganisationConfigSetting[] = [
+  { key: 'sign_accept_deadline_days', group: 'agreements', unit: 'days',
+    min: 1, max: 180, value: null, default: 30 },
+  { key: 'sign_reminder_days', group: 'agreements', unit: 'days',
+    min: 1, max: 60, value: null, default: 3 },
+]
+
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {
   return {
     organisation: { code: 'alpha', name: 'Alpha Foundation' },
     settings: [{
       key: KEY, group: 'sponsor_page', unit: 'days', min: 1, max: 90,
       value: null, default: 2, ...over,
-    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E],
+    }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E, ...SPRINT_F],
   }
 }
 
@@ -251,10 +260,22 @@ describe('the Sprint B rows render, grouped and ordered', () => {
     // ("days" vs "questions") — the owner read it as untidy on 2026-09-07. The width class is
     // the alignment; losing it brings the drift back.
     await mount()
-    for (const s of [{ key: KEY }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E]) {
+    for (const s of [{ key: KEY }, ...SPRINT_B, ...SPRINT_C, ...SPRINT_D, ...SPRINT_E, ...SPRINT_F]) {
       const unit = screen.getByTestId(`config-${s.key}-unit`)
       expect(unit.className).toContain('w-24')
     }
+  })
+
+  it('draws the Sprint F rows, with Agreements last', async () => {
+    await mount()
+    for (const s of SPRINT_F) {
+      expect(screen.getByTestId(`config-${s.key}`)).toBeTruthy()
+    }
+    const text = document.body.textContent || ''
+    const documents = text.indexOf('admin.orgSettings.config.group.documents')
+    const agreements = text.indexOf('admin.orgSettings.config.group.agreements')
+    expect(documents).toBeGreaterThanOrEqual(0)
+    expect(agreements).toBeGreaterThan(documents)
   })
 
   it('draws the Sprint E rows, with Documents after Interviews', async () => {

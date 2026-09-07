@@ -807,9 +807,10 @@ def distribute_executed_agreement(agreement):
 def send_signing_reminders(now=None):
     """SLA cron: nudge the party whose signature is still pending on a binding-but-not-yet-
     executed agreement — the partner (witness) first if a referring org with a contact email
-    exists, else the Foundation (countersign). Re-nudges no more often than
-    ``BURSARY_SIGN_REMINDER_DAYS``. Best-effort; returns a summary. No-op when the feature is
-    off. Idempotent within the interval via the ``*_reminded_at`` stamps."""
+    exists, else the Foundation (countersign). Re-nudges no more often than the APPLICATION's
+    organisation's ``sign_reminder_days`` (Org Config Sprint F; platform default 3). Best-effort;
+    returns a summary. No-op when the feature is off. Idempotent within the interval via the
+    ``*_reminded_at`` stamps."""
     summary = {'witness': 0, 'countersign': 0}
     if not getattr(settings, 'BURSARY_AGREEMENT_ENABLED', False):
         return summary
@@ -817,15 +818,30 @@ def send_signing_reminders(now=None):
     from . import emails
     from .models import BursaryAgreement
     now = now or timezone.now()
-    interval = timedelta(days=getattr(settings, 'BURSARY_SIGN_REMINDER_DAYS', 3))
+    # ⚠ THE INTERVAL IS PER APPLICATION, so it is resolved INSIDE the loop (Org Config Sprint F).
+    # It used to be computed once above — correct while the number was the platform's, and a
+    # silent bug the moment it became each organisation's: one tenant's cadence would have
+    # governed every tenant's agreements in the same sweep. Cached by org id, beside the
+    # pattern `send_review_nudges` uses.
+    from apps.courses import org_config
+    interval_cache = {}
+
+    def reminder_interval(application):
+        org_id = application.owning_organisation_id
+        if org_id not in interval_cache:
+            interval_cache[org_id] = timedelta(days=org_config.value(
+                application.owning_organisation, 'sign_reminder_days'))
+        return interval_cache[org_id]
+
     qs = (BursaryAgreement.objects
           .filter(guarantor_signed_at__isnull=False, foundation_signed_at__isnull=True)
           .select_related('application', 'application__profile', 'application__witness_org',
-                          'witness_org'))
+                          'application__owning_organisation', 'witness_org'))
     for ag in qs:
         app = ag.application
         if getattr(app, 'status', '') != 'awarded':
             continue   # only a still-pending (not declined/active) agreement is nudged
+        interval = reminder_interval(app)
         org = _resolve_witness_org(app)
         name = _applicant_name(app)
         link = _cockpit_link(app)

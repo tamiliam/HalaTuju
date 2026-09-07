@@ -9243,3 +9243,52 @@ max becomes a promise the storage will not keep — and nothing in the code woul
 
 **Revisit if:** the bucket gains a `file_size_limit`, or the project's storage plan changes. The
 check is one query: `SELECT id, file_size_limit FROM storage.buckets`.
+
+## The foundation signatory stays on the contract template and is refused a place on the Configuration tab — Org Config Sprint F, 2026-09-07
+
+**Decision:** the Org Config arc closes WITHOUT the signatory settings its own roadmap asked for.
+The signatory name, title, NRIC and countersign notify list stay on `ContractTemplate`
+(`counterparty_*`), and `org_config.SETTINGS` carries a comment and a test forbidding those keys.
+The three dead `FOUNDATION_SIGNATORY_*` Django settings were deleted; `FOUNDATION_NOTIFY_EMAIL`
+was kept.
+
+**Alternatives considered:** (a) build what the roadmap said — add the three fields to the tab and
+have the agreement read the tab; (b) build them and have the tab WRITE the active contract
+template's fields (a proxy editor); (c) what was done.
+
+**Rationale:** (a) is two homes for one fact, and the second home is the one that prints on a
+signed legal document — the tab would say one name and the PDF would carry another, with no error
+anywhere. (b) is superficially attractive and worse than it looks: a contract template is
+VERSIONED, and an agreement already signed under version N must keep version N's signatory, so a
+tab that edits "the signatory" would have to decide silently whether it means the next version or
+the current one. The template screen already asks that question properly. (c) leaves one home and
+one editor.
+
+**Trade-offs:** an organisation looking for its signatory on the Settings tab will not find it,
+and nothing on that tab points to where it lives. Accepted for now; the tab shows only settings
+that are read, and a pointer row would be the decorative UI the binding rules forbid.
+
+**Revisit if:** the contract-template screen is ever removed or an organisation is expected to run
+without a template. Then the signatory needs a home, and this decision is the record of why the
+tab was not it.
+
+## The dead FOUNDATION_SIGNATORY_* settings were deleted rather than left as harmless — Org Config Sprint F, 2026-09-07
+
+**Decision:** delete `FOUNDATION_SIGNATORY_NAME` / `_TITLE` / `_NRIC` from `settings/base.py`
+(owner's call, 2026-09-07). Keep `FOUNDATION_NOTIFY_EMAIL`.
+
+**Alternatives considered:** leave them — they are three lines, they break nothing, and a legal
+area is a place for restraint.
+
+**Rationale:** they were read by nothing after Sprint 5 and set on nothing in production (checked
+against `gcloud run services describe`, not against `base.py`). Their cost is not runtime, it is
+the day somebody has to correct a name on an agreement: three settings named exactly for that job,
+which change nothing. `FOUNDATION_NOTIFY_EMAIL` is different — `bursary.foundation_notify_emails`
+still reads it as the fallback when an organisation has no template, so deleting it would change
+who gets a countersign nudge.
+
+**Trade-offs:** an operator who had set one of these in an untracked environment loses a value
+that was already being ignored. The comment left in `base.py` names the replacement.
+
+**Revisit if:** never for these three. The general form — "a setting nothing reads is a signpost
+to a room that no longer exists" — belongs in lessons.md, and is there.

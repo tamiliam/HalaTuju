@@ -44,8 +44,10 @@ def _token(uid, email='x@x.com'):
 def _ensure_active_template(cohort):
     """Post-cutover, a flag-on signing goes through the org's ACTIVE contract template.
     Point the cohort at BrightPath (the org migration 0098 seeds) and deploy a template
-    whose counterparty is 'Suresh' (matching the legacy FOUNDATION_SIGNATORY_NAME so the
-    render assertions in this module stay valid). Idempotent within a test."""
+    whose counterparty is 'Suresh' — the name the old `FOUNDATION_SIGNATORY_NAME` setting
+    carried, kept here so the render assertions in this module stay valid. That setting was
+    DELETED in Org Config Sprint F (dead since Sprint 5 moved the party onto the template);
+    'Suresh' is now just this fixture's chosen name. Idempotent within a test."""
     import datetime
     from apps.scholarship import contracts
     from apps.scholarship.tests.contract_helpers import brightpath_org, seed_draft

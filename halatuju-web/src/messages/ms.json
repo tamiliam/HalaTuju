@@ -5743,7 +5743,8 @@
           "student_comms": "Komunikasi pelajar",
           "reviewers_staff": "Penilai & kakitangan",
           "interviews": "Temu duga",
-          "documents": "Dokumen"
+          "documents": "Dokumen",
+          "agreements": "Perjanjian"
         },
         "setting": {
           "pool_funded_grace_days": {
@@ -5821,6 +5822,14 @@
           "max_other_docs": {
             "label": "Dokumen \"lain\" bagi setiap permohonan",
             "desc": "Berapa banyak dokumen tambahan boleh diminta oleh penilai selain senarai standard. Ia dikira dalam jumlah keseluruhan di atas."
+          },
+          "sign_accept_deadline_days": {
+            "label": "Tandatangan sebelum — hari selepas kami menjemput",
+            "desc": "Berapa lama pelajar ada untuk menandatangani perjanjian selepas e-mel \"sedia untuk ditandatangani\" dihantar. Hantaran semula memulakan semula kiraan."
+          },
+          "sign_reminder_days": {
+            "label": "Ingatkan tandatangan tertunggak setiap — hari",
+            "desc": "Berapa kerap kami mengingatkan pihak yang masih perlu menandatangani — sekolah rakan sebagai saksi, kemudian tandatangan balas anda."
           },
           "doc_stage_max_attempts": {
             "label": "Percubaan sebelum kami berhenti bertanya",

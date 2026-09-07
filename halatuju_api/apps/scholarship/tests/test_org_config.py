@@ -1106,3 +1106,108 @@ class TestPerOrgDocumentLimits(TestCase):
         ResolutionItem.objects.create(
             application=other, code='ic_unreadable', status='open', params={'attempts': 1})
         self.assertFalse(_stage_attempts_exhausted(other, other_doc, django_settings))
+
+
+class TestSprintFRegistry(TestCase):
+    """The two Sprint F keys exist and delegate — and the SIGNATORY is deliberately absent."""
+
+    SPRINT_F = ('sign_accept_deadline_days', 'sign_reminder_days')
+
+    def test_every_key_is_registered_with_its_group_and_unit(self):
+        for key in self.SPRINT_F:
+            spec = org_config.SETTINGS[key]
+            self.assertEqual((spec['group'], spec['unit']), ('agreements', 'days'), key)
+            self.assertEqual(set(spec) - {'allowed'},
+                             {'group', 'unit', 'min', 'max', 'default'}, key)
+
+    @override_settings(SIGN_ACCEPT_DEADLINE_DAYS=45, BURSARY_SIGN_REMINDER_DAYS=7)
+    def test_defaults_delegate_to_the_live_platform_homes(self):
+        self.assertEqual(org_config.default('sign_accept_deadline_days'), 45)
+        self.assertEqual(org_config.default('sign_reminder_days'), 7)
+
+    def test_the_foundation_signatory_is_NOT_a_tab_setting(self):
+        """⚠ A GUARD, NOT A COINCIDENCE. The signatory lives on `ContractTemplate`
+        (`counterparty_*`), which is already per organisation and is what prints on the
+        agreement. A key here would be a SECOND home for the same fact — and the tab would
+        quietly disagree with the signed PDF. The roadmap's Sprint F line asked for exactly
+        this and was out of date; if someone re-reads it and adds the key, this fails."""
+        for forbidden in ('foundation_signatory_name', 'foundation_signatory_title',
+                          'foundation_signatory_nric', 'foundation_notify_email'):
+            self.assertNotIn(forbidden, org_config.SETTINGS)
+
+    def test_the_dead_signatory_settings_are_gone(self):
+        """They were read by nothing after Sprint 5 moved the party onto the template. Left in
+        place they read as the way to correct a name on an agreement, which they were not."""
+        from django.conf import settings as django_settings
+        for dead in ('FOUNDATION_SIGNATORY_NAME', 'FOUNDATION_SIGNATORY_TITLE',
+                     'FOUNDATION_SIGNATORY_NRIC'):
+            self.assertFalse(hasattr(django_settings, dead), dead)
+
+
+class TestPerOrgAgreementClocks(TestCase):
+    """`sign_accept_deadline_days` and `sign_reminder_days` resolve PER APPLICATION."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='sf-org', name='Agreement Org')
+        cls.cohort = _org_cohort('sf-a', cls.org)
+        cls.null_cohort = _org_cohort('sf-null', None)
+
+    def _app(self, cohort, uid):
+        from apps.courses.models import StudentProfile
+        profile = StudentProfile.objects.create(supabase_user_id=uid, name='Kavi')
+        return ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='awarded', notify_email='stu@x.com')
+
+    def _offer(self, app):
+        from apps.scholarship.models import Sponsor, Sponsorship
+        sponsor = Sponsor.objects.create(
+            supabase_user_id=f'sf-spon-{app.id}', name='Jane Sponsor',
+            email=f'jane{app.id}@sponsor.example', phone='0123', source='friend',
+            consent_at=timezone.now(), status='approved')
+        return Sponsorship.objects.create(
+            application=app, sponsor=sponsor, status='offered',
+            offered_at=timezone.now(), amount=5000)
+
+    def test_the_accept_clock_arms_on_the_organisations_window(self):
+        from apps.scholarship import sponsorship
+        _configure(self.org, 'sign_accept_deadline_days', 7)
+        app = self._app(self.cohort, 'sf-a1')
+        self._offer(app)
+        now = timezone.now()
+        deadline = sponsorship.arm_sign_deadline(app, now=now)
+        self.assertEqual((deadline - now).days, 7)
+        # A tenant that tuned nothing keeps the platform's 30.
+        other = self._app(self.null_cohort, 'sf-a2')
+        self._offer(other)
+        self.assertEqual((sponsorship.arm_sign_deadline(other, now=now) - now).days, 30)
+
+    @override_settings(BURSARY_AGREEMENT_ENABLED=True)
+    def test_the_signing_reminder_interval_is_resolved_per_application(self):
+        """⚠ THE INTERVAL USED TO BE HOISTED ABOVE THE LOOP. One sweep spans every tenant, so a
+        single interval would apply one organisation's cadence to all of them. Here the tuned
+        org (1 day) is due for a nudge and the platform org (3 days) is not, in the SAME run."""
+        from unittest import mock
+        from datetime import timedelta
+        from apps.scholarship import bursary
+        from apps.scholarship.models import BursaryAgreement
+        _configure(self.org, 'sign_reminder_days', 1)
+        signed = timezone.now() - timedelta(days=2)
+        for cohort, uid in ((self.cohort, 'sf-r1'), (self.null_cohort, 'sf-r2')):
+            app = self._app(cohort, uid)
+            ag = BursaryAgreement.objects.create(application=app)
+            BursaryAgreement.objects.filter(pk=ag.pk).update(guarantor_signed_at=signed)
+        # `emails` is imported INSIDE the sweep, so patch the module itself — `bursary.emails`
+        # is not an attribute of `bursary`.
+        from apps.scholarship import emails as scholarship_emails
+        with mock.patch.object(scholarship_emails, 'send_countersign_pending_email',
+                               return_value=True), \
+                mock.patch.object(bursary, 'foundation_notify_emails',
+                                  return_value=['ops@x.com']):
+            summary = bursary.send_signing_reminders()
+        # Only the org whose cadence is 1 day has come due at 2 days old.
+        self.assertEqual(summary['countersign'], 1)
+        nudged = set(BursaryAgreement.objects
+                     .filter(countersign_reminded_at__isnull=False)
+                     .values_list('application__profile_id', flat=True))
+        self.assertEqual(nudged, {'sf-r1'})

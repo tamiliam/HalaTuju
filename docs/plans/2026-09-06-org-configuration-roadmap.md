@@ -104,10 +104,17 @@ file-size limit of its own), `max_docs_per_application` (40), `max_other_docs` (
 both upload doors read it. The uploader's own `MAX_DOC_SIZE_BYTES` mirror is gone (served on the
 document list), and "under 8 MB" is parameterised in three languages.
 
-### Sprint F — agreements  *(medium; no migration; legal-adjacent)*
-`sign_accept_deadline_days` (30), `sign_reminder_days` (3), foundation signatory
-name/title/notify email (tenant identity currently in platform env vars — prints into the
-agreement PDF, so owner reviews the rendered output).
+### ✔ Sprint F — agreements  *(SHIPPED 2026-09-07; no migration)*
+`sign_accept_deadline_days` (30), `sign_reminder_days` (3).
+
+⚠ **The signatory part of this line was already out of date when it was written.** It asked for
+the foundation signatory name/title/notify email as "tenant identity currently in platform env
+vars". **Sprint 5 had already moved them onto `ContractTemplate`** (`counterparty_name`,
+`counterparty_title`, `counterparty_nric`, `counterparty_notify_emails`) — per organisation, and
+what actually prints on the agreement. Adding them here would have been a second home for the
+same fact; a registry test now fails if anyone tries. The three dead `FOUNDATION_SIGNATORY_*`
+settings were deleted instead. `FOUNDATION_NOTIFY_EMAIL` stays: still the live fallback for an
+organisation with no template.
 
 Sprints B–F are independent of each other; re-order freely on demand. Each is small because the
 engine and the tab already exist — a later sprint is registry entries + wired read sites + rows.
@@ -132,4 +139,11 @@ engine and the tab already exist — a later sprint is registry entries + wired 
 - [x] Sprint E — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-sprint-e`, branch
       `feat/org-config-sprint-e`; the four document limits; retro
       `docs/retrospective-2026-09-07-org-config-sprint-e.md`)
-- [ ] F
+- [x] Sprint F — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-sprint-f`, branch
+      `feat/org-config-sprint-f`; the two agreement clocks + three dead settings deleted; retro
+      `docs/retrospective-2026-09-07-org-config-sprint-f.md`)
+
+**THE ARC IS COMPLETE.** A ✔ B ✔ C ✔ D ✔ E ✔ F ✔ — 23 settings across six groups on
+Organisation → Settings → Configuration. Anything further starts from the binding rules above:
+a setting appears ONLY when code reads it, blank means the platform default, and feature
+switches / per-GIFT values / platform internals stay out.

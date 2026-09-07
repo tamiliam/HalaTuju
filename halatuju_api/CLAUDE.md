@@ -550,7 +550,46 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after Org Config Sprint E — the document limits)
+## Next Sprint (as of 2026-09-07, after Org Config Sprint F — the agreement clocks; THE ARC IS DONE)
+
+**SHIPPED.** Worktree `.worktrees/org-config-sprint-f`, branch `feat/org-config-sprint-f`.
+**NO MIGRATION.** Retro `docs/retrospective-2026-09-07-org-config-sprint-f.md`; roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (**A–F all shipped**).
+Gates: pytest **5964** (+6; `test_org_config.py` 64 → 70); jest **1779** (+1); lint **0**;
+tsc **24** (baseline); i18n **4850 × 3** (+5); `next build` compiled; `makemigrations --check`
+clean. Three bite-checks landed.
+
+**The tab now carries 23 settings in six groups:** sponsor page 2 · student comms 4 ·
+reviewers & staff 5 · interviews 6 · documents 4 · agreements 2.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **`sign_accept_deadline_days` 30** — arms when the sign-invitation email is SENT
+  (`sponsorship.arm_sign_deadline`), not at offer time; a resend re-arms it.
+- **`sign_reminder_days` 3** — ⚠ **THE INTERVAL IS RESOLVED INSIDE THE SWEEP'S LOOP.** It used
+  to be computed once above it, which is correct only while the number is the platform's: one
+  sweep spans every tenant, so a hoisted interval would apply one organisation's cadence to all
+  of them, silently. Per-org cache, same shape as `send_review_nudges`. **Do not hoist it back
+  for speed.**
+- **⚠ THE FOUNDATION SIGNATORY IS NOT ON THIS TAB, AND MUST NOT BE ADDED.** The roadmap asked
+  for it and the roadmap was out of date: Sprint 5 moved the party onto `ContractTemplate`
+  (`counterparty_name` / `_title` / `_nric` / `_notify_emails`), which is per organisation and is
+  what prints on the agreement. A second home would let the tab disagree with the signed PDF.
+  `test_the_foundation_signatory_is_NOT_a_tab_setting` fails if the key is ever added.
+- **Three dead settings deleted:** `FOUNDATION_SIGNATORY_NAME` / `_TITLE` / `_NRIC` — read by
+  nothing since Sprint 5, set on nothing in production. **`FOUNDATION_NOTIFY_EMAIL` STAYS**: it
+  is still the live fallback in `bursary.foundation_notify_emails` for an org with no template.
+- **To change a signatory: edit the organisation's contract template.** Not settings, not the tab.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):** Organisation →
+Settings → Configuration now shows SIX groups; **Agreements** has 2 rows, both blank with the
+platform default named underneath. ms/ta strings are my first drafts.
+
+**▶ NEXT = the owner picks; the Org Config arc is finished.** Standing candidates: TD-229
+(contract template per gift), TD-230 / the Sabah apply link, TD-233 (interview duration vs slot
+step), TD-234 (thirteen repair commands with no route to production), TD-221 (the 24 `tsc`
+errors that make that gate a no-op).
+
+## Superseded — previous Next Sprint (as of 2026-09-07, after Org Config Sprint E — the document limits)
 
 **SHIPPED.** Worktree `.worktrees/org-config-sprint-e`, branch `feat/org-config-sprint-e` (base =
 the clock-box fix, `9b0a454e`). **NO MIGRATION.** Retro

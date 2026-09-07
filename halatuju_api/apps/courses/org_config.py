@@ -151,6 +151,14 @@ def _default_doc_stage_max_attempts():
     return int(getattr(settings, 'DOC_STAGE_MAX_ATTEMPTS', 3))
 
 
+def _default_sign_accept_deadline_days():
+    return int(getattr(settings, 'SIGN_ACCEPT_DEADLINE_DAYS', 30))
+
+
+def _default_sign_reminder_days():
+    return int(getattr(settings, 'BURSARY_SIGN_REMINDER_DAYS', 3))
+
+
 # key → {group, unit, min, max, default}, plus two OPTIONAL keys:
 #   * `allowed` — the only values this setting may take (rendered as a menu, not a box). Use it
 #     when the range is not the real constraint: a slot step of 45 leaves `minute % step` no
@@ -366,7 +374,35 @@ SETTINGS = {
         'max': 10,
         'default': _default_doc_stage_max_attempts,
     },
+    # ── agreements (Sprint F) ──
+    # How long a student has to sign once the "your agreement is ready" email actually GOES OUT
+    # — the clock arms on the send, not at offer time (`sponsorship.arm_sign_deadline`), and a
+    # resend re-arms it. Beyond it the offer MAY lapse; nothing expires on its own.
+    'sign_accept_deadline_days': {
+        'group': 'agreements',
+        'unit': 'days',
+        'min': 1,
+        'max': 180,
+        'default': _default_sign_accept_deadline_days,
+    },
+    # How often the signing-chain cron may re-nudge the party whose signature is still missing
+    # (the partner witness first, then the Foundation's countersignature).
+    'sign_reminder_days': {
+        'group': 'agreements',
+        'unit': 'days',
+        'min': 1,
+        'max': 60,
+        'default': _default_sign_reminder_days,
+    },
 }
+
+# ⚠ THE FOUNDATION SIGNATORY IS NOT HERE, AND MUST NOT BE ADDED. The roadmap's Sprint F line said
+# the signatory name/title/NRIC and the countersign notify list "currently live in platform env
+# vars". They did once; Sprint 5 moved them onto `ContractTemplate` (`counterparty_name`,
+# `counterparty_title`, `counterparty_nric`, `counterparty_notify_emails`), which is already owned
+# by one organisation and is what actually prints on the agreement. Putting them on this tab would
+# be a SECOND home for the same fact — the exact defect the catalogue rule exists to prevent. The
+# three dead `FOUNDATION_SIGNATORY_*` settings were deleted in Sprint F for the same reason.
 
 # Cross-field rules: (earlier key, later key, code). A single key's bounds cannot express
 # "the window must open before it closes", and a window stored inverted would offer the

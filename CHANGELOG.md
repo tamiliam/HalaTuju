@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## Org Config Sprint F: the agreement clocks become organisation-tunable - 2026-09-07
+
+The LAST sprint of the Org Config arc. Two settings join Organisation > Settings >
+Configuration under a new **Agreements** group - **no migration**. Roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A-F all done);
+retro `docs/retrospective-2026-09-07-org-config-sprint-f.md`.
+
+- **`sign_accept_deadline_days` (30)** - how long a student has to sign once the "ready to
+  sign" email actually goes out. The clock arms on the SEND, not at offer time
+  (`sponsorship.arm_sign_deadline`), and a resend re-arms it.
+- **`sign_reminder_days` (3)** - how often the signing-chain cron re-nudges whoever still owes
+  a signature (partner witness first, then the Foundation's countersignature). ⚠ The interval
+  used to be computed ONCE above the sweep's loop - correct while the number was the platform's,
+  and a silent bug the moment it became each organisation's, because one sweep spans every
+  tenant. It now resolves per application with a per-org cache, beside the pattern
+  `send_review_nudges` uses.
+
+- **⚠ THE ROADMAP'S THIRD ITEM WAS OUT OF DATE, AND IS NOT BUILT.** It asked for the foundation
+  signatory name/title/notify email, "currently in platform env vars". They were - until
+  **Sprint 5 moved them onto `ContractTemplate`** (`counterparty_name` / `counterparty_title` /
+  `counterparty_nric` / `counterparty_notify_emails`), which is already owned by one
+  organisation and is what actually prints on the agreement. Adding them to this tab would have
+  been a SECOND home for the same fact, and the tab would have quietly disagreed with the signed
+  PDF. A test now fails if any of those keys is ever added to the registry.
+
+- **Three dead settings deleted:** `FOUNDATION_SIGNATORY_NAME` / `_TITLE` / `_NRIC` were read by
+  nothing after Sprint 5 and set on nothing in production (verified against the live service).
+  Left in place they read as the way to correct a name on a signed agreement, and were not.
+  `FOUNDATION_NOTIFY_EMAIL` STAYS - it is still the live fallback for an organisation with no
+  template.
+
++6 pytest (5958 -> 5964) and +1 jest (1778 -> 1779). Three bite-checks: the accept clock
+de-orged, the reminder interval hoisted back above the loop, and a signatory key added to the
+registry - each failed its owning test, each restored. i18n +5 keys x3 (ms/ta first drafts).
+
 ## Org Config Sprint E: the document limits become organisation-tunable - 2026-09-07
 
 Four settings join Organisation > Settings > Configuration under a new **Documents** group

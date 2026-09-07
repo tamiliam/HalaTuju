@@ -5743,7 +5743,8 @@
           "student_comms": "Student communications",
           "reviewers_staff": "Reviewers & staff",
           "interviews": "Interviews",
-          "documents": "Documents"
+          "documents": "Documents",
+          "agreements": "Agreements"
         },
         "setting": {
           "pool_funded_grace_days": {
@@ -5821,6 +5822,14 @@
           "max_other_docs": {
             "label": "\"Other\" documents per application",
             "desc": "How many extra documents a reviewer may request beyond the standard list. These are counted within the total above."
+          },
+          "sign_accept_deadline_days": {
+            "label": "Sign by — days after we invite",
+            "desc": "How long a student has to sign the agreement once the \"ready to sign\" email goes out. A resend starts the clock again."
+          },
+          "sign_reminder_days": {
+            "label": "Chase a missing signature every — days",
+            "desc": "How often we remind whoever still has to sign — the partner school witnessing, then your own countersignature."
           },
           "doc_stage_max_attempts": {
             "label": "Tries before we stop asking",
