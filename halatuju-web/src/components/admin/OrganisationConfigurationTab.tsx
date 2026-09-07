@@ -31,18 +31,41 @@ import {
 } from '@/lib/admin-api'
 
 /** Groups render in this order; a group appears only when the registry has a row in it. */
-const GROUP_ORDER = ['sponsor_page', 'student_comms', 'reviewers_staff']
+const GROUP_ORDER = ['sponsor_page', 'student_comms', 'reviewers_staff', 'interviews']
 
 type Outcome =
   | { kind: 'idle' }
   | { kind: 'saved' }
   | { kind: 'refused'; key: string }
+  | { kind: 'refusedWindow'; key: string }
   | { kind: 'error' }
 
-/** The text-box state the payload implies: '' for "following the default", else the number. */
+/** Minutes past midnight ⇄ the "HH:MM" a clock box shows (Org Config Sprint D). The stored
+ *  value is a plain number like every other setting; only the KEYBOARD changes, because
+ *  nobody should have to work out that half past nine at night is 1290. */
+export function minutesToHhmm(mins: number): string {
+  const m = Math.max(0, Math.min(1439, Math.round(mins)))
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+}
+
+export function hhmmToMinutes(text: string): number | null {
+  const match = (text ?? '').trim().match(/^(\d{1,2}):(\d{2})$/)
+  if (!match) return null
+  const h = parseInt(match[1], 10)
+  const m = parseInt(match[2], 10)
+  if (h > 23 || m > 59) return null
+  return h * 60 + m
+}
+
+const isClock = (s: OrganisationConfigSetting) => s.unit === 'time_of_day'
+
+/** The box state the payload implies: '' for "following the default", else the typed form —
+ *  "HH:MM" for a clock row, the plain number for every other. */
 function draftFrom(cfg: OrganisationConfiguration | null): Record<string, string> {
   const out: Record<string, string> = {}
-  for (const s of cfg?.settings ?? []) out[s.key] = s.value === null ? '' : String(s.value)
+  for (const s of cfg?.settings ?? []) {
+    out[s.key] = s.value === null ? '' : (isClock(s) ? minutesToHhmm(s.value) : String(s.value))
+  }
   return out
 }
 
@@ -51,9 +74,11 @@ function parseBox(raw: string, s: OrganisationConfigSetting):
     { ok: true; value: number | null } | { ok: false } {
   const text = (raw ?? '').trim()
   if (text === '') return { ok: true, value: null }
-  if (!/^\d+$/.test(text)) return { ok: false }
-  const n = parseInt(text, 10)
+  const n = isClock(s) ? hhmmToMinutes(text) : (/^\d+$/.test(text) ? parseInt(text, 10) : null)
+  if (n === null) return { ok: false }
   if (n < s.min || n > s.max) return { ok: false }
+  // A listed vocabulary is the whole rule for that row — the range is not the constraint.
+  if (s.allowed && !s.allowed.includes(n)) return { ok: false }
   return { ok: true, value: n }
 }
 
@@ -114,7 +139,11 @@ export default function OrganisationConfigurationTab() {
       setOutcome({ kind: 'saved' })
     } catch (e) {
       const err = e as Error & { body?: { code?: string; key?: string } }
-      if (err.body?.code && err.body.key) {
+      if (err.body?.code === 'window_inverted' && err.body.key) {
+        // The one refusal a person actually hits by typing a sensible-looking pair, so it
+        // says what is wrong rather than "we could not save that row".
+        setOutcome({ kind: 'refusedWindow', key: err.body.key })
+      } else if (err.body?.code && err.body.key) {
         setOutcome({ kind: 'refused', key: err.body.key })
       } else {
         setOutcome({ kind: 'error' })
@@ -130,6 +159,7 @@ export default function OrganisationConfigurationTab() {
     switch (outcome.kind) {
       case 'saved': return t('admin.orgSettings.config.saved')
       case 'refused': return t('admin.orgSettings.config.refused', { label: label(outcome.key) })
+      case 'refusedWindow': return t('admin.orgSettings.config.refusedWindow', { label: label(outcome.key) })
       case 'error': return t('admin.orgSettings.config.errorGeneric')
       default:
         if (invalid) return t('admin.orgSettings.config.invalid')
@@ -179,16 +209,40 @@ export default function OrganisationConfigurationTab() {
                     </div>
                     <div className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <input type="text" inputMode="numeric" spellCheck={false} autoComplete="off"
-                          value={draft[s.key] ?? ''}
-                          onChange={(e) => {
-                            setOutcome({ kind: 'idle' })
-                            setDraft((d) => ({ ...d, [s.key]: e.target.value }))
-                          }}
-                          placeholder={String(s.default)}
-                          aria-label={label(s.key)}
-                          data-testid={`config-${s.key}`}
-                          className="w-24 rounded-lg border border-ground-200 bg-ground-0 px-3 py-2 text-right text-sm tabular-nums text-ground-900" />
+                        {/* Three keyboards, one contract: whatever the row's shape, an EMPTY
+                            choice means "follow the platform default" and the value that
+                            travels is a plain number. A clock row types HH:MM (nobody should
+                            convert 21:30 to 1290); a row with a listed vocabulary is a menu,
+                            because its range is not its rule. */}
+                        {s.allowed ? (
+                          <select
+                            value={draft[s.key] ?? ''}
+                            onChange={(e) => {
+                              setOutcome({ kind: 'idle' })
+                              setDraft((d) => ({ ...d, [s.key]: e.target.value }))
+                            }}
+                            aria-label={label(s.key)}
+                            data-testid={`config-${s.key}`}
+                            className="w-24 rounded-lg border border-ground-200 bg-ground-0 px-3 py-2 text-right text-sm tabular-nums text-ground-900">
+                            <option value="">{String(s.default)}</option>
+                            {s.allowed.map((n) => (
+                              <option key={n} value={String(n)}>{n}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input type={isClock(s) ? 'time' : 'text'}
+                            inputMode={isClock(s) ? undefined : 'numeric'}
+                            spellCheck={false} autoComplete="off"
+                            value={draft[s.key] ?? ''}
+                            onChange={(e) => {
+                              setOutcome({ kind: 'idle' })
+                              setDraft((d) => ({ ...d, [s.key]: e.target.value }))
+                            }}
+                            placeholder={isClock(s) ? minutesToHhmm(s.default) : String(s.default)}
+                            aria-label={label(s.key)}
+                            data-testid={`config-${s.key}`}
+                            className="w-24 rounded-lg border border-ground-200 bg-ground-0 px-3 py-2 text-right text-sm tabular-nums text-ground-900" />
+                        )}
                         {/* Fixed-width unit column: with a natural-width label the right-aligned
                             pair shifts the BOX by the unit's length ("days" vs "questions"), so
                             the boxes never line up down the page (owner, 2026-09-07). w-24 also
@@ -201,15 +255,19 @@ export default function OrganisationConfigurationTab() {
                       {parsed.ok ? (
                         <p className="mt-1 text-xs text-ground-400">
                           {t('admin.orgSettings.config.defaultNote', {
-                            n: String(s.default),
+                            n: isClock(s) ? minutesToHhmm(s.default) : String(s.default),
                             unit: t(`admin.orgSettings.config.unit.${s.unit}`),
                           })}
                         </p>
                       ) : (
                         <p className="mt-1 text-xs text-critical-700" data-testid={`config-${s.key}-invalid`}>
-                          {t('admin.orgSettings.config.rowInvalid', {
-                            min: String(s.min), max: String(s.max),
-                          })}
+                          {/* A clock row's bounds are 0–1439 minutes, which is true and
+                              useless to read — say what a valid ANSWER looks like instead. */}
+                          {isClock(s)
+                            ? t('admin.orgSettings.config.rowInvalidClock')
+                            : t('admin.orgSettings.config.rowInvalid', {
+                              min: String(s.min), max: String(s.max),
+                            })}
                         </p>
                       )}
                     </div>

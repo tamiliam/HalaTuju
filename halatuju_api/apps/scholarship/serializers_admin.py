@@ -119,7 +119,12 @@ def interview_schedule_payload(application, *, include_reviewer_busy=False):
         'meeting_provider': application.interview_meeting_provider or '',
         'booked_slot_id': application.interview_slot_id,
         'slots': InterviewSlotSerializer(active, many=True).data,
-        'reschedule_cutoff_hours': _reschedule_cutoff_hours(),
+        # ⚠ THE BOOKING RULES ARE SERVED, NEVER MIRRORED (Org Config Sprint D). The picker
+        # used to hold its own copy of the window/step/lead in `interviewSlots.ts` under a
+        # "keep in lock-step" comment; they are the ORGANISATION's now, so the only honest
+        # copy is the one that travels with the data. This payload feeds BOTH the reviewer's
+        # propose grid and the student's booking panel, so one seam serves both.
+        **_slot_rules_payload(application),
         # Student asked for different times (none of the proposed slots worked).
         'alternatives_requested': application.interview_alternatives_requested_at is not None,
         'alternatives_note': application.interview_alternatives_note or '',
@@ -141,9 +146,22 @@ def interview_schedule_payload(application, *, include_reviewer_busy=False):
     return payload
 
 
-def _reschedule_cutoff_hours():
-    from django.conf import settings
-    return getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
+def _slot_rules_payload(application):
+    """The five interview numbers the browser needs, resolved for this application's
+    organisation. `reschedule_cutoff_hours` keeps its existing name — it was already served
+    (and already read by the student panel); Sprint D only made it per-organisation."""
+    from apps.courses import org_config
+    from . import scheduling
+    org = application.owning_organisation
+    rules = scheduling.slot_rules(org)
+    return {
+        'reschedule_cutoff_hours': org_config.value(org, 'interview_reschedule_cutoff_hours'),
+        'interview_duration_min': org_config.value(org, 'interview_duration_min'),
+        'slot_window_start_min': rules['window_start_min'],
+        'slot_window_end_min': rules['window_end_min'],
+        'slot_step_min': rules['step_min'],
+        'slot_min_lead_hours': rules['min_lead_hours'],
+    }
 
 
 class SponsorProfileSerializer(serializers.ModelSerializer):

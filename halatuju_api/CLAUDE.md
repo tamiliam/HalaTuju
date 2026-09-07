@@ -550,7 +550,64 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after the gift-delete rule — students hold a gift, not years)
+## Next Sprint (as of 2026-09-07, after Org Config Sprint D — the interview grid)
+
+**SHIPPED.** Worktree `.worktrees/org-config-sprint-d`, branch `feat/org-config-sprint-d` (base =
+the Sprint C close, `5a677f91`). **NO MIGRATION** — registry entries + wired read sites + rows on
+the existing tab. Retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`; roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A ✔ B ✔ C ✔ D ✔ · E/F open).
+Gates: pytest **5935** (+11; `test_org_config.py` 45 → 56); jest **1767** (+13); lint **0**;
+tsc **24** (baseline); i18n **4832 × 3** (+16, ms/ta first drafts); `next build` compiled;
+`makemigrations --check` clean. Four bite-checks landed (window de-orged, payload serving a
+platform constant, cross-field rule disabled, browser ignoring the served rules).
+
+**Six settings joined the tab under a new Interviews group:** `interview_duration_min` 30 ·
+`interview_window_start_min` 08:00 · `interview_window_end_min` 21:30 ·
+`interview_slot_step_min` 30 · `interview_min_lead_hours` 24 ·
+`interview_reschedule_cutoff_hours` 12.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ THE PICKER'S LOCK-STEP COPY IS GONE, AND IT MUST STAY GONE.** `interviewSlots.ts` used to
+  carry the window/step/notice under a comment telling the next person to keep them equal to
+  `scheduling.py`. The values are the ORGANISATION's now, so equality is not something a copy can
+  hold. `interview_schedule_payload` — the ONE seam feeding both the reviewer's propose grid and
+  the student's booking panel — serves the resolved four; `slotRulesFrom` reads them with a
+  PER-FIELD fallback. The module constants are the platform default only. **Do not read them
+  where a payload is in hand.**
+- **⚠ FOUR DEAD 45s RETIRED.** `emails.py`, `scheduling.py` and both `meeting.py` event builders
+  fell back to 45 minutes while `base.py` says 30 (its comment: "matches the 'about 30 minutes'
+  copy"). None could fire; all four were one deleted settings line from a 45-minute calendar
+  block under a 30-minute promise. Every reader now goes through the ONE registry delegation —
+  do not re-add a per-reader getattr or a literal.
+- **⚠ TWO SENTENCES WERE MIRRORS TOO.** The reviewer's "Available times (8:00am–9:30pm, 30-min)"
+  caption and the student's "about 30 minutes" promise stated the rules as fixed words in three
+  languages. Both interpolate now; `interviewSlots.test.ts` fails if a number goes back in.
+- **⚠ TWO ENGINE ADDITIONS, both load-bearing.** `allowed` (a listed vocabulary — the slot step
+  must divide 60, because `slot_in_window` reads `minute % step`) renders a menu, not a box.
+  `_ORDERED_PAIRS` is the cross-field fence (the window must open before it closes) and it
+  resolves the ABSENT side from the platform default, so storing one end alone cannot invert the
+  pair. The endpoint validates the MERGED result, not the diff — and reads the stored values BY
+  QUERY, never through `org.configuration` (that caches the pre-save row and makes a successful
+  save look ignored until reload).
+- **KNOWN LIMIT, owner told and accepted:** nothing checks duration against step, so a 60-minute
+  interview on a 30-minute grid can overlap a reviewer's own proposals (`held_starts` compares
+  START times only). `InterviewSlot.duration_min` also keeps its model default of 45 — never the
+  effective value (`propose_slots` always writes the resolved one), and changing it would need a
+  migration this sprint promised not to make.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):** Organisation →
+Settings → Configuration now shows FOUR groups — the new **Interviews** has 6 rows. Two of them
+are clock boxes (HH:MM) and one is a menu; every box is blank with the platform default named
+underneath. Change nothing unless you want to. ms/ta strings are my first drafts.
+
+**▶ NEXT = the roadmap's last two, owner picks:** E documents (`max_doc_size_mb`,
+`max_docs_per_application`, `max_other_docs`, `doc_stage_max_attempts`) · F agreements
+(`sign_accept_deadline_days`, `sign_reminder_days`, foundation signatory identity — legal-adjacent,
+prints into the agreement PDF, so the owner reviews the rendered output). The gift-setup-flow
+close's candidates (TD-229 contract-per-gift, TD-230/Sabah apply link) still stand. Feature
+switches, per-GIFT values and platform internals stay OUT of this tab (binding rules).
+
+## Superseded — previous Next Sprint (as of 2026-09-07, after the gift-delete rule — students hold a gift, not years)
 
 **SHIPPED, NOT DEPLOYED (the owner gates the deploy).** Worktree `.worktrees/gift-delete-rule`,
 branch `feat/gift-delete-rule`, based on `origin/main` at `5a677f91`. **NO MIGRATION** — api + web,
@@ -619,7 +676,7 @@ nothing); TD-221 (the 24 `tsc` errors that make that gate a no-op). **TD-232 is 
 credit) until it is **inked AND the money has changed hands**, with a bank reference for
 `external_reference`.
 
-## Superseded - previous Next Sprint (as of 2026-09-07, after Org Config Sprint C — the reviewers & staff clocks)
+## Superseded — previous Next Sprint (as of 2026-09-07, after Org Config Sprint C — the reviewers & staff clocks)
 
 **SHIPPED.** Worktree `.worktrees/org-config-c`, branch `feat/org-config-sprint-c` (base = the
 gift-setup-flow close, `cd9c0959`). **NO MIGRATION** — registry entries + wired read sites + rows

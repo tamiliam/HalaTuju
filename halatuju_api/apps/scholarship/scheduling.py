@@ -43,31 +43,55 @@ def _bills_to_application(fn):
             return fn(application, *args, **kwargs)
     return wrapper
 
-# Interview slot rule (mirrored in halatuju-web/src/lib/interviewSlots.ts — keep in
-# lock-step): a proposed time must be MYT, on a 30-minute boundary, between 08:00 and
-# 21:30 (latest start). Times are stored UTC; we compare in MYT.
+# Interview slot rule: a proposed time must be MYT, on the organisation's step boundary,
+# inside its booking window. Times are stored UTC; we compare in MYT.
+#
+# ⚠ THESE FOUR CONSTANTS ARE THE PLATFORM DEFAULT, NOT THE RULE (Org Config Sprint D). The
+# rule is `org_config.value(organisation, 'interview_window_start_min')` and friends, which
+# DELEGATE here for an organisation that has tuned nothing. The browser no longer keeps a
+# lock-step copy: `interview_schedule_payload` SERVES the resolved four to the picker, so
+# there is nothing left to keep in step.
 _MYT = ZoneInfo('Asia/Kuala_Lumpur')
 SLOT_WINDOW_START_MIN = 8 * 60        # 08:00
 SLOT_WINDOW_END_MIN = 21 * 60 + 30    # 21:30 (latest start)
 SLOT_STEP_MIN = 30
-# Minimum scheduling notice (mirrored in halatuju-web/src/lib/interviewSlots.ts): the earliest
-# proposable slot is this far ahead, so the student has time to see + pick + prepare.
+# Minimum scheduling notice: the earliest proposable slot is this far ahead, so the student
+# has time to see + pick + prepare.
 SLOT_MIN_LEAD_HOURS = 24
 
 
-def meets_min_lead(dt, now) -> bool:
-    """True if a proposed start is at least SLOT_MIN_LEAD_HOURS ahead of ``now``."""
-    return dt >= now + timedelta(hours=SLOT_MIN_LEAD_HOURS)
+def slot_rules(organisation=None):
+    """The four booking-grid values for one organisation, resolved once.
+
+    Returned as a dict so a caller that needs several of them (the propose endpoint, the
+    payload) pays for one registry read per value and no more.
+    """
+    from apps.courses import org_config
+    return {
+        'window_start_min': org_config.value(organisation, 'interview_window_start_min'),
+        'window_end_min': org_config.value(organisation, 'interview_window_end_min'),
+        'step_min': org_config.value(organisation, 'interview_slot_step_min'),
+        'min_lead_hours': org_config.value(organisation, 'interview_min_lead_hours'),
+    }
 
 
-def slot_in_window(dt) -> bool:
-    """True if a tz-aware datetime falls on an allowed interview slot (MYT, 30-min
-    boundary, inside the 08:00–21:30 window). Enforced at the propose endpoint."""
+def meets_min_lead(dt, now, organisation=None) -> bool:
+    """True if a proposed start is at least the organisation's minimum notice ahead of ``now``."""
+    from apps.courses import org_config
+    hours = org_config.value(organisation, 'interview_min_lead_hours')
+    return dt >= now + timedelta(hours=hours)
+
+
+def slot_in_window(dt, organisation=None) -> bool:
+    """True if a tz-aware datetime falls on an allowed interview slot for this organisation
+    (MYT, on its step boundary, inside its window). Enforced at the propose endpoint."""
+    rules = slot_rules(organisation)
+    step = rules['step_min']
     local = dt.astimezone(_MYT)
-    if local.second or local.microsecond or local.minute % SLOT_STEP_MIN:
+    if local.second or local.microsecond or local.minute % step:
         return False
     mins = local.hour * 60 + local.minute
-    return SLOT_WINDOW_START_MIN <= mins <= SLOT_WINDOW_END_MIN
+    return rules['window_start_min'] <= mins <= rules['window_end_min']
 
 
 class SchedulingError(Exception):
@@ -110,9 +134,15 @@ def _reviewer_phone(reviewer):
     return rp.phone if (rp and rp.share_phone_with_students) else ''
 
 
-def _cutoff_ok(start, now):
-    """True if we're still outside the reschedule/cancel cutoff window."""
-    hours = getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
+def _cutoff_ok(start, now, organisation=None):
+    """True if we're still outside the reschedule/cancel cutoff window.
+
+    ⚠ The SAME value is printed to the student in the booked-interview email ("you can change
+    or cancel up to N hours before"). Resolve it per organisation at both, or the promise and
+    the refusal disagree — see `emails.send_interview_booked_email`.
+    """
+    from apps.courses import org_config
+    hours = org_config.value(organisation, 'interview_reschedule_cutoff_hours')
     return now < (start - timedelta(hours=hours))
 
 
@@ -204,7 +234,9 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
     goes through admin reassignment.
     """
     now = now or timezone.now()
-    duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
+    if duration_min is None:
+        from apps.courses import org_config
+        duration_min = org_config.value(application.owning_organisation, 'interview_duration_min')
 
     if not _can_review(reviewer):
         raise SchedulingError('not_reviewer')
@@ -349,7 +381,8 @@ def book_slot(application, *, slot_id, now=None):
         raise SchedulingError('past_slot')
 
     rescheduling = application.interview_status == 'booked' and application.interview_start
-    if rescheduling and not _cutoff_ok(application.interview_start, now):
+    if rescheduling and not _cutoff_ok(application.interview_start, now,
+                                       application.owning_organisation):
         raise SchedulingError('too_late')
 
     reviewer = slot.reviewer or application.assigned_to
@@ -414,11 +447,15 @@ def book_slot(application, *, slot_id, now=None):
         'interview_reminded_1d_at', 'interview_reminded_1h_at',
     ])
 
-    # Confirmations (best-effort).
+    # Confirmations (best-effort). The cutoff is resolved HERE, where the organisation is in
+    # hand, and passed in — `emails` takes an address and a time, never a tenant.
+    from apps.courses import org_config
     emails.send_interview_booked_email(
         student_email, student_name=student_name, reviewer_name=reviewer_name,
         start=slot.start, meeting_url=application.interview_meeting_url,
-        duration_min=slot.duration_min, english_only=emails.english_only_email(application))
+        duration_min=slot.duration_min, english_only=emails.english_only_email(application),
+        reschedule_cutoff_hours=org_config.value(application.owning_organisation,
+                                                 'interview_reschedule_cutoff_hours'))
     if reviewer_email:
         emails.send_reviewer_interview_booked_email(
             reviewer_email, reviewer_name=reviewer_name, applicant_name=student_name,
@@ -435,7 +472,9 @@ def cancel(application, *, by='student', reason='', now=None):
     now = now or timezone.now()
     if application.interview_status != 'booked':
         raise SchedulingError('not_booked')
-    if by == 'student' and application.interview_start and not _cutoff_ok(application.interview_start, now):
+    if (by == 'student' and application.interview_start
+            and not _cutoff_ok(application.interview_start, now,
+                               application.owning_organisation)):
         raise SchedulingError('too_late')
 
     reviewer = application.assigned_to

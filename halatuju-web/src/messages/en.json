@@ -1889,7 +1889,7 @@
       "homeCta": "Back to home",
       "interview": {
         "title": "Your interview",
-        "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about 30 minutes).",
+        "pickIntro": "Your interviewer has proposed these times. Pick the one that suits you — it's a short video call (about {minutes} minutes).",
         "book": "Book this time",
         "selectFirst": "Please choose a time first.",
         "booked": "Your interview is booked for",
@@ -3923,7 +3923,7 @@
           "noLink": "No link yet — it is created when the student books.",
           "cancelledNote": "The student cancelled — propose fresh times.",
           "cancelReasonLabel": "Reason they gave:",
-          "availableTimes": "Available times (8:00am–9:30pm, 30-min)",
+          "availableTimes": "Available times ({from}–{to}, {step}-min)",
           "noneToday": "No more times available today — pick another date.",
           "selectedCount": "Selected ({n} of {max})",
           "busyOther": "You have another student's interview at this time",
@@ -5741,7 +5741,8 @@
         "group": {
           "sponsor_page": "Sponsor page",
           "student_comms": "Student communications",
-          "reviewers_staff": "Reviewers & staff"
+          "reviewers_staff": "Reviewers & staff",
+          "interviews": "Interviews"
         },
         "setting": {
           "pool_funded_grace_days": {
@@ -5787,6 +5788,30 @@
           "admin_dormant_days": {
             "label": "Dormant after — days without sign-in",
             "desc": "How many days without opening the console before the Invitations page describes a staff member as dormant. A label only — it never blocks anyone."
+          },
+          "interview_duration_min": {
+            "label": "Interview length — minutes",
+            "desc": "How long one interview runs. Sets the end time on the calendar invitation the student and the reviewer receive."
+          },
+          "interview_window_start_min": {
+            "label": "Booking window opens",
+            "desc": "The earliest an interview may start, in Malaysian time. Reviewers cannot offer a time before this."
+          },
+          "interview_window_end_min": {
+            "label": "Booking window closes",
+            "desc": "The latest an interview may start, in Malaysian time. Must be after the opening time."
+          },
+          "interview_slot_step_min": {
+            "label": "Times offered every — minutes",
+            "desc": "The spacing of the times a reviewer can offer, such as every 30 minutes. Only values that divide an hour are allowed."
+          },
+          "interview_min_lead_hours": {
+            "label": "Earliest booking — hours ahead",
+            "desc": "How far ahead the soonest offered time must be, so a student has time to read the email, pick a time and prepare."
+          },
+          "interview_reschedule_cutoff_hours": {
+            "label": "Change or cancel until — hours before",
+            "desc": "How close to the start a student may still pick a different time or cancel. The confirmation email promises this same number."
           }
         },
         "unit": {
@@ -5794,13 +5819,16 @@
           "hours": "hours",
           "minutes": "minutes",
           "cards": "cards",
-          "questions": "questions"
+          "questions": "questions",
+          "time_of_day": "(Malaysian time)"
         },
         "defaultNote": "Platform default: {n} {unit}",
         "rowInvalid": "Enter a whole number between {min} and {max}, or leave blank for the default.",
+        "rowInvalidClock": "Enter a time like 08:00, or leave blank for the default.",
         "save": "Save changes",
         "saved": "Saved. The change is live now.",
         "refused": "The server refused the value for “{label}”. Check it and try again.",
+        "refusedWindow": "“{label}” must be after the time the booking window opens. Nothing was saved.",
         "errorGeneric": "Could not save. Please try again.",
         "invalid": "Fix the highlighted value first.",
         "unsaved": "Unsaved changes",

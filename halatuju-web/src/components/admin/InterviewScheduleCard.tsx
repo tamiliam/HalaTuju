@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { formatMyt } from '@/lib/interviewTime'
 import {
-  cellDateStr, daySlots, earliestDateStr, intlLocale, isoToSlotValue, monthCells, slotLabel12h,
-  MIN_LEAD_HOURS, RESCHEDULE_MIN_LEAD_HOURS,
+  cellDateStr, daySlots, earliestDateStr, intlLocale, isoToSlotValue, minuteLabel, monthCells,
+  slotLabel12h, slotRulesFrom, RESCHEDULE_MIN_LEAD_HOURS,
 } from '@/lib/interviewSlots'
 import { proposeInterviewSlots, type InterviewSchedule } from '@/lib/admin-api'
 
@@ -45,7 +45,10 @@ export default function InterviewScheduleCard({
   // On a reschedule the candidate has already waited through the original notice, so the 24h
   // floor relaxes to a short lead — the reviewer can offer nearer slots (TD-137). First-propose
   // keeps the 24h floor. (Backend already accepts any future slot; this is a UI-only relaxation.)
-  const leadHours = rescheduling ? RESCHEDULE_MIN_LEAD_HOURS : MIN_LEAD_HOURS
+  // The booking grid this organisation uses, as SERVED on the payload (window, step, notice).
+  // Never the module constants — those are the platform default this falls back to.
+  const rules = useMemo(() => slotRulesFrom(schedule), [schedule])
+  const leadHours = rescheduling ? RESCHEDULE_MIN_LEAD_HOURS : rules.minLeadHours
   // The earliest selectable day (now + the lead window) — days before this are disabled.
   const earliest = earliestDateStr(todayNow, leadHours)
   const earliestMonth = new Date(`${earliest}T00:00`)
@@ -76,7 +79,9 @@ export default function InterviewScheduleCard({
     [schedule],
   )
   // Future slots for the selected day (past times dropped, like Calendly).
-  const slots = useMemo(() => daySlots(date, new Date(), leadHours).filter((s) => !s.tooEarly), [date, leadHours])
+  const slots = useMemo(
+    () => daySlots(date, new Date(), leadHours, rules).filter((s) => !s.tooEarly),
+    [date, leadHours, rules])
   // Days the reviewer has picked a time on → a dot on the calendar.
   const pickedDays = useMemo(() => new Set(selected.map((v) => v.slice(0, 10))), [selected])
 
@@ -138,9 +143,9 @@ export default function InterviewScheduleCard({
     // Re-open the picker pre-loaded with the current menu, so it's a revise, not a rebuild.
     setSelected(proposedSlots.map((s) => isoToSlotValue(s.start)).slice(0, REQUIRED_PROPOSALS))
     setError('')
-    // Normal (non-reschedule) re-open uses the 24h floor — snap the day back in case a prior
-    // reschedule left the picker on a nearer date that's now disabled.
-    const e = earliestDateStr(new Date(), MIN_LEAD_HOURS)
+    // Normal (non-reschedule) re-open uses the organisation's own notice floor — snap the day
+    // back in case a prior reschedule left the picker on a nearer date that's now disabled.
+    const e = earliestDateStr(new Date(), rules.minLeadHours)
     setDate(e)
     const em = new Date(`${e}T00:00`)
     setView({ y: em.getFullYear(), m: em.getMonth() })
@@ -314,8 +319,16 @@ export default function InterviewScheduleCard({
             {/* Right: time pills for the selected day */}
             <div className="md:border-l md:border-ground-100 md:pl-5">
               <div className="text-sm font-semibold text-ground-900">{dateHeading}</div>
+              {/* ⚠ This label used to READ OUT the window and the step ("8:00am–9:30pm,
+                  30-min") as fixed words. They are the organisation's now, so the label is
+                  built from the SAME served rules that build the pills below it — a caption
+                  that disagrees with the buttons under it is worse than no caption. */}
               <p className="text-[11px] text-ground-400">
-                {t('admin.scholarship.interview.schedule.availableTimes')}
+                {t('admin.scholarship.interview.schedule.availableTimes', {
+                  from: slotLabel12h(minuteLabel(rules.windowStartMin)),
+                  to: slotLabel12h(minuteLabel(rules.windowEndMin)),
+                  step: String(rules.stepMin),
+                })}
               </p>
               {slots.length === 0 ? (
                 <p className="mt-2 text-sm italic text-ground-400">

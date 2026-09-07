@@ -1,7 +1,10 @@
 import {
-  allSlotTimes, cellDateStr, daySlots, earliestDateStr, isoToSlotValue, monthCells, slotLabel12h,
-  todayStr, RESCHEDULE_MIN_LEAD_HOURS,
+  allSlotTimes, cellDateStr, daySlots, earliestDateStr, isoToSlotValue, minuteLabel, monthCells,
+  slotLabel12h, slotRulesFrom, todayStr, DEFAULT_SLOT_RULES, RESCHEDULE_MIN_LEAD_HOURS,
 } from '../interviewSlots'
+import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
+import ta from '@/messages/ta.json'
 
 describe('interview slot rule', () => {
   test('allSlotTimes spans 08:00–21:30 in 30-min steps (28 slots)', () => {
@@ -73,6 +76,42 @@ describe('interview slot rule', () => {
     expect(slotLabel12h('21:30')).toBe('9:30pm')
   })
 
+  // ── the rules are SERVED, not mirrored (Org Config Sprint D) ──
+  test('the grid follows the rules the SERVER sent, not the platform constants', () => {
+    const rules = slotRulesFrom({
+      slot_window_start_min: 10 * 60, slot_window_end_min: 12 * 60,
+      slot_step_min: 60, slot_min_lead_hours: 48,
+    })
+    expect(rules).toEqual({
+      windowStartMin: 600, windowEndMin: 720, stepMin: 60, minLeadHours: 48,
+    })
+    expect(allSlotTimes(rules)).toEqual(['10:00', '11:00', '12:00'])
+    const now = new Date('2026-06-22T10:00:00')
+    const day = daySlots('2026-06-25', now, rules.minLeadHours, rules)
+    expect(day.map((s) => s.label)).toEqual(['10:00', '11:00', '12:00'])
+    expect(day[0].value).toBe('2026-06-25T10:00')
+  })
+
+  test('a payload with the fields missing falls back to the platform grid, per field', () => {
+    // An older cached payload, or a build that served only some of them: whatever IS there is
+    // used, and the rest follow the platform default — never a blank grid.
+    expect(slotRulesFrom(undefined)).toEqual(DEFAULT_SLOT_RULES)
+    expect(slotRulesFrom(null)).toEqual(DEFAULT_SLOT_RULES)
+    expect(slotRulesFrom({})).toEqual(DEFAULT_SLOT_RULES)
+    expect(slotRulesFrom({ slot_step_min: 15 })).toEqual({
+      ...DEFAULT_SLOT_RULES, stepMin: 15,
+    })
+    // A nonsense step would loop forever in allSlotTimes — refused on its own.
+    expect(slotRulesFrom({ slot_step_min: 0 }).stepMin).toBe(30)
+    expect(allSlotTimes(slotRulesFrom({ slot_step_min: 0 })).length).toBe(28)
+  })
+
+  test('minuteLabel joins served minutes to the HH:MM the labels speak', () => {
+    expect(minuteLabel(8 * 60)).toBe('08:00')
+    expect(minuteLabel(21 * 60 + 30)).toBe('21:30')
+    expect(slotLabel12h(minuteLabel(600))).toBe('10:00am')
+  })
+
   test('monthCells pads leading blanks and lists every day', () => {
     // June 2026: the 1st is a Monday → one leading blank (Sunday).
     const cells = monthCells(2026, 5)
@@ -80,5 +119,28 @@ describe('interview slot rule', () => {
     expect(cells[1]).toBe(1)
     expect(cells.filter((c) => c != null)).toHaveLength(30)
     expect(cellDateStr(2026, 5, 9)).toBe('2026-06-09')
+  })
+})
+
+describe('the interview copy states no fixed window, step or length', () => {
+  // ⚠ THE OTHER KIND OF MIRROR. Two sentences used to READ OUT the rules — the reviewer's
+  // "Available times (8:00am-9:30pm, 30-min)" caption and the student's "about 30 minutes"
+  // promise. Copy is invisible to a type-check and to every test that renders a component,
+  // so it survived as a claim the product no longer guarantees the day the values became the
+  // organisation's. These must interpolate; a rewrite that puts a number back fails here.
+  type Leaf = Record<string, unknown>
+  const dig = (obj: Leaf, path: string[]): unknown =>
+    path.reduce<unknown>((o, part) => (o as Leaf | undefined)?.[part as keyof Leaf], obj)
+
+  it.each([['en', en], ['ms', ms], ['ta', ta]] as const)('%s', (_lang, messages) => {
+    const caption = dig(messages as unknown as Leaf,
+      ['admin', 'scholarship', 'interview', 'schedule', 'availableTimes']) as string
+    for (const token of ['{from}', '{to}', '{step}']) expect(caption).toContain(token)
+    expect(caption).not.toMatch(/\b30\b/)
+
+    const intro = dig(messages as unknown as Leaf,
+      ['scholarship', 'application', 'interview', 'pickIntro']) as string
+    expect(intro).toContain('{minutes}')
+    expect(intro).not.toMatch(/\b30\b/)
   })
 })

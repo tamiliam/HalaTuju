@@ -96,8 +96,47 @@ def _default_admin_dormant_days():
     return int(getattr(settings, 'ADMIN_DORMANT_DAYS', 90))
 
 
-# key → {group, unit, min, max, default}. `default` is a CALLABLE, evaluated per read, because
-# several platform defaults are env vars that can change without a deploy.
+def _default_interview_duration_min():
+    # ⚠ 30 to match settings/base.py ("matches the 'about 30 minutes' copy"). Before Sprint D
+    # FOUR fallbacks said 45 — `emails.send_interview_booked_email`, `scheduling.propose_slots`
+    # and both `meeting.py` event builders. None could fire while base.py defines the setting,
+    # but a 45-minute .ics against a 30-minute promise was one deleted line away.
+    return int(getattr(settings, 'INTERVIEW_DURATION_MIN', 30))
+
+
+def _default_interview_window_start_min():
+    # The platform home is a module constant, not a Django setting — lazy import, because
+    # `scheduling` lives in apps.scholarship and importing it at module load would be circular.
+    from apps.scholarship.scheduling import SLOT_WINDOW_START_MIN
+    return SLOT_WINDOW_START_MIN
+
+
+def _default_interview_window_end_min():
+    from apps.scholarship.scheduling import SLOT_WINDOW_END_MIN
+    return SLOT_WINDOW_END_MIN
+
+
+def _default_interview_slot_step_min():
+    from apps.scholarship.scheduling import SLOT_STEP_MIN
+    return SLOT_STEP_MIN
+
+
+def _default_interview_min_lead_hours():
+    from apps.scholarship.scheduling import SLOT_MIN_LEAD_HOURS
+    return SLOT_MIN_LEAD_HOURS
+
+
+def _default_interview_reschedule_cutoff_hours():
+    return int(getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12))
+
+
+# key → {group, unit, min, max, default}, plus two OPTIONAL keys:
+#   * `allowed` — the only values this setting may take (rendered as a menu, not a box). Use it
+#     when the range is not the real constraint: a slot step of 45 leaves `minute % step` no
+#     honest reading across an hour boundary, so the divisors of 60 are the whole vocabulary.
+#   * cross-field rules live in `validate_values`, not here — see `_check_pairs`.
+# `default` is a CALLABLE, evaluated per read, because several platform defaults are env vars
+# that can change without a deploy.
 SETTINGS = {
     # How long a just-funded student lingers as a read-only "Funded" card on the sponsor browse
     # page before dropping off (`pool.display_pool_queryset`). Owner 2026-09-06: BrightPath wants
@@ -207,7 +246,73 @@ SETTINGS = {
         'max': 365,
         'default': _default_admin_dormant_days,
     },
+    # ── interviews (Sprint D) ──
+    # How long one interview runs. Read where the time is WRITTEN DOWN for somebody: the slot
+    # row (`propose_slots`), the student's .ics + Add-to-calendar links, and the Google Meet
+    # event's end time. ⚠ Nothing checks duration against the slot step, so a duration LONGER
+    # than the step lets a reviewer's own proposals overlap (conflict-blocking compares start
+    # times only — `scheduling.held_starts`). Owner told, 2026-09-07.
+    'interview_duration_min': {
+        'group': 'interviews',
+        'unit': 'minutes',
+        'min': 10,
+        'max': 180,
+        'default': _default_interview_duration_min,
+    },
+    # The earliest and latest an interview may START, in the organisation's clock (MYT). Stored
+    # as minutes past midnight — the tab types them as HH:MM (owner 2026-09-07). Enforced at the
+    # propose endpoint (`scheduling.slot_in_window`) and SERVED to the picker, never mirrored.
+    'interview_window_start_min': {
+        'group': 'interviews',
+        'unit': 'time_of_day',
+        'min': 0,
+        'max': 1439,
+        'default': _default_interview_window_start_min,
+    },
+    'interview_window_end_min': {
+        'group': 'interviews',
+        'unit': 'time_of_day',
+        'min': 0,
+        'max': 1439,
+        'default': _default_interview_window_end_min,
+    },
+    # The grid the picker offers times on. Divisors of 60 ONLY: `slot_in_window` reads
+    # `minute % step`, which is a lie for any step that does not tile an hour.
+    'interview_slot_step_min': {
+        'group': 'interviews',
+        'unit': 'minutes',
+        'min': 5,
+        'max': 60,
+        'allowed': (5, 10, 15, 20, 30, 60),
+        'default': _default_interview_slot_step_min,
+    },
+    # Minimum notice: the earliest proposable slot is this far ahead, so the student has time to
+    # see the email, pick and prepare. A reviewer RESCHEDULE relaxes this in the UI only (TD-137).
+    'interview_min_lead_hours': {
+        'group': 'interviews',
+        'unit': 'hours',
+        'min': 1,
+        'max': 168,
+        'default': _default_interview_min_lead_hours,
+    },
+    # How close to the start a student may still re-pick or cancel. Read at the two refusals
+    # (`scheduling.book`/`cancel`) AND printed in the booked-interview email, so one value keeps
+    # the promise and the enforcement identical.
+    'interview_reschedule_cutoff_hours': {
+        'group': 'interviews',
+        'unit': 'hours',
+        'min': 1,
+        'max': 168,
+        'default': _default_interview_reschedule_cutoff_hours,
+    },
 }
+
+# Cross-field rules: (earlier key, later key, code). A single key's bounds cannot express
+# "the window must open before it closes", and a window stored inverted would offer the
+# reviewer an empty picker with nothing on screen saying why.
+_ORDERED_PAIRS = (
+    ('interview_window_start_min', 'interview_window_end_min', 'window_inverted'),
+)
 
 
 def default(key):
@@ -215,11 +320,33 @@ def default(key):
     return SETTINGS[key]['default']()
 
 
-def validate_values(values):
+def _check_pairs(values):
+    """Cross-field rules, resolved against the platform default for any key not stored.
+
+    ⚠ Runs on a WHOLE settings dict, never on a diff: an organisation that stores only the
+    closing time is still describing a window whose other end is the platform default, so
+    checking the pair needs both sides resolved — and a diff has only one.
+    """
+    for earlier, later, code in _ORDERED_PAIRS:
+        a = values.get(earlier)
+        b = values.get(later)
+        if a is None and b is None:
+            continue
+        a = default(earlier) if a is None else a
+        b = default(later) if b is None else b
+        if a >= b:
+            # Name the LATER key: it is the box the person was most likely typing in.
+            raise OrgConfigError(code, later)
+
+
+def validate_values(values, *, pairs=True):
     """The storage fence. Raises `OrgConfigError` on anything the registry refuses.
 
     Run inside `OrganisationConfiguration.save()` — the model is where the fence lives
     (the `OrganisationTheme.save()` precedent), so every writer passes it.
+
+    `pairs=False` checks each key ALONE, for a caller holding only the changed keys (the
+    endpoint's first pass, which wants a per-key refusal code before it merges).
     """
     if not isinstance(values, dict):
         raise OrgConfigError('bad_values')
@@ -232,6 +359,11 @@ def validate_values(values):
             raise OrgConfigError('bad_value', key)
         if value < spec['min'] or value > spec['max']:
             raise OrgConfigError('out_of_range', key)
+        allowed = spec.get('allowed')
+        if allowed is not None and value not in allowed:
+            raise OrgConfigError('not_allowed', key)
+    if pairs:
+        _check_pairs(values)
 
 
 def stored(organisation, key):

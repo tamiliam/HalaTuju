@@ -3113,7 +3113,7 @@ def _join_line(meeting_url, lang='en'):
 
 def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
                                 meeting_url='', english_only=False, duration_min=None,
-                                reviewer_phone=''):
+                                reviewer_phone='', reschedule_cutoff_hours=None):
     """Student confirmation that an interview slot is booked. HTML primary + plain-text
     fallback; bilingual (EN + BM) by default, ``english_only=True`` drops the BM mirror.
     Names the interviewer (no contact details); attaches an .ics + an Add-to-calendar
@@ -3125,8 +3125,14 @@ def send_interview_booked_email(to_email, *, student_name, reviewer_name, start,
     rev_en = reviewer or 'one of our interviewers'
     rev_bm = reviewer or 'salah seorang penemu duga kami'
     when = _fmt_myt(start)
-    cutoff = getattr(settings, 'INTERVIEW_RESCHEDULE_CUTOFF_HOURS', 12)
-    duration_min = duration_min or getattr(settings, 'INTERVIEW_DURATION_MIN', 45)
+    # ⚠ Both numbers belong to the ORGANISATION, and this sender has none — the caller
+    # (`scheduling.book`) resolves them and passes them in. The fallback below is the ONE
+    # registry default, never a literal: a second literal here is how the cutoff this email
+    # PROMISES drifts from the cutoff `_cutoff_ok` ENFORCES.
+    from apps.courses import org_config
+    cutoff = (reschedule_cutoff_hours if reschedule_cutoff_hours is not None
+              else org_config.default('interview_reschedule_cutoff_hours'))
+    duration_min = duration_min or org_config.default('interview_duration_min')
     app_link = f"{_P.frontend_url}/scholarship/application"
     summary = '' + _PROG_EN + ' Programme interview'
     details = f'Join: {meeting_url}' if meeting_url else 'Your interviewer will share the video-call link.'
@@ -3588,7 +3594,9 @@ def build_reviewer_interview_booked_email(*, reviewer_name, applicant_name, star
     if calendar_invite_sent:
         calendar_line = "It's on your calendar (a Google invite has been sent) and in their record."
     else:
-        gcal = _gcal_url(start=start, duration_min=duration_min or 30,
+        from apps.courses import org_config
+        gcal = _gcal_url(start=start,
+                         duration_min=duration_min or org_config.default('interview_duration_min'),
                          text=f'B40 interview — {applicant}',
                          details='' + _PROG_EN + ' Programme interview.', location=meeting_url or '')
         calendar_line = (

@@ -1189,6 +1189,15 @@ export interface InterviewSchedule {
   booked_slot_id: number | null
   slots: InterviewSlot[]
   reschedule_cutoff_hours: number
+  /** The organisation's booking grid, SERVED (Org Config Sprint D) — the picker must not
+   *  hold its own copy. Optional so a payload cached from an older build still types; read
+   *  them through `interviewSlots.slotRulesFrom`, which falls back per field.
+   *  ⚠ The student shape in `api.ts` carries these too — same endpoint family, one seam. */
+  slot_window_start_min?: number
+  slot_window_end_min?: number
+  slot_step_min?: number
+  slot_min_lead_hours?: number
+  interview_duration_min?: number
   /** Reviewer-facing only: start times (ISO) this reviewer already holds for OTHER
    *  students, so the propose grid can grey them out. Absent on the student payload. */
   reviewer_busy?: string[]
@@ -3004,6 +3013,10 @@ export interface OrganisationConfigSetting {
   value: number | null
   /** The platform default, read live from the server's settings. */
   default: number
+  /** Present (non-null) when the setting's vocabulary is a short LIST rather than a range —
+   *  the row renders a menu of exactly these, not a number box (Org Config Sprint D: a slot
+   *  step must divide an hour, so 5/10/15/20/30/60 is the whole vocabulary). */
+  allowed?: number[] | null
 }
 
 export interface OrganisationConfiguration {

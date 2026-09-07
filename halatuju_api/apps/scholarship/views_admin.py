@@ -3481,12 +3481,14 @@ class AdminInterviewSlotsView(_AdminBase):
         # Minimum scheduling notice — reject any slot sooner than the lead window (checked
         # first so a too-soon time reads as 'too_soon', not 'invalid_slot_time').
         from django.utils import timezone as _tz
-        if any(s and not scheduling.meets_min_lead(s, _tz.now()) for s in starts):
+        _org = app.owning_organisation
+        if any(s and not scheduling.meets_min_lead(s, _tz.now(), _org) for s in starts):
             return Response({'error': 'too_soon', 'code': 'too_soon'},
                             status=status.HTTP_400_BAD_REQUEST)
-        # Enforce the interview-slot rule (MYT, 30-min, 08:00–21:30) at the input
-        # boundary — the UI only offers valid chips, but reject anything else too.
-        if any(s and not scheduling.slot_in_window(s) for s in starts):
+        # Enforce the interview-slot rule (MYT, on the organisation's step, inside its booking
+        # window) at the input boundary — the UI only offers valid chips, but reject anything
+        # else too. Both checks read the SAME organisation the picker was served from.
+        if any(s and not scheduling.slot_in_window(s, _org) for s in starts):
             return Response({'error': 'invalid_slot_time', 'code': 'invalid_slot_time'},
                             status=status.HTTP_400_BAD_REQUEST)
         # reschedule=True: the reviewer is MOVING an already-booked interview — release the
@@ -6302,6 +6304,9 @@ class AdminOrganisationConfigurationView(_AdminBase):
                 # the default beside it, never the default AS the value (a copied default rots).
                 'value': org_config.stored(org, key),
                 'default': org_config.default(key),
+                # Present only for a setting whose vocabulary is a short list rather than a
+                # range (the slot step) — the tab renders a menu instead of a box.
+                'allowed': list(spec['allowed']) if spec.get('allowed') else None,
             })
         return {
             'organisation': {'code': org.code, 'name': org.name},
@@ -6338,11 +6343,28 @@ class AdminOrganisationConfigurationView(_AdminBase):
         # is valid for any known key; everything else goes through the registry's own fence.
         to_set = {k: v for k, v in changes.items() if v is not None}
         to_clear = [k for k, v in changes.items() if v is None]
+        # The RESULT of the save, not the diff — a cross-field rule (Sprint D: the interview
+        # window must open before it closes) is a statement about the two values that will be
+        # STORED TOGETHER, and one of them may be arriving while the other is already on file
+        # or is following the platform default. Validating the diff alone would let an inverted
+        # window reach `row.save()`, where the model's own fence raises with the audit lines
+        # already written — a 500 for what is an ordinary typo.
+        # ⚠ Read the stored values by QUERY, never through `org.configuration`. Touching the
+        # reverse OneToOne caches the row on this `org` instance, and `_payload` below would
+        # then answer the save with the values as they were BEFORE it — a save that looks
+        # ignored until the page is reloaded.
+        existing = dict(OrganisationConfiguration.objects
+                        .filter(organisation=org)
+                        .values_list('values', flat=True).first() or {})
+        merged = {k: v for k, v in existing.items() if k not in to_clear}
+        merged.update(to_set)
         try:
             for key in to_clear:
                 if key not in org_config.SETTINGS:
                     raise org_config.OrgConfigError('unknown_setting', key)
-            org_config.validate_values(to_set)
+            # Per-key first, so the refusal names the key the person actually typed.
+            org_config.validate_values(to_set, pairs=False)
+            org_config.validate_values(merged)
         except org_config.OrgConfigError as exc:
             code = exc.code
             http = status.HTTP_404_NOT_FOUND if code == 'unknown_setting' else status.HTTP_400_BAD_REQUEST

@@ -185,7 +185,14 @@ export default function InterviewBookingPanel({
         <div className="mt-2">
           {pickable.length > 0 ? (
             <>
-              <p className="text-sm text-ground-700">{t('scholarship.application.interview.pickIntro')}</p>
+              {/* ⚠ "about 30 minutes" was written into the sentence. The length is the
+                  organisation's now and rides on this same payload, so the promise is made
+                  from the value the calendar invitation will actually carry. */}
+              <p className="text-sm text-ground-700">
+                {t('scholarship.application.interview.pickIntro', {
+                  minutes: String(sched.interview_duration_min ?? 30),
+                })}
+              </p>
               <ul className="mt-3 space-y-2">
                 {pickable.map((s) => (
                   <li key={s.id}>

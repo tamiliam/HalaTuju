@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## Org Config Sprint D: the interview grid becomes organisation-tunable - 2026-09-07
+
+Six settings join Organisation > Settings > Configuration under a new **Interviews** group
+(registry entries + wired read sites + rows - **no migration**). Roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C + D done);
+retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
+
+- **The picker's lock-step copy is GONE.** `interviewSlots.ts` carried its own window, step and
+  notice under a comment telling the next person to keep them equal to `scheduling.py`. Those
+  values are the ORGANISATION's now, so equality is not a thing a copy can hold: the interview
+  payload - the ONE seam both the reviewer's propose grid and the student's booking panel read -
+  SERVES the resolved four, and the constants survive only as the platform fallback for a
+  payload that predates the fields.
+- **`interview_duration_min` (30)** settles a four-way dead default: `emails.py`,
+  `scheduling.py` and both `meeting.py` event builders fell back to **45** while
+  `settings/base.py` says 30 ("matches the 'about 30 minutes' copy"). None could fire, and one
+  deleted settings line would have put a 45-minute block on a student's calendar against a
+  30-minute promise.
+- **`interview_window_start_min` / `interview_window_end_min`** (08:00 / 21:30, stored as
+  minutes past midnight) - typed on the tab as **HH:MM clock boxes**, which is the engine's
+  first new input shape (owner's choice, 2026-09-07). A window that closes before it opens is
+  refused by a CROSS-FIELD rule that resolves the absent side from the platform default, so
+  storing one end alone cannot invert the pair either.
+- **`interview_slot_step_min` (30)** is the engine's first setting whose vocabulary is a LIST
+  rather than a range - only divisors of 60, rendered as a menu, because `slot_in_window` reads
+  `minute % step` and a 45-minute grid has no honest reading across an hour boundary.
+- **`interview_min_lead_hours` (24)** and **`interview_reschedule_cutoff_hours` (12)** - the
+  cutoff is now resolved per organisation at BOTH surfaces that must agree: the refusal
+  (`scheduling._cutoff_ok`, on book and cancel) and the promise (the booked-interview email's
+  "you can change or cancel up to N hours before").
+- **Two sentences that read the rules out as fixed words were parameterised** in all three
+  languages: the reviewer's "Available times (8:00am-9:30pm, 30-min)" caption and the student's
+  "it's a short video call (about 30 minutes)". Copy is invisible to a type-check, so a jest
+  guard now fails if a number goes back into either.
+
++11 pytest (5924 -> 5935) and +13 jest (1754 -> 1767). Four bite-checks: the window de-orged,
+the payload serving a platform constant, the cross-field rule disabled, and the browser
+ignoring the served rules - each failed its owning test, each restored by writing the original
+back. i18n +16 keys x3 (ms/ta first drafts).
 ## Fix: the #20 sweep settles an income slot the way the platform does - 2026-09-08
 
 The report the previous change made runnable was read before anything was written, and it said
