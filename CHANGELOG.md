@@ -101,6 +101,27 @@ retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
 the payload serving a platform constant, the cross-field rule disabled, and the browser
 ignoring the served rules - each failed its owning test, each restored by writing the original
 back. i18n +16 keys x3 (ms/ta first drafts).
+## Fix: the sponsors table drops the Role column instead of dashing it - 2026-09-08
+
+Owner, looking at the live Invitations page while testing #17: *"what is the purpose of the role
+column?"* On the Sponsors table it had none. **A sponsor invitation carries no role because it
+creates no account** — it emails a link to the ordinary public registration — so that column could
+only ever print "—", for every row, for ever. Confirmed against production: every sponsor
+invitation on file has an empty role, and always will.
+
+- **`InvitationsTable` takes `showRole`**, and the page passes it by KIND: true for Admins (Admin ·
+  Finance · Org admin) and Reviewers (Reviewer · QC), where the column separates things; false for
+  Sponsors and Source.
+- **Passed, never derived from the rows.** "Do these invitations have roles" is a fact about the
+  kind. Reading it off whichever rows are loaded would hide the column on a staff table the day one
+  arrives with a blank role — a real missing value, reported as nothing at all.
+- **A dash is not neutral.** It reads as a value we failed to fetch, which is exactly the question
+  it prompted.
+
+Both directions bite-checked — forced false, the staff-table test fails; forced true, the sponsors
+test fails. jest **1781**; tsc 24 (baseline); lint 0; i18n 4839 × 3 (no new keys); `next build`
+clean on a retry after a concurrent build in the same checkout locked `.next`.
+
 ## Fix: Enter in the invitation note no longer sends it (BrightPath #17) - 2026-09-08
 
 The note on the sponsor invitation form was a single-line `<input>` inside the form whose main

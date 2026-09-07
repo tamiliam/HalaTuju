@@ -226,6 +226,13 @@ export default function OrganisationInvitationsPage() {
         ) : (
           <InvitationsTable
             rows={rows} canAct={canManage} busyId={busyId}
+            /* ⚠ ONLY THE STAFF KINDS CARRY A ROLE. Admins holds Admin · Finance · Org admin and
+               Reviewers holds Reviewer · QC, so the column separates things there. A sponsor
+               invitation creates no account and has no role, so on that table the column could
+               only ever print a dash for every row — which reads as a value we failed to fetch.
+               Named by KIND, never derived from the rows: a staff row arriving with a blank role
+               is a missing value to show, not a column to drop. */
+            showRole={kind === 'admins' || kind === 'reviewers'}
             /* `resend` and `toggle` act on the ACCOUNT, so they take the staff row behind the
                invitation. Both read only `id` and `is_active`; a sponsor invitation has no
                account, and the table never offers these for one. */

@@ -190,6 +190,21 @@ describe('which gift a sponsor is invited into', () => {
       { email: 'donor@example.org', name: 'Donor', note: '' }, { token: 'tok' }))
   })
 
+  it('⚠ shows NO Role column on the sponsors table — it could only ever print a dash', async () => {
+    // Owner, 2026-09-08, looking at the live table: "what is the purpose of the role column?" A
+    // sponsor invitation creates no account and carries no role, so every row read "—" for ever.
+    await loaded()
+    await pick('sponsors')
+    expect(screen.queryByText('admin.roleHeader')).toBeNull()
+  })
+
+  it('⚠ and KEEPS it on the staff tables, where it separates Admin from Finance', async () => {
+    // The other direction, and the one that matters: this must not become "hide Role everywhere".
+    await loaded()
+    expect(screen.getByText('admin.roleHeader')).toBeTruthy()
+    expect(screen.getByText('admin.role.org_admin')).toBeTruthy()
+  })
+
   it('⚠ the note is a TEXTAREA inside the form, which is what stops Enter sending (#17)', async () => {
     // BrightPath #17, and the reason it was urgent: the note used to be a single-line box inside
     // this form, so Enter did the form's main action — posting an invitation to a DONOR, half
