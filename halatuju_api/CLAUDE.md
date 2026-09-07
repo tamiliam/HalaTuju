@@ -550,7 +550,95 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after Org Config Sprint B — student comms on the tab)
+## Next Sprint (as of 2026-09-07, after the gift setup flow)
+
+**SHIPPED AND DEPLOYED.** `main` at **`ac46f7a6`**; both Cloud Builds SUCCESS; serving
+**halatuju-api-00982-2cx** / **halatuju-web-00833-qq2**. All public routes 200; no error logs.
+**Three deploys** — the second and third were the owner's live-review rounds finding real defects,
+not re-attempts at the same change. **Migration `scholarship/0150` APPLIED MIGRATE-FIRST and
+verified BEFORE the first push**; ledger reconciled at close: **scholarship 150/150, courses
+74/74, no gaps**. Retro `docs/retrospective-2026-09-07-gift-setup-flow.md`; decisions ×5;
+lessons ×6; **TD-231** raised.
+Merged tree (carries Org Config Sprint B, Layer 1 F7f, the grades-stream fix and the income-panel
+fix): pytest **5914**; jest **1741**; tsc **24** (baseline); lint **0**; i18n **4804 × 3**;
+`next build` clean. **Six guards bite-checked**, each injection verified as landed first.
+
+**⚠ THE OWNER'S TEST WAS THE SPRINT.** *"Pls investigate if this flow is there. We do not want a
+disconnected flow."* It was not: Create closed a dialog and stopped, and "Open its settings" landed
+on **Rules** — the one tab that cannot work before an intake year exists.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ THE TAB ORDER FOLLOWS THE DATA: Intake year · Rules · What we ask for.** Reversed from
+  2026-09-03, whose reason — *"who qualifies precedes what they are asked to send"* — is TRUE of
+  READING a gift already running and is carried forward verbatim in the comment and the test. It is
+  not true of SETTING ONE UP: **the rules are COLUMNS ON THE INTAKE YEAR.** `?tab=` deep-links a
+  tab; Create lands on `?tab=year`. Read via `window.location`, NOT `useSearchParams` — a page
+  using that needs a Suspense boundary or `next build` refuses (the F7c trap).
+- **⚠ `opens_on` / `closes_on` DESCRIBE. THEY OPEN NOTHING.** `is_open` is the switch and stays the
+  switch (owner ruling). A clock would fire whether or not the gift's rules and questions had been
+  finished. **NULL means no window stated and NOTHING was backfilled** — the 2026 round already
+  ran; inventing dates for it would be fiction on an audited row. The order check reads the RESULT,
+  not the payload (so patching one date validates against the stored other), and it **REFUSES** a
+  backwards window rather than swapping it.
+- **⚠ ONE OPEN ROUND PER GIFT PROGRAMME, NOT PER ORGANISATION** (owner: *"if the org has two
+  programmes, there could be two open applications"*). Do not put `owning_organisation=` back — it
+  capped an organisation at one live intake with no message saying why.
+- **⚠ THE APPLY PAGE ASKS BEFORE THE FORM.** `resolve_open_cohort` still refuses to guess between
+  two open rounds — guessing once filed a student under the wrong foundation, funded from the wrong
+  money, with no error. What changed is WHEN: `intake/` returns `choices` when it cannot name a
+  round, and the page asks before the first keystroke instead of 409-ing after the whole form. The
+  pick is stored on the SAME key a `?p=` link writes — one routing path to be right about.
+  `choices` carries `{code, name}` only: no organisation, no ids, no counts, and it stays EMPTY for
+  a caller naming a programme that does not exist.
+- **⚠ THE GIFT YOU JUST CREATED WAS UNREACHABLE, AND THE GUARD WAS NOT THE BUG.** The shell fetches
+  its scope list ONCE per session, so a gift created during that session was not in it and
+  `programmeScope` refused to resolve the unknown code — correctly. The screen asked *which gift*
+  forever, every click a no-op. **Fix the LIST, never the guard:** `useProgrammeScope().reload()`
+  re-fetches and `GiftProgrammes.create` AWAITS it BEFORE selecting. Accepting an unknown code is
+  the 2026-09-03 defect; falling back to "the only gift" is the same defect wearing a hat.
+- **⚠ DELETING A GIFT: THE RULE IS THE MODEL'S.** Every relation meaning a gift has BECOME something
+  is `on_delete=PROTECT` — so **a gift that has ever taken a student or a ringgit cannot be
+  deleted**, and the endpoint's contribution is naming WHICH. Its own configuration CASCADEs;
+  invitations, sources and reviewers are SET_NULL (a narrowing whose gift is gone falls back to
+  "every gift"). Confirmation is the typed phrase **`delete <code>`**, checked server-side — the
+  code alone is printed on the card and in the dialog's own label, so typing it is closer to
+  copying than to deciding.
+- **⚠ ONE FUNCTION, TWO READERS: `programme_delete_blocker`.** It fills `delete_blocked_by` on the
+  list row (so the Delete button is DISABLED with the reason as visible text) and it decides the
+  refusal. Two copies would drift, and the drift's shape is a button that looked safe. **Do not
+  derive the button's state from the card's own counts** — the row has never carried benefactors,
+  money or payment runs, so that button would go GREEN for a gift held by a donation.
+- **Two sidebar rows had no icon** (`orgSettings`, `faq`), and nothing complained. `icons.test.ts`
+  now asserts every registry id has a glyph, **deriving both sides at runtime**. The dot fallback
+  STAYS — a missing glyph must not throw inside the shell that renders every admin page; the
+  loudness lives in the test.
+
+**▶ OWNER POST-CHECK (still outstanding):**
+1. **BrightPath Bursary's Delete should be grey**, with *"Students have applied to this gift…"*
+   beneath it. Safe to look at — that is the change.
+2. **Delete a spare gift** with the phrase `delete <code>`.
+3. **A past start date must leave a round CLOSED.** The one thing this sprint could have got wrong.
+4. **ms and ta are FIRST DRAFTS** across everything new here (+59 keys).
+
+**▶ NEXT — OWNER PICKS. Nothing here is blocking:**
+1. **TD-229 — the contract template per gift** (medium). Already RULED 2026-09-04, not built. Not
+   launch-blocking (`BURSARY_AGREEMENT_ENABLED` is OFF) but it blocks a Sabah student ever signing.
+   ⚠ `BursaryAgreement.template` is PROTECT — re-homing the live template is a deliberate data step.
+2. **The Sabah apply link + the source list** (TD-230). **Its first half is now half-built:** the
+   apply page can already ASK which gift when several are open, so what remains is publicising
+   `/scholarship/apply?p=<code>` and retiring the hard-coded `REFERRING_ORG_OPTIONS` constant.
+3. **Org Config C–F** — the other agent's roadmap, `docs/plans/2026-09-06-org-configuration-roadmap.md`.
+
+**⚠ ALSO OPEN:** TD-231 (five counts per gift on the list — correct while the numbers are small);
+TD-225 (the brand logo in dark — artwork, owner's call); TD-228 (the ORGANISATION crumb filters
+nothing — trigger is a second ORGANISATION); TD-221 (the 24 `tsc` errors that make that gate a
+no-op).
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-07, after Org Config Sprint B — student comms on the tab)
 
 **SHIPPED AND DEPLOYED.** Worktree `.worktrees/org-config-b`, branch `feat/org-config-sprint-b`
 merged to `main`. **NO MIGRATION** — Sprint A built the store/endpoint/tab; B is registry entries +
