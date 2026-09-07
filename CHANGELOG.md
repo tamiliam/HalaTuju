@@ -35,6 +35,37 @@ writing the original back.
 pytest **5924** (+10; `test_org_config.py` 35 -> 45) - jest **1745** (+4) - lint **0** -
 tsc **24** (baseline) - i18n **4815 x 3** (+12 keys; ms/ta first drafts) - `next build` clean -
 `makemigrations --check` clean.
+## Fix: a half-completed Approve no longer locks the reviewer out of her own case - 2026-09-07
+
+One Approve press does two things in order: `record-verdict` saves the decision, then
+`verify-accept` submits the case to QC. **Saving the verdict is what makes the Recommendation
+panel read-only** — so when the second half did not run (the profile read incomplete, or the
+accept call failed), the reviewer was left looking at a locked panel with no Approve button.
+
+The only exit was **Reopen**: super-only, and recorded as a correction against the reviewer,
+asking what she got wrong. She got nothing wrong. Application 144 sat like that from 1 to
+7 September and Vasantha could not have freed it herself; it was moved by hand instead, rather
+than put a false mark on her record. (BrightPath #21, found by the owner.)
+
+- **`isStuckAfterVerdict`** — a verdict recorded, the accept never run, the case still live. The
+  panel stays editable in exactly that state, so the reviewer finishes what she started.
+- **⚠ KEYED ON `verified_at`, NOT ON THE STATUS.** That field is the record of whether the second
+  half ever ran; a status-only check would also unlock a case that moved on and came back.
+- **A DECLINE is untouched** — it leaves the case `rejected`, which is not a live state.
+- **The panel now SAYS the verdict is already saved**, with its date. Without it a fresh page load
+  looks untouched, and the only clue the reviewer ever had vanished with the page.
+
+⚠ **NO LIVE CASE IS LEFT TO EYEBALL** — 144 was advanced by hand, so it renders the ordinary
+locked panel now. The next case to reach this state will be a real student. Hence a source guard
+(`approveLockoutGuard.test.ts`, bite-checked) pinning that the page still asks the question: the
+cockpit has no mount harness, and this claim is structural rather than interactive.
+
+**Also: `incomeDocLayout` is DELETED**, with its tests. Exported, tested, and called by nothing —
+found this morning when a fix applied to it alone passed every gate and would have changed no
+screen. The header comment now records that it existed and why it was dangerous.
+
+jest 1740 -> **1745** (+9 new, −4 dead); tsc **24** (baseline); lint **0**;
+i18n 4804 -> **4805 x 3**; build clean. Web only, no migration, nothing a student sees.
 
 ## The gift setup flow — the cycle starts where the data starts - 2026-09-07
 

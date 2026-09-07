@@ -74,6 +74,7 @@ import {
   earnerMemberFor,
   viewerKind,
   isClearAccept,
+  isStuckAfterVerdict,
   verdictSaveOutcome,
   isQcAccepted,
   isQueryingLocked,
@@ -1010,7 +1011,16 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const interviewSubmitted = app.interview_session?.status === 'submitted'
   const interviewLocked = interviewSubmitted && !decisionReopened
   const decisionRecorded = !!app.verdict_decided_at
-  const decisionLocked = decisionRecorded && !decisionReopened
+  // ⚠ A HALF-COMPLETED APPROVE MUST NOT LOCK THE PANEL. Saving the verdict is the FIRST of the
+  // two things one Approve press does; locking on it stranded application 144 for six days with
+  // no button its own reviewer could press. While the case is still waiting to be submitted, the
+  // controls stay live so she can finish it herself — see `isStuckAfterVerdict`.
+  const stuckAfterVerdict = isStuckAfterVerdict({
+    status: app.status,
+    verdictDecidedAt: app.verdict_decided_at,
+    verifiedAt: app.verified_at,
+  })
+  const decisionLocked = decisionRecorded && !decisionReopened && !stuckAfterVerdict
 
   // The interview agenda (questions): deterministic flags not already a Check-2 query +
   // AI gaps. Computed once; the editable view drops 'deleted' items, the read-only view
@@ -2814,6 +2824,16 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
               {/* The old coarse "still owes: documents / consent" banner moved OUT to its own
                   Blockers card below this one (owner 2026-07-22) — it now names each item
                   from the consent gate instead of two categories. */}
+              {/* ⚠ SAY THAT THE VERDICT IS ALREADY SAVED. Without this the panel looks untouched
+                  on a fresh load, so a reviewer coming back to a half-completed Approve cannot
+                  tell whether her decision was recorded — and the only clue she ever had was a
+                  message that vanished with the page. */}
+              {stuckAfterVerdict && (
+                <p className="rounded-lg bg-caution-50 px-3 py-2 text-[11px] text-caution-800">
+                  {t('admin.scholarship.recordVerdict.savedNotSubmitted',
+                     { date: formatDate(app.verdict_decided_at) })}
+                </p>
+              )}
               {/* Reversible outcome selection. Approve needs an amount; Decline doesn't (and clears it). */}
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={selectApprove} disabled={!!busy || !approveReady}

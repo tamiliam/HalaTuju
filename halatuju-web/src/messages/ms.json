@@ -4452,6 +4452,7 @@
         "approveNeedsAmount": "Tetapkan jumlah bantuan yang disyorkan sebelum meluluskan.",
         "approveNeedsReview": "Sistem mengesyorkan tiada jumlah. Selesaikan laluan/pendapatan, atau tetapkan jumlah ganti, sebelum mengesyorkan.",
         "chooseOutcome": "Pilih Syorkan atau Tolak.",
+        "savedNotSubmitted": "Keputusan anda telah disimpan pada {date}, tetapi kes ini belum berpindah ke QC. Tekan Luluskan sekali lagi untuk menghantarnya.",
         "saveNeedsReady": "Hantar penemuan anda, nilai AI dan tambah kesimpulan anda.",
         "reasonPlaceholder": "Nyatakan hujah anda: mengapa pelajar ini layak ditaja — atau TIDAK memenuhi syarat {programmeName}.",
         "save": "Simpan & jana profil akhir",

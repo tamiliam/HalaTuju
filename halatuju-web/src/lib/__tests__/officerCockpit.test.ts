@@ -7,13 +7,13 @@ import {
   documentFacts,
   utilityBillValues,
   schoolLeavingValues,
-  incomeDocLayout,
   incomeSubSections,
   docIconFor,
   earnerMemberFor,
   viewerKind,
   verdictReliability,
   isClearAccept,
+  isStuckAfterVerdict,
   verdictSaveOutcome,
   isQueryingLocked,
   isDecisionReady,
@@ -737,67 +737,6 @@ describe('documentFacts', () => {
   })
 })
 
-// ── incomeDocLayout ───────────────────────────────────────────────────────────
-
-describe('incomeDocLayout', () => {
-  it('STR + mother → STR doc → earner IC → birth certificate slots; missing ones are null', () => {
-    const str = doc({ id: 1, doc_type: 'str' })
-    const layout = incomeDocLayout({ income_route: 'str', income_earner: 'mother' }, [str])
-    expect(layout.required.map((s) => [s.docType, s.doc?.id ?? null])).toEqual([
-      ['str', 1],
-      ['parent_ic', null],          // not uploaded → placeholder
-      ['birth_certificate', null],  // mother → BC required
-    ])
-  })
-
-  it('STR + father → no birth certificate slot (patronymic)', () => {
-    const layout = incomeDocLayout({ income_route: 'str', income_earner: 'father' }, [])
-    expect(layout.required.map((s) => s.docType)).toEqual(['str', 'parent_ic'])
-  })
-
-  it('an uploaded birth certificate fills the slot (must be grouped into income first)', () => {
-    // Regression: birth_certificate was missing from docTypeToFact's income case, so it
-    // landed in 'other' and the income panel never saw it → showed a false "Missing".
-    const bc = doc({ id: 7, doc_type: 'birth_certificate', household_member: '' })
-    const layout = incomeDocLayout({ income_route: 'str', income_earner: 'mother' }, [bc])
-    expect(layout.required.find((s) => s.docType === 'birth_certificate')?.doc?.id).toBe(7)
-  })
-
-  it('salary + father & mother → per-member IC + salary slip, one untagged BC; extras go optional', () => {
-    const fIc = doc({ id: 1, doc_type: 'parent_ic', household_member: 'father' })
-    const fSlip = doc({ id: 2, doc_type: 'salary_slip', household_member: 'father' })
-    const water = doc({ id: 9, doc_type: 'water_bill' })
-    const layout = incomeDocLayout(
-      { income_route: 'salary', income_working_members: ['father', 'mother'] },
-      [fIc, fSlip, water],
-    )
-    expect(layout.required.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
-      // UPDATED DELIBERATELY 2026-09-07: the slot is income evidence any one way, so an EMPTY
-      // one is no longer called a salary slip. A filled one still names what is in it.
-      ['parent_ic', 'father', 1],
-      ['salary_slip', 'father', 2],
-      ['parent_ic', 'mother', null],
-      ['income_evidence', 'mother', null],
-      ['birth_certificate', '', null],   // mother needs a BC (untagged), not uploaded
-    ])
-    expect(layout.optional.map((d) => d.id)).toEqual([9])   // the water bill
-  })
-
-  it('optional bucket is canonically ordered: salary → EPF → BC → guardian → utilities', () => {
-    // Uploaded in a jumbled order; the layout sorts them to mirror the student wizard.
-    const elec = doc({ id: 1, doc_type: 'electricity_bill' })
-    const epf = doc({ id: 2, doc_type: 'epf' })
-    const bc = doc({ id: 3, doc_type: 'birth_certificate' })   // e.g. a mononym father-link proof
-    const salary = doc({ id: 4, doc_type: 'salary_slip' })
-    const water = doc({ id: 5, doc_type: 'water_bill' })
-    // STR + father → only str/parent_ic are "required"; everything else is optional.
-    const layout = incomeDocLayout({ income_route: 'str', income_earner: 'father' },
-      [elec, epf, bc, salary, water])
-    expect(layout.optional.map((d) => d.doc_type)).toEqual(
-      ['salary_slip', 'epf', 'birth_certificate', 'water_bill', 'electricity_bill'])
-  })
-})
-
 // ── incomeSubSections (STR ROUTE / SALARY ROUTE / UTILITY) ─────────────────────
 describe('incomeSubSections', () => {
   const ids = (slots: { doc: AdminApplicantDocument | null }[]) => slots.map((s) => s.doc?.id ?? null)
@@ -1174,6 +1113,49 @@ describe('verdictReliability (the scorekeeper)', () => {
 })
 
 // ── Officer-decision gates (lifted from page.tsx — TD audit 2026-06-14) ─────────
+
+// ── isStuckAfterVerdict (the half-completed Approve) ──────────────────────────
+//
+// One Approve press saves the verdict and THEN submits the case. Saving the verdict is what
+// locks the panel, so when the second half does not run the reviewer loses the button she needs
+// — application 144, 1 to 7 September, freeable only by a super admin through Reopen, which is
+// recorded as a correction against a reviewer who did nothing wrong (BrightPath #21).
+
+describe('isStuckAfterVerdict', () => {
+  const at = '2026-09-01T22:27:53Z'
+
+  it('application 144: verdict recorded, never verified, still live → STUCK', () => {
+    expect(isStuckAfterVerdict({
+      status: 'interviewing', verdictDecidedAt: at, verifiedAt: null,
+    })).toBe(true)
+  })
+
+  it('no verdict recorded → not stuck (nothing half-done)', () => {
+    expect(isStuckAfterVerdict({
+      status: 'interviewing', verdictDecidedAt: null, verifiedAt: null,
+    })).toBe(false)
+  })
+
+  it('the accept DID run → not stuck, even while the status is still live', () => {
+    // ⚠ KEYED ON `verified_at`, NOT THE STATUS: that field is the record of whether the second
+    // half ever ran. A status-only check would unlock a case that moved on and came back.
+    expect(isStuckAfterVerdict({
+      status: 'interviewed', verdictDecidedAt: at, verifiedAt: '2026-09-07T07:27:29Z',
+    })).toBe(false)
+  })
+
+  it('a DECLINE is untouched — a rejected case is not live and stays locked', () => {
+    expect(isStuckAfterVerdict({
+      status: 'rejected', verdictDecidedAt: at, verifiedAt: null,
+    })).toBe(false)
+  })
+
+  it('a decided case never reopens itself: recommended / awarded / closed are not stuck', () => {
+    for (const s of ['recommended', 'awarded', 'active', 'maintenance', 'closed', 'withdrawn', 'expired']) {
+      expect(isStuckAfterVerdict({ status: s, verdictDecidedAt: at, verifiedAt: null })).toBe(false)
+    }
+  })
+})
 
 describe('isClearAccept', () => {
   it('true when the profile is complete and the case is live', () => {
