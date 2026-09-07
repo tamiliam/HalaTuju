@@ -62,6 +62,30 @@ retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
 the payload serving a platform constant, the cross-field rule disabled, and the browser
 ignoring the served rules - each failed its owning test, each restored by writing the original
 back. i18n +16 keys x3 (ms/ta first drafts).
+## Fix: Enter in the invitation note no longer sends it (BrightPath #17) - 2026-09-08
+
+The note on the sponsor invitation form was a single-line `<input>` inside the form whose main
+action is **Send invite**. Pressing Enter to start a new line is understood by the browser as *"I
+have finished"*, so it did the main action — posting a **half-written note to a donor**, which
+cannot be taken back. Reported 15 August; triaged bug / small change, so no charge.
+
+- **The note is a `<textarea>`.** Enter is a new line; only the button sends. Nothing else on the
+  form changed, and the two boxes above it are correctly still single-line.
+- **The email already carried line breaks, and that is now pinned rather than assumed** — the
+  analysis promised to check. The invitation sends as plain text and `email_templates.render`
+  fills each block without collapsing newlines. **Two tests**: one on the built-in body, one on a
+  stored `PartnerEmailTemplate` — production has a seeded row, so the stored path is the one that
+  actually sends and pinning only the built-in would have proved the wrong half.
+
+⚠ **THE FIRST RENDERED TEST WAS VACUOUS AND IS DELETED.** "Press Enter, assert nothing was sent"
+passes against the BROKEN single-line box too: implicit form submission is browser behaviour and
+**jsdom does not implement it**, so no test in this suite can observe the defect directly. Caught
+by injecting the old `<input>` and watching the file stay green — the same silent-bite lesson as
+BrightPath #20 earlier today, twice in one day. What is asserted instead is the pair that decides
+the real behaviour: a textarea, inside the form.
+
+jest **1771**; tsc 24 (baseline); lint 0; i18n 4833 × 3 (no new keys); `next build` clean.
+
 ## Consolidation review, and a guard that every repair has a door - 2026-09-08
 
 The eleven-entry small-change review (`docs/consolidation-log.md`, 19 Aug → 8 Sep). One guardrail

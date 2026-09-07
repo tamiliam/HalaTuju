@@ -648,6 +648,43 @@ class TestTheSponsorInvitationIsTheORGANISATIONPitching(TestCase):
         subject, body = self._pitch()
         self.assertEqual(partner_comms.banned_phrases(subject, body), ())
 
+    def test_A_MULTI_LINE_NOTE_ARRIVES_AS_IT_WAS_TYPED(self):
+        """BrightPath #17's second half — CHECKED rather than assumed, which is what the analysis
+        promised the requester.
+
+        The note box became a textarea so Enter starts a new line instead of sending the
+        invitation. That is only half a fix: a box that accepts line breaks and an email that
+        eats them would let somebody lay a note out carefully and post a wall of text to a donor.
+
+        It already works, and this pins WHY so it keeps working. The invitation is sent as PLAIN
+        TEXT (`EmailMessage(..., body=...)`, no HTML alternative), and `email_templates.render`
+        splits the stored TEMPLATE on blank lines and fills each block — so newlines inside a
+        substituted VALUE are carried, not collapsed. An HTML letter would need `<br>`, and the
+        renderer does that too, on the path this sender does not use.
+        """
+        from apps.scholarship import emails
+        note = 'Dear Ravi,\n\nWe would value your support.\nSuresh'
+        _subject, body = emails.build_sponsor_invitation_email(
+            org_name='BrightPath', invited_by='Suresh', code='abc123', note=note)
+        self.assertIn(note, body)                       # every break intact, in order
+        self.assertNotIn('Dear Ravi, We would value', body)     # not flattened onto one line
+
+    def test_and_the_STORED_wording_carries_them_too_which_is_the_path_that_sends(self):
+        """⚠ The test above exercises the BUILT-IN body, because no template row exists in a test
+        database. Production has one — seeded 2026-08-04 — and `_invite_render` prefers it, so the
+        built-in is the path that does NOT send. Pinning only that would prove the wrong half."""
+        from apps.scholarship import emails
+        from apps.scholarship.models import PartnerEmailTemplate
+        PartnerEmailTemplate.objects.create(
+            kind='invite_sponsor', enabled=True,
+            subject='An invitation to become a donor of {org_name}',
+            body='Hello,\n\n{invited_by} invited you.\n\n{note}\n\nRegister here:\n{link}')
+        note = 'Dear Ravi,\n\nWe would value your support.\nSuresh'
+        _subject, body = emails.build_sponsor_invitation_email(
+            org_name='BrightPath', invited_by='Suresh', code='abc123', note=note)
+        self.assertIn('invited you.', body)             # the STORED wording, not the built-in
+        self.assertIn(note, body)
+
 
 class TestTheDonorPitchIsGuardedAgainstATaxClaim(TestCase):
     """⚠ THE GAP THIS SPRINT CLOSED, 2026-08-04.

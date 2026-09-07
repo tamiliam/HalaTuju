@@ -193,8 +193,18 @@ export default function OrganisationInvitationsPage() {
                   </select>
                 </label>
               )}
+              {/* ⚠ A TEXTAREA, NOT AN INPUT, AND THE REASON IS NOT COSMETIC (BrightPath #17).
+                  Enter inside a single-line box submits the form it sits in — that is the
+                  browser's own behaviour, not anything this page asked for — so the main action
+                  fired, and the main action here SENDS AN INVITATION TO A DONOR. Somebody
+                  starting a second line posted a half-written note to an outsider, with no way
+                  to take it back. In a textarea Enter is a new line and only the button sends.
+                  A rendered test presses Enter in this box and asserts nothing was sent; do not
+                  "tidy" this back to an <input> to match the two above it. The email carries the
+                  line breaks through — it is plain text, and a backend test pins that. */}
               {kind === 'sponsors' && (
-                <input className={inputCls} placeholder={t('admin.invitations.notePlaceholder')}
+                <textarea className={inputCls} rows={3}
+                  placeholder={t('admin.invitations.notePlaceholder')}
                   value={note} onChange={(e) => setNote(e.target.value)} />
               )}
               <button type="submit" disabled={busy}
