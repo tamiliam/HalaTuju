@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## Org Config Sprint C: the reviewers & staff clocks become organisation-tunable - 2026-09-07
+
+Five settings join Organisation > Settings > Configuration under a new **Reviewers & staff**
+group (registry entries + wired read sites + rows - **no migration**, the roadmap's promised
+shape). Roadmap `docs/plans/2026-09-06-org-configuration-roadmap.md` (A + B + C done);
+retro `docs/retrospective-2026-09-07-org-config-sprint-c.md`.
+
+- **The three verdict clocks** (`review_sla_days` 10 / `review_nudge_soon_days` 2 /
+  `review_escalate_grace_days` 4) resolve per APPLICATION at all three read sites - the nudge
+  sweep, the reviewer interview reminder's verdict-due line, and the review-by date in the
+  assignment email. Two DEAD defaults retired by the one delegation: `services.py` said the SLA
+  default was 7 (the sweep said 10) and the sweep's grace default was 3 (base.py says 4) - both
+  unreachable while base.py defines the settings, both drift waiting to bite.
+- **`temp_password_ttl_days` (7)** - ONE clock, four readers that must refuse together: the
+  invitation's own expiry, the rotate-dead cron (per-admin cutoff), the Resend reset, and the
+  login gate. The login page's hard-coded `7 * 24 * 60 * 60 * 1000` "keep in step" mirror is
+  GONE: the role payload serves the caller's org-resolved TTL and the check moved into the pure,
+  tested `invitations.tempPasswordExpired` (fails OPEN on an unreadable date - the cron is the
+  hard boundary).
+- **`admin_dormant_days` (90)** - the rule lived ONLY in the browser (`lib/invitations.ts`
+  `DORMANT_DAYS`; the backend helper had zero callers). `AdminListView` now serves
+  `dormant_days` PER ROW - a super's list spans organisations, so one page-wide number would
+  mislabel other tenants' people. `standingOf` reads the served value; the constant survives
+  only as the fallback for an old payload.
+
+This is the first exercise of the serve-don't-mirror rule Sprint D's `interviewSlots.ts`
+warning states. Four bite-checks (sweep de-orged, invitation TTL unthreaded, cron cutoff
+re-globalled, `standingOf` re-hardcoded) - each failed its owning test, each restored by
+writing the original back.
+
+Merged tree (carries the concurrent approve-lockout cockpit fix `260927dc`): pytest **5924**
+(+10; `test_org_config.py` 35 -> 45) - jest **1749** (+4 of those are this sprint's) -
+lint **0** - tsc **24** (baseline) - i18n **4816 x 3** (+12 keys are this sprint's; ms/ta first
+drafts) - `next build` clean - `makemigrations --check` clean.
 ## Fix: a half-completed Approve no longer locks the reviewer out of her own case - 2026-09-07
 
 One Approve press does two things in order: `record-verdict` saves the decision, then

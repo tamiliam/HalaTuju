@@ -13,7 +13,7 @@
  *  - a refusal from the SERVER is rendered even when the browser thought the value was fine;
  *  - every registry key rendered has words behind it in all three languages.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import OrganisationConfigurationTab from './OrganisationConfigurationTab'
 import * as api from '@/lib/admin-api'
@@ -51,13 +51,27 @@ const SPRINT_B: api.OrganisationConfigSetting[] = [
     min: 1, max: 10, value: null, default: 3 },
 ]
 
+// The Sprint C registry rows — reviewers & staff, all in days.
+const SPRINT_C: api.OrganisationConfigSetting[] = [
+  { key: 'review_sla_days', group: 'reviewers_staff', unit: 'days',
+    min: 1, max: 60, value: null, default: 10 },
+  { key: 'review_nudge_soon_days', group: 'reviewers_staff', unit: 'days',
+    min: 1, max: 30, value: null, default: 2 },
+  { key: 'review_escalate_grace_days', group: 'reviewers_staff', unit: 'days',
+    min: 1, max: 30, value: null, default: 4 },
+  { key: 'temp_password_ttl_days', group: 'reviewers_staff', unit: 'days',
+    min: 1, max: 30, value: null, default: 7 },
+  { key: 'admin_dormant_days', group: 'reviewers_staff', unit: 'days',
+    min: 7, max: 365, value: null, default: 90 },
+]
+
 function config(over: Partial<api.OrganisationConfigSetting> = {}): api.OrganisationConfiguration {
   return {
     organisation: { code: 'alpha', name: 'Alpha Foundation' },
     settings: [{
       key: KEY, group: 'sponsor_page', unit: 'days', min: 1, max: 90,
       value: null, default: 2, ...over,
-    }, ...SPRINT_B],
+    }, ...SPRINT_B, ...SPRINT_C],
   }
 }
 
@@ -85,9 +99,11 @@ describe('a blank box means the platform default', () => {
     await mount()
     expect(box().value).toBe('')
     expect(box().placeholder).toBe('2')
-    // The note interpolates {n} and {unit} — the harness renders vars after a pipe. Pinned to
-    // the DAYS unit: the query-delay row also defaults to 2, in hours.
-    expect(screen.getByText(
+    // The note interpolates {n} and {unit} — the harness renders vars after a pipe. Scoped to
+    // THIS row's list item: since Sprint C, `review_nudge_soon_days` also reads "2, days", so a
+    // page-wide query would match two rows.
+    const row = box().closest('li') as HTMLElement
+    expect(within(row).getByText(
       /admin\.orgSettings\.config\.defaultNote\|2,admin\.orgSettings\.config\.unit\.days/,
     )).toBeTruthy()
   })
@@ -182,12 +198,24 @@ describe('the Sprint B rows render, grouped and ordered', () => {
     expect(comms).toBeGreaterThan(sponsor)
   })
 
+  it('draws the Sprint C rows, with Reviewers & staff after Student communications', async () => {
+    await mount()
+    for (const s of SPRINT_C) {
+      expect(screen.getByTestId(`config-${s.key}`)).toBeTruthy()
+    }
+    const text = document.body.textContent || ''
+    const comms = text.indexOf('admin.orgSettings.config.group.student_comms')
+    const staff = text.indexOf('admin.orgSettings.config.group.reviewers_staff')
+    expect(comms).toBeGreaterThanOrEqual(0)
+    expect(staff).toBeGreaterThan(comms)
+  })
+
   it('every unit label sits in a fixed-width column so the boxes align down the page', async () => {
     // With a natural-width unit the right-aligned pair shifts each BOX by the unit's length
     // ("days" vs "questions") — the owner read it as untidy on 2026-09-07. The width class is
     // the alignment; losing it brings the drift back.
     await mount()
-    for (const s of [{ key: KEY }, ...SPRINT_B]) {
+    for (const s of [{ key: KEY }, ...SPRINT_B, ...SPRINT_C]) {
       const unit = screen.getByTestId(`config-${s.key}-unit`)
       expect(unit.className).toContain('w-24')
     }

@@ -184,6 +184,9 @@ export interface AdminItem {
   /** NULL means NOT RECORDED, never "never signed in" — everyone predating 2026-08-03 is empty. */
   first_seen_at?: string | null
   last_seen_at?: string | null
+  /** THIS row's dormancy threshold, resolved for the person's own organisation on the server
+   *  (Org Config Sprint C). `standingOf` reads it; the old constant is only its fallback. */
+  dormant_days?: number
   /** The invitation behind this person. Null when they predate the record. */
   invitation?: {
     /** Decided by the server (`invitations.status_of`); never re-derived on this side. */

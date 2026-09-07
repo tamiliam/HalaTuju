@@ -69,6 +69,33 @@ def _default_max_clarify_open():
     return MAX_CLARIFY
 
 
+def _default_review_sla_days():
+    # ⚠ The getattr default here is 10 to match settings/base.py. Before Sprint C, THREE readers
+    # carried their own defaults (10, 10 and 7 — `services.py`'s assign email said 7); all dead
+    # because base.py always defines the setting, but a drift waiting to bite the day it moved.
+    # All three now read through this one delegation.
+    return int(getattr(settings, 'REVIEW_SLA_DAYS', 10))
+
+
+def _default_review_nudge_soon_days():
+    return int(getattr(settings, 'REVIEW_NUDGE_SOON_DAYS', 2))
+
+
+def _default_review_escalate_grace_days():
+    # Same story: `send_review_nudges` said 3 where base.py says 4 (→ escalate at day 14). The
+    # dead default never fired; the delegation retires it.
+    return int(getattr(settings, 'REVIEW_ESCALATE_GRACE_DAYS', 4))
+
+
+def _default_temp_password_ttl_days():
+    return int(getattr(settings, 'PARTNER_TEMP_PASSWORD_TTL_DAYS', 7))
+
+
+def _default_admin_dormant_days():
+    # No settings/base.py entry exists for this one — the env-var override is the getattr itself.
+    return int(getattr(settings, 'ADMIN_DORMANT_DAYS', 90))
+
+
 # key → {group, unit, min, max, default}. `default` is a CALLABLE, evaluated per read, because
 # several platform defaults are env vars that can change without a deploy.
 SETTINGS = {
@@ -130,6 +157,55 @@ SETTINGS = {
         'min': 1,
         'max': 10,
         'default': _default_max_clarify_open,
+    },
+    # ── reviewers & staff (Sprint C) ──
+    # A verdict is due `assigned_at + review_sla_days`. Read at THREE sites, all per-application:
+    # the nudge sweep (`send_review_nudges`), the reviewer interview reminder's verdict-due line
+    # (`send_interview_reminders`), and the review-by date in the assignment email
+    # (`services.assign_reviewer`).
+    'review_sla_days': {
+        'group': 'reviewers_staff',
+        'unit': 'days',
+        'min': 1,
+        'max': 60,
+        'default': _default_review_sla_days,
+    },
+    # The "your verdict is due soon" nudge fires this many days BEFORE the due date.
+    'review_nudge_soon_days': {
+        'group': 'reviewers_staff',
+        'unit': 'days',
+        'min': 1,
+        'max': 30,
+        'default': _default_review_nudge_soon_days,
+    },
+    # Escalation to the org's admins fires this many days AFTER the due date.
+    'review_escalate_grace_days': {
+        'group': 'reviewers_staff',
+        'unit': 'days',
+        'min': 1,
+        'max': 30,
+        'default': _default_review_escalate_grace_days,
+    },
+    # How long an emailed temporary password stays usable. ⚠ ONE clock, FOUR readers that must
+    # agree: the invitation's own expiry (`invitations.staff_ttl_days`), the daily rotate-dead
+    # cron (`expire_temp_passwords`), the login gate (the FE check, served the resolved value on
+    # the role payload — never a hard-coded mirror), and the Resend reset.
+    'temp_password_ttl_days': {
+        'group': 'reviewers_staff',
+        'unit': 'days',
+        'min': 1,
+        'max': 30,
+        'default': _default_temp_password_ttl_days,
+    },
+    # Days without opening the console before the Invitations page calls somebody dormant.
+    # Descriptive only — never a permission state. Served per staff row on the list payload
+    # (`AdminListView`) because a super's list spans organisations.
+    'admin_dormant_days': {
+        'group': 'reviewers_staff',
+        'unit': 'days',
+        'min': 7,
+        'max': 365,
+        'default': _default_admin_dormant_days,
     },
 }
 

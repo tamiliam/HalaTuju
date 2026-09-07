@@ -584,3 +584,197 @@ class TestPerOrgSponsorEmailCap(TestCase):
         self.assertIsNone(_sole_batch_organisation([_App(self.org), _App(other)]))
         # A NULL-org application makes the batch UNKNOWN, never "the other apps' org".
         self.assertIsNone(_sole_batch_organisation([_App(self.org), _App(None)]))
+
+
+# ─── Sprint C: reviewers & staff ─────────────────────────────────────────────
+
+class TestSprintCRegistry(TestCase):
+    """The five Sprint C keys exist, and every default DELEGATES to the platform's live home."""
+
+    SPRINT_C = ('review_sla_days', 'review_nudge_soon_days', 'review_escalate_grace_days',
+                'temp_password_ttl_days', 'admin_dormant_days')
+
+    def test_every_key_is_registered_with_its_group_and_unit(self):
+        for key in self.SPRINT_C:
+            spec = org_config.SETTINGS[key]
+            self.assertEqual((spec['group'], spec['unit']), ('reviewers_staff', 'days'), key)
+            self.assertEqual(set(spec), {'group', 'unit', 'min', 'max', 'default'})
+
+    @override_settings(REVIEW_SLA_DAYS=12, REVIEW_NUDGE_SOON_DAYS=3,
+                       REVIEW_ESCALATE_GRACE_DAYS=5, PARTNER_TEMP_PASSWORD_TTL_DAYS=9,
+                       ADMIN_DORMANT_DAYS=120)
+    def test_defaults_delegate_to_the_live_platform_settings(self):
+        self.assertEqual(org_config.default('review_sla_days'), 12)
+        self.assertEqual(org_config.default('review_nudge_soon_days'), 3)
+        self.assertEqual(org_config.default('review_escalate_grace_days'), 5)
+        self.assertEqual(org_config.default('temp_password_ttl_days'), 9)
+        self.assertEqual(org_config.default('admin_dormant_days'), 120)
+
+
+@override_settings(REVIEW_NUDGES_ENABLED=True)
+class TestPerOrgReviewClocks(TestCase):
+    """`review_sla_days` / `review_nudge_soon_days` / `review_escalate_grace_days` — the three
+    verdict clocks are computed PER ORGANISATION, and the three read sites (the nudge sweep, the
+    assignment email, the interview reminder) all state the SAME due date."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='rc-org', name='Review Org')
+        cls.cohort = _org_cohort('rc-a', cls.org)
+        cls.null_cohort = _org_cohort('rc-null', None)
+        cls.reviewer = PartnerAdmin.objects.create(
+            supabase_user_id='rc-rev', role='reviewer', is_active=True,
+            owning_organisation=cls.org, name='Reviewer RC', email='rc-rev@x.com')
+
+    def _assigned_app(self, cohort, suffix, *, days_ago):
+        from apps.courses.models import StudentProfile
+        profile = StudentProfile.objects.create(supabase_user_id=f'orc-{suffix}', name='Kavi')
+        app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='profile_complete',
+            notify_email='stu@x.com', assigned_to=self.reviewer)
+        ScholarshipApplication.objects.filter(pk=app.pk).update(
+            assigned_at=timezone.now() - timedelta(days=days_ago))
+        app.refresh_from_db()
+        return app
+
+    def _run(self):
+        from django.core.management import call_command
+        call_command('send_review_nudges')
+
+    def test_the_sweep_uses_the_organisations_sla_and_grace(self):
+        # Org: due at day 5, escalate at day 6 → an app assigned 8 days ago is overdue AND
+        # escalated. NULL org: platform SLA 10 → the same age is not even due yet.
+        _configure(self.org, 'review_sla_days', 5)
+        _configure(self.org, 'review_escalate_grace_days', 1)
+        ours = self._assigned_app(self.cohort, 'a1', days_ago=8)
+        theirs = self._assigned_app(self.null_cohort, 'a2', days_ago=8)
+        self._run()
+        ours.refresh_from_db(); theirs.refresh_from_db()
+        self.assertIsNotNone(ours.review_nudged_overdue_at)
+        self.assertIsNotNone(ours.review_escalated_at)
+        self.assertIsNone(theirs.review_nudged_overdue_at)   # platform clock, untouched
+        self.assertIsNone(theirs.review_escalated_at)
+
+    def test_the_soon_window_follows_the_organisation(self):
+        # Org SLA 5, soon window 2 → an app assigned 4 days ago is due in 1 day → "due soon".
+        # NULL org at the same age: due in 6 days on the platform's 10 → silence.
+        _configure(self.org, 'review_sla_days', 5)
+        soon = self._assigned_app(self.cohort, 'b1', days_ago=4)
+        quiet = self._assigned_app(self.null_cohort, 'b2', days_ago=4)
+        self._run()
+        soon.refresh_from_db(); quiet.refresh_from_db()
+        self.assertIsNotNone(soon.review_nudged_soon_at)
+        self.assertIsNone(quiet.review_nudged_soon_at)
+
+    def test_the_assignment_email_states_the_organisations_review_by_date(self):
+        from unittest import mock
+        from apps.scholarship import services
+        _configure(self.org, 'review_sla_days', 5)
+        app = self._assigned_app(self.cohort, 'c1', days_ago=0)
+        other = PartnerAdmin.objects.create(
+            supabase_user_id='rc-rev2', role='reviewer', is_active=True,
+            owning_organisation=self.org, name='Reviewer Two', email='rc-rev2@x.com')
+        superadmin = PartnerAdmin.objects.create(
+            supabase_user_id='rc-super', is_super_admin=True, is_active=True,
+            name='Super', email='rc-super@x.com')
+        with mock.patch('apps.scholarship.emails.send_reviewer_assigned_email') as sent:
+            services.assign_reviewer(app, reviewer=other, by_admin=superadmin)
+        expected = (timezone.now() + timedelta(days=5)).date().strftime('%d %b %Y')
+        self.assertEqual(sent.call_args.kwargs['review_by'], expected)
+
+    @override_settings(INTERVIEW_SCHEDULING_ENABLED=True)
+    def test_the_interview_reminder_names_the_same_due_date(self):
+        from unittest import mock
+        from django.core.management import call_command
+        _configure(self.org, 'review_sla_days', 5)
+        app = self._assigned_app(self.cohort, 'd1', days_ago=1)
+        now = timezone.now()
+        ScholarshipApplication.objects.filter(pk=app.pk).update(
+            interview_status='booked', interview_start=now + timedelta(minutes=30),
+            interview_booked_at=now - timedelta(hours=3))
+        with mock.patch('apps.scholarship.emails.send_interview_reminder_email'), \
+                mock.patch('apps.scholarship.emails'
+                           '.send_reviewer_interview_reminder_email') as rev:
+            call_command('send_interview_reminders')
+        app.refresh_from_db()
+        expected = (app.assigned_at + timedelta(days=5)).date().strftime('%d %b %Y')
+        self.assertEqual(rev.call_args.kwargs['verdict_due'], expected)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestPerOrgStaffClocks(TestCase):
+    """`temp_password_ttl_days` + `admin_dormant_days` — the staff clocks, per organisation.
+
+    ⚠ ONE TTL, several readers: the invitation's own expiry, the rotate-dead cron and the login
+    gate (which reads the number SERVED on the role payload) must all move together when an
+    organisation tunes it — a screen saying "still valid" about a password the cron already
+    rotated dead is the exact drift the shared derivation exists to prevent."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='sc-org', name='Staff Org')
+        cls.oa = PartnerAdmin.objects.create(
+            supabase_user_id='sc-oa', role='org_admin', is_active=True,
+            owning_organisation=cls.org, name='OrgAdmin SC', email='sc-oa@x.com')
+        cls.rev = PartnerAdmin.objects.create(
+            supabase_user_id='sc-rev', role='reviewer', is_active=True,
+            owning_organisation=cls.org, name='Reviewer SC', email='sc-rev@x.com')
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+
+    def test_a_staff_invitations_expiry_follows_the_organisations_ttl(self):
+        from apps.scholarship import invitations
+        _configure(self.org, 'temp_password_ttl_days', 3)
+        inv = invitations.create_or_refresh(
+            audience='staff', email='new@x.com', name='New', role='reviewer',
+            organisation=self.org)
+        self.assertAlmostEqual(
+            (inv.expires_at - timezone.now()).total_seconds(), 3 * 86400, delta=10)
+        # No organisation → the platform's 7 days, untouched.
+        bare = invitations.create_or_refresh(
+            audience='staff', email='bare@x.com', name='Bare', role='reviewer',
+            organisation=None)
+        self.assertAlmostEqual(
+            (bare.expires_at - timezone.now()).total_seconds(), 7 * 86400, delta=10)
+
+    def test_the_role_payload_serves_the_callers_resolved_ttl(self):
+        _configure(self.org, 'temp_password_ttl_days', 3)
+        self._auth('sc-rev')
+        body = self.client.get('/api/v1/admin/role/').json()
+        self.assertEqual(body['temp_password_ttl_days'], 3)
+
+    def test_the_staff_list_serves_dormant_days_per_row(self):
+        _configure(self.org, 'admin_dormant_days', 30)
+        self._auth('sc-oa')
+        body = self.client.get('/api/v1/admin/admins/').json()
+        rows = {r['email']: r for r in body['admins']}
+        self.assertEqual(rows['sc-rev@x.com']['dormant_days'], 30)
+
+    @override_settings(SUPABASE_URL='https://sb.test', SUPABASE_SERVICE_ROLE_KEY='sk')
+    def test_the_expiry_cron_rotates_on_the_organisations_clock(self):
+        # Org TTL 1 day: a 3-day-old unchanged temp password rotates (both sc-org accounts).
+        # The SAME age under the platform's 7 days (a NULL-org admin) is left alone.
+        from unittest import mock
+        from django.core.management import call_command
+        _configure(self.org, 'temp_password_ttl_days', 1)
+        PartnerAdmin.objects.create(
+            supabase_user_id='sc-null', role='reviewer', is_active=True,
+            owning_organisation=None, name='Platform Rev', email='sc-null@x.com')
+        issued = (timezone.now() - timedelta(days=3)).isoformat()
+        meta = {'must_change_password': True, 'temp_password_issued_at': issued}
+        get = mock.Mock(status_code=200, json=lambda: {'user_metadata': dict(meta)})
+        put = mock.Mock(status_code=200)
+        with mock.patch('apps.courses.management.commands.expire_temp_passwords'
+                        '.http_requests.get', return_value=get), \
+                mock.patch('apps.courses.management.commands.expire_temp_passwords'
+                           '.http_requests.put', return_value=put) as put_call:
+            call_command('expire_temp_passwords')
+        rotated_urls = [c.args[0] for c in put_call.call_args_list]
+        self.assertEqual(len(rotated_urls), 2)
+        self.assertTrue(any('sc-oa' in u for u in rotated_urls))
+        self.assertTrue(any('sc-rev' in u for u in rotated_urls))
+        self.assertFalse(any('sc-null' in u for u in rotated_urls))

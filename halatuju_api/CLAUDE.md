@@ -550,7 +550,63 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-07, after the gift setup flow)
+## Next Sprint (as of 2026-09-07, after Org Config Sprint C — the reviewers & staff clocks)
+
+**SHIPPED.** Worktree `.worktrees/org-config-c`, branch `feat/org-config-sprint-c` (base = the
+gift-setup-flow close, `cd9c0959`). **NO MIGRATION** — registry entries + wired read sites + rows
+on the existing tab, the roadmap's promised shape. Retro
+`docs/retrospective-2026-09-07-org-config-sprint-c.md`; roadmap
+`docs/plans/2026-09-06-org-configuration-roadmap.md` (A ✔ B ✔ C ✔ · D/E/F open).
+Merged tree (carries the concurrent approve-lockout cockpit fix `260927dc`):
+pytest **5924** (full `apps/` suite, +10; `test_org_config.py` 35 → 45); jest **1749** (+4 of
+those are this sprint's); lint **0**; tsc **24** (baseline); i18n **4816 × 3** (+12 keys are
+this sprint's, ms/ta first drafts); `next build` clean; `makemigrations --check` clean. Four bite-checks landed (sweep de-orged,
+invitation TTL unthreaded, cron cutoff re-globalled, FE standing rule re-hardcoded).
+
+**Five settings joined the tab under a new Reviewers & staff group** (all in days):
+`review_sla_days` 10 · `review_nudge_soon_days` 2 · `review_escalate_grace_days` 4 ·
+`temp_password_ttl_days` 7 · `admin_dormant_days` 90.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **The three verdict clocks resolve per APPLICATION** (`owning_organisation`) at all three read
+  sites — `send_review_nudges` (with an `org_days_cache` beside its existing `org_admin_cache`),
+  the reviewer interview reminder's verdict-due line, and the review-by date in the assignment
+  email (`services.assign_reviewer`). No SQL window this sprint: none of these sweeps carries its
+  cutoff in the queryset, so per-row Python reads are complete. Do not hoist the reads back to
+  one module-level value — that un-does the per-org resolution.
+- **⚠ TWO DEAD DEFAULTS WERE RETIRED, AND THE DELEGATION IS WHAT KEEPS THEM DEAD.** `services.py`
+  said the SLA default was 7 while the sweep said 10; the sweep's grace default was 3 while
+  base.py says 4. Neither ever fired (base.py always defines the settings) — but they were drift
+  waiting for the day a base.py line moved. Every reader now goes through the ONE registry
+  delegation; a disagreement is no longer expressible. Do not re-add a per-reader getattr.
+- **⚠ ONE TEMP-PASSWORD CLOCK, FOUR READERS THAT MUST REFUSE TOGETHER:** the invitation's own
+  expiry (`invitations.staff_ttl_days(organisation)`), the rotate-dead cron (per-admin cutoff on
+  the admin's `owning_organisation`), the Resend reset, and the login gate. **The login page's
+  hard-coded `7 * 24 * 60 * 60 * 1000` mirror is GONE** — the role payload serves the caller's
+  resolved `temp_password_ttl_days` and the check is the pure `invitations.tempPasswordExpired`,
+  which **fails OPEN on an unreadable date** (the cron is the hard boundary; the FE gate exists
+  only for the clearer message — do not make it refuse on parse failure).
+- **⚠ `admin_dormant_days` IS SERVED PER ROW, NOT PER PAGE.** The rule used to live ONLY in the
+  browser (`DORMANT_DAYS = 90`; the backend helper had zero callers). `AdminListView` resolves it
+  per staff row because a super's list spans organisations — one page-wide number would mislabel
+  other tenants' people. `standingOf` reads `a.dormant_days`; the FE constant is only the
+  fallback for a payload predating the field. Do not collapse it to one value on the payload.
+- **This was the first exercise of the serve-don't-mirror rule** that Sprint D's
+  `interviewSlots.ts` warning states — the pattern is now proven twice (role payload, list rows).
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):** Organisation →
+Settings → Configuration now shows THREE groups — the new **Reviewers & staff** has 5 rows, every
+box blank with the platform default named underneath. Change nothing unless you want to. ms/ta
+strings are my first drafts.
+
+**▶ NEXT = the roadmap's remaining sprints, owner picks the order:** D interviews (⚠ its
+`interviewSlots.ts` FE mirror must be SERVED — the pattern this sprint proved; it also settles
+the 30-vs-45 duration fallback inconsistency) · E documents · F agreements. The gift-setup-flow
+close's candidates (TD-229 contract-per-gift, TD-230/Sabah apply link) still stand — see the
+superseded block below. Feature switches, per-GIFT values and platform internals stay OUT of
+this tab (binding rules; re-argue only with the owner).
+
+## Superseded — previous Next Sprint (as of 2026-09-07, after the gift setup flow)
 
 **SHIPPED AND DEPLOYED.** `main` at **`ac46f7a6`**; both Cloud Builds SUCCESS; serving
 **halatuju-api-00982-2cx** / **halatuju-web-00833-qq2**. All public routes 200; no error logs.

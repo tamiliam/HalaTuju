@@ -112,4 +112,9 @@ engine and the tab already exist — a later sprint is registry entries + wired 
       `feat/org-config-sprint-b`; the four student-comms settings + the deferred
       `sponsor_email_max_cards`, threaded through the sponsor email senders; retro
       `docs/retrospective-2026-09-07-org-config-sprint-b.md`)
-- [ ] C · [ ] D · [ ] E · [ ] F
+- [x] Sprint C — SHIPPED 2026-09-07 (worktree `.worktrees/org-config-c`, branch
+      `feat/org-config-sprint-c`; the five reviewers-&-staff clocks; the temp-password TTL and
+      dormancy threshold are now SERVED to the FE — the first exercise of the rule Sprint D's
+      `interviewSlots.ts` warning states; retro
+      `docs/retrospective-2026-09-07-org-config-sprint-c.md`)
+- [ ] D · [ ] E · [ ] F

@@ -331,11 +331,17 @@ class AdminRoleView(PartnerAdminMixin, APIView):
         # reviewer_profile_complete: gates the reviewer's first-login landing (they stay on
         # /admin/profile until their compulsory fields are filled). True for every non-reviewer.
         from apps.scholarship.reviewer_onboarding import reviewer_profile_complete
+        from . import org_config
         return Response({
             'is_admin': True,
             'is_super_admin': admin.is_super_admin,
             'role': 'super' if admin.is_super else admin.role,
             'admin_id': admin.id,
+            # The login page's temp-password gate reads THIS, never a hard-coded mirror of the
+            # TTL (Org Config Sprint C) — the served number is resolved for the caller's own
+            # organisation, so an org that shortens its TTL shortens the gate too.
+            'temp_password_ttl_days': org_config.value(
+                admin.owning_organisation, 'temp_password_ttl_days'),
             # `org_name` is the REFERRAL org (None for an org_admin). The Administration
             # panel's org section keys off `owning_org_*` — the B40 tenant this staff
             # member administers (their access boundary), NOT the referral org.
@@ -946,6 +952,20 @@ class AdminListView(PartnerAdminMixin, APIView):
             )
         admins = list(admins)
         invites = _invitations_for(admins)
+        # Dormancy threshold per ROW, not per page (Org Config Sprint C): a super's list spans
+        # organisations, and each person reads as dormant by THEIR org's `admin_dormant_days`.
+        # The FE (`invitations.standingOf`) uses the served number; its constant is only the
+        # fallback for a payload predating this field. Cached per org id.
+        from . import org_config
+        _dormant_cache = {}
+
+        def _dormant_for(a):
+            org_id = a.owning_organisation_id
+            if org_id not in _dormant_cache:
+                _dormant_cache[org_id] = org_config.value(
+                    a.owning_organisation, 'admin_dormant_days')
+            return _dormant_cache[org_id]
+
         data = []
         for a in admins:
             data.append({
@@ -975,6 +995,7 @@ class AdminListView(PartnerAdminMixin, APIView):
                 # having ignored their invitation.
                 'first_seen_at': a.first_seen_at.isoformat() if a.first_seen_at else None,
                 'last_seen_at': a.last_seen_at.isoformat() if a.last_seen_at else None,
+                'dormant_days': _dormant_for(a),
                 # The invitation behind this person, and how far it got. Computed server-side so
                 # the screen renders a word rather than re-deriving the rule — the same split
                 # `_reviewer_dict` / `reviewerTable.ts` uses.
