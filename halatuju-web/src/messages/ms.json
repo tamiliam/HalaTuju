@@ -5652,9 +5652,22 @@
         "nameRequired": "Please give the programme a name.",
         "hasOpenYear": "This programme is taking applications. Close its intake year first.",
         "noOrg": "Your account is not tied to an organisation.",
-        "generic": "That did not work. Nothing was changed."
+        "generic": "That did not work. Nothing was changed.",
+        "hasIntakeYears": "Hadiah ini mempunyai tahun pengambilan. Padamkannya dahulu, atau kekalkan hadiah ini — tahun itu memegang syarat dan sebarang permohonan di bawahnya.",
+        "hasApplications": "Pelajar telah memohon kepada hadiah ini, jadi ia tidak boleh dipadam.",
+        "hasBenefactors": "Penderma telah diterima ke dalam hadiah ini, jadi ia tidak boleh dipadam.",
+        "hasMoney": "Wang telah direkodkan terhadap hadiah ini, jadi ia tidak boleh dipadam.",
+        "hasPaymentRuns": "Hadiah ini telah membayar pelajar, jadi ia tidak boleh dipadam.",
+        "inUse": "Sesuatu masih bergantung pada hadiah ini, jadi ia tidak boleh dipadam.",
+        "confirmMismatch": "Itu tidak sepadan dengan kod ringkas. Tiada apa-apa yang dipadam."
       },
-      "openSettings": "Buka tetapannya"
+      "openSettings": "Buka tetapannya",
+      "delete": "Padam",
+      "deleteTitle": "Padam {name}?",
+      "deleteBody": "Ini membuang program hadiah itu dan tetapannya — syaratnya dan apa yang dimintanya daripada pelajar. Ia tidak boleh dibatalkan.",
+      "deleteKeeps": "Jemputan, sumber dan penyemak yang anda hadkan kepada hadiah ini akan dikekalkan — ia kembali meliputi semua hadiah.",
+      "deleteConfirmLabel": "Taip {code} untuk mengesahkan",
+      "deleteCta": "Padam program hadiah ini"
     },
     "years": {
       "subtitle": "one round of students per year.",

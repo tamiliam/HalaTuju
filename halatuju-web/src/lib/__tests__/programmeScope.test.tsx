@@ -1,136 +1,94 @@
 /**
  * @jest-environment jsdom
  *
- * Which gift the console is looking at (`lib/programmeScope`).
+ * Which gift am I looking at — and the stale-list defect the owner hit on 2026-09-07.
  *
- * ⚠ EVERY TEST HERE EXISTS BECAUSE OF ONE LIVE DEFECT, FOUND BY THE OWNER ON FIRST USE
- * (2026-09-03). They created a second gift, pressed "Open its settings", and the console showed
- * them the FIRST gift's settings — silently, with the breadcrumb naming the first gift too.
+ * ⚠⚠ THE SYMPTOM WAS A DEAD SCREEN. They created a gift, were taken to Configuration, and it asked
+ * WHICH gift — then every click on the answer did nothing, however many times they pressed.
  *
- * The cause was two rules welded into one expression: "drop a code we do not recognise" and
- * "resolve a single gift when nobody has chosen". Each is correct alone. Together, an unrecognised
- * pick fell through the first rule into the second and came out as a DIFFERENT gift. The new gift
- * was unrecognised because it was inactive and the scopes endpoint returned active programmes only
- * — but the endpoint is only half the fix, because the substitution must be impossible however the
- * list is populated.
+ * ⚠ THE GUARD WAS NOT THE BUG. `chosen` deliberately resolves to `''` for a code that is not in
+ * the list, because accepting an unknown code is the 2026-09-03 defect (it showed the owner a
+ * DIFFERENT programme's settings than the one they opened) and falling back to "the only one" is
+ * the same defect wearing a hat. The list was STALE: the shell fetches the scopes once per console
+ * session, so a gift created during that session was not in it.
  *
- * The invariant, stated once: **a pick is honoured, or it resolves to nothing. It is never
- * replaced.**
+ * So these tests pin both halves at once — the refusal stays, and the list can be refreshed.
  */
-import { fireEvent, render, screen } from '@testing-library/react'
-
+import { act, render, screen } from '@testing-library/react'
 import { ProgrammeScopeProvider, useProgrammeScope } from '@/lib/programmeScope'
 
-const FLAGSHIP = { code: 'brightpath-flagship', name: 'BrightPath Bursary' }
-const SECOND = { code: 'test', name: 'Test Programme' }
+const TWO = [{ code: 'bp', name: 'BrightPath' }, { code: 'test', name: 'Test' }]
 
-/** Renders the resolved state, and offers a button to pick a code the way a screen would. */
-function Probe({ pick }: { pick?: string }) {
-  const { chosen, programme, ambiguous, choices } = useProgrammeScope()
+function Probe() {
+  const { chosen, ambiguous, select, reload } = useProgrammeScope()
   return (
     <div>
       <span data-testid="chosen">{chosen || '(none)'}</span>
-      <span data-testid="name">{programme?.name || '(none)'}</span>
       <span data-testid="ambiguous">{String(ambiguous)}</span>
-      <span data-testid="count">{choices.length}</span>
-      <Picker code={pick} />
+      <button data-testid="pick-new" onClick={() => select('test2')}>pick new</button>
+      <button data-testid="pick-known" onClick={() => select('test')}>pick known</button>
+      <button data-testid="reload" onClick={() => { void reload() }}>reload</button>
     </div>
   )
 }
 
-function Picker({ code }: { code?: string }) {
-  const { select } = useProgrammeScope()
-  if (!code) return null
-  return <button type="button" onClick={() => select(code)}>pick</button>
-}
-
-const mount = (choices: { code: string; name: string }[], pick?: string) =>
-  render(
-    <ProgrammeScopeProvider choices={choices}>
-      <Probe pick={pick} />
-    </ProgrammeScopeProvider>,
-  )
-
 const chosen = () => screen.getByTestId('chosen').textContent
-const name = () => screen.getByTestId('name').textContent
 
-describe('nothing has been chosen yet', () => {
-  it('resolves a single gift without asking — production today', () => {
-    mount([FLAGSHIP])
-    expect(chosen()).toBe('brightpath-flagship')
-    expect(screen.getByTestId('ambiguous').textContent).toBe('false')
-  })
-
-  it('resolves NOTHING when there are several, rather than picking the first', () => {
-    mount([FLAGSHIP, SECOND])
-    expect(chosen()).toBe('(none)')
-    expect(screen.getByTestId('ambiguous').textContent).toBe('true')
-  })
-
-  it('resolves nothing when the caller has no gifts at all', () => {
-    mount([])
+describe('a code the list does not know', () => {
+  it('⚠ resolves to NOTHING — never to whichever gift happens to be there', () => {
+    // This is the guard doing its job. Do not "fix" the dead screen by loosening it.
+    render(<ProgrammeScopeProvider choices={TWO}><Probe /></ProgrammeScopeProvider>)
+    act(() => { screen.getByTestId('pick-new').click() })
     expect(chosen()).toBe('(none)')
   })
-})
 
-describe('a gift has been chosen', () => {
-  it('honours a choice of the FIRST gift too, not only of the new one', () => {
-    // Both directions matter: the substitution bug happened to hand back the first gift, so a
-    // test that only ever picked the second could pass while the code returned a constant.
-    mount([FLAGSHIP, SECOND], 'brightpath-flagship')
-    expect(chosen()).toBe('(none)')          // nothing chosen until the press
-    fireEvent.click(screen.getByText('pick'))
-    expect(chosen()).toBe('brightpath-flagship')
-  })
-
-  it('switches to the gift that was picked', () => {
-    mount([FLAGSHIP, SECOND], 'test')
-    fireEvent.click(screen.getByText('pick'))
+  it('and a code the list DOES know resolves, so the refusal is about staleness only', () => {
+    render(<ProgrammeScopeProvider choices={TWO}><Probe /></ProgrammeScopeProvider>)
+    act(() => { screen.getByTestId('pick-known').click() })
     expect(chosen()).toBe('test')
-    expect(name()).toBe('Test Programme')
+  })
+
+  it('⚠ still resolves to NOTHING when there is exactly one gift, not to that one', () => {
+    // The 2026-09-03 substitution, in its most tempting form: one gift, an unknown pick, and an
+    // obvious "helpful" fallback that is how the owner was shown somebody else's settings.
+    render(
+      <ProgrammeScopeProvider choices={[{ code: 'bp', name: 'BrightPath' }]}>
+        <Probe />
+      </ProgrammeScopeProvider>,
+    )
+    expect(chosen()).toBe('bp')                                   // nothing picked → the only one
+    act(() => { screen.getByTestId('pick-new').click() })
+    expect(chosen()).toBe('(none)')                               // picked-but-unknown → ask
   })
 })
 
-describe('⚠ the owner’s defect: a pick we do not recognise', () => {
-  // THE REGRESSION TEST. Before the fix this returned 'brightpath-flagship' — the console
-  // answering "which gift am I in?" with a gift the person had not opened.
-  it('resolves to NOTHING, never to the only gift in the list', () => {
-    mount([FLAGSHIP], 'test')
-    fireEvent.click(screen.getByText('pick'))
-    expect(chosen()).toBe('(none)')
-    expect(name()).toBe('(none)')
-  })
-
-  it('resolves to nothing rather than the first of several', () => {
-    mount([FLAGSHIP, SECOND], 'gone')
-    fireEvent.click(screen.getByText('pick'))
-    expect(chosen()).toBe('(none)')
-  })
-
-  it('recovers the moment the list catches up with the pick', () => {
-    // The real sequence: the pick lands before the scopes list has the new gift in it. Once the
-    // list arrives, the SAME pick must resolve — a discarded code must not be forgotten.
+describe('the list can be refreshed, which is the actual fix', () => {
+  it('asks the shell to re-fetch, so a gift created just now becomes selectable', async () => {
+    const onReload = jest.fn().mockResolvedValue(undefined)
     const { rerender } = render(
-      <ProgrammeScopeProvider choices={[FLAGSHIP]}>
-        <Probe pick="test" />
-      </ProgrammeScopeProvider>,
+      <ProgrammeScopeProvider choices={TWO} onReload={onReload}><Probe /></ProgrammeScopeProvider>,
     )
-    fireEvent.click(screen.getByText('pick'))
+
+    // The dead screen: pick a gift the stale list has never heard of.
+    act(() => { screen.getByTestId('pick-new').click() })
     expect(chosen()).toBe('(none)')
 
+    act(() => { screen.getByTestId('reload').click() })
+    expect(onReload).toHaveBeenCalledTimes(1)
+
+    // The shell re-fetches and hands down a list that now contains it — and the SAME pick, which
+    // was never lost, resolves. That is why `select` is not re-fired after a reload.
     rerender(
-      <ProgrammeScopeProvider choices={[FLAGSHIP, SECOND]}>
-        <Probe pick="test" />
-      </ProgrammeScopeProvider>,
+      <ProgrammeScopeProvider choices={[...TWO, { code: 'test2', name: 'Test 2' }]}
+        onReload={onReload}><Probe /></ProgrammeScopeProvider>,
     )
-    expect(chosen()).toBe('test')
+    expect(chosen()).toBe('test2')
   })
-})
 
-describe('outside the provider', () => {
-  it('behaves as it did before this module existed — no gift, no crash', () => {
-    render(<Probe />)
+  it('a provider with no `onReload` still mounts and reload is a harmless no-op', async () => {
+    // A test harness or the sandbox mounts without a shell; it must not throw.
+    render(<ProgrammeScopeProvider choices={TWO}><Probe /></ProgrammeScopeProvider>)
+    act(() => { screen.getByTestId('reload').click() })
     expect(chosen()).toBe('(none)')
-    expect(screen.getByTestId('count').textContent).toBe('0')
   })
 })

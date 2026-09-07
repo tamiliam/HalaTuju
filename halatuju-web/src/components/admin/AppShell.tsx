@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { getPendingSponsorCount, getAdminScopes, type AdminScopes } from '@/lib/admin-api'
 import { adminSignOut } from '@/lib/admin-supabase'
@@ -82,12 +82,21 @@ export function AppShell({ children }: { children: ReactNode }) {
    */
   const [scopes, setScopes] = useState<AdminScopes>({ organisations: [], programmes: [] })
   const [selectedOrg, setSelectedOrg] = useState('')
-  useEffect(() => {
+  // ⚠ EXTRACTED SO IT CAN BE RE-RUN. It used to be an inline effect on [token, locale],
+  // i.e. fetched ONCE per console session — so a gift created during that session was
+  // missing from this list, `programmeScope` refused to resolve the unknown code (correctly),
+  // and the Configuration screen asked which gift forever with every click a no-op. Reported
+  // by the owner on first real use, 2026-09-07. The list was stale; the guard was right.
+  const loadScopes = useCallback(async () => {
     if (!token) return
-    getAdminScopes(locale, { token })
-      .then(setScopes)
-      .catch(() => { /* furniture — never block the shell */ })
+    try {
+      setScopes(await getAdminScopes(locale, { token }))
+    } catch {
+      /* furniture — never block the shell */
+    }
   }, [token, locale])
+
+  useEffect(() => { void loadScopes() }, [loadScopes])
 
   const programmeChoices = useMemo(
     () => scopes.programmes.map((p) => ({ code: p.code, name: p.name, isActive: p.is_active })),
@@ -211,7 +220,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const hrefOf = (id: string) => utility?.items.find((i) => i.id === id)?.href
 
   return (
-    <ProgrammeScopeProvider choices={programmeChoices}>
+    <ProgrammeScopeProvider choices={programmeChoices} onReload={loadScopes}>
     <div className="flex min-h-screen flex-col bg-ground-50">
       <Topbar
         orgName={role?.owning_org_name ?? role?.org_name}
