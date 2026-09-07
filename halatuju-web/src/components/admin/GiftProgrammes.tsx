@@ -66,13 +66,14 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
               // Why a gift cannot be deleted, named. Each is a relation the model PROTECTS: the
               // gift has become something, and the reader is owed which thing rather than a
               // blanket "that did not work".
-              : c === 'has_intake_years' ? 'hasIntakeYears'
-                : c === 'has_applications' ? 'hasApplications'
-                  : c === 'has_benefactors' ? 'hasBenefactors'
-                    : c === 'has_money' ? 'hasMoney'
-                      : c === 'has_payment_runs' ? 'hasPaymentRuns'
-                        : c === 'in_use' ? 'inUse'
-                          : c === 'confirm_mismatch' ? 'confirmMismatch' : 'generic'
+              // ⚠ AN INTAKE YEAR IS NOT ONE OF THEM (owner, 2026-09-07) — students hold a gift, a
+              // year does not, and an empty year is deleted along with it.
+              : c === 'has_applications' ? 'hasApplications'
+                : c === 'has_benefactors' ? 'hasBenefactors'
+                  : c === 'has_money' ? 'hasMoney'
+                    : c === 'has_payment_runs' ? 'hasPaymentRuns'
+                      : c === 'in_use' ? 'inUse'
+                        : c === 'confirm_mismatch' ? 'confirmMismatch' : 'generic'
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setError('')
@@ -238,6 +239,16 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
               {t('admin.programmes.deleteTitle', { name: deleting.name_en })}
             </h2>
             <p className="mt-2 text-sm text-ground-700">{t('admin.programmes.deleteBody')}</p>
+            {/* ⚠ SAY THAT THE YEARS GO, AND SAY HOW MANY. The years are the one thing being
+                removed that the person cannot see from this dialog, and since 2026-09-07 they no
+                longer block the delete — so silence here would mean somebody presses Delete on a
+                gift and quietly loses three years of rules they had set up. Shown only when there
+                is at least one; a gift with none needs no sentence about none. */}
+            {deleting.intake_years > 0 && (
+              <p className="mt-2 text-sm text-ground-700" data-testid="delete-years-note">
+                {t('admin.programmes.deleteYears', { count: String(deleting.intake_years) })}
+              </p>
+            )}
             <div className="mt-3">
               <InfoBox kind="warning">{t('admin.programmes.deleteKeeps')}</InfoBox>
             </div>

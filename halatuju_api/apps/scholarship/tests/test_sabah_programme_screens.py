@@ -340,10 +340,16 @@ class TestDeletingAGift(_Case):
     """Deleting a gift programme (owner request, live use 2026-09-07).
 
     ⚠⚠ THE RULE IS ALREADY WRITTEN IN THE MODEL, AND THE ENDPOINT ONLY SURFACES IT. Every relation
-    that means a gift has BECOME something is `on_delete=PROTECT` — intake years, applications, the
-    benefactors accepted into it, money recorded against it, payment runs. So the honest line is:
-    **a gift that has ever taken a student or a ringgit cannot be deleted.** What can be deleted is
-    the one somebody created by mistake a minute ago.
+    that means a gift has BECOME something is `on_delete=PROTECT` — applications, the benefactors
+    accepted into it, money recorded against it, payment runs. So the honest line is: **a gift that
+    has ever taken a student or a ringgit cannot be deleted.** What can be deleted is the one
+    somebody created by mistake a minute ago.
+
+    ⚠⚠ AN INTAKE YEAR IS NOT ON THAT LIST, AND ITS ABSENCE IS THE OWNER'S RULING (2026-09-07):
+    *"I don't [want] the ability to delete a gift programme that has students, and not merely intake
+    years."* It WAS on the list, checked first, and that made a gift created by mistake and given
+    one stray year permanent — the year could not be deleted either (TD-232). An empty year now goes
+    with the gift. A year holding a student refuses, as `has_applications`.
 
     These tests are the reason the refusal NAMES what is holding it. The database would refuse
     either way; a person told "that did not work" learns nothing and presses again.
@@ -354,6 +360,22 @@ class TestDeletingAGift(_Case):
         self.spare = Programme.objects.create(
             organisation=self.org_a, code='sab-a-spare', name_en='A Spare', is_active=False)
         self.url = f'{PROGRAMMES}{self.spare.id}/'
+
+    def _year(self, code, year):
+        return ScholarshipCohort.objects.create(
+            programme=self.spare, owning_organisation=self.org_a, code=code,
+            name=f'Spare {year}', year=year, is_active=True, is_open=False)
+
+    def _student_in(self, cohort, suffix):
+        """One submitted application under `cohort` — the thing that actually holds a gift."""
+        from apps.courses.models import StudentProfile
+        from apps.scholarship.models import ScholarshipApplication
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'sab-del-{suffix}', name='Priya Devi',
+            household_income=1200, household_size=3)
+        return ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, status='profile_complete',
+            notify_email=f'{suffix}@example.invalid')
 
     # ── the typed confirmation ───────────────────────────────────────────────────────────────
 
@@ -375,14 +397,44 @@ class TestDeletingAGift(_Case):
 
     # ── what makes a gift undeletable ────────────────────────────────────────────────────────
 
-    def test_an_intake_year_holds_it_and_the_refusal_SAYS_SO(self):
-        ScholarshipCohort.objects.create(
-            programme=self.spare, owning_organisation=self.org_a, code='sab-a-spare-2027',
-            name='Spare 2027', year=2027, is_active=True, is_open=False)
+    def test_an_EMPTY_intake_year_GOES_WITH_the_gift(self):
+        """⚠ THE OWNER'S RULING, AND THE REVERSE OF WHAT SHIPPED FIRST (2026-09-07). A year on its
+        own is the rules somebody typed a minute ago. Blocking on it made a gift created by mistake
+        permanent, because a year cannot be deleted on its own either (TD-232)."""
+        self._year('sab-a-spare-2027', 2027)
+        self._year('sab-a-spare-2028', 2028)
+        r = self._delete(self.admin_a, self.url, {'confirm': 'delete sab-a-spare'})
+        self.assertEqual(r.status_code, 204)
+        self.assertFalse(Programme.objects.filter(pk=self.spare.pk).exists())
+        self.assertFalse(ScholarshipCohort.objects.filter(code__startswith='sab-a-spare-').exists())
+
+    def test_a_YEAR_WITH_A_STUDENT_refuses_and_BOTH_survive(self):
+        """The line the owner drew: students, not years. Nothing is half-deleted — the `atomic`
+        block is why the year is still there after the refusal."""
+        year = self._year('sab-a-spare-2027', 2027)
+        self._student_in(year, 'held')
         r = self._delete(self.admin_a, self.url, {'confirm': 'delete sab-a-spare'})
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.data['code'], 'has_intake_years')
+        self.assertEqual(r.data['code'], 'has_applications')
         self.assertEqual(r.data['count'], 1)
+        self.assertTrue(Programme.objects.filter(pk=self.spare.pk).exists())
+        self.assertTrue(ScholarshipCohort.objects.filter(pk=year.pk).exists())
+
+    def test_a_student_reached_ONLY_through_the_cohort_still_holds_it(self):
+        """⚠ THE SET-ONCE COLUMN IS WHY THE QUERY REACHES THROUGH THE COHORT.
+        `ScholarshipApplication.programme` is copied from the cohort at first save and never
+        rewritten, so a cohort moved between gifts leaves its old applications pointing at the OLD
+        gift. Filtering on the column alone would call this gift empty while its own year still
+        held somebody — and the database's `PROTECT` would refuse after the phrase was typed out in
+        full. The `.update()` below is how that stale column is reproduced without a save."""
+        from apps.scholarship.models import ScholarshipApplication
+        year = self._year('sab-a-spare-2027', 2027)
+        app = self._student_in(year, 'stale')
+        ScholarshipApplication.objects.filter(pk=app.pk).update(programme=self.prog_a)
+
+        r = self._delete(self.admin_a, self.url, {'confirm': 'delete sab-a-spare'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'has_applications')
         self.assertTrue(Programme.objects.filter(pk=self.spare.pk).exists())
 
     def test_a_gift_with_nothing_attached_goes(self):
@@ -447,20 +499,23 @@ class TestDeletingAGift(_Case):
         self.assertIsNone(by_code['sab-a-spare']['delete_blocked_by'])
         self.assertEqual(by_code['sab-a-spare']['delete_blocked_count'], 0)
 
-        ScholarshipCohort.objects.create(
-            programme=self.spare, owning_organisation=self.org_a, code='sab-a-spare-2028',
-            name='Spare 2028', year=2028, is_active=True, is_open=False)
+        # ⚠ AN EMPTY YEAR MUST LEAVE THE BUTTON LIVE. This is the assertion that would fail if
+        # anybody put `has_intake_years` back into the blocker (owner ruling, 2026-09-07).
+        year = self._year('sab-a-spare-2028', 2028)
         row = {p['code']: p for p in self._get(self.admin_a, PROGRAMMES).data['programmes']}
-        self.assertEqual(row['sab-a-spare']['delete_blocked_by'], 'has_intake_years')
+        self.assertEqual(row['sab-a-spare']['intake_years'], 1)
+        self.assertIsNone(row['sab-a-spare']['delete_blocked_by'])
+
+        self._student_in(year, 'row')
+        row = {p['code']: p for p in self._get(self.admin_a, PROGRAMMES).data['programmes']}
+        self.assertEqual(row['sab-a-spare']['delete_blocked_by'], 'has_applications')
         self.assertEqual(row['sab-a-spare']['delete_blocked_count'], 1)
 
     def test_what_the_row_SAYS_and_what_the_delete_REFUSES_are_the_same_answer(self):
         """⚠ ONE FUNCTION, TWO READERS. Two copies of "what holds a gift" would drift, and the
         drift shows up as the worst shape there is: a button that looked safe, a phrase typed out
         in full, and only then a refusal. This is the test that keeps them welded."""
-        ScholarshipCohort.objects.create(
-            programme=self.spare, owning_organisation=self.org_a, code='sab-a-spare-2029',
-            name='Spare 2029', year=2029, is_active=True, is_open=False)
+        self._student_in(self._year('sab-a-spare-2029', 2029), 'weld')
 
         row = {p['code']: p for p in self._get(self.admin_a, PROGRAMMES).data['programmes']}
         said = row['sab-a-spare']['delete_blocked_by']
