@@ -552,10 +552,23 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-09, after the gift code + apply link)
 
-**SHIPPED, NOT DEPLOYED — the owner gates it, AND THERE IS A MIGRATION.** Worktree
-`.worktrees/gift-code`, branch `feat/gift-code-alias`, base `8dcd2310`. api + web.
-**⚠ MIGRATION `scholarship/0153` — A REAL NEW TABLE. MIGRATE-FIRST, WITH RLS** (unlike `0152`,
-which was choices-only and needed a ledger row alone). Retro
+**DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`91f6b96c`**; BOTH Cloud Builds SUCCESS on
+`91f6b96` (Python changed, so both triggers fired — as expected); serving
+**halatuju-api-01005-vth** / **halatuju-web-00863-9qm** (read from
+`status.latestReadyRevisionName`, never `status.traffic[0]`). All public routes 200,
+`Server: Google Frontend`; the api's intake endpoint 200; the programmes endpoint **401 (gated,
+not 500)**; **no api ERROR logs since the deploy**.
+**⚠ MIGRATION `scholarship/0153` WAS APPLIED MIGRATE-FIRST, BEFORE THE PUSH** — a REAL new table
+(unlike `0152`, which was choices-only and needed a ledger row alone). Verified after: the table
+exists with **RLS ON and exactly one `service_role` policy**, 0 rows; the Security Advisor reports
+**no new finding** (it is absent from the rls-enabled-no-policy list); ledger reconciled at
+**scholarship 153/153, courses 74/74**.
+**The served admin bundle was READ BACK** (2.09 MB across 22 chunks): it carries "Copy apply link",
+"Change the short code", "The link applicants follow today", "old short code keeps working" and
+"Link copied" — **and no longer carries "cannot be changed after creation"** in English or Malay.
+That last pair is an ABSENCE check: a presence grep cannot verify a correction.
+
+Was worktree `.worktrees/gift-code`, branch `feat/gift-code-alias`, base `8dcd2310`. api + web. Retro
 `docs/retrospective-2026-09-09-gift-code-apply-link.md`; decisions ×2; lessons ×5.
 Gates, ALL RUN INSIDE THE WORKTREE: pytest **6059** (+25); jest **1903** (+11); tsc **24**
 (baseline); lint **0 Errors**; i18n **4910 × 3** (+9); `next build` exit 0;
@@ -609,7 +622,7 @@ flow, and the first match was replaced. The standing rule (write the original by
 site injected into. Only the suite staying red caught it. **Re-run after every restore and expect
 GREEN; a still-red suite means the restore missed.**
 
-**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0153` MIGRATE-FIRST** via Supabase MCP —
+**▶ THE DEPLOY IS DONE. For the record, the shape was:** (1) apply **`scholarship/0153` MIGRATE-FIRST** via Supabase MCP —
 hand-written Postgres DDL **including `ENABLE ROW LEVEL SECURITY` + the one `service_role` policy**
 is in the migration's own docstring — and record its `django_migrations` row BEFORE the push;
 (2) confirm the Security Advisor reports no new finding; (3) push (**api + web** — Python changed,
