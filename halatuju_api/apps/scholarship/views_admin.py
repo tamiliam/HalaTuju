@@ -136,6 +136,28 @@ class _AdminBase(PartnerAdminMixin, APIView):
         org_id = admin.owning_organisation_id if admin is not None else None
         return qs.filter(**{field: org_id})
 
+    def _programme_by_code(self, admin, code):
+        """Resolve a `?programme=<code>` narrowing INSIDE the caller's own organisation.
+
+        ⚠ THIS IS NOT A FENCE AND MUST NOT BECOME ONE. The organisation wall stays
+        `_org_scoped` / `_org_allows`; this only says WHICH of the caller's own gifts a list
+        was asked to narrow to. It is derived from the same `owning_organisation` the fence
+        uses, so it can never widen anything — a client that omits the parameter reaches
+        exactly the rows the fence already allowed.
+
+        Returns None for an unknown code AND for another tenant's code — the caller turns both
+        into a 404, never a 403, so a cross-tenant code cannot confirm that gift exists.
+        `_ProgrammeScopedBase._programmes_for` runs the same query, but its ROLES gate is
+        org_admin-only; the Applications list is read by reviewers and admins too, so the
+        lookup lives here where the role gate is the reading view's own.
+        """
+        from .models import Programme
+        qs = Programme.objects.all()
+        if not self.has_role(admin, 'super'):
+            org_id = admin.owning_organisation_id if admin is not None else None
+            qs = qs.filter(organisation_id=org_id) if org_id else qs.none()
+        return qs.filter(code=code).first()
+
     def _org_allows(self, admin, app):
         """Row-level org fence: True if this admin's organisation owns ``app``.
         Super is global; everyone else must match owning_organisation. A cross-org
@@ -279,6 +301,25 @@ class _AdminBase(PartnerAdminMixin, APIView):
 
 
 class AdminApplicationListView(_AdminBase):
+    """The B40 Applications list.
+
+    ⚠ `?programme=<code>` NARROWS; IT DOES NOT FENCE, AND IT IS RE-FENCED SERVER-SIDE.
+    The breadcrumb's gift switcher is a DISPLAY preference (`lib/programmeScope`) — it travels as
+    an explicit request value, never as a header or a cookie, and this view resolves the code
+    inside the caller's OWN organisation before it touches an application. A client that ignores
+    the parameter reaches exactly the same rows the org fence already allowed. See
+    `AdminScopeListView`'s docstring for why that distinction is load-bearing.
+
+    ⚠ AN UNKNOWN OR CROSS-TENANT CODE IS 404, NEVER "show everything". Silently dropping an
+    unrecognised narrowing is precisely the defect this sprint fixes — a heading naming one gift
+    over another gift's applicants. The house rule elsewhere is the same: not recognised means
+    ask, never substitute.
+
+    ⚠ OMITTED IS A REAL ANSWER and it means EVERY gift this caller may see. Reading a list is not
+    deciding something, so with several gifts and no choice the honest answer is the wider one —
+    unlike the configuration screens, where a wrong silent pick would EDIT the wrong gift.
+    """
+
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
@@ -286,12 +327,27 @@ class AdminApplicationListView(_AdminBase):
         scope = self._b40_scope(admin)
         if scope == 'none':
             return self._deny_role()   # partner has no B40 Applications access
+
+        programme_f = (request.GET.get('programme') or '').strip()
+        programme = None
+        if programme_f:
+            programme = self._programme_by_code(admin, programme_f)
+            if programme is None:
+                return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
         # org-fence: _org_scoped applied immediately below (tenant wall on the list).
         qs = ScholarshipApplication.objects.select_related(
             'profile', 'cohort', 'assigned_to').order_by('-submitted_at')
         qs = self._org_scoped(qs, admin)   # tenant fence (Sprint 3a) — super sees all
         if scope == 'assigned':
             qs = qs.filter(assigned_to=admin)   # reviewer sees only their assigned applicants
+        if programme is not None:
+            # ⚠ REACH THROUGH THE COHORT TOO — the same predicate `programme_delete_blocker` uses.
+            # `ScholarshipApplication.programme` is denormalised at first save and SET ONCE, so a
+            # cohort moved between gifts leaves its old applications pointing at the OLD gift.
+            # Filtering on the column alone would show a gift's own round as empty. Both sides are
+            # single-valued FK chains, so this cannot multiply rows.
+            qs = qs.filter(Q(programme=programme) | Q(cohort__programme=programme))
         status_f = request.GET.get('status')
         bucket_f = request.GET.get('bucket')
         source_f = request.GET.get('source')   # referring org chosen at apply

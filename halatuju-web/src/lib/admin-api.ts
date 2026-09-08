@@ -1285,10 +1285,15 @@ export async function getScholarshipApplications(
     pageSize?: number
     sort?: string
     dir?: string
+    /** The gift the breadcrumb switcher is on. Omitted = every gift this caller may see —
+     *  a real answer, not a missing one. The server re-fences the code on the caller's own
+     *  organisation and 404s an unknown one; it is a narrowing, never a fence. */
+    programme?: string
   } = {},
   options?: ApiOptions
 ) {
   const q = new URLSearchParams()
+  if (filters.programme) q.set('programme', filters.programme)
   if (filters.status) q.set('status', filters.status)
   if (filters.bucket) q.set('bucket', filters.bucket)
   if (filters.source) q.set('source', filters.source)

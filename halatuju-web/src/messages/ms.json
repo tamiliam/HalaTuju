@@ -3794,6 +3794,7 @@
     "scholarship": {
       "nav": "Permohonan B40",
       "title": "Pemohon {programmeName}",
+      "titleAll": "Semua pemohon",
       "countSubtitle": "{count} pemohon",
       "loadFailed": "Tidak dapat memuatkan permohonan.",
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",

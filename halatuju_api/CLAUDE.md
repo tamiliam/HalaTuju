@@ -550,7 +550,75 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-08, after the round-state sprint)
+## Next Sprint (as of 2026-09-08, after the gift switcher)
+
+**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION.** Worktree `.worktrees/gift-switcher`,
+branch `feat/gift-switcher`. api + web. Retro `docs/retrospective-2026-09-08-gift-switcher.md`;
+decisions x2; lessons x2. Gates, ALL RUN INSIDE THE WORKTREE: pytest **5997** (+8); jest **1849**
+(+4); tsc **24** (baseline); lint **0**; i18n **4887 x 3** (+1); `next build` exit 0;
+`makemigrations --check` clean. Four bite-checks landed.
+
+**⚠⚠ THE HEADING WAS THE DEFECT, NOT THE MISSING FILTER — read this first.**
+`admin.scholarship.title` is `'{programmeName} Applicants'`, and `programmeName` is one of the five
+**BRANDING AUTO-TOKENS** `t()` injects beneath explicit call-site params — the tenant's *flagship*
+name, never the selected gift. It read "BrightPath Bursary Applicants" while the crumb said Test
+Programme, over 143 people who were not Test Programme's. **Passing `programmeName` EXPLICITLY
+shadows the auto-token**, so one string serves both readings and ms/ta needed no new key. Do not
+"tidy" that into a second key — the shadowing is the fix.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ `?programme=<code>` IS A NARROWING, NEVER A FENCE.** `_AdminBase._programme_by_code` resolves
+  it inside the caller's OWN organisation; the org wall is still `_org_scoped`. A client that omits
+  the parameter reaches exactly the rows the fence already allowed, and none can widen anything.
+  The choice travels as an EXPLICIT request value — never a header, cookie or middleware rewrite
+  (that is the 2026-07-15 surface-partition incident in a new costume).
+- **⚠ OMITTED MEANS EVERY GIFT AND IS A REAL ANSWER.** Several gifts, none chosen → list them all
+  under a neutral heading. **Deliberately unlike the Configuration tabs**, which ask: a silent pick
+  there would EDIT the wrong gift, while a list is a READ — wider is true, just less specific.
+- **⚠ UNKNOWN OR CROSS-TENANT IS 404, NEVER "show everything".** Silently dropping a narrowing the
+  caller asked for puts the wrong people under a named heading — the defect this sprint fixed. A
+  cross-tenant code is 404 and never 403, so a refusal cannot confirm another tenant's gift exists.
+- **⚠ THE FILTER REACHES THROUGH THE COHORT** — `Q(programme=p) | Q(cohort__programme=p)`, the same
+  predicate `programme_delete_blocker` uses. `ScholarshipApplication.programme` is denormalised and
+  **SET ONCE**, so a cohort moved between gifts leaves its old applications on the OLD gift; the
+  column alone would call a gift's own round empty while the delete rule refuses to delete it.
+- **⚠ THE SCOPE WAS ONE PAGE, AND THE ROUTE REGISTRY IS WHY.** Only TWO admin routes carry
+  `scope: 'programme'` — Configuration (already filtered) and Applications. Reviewers, Sources,
+  Payments and Sponsors are ORGANISATION scope and render **no gift crumb at all**, so nothing
+  there misleads today. **Do not widen this by assumption**: a reviewer's `programme` is nullable
+  and **NULL MEANS EVERY GIFT**, so a naive filter would hide the organisation-wide reviewers —
+  the same trap on sources. Each needs its own owner ruling.
+- **Switching gift resets to page 1** (a narrower set may not have page 5). Not folded into
+  `changeFilter` — the gift comes from the shell's breadcrumb, not a control on the page.
+
+**▶ AT DEPLOY: push (api + web — Python changed).** No migrate-first, no env vars, no data step.
+**Nothing a student sees changes.** BrightPath's org_admin has TWO gifts, so the first load shows
+the neutral heading over both; pressing a gift narrows and names it.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Open **Applications** with no gift chosen — the heading reads **All applicants** and lists
+   everything. It must NOT read "BrightPath Bursary Applicants".
+2. Press the gift crumb → **BrightPath Bursary**. The heading names it and the count is its own.
+3. Press **Test Programme**. The heading names THAT, and the list holds only its applicants
+   (probably none) — the empty state, not 143 people.
+4. **ms and ta are first drafts** for the one new key (`admin.scholarship.titleAll`).
+
+**▶ NEXT, and the owner has already approved the approach:** the **apply link on the gift card**
+(`/scholarship/apply?p=<code>`, per GIFT not per year, shown nowhere today) and an **editable gift
+code with the old code KEPT AS AN ALIAS**. ⚠ The alias is not optional: an unknown code resolves to
+"no open round", so a renamed gift would make every printed link tell a student **"applications
+closed"** — silent and wrong. TD-230's other half.
+
+**⚠ ALSO OPEN:** the four organisation-scope surfaces above (owner ruling per screen); the
+application DETAIL page still shows whichever gift the crumb is on (only a cross-gift direct link
+can disagree — named, not fixed); archiving a gift blocks creating a payment run for it; TD-229;
+TD-231; TD-225; TD-221.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-08, after the round-state sprint)
 
 **SHIPPED, NOT DEPLOYED — the owner gates it, and there is a MIGRATION.** Worktree
 `.worktrees/round-states`, branch `feat/round-states` (base = `origin/main` at `2af14eda`).
