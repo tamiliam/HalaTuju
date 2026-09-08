@@ -5,6 +5,7 @@ import { getCourseDataStatus, runCourseDataCheck, type CourseDataStatusResponse,
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { effectiveRole } from '@/lib/navigation'
 
 function fmtDate(iso: string | null): string | null {
@@ -172,7 +173,10 @@ export default function CourseDataDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
         <div className="bg-ground-0 rounded-lg p-6 shadow-sm border lg:col-span-2">
           <h2 className="font-semibold mb-3">{t('admin.courseData.coverage')}</h2>
-          <table className="w-full text-sm">
+          {/* Had no scroll path at all — on a phone the right-hand columns had nowhere to go.
+              `bare` because this table already sits inside the coverage card. */}
+          <TableFrame bare minWidth={420} label={t('admin.courseData.coverage')}>
+            <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-ground-500 border-b">
                 <th className="py-2 font-medium">{t('admin.courseData.source')}</th>
@@ -210,6 +214,7 @@ export default function CourseDataDashboard() {
               </tr>
             </tbody>
           </table>
+          </TableFrame>
           {coverage.uptvet_available == null && (
             <p className="text-xs text-ground-400 mt-3">{t('admin.courseData.uptvetHint')}</p>
           )}

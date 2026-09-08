@@ -47,8 +47,10 @@ beforeEach(() => {
 })
 
 /** The registry's wrapper — found via a cell, since only the wrapper carries `hidden`. */
-const registryWrapper = () =>
-  screen.getByText('Sekolah Menengah Cheras').closest('div[class*="overflow-x-auto"]')
+// Addressed by test id, not by a layout class: the element that carries `hidden` is the registry
+// PANEL, and which class happens to sit on it is incidental — it moved when the table went into
+// the shared TableFrame (the scrolling class is now on the frame's inner element).
+const registryWrapper = () => screen.getByTestId('sources-registry')
 
 describe('Sources page panels', () => {
   it('lands on Organisations with the emails card not yet mounted', async () => {

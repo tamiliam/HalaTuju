@@ -164,7 +164,7 @@ export default function AdminRequestsPage() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <h1 className="text-2xl font-bold text-ground-900">{t('admin.requests.title')}</h1>
       <p className="text-sm text-ground-500 mt-1 mb-6">{t('admin.requests.subtitle')}</p>
 

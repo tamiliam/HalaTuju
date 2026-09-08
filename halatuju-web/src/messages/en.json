@@ -3095,6 +3095,9 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "table": {
+      "scrollHint": "Swipe the table sideways to see the rest."
+    },
     "orgPage": {
       "nav": "Overview",
       "sub": "Your organisation — its people, its sponsors and its money.",
@@ -3799,6 +3802,7 @@
     "scholarship": {
       "nav": "B40 Applications",
       "title": "{programmeName} Applicants",
+      "titleAll": "All applicants",
       "countSubtitle": "{count} applicants",
       "loadFailed": "Could not load applications.",
       "showingRange": "Showing {start}–{end} of {total} applications",

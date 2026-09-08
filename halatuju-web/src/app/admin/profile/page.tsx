@@ -137,7 +137,7 @@ export default function AdminProfilePage() {
   const req = <span className="text-critical-600" aria-hidden> *</span>  // compulsory-field marker
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <h1 className="text-2xl font-bold text-ground-900 mb-1">{t('admin.profileTitle')}</h1>
 
       {gated && (

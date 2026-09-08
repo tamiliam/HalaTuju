@@ -160,6 +160,161 @@ name makes one type eligible again without re-sweeping the whole corpus.
 
 pytest **4657**; `makemigrations --check` clean. Two bite-checks landed, each injection verified.
 
+## Fix: four pages were still setting their own width, behind an early return - 2026-09-08
+
+The owner, on the sponsor detail page after the last fix: *"appears the same. Or am I looking at a
+different page?"* — the right page, and the change had never reached it.
+
+**The conversion script and the guard shared one blind spot.** Both read only the FIRST `return (`
+in a page file. A page with an early return — a loading state, a "coming soon" branch, a
+not-allowed message — hides its real root behind it, so four pages kept their own limit and the
+test that exists to catch exactly this said nothing: `sponsors/[id]` (max-w-5xl, so widening its
+route changed nothing on screen), `faq`, and `billing` twice.
+
+- All four roots are stripped. Billing also padded itself on top of the shell's own `p-4 md:p-6`,
+  which inset its left edge from every other page — the alignment complaint in miniature.
+- **The guard now reads EVERY `return (` root in the file**, and a bite-check confirms it fails
+  when a width is put back behind an early return.
+
+⚠ A guard that shares a blind spot with the change it is guarding is not a second opinion. This is
+the second time in two days that a source-level test passed a fault it was written to catch (the
+first was "does the file mention TableFrame", satisfied by an import line).
+
+## Fix: three detail pages get the wide layout - 2026-09-08
+
+The owner walked the console after the layout standard shipped and found the payment-run page and
+the B40 application page cramped. Both were forced to `reading` because they show ONE of something
+- which is not what the rule asks.
+
+- **The rule's WORDING was too narrow, and is now corrected**: "does the page lead with a TABLE?"
+  becomes "does the page lay its content out in MULTIPLE COLUMNS?". A table was only ever the
+  commonest case of the real question - across the page, or down it.
+- **`/admin/payments/<run>`** leads with an EIGHT-column table. It answered even the original rule;
+  the override was simply wrong.
+- **`/admin/scholarship/<id>`** (the B40 cockpit) has no table at all - twelve two-column cards and
+  a three-column grid - and is denser than most pages that do. ⚠ It had been **1152px** before this
+  arc, so standardising it to 900 made it NARROWER than it had ever been: a regression dressed as a
+  standard.
+- **`/admin/sponsors/<id>`** carries two tables of its own and would have been the next one spotted.
+  Changed for the same reason, unprompted.
+
+What stays `reading` genuinely runs down the page in one column: one student, one contract
+template, one reviewer. A test now pins all three widened routes against the reason they were
+widened.
+
+## The gift switcher decides what the Applications list shows - 2026-09-08
+
+The owner's item 3, on its own. The breadcrumb's gift switcher moved the crumb and filtered
+nothing, and the heading above the list named the wrong gift entirely.
+
+**THE HEADING WAS ACTIVELY WRONG, WHICH IS WHY IT WENT FIRST.** `admin.scholarship.title` is
+`'{programmeName} Applicants'`, and `programmeName` is one of the five **branding auto-tokens**
+`t()` injects - the tenant's *flagship* name, never the selected gift. So it read "BrightPath
+Bursary Applicants" while the crumb said Test Programme, over 143 people who were not Test
+Programme's. Passing `programmeName` **explicitly** shadows the auto-token, so the one string
+serves both and the ms/ta translations needed no new key. Nothing chosen drops to a neutral
+heading rather than naming a gift.
+
+- **⚠ THE LIST NOW NARROWS, AND THE SERVER RE-FENCES IT.** `?programme=<code>` on
+  `AdminApplicationListView`, resolved by `_AdminBase._programme_by_code` inside the caller's OWN
+  organisation. It is a NARROWING, never a fence: the organisation wall is still `_org_scoped`, and
+  a client that omits the parameter reaches exactly the rows the fence already allowed. The choice
+  travels as an explicit request value - never a header or a cookie, which would relocate the fence
+  into the client.
+- **⚠ OMITTED MEANS EVERY GIFT, AND THAT IS A REAL ANSWER.** Several gifts with none chosen lists
+  all of them. Deliberately unlike the Configuration tabs, which ask: those would EDIT the wrong
+  gift on a silent pick, while a list is a READ - a wider answer is true, just less specific.
+- **⚠ AN UNKNOWN OR CROSS-TENANT CODE IS 404, NEVER "show everything".** Silently dropping a
+  narrowing the caller asked for is the defect this sprint fixes, and a cross-tenant code must not
+  confirm that gift exists.
+- **⚠ THE FILTER REACHES THROUGH THE COHORT** - `Q(programme=p) | Q(cohort__programme=p)`, the same
+  predicate `programme_delete_blocker` uses. `ScholarshipApplication.programme` is denormalised and
+  **set once**, so a cohort moved between gifts leaves its old applications pointing at the OLD
+  gift; the column alone would call a gift's own round empty.
+- **⚠ THE SCOPE WAS ONE PAGE, MEASURED FROM THE ROUTE REGISTRY.** Only TWO admin routes carry
+  `scope: 'programme'` - Configuration (already filtered) and Applications (this). Reviewers,
+  Sources, Payments and Sponsors are organisation-scope and render **no gift crumb at all**, so
+  nothing there misleads today. Making them gift-aware needs a ruling per screen: a reviewer's
+  `programme` is nullable and **NULL means every gift**, so a naive filter would hide the
+  organisation-wide reviewers.
+
+No migration. api + web. pytest 5997 (+8), jest 1849 (+4), tsc 24 (baseline; one new error in the
+new test was FIXED, not waived), lint 0 Errors, i18n 4887 x 3 (+1), `next build` exit 0. Four
+bite-checks, each injection verified as landed first.
+
+## The round menu escapes the table, and Save sleeps until there is something to save - 2026-09-08
+
+Two faults the owner found on the deployed round-state screen.
+
+**THE MENU OPENED AND WAS SLICED OFF** (*"Clicking the close opens something, but it is hidden.
+There is a line below close but nothing is showing."*). Nothing was wrong with the menu: the state
+badge sits in a table whose wrapper carries `overflow-hidden` - which is there to round the corners
+over the header's fill, not to clip anything - and the panel was `absolute` inside the trigger, so
+the wrapper cut it off at the table's edge. The thin line the owner saw was the top of it.
+
+- **Fixed in the PRIMITIVE, not in the table.** `Menu`'s panel is now a portal on `document.body`,
+  which is the one placement no ancestor can clip. Removing `overflow-hidden` from this one table
+  would have worked and left the trap armed for the next caller - a menu in a card, in a modal, in
+  any rounded panel. The panel is `fixed` and placed by measurement (`place()`), and it **flips
+  above the trigger** when the space below is short, because a fixed panel running off the bottom
+  cannot be scrolled to.
+- **⚠ And by the time this merged, removing the clip was no longer even possible.** `TableFrame`
+  (same day, console layout) wraps every console table in a corner-clipping card **and** an
+  `overflow-x-auto` scroller, so the table can scroll on a phone instead of losing its right-hand
+  columns. That second layer clips a dropdown just as hard and is not optional. Escaping at the
+  primitive was the only fix that survives it.
+- **⚠ Two things a portal breaks if you forget them.** The panel is no longer inside the trigger's
+  wrapper, so the click-outside guard now tests the panel too - without that, the mousedown on an
+  item closes the menu before its click fires and **every menu item in the console becomes a
+  no-op**. And a `fixed` box is laid out against the viewport *without* the scrollbar, so the
+  right-aligned topbar menus anchor to `documentElement.clientWidth`, not `window.innerWidth`.
+- **⚠ What the tests can and cannot see.** Three assertions pin the panel's PLACE in the DOM
+  (parent is the body; not inside the clipping wrapper; not inside the table) and all three bite.
+  The placement arithmetic has no test that can fail: jsdom returns 0x0 at 0,0 from every
+  `getBoundingClientRect`. That half was verified by reading.
+
+**SAVE WAS AWAKE WITH NOTHING TO SAVE** (*"the save is enabled even though no change has been made.
+It should follow the platform rule."*). Correct - every other Configuration screen obeys that rule
+through `SaveBar`, and this dialog, being a dialog, had its own button and never got it. It now
+compares **as it will be sent**: the name trimmed, a blank date box as `null`. A trailing space is
+not a change, and neither is an empty box against a round that never had a window - a button that
+woke for those would post the server exactly what it already holds.
+
+Web only. No API change, no migration. jest 1829 (+6), tsc 24 (baseline), lint 0 Errors,
+i18n 4885 x 3, `next build` exit 0. Three bite-checks, each injection verified as landed first.
+
+## The console has one layout standard - 2026-09-08
+
+The owner, on seeing five admin screens side by side: *"the table width, even alignment, is not
+standardised... this must be done both for desktop view and mobile view. If something cannot be
+seen in mobile view, it must be communicated, and not allowed to break silently."*
+
+**Measured first.** Thirty-five admin pages wrote their own width and there were EIGHT different
+answers - Organisation stopped at 896px, Reviewers ran full-bleed, Sources sat at 1024px. Fourteen
+tables were built fourteen times, and on a phone they behaved three ways: six scrolled properly,
+five squashed their columns because they had no minimum width, and TWO were CLIPPED by their own
+card with no scrollbar at all.
+
+- **`lib/pageWidth` is the one place a page's width is decided,** and `AppShell` applies it. The
+  rule is the owner's: **does the page lead with a table? wide (1280px). otherwise reading
+  (900px).** Both start at the same left edge. A page can no longer invent a ninth answer - fifteen
+  pages had their own `max-w-*` deleted, and a test fails if one comes back.
+- **The B40 application page stopped centring itself.** It was the only `mx-auto` in the console
+  outside login, and it was never a decision: the commit that introduced it (30 May, an applicant-
+  detail redesign) describes the cards in detail and never mentions width or alignment.
+- **`TableFrame` is the one shell every table sits in.** It keeps three promises: the card clips
+  only its CORNERS while a separate element scrolls (merging those two is exactly what cut Intake
+  years off); a `minWidth` floor, so columns keep their shape instead of crushing; and a visible
+  edge cue PLUS a sentence, because a scrollbar you find by guessing is not communication.
+- **The two clipped tables can now be read on a phone:** Intake years and Course data.
+- **Table headers settle on one style** (`TH` / `TH_RIGHT`) - 38 places said one thing and 18
+  another.
+
++10 jest (1818 -> 1828). Three bite-checks landed; a FOURTH did not, and that was the useful one:
+the first version of the "every table is framed" guard only asked whether the file MENTIONED
+TableFrame, so putting Intake years back into a clipping card sailed past it. Counting frames
+against tables instead immediately found a real miss - the Payments funding table, which my own
+survey had never seen because it counted one table per file.
 ## An intake round has four states, and one of them is final - 2026-09-08
 
 The owner's third live-review round on Programme -> Configuration, and it started with a question I

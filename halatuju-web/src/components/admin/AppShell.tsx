@@ -9,6 +9,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import { useNavProbes } from '@/lib/useNavProbes'
 import { activeItem, chordTarget, effectiveRole, visibleNav, CHORD_PREFIX } from '@/lib/navigation'
+import { pageWidthFor, WIDTH_CLASS } from '@/lib/pageWidth'
 import { PREF_KEYS, readPref, writePref } from '@/lib/uiPrefs'
 import { ProgrammeScopeProvider } from '@/lib/programmeScope'
 import { Sidebar } from '@/components/admin/Sidebar'
@@ -296,7 +297,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
+        {/* ⚠ THE PAGE'S WIDTH IS DECIDED HERE, ONCE (owner, 2026-09-08). Every admin page used
+            to write its own `max-w-*` and there were EIGHT different answers, so two pages one
+            click apart started their text in different places. `lib/pageWidth` holds the rule —
+            leads with a table? wide; otherwise reading — and a page can no longer invent a ninth
+            answer. Left-aligned, never `mx-auto`: centring is what made the B40 cockpit look like
+            a different console. */}
+        <main className="min-w-0 flex-1 p-4 md:p-6">
+          <div className={WIDTH_CLASS[pageWidthFor(pathname)]}>{children}</div>
+        </main>
       </div>
 
       <CommandPalette

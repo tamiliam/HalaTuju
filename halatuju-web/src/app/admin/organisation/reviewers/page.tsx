@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { listReviewers, type AdminReviewer } from '@/lib/admin-api'
 import { canAccess, effectiveRole } from '@/lib/navigation'
@@ -134,7 +135,7 @@ export default function AdminReviewersList() {
       ) : error ? null : reviewers.length === 0 ? (
         <div className="text-center text-ground-500 mt-8">{t('admin.reviewers.empty')}</div>
       ) : (
-        <div className="bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
+        <TableFrame minWidth={900} label={t('admin.reviewers.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
@@ -230,7 +231,7 @@ export default function AdminReviewersList() {
               />
             </div>
           )}
-        </div>
+        </TableFrame>
       )}
       <p className="text-xs text-ground-500 mt-4 max-w-3xl">{t('admin.reviewers.footnote')}</p>
       </>)}

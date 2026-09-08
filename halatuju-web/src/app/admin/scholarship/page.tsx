@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import { useProgrammeScope } from '@/lib/programmeScope'
+import TableFrame from '@/components/admin/TableFrame'
 import { effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
@@ -53,6 +55,19 @@ export default function AdminScholarshipList() {
   // the filter is redundant for them (and "Unassigned" would always return nothing).
   const canFilterByAssignee = isSuper || role?.role === 'admin' || role?.role === 'org_admin'
   const { t } = useT()
+  /*
+   * ⚠ THE HEADING USED TO NAME THE TENANT'S FLAGSHIP, WHATEVER GIFT WAS PICKED.
+   * `admin.scholarship.title` is '{programmeName} Applicants', and `programmeName` is one of the
+   * five BRANDING auto-tokens `t()` injects beneath explicit call-site params — the organisation's
+   * flagship name, not the selected gift. So it read "BrightPath Bursary Applicants" over the crumb
+   * saying Test Programme, above 143 people who are not Test Programme's. That is a correctness
+   * problem, not a missing feature, which is why it is fixed before the filtering.
+   *
+   * Passing `programmeName` EXPLICITLY shadows the auto-token, so the one string serves both and
+   * the ms/ta translations need no new keys. With nothing chosen the gift cannot be named at all,
+   * so the heading drops to a neutral one rather than asserting a gift.
+   */
+  const { chosen, programme } = useProgrammeScope()
   const [data, setData] = useState<AdminScholarshipListData | null>(null)
   // Inline reviewer assignment (the "Assigned" column dropdown) — super or org_admin.
   const [reviewers, setReviewers] = useState<Reviewer[]>([])
@@ -87,6 +102,11 @@ export default function AdminScholarshipList() {
   }
   const sortArrow = (key: SortKey) => (sort === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '')
 
+  // Switching gift narrows the set, so page 5 of the old one may not exist in the new one — the
+  // same reason every filter resets the page. Not folded into `changeFilter`: the gift comes from
+  // the shell's breadcrumb, not from a control on this page.
+  useEffect(() => { setPage(1) }, [chosen])
+
   // Debounce the search box so a request doesn't fire on every keystroke.
   useEffect(() => {
     const id = setTimeout(() => {
@@ -110,6 +130,10 @@ export default function AdminScholarshipList() {
         pageSize,
         sort: sort || undefined,
         dir: sort ? sortDir : undefined,
+        // The chosen gift, sent as an EXPLICIT value the server re-fences — never a header or a
+        // cookie. Empty (several gifts, none chosen) sends nothing and lists every gift the
+        // caller may see, which is the honest answer for a READ.
+        programme: chosen || undefined,
       },
       { token },
     )
@@ -117,7 +141,7 @@ export default function AdminScholarshipList() {
       .catch(() => setError(t('admin.scholarship.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, bucket, statusF, source, assignedF, q, page, pageSize, sort, sortDir])
+  }, [token, chosen, bucket, statusF, source, assignedF, q, page, pageSize, sort, sortDir])
 
   const apps = data?.applications ?? []
 
@@ -177,7 +201,11 @@ export default function AdminScholarshipList() {
 
   return (
     <div>
-      <h1 className="text-xl sm:text-2xl font-bold">{t('admin.scholarship.title')}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold">
+        {programme
+          ? t('admin.scholarship.title', { programmeName: programme.name })
+          : t('admin.scholarship.titleAll')}
+      </h1>
       <p className="text-sm text-ground-500 mt-1 mb-4">
         {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
       </p>
@@ -245,7 +273,7 @@ export default function AdminScholarshipList() {
         <div className="text-center text-ground-500 mt-8">{t('admin.scholarship.empty')}</div>
       ) : (
         <>
-        <div className="bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
+        <TableFrame minWidth={980} label={t('admin.scholarship.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
@@ -357,7 +385,7 @@ export default function AdminScholarshipList() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableFrame>
         {data && (
           <Pagination
             page={data.page}

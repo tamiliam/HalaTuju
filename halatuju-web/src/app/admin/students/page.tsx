@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { effectiveRole } from '@/lib/navigation'
 import { formatNricDisplay } from '@/lib/scholarship'
 import { Pagination } from '@/components/Pagination'
@@ -192,7 +193,7 @@ export default function AdminStudentList() {
       </div>
 
       {/* Desktop: table layout */}
-      <div className="hidden md:block bg-ground-0 rounded-xl shadow-sm border overflow-x-auto mt-6">
+      <TableFrame className="hidden md:block mt-6" minWidth={900} label={t('admin.studentsTitle')}>
         <table className="w-full text-sm">
           <thead className="bg-ground-50/80 border-b">
             <tr>
@@ -256,7 +257,7 @@ export default function AdminStudentList() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TableFrame>
 
       {/* Pagination */}
       <Pagination

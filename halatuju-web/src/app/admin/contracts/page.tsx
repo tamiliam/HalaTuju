@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getContractTemplates, createContractTemplate, importContractDocx, putContractClauses,
@@ -104,7 +105,7 @@ export default function ContractsListPage() {
   }
 
   return (
-    <div className="max-w-5xl font-plex">
+    <div className="font-plex">
       <div className="flex items-start justify-between gap-4 mb-2">
         <div>
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.contracts.title')}</h1>
@@ -173,8 +174,8 @@ export default function ContractsListPage() {
         </form>
       )}
 
-      <div className="bg-ground-0 rounded-lg shadow-sm border overflow-x-auto mt-4">
-        <table className="w-full text-sm min-w-[640px]">
+      <TableFrame className="mt-4" minWidth={640} label={t('admin.contracts.title')}>
+        <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.contracts.colVersion')}</th>
@@ -207,7 +208,7 @@ export default function ContractsListPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </TableFrame>
     </div>
   )
 }

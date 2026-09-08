@@ -3095,6 +3095,9 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "table": {
+      "scrollHint": "Leret jadual ke sisi untuk melihat selebihnya."
+    },
     "orgPage": {
       "nav": "Gambaran keseluruhan",
       "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
@@ -3799,6 +3802,7 @@
     "scholarship": {
       "nav": "Permohonan B40",
       "title": "Pemohon {programmeName}",
+      "titleAll": "Semua pemohon",
       "countSubtitle": "{count} pemohon",
       "loadFailed": "Tidak dapat memuatkan permohonan.",
       "showingRange": "Papar {start}–{end} daripada {total} permohonan",

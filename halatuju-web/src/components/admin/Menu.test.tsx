@@ -1,9 +1,10 @@
 /**
  * @jest-environment jsdom
  *
- * The Menu primitive is used three times (help, notifications, account), so its keyboard and
- * dismissal behaviour is worth pinning once. These are exactly the behaviours that a pure test
- * cannot reach and that a user notices immediately when they are missing.
+ * The Menu primitive carries the help, notification and account menus in the topbar, the gift
+ * card's menu and the intake round's state badge, so its keyboard, dismissal and PLACEMENT
+ * behaviour is worth pinning once. These are exactly the behaviours that a pure test cannot reach
+ * and that a user notices immediately when they are missing.
  *
  * NB the frontend jest config runs in `node` by default; this file opts into jsdom with the
  * docblock above, the same way AwardComprehensionQuiz.test.tsx does.
@@ -82,5 +83,44 @@ describe('Menu', () => {
     fireEvent.click(trigger())
     fireEvent.click(screen.getAllByRole('menuitem')[0])
     expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  // ⚠ THE OWNER SAW THIS ONE (2026-09-08): *"Clicking the close opens something, but it is
+  // hidden."* The panel was `absolute` inside the trigger's own box, so an ancestor with
+  // `overflow-hidden` — the rounded wrapper round the intake-round table — sliced it off. It
+  // opened, it rendered, and only a sliver of it reached the screen.
+  //
+  // The panel is a PORTAL on document.body now, which is the only placement no ancestor can clip.
+  // Pinning it here rather than on the one table is deliberate: the trap was in the primitive.
+  it('escapes a clipping ancestor — the panel is a portal on the body', () => {
+    render(
+      <div style={{ overflow: 'hidden' }} data-testid="clipper">
+        <Menu label="Account" trigger={<span>avatar</span>}>
+          <MenuItem onClick={() => {}}>Profile</MenuItem>
+        </Menu>
+      </div>,
+    )
+    fireEvent.click(trigger())
+    const panel = screen.getByRole('menu')
+    expect(panel.parentElement).toBe(document.body)
+    expect(screen.getByTestId('clipper').contains(panel)).toBe(false)
+  })
+
+  // The portal put the panel outside the wrapper, and the click-outside guard watched only the
+  // wrapper. Left alone, the mousedown on an item would close the menu BEFORE its click fired —
+  // every menu item in the console would have become a no-op.
+  it('still runs an item that is pressed, mousedown first', () => {
+    const chosen = jest.fn()
+    render(
+      <Menu label="Account" trigger={<span>avatar</span>}>
+        <MenuItem onClick={chosen}>Profile</MenuItem>
+      </Menu>,
+    )
+    fireEvent.click(trigger())
+    const item = screen.getByRole('menuitem')
+    fireEvent.mouseDown(item)
+    expect(screen.queryByRole('menu')).toBeTruthy()
+    fireEvent.click(item)
+    expect(chosen).toHaveBeenCalledTimes(1)
   })
 })

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { seenBand } from '@/lib/sponsorDetail'
 import { listSponsors, reviewSponsor, type AdminSponsor } from '@/lib/admin-api'
@@ -178,7 +179,7 @@ export default function AdminSponsorsList() {
       ) : sponsors.length === 0 ? (
         <div className="text-center text-ground-500 mt-8">{t('admin.sponsors.empty')}</div>
       ) : (
-        <div className="bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
+        <TableFrame minWidth={880} label={t('admin.sponsors.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
@@ -248,7 +249,7 @@ export default function AdminSponsorsList() {
               />
             </div>
           )}
-        </div>
+        </TableFrame>
       )}
       </>)}
     </div>

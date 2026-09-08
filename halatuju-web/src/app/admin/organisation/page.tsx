@@ -69,7 +69,7 @@ export default function OrganisationOverviewPage() {
   ]
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader title={orgName || t('admin.nav.group.organisation')}
         subtitle={t('admin.orgPage.sub')} />
 

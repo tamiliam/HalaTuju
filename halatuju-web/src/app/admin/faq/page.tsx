@@ -53,7 +53,7 @@ export default function AdminFaqPage() {
   const shown: Audience[] = showAll ? ALL_FAQ_AUDIENCES : defaults
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <div className="flex items-start gap-4 rounded-2xl border border-info-100 bg-gradient-to-br from-info-50 to-ground-0 p-5">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-fill text-brand-fill-ink">
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
