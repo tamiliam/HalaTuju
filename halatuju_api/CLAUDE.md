@@ -631,6 +631,11 @@ credit) until it is **inked AND the money has changed hands**, with a bank refer
 
 ## Superseded — previous Next Sprint (as of 2026-09-08, after the interview-overlap sprint — TD-233 closed)
 
+**✅ SHIPPED AND DEPLOYED 2026-09-08.** `main` at **`61b2febe`**; BOTH Cloud Builds SUCCESS (Python
+changed, so both triggers fired, as expected); serving **halatuju-api-01002-t2v** /
+**halatuju-web-00859-znz** (read from `status.latestReadyRevisionName`, never `status.traffic[0]`).
+Public routes 200, `Server: Google Frontend`; **no api ERROR logs since the deploy**.
+
 **WHAT SHIPPED.** Interview conflict checking compares **BLOCKS, not start times**.
 `scheduling.held_starts` is DELETED; `held_intervals` (start + the slot's own stored
 `duration_min`) + `overlaps` answer that question for all five call sites. **No migration.**
