@@ -115,13 +115,24 @@ def _doc_wrong_type(doc):
 
 
 def _usable_relationship_fields(application, doc_type):
-    """The latest live relationship doc of ``doc_type`` + its fields, with a WRONG-TYPE doc treated
-    as unusable (doc returned, fields blanked) so no relationship can be read off it. Returns
-    ``(doc, fields, unusable)``."""
+    """The latest live relationship doc of ``doc_type`` + its fields, with an unusable doc's
+    fields blanked so no relationship can be read off it. Returns ``(doc, fields, unusable)``.
+
+    ⚠ ``unusable`` IS A REASON STRING, NOT A BOOLEAN — '' / 'wrong_type' / 'unreadable'. It stays
+    truthy in all the existing ``if bc_unusable`` sites, and it exists because the two states owe
+    the student DIFFERENT messages: 'wrong_type' says *that is not a birth certificate* (#27),
+    'unreadable' says *we could not read yours, please send a clearer copy* (#23). Collapsing them
+    would tell a family with a poor scan that their certificate is not genuine.
+    """
+    from .income_engine import relationship_doc_unreadable   # lazy: income_engine imports us
     d = _latest_doc(application, doc_type)
-    if d is not None and _doc_wrong_type(d):
-        return d, {}, True
-    return d, _doc_assist_fields(d), False
+    if d is None:
+        return d, {}, ''
+    if _doc_wrong_type(d):
+        return d, {}, 'wrong_type'
+    if relationship_doc_unreadable(d):
+        return d, {}, 'unreadable'
+    return d, _doc_assist_fields(d), ''
 
 
 # ── Identity (name + NRIC) ───────────────────────────────────────────────────
@@ -435,7 +446,9 @@ def _verdict_income(application):
             gap.append(_item('birth_cert_missing'))
         else:
             _, bcf, bc_unusable = _usable_relationship_fields(application, 'birth_certificate')
-            if bc_unusable:
+            if bc_unusable == 'unreadable':
+                gap.append(_item('birth_cert_unreadable'))
+            elif bc_unusable:
                 gap.append(_item('birth_cert_not_genuine'))
             else:
                 rel = mother_relationship(bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
@@ -445,7 +458,9 @@ def _verdict_income(application):
             gap.append(_item('guardianship_letter_missing'))
         else:
             g, _, g_unusable = _usable_relationship_fields(application, 'guardianship_letter')
-            if g_unusable:
+            if g_unusable == 'unreadable':
+                gap.append(_item('guardianship_letter_unreadable'))
+            elif g_unusable:
                 gap.append(_item('guardianship_letter_not_genuine'))
             else:
                 rel = guardian_relationship(getattr(g, 'vision_name', '') or '', earner_ic_name)
@@ -661,11 +676,20 @@ def _verdict_income_salary(application, student_name, present, any_route=False):
     if bc_missing:
         gap.append(_item('birth_cert_missing'))
     elif bc_unusable and any(relationship_doc_for(m) == 'birth_certificate' for m in members):
-        gap.append(_item('birth_cert_not_genuine'))       # required + wrong-type → re-upload (#27)
+        # required + unusable → re-upload, in the words that fit: wrong-type (#27) says it is not
+        # a birth certificate; unreadable (#23) says we could not read the one they sent. Both
+        # codes are written OUT as literals so the i18n coverage guard can see them.
+        if bc_unusable == 'unreadable':
+            gap.append(_item('birth_cert_unreadable'))
+        else:
+            gap.append(_item('birth_cert_not_genuine'))
     if letter_missing:
         gap.append(_item('guardianship_letter_missing'))
     elif letter_unusable and any(relationship_doc_for(m) == 'guardianship_letter' for m in members):
-        gap.append(_item('guardianship_letter_not_genuine'))
+        if letter_unusable == 'unreadable':
+            gap.append(_item('guardianship_letter_unreadable'))
+        else:
+            gap.append(_item('guardianship_letter_not_genuine'))
     if ic_unreadable:
         review.append(_item('earner_ic_unreadable', members=ic_unreadable))
     if patronymic_mismatch:
@@ -960,9 +984,9 @@ def _apply_genuineness_caps(application, facts):
         # (birth_cert_not_genuine / guardianship_letter_not_genuine) already explains it — don't
         # stack the generic officer-only caveat on top.
         specific = {i['code'] for i in fact['unresolved']}
-        if 'birth_cert_not_genuine' in specific:
+        if specific & {'birth_cert_not_genuine', 'birth_cert_unreadable'}:
             dts = [d for d in dts if d != 'birth_certificate']
-        if 'guardianship_letter_not_genuine' in specific:
+        if specific & {'guardianship_letter_not_genuine', 'guardianship_letter_unreadable'}:
             dts = [d for d in dts if d != 'guardianship_letter']
         if not dts or any(i['code'] == 'document_not_genuine' for i in fact['unresolved']):
             continue

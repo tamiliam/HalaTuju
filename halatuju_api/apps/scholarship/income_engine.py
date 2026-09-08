@@ -1473,13 +1473,45 @@ def _combine_relationship(name_b, nric_b, nric_one_digit=False):
     if name_b == 'match':
         if nric_b == 'mismatch':
             return 'check_near' if nric_one_digit else 'check'
-        return 'match'
-    # No NAME to compare (no_ref) — fall back to the NRIC alone.
+        # ⚠ ONE CELL ALONE IS NOT GREEN (BrightPath #23, owner 2026-09-08). A matching name with
+        # no number to check it against used to read as fully verified — "which is how a father
+        # with no Malaysian number passes on his name". We checked half of this row, so the row
+        # says half: AMBER, and a person decides. It does not block; only a red does.
+        return 'match' if nric_b == 'match' else 'check_one'
+    # No NAME to compare (no_ref) — the NRIC alone, and the same rule applies to it.
     if nric_b == 'mismatch':
         return 'mismatch'
     if nric_b == 'match':
-        return 'match'
+        return 'check_one'
     return 'no_ref'
+
+
+_REL_DOC_READ_FIELDS = {
+    'birth_certificate': ('bc_child_name', 'bc_child_nric', 'bc_mother_name',
+                          'bc_mother_nric', 'bc_father_name', 'bc_father_nric'),
+    'guardianship_letter': ('guardian_name', 'guardian_nric', 'ward_name'),
+}
+
+
+def relationship_doc_unreadable(doc) -> bool:
+    """True when a relationship document is ON FILE but yielded NOTHING to check.
+
+    ⚠ UNREADABLE IS NOT CLEAN. Every row of such a document buckets to ``no_ref``, which reads
+    as "nothing disagrees" — so a certificate we could not read scored exactly like one that
+    checked out, and nobody was asked for a better copy (BrightPath #23, owner: *"today
+    'we could not read it' scores the same as 'it checked out'"*).
+
+    The rule is DOCUMENT-level, never row-level: a blank father row on a certificate that
+    names no father is a real absence, not a failed read. Only when EVERY field we know how
+    to read is blank did the document tell us nothing. A wrong-type document is a separate,
+    already-handled state (``verdict_engine._doc_wrong_type``) — it is a different message to
+    the student ("that is not a birth certificate") from "we could not read yours".
+    """
+    fields = _REL_DOC_READ_FIELDS.get(getattr(doc, 'doc_type', ''))
+    if doc is None or not fields:
+        return False
+    f = _doc_fields(doc)
+    return not any((f.get(k) or '').strip() for k in fields)
 
 
 def student_bc_check(doc):
@@ -1517,6 +1549,10 @@ def student_bc_check(doc):
         'mother_name': mother_name, 'mother_nric': mother_nric, 'mother_status': mother_status,
         'father_name': father_name, 'father_status': father_status,
         'bc_number': (f.get('bc_number', '') or '').strip(),
+        # Nothing read at all → the officer must see ONE amber, not three greys that look like
+        # an absent optional document (#23). The three row statuses stay as they are; the
+        # surface decides what to draw.
+        'unreadable': relationship_doc_unreadable(doc),
     }
 
 
@@ -1542,6 +1578,7 @@ def student_guardianship_check(doc):
         'guardian_name': g_name, 'guardian_nric': g_nric, 'guardian_status': guardian_status,
         'ward_name': ward_name, 'ward_status': _name_bucket(ward_name, student),
         'doc_kind': (f.get('doc_kind', '') or '').strip(),
+        'unreadable': relationship_doc_unreadable(doc),   # nothing read ≠ nothing wrong (#23)
     }
 
 

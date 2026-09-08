@@ -276,7 +276,9 @@ function factStatus(s: string | undefined | null): FactStatus {
     // number is the stronger evidence and a person should read the row, not a red that tells a
     // student to fetch a corrected certificate she cannot get.
     case 'partial': case 'uncertain': case 'pending': case 'stale': case 'unconfirmed': case 'check': case 'check_near':
-    case 'check_name':
+    // `check_one` (#23): we held only ONE of the name/number pair, so only half the row was
+    // checked. Green would claim a corroboration we do not have.
+    case 'check_name': case 'check_one':
       return 'partial'
     case 'mismatch': case 'unreadable': case 'not_found': case 'rejected':
       return 'not'
@@ -531,6 +533,10 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   if (dt === 'birth_certificate') {
     const c = doc.bc_check
     if (!c) return []
+    // ⚠ NOTHING READ IS NOT NOTHING WRONG (#23). Every row of an unreadable certificate buckets
+    // to `no_ref`, and three GREY chips read like an absent optional document — the same as one
+    // that checked out. One AMBER chip instead, so the officer sees a document to chase.
+    if (c.unreadable) return [{ key: 'unreadable', status: 'partial' }]
     return [
       { key: 'child', status: factStatus(c.child_status) },
       { key: 'mother', status: factStatus(c.mother_status) },
@@ -540,6 +546,7 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   if (dt === 'guardianship_letter') {
     const c = doc.guardianship_check
     if (!c) return []
+    if (c.unreadable) return [{ key: 'unreadable', status: 'partial' }]
     return [
       { key: 'guardian', status: factStatus(c.guardian_status) },
       { key: 'ward', status: factStatus(c.ward_status) },

@@ -184,6 +184,71 @@ class TestGateSuppression(_Base):
                 self.assertNotIn('parent_ic_person_mismatch', services.document_red_blockers(app))
 
 
+class TestProvingIncomeDoesNotSettleParentage(_Base):
+    """BrightPath #23, owner 2026-09-08 — proving the household's income must NOT switch off the
+    question "is this really her mother?".
+
+    `birth_certificate` and `guardianship_letter` sat in `_INCOME_CLUSTER_DOC_TYPES` until today, so
+    a dispositive STR made the relationship check disappear entirely. That is how application 144
+    submitted behind a certificate nobody had checked. "One clean cluster is enough" is a rule about
+    income EVIDENCE — an extraneous or misread income proof must not trap a family whose income is
+    already established (#19, #28). It was never a rule about who somebody's parent is.
+
+    ⚠ THE TWO HALVES ARE TESTED TOGETHER ON PURPOSE. Whoever narrows this list must show that the
+    income softening still works; whoever widens it back must fail the first test here.
+    """
+
+    def _established(self):
+        """Income established the STR way — the shape application 16 is actually in."""
+        return mock.patch('apps.scholarship.income_engine.household_str_status',
+                          return_value=('current', 'mother'))
+
+    def test_a_red_birth_certificate_blocks_even_when_income_is_proved(self):
+        app = self._app('rel-a', income_route='str', income_earner='mother')
+        self._doc(app, 'birth_certificate')
+        with self._established(), \
+             mock.patch('apps.scholarship.income_engine.student_bc_check',
+                        return_value={'child_status': 'mismatch', 'mother_status': 'match',
+                                      'father_status': 'match'}):
+            self.assertTrue(income_engine.income_established(app))
+            self.assertIn('birth_cert_person_mismatch', services.document_red_blockers(app))
+
+    def test_a_red_guardianship_letter_blocks_even_when_income_is_proved(self):
+        app = self._app('rel-b', income_route='str', income_earner='guardian')
+        self._doc(app, 'guardianship_letter')
+        with self._established(), \
+             mock.patch('apps.scholarship.income_engine.student_guardianship_check',
+                        return_value={'guardian_status': 'match', 'ward_status': 'mismatch'}):
+            self.assertIn('guardianship_person_mismatch', services.document_red_blockers(app))
+
+    def test_a_clean_certificate_still_blocks_nothing(self):
+        app = self._app('rel-c', income_route='str', income_earner='mother')
+        self._doc(app, 'birth_certificate')
+        with self._established(), \
+             mock.patch('apps.scholarship.income_engine.student_bc_check',
+                        return_value={'child_status': 'match', 'mother_status': 'check_one',
+                                      'father_status': 'mismatch'}):
+            # Amber never blocks, and the FATHER row never blocks — even when it is red.
+            self.assertEqual(services.document_red_blockers(app), [])
+
+    def test_the_income_softening_it_sits_beside_is_UNCHANGED(self):
+        # The other half: an extraneous, misread income proof on a household whose income is
+        # already established stays SOFT (#19 / #28). Narrowing the list must not have taken
+        # this with it.
+        app = self._app('rel-d', income_route='str', income_earner='mother')
+        self._doc(app, 'parent_ic', 'father', vision_name='RAJAANMALAYS')
+        mismatch = {'name_status': 'mismatch', 'proof_name_status': 'no_ref',
+                    'proof_nric_status': 'no_ref'}
+        with mock.patch('apps.scholarship.income_engine.student_income_ic_check',
+                        return_value=mismatch):
+            with self._established():
+                self.assertNotIn('parent_ic_person_mismatch',
+                                 services.document_red_blockers(app))
+            with mock.patch('apps.scholarship.income_engine.household_str_status',
+                            return_value=(None, None)):
+                self.assertIn('parent_ic_person_mismatch', services.document_red_blockers(app))
+
+
 class TestOcrNameGuard(TestCase):
     def test_fused_header_fragment_is_garbled(self):
         self.assertTrue(_name_looks_garbled('RAJAANMALAYS'))      # MALAYSIA header bled in

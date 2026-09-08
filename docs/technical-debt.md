@@ -3448,3 +3448,31 @@ Config Sprint C proved twice; it is a sprint, not a patch.
 whichever comes first.
 
 (Logged 2026-09-08, consolidation review.)
+
+### [TD-236] `record_request_analysis` cannot run from a worktree, and stamps the wrong commit — low
+
+**Found:** BrightPath #23's completion report, 2026-09-08.
+
+**What:** the command resolves `_REPO_ROOT` five levels up from its own file, and reads the
+gitignored `.env` from there. Every sprint is worked in a **git worktree** (`parallel-work-isolation.md`),
+and a worktree has no `.env` — the credential lives only in the main checkout. So the command has to
+be run from the main checkout, which is on a different branch.
+
+**Why it is not merely inconvenient:** `_repo_sha()` then records the MAIN checkout's HEAD as the
+commit the analysis was read against. Analysis 53 on request #23 is stamped `04aca637` (main) when
+the work it describes is on `feat/bc-verdict` at `3c8cfd72`. The docstring is explicit that the SHA
+exists so "a citation three weeks stale is worth knowing about" — a SHA that points at a different
+branch is worse than stale, because it looks precise.
+
+**It is low because nothing the ORGANISATION reads is affected** — the body and the citation paths
+are correct, and the cited files exist on both branches. Only the owner-facing provenance stamp is
+wrong.
+
+**Fix, roughly:** resolve `.env` through `git rev-parse --git-common-dir` (a worktree's shared git
+dir points at the main checkout) or accept `--env-file`, and take the SHA from the CURRENT working
+tree rather than from wherever the credential happened to live. Whichever way, the two must come
+from the same place, or the next person gets the same silent mismatch.
+
+**The trigger:** the next completion report staged from a worktree — i.e. the next one.
+
+(Logged 2026-09-08, BrightPath #23 close.)

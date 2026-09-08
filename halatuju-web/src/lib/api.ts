@@ -1795,7 +1795,9 @@ export interface ApplicantDocument {
 // not — a misread digit off a security-printed JPN document) and, from BrightPath #19,
 // `check_name` (the NRIC matches EXACTLY, the name is spelt differently — a transliteration, not
 // a different person). All three render partial, never green and never red.
-type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name'
+// `check_one` (#23): only ONE of the two cells was present at all, so half the row was
+// checked. Amber — never green off a single piece of evidence, never red either.
+type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name' | 'check_one'
 
 export interface BcCheck {
   child_name: string
@@ -1806,6 +1808,10 @@ export interface BcCheck {
   father_name: string
   father_status: RelStatus    // vs your IC patronymic
   bc_number: string
+  // #23: the document is on file and is the right KIND, but nothing at all could be read off
+  // it. The three statuses above are all `no_ref` in that case, which renders as three greys —
+  // indistinguishable from a certificate that checked out. The surface draws one amber instead.
+  unreadable?: boolean
 }
 
 export interface GuardianshipCheck {
@@ -1815,6 +1821,7 @@ export interface GuardianshipCheck {
   ward_name: string
   ward_status: RelStatus      // vs the student (you)
   doc_kind: string
+  unreadable?: boolean        // #23 — nothing read ≠ nothing wrong
 }
 
 // V1: the declared-income supporting doc — whether it READ as real evidence (officer chip).

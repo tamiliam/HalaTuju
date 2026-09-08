@@ -59,6 +59,12 @@ CODE_TO_TICKET = {
     # genuineness) — a required relationship proof is effectively absent → auto-ask a re-upload.
     'birth_cert_not_genuine':       {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
     'guardianship_letter_not_genuine': {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
+    # #23 (owner 2026-09-08): the doc IS on file and IS the right kind, but nothing could be read
+    # off it — which used to score exactly like a document that checked out. A DIFFERENT message
+    # from *_not_genuine: "we could not read yours", not "that is not a birth certificate". The
+    # `_unreadable` suffix puts both in STUDENT_DOC_REQUEST_CODES automatically.
+    'birth_cert_unreadable':           {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
+    'guardianship_letter_unreadable':  {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
     'birth_cert_mismatch':          {'fact': 'income', 'kind': 'confirm'},
     'father_patronymic_mismatch':   {'fact': 'income', 'kind': 'confirm'},
     'guardianship_letter_missing':  {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
@@ -327,7 +333,10 @@ def doc_match_verdict(doc):
         if red(chk, 'name_status', 'nric_status') or chk.get('current_status') in income_engine.STR_RED_STATES:
             return 'mismatch'
     elif dt == 'birth_certificate':
-        if red(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):
+        # The FATHER row is not a blocker (#23): it is checked against the patronymic in the
+        # student's own name, and a father with no Malaysian IC must not stop a re-upload from
+        # resolving. Child + mother still do.
+        if red(income_engine.student_bc_check(doc), 'child_status', 'mother_status'):
             return 'mismatch'
         # V2 (#4): same hold — an errored/blank BC extraction must not resolve the request as read.
         sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')

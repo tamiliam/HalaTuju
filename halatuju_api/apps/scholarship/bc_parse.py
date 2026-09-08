@@ -117,6 +117,43 @@ def _nric_in_span(rows, start_i, end_i):
     return ''
 
 
+_MONTH_TOK = {
+    'JAN': 1, 'JANUARI': 1, 'JANUARY': 1, 'FEB': 2, 'FEBRUARI': 2, 'FEBRUARY': 2,
+    'MAC': 3, 'MAR': 3, 'MARCH': 3, 'APR': 4, 'APRIL': 4, 'MEI': 5, 'MAY': 5,
+    'JUN': 6, 'JUNE': 6, 'JUL': 7, 'JULAI': 7, 'JULY': 7, 'OGO': 8, 'OGOS': 8,
+    'AUG': 8, 'AUGUST': 8, 'SEP': 9, 'SEPT': 9, 'SEPTEMBER': 9, 'OKT': 10, 'OCT': 10,
+    'OKTOBER': 10, 'OCTOBER': 10, 'NOV': 11, 'NOVEMBER': 11, 'DIS': 12, 'DEC': 12,
+    'DISEMBER': 12, 'DECEMBER': 12,
+}
+
+
+def _dob_in_span(rows, start_i, end_i) -> str:
+    """The child's printed date of birth within a row band, as ``DD MON YYYY`` (or a numeric
+    date if that is how it is printed). '' when it cannot be read.
+
+    ⚠ Token-wise, NOT a single regex: the OCR interleaves the value into its own label
+    ('Tarikh 20 dan JUN 2008 Waktu Kelahiran'), so the day, month and year are not adjacent.
+    Anchor on the MONTH WORD and take the nearest bare 1-2 digit day before it and the
+    nearest 4-digit year after it.
+    """
+    toks = []
+    for r in rows[start_i:end_i]:
+        toks.extend((r.get('text') or '').replace('/', ' ').replace('-', ' ').split())
+    for i, t in enumerate(toks):
+        mon = _MONTH_TOK.get(t.upper().strip('.,'))
+        if not mon:
+            continue
+        day = next((x for x in reversed(toks[max(0, i - 4):i])
+                    if x.isdigit() and 1 <= len(x) <= 2 and 1 <= int(x) <= 31), '')
+        yr = next((x for x in toks[i + 1:i + 5]
+                   if x.isdigit() and len(x) == 4 and 1900 <= int(x) <= 2099), '')
+        if day and yr:
+            return f'{int(day):02d} {t.upper().strip(".,")} {yr}'
+    band = ' '.join((r.get('text') or '') for r in rows[start_i:end_i])
+    m = re.search(r'\b(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})\b', band)
+    return m.group(0) if m else ''
+
+
 def parse_bc(words) -> Optional[dict]:
     rows = _rows(words)
     if not rows:
@@ -144,10 +181,25 @@ def parse_bc(words) -> Optional[dict]:
 
     # ── child name: between KANAK-KANAK and "Tarikh dan Waktu Kelahiran" (fallback: BAPA) ──
     child_name = ''
+    child_dob = ''
     if ci != -1:
+        f_end = fi if fi != -1 else len(rows)
         ti = _find(rows, 'Tarikh dan Waktu', 'Tarikh dan Waktu Kelahiran', start=ci + 1,
-                   end=(fi if fi != -1 else len(rows)))
-        child_name = _name_in_span(rows, ci, ti if ti != -1 else (fi if fi != -1 else len(rows)))
+                   end=f_end)
+        child_name = _name_in_span(rows, ci, ti if ti != -1 else f_end)
+        child_dob = _dob_in_span(rows, ti if ti != -1 else ci, f_end)
+
+    # ── the child IC must not CONTRADICT the printed date of birth ─────────────
+    # ⚠ The child row is what ties this certificate to THIS student, so a wrong number reads
+    # as a confident wrong-person mismatch and would BLOCK them — worse than a blank. The
+    # position bracket above is the primary constraint (digits-only, above KANAK-KANAK, so
+    # never the letter-prefixed register number); this drops a number the certificate's own
+    # date of birth REFUTES. An unreadable date leaves the positional read standing —
+    # deliberately, since dropping it would discard reads that are correct today.
+    if child_nric and child_dob:
+        from .vision import nric_dob_agrees
+        if not nric_dob_agrees(child_nric, child_dob):
+            child_nric = ''
 
     # ── father: between BAPA and IBU; name up to "No. Kad Pengenalan"; IC = first NRIC after it
     #    within the band (the value can be on the label row OR the next — so search to the band end,
@@ -183,6 +235,7 @@ def parse_bc(words) -> Optional[dict]:
         return None
 
     return {'bc_child_name': child_name, 'bc_child_nric': child_nric,
+            'bc_child_dob': child_dob,
             'bc_father_name': father_name, 'bc_father_nric': father_nric,
             'bc_mother_name': mother_name, 'bc_mother_nric': mother_nric,
             'bc_number': bc_number, '_bc_version': version}

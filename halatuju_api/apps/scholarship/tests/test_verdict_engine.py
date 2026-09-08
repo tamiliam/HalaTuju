@@ -487,6 +487,45 @@ class TestIncome(_Base):
         self.assertNotEqual(f['status'], 'verified')
         self.assertIn('birth_cert_not_genuine', _codes(f['unresolved']))
 
+    def test_mother_route_unreadable_bc_asks_for_a_clearer_copy(self):
+        """#23 (owner 2026-09-08): the doc IS a birth certificate and IS on file, but NOTHING
+        could be read off it. Every row buckets to `no_ref`, which used to score exactly like a
+        certificate that checked out — no gap, no ask, silence. It must now ask for a clearer
+        copy, in WORDS THAT FIT: never `birth_cert_not_genuine`, which tells a family with a poor
+        scan that their certificate is not genuine."""
+        self._wizard(route='str', earner='mother')
+        _parent_ic(self.app, 'KAMALA A/P RAMAN', nric='860419-43-5610')
+        _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                 fields={'bc_child_name': '', 'bc_mother_name': '', 'bc_father_name': '',
+                         'bc_child_nric': '', 'bc_mother_nric': '', 'bc_father_nric': ''})
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'KAMALA A/P RAMAN', 'recipient_nric': '860419-43-5610',
+                         'status': 'Lulus', 'year': '2026', 'source_type': 'letter'})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'gap')
+        codes = _codes(f['unresolved'])
+        self.assertIn('birth_cert_unreadable', codes)
+        self.assertNotIn('birth_cert_not_genuine', codes)     # the WRONG message for this case
+        self.assertNotIn('document_not_genuine', codes)       # specific ticket already explains it
+
+    def test_a_partly_read_certificate_is_not_unreadable(self):
+        # The rule is DOCUMENT-level. A certificate that named the mother told us something, so a
+        # blank child row is a row-level fact for the normal checks — never a re-upload demand.
+        self._wizard(route='str', earner='mother')
+        _parent_ic(self.app, 'KAMALA A/P RAMAN')
+        _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                 fields={'bc_child_name': '', 'bc_mother_name': 'KAMALA A/P RAMAN'})
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'KAMALA A/P RAMAN', 'status': 'Lulus', 'year': '2026'})
+        self.assertNotIn('birth_cert_unreadable', _codes(_facts(self.app)['income']['unresolved']))
+
+    def test_the_student_is_actually_asked(self):
+        # The `_unreadable` suffix is what puts a code in STUDENT_DOC_REQUEST_CODES — i.e. what
+        # turns the finding into an Action-Centre re-upload the form-locked student can act on.
+        from apps.scholarship.resolution import STUDENT_DOC_REQUEST_CODES
+        self.assertIn('birth_cert_unreadable', STUDENT_DOC_REQUEST_CODES)
+        self.assertIn('guardianship_letter_unreadable', STUDENT_DOC_REQUEST_CODES)
+
     def test_guardian_letter_missing_is_gap(self):
         self._wizard(route='str', earner='guardian')
         _parent_ic(self.app, 'RAJA A/L KUMAR')
@@ -1726,9 +1765,14 @@ class TestRelationshipChecklists(TestCase):
                               'bc_mother_name': 'VANITHA A/P MOHAN', 'bc_mother_nric': '760820-02-5230',
                               'bc_father_name': 'ELANJELIAN A/L VENUGOPAL'})
         chk = student_bc_check(bc)
-        self.assertEqual(chk['child_status'], 'match')      # child = the student
+        # ⚠ CHANGED BY #23 (2026-09-08), deliberately: this fixture gives the child a NAME and no
+        # number, and one cell alone no longer reads as fully verified. Amber, not green — the
+        # mother row below, which carries BOTH a name and a matching number, is still green.
+        self.assertEqual(chk['child_status'], 'check_one')  # child name matches; no number to check
         self.assertEqual(chk['mother_status'], 'match')     # mother name+NRIC = the mother IC
-        # father vs the student's patronymic (A/L ELANJELIAN → ELANJELIAN)
+        # father vs the student's patronymic (A/L ELANJELIAN → ELANJELIAN). Name-only by
+        # construction — there is no father NRIC reference — so it is untouched by the one-cell
+        # rule and stays green; whether it should is the owner's open question.
         self.assertEqual(chk['father_status'], 'match')
 
     def test_bc_mother_mismatch(self):

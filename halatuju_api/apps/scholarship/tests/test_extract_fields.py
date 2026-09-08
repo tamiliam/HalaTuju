@@ -322,6 +322,49 @@ class TestExtractionSanitizer(TestCase):
         self.assertEqual(out['bc_child_name'], 'TAANUSIYA A/P MUGINDRAN')
 
 
+class TestChildNricAgainstDateOfBirth(TestCase):
+    """`bc_child_nric` is the row that ties the certificate to THIS student, and the AI read is
+    NOT positionally constrained (unlike `bc_parse`), so it is kept only when the certificate's
+    own printed date of birth confirms the leading YYMMDD. A wrong number reads as a confident
+    wrong-person mismatch and would BLOCK a student; a blank never did."""
+
+    def test_agrees(self):
+        self.assertTrue(vision.nric_dob_agrees('080117-10-2004', '17 JANUARI 2008'))
+        self.assertTrue(vision.nric_dob_agrees('080602-14-1410', '02 JUN 2008'))
+        self.assertTrue(vision.nric_dob_agrees('08011710 2004', '17/01/2008'))     # spaced + numeric
+        self.assertTrue(vision.nric_dob_agrees('080117-10-2004', '2008-01-17'))    # ISO order
+
+    def test_refuses(self):
+        self.assertFalse(vision.nric_dob_agrees('080117-10-2004', '18 JANUARI 2008'))  # day off
+        self.assertFalse(vision.nric_dob_agrees('080117-10-2004', '17 FEBRUARI 2008'))  # month off
+        self.assertFalse(vision.nric_dob_agrees('080117-10-2004', ''))              # no date to check
+        self.assertFalse(vision.nric_dob_agrees('BZ21723', '17 JANUARI 2008'))      # register number
+        self.assertFalse(vision.nric_dob_agrees('', '17 JANUARI 2008'))
+        self.assertFalse(vision.nric_dob_agrees('0801-17', '17 JANUARI 2008'))      # not 12 digits
+
+    def test_unconfirmed_number_is_dropped(self):
+        out = vision._sanitize_extracted_fields('birth_certificate', {
+            'bc_child_name': 'TAANUSIYA A/P MUGINDRAN', 'bc_child_nric': '700101-10-1111',
+            'bc_child_dob': '17 JANUARI 2008',
+            'bc_father_name': 'X A/L Y', 'bc_mother_name': 'Z A/P W'})
+        self.assertEqual(out['bc_child_nric'], '')
+        self.assertEqual(out['bc_child_name'], 'TAANUSIYA A/P MUGINDRAN')   # the rest survives
+
+    def test_no_date_read_means_no_number(self):
+        # The AI read has no positional bracket, so an unverifiable number is not trusted.
+        out = vision._sanitize_extracted_fields('birth_certificate', {
+            'bc_child_name': 'TAANUSIYA A/P MUGINDRAN', 'bc_child_nric': '080117-10-2004',
+            'bc_father_name': 'X A/L Y', 'bc_mother_name': 'Z A/P W'})
+        self.assertEqual(out['bc_child_nric'], '')
+
+    def test_confirmed_number_is_kept(self):
+        out = vision._sanitize_extracted_fields('birth_certificate', {
+            'bc_child_name': 'TAANUSIYA A/P MUGINDRAN', 'bc_child_nric': '080117-10-2004',
+            'bc_child_dob': '17 JANUARI 2008',
+            'bc_father_name': 'X A/L Y', 'bc_mother_name': 'Z A/P W'})
+        self.assertEqual(out['bc_child_nric'], '080117-10-2004')
+
+
 class TestReportingDateNormalisation(TestCase):
     """Offer reporting_date → clean 'D Mon YYYY' (strip weekday/time/parenthetical; range→start)."""
     def test_variants(self):

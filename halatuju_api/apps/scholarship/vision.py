@@ -56,6 +56,69 @@ def _canonical_nric(s: str) -> str:
     return re.sub(r'\D', '', s or '')
 
 
+_MONTHS = {
+    'jan': 1, 'januari': 1, 'january': 1,
+    'feb': 2, 'februari': 2, 'february': 2,
+    'mac': 3, 'mar': 3, 'march': 3,
+    'apr': 4, 'april': 4,
+    'mei': 5, 'may': 5,
+    'jun': 6, 'june': 6,
+    'jul': 7, 'julai': 7, 'july': 7,
+    'ogo': 8, 'ogos': 8, 'aug': 8, 'august': 8,
+    'sep': 9, 'sept': 9, 'september': 9,
+    'okt': 10, 'oct': 10, 'oktober': 10, 'october': 10,
+    'nov': 11, 'november': 11,
+    'dis': 12, 'dec': 12, 'disember': 12, 'december': 12,
+}
+
+
+def _parse_dob(s: str):
+    """Parse a printed date of birth → ``(yy, mm, dd)`` as 2-digit strings, else None.
+
+    Accepts what a Malaysian birth certificate actually prints: ``17 JANUARI 2008``,
+    ``17 JAN 2008``, ``17/01/2008``, ``17-01-2008`` and ``2008-01-17``. Pure; never raises.
+    """
+    if not s:
+        return None
+    txt = str(s).strip().lower()
+
+    m = re.search(r'\b(\d{1,2})\s*[/\-. ]\s*([a-z]+)\s*[/\-. ]\s*(\d{4})\b', txt)
+    if m and m.group(2) in _MONTHS:
+        dd, mm, yyyy = int(m.group(1)), _MONTHS[m.group(2)], int(m.group(3))
+    else:
+        m = re.search(r'\b(\d{4})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(\d{1,2})\b', txt)
+        if m:                                   # ISO order: 2008-01-17
+            yyyy, mm, dd = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        else:
+            m = re.search(r'\b(\d{1,2})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(\d{4})\b', txt)
+            if not m:                           # day-first: 17/01/2008
+                return None
+            dd, mm, yyyy = int(m.group(1)), int(m.group(2)), int(m.group(3))
+
+    if not (1 <= mm <= 12 and 1 <= dd <= 31 and 1900 <= yyyy <= 2099):
+        return None
+    return f'{yyyy % 100:02d}', f'{mm:02d}', f'{dd:02d}'
+
+
+def nric_dob_agrees(nric: str, dob: str) -> bool:
+    """True iff a 12-digit NRIC's leading YYMMDD equals the printed date of birth.
+
+    ⚠ THIS GUARD IS LOAD-BEARING, NOT BELT-AND-BRACES. ``bc_child_nric`` feeds
+    ``academic/income`` engines that compare it to the student's OWN NRIC, so a MISREAD
+    number (the register number ``BZ21723``, a parent's IC, a line of the barcode) produces
+    a confident ``mismatch`` that newly BLOCKS a student — strictly worse than the blank
+    this field held before. The certificate prints the date of birth beside the number, so
+    the two must agree or we do not trust the read. Pure; never raises.
+    """
+    digits = _canonical_nric(nric)
+    if len(digits) != 12:
+        return False
+    parts = _parse_dob(dob)
+    if not parts:
+        return False
+    return digits[:6] == ''.join(parts)
+
+
 def canonical_name_tokens(s: str) -> set:
     """Lowercase, strip MyKad parentage tokens + honorific prefixes, return a tokens set."""
     if not s:
@@ -1273,7 +1336,11 @@ _FIELD_SCHEMAS = {
                                  'bidang_pengkhususan': _STR, 'elektif': _STR, 'aliran': _STR}),
     # Income Check-1: the Birth Certificate links the income earner (mother) to the
     # student. Read the child + both parents' names AND their NRICs (the strong match).
+    # `bc_child_dob` exists ONLY to validate `bc_child_nric` (see `nric_dob_agrees`) — the
+    # child row is the one that ties the certificate to THIS student, so a misread number
+    # would newly BLOCK a student where a blank never did.
     'birth_certificate': _doc_schema({'bc_child_name': _STR, 'bc_child_nric': _STR,
+                                      'bc_child_dob': _STR,
                                       'bc_mother_name': _STR, 'bc_mother_nric': _STR,
                                       'bc_father_name': _STR, 'bc_father_nric': _STR}),
     # Income Check-1: a guardianship order / authorisation letter ties the legal guardian
@@ -1504,10 +1571,16 @@ _DOC_HINTS = {
                           '12 NRIC digits). IGNORE the "PEMBERITAHU / INFORMANT" block at the bottom '
                           'entirely — its "Nama" is the informant (often a grandparent), NOT the '
                           'child or a parent. Use names EXACTLY as printed (keep bin/binti/a/l/a/p). '
-                          'Leave a field empty if absent. NOTE: a birth certificate normally shows NO '
-                          'IC number for the child (only the parents have "No. Kad Pengenalan") — '
-                          'leave "bc_child_nric" empty and do NOT add any warning about a missing/'
-                          'unlabelled child IC.'),
+                          'Leave a field empty if absent. THE CHILD\'S IC: on a modern certificate a '
+                          '12-digit number is printed in the TOP-RIGHT block beside the barcode, '
+                          'often UNLABELLED (e.g. "080117-10-2004") — that is the child\'s IC number. '
+                          'Return it as "bc_child_nric" with all 12 digits. Do NOT confuse it with '
+                          'the certificate/register number, which carries LETTERS (e.g. "BZ21723"); '
+                          'if the number you see has any letter in it, leave "bc_child_nric" empty. '
+                          'Also return "bc_child_dob" = the child\'s date of birth ("Tarikh Lahir") '
+                          'EXACTLY as printed (e.g. "17 JANUARI 2008"). On an older certificate that '
+                          'shows no child IC at all, leave "bc_child_nric" empty and do NOT add any '
+                          'warning about a missing/unlabelled child IC.'),
     'guardianship_letter': (' This is EITHER a Malaysian court-issued guardianship order OR a '
                             'written authorisation letter from a parent placing the applicant '
                             '(the "ward") under someone\'s care. Return: "guardian_name" = the '
@@ -1708,6 +1781,13 @@ def _sanitize_extracted_fields(doc_type: str, data: dict) -> dict:
                       or name_match(child, data.get('bc_mother_name') or '') == 'match'):
             child = ''
         data['bc_child_name'] = child
+        # ⚠ The child's IC is kept ONLY when the printed date of birth confirms it. The number
+        # sits unlabelled beside the barcode next to the register number (which carries
+        # letters), so a misread is easy — and unlike a blank, a wrong number reads as a
+        # CONFIDENT mismatch against the student's own NRIC and would newly block them.
+        if data.get('bc_child_nric') and not nric_dob_agrees(data.get('bc_child_nric'),
+                                                             data.get('bc_child_dob') or ''):
+            data['bc_child_nric'] = ''
     return data
 
 
