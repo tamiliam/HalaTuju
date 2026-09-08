@@ -30,6 +30,44 @@ refused at length 45 and allowed at length 30* — because a test asserting only
 also passes against a guard that is simply too tight. Two more drive over the bump: 11:00 after a
 10:00 hold is still offerable, and 10:45 sits back-to-back with 10:00–10:45 without clashing.
 
+## Console tables start at twenty-five rows - 2026-09-08
+
+**DEPLOYED AND VERIFIED LIVE.** `main` at `ef44c723`; **only the WEB build fired** (no Python
+changed — the sixth observation agreeing that the api trigger follows PYTHON, not the
+`halatuju_api/**` glob); serving **halatuju-web-00858-xjp**; public routes 200; no web ERROR logs.
+⚠ The live proof is by TEST, not by reading the served bundle: the change is a NUMBER, which
+minifies inline with nothing distinctive to grep for. The reviewers and benefactors pages are
+admin-gated, so the visual check is the owner's.
+
+BrightPath request #18 (small change, 0.5h quoted). `tableView.DEFAULT_PAGE_SIZE` 10 -> 25.
+
+**THEY ASKED FOR TWO PAGES AND WE MOVED THE SHARED DEFAULT INSTEAD**, which is what the posted
+analysis recommended and they accepted. Setting reviewers and benefactors to 25 while the rest
+stayed at 10 would have left the console with two starting sizes and no rule, so the next table
+added inherits whichever number its author thinks of. One constant, six call sites, no per-page
+overrides.
+
+**⚠ THE VISIBLE EFFECT IS THAT THE PAGER DISAPPEARS, not that pages get longer.** On the live
+numbers reviewers (20), benefactors (11) and invitations (20) now fit one page and lose their footer
+entirely; only a benefactor's own student list (46 at the busiest) still pages. That is the request
+— the reader wanted the whole list, not a second page. The 10 / 25 / 50 selector is untouched.
+
+**⚠ THREE TEST ASSERTIONS WERE CHANGED ON PURPOSE, each with its reason at the line.** Two rendered
+sponsor-page tests pinned the old ten (eleven rows used to page and now fit); the claims they
+protect are unchanged, only the number they are written against.
+
+**⚠ AND ONE TEST WAS REPLACED RATHER THAN RENUMBERED.** `expect(DEFAULT_PAGE_SIZE).toBe(PAGINATION_MIN_ROWS)`
+pinned an EQUALITY to protect a PROPERTY its own comment stated — *"a table could pass the threshold
+and still show one page"*. That property is held by the second clause of `shouldPaginate`, not by
+the constants agreeing, so once the default moved the equality was false while the property stayed
+true. It is written as the property now and survives the constants diverging again.
+**`PAGINATION_MIN_ROWS` is NOT dead** — it still binds any caller passing a smaller page size, and a
+test says so.
+
+jest **1879** (+3); tsc **24** (baseline); lint **0**; i18n **4897 x 3** (no new keys);
+`next build` exit 0. One bite-check: putting the constant back fails exactly the two tests written
+for this and nothing else. **No backend change.**
+
 ## Every console list reads as cards on a phone - 2026-09-08
 
 "Proceed with all" — the remaining lists, after the payment run proved the shape. Each keeps its
