@@ -552,8 +552,14 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-08, after the gift card)
 
-**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION.** Worktree `.worktrees/gift-card`,
-branch `feat/gift-card`, base `ee9630cb`. api + web. Retro
+**DEPLOYED AND VERIFIED LIVE 2026-09-08.** `main` at `99bdfe3e`; **BOTH** builds SUCCESS on
+`99bdfe3` (Python changed, so both triggers fired — as expected); serving
+**halatuju-api-01003-bcm** / **halatuju-web-00860-cwd**. Served bundle read back (1.69 MB): it
+carries "Taking applications for", "Not taking applications", "Awarded", the card's own door label
+and the menu's name, and **no longer carries the retired "Taking applications" column heading** —
+an absence check, not just five presence ones. The programmes endpoint answers **401 (gated, not
+500)**; no error logs. **NO MIGRATION.** Was worktree `.worktrees/gift-card`, branch
+`feat/gift-card`, base `ee9630cb`. api + web. Retro
 `docs/retrospective-2026-09-08-gift-card.md`; decisions x4; lessons x5. Gates, ALL RUN INSIDE THE
 WORKTREE: pytest **6034** (+7); jest **1886** (+3); tsc **24** (baseline); lint **0 Errors**;
 i18n **4901 x 3** (5 added, 1 retired); `next build` exit 0; `makemigrations --check` clean.
@@ -599,10 +605,9 @@ found is indistinguishable from a missing one.**
 - The card is about **half its old height** — three facts on one line, the round as a sentence
   beneath. `col.takingApplications` was **retired**, not left orphaned.
 
-**▶ AT DEPLOY: push (api + web — Python changed).** No migrate-first, no env vars, no data step.
-**Nothing a student sees changes.**
+**▶ DEPLOYED. Nothing a student sees changed.**
 
-**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+**▶ OWNER POST-CHECK, STILL OWED (as the BrightPath `org_admin`, elanjelian@me.com):**
 1. Organisation → Overview. **Press a gift card anywhere** — it opens that gift's Configuration.
 2. The **⋮** at the card's top-right holds **Settings** and **Delete**.
 3. On **BrightPath Bursary**, Delete is **asleep with the reason underneath** ("students have
