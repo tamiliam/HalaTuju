@@ -1806,6 +1806,10 @@ export interface BcCheck {
   father_name: string
   father_status: RelStatus    // vs your IC patronymic
   bc_number: string
+  // #23: the document is on file and is the right KIND, but nothing at all could be read off
+  // it. The three statuses above are all `no_ref` in that case, which renders as three greys —
+  // indistinguishable from a certificate that checked out. The surface draws one amber instead.
+  unreadable?: boolean
 }
 
 export interface GuardianshipCheck {
@@ -1815,6 +1819,7 @@ export interface GuardianshipCheck {
   ward_name: string
   ward_status: RelStatus      // vs the student (you)
   doc_kind: string
+  unreadable?: boolean        // #23 — nothing read ≠ nothing wrong
 }
 
 // V1: the declared-income supporting doc — whether it READ as real evidence (officer chip).

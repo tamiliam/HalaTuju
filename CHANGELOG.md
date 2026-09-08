@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## Nothing read is not nothing wrong - 2026-09-08
+
+Step 2 of BrightPath request #23, and the owner's sentence for it was exact: *"today 'we could not
+read it' scores the same as 'it checked out'."*
+
+**A RELATIONSHIP DOCUMENT ON FILE THAT YIELDS NOTHING NOW SAYS SO.** Every row of an unreadable
+certificate buckets to `no_ref`, which means "nothing disagrees" - so the blocking rule saw no
+disagreement, the officer saw three grey chips indistinguishable from an absent optional document,
+and nobody was ever asked for a better copy. New `income_engine.relationship_doc_unreadable`.
+
+**THE RULE IS DOCUMENT-LEVEL, NEVER ROW-LEVEL.** A blank father row on a certificate that names no
+father is a real absence, not a failed read. Only when EVERY field we know how to read is blank did
+the document tell us nothing. A test pins the partly-read case as NOT unreadable.
+
+**`unusable` IS A REASON STRING NOW, NOT A BOOLEAN** - '' / 'wrong_type' / 'unreadable'. It stays
+truthy at every existing call site, and it exists because the two states owe the student DIFFERENT
+words: wrong-type (#27) says *that is not a birth certificate*; unreadable (#23) says *we could not
+read yours, please send a clearer copy*. Collapsing them would tell a family with a poor scan that
+their certificate is not genuine.
+
+**TWO NEW CODES, AND THE SUFFIX IS LOAD-BEARING.** `birth_cert_unreadable` /
+`guardianship_letter_unreadable`. `STUDENT_DOC_REQUEST_CODES` is derived from the `_unreadable`
+suffix, so both become Action-Centre re-uploads automatically - which is what a form-locked student
+can actually act on.
+
+**THE CODES ARE WRITTEN OUT AS LITERALS, NOT PICKED BY A TERNARY.** The first cut used a ternary and
+`test_no_new_unverifiable_dynamic_call_site` failed, correctly: a computed code escapes the i18n
+coverage check entirely. The guard was right and the code changed, not the guard.
+
+**ON THE OFFICER'S SCREEN IT IS ONE AMBER ROW**, replacing three greys. Measured on production
+first: of 62 live certificates plus one guardianship letter, exactly two are in this state - one
+certificate that read nothing, one letter never processed. Nobody is stranded by fixing it.
+
+pytest **4660**; jest **1825**; tsc **24** (baseline); lint **0**; i18n **4892 x 3** (ms/ta first
+drafts); `next build` exit 0; `makemigrations --check` clean. One bite-check landed.
+
 ## The birth certificate carries the child's IC, and we told the reader to skip it - 2026-09-08
 
 Step 1 of BrightPath request #23. The owner sent two certificates and pointed at the same thing on

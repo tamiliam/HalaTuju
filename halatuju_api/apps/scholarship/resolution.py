@@ -59,6 +59,12 @@ CODE_TO_TICKET = {
     # genuineness) — a required relationship proof is effectively absent → auto-ask a re-upload.
     'birth_cert_not_genuine':       {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
     'guardianship_letter_not_genuine': {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
+    # #23 (owner 2026-09-08): the doc IS on file and IS the right kind, but nothing could be read
+    # off it — which used to score exactly like a document that checked out. A DIFFERENT message
+    # from *_not_genuine: "we could not read yours", not "that is not a birth certificate". The
+    # `_unreadable` suffix puts both in STUDENT_DOC_REQUEST_CODES automatically.
+    'birth_cert_unreadable':           {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
+    'guardianship_letter_unreadable':  {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
     'birth_cert_mismatch':          {'fact': 'income', 'kind': 'confirm'},
     'father_patronymic_mismatch':   {'fact': 'income', 'kind': 'confirm'},
     'guardianship_letter_missing':  {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},

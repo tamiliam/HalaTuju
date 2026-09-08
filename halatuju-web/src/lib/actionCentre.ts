@@ -134,6 +134,11 @@ export const KNOWN_CODES = [
   // → a re-upload request for the full, uncropped document.
   'birth_cert_not_genuine',
   'guardianship_letter_not_genuine',
+  // #23 — the right kind of document, but NOTHING could be read off it. A separate code from
+  // *_not_genuine on purpose: telling a family with a poor scan that their certificate is not
+  // genuine is a different (and wrong) message from asking for a clearer copy.
+  'birth_cert_unreadable',
+  'guardianship_letter_unreadable',
   'father_patronymic_mismatch',
   'guardianship_letter_missing',
   'str_not_current',

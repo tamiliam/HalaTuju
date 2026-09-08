@@ -455,6 +455,29 @@ describe('documentFacts', () => {
     expect(bc('mismatch')).toBe('not')
   })
 
+  // BrightPath #23. An unreadable certificate buckets EVERY row to `no_ref`, which renders as
+  // three grey chips — indistinguishable from a document that checked out, which is exactly the
+  // owner's complaint ("we could not read it scores the same as it checked out"). One amber row.
+  it('a certificate nothing could be read from is ONE amber row, not three greys', () => {
+    const rows = documentFacts(doc({
+      doc_type: 'birth_certificate',
+      bc_check: { child_name: '', child_status: 'no_ref', mother_name: '', mother_nric: '', mother_status: 'no_ref', father_name: '', father_status: 'no_ref', bc_number: '', unreadable: true },
+    }))
+    expect(rows).toEqual([{ key: 'unreadable', status: 'partial' }])
+    // Without the flag the same three `no_ref` rows still render as they always did.
+    expect(documentFacts(doc({
+      doc_type: 'birth_certificate',
+      bc_check: { child_name: '', child_status: 'no_ref', mother_name: '', mother_nric: '', mother_status: 'no_ref', father_name: '', father_status: 'no_ref', bc_number: '' },
+    })).map((f) => f.key)).toEqual(['child', 'mother', 'father'])
+  })
+
+  it('an unreadable guardianship letter is ONE amber row too', () => {
+    expect(documentFacts(doc({
+      doc_type: 'guardianship_letter',
+      guardianship_check: { guardian_name: '', guardian_nric: '', guardian_status: 'no_ref', ward_name: '', ward_status: 'no_ref', doc_kind: '', unreadable: true },
+    }))).toEqual([{ key: 'unreadable', status: 'partial' }])
+  })
+
   it('utility bill → Address, Current, Reasonable (Outstanding only when arrears > charge)', () => {
     const util = (o: Partial<NonNullable<AdminApplicantDocument['utility_check']>>) =>
       ({ name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: '',
