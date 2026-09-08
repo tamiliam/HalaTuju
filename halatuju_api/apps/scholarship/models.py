@@ -2112,7 +2112,9 @@ REQUEST_COMPONENT_TREE = {
 
 # English labels (human text — the VALUES derive from the tree, the labels are looked up here).
 _REQUEST_COMPONENT_LABELS = {
-    'applications': 'B40 Applications',
+    # ⚠ MATCHES THE MENU ROW, which stopped naming one programme on 2026-09-08 — this list
+    # names the same console page, so the two must move together.
+    'applications': 'Applications',
     'applications_student_details': 'Student details',
     'applications_documents': 'Documents',
     'applications_ai_prediction': 'AI Prediction & verdicts',
