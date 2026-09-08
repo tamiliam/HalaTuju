@@ -80,7 +80,7 @@ export default function AdminProgrammePage() {
   if (!mayView) return null
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <h1 className="text-2xl font-semibold text-ground-900">{t('admin.programme.title')}</h1>
       <p className="mt-1 text-sm text-ground-600">
         {programme ? `${programme.name} — ` : ''}{t('admin.programme.subtitle')}

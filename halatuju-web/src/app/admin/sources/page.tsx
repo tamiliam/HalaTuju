@@ -6,6 +6,7 @@ import {
   getSources, createSource, updateSource, type SourceItem,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatPhone, isValidPhone } from '@/lib/scholarship'
@@ -149,7 +150,7 @@ export default function SourcesPage() {
   }
 
   return (
-    <div className="max-w-5xl font-plex">
+    <div className="font-plex">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.sources.title')}</h1>
@@ -226,8 +227,9 @@ export default function SourcesPage() {
       {/* The registry is HIDDEN rather than unmounted: a half-finished inline edit survives a trip
           to the emails badge and back. The plain `hidden` attribute (not a Tailwind class) is
           deliberate — it takes the table out of the accessibility tree as well as the layout. */}
-      <div hidden={panel !== 'orgs'} className="bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
-        <table className="w-full text-sm min-w-[820px]">
+      <div hidden={panel !== 'orgs'} data-testid="sources-registry">
+        <TableFrame minWidth={820} label={t('admin.sources.title')}>
+        <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-ground-600">{t('admin.sources.colOrganisation')}</th>
@@ -332,6 +334,7 @@ export default function SourcesPage() {
             )}
           </tbody>
         </table>
+        </TableFrame>
       </div>
     </div>
   )

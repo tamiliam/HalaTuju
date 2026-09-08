@@ -3086,6 +3086,9 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "table": {
+      "scrollHint": "Swipe the table sideways to see the rest."
+    },
     "orgPage": {
       "nav": "Overview",
       "sub": "Your organisation — its people, its sponsors and its money.",

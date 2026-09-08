@@ -151,7 +151,7 @@ export default function OrganisationInvitationsPage() {
   const canInviteHere = canManage && (kind === 'sponsors' || invitable.length > 0)
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader title={t('admin.invitations.title')} subtitle={t('admin.invitations.subtitle')} />
 
       {/* The same bar every organisation surface wears — one component, so they cannot drift. */}

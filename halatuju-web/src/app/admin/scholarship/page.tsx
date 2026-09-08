@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
@@ -245,7 +246,7 @@ export default function AdminScholarshipList() {
         <div className="text-center text-ground-500 mt-8">{t('admin.scholarship.empty')}</div>
       ) : (
         <>
-        <div className="bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
+        <TableFrame minWidth={980} label={t('admin.scholarship.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
@@ -357,7 +358,7 @@ export default function AdminScholarshipList() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableFrame>
         {data && (
           <Pagination
             page={data.page}

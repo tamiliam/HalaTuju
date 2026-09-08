@@ -1056,7 +1056,7 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
   const editableAgenda = agendaItems.filter((it) => findings[it.code]?.verdict !== 'deleted')
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 pb-10">
+    <div className="space-y-4 pb-10">
       <DocViewer doc={viewerDoc} onClose={() => setViewerDoc(null)} />
       {/* Header — applicant identity, status, and key facts at a glance */}
       <header className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm">

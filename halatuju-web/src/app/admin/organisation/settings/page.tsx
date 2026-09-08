@@ -32,7 +32,7 @@ export default function AdminOrganisationSettingsPage() {
   if (!mayView) return null
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <h1 className="text-2xl font-semibold text-ground-900">{t('admin.orgSettings.title')}</h1>
       <p className="mt-1 text-sm text-ground-600">{t('admin.orgSettings.subtitle')}</p>
 
