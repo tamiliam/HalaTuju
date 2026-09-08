@@ -30,6 +30,18 @@ class IncompleteProfileError(Exception):
         super().__init__('Profile is not complete.')
 
 
+class RoundFinishedError(Exception):
+    """Raised when a student tries to submit into an intake round that was closed FOR GOOD.
+
+    Distinct from `IncompleteProfileError` on purpose: nothing the student can do fixes it, so the
+    screen must not point them at a missing document. It is the end of the grace period a closed
+    round grants (see `confirm_profile`), and it is terminal.
+    """
+    def __init__(self, cohort_code=''):
+        self.cohort_code = cohort_code
+        super().__init__('This intake round has closed for good.')
+
+
 class OnboardingError(Exception):
     """Raised when a student tries to complete onboarding out of order (e.g. before
     their award has been accepted). Carries a short ``code`` for the view."""
@@ -1355,6 +1367,15 @@ def confirm_profile(application):
     """
     if application.status != 'shortlisted':
         return False  # already confirmed / further along — idempotent no-op
+    # ⚠⚠ A FINISHED ROUND TAKES NO MORE SUBMISSIONS, AND THIS IS THE ONLY PLACE THAT IS TRUE.
+    # Closing a round (`is_open=False`) stops NEW applications and nothing else — the intake gate
+    # lives on `ApplicationCreateView` and a returning applicant never reaches it again. That grace
+    # period is deliberate and production relied on it (thirty students submitted between the 2026
+    # round closing on 1 July and the deadline on the 7th). `finished_at` is where the grace period
+    # ends, so the refusal belongs on the SUBMIT path, not beside the create gate.
+    cohort = application.cohort
+    if cohort and cohort.finished_at:
+        raise RoundFinishedError(cohort.code)
     completeness = application_completeness(application)
     if not completeness['complete']:
         raise IncompleteProfileError(completeness)

@@ -39,6 +39,7 @@ from .serializers_admin import interview_schedule_payload
 from .services import (
     CONSENT_VERSION,
     IncompleteProfileError,
+    RoundFinishedError,
     OnboardingError,
     POST_SHORTLIST_EDITABLE,
     complete_onboarding,
@@ -465,6 +466,14 @@ class ApplicationConfirmView(APIView):
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         try:
             confirm_profile(application)
+        except RoundFinishedError:
+            # ⚠ NOT an `incomplete_profile` — nothing the student uploads changes this, so the
+            # screen must not send them back to the documents. The round is over.
+            return Response(
+                {'error': 'This intake round has closed and is no longer accepting submissions.',
+                 'code': 'round_finished'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except IncompleteProfileError as exc:
             return Response(
                 {'error': 'Please complete every required step before submitting.',

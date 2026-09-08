@@ -156,6 +156,41 @@ class ScholarshipCohort(models.Model):
                   'NULL means no window was stated.',
     )
 
+    # ── Finishing a round for good (owner, 2026-09-08) ───────────────────────────────────────
+    #
+    # ⚠⚠ CLOSED AND FINISHED ARE DIFFERENT THINGS, AND THE DIFFERENCE IS A REAL BEHAVIOUR THAT
+    # PRODUCTION ALREADY RELIED ON. `is_open=False` stops NEW applications and nothing else —
+    # a student who had already started keeps their right to finish, because the intake gate
+    # lives on the CREATE endpoint and a returning applicant never reaches it again. That is
+    # stated at `views.ApplicationCreateView` and it is not an oversight.
+    #
+    # It is how the 2026 intake actually ran: the switch went off on 1 July, the landing page
+    # greyed out, and THIRTY students who were already part-way through submitted between then
+    # and 7 July. Nobody designed that grace period into the screen; it fell out of where the
+    # gate sits, and for two months nothing said it existed. Reconstructing it needed a database
+    # query, because there is no record of the close (this pair is the fix for that too).
+    #
+    # `finished_at` is the end of the grace period: the round is done, and a late submission is
+    # refused. **It is TERMINAL** (owner: *"when an application is finished, can it be opened
+    # again? I don't think it should be"*). Nothing in the product clears it — not the open
+    # toggle, not the edit dialog. That is why finishing asks for the round's code to be TYPED,
+    # the same shape as deleting a gift: an irreversible act gets a deliberate one.
+    #
+    # ⚠ DO NOT "SIMPLIFY" THIS INTO `is_open`. Three states are needed because the middle one is
+    # load-bearing: open (anyone may start), closed (no new starts, those in flight may finish),
+    # finished (nobody may submit). Collapsing closed into finished would have shut out those
+    # thirty students on 1 July.
+    finished_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When this round was closed FOR GOOD. Terminal — nothing in the product '
+                  'clears it. NULL means the round can still be reopened.',
+    )
+    finished_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the administrator who finished the round. Blank for a round "
+                  "finished before this was recorded, which is never 'nobody'.",
+    )
+
     # ── Shortlisting requirements (consumed by `shortlisting.evaluate`) ──────────────────────
     #
     # ⚠⚠ NULL MEANS THE TEST IS NOT APPLIED (Sabah S2a, owner 2026-09-02). Every one of these was

@@ -995,6 +995,16 @@ Four sprints replaced a hardcoded top bar with a data-driven shell. Two files ca
   the shell**, owner decision), `StaffAdmin` (shared by the four organisation pages).
   - **⚠ Every component in `StaffAdmin.tsx` must stay at MODULE scope.** One declared inside its
     parent remounts the subtree and steals focus from the invite inputs each keystroke.
+  - **`IntakeYearTab` — a round has FOUR states, and the badge is the control (2026-09-08).**
+    `draft · open · closed · finished`, **served** by `views_admin.round_state` (never derived here,
+    the `lifecycle` rule). **⚠⚠ CLOSED AND FINISHED ARE DIFFERENT THINGS AND MUST NOT BE COLLAPSED:**
+    closing a round stops NEW applications only — the intake gate is on `ApplicationCreateView`, so
+    anyone already started may still submit. The 2026 intake ran on exactly that between 1 and 7
+    July 2026, thirty students deep. `finished_at` ends the grace period, is refused in
+    `services.confirm_profile`, and is **TERMINAL** (owner ruling) — the reopen refusal is on the
+    ENDPOINT, and finishing takes a typed confirmation plus a count of who it shuts out.
+    ⚠ `ScholarshipApplication.submitted_at` is `auto_now_add` and never null; `shortlisted` is the
+    not-yet-submitted status.
   - **`SaveBar` — the ONE save bar (2026-09-07).** Sticky grey bar, status left, buttons **right**,
     `SAVE_BAR_PRIMARY` / `SAVE_BAR_SECONDARY` for the buttons, and **idle renders nothing**. Used
     by all four configuration tabs (Rules · What we ask for · Organisation Configuration ·

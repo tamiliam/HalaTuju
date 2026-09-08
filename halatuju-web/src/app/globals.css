@@ -9,6 +9,14 @@
    from today's EXACT platform hexes — static CSS so first paint is correct + SSR-safe. A tenant
    overrides these on :root at runtime (branding-context); BrightPath uses these verbatim. */
 :root {
+  /* ⚠ THE BROWSER PAINTS THE NATIVE CONTROLS, AND IT NEEDS TELLING WHICH MODE IT IS IN (owner,
+     2026-09-08: *"in dark mode the calendar icon is almost hidden"*). Every `<input type="date">`
+     picker glyph, dropdown arrow, spinner and scrollbar is drawn by the browser, not by us, and
+     without `color-scheme` it draws them all for a LIGHT page — a near-black icon on a near-black
+     field. One declaration per mode fixes every native control at once, present and future; do
+     not chase individual glyphs with `filter: invert()`. */
+  color-scheme: light;
+
   --brand-50: 239 246 255;   /* #eff6ff */
   --brand-100: 219 234 254;  /* #dbeafe */
   --brand-200: 191 219 254;  /* #bfdbfe */
@@ -270,6 +278,10 @@
    mid-session while a form is half-filled. Losing that form would not be
    reported as a theming bug. */
 :root[data-theme='dark'] {
+  /* ⚠ SEE THE NOTE ON `:root` — this is what makes the browser draw its OWN controls dark. The
+     date picker's calendar icon was all but invisible without it. */
+  color-scheme: dark;
+
   /* ── brand: the SAME colour, aimed at a different ground (Layer 1 F3b) ──────────────────────
      ⚠ THIS BLOCK LOOKS LIKE IT BREAKS THE OWNER'S RULING. IT IS THE RULING, STATED PRECISELY.
      The rule (2026-07-29) is that switching mode must never change WHOSE product you are looking

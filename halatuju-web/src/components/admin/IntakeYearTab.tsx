@@ -56,8 +56,10 @@ import { formatDate } from '@/lib/formatDate'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
 import RequirementFields from '@/components/admin/RequirementFields'
 import {
-  getAdminIntakeYears, createAdminIntakeYear, updateAdminIntakeYear, type AdminIntakeYear,
+  getAdminIntakeYears, createAdminIntakeYear, updateAdminIntakeYear, finishAdminIntakeYear,
+  type AdminIntakeYear,
 } from '@/lib/admin-api'
+import { Menu, MenuHeading, MenuItem } from '@/components/admin/Menu'
 // ⚠ In `lib`, not beside the page: a page module may carry NO export beyond its default, and
 // `next build` is the only gate that says so (Layer 1 F7c, three times).
 import {
@@ -70,6 +72,14 @@ const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
 const EMPTY_FORM = { year: '', code: '', name: '', opens_on: '', closes_on: '' }
 
 const EMPTY_EDIT = { name: '', opens_on: '', closes_on: '' }
+
+// ⚠ THE BROWSER'S YEAR SLOT TAKES SIX DIGITS (owner, 2026-09-08, having typed `07/07/202026`).
+// Chrome's date input accepts a year up to 275760, so typing over an existing value produces a
+// well-formed but absurd date. The server already refuses it — `date.fromisoformat` wants four
+// digits — but the message it can give back is only "enter a valid closing date", which does not
+// say the YEAR is the problem. `min`/`max` make the browser itself refuse, at the keystroke.
+const DATE_MIN = '2000-01-01'
+const DATE_MAX = '2099-12-31'
 
 /**
  * The "When it runs" cell: the stated dates, and what they MEAN today.
@@ -106,6 +116,67 @@ function WindowCell({ year, today, t }: {
   )
 }
 
+/**
+ * The round's state, and the badge IS the control — the shape the owner approved on the gift card
+ * (2026-09-07) and asked for here (2026-09-08: *"the button seems odd sitting there, and at present
+ * it would sit there in perpetuity"*). A round closed two months ago with 143 applications will
+ * never reopen; a loose "Open applications" link beside it for ever is furniture.
+ *
+ * ⚠ FOUR TONES, AND NONE OF THEM IS RED. `critical` in this product means something is WRONG, and
+ * every one of these is a normal point in a round's life. Same ruling as the gift card's badge.
+ *
+ * ⚠ THE MENU'S HEADING IS THE POINT, not decoration. "Closed" has a behaviour nobody could see:
+ * no NEW applications, but anyone already started may still finish. That grace period is what the
+ * 2026 intake actually ran on between 1 and 7 July, and the only place it is now stated.
+ *
+ * ⚠ FINISHED OFFERS NOTHING. It is terminal (owner's ruling) and the server refuses to reopen one,
+ * so the menu explains rather than pretending there is a move.
+ */
+const ROUND_TONE: Record<AdminIntakeYear['state'], string> = {
+  draft: 'bg-ground-100 text-ground-600',
+  open: 'bg-positive-100 text-positive-800',
+  closed: 'bg-caution-100 text-caution-800',
+  finished: 'bg-info-100 text-info-800',
+}
+
+function RoundBadge({ year: y, busy, onOpen, onClose, onFinish, t }: {
+  year: AdminIntakeYear
+  busy: boolean
+  onOpen: (y: AdminIntakeYear) => void
+  onClose: (y: AdminIntakeYear) => void
+  onFinish: (y: AdminIntakeYear) => void
+  t: (k: string, p?: Record<string, string>) => string
+}) {
+  const s = y.state
+  return (
+    <Menu
+      label={t('admin.years.state.change', { name: y.name })}
+      align="left"
+      width="w-72"
+      trigger={
+        <span data-testid={`state-${y.code}`}
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${ROUND_TONE[s]}`}>
+          {t(`admin.years.state.${s}`)}
+          <span aria-hidden className="text-[9px] leading-none opacity-70">▾</span>
+        </span>
+      }
+    >
+      <MenuHeading>{t(`admin.years.state.means.${s}`)}</MenuHeading>
+      {s === 'open' && (
+        <MenuItem onClick={() => !busy && onClose(y)}>{t('admin.years.state.closeIt')}</MenuItem>
+      )}
+      {(s === 'draft' || s === 'closed') && (
+        <MenuItem onClick={() => !busy && onOpen(y)}>{t('admin.years.state.openIt')}</MenuItem>
+      )}
+      {/* Only a round that has actually taken applications can be "finished" — finishing a draft
+          nobody applied to says nothing and would spend a terminal action on an empty row. */}
+      {s === 'closed' && (
+        <MenuItem onClick={() => !busy && onFinish(y)}>{t('admin.years.state.finishIt')}</MenuItem>
+      )}
+    </Menu>
+  )
+}
+
 export default function IntakeYearTab() {
   const { token } = useAdminAuth()
   const { t } = useT()
@@ -122,6 +193,9 @@ export default function IntakeYearTab() {
   const [edit, setEdit] = useState(EMPTY_EDIT)
   /** A round the admin has asked to open AGAINST its own stated schedule, held for a confirm. */
   const [confirmOpen, setConfirmOpen] = useState<AdminIntakeYear | null>(null)
+  /** A round being closed FOR GOOD, and the phrase typed to confirm it. Terminal, so it asks. */
+  const [finishing, setFinishing] = useState<AdminIntakeYear | null>(null)
+  const [finishPhrase, setFinishPhrase] = useState('')
 
   const programmeId = programme?.id ?? null
   // Read ONCE per render rather than per row, so every row on the page is judged against the same
@@ -155,7 +229,13 @@ export default function IntakeYearTab() {
                 // swap turns a typo into a stated fact nobody was told about.
                 : c === 'window_backwards' ? 'windowBackwards'
                   : c === 'opens_on' ? 'badOpensOn'
-                    : c === 'closes_on' ? 'badClosesOn' : 'generic'
+                    : c === 'closes_on' ? 'badClosesOn'
+                      // ⚠ The three refusals a FINISH can meet. `roundFinished` is the terminal
+                      // one: the server refuses to reopen, whatever a stale screen offers.
+                      : c === 'round_finished' ? 'roundFinished'
+                        : c === 'still_open' ? 'stillOpen'
+                          : c === 'already_finished' ? 'alreadyFinished'
+                            : c === 'confirm_mismatch' ? 'confirmMismatch' : 'generic'
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setError('')
@@ -208,6 +288,13 @@ export default function IntakeYearTab() {
     if (y.is_open) { void setOpenState(y, false); return }
     if (outsideWindow(windowState(y, today))) { setError(''); setConfirmOpen(y); return }
     void setOpenState(y, true)
+  }
+
+  const saveFinish = async () => {
+    if (!finishing) return
+    const ok = await run(() => finishAdminIntakeYear(
+      finishing.id, finishPhrase.trim(), { token: token! }))
+    if (ok) { setFinishing(null); setFinishPhrase('') }
   }
 
   const inputCls = 'w-full rounded-lg border border-ground-300 px-3 py-2 text-sm'
@@ -270,18 +357,14 @@ export default function IntakeYearTab() {
                     </td>
                     <td className="px-4 py-3 tabular-nums text-ground-700">{y.applications}</td>
                     <td className="px-4 py-3">
-                      <span className="flex flex-wrap items-center gap-3">
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          y.is_open ? 'bg-positive-100 text-positive-800' : 'bg-ground-100 text-ground-600'}`}>
-                          {t(y.is_open ? 'admin.years.open' : 'admin.years.closed')}
-                        </span>
-                        <button type="button" disabled={busy}
-                          data-testid={`toggle-${y.code}`}
-                          onClick={() => pressOpenToggle(y)}
-                          className="text-xs font-medium text-primary-600 hover:underline disabled:opacity-50">
-                          {t(y.is_open ? 'admin.years.close' : 'admin.years.openIt')}
-                        </button>
-                      </span>
+                      {/* ⚠ THE BADGE IS THE CONTROL. The loose Open/Close link is gone — it sat
+                          beside a two-month-old closed round for ever, offering a move nobody
+                          would ever make. Every move a round can make now lives in its own menu,
+                          under a line saying what the state actually means. */}
+                      <RoundBadge year={y} busy={busy} t={t}
+                        onOpen={pressOpenToggle}
+                        onClose={(r) => void setOpenState(r, false)}
+                        onFinish={(r) => { setError(''); setFinishPhrase(''); setFinishing(r) }} />
                     </td>
                     <td className="px-4 py-3">
                       <button type="button" disabled={busy}
@@ -356,7 +439,7 @@ export default function IntakeYearTab() {
                 <label htmlFor="y-opens" className="block text-sm font-medium text-ground-700">
                   {t('admin.years.field.opensOn')}
                 </label>
-                <input id="y-opens" type="date" value={form.opens_on}
+                <input id="y-opens" type="date" min={DATE_MIN} max={DATE_MAX} value={form.opens_on}
                   onChange={(e) => setForm({ ...form, opens_on: e.target.value })}
                   className={`mt-1 ${inputCls}`} />
               </div>
@@ -364,7 +447,7 @@ export default function IntakeYearTab() {
                 <label htmlFor="y-closes" className="block text-sm font-medium text-ground-700">
                   {t('admin.years.field.closesOn')}
                 </label>
-                <input id="y-closes" type="date" value={form.closes_on}
+                <input id="y-closes" type="date" min={DATE_MIN} max={DATE_MAX} value={form.closes_on}
                   onChange={(e) => setForm({ ...form, closes_on: e.target.value })}
                   className={`mt-1 ${inputCls}`} />
               </div>
@@ -427,7 +510,7 @@ export default function IntakeYearTab() {
                 <label htmlFor="e-opens" className="block text-sm font-medium text-ground-700">
                   {t('admin.years.field.opensOn')}
                 </label>
-                <input id="e-opens" type="date" value={edit.opens_on}
+                <input id="e-opens" type="date" min={DATE_MIN} max={DATE_MAX} value={edit.opens_on}
                   onChange={(e) => setEdit({ ...edit, opens_on: e.target.value })}
                   className={`mt-1 ${inputCls}`} />
               </div>
@@ -435,7 +518,7 @@ export default function IntakeYearTab() {
                 <label htmlFor="e-closes" className="block text-sm font-medium text-ground-700">
                   {t('admin.years.field.closesOn')}
                 </label>
-                <input id="e-closes" type="date" value={edit.closes_on}
+                <input id="e-closes" type="date" min={DATE_MIN} max={DATE_MAX} value={edit.closes_on}
                   onChange={(e) => setEdit({ ...edit, closes_on: e.target.value })}
                   className={`mt-1 ${inputCls}`} />
               </div>
@@ -459,6 +542,61 @@ export default function IntakeYearTab() {
         </div>
       )}
 
+      {/* ── Closing a round FOR GOOD ─────────────────────────────────────────────────────────
+          ⚠ TERMINAL, AND THE TYPED CODE IS WHY IT ASKS (owner, 2026-09-08: *"when an application
+          is finished, can it be opened again? I don't think it should be"*). Nothing in the
+          product clears `finished_at`; the server refuses to reopen. Same shape as deleting a
+          gift — the code is printed in the dialog's own label, so typing it is closer to copying
+          than to deciding, and the pause is the point.
+
+          ⚠ IT NAMES THE PEOPLE IT WOULD SHUT OUT. A closed round still lets anyone already
+          started submit; finishing ends that. `unsubmitted` is the one fact the reader cannot see
+          from here, and silence would mean pressing this and quietly locking someone out. */}
+      {finishing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4"
+          onClick={() => !busy && setFinishing(null)}>
+          <div className="my-8 w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
+            data-testid="finish-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-ground-900">
+              {t('admin.years.finish.title')}
+            </h2>
+            <p className="mt-2 text-sm text-ground-600">{t('admin.years.finish.body')}</p>
+            {finishing.unsubmitted > 0 && (
+              <div className="mt-3">
+                <InfoBox kind="warning" >
+                  <span data-testid="finish-unsubmitted">
+                    {t('admin.years.finish.stranded', { n: String(finishing.unsubmitted) })}
+                  </span>
+                </InfoBox>
+              </div>
+            )}
+
+            <label htmlFor="finish-confirm"
+              className="mt-4 block text-sm font-medium text-ground-700">
+              {t('admin.years.finish.typeCode', { code: finishing.code })}
+            </label>
+            <input id="finish-confirm" value={finishPhrase} autoComplete="off"
+              onChange={(e) => setFinishPhrase(e.target.value)}
+              className={`mt-1 ${inputCls}`} />
+
+            {error && <p className="mt-3 text-sm text-critical-600">{error}</p>}
+
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button type="button" onClick={() => setFinishing(null)} disabled={busy}
+                className="text-sm font-medium text-ground-500 hover:text-ground-700">
+                {t('common.cancel')}
+              </button>
+              <button type="button" data-testid="finish-confirm-yes"
+                onClick={saveFinish}
+                disabled={busy || finishPhrase.trim().toLowerCase() !== finishing.code.toLowerCase()}
+                className="rounded-lg bg-critical-fill px-5 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
+                {t('admin.years.finish.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Opening against the round's own schedule ──────────────────────────────────────────
           ⚠ THIS ASKS; IT DOES NOT REFUSE. The server accepts an out-of-window open deliberately
           (the window describes, the person decides), so this must never grow into a gate — that
@@ -472,6 +610,11 @@ export default function IntakeYearTab() {
             <h2 className="text-lg font-semibold text-ground-900">
               {t('admin.years.confirmOpenTitle')}
             </h2>
+            {/* ⚠ TENSE FOLLOWS THE DATE (owner, 2026-09-08: it *"is talking about a date that is
+                long past as a 'due to close'"*). A window that ended reads in the past; one that
+                has not started reads in the present. Two short lines, not three long ones — the
+                "these dates only record the schedule" sentence lives in the Edit dialog, which is
+                where somebody is actually setting them. */}
             <p className="mt-2 text-sm text-ground-600">
               {(() => {
                 const s = windowState(confirmOpen, today)
@@ -484,7 +627,7 @@ export default function IntakeYearTab() {
                     : t('admin.years.confirmOpenGeneric')
               })()}
             </p>
-            <p className="mt-2 text-sm text-ground-600">{t('admin.years.confirmOpenNote')}</p>
+            <p className="mt-1 text-sm text-ground-600">{t('admin.years.confirmOpenNote')}</p>
 
             <div className="mt-5 flex items-center justify-end gap-3">
               <button type="button" onClick={() => setConfirmOpen(null)} disabled={busy}

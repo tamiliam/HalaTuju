@@ -6752,11 +6752,47 @@ def _window_from(data, current=(None, None)):
     return fields, None
 
 
+def round_state(c):
+    """Where an intake round is in its life: `draft` · `open` · `closed` · `finished`.
+
+    ⚠ SERVED, NEVER DERIVED IN THE BROWSER — the same rule as the gift card's `lifecycle`. Two
+    copies of this would eventually disagree, and the shape of that disagreement is a badge saying
+    one thing beside a control doing another.
+
+    ⚠⚠ THE FOUR STATES ARE THREE BEHAVIOURS, AND THE MIDDLE ONE IS LOAD-BEARING:
+      · `open`     — anyone may start an application and submit it.
+      · `closed`   — no NEW applications; **anyone already started may still finish**. That is not
+                     an oversight, it is where the intake gate sits (`ApplicationCreateView`), and
+                     production relied on it: the 2026 round's switch went off on 1 July and THIRTY
+                     students who were already part-way through submitted between then and 7 July.
+      · `finished` — the grace period is over. A late submission is refused. **TERMINAL.**
+      · `draft`    — never opened and nobody has applied. A round on its first day.
+
+    `draft` vs `closed` is a display distinction only (both refuse new applications); it exists so a
+    round being set up does not read as one that has run and stopped, which is the same confusion
+    "inactive" caused on the gift card.
+    """
+    from .models import ScholarshipApplication
+    if c.finished_at:
+        return 'finished'
+    if c.is_open:
+        return 'open'
+    # org-fence: `c` was reached through `_programmes_for` / `_cohort_or_404`, so it is already
+    # inside the caller's organisation and this count cannot widen past it.
+    if ScholarshipApplication.objects.filter(cohort=c).exists():
+        return 'closed'
+    return 'draft'
+
+
 def _cohort_row(c):
     from .models import ScholarshipApplication
     return {
         'id': c.id, 'code': c.code, 'name': c.name, 'year': c.year,
         'is_open': c.is_open, 'is_active': c.is_active,
+        # ⚠ THE STATE IS SERVED. See `round_state` — do not re-derive it in the browser.
+        'state': round_state(c),
+        'finished_at': c.finished_at.isoformat() if c.finished_at else None,
+        'finished_by': c.finished_by,
         # ⚠ THE STATED WINDOW, AND IT IS DESCRIPTIVE (owner, 2026-09-06). Serialised beside
         # `is_open` and never instead of it: `is_open` is what decides whether a student may
         # apply, these two say when the round is MEANT to run. ISO or None — a round with no
@@ -6766,6 +6802,17 @@ def _cohort_row(c):
         # org-fence: same reasoning — the cohort reached here was selected through
         # `programme__in=self._programmes_for(admin)`, so it is already inside the caller's org.
         'applications': ScholarshipApplication.objects.filter(cohort=c).count(),
+        # ⚠ THE PEOPLE FINISHING WOULD SHUT OUT. Served because the "close for good" dialog has to
+        # name it: a closed round still lets anyone already started submit, and finishing ends that.
+        #
+        # ⚠⚠ `shortlisted` IS THE NOT-YET-SUBMITTED STATUS. **DO NOT reach for `submitted_at` —
+        # it is `auto_now_add`, so it is stamped at CREATION and is never null.** The field that
+        # records a real submission is `profile_completed_at`, and the status that gates
+        # `services.confirm_profile` is `shortlisted`; that is precisely the population a finish
+        # would shut out, so it is the population to count.
+        # org-fence: as above.
+        'unsubmitted': ScholarshipApplication.objects.filter(
+            cohort=c, status='shortlisted').count(),
         'requirements': {f: getattr(c, f) for f in REQUIREMENT_FIELDS},
     }
 
@@ -7129,6 +7176,14 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
 
         if 'is_open' in request.data:
             want = bool(request.data.get('is_open'))
+            # ⚠⚠ FINISHED IS TERMINAL (owner, 2026-09-08: *"when an application is finished, can it
+            # be opened again? I don't think it should be"*). The refusal lives HERE, on the
+            # endpoint, not only in the browser — a screen that merely hides the control is a
+            # suggestion, and this one has to be a rule. Nothing in the product clears
+            # `finished_at`; reversing it is a deliberate database correction.
+            if want and c.finished_at:
+                return Response({'error': 'round_finished', 'code': 'round_finished'},
+                                status=status.HTTP_400_BAD_REQUEST)
             if want:
                 # ⚠⚠ ONE OPEN ROUND PER **GIFT PROGRAMME** — NOT PER ORGANISATION (owner,
                 # 2026-09-06: *"Only one round is open for a gift programme. But if the org has two
@@ -7178,4 +7233,66 @@ class AdminIntakeYearDetailView(_ProgrammeScopedBase):
                     c.code,
                     ';'.join('%s:%s->%s' % (f, old, new) for f, (old, new) in sorted(moved.items())),
                     admin.email or '')
+        return Response(_cohort_row(c))
+
+
+class AdminIntakeYearFinishView(_ProgrammeScopedBase):
+    """POST — close an intake round FOR GOOD. Terminal.
+
+    ⚠ ITS OWN ENDPOINT, NOT A FIELD ON THE PATCH, and the reason is the typed confirmation. This is
+    the one action on this screen with no way back, so it takes the same shape as deleting a gift:
+    the round's own code has to be typed. Folding it into the PATCH would make an irreversible act
+    reachable by the same request that renames a round.
+
+    ⚠ THE ROUND MUST BE CLOSED FIRST. Two deliberate steps, the same reasoning as "creating never
+    opens": stopping new applicants and ending the grace period are different decisions, taken at
+    different times, and collapsing them would have shut out the thirty students who submitted
+    between 1 and 7 July 2026.
+
+    ⚠ THE DIALOG NAMES THE UNSUBMITTED COUNT, and this endpoint is why it can: finishing REFUSES a
+    late submission, so anybody still part-way through is shut out. That number is the one thing the
+    reader cannot see from the dialog, so it is served on the row.
+    """
+
+    def post(self, request, pk):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        from .models import ScholarshipApplication, ScholarshipCohort
+        c = (ScholarshipCohort.objects
+             .select_related('programme', 'programme__organisation')
+             .filter(pk=pk, programme__in=self._programmes_for(admin)).first())
+        if c is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if c.finished_at:
+            return Response({'error': 'already_finished', 'code': 'already_finished'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if c.is_open:
+            return Response({'error': 'still_open', 'code': 'still_open'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # The typed phrase is the round's own code — printed on the row and in the dialog's label,
+        # so typing it is closer to copying than to deciding. Same shape as `delete <code>`.
+        typed = (request.data.get('confirm') or '').strip().lower()
+        if typed != c.code.lower():
+            return Response({'error': 'confirm_mismatch', 'code': 'confirm_mismatch'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        c.finished_at = timezone.now()
+        c.finished_by = admin.email or ''
+        c.save(update_fields=['finished_at', 'finished_by'])
+
+        # ⚠ `shortlisted`, NOT `submitted_at__isnull` — that column is `auto_now_add` and is never
+        # null. See the same note on `_cohort_row`.
+        #
+        # ⚠ THE PRAGMA SITS DIRECTLY ABOVE THE QUERY, and it has to: the static guard looks within
+        # 200 characters, so an explanation wedged between the two makes it fail — correctly.
+        # org-fence: `c` came through `_programmes_for(admin)`, so this is already the caller's org.
+        stranded = ScholarshipApplication.objects.filter(cohort=c, status='shortlisted').count()
+        # ⚠ THE COUNT IS ON THE AUDIT LINE because it is the part nobody can reconstruct later: the
+        # round's own row says it is finished either way, but "and it shut out two half-finished
+        # applications" is the fact a reader would otherwise have to guess at. TD-203's lesson.
+        logger.info('AUDIT intake_year_finished cohort=%s unsubmitted=%s by=%s',
+                    c.code, stranded, admin.email or '')
         return Response(_cohort_row(c))
