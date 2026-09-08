@@ -23,12 +23,12 @@ export const roleReviewer: ManualChapter = {
       anchor: 'reviewer-your-applicants',
       title: 'Your applicants',
       body: (
-        <>On <strong>B40 Applications</strong> you&rsquo;ll see <strong>only the applicants assigned to you</strong>
+        <>On <strong>Applications</strong> you&rsquo;ll see <strong>only the applicants assigned to you</strong>
         — not everyone&rsquo;s. Each row shows the name, source, qualification, merit score and status. Click a
         name to open the review screen — everything is on that one page.</>
       ),
       img: '/reviewer-guide/step1-list.png',
-      alt: 'The B40 Applications list showing your assigned applicants',
+      alt: 'The Applications list showing your assigned applicants',
     },
     {
       anchor: 'reviewer-working-a-case',

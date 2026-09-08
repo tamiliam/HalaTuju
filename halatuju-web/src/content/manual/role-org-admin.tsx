@@ -41,7 +41,7 @@ export const roleOrgAdmin: ManualChapter = {
       anchor: 'org-admin-assigning',
       title: 'Assigning applicants',
       body: (
-        <>On <strong>B40 Applications</strong> you get an <strong>Assigned</strong> column with an inline control
+        <>On <strong>Applications</strong> you get an <strong>Assigned</strong> column with an inline control
         to give a case to one of <em>your</em> reviewers (and the same control sits on each applicant&rsquo;s
         page). You can only assign your own organisation&rsquo;s active reviewers. A case can only change hands
         while a review is live (Awaiting review / Interviewing) — the control is disabled otherwise.</>
@@ -144,7 +144,7 @@ export const roleOrgAdmin: ManualChapter = {
         <br /><br />
         Below it sits your programme&rsquo;s own group, which is deliberately short:
         <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
-        for, and its intake year) and <strong>B40 Applications</strong>. Platform-only tools — adding
+        for, and its intake year) and <strong>Applications</strong>. Platform-only tools — adding
         organisations or referral partners — never appear for you; those stay with the HalaTuju platform team.</>
       ),
       img: '/manual/org-admin-administration.png',

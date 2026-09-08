@@ -140,21 +140,32 @@ describe('the lifecycle badge', () => {
  * never found it — they reached a gift through Applications and the breadcrumb instead.
  */
 describe('the card is the door', () => {
-  it('opens the gift when the card itself is pressed', async () => {
+  it('takes you to the APPLICATIONS for that gift, not to its settings', async () => {
+    // ⚠ Owner, 2026-09-08: *"it should link to Applications. To reach settings, there are the three
+    // dots."* Configuration is something you set up once; the applicants are what you come back to.
     await show(programme())
     fireEvent.click(screen.getByTestId('open-test3'))
     expect(mockSelect).toHaveBeenCalledWith('test3')
-    expect(mockPush).toHaveBeenCalledWith('/admin/programme')
+    expect(mockPush).toHaveBeenCalledWith('/admin/scholarship')
   })
 
-  it('KEEPS Settings in the menu as well', async () => {
-    // The card is a shortcut, not a replacement. Somebody looking for "where do I configure this"
-    // should find the word, and both routes must land in the same place.
+  it('KEEPS Settings in the menu, and that is the route to Configuration', async () => {
+    // Two destinations, deliberately. The card takes the common one; the ⋮ menu keeps the named
+    // route for the once-in-a-while visit.
     await show(programme())
     openMore()
     fireEvent.click(screen.getByText('admin.programmes.openSettings'))
     expect(mockSelect).toHaveBeenCalledWith('test3')
     expect(mockPush).toHaveBeenCalledWith('/admin/programme')
+  })
+
+  it('SELECTS the gift whichever door is used — that is what reveals the Programme menu', async () => {
+    // ⚠ The Configuration row waits for a chosen gift (`NavItem.needsProgramme`). Entering through
+    // Applications must still fill that in, or the two changes would fight: the owner would land on
+    // the applicants and find the menu still missing the row they were looking for.
+    await show(programme())
+    fireEvent.click(screen.getByTestId('open-test3'))
+    expect(mockSelect).toHaveBeenCalledWith('test3')
   })
 
   it('never nests a button inside the card button', async () => {
@@ -175,6 +186,29 @@ describe('the card is the door', () => {
     fireEvent.click(screen.getByTestId('lifecycle-test3'))
     expect(mockPush).not.toHaveBeenCalled()
     expect(screen.getByText('admin.programmes.lifecycle.makeLive')).toBeTruthy()
+  })
+})
+
+/*
+ * ⚠ A CLASS-STRING TEST, AND HONEST ABOUT IT. jsdom computes no layout, so nothing here can prove
+ * two cards actually SIT side by side — only that the container asks them to, and that the two
+ * full-width messages are not left stranded in a half-width column. The visual claim is the
+ * owner's browser pass.
+ */
+describe('the cards sit two across', () => {
+  it('lays the gifts out in a two-column grid from `sm` up', async () => {
+    await show(programme())
+    const grid = screen.getByTestId('programme-test3').parentElement as HTMLElement
+    expect(grid.className).toContain('grid')
+    expect(grid.className).toContain('sm:grid-cols-2')
+    expect(grid.className).not.toContain('space-y-')
+  })
+
+  it('spans the empty state across both columns', async () => {
+    mockApi.getAdminProgrammes.mockResolvedValue({ programmes: [] })
+    render(<GiftProgrammes token="tok" />)
+    const empty = await screen.findByText('admin.programmes.empty')
+    expect(empty.className).toContain('sm:col-span-2')
   })
 })
 

@@ -3801,7 +3801,7 @@
       }
     },
     "scholarship": {
-      "nav": "B40 Applications",
+      "nav": "Applications",
       "title": "{programmeName} Applicants",
       "titleAll": "All applicants",
       "countSubtitle": "{count} applicants",

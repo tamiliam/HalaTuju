@@ -48,7 +48,7 @@ export const basicsProgramme: ManualChapter = {
         The pages are grouped by what they belong to: <strong>HalaTuju</strong> (the platform),
         <strong> your organisation</strong> — the people, the money and the paperwork — and
         <strong> your programme</strong>, which is one gift: its <strong>Configuration</strong> and its
-        <strong> B40 Applications</strong>. If your organisation runs more than one gift, the trail across the
+        <strong> Applications</strong>. If your organisation runs more than one gift, the trail across the
         top says which one you are in, and you can switch there. You only ever see the groups your role
         reaches, so a short menu is not a fault. An entry marked <em>soon</em> is a page still being built; you
         may well see none at all.
