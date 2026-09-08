@@ -585,7 +585,7 @@ courses 74/74**. Five bite-checks landed.
 
 **Request #23 is `done`** — bug / sprint, **no charge**, ~**3.0h against 9.0h planned**. Analysis 52
 → comment 77 (the plan); analysis 53 → comment 78 (the completion report). Four of five steps built;
-**step 5 deferred by the owner.**
+**step 5 DROPPED by the owner** (2026-09-08 — see the block below; it is not deferred work).
 
 **⚠⚠ THE ONE THING TO READ FIRST: EVERY BEHAVIOUR CHANGE WAS MEASURED ON PRODUCTION, AND THE RAW
 COUNTS WERE ALL WRONG.** Step 3 looked like 21 rows moving; **one** live application moves, because
@@ -639,10 +639,14 @@ prompt. It is down to 2 now.
 
 **▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com) — the deploy is live, so
 these are things to LOOK at, not to do:**
-1. **Application 83 (VARNISA, awarded) is the one real record that moved** — her certificate's child
-   row is now **amber**: the name matches, the last four digits of the number do not, and the
-   printed date of birth agrees. Either our read of the last four digits is off or her certificate
-   genuinely disagrees with her IC. Nothing is gated by it; it is a chip for a person to read.
+1. **✅ APPLICATION 83 (VARNISA, awarded) — CHECKED BY THE OWNER 2026-09-08, BEHAVIOUR CONFIRMED
+   CORRECT. Do not re-raise it.** Her certificate's child row reads **amber**: the name matches,
+   the printed date of birth (`06 MAC 2008`) matches, and the last four digits do not
+   (`…0923` on a stained, creased barcode block against `…0398` read off her MyKad). Read via the
+   **Gemini path** (`capture: ai`), so the step-1 guard kept the number precisely because the date
+   agreed. **This is the standing proof that `nric_dob_agrees` vouches for the first six digits and
+   nothing more** — the note now lives in its docstring. Amber, not green, is the whole point;
+   nothing is gated by it.
 2. Open any student with a birth certificate — the rows show **green / amber / red per person**, and
    a name with no number reads amber, not green.
 3. A certificate that read nothing shows **one amber row**, not three greys, and the student has a
@@ -650,14 +654,27 @@ these are things to LOOK at, not to do:**
 4. **ms and ta are first drafts** for the two new codes and the `unreadable` fact label.
 5. Not click-tested in a browser (TD-182 still breaks admin Google sign-in on localhost).
 
+**⚠ STEP 5 IS DROPPED, NOT DEFERRED (owner, 2026-09-08: *"let's leave step 5 out"*).** The
+explanation-letter document type is NOT being built. Two reasons, and the second is the one to
+remember: (a) a **QC or super may already pass a red check by recording a reason**
+(`AdminQcDecisionView`, `qc_override_reason/_by/_at`, audited) — the same outcome, already built;
+(b) **request #19's rule already covers the population step 5 was written for** — an exactly-matching
+IC number rescues a differently-spelt name to AMBER, which is the "same person, spelt differently"
+family. What remains genuinely red is *name wrong AND number wrong*, which is a wrong document, and
+a letter is not the answer to that.
+
+**⚠ AND THE LIMIT OF THAT OVERRIDE, WHICH I GOT WRONG ONCE — SAY IT PLAINLY IF IT COMES UP AGAIN.**
+The QC override sits on the **QC gate** (`interviewed → recommended`). It does **NOT** reach
+`consent_blockers`, which has no override at all: a red relationship row stops a student SUBMITTING
+and only a better document clears it. So the override covers the officer's end, never the family's.
+**If a real applicant is ever red-blocked at submission, the thing to build is a route past the
+SUBMISSION gate — not a second override at the review gate.**
+
 **▶ NEXT — OWNER PICKS. Nothing here is blocking:**
-1. **Step 5 of #23, and it is the owner's own experiment first:** try the existing **QC override**
-   on a family whose certificate genuinely cannot be corrected. Only if that falls short is the
-   explanation-letter document type worth building.
-2. **The apply link on the gift card** + the editable gift code with the old code kept as an ALIAS
+1. **The apply link on the gift card** + the editable gift code with the old code kept as an ALIAS
    (the previous sprint's NEXT, unchanged — see the superseded block below). ⚠ The alias is not
    optional: a renamed gift would make every printed link tell a student "applications closed".
-3. **TD-236** (this sprint's) — `record_request_analysis` cannot run from a worktree and stamps the
+2. **TD-236** (this sprint's) — `record_request_analysis` cannot run from a worktree and stamps the
    wrong commit. Low, and its trigger is the next completion report.
 
 **⚠ ALSO OPEN:** the four organisation-scope surfaces the gift switcher did not filter; archiving a

@@ -109,6 +109,16 @@ def nric_dob_agrees(nric: str, dob: str) -> bool:
     a confident ``mismatch`` that newly BLOCKS a student — strictly worse than the blank
     this field held before. The certificate prints the date of birth beside the number, so
     the two must agree or we do not trust the read. Pure; never raises.
+
+    ⚠ **IT VOUCHES FOR THE FIRST SIX DIGITS AND NOTHING MORE — do not read a pass as "the number
+    is right".** The date can only speak for the date. Application 83 is the observed proof: a
+    stained, creased barcode block read ``080306-07-0923`` against a MyKad of ``080306-07-0398``,
+    the printed ``06 MAC 2008`` agreed, so the read was kept — and the last four digits still
+    disagreed. That is WHY a number that survives this guard is compared row-wise and lands AMBER
+    rather than green (`_combine_relationship`): the guard is what stops a misread creating a
+    confident RED, not what makes the number trustworthy. Widening it is impossible — nothing on
+    the certificate corroborates the last four digits — so the amber is the answer, and a person
+    reads it. (Owner reviewed #83 on 2026-09-08 and confirmed the behaviour is correct.)
     """
     digits = _canonical_nric(nric)
     if len(digits) != 12:

@@ -9728,3 +9728,32 @@ say green.
 **Revisit if:** father ICs become common on file (say, above half of applications), at which point
 the measured cost of the amber falls and the rule can be applied uniformly. Owner ruled on the
 numbers above, 2026-09-08.
+
+## The explanation-letter document type is dropped, not deferred — BrightPath #23, 2026-09-08
+
+**Decision:** step 5 of request #23 — a document type for a letter attesting that two spellings of a
+name are the same person — will NOT be built. Dropped by the owner ("let's leave step 5 out") after
+reviewing the two reasons below and application 83.
+
+**Alternatives considered:** build it now as originally scoped; or keep it parked with a trigger
+("the first family who cannot correct their certificate").
+
+**Rationale:** two things had already made it near-empty. First, a `qc` or `super` may pass a red
+verdict fact by RECORDING A REASON (`AdminQcDecisionView`, `qc_override_reason/_by/_at`, audited and
+shown on the record) — the same outcome a letter would achieve, already built and already trailed.
+Second, and more decisive: **request #19's rule already covers the population step 5 was written
+for.** An exactly-matching IC number rescues a differently-spelt name to AMBER, which is precisely
+the "same person, transliterated differently" family that JPN issues such letters for. What is left
+as a genuine RED is *name wrong AND number wrong* — a wrong document, for which the honest remedy is
+a correct upload, not an explanatory letter.
+
+**Trade-offs, and one of them is a real gap we are accepting knowingly:** the QC override sits on the
+QC gate (`interviewed → recommended`) and does NOT reach `consent_blockers`, which has no override
+at all. A red relationship row therefore stops a student SUBMITTING and only a better document
+clears it. So the override covers the officer's end and never the family's. Accepted because no live
+applicant is in that state (the only reds on file are one expired application whose certificate
+belongs to a different family, and the owner's test account).
+
+**Revisit if:** a real applicant is ever red-blocked AT SUBMISSION by a relationship row they cannot
+fix. The thing to build then is a route past the SUBMISSION gate — **not** a second override at the
+review gate, which is where the first reading of this pointed and was wrong.
