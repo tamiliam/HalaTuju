@@ -3801,7 +3801,7 @@
       }
     },
     "scholarship": {
-      "nav": "Permohonan B40",
+      "nav": "Permohonan",
       "title": "Pemohon {programmeName}",
       "titleAll": "Semua pemohon",
       "countSubtitle": "{count} pemohon",

@@ -63,7 +63,7 @@ describe('visibleNav per role', () => {
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
       'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
       'contracts', 'billing',
-      'programmeConfig', 'applications',
+      'applications', 'programmeConfig',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
@@ -84,7 +84,7 @@ describe('visibleNav per role', () => {
     org_admin: [
       'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
       'contracts', 'billing',
-      'programmeConfig', 'applications',
+      'applications', 'programmeConfig',
       'profile', 'guide', 'faq',
     ],
     admin: [
@@ -113,6 +113,27 @@ describe('visibleNav per role', () => {
 
   it('finance never reaches Applications — it has no B40 scope at all', () => {
     expect(canAccess('/admin/scholarship', 'finance')).toBe(false)
+  })
+
+  /*
+   * ⚠ THE SILENT BITE-CHECK. Renaming this row to "Applications" (owner, 2026-09-08) broke NOTHING
+   * — every test passed with the old label restored, because nothing pinned the words. That is
+   * mostly right: a label is copy. But the MANUAL names this row in prose in six places, and copy
+   * that describes the UI going stale is now a three-time pattern in this repo (the 2026-07-28
+   * lesson: "a term-based grep finds copy that NAMES the thing you changed"). This is the cheapest
+   * guard that would have caught it: the row's own name, and the manual, must agree.
+   */
+  it('the Applications row is named for ANY gift, not just B40', () => {
+    const label = resolve(en as Record<string, unknown>, 'admin.scholarship.nav') as string
+    expect(label).toBe('Applications')
+
+    // The manual describes this row by name. If the label goes back to naming one programme, the
+    // manual must move with it — this fails loudly instead of letting the two drift.
+    const manual = path.join(process.cwd(), 'src', 'content', 'manual')
+    const stale = fs.readdirSync(manual)
+      .filter((f) => f.endsWith('.tsx'))
+      .filter((f) => fs.readFileSync(path.join(manual, f), 'utf8').includes('B40 Applications'))
+    expect(stale).toEqual([])
   })
 
   it('a reviewer reaches neither the organisation nor the platform scope', () => {
@@ -350,9 +371,14 @@ describe('visibleNav groups', () => {
   // ⚠ THE ASSERTION IS THE COUNT, not the contents. Everything a person SETS about a gift is one
   // screen with tabs; a third row here means somebody has promoted a tab back into a page, which
   // is the drift this sprint removed. Applications is the only other thing you DO to a gift.
-  it('the programme scope is two rows: configure it, and work through it', () => {
+  // ⚠ APPLICATIONS LEADS (owner, 2026-09-08). The order is FREQUENCY, not hierarchy:
+  // configuration is set up once, the applicants are what you come back to — and it is where
+  // the gift card now takes you. Do NOT re-sort this to match the Configuration screen's own
+  // tab order (Intake year → Rules → What we ask for); that follows the DATA, which is a
+  // different question from which page a person opens most.
+  it('the programme scope is two rows, the one you use daily first', () => {
     const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
-    expect(prog.items.map((i) => i.id)).toEqual(['programmeConfig', 'applications'])
+    expect(prog.items.map((i) => i.id)).toEqual(['applications', 'programmeConfig'])
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
@@ -376,7 +402,7 @@ describe('visibleNav groups', () => {
 
     it('shows both rows once a gift is chosen', () => {
       const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id)).toEqual(['programmeConfig', 'applications'])
+      expect(prog.items.map((i) => i.id)).toEqual(['applications', 'programmeConfig'])
     })
 
     // ⚠ THE REVIEWER STRAND, PINNED. Programme is a reviewer's ONLY sidebar group (asserted
@@ -431,7 +457,7 @@ describe('searchNav', () => {
     ({ item: NAV_ITEMS.find((i) => i.id === id)!, label })
   const items = [
     L('overview', 'Dashboard'), L('students', 'Students'),
-    L('payments', 'Payments'), L('applications', 'B40 Applications'),
+    L('payments', 'Payments'), L('applications', 'Applications'),
     L('billingRates', 'Billing rates'),      // reserved
   ]
 
@@ -445,7 +471,9 @@ describe('searchNav', () => {
   })
 
   it('ranks a prefix hit above a word hit above a bare substring', () => {
-    // "App" starts B40 Applications' second WORD; it is a bare substring of nothing else here.
+    // "App" starts the label outright now that it is "Applications" (it used to start its SECOND
+    // word, "B40 Applications"). Either way it is a bare substring of nothing else here, so the
+    // ranking claim holds — the rename moved this hit from rank 1 to rank 0.
     expect(searchNav('app', items).map((i) => i.id)).toEqual(['applications'])
     // "s" starts Students, and appears inside Applications and Payments.
     const ids = searchNav('s', items).map((i) => i.id)

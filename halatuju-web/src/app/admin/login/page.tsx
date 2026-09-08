@@ -98,7 +98,7 @@ export default function AdminLoginPage() {
           return
         }
         // Reviewers/viewers have no partner-org dashboard — send them to their workspace
-        // (B40 Applications); org admins/super keep the dashboard; a reviewer with an
+        // (Applications); org admins/super keep the dashboard; a reviewer with an
         // incomplete profile is held on /admin/profile until they finish onboarding.
         router.push(adminLanding(role))
         return

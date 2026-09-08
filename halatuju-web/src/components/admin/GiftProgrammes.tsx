@@ -201,11 +201,22 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
   const setLifecycle = (p: AdminProgramme, makeActive: boolean) =>
     run(() => updateAdminProgramme(p.id, { is_active: makeActive }, { token: token! }))
 
-  /** Open a gift's own settings. The choice goes through the breadcrumb switcher's context, so
-   *  the crumb and the page agree about which gift you just stepped into. */
-  const openSettings = (p: AdminProgramme) => {
+  /**
+   * Step into a gift. The choice goes through the breadcrumb switcher's context, so the crumb, the
+   * sidebar and the page all agree about which gift you just entered.
+   *
+   * ⚠ TWO DESTINATIONS ON PURPOSE, AND THE CARD TAKES THE COMMON ONE (owner, 2026-09-08:
+   * *"it should link to Applications. To reach settings, there are the three dots."*). Configuration
+   * is something you set up once; the applicants are what you come back to. The ⋮ menu keeps the
+   * named route to Configuration for the once-in-a-while visit.
+   *
+   * ⚠ EITHER DOOR ALSO REVEALS THE PROGRAMME MENU. `select` is what fills in the gift the
+   * Configuration row waits for (`needsProgramme`), so entering through Applications still makes
+   * both Programme rows appear — the two changes compose rather than fight.
+   */
+  const enterGift = (p: AdminProgramme, where: '/admin/scholarship' | '/admin/programme') => {
     select(p.code)
-    router.push('/admin/programme')
+    router.push(where)
   }
 
   const inputCls = 'w-full rounded-lg border border-ground-300 px-3 py-2 text-sm'
@@ -226,7 +237,17 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
 
       {error && <div className="mt-4"><InfoBox kind="block">{error}</InfoBox></div>}
 
-      <div className="mt-4 space-y-3">
+      {/*
+        ⚠ TWO ACROSS FROM `sm` UP (owner, 2026-09-08: *"with 900 px, both cards would sit side by
+        side"*). The Overview is a `reading`-width page (max-w-4xl ≈ 896px, `lib/pageWidth`), so at
+        `sm` each card gets ~430px — enough for the name, the badge and three facts on one line.
+        Below `sm` they stack, which is the phone layout the owner already approved.
+
+        ⚠ THIS IS WHY THE CARD GOT SHORTER FIRST. A full-width card wasted the right-hand half of
+        the page on a list of two; halving the height and then halving the width is one change made
+        in two passes, not two changes.
+      */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {rows.map((p) => (
           /*
            * ⚠⚠ THE WHOLE CARD IS THE DOOR (owner, 2026-09-08, pointing at Supabase: *"the project
@@ -245,7 +266,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
             data-testid={`programme-${p.code}`}>
             {/* The door. `absolute inset-0` so the whole card is the hit area; `z-0` so the badge
                 and the menu above it stay clickable in their own right. */}
-            <button type="button" onClick={() => openSettings(p)}
+            <button type="button" onClick={() => enterGift(p, '/admin/scholarship')}
               data-testid={`open-${p.code}`}
               className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-shape">
               <span className="sr-only">{t('admin.programmes.open', { name: p.name_en })}</span>
@@ -279,7 +300,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                       </span>
                     }
                   >
-                    <MenuItem onClick={() => openSettings(p)}>
+                    <MenuItem onClick={() => enterGift(p, '/admin/programme')}>
                       {t('admin.programmes.openSettings')}
                     </MenuItem>
                     {/* ⚠ ASLEEP WITH ITS REASON, NEVER HIDDEN — the 2026-09-07 ruling, carried
@@ -328,11 +349,11 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
           </div>
         ))}
         {!loading && rows.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-ground-300 px-4 py-10 text-center text-sm text-ground-400">
+          <p className="rounded-2xl border border-dashed border-ground-300 px-4 py-10 text-center text-sm text-ground-400 sm:col-span-2">
             {t('admin.programmes.empty')}
           </p>
         )}
-        {loading && <p className="text-sm text-ground-400">{t('common.loading')}</p>}
+        {loading && <p className="text-sm text-ground-400 sm:col-span-2">{t('common.loading')}</p>}
       </div>
 
       <p className="mt-4 text-xs text-ground-500">{t('admin.programmes.durableNote')}</p>

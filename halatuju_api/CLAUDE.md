@@ -550,7 +550,69 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-08, after the gift card)
+## Next Sprint (as of 2026-09-08, after the gift-card follow-ups)
+
+**SHIPPED, NOT DEPLOYED — the owner gates it. WEB ONLY, NO MIGRATION, NO BACKEND.** Worktree
+`.worktrees/gift-card2`, branch `fix/gift-card-layout`, base `731a87f0`. Gates, ALL RUN INSIDE THE
+WORKTREE: jest **1892** (+4); tsc **24** (baseline); lint **0 Errors**; i18n **4901 x 3** (no new
+keys); `next build` exit 0. **No Python touched**, so pytest and `makemigrations --check` are
+unchanged from main. Four bite-checks landed.
+
+Four owner corrections off one live look at the gift card, an hour after it deployed.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ THE CARD OPENS THE GIFT'S APPLICATIONS, NOT ITS SETTINGS** (owner: *"it should link to
+  Applications. To reach settings, there are the three dots."*). Configuration is set up once; the
+  applicants are the daily work. `GiftProgrammes.enterGift(p, where)` takes the destination as a
+  parameter — the card passes `/admin/scholarship`, the ⋮ menu passes `/admin/programme`.
+  **⚠ EITHER DOOR STILL CALLS `select`**, which is what fills in the gift `needsProgramme` waits
+  for; without that the owner would land on the applicants and find the Configuration row still
+  missing. A test pins it.
+- **⚠ TWO CARDS ACROSS FROM `sm` UP** (*"with 900 px, both cards would sit side by side"*). The
+  Overview is a `reading` page (max-w-4xl), so each card gets ~430px. The empty state and the
+  loading line carry `sm:col-span-2` or a one-line message sits in a half-width column.
+- **⚠ THE MENU ROW IS "Applications", NOT "B40 Applications".** It lists whichever gift is chosen.
+  **The manual moved with it in six places** — and a guard now asserts the row's name AND refuses
+  any manual file still carrying the old one.
+- **⚠ APPLICATIONS SITS ABOVE CONFIGURATION** in the Programme group. FREQUENCY, not hierarchy.
+  **Do NOT "make it consistent" with the Configuration screen's own tab order** (Intake year →
+  Rules → What we ask for) — that follows the DATA, which is a different question.
+
+**⚠⚠ TWO PROCESS FAILURES IN THIS BATCH, BOTH WORTH READING.**
+1. **A `git checkout --` during a bite-check destroyed a real edit** — the reorder in
+   `navigation.ts`, reverted along with the injected fault because the file held both. Nothing
+   failed; the suite went green against tests updated for an edit that was no longer there. Caught
+   by reading the diff. **The lessons file has warned about exactly this since 2026-09-02.**
+   Restore a bite by writing the original bytes back.
+2. **The rename bite-check produced SILENCE**, and the silence was the finding — see the new guard.
+
+**▶ AT DEPLOY: push (WEB ONLY — no Python changed).** No migrate-first, no env vars, no data step.
+**Nothing a student sees changes.**
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Organisation → Overview: **both gift cards side by side**; press one → it opens that gift's
+   **Applications**, and the Programme menu now shows both rows.
+2. The sidebar reads **Applications** then **Configuration** — in that order, and without "B40".
+3. The ⋮ menu still reaches **Settings**.
+4. On a phone the cards stack, as before.
+
+**▶ NEXT, and the owner has already approved the approach:** the **apply link on the gift card**
+(`/scholarship/apply?p=<code>`, per GIFT not per year) and an **editable gift code with the old code
+KEPT AS AN ALIAS**. ⚠ The alias is not optional: an unknown code resolves to "no open round", so a
+renamed gift would make every printed link tell a student **"applications closed"**. TD-230's other
+half. **That sprint has a migration.**
+
+**⚠ ALSO OPEN:** the four organisation-scope surfaces (Reviewers, Sources, Payments, Sponsors)
+still ignore the gift — each needs its own owner ruling, and a reviewer's `programme` is nullable
+where **NULL MEANS EVERY GIFT**. The application DETAIL page still shows whichever gift the crumb is
+on. Archiving a gift blocks creating a payment run for it; TD-236; TD-234; TD-229; TD-231; TD-225;
+TD-221.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-08, after the gift card)
 
 **DEPLOYED AND VERIFIED LIVE 2026-09-08.** `main` at `99bdfe3e`; **BOTH** builds SUCCESS on
 `99bdfe3` (Python changed, so both triggers fired — as expected); serving

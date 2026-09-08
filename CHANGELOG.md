@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## Four fixes off the owner's live look at the new gift card - 2026-09-08
+
+All four are their words, from one screen, an hour after the card shipped.
+
+- **The card now opens the gift's APPLICATIONS, not its settings** (*"it should link to
+  Applications. To reach settings, there are the three dots."*). Configuration is what you set up
+  once; the applicants are what you come back to. The ⋮ menu keeps the named route to
+  Configuration. **Either door still SELECTS the gift**, which is what makes the Programme menu
+  appear — so landing on Applications does not leave the reader hunting for the row they wanted.
+- **The cards sit two across** from `sm` up (*"with 900 px, both cards would sit side by side"*).
+  The Overview is a reading-width page (max-w-4xl), so each card gets about 430px — enough for the
+  name, the badge and three facts on one line. Below `sm` they stack, which is the phone layout the
+  owner had just approved. Halving the height and then halving the width is one change made in two
+  passes.
+- **The menu row "B40 Applications" is now just "Applications"** — it lists whichever gift is
+  chosen, so naming one programme in it was wrong the day a second gift existed. **The manual moved
+  with it**, in six places.
+- **Applications sits ABOVE Configuration** in the Programme menu. The order is FREQUENCY, not
+  hierarchy — and it matches where the card now lands you, so pressing a gift arrives at the first
+  row of its own group.
+
+**A guard came out of the rename, because the rename broke nothing.** Every test passed with the
+old label restored — a label is copy, so nothing pinned the words. But the manual describes that row
+by name, and copy going stale behind a UI change is now a three-time pattern here. One test asserts
+the row's name and refuses any manual file still carrying the old one.
+
+Web only. No migration, no backend. jest 1888 -> 1892; four bite-checks landed.
+
 ## Feature: the gift card is the door, and it says how many were awarded - 2026-09-08
 
 The owner, after finding the gift menu the long way round: *"In supabase, the project card is

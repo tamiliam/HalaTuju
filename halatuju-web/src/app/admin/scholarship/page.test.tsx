@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  *
- * The B40 Applications list, rendered (owner's item 3 — the gift switcher).
+ * The Applications list, rendered (owner's item 3 — the gift switcher).
  *
  * ⚠ THE HEADING WAS ACTIVELY WRONG, AND THAT IS WHY IT IS TESTED FIRST. `admin.scholarship.title`
  * is `'{programmeName} Applicants'`, and `programmeName` is one of the five BRANDING auto-tokens

@@ -268,12 +268,22 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       //
       // WHICH gift comes from the breadcrumb switcher (`lib/programmeScope`), which is a display
       // preference passed to each endpoint explicitly — never an ambient scope. See that module.
-      { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
-        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
-        exact: true, match: ['/admin/programme/years'], needsProgramme: true },
+      // ⚠ APPLICATIONS SITS ABOVE CONFIGURATION (owner, 2026-09-08), and the reason is FREQUENCY,
+      // not hierarchy. Configuration is what you set up once; the applicants are what you come
+      // back to — so the row you use daily leads. It also matches where the gift card now takes
+      // you (`GiftProgrammes.enterGift`), so pressing a gift lands on the first row of its own
+      // group rather than the second.
+      //
+      // ⚠ THIS IS NOT THE 2026-09-07 TAB ORDER, AND MUST NOT BE "MADE CONSISTENT" WITH IT. Inside
+      // the Configuration screen the tabs follow the DATA (Intake year → Rules → What we ask for),
+      // because the rules are columns on the year. That is a different question from which page a
+      // person opens most.
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
         gate: { mode: 'always' } },
+      { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
+        chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
+        exact: true, match: ['/admin/programme/years'], needsProgramme: true },
     ],
   },
   {
