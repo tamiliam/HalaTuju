@@ -20,7 +20,19 @@
 /** Below this many rows a table shows no pagination at all (owner, 2026-07-28). */
 export const PAGINATION_MIN_ROWS = 10
 
-export const DEFAULT_PAGE_SIZE = 10
+/**
+ * Where every console table STARTS. Twenty-five since BrightPath #18 (2026-09-08) — they asked for
+ * the reviewers and benefactors pages and we widened it to the one shared default rather than set
+ * two pages apart, because the next table added would otherwise inherit whichever number its author
+ * happened to think of.
+ *
+ * ⚠ ITS REAL EFFECT IS THAT THE PAGER DISAPPEARS, not that pages get longer. On the live numbers,
+ * reviewers (20), benefactors (11) and invitations (20) all fit one page now and lose their footer
+ * entirely; only a benefactor's own student list (46 at the busiest) still pages. That is the point
+ * of the request — the reader wanted the whole list, not a second page. The 10 / 25 / 50 selector is
+ * unchanged, so anyone who prefers ten still has it.
+ */
+export const DEFAULT_PAGE_SIZE = 25
 export const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
 export type SortDir = 'asc' | 'desc'

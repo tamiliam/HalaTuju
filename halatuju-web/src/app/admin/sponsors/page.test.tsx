@@ -186,30 +186,34 @@ describe('pagination', () => {
     expect(screen.queryByText('admin.pageOf')).toBeNull()
   })
 
-  it('stays hidden at exactly ten rows and appears at eleven', async () => {
-    mockApi.listSponsors.mockResolvedValue({ sponsors: many(10) })
+  // ⚠ BOTH TESTS BELOW CHANGED DELIBERATELY (BrightPath #18, 2026-09-08). They pinned the OLD
+  // starting page size of ten on the real page, and ten is exactly what the request moved. The
+  // claims are unchanged — "no footer until the page is full" and "a full page moves to the next"
+  // — only the number they are written against. Eleven rows used to page and now fit.
+  it('stays hidden until the page is full, and appears one row after', async () => {
+    mockApi.listSponsors.mockResolvedValue({ sponsors: many(25) })
     render(<AdminSponsorsList />)
     await waitFor(() => expect(screen.getAllByText('Sponsor 000').length).toBeGreaterThan(0))
     expect(screen.queryByText('admin.pageOf')).toBeNull()
 
-    mockApi.listSponsors.mockResolvedValue({ sponsors: many(11) })
+    mockApi.listSponsors.mockResolvedValue({ sponsors: many(26) })
     render(<AdminSponsorsList />)
     await waitFor(() => expect(screen.getAllByText('Sponsor 000').length).toBeGreaterThan(0))
     expect(screen.getAllByText('admin.pageOf').length).toBeGreaterThan(0)
   })
 
-  it('renders one page of ten and moves to the next', async () => {
-    mockApi.listSponsors.mockResolvedValue({ sponsors: many(25) })
+  it('renders one page of twenty-five and moves to the next', async () => {
+    mockApi.listSponsors.mockResolvedValue({ sponsors: many(30) })
     render(<AdminSponsorsList />)
     await waitFor(() => expect(screen.getAllByText('Sponsor 000').length).toBeGreaterThan(0))
-    expect(screen.getAllByRole('row').slice(1)).toHaveLength(10)
-    expect(ui().queryByText('Sponsor 010')).toBeNull()
+    expect(screen.getAllByRole('row').slice(1)).toHaveLength(25)
+    expect(ui().queryByText('Sponsor 025')).toBeNull()
 
     // The control renders a mobile and a desktop copy (hidden by CSS, both in the DOM), so take
     // the desktop one rather than assuming there is only ever a single Next.
     const nexts = screen.getAllByRole('button', { name: 'admin.next' })
     fireEvent.click(nexts[nexts.length - 1])
-    expect(ui().getByText('Sponsor 010')).toBeTruthy()
+    expect(ui().getByText('Sponsor 025')).toBeTruthy()
     expect(screen.queryByText('Sponsor 000')).toBeNull()
   })
 })

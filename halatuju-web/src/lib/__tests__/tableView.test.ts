@@ -11,9 +11,15 @@ import {
 } from '../tableView'
 
 describe('shouldPaginate', () => {
-  it('stays hidden at ten rows and appears at eleven (owner: only above 10)', () => {
+  // ⚠ CHANGED DELIBERATELY (BrightPath #18, 2026-09-08). This used to read
+  // `shouldPaginate(PAGINATION_MIN_ROWS + 1) === true` against the DEFAULT page size, which was
+  // ten. The owner's 2026-07-28 ruling — no pagination at all below ten rows — is unchanged and is
+  // still asserted here; what moved is the default page size, which is now 25 and therefore the
+  // binding constraint. Eleven rows no longer page because they FIT, not because the floor moved.
+  it('stays hidden at or below ten rows, whatever the page size (owner: only above 10)', () => {
+    expect(shouldPaginate(PAGINATION_MIN_ROWS, 5)).toBe(false)
+    expect(shouldPaginate(PAGINATION_MIN_ROWS + 1, 5)).toBe(true)
     expect(shouldPaginate(PAGINATION_MIN_ROWS)).toBe(false)
-    expect(shouldPaginate(PAGINATION_MIN_ROWS + 1)).toBe(true)
   })
 
   it('stays hidden when everything fits one page, whatever the threshold', () => {
@@ -120,8 +126,33 @@ describe('sortIndicator', () => {
 })
 
 describe('defaults', () => {
-  it('pages at ten, matching the threshold', () => {
-    // If these disagreed, a table could pass the threshold and still show one page.
-    expect(DEFAULT_PAGE_SIZE).toBe(PAGINATION_MIN_ROWS)
+  // ⚠ THIS REPLACES `expect(DEFAULT_PAGE_SIZE).toBe(PAGINATION_MIN_ROWS)` (BrightPath #18).
+  // That test pinned an EQUALITY to protect a PROPERTY — "a table could pass the threshold and
+  // still show one page" — and the property is actually held by the second clause of
+  // `shouldPaginate`, not by the two constants agreeing. Once the default moved to 25 the equality
+  // was false while the property stayed true, so the assertion was testing the procedure rather
+  // than the claim. It is written as the claim now, and it survives the constants diverging again.
+  it('never shows a footer on a table that fits one page', () => {
+    for (const rows of [1, 9, 10, 11, 20, 24, DEFAULT_PAGE_SIZE]) {
+      expect(shouldPaginate(rows, DEFAULT_PAGE_SIZE)).toBe(false)
+    }
+    expect(shouldPaginate(DEFAULT_PAGE_SIZE + 1, DEFAULT_PAGE_SIZE)).toBe(true)
+  })
+
+  it('starts at twenty-five, so the live console tables stop paging', () => {
+    // The request, in numbers, read off production on 2026-09-08. Reviewers, benefactors and
+    // invitations each fit one page now; a benefactor's own student list still does not.
+    expect(DEFAULT_PAGE_SIZE).toBe(25)
+    expect(shouldPaginate(20, DEFAULT_PAGE_SIZE)).toBe(false)   // reviewers
+    expect(shouldPaginate(11, DEFAULT_PAGE_SIZE)).toBe(false)   // benefactors
+    expect(shouldPaginate(20, DEFAULT_PAGE_SIZE)).toBe(false)   // invitations
+    expect(shouldPaginate(46, DEFAULT_PAGE_SIZE)).toBe(true)    // one benefactor's students
+  })
+
+  it('still hides the footer below the minimum when a caller asks for a smaller page', () => {
+    // PAGINATION_MIN_ROWS is not dead now the default exceeds it — it governs any caller that
+    // passes a page size of its own (owner ruling, 2026-07-28).
+    expect(shouldPaginate(PAGINATION_MIN_ROWS, 5)).toBe(false)
+    expect(shouldPaginate(PAGINATION_MIN_ROWS + 1, 5)).toBe(true)
   })
 })
