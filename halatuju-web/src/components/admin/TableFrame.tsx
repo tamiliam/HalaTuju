@@ -26,6 +26,17 @@ import { useT } from '@/lib/i18n'
  *  What it does NOT do: decide columns, sorting or content. Each table keeps its own markup —
  *  this is a frame, not a data-table abstraction. Use `TH` for the header cell so the two header
  *  styles that drifted apart (38 places said one thing, 18 another) stay one thing.
+ *
+ *  ⚠ ANYTHING THAT POPS OUT OF A ROW MUST ESCAPE THIS FRAME — USE `Menu`, NOT A BARE ABSOLUTE
+ *  PANEL. Both elements here establish a clipping context (`overflow-hidden` on the card for the
+ *  corners, `overflow-x-auto` on the scroller), so a dropdown positioned `absolute` inside a cell
+ *  is sliced off at the table's edge. That is not hypothetical: it happened on the Intake years
+ *  round-state badge on 2026-09-08, and the owner reported it as *"clicking the close opens
+ *  something, but it is hidden — there is a line below close but nothing is showing"* — the line
+ *  being the top of the panel. It was fixed in the PRIMITIVE rather than by loosening the table:
+ *  `Menu` renders its panel through a portal on `document.body`, the one placement no ancestor can
+ *  clip. This frame put the same trap on fourteen tables instead of one, so the rule is worth
+ *  stating here: pop-outs go through `Menu`.
  */
 export const TH =
   'px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-ground-600'
