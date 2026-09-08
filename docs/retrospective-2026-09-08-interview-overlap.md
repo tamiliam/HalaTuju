@@ -130,7 +130,7 @@ to FILL"*. In brief:
 | Gate | Result |
 |---|---|
 | pytest | **6034** passed (+7), 219 subtests |
-| jest | **1877** passed, 117 suites |
+| jest | **1879** passed, 117 suites (merged tree; BrightPath #18 landed mid-sprint) |
 | `tsc --noEmit` | **24** errors — unchanged baseline (TD-221) |
 | `next lint` | **0** errors |
 | `check-i18n` | ALL PASSED, **4897 × 3** |

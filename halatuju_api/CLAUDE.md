@@ -586,8 +586,11 @@ proposed a second time and rejected.
 
 Worktree `.worktrees/interview-overlap`, branch `feat/interview-overlap` (base `origin/main` at
 `ee9630cb`). Retro `docs/retrospective-2026-09-08-interview-overlap.md`; 1 decision; 2 lessons.
-Gates: pytest **6034** (+7, all bite-checked); jest **1877**; tsc **24** (baseline); lint **0**;
-i18n **4897 × 3**; `next build` exit 0; `makemigrations --check` clean.
+Gates on the MERGED tree (`origin/main` moved under this branch — BrightPath #18 landed): pytest
+**6034** (+7, all bite-checked); jest **1879**; tsc **24** (baseline); lint **0**; i18n
+**4897 × 3**; `next build` exit 0; `makemigrations --check` clean. Ledger: 151 scholarship and 74
+courses migration files, unchanged from the reconciliation earlier today (151/151, 74/74 on
+production) — this sprint adds none.
 
 **▶ OWNER POST-CHECK — nothing to click unless you want to.** The Interviews settings page is
 unchanged and still refuses nothing new. To see the fix: set **Interview length** to 45 (leave
