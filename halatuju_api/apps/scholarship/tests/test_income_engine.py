@@ -1624,3 +1624,37 @@ class TestSgdSalaryConversion(SimpleTestCase):
         # a Malaysian Sdn Bhd is never converted
         self.assertEqual(_to_myr(2000.0, {'employer': 'Kilang ABC Sdn Bhd'}, review), 2000.0)
         self.assertIsNone(_to_myr(None, pte, review))          # no amount → no-op
+
+
+class TestFilledChildNricCanOnlyHelp(SimpleTestCase):
+    """⚠ Reading the child's IC gives the child row a SECOND cell, and the safety property is
+    that filling it can never newly BLOCK a student. `_combine_relationship` treats a filled
+    number as corroboration: a disagreement is amber, and a matching number RESCUES a name
+    that is merely spelt differently (request #19). Only a row that was already red — name
+    wrong AND number wrong — stays red."""
+
+    def _child_status(self, *, child, child_nric):
+        bc = _bc_doc(child=child)
+        bc.vision_fields['fields']['bc_child_nric'] = child_nric
+        _chain_app([bc])
+        return student_bc_check(bc)['child_status']
+
+    def test_both_agree_is_green(self):
+        self.assertEqual(self._child_status(child=_STUDENT, child_nric='050101-04-9999'), 'match')
+
+    def test_name_agrees_but_number_does_not_is_amber_not_red(self):
+        self.assertEqual(self._child_status(child=_STUDENT, child_nric='060202-05-1234'), 'check')
+
+    def test_a_matching_number_rescues_a_differently_spelt_name(self):
+        # Request #19, on the child row: exact number, tolerable spelling → amber, never red.
+        self.assertEqual(
+            self._child_status(child='THAVAMALAR A/P VIJAYAN', child_nric='050101-04-9999'),
+            'check_name')
+
+    def test_a_row_that_was_already_red_stays_red(self):
+        self.assertEqual(
+            self._child_status(child='THAVAMALAR A/P VIJAYAN', child_nric='060202-05-1234'),
+            'mismatch')
+
+    def test_a_blank_number_reads_exactly_as_it_did_before(self):
+        self.assertEqual(self._child_status(child=_STUDENT, child_nric=''), 'match')

@@ -82,6 +82,25 @@ class ReextractCommandTests(TestCase):
         self.assertEqual(self._marked_error(), 0)
 
     @patch('apps.scholarship.management.commands.reextract_documents.reextract_document')
+    def test_the_env_vars_are_the_production_door(self, mock_re):
+        """⚠ The cron endpoint passes NO arguments, so a targeted re-read after a parser
+        change is reachable in production ONLY through the env vars (TD-234). A NEW pass name
+        must make already-done docs eligible again WITHOUT re-sweeping the whole corpus."""
+        mock_re.side_effect = self._stamped_read
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='birth_certificate', storage_path='bc')
+        call_command('reextract_documents', '--limit', '9')          # the standing pass
+        self.assertEqual(mock_re.call_count, 4)                      # 3 offers + 1 certificate
+
+        with patch.dict('os.environ', {'REEXTRACT_DOC_TYPE': 'birth_certificate',
+                                       'REEXTRACT_PASS': 'reextract_bc_child_ic'}):
+            call_command('reextract_documents', '--limit', '9')
+        self.assertEqual(mock_re.call_count, 5)                      # ONLY the certificate again
+        bc = ApplicantDocument.objects.get(doc_type='birth_certificate')
+        self.assertTrue((bc.vision_fields or {}).get('reextract_bc_child_ic'))
+        self.assertTrue((bc.vision_fields or {}).get(MARKER))        # the standing pass survives
+
+    @patch('apps.scholarship.management.commands.reextract_documents.reextract_document')
     def test_stale_kept_run_is_marked_error(self, mock_re):
         # The clobber guard keeps the stored read and skips the save on a failed re-run —
         # no timestamp advances. The command must count that as an ERROR of this run

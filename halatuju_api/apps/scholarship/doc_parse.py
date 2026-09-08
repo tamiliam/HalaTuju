@@ -426,6 +426,41 @@ def _bc_child(lines: list) -> str:
     return ''
 
 
+def _bc_child_dob(lines: list) -> str:
+    """The child's date of birth off a 'Tarikh Lahir' / 'Date of Birth' line, as printed."""
+    for i, ln in enumerate(lines):
+        if not re.search(r'tarikh\s+lahir|date\s+of\s+birth', ln, re.IGNORECASE):
+            continue
+        for cand in [ln] + [x for x in lines[i + 1:i + 3]]:
+            m = re.search(r'(\d{1,2}\s*[/\-. ]\s*[A-Za-z]+\s*[/\-. ]\s*\d{4}'
+                          r'|\d{1,2}\s*[/\-.]\s*\d{1,2}\s*[/\-.]\s*\d{4}'
+                          r'|\d{4}\s*[/\-.]\s*\d{1,2}\s*[/\-.]\s*\d{1,2})', cand or '')
+            if m:
+                return m.group(1).strip()
+    return ''
+
+
+def _bc_child_nric(text: str, parent_nrics: set) -> str:
+    """The child's 12-digit IC, printed unlabelled beside the barcode on a modern certificate.
+
+    ⚠ Kept ONLY when the certificate's own printed date of birth confirms the leading YYMMDD
+    (``vision.nric_dob_agrees``). The register number sits in the same corner and the child
+    row is what ties the certificate to THIS student, so a misread would read as a confident
+    wrong-person mismatch — strictly worse than the blank this field used to hold.
+    """
+    from .vision import nric_dob_agrees        # local: vision imports doc_parse lazily
+    dob = _bc_child_dob(_lines(text))
+    if not dob:
+        return ''
+    for m in _BC_NRIC_RE.finditer(text or ''):
+        cand = f'{m.group(1)}-{m.group(2)}-{m.group(3)}'
+        if cand in parent_nrics:
+            continue
+        if nric_dob_agrees(cand, dob):
+            return cand
+    return ''
+
+
 @register('birth_certificate')
 def _parse_bc(text: str) -> Optional[dict]:
     if not has(text, r'sijil\s+kelahiran', r'birth\s+certificate'):
@@ -451,7 +486,8 @@ def _parse_bc(text: str) -> Optional[dict]:
         return None
     (fn, fr), (mn, mr) = parents[0], parents[1]
     reg = re.search(r'\b([A-Z]{2}\s?\d{4,6})\b', text or '')   # JPN register no (CA17451, BV 46144)
-    return {'bc_child_name': child or '', 'bc_child_nric': '',
+    return {'bc_child_name': child or '', 'bc_child_nric': _bc_child_nric(text, {fr, mr}),
+            'bc_child_dob': _bc_child_dob(lines),
             'bc_father_name': fn, 'bc_father_nric': fr,
             'bc_mother_name': mn, 'bc_mother_nric': mr,
             'bc_number': reg.group(1) if reg else ''}

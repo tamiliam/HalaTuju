@@ -9,7 +9,14 @@ hasn't touched yet — marked by a flag written into ``vision_fields`` — so it
 called repeatedly (cron-driven) and observed batch by batch. FORCES billable reads, so
 it's run deliberately. Scope = the supporting + text doc types (ic/parent_ic already
 store their read in dedicated columns; photos aren't OCR'd).
+
+⚠ THE CRON ENDPOINT PASSES NO ARGUMENTS. To run a targeted pass on the live service, set
+``REEXTRACT_DOC_TYPE`` (one doc type) and ``REEXTRACT_PASS`` (a NEW pass name, so those docs
+become eligible again without re-sweeping the whole corpus), run the ``reextract-documents``
+job repeatedly until it reports nothing left, then UNSET both.
 """
+import os
+
 from django.core.management.base import BaseCommand
 
 from apps.scholarship.models import ApplicantDocument
@@ -29,7 +36,11 @@ def _summary(doc) -> str:
     if dt == 'offer_letter':
         return f"ic={f.get('candidate_nric','') or '∅'} name={(f.get('candidate_name') or '')[:16]}"
     if dt == 'birth_certificate':
-        return f"child={(f.get('bc_child_name') or '∅')[:16]} mother={(f.get('bc_mother_name') or '')[:12]}"
+        # The child IC + the date of birth that vouches for it: this pass exists to fill them,
+        # so a batch's output must show whether it did.
+        return (f"child={(f.get('bc_child_name') or '∅')[:16]} "
+                f"ic={f.get('bc_child_nric') or '∅'} dob={f.get('bc_child_dob') or '∅'} "
+                f"mother={(f.get('bc_mother_name') or '')[:12]}")
     if dt == 'results_slip':
         return f"name={(f.get('slip_name') or f.get('name') or '')[:16]} cap={cap}"
     if dt == 'school_leaving_cert':
@@ -51,6 +62,10 @@ class Command(BaseCommand):
                             help='Restrict the pass to ONE doc type (e.g. school_leaving_cert) — a '
                                  'targeted, cheap re-extraction (calibration / a single-type rollout) '
                                  'instead of the whole supporting-doc corpus.')
+        parser.add_argument('--pass-marker', default='',
+                            help='Name this pass (default: PASS_MARKER). A NEW name makes docs '
+                                 'eligible again without disturbing the standing pass — which is '
+                                 'how a single-type re-read after a parser change is run.')
         parser.add_argument('--retry-errors', action='store_true',
                             help="Also re-attempt docs whose last run FAILED (marked 'error'). "
                                  "Default runs skip them so one broken doc can't wedge the pass.")
@@ -68,7 +83,10 @@ class Command(BaseCommand):
         # routine supporting-doc pass.
         types = sorted(SUPPORTING_NAME_CHECK_TYPES | TEXT_READ_DOC_TYPES)
         targeted_only = {'ic'}
-        only = (opts.get('doc_type') or '').strip()
+        # ⚠ THE CRON ENDPOINT PASSES NO ARGUMENTS, so a flag alone can never be used in
+        # production (TD-234). The env vars are the door: set them on the service, run the
+        # job, then UNSET them — the same shape as PARTNER_EMAIL_RESET_KINDS.
+        only = (opts.get('doc_type') or os.environ.get('REEXTRACT_DOC_TYPE') or '').strip()
         if only:
             if only not in set(types) | targeted_only:
                 self.stderr.write(f"reextract: --doc-type '{only}' is not re-extractable "
@@ -77,6 +95,7 @@ class Command(BaseCommand):
             types = [only]
         limit = max(1, opts['limit'])
         retry_errors = opts['retry_errors']
+        marker = (opts.get('pass_marker') or os.environ.get('REEXTRACT_PASS') or PASS_MARKER).strip()
 
         # Filter "not yet processed this pass" in Python — a JSON-key `.exclude()` mishandles
         # rows where the key (or the whole vision_fields) is absent (SQL NULL semantics).
@@ -84,7 +103,7 @@ class Command(BaseCommand):
         # past it (no wedge), but it stays visibly failed and a --retry-errors run picks it
         # back up, instead of being silently stuck on the weak read forever.
         def unprocessed(doc):
-            mark = (doc.vision_fields or {}).get(PASS_MARKER)
+            mark = (doc.vision_fields or {}).get(marker)
             return not mark or (retry_errors and mark == 'error')
 
         all_docs = ApplicantDocument.objects.filter(doc_type__in=types).order_by('id')
@@ -121,7 +140,7 @@ class Command(BaseCommand):
             # 'error' = attempted + failed (skipped by default, re-attempted with
             # --retry-errors). Never stamp a failure as done (#5b).
             vf = doc.vision_fields or {}
-            vf[PASS_MARKER] = True if ok else 'error'
+            vf[marker] = True if ok else 'error'
             doc.vision_fields = vf
             doc.save(update_fields=['vision_fields'])
             done += 1
@@ -134,7 +153,7 @@ class Command(BaseCommand):
             if unprocessed(d))
         error_total = sum(
             1 for d in ApplicantDocument.objects.filter(doc_type__in=types).only('vision_fields', 'doc_type')
-            if (d.vision_fields or {}).get(PASS_MARKER) == 'error')
+            if (d.vision_fields or {}).get(marker) == 'error')
         self.stdout.write(
             f'reextract: processed {done} ({errors} errors this run), {remaining} remaining, '
             f'{error_total} marked error total — re-attempt those with --retry-errors.')

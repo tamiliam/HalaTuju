@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## The birth certificate carries the child's IC, and we told the reader to skip it - 2026-09-08
+
+Step 1 of BrightPath request #23. The owner sent two certificates and pointed at the same thing on
+both: a twelve-digit number printed top-right beside the barcode, whose first six digits are the
+child's date of birth. **That is the one row that ties a certificate to THIS student**, and on
+twenty-three of the sixty-two certificates on file we hold nothing for it.
+
+**THE GEMINI PROMPT SAID, IN AS MANY WORDS, "leave bc_child_nric empty".** That instruction was
+true of older certificates and stopped being true; it now asks for the number, warns that the
+register number in the same corner carries LETTERS (`BZ21723`), and asks for the printed date of
+birth beside it.
+
+**THE DATE OF BIRTH IS NOT BELT-AND-BRACES - IT IS WHY THIS IS SAFE TO DO AT ALL.**
+`student_bc_check` feeds `bc_child_nric` into `_nric_bucket` against the student's own NRIC, so a
+misread number produces a CONFIDENT mismatch where a blank produced nothing. New pure
+`vision.nric_dob_agrees` checks the leading YYMMDD against the certificate's own printed date.
+
+**THE TWO READERS ARE GUARDED DIFFERENTLY, AND THAT IS DELIBERATE.** `bc_parse` (geometry, and the
+one that actually runs) already read this number from a position bracket - above the KANAK-KANAK
+header, digits only - so it keeps a number the date cannot check and drops only one the date
+REFUTES; tightening it further would discard reads that are correct today. The Gemini fallback has
+no positional bracket, so there the number is kept only when the date confirms it.
+
+**FILLING THE FIELD CANNOT NEWLY BLOCK ANYBODY**, and a test says so per case: with a number
+present, a disagreement is amber, and an exact number RESCUES a differently-spelt name (#19). Only
+a row that was already red - name wrong and number wrong - stays red.
+
+**THE RE-READ HAD NO ROUTE TO PRODUCTION** (TD-234's shape): `reextract_documents` takes
+`--doc-type`, and the cron endpoint passes no arguments. `REEXTRACT_DOC_TYPE` and `REEXTRACT_PASS`
+are now the door - set them, run the job until it reports nothing left, then UNSET both. A new pass
+name makes one type eligible again without re-sweeping the whole corpus.
+
+pytest **4657**; `makemigrations --check` clean. Two bite-checks landed, each injection verified.
+
 ## An intake round has four states, and one of them is final - 2026-09-08
 
 The owner's third live-review round on Programme -> Configuration, and it started with a question I

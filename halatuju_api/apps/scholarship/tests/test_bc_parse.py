@@ -100,6 +100,74 @@ _CROPPED = _words([
 ])
 
 
+# The child IC above the header does NOT agree with the printed date of birth (here it is the
+# father's own IC, mis-picked from the top of the page). It must be dropped, not passed on.
+_WRONG_CHILD_IC = _words([
+    (120, '700101-10-1111'),                       # NOT a 2008 birth — refuted by the DOB below
+    (300, 'SIJIL KELAHIRAN'),
+    (560, 'KANAK - KANAK'),
+    (640, 'Nama'),
+    (720, 'AISYAH'),
+    (840, 'Tarikh dan Waktu Kelahiran'),
+    (920, '01 JAN 2008 LELAKI'),
+    (1060, 'BAPA'),
+    (1140, 'Nama'),
+    (1220, 'AHMAD A / L BAKAR'),
+    (1320, 'No. Kad Pengenalan Umur'),
+    (1400, '700101-10-1111 38 TAHUN'),
+    (1520, 'IBU'),
+    (1600, 'Nama'),
+    (1680, 'SITI A / P RAHIM'),
+    (1780, 'No. Kad Pengenalan Umur'),
+    (1860, '750202-10-2222 33 TAHUN'),
+    (2200, 'PENDAFTAR BESAR'),
+])
+
+# An older certificate that prints NO date of birth we can read. The positional read stands —
+# dropping it here would discard numbers that are correct today.
+_NO_DOB = _words([
+    (120, '080101-10-5678'),
+    (300, 'SIJIL KELAHIRAN'),
+    (560, 'KANAK - KANAK'),
+    (640, 'Nama'),
+    (720, 'AISYAH'),
+    (1060, 'BAPA'),
+    (1140, 'Nama'),
+    (1220, 'AHMAD A / L BAKAR'),
+    (1320, 'No. Kad Pengenalan Umur'),
+    (1400, '700101-10-1111 38 TAHUN'),
+    (1520, 'IBU'),
+    (1600, 'Nama'),
+    (1680, 'SITI A / P RAHIM'),
+    (1780, 'No. Kad Pengenalan Umur'),
+    (1860, '750202-10-2222 33 TAHUN'),
+    (2200, 'PENDAFTAR BESAR'),
+])
+
+
+class TestChildIcAgainstDateOfBirth(SimpleTestCase):
+    """The child row is what ties the certificate to THIS student, so a WRONG number is worse
+    than a blank: it reads as a confident wrong-person mismatch and would block them."""
+
+    def test_dob_is_read_alongside_the_child_ic(self):
+        self.assertEqual(parse_bc(_MONO)['bc_child_dob'], '01 JAN 2008')
+        self.assertEqual(parse_bc(_BILINGUAL)['bc_child_dob'], '02 FEB 2008')
+
+    def test_dob_survives_the_interleaved_label(self):
+        # The OCR scrambles the value into its own label ('Tarikh 20 dan JUN 2008 Waktu').
+        r = parse_bc(_INTERLEAVED)
+        self.assertEqual(r['bc_child_dob'], '20 JUN 2008')
+        self.assertEqual(r['bc_child_nric'], '080620-10-1578')       # 080620 agrees → kept
+
+    def test_a_number_the_date_of_birth_refutes_is_dropped(self):
+        r = parse_bc(_WRONG_CHILD_IC)
+        self.assertEqual(r['bc_child_nric'], '')                     # 700101 ≠ 01 JAN 2008
+        self.assertEqual(r['bc_child_name'], 'AISYAH')               # the rest still reads
+
+    def test_an_unreadable_date_leaves_the_positional_read_standing(self):
+        self.assertEqual(parse_bc(_NO_DOB)['bc_child_nric'], '080101-10-5678')
+
+
 class TestBcParse(SimpleTestCase):
     def test_monolingual(self):
         r = parse_bc(_MONO)
