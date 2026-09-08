@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: four pages were still setting their own width, behind an early return - 2026-09-08
+
+The owner, on the sponsor detail page after the last fix: *"appears the same. Or am I looking at a
+different page?"* — the right page, and the change had never reached it.
+
+**The conversion script and the guard shared one blind spot.** Both read only the FIRST `return (`
+in a page file. A page with an early return — a loading state, a "coming soon" branch, a
+not-allowed message — hides its real root behind it, so four pages kept their own limit and the
+test that exists to catch exactly this said nothing: `sponsors/[id]` (max-w-5xl, so widening its
+route changed nothing on screen), `faq`, and `billing` twice.
+
+- All four roots are stripped. Billing also padded itself on top of the shell's own `p-4 md:p-6`,
+  which inset its left edge from every other page — the alignment complaint in miniature.
+- **The guard now reads EVERY `return (` root in the file**, and a bite-check confirms it fails
+  when a width is put back behind an early return.
+
+⚠ A guard that shares a blind spot with the change it is guarding is not a second opinion. This is
+the second time in two days that a source-level test passed a fault it was written to catch (the
+first was "does the file mention TableFrame", satisfied by an import line).
+
 ## Fix: three detail pages get the wide layout - 2026-09-08
 
 The owner walked the console after the layout standard shipped and found the payment-run page and

@@ -154,7 +154,7 @@ export default function AdminBillingPage() {
   if (loading && !data) return <p className="p-6 text-ground-500">{t('admin.billing.loading')}</p>
   if (dark) {
     return (
-      <div className="p-6 max-w-2xl">
+      <div>
         <h1 className="text-xl font-bold text-ground-900">{t('admin.billing.title')}</h1>
         <p className="mt-3 text-ground-500">{t('admin.billing.comingSoon')}</p>
       </div>
@@ -163,7 +163,7 @@ export default function AdminBillingPage() {
   if (!data) return null
 
   return (
-    <div className="p-4 sm:p-6 max-w-5xl">
+    <div>
       <h1 className="text-xl font-bold text-ground-900">{t('admin.billing.title')}</h1>
       <p className="mt-1 text-sm text-ground-500">
         {isSuper ? t('admin.billing.subtitleSuper') : t('admin.billing.subtitleOrg')}

@@ -87,13 +87,23 @@ describe('no page may invent a ninth width', () => {
   // ⚠ THE GUARD THIS SPRINT EXISTS FOR. Thirty-five pages each wrote their own limit and there
   // were EIGHT different answers. The width now comes from AppShell; a page that writes its own
   // on its root container silently opts out of the standard, and nothing on screen would say so.
-  test('no admin page sets max-w-* on its root container', () => {
-    const offenders = sources(ADMIN)
-      .filter(([rel]) => rel.endsWith('page.tsx'))
-      .filter(([rel]) => !CHROMELESS.some((c) => rel.includes(c)))
-      .map(([rel, src]) => [rel, src.match(/return \(\s*\n\s*<\w+\s+className="([^"]*)"/)] as const)
-      .filter(([, m]) => m && /max-w-/.test(m[1]))
-      .map(([rel, m]) => `${rel} → "${m![1]}"`)
+  // ⚠ EVERY `return (` IN THE FILE, NOT JUST THE FIRST. The first version of this guard read one
+  // match per file and so was blind in exactly the same way the conversion script was: a page with
+  // an early return — a loading state, a "coming soon" branch, a not-allowed message — hid its real
+  // root behind it. FOUR pages kept their own width that way (sponsors/[id] at max-w-5xl, faq,
+  // and billing twice), and the owner found the first of them by looking at the screen. A guard
+  // that shares a blind spot with the change it is guarding is not a second opinion.
+  test('no admin page sets max-w-* on ANY of its return roots', () => {
+    const offenders: string[] = []
+    for (const [rel, src] of sources(ADMIN)) {
+      if (!rel.endsWith('page.tsx')) continue
+      if (CHROMELESS.some((c) => rel.includes(c))) continue
+      const roots = src.match(/return \(\s*\n\s*<\w+[^>]*?className="[^"]*"/g) || []
+      roots.forEach((root) => {
+        const cls = (root.match(/className="([^"]*)"/) || ['', ''])[1]
+        if (/max-w-/.test(cls)) offenders.push(`${rel} → "${cls}"`)
+      })
+    }
     expect(offenders).toEqual([])
   })
 

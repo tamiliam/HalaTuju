@@ -193,7 +193,7 @@ export default function AdminSponsorDetailPage() {
   }
 
   return (
-    <div className="max-w-5xl font-plex flex flex-col gap-5">
+    <div className="font-plex flex flex-col gap-5">
       <Link href="/admin/sponsors" className="text-xs text-ground-500 hover:text-primary-600">
         ← {t('admin.sponsors.title')}
       </Link>
