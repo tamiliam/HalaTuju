@@ -550,7 +550,95 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-08, after the gift switcher)
+## Next Sprint (as of 2026-09-08, after BrightPath #23 — the birth certificate nobody checked)
+
+**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION.** Worktree `.worktrees/bc-verdict`,
+branch `feat/bc-verdict` (base `origin/main` at `8b9d19f4`, **merged forward to `c145b677`** so the
+gates below are the merged tree). api + web. Retro
+`docs/retrospective-2026-09-08-birth-certificate-checks.md`; decisions ×2; lessons ×4; **TD-236**
+raised. Gates: pytest **6027**; jest **1852**; tsc **24** (baseline); lint **0**; i18n **4894 × 3**;
+`next build` exit 0; `makemigrations --check` clean; ledger vs production **scholarship 151/151,
+courses 74/74**. Five bite-checks landed.
+
+**Request #23 is `done`** — bug / sprint, **no charge**, ~**3.0h against 9.0h planned**. Analysis 52
+→ comment 77 (the plan); analysis 53 → comment 78 (the completion report). Four of five steps built;
+**step 5 deferred by the owner.**
+
+**⚠⚠ THE ONE THING TO READ FIRST: EVERY BEHAVIOUR CHANGE WAS MEASURED ON PRODUCTION, AND THE RAW
+COUNTS WERE ALL WRONG.** Step 3 looked like 21 rows moving; **one** live application moves, because
+20 belong to decided students. Step 4 looked like seven applications at risk; **one** is newly
+stopped and **it is the owner's own test account** (app 16, whose certificate names a different
+child). **Zero real students are affected by either.** Do not re-derive these from row counts.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ `vision.nric_dob_agrees` IS LOAD-BEARING, NOT BELT-AND-BRACES.** `bc_child_nric` feeds
+  `_nric_bucket` against the student's OWN NRIC, so a misread number is a CONFIDENT mismatch where a
+  blank was nothing. The register number (`BZ21723`) sits in the same corner of the page.
+- **⚠ THE TWO BC READERS ARE GUARDED DIFFERENTLY ON PURPOSE.** `bc_parse` (geometry, and the one
+  that actually RUNS first) reads the number from a position bracket, so it drops only a number the
+  date REFUTES. The Gemini fallback has no bracket, so there the number is kept only when the date
+  confirms it. **The prompt was never the whole story** — saying otherwise is what made a published
+  analysis half wrong (lessons.md).
+- **⚠ `relationship_doc_unreadable` IS DOCUMENT-LEVEL, NEVER ROW-LEVEL.** A blank father row on a
+  certificate that names no father is a real absence. And `_usable_relationship_fields` returns a
+  REASON string (`''` / `'wrong_type'` / `'unreadable'`), not a boolean — telling a family with a
+  poor scan that their certificate is not genuine is the wrong message.
+- **⚠ VERDICT CODES ARE WRITTEN OUT AS LITERALS, NEVER PICKED BY A TERNARY.** A computed code escapes
+  `test_no_new_unverifiable_dynamic_call_site` and the whole i18n coverage check. The first cut used
+  a ternary; the guard caught it, correctly.
+- **⚠ `STUDENT_DOC_REQUEST_CODES` IS DERIVED FROM THE `_unreadable` SUFFIX** — that suffix is what
+  turns a finding into an Action-Centre re-upload a form-locked student can act on.
+- **⚠ A RED FATHER ROW BLOCKS NOTHING, AT BOTH GATES** (`services.document_red_blockers` and
+  `resolution.doc_match_verdict`). The second matters as much: without it a student re-uploads for
+  ever over a row they cannot change. **And the father row keeps its green on a name alone** — owner
+  ruling with its numbers (51 of 62 would go amber; only 11 hold a father's IC). A decision, not an
+  oversight; do not "finish the one-cell rule" there.
+- **⚠ THE RELATIONSHIP DOCUMENTS ARE OUT OF `_INCOME_CLUSTER_DOC_TYPES` AND MUST STAY OUT.** "One
+  clean cluster is enough" (#19, #28) is a rule about income EVIDENCE, never about parentage. Both
+  halves are tested in ONE class (`TestProvingIncomeDoesNotSettleParentage`) so narrowing the list
+  must keep the income softening working, and widening it back fails loudly.
+- **⚠ LINA'S OWN FILE IS CLOSED — LEAVE IT** (owner: *"water under the bridge"*). Verified rather
+  than assumed: app 144's certificate rows all read `no_ref`, so nothing about it blocks her. **Do
+  not build the multi-page reader for this.**
+
+**▶ AT DEPLOY, IN ORDER:** (1) push (**api + web** — Python changed); (2) **then run the re-read on
+the LIVE service** — set `REEXTRACT_DOC_TYPE=birth_certificate` and
+`REEXTRACT_PASS=reextract_bc_child_ic` on `halatuju-api`, run the `reextract-documents` cron job
+repeatedly (20 docs a run) until it reports nothing left, then **UNSET BOTH**. No migration, no
+backfill, no other env var. ⚠ **NEVER re-extract from a local checkout** — no Storage access, so it
+reads "no text" and destroys `vision_fields`.
+
+**▶ WHY THE RE-READ IS PART OF THE DEPLOY, NOT AFTER IT:** 21 of 62 certificates carry a child name
+with no number, so the one-cell rule reads them amber until the number is filled in. Amber blocks
+nobody, but leaving it is amber for no better reason than our own old prompt.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Open a shortlisted student with a birth certificate — the certificate's rows show **green /
+   amber / red per person**, and a name with no number reads amber, not green.
+2. A certificate that read nothing shows **one amber row**, not three greys, and the student has a
+   re-upload task in their Action Centre.
+3. **ms and ta are first drafts** for the two new codes and the `unreadable` fact label.
+4. Not click-tested in a browser (TD-182 still breaks admin Google sign-in on localhost).
+
+**▶ NEXT — OWNER PICKS. Nothing here is blocking:**
+1. **Step 5 of #23, and it is the owner's own experiment first:** try the existing **QC override**
+   on a family whose certificate genuinely cannot be corrected. Only if that falls short is the
+   explanation-letter document type worth building.
+2. **The apply link on the gift card** + the editable gift code with the old code kept as an ALIAS
+   (the previous sprint's NEXT, unchanged — see the superseded block below). ⚠ The alias is not
+   optional: a renamed gift would make every printed link tell a student "applications closed".
+3. **TD-236** (this sprint's) — `record_request_analysis` cannot run from a worktree and stamps the
+   wrong commit. Low, and its trigger is the next completion report.
+
+**⚠ ALSO OPEN:** the four organisation-scope surfaces the gift switcher did not filter; archiving a
+gift blocks creating a payment run for it; TD-234 (thirteen repair commands with no door); TD-229;
+TD-231; TD-225; TD-221.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-08, after the gift switcher)
 
 **SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION.** Worktree `.worktrees/gift-switcher`,
 branch `feat/gift-switcher`. api + web. Retro `docs/retrospective-2026-09-08-gift-switcher.md`;

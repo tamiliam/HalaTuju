@@ -9611,3 +9611,60 @@ multiplies.
 
 **Revisit if:** the set-once rule is ever replaced by a maintained column, in which case both
 readers change together — never one of them.
+
+## The relationship documents leave the income cluster — BrightPath #23, 2026-09-08
+
+**Decision:** `birth_certificate` and `guardianship_letter` are removed from
+`services._INCOME_CLUSTER_DOC_TYPES`, so establishing a household's income no longer switches off
+the check that the certificate names this student and her mother. The income-proof types
+(`parent_ic`, `salary_slip`, `epf`, `str`) stay in the list and keep the softening exactly as it was.
+
+**Alternatives considered:** (a) leave it — nobody is currently stopped, and the check still runs
+for any household whose income is not established; (b) remove the whole list, so every income-cluster
+red blocks again once income is proved; (c) keep the softening but exempt only a red on the CHILD
+row, leaving the mother row soft.
+
+**Rationale:** "one clean cluster is enough" (#19, #28) is a rule about income EVIDENCE — an
+extraneous or misread income proof must not trap a family whose income is already established. It
+was never a rule about parentage. *Is this family poor?* and *is this really her mother?* are
+different questions answered by different documents that merely travel in the same bundle; the
+certificate was in the list because of where it is filed, not because of what it proves. (b) would
+have re-imposed the exact trap #19 and #28 were fixed to remove. (c) splits one document's rows
+across two policies for no reason anyone could state on a screen.
+
+**Trade-offs:** this is the one change in request #23 that can newly STOP somebody submitting, so it
+was measured on production and put to the owner before a line changed — seven live applications,
+one newly stopped, and that one is the owner's test account whose certificate names a different
+child. Zero real students move. Accepted alongside: a family with a genuinely uncorrectable
+certificate now meets a wall the income route used to route them around, which is what the deferred
+step 5 (an explanation-letter document type) exists for if the QC override proves insufficient.
+
+**Revisit if:** a real applicant is ever blocked by a red relationship row they cannot fix. The
+answer then is step 5 or the QC override — **not** putting the two document types back, which would
+restore the silence rather than provide the exit.
+
+## The father row keeps its green on a name alone — BrightPath #23, 2026-09-08
+
+**Decision:** the one-cell rule (a matching name with no number is amber, not green) is applied to
+the CHILD and MOTHER rows and deliberately NOT to the FATHER row, which continues to read green on a
+name match alone.
+
+**Alternatives considered:** apply the rule uniformly to all three rows, for consistency with the
+owner's own written example, which named the father.
+
+**Rationale:** the father row never goes through `_combine_relationship` at all. It compares the
+certificate's father against the patronymic in the STUDENT'S OWN name, so it has only ever had one
+cell by construction — there is no second cell to have checked. Measured before recommending:
+applying the rule there turns **51 of 62** father rows amber, because only **11** applications carry
+a father's IC to compare a number against. The row still corroborates two documents; it simply
+corroborates two names rather than a name and a number. Amber on 51 of 62 is a chip reviewers learn
+to ignore, which costs more than it buys.
+
+**Trade-offs:** the product is internally inconsistent in a way a careful reader can notice — three
+rows, two policies. The comment at `student_bc_check` says why, so it reads as a decision rather
+than an omission. Accepted: a father's name matching by chance is corroborated by nothing, and we
+say green.
+
+**Revisit if:** father ICs become common on file (say, above half of applications), at which point
+the measured cost of the amber falls and the rule can be applied uniformly. Owner ruled on the
+numbers above, 2026-09-08.
