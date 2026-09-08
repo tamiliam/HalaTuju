@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## Feature: the gift card is the door, and it says how many were awarded - 2026-09-08
+
+The owner, after finding the gift menu the long way round: *"In supabase, the project card is
+clickable. Likewise, we could change the entire gift card to button. But in supabase you see the
+settings are hidden behind the three dots, which is nice."*
+
+**The old door was a small grey word.** "Settings" sat in a row of verbs at the foot of the card,
+so the owner never found it - they reached a gift through Applications and the breadcrumb instead.
+
+- **The whole card opens the gift.** Pressing it selects that gift and steps into its settings,
+  exactly as the "Settings" link always did.
+- **Settings and Delete moved behind a three-dot menu.** Settings STAYS in there as well: the card
+  is a shortcut, the menu is the named route, and somebody looking for "where do I configure this"
+  should find the word.
+- **The card is about half its old height** - the facts sit on one line and the round is a sentence
+  under them ("Taking applications for 2026" / "Not taking applications") instead of a column that
+  could only ever read "None".
+- **A new fact: how many students the gift has AWARDED.**
+
+**The two things that could have gone quietly wrong, and did not:**
+
+- **A button inside a button is broken HTML** and the inner control cannot be reached by keyboard.
+  The state badge and the three-dot menu are SIBLINGS of the card button, never children of it, and
+  a test asserts that structurally - a browser recovers from the mistake silently, which is exactly
+  how it would have survived review.
+- **Hiding Delete could have quietly undone the owner's own ruling from 7 September** (*"it should
+  be prevented at the button stage"*). Inside the menu it is shown **asleep with the reason
+  underneath**, and pressing it keeps the menu open so the reason stays readable. The one reason
+  that used to be suppressed as redundant - "students have applied", beside a column reading 143 -
+  is no longer redundant, because the menu carries no counts.
+
+**Fix found while building it: the card counted applications more narrowly than the list it links
+to.** An application's gift is copied from its round and set once, so a round moved between gifts
+leaves its applications on the OLD gift. The Applications list already reaches through the round;
+the card did not, so the two would have disagreed about the same number. Identical today - the
+point is that they stay identical when a round does move.
+
+**And "Awarded" means has EVER been awarded, never the live status.** `awarded` is one stage in
+awarded -> active -> maintenance -> closed, so counting the status alone would make the number FALL
+as students progress - twelve today, three next month, with nobody having lost anything.
+
+api + web. No migration. pytest 6027 -> 6034; jest 1883 -> 1886; six bite-checks landed.
+
 ## Every console list reads as cards on a phone - 2026-09-08
 
 "Proceed with all" — the remaining lists, after the payment run proved the shape. Each keeps its

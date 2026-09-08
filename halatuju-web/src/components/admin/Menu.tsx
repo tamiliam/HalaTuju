@@ -31,13 +31,26 @@ import { createPortal } from 'react-dom'
  * and placed — see `place()`, which also flips it above the trigger when the space below is short.
  */
 
-export function MenuItem({ icon, children, sub, onClick, href, danger }: {
+export function MenuItem({ icon, children, sub, onClick, href, danger, disabled, reason }: {
   icon?: ReactNode
   children: ReactNode
   sub?: string
   onClick?: () => void
   href?: string
   danger?: boolean
+  /**
+   * Asleep, and SHOWN rather than hidden.
+   *
+   * ⚠ THE OWNER RULED THIS ON 2026-09-07, ABOUT DELETE: *"I feel it should be prevented at the
+   * button stage, and not wait until typed to check."* They were afraid to press Delete on the live
+   * flagship, and that fear was the finding — a destructive control you cannot tell is safe to press
+   * is one people avoid, so they cannot tidy up either. Hiding it explains nothing; asleep with the
+   * reason explains everything. When such a control moves INTO a menu the reason has to move with
+   * it, or the ruling is quietly undone by the relocation.
+   */
+  disabled?: boolean
+  /** Why it is asleep. Rendered under the item — a `title` needs a hover a touch screen cannot give. */
+  reason?: string
 }) {
   const cls = `flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors
     ${danger
@@ -50,6 +63,23 @@ export function MenuItem({ icon, children, sub, onClick, href, danger }: {
       {sub && <span className="shrink-0 text-xs text-ground-400">{sub}</span>}
     </>
   )
+  if (disabled) {
+    return (
+      // ⚠ `stopPropagation` IS LOAD-BEARING. The panel closes on its own click, so without this
+      // pressing an asleep item would shut the menu — taking the reason off the screen at the exact
+      // moment the reader went looking for it.
+      <span
+        role="menuitem" aria-disabled="true" data-menuitem data-menuitem-disabled
+        onClick={(e) => e.stopPropagation()}
+        className="block cursor-not-allowed rounded-lg px-3 py-2"
+      >
+        <span className="flex w-full items-center gap-2.5 text-left text-sm text-ground-400">
+          {inner}
+        </span>
+        {reason && <span className="mt-0.5 block text-xs text-ground-500">{reason}</span>}
+      </span>
+    )
+  }
   if (href) {
     return <a role="menuitem" href={href} className={cls} data-menuitem>{inner}</a>
   }
