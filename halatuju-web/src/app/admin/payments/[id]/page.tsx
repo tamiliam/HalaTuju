@@ -179,8 +179,101 @@ export default function PaymentRunDetailPage() {
 
       {error && <div className="mt-4 rounded-lg bg-critical-50 border border-critical-200 p-3 text-sm text-critical-600">{error}</div>}
 
-      {/* Students table */}
-      <TableFrame className="mt-5" minWidth={840} label={t('admin.payments.studentsHeading')}>
+      {/* ── PHONE: one card per student (owner, 2026-09-08) ────────────────────────────────
+          Seven columns do not fit a phone. They are not dropped — three LEAD (name, include,
+          the amount to pay) and the rest move to quieter lines, which is the owner's approved
+          shape. Same rows, same order, same links as the table below.
+
+          ⚠ THE AMOUNT IS READ-ONLY HERE EVEN ON A DRAFT, and that is the owner's ruling, not a
+          shortcut: *"Desktop is the preferred option. Phone is for quick checking."* A money
+          field a thumb can graze, on the screen people use to LOOK, is a bad trade. The card
+          SAYS where to change it rather than offering a control that silently does nothing —
+          an inert-looking box is the "UI asserts what nothing checks" defect wearing a
+          different hat. The INCLUDE toggle stays live: it was the reason to open a draft run
+          on a phone at all.
+
+          ⚠ EVERY STATE THE ROW CAN CARRY IS HERE TOO. An excluded student greys, strikes
+          through and shows the reason IN FULL (on the table that reason is a small box off to
+          the right, which is where it goes unread); the not-activated warning stays welded to
+          the e-wallet ID because it is the one fact here that stops a payment; and a credit
+          applied keeps its note. A phone layout that quietly loses a warning is worse than a
+          table you have to swipe. */}
+      <div className="mt-5 space-y-2.5 md:hidden" data-testid="payment-cards">
+        {sortedItems.map((it) => (
+          <div key={it.id}
+            className={`rounded-xl border border-l-[3px] p-3 ${it.included
+              ? 'border-ground-200 border-l-brand-fill bg-ground-0'
+              : 'border-ground-200 border-l-ground-300 bg-ground-50/60'}`}>
+            <div className="flex items-start justify-between gap-3">
+              {isFinanceViewer ? (
+                <span className={`text-sm font-semibold ${it.included ? 'text-ground-900' : 'text-ground-500 line-through'}`}>
+                  {it.name || '—'}
+                </span>
+              ) : (
+                <a href={appHref(it.application_id)} target="_blank" rel="noopener noreferrer"
+                  className={`text-sm font-semibold hover:underline ${it.included ? 'text-primary-600' : 'text-ground-500 line-through'}`}>
+                  {it.name || '—'} ↗
+                </a>
+              )}
+              {/* The one control that stays live on a phone. Disabled once the run is past draft,
+                  exactly as in the table. */}
+              <Toggle on={it.included} disabled={!isDraft}
+                label={t('admin.payments.col.include')}
+                onChange={(v) => isDraft && patchItem(it.id, v
+                  ? { included: true }
+                  : { included: false, exclude_reason: it.exclude_reason || t('admin.payments.defaultReason') })} />
+            </div>
+
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-ground-500">
+                {t('admin.payments.col.amountToPay')}
+              </span>
+              <span className={`text-lg tabular-nums ${it.included ? 'text-ground-900' : 'text-ground-400'}`}>
+                RM {rm(it.amount)}
+              </span>
+            </div>
+            {Number(it.credit_applied) > 0 && (
+              <p className="mt-0.5 text-[11px] italic text-primary-600">
+                {t('admin.payments.creditApplied', { amount: rm(it.credit_applied) })}
+              </p>
+            )}
+            {isDraft && it.included && (
+              <p className="mt-1 text-[11px] text-ground-500" data-testid="edit-on-desktop">
+                {t('admin.payments.editOnDesktop')}
+              </p>
+            )}
+
+            <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] text-ground-600">
+              <span>{it.nric || '—'}</span>
+              <span aria-hidden>·</span>
+              <span className="tabular-nums">{it.vircle_id || '—'}</span>
+              {!it.activated && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-caution-100 px-2 py-0.5 font-sans text-[10.5px] font-medium text-caution-800">
+                  ⚠ {t('admin.payments.notActivated')}
+                </span>
+              )}
+
+            </div>
+
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ground-600">
+              <span><span className="text-ground-500">{t('admin.payments.col.awardApproved')}</span>{' '}
+                <span className="tabular-nums">RM {rm(it.award_amount)}</span></span>
+              <span><span className="text-ground-500">{t('admin.payments.col.paidToDate')}</span>{' '}
+                <span className="tabular-nums">RM {rm(it.paid_to_date)}</span></span>
+            </div>
+
+            {!it.included && (
+              <p className="mt-2 border-t border-ground-200 pt-2 text-[11.5px] text-ground-600">
+                <span className="font-semibold text-ground-800">{t('admin.payments.leftOut')}</span>{' '}
+                {it.exclude_reason || '—'}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Students table — DESKTOP. Untouched by the phone work above. */}
+      <TableFrame className="mt-5 hidden md:block" minWidth={840} label={t('admin.payments.studentsHeading')}>
         <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
