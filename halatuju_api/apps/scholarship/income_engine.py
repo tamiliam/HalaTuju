@@ -1449,9 +1449,27 @@ def _combine_relationship(name_b, nric_b, nric_one_digit=False):
     (``nric_one_digit``) the amber is the more reassuring 'check_near' ("differs by one
     digit — likely a scan misread"); a larger clash is the plainer 'check'. Red is reserved
     for a real NAME mismatch (a genuinely different person) or an NRIC clash with no name to
-    vouch for it. Strictly demotes false reds to amber — never turns a real mismatch green."""
+    vouch for it. Strictly demotes false reds to amber — never turns a real mismatch green.
+
+    ⚠ **AND THE MIRROR OF THAT RULE (BrightPath #19, 2026-09-08): AN EXACTLY-MATCHING NRIC MAY
+    VOUCH FOR A DIFFERING NAME.** The paragraph above forgives a misread NUMBER when the name
+    agrees. It did not forgive a differing NAME when the number agrees exactly, and the number is
+    the stronger evidence of the two: twelve government-issued digits identifying one person,
+    against a Tamil name transliterated into Latin script — which varies so routinely that JPN
+    issues a letter attesting that two spellings are the same human being. Application 144's
+    certificate and her mother's MyKad both read 760201-14-5030 while the names differ by spacing
+    and several letters, and we told her to fetch "a corrected birth certificate" she cannot get.
+    Application 84 is the same red for a different reason: OUR OCR read her MyKad as
+    "KAVITA N. SURE NIAM" instead of SUBRAMANIAM.
+
+    ⚠ IT DEMOTES TO AMBER, NEVER TO GREEN, and only on an EXACT number match — never on
+    ``nric_close``, whose whole meaning is "these digits are not the same". A person still reads
+    the row. Measured over all 62 live mother rows before shipping: exactly two move (144 and 84),
+    and the two genuinely-different-person reds — a different woman on #5, a father's IC in the
+    mother slot on #9 — stay red, because neither number matches either.
+    """
     if name_b == 'mismatch':
-        return 'mismatch'
+        return 'check_name' if nric_b == 'match' else 'mismatch'
     if name_b == 'match':
         if nric_b == 'mismatch':
             return 'check_near' if nric_one_digit else 'check'

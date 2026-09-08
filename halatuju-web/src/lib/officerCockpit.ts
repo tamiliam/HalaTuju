@@ -272,7 +272,11 @@ function factStatus(s: string | undefined | null): FactStatus {
   switch (s) {
     case 'match': case 'found': case 'ok': case 'current':
       return 'verified'
+    // `check_name` (#19): the names differ but the IC NUMBER matches exactly — amber, because the
+    // number is the stronger evidence and a person should read the row, not a red that tells a
+    // student to fetch a corrected certificate she cannot get.
     case 'partial': case 'uncertain': case 'pending': case 'stale': case 'unconfirmed': case 'check': case 'check_near':
+    case 'check_name':
       return 'partial'
     case 'mismatch': case 'unreadable': case 'not_found': case 'rejected':
       return 'not'

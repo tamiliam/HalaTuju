@@ -474,14 +474,17 @@ function relPill(status: string, t: (k: string) => string): ReactNode {
   const kind: ICCheckKind =
     status === 'match' ? 'match'
       : status === 'mismatch' ? 'mismatch'
-        : status === 'check' || status === 'check_near' ? 'partial'
+        : status === 'check' || status === 'check_near' || status === 'check_name' ? 'partial'
           : 'none'
   const label =
     status === 'match' ? t('scholarship.docs.relCheck.confirmed')
       : status === 'mismatch' ? t('scholarship.docs.relCheck.mismatch')
         : status === 'check_near' ? t('scholarship.docs.relCheck.checkNumberOneDigit')
           : status === 'check' ? t('scholarship.docs.relCheck.checkNumber')
-            : t('scholarship.docs.relCheck.reviewing')
+            // #19: spelt differently, same IC number. The student must NOT be told to correct a
+            // certificate — the document is right and the spelling difference is real.
+            : status === 'check_name' ? t('scholarship.docs.relCheck.checkName')
+              : t('scholarship.docs.relCheck.reviewing')
   return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${REL_PILL[kind]}`}>{label}</span>
 }
 
