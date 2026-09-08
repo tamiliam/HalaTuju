@@ -1765,9 +1765,14 @@ class TestRelationshipChecklists(TestCase):
                               'bc_mother_name': 'VANITHA A/P MOHAN', 'bc_mother_nric': '760820-02-5230',
                               'bc_father_name': 'ELANJELIAN A/L VENUGOPAL'})
         chk = student_bc_check(bc)
-        self.assertEqual(chk['child_status'], 'match')      # child = the student
+        # ⚠ CHANGED BY #23 (2026-09-08), deliberately: this fixture gives the child a NAME and no
+        # number, and one cell alone no longer reads as fully verified. Amber, not green — the
+        # mother row below, which carries BOTH a name and a matching number, is still green.
+        self.assertEqual(chk['child_status'], 'check_one')  # child name matches; no number to check
         self.assertEqual(chk['mother_status'], 'match')     # mother name+NRIC = the mother IC
-        # father vs the student's patronymic (A/L ELANJELIAN → ELANJELIAN)
+        # father vs the student's patronymic (A/L ELANJELIAN → ELANJELIAN). Name-only by
+        # construction — there is no father NRIC reference — so it is untouched by the one-cell
+        # rule and stays green; whether it should is the owner's open question.
         self.assertEqual(chk['father_status'], 'match')
 
     def test_bc_mother_mismatch(self):

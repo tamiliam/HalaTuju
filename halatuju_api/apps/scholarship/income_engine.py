@@ -1473,12 +1473,16 @@ def _combine_relationship(name_b, nric_b, nric_one_digit=False):
     if name_b == 'match':
         if nric_b == 'mismatch':
             return 'check_near' if nric_one_digit else 'check'
-        return 'match'
-    # No NAME to compare (no_ref) — fall back to the NRIC alone.
+        # ⚠ ONE CELL ALONE IS NOT GREEN (BrightPath #23, owner 2026-09-08). A matching name with
+        # no number to check it against used to read as fully verified — "which is how a father
+        # with no Malaysian number passes on his name". We checked half of this row, so the row
+        # says half: AMBER, and a person decides. It does not block; only a red does.
+        return 'match' if nric_b == 'match' else 'check_one'
+    # No NAME to compare (no_ref) — the NRIC alone, and the same rule applies to it.
     if nric_b == 'mismatch':
         return 'mismatch'
     if nric_b == 'match':
-        return 'match'
+        return 'check_one'
     return 'no_ref'
 
 

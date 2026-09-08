@@ -273,6 +273,41 @@ class ConsentRedGateTests(TestCase):
                    return_value={'child_status': 'mismatch', 'mother_status': 'match', 'father_status': 'match'}):
             self.assertIn('birth_cert_person_mismatch', document_red_blockers(app))
 
+    def test_a_red_FATHER_row_does_not_block(self):
+        """⚠ BrightPath #23, owner 2026-09-08: *"A red on the father row does NOT [stop a
+        submission], because a father may legitimately have no Malaysian number — Lina's does
+        not — and that must never be what stops a student."*
+
+        The father row compares the certificate against the patronymic in the STUDENT'S OWN name,
+        so a foreign father, an absent father, or a student whose name simply does not carry the
+        patronymic all read red through no fault of the family. It is still READ and still shown
+        to the officer; it just no longer holds the door. Child and mother still block."""
+        from unittest.mock import patch
+        from apps.scholarship.services import document_red_blockers
+        app = self._app_with_doc('birth_certificate')
+        with patch('apps.scholarship.income_engine.student_bc_check',
+                   return_value={'child_status': 'match', 'mother_status': 'match',
+                                 'father_status': 'mismatch'}):
+            self.assertEqual(document_red_blockers(app), [])
+        # ...and the two rows that DO block still do.
+        with patch('apps.scholarship.income_engine.student_bc_check',
+                   return_value={'child_status': 'match', 'mother_status': 'mismatch',
+                                 'father_status': 'match'}):
+            self.assertIn('birth_cert_person_mismatch', document_red_blockers(app))
+
+    def test_a_red_father_row_does_not_hold_a_re_upload_either(self):
+        # The same rule at the OTHER gate: `doc_match_verdict` decides whether a re-uploaded
+        # certificate closes its Action-Centre task. A red father there would leave a student
+        # re-uploading for ever over a row they cannot change.
+        from unittest.mock import patch
+        from apps.scholarship.resolution import doc_match_verdict
+        app = self._app_with_doc('birth_certificate')
+        doc = app.documents.filter(doc_type='birth_certificate').first()
+        with patch('apps.scholarship.income_engine.student_bc_check',
+                   return_value={'child_status': 'match', 'mother_status': 'match',
+                                 'father_status': 'mismatch'}):
+            self.assertNotEqual(doc_match_verdict(doc), 'mismatch')
+
     def test_offer_pathway_clash_is_soft_not_gated(self):
         from unittest.mock import patch
         from apps.scholarship.services import document_red_blockers

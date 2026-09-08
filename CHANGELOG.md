@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## One cell is half a check, and a father cannot be what stops a student - 2026-09-08
+
+Step 3 of BrightPath request #23 - the rule the owner wrote out, made real.
+
+**ONE CELL ALONE IS NO LONGER GREEN.** For each person on a certificate we hold two things, a name
+and an identity card number. A matching name with NO number to corroborate it used to read as fully
+verified - *"which is how a father with no Malaysian number passes on his name"*. It now reads
+`check_one`: AMBER. Green is reserved for both cells checked and both agreeing.
+
+**MEASURED ON PRODUCTION BEFORE SHIPPING, and the live number is ONE.** 21 of 62 certificates carry
+a child name with no number, so 21 child rows move green -> amber - but **20 of them belong to
+students already awarded, rejected or expired**. Exactly **one** live application moves, and amber
+does not block. **0** mother rows move (61 of 62 already carry both cells).
+
+**⚠ SEQUENCE MATTERS: STEP 1'S RE-READ SHOULD RUN WITH THIS.** Those 21 blanks exist because the
+Gemini prompt was telling the reader to skip the child's number. Once the re-read fills them, most
+of those rows go back to green - or to amber for a real reason. Shipping the rule without the
+re-read leaves 21 rows amber for no better reason than our own old instruction.
+
+**⚠ A RED FATHER ROW NO LONGER BLOCKS A SUBMISSION** (owner: *"a father may legitimately have no
+Malaysian number - Lina's does not - and that must never be what stops a student"*). Removed from
+BOTH gates: `services.document_red_blockers` and `resolution.doc_match_verdict` - the second matters
+just as much, or a student re-uploads for ever over a row they cannot change. The row is still read
+and still shown; it just no longer holds the door. Child and mother still block, and a test pins
+that so the change cannot be widened by a later sweep.
+
+**⚠ THE FATHER ROW IS STILL GREEN ON A NAME ALONE, AND THAT IS AN OPEN OWNER QUESTION.** It does not
+go through `_combine_relationship` at all - it compares the certificate against the patronymic in
+the STUDENT'S OWN name, so it has only ever had one cell by construction. Applying the one-cell rule
+to it would turn **51 of 62** father rows amber, because only **11** applications carry a father's
+IC to compare a number against. Measured, not guessed; put to the owner rather than decided here.
+
+**TWO ASSERTIONS WERE CHANGED ON PURPOSE**, each with the reason written at the line: a fixture that
+claimed a name-only child row was green, and a step-1 test that pinned the same thing hours earlier.
+Both were true when written; step 3 is what changed them.
+
+pytest **4668**; jest **1826**; tsc **24** (baseline); lint **0**; i18n **4892 x 3**; `next build`
+exit 0; `makemigrations --check` clean. Two bite-checks landed.
+
+⚠ Unrelated to this change: the shared checkout's `node_modules` had lost `@jest` and `.bin`
+mid-session, so jest could not run. Repaired with `npm install` from the committed lockfile; the
+one-line lockfile churn that caused was reverted.
+
 ## Nothing read is not nothing wrong - 2026-09-08
 
 Step 2 of BrightPath request #23, and the owner's sentence for it was exact: *"today 'we could not

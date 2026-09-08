@@ -1795,7 +1795,9 @@ export interface ApplicantDocument {
 // not — a misread digit off a security-printed JPN document) and, from BrightPath #19,
 // `check_name` (the NRIC matches EXACTLY, the name is spelt differently — a transliteration, not
 // a different person). All three render partial, never green and never red.
-type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name'
+// `check_one` (#23): only ONE of the two cells was present at all, so half the row was
+// checked. Amber — never green off a single piece of evidence, never red either.
+type RelStatus = 'match' | 'mismatch' | 'no_ref' | 'check' | 'check_near' | 'check_name' | 'check_one'
 
 export interface BcCheck {
   child_name: string

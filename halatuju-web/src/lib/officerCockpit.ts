@@ -276,7 +276,9 @@ function factStatus(s: string | undefined | null): FactStatus {
     // number is the stronger evidence and a person should read the row, not a red that tells a
     // student to fetch a corrected certificate she cannot get.
     case 'partial': case 'uncertain': case 'pending': case 'stale': case 'unconfirmed': case 'check': case 'check_near':
-    case 'check_name':
+    // `check_one` (#23): we held only ONE of the name/number pair, so only half the row was
+    // checked. Green would claim a corroboration we do not have.
+    case 'check_name': case 'check_one':
       return 'partial'
     case 'mismatch': case 'unreadable': case 'not_found': case 'rejected':
       return 'not'

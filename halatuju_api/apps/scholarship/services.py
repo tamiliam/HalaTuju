@@ -2622,7 +2622,12 @@ def document_red_blockers(application):
             if has(chk, 'name_status', 'nric_status') or chk.get('current_status') in income_engine.STR_RED_STATES:
                 codes.add('str_person_mismatch')
         elif dt == 'birth_certificate':
-            if has(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):
+            # ⚠ THE FATHER ROW IS DELIBERATELY NOT A BLOCKER (BrightPath #23, owner 2026-09-08).
+            # It compares the certificate's father against the patronymic in the STUDENT'S own
+            # name — a father may legitimately have no Malaysian IC (Lina's has none), and a
+            # foreign or absent father must never be what stops a student submitting. The row is
+            # still READ and still shown to the officer; it just does not hold the door.
+            if has(income_engine.student_bc_check(doc), 'child_status', 'mother_status'):
                 codes.add('birth_cert_person_mismatch')
         elif dt == 'guardianship_letter':
             if has(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):

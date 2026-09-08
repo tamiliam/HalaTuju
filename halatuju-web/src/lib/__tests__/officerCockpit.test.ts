@@ -455,6 +455,18 @@ describe('documentFacts', () => {
     expect(bc('mismatch')).toBe('not')
   })
 
+  // BrightPath #23. One cell alone is not a full check: a matching name with no number to
+  // corroborate it used to read GREEN, which is how a father with no Malaysian number passed on
+  // his name. Amber — a person reads the row. It never blocks; only `mismatch` does.
+  it('a row checked on ONE cell is amber, not green', () => {
+    const child = (child_status: 'match' | 'check_one') => documentFacts(doc({
+      doc_type: 'birth_certificate',
+      bc_check: { child_name: '', child_status, mother_name: '', mother_nric: '', mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' },
+    })).find((f) => f.key === 'child')?.status
+    expect(child('check_one')).toBe('partial')
+    expect(child('match')).toBe('verified')     // both cells agreed → still green
+  })
+
   // BrightPath #23. An unreadable certificate buckets EVERY row to `no_ref`, which renders as
   // three grey chips — indistinguishable from a document that checked out, which is exactly the
   // owner's complaint ("we could not read it scores the same as it checked out"). One amber row.

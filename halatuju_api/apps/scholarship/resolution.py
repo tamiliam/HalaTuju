@@ -333,7 +333,10 @@ def doc_match_verdict(doc):
         if red(chk, 'name_status', 'nric_status') or chk.get('current_status') in income_engine.STR_RED_STATES:
             return 'mismatch'
     elif dt == 'birth_certificate':
-        if red(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):
+        # The FATHER row is not a blocker (#23): it is checked against the patronymic in the
+        # student's own name, and a father with no Malaysian IC must not stop a re-upload from
+        # resolving. Child + mother still do.
+        if red(income_engine.student_bc_check(doc), 'child_status', 'mother_status'):
             return 'mismatch'
         # V2 (#4): same hold — an errored/blank BC extraction must not resolve the request as read.
         sv = (getattr(doc, 'vision_fields', None) or {}).get('student_verdict', '')
