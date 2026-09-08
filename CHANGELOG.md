@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## Feature: the gift must be known before the menu offers to configure one - 2026-09-08
+
+The owner, looking at the shipped gift switcher: *"I feel the programme shouldn't show up until
+they are selected"* — the Supabase shape, where you pick a project before its pages appear. And
+immediately the knot with it: *"But reviewers do not have access to the overview page. They are
+brought straight to the Application page. So, I think we need to think this through."*
+
+**The rule is CONSEQUENCE, not role, and that is what dissolves the knot.** A row that would go
+wrong without a choice hides; a row that answers correctly stays.
+
+- **Programme > Configuration hides** until a gift is chosen. It writes a gift's settings, so
+  opening it with nothing chosen can only ever ask a question - and worse, it invites somebody to
+  edit the wrong gift's rules.
+- **Programme > Applications stays.** It is a READ: with nothing chosen it lists every gift under
+  a neutral heading, which is true, just less specific. The same line the gift switcher drew
+  inside the pages, applied to the menu.
+- **So no role needs an exemption.** Programme is a reviewer's ONLY sidebar group, so hiding the
+  group would have left them with an empty rail and no way back to their own queue. Marking the
+  configure row and not the work row means the group can never empty, for anybody.
+- The rail now **names the gift** in that group's heading. The prop had existed since N4 and was
+  fed `undefined`, so the heading read the bare word "Programme" whichever gift was open.
+
+**Fix: nobody was landing where they were supposed to, and one role landed somewhere it may not
+go.** Login sent everyone but a reviewer to `/admin`, which is the PLATFORM dashboard
+(`roles: ['super','partner']`), so four roles were bounced off it by the page.
+
+- **`finance` was bounced onto Applications, a page the registry omits it from deliberately** -
+  its `_b40_scope` is 'none', so every call it makes there can only 403. Their first screen after
+  signing in was a list built for somebody else, failing quietly. The page also had no role guard
+  of its own; it has one now.
+- **org_admin, admin and finance now land on their organisation's Overview**, which is the front
+  door the gifts are listed on. qc reaches Applications in one hop instead of two. super and
+  partner are unchanged.
+- Landing is **derived** from the registry - the first route this role may actually open, in the
+  registry's own order - instead of naming `/admin` and letting a page sort it out.
+- **`adminLanding()` now really does delegate to `defaultRoute()`.** The docstring had claimed it
+  for months while the two held separate hand-copied implementations, agreeing only because
+  nobody had edited either.
+
+Web only. No migration, no API change. jest 1853 -> 1864; six bite-checks landed.
+
 ## The payment run reads as cards on a phone - 2026-09-08
 
 First of the phone card layouts, approved by the owner from a drawing before any code. Seven

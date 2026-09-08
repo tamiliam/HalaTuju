@@ -23,8 +23,10 @@ jest.mock('@/lib/i18n', () => ({
   useT: () => ({ t: (k: string, vars?: Record<string, string>) =>
     vars ? `${k}|${Object.values(vars).join(',')}` : k }),
 }))
+// Re-pointed per test, so the page's own role guard can be exercised from the outside.
+let authRole: { role: string } = { role: 'org_admin' }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'org_admin' } }),
+  useAdminAuth: () => ({ token: 'tok', role: authRole }),
 }))
 jest.mock('@/lib/admin-api')
 
@@ -45,6 +47,7 @@ const EMPTY_LIST: api.AdminScholarshipListData = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  authRole = { role: 'org_admin' }
   scope = { chosen: '', programme: null }
   mockApi.getScholarshipApplications.mockResolvedValue(EMPTY_LIST)
   mockApi.getAssignableAdmins.mockResolvedValue({ admins: [], past_assignees: [] })
@@ -88,5 +91,34 @@ describe('the switcher reaches the endpoint', () => {
     const [filters] = mockApi.getScholarshipApplications.mock.calls[0]
     expect(filters).toBeDefined()
     expect(filters?.programme).toBeUndefined()
+  })
+})
+
+/*
+ * ⚠ THIS PAGE HAD NO ROLE GUARD, AND A REAL ROLE WAS BEING ROUTED HERE (2026-09-08).
+ *
+ * The registry omits `finance` from `applications` deliberately — `_b40_scope` is 'none', so every
+ * call it makes here can only 403 — yet the old landing rule sent finance to `/admin`, which
+ * bounced it straight to this page. Their first screen after signing in was a list built for
+ * somebody else, failing silently. `defaultRoute` is the real fix; this is the second line of it.
+ */
+describe('the page refuses a role the registry never gave it', () => {
+  it('shows a refusal to finance and asks the server for nothing', async () => {
+    authRole = { role: 'finance' }
+    render(<AdminScholarshipList />)
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+    await waitFor(() => expect(screen.getByText('apiErrors.superAdminRequired')).toBeTruthy())
+    // ⚠ NOT MERELY HIDDEN. A guard that renders a refusal while still fetching would put a 403 in
+    // the console and a wasted round trip on the wire every time somebody lands here.
+    expect(mockApi.getScholarshipApplications).not.toHaveBeenCalled()
+  })
+
+  it('still lets every role the registry DOES list through', async () => {
+    for (const role of ['super', 'org_admin', 'admin', 'qc', 'reviewer']) {
+      authRole = { role }
+      const { unmount } = render(<AdminScholarshipList />)
+      await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toBeTruthy())
+      unmount()
+    }
   })
 })

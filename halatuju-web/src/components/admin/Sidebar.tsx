@@ -139,6 +139,16 @@ export function Sidebar({
    *  a count — not another prop threaded through three components (TD-205). */
   badgeCounts: Partial<Record<BadgeKey, number>>
   orgName?: string | null
+  /**
+   * The gift the console is currently open on, which becomes the Programme group's heading.
+   *
+   * ⚠ THE PROP EXISTED FROM N4 AND WAS FED `undefined` UNTIL 2026-09-08, so the group read the
+   * word "Programme" whichever gift was open — `heading()` below has always preferred the name.
+   * The rail now hides Configuration until a gift is known, so it owes the reader the other half
+   * of that sentence: which gift it settled on. Still `undefined` when several gifts are open and
+   * none is chosen, and the scope label stands in — the same refusal to name one that the
+   * breadcrumb makes.
+   */
   programmeName?: string
   /** Open and static — either the person pinned it, or this is the mobile drawer, where
    *  hovering is not a thing that happens. */

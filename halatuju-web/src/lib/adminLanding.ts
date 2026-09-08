@@ -9,16 +9,26 @@
  * reviewer is ever gated. We check `=== false` (not falsy) so an OLD payload that omits the field
  * never traps anyone.
  */
+import { defaultRoute } from '@/lib/navigation'
+
 export interface AdminRoleLike {
   role?: string
+  is_super_admin?: boolean
   reviewer_profile_complete?: boolean
 }
 
-/** The post-login destination for an authenticated admin. */
+/**
+ * The post-login destination for an authenticated admin.
+ *
+ * ⚠ IT DELEGATES NOW, AND IT DID NOT BEFORE. `navigation.ts:defaultRoute` has claimed in its
+ * docstring since N2 that "adminLanding() delegates here, so the rule has one home" — and it did
+ * not: this function held a second, hand-copied implementation of the same three lines. They
+ * agreed only because nobody had changed either. Deriving the landing route from the registry
+ * (2026-09-08) is precisely the kind of change that would have split them, so the claimed
+ * delegation is now the real one. There is one rule and one place it lives.
+ */
 export function adminLanding(role: AdminRoleLike): string {
-  if (role.role === 'reviewer' && role.reviewer_profile_complete === false) return '/admin/profile'
-  if (role.role === 'reviewer' || role.role === 'viewer') return '/admin/scholarship'
-  return '/admin'
+  return defaultRoute(role, role.reviewer_profile_complete)
 }
 
 /** True when a reviewer with an incomplete profile is on a page other than the profile page (and

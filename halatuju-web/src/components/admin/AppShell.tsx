@@ -11,7 +11,7 @@ import { useNavProbes } from '@/lib/useNavProbes'
 import { activeItem, chordTarget, effectiveRole, visibleNav, CHORD_PREFIX } from '@/lib/navigation'
 import { pageWidthFor, WIDTH_CLASS } from '@/lib/pageWidth'
 import { PREF_KEYS, readPref, writePref } from '@/lib/uiPrefs'
-import { ProgrammeScopeProvider } from '@/lib/programmeScope'
+import { ProgrammeScopeProvider, useProgrammeScope } from '@/lib/programmeScope'
 import { Sidebar } from '@/components/admin/Sidebar'
 import { Topbar, type Attention } from '@/components/admin/Topbar'
 import { CommandPalette } from '@/components/admin/CommandPalette'
@@ -36,16 +36,88 @@ import { BreadcrumbScopes } from '@/components/admin/ScopeSwitcher'
  *
  * Who may see what comes from the registry (lib/navigation.ts), never from a role check
  * written here. It is UX only: the org fence and the endpoint role gates are unchanged.
+ *
+ * ⚠ TWO COMPONENTS, AND THE SPLIT IS THE POINT (2026-09-08). `AppShell` fetches the scopes and
+ * PROVIDES the programme context; `Chrome` renders inside it and CONSUMES it. They had to
+ * separate the day the sidebar started depending on which gift is open: the selection lives in
+ * `ProgrammeScopeProvider`'s own state, and a component cannot read a context it is itself
+ * mounting. Lifting that state up here instead would have given the crumb and the pages two
+ * holders for one answer — the exact thing `ScopeSwitcher`'s docstring forbids.
  */
 export function AppShell({ children }: { children: ReactNode }) {
+  const { token } = useAdminAuth()
+  const { locale } = useT()
+
+  /*
+   * The scopes behind the breadcrumb switchers (nav/IA N3a).
+   *
+   * ⚠ A selected scope is a DISPLAY preference. It is not sent as a header, a cookie or anything
+   * ambient, and nothing is re-scoped because of it — the organisation fence is server-side and
+   * unchanged. Putting it in a header or a cookie would relocate that fence into the client.
+   *
+   * ⚠ THE PROGRAMME HALF NOW LIVES IN `ProgrammeScopeProvider`, NOT IN THIS COMPONENT'S STATE
+   * (TD-193, 2026-09-03). The crumb and the Programme-scope pages must agree about which gift is
+   * open, and the only way to guarantee that is one holder — so the shell provides the context and
+   * the crumb consumes it exactly as the tabs do. The chosen code is handed to each endpoint as an
+   * explicit request value the server re-fences; it never travels on its own.
+   *
+   * A failed fetch is swallowed: a switcher is furniture, and the console must not go down
+   * because a dropdown could not be populated. Empty scopes fall back to the static crumbs.
+   */
+  const [scopes, setScopes] = useState<AdminScopes>({ organisations: [], programmes: [] })
+  /*
+   * ⚠ HAS THE LIST ARRIVED YET? An empty `programmes` array is TWO different facts — "this tenant
+   * runs no gifts" and "we have not asked yet" — and the menu now behaves differently for each.
+   * Without this flag the Configuration row would be hidden on the first paint of every page load
+   * and pop into the rail a moment later, which is exactly the kind of movement the pinned-rail
+   * note above refuses to make. Until we know, we show: `programmeChosen` stays `undefined`, and
+   * `NavContext` says an omitted value means show.
+   */
+  const [scopesLoaded, setScopesLoaded] = useState(false)
+  // ⚠ EXTRACTED SO IT CAN BE RE-RUN. It used to be an inline effect on [token, locale],
+  // i.e. fetched ONCE per console session — so a gift created during that session was
+  // missing from this list, `programmeScope` refused to resolve the unknown code (correctly),
+  // and the Configuration screen asked which gift forever with every click a no-op. Reported
+  // by the owner on first real use, 2026-09-07. The list was stale; the guard was right.
+  const loadScopes = useCallback(async () => {
+    if (!token) return
+    try {
+      setScopes(await getAdminScopes(locale, { token }))
+      setScopesLoaded(true)
+    } catch {
+      /* furniture — never block the shell. ⚠ `scopesLoaded` stays false on a failure, so a menu
+         row is never hidden on the strength of a list we could not fetch. */
+    }
+  }, [token, locale])
+
+  useEffect(() => { void loadScopes() }, [loadScopes])
+
+  const programmeChoices = useMemo(
+    () => scopes.programmes.map((p) => ({ code: p.code, name: p.name, isActive: p.is_active })),
+    [scopes.programmes],
+  )
+
+  return (
+    <ProgrammeScopeProvider choices={programmeChoices} onReload={loadScopes}>
+      <Chrome scopes={scopes} scopesLoaded={scopesLoaded}>{children}</Chrome>
+    </ProgrammeScopeProvider>
+  )
+}
+
+/** Everything that reads the programme context — see the split note on `AppShell`. */
+function Chrome(
+  { scopes, scopesLoaded, children }:
+  { scopes: AdminScopes; scopesLoaded: boolean; children: ReactNode },
+) {
   const { role, token } = useAdminAuth()
-  const { t, locale } = useT()
+  const { t } = useT()
   const pathname = usePathname()
   const router = useRouter()
 
   const [pendingSponsors, setPendingSponsors] = useState(0)
   const [mobileNav, setMobileNav] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [selectedOrg, setSelectedOrg] = useState('')
 
   /*
    * The rail starts on hover-open for everyone, then adopts the person's saved choice after
@@ -65,48 +137,26 @@ export function AppShell({ children }: { children: ReactNode }) {
     })
   }
 
-  /*
-   * The scopes behind the breadcrumb switchers (nav/IA N3a).
-   *
-   * ⚠ A selected scope is a DISPLAY preference. It is not sent as a header, a cookie or anything
-   * ambient, and nothing is re-scoped because of it — the organisation fence is server-side and
-   * unchanged. Putting it in a header or a cookie would relocate that fence into the client.
-   *
-   * ⚠ THE PROGRAMME HALF NOW LIVES IN `ProgrammeScopeProvider`, NOT IN THIS COMPONENT'S STATE
-   * (TD-193, 2026-09-03). The crumb and the Programme-scope pages must agree about which gift is
-   * open, and the only way to guarantee that is one holder — so the shell provides the context and
-   * the crumb consumes it exactly as the tabs do. The chosen code is handed to each endpoint as an
-   * explicit request value the server re-fences; it never travels on its own.
-   *
-   * A failed fetch is swallowed: a switcher is furniture, and the console must not go down
-   * because a dropdown could not be populated. Empty scopes fall back to the static crumbs.
-   */
-  const [scopes, setScopes] = useState<AdminScopes>({ organisations: [], programmes: [] })
-  const [selectedOrg, setSelectedOrg] = useState('')
-  // ⚠ EXTRACTED SO IT CAN BE RE-RUN. It used to be an inline effect on [token, locale],
-  // i.e. fetched ONCE per console session — so a gift created during that session was
-  // missing from this list, `programmeScope` refused to resolve the unknown code (correctly),
-  // and the Configuration screen asked which gift forever with every click a no-op. Reported
-  // by the owner on first real use, 2026-09-07. The list was stale; the guard was right.
-  const loadScopes = useCallback(async () => {
-    if (!token) return
-    try {
-      setScopes(await getAdminScopes(locale, { token }))
-    } catch {
-      /* furniture — never block the shell */
-    }
-  }, [token, locale])
-
-  useEffect(() => { void loadScopes() }, [loadScopes])
-
-  const programmeChoices = useMemo(
-    () => scopes.programmes.map((p) => ({ code: p.code, name: p.name, isActive: p.is_active })),
-    [scopes.programmes],
-  )
-
   const { probes, requestsWaiting } = useNavProbes(token)
   const r = effectiveRole(role)
-  const groups = useMemo(() => visibleNav({ role: r, probes }), [r, probes])
+  /*
+   * ⚠ THE MENU NOW DEPENDS ON WHETHER A GIFT IS KNOWN (owner, 2026-09-08: *"the programme
+   * shouldn't show up until they are selected"*). `chosen` is `''` only when there are SEVERAL
+   * gifts and none picked — with one gift it fills itself in, so on a single-gift tenant nothing
+   * here changes at all.
+   *
+   * ⚠ IT HIDES THE ROW THAT WOULD GO WRONG, NOT THE GROUP. Only `programmeConfig` carries
+   * `needsProgramme`; Applications stays, because a list of every gift is a true answer and it is
+   * a reviewer's only door. See `NavItem.needsProgramme` for why that removes the need for any
+   * role exemption.
+   */
+  const { chosen, programme } = useProgrammeScope()
+  const groups = useMemo(
+    // ⚠ `undefined` UNTIL THE LIST HAS ARRIVED — see `scopesLoaded` on AppShell. Hiding a row on
+    // the strength of a list we have not fetched would make it pop in on every page load.
+    () => visibleNav({ role: r, probes, programmeChosen: scopesLoaded ? chosen !== '' : undefined }),
+    [r, probes, chosen, scopesLoaded],
+  )
   const active = activeItem(pathname)
   const activeId = active?.id
 
@@ -221,7 +271,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const hrefOf = (id: string) => utility?.items.find((i) => i.id === id)?.href
 
   return (
-    <ProgrammeScopeProvider choices={programmeChoices} onReload={loadScopes}>
     <div className="flex min-h-screen flex-col bg-ground-50">
       <Topbar
         orgName={role?.owning_org_name ?? role?.org_name}
@@ -269,6 +318,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               activeId={activeId}
               badgeCounts={badgeCounts}
               orgName={role?.owning_org_name ?? role?.org_name}
+              programmeName={programme?.name}
               pinned={pinned}
             />
           </div>
@@ -289,6 +339,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 activeId={activeId}
                 badgeCounts={badgeCounts}
                 orgName={role?.owning_org_name ?? role?.org_name}
+                programmeName={programme?.name}
                 pinned
                 chords={false}
                 onNavigate={() => setMobileNav(false)}
@@ -314,6 +365,5 @@ export function AppShell({ children }: { children: ReactNode }) {
         onClose={() => setPaletteOpen(false)}
       />
     </div>
-    </ProgrammeScopeProvider>
   )
 }
