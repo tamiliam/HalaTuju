@@ -17,7 +17,7 @@ and posted to BrightPath as comment **77** — that is the promise we are delive
 | 1 | Read the child's IC from the certificate + re-read the 62 on file | **shipped** `f8836d36` |
 | 2 | Unreadable ≠ clean: amber + ask for a re-upload | **shipped** `6317bf80` |
 | 3 | The merged green/amber/red rule + father does not block | **shipped** `7099c61d` |
-| 4 | **MEASURE ONLY, THEN STOP** — income switching off the relationship check | **next** |
+| 4 | **MEASURE ONLY, THEN STOP** — income switching off the relationship check | **measured 2026-09-08 — awaiting the owner's ruling** |
 | 5 | A document type for an explanation letter | **DEFERRED** — try the QC override first |
 
 ---
@@ -51,21 +51,51 @@ Once income is established by ANY route, every income-cluster document stops bei
 including the birth certificate, whose question ("is this her mother?") is a different question from
 "is this family poor?". That is how Lina (app 144) submitted with an unreadable certificate.
 
-### What was measured before (re-verify, do not trust these)
+### ✅ MEASURED ON PRODUCTION 2026-09-08 — ONE APPLICATION MOVES, AND IT IS THE TEST ACCOUNT
 
-- 61 of 62 applications holding a birth certificate have income evidence, so the check is off for
-  almost everyone.
-- **55 of those 61 are already decided** — 37 awarded, 13 rejected, 5 expired. Re-checking a decided
-  student would be wrong.
-- **7 are live**: 3 recommended, 1 shortlisted, 1 interviewed, 1 interviewing, 1 profile_complete.
+Seven live (undecided) applications: **16 · 32 · 106 · 132 · 133 · 140 · 144**. Four of them hold a
+birth certificate (16, 32, 133, 144); 106, 132 and 140 hold none, so the relationship check cannot
+reach them at all.
 
-Deliver: those 7 by application id + name + what would newly block each, if anything.
+Every row scored by running the REAL `_name_bucket` / `_nric_bucket` / `_combine_relationship` over
+the production values (pure functions, no DB — script kept in the session scratchpad):
+
+| app | status | child row | mother row | newly blocks? |
+|---|---|---|---|---|
+| **16** | shortlisted | **mismatch** | match | **YES** — the owner's own test account |
+| 32 | interviewing | match | match | no |
+| 133 | profile_complete | match | match | no |
+| 144 | interviewed | no_ref | no_ref | no |
+
+**Application 16 is `ELANJELIAN VENUGOPAL` — the owner's test record.** Its certificate belongs to
+`THEEPICAA A/P SELVINAYAGAM` (a different person, correctly read as a mismatch). It holds an approved
+2026 STR in the mother's name, so income IS established and the check is skipped today.
+
+**So: no real student is affected. Zero of the seven.**
+
+⚠ **Applications 43 and 124 were awarded DURING this measurement** (`awarded_at` 2026-09-08 05:01
+UTC), so they left the live set mid-count. Any re-measurement must re-read the statuses; do not
+carry this table forward as though it were static.
+
+### The whole 62-certificate corpus, for safety
+
+Every row that is not a byte-identical match on both cells was scored the same way. **Three reds in
+62**, and none of them is a false alarm:
+- **#5** (expired) — genuinely a different family's certificate.
+- **#9** (awarded) — the script reads red, but the LIVE engine rescues it: `chain_verified_earner`
+  matches the mother's IC number on the income proof. Not a real red.
+- **#16** — the test account above.
+
+Everything else lands `match`, or amber (`check_one` ×7 on a child row with no number,
+`check_name` ×1 on #84). The rule is safe to run for the next intake.
 
 ---
 
-## ⚠ AN OWNER QUESTION IS OPEN FROM STEP 3 — DO NOT DECIDE IT ALONE
+## ✅ SETTLED BY THE OWNER 2026-09-08 — THE FATHER ROW STAYS AS IT IS
 
-**Should the father row go amber when we only hold a name?**
+**Should the father row go amber when we only hold a name? — NO. Leave it.** The owner accepted the
+recommendation below verbatim. Do not re-open it, and do not "finish the one-cell rule" by extending
+it to the father row: that is a decision, not an oversight.
 
 The owner's rule says one cell alone is amber, and their own example was the father. But the father
 row never went through `_combine_relationship`: it compares the certificate against the patronymic
@@ -128,9 +158,11 @@ endpoint passes NO arguments — that was TD-234's shape and step 1 fixed it):
 
 ## Still outstanding for the owner (carried, not part of step 4)
 
-- **Lina's own file is not repaired.** Her certificate is a merged scan and `_pdf_first_page_png`
-  reads page 1 only. She needs a clean single-page re-upload, or a separate decision about reading
-  every page (its own cost per document, and a rule for which page wins).
+- **~~Lina's own file is not repaired.~~ CLOSED BY THE OWNER 2026-09-08: leave it.** Verbatim:
+  *"This is water under the bridge. Future Lina will not be prevented when she submits the BC only."*
+  Verified true — application 144's certificate rows all read `no_ref`, so nothing about it blocks
+  her; step 2 asks her for a clearer copy and that ask does not hold the door. **Do not build the
+  multi-page reader for this.**
 - **ms/ta are first drafts** for everything new here: `birth_cert_unreadable`,
   `guardianship_letter_unreadable`, the `unreadable` fact label, plus the older
   `scholarship.docs.relCheck.checkName` and the #16/#17 strings.
