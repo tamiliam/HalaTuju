@@ -269,6 +269,21 @@ export default function IntakeYearTab() {
     setEdit({ name: y.name, opens_on: y.opens_on || '', closes_on: y.closes_on || '' })
   }
 
+  /**
+   * Has anything in the edit dialog actually changed? (Owner, 2026-09-08: *"the save is enabled
+   * even though no change has been made. It should follow the platform rule."*)
+   *
+   * ⚠ COMPARED THE WAY IT WILL BE SENT, not the way it is typed. `saveEdit` trims the name and
+   * turns a blank box into null, so a trailing space is not a change and neither is '' against a
+   * null window. Comparing the raw boxes would wake the button up for a keystroke that sends
+   * exactly what the server already holds.
+   */
+  const editDirty = !!editing && (
+    edit.name.trim() !== editing.name
+    || edit.opens_on !== (editing.opens_on || '')
+    || edit.closes_on !== (editing.closes_on || '')
+  )
+
   const saveEdit = async () => {
     if (!editing) return
     const ok = await run(() => updateAdminIntakeYear(editing.id, {
@@ -533,7 +548,7 @@ export default function IntakeYearTab() {
                 {t('common.cancel')}
               </button>
               <button type="button" onClick={saveEdit} data-testid="save-edit"
-                disabled={busy || !edit.name.trim()}
+                disabled={busy || !edit.name.trim() || !editDirty}
                 className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {t('common.save')}
               </button>
