@@ -349,6 +349,10 @@ describe('the round badge is the control', () => {
     const panel = screen.getByRole('menu')
     expect((document.querySelector('table') as HTMLElement).contains(panel)).toBe(false)
     expect(document.querySelector('.overflow-hidden')?.contains(panel)).toBeFalsy()
+    // ⚠ And not inside TableFrame's SCROLLER either. That layer is `overflow-x-auto`, which clips
+    // just as hard and — unlike the corner-rounding card — cannot be removed: it is the whole
+    // reason the table scrolls on a phone instead of losing its right-hand columns.
+    expect(screen.getByTestId('table-scroller').contains(panel)).toBe(false)
     expect(panel.parentElement).toBe(document.body)
   })
 })

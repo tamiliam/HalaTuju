@@ -50,6 +50,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
 import { formatDate } from '@/lib/formatDate'
@@ -353,7 +354,9 @@ export default function IntakeYearTab() {
             </InfoBox>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-2xl border border-ground-200 bg-ground-0 shadow-sm">
+          {/* Was a bare overflow-hidden card: on a phone the right-hand columns were CLIPPED
+              with no scrollbar. TableFrame keeps the corners clipped and the scrolling separate. */}
+          <TableFrame className="mt-4" minWidth={760} label={t('admin.years.subtitle')}>
             <table className="w-full text-sm">
               <thead className="border-b border-ground-200 bg-ground-50">
                 <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
@@ -397,7 +400,7 @@ export default function IntakeYearTab() {
                 )}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
 
           {/* ⚠ THE ONWARD POINTER IS GONE, DELIBERATELY (owner, 2026-09-07: *"Why is it there?"*).
               I added it as the second half of a setup trail and got the CONDITION backwards: it

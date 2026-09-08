@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import {
@@ -130,7 +131,7 @@ export default function PaymentsLandingPage() {
   const inputCls = 'w-full px-3 py-2 border border-ground-300 rounded-lg focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
   return (
-    <div className="max-w-4xl font-plex">
+    <div className="font-plex">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-ground-900">{t('admin.payments.title')}</h1>
@@ -146,8 +147,8 @@ export default function PaymentsLandingPage() {
 
       {error && <div className="mt-4 rounded-lg bg-critical-50 border border-critical-200 p-3 text-sm text-critical-600">{error}</div>}
 
-      <div className="mt-6 bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
-        <table className="w-full text-sm min-w-[640px]">
+      <TableFrame className="mt-6" minWidth={640} label={t('admin.payments.title')}>
+        <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
               <th className="px-4 py-3 font-semibold">{t('admin.payments.col.reference')}</th>
@@ -187,7 +188,7 @@ export default function PaymentsLandingPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </TableFrame>
 
       {/* Only offered when there is something to reveal — no dead control on a clean list. */}
       {!loading && cancelledCount > 0 && (
@@ -207,8 +208,9 @@ export default function PaymentsLandingPage() {
         <div className="mt-8">
           <h2 className="text-lg font-bold text-ground-900">{t('admin.payments.funding.title')}</h2>
           <p className="mt-1 text-sm text-ground-500">{t('admin.payments.funding.subtitle')}</p>
-          <div className="mt-3 bg-ground-0 rounded-xl shadow-sm border overflow-x-auto">
-            <table className="w-full text-sm min-w-[720px]">
+          <TableFrame className="mt-3" minWidth={720}
+            label={t('admin.payments.funding.title')}>
+            <table className="w-full text-sm">
               <thead className="bg-ground-50 border-b">
                 <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
                   <th className="px-4 py-3 font-semibold">{t('admin.payments.funding.col.student')}</th>
@@ -255,7 +257,7 @@ export default function PaymentsLandingPage() {
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </TableFrame>
         </div>
       )}
 

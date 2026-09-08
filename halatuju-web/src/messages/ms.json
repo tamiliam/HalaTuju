@@ -3087,6 +3087,9 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "table": {
+      "scrollHint": "Leret jadual ke sisi untuk melihat selebihnya."
+    },
     "orgPage": {
       "nav": "Gambaran keseluruhan",
       "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",

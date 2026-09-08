@@ -9514,3 +9514,57 @@ that was already being ignored. The comment left in `base.py` names the replacem
 
 **Revisit if:** never for these three. The general form — "a setting nothing reads is a signpost
 to a room that no longer exists" — belongs in lessons.md, and is there.
+
+## The console has two page widths, and the SHELL applies them — Console layout standard, 2026-09-08
+
+**Decision:** `lib/pageWidth` maps every admin route to `reading` (max-w-4xl, ~900px) or `wide`
+(max-w-7xl, 1280px), and `AppShell` wraps `children` in that container. Pages no longer set their
+own width; fifteen had theirs deleted. Neither width centres. The rule is the owner's: does the page
+lead with a table? wide; otherwise reading.
+
+**Alternatives considered:** (a) one width for everything — offered to the owner and declined,
+because a settings form and a nine-column table do not want the same room, and a single wide value
+leaves short forms floating; (b) a `<AdminPage width="wide">` wrapper each page opts into — explicit
+and readable, but a page can forget it, and forgetting is exactly the failure being fixed; (c) leave
+the widths and just write them down.
+
+**Rationale:** the width had been a per-page decision for thirty-five pages and produced eight
+answers, so the mechanism had already been tested and had failed. Putting it in the shell makes the
+standard the default rather than the discipline. Two widths rather than one keeps the honesty: the
+pages genuinely differ, and naming the difference is better than pretending it away. Longest-prefix
+matching lets a detail page under a table list read narrow, which is what makes the B40 cockpit
+land in the right bucket.
+
+**Trade-offs:** an unlisted route silently gets `reading` — safe (a text page is never harmed by
+being narrower) but it means a new table page must be added to `WIDE_ROUTES` or it will feel
+cramped. A test asserts every wide route names a real page; nothing can assert the reverse, because
+"is this page mostly a table" is a judgement.
+
+**Revisit if:** a third kind appears — a genuinely full-bleed surface such as a calendar or a
+kanban. That is a new width, added to the map, not a page inventing one.
+
+## A table's card and its scroller must be two different elements — Console layout standard, 2026-09-08
+
+**Decision:** `TableFrame` is the only shell an admin table sits in. Its outer card carries
+`overflow-hidden` for the rounded corners; a separate inner element carries `overflow-x-auto` and a
+`minWidth` floor; a measured cue and a sentence announce hidden content.
+
+**Alternatives considered:** (a) a full data-table component owning columns, sorting and rendering —
+a far larger refactor of fourteen hand-written tables, and it would have forced every table into one
+shape when several are genuinely different; (b) fixing only the two broken tables and leaving the
+rest; (c) hiding columns on small screens instead of scrolling — rejected outright: the owner's
+instruction was that nothing may disappear silently, and a dropped column is the loudest form of
+that.
+
+**Rationale:** a frame is the smallest thing that can carry the promise. The specific pairing —
+clipping card, separate scroller — is the fix for the actual defect: Intake years put both on one
+div, so the columns that did not fit were cut with no way to reach them. `minWidth` is the second
+half: without it a table shrinks rather than scrolls, and the five squashing tables prove that is
+what happens by default.
+
+**Trade-offs:** each table keeps its own header markup, so `TH` / `TH_RIGHT` are shared constants
+rather than enforced structure — a new table can still hand-write a header cell. That is a
+deliberate stopping point: the alternative is the full component in (a).
+
+**Revisit if:** a third table needs a genuinely different shell (a virtualised list, say), or when
+the phone card layouts land — those replace the table on small screens rather than framing it.

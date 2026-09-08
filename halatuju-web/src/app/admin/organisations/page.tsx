@@ -42,7 +42,7 @@ export default function OrganisationsPage() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader title={t('admin.nav.organisations')} subtitle={t('admin.organisations.sub')} />
       <MessageBanner message={message} />
 

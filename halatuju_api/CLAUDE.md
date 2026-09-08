@@ -631,6 +631,44 @@ TD-231; TD-225; TD-221.
 **⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
 credit) until it is **inked AND the money has changed hands**, with a bank reference for
 `external_reference`.
+## Superseded — previous Next Sprint (as of 2026-09-08, after the console layout standard)
+
+**SHIPPED.** Worktree `.worktrees/console-layout`, branch `feat/console-layout`. **NO MIGRATION,
+and no Python file changed at all** — web only. Retro
+`docs/retrospective-2026-09-08-console-layout-standard.md`; decisions x2; lessons x3.
+Gates: jest **1828** (+10); lint **0**; tsc **24** (baseline); i18n **4868 x 3** (+1); `next build`
+compiled. Three bite-checks landed and one deliberately did NOT — see the retro, it is the useful
+part.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ A PAGE NEVER SETS ITS OWN WIDTH AGAIN.** `lib/pageWidth` maps every admin route to `reading`
+  (max-w-4xl) or `wide` (max-w-7xl) and **AppShell applies it**. Thirty-five pages used to write
+  their own and produced EIGHT answers. Fifteen pages had theirs deleted.
+  `pageWidth.test.ts` fails if a `max-w-*` returns to a page root, or if any page centres itself.
+- **The rule is the owner's:** does the page lead with a TABLE? wide. Otherwise reading. Detail
+  pages under a table list read narrow via longest-prefix matching (`/admin/scholarship` wide,
+  `/admin/scholarship/143` reading). A new TABLE page must be added to `WIDE_ROUTES`.
+- **⚠ NOTHING CENTRES.** The B40 cockpit's `mx-auto` is gone. It was never a decision — the 30 May
+  commit that added it describes the cards and never mentions alignment.
+- **⚠ `TableFrame` — THE CARD AND THE SCROLLER ARE TWO ELEMENTS ON PURPOSE.** The card clips
+  corners; a separate inner div scrolls and holds the `minWidth` floor. Merging them is precisely
+  what cut Intake years off on a phone. The cue is MEASURED (appears only while content is really
+  hidden) and is backed by a sentence, because a fade is invisible to a screen reader.
+- **⚠ THE FRAME GUARD COUNTS.** `<TableFrame` vs `<table` per file — NOT "does the file mention
+  TableFrame", which an import line satisfies and which let a deliberate fault pass. That rewrite
+  immediately found a real miss (the Payments funding table).
+- **Every `label={t(...)}` on a frame is checked against en.json** — an invented key would be an
+  invisible screen-reader name that i18n parity cannot see.
+- **NOT DONE, on purpose:** card layouts for lists on phones. Only Students has one; extending it
+  changes what each screen SHOWS and needs the owner's eye per screen.
+
+**▶ OWNER POST-CHECK:** every console page should now start at the same left edge, with tables
+wider than forms; the B40 application page no longer floats in the middle; and on a phone the
+Intake years and Course data tables can be swiped instead of being cut off.
+
+**▶ NEXT = owner's pick.** Standing: the phone card layouts (above), TD-229 (contract template per
+gift), TD-230 / the Sabah apply link (another agent is on it), TD-233, TD-234, TD-221 (the 24 tsc
+errors, which this sprint had to work around).
 
 ## Superseded — previous Next Sprint (as of 2026-09-07, after the Configuration consistency pass)
 

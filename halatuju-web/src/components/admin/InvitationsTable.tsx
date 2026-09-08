@@ -4,6 +4,7 @@ import { Pagination } from '@/components/Pagination'
 import { formatDate } from '@/lib/formatDate'
 import { usePagedRows } from '@/lib/usePagedRows'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import type { InvitationRow } from '@/lib/admin-api'
 
 /**
@@ -60,8 +61,10 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
 
   return (
     <div className="overflow-hidden rounded-lg border bg-ground-0 shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
+      {/* bare: the card, and the pagination beneath it, belong to THIS component — so the frame
+          contributes only the scroll floor and the more-to-the-right cue, not a second card. */}
+      <TableFrame bare minWidth={640} label={t('admin.invitations.title')}>
+        <table className="w-full text-sm">
           <thead className="border-b bg-ground-50">
             <tr>
               {['nameHeader', 'emailHeader', ...(showRole ? ['roleHeader'] : []),
@@ -134,7 +137,7 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
             })}
           </tbody>
         </table>
-      </div>
+      </TableFrame>
       {/* ⚠ The padding belongs HERE, not inside `Pagination` — it is the table's inset, and the
           component is dropped onto surfaces with different insets (the sponsors page uses the same
           wrapper). Rendered bare it sat flush against the card edge, out of line with the `px-4`

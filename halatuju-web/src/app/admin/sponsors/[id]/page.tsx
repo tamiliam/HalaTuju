@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { effectiveRole } from '@/lib/navigation'
 import {
   canRecordCredit, canSetMembership, creditActions, creditableProgrammes, creditChain,
@@ -369,8 +370,8 @@ export default function AdminSponsorDetailPage() {
         {detail.credits.length === 0 ? (
           <p className="px-4 sm:px-5 py-5 text-sm text-ground-500">{t('admin.sponsors.detail.noCredits')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[680px]">
+          <TableFrame bare minWidth={680} label={t('admin.sponsors.detail.creditsTitle')}>
+            <table className="w-full text-sm">
               <thead className="bg-ground-50/80 border-b">
                 <tr>
                   <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-ground-500">{t('admin.sponsors.detail.received')}</th>
@@ -454,7 +455,7 @@ export default function AdminSponsorDetailPage() {
               </tbody>
             </table>
             <TableFooter paged={pagedCredits} />
-          </div>
+          </TableFrame>
         )}
       </Block>
 
@@ -463,8 +464,8 @@ export default function AdminSponsorDetailPage() {
         {detail.sponsorships.length === 0 ? (
           <p className="px-4 sm:px-5 py-5 text-sm text-ground-500">{t('admin.sponsors.detail.noStudents')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[620px]">
+          <TableFrame bare minWidth={620} label={t('admin.sponsors.detail.studentsTitle')}>
+            <table className="w-full text-sm">
               <thead className="bg-ground-50/80 border-b">
                 <tr>
                   <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-ground-500">{t('admin.sponsors.detail.offered')}</th>
@@ -500,7 +501,7 @@ export default function AdminSponsorDetailPage() {
               </tbody>
             </table>
             <TableFooter paged={pagedStudents} />
-          </div>
+          </TableFrame>
         )}
       </Block>
 

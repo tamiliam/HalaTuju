@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
 import {
@@ -149,7 +150,7 @@ export default function PaymentRunDetailPage() {
   const inputCls = 'px-2 py-1 border border-ground-300 rounded text-sm focus:ring-2 focus:ring-info-500 focus:border-info-500'
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <nav className="text-xs text-ground-400">
         <a href="/admin/payments" className="hover:underline">{t('admin.payments.title')}</a>
         <span className="mx-1">/</span><span className="text-ground-600">{run.reference}</span>
@@ -179,8 +180,8 @@ export default function PaymentRunDetailPage() {
       {error && <div className="mt-4 rounded-lg bg-critical-50 border border-critical-200 p-3 text-sm text-critical-600">{error}</div>}
 
       {/* Students table */}
-      <div className="mt-5 bg-ground-0 rounded-xl shadow border overflow-x-auto">
-        <table className="w-full text-sm min-w-[840px]">
+      <TableFrame className="mt-5" minWidth={840} label={t('admin.payments.studentsHeading')}>
+        <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
               <SortTh k="name" label={t('admin.payments.col.name')} />
@@ -258,7 +259,7 @@ export default function PaymentRunDetailPage() {
             </tr>
           </tfoot>
         </table>
-      </div>
+      </TableFrame>
 
       {/* Skipped this run */}
       {run.skipped.length > 0 && (

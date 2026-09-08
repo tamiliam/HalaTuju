@@ -47,7 +47,7 @@ export default function ReferralPartnersPage() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader title={t('admin.nav.referralPartners')} subtitle={t('admin.partners.sub')} />
       <MessageBanner message={message} />
 

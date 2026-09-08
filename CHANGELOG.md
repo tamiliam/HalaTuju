@@ -18,6 +18,11 @@ the wrapper cut it off at the table's edge. The thin line the owner saw was the 
   any rounded panel. The panel is `fixed` and placed by measurement (`place()`), and it **flips
   above the trigger** when the space below is short, because a fixed panel running off the bottom
   cannot be scrolled to.
+- **⚠ And by the time this merged, removing the clip was no longer even possible.** `TableFrame`
+  (same day, console layout) wraps every console table in a corner-clipping card **and** an
+  `overflow-x-auto` scroller, so the table can scroll on a phone instead of losing its right-hand
+  columns. That second layer clips a dropdown just as hard and is not optional. Escaping at the
+  primitive was the only fix that survives it.
 - **⚠ Two things a portal breaks if you forget them.** The panel is no longer inside the trigger's
   wrapper, so the click-outside guard now tests the panel too - without that, the mousedown on an
   item closes the menu before its click fires and **every menu item in the console becomes a
@@ -38,6 +43,38 @@ woke for those would post the server exactly what it already holds.
 Web only. No API change, no migration. jest 1829 (+6), tsc 24 (baseline), lint 0 Errors,
 i18n 4885 x 3, `next build` exit 0. Three bite-checks, each injection verified as landed first.
 
+## The console has one layout standard - 2026-09-08
+
+The owner, on seeing five admin screens side by side: *"the table width, even alignment, is not
+standardised... this must be done both for desktop view and mobile view. If something cannot be
+seen in mobile view, it must be communicated, and not allowed to break silently."*
+
+**Measured first.** Thirty-five admin pages wrote their own width and there were EIGHT different
+answers - Organisation stopped at 896px, Reviewers ran full-bleed, Sources sat at 1024px. Fourteen
+tables were built fourteen times, and on a phone they behaved three ways: six scrolled properly,
+five squashed their columns because they had no minimum width, and TWO were CLIPPED by their own
+card with no scrollbar at all.
+
+- **`lib/pageWidth` is the one place a page's width is decided,** and `AppShell` applies it. The
+  rule is the owner's: **does the page lead with a table? wide (1280px). otherwise reading
+  (900px).** Both start at the same left edge. A page can no longer invent a ninth answer - fifteen
+  pages had their own `max-w-*` deleted, and a test fails if one comes back.
+- **The B40 application page stopped centring itself.** It was the only `mx-auto` in the console
+  outside login, and it was never a decision: the commit that introduced it (30 May, an applicant-
+  detail redesign) describes the cards in detail and never mentions width or alignment.
+- **`TableFrame` is the one shell every table sits in.** It keeps three promises: the card clips
+  only its CORNERS while a separate element scrolls (merging those two is exactly what cut Intake
+  years off); a `minWidth` floor, so columns keep their shape instead of crushing; and a visible
+  edge cue PLUS a sentence, because a scrollbar you find by guessing is not communication.
+- **The two clipped tables can now be read on a phone:** Intake years and Course data.
+- **Table headers settle on one style** (`TH` / `TH_RIGHT`) - 38 places said one thing and 18
+  another.
+
++10 jest (1818 -> 1828). Three bite-checks landed; a FOURTH did not, and that was the useful one:
+the first version of the "every table is framed" guard only asked whether the file MENTIONED
+TableFrame, so putting Intake years back into a clipping card sailed past it. Counting frames
+against tables instead immediately found a real miss - the Payments funding table, which my own
+survey had never seen because it counted one table per file.
 ## An intake round has four states, and one of them is final - 2026-09-08
 
 The owner's third live-review round on Programme -> Configuration, and it started with a question I

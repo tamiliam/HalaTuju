@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { getBillingUsage, type BillingUsagePayload, type BillingOrgBlock } from '@/lib/admin-api'
 import {
@@ -72,8 +73,8 @@ function OrgCard({ block, t }: { block: BillingOrgBlock; t: (k: string) => strin
       </div>
 
       {/* Breakdown table */}
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-sm bg-ground-0 rounded-xl border shadow-sm">
+      <TableFrame className="mt-4" minWidth={720} label={t('admin.billing.title')}>
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-ground-600">
               <th className="text-left px-4 py-2 font-medium">{t('admin.billing.col.service')}</th>
@@ -118,7 +119,7 @@ function OrgCard({ block, t }: { block: BillingOrgBlock; t: (k: string) => strin
             ))}
           </tbody>
         </table>
-      </div>
+      </TableFrame>
     </section>
   )
 }

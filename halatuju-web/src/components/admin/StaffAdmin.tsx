@@ -7,6 +7,7 @@ import {
   type AdminItem, type OrgItem,
 } from '@/lib/admin-api'
 import { useT } from '@/lib/i18n'
+import TableFrame from '@/components/admin/TableFrame'
 import { roleBadgeClass } from '@/lib/roleBadge'
 
 /**
@@ -64,8 +65,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   const { t } = useT()
   const cols = 3 + (showOrg ? 1 : 0) + (canAct ? 1 : 0)
   return (
-    <div className="overflow-x-auto rounded-lg border bg-ground-0 shadow-sm">
-      <table className="w-full min-w-[560px] text-sm">
+    <TableFrame minWidth={560} label={t('admin.invitations.title')}>
+      <table className="w-full text-sm">
         <thead className="border-b bg-ground-50">
           <tr>
             <th className="px-4 py-3 text-left font-medium text-ground-600">{t('admin.nameHeader')}</th>
@@ -131,7 +132,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
           )}
         </tbody>
       </table>
-    </div>
+    </TableFrame>
   )
 }
 

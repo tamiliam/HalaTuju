@@ -157,7 +157,7 @@ export default function AdminRequestDetailPage() {
   )
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <Link href="/admin/requests" className="text-sm text-primary-600 hover:text-primary-800">← {t('admin.requests.detail.back')}</Link>
 
       <div className="flex items-start justify-between gap-3 mt-3 mb-4">
