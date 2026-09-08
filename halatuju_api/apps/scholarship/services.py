@@ -2547,9 +2547,20 @@ def consent_blockers(application):
 # The income-CLUSTER document types — the ones the "one clean cluster is enough" rule can turn
 # into soft Check-2 items once a different earner is fully documented. The student's own IC and the
 # identity/academic/pathway docs (ic / results_slip / offer_letter) are NOT here — they always gate.
-_INCOME_CLUSTER_DOC_TYPES = (
-    'parent_ic', 'salary_slip', 'epf', 'str', 'birth_certificate', 'guardianship_letter',
-)
+#
+# ⚠ THE RELATIONSHIP DOCUMENTS ARE DELIBERATELY NOT IN THIS LIST (BrightPath #23, owner 2026-09-08).
+# `birth_certificate` and `guardianship_letter` sat here until today, so proving the household's
+# income switched OFF the question "is this really her mother?" — a DIFFERENT question, answered by
+# a different document, that only happens to travel in the same cluster. That is how application 144
+# submitted with a certificate nobody had checked. "One clean cluster is enough" is a rule about
+# income EVIDENCE: an extraneous or misread income proof must not trap a family whose income is
+# already established (#19, #28). It was never a rule about who somebody's parent is.
+#
+# Measured on production before it shipped: of the seven live applications, exactly ONE was newly
+# stopped, and it was the owner's own test account (16), whose certificate names a different child.
+# Zero real students moved. Across all 62 certificates on file there are three red rows — one
+# genuinely wrong document, one the IC-number chain already rescues, and that test account.
+_INCOME_CLUSTER_DOC_TYPES = ('parent_ic', 'salary_slip', 'epf', 'str')
 
 
 def document_red_blockers(application):
