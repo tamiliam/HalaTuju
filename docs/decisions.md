@@ -1,5 +1,64 @@
 # Architectural Decisions — HalaTuju
 
+## The gift card is the door, and its controls are its siblings, 2026-09-08
+**Decision:** the whole gift card is a `<button>` that opens that gift; the lifecycle badge and a
+new ⋮ menu (Settings · Delete) sit OUTSIDE it, in the same header row, over an `absolute inset-0`
+door.
+
+**Why the card and not the link:** the door was the word "Settings" at the foot of a verb row, and
+the owner — who designed the flow — did not find it; they reached a gift through Applications and
+the breadcrumb instead. Their own reference was Supabase: *"the project card is clickable… we could
+change the entire gift card to button. But in supabase you see the settings are hidden behind the
+three dots, which is nice."*
+
+**Why the controls are siblings, not children:** a `<button>` inside a `<button>` is invalid HTML
+and the inner control becomes unreachable by keyboard. A browser recovers from it quietly, which is
+precisely why the mistake survives review — so the structure is asserted by a test
+(`never nests a button inside the card button`), not by a comment. The text is
+`pointer-events-none` with the two controls re-enabled, so the card's own hit area is the whole card
+and nothing steals the click.
+
+**Settings stays in the menu even though the card does the same thing.** The card is a shortcut; the
+menu is the named route. Somebody looking for "where do I configure this" should find the word, and
+both are asserted to land in the same place.
+
+**Delete is asleep with its reason, never hidden** — the 2026-09-07 ruling carried through the move
+(*"I feel it should be prevented at the button stage, and not wait until typed to check."*). Moving
+a control into a menu is exactly where such a ruling gets quietly undone.
+
+## `redundantWithCard` is answered, not stale — the delete reason returns for `has_applications`, 2026-09-08
+**Decision:** the suppression of the "students have applied" refusal is REMOVED, and the reason now
+shows for all five causes inside the ⋮ menu.
+
+**Why this is not a reversal of the owner's ruling:** their words on 2026-09-07 were *"REMOVE.
+Redundant."* — and it was, because an APPLICATIONS column reading 143 stood directly above the
+sentence. That was a statement about ADJACENCY, not about the reason. Delete now lives in a menu
+that carries no counts at all, so on that surface the sentence is the only explanation a reader
+gets, and suppressing it would restore the dead-control-with-no-explanation the ruling exists to
+prevent. The predicate was deleted with a comment saying so, rather than left in place looking like
+an oversight.
+
+## "Awarded" on a gift card means has EVER been awarded, 2026-09-08
+**Decision:** `awarded` counts `awarded_at IS NOT NULL` OR a status in
+(`awarded`, `active`, `maintenance`). Not `status='awarded'`; `closed` is deliberately absent from
+the status arm.
+
+**Why:** `awarded` is one stage in `awarded → active → maintenance → closed`, so a live-status count
+would FALL as students progress — twelve one month, three the next, with nobody having lost
+anything. `awarded_at` is stamped set-if-null by `stamp_first` and never cleared, so it is the
+durable answer. The status arm is the fallback for rows awarded before that stamp existed
+(`vircle.py` notes such rows). `closed` is excluded because a closed case that WAS awarded carries
+the stamp anyway, while one that was not is not an award — including it would count the second kind.
+
+## The gift card's application count reaches through the round, 2026-09-08
+**Decision:** the card counts through `programme_student_queryset` (`Q(programme=p) |
+Q(cohort__programme=p)`), not `filter(programme=p)`.
+
+**Why:** `ScholarshipApplication.programme` is denormalised from the cohort at first save and is
+SET-ONCE, so a round moved between gifts leaves its applications pointing at the OLD gift. The
+Applications LIST has narrowed through that predicate since 2026-09-08; a card counting the column
+would disagree with the list it links to, about the same number, on the same screen. Identical
+today — no round has moved — which is the whole reason to fix it now rather than after one does.
 ## The slot step is a grid to PLACE a block on, not a cadence to FILL — 2026-09-08
 **Decision:** `interview_duration_min` is deliberately NOT fenced against `interview_slot_step_min`.
 A length LONGER than the step is a supported configuration; conflict checking absorbs it by

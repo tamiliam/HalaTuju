@@ -25,12 +25,16 @@ import {
 
 const CODE_OK = /^[a-z0-9][a-z0-9-]{1,49}$/
 
-/** Is the server's delete refusal already legible from the card above it? (owner, 2026-09-07)
+/*
+ * ⚠ `redundantWithCard` WAS DELETED ON 2026-09-08, AND ITS RULING SURVIVES THE DELETION.
  *
- *  ⚠ ONLY `has_applications`, and only because the card carries an APPLICATIONS column. The other
- *  four reasons — benefactors, money, payment runs, `in_use` — appear nowhere on this card, so
- *  their sentence must stay or the greyed button explains nothing. */
-const redundantWithCard = (p: AdminProgramme) => p.delete_blocked_by === 'has_applications'
+ * It suppressed the delete refusal for `has_applications` alone — owner, 2026-09-07: *"REMOVE.
+ * Redundant."* — because an APPLICATIONS column reading 143 stood directly above the sentence
+ * "students have applied to this gift". That was a statement about ADJACENCY, not about the reason.
+ * Delete now lives behind the ⋮ menu, which carries no counts, so the one reason that was redundant
+ * beside the number is the only explanation a reader gets in there. The predicate is not stale, it
+ * is answered: nothing on that surface makes any refusal redundant.
+ */
 
 /** The colour of each state. ⚠ RED IS DELIBERATELY ABSENT.
  *
@@ -224,78 +228,103 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
 
       <div className="mt-4 space-y-3">
         {rows.map((p) => (
-          <div key={p.id} className="rounded-2xl border border-ground-200 bg-ground-0 p-5 shadow-sm"
+          /*
+           * ⚠⚠ THE WHOLE CARD IS THE DOOR (owner, 2026-09-08, pointing at Supabase: *"the project
+           * card is clickable… we could change the entire gift card to button"*). The old door was
+           * a small grey word "Settings" in a row of verbs at the bottom — so the owner never found
+           * it and reached a gift the long way round, through Applications and the breadcrumb.
+           *
+           * ⚠ IT IS A <button>, AND THE TWO CONTROLS INSIDE IT ARE SIBLINGS, NOT CHILDREN. A button
+           * inside a button is invalid HTML and the inner one becomes unreachable by keyboard, so
+           * the state badge and the ⋮ menu sit OUTSIDE the card button in the same header row, and
+           * the button is a positioned overlay behind them. That is why this is a relative box with
+           * an inset button rather than the obvious `<button>` wrapping everything.
+           */
+          <div key={p.id}
+            className="relative rounded-2xl border border-ground-200 bg-ground-0 shadow-sm transition-colors focus-within:border-primary-300 hover:border-primary-300"
             data-testid={`programme-${p.code}`}>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-base font-semibold text-ground-900">{p.name_en}</h3>
-              <LifecycleBadge programme={p} busy={busy} onChange={setLifecycle} />
-            </div>
-            <p className="mt-0.5 font-mono text-xs text-ground-400">{p.code}</p>
+            {/* The door. `absolute inset-0` so the whole card is the hit area; `z-0` so the badge
+                and the menu above it stay clickable in their own right. */}
+            <button type="button" onClick={() => openSettings(p)}
+              data-testid={`open-${p.code}`}
+              className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-shape">
+              <span className="sr-only">{t('admin.programmes.open', { name: p.name_en })}</span>
+            </button>
 
-            <dl className="mt-4 flex flex-wrap gap-x-9 gap-y-3">
-              {([
-                ['years', String(p.intake_years)],
-                ['applications', String(p.applications)],
-                // A programme is never "open"; one of its years is. Say which, or say none.
-                ['takingApplications', p.open_year === null
-                  ? t('admin.programmes.none') : String(p.open_year)],
-              ] as const).map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">
-                    {t(`admin.programmes.col.${k}`)}
-                  </dt>
-                  <dd className="mt-0.5 text-sm font-semibold tabular-nums text-ground-700">{v}</dd>
+            {/* ⚠ `pointer-events-none` ON THE TEXT, RE-ENABLED ON THE CONTROLS. Without it the
+                headings would sit above the door and swallow the click that opens the gift. */}
+            <div className="pointer-events-none relative z-10 p-4">
+              <div className="flex items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold text-ground-900">{p.name_en}</h3>
+                    <span className="pointer-events-auto">
+                      <LifecycleBadge programme={p} busy={busy} onChange={setLifecycle} />
+                    </span>
+                  </div>
+                  <p className="mt-0.5 font-mono text-xs text-ground-400">{p.code}</p>
                 </div>
-              ))}
-            </dl>
 
-            {/* ⚠ TWO VERBS, AND THE STATE IS NOT ONE OF THEM (owner, 2026-09-07). "Switch off" used
-                to sit here beside Delete, one line under a column reading "Taking applications" —
-                which made it read as a duplicate of the intake year's Open/Close. It is not: the
-                year decides whether students may apply RIGHT NOW, the gift's state decides whether
-                it is a thing this organisation runs at all. A state belongs in the badge that
-                already shows it, so the control moved there and this row is verbs only. */}
-            <div className="mt-4 flex items-center justify-end gap-4 border-t border-ground-100 pt-3">
-              <button type="button" onClick={() => openSettings(p)}
-                className="text-sm font-medium text-primary-600 hover:underline">
-                {t('admin.programmes.openSettings')}
-              </button>
-              {/* ⚠ DISABLED WHEN THE SERVER SAYS IT IS HELD — SHOWN, NEVER HIDDEN (owner,
-                  2026-09-07: *"I feel it should be prevented at the button stage, and not wait
-                  until typed to check."*). They were afraid to test Delete on the live flagship,
-                  and that fear is the finding: a destructive control you cannot tell is safe to
-                  press is one people avoid, so they cannot tidy up either.
-                  ⚠ THE ANSWER IS `delete_blocked_by` FROM THE PAYLOAD, never derived from the two
-                  counts on this card — those know nothing about benefactors, money or payment
-                  runs. Hidden would explain nothing; disabled-with-the-reason explains everything.
-                  The server still refuses, and from the same function that filled this field. */}
-              <button type="button" data-testid={`delete-${p.code}`}
-                disabled={busy || p.delete_blocked_by !== null}
-                title={p.delete_blocked_by
-                  ? t(`admin.programmes.error.${errKey(p.delete_blocked_by)}`) : undefined}
-                onClick={() => { setError(''); setConfirmText(''); setDeleting(p) }}
-                className="text-sm font-medium text-critical-600 hover:underline disabled:cursor-not-allowed disabled:text-ground-400 disabled:no-underline">
-                {t('admin.programmes.delete')}
-              </button>
-            </div>
-            {/* ⚠ THE REASON IS VISIBLE TEXT, not only the button's `title`. A tooltip needs a hover
-                that a touch screen has no way to give, so on a phone the control would simply be
-                dead with no explanation — which is the thing being fixed, not a smaller version
-                of it.
+                {/* ⚠ SETTINGS AND DELETE LIVE BEHIND THE THREE DOTS NOW (owner: *"this is not
+                    something we'll be messing with regularly"*). Settings STAYS in the menu even
+                    though the card opens it — the card is a shortcut, the menu is the named route,
+                    and a reader looking for "where do I configure this" should find the word. */}
+                <span className="pointer-events-auto shrink-0">
+                  <Menu label={t('admin.programmes.moreFor', { name: p.name_en })} align="right"
+                    width="w-64"
+                    trigger={
+                      <span data-testid={`more-${p.code}`}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-ground-500 hover:bg-ground-100 hover:text-ground-800">
+                        <span aria-hidden className="text-base leading-none">⋮</span>
+                      </span>
+                    }
+                  >
+                    <MenuItem onClick={() => openSettings(p)}>
+                      {t('admin.programmes.openSettings')}
+                    </MenuItem>
+                    {/* ⚠ ASLEEP WITH ITS REASON, NEVER HIDDEN — the 2026-09-07 ruling, carried
+                        through the move into this menu. The reason comes from the served
+                        `delete_blocked_by`, never derived from the counts on this card: those know
+                        nothing about benefactors, money or payment runs.
+                        ⚠ AND `redundantWithCard` NO LONGER APPLIES. It suppressed the sentence for
+                        `has_applications` because an APPLICATIONS column stood right above it; the
+                        menu is a separate surface with no counts in it, so the one reason that was
+                        redundant on the card is the only explanation there is in here. */}
+                    <MenuItem danger
+                      disabled={busy || p.delete_blocked_by !== null}
+                      reason={p.delete_blocked_by
+                        ? t(`admin.programmes.error.${errKey(p.delete_blocked_by)}`) : undefined}
+                      onClick={() => { setError(''); setConfirmText(''); setDeleting(p) }}>
+                      {t('admin.programmes.delete')}
+                    </MenuItem>
+                  </Menu>
+                </span>
+              </div>
 
-                ⚠ BUT IT IS HIDDEN FOR THE ONE REASON THE CARD ALREADY STATES (owner, 2026-09-07:
-                *"REMOVE. Redundant."*). "Students have applied to this gift" adds nothing beside an
-                APPLICATIONS column reading 143. **The other four are NOT on this card** —
-                benefactors, money, payment runs and the generic `in_use` — so removing the line
-                outright would put back a dead button with no explanation, which is the defect this
-                sentence was written for. `redundantWithCard` is the whole rule; extend it only when
-                a reason's evidence is genuinely visible above it. */}
-            {p.delete_blocked_by && !redundantWithCard(p) && (
-              <p className="mt-2 text-right text-xs text-ground-500"
-                data-testid={`delete-blocked-${p.code}`}>
-                {t(`admin.programmes.error.${errKey(p.delete_blocked_by)}`)}
+              {/* Four facts on one line, then the round. Half the height the card used to be. */}
+              <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
+                {([
+                  ['years', String(p.intake_years)],
+                  ['applications', String(p.applications)],
+                  // ⚠ "HAS EVER BEEN AWARDED", served. See `AdminProgramme.awarded` — do not
+                  // recompute it from a status anywhere in the browser.
+                  ['awarded', String(p.awarded)],
+                ] as const).map(([k, v]) => (
+                  <div key={k}>
+                    <dt className="text-[10px] font-semibold uppercase tracking-wider text-ground-400">
+                      {t(`admin.programmes.col.${k}`)}
+                    </dt>
+                    <dd className="mt-0.5 text-sm font-semibold tabular-nums text-ground-700">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              {/* A programme is never "open"; one of its years is. Say which, or say none. */}
+              <p className="mt-2 text-xs text-ground-500">
+                {p.open_year === null
+                  ? t('admin.programmes.notTakingApplications')
+                  : t('admin.programmes.takingApplicationsFor', { year: String(p.open_year) })}
               </p>
-            )}
+            </div>
           </div>
         ))}
         {!loading && rows.length === 0 && (

@@ -35,7 +35,8 @@ const mockApi = api as jest.Mocked<typeof api>
 
 const programme = (over: Partial<api.AdminProgramme> = {}): api.AdminProgramme => ({
   id: 1, code: 'bp', name_en: 'BrightPath Bursary', name_ms: '', name_ta: '',
-  is_active: true, lifecycle: 'active', intake_years: 1, applications: 143, open_year: 2026,
+  is_active: true, lifecycle: 'active', intake_years: 1, applications: 143, awarded: 47,
+  open_year: 2026,
   delete_blocked_by: 'has_applications', delete_blocked_count: 143, ...over,
 })
 

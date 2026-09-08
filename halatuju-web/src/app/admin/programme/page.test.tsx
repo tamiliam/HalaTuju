@@ -50,7 +50,8 @@ beforeEach(() => {
   mockApi.getAdminProgrammes.mockResolvedValue({
     programmes: [{
       id: 1, code: 'bp', name_en: 'BrightPath Bursary', name_ms: '', name_ta: '',
-      is_active: true, lifecycle: 'active', intake_years: 1, applications: 41, open_year: null,
+      is_active: true, lifecycle: 'active', intake_years: 1, applications: 41, awarded: 0,
+      open_year: null,
       // ⚠ A GIFT WITH APPLICATIONS CANNOT BE DELETED, and the SERVER says so — the client
       // never derives it. This fixture is the production shape: 41 applications, held.
       delete_blocked_by: 'has_applications', delete_blocked_count: 41,

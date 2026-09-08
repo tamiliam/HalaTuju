@@ -3101,7 +3101,22 @@ export interface AdminProgramme {
    */
   lifecycle: 'draft' | 'active' | 'archived'
   intake_years: number
+  /**
+   * Everyone who has ever applied to this gift.
+   *
+   * ⚠ COUNTED THROUGH THE ROUND AS WELL AS THE COLUMN, server-side. An application's gift is
+   * denormalised and set once, so a round moved between gifts leaves its applications on the old
+   * one — and this number has to agree with the Applications list, which narrows the same way.
+   */
   applications: number
+  /**
+   * How many of them have EVER been awarded — not how many sit at `awarded` right now.
+   *
+   * ⚠ `awarded` is one stage in awarded → active → maintenance → closed, so a live status count
+   * would FALL as students progress. Served from the never-cleared `awarded_at` stamp; do not
+   * re-derive it here from anything on this card.
+   */
+  awarded: number
   /** The year currently taking applications, or null. A PROGRAMME is never open — a year is. */
   open_year: number | null
   /**

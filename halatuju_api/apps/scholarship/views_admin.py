@@ -6728,10 +6728,11 @@ def programme_delete_blocker(p):
 
 
 def _programme_row(p):
-    """One gift, with the two counts the list screen shows. Deliberately not a serializer: the
-    shape is three joins wide and exists only here."""
-    from .models import ScholarshipCohort, ScholarshipApplication
+    """One gift, with the counts its card shows. Deliberately not a serializer: the shape is three
+    joins wide and exists only here."""
+    from .models import ScholarshipCohort
     cohorts = ScholarshipCohort.objects.filter(programme=p)
+    students = programme_student_queryset(p)
     open_year = cohorts.filter(is_open=True, is_active=True).values_list('year', flat=True).first()
     blocked_by, blocked_count = programme_delete_blocker(p)
     return {
@@ -6741,18 +6742,33 @@ def _programme_row(p):
         # ⚠ THE BADGE'S ANSWER, SERVED. `is_active` stays beside it because it is what the PATCH
         # writes — the control still flips a boolean; `lifecycle` is only how it READS. Do not
         # re-derive this from `applications` in the browser (the `delete_blocked_by` rule).
-        'lifecycle': programme_lifecycle(
-            p, programme_student_queryset(p).exists()),
+        'lifecycle': programme_lifecycle(p, students.exists()),
         # ⚠ SERVED, NOT GUESSED. The Delete control is disabled from THIS, and the delete endpoint
         # refuses from the same function — so the button and the refusal cannot disagree. `null`
         # means nothing is holding it and it may be deleted.
         'delete_blocked_by': blocked_by,
         'delete_blocked_count': blocked_count,
         'intake_years': cohorts.count(),
+        # ⚠ COUNTED THROUGH `programme_student_queryset`, NOT `filter(programme=p)` (2026-09-08).
+        # `ScholarshipApplication.programme` is denormalised and SET ONCE, so a cohort moved between
+        # gifts leaves its old applications on the OLD gift — the column alone would call a gift's
+        # own round empty. The Applications LIST already narrows through that same predicate, so a
+        # card counting the column would disagree with the list it links to. Identical today (no
+        # cohort has moved); the point is that it stays identical when one does.
         # Counted on a programme ALREADY narrowed to the caller's own `owning_organisation`, so it
         # cannot be handed another tenant's programme in the first place.
-        # org-fence: programme pre-fenced by `_ProgrammeScopedBase._programmes_for`
-        'applications': ScholarshipApplication.objects.filter(programme=p).count(),
+        'applications': students.count(),
+        # ⚠ "HAS EVER BEEN AWARDED", NEVER `status='awarded'`. `awarded` is one stage in a chain
+        # (awarded → active → maintenance → closed), so counting the status alone would make the
+        # number FALL as students progress — twelve today, three next month, with nobody having
+        # lost anything. `awarded_at` is stamped set-if-null by `stamp_first` and never cleared, so
+        # it is the durable answer; the status arm catches any row awarded before that stamp
+        # existed (`vircle.py` notes such rows exist). `closed` is deliberately absent from the
+        # status arm — a closed case that was awarded carries the stamp, and one that was not is
+        # not an award.
+        'awarded': students.filter(
+            Q(awarded_at__isnull=False)
+            | Q(status__in=('awarded', 'active', 'maintenance'))).count(),
         # The year currently taking applications, or None. Named `open_year` rather than `is_open`
         # because a PROGRAMME is never open — one of its years is.
         'open_year': open_year,

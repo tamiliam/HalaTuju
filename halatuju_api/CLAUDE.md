@@ -550,7 +550,86 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-08, after the interview-overlap sprint — TD-233 closed)
+## Next Sprint (as of 2026-09-08, after the gift card)
+
+**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION.** Worktree `.worktrees/gift-card`,
+branch `feat/gift-card`, base `ee9630cb`. api + web. Retro
+`docs/retrospective-2026-09-08-gift-card.md`; decisions x4; lessons x5. Gates, ALL RUN INSIDE THE
+WORKTREE: pytest **6034** (+7); jest **1886** (+3); tsc **24** (baseline); lint **0 Errors**;
+i18n **4901 x 3** (5 added, 1 retired); `next build` exit 0; `makemigrations --check` clean.
+Six bite-checks landed.
+
+**⚠⚠ NOTHING WAS BROKEN, AND THAT IS THE FINDING.** "Settings" at the foot of the gift card already
+selected the gift and stepped into it, and had since 2026-09-06. The owner — who designed the flow —
+did not find it, and reached a gift through Applications and the breadcrumb instead. A small grey
+verb in a row of verbs reads as a minor action, not as a way in. **A control that works and is not
+found is indistinguishable from a missing one.**
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠⚠ THE WHOLE CARD IS A `<button>`, AND ITS TWO CONTROLS ARE SIBLINGS OF IT, NEVER CHILDREN.**
+  A `<button>` inside a `<button>` is invalid HTML and the inner control stops being reachable by
+  keyboard — and nothing throws, nothing warns, and it renders perfectly to a mouse. The badge and
+  the ⋮ menu sit outside the door in the same header row, over an `absolute inset-0` button, with
+  the text `pointer-events-none`. **Asserted structurally by a test**, because review reads the
+  intent and the intent was right the whole time.
+- **⚠ SETTINGS STAYS IN THE ⋮ MENU EVEN THOUGH THE CARD DOES THE SAME THING.** The card is a
+  shortcut; the menu is the named route, and somebody looking for "where do I configure this"
+  should find the word. Both are tested to land in the same place.
+- **⚠ DELETE IS ASLEEP WITH ITS REASON, NEVER HIDDEN** — the 2026-09-07 ruling carried through the
+  move (*"it should be prevented at the button stage, and not wait until typed to check"*). Moving
+  a control into a menu is exactly where such a ruling gets quietly undone. `MenuItem` gained
+  `disabled`/`reason`, and the asleep item **stops propagation** so pressing it keeps the menu open
+  — the panel closes on its own click, and shutting it would take the reason off the screen at the
+  moment it was being read.
+- **⚠ `redundantWithCard` IS DELETED AND ITS RULING IS ANSWERED, NOT REVERSED.** It suppressed the
+  "students have applied" refusal because an APPLICATIONS column reading 143 stood directly above
+  the sentence — a statement about ADJACENCY. The menu carries no counts, so in there that is the
+  only explanation a reader gets. A comment stands where the predicate was; do not restore it
+  thinking it was an oversight.
+- **⚠ "AWARDED" MEANS HAS EVER BEEN AWARDED.** `awarded_at IS NOT NULL` OR status in
+  (awarded, active, maintenance). **NOT `status='awarded'`** — that is one stage in awarded →
+  active → maintenance → closed, so the number would FALL as students progress. `closed` is
+  deliberately absent from the status arm: a closed case that WAS awarded carries the stamp, one
+  that was not is not an award. Served; never re-derive it in the browser.
+- **⚠ `applications` REACHES THROUGH THE ROUND** (`programme_student_queryset`), not
+  `filter(programme=p)`. An application's gift is denormalised and SET ONCE, so a round moved
+  between gifts leaves its applications on the OLD gift — and the Applications LIST already narrows
+  the same way, so a card counting the column would disagree with the list it links to. Identical
+  today; aligned now because afterwards there is no telling which number was right.
+- The card is about **half its old height** — three facts on one line, the round as a sentence
+  beneath. `col.takingApplications` was **retired**, not left orphaned.
+
+**▶ AT DEPLOY: push (api + web — Python changed).** No migrate-first, no env vars, no data step.
+**Nothing a student sees changes.**
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Organisation → Overview. **Press a gift card anywhere** — it opens that gift's Configuration.
+2. The **⋮** at the card's top-right holds **Settings** and **Delete**.
+3. On **BrightPath Bursary**, Delete is **asleep with the reason underneath** ("students have
+   applied…"), and pressing it does NOT close the menu. That sentence is BACK — it was suppressed
+   on the card because the count sat above it; the menu has no count.
+4. The card shows **Intake years · Applications · Awarded**, then a line naming the round.
+5. **Look at it on a phone** — the facts sit on one flex line and will wrap; that is the one thing
+   the tests cannot judge.
+6. **ms and ta are first drafts** for the five new strings.
+
+**▶ NEXT, and the owner has already approved the approach:** the **apply link on the gift card**
+(`/scholarship/apply?p=<code>`, per GIFT not per year) and an **editable gift code with the old code
+KEPT AS AN ALIAS**. ⚠ The alias is not optional: an unknown code resolves to "no open round", so a
+renamed gift would make every printed link tell a student **"applications closed"**. TD-230's other
+half. **That sprint has a migration; this one did not.**
+
+**⚠ ALSO OPEN:** the four organisation-scope surfaces (Reviewers, Sources, Payments, Sponsors)
+still ignore the gift — each needs its own owner ruling, and a reviewer's `programme` is nullable
+where **NULL MEANS EVERY GIFT**. The application DETAIL page still shows whichever gift the crumb is
+on. Archiving a gift blocks creating a payment run for it; TD-236; TD-234; TD-229; TD-231; TD-225;
+TD-221.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-08, after the interview-overlap sprint — TD-233 closed)
 
 **WHAT SHIPPED.** Interview conflict checking compares **BLOCKS, not start times**.
 `scheduling.held_starts` is DELETED; `held_intervals` (start + the slot's own stored
@@ -600,7 +679,6 @@ picker should grey out 09:30, 10:00 **and** 10:30 for everyone else, leaving 11:
 **WHAT'S NEXT — the owner's pick, unchanged:** TD-229 (contract template per gift), TD-234 (thirteen
 repair commands with no route to production), TD-221 (24 tsc errors making that gate a no-op).
 
----
 
 ## Superseded — previous Next Sprint (as of 2026-09-08, after BrightPath #23 — the birth certificate nobody checked)
 

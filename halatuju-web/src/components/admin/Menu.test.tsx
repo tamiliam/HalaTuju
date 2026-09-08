@@ -124,3 +124,52 @@ describe('Menu', () => {
     expect(chosen).toHaveBeenCalledTimes(1)
   })
 })
+
+/*
+ * ── An asleep item, shown with its reason (2026-09-08) ────────────────────────────────────────
+ *
+ * Delete moved off the gift card and into a menu, and the owner's 2026-09-07 ruling had to survive
+ * the move: *"I feel it should be prevented at the button stage, and not wait until typed to
+ * check."* A destructive control you cannot tell is safe to press is one people avoid — so a held
+ * Delete is shown asleep WITH the reason, never hidden.
+ */
+describe('a disabled MenuItem', () => {
+  const held = (onClick = jest.fn()) => {
+    render(
+      <Menu label="Account" trigger={<span>avatar</span>}>
+        <MenuItem danger disabled reason="Students have applied" onClick={onClick}>
+          Delete
+        </MenuItem>
+      </Menu>,
+    )
+    fireEvent.click(trigger())
+    return screen.getByRole('menuitem')
+  }
+
+  it('shows the reason rather than hiding the control', () => {
+    const item = held()
+    expect(item.getAttribute('aria-disabled')).toBe('true')
+    expect(item.textContent).toContain('Delete')
+    expect(item.textContent).toContain('Students have applied')
+  })
+
+  it('is not a button, so nothing can tab onto it or press it', () => {
+    // ⚠ A real <button disabled> would do; a <span> is used because the reason renders BELOW the
+    // label and a button's own text would then read as one long run to a screen reader.
+    const onClick = jest.fn()
+    const item = held(onClick)
+    expect(item.tagName).toBe('SPAN')
+    expect(item.querySelector('button')).toBeNull()
+    fireEvent.click(item)
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
+  it('KEEPS THE MENU OPEN when pressed — the reason must stay readable', () => {
+    // ⚠ The panel closes on its own click. Without `stopPropagation`, pressing an asleep item would
+    // shut the menu and take the explanation off the screen at the exact moment it was wanted.
+    const item = held()
+    fireEvent.click(item)
+    expect(screen.queryByRole('menu')).toBeTruthy()
+    expect(screen.getByText('Students have applied')).toBeTruthy()
+  })
+})

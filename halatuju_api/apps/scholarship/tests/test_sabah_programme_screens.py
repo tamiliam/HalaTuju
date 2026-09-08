@@ -598,3 +598,99 @@ class TestDeletingAGift(_Case):
         r = self._delete(self.admin_a, self.url, {'confirm': 'delete sab-a-spare'})
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data['code'], said)
+
+
+class TestTheCardsCounts(_Case):
+    """What the gift card COUNTS — applications, and how many were ever awarded (2026-09-08).
+
+    ⚠ BOTH COUNTS ARE ABOUT THE SAME TRAP FROM OPPOSITE SIDES: a number that looks right today and
+    silently drifts. `applications` drifts when a round MOVES between gifts (the denormalised column
+    goes stale); `awarded` drifts as students PROGRESS (the status moves on). Each is asserted
+    against the drifting case, not just the happy one.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.spare = Programme.objects.create(
+            organisation=self.org_a, code='sab-a-count', name_en='A Count', is_active=True)
+
+    def _row(self, code):
+        rows = {p['code']: p for p in self._get(self.admin_a, PROGRAMMES).data['programmes']}
+        return rows[code]
+
+    def _cohort(self, programme, suffix, year=2027):
+        return ScholarshipCohort.objects.create(
+            programme=programme, owning_organisation=self.org_a, code=f'cnt-{suffix}',
+            name=f'Count {suffix}', year=year, is_active=True, is_open=False)
+
+    def _student(self, cohort, suffix, **kw):
+        from apps.courses.models import StudentProfile
+        from apps.scholarship.models import ScholarshipApplication
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'sab-cnt-{suffix}', name='Priya Devi',
+            household_income=1200, household_size=3)
+        return ScholarshipApplication.objects.create(
+            cohort=cohort, profile=profile, notify_email=f'{suffix}@example.invalid',
+            **{'status': 'profile_complete', **kw})
+
+    # ── applications ────────────────────────────────────────────────────
+
+    def test_it_counts_the_gifts_applicants(self):
+        cohort = self._cohort(self.spare, 'a')
+        self._student(cohort, 'one')
+        self._student(cohort, 'two')
+        self.assertEqual(self._row('sab-a-count')['applications'], 2)
+
+    def test_it_REACHES_THROUGH_A_ROUND_THAT_MOVED_between_gifts(self):
+        """⚠ THE DRIFT CASE. `ScholarshipApplication.programme` is copied from the cohort at first
+        save and is SET-ONCE, so moving a round to another gift leaves its applications pointing at
+        the OLD one. Counting the column alone would call this gift's own round empty — and would
+        disagree with the Applications list, which narrows through the same predicate."""
+        cohort = self._cohort(self.spare, 'moved')
+        app = self._student(cohort, 'moved')
+        other = Programme.objects.create(
+            organisation=self.org_a, code='sab-a-other', name_en='A Other', is_active=True)
+        cohort.programme = other
+        cohort.save(update_fields=['programme'])
+        app.refresh_from_db()
+        # The stale column still names the old gift — that is the condition being guarded.
+        self.assertEqual(app.programme_id, self.spare.id)
+        self.assertEqual(self._row('sab-a-other')['applications'], 1)
+
+    # ── awarded ─────────────────────────────────────────────────────────
+
+    def test_a_gift_nobody_was_awarded_reads_zero(self):
+        self._student(self._cohort(self.spare, 'none'), 'none')
+        self.assertEqual(self._row('sab-a-count')['awarded'], 0)
+
+    def test_it_counts_a_student_who_HAS_BEEN_awarded_at_every_later_stage(self):
+        """⚠ THE WHOLE POINT. `awarded` is one stage in awarded → active → maintenance → closed, so
+        counting the status alone would make the number FALL as students progress. Someone who was
+        awarded stays awarded; `awarded_at` is stamped set-if-null and never cleared."""
+        from django.utils import timezone
+        cohort = self._cohort(self.spare, 'award')
+        for i, status in enumerate(('awarded', 'active', 'maintenance', 'closed')):
+            self._student(cohort, f'st{i}', status=status, awarded_at=timezone.now())
+        self.assertEqual(self._row('sab-a-count')['awarded'], 4)
+
+    def test_a_row_awarded_BEFORE_the_stamp_existed_still_counts(self):
+        """The status arm is the fallback for legacy rows carrying no `awarded_at` — `vircle.py`
+        notes such rows exist. Without it the card would under-report real awards."""
+        self._student(self._cohort(self.spare, 'legacy'), 'legacy', status='awarded')
+        self.assertEqual(self._row('sab-a-count')['awarded'], 1)
+
+    def test_a_CLOSED_row_that_was_never_awarded_does_NOT_count(self):
+        """⚠ `closed` is deliberately absent from the status arm. A closed case that WAS awarded
+        carries the stamp (asserted above); one that was not is not an award, and folding `closed`
+        into the status list would count it."""
+        self._student(self._cohort(self.spare, 'shut'), 'shut', status='closed')
+        self.assertEqual(self._row('sab-a-count')['awarded'], 0)
+
+    def test_awarded_is_never_more_than_applications(self):
+        cohort = self._cohort(self.spare, 'both')
+        from django.utils import timezone
+        self._student(cohort, 'b1', status='active', awarded_at=timezone.now())
+        self._student(cohort, 'b2')
+        row = self._row('sab-a-count')
+        self.assertEqual(row['applications'], 2)
+        self.assertEqual(row['awarded'], 1)
