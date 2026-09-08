@@ -43,6 +43,28 @@ go.** Login sent everyone but a reviewer to `/admin`, which is the PLATFORM dash
 
 Web only. No migration, no API change. jest 1853 -> 1864; six bite-checks landed.
 
+## The payment run reads as cards on a phone - 2026-09-08
+
+First of the phone card layouts, approved by the owner from a drawing before any code. Seven
+columns do not fit a phone; the desktop table is untouched and the same rows are drawn as cards
+below 768px - the breakpoint the Students page already uses.
+
+- **Three lead**: the student's name (still a link to their application), the **include toggle**
+  top-right where a thumb reaches, and **the amount to pay** as the large figure. The rest -
+  NRIC, e-wallet ID, award approved, paid to date - move to quieter lines. Nothing is dropped.
+- **⚠ THE AMOUNT IS READ-ONLY ON A PHONE, and that is the owner's ruling** (*"Desktop is the
+  preferred option. Phone is for quick checking"*). A money box a thumb can graze, on the screen
+  people use to LOOK, is a bad trade. The card SAYS where to change it rather than showing a
+  control that silently does nothing. **The include toggle stays live on a draft** - it is the
+  reason to open a run on a phone at all.
+- **Two things get CLEARER than the table.** An excluded student greys, strikes through and shows
+  the exclusion reason in full, where the table keeps it in a small box off to the right; and the
+  not-activated warning stays welded to the e-wallet ID, because it is the one fact on the row
+  that stops a payment.
+
++8 jest (1849 -> 1857), with the money rule and the warning both bite-checked: making the amount
+editable, and dropping the warning chip, each fail their own test. +2 i18n keys x3.
+
 ## Fix: four pages were still setting their own width, behind an early return - 2026-09-08
 
 The owner, on the sponsor detail page after the last fix: *"appears the same. Or am I looking at a
