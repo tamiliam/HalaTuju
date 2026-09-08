@@ -552,9 +552,32 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-08, after BrightPath #23 — the birth certificate nobody checked)
 
-**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION.** Worktree `.worktrees/bc-verdict`,
-branch `feat/bc-verdict` (base `origin/main` at `8b9d19f4`, **merged forward to `c145b677`** so the
-gates below are the merged tree). api + web. Retro
+**✅ SHIPPED AND DEPLOYED 2026-09-08 — AND THE RE-READ HAS RUN.** `main` at **`c1bb93c8`**; BOTH
+Cloud Builds SUCCESS (Python changed, so both triggers fired, as expected); serving
+**halatuju-api-00998-g4m** / **halatuju-web-00856-9ff** at the time of the deploy check. All public
+routes 200; the api's intake endpoint 200; **no ERROR logs since**. The served web bundle was READ
+BACK rather than assumed — `birth_cert_unreadable` and `guardianship_letter_unreadable` are both in
+it (2 chunks each, 1.8 MB scanned).
+
+**⚠ READING THE SERVING REVISION: use `status.latestReadyRevisionName`, NOT `status.traffic[0]`.**
+`traffic[0]` on this service is a TAGGED revision (`stpm`, `halatuju-api-00067-sup`) carrying **no
+traffic at all**. Reading it reports a revision from months ago as live and nearly produced a false
+deploy report.
+
+**✅ THE CERTIFICATE RE-READ RAN ON THE LIVE SERVICE AND THE DOOR IS CLOSED AGAIN.** Env vars set on
+`halatuju-api` (rev …00999), `reextract-documents` drained until it answered *"nothing left — every
+supporting doc is on the current pass"*, then **both vars REMOVED** (rev …01000, verified absent).
+**Result: certificates carrying the child's IC went 41 → 58 of 62; name-with-no-number went 21 → 2;
+60 of 62 now also carry the printed date of birth.** So 19 of the 21 amber child rows resolved.
+
+**⚠ EXACTLY THREE CERTIFICATES NOW DISAGREE WITH THE STUDENT'S OWN NRIC, AND NONE IS A NEW RED.**
+#5 (expired) and #16 (the test account) were already red on the NAME — a genuinely different child
+on both. **#83 (awarded) is the one real record that moved**: name matches, number differs in its
+last four digits with the date of birth agreeing, so it reads **AMBER — "check the number"**, which
+is the whole point of the rule. She is awarded, so nothing is gated by it.
+
+Worktree `.worktrees/bc-verdict`, branch `feat/bc-verdict` (base `origin/main` at `8b9d19f4`,
+merged forward three times as main moved under it). api + web. **NO MIGRATION.** Retro
 `docs/retrospective-2026-09-08-birth-certificate-checks.md`; decisions ×2; lessons ×4; **TD-236**
 raised. Gates: pytest **6027**; jest **1852**; tsc **24** (baseline); lint **0**; i18n **4894 × 3**;
 `next build` exit 0; `makemigrations --check` clean; ledger vs production **scholarship 151/151,
@@ -601,24 +624,31 @@ child). **Zero real students are affected by either.** Do not re-derive these fr
   than assumed: app 144's certificate rows all read `no_ref`, so nothing about it blocks her. **Do
   not build the multi-page reader for this.**
 
-**▶ AT DEPLOY, IN ORDER:** (1) push (**api + web** — Python changed); (2) **then run the re-read on
-the LIVE service** — set `REEXTRACT_DOC_TYPE=birth_certificate` and
-`REEXTRACT_PASS=reextract_bc_child_ic` on `halatuju-api`, run the `reextract-documents` cron job
-repeatedly (20 docs a run) until it reports nothing left, then **UNSET BOTH**. No migration, no
-backfill, no other env var. ⚠ **NEVER re-extract from a local checkout** — no Storage access, so it
-reads "no text" and destroys `vision_fields`.
+**▶ THE DEPLOY IS DONE, BOTH HALVES — nothing is outstanding.** For the record, the shape was:
+(1) push (api + web); (2) set `REEXTRACT_DOC_TYPE=birth_certificate` and
+`REEXTRACT_PASS=reextract_bc_child_ic` on `halatuju-api`; (3) drain the `reextract-documents` cron
+job (20 docs a run); (4) **UNSET BOTH**. No migration, no backfill, no other env var.
+⚠ **NEVER re-extract from a local checkout** — no Storage access, so it reads "no text" and
+destroys `vision_fields`. The re-read must run on the SERVICE, which is why it is an env-var door
+and a cron POST rather than a command somebody runs at a laptop.
 
-**▶ WHY THE RE-READ IS PART OF THE DEPLOY, NOT AFTER IT:** 21 of 62 certificates carry a child name
-with no number, so the one-cell rule reads them amber until the number is filled in. Amber blocks
-nobody, but leaving it is amber for no better reason than our own old prompt.
+**▶ WHY THE RE-READ WAS PART OF THE DEPLOY AND NOT A FOLLOW-UP:** 21 of 62 certificates carried a
+child name with no number, so the one-cell rule read them amber until the number was filled in.
+Amber blocks nobody, but leaving it would have been amber for no better reason than our own old
+prompt. It is down to 2 now.
 
-**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
-1. Open a shortlisted student with a birth certificate — the certificate's rows show **green /
-   amber / red per person**, and a name with no number reads amber, not green.
-2. A certificate that read nothing shows **one amber row**, not three greys, and the student has a
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com) — the deploy is live, so
+these are things to LOOK at, not to do:**
+1. **Application 83 (VARNISA, awarded) is the one real record that moved** — her certificate's child
+   row is now **amber**: the name matches, the last four digits of the number do not, and the
+   printed date of birth agrees. Either our read of the last four digits is off or her certificate
+   genuinely disagrees with her IC. Nothing is gated by it; it is a chip for a person to read.
+2. Open any student with a birth certificate — the rows show **green / amber / red per person**, and
+   a name with no number reads amber, not green.
+3. A certificate that read nothing shows **one amber row**, not three greys, and the student has a
    re-upload task in their Action Centre.
-3. **ms and ta are first drafts** for the two new codes and the `unreadable` fact label.
-4. Not click-tested in a browser (TD-182 still breaks admin Google sign-in on localhost).
+4. **ms and ta are first drafts** for the two new codes and the `unreadable` fact label.
+5. Not click-tested in a browser (TD-182 still breaks admin Google sign-in on localhost).
 
 **▶ NEXT — OWNER PICKS. Nothing here is blocking:**
 1. **Step 5 of #23, and it is the owner's own experiment first:** try the existing **QC override**
