@@ -550,7 +550,48 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-09, after the gift code + apply link)
+## Next Sprint (as of 2026-09-09, after Vircle Airtable V1 — the two webhooks)
+
+**SHIPPED, NOT DEPLOYED (owner gates it). NO MIGRATION. Backend only.** Retro
+`docs/retrospective-2026-09-09-vircle-airtable-v1.md`; decision ×1 (supersedes the 2026-07-30
+"do not re-propose asking Vircle" ruling on its own terms — Vircle proposed this themselves).
+Gates: pytest **6076** (full `apps/`, +17 in `test_vircle_airtable.py`); `makemigrations --check`
+clean; no web change, so the frontend gates are unchanged from main. Two bite-checks landed
+(overwrite guard, empty-secret refusal), each restored and re-run to green.
+
+**THE FLOW:** student confirms "installed" in the Action Centre → we POST `{Name, NRIC, Type}` to
+Vircle's Airtable webhook → their update automation POSTs the row back to
+`POST /api/v1/internal/vircle/airtable/` → we store `vircle_id` + `vircle_activated_at`. The
+student never types a wallet id again (V2 removes the box).
+
+**WHAT MUST NOT BE "TIDIED":**
+- **⚠ THE INBOUND WRITE NEVER OVERWRITES A STORED `vircle_id`.** Mismatch → ERROR log, human
+  resolves. The field decides where money goes; an automated overwrite is a change with no witness.
+- **⚠ THE INBOUND VALUE STILL PASSES `valid_vircle_id`** — Vircle is authoritative for WHICH
+  wallet, not exempt from the format gate. And matching is NRIC-DIGITS within
+  `VIRCLE_SETUP_STATES`, so a webhook row can never write onto a rejected/expired file.
+- **⚠ THE PUSH FIRES AT THE STUDENT'S CONFIRM, NOT AT AWARD** (owner ruling 2026-09-09: the
+  student may register with a different mobile than the application holds). Best-effort by the
+  usage-meter contract — fault-injected; outcome stamped in the item's `params.airtable_push`.
+- **⚠ V1 CHANGES NOTHING A STUDENT SEES.** The wallet-id box, the 48h activation email and the
+  relay sheet all keep running beside the webhooks until V2.
+- **Known limit, accepted:** Rishvin (#114) — his Vircle account carries his FATHER's IC, so his
+  inbound row logs `no_match`; a human reconciles.
+
+**▶ AT DEPLOY:** push (api only — no web change; expect only the api build to fire since only
+Python changed). No migrate-first. THEN: (1) set `VIRCLE_AIRTABLE_PUSH_URL` (the URL from
+Vircle's integration guide — CONFIDENTIAL) and `VIRCLE_AIRTABLE_SECRET` (mint a long random
+string) via `--update-env-vars`; (2) send Gokula our URL
+`https://halatuju-api-90344691621.asia-southeast1.run.app/api/v1/internal/vircle/airtable/` +
+the header name `X-Vircle-Secret` + the secret, for his update automation; (3) watch the first
+real confirm/callback pair in the logs (`Vircle Airtable push` / `AUDIT vircle_id_set`).
+
+**▶ NEXT = V2 — retire the student-facing half**, once the pair is proven live: remove the
+wallet-id box from the Action Centre (mobile stays), retire the 48h activation email, KEEP the
+relay sheet (owner: it is the `Vircle_account` mirror, keep for now), reviewer Guide/FAQ updated
+in the same change, en/ms/ta copy for the shortened task.
+
+## Superseded — previous Next Sprint (as of 2026-09-09, after the gift code + apply link)
 
 **DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`91f6b96c`**; BOTH Cloud Builds SUCCESS on
 `91f6b96` (Python changed, so both triggers fired — as expected); serving

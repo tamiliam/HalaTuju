@@ -1,5 +1,32 @@
 # Architectural Decisions — HalaTuju
 
+## The Vircle wallet id comes FROM Vircle; the student stops typing it, 2026-09-09
+**Decision:** the eWallet ID's source of truth is Vircle's Airtable, flowing to us through their
+outbound automation (`vircle_airtable.py` + `VircleAirtableUpdateView`). We push
+`{Name, NRIC, Type}` when the student confirms "installed"; Vircle pushes the wallet id and
+activation back. V2 removes the typed wallet-id box from the Action Centre.
+
+**Why:** every wallet-id defect to date was a corruption of the student's COPY of a number Vircle
+already held — the three DuitNow truncations (2026-07-29), the 4-digit box that could not hold the
+rolled-over `800040018xxxx` block (2026-08-27, three students stuck), and Revina's dropped digit.
+This supersedes the 2026-07-30 "do not re-propose asking Vircle" ruling on its own terms: that
+ruling was made when Vircle offered nothing back; Vircle now offers the data and proposed the
+integration themselves (Gokula, 2026-09-08/09).
+
+**The rules inside it:**
+- The push fires at the student's CONFIRM, never at award — the student may register with a
+  different mobile than the application holds (owner, 2026-09-09).
+- The inbound write NEVER overwrites a stored `vircle_id` — a mismatch is a human's question,
+  logged ERROR. An automated overwrite of the field that decides where money goes is how a wrong
+  id becomes a wrong payment with no witness.
+- The inbound value still passes `valid_vircle_id` — Vircle's row is authoritative for WHICH
+  wallet, not exempt from the format gate that catches a mis-keyed row on their side.
+- Reading via connector/API polling was REFUSED by Vircle (automation-credit exhaustion across
+  their 100-school workspace); the per-event push costs them ~2 runs per student.
+
+**Revisit if:** Vircle's webhook proves unreliable (rows landing without a callback) — the
+fallback is a shared read-only view link with CSV export, already offered and accepted as viable.
+
 ## A retired gift code keeps working for STUDENTS only, 2026-09-09
 **Decision:** renaming a gift's short code writes the old one into `ProgrammeCodeAlias`, and
 `services.resolve_open_cohort` falls back to that alias. Nothing else does — the admin console's

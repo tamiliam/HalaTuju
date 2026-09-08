@@ -1533,6 +1533,13 @@ class ResolutionItemResolveView(APIView):
                 if not verdict['on_topic']:
                     return Response({'resolved': False, 'nudge': verdict['nudge']})
         resolve_item(item, text=text, by='student')
+        # Vircle Airtable push (2026-09-09): the student just said "installed, and this is my
+        # mobile" — that is the agreed moment Vircle is told WHO to expect (never earlier: the
+        # student may register with a different phone than the application's). Best-effort by
+        # contract — push_recipient never raises, so it cannot fail the confirmation it rides on.
+        if item.code == VIRCLE_CODE:
+            from . import vircle_airtable
+            vircle_airtable.push_recipient(item)
         # The ask-first informal clarify: READ the answer once, here, and store what it claims
         # (#126, owner 2026-07-13). If the student says the earner does have a payslip/EPF, the
         # suppressed document request re-opens (income_engine.informal_payslip_claimed) and the
@@ -2072,6 +2079,30 @@ class CronRunView(APIView):
             logging.getLogger(__name__).warning('Cron job %s failed: %s', job, e, exc_info=True)
             return Response({'job': job, 'error': str(e)[:300]}, status=status.HTTP_200_OK)
         return Response({'job': job, 'output': out.getvalue()[:12000]})
+
+
+class VircleAirtableUpdateView(APIView):
+    """POST /api/v1/internal/vircle/airtable/ — Vircle's Airtable automation calls US.
+
+    The inbound half of the two-webhook flow (vircle_airtable.py): when a BrightPath row in
+    Vircle's Recipients table gains its Principal Wallet ID or activation, their automation
+    POSTs the row here and we store `vircle_id` + `vircle_activated_at` — the student never
+    types a wallet id. Auth mirrors CronRunView: public route, shared-secret header
+    (X-Vircle-Secret vs VIRCLE_AIRTABLE_SECRET) compared in constant time, inert while the
+    secret is unset. Always 200 on a matched-or-not payload (a 4xx would put Vircle's
+    automation into retries about OUR data question); 403 only for a bad secret."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        import hmac
+        from django.conf import settings as _s
+        from . import vircle_airtable
+        secret = getattr(_s, 'VIRCLE_AIRTABLE_SECRET', '') or ''
+        provided = request.headers.get('X-Vircle-Secret', '') or ''
+        if not secret or not hmac.compare_digest(secret, provided):
+            return Response({'error': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        payload = request.data if isinstance(request.data, dict) else {}
+        return Response(vircle_airtable.apply_update(payload))
 
 
 def _award_application(user_id):

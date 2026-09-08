@@ -290,6 +290,16 @@ VIRCLE_ACTIVATION_BCC = os.environ.get('VIRCLE_ACTIVATION_BCC', '')
 # Drive folder the sent activation CSV is archived into ('/'-separated; the folder must already exist).
 VIRCLE_ACTIVATION_FOLDER = os.environ.get('VIRCLE_ACTIVATION_FOLDER', '01 BrightPath/03 Vircle/03 Activation')
 
+# Vircle Airtable integration (vircle_airtable.py, 2026-09-09) — we tell Vircle WHO, Vircle
+# tells us the WALLET, so the student never types an eWallet ID again (the source of every
+# wallet-id defect to date). Both values are SECRETS and live in Cloud Run env vars only:
+# the push URL is Vircle's inbound-webhook credential (their guide: treat as confidential);
+# the secret guards OUR inbound endpoint (X-Vircle-Secret header, compared constant-time).
+# Blank push URL = the outbound push is a no-op; blank secret = the inbound endpoint refuses
+# everything. Dark by default.
+VIRCLE_AIRTABLE_PUSH_URL = os.environ.get('VIRCLE_AIRTABLE_PUSH_URL', '')
+VIRCLE_AIRTABLE_SECRET = os.environ.get('VIRCLE_AIRTABLE_SECRET', '')
+
 # Check 2 STEP 3: auto-draft the sponsor profile at the reviewer handoff (and the
 # backfill/sweep that share this gate). Billable Gemini, so off by default; flip via the
 # env var. (Was referenced in code but never defined here, so it was permanently off.)

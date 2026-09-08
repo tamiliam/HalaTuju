@@ -16,6 +16,7 @@ from .views import (
     GuarantorPhoneVerifyCheckView,
     ConsentView,
     CronRunView,
+    VircleAirtableUpdateView,
     DocumentDetailView,
     DocumentHelpView,
     IncomeRouteSwitchView,
@@ -262,6 +263,9 @@ urlpatterns = [
     # Internal cron — Cloud Scheduler runs whitelisted commands via a shared
     # secret header (X-Cron-Secret). Inert without the secret.
     path('internal/cron/<str:job>/', CronRunView.as_view()),
+    # Vircle's Airtable automation posts wallet-id/activation updates here (X-Vircle-Secret).
+    # Inert without the secret. See vircle_airtable.py for the flow.
+    path('internal/vircle/airtable/', VircleAirtableUpdateView.as_view()),
 
     # Payments module (P2): monthly Vircle payment runs. Admin/org_admin (+ finance for read
     # and the finance-check signature, Sprint 14), org-fenced.

@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## Vircle Airtable V1 — we tell Vircle who, Vircle tells us the wallet - 2026-09-09
+
+**Sprint (Vircle Airtable roadmap, V1 of 2).** No migration. Backend only; the old flow (typed
+wallet id, 48h activation email, relay sheet) keeps running beside it until V2.
+
+- **Outbound:** when a student confirms "installed" in the Action Centre, the server POSTs
+  `{Name, NRIC, Type}` to Vircle's Airtable inbound webhook (their integration guide, 2026-09).
+  `Type` derives from the SAME birth-year rule as the setup email (`vircle.can_register`):
+  a child registration is "Supplementary" (Gokula, 2026-09-08). Best-effort by contract — a dead
+  webhook can never fail the student's own confirmation (fault-injected test); the outcome is
+  stamped on the resolution item's params. Fires at CONFIRM, not at award, because the student
+  may register with a different mobile than the application's (owner ruling).
+- **Inbound:** `POST /api/v1/internal/vircle/airtable/` (X-Vircle-Secret, constant-time, inert
+  while unset — the CronRunView pattern). Vircle's update automation posts the Recipients row;
+  we match on NRIC DIGITS within `VIRCLE_SETUP_STATES` and write `vircle_id` (through
+  `valid_vircle_id`, with the `AUDIT vircle_id_set` line) and `vircle_activated_at` (set-if-null,
+  the relay sheet's own presence-is-the-signal rule).
+- **⚠ A stored wallet id is NEVER overwritten by the webhook.** A mismatch is logged ERROR and
+  left for a human — the field decides where money goes. Bite-checked (guard disabled → test
+  fails), as is the empty-secret refusal.
+- **Known limit, accepted:** Rishvin (#114) — his Vircle account carries his father's IC, so an
+  inbound row for him logs `no_match`; a human reconciles.
+- Env vars (both secrets, both unset = dark): `VIRCLE_AIRTABLE_PUSH_URL`,
+  `VIRCLE_AIRTABLE_SECRET`.
+
 ## The apply link, and a gift code that can change without breaking it - 2026-09-09
 
 A gift's short code is what a printed poster carries (`/scholarship/apply?p=<code>`), and until now
