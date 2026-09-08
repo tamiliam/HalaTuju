@@ -558,8 +558,14 @@ bundle read back: `sm:grid-cols-2` and `sm:col-span-2` present.
 
 **⚠⚠ AND THE READ-BACK FOUND A FIFTH THING — "B40 Applications" WAS STILL IN THE BUNDLE.** The
 Requests **component picker** carried a SECOND copy of the label, in en/ms/ta and in the Django
-choices behind them. That fix is **SHIPPED, NOT DEPLOYED** — worktree `.worktrees/gift-card3`,
-branch `fix/applications-label`, base `d696bcc5`, **with choices-only migration `0152`**.
+choices behind them. **That fix is now DEPLOYED TOO** — `main` at `f4b65a21`; BOTH builds SUCCESS on `f4b65a2`;
+serving **halatuju-api-01004-qks** / **halatuju-web-00862-qb9**. **Migration `0152` was applied
+MIGRATE-FIRST via Supabase MCP as a ledger row only** — the column was read BEFORE the write and
+confirmed already `varchar(30)`, so the no-op claim was verified rather than trusted; ledger
+reconciled after at **scholarship 152/152, courses 74/74**, and **0 rows hold that value** anyway.
+**The old label was then proven GONE across `/admin/requests`, `/admin/guide` and
+`/admin/scholarship`** (5.1 MB of served JS) — the Overview bundle alone would not have covered the
+picker's own page. Requests endpoint 401 (gated); no error logs.
 **⚠ THE ABSENCE CHECK IS WHAT FOUND IT.** Greping for "Applications" would have passed on the old
 label — it contains the new one. Only "is the OLD string gone?" answers a rename.
 
@@ -596,12 +602,9 @@ Four owner corrections off one live look at the gift card, an hour after it depl
    Restore a bite by writing the original bytes back.
 2. **The rename bite-check produced SILENCE**, and the silence was the finding — see the new guard.
 
-**▶ AT DEPLOY (the fifth fix only): apply `scholarship/0152` MIGRATE-FIRST via Supabase MCP —
-it is CHOICES-ONLY, `sqlmigrate` prints a no-op, so the production step is the `django_migrations`
-ledger row and NOTHING else** (the `0113` / `0116` pattern). Then push (**api + web** — Python
-changed). No env vars, no data step. **Nothing a student sees changes.**
+**▶ ALL FIVE ARE DEPLOYED. Nothing a student sees changed.**
 
-**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+**▶ OWNER POST-CHECK, STILL OWED (as the BrightPath `org_admin`, elanjelian@me.com):**
 1. Organisation → Overview: **both gift cards side by side**; press one → it opens that gift's
    **Applications**, and the Programme menu now shows both rows.
 2. The sidebar reads **Applications** then **Configuration** — in that order, and without "B40".
