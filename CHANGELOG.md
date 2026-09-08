@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## The rename missed a second copy, and the guard missed it too - 2026-09-08
+
+Reading the deployed bundle back after the rename found **"B40 Applications" still in it**. The
+menu row had moved; the **Requests component picker** had not — a second copy of the same label,
+naming the same console page, in the dropdown an org admin uses to say which part of the console
+their bug report is about.
+
+- Renamed in all three languages **and in the Django choices** behind them, so the picker and the
+  menu cannot disagree.
+- **Migration `0152` is choices-only** — `sqlmigrate` prints a no-op. Every stored value is
+  unchanged; only the label moved. The production step is the ledger row, nothing else.
+- **The guard was widened.** It watched the manual and the menu key; it now walks the WHOLE of
+  `en.json` as well, because nothing in the product may name that page after one programme.
+
+⚠ The absence check is what found it. Greping the bundle for "Applications" would have passed on
+the old label too — it contains the new one. Only asking whether the OLD string was gone could
+answer the question.
+
+Web + a choices-only migration. jest 1892 (unchanged — the widened guard replaces the narrow one).
+
 ## Four fixes off the owner's live look at the new gift card - 2026-09-08
 
 All four are their words, from one screen, an hour after the card shipped.

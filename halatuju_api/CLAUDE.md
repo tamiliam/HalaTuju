@@ -552,8 +552,18 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-08, after the gift-card follow-ups)
 
-**SHIPPED, NOT DEPLOYED — the owner gates it. WEB ONLY, NO MIGRATION, NO BACKEND.** Worktree
-`.worktrees/gift-card2`, branch `fix/gift-card-layout`, base `731a87f0`. Gates, ALL RUN INSIDE THE
+**FOUR OF THE FIVE ARE DEPLOYED AND VERIFIED LIVE 2026-09-08** — `main` at `d696bcc5`; web build
+SUCCESS on `d696bcc` (no Python changed, so web only); serving **halatuju-web-00861-t6j**. Served
+bundle read back: `sm:grid-cols-2` and `sm:col-span-2` present.
+
+**⚠⚠ AND THE READ-BACK FOUND A FIFTH THING — "B40 Applications" WAS STILL IN THE BUNDLE.** The
+Requests **component picker** carried a SECOND copy of the label, in en/ms/ta and in the Django
+choices behind them. That fix is **SHIPPED, NOT DEPLOYED** — worktree `.worktrees/gift-card3`,
+branch `fix/applications-label`, base `d696bcc5`, **with choices-only migration `0152`**.
+**⚠ THE ABSENCE CHECK IS WHAT FOUND IT.** Greping for "Applications" would have passed on the old
+label — it contains the new one. Only "is the OLD string gone?" answers a rename.
+
+Was worktree `.worktrees/gift-card2`, branch `fix/gift-card-layout`, base `731a87f0`. Gates, ALL RUN INSIDE THE
 WORKTREE: jest **1892** (+4); tsc **24** (baseline); lint **0 Errors**; i18n **4901 x 3** (no new
 keys); `next build` exit 0. **No Python touched**, so pytest and `makemigrations --check` are
 unchanged from main. Four bite-checks landed.
@@ -586,8 +596,10 @@ Four owner corrections off one live look at the gift card, an hour after it depl
    Restore a bite by writing the original bytes back.
 2. **The rename bite-check produced SILENCE**, and the silence was the finding — see the new guard.
 
-**▶ AT DEPLOY: push (WEB ONLY — no Python changed).** No migrate-first, no env vars, no data step.
-**Nothing a student sees changes.**
+**▶ AT DEPLOY (the fifth fix only): apply `scholarship/0152` MIGRATE-FIRST via Supabase MCP —
+it is CHOICES-ONLY, `sqlmigrate` prints a no-op, so the production step is the `django_migrations`
+ledger row and NOTHING else** (the `0113` / `0116` pattern). Then push (**api + web** — Python
+changed). No env vars, no data step. **Nothing a student sees changes.**
 
 **▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
 1. Organisation → Overview: **both gift cards side by side**; press one → it opens that gift's
@@ -595,6 +607,8 @@ Four owner corrections off one live look at the gift card, an hour after it depl
 2. The sidebar reads **Applications** then **Configuration** — in that order, and without "B40".
 3. The ⋮ menu still reaches **Settings**.
 4. On a phone the cards stack, as before.
+5. **Requests → new request → the component dropdown** reads **Applications**, not "B40
+   Applications" (the fifth fix, deploying with `0152`).
 
 **▶ NEXT, and the owner has already approved the approach:** the **apply link on the gift card**
 (`/scholarship/apply?p=<code>`, per GIFT not per year) and an **editable gift code with the old code

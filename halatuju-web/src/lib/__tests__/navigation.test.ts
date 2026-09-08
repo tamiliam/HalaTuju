@@ -127,8 +127,25 @@ describe('visibleNav per role', () => {
     const label = resolve(en as Record<string, unknown>, 'admin.scholarship.nav') as string
     expect(label).toBe('Applications')
 
-    // The manual describes this row by name. If the label goes back to naming one programme, the
-    // manual must move with it — this fails loudly instead of letting the two drift.
+    // ⚠ THE FIRST CUT OF THIS GUARD ONLY WATCHED THE MANUAL, AND IT MISSED ONE. The Requests
+    // component picker (`admin.requests.component.applications`) carried a SECOND copy of the same
+    // label, found by reading the deployed bundle back rather than by any test. So the guard is
+    // now the whole of en.json plus the manual: NOTHING in the product may name this console page
+    // after one programme, because it lists whichever gift is chosen.
+    const staleMessages: string[] = []
+    const walk = (node: unknown, trail: string) => {
+      if (typeof node === 'string') {
+        if (node.includes('B40 Applications')) staleMessages.push(trail)
+        return
+      }
+      if (node && typeof node === 'object') {
+        for (const [k, v] of Object.entries(node)) walk(v, trail ? `${trail}.${k}` : k)
+      }
+    }
+    walk(en, '')
+    expect(staleMessages).toEqual([])
+
+    // The manual describes this row in prose, which no message walk can see.
     const manual = path.join(process.cwd(), 'src', 'content', 'manual')
     const stale = fs.readdirSync(manual)
       .filter((f) => f.endsWith('.tsx'))
