@@ -3941,7 +3941,7 @@
           "availableTimes": "Masa tersedia ({from}–{to}, {step} minit)",
           "noneToday": "Tiada lagi masa tersedia hari ini — pilih tarikh lain.",
           "selectedCount": "Dipilih ({n} daripada {max})",
-          "busyOther": "Anda ada temu duga pelajar lain pada masa ini",
+          "busyOther": "Ini akan bertindih dengan temu duga pelajar lain",
           "pickThree": "Pilih 3 masa — pelajar akan pilih satu.",
           "propose": "Cadangkan masa",
           "proposedHeading": "Masa yang dicadangkan",

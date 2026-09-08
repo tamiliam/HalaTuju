@@ -1,5 +1,32 @@
 # Architectural Decisions — HalaTuju
 
+## The slot step is a grid to PLACE a block on, not a cadence to FILL — 2026-09-08
+**Decision:** `interview_duration_min` is deliberately NOT fenced against `interview_slot_step_min`.
+A length LONGER than the step is a supported configuration; conflict checking absorbs it by
+comparing blocks (`scheduling.held_intervals` / `overlaps`). **Do not add a `step >= duration`
+validator to the registry** — the comment beside that key says so, and this entry is why.
+
+**Why.** The owner's arithmetic, and it is the whole argument. For a 45-minute interview:
+a 60-minute step offers only 10:00, 11:00, 12:00 — 11:30 is unreachable; a 45-minute step offers
+10:00, 10:45, 11:30, 12:15 — drifting, unreadable times; **a 30-minute step offers 10:00, 10:30,
+11:00, 11:30 — clean, and a reviewer places one interview at 10:00 and the next at 11:00.** The
+right step is therefore *smaller* than the length, which is exactly what the fence would refuse.
+The step answers "where may a start sit?", never "how often will one happen?".
+
+**Alternatives considered.** (a) **Merge the two settings into one** — the owner asked directly.
+Rejected: they do different jobs (length sets the calendar invite's end time; step sets the
+clickable grid), and merging forces them equal, which deletes the common "30-minute interviews on
+the hour, half an hour to write notes" setup and the free placement above. (b) **Fence
+`step >= duration`** — rejected as above; TD-233's own note had already recorded this refutation on
+2026-09-07 and it was proposed again anyway, which is the lesson filed under it.
+
+**Consequences:** the settings page keeps both boxes and refuses nothing new. The honesty moved
+into the engine instead: the picker greys out every start a new interview could not begin at, so a
+reviewer never does the arithmetic herself. TD-233 closed.
+
+**Revisit if:** an organisation ever needs a start OFF the grid (an interview at 10:20 on a
+30-minute step). That is a different feature — free-time entry — not a change to this ruling.
+
 ## A menu row waits for a gift only if it would go WRONG without one, 2026-09-08
 **Decision:** `NavItem.needsProgramme` hides a row until `useProgrammeScope().chosen` resolves.
 Exactly one row carries it — Programme → **Configuration**. Programme → **Applications** does not,

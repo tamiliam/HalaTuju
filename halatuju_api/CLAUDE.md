@@ -550,7 +550,56 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-08, after BrightPath #23 — the birth certificate nobody checked)
+## Next Sprint (as of 2026-09-08, after the interview-overlap sprint — TD-233 closed)
+
+**WHAT SHIPPED.** Interview conflict checking compares **BLOCKS, not start times**.
+`scheduling.held_starts` is DELETED; `held_intervals` (start + the slot's own stored
+`duration_min`) + `overlaps` answer that question for all five call sites. **No migration.**
+
+**⚠⚠ THE ONE RULING TO NOT UNDO: `interview_duration_min` IS DELIBERATELY NOT FENCED AGAINST
+`interview_slot_step_min`, AND MUST NEVER BE.** A length LONGER than the step is a supported
+setting. The owner's arithmetic (2026-09-08) is the whole argument: for a 45-minute interview a
+60-minute step cannot reach 11:30 and a 45-minute step drifts, so **30 is the right step — smaller
+than the length.** The step is a grid to PLACE a block on, not a cadence to FILL. A `step >=
+duration` validator would forbid exactly the configuration people want. The refusal is written
+beside the key in `org_config.py` and in `docs/decisions.md`; TD-233 records that the fence was
+proposed a second time and rejected.
+
+**Three things a later reader will otherwise get wrong:**
+- **The block's length comes from the SLOT ROW, not the organisation's current setting.** If an org
+  changes its length, interviews already on people's calendars keep what they were booked at. That
+  column is also what goes on the .ics — the stored value is the promise that was made.
+- **`InterviewSlot.duration_min`'s MODEL default is 45 and is never the effective value** (30, from
+  the registry). It used to be inert for conflict logic; it is now load-bearing, so a fixture that
+  calls `InterviewSlot.objects.create()` without a duration silently reserves 45 minutes and tests a
+  configuration no organisation has. **Pass it explicitly in tests.**
+- **`reviewer_busy` is now the EXPANDED set** — the grid starts a new interview cannot begin at, not
+  the times the reviewer holds. With length 45 / step 30, a hold at 10:00 greys 09:30, 10:00 and
+  10:30. The browser still just does `reviewerBusy.has(value)`: **serve, don't mirror.** Zero lines
+  of frontend logic changed (only the `busyOther` tooltip copy, which used to say "at this time" and
+  would have been false for 09:30).
+- **Call site 3 changed subject, deliberately:** the first-booking guard hand-wrote its own query on
+  `ScholarshipApplication.interview_start` and so was invisible to a grep for the helper. It now
+  reads the same slot rows as the other four, which means it asks about the SLOT's reviewer rather
+  than the application's current `assigned_to`. They differ only when a case is reassigned AFTER its
+  interview is booked.
+
+Worktree `.worktrees/interview-overlap`, branch `feat/interview-overlap` (base `origin/main` at
+`ee9630cb`). Retro `docs/retrospective-2026-09-08-interview-overlap.md`; 1 decision; 2 lessons.
+Gates: pytest **6034** (+7, all bite-checked); jest **1877**; tsc **24** (baseline); lint **0**;
+i18n **4897 × 3**; `next build` exit 0; `makemigrations --check` clean.
+
+**▶ OWNER POST-CHECK — nothing to click unless you want to.** The Interviews settings page is
+unchanged and still refuses nothing new. To see the fix: set **Interview length** to 45 (leave
+*Times offered every* at 30), then open a case's propose grid. Book one student at 10:00 and the
+picker should grey out 09:30, 10:00 **and** 10:30 for everyone else, leaving 11:00 open.
+
+**WHAT'S NEXT — the owner's pick, unchanged:** TD-229 (contract template per gift), TD-234 (thirteen
+repair commands with no route to production), TD-221 (24 tsc errors making that gate a no-op).
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-08, after BrightPath #23 — the birth certificate nobody checked)
 
 **✅ SHIPPED AND DEPLOYED 2026-09-08 — AND THE RE-READ HAS RUN.** `main` at **`c1bb93c8`**; BOTH
 Cloud Builds SUCCESS (Python changed, so both triggers fired, as expected); serving
@@ -1256,11 +1305,11 @@ platform constant, cross-field rule disabled, browser ignoring the served rules)
   pair. The endpoint validates the MERGED result, not the diff — and reads the stored values BY
   QUERY, never through `org.configuration` (that caches the pre-save row and makes a successful
   save look ignored until reload).
-- **KNOWN LIMIT, owner told and accepted:** nothing checks duration against step, so a 60-minute
-  interview on a 30-minute grid can overlap a reviewer's own proposals (`held_starts` compares
-  START times only). `InterviewSlot.duration_min` also keeps its model default of 45 — never the
-  effective value (`propose_slots` always writes the resolved one), and changing it would need a
-  migration this sprint promised not to make.
+- **~~KNOWN LIMIT~~ — CLOSED 2026-09-08 (TD-233).** Duration is no longer fenced against step and
+  never will be: conflict-checking compares BLOCKS (`scheduling.held_intervals` / `overlaps`), so
+  an interview longer than the step is a supported setting, not a hazard. `InterviewSlot.duration_min`
+  still keeps its model default of 45 — never the effective value (`propose_slots` always writes
+  the resolved one), and changing it would need a migration.
 
 **▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):** Organisation →
 Settings → Configuration now shows FOUR groups — the new **Interviews** has 6 rows. Two of them

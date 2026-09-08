@@ -347,12 +347,148 @@ class SchedulingServiceTests(TestCase):
     def test_payload_reviewer_busy_admin_only(self):
         from apps.scholarship.serializers_admin import interview_schedule_payload
         other = self._other_app()
+        # duration_min explicitly: the MODEL default is 45, which is never the effective
+        # value (propose_slots writes the organisation's resolved 30). Since TD-233 that
+        # column sets the length of the block, so a bare create() would silently reserve 45
+        # minutes here and test a configuration no organisation has. Expansion beyond the
+        # single start is covered by the TD-233 tests below.
         InterviewSlot.objects.create(
-            application=other, reviewer=self.reviewer, start=self._future(days=3))
+            application=other, reviewer=self.reviewer, start=self._future(days=3),
+            duration_min=30)
         admin_p = interview_schedule_payload(self.app, include_reviewer_busy=True)
         self.assertEqual(len(admin_p['reviewer_busy']), 1)        # the other student's slot
         student_p = interview_schedule_payload(self.app)
         self.assertNotIn('reviewer_busy', student_p)              # never leaked to students
+
+    # ── TD-233: conflicts compare BLOCKS, not start times ──────────────────────
+    #
+    # The owner's worked configuration (2026-09-08): interview length 45 on a 30-minute grid.
+    # That is CORRECT, not a misconfiguration — a 60 step cannot reach 11:30 and a 45 step
+    # drifts — so the step is a grid to place a block on, not a cadence to fill. Before this,
+    # `held_starts` compared start times, so a 45-minute interview at 10:00 and another at
+    # 10:30 both passed and the reviewer was double-booked for 15 minutes.
+    #
+    # ⚠ `duration_min` is passed EXPLICITLY throughout. Bare `InterviewSlot.objects.create()`
+    # takes the model default of 45, which no organisation actually uses.
+
+    def _at(self, hour, minute=0, days=3):
+        """A fixed wall-clock time, days ahead — so 10:00 vs 10:30 is exact, not drifting."""
+        base = timezone.now() + timedelta(days=days)
+        return base.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    def test_propose_conflict_depends_on_length_not_start_alone(self):
+        """THE INVARIANT: the SAME pair of times is refused when the interview is longer than
+        the step and allowed when it fits inside it. Fails before TD-233, passes after —
+        a test asserting only "10:30 is refused" would pass against a guard that is simply
+        too tight."""
+        other = self._other_app()
+        ten, ten_thirty = self._at(10), self._at(10, 30)
+
+        # 45 minutes: 10:00–10:45 covers 10:30, so the second proposal must be refused.
+        scheduling.propose_slots(other, reviewer=self.reviewer, starts=[ten], duration_min=45)
+        with self.assertRaises(scheduling.SchedulingError) as cm:
+            scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                     starts=[ten_thirty], duration_min=45)
+        self.assertEqual(str(cm.exception), 'reviewer_conflict')
+
+        # 30 minutes on the same grid: 10:00–10:30 and 10:30–11:00 sit side by side. Allowed.
+        # A second reviewer, so this half starts from an empty calendar.
+        other2 = self._other_app(uid='stud3')
+        other2.assigned_to = self.other_reviewer
+        other2.save(update_fields=['assigned_to'])
+        scheduling.propose_slots(other2, reviewer=self.other_reviewer,
+                                 starts=[ten], duration_min=30)
+        self.app.assigned_to = self.other_reviewer
+        self.app.save(update_fields=['assigned_to'])
+        slots = scheduling.propose_slots(self.app, reviewer=self.other_reviewer,
+                                         starts=[ten_thirty], duration_min=30)
+        self.assertEqual(len(slots), 1)
+
+    def test_propose_still_accepts_the_next_clear_time(self):
+        """Drive over the bump: a guard that refuses everything after a hold would pass the
+        test above. 11:00 is clear of a 10:00–10:45 block and must still be offerable."""
+        other = self._other_app()
+        scheduling.propose_slots(other, reviewer=self.reviewer,
+                                 starts=[self._at(10)], duration_min=45)
+        slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                         starts=[self._at(11)], duration_min=45)
+        self.assertEqual(len(slots), 1)
+
+    def test_a_block_ending_when_the_next_begins_does_not_clash(self):
+        """Half-open: 10:00–10:45 and 10:45–11:30 are back to back, not overlapping."""
+        other = self._other_app()
+        scheduling.propose_slots(other, reviewer=self.reviewer,
+                                 starts=[self._at(10)], duration_min=45)
+        slots = scheduling.propose_slots(self.app, reviewer=self.reviewer,
+                                         starts=[self._at(10, 45)], duration_min=45)
+        self.assertEqual(len(slots), 1)
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_book_refuses_a_slot_that_runs_into_a_booking_elsewhere(self, _mock):
+        """The FIRST-booking guard (only a confirmed booking blocks) is overlap-aware too —
+        a stale page could POST a 10:30 the picker had greyed out."""
+        other = self._other_app()
+        mine = InterviewSlot.objects.create(
+            application=self.app, reviewer=self.reviewer, start=self._at(10), duration_min=45)
+        theirs = InterviewSlot.objects.create(
+            application=other, reviewer=self.reviewer, start=self._at(10, 30), duration_min=45)
+        scheduling.book_slot(self.app, slot_id=mine.id)
+        with self.assertRaises(scheduling.SchedulingError) as cm:
+            scheduling.book_slot(other, slot_id=theirs.id)
+        self.assertEqual(str(cm.exception), 'reviewer_conflict')
+
+    @patch('apps.scholarship.meeting.create_event', return_value=None)
+    def test_repick_menu_drops_a_released_time_now_covered_elsewhere(self, _mock):
+        """Serializer call site: a booked application's unpicked siblings are released, so the
+        re-pick menu must hide one the reviewer has since covered — by OVERLAP, not by an
+        exact start match, or the student books into a clash."""
+        from apps.scholarship.serializers_admin import interview_schedule_payload
+        picked = InterviewSlot.objects.create(
+            application=self.app, reviewer=self.reviewer, start=self._at(9), duration_min=45)
+        InterviewSlot.objects.create(          # released sibling, still on the menu
+            application=self.app, reviewer=self.reviewer, start=self._at(10, 30), duration_min=45)
+        scheduling.book_slot(self.app, slot_id=picked.id)
+        self.app.refresh_from_db()
+        menu = interview_schedule_payload(self.app)['slots']
+        self.assertEqual(len(menu), 2)         # both offered while nothing covers 10:30
+
+        other = self._other_app()              # reviewer now books 10:00–10:45 for someone else
+        theirs = InterviewSlot.objects.create(
+            application=other, reviewer=self.reviewer, start=self._at(10), duration_min=45)
+        scheduling.book_slot(other, slot_id=theirs.id)
+        self.app.refresh_from_db()
+        menu = interview_schedule_payload(self.app)['slots']
+        self.assertEqual([s['id'] for s in menu], [picked.id])
+
+    def test_reviewer_busy_serves_every_start_the_picker_must_grey_out(self):
+        """SERVE, DON'T MIRROR: the browser only does `reviewerBusy.has(value)`, so the server
+        must send the EXPANDED set — including 09:30, whose 45 minutes run into a 10:00 hold.
+        Sending bare held starts would leave the picker offering a clash."""
+        from apps.scholarship.serializers_admin import interview_schedule_payload
+        other = self._other_app()
+        InterviewSlot.objects.create(
+            application=other, reviewer=self.reviewer, start=self._at(10), duration_min=45)
+        with patch('apps.courses.org_config.value', side_effect=self._org_45_step_30):
+            busy = interview_schedule_payload(self.app, include_reviewer_busy=True)['reviewer_busy']
+        self.assertEqual(busy, [self._at(9, 30), self._at(10), self._at(10, 30)])
+
+    @staticmethod
+    def _org_45_step_30(organisation, key):
+        """An organisation on the owner's worked setting: 45-minute interviews, 30-minute grid."""
+        from apps.courses import org_config
+        return {'interview_duration_min': 45, 'interview_slot_step_min': 30}.get(
+            key, org_config.default(key))
+
+    def test_blocked_starts_expands_a_block_both_ways(self):
+        """The expansion itself, as arithmetic: a 45-minute block at 10:00 blocks a NEW
+        45-minute interview at 09:30 (ends 10:15, inside it), 10:00 and 10:30 — but not 09:00
+        (ends 09:45) and not 10:45 (the block has closed)."""
+        block_start = self._at(10)
+        blocked = scheduling.blocked_starts(
+            [(block_start, block_start + timedelta(minutes=45))],
+            duration_min=45, step_min=30)
+        self.assertEqual(sorted(blocked),
+                         [self._at(9, 30), self._at(10), self._at(10, 30)])
 
     # ── request alternatives ("none of these work") ────────────────────────────
     def test_request_alternatives_records_and_notifies_reviewer(self):

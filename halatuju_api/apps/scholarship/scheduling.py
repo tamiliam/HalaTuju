@@ -146,11 +146,25 @@ def _cutoff_ok(start, now, organisation=None):
     return now < (start - timedelta(hours=hours))
 
 
-def held_starts(reviewer, *, exclude_application=None):
-    """The start times this reviewer genuinely HOLDS — the single source of truth for
+def held_intervals(reviewer, *, exclude_application=None, booked_only=False):
+    """The BLOCKS of time this reviewer genuinely holds — the single source of truth for
     conflict-blocking (propose grid, propose guard, book guard, student re-pick menu).
 
-    Hold semantics (owner's design, 2026-07-02):
+    Returns ``[(start, end), ...]``, where ``end`` is the slot's OWN stored ``duration_min``
+    past its start. That column is written at propose time from the organisation's
+    `interview_duration_min` and is the value every booking path puts on the calendar
+    invite and the .ics — so it is what the reviewer is really committed to.
+
+    ⚠ **This answers "is this time free?" for all five call sites; do not write a second
+    one.** It replaced `held_starts`, which returned bare start times and so compared only
+    starts (TD-233): with an interview LONGER than the step — length 45 on a 30-minute grid,
+    which the owner ruled the correct configuration on 2026-09-08, because a 60 step cannot
+    reach 11:30 and a 45 step drifts — a hold at 10:00 runs to 10:45 and 10:30 has a
+    different start, so both were offered and the reviewer was double-booked for 15 minutes.
+    The step is a GRID TO PLACE A BLOCK ON, not a cadence to fill, so refusing
+    `duration > step` at the registry was rejected: it forbids the configuration people want.
+
+    Hold semantics (owner's design, 2026-07-02) are UNCHANGED — only the comparison moved:
       - an UNBOOKED application's active proposals all hold the reviewer's time (the
         student may pick any of them);
       - once an application is BOOKED, only its booked slot holds — the unpicked
@@ -158,18 +172,69 @@ def held_starts(reviewer, *, exclude_application=None):
         longer block the reviewer offering those times to someone else; first to book
         wins, and a released time re-offered elsewhere disappears from the original
         student's re-pick menu).
+
+    ``booked_only`` keeps the deliberately WEAKER rule on a first booking: only a confirmed
+    booking elsewhere blocks, never a mere proposal to another student (first to book wins).
     """
     if reviewer is None:
-        return set()
+        return []
     from django.db.models import F, Q
     qs = InterviewSlot.objects.filter(reviewer=reviewer, is_active=True)
     if exclude_application is not None:
         qs = qs.exclude(application=exclude_application)
-    # Drop the released siblings: slots of a BOOKED application that are not its
-    # booked slot. Everything else (unbooked proposals + booked slots) holds.
-    qs = qs.exclude(Q(application__interview_status='booked')
-                    & ~Q(application__interview_slot_id=F('id')))
-    return set(qs.values_list('start', flat=True))
+    if booked_only:
+        # Confirmed bookings only — the slot that IS its application's booked slot.
+        qs = qs.filter(application__interview_status='booked',
+                       application__interview_slot_id=F('id'))
+    else:
+        # Drop the released siblings: slots of a BOOKED application that are not its
+        # booked slot. Everything else (unbooked proposals + booked slots) holds.
+        qs = qs.exclude(Q(application__interview_status='booked')
+                        & ~Q(application__interview_slot_id=F('id')))
+    # A non-positive duration would make a block that contains nothing and could never
+    # clash; floor it at a minute so such a row still holds its own start, as before.
+    return [(s, s + timedelta(minutes=max(int(d or 0), 1)))
+            for s, d in qs.values_list('start', 'duration_min')]
+
+
+def overlaps(start, duration_min, intervals) -> bool:
+    """True if an interview of ``duration_min`` beginning at ``start`` would run into any
+    of ``intervals`` (from `held_intervals`). Half-open: a block ending at 10:45 does not
+    clash with one starting at 10:45."""
+    end = start + timedelta(minutes=max(int(duration_min or 0), 1))
+    return any(start < h_end and end > h_start for h_start, h_end in intervals)
+
+
+def blocked_starts(intervals, *, duration_min, step_min):
+    """The grid starts at which a NEW interview of ``duration_min`` would overlap a held
+    block — i.e. exactly the times the reviewer's picker must grey out.
+
+    This is the SERVE-DON'T-MIRROR half of the fix (the standing Org Config Sprint D rule):
+    the browser keeps doing `reviewerBusy.has(slotValue)` and knows nothing about lengths,
+    because the server hands it the already-expanded set. With length 45, step 30 and a hold
+    at 10:00–10:45 that set is {09:30, 10:00, 10:30} — 09:30 + 45 minutes lands inside the
+    hold — where the old start-only answer greyed 10:00 alone.
+
+    Derived from the blocks themselves, so it needs no knowledge of which days the picker is
+    showing, and is bounded at (duration + block length) / step starts per block. Starts are
+    on the grid already (`slot_in_window` enforces it at propose), so stepping from each
+    block's own start stays on it.
+    """
+    step = max(int(step_min or 0), 1)
+    dur = max(int(duration_min or 0), 1)
+    blocked = set()
+    for h_start, h_end in intervals:
+        # Earlier grid starts whose interview would still be running when the block opens.
+        k = 1
+        while k * step < dur:
+            blocked.add(h_start - timedelta(minutes=k * step))
+            k += 1
+        # The block's own start, and every grid start before it closes.
+        cur = h_start
+        while cur < h_end:
+            blocked.add(cur)
+            cur += timedelta(minutes=step)
+    return blocked
 
 
 # ── Reviewer side: propose / withdraw ─────────────────────────────────────────
@@ -254,12 +319,14 @@ def propose_slots(application, *, reviewer, starts, duration_min=None, now=None,
     if not future:
         raise SchedulingError('no_future_slots')
 
-    # Reviewer-wide conflict: never offer a time this reviewer already HOLDS for ANOTHER
-    # applicant — keeps one reviewer from being double-booked. A booked application's
-    # released siblings no longer hold (see held_starts), so those times are re-offerable.
-    # The UI greys held times out; this is the server guard / race backstop.
-    held = held_starts(reviewer, exclude_application=application)
-    if any(s in held for s in future):
+    # Reviewer-wide conflict: never offer a time that would RUN INTO something this reviewer
+    # already holds for ANOTHER applicant — keeps one reviewer from being double-booked. A
+    # booked application's released siblings no longer hold (see held_intervals), so those
+    # times are re-offerable. The UI greys held times out; this is the server guard / race
+    # backstop. Compares blocks, not starts, so a 45-minute interview on a 30-minute grid
+    # cannot be proposed half an hour after another one (TD-233).
+    held = held_intervals(reviewer, exclude_application=application)
+    if any(overlaps(s, duration_min, held) for s in future):
         raise SchedulingError('reviewer_conflict')
 
     # Reviewer reschedule: release the held booking (slot + Meet event + fields) so the new
@@ -393,16 +460,21 @@ def book_slot(application, *, slot_id, now=None):
     #  - RE-PICK (reschedule): anything the reviewer now HOLDS elsewhere blocks, incl.
     #    a released time re-offered to another student — that option is hidden from the
     #    re-pick menu, but a stale page could still POST it.
+    #
+    # Both strengths compare BLOCKS, not starts (TD-233) — a 45-minute interview booked at
+    # 10:00 blocks 10:30 even though no interview STARTS at 10:30.
+    #
+    # The first-booking branch used to hand-write its own query over ScholarshipApplication
+    # (`assigned_to=reviewer, interview_start=...`) rather than call the shared helper — which
+    # is why it was nearly missed here. It now reads the same slot rows as the other four call
+    # sites, so "whose calendar is this?" is answered once. One consequence, deliberate: the
+    # subject is the SLOT's reviewer, not the application's current `assigned_to`. They differ
+    # only when a case is reassigned AFTER its interview is booked, and the person holding the
+    # calendar invite is the one who must not be double-booked.
     if reviewer is not None:
-        if rescheduling:
-            conflict = slot.start in held_starts(reviewer, exclude_application=application)
-        else:
-            from .models import ScholarshipApplication
-            conflict = (ScholarshipApplication.objects
-                        .filter(assigned_to=reviewer, interview_status='booked',
-                                interview_start=slot.start)
-                        .exclude(id=application.id).exists())
-        if conflict:
+        held = held_intervals(reviewer, exclude_application=application,
+                              booked_only=not rescheduling)
+        if overlaps(slot.start, slot.duration_min, held):
             raise SchedulingError('reviewer_conflict')
 
     student_email, student_name = _student_identity(application)

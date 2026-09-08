@@ -278,9 +278,12 @@ SETTINGS = {
     # ── interviews (Sprint D) ──
     # How long one interview runs. Read where the time is WRITTEN DOWN for somebody: the slot
     # row (`propose_slots`), the student's .ics + Add-to-calendar links, and the Google Meet
-    # event's end time. ⚠ Nothing checks duration against the slot step, so a duration LONGER
-    # than the step lets a reviewer's own proposals overlap (conflict-blocking compares start
-    # times only — `scheduling.held_starts`). Owner told, 2026-09-07.
+    # event's end time. It is ALSO the length of the block conflict-checking reserves —
+    # `scheduling.held_intervals` / `overlaps` compare blocks, so a duration LONGER than the
+    # slot step is safe and supported (TD-233, resolved 2026-09-08). **Deliberately unfenced
+    # against `interview_slot_step_min`:** the step is a grid to place a block on, not a
+    # cadence to fill, and length 45 on a 30-minute grid is the owner's worked example of a
+    # CORRECT setting — a 60 step cannot reach 11:30 and a 45 step drifts. Do not add that fence.
     'interview_duration_min': {
         'group': 'interviews',
         'unit': 'minutes',

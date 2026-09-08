@@ -3279,10 +3279,30 @@ moment to draw.
 
 ---
 
-### [TD-233] An interview longer than the slot step can overlap a reviewer's own proposals — low
+### [TD-233] An interview longer than the slot step can overlap a reviewer's own proposals — low — **RESOLVED 2026-09-08**
+
+**Resolved by:** the Interview-overlap sprint (2026-09-08). `held_starts` is DELETED; conflict
+checking now compares BLOCKS via `scheduling.held_intervals` + `overlaps`, at all five call sites
+(propose guard, both book branches, the student's re-pick menu, the reviewer's picker). No
+migration — `InterviewSlot.duration_min` already stored the length, and it is the value that goes
+on the calendar invite, so the block is what the reviewer is really committed to.
+
+**⚠ The registry fence proposed below was REJECTED, and must not be added later.** The owner's
+worked example settled it (2026-09-08): with a 45-minute interview, a 60-minute step cannot reach
+11:30 and a 45-minute step produces drifting times, so **30 is the right step** — smaller than the
+length. The step is a grid to place a block on, not a cadence to fill. A `step >= duration` fence
+would forbid exactly the configuration people want. The org_config registry now carries that
+ruling as a comment beside `interview_duration_min`.
+
+**The seam that made it cheap:** `reviewer_busy` already served the picker a flat list of times to
+grey out, and the browser only does `reviewerBusy.has(value)`. The server now sends the EXPANDED
+set (with length 45 / step 30, a hold at 10:00 greys 09:30, 10:00 and 10:30) — serve, don't mirror.
+**Zero lines of frontend logic changed.**
 
 **Found:** Org Config Sprint D (2026-09-07), making the interview length and the slot step
 organisation-tunable.
+
+--- *original entry below, kept for the reasoning* ---
 
 **What.** Conflict-blocking compares START times only — `scheduling.held_starts` returns the set of
 starts a reviewer holds, and `propose_slots` refuses a proposal whose start is in that set. That is

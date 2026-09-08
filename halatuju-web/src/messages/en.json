@@ -3941,7 +3941,7 @@
           "availableTimes": "Available times ({from}–{to}, {step}-min)",
           "noneToday": "No more times available today — pick another date.",
           "selectedCount": "Selected ({n} of {max})",
-          "busyOther": "You have another student's interview at this time",
+          "busyOther": "This would run into another student's interview",
           "pickThree": "Select 3 times — the student picks one.",
           "propose": "Propose times",
           "proposedHeading": "Proposed times",

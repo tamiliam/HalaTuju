@@ -102,15 +102,18 @@ def interview_schedule_payload(application, *, include_reviewer_busy=False):
     from . import scheduling
     active = [s for s in application.interview_slots.all() if s.is_active]
     active.sort(key=lambda s: s.start)
-    # A BOOKED application's unpicked siblings are RELEASED (scheduling.held_starts):
+    # A BOOKED application's unpicked siblings are RELEASED (scheduling.held_intervals):
     # the reviewer may re-offer those times to other students, first to book wins. So
     # the re-pick menu must drop any released time the reviewer has since re-offered
-    # or re-booked elsewhere — otherwise the student books into a conflict.
+    # or re-booked elsewhere — otherwise the student books into a conflict. Overlap, not
+    # exact start (TD-233): with an interview longer than the step, a released 10:30 is
+    # unpickable once the reviewer books someone else at 10:00.
     if application.interview_status == 'booked' and application.assigned_to_id:
-        taken = scheduling.held_starts(application.assigned_to,
-                                       exclude_application=application)
+        taken = scheduling.held_intervals(application.assigned_to,
+                                          exclude_application=application)
         active = [s for s in active
-                  if s.id == application.interview_slot_id or s.start not in taken]
+                  if s.id == application.interview_slot_id
+                  or not scheduling.overlaps(s.start, s.duration_min, taken)]
     payload = {
         'enabled': bool(getattr(settings, 'INTERVIEW_SCHEDULING_ENABLED', False)),
         'status': application.interview_status or '',
@@ -138,11 +141,19 @@ def interview_schedule_payload(application, *, include_reviewer_busy=False):
         ],
     }
     if include_reviewer_busy:
-        # Only the times the reviewer genuinely HOLDS (a booked application's released
-        # siblings no longer block) — see scheduling.held_starts for the semantics.
-        payload['reviewer_busy'] = sorted(
-            scheduling.held_starts(application.assigned_to,
-                                   exclude_application=application))
+        # The grid starts the reviewer CANNOT begin a new interview at — not merely the ones
+        # she already holds (TD-233). The server expands her held blocks against this
+        # organisation's own length and step, so the picker keeps doing a plain set-membership
+        # test and never learns what a duration is: serve, don't mirror. With length 45 and
+        # step 30, a booking at 10:00 greys out 09:30, 10:00 and 10:30.
+        # (A booked application's released siblings no longer block — see
+        # scheduling.held_intervals for the hold semantics.)
+        payload['reviewer_busy'] = sorted(scheduling.blocked_starts(
+            scheduling.held_intervals(application.assigned_to,
+                                      exclude_application=application),
+            duration_min=payload['interview_duration_min'],
+            step_min=payload['slot_step_min'],
+        ))
     return payload
 
 

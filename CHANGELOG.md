@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## A booked hour is an hour, not a start time - 2026-09-08
+
+TD-233, closed. Conflict checking asked *"does anything START at this minute?"*, which is exact only
+while every interview is one step long. The owner walked the case that breaks it: with a 45-minute
+interview, an interview at 10:00 runs to 10:45, and 10:30 has a different start — so the picker
+offered it as free, the server waved it through, and the reviewer was double-booked for fifteen
+minutes. Nobody would have reported a bug; a student would have sat in an empty room.
+
+- **`held_starts` is deleted, not left beside its replacement.** `held_intervals` + `overlaps`
+  answer that question once for all five callers — the propose guard, BOTH book branches, the
+  student's re-pick menu, and the reviewer's picker. One of those five (the first-booking guard)
+  hand-wrote its own query instead of calling the helper, which is how it was nearly missed.
+- **The step is a GRID TO PLACE A BLOCK ON, not a cadence to fill.** The cheap half-fix — refusing
+  a length longer than the step — is rejected and written into the registry as rejected. The owner
+  settled it with arithmetic: for a 45-minute interview a 60 step cannot reach 11:30 and a 45 step
+  drifts, so **30 is the right step**, and it is smaller than the length.
+- **Zero lines of frontend logic.** The picker already greys out whatever list it is handed; the
+  server now hands it the expanded set (a 45/30 hold at 10:00 greys 09:30, 10:00 and 10:30). Serve,
+  don't mirror — the browser never learns what a duration is.
+- **No migration.** `InterviewSlot.duration_min` already stored the length and is what goes on the
+  calendar invite, so the block is what the reviewer is actually committed to. Nothing to backfill,
+  and nothing to renumber against the two branches in flight.
+
++7 pytest, every one bite-checked. The load-bearing one is an INVARIANT — *the same pair of times is
+refused at length 45 and allowed at length 30* — because a test asserting only "10:30 is refused"
+also passes against a guard that is simply too tight. Two more drive over the bump: 11:00 after a
+10:00 hold is still offerable, and 10:45 sits back-to-back with 10:00–10:45 without clashing.
+
 ## Every console list reads as cards on a phone - 2026-09-08
 
 "Proceed with all" — the remaining lists, after the payment run proved the shape. Each keeps its
