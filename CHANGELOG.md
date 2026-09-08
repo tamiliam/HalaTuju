@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Fix: three detail pages get the wide layout - 2026-09-08
+
+The owner walked the console after the layout standard shipped and found the payment-run page and
+the B40 application page cramped. Both were forced to `reading` because they show ONE of something
+- which is not what the rule asks.
+
+- **The rule's WORDING was too narrow, and is now corrected**: "does the page lead with a TABLE?"
+  becomes "does the page lay its content out in MULTIPLE COLUMNS?". A table was only ever the
+  commonest case of the real question - across the page, or down it.
+- **`/admin/payments/<run>`** leads with an EIGHT-column table. It answered even the original rule;
+  the override was simply wrong.
+- **`/admin/scholarship/<id>`** (the B40 cockpit) has no table at all - twelve two-column cards and
+  a three-column grid - and is denser than most pages that do. ⚠ It had been **1152px** before this
+  arc, so standardising it to 900 made it NARROWER than it had ever been: a regression dressed as a
+  standard.
+- **`/admin/sponsors/<id>`** carries two tables of its own and would have been the next one spotted.
+  Changed for the same reason, unprompted.
+
+What stays `reading` genuinely runs down the page in one column: one student, one contract
+template, one reviewer. A test now pins all three widened routes against the reason they were
+widened.
+
 ## The round menu escapes the table, and Save sleeps until there is something to save - 2026-09-08
 
 Two faults the owner found on the deployed round-state screen.

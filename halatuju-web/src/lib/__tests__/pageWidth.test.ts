@@ -44,15 +44,23 @@ describe('the rule: leads with a table? wide. otherwise reading.', () => {
     expect(pageWidthFor('/admin/organisation/reviewers')).toBe('wide')
   })
 
-  test('a DETAIL page below a table page reads — the longer match wins', () => {
-    // The B40 cockpit is one application, not a list of them. This pair is the whole reason
-    // matching is longest-prefix rather than first-hit.
-    expect(pageWidthFor('/admin/scholarship')).toBe('wide')
-    expect(pageWidthFor('/admin/scholarship/143')).toBe('reading')
-    expect(pageWidthFor('/admin/payments')).toBe('wide')
-    expect(pageWidthFor('/admin/payments/PR-2026-09-01-03')).toBe('reading')
+  test('a detail page that runs DOWN the page reads — the longer match wins', () => {
+    // Longest-prefix matching exists for this pair: a one-column profile below a table list.
     expect(pageWidthFor('/admin/organisation/reviewers')).toBe('wide')
     expect(pageWidthFor('/admin/organisation/reviewers/7')).toBe('reading')
+    expect(pageWidthFor('/admin/students')).toBe('wide')
+    expect(pageWidthFor('/admin/students/88')).toBe('reading')
+  })
+
+  test('being ONE of something is not the test — the layout is (owner review, 2026-09-08)', () => {
+    // ⚠ THE REGRESSION THIS PINS. All three were forced to `reading` on the first pass because
+    // they show a single record. The owner walked the console and found two of them cramped; the
+    // third has two tables and would have been the next one spotted. The cockpit is the sharp
+    // case: it had been 1152px for months, so "standardising" it to 900 made it narrower than it
+    // had ever been.
+    expect(pageWidthFor('/admin/payments/PR-2026-09-01-02')).toBe('wide')   // 8-column table
+    expect(pageWidthFor('/admin/scholarship/143')).toBe('wide')             // dense card grid
+    expect(pageWidthFor('/admin/sponsors/12')).toBe('wide')                 // two tables
   })
 
   test('a trailing slash and an unknown route both resolve', () => {

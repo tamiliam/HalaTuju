@@ -10,11 +10,21 @@
  *  root — and `pageWidth.test.ts` fails if one tries. That is the whole point: a rule a page has to
  *  remember is a rule that drifts, and this one already had.
  *
- *  ── The rule (owner's words) ────────────────────────────────────────────────────────────────
- *  **Does the page lead with a TABLE?** Wide. Otherwise reading. Both start at the same left edge.
+ *  ── The rule ────────────────────────────────────────────────────────────────────────────────
+ *  **Does the page lay its content out in MULTIPLE COLUMNS?** Wide. Otherwise reading. Both start
+ *  at the same left edge.
  *
- *  'reading' — forms, settings, detail pages. ~900px, the width long text stays readable at.
- *  'wide'    — pages whose first job is a table of many columns. 1280px.
+ *  ⚠ THIS WAS FIRST WRITTEN AS "does the page lead with a TABLE?", and the owner's review found
+ *  the wording too narrow (2026-09-08). A table was only ever the commonest case of the real
+ *  question, which is whether the content is laid out ACROSS the page or DOWN it. The B40
+ *  application cockpit leads with no table at all — it is twelve two-column cards and a
+ *  three-column grid — and at the reading width its addresses wrapped and its grade chips broke
+ *  onto three rows. It had been 1152px before this arc; the first rule made it NARROWER than it
+ *  had ever been, which is a regression dressed as a standard.
+ *
+ *  'reading' — one column of prose, form fields or stacked panels. ~900px, where long text stays
+ *              readable and a form does not sprawl.
+ *  'wide'    — a table of many columns, or a dense card grid. 1280px.
  *
  *  Neither is centred. On a very wide monitor a reading page does leave space on the right; that
  *  reads as deliberate when every page does it and as a mistake when one page does.
@@ -27,8 +37,8 @@ export const WIDTH_CLASS: Record<PageWidth, string> = {
   wide: 'max-w-7xl',      // 80rem / 1280px
 }
 
-/** Routes whose first job is a TABLE. Longest match wins, so a detail page below a wide list
- *  (`/admin/payments/[id]`) can still be a reading page by being listed in READING_ROUTES. */
+/** Routes laid out ACROSS the page. Longest match wins, so a page below a wide list can still
+ *  read narrow by being listed in READING_ROUTES — `/admin/students/<id>` is the shape. */
 export const WIDE_ROUTES: readonly string[] = [
   '/admin/scholarship',              // Applications
   '/admin/organisation/reviewers',
@@ -47,14 +57,22 @@ export const WIDE_ROUTES: readonly string[] = [
   '/admin/administration',
 ]
 
-/** Routes BELOW a wide route that are detail pages, not tables — they win by being longer. */
+/** Routes BELOW a wide route that read DOWN the page rather than across — they win by being
+ *  longer. Being a detail page is not the test; the layout is.
+ *
+ *  ⚠ THREE ROUTES LEFT THIS LIST ON 2026-09-08, after the owner walked the console. Each was here
+ *  because it shows ONE of something, which is not the question:
+ *    · `/admin/payments/<run>` leads with an EIGHT-column table (name, NRIC, e-wallet, approved,
+ *      paid, to be paid, include). It answered the original rule and I overrode it anyway.
+ *    · `/admin/scholarship/<id>` is the cockpit — twelve two-column cards and a three-column
+ *      grid. No table, and denser than most pages that have one.
+ *    · `/admin/sponsors/<id>` carries two tables of its own.
+ *  What is left genuinely runs down the page in one column.
+ */
 export const READING_ROUTES: readonly string[] = [
-  '/admin/scholarship/',             // one application (the cockpit)
-  '/admin/payments/',                // one payment run
-  '/admin/sponsors/',                // one sponsor
-  '/admin/students/',                // one student
-  '/admin/contracts/',               // one contract template
-  '/admin/organisation/reviewers/',  // one reviewer
+  '/admin/students/',                // one student — a profile, read downwards
+  '/admin/contracts/',               // one contract template — a long document
+  '/admin/organisation/reviewers/',  // one reviewer — a profile and a short history
 ]
 
 /** The width for a pathname. Unlisted → 'reading', which is the safe default: a page that is
