@@ -17,20 +17,22 @@ and posted to BrightPath as comment **77** — that is the promise we are delive
 | 1 | Read the child's IC from the certificate + re-read the 62 on file | **shipped** `f8836d36` |
 | 2 | Unreadable ≠ clean: amber + ask for a re-upload | **shipped** `6317bf80` |
 | 3 | The merged green/amber/red rule + father does not block | **shipped** `7099c61d` |
-| 4 | **MEASURE ONLY, THEN STOP** — income switching off the relationship check | **measured 2026-09-08 — awaiting the owner's ruling** |
+| 4 | Income no longer switches off the relationship check | **shipped** `79826979` (measured first, owner ruled 2026-09-08) |
 | 5 | A document type for an explanation letter | **DEFERRED** — try the QC override first |
 
 ---
 
-## ⚠ STEP 4 IS A MEASUREMENT, NOT A CHANGE
+## ✅ STEP 4 — MEASURED FIRST, THEN RULED ON, THEN SHIPPED
 
 The promise in comment 77, verbatim:
 
 > 4. Stop income evidence from switching off the relationship check. SEVEN live applications, named
 > for you first, and your decision before it ships.
 
-So step 4 **produces a list of names for the owner and stops**. Do not change the behaviour until
-they rule. This is the one change in the whole request that can newly stop somebody submitting.
+Kept: the seven were measured on production and put to the owner, who ruled **turn the check back
+on** (2026-09-08). `birth_certificate` and `guardianship_letter` are out of
+`services._INCOME_CLUSTER_DOC_TYPES`; the income softening beside it is unchanged and tested in the
+same class. Four tests in `test_one_clean_cluster.py::TestProvingIncomeDoesNotSettleParentage`.
 
 ### The mechanism to measure
 
