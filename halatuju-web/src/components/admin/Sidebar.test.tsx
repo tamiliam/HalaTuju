@@ -7,7 +7,7 @@
  * What it cannot prove: whether the open/close feels right, or whether the chip lands where
  * your eye is. That is the browser pass, and it is still owed.
  */
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 
 import { Sidebar } from './Sidebar'
 import { NO_PROBES, visibleNav, type AdminRoleName } from '@/lib/navigation'
@@ -108,6 +108,25 @@ describe('what survives the collapse', () => {
     const openSponsors = within(nav).getByText('admin.sponsors.nav').closest('a') as HTMLElement
     expect(openSponsors.querySelector('[data-badge="dot"]')).toBeNull()
     expect(within(openSponsors).getByText('3').className).toContain('opacity-100')
+  })
+
+  /*
+   * ⚠ THE PROP SHIPPED IN N4 AND WAS FED `undefined` UNTIL 2026-09-08, so the Programme group read
+   * the bare word "Programme" whichever gift was open — `heading()` had always preferred the name.
+   * Untested wiring is how a prop stays starved for six weeks; this is the test that would have
+   * said so.
+   */
+  it('names the gift in the Programme heading, and falls back to the scope word', () => {
+    const named = renderRail('org_admin', { programmeName: 'BrightPath Sabah' })
+    expect(within(named).getByText('BrightPath Sabah')).toBeTruthy()
+    // The scope survives as the quiet tag beside it — the reader keeps both facts.
+    expect(within(named).getByText('admin.nav.group.programme')).toBeTruthy()
+
+    cleanup()
+    // Several gifts, none chosen: the rail refuses to name one, exactly as the breadcrumb does.
+    const unnamed = renderRail('org_admin')
+    expect(within(unnamed).queryByText('BrightPath Sabah')).toBeNull()
+    expect(within(unnamed).getByText('admin.nav.group.programme')).toBeTruthy()
   })
 
   it('never renders a badge for a count of zero', () => {

@@ -1,5 +1,65 @@
 # Architectural Decisions — HalaTuju
 
+## A menu row waits for a gift only if it would go WRONG without one, 2026-09-08
+**Decision:** `NavItem.needsProgramme` hides a row until `useProgrammeScope().chosen` resolves.
+Exactly one row carries it — Programme → **Configuration**. Programme → **Applications** does not,
+and must not.
+
+**Why not the whole group,** which is what the owner's Supabase comparison literally described:
+Programme is a **reviewer's only sidebar group**, pinned in `navigation.test.ts`. Hiding it would
+leave a reviewer with an empty rail and no route back to their own queue — the exact stranding the
+owner raised in the same message (*"reviewers do not have access to the overview page"*).
+
+**Why the split is by CONSEQUENCE and not by role:** the gift-switcher sprint had already drawn
+this line inside the pages, and it holds one level up. Configuration WRITES a gift's settings, so
+a silent or absent choice risks editing the wrong gift's rules — `ChooseProgramme` exists for
+precisely that, and a row whose only outcome is to ask is noise. Applications is a READ: with
+nothing chosen it lists every gift under a neutral heading, which is a true answer, just a less
+specific one. Because the test is what the row DOES, no role needs an exemption and the group can
+never empty. A rule written as `if (role === 'reviewer')` would have had to be re-reasoned for
+`qc`, for `finance`, and for every role added after.
+
+**Hidden, never "soon".** A "Soon" pill promises a feature that is coming; this one is here and
+waiting on the reader.
+
+**`programmeChosen` is optional and checked as `=== false`** — the `reviewer_profile_complete`
+shape. An omitted value means SHOW, so a caller that predates the dimension (the Organisation
+Overview looks hrefs up through `visibleNav`) cannot silently lose a row, and the shell keeps it
+`undefined` until the scopes list has actually arrived — an empty `programmes` array means both
+"no gifts" and "not asked yet", and treating the second as the first would hide the row on every
+first paint and slide it in a moment later.
+
+**Still not a fence.** `navigation.ts` has said since N2 that hiding a link is not access control,
+and nothing here changes that: the endpoint refuses on its own and a typed URL reaches what it
+always did.
+
+## Where an admin lands is DERIVED from the registry, not named, 2026-09-08
+**Decision:** `defaultRoute()` returns the first non-placeholder route, in registry order, that
+`canSee` reports as `show` for this role with nothing probed. `adminLanding()` delegates to it.
+
+**Why:** the old rule sent every non-reviewer to `/admin`, and `/admin` is the PLATFORM dashboard
+(`roles: ['super','partner']`). Four roles were therefore bounced off their own landing page by
+`admin/page.tsx`, and one of the four landed somewhere it may not be: **`finance` was redirected to
+Applications, which the registry omits `finance` from deliberately** (`_b40_scope` → 'none', so
+every call can only 403). The page had no guard of its own, so it failed as an empty table rather
+than as a refusal. This is the 2026-06-16 lesson repeating — "when a new role is added, audit every
+place that assumes the old default" — and deriving the destination is what stops it repeating a
+third time: change a role set in the registry and the landing moves with it.
+
+**What moved:** org_admin, admin and finance now land on `/admin/organisation` (their Overview, and
+the only screen the gifts are listed on — which is what the owner asked for); qc reaches
+`/admin/scholarship` in one hop instead of two. super and partner are unchanged.
+
+**What is excluded, and why each:** a `placeholder` has no page behind it; a probe-gated page is
+'soon' or 'hide' with nothing probed, and a dark-shipped feature is not somewhere to land. The
+Utility group is last and holds Profile, which every role may open, so the function always returns
+a real route.
+
+**The delegation is now real.** `defaultRoute`'s docstring had claimed since N2 that `adminLanding`
+delegates to it; `adminLanding` in fact held its own hand-copied copy of the same three lines. They
+agreed only because nobody had edited either — and deriving the route is exactly the change that
+would have split them. A test now asserts the two agree for every role.
+
 ## An intake round has four states; "finished" is terminal, 2026-09-08
 **Decision:** `draft` · `open` · `closed` · `finished`, served by `views_admin.round_state`. The
 badge is the control. **`finished` cannot be undone** — nothing in the product clears `finished_at`

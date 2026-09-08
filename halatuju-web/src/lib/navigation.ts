@@ -80,6 +80,26 @@ export interface NavItem {
   exact?: boolean
   badge?: BadgeKey
   /**
+   * This row ACTS ON one particular gift, so it stays hidden until we know which gift that is.
+   *
+   * ⚠ THE TEST IS CONSEQUENCE, NOT SCOPE. Both Programme rows belong to a gift; only one of them
+   * would go WRONG without a choice. `programmeConfig` writes a gift's settings, so opening it
+   * with nothing chosen can only ever produce a question (`ChooseProgramme`) — a row whose sole
+   * outcome is to ask is noise, and worse, it invites somebody to edit the wrong gift's rules.
+   * `applications` is a READ: with nothing chosen it lists every gift under a neutral heading,
+   * which is a true answer, just a less specific one. That is the same line the gift-switcher
+   * sprint drew inside the pages (2026-09-08); this applies it to the menu.
+   *
+   * ⚠ AND IT IS WHY NO ROLE NEEDS AN EXEMPTION. A reviewer's ONLY sidebar group is Programme
+   * (`navigation.test.ts` pins it), so hiding the group outright would leave them with an empty
+   * sidebar and no way back to their own queue. Marking the CONFIGURE row and not the WORK row
+   * means the group can never empty, for anybody — no `if (role === 'reviewer')` anywhere.
+   *
+   * ⚠ STILL VISIBILITY ONLY. See the module docstring: the fence is the endpoint, and a person
+   * who types `/admin/programme` reaches exactly what they always did.
+   */
+  needsProgramme?: boolean
+  /**
    * The second key of the `G`-then-X jump, upper-case, e.g. 'A' → Applications.
    *
    * OPTIONAL on purpose, inverting the usual "make a new dimension required" rule: most routes
@@ -250,7 +270,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // preference passed to each endpoint explicitly — never an ambient scope. See that module.
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
-        exact: true, match: ['/admin/programme/years'] },
+        exact: true, match: ['/admin/programme/years'], needsProgramme: true },
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
         gate: { mode: 'always' } },
@@ -285,6 +305,20 @@ export const CHROMELESS: readonly string[] = [
 export interface NavContext {
   role: AdminRoleName
   probes: Record<ProbeKey, ProbeState>
+  /**
+   * Is the gift the person is looking at KNOWN? Read by `needsProgramme` rows only.
+   *
+   * ⚠ OPTIONAL, AND `undefined` MEANS SHOW. Checked as `=== false`, the same shape as
+   * `reviewer_profile_complete` in `adminLanding.ts` and for the same reason: a caller that has
+   * not been taught about this dimension must never lose a menu row because of it. The module
+   * docstring's rule — "absence from the registry must never invent a new block" — applies to a
+   * missing FIELD exactly as it applies to a missing route.
+   *
+   * The shell is the one caller that supplies it, from `useProgrammeScope().chosen`. That value
+   * fills itself in when there is exactly ONE gift, so on a single-gift tenant — production
+   * today — this is always true and nothing changes.
+   */
+  programmeChosen?: boolean
 }
 
 /** A context with nothing probed yet — the safe default (see `canSee`). */
@@ -317,6 +351,9 @@ export function effectiveRole(
  */
 export function canSee(item: NavItem, ctx: NavContext): 'show' | 'soon' | 'hide' {
   if (!item.roles.includes(ctx.role)) return 'hide'
+  // Hidden, never 'soon': a "Soon" pill promises a feature that is coming, and this one is here
+  // already — it is waiting on the reader, not on us. See `NavItem.needsProgramme`.
+  if (item.needsProgramme && ctx.programmeChosen === false) return 'hide'
   if (item.gate.mode === 'probe') {
     return ctx.probes[item.gate.probe] === 'live' ? 'show' : item.gate.dark
   }
@@ -448,22 +485,52 @@ export function chordTarget(
 }
 
 /**
- * Where an authenticated admin lands after sign-in. `adminLanding()` delegates here, so the
- * rule has one home; the outputs are IDENTICAL to the previous implementation and its tests
- * pass unmodified.
+ * Where an authenticated admin lands after sign-in. THE one home for the rule — `adminLanding()`
+ * delegates here.
  *
- * ⚠ Deliberately NOT `canAccess('/admin', r) ? … : …`, which reads better and is wrong: it
- * would send admin / org_admin / qc / finance straight to `/admin/scholarship`, whereas today
- * they land on `/admin` and are bounced by the page. Same destination, one hop fewer — but
- * that is a behaviour change, and this sprint ships the shell, not a new landing rule. The
- * double hop is worth removing later; it is not worth smuggling in here.
+ * ⚠⚠ THIS USED TO SEND EVERY NON-REVIEWER TO `/admin`, AND FOUR ROLES WERE THEN BOUNCED OFF IT.
+ * `/admin` is `roles: ['super', 'partner']` — the platform dashboard — so org_admin, admin, qc and
+ * finance each landed on a page they may not open and were redirected by `admin/page.tsx`. The old
+ * docstring called that "a double hop worth removing later" and it was worse than a hop:
+ *
+ *   · **`finance` was bounced onto Applications, which `finance` may not see.** The registry omits
+ *     it from `applications` deliberately (`_b40_scope` → 'none', so it can only 403), and the
+ *     scholarship page had no client guard to catch the contradiction. A finance user's first
+ *     screen was a page built for somebody else.
+ *   · **org_admin and admin never reached their own Overview**, which is the front door the owner
+ *     designed and the only place the gifts are listed (2026-09-08).
+ *
+ * The fix is to stop naming a destination and DERIVE one: the first route in the registry this
+ * role may actually open, in the registry's own order — Platform, then Organisation, then
+ * Programme, then Utility. Same answer as before for super and partner; the right answer for the
+ * other four. This is exactly the lesson from 2026-06-16, when the reviewer role was added and
+ * "post-login landing" was not revisited: adding a role is not done until every place that
+ * branches on "is this user an admin?" has been re-checked.
+ *
+ * ⚠ `NO_PROBES` ON PURPOSE. A dark-shipped page is not a landing page: with nothing probed,
+ * `canSee` reports 'soon'/'hide' for Billing and Requests, and only a 'show' is a candidate. A
+ * placeholder is skipped for the older reason — there is no page there.
+ *
+ * ⚠ NOT `programmeChosen: false`. Landing happens before the shell has fetched anything, so the
+ * question "which gift" has not been asked yet; answering it here would send an org_admin
+ * somewhere different depending on a race. The field is omitted, which means show — see
+ * `NavContext`.
+ *
+ * The Utility group is last and holds Profile, which every role may open, so this always returns
+ * something. `/admin/profile` is the honest floor for an account that can reach nothing else.
  */
 export function defaultRoute(role: { role?: string; is_super_admin?: boolean } | null | undefined,
                              reviewerProfileComplete?: boolean): string {
   // A newly-invited reviewer is held on their profile until the compulsory fields are filled.
   // Checked as `=== false` so an OLD payload that omits the field never traps anyone.
   if (role?.role === 'reviewer' && reviewerProfileComplete === false) return '/admin/profile'
-  // 'viewer' is a legacy value that is not a real role; it lands where a reviewer does.
-  if (role?.role === 'reviewer' || role?.role === 'viewer') return '/admin/scholarship'
-  return '/admin'
+
+  const r = effectiveRole(role)
+  for (const group of NAV_GROUPS) {
+    for (const item of group.items) {
+      if (item.placeholder) continue
+      if (canSee(item, { role: r, probes: NO_PROBES }) === 'show') return item.href
+    }
+  }
+  return '/admin/profile'
 }

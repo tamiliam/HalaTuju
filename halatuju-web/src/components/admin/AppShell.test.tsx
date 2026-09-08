@@ -261,3 +261,58 @@ describe('a request waiting on us is visible without going looking', () => {
     expect(screen.queryByText('admin.requests.nav')).toBeNull()
   })
 })
+
+/**
+ * ── The gift must be known before the rail offers to CONFIGURE one (owner, 2026-09-08) ──
+ *
+ * `navigation.test.ts` proves `visibleNav` hides the row; this proves the SHELL feeds it the right
+ * answer — which is the half that was starved for six weeks in the `programmeName` prop next door.
+ * The wiring runs shell → `ProgrammeScopeProvider` → `useProgrammeScope().chosen` → `visibleNav`,
+ * and every link in it is invisible to a unit test of either end.
+ */
+describe('the rail waits for a gift before offering Configuration', () => {
+  const withGifts = (programmes: Array<{ code: string; name: string; is_active: boolean }>) => {
+    mockToken = 'test-token'
+    const api = jest.requireMock('@/lib/admin-api')
+    api.getAdminScopes.mockResolvedValue({ organisations: [], programmes })
+  }
+
+  afterEach(() => {
+    mockToken = null
+    const api = jest.requireMock('@/lib/admin-api')
+    api.getAdminScopes.mockResolvedValue({ organisations: [], programmes: [] })
+  })
+
+  const G = (code: string, name: string) => ({ code, name, is_active: true })
+
+  it('hides Configuration when there are several gifts and none is chosen', async () => {
+    withGifts([G('bp-flagship', 'BrightPath Bursary'), G('bp-sabah', 'Test Programme')])
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    // Applications STAYS — a list of every gift is a true answer, and it is the row that keeps
+    // the group from emptying. Awaited first, so the assertion below runs after the fetch lands.
+    expect(await screen.findByText('admin.scholarship.nav')).toBeTruthy()
+    expect(screen.queryByText('admin.programme.config.nav')).toBeNull()
+  })
+
+  it('shows Configuration when the tenant has exactly one gift — nothing to choose', async () => {
+    // ⚠ PRODUCTION TODAY IS THIS CASE for every tenant but BrightPath. `programmeScope` resolves a
+    // sole gift on its own, so nobody sees any of this behaviour until a second gift exists.
+    withGifts([G('bp-flagship', 'BrightPath Bursary')])
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    expect(await screen.findByText('admin.programme.config.nav')).toBeTruthy()
+    // ...and the rail names the gift it settled on, instead of the bare scope word.
+    expect(within(sidebar()).getByText('BrightPath Bursary')).toBeTruthy()
+  })
+
+  it('shows Configuration while the list is still on its way — a row must not pop in', () => {
+    // ⚠ AN EMPTY `programmes` IS TWO FACTS. Before the fetch resolves it means "not asked yet",
+    // and treating that as "no gift chosen" would hide the row on the first paint of every page
+    // load and slide it in a moment later. Rendered and asserted synchronously, i.e. pre-fetch.
+    withGifts([G('bp-flagship', 'BrightPath Bursary'), G('bp-sabah', 'Test Programme')])
+    asRole('org_admin')
+    render(<AppShell>content</AppShell>)
+    expect(screen.getByText('admin.programme.config.nav')).toBeTruthy()
+  })
+})

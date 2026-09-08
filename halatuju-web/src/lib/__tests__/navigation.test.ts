@@ -356,6 +356,60 @@ describe('visibleNav groups', () => {
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
+  /*
+   * ── The gift must be known before the menu offers to CONFIGURE one (owner, 2026-09-08) ──
+   *
+   * ⚠ THE PAIR OF ASSERTIONS IS THE RULE. Hiding Configuration is half of it; Applications
+   * STAYING is the other half, and it is the half that keeps a reviewer out of an empty sidebar.
+   * If a later change marks `applications` with `needsProgramme`, these tests fail — deliberately.
+   */
+  describe('a row that acts on one gift waits until the gift is known', () => {
+    const noGift = (role: AdminRoleName): NavContext =>
+      ({ role, probes: NO_PROBES, programmeChosen: false })
+    const gift = (role: AdminRoleName): NavContext =>
+      ({ role, probes: NO_PROBES, programmeChosen: true })
+
+    it('hides Configuration, and only Configuration, while no gift is chosen', () => {
+      const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
+      expect(prog.items.map((i) => i.id)).toEqual(['applications'])
+    })
+
+    it('shows both rows once a gift is chosen', () => {
+      const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
+      expect(prog.items.map((i) => i.id)).toEqual(['programmeConfig', 'applications'])
+    })
+
+    // ⚠ THE REVIEWER STRAND, PINNED. Programme is a reviewer's ONLY sidebar group (asserted
+    // above), so hiding the group would leave them with no menu and no way back to their queue.
+    it('never empties a sidebar — a reviewer keeps their queue with no gift chosen', () => {
+      const scopes = visibleNav(noGift('reviewer')).map((g) => g.scope)
+      expect(scopes).toContain('programme')
+      const prog = visibleNav(noGift('reviewer')).find((g) => g.scope === 'programme')!
+      expect(prog.items.map((i) => i.id)).toEqual(['applications'])
+    })
+
+    it('leaves every other scope untouched', () => {
+      for (const role of ROLE_NAMES) {
+        const before = visibleNav(gift(role)).filter((g) => g.scope !== 'programme')
+        const after = visibleNav(noGift(role)).filter((g) => g.scope !== 'programme')
+        expect(after).toEqual(before)
+      }
+    })
+
+    // ⚠ `undefined` MEANS SHOW — the same `=== false` shape as `reviewer_profile_complete`. A
+    // caller that predates this dimension (the Organisation Overview looks hrefs up this way)
+    // must not silently lose a row.
+    it('an omitted programmeChosen shows everything, exactly as before', () => {
+      const omitted = visibleNav({ role: 'org_admin', probes: NO_PROBES })
+      expect(omitted).toEqual(visibleNav(gift('org_admin')))
+    })
+
+    it('marks exactly one row as needing a gift', () => {
+      expect(NAV_ITEMS.filter((i) => i.needsProgramme).map((i) => i.id))
+        .toEqual(['programmeConfig'])
+    })
+  })
+
   it('marks reserved slots so the sidebar can disable them', () => {
     const platform = visibleNav(ctx('super')).find((g) => g.scope === 'platform')!
     expect(platform.items.find((i) => i.id === 'students')!.placeholder).toBeFalsy()
@@ -418,10 +472,41 @@ describe('defaultRoute', () => {
     expect(defaultRoute({ role: 'reviewer' }, true)).toBe('/admin/scholarship')
     expect(defaultRoute({ role: 'viewer' })).toBe('/admin/scholarship')
   })
-  it('sends everyone else to /admin, which bounces them if they may not see it', () => {
-    for (const r of ['super', 'admin', 'org_admin', 'qc', 'finance', 'partner'] as const) {
-      expect(defaultRoute({ role: r })).toBe('/admin')
+  /*
+   * ⚠⚠ THE WHOLE TABLE, LITERAL ON PURPOSE — it replaces "everyone else goes to /admin".
+   *
+   * `/admin` is the PLATFORM dashboard (`roles: ['super','partner']`), so the old rule sent four
+   * roles to a page they may not open and let `admin/page.tsx` bounce them. The worst of the four
+   * was `finance`, which was bounced onto Applications — a page the registry omits it from
+   * DELIBERATELY, because its `_b40_scope` is 'none' and every call can only 403.
+   *
+   * Landing is now DERIVED: the first route in registry order this role may actually open. Change
+   * a role set in the registry and this table moves with it — which is the point — but it must
+   * never move by accident, so each destination is asserted by name.
+   */
+  it('lands every role on the first page it may actually open', () => {
+    expect(defaultRoute({ role: 'super' })).toBe('/admin')            // platform dashboard
+    expect(defaultRoute({ role: 'partner' })).toBe('/admin')          // ditto — a referral rep
+    expect(defaultRoute({ role: 'org_admin' })).toBe('/admin/organisation')
+    expect(defaultRoute({ role: 'admin' })).toBe('/admin/organisation')
+    expect(defaultRoute({ role: 'finance' })).toBe('/admin/organisation')
+    expect(defaultRoute({ role: 'qc' })).toBe('/admin/scholarship')   // no organisation row at all
+  })
+
+  it('never lands anyone on a page the registry says they may not open', () => {
+    for (const r of ROLE_NAMES) {
+      expect(canAccess(defaultRoute({ role: r }), r)).toBe(true)
     }
+    // The bug this replaces, named so it cannot come back: finance may not see Applications.
+    expect(canAccess('/admin/scholarship', 'finance')).toBe(false)
+    expect(defaultRoute({ role: 'finance' })).not.toBe('/admin/scholarship')
+  })
+
+  // A landing page must be a page. `billingRates` is reserved and `billing`/`requests` are dark
+  // until their endpoint answers — with nothing probed, neither is a candidate.
+  it('never lands anyone on a reserved slot or a dark-shipped page', () => {
+    const bad = ['/admin/billing-rates', '/admin/billing', '/admin/requests']
+    for (const r of ROLE_NAMES) expect(bad).not.toContain(defaultRoute({ role: r }))
   })
   it('never traps on an OLD payload that omits the completeness flag', () => {
     expect(defaultRoute({ role: 'reviewer' })).toBe('/admin/scholarship')
