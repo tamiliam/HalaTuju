@@ -135,7 +135,76 @@ export default function AdminReviewersList() {
       ) : error ? null : reviewers.length === 0 ? (
         <div className="text-center text-ground-500 mt-8">{t('admin.reviewers.empty')}</div>
       ) : (
-        <TableFrame minWidth={900} label={t('admin.reviewers.title')}>
+        <>
+        {/* ── PHONE: one card per reviewer (owner, 2026-09-08) ────────────────────────────────
+            Seven columns do not fit. The name and the STATUS lead — a paused volunteer is the
+            thing you scan this list for — and **open now** is the large figure, because "who is
+            free" is the question this page answers. Completed and turnaround follow it as
+            context, on one line, in the same order as the table's columns.
+
+            ⚠ THE TWO "NORMAL EMPTY" READINGS SURVIVE, and they are the reason this page has
+            careful greys: an empty caseload is a volunteer between assignments (greyed, never
+            flagged), and a blank gift means EVERY gift, which is the live default for all 17
+            org-scoped staff. Both must read as answers, not as missing data. */}
+        <div className="space-y-2.5 md:hidden" data-testid="reviewer-cards">
+          {paged.rows.map((r) => {
+            const band = turnaroundBand(r.turnaround_days)
+            return (
+              <div key={r.id}
+                className="rounded-xl border border-ground-200 border-l-[3px] border-l-blue-500 bg-ground-0 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link href={`/admin/organisation/reviewers/${r.id}`}
+                      className="text-sm font-semibold text-primary-600 hover:text-primary-800">
+                      {r.name || '—'}
+                    </Link>
+                    <div className="mt-0.5 truncate text-[11px] text-ground-500">{r.email || '—'}</div>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                    r.paused ? 'bg-caution-100 text-caution-700' : 'bg-positive-100 text-positive-700'}`}>
+                    {t(`admin.reviewers.status.${r.paused ? 'paused' : 'active'}`)}
+                  </span>
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[11px] text-ground-600">
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="text-ground-500">{t('admin.reviewers.colOpen')}</span>
+                    <span className={`text-base tabular-nums ${
+                      isFree(r) ? 'text-ground-400' : 'font-semibold text-ground-900'}`}>{r.open_now}</span>
+                  </span>
+                  <span>
+                    <span className="text-ground-500">{t('admin.reviewers.colCompleted')}</span>{' '}
+                    <span className="tabular-nums">{r.completed > 0 ? r.completed : '—'}</span>
+                  </span>
+                  <span className={band === 'waiting' ? 'font-semibold text-caution-700' : ''}>
+                    <span className="font-normal text-ground-500">{t('admin.reviewers.colTurnaround')}</span>{' '}
+                    {band === 'unknown'
+                      ? t('admin.reviewers.noTurnaround')
+                      : t('admin.reviewers.days', { days: String(r.turnaround_days) })}
+                  </span>
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${roleBadge(r.role)}`}>
+                    {t(`admin.reviewers.role.${r.role}`)}
+                  </span>
+                  {orderedLanguages(r).map((code) => (
+                    <span key={code} className="rounded bg-ground-100 px-1.5 py-0.5 text-[11px] text-ground-600">
+                      {t(`admin.reviewers.lang.${code}`)}
+                    </span>
+                  ))}
+                  {giftCount > 1 && (
+                    <span className="text-[11px] text-ground-400">
+                      {r.programme_name || t('admin.reviewers.detail.giftEvery')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <TableFrame className="hidden md:block" minWidth={900} label={t('admin.reviewers.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
@@ -232,6 +301,7 @@ export default function AdminReviewersList() {
             </div>
           )}
         </TableFrame>
+        </>
       )}
       <p className="text-xs text-ground-500 mt-4 max-w-3xl">{t('admin.reviewers.footnote')}</p>
       </>)}

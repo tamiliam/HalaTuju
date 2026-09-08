@@ -17,7 +17,7 @@
  *     2026-09-07). A test pins the going-ahead, not just the asking: a confirmation that could
  *     not be got past would be a client-side gate the server does not hold.
  */
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import IntakeYearTab from './IntakeYearTab'
 import * as api from '@/lib/admin-api'
@@ -72,7 +72,7 @@ const loaded = async (code = 'bp-2026') => {
 /** ⚠ THE BADGE IS THE CONTROL NOW (2026-09-08). The loose Open/Close link is gone — it sat beside
  *  a two-month-old closed round for ever. Press the badge, then the move. */
 const pressState = (code: string, action: 'openIt' | 'closeIt' | 'finishIt') => {
-  fireEvent.click(screen.getByTestId(`state-${code}`))
+  fireEvent.click(ui().getByTestId(`state-${code}`))
   fireEvent.click(screen.getByText(`admin.years.state.${action}`))
 }
 
@@ -86,6 +86,12 @@ beforeEach(() => {
 })
 
 afterEach(() => { jest.useRealTimers() })
+
+/** ⚠ EACH ROUND RENDERS TWICE (2026-09-08): a phone card and a desktop table row, both carrying
+ *  the same `WindowCell` and `RoundBadge` — so their test ids exist twice and jsdom, which
+ *  applies no breakpoints, sees both. These tests drive the TABLE; the card renders the same two
+ *  components with the same props, so proving the rule on one proves it for both. */
+const ui = () => within(document.querySelector('[data-testid="table-scroller"]') as HTMLElement)
 
 describe('the caution sits above the table', () => {
   it('renders the one-open-round warning before the rows, not after them', async () => {
@@ -101,13 +107,13 @@ describe('the caution sits above the table', () => {
 describe('the window says where today sits', () => {
   it('renders a bare dash and NO state line for a round with no dates', async () => {
     await loaded()
-    expect(screen.queryByTestId('window-bp-2026')).toBeNull()
+    expect(ui().queryByTestId('window-bp-2026')).toBeNull()
   })
 
   it('names the state under the dates once a window is stated', async () => {
     withYears([year({ opens_on: '2026-10-01', closes_on: '2026-11-30' })])
     await loaded()
-    const cell = screen.getByTestId('window-bp-2026')
+    const cell = ui().getByTestId('window-bp-2026')
     expect(cell.querySelector('[data-window-state]')?.getAttribute('data-window-state'))
       .toBe('before')
     expect(cell.textContent).toContain('admin.years.win.before')
@@ -118,7 +124,7 @@ describe('the window says where today sits', () => {
   it('reads "after" once the stated window has passed', async () => {
     withYears([year({ opens_on: '2026-03-01', closes_on: '2026-04-30' })])
     await loaded()
-    expect(screen.getByTestId('window-bp-2026').textContent).toContain('admin.years.win.after')
+    expect(ui().getByTestId('window-bp-2026').textContent).toContain('admin.years.win.after')
   })
 })
 
@@ -299,7 +305,7 @@ describe('the round badge is the control', () => {
       cleanup()
       jest.clearAllMocks()
       await at(state)
-      const badge = screen.getByTestId('state-bp-2026')
+      const badge = ui().getByTestId('state-bp-2026')
       expect(badge.textContent).toContain(`admin.years.state.${state}`)
       expect(badge.className).toContain(tone)
       expect(badge.className).not.toContain('critical')
@@ -308,7 +314,7 @@ describe('the round badge is the control', () => {
 
   it('says what CLOSED means — no new applications, but those started may still submit', async () => {
     await at('closed')
-    fireEvent.click(screen.getByTestId('state-bp-2026'))
+    fireEvent.click(ui().getByTestId('state-bp-2026'))
     expect(screen.getByText('admin.years.state.means.closed')).toBeTruthy()
   })
 
@@ -317,13 +323,13 @@ describe('the round badge is the control', () => {
       cleanup()
       jest.clearAllMocks()
       await at(state)
-      fireEvent.click(screen.getByTestId('state-bp-2026'))
+      fireEvent.click(ui().getByTestId('state-bp-2026'))
       expect(screen.queryByText('admin.years.state.finishIt')).toBeNull()
     }
     cleanup()
     jest.clearAllMocks()
     await at('closed')
-    fireEvent.click(screen.getByTestId('state-bp-2026'))
+    fireEvent.click(ui().getByTestId('state-bp-2026'))
     expect(screen.queryByText('admin.years.state.finishIt')).toBeTruthy()
   })
 
@@ -331,7 +337,7 @@ describe('the round badge is the control', () => {
   // The server refuses to reopen it too; this is the half a person can see.
   it('a FINISHED round offers no move at all, and says why', async () => {
     await at('finished', { finished_at: '2026-07-08T04:00:00Z' })
-    fireEvent.click(screen.getByTestId('state-bp-2026'))
+    fireEvent.click(ui().getByTestId('state-bp-2026'))
     expect(screen.getByText('admin.years.state.means.finished')).toBeTruthy()
     expect(screen.queryByText('admin.years.state.openIt')).toBeNull()
     expect(screen.queryByText('admin.years.state.closeIt')).toBeNull()
@@ -345,7 +351,7 @@ describe('the round badge is the control', () => {
   // clipping ancestor that proved the primitive was wrong.
   it('opens its menu OUTSIDE the table, where nothing can clip it', async () => {
     await at('closed')
-    fireEvent.click(screen.getByTestId('state-bp-2026'))
+    fireEvent.click(ui().getByTestId('state-bp-2026'))
     const panel = screen.getByRole('menu')
     expect((document.querySelector('table') as HTMLElement).contains(panel)).toBe(false)
     expect(document.querySelector('.overflow-hidden')?.contains(panel)).toBeFalsy()
@@ -361,7 +367,7 @@ describe('closing a round for good', () => {
   const openDialog = async (over = {}) => {
     withYears([year({ state: 'closed', ...over })])
     await loaded()
-    fireEvent.click(screen.getByTestId('state-bp-2026'))
+    fireEvent.click(ui().getByTestId('state-bp-2026'))
     fireEvent.click(screen.getByText('admin.years.state.finishIt'))
   }
 

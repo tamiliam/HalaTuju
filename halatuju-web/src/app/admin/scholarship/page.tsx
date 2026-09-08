@@ -293,7 +293,94 @@ export default function AdminScholarshipList() {
         <div className="text-center text-ground-500 mt-8">{t('admin.scholarship.empty')}</div>
       ) : (
         <>
-        <TableFrame minWidth={980} label={t('admin.scholarship.title')}>
+        {/* ── PHONE: one card per application (owner, 2026-09-08) ─────────────────────────────
+            Eight columns do not fit a phone. Three LEAD — the name (recognition), the status
+            (what you scan a list of applications FOR) and the merit score — and the rest move to
+            quieter lines. Nothing is dropped.
+
+            ⚠ THE ASSIGN CONTROL COMES WITH ITS RULES OR NOT AT ALL. Its `disabled` conditions,
+            its title, its "keep the current assignee selectable" option and the language-match
+            ✓/⚠ prefixes are the same expressions as the table's — copied deliberately rather
+            than simplified, because a phone select that offers an assignment the server refuses
+            ('not_ready') is worse than no control. If that logic ever changes, it changes in
+            both places; the alternative is a shared component, which is the next refactor if a
+            third caller appears. */}
+        <div className="space-y-2.5 md:hidden" data-testid="application-cards">
+          {apps.map((a) => {
+            const s = displayStatus(a)
+            const blocked = a.assignable === false
+              || (a.assigned_to_id == null && a.ready_for_assignment === false)
+            return (
+              <div key={a.id}
+                className="rounded-xl border border-ground-200 border-l-[3px] border-l-blue-500 bg-ground-0 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <Link href={`/admin/scholarship/${a.id}`}
+                    className="text-sm font-semibold text-primary-600 hover:underline">
+                    {a.name || '—'}
+                  </Link>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusTone(s)}`}>
+                    {t(statusLabelKey(s))}
+                  </span>
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${bucketBadge(a.bucket)}`}>
+                    {a.bucket || '—'}
+                  </span>
+                  <span className="text-[11px] text-ground-600">{a.qualification?.toUpperCase()}</span>
+                  <span className="text-[11px] text-ground-500">·</span>
+                  <span className="text-[11px] text-ground-700">
+                    {t('admin.scholarship.merit')} <span className="tabular-nums font-medium">{a.merit_score ?? '—'}</span>
+                  </span>
+                </div>
+
+                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-500">
+                  <span title={a.referral_source ? t(`scholarship.apply.org.${a.referral_source}`) : ''}>
+                    {referralAcronym(a.referral_source) || '—'}
+                  </span>
+                  <span>{formatDate(a.submitted_at)}</span>
+                </div>
+
+                {canAssign && (
+                  <div className="mt-2 border-t border-ground-100 pt-2">
+                    {SPECIFIC_CALL_LANGS.has(a.call_language) && (
+                      <p className="mb-1 text-[11px] text-ground-500">
+                        {t('admin.scholarship.prefersLang', { lang: t(`scholarship.apply.callLang.${a.call_language}`) })}
+                      </p>
+                    )}
+                    <select
+                      value={a.assigned_to_id ?? ''}
+                      onChange={(e) => handleAssign(a.id, e.target.value ? Number(e.target.value) : null)}
+                      disabled={blocked}
+                      title={a.assignable === false
+                        ? t('admin.scholarship.assign.error.not_assignable')
+                        : (a.assigned_to_id == null && a.ready_for_assignment === false)
+                          ? t('admin.scholarship.assign.error.not_ready')
+                          : undefined}
+                      aria-label={t('admin.scholarship.assigned')}
+                      className="w-full rounded-lg border bg-ground-0 px-2 py-1.5 text-sm disabled:cursor-not-allowed disabled:bg-ground-100 disabled:text-ground-placeholder"
+                    >
+                      <option value="">{t('admin.scholarship.unassigned')}</option>
+                      {a.assigned_to_id != null && !reviewers.some((rv) => rv.id === a.assigned_to_id) && (
+                        <option value={a.assigned_to_id}>{a.assigned_to_name || a.assigned_to_id}</option>
+                      )}
+                      {orderReviewersFor(
+                        reviewers.filter((rv) => rv.id === a.assigned_to_id || isSuper || rv.role === 'reviewer'),
+                        a.call_language,
+                      ).map(({ rv, match, specific }) => (
+                        <option key={rv.id} value={rv.id}>
+                          {specific ? (match ? '✓ ' : '⚠ ') : ''}{rv.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <TableFrame className="hidden md:block" minWidth={980} label={t('admin.scholarship.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>

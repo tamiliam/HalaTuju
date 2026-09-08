@@ -55,7 +55,9 @@ const registryWrapper = () => screen.getByTestId('sources-registry')
 describe('Sources page panels', () => {
   it('lands on Organisations with the emails card not yet mounted', async () => {
     render(<SourcesPage />)
-    await waitFor(() => expect(screen.getByText('Sekolah Menengah Cheras')).toBeTruthy())
+    // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
+    // you SEE is a CSS breakpoint, and jsdom applies none.
+    await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
 
     expect(registryWrapper()!.hasAttribute('hidden')).toBe(false)
     expect(screen.queryByText('admin.sources.emails.title')).toBeNull()
@@ -66,7 +68,9 @@ describe('Sources page panels', () => {
 
   it('swaps to the emails card and hides the registry without unmounting it', async () => {
     render(<SourcesPage />)
-    await waitFor(() => expect(screen.getByText('Sekolah Menengah Cheras')).toBeTruthy())
+    // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
+    // you SEE is a CSS breakpoint, and jsdom applies none.
+    await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
 
     fireEvent.click(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }))
     await waitFor(() => expect(screen.getByText('admin.sources.emails.title')).toBeTruthy())
@@ -78,7 +82,9 @@ describe('Sources page panels', () => {
 
   it('hides Add source on the emails panel — there is nothing there to add', async () => {
     render(<SourcesPage />)
-    await waitFor(() => expect(screen.getByText('Sekolah Menengah Cheras')).toBeTruthy())
+    // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
+    // you SEE is a CSS breakpoint, and jsdom applies none.
+    await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
     expect(screen.queryByText(/admin\.sources\.add/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: 'admin.sources.tabEmails' }))
@@ -88,7 +94,9 @@ describe('Sources page panels', () => {
 
   it('keeps a half-finished add form across a trip to the emails panel and back', async () => {
     render(<SourcesPage />)
-    await waitFor(() => expect(screen.getByText('Sekolah Menengah Cheras')).toBeTruthy())
+    // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
+    // you SEE is a CSS breakpoint, and jsdom applies none.
+    await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
 
     fireEvent.click(screen.getByText(/admin\.sources\.add/))
     fireEvent.change(screen.getByLabelText(/admin\.sources\.code/), { target: { value: 'halfway' } })
@@ -110,7 +118,9 @@ describe('Sources page panels', () => {
 describe('the source Save reflects whether the row was edited', () => {
   const openEditor = async () => {
     render(<SourcesPage />)
-    await waitFor(() => expect(screen.getByText('Sekolah Menengah Cheras')).toBeTruthy())
+    // getAllBy: each source renders TWICE — a phone card and a desktop table row. Which one
+    // you SEE is a CSS breakpoint, and jsdom applies none.
+    await waitFor(() => expect(screen.getAllByText('Sekolah Menengah Cheras').length).toBeGreaterThan(0))
     fireEvent.click(screen.getByText('admin.sources.edit'))
     return screen.getByText('admin.sources.save').closest('button') as HTMLButtonElement
   }

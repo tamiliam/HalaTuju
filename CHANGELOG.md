@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Every console list reads as cards on a phone - 2026-09-08
+
+"Proceed with all" — the remaining lists, after the payment run proved the shape. Each keeps its
+desktop table untouched and draws the same rows as cards under 768px.
+
+| List | Leads | Then |
+|---|---|---|
+| Applications | name · status · merit | bucket, qualification, source, submitted, **and the assign control** |
+| Reviewers | name · status · **open now** | role, languages, completed, turnaround |
+| Benefactors | name · status · **given** | students, last seen, registered, **and the vetting buttons** |
+| Sources | organisation · **active switch** | contact details, students |
+| Staff | name · status | role, email, **and resend / revoke** |
+| Payment runs | reference · status · **total** | date, month, students |
+| Intake years | name · **the round badge** | window with its plain-words line, applications, edit |
+
+- **Actions travel with the rows they belong to.** Assigning a reviewer, vetting a benefactor,
+  switching a school on the apply form, revoking access, opening a round — all reachable. What
+  does NOT travel is bulk typing: the sources EDIT FORM stays on desktop and says so, the same
+  ruling the payment amount got (*"desktop is the preferred option; phone is for quick
+  checking"*).
+- **⚠ A NEW GUARD: a list surface owes a phone layout, or a WRITTEN reason.** Seven files are
+  exempt and each names why in the test — billing's four short columns, a detail card's inner
+  tables, the invitations table (raised rather than done blind, because its actions differ per
+  kind). It found two lists I had missed while I was writing it: the payment-run LIST and intake
+  years.
+- **`StaffAdmin`'s status now has one home** (`statusOf`), read by both renderings. That screen
+  and the Reviewers table disagreed about Paused until 2026-08-03; two copies of the rule in one
+  file was how it would have happened again.
+
++2 jest and **six test files re-scoped**: every row now renders twice, so an assertion about one
+element has to say which rendering it means. That is the standing cost of this pattern, and it is
+written up.
+
 ## Feature: the gift must be known before the menu offers to configure one - 2026-09-08
 
 The owner, looking at the shipped gift switcher: *"I feel the programme shouldn't show up until

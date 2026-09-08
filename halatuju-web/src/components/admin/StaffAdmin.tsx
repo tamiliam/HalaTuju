@@ -64,8 +64,83 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
 }) {
   const { t } = useT()
   const cols = 3 + (showOrg ? 1 : 0) + (canAct ? 1 : 0)
+
+  /** The status a row shows. ⚠ REVOKED BEATS PAUSED — a revoked account cannot be brought back
+   *  by un-pausing, so showing "Paused" over it would name the smaller of two facts. Extracted
+   *  when the phone cards arrived, so the two renderings cannot drift the way this screen and
+   *  the Reviewers table did until 2026-08-03 (one said Active while the other said Paused). */
+  const statusOf = (a: AdminItem) => (
+    !a.is_active
+      ? { tone: 'bg-critical-100 text-critical-600', label: t('admin.revoked') }
+      : a.paused
+        ? { tone: 'bg-caution-100 text-caution-700', label: t('admin.reviewers.status.paused') }
+        : { tone: 'bg-positive-100 text-positive-700', label: t('admin.active') })
+
+  /** The row's actions, or none. Same conditions as the table — a super is never actionable,
+   *  and the sole active org_admin of a tenant keeps no Revoke (the backend enforces it; this
+   *  only keeps a dead affordance off the screen). */
+  const actionsFor = (a: AdminItem) => {
+    if (!canAct || a.is_super_admin || a.role === 'super') return null
+    return (
+      <div className="flex items-center gap-3">
+        {a.is_active && onResend && (
+          <button disabled={busyId === a.id} onClick={() => onResend(a)}
+            className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
+            {busyId === a.id ? t('admin.resending') : t('admin.resend')}
+          </button>
+        )}
+        {onToggle && !(a.is_active && soleOrgAdmin?.(a)) && (
+          <button disabled={busyId === a.id} onClick={() => onToggle(a)}
+            className={`text-xs font-medium disabled:opacity-50 ${
+              a.is_active ? 'text-critical-600 hover:text-critical-800'
+                          : 'text-primary-600 hover:text-primary-800'}`}>
+            {a.is_active ? t('admin.revoke') : t('admin.restore')}
+          </button>
+        )}
+      </div>
+    )
+  }
+
   return (
-    <TableFrame minWidth={560} label={t('admin.invitations.title')}>
+    <>
+    {/* ── PHONE: one card per person (owner, 2026-09-08). Name and STATUS lead — this list is
+        read to find out who still has access — with the role beside the email. The actions come
+        too: revoking somebody is the one thing on this screen that might not wait for a desk. */}
+    <div className="space-y-2.5 md:hidden" data-testid="staff-cards">
+      {rows.map((a) => {
+        const status = statusOf(a)
+        const actions = actionsFor(a)
+        return (
+          <div key={a.id} className="rounded-xl border border-ground-200 bg-ground-0 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className="block text-sm font-semibold text-ground-900">{a.name}</span>
+                <span className="block truncate text-[11px] text-ground-500">{a.email}</span>
+                {showOrg && (
+                  <span className="block text-[11px] text-ground-400">{a.owning_org_name || '—'}</span>
+                )}
+              </div>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${status.tone}`}>
+                {status.label}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] ${roleBadge(a.role)}`}>
+                {t(`admin.role.${a.role}`)}
+              </span>
+              {actions}
+            </div>
+          </div>
+        )
+      })}
+      {rows.length === 0 && (
+        <p className="rounded-xl border border-dashed border-ground-200 px-4 py-6 text-center text-sm text-ground-400">
+          {t('admin.noAdmins')}
+        </p>
+      )}
+    </div>
+
+    <TableFrame className="hidden md:block" minWidth={560} label={t('admin.invitations.title')}>
       <table className="w-full text-sm">
         <thead className="border-b bg-ground-50">
           <tr>
@@ -94,13 +169,8 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                   same people, and until 2026-08-03 they disagreed — one said Active while the
                   other said Paused. */}
               <td className="px-4 py-3">
-                <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${
-                  !a.is_active ? 'bg-critical-100 text-critical-600'
-                    : a.paused ? 'bg-caution-100 text-caution-700'
-                    : 'bg-positive-100 text-positive-700'}`}>
-                  {!a.is_active ? t('admin.revoked')
-                    : a.paused ? t('admin.reviewers.status.paused')
-                    : t('admin.active')}
+                <span className={`inline-block rounded-full px-2 py-0.5 text-xs ${statusOf(a).tone}`}>
+                  {statusOf(a).label}
                 </span>
               </td>
               {canAct && (
@@ -133,6 +203,7 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
         </tbody>
       </table>
     </TableFrame>
+    </>
   )
 }
 

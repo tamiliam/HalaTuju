@@ -228,7 +228,53 @@ export default function SourcesPage() {
           to the emails badge and back. The plain `hidden` attribute (not a Tailwind class) is
           deliberate — it takes the table out of the accessibility tree as well as the layout. */}
       <div hidden={panel !== 'orgs'} data-testid="sources-registry">
-        <TableFrame minWidth={820} label={t('admin.sources.title')}>
+        {/* ── PHONE: one card per referring organisation (owner, 2026-09-08) ──────────────────
+            The name and the ACTIVE switch lead: this list answers "which schools appear on the
+            apply form", and that switch is the answer. The contact details follow as a quiet
+            block, and the student count sits with them.
+
+            ⚠ THE SWITCH IS LIVE, THE EDIT FORM IS NOT — the owner's payment-run ruling applied
+            to its next case: *"Desktop is the preferred option. Phone is for quick checking."*
+            Flipping a school on or off is a check-and-tap; retyping a contact person, an email
+            and a phone number in six boxes is desk work. So the card says where to do it rather
+            than opening a form nobody wants to fill in on a phone.
+
+            ⚠ A BLANK GIFT MEANS EVERY GIFT, as in the table — and the line only renders above
+            one gift, so a one-gift organisation is not told the same thing on every card. */}
+        <div className="space-y-2.5 md:hidden" data-testid="source-cards">
+          {sources.map((s) => (
+            <div key={s.id} className="rounded-xl border border-ground-200 bg-ground-0 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="block text-sm font-semibold text-ground-900">{s.name}</span>
+                  <span className="block text-[11px] text-ground-400">{s.code}</span>
+                  {gifts.length > 1 && (
+                    <span className="block text-[11px] text-ground-400">
+                      {s.programme_name || t('admin.sources.giftEvery')}
+                    </span>
+                  )}
+                </div>
+                <Toggle on={s.show_in_apply} disabled={busy === s.id}
+                  onClick={() => toggleActive(s)} label={t('admin.sources.activeInApply')} />
+              </div>
+
+              <div className="mt-2 space-y-0.5 text-[11px] text-ground-600">
+                <div>{s.contact_person || t('admin.sources.empty')}</div>
+                <div className="truncate text-ground-500">{s.contact_email || t('admin.sources.empty')}</div>
+                <div className="text-ground-500">{s.phone ? formatPhone(s.phone) : t('admin.sources.empty')}</div>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between gap-3 border-t border-ground-100 pt-2">
+                <span className="inline-block min-w-[1.75rem] rounded-full bg-ground-100 px-2 py-0.5 text-center text-[11px] text-ground-600">
+                  {s.student_count ?? 0}
+                </span>
+                <span className="text-[11px] text-ground-500">{t('admin.sources.editOnDesktop')}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <TableFrame className="hidden md:block" minWidth={820} label={t('admin.sources.title')}>
         <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr>

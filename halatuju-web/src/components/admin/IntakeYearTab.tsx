@@ -354,9 +354,57 @@ export default function IntakeYearTab() {
             </InfoBox>
           </div>
 
+          {/* ── PHONE: one card per round (owner, 2026-09-08) ──────────────────────────────────
+              The year and its STATE lead, because "which round is open" is the whole question
+              this screen answers. The state is the RoundBadge — the same component, so every
+              move a round can make is offered here too. Opening a round is a deliberate press
+              behind its own menu and confirmation, not a control a thumb reaches by accident.
+
+              ⚠ THE WINDOW KEEPS ITS PLAIN-WORDS LINE. `WindowCell` renders the dates AND what
+              they mean today; the dates alone were what the owner read as furniture on
+              2026-09-07, so the phone gets both or neither. */}
+          <div className="mt-4 space-y-2.5 md:hidden" data-testid="year-cards">
+            {years.map((y) => (
+              <div key={y.id} data-testid={`year-card-${y.code}`}
+                className="rounded-xl border border-ground-200 bg-ground-0 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-sm font-semibold text-ground-900">{y.name}</span>
+                    <span className="block text-[11px] tabular-nums text-ground-500">{y.year}</span>
+                  </div>
+                  <RoundBadge year={y} busy={busy} t={t}
+                    onOpen={pressOpenToggle}
+                    onClose={(r) => void setOpenState(r, false)}
+                    onFinish={(r) => { setError(''); setFinishPhrase(''); setFinishing(r) }} />
+                </div>
+
+                <div className="mt-2 text-[11px] text-ground-600">
+                  <WindowCell year={y} today={today} t={t} />
+                </div>
+
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-ground-100 pt-2">
+                  <span className="text-[11px] text-ground-600">
+                    {t('admin.years.col.applications')}{' '}
+                    <span className="tabular-nums">{y.applications}</span>
+                  </span>
+                  <button type="button" disabled={busy}
+                    data-testid={`edit-card-${y.code}`} onClick={() => startEdit(y)}
+                    className="text-xs font-medium text-primary-600 hover:underline disabled:opacity-50">
+                    {t('admin.years.edit')}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {years.length === 0 && (
+              <p className="rounded-xl border border-dashed border-ground-300 px-4 py-8 text-center text-sm text-ground-400">
+                {t('admin.years.empty')}
+              </p>
+            )}
+          </div>
+
           {/* Was a bare overflow-hidden card: on a phone the right-hand columns were CLIPPED
               with no scrollbar. TableFrame keeps the corners clipped and the scrolling separate. */}
-          <TableFrame className="mt-4" minWidth={760} label={t('admin.years.subtitle')}>
+          <TableFrame className="mt-4 hidden md:block" minWidth={760} label={t('admin.years.subtitle')}>
             <table className="w-full text-sm">
               <thead className="border-b border-ground-200 bg-ground-50">
                 <tr className="text-left text-xs uppercase tracking-wider text-ground-500">

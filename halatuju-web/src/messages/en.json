@@ -3299,6 +3299,7 @@
       "email": "Email",
       "phone": "Phone",
       "activeInApply": "Active",
+      "editOnDesktop": "These details can be changed on a computer.",
       "giftLabel": "Listed on:",
       "giftEvery": "Every gift",
       "activeHelp": "Show this organisation in the apply form's source list when the intake reopens.",

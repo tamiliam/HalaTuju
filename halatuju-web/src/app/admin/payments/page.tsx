@@ -147,7 +147,36 @@ export default function PaymentsLandingPage() {
 
       {error && <div className="mt-4 rounded-lg bg-critical-50 border border-critical-200 p-3 text-sm text-critical-600">{error}</div>}
 
-      <TableFrame className="mt-6" minWidth={640} label={t('admin.payments.title')}>
+      {/* ── PHONE: one card per run (owner, 2026-09-08). The reference and the STATUS lead — this
+          list is scanned for what still needs signing — with the TOTAL as the figure. The whole
+          card is the link, because every column here was only ever a way into the run. */}
+      <div className="mt-6 space-y-2.5 md:hidden" data-testid="run-cards">
+        {visibleRuns.map((r) => (
+          <Link key={r.id} href={`/admin/payments/${r.id}`}
+            className="block rounded-xl border border-ground-200 bg-ground-0 p-3 hover:border-info-300">
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-sm font-semibold text-primary-600">{r.reference}</span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusPill(r.status)}`}>
+                {t(`admin.payments.status.${r.status}`)}
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-ground-500">
+                {t('admin.payments.col.total')}
+              </span>
+              <span className="text-base font-medium tabular-nums text-ground-900">RM {rm(r.total)}</span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-600">
+              <span>{formatDate(r.payment_date)}</span>
+              <span>{monthLabel(r.period_month)}</span>
+              <span>{t('admin.payments.col.students')}{' '}
+                <span className="tabular-nums">{r.students}</span></span>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <TableFrame className="mt-6 hidden md:block" minWidth={640} label={t('admin.payments.title')}>
         <table className="w-full text-sm">
           <thead className="bg-ground-50 border-b">
             <tr className="text-left text-xs uppercase tracking-wider text-ground-500">

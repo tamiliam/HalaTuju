@@ -7,7 +7,7 @@
  * things that must NOT be on it. A column removed by owner decision comes back the moment somebody
  * adds it "for completeness", and only a rendered test notices.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import AdminReviewersList from './page'
 import * as api from '@/lib/admin-api'
 
@@ -48,9 +48,19 @@ beforeEach(() => {
   mockApi.listReviewers.mockResolvedValue({ reviewers: REVIEWERS, programmes: giftChoices })
 })
 
+/** ⚠ THE SAME ROWS ARE RENDERED TWICE (2026-09-08): once as phone cards, once as the desktop
+ *  table. Which one you SEE is a CSS breakpoint, and jsdom applies no breakpoints — so every
+ *  query below must say which rendering it means, or `getByText` finds two of everything.
+ *
+ *  These tests are about the TABLE, so `screen` is replaced by a scoped `ui`. The phone cards
+ *  have their own describe at the foot of this file. */
+const table = () => document.querySelector('[data-testid="table-scroller"]') as HTMLElement
+const ui = () => within(table())
+const cards = () => screen.getByTestId('reviewer-cards')
+
 const loaded = async () => {
   render(<AdminReviewersList />)
-  await waitFor(() => expect(screen.getByText('Kavitha Raman')).toBeTruthy())
+  await waitFor(() => expect(screen.getAllByText('Kavitha Raman').length).toBeGreaterThan(0))
 }
 
 describe('what the table shows', () => {
@@ -58,20 +68,20 @@ describe('what the table shows', () => {
     await loaded()
     for (const key of ['colName', 'colRole', 'colLanguages', 'colOpen', 'colCompleted',
       'colTurnaround', 'colStatus']) {
-      expect(screen.getByText(`admin.reviewers.${key}`)).toBeTruthy()
+      expect(ui().getByText(`admin.reviewers.${key}`)).toBeTruthy()
     }
   })
 
   it('opens each reviewer\'s own record from their name', async () => {
     await loaded()
-    expect(screen.getByText('Kavitha Raman').closest('a')!.getAttribute('href'))
+    expect(ui().getByText('Kavitha Raman').closest('a')!.getAttribute('href'))
       .toBe('/admin/organisation/reviewers/5')
   })
 
   it('names the languages someone can actually interview in', async () => {
     await loaded()
-    expect(screen.getByText('admin.reviewers.lang.ta')).toBeTruthy()
-    expect(screen.getByText('admin.reviewers.lang.en')).toBeTruthy()
+    expect(ui().getByText('admin.reviewers.lang.ta')).toBeTruthy()
+    expect(ui().getByText('admin.reviewers.lang.en')).toBeTruthy()
     expect(screen.queryByText('admin.reviewers.lang.ms')).toBeNull()
   })
 })
@@ -196,7 +206,9 @@ describe('the role gate', () => {
   it('admits finance, which already reads the staff list', async () => {
     viewerRole = { role: 'finance' }
     render(<AdminReviewersList />)
-    await waitFor(() => expect(screen.getByText('Kavitha Raman')).toBeTruthy())
+    // getAllBy: the row exists twice (phone card + desktop table). The gate is what is under
+    // test, so either rendering proves it.
+    await waitFor(() => expect(screen.getAllByText('Kavitha Raman').length).toBeGreaterThan(0))
   })
 })
 

@@ -179,7 +179,78 @@ export default function AdminSponsorsList() {
       ) : sponsors.length === 0 ? (
         <div className="text-center text-ground-500 mt-8">{t('admin.sponsors.empty')}</div>
       ) : (
-        <TableFrame minWidth={880} label={t('admin.sponsors.title')}>
+        <>
+        {/* ── PHONE: one card per benefactor (owner, 2026-09-08) ──────────────────────────────
+            Seven columns do not fit. Name and STATUS lead — this page exists to vet people, so
+            the status is what you scan — with the money GIVEN as the figure beneath. Students,
+            last seen and registered follow as one quiet line.
+
+            ⚠ THE VETTING BUTTONS COME TOO, and they are the same `actionsFor(status)` the table
+            uses. A vetting queue you can read on a phone but not act on would send you back to
+            a desk for one tap. They keep their `busyId` guard, so a double-tap on a slow
+            connection cannot fire twice.
+
+            ⚠ "NEVER SEEN" IS AN ANSWER, NOT A BLANK. `seenBand`/`seenTone` carry over verbatim —
+            a benefactor who has never signed in reads as such, in its own tone, exactly as in
+            the table. */}
+        <div className="space-y-2.5 md:hidden" data-testid="sponsor-cards">
+          {paged.rows.map((s) => (
+            <div key={s.id}
+              className="rounded-xl border border-ground-200 border-l-[3px] border-l-blue-500 bg-ground-0 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link href={`/admin/sponsors/${s.id}`}
+                    className="text-sm font-semibold text-primary-600 hover:text-primary-800">
+                    {s.name || '—'}
+                  </Link>
+                  <div className="mt-0.5 truncate text-[11px] text-ground-500">{s.email || '—'}</div>
+                </div>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusBadge(s.status)}`}>
+                  {s.status}
+                </span>
+              </div>
+
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-ground-500">
+                  {t('admin.sponsors.colGiven')}
+                </span>
+                <span className="text-base tabular-nums text-ground-900">
+                  {Number(s.given) > 0
+                    ? Number(s.given).toLocaleString('en-MY', { minimumFractionDigits: 2 })
+                    : '—'}
+                </span>
+              </div>
+
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-600">
+                <span>{t('admin.sponsors.colStudents')}{' '}
+                  <span className="tabular-nums">{s.students > 0 ? s.students : '—'}</span></span>
+                <span className={seenTone[seenBand(s.last_seen_at)]}>
+                  {s.last_seen_at
+                    ? t(`admin.sponsors.seen.${seenBand(s.last_seen_at)}`, { date: formatDate(s.last_seen_at) })
+                    : t('admin.sponsors.seen.never')}
+                </span>
+                <span className="text-ground-500">{formatDate(s.created_at)}</span>
+              </div>
+
+              {s.note && (
+                <p className="mt-1.5 whitespace-pre-wrap text-[11px] text-ground-500">{s.note}</p>
+              )}
+
+              {actionsFor(s.status).length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-2 border-t border-ground-100 pt-2.5">
+                  {actionsFor(s.status).map((a) => (
+                    <button key={a} onClick={() => handleReview(s.id, a)} disabled={busyId === s.id}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${actionStyle[a]}`}>
+                      {t(`admin.sponsors.action.${a}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <TableFrame className="hidden md:block" minWidth={880} label={t('admin.sponsors.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
@@ -250,6 +321,7 @@ export default function AdminSponsorsList() {
             </div>
           )}
         </TableFrame>
+        </>
       )}
       </>)}
     </div>

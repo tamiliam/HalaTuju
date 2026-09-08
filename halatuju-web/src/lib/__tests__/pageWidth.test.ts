@@ -151,6 +151,49 @@ describe('every table sits in the shared frame', () => {
     expect(used.filter((k) => typeof resolve(k) !== 'string')).toEqual([])
   })
 
+  // ⚠ A LIST SURFACE OWES A PHONE LAYOUT (owner, 2026-09-08). The frame made every table SAFE on
+  // a phone — it scrolls and says when there is more — but safe is not the same as good: a
+  // seven-column table dragged sideways is still the wrong shape for the screen people check
+  // things on. Each list below draws the same rows as cards under `md`.
+  //
+  // The EXEMPT list is the point of this test: staying table-only has to be a decision somebody
+  // wrote down, not something that happened because nobody looked.
+  const EXEMPT: Record<string, string> = {
+    'src/app/admin/billing/page.tsx':
+      'four short columns (service · calls · tokens in · tokens out) — it already fits, and cards '
+      + 'would be taller than the table without adding a thing',
+    'src/app/admin/course-data/page.tsx':
+      'an internal coverage panel, four narrow columns, not a list of people',
+    'src/app/admin/contracts/page.tsx':
+      'template versions — read at a desk when authoring, never on a phone',
+    'src/app/admin/payments/[id]/page.tsx':
+      'has its own cards (data-testid="payment-cards"); this file also holds the skipped-list table',
+    'src/app/admin/sponsors/[id]/page.tsx':
+      'two short tables INSIDE a detail card, four columns each',
+    'src/components/admin/InvitationsTable.tsx':
+      'five columns and the next in line — TD raised rather than done blind, because the actions '
+      + 'differ per kind and the owner reviews each list',
+    'src/app/admin/students/page.tsx':
+      'already had cards before this work (the pattern everything else copied)',
+  }
+
+  test('every list surface has phone cards, or a written reason not to', () => {
+    const offenders = [...sources(ADMIN), ...sources(COMPONENTS)]
+      .filter(([, src]) => /<TableFrame/.test(src))
+      .filter(([rel]) => !(rel in EXEMPT))
+      .filter(([, src]) => !/md:hidden/.test(src))
+      .map(([rel]) => rel)
+    expect(offenders).toEqual([])
+  })
+
+  test('an exemption names a file that still exists and still has a table', () => {
+    // A stale exemption is worse than none: it silently excuses a file that may have changed.
+    const seen = new Set([...sources(ADMIN), ...sources(COMPONENTS)]
+      .filter(([, src]) => /<TableFrame/.test(src))
+      .map(([rel]) => rel))
+    expect(Object.keys(EXEMPT).filter((rel) => !seen.has(rel))).toEqual([])
+  })
+
   test('every <table> has a frame around it', () => {
     const offenders = [...sources(ADMIN), ...sources(COMPONENTS)]
       .map(([rel, src]) => [rel, openTags(src, 'table'), openTags(src, 'TableFrame')] as const)
