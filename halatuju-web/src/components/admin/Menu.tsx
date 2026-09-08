@@ -1,6 +1,9 @@
 'use client'
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import {
+  useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode,
+} from 'react'
+import { createPortal } from 'react-dom'
 
 /**
  * The console's one dropdown primitive — used by the help menu, the account menu and the
@@ -15,6 +18,17 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
  * on every render is a new type each time, so React unmounts and remounts the subtree and any
  * focused input loses focus mid-keystroke — the bug that hit the Administration invite form
  * (see the hoist comment in admin/administration/page.tsx).
+ *
+ * ⚠ THE PANEL IS A PORTAL ON `document.body`, AND THAT IS THE WHOLE POINT (owner, 2026-09-08:
+ * *"Clicking the close opens something, but it is hidden"*). It used to be `absolute` inside the
+ * trigger's own box, so ANY ancestor with `overflow-hidden` clipped it — and the intake-round
+ * table has exactly that, on the wrapper that rounds its corners. The menu opened correctly,
+ * rendered correctly, and was sliced off at the table's edge.
+ *
+ * Fixing the one table would have left the trap armed for the next caller: a menu inside a card,
+ * a modal, any rounded panel. Escaping the clip at the PRIMITIVE means no future caller has to
+ * know. The cost is that the panel no longer inherits the trigger's position, so it is measured
+ * and placed — see `place()`, which also flips it above the trigger when the space below is short.
  */
 
 export function MenuItem({ icon, children, sub, onClick, href, danger }: {
@@ -59,6 +73,15 @@ export function MenuSeparator() {
   return <div className="my-1 h-px bg-ground-100" role="separator" />
 }
 
+/** Where the panel sits, in viewport pixels. Two of the four edges are set, never all four. */
+type Pos = { top?: number; bottom?: number; left?: number; right?: number }
+
+/** The gap between the trigger and the panel — the old `mt-1.5`, now a number we can add up. */
+const GAP = 6
+
+const samePos = (a: Pos | null, b: Pos) =>
+  !!a && a.top === b.top && a.bottom === b.bottom && a.left === b.left && a.right === b.right
+
 export function Menu({ label, trigger, children, align = 'right', width = 'w-60' }: {
   /** Accessible name for the trigger — every trigger here is an icon, so this is not optional. */
   label: string
@@ -68,17 +91,65 @@ export function Menu({ label, trigger, children, align = 'right', width = 'w-60'
   width?: string
 }) {
   const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState<Pos | null>(null)
   const wrap = useRef<HTMLDivElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const id = useId()
+
+  /**
+   * Put the panel under (or over) the trigger, in viewport coordinates.
+   *
+   * Called once before paint — when the panel's height is not yet known, so it assumes "below" —
+   * and again on the next frame, when the height IS known and it can flip. Both passes go through
+   * `samePos`, so a scroll that does not actually move the menu costs no render.
+   */
+  const place = useCallback(() => {
+    const r = triggerRef.current?.getBoundingClientRect()
+    if (!r) return
+    // ⚠ clientWidth/clientHeight, NOT innerWidth/innerHeight. A `fixed` box is laid out against
+    // the viewport WITHOUT the scrollbar, while innerWidth counts it — anchoring a right-aligned
+    // menu to innerWidth would leave every topbar menu a scrollbar's width out of true.
+    const vw = document.documentElement.clientWidth || window.innerWidth
+    const vh = document.documentElement.clientHeight || window.innerHeight
+    const height = panel.current?.offsetHeight ?? 0
+    const below = vh - r.bottom
+    // Flip above ONLY when it does not fit below and genuinely fits better above. A fixed panel
+    // running off the bottom cannot be scrolled to — it is simply gone.
+    const flip = height > 0 && below < height + GAP && r.top > below
+    const next: Pos = flip
+      ? { bottom: Math.round(vh - r.top + GAP) }
+      : { top: Math.round(r.bottom + GAP) }
+    if (align === 'right') next.right = Math.round(Math.max(0, vw - r.right))
+    else next.left = Math.round(Math.max(0, r.left))
+    setPos((prev) => (samePos(prev, next) ? prev : next))
+  }, [align])
+
+  // Measure before paint, then again once the panel has a height. Keep up with scrolling and
+  // resizing — `true` catches scroll on any ancestor, not only the window.
+  useLayoutEffect(() => {
+    if (!open) { setPos(null); return }
+    place()
+    const frame = requestAnimationFrame(place)
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', place, true)
+    }
+  }, [open, place])
 
   // Close on a click anywhere outside, and on Escape. Escape also returns focus to the trigger:
   // a keyboard user who dismisses a menu should not be dumped at the top of the document.
   useEffect(() => {
     if (!open) return
     const onPointer = (e: MouseEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      // ⚠ THE PANEL IS NO LONGER INSIDE `wrap` — it is a portal. Testing only `wrap` would make
+      // every menu close on the mousedown of its own item, BEFORE the click ever fired.
+      if (wrap.current?.contains(target) || panel.current?.contains(target)) return
+      setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -131,22 +202,26 @@ export function Menu({ label, trigger, children, align = 'right', width = 'w-60'
         {trigger}
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div
           ref={panel}
           id={id}
           role="menu"
           aria-label={label}
+          data-menu-panel
+          style={pos ?? { top: 0, left: 0 }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') { e.preventDefault(); move(1) }
             if (e.key === 'ArrowUp') { e.preventDefault(); move(-1) }
           }}
           onClick={() => setOpen(false)}
-          className={`absolute z-40 mt-1.5 ${width} rounded-xl border border-ground-200 bg-ground-0 p-1.5 shadow-lg
-            ${align === 'right' ? 'right-0' : 'left-0'}`}
+          // z-50 so it clears the sticky save bar and the topbar. `fixed`, because the panel no
+          // longer lives beside its trigger — `place()` supplies the coordinates.
+          className={`fixed z-50 ${width} rounded-xl border border-ground-200 bg-ground-0 p-1.5 shadow-lg`}
         >
           {children}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

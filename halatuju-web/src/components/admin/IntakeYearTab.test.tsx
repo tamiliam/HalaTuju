@@ -172,6 +172,45 @@ describe('editing a round', () => {
     expect(mockApi.updateAdminIntakeYear.mock.calls[0][1])
       .toEqual({ name: 'BrightPath Bursary Programme 2026', opens_on: null, closes_on: null })
   })
+
+  // ⚠ THE PLATFORM RULE: A SAVE SLEEPS UNTIL THERE IS SOMETHING TO SAVE (owner, 2026-09-08:
+  // *"the save is enabled even though no change has been made"*). Every other Configuration
+  // screen already obeyed it via SaveBar; this dialog was the one that did not.
+  it('sleeps until something is actually changed', async () => {
+    withYears([year({ opens_on: '2026-03-01', closes_on: '2026-04-30' })])
+    await loaded()
+    fireEvent.click(screen.getByTestId('edit-bp-2026'))
+    const save = screen.getByTestId('save-edit') as HTMLButtonElement
+    expect(save.disabled).toBe(true)
+
+    fireEvent.change(document.getElementById('e-closes') as HTMLInputElement,
+      { target: { value: '2026-05-31' } })
+    expect((screen.getByTestId('save-edit') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  // ⚠ COMPARED AS IT WILL BE SENT. `saveEdit` trims the name and turns a blank box into null, so
+  // neither a trailing space nor an empty box against a null window is a change. A button that
+  // woke up for those would send the server exactly what it already holds.
+  it('stays asleep for a change that sends nothing new', async () => {
+    withYears([year()])
+    await loaded()
+    fireEvent.click(screen.getByTestId('edit-bp-2026'))
+    fireEvent.change(document.getElementById('e-name') as HTMLInputElement,
+      { target: { value: 'BrightPath Bursary Programme 2026  ' } })
+    expect((screen.getByTestId('save-edit') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  // Re-opening the dialog on a second round must not inherit the first round's dirtiness.
+  it('wakes up, then sleeps again when the change is typed back out', async () => {
+    withYears([year()])
+    await loaded()
+    fireEvent.click(screen.getByTestId('edit-bp-2026'))
+    const name = document.getElementById('e-name') as HTMLInputElement
+    fireEvent.change(name, { target: { value: 'Something else' } })
+    expect((screen.getByTestId('save-edit') as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.change(name, { target: { value: 'BrightPath Bursary Programme 2026' } })
+    expect((screen.getByTestId('save-edit') as HTMLButtonElement).disabled).toBe(true)
+  })
 })
 
 describe('opening a round against its own schedule', () => {
@@ -297,6 +336,24 @@ describe('the round badge is the control', () => {
     expect(screen.queryByText('admin.years.state.openIt')).toBeNull()
     expect(screen.queryByText('admin.years.state.closeIt')).toBeNull()
     expect(screen.queryByText('admin.years.state.finishIt')).toBeNull()
+  })
+
+  // ⚠ THE MENU MUST LEAVE THE TABLE (owner, 2026-09-08: *"Clicking the close opens something, but
+  // it is hidden."*). The table's wrapper is `overflow-hidden` — it is what rounds the corners —
+  // so a panel rendered inside the row was clipped to a sliver at the table's edge. The panel is
+  // a portal now. Asserting it here as well as in Menu.test.tsx is the point: this table is the
+  // clipping ancestor that proved the primitive was wrong.
+  it('opens its menu OUTSIDE the table, where nothing can clip it', async () => {
+    await at('closed')
+    fireEvent.click(screen.getByTestId('state-bp-2026'))
+    const panel = screen.getByRole('menu')
+    expect((document.querySelector('table') as HTMLElement).contains(panel)).toBe(false)
+    expect(document.querySelector('.overflow-hidden')?.contains(panel)).toBeFalsy()
+    // ⚠ And not inside TableFrame's SCROLLER either. That layer is `overflow-x-auto`, which clips
+    // just as hard and — unlike the corner-rounding card — cannot be removed: it is the whole
+    // reason the table scrolls on a phone instead of losing its right-hand columns.
+    expect(screen.getByTestId('table-scroller').contains(panel)).toBe(false)
+    expect(panel.parentElement).toBe(document.body)
   })
 })
 

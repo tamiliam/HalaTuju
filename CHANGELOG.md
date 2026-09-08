@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## The round menu escapes the table, and Save sleeps until there is something to save - 2026-09-08
+
+Two faults the owner found on the deployed round-state screen.
+
+**THE MENU OPENED AND WAS SLICED OFF** (*"Clicking the close opens something, but it is hidden.
+There is a line below close but nothing is showing."*). Nothing was wrong with the menu: the state
+badge sits in a table whose wrapper carries `overflow-hidden` - which is there to round the corners
+over the header's fill, not to clip anything - and the panel was `absolute` inside the trigger, so
+the wrapper cut it off at the table's edge. The thin line the owner saw was the top of it.
+
+- **Fixed in the PRIMITIVE, not in the table.** `Menu`'s panel is now a portal on `document.body`,
+  which is the one placement no ancestor can clip. Removing `overflow-hidden` from this one table
+  would have worked and left the trap armed for the next caller - a menu in a card, in a modal, in
+  any rounded panel. The panel is `fixed` and placed by measurement (`place()`), and it **flips
+  above the trigger** when the space below is short, because a fixed panel running off the bottom
+  cannot be scrolled to.
+- **⚠ And by the time this merged, removing the clip was no longer even possible.** `TableFrame`
+  (same day, console layout) wraps every console table in a corner-clipping card **and** an
+  `overflow-x-auto` scroller, so the table can scroll on a phone instead of losing its right-hand
+  columns. That second layer clips a dropdown just as hard and is not optional. Escaping at the
+  primitive was the only fix that survives it.
+- **⚠ Two things a portal breaks if you forget them.** The panel is no longer inside the trigger's
+  wrapper, so the click-outside guard now tests the panel too - without that, the mousedown on an
+  item closes the menu before its click fires and **every menu item in the console becomes a
+  no-op**. And a `fixed` box is laid out against the viewport *without* the scrollbar, so the
+  right-aligned topbar menus anchor to `documentElement.clientWidth`, not `window.innerWidth`.
+- **⚠ What the tests can and cannot see.** Three assertions pin the panel's PLACE in the DOM
+  (parent is the body; not inside the clipping wrapper; not inside the table) and all three bite.
+  The placement arithmetic has no test that can fail: jsdom returns 0x0 at 0,0 from every
+  `getBoundingClientRect`. That half was verified by reading.
+
+**SAVE WAS AWAKE WITH NOTHING TO SAVE** (*"the save is enabled even though no change has been made.
+It should follow the platform rule."*). Correct - every other Configuration screen obeys that rule
+through `SaveBar`, and this dialog, being a dialog, had its own button and never got it. It now
+compares **as it will be sent**: the name trimmed, a blank date box as `null`. A trailing space is
+not a change, and neither is an empty box against a round that never had a window - a button that
+woke for those would post the server exactly what it already holds.
+
+Web only. No API change, no migration. jest 1829 (+6), tsc 24 (baseline), lint 0 Errors,
+i18n 4885 x 3, `next build` exit 0. Three bite-checks, each injection verified as landed first.
+
 ## The console has one layout standard - 2026-09-08
 
 The owner, on seeing five admin screens side by side: *"the table width, even alignment, is not
