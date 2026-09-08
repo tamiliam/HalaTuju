@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## Proving you are poor does not prove who your mother is - 2026-09-08
+
+Step 4 of BrightPath request #23, and the last one built. It is also the only change in the whole
+request that could newly STOP somebody submitting, which is why comment 77 promised the owner a list
+of names before it shipped rather than after.
+
+**THE BIRTH CERTIFICATE HAD BEEN FILED WITH THE INCOME DOCUMENTS, AND SO IT INHERITED THEIR
+SOFTENING.** `services._INCOME_CLUSTER_DOC_TYPES` existed for a good rule - "one clean cluster is
+enough" (#19, #28): once a household's income is established, an EXTRANEOUS or misread income proof
+must not trap them at submission. `birth_certificate` and `guardianship_letter` sat in that list, so
+establishing income switched off the question *"is this really her mother?"* entirely. That is a
+different question, answered by a different document, that merely travels in the same bundle. It is
+how application 144 submitted behind a certificate nobody had checked.
+
+**MEASURED ON PRODUCTION AND PUT TO THE OWNER BEFORE THE FIRST LINE CHANGED.** Seven live
+applications; four hold a certificate; every row scored by running the REAL `_name_bucket` /
+`_nric_bucket` / `_combine_relationship` over the live values rather than by reasoning about them.
+**Exactly ONE is newly stopped, and it is the owner's own test account** (16), whose certificate
+names a different child. **Zero real students move.** Across all 62 certificates there are three red
+rows in total: one genuinely a different family's document (#5, expired), one the IC-number chain
+already rescues (#9), and that test account.
+
+**⚠ TWO APPLICATIONS WERE AWARDED MID-MEASUREMENT** (43 and 124, `awarded_at` 05:01 UTC), leaving the
+live set while it was being counted. The brief says so, so the table is not carried forward as
+static. A live cohort is not a fixture.
+
+**BOTH HALVES ARE TESTED IN ONE CLASS ON PURPOSE** -
+`test_one_clean_cluster.py::TestProvingIncomeDoesNotSettleParentage`. Whoever narrows the list must
+show the income softening still works; whoever widens it back fails loudly. Not one existing test
+broke, which is itself the finding: nothing had ever asserted the relationship check was skipped.
+
+**⚠ THE FATHER-ROW QUESTION IS SETTLED: LEAVE IT** (owner, 2026-09-08). Step 3 left it open with its
+numbers - 51 of 62 father rows would go amber, and only 11 applications hold a father's IC to check
+a number against. The owner took the recommendation. It is a decision, not an oversight; do not
+"finish the one-cell rule" by extending it there.
+
+**⚠ LINA'S OWN FILE IS CLOSED TOO: LEAVE IT** (owner: *"water under the bridge. Future Lina will not
+be prevented when she submits the BC only"*). Verified rather than assumed - application 144's
+certificate rows all read `no_ref`, so nothing about it blocks her, and step 2's ask for a clearer
+copy does not hold the door. The multi-page reader is not being built for this.
+
+pytest **4672**; `makemigrations --check` clean. No web file changed - no new codes, no new strings.
+One bite-check landed: putting the two document types back fails exactly the two tests written for
+them, and nothing else.
+
 ## One cell is half a check, and a father cannot be what stops a student - 2026-09-08
 
 Step 3 of BrightPath request #23 - the rule the owner wrote out, made real.
