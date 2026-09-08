@@ -64,6 +64,75 @@ class Programme(models.Model):
         return f'{self.name_en} ({self.code})'
 
 
+class ProgrammeCodeAlias(models.Model):
+    """A code this gift USED to answer to — so a printed apply link never dies.
+
+    ⚠⚠ THIS TABLE IS THE WHOLE REASON A GIFT CODE MAY BE RENAMED AT ALL.
+    `Programme.code` is what `/scholarship/apply?p=<code>` carries, and `resolve_open_cohort`
+    narrows on it. An unknown code narrows to NOTHING, which the apply page reads as **"no open
+    round"** — so without an alias a rename would make every poster, WhatsApp forward and printed
+    flyer already in circulation tell a student *"applications are closed"*, silently, with no
+    error anywhere for us to see. The student simply goes away.
+
+    ⚠ THE ALIAS SERVES THE STUDENT PATH ONLY (owner ruling, 2026-09-09). `resolve_open_cohort` is
+    the one resolver that consults it. The admin console's own gift switcher
+    (`_AdminBase._programme_by_code`) keeps resolving LIVE codes only: an admin's URL is never
+    printed on a poster, and letting a stale code work there would hide a rename from the very
+    people who performed it.
+
+    ⚠ ONE WRITER, AND NAMING IT IS PART OF THE DESIGN. Rows are created by
+    `AdminProgrammeDetailView.patch` at the moment a code changes, and by nothing else. A table
+    populated by a backfill with no matching write path is a bug with a delay on it — migration
+    `0123` left the 28/07 sponsor with no membership that way (lessons.md, 2026-07-29). There is
+    no backfill here BECAUSE no code has ever been renamed; the first rename writes the first row.
+
+    ⚠ UNIQUENESS SPANS BOTH TABLES, AND THE DATABASE CANNOT SAY SO. `code` is unique here, and
+    `Programme.code` is unique there, but nothing stops an alias colliding with another gift's LIVE
+    code — which would make one link resolve two ways. `code_is_free()` is the one check both the
+    create and the rename paths call; it is application-level on purpose, since a cross-table
+    constraint would need a trigger this project has no precedent for.
+    """
+    programme = models.ForeignKey(
+        Programme, on_delete=models.CASCADE, related_name='code_aliases',
+        help_text='The gift this retired code still points at.',
+    )
+    code = models.CharField(
+        max_length=50, unique=True,
+        help_text="A code this gift used to answer to, e.g. 'brightpath-flagship'.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text='Email of the admin who renamed the code, for the audit trail.',
+    )
+
+    class Meta:
+        db_table = 'scholarship_programme_code_aliases'
+        ordering = ['programme_id', 'code']
+
+    def __str__(self):
+        return f'{self.code} -> {self.programme.code}'
+
+
+def code_is_free(code, *, exclude_programme=None):
+    """Is `code` available — as a live gift code AND as a retired one?
+
+    ⚠ BOTH TABLES, ALWAYS. A code taken by another gift's ALIAS is not free: reusing it would make
+    one printed link resolve to two different gifts depending on which query ran first. The two
+    unique constraints each guard their own table and neither can see the other, so this function
+    is the only place the real rule exists — call it from every path that accepts a code.
+
+    `exclude_programme` lets a gift keep its own code (a no-op rename) and re-claim a code it had
+    itself retired earlier, which is the natural "undo a rename" and must not be refused.
+    """
+    live = Programme.objects.filter(code=code)
+    alias = ProgrammeCodeAlias.objects.filter(code=code)
+    if exclude_programme is not None:
+        live = live.exclude(pk=exclude_programme.pk)
+        alias = alias.exclude(programme=exclude_programme)
+    return not live.exists() and not alias.exists()
+
+
 class ScholarshipCohort(models.Model):
     """
     A single application round — the YEAR (intake) level of the hierarchy: one annual

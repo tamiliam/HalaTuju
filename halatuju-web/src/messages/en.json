@@ -5655,7 +5655,7 @@
       "empty": "No gift programmes have been created.",
       "loadFailed": "The gift programmes could not be loaded.",
       "durableNote": "A gift programme does not expire. Its intake years are opened and closed beneath it.",
-      "codeWarning": "The short code forms part of the link applicants use, so it cannot be changed after creation.",
+      "codeWarning": "The short code forms part of the link applicants use. It can be changed later, and the old code keeps working.",
       "col": {
         "years": "Intake years",
         "applications": "Applications",
@@ -5664,7 +5664,8 @@
       "field": {
         "name": "Name",
         "code": "Short code",
-        "codeHint": "Lower-case letters, numbers and hyphens. Used in the web address."
+        "codeHint": "Lower-case letters, numbers and hyphens. Used in the web address.",
+        "newCode": "New short code"
       },
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
@@ -5680,6 +5681,14 @@
         "inUse": "A record still depends on this gift, so it cannot be deleted.",
         "confirmMismatch": "That does not match the required phrase. Nothing was deleted."
       },
+      "copyLink": "Copy apply link",
+      "copied": "Link copied",
+      "copyFailed": "The link could not be copied. It is: {url}",
+      "changeCode": "Change the short code",
+      "renameTitle": "Change the short code for {name}",
+      "applyLinkLabel": "The link applicants follow today",
+      "renameKeeps": "The old short code keeps working. Links already printed or sent still reach this gift programme.",
+      "renameCta": "Change the short code",
       "openSettings": "Settings",
       "delete": "Delete",
       "deleteTitle": "Delete {name}?",

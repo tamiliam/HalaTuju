@@ -55,6 +55,7 @@ beforeEach(() => {
       // ⚠ A GIFT WITH APPLICATIONS CANNOT BE DELETED, and the SERVER says so — the client
       // never derives it. This fixture is the production shape: 41 applications, held.
       delete_blocked_by: 'has_applications', delete_blocked_count: 41,
+      apply_url: 'https://halatuju.xyz/scholarship/apply?p=bp',
     }],
   })
   mockApi.getAdminIntakeYears.mockResolvedValue({

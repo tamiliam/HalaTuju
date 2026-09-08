@@ -355,3 +355,54 @@ class TestApplyLinkEndToEnd(TestCase):
             self.client.get('/api/v1/scholarship/intake/?programme=nope').json(),
             {'open': False, 'cohort_name': '', 'choices': []},
         )
+
+
+class TestARetiredCodeStillReachesItsGift(TestCase):
+    """A renamed gift keeps answering to its OLD code — the student path only (2026-09-09).
+
+    ⚠ THIS IS THE ONLY PLACE A RETIRED CODE WORKS, AND THAT IS THE OWNER'S RULING. A poster or a
+    printed letter carries a code for years; the admin console's own gift switcher resolves live
+    codes only, because an admin's URL is never printed and letting stale codes work there would
+    quietly hide a rename from the person who made it.
+    """
+
+    def setUp(self):
+        from apps.scholarship.models import ProgrammeCodeAlias
+        self.org = _org('tenant-a')
+        self.prog = _programme(self.org, 'tenant-a-new')
+        self.cohort = _cohort(self.org, 'a-2026')
+        self.cohort.programme = self.prog
+        self.cohort.save(update_fields=['programme'])
+        ProgrammeCodeAlias.objects.create(programme=self.prog, code='tenant-a-old')
+
+    def test_the_old_code_still_finds_the_open_round(self):
+        self.assertEqual(services.resolve_open_cohort(programme_code='tenant-a-old'),
+                         self.cohort)
+
+    def test_the_new_code_still_works_too(self):
+        self.assertEqual(services.resolve_open_cohort(programme_code='tenant-a-new'),
+                         self.cohort)
+
+    def test_a_LIVE_code_wins_over_another_gifts_alias(self):
+        """⚠ Live first, alias only as a fallback. If a code is both somebody's live code and a
+        stale alias, the live gift is the one taking applications today."""
+        from apps.scholarship.models import ProgrammeCodeAlias
+        other = _programme(self.org, 'tenant-a-second')
+        other_cohort = _cohort(self.org, 'a2-2026')
+        other_cohort.programme = other
+        other_cohort.save(update_fields=['programme'])
+        # `tenant-a-second` is live for `other`, and (impossibly, but the code must not care) also
+        # recorded as a retired code of the first gift.
+        ProgrammeCodeAlias.objects.filter(code='tenant-a-old').delete()
+        ProgrammeCodeAlias.objects.create(programme=self.prog, code='tenant-a-second-x')
+        self.assertEqual(services.resolve_open_cohort(programme_code='tenant-a-second'),
+                         other_cohort)
+
+    def test_an_alias_of_an_INACTIVE_gift_still_reads_closed(self):
+        """The alias resolves the code; the gift's own `is_active` still decides."""
+        self.prog.is_active = False
+        self.prog.save(update_fields=['is_active'])
+        self.assertIsNone(services.resolve_open_cohort(programme_code='tenant-a-old'))
+
+    def test_an_unknown_code_that_is_no_alias_still_reads_closed(self):
+        self.assertIsNone(services.resolve_open_cohort(programme_code='never-existed'))

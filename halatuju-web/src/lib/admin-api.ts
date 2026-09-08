@@ -3138,6 +3138,18 @@ export interface AdminProgramme {
     | 'has_applications' | 'has_benefactors'
     | 'has_money' | 'has_payment_runs' | null
   delete_blocked_count: number
+  /**
+   * The whole link a student follows to apply to THIS gift.
+   *
+   * ⚠ SERVED WHOLE — do not rebuild it from `code` and `window.location.origin`. The console and
+   * the student site share an origin today, so that would be right, and would go silently wrong
+   * the day a tenant is served from its own domain; the server already answers that per
+   * organisation. It is also the one string somebody copies onto a poster.
+   *
+   * ⚠ PER GIFT, NOT PER YEAR (owner ruling). The code is the gift's permanent identifier, so a
+   * printed link survives every intake; the server picks whichever round is open.
+   */
+  apply_url: string
 }
 
 export interface AdminIntakeYear {
@@ -3191,7 +3203,9 @@ export async function createAdminProgramme(
 
 export async function updateAdminProgramme(
   id: number,
-  body: Partial<{ name_en: string; name_ms: string; name_ta: string; is_active: boolean }>,
+  // ⚠ `code` IS EDITABLE, AND THE SERVER KEEPS THE OLD ONE AS AN ALIAS. Sending it unchanged is a
+  // no-op — no alias is written — so the rename dialog may post the box as it stands.
+  body: Partial<{ code: string; name_en: string; name_ms: string; name_ta: string; is_active: boolean }>,
   options?: ApiOptions,
 ) {
   return adminMutate<AdminProgramme>(

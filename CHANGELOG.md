@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## The apply link, and a gift code that can change without breaking it - 2026-09-09
+
+A gift's short code is what a printed poster carries (`/scholarship/apply?p=<code>`), and until now
+it was fixed at creation because changing it had no safe outcome: `resolve_open_cohort` filters on
+`programme__code`, so an unknown code answers **"no open round"**. A rename would have told every
+student on an old link that applications were closed, silently, with nothing failing anywhere.
+
+- **The link is served whole** (`apply_url` on each gift row) and copied from the card's ⋮ menu.
+  Per GIFT, not per intake year: the code is the gift's permanent identifier, so a printed link
+  survives every year and the server picks whichever round is open.
+- **The code is editable**, and the old one is kept as a `ProgrammeCodeAlias`. The student path
+  resolves a retired code; the admin console's own gift switcher does not (owner ruling).
+- **Uniqueness now spans both tables** (`code_is_free`) - a code any gift used to answer to cannot
+  be handed to another one, because it still routes students.
+- Migration **`scholarship/0153`** - a REAL new table, so migrate-first WITH RLS, unlike `0152`.
+- The manual gained a section for it, and `codeWarning` was corrected: it had asserted the code
+  could never be changed after creation.
+
 ## The rename missed a second copy, and the guard missed it too - 2026-09-08
 
 Reading the deployed bundle back after the rename found **"B40 Applications" still in it**. The

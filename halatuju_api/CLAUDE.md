@@ -550,7 +550,93 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-08, after the gift-card follow-ups)
+## Next Sprint (as of 2026-09-09, after the gift code + apply link)
+
+**SHIPPED, NOT DEPLOYED — the owner gates it, AND THERE IS A MIGRATION.** Worktree
+`.worktrees/gift-code`, branch `feat/gift-code-alias`, base `8dcd2310`. api + web.
+**⚠ MIGRATION `scholarship/0153` — A REAL NEW TABLE. MIGRATE-FIRST, WITH RLS** (unlike `0152`,
+which was choices-only and needed a ledger row alone). Retro
+`docs/retrospective-2026-09-09-gift-code-apply-link.md`; decisions ×2; lessons ×5.
+Gates, ALL RUN INSIDE THE WORKTREE: pytest **6059** (+25); jest **1903** (+11); tsc **24**
+(baseline); lint **0 Errors**; i18n **4910 × 3** (+9); `next build` exit 0;
+`makemigrations --check` clean. **Five bite-checks landed.**
+
+**⚠⚠ THE ALIAS IS NOT A NICETY, AND THAT IS THE THING TO READ FIRST.** `resolve_open_cohort`
+filters on `programme__code`, and an unknown code does not error — it answers **"no open round"**.
+So renaming a gift's code with nothing else in place would have made every poster, school letter
+and forwarded message already in circulation tell a student **"applications are closed"**, silently,
+with nothing failing anywhere. That is why the code could not be edited before today.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ THE ALIAS SERVES THE STUDENT PATH ONLY** (owner ruling). `resolve_open_cohort` falls back to
+  a `ProgrammeCodeAlias`; the admin console's breadcrumb switcher (`_programme_by_code`) resolves
+  **live codes only**. An administrator's URL is never printed, and letting a stale one keep working
+  in the console would hide a rename from the person who made it. A 404 there is information.
+- **⚠ LIVE CODE FIRST, ALIAS ONLY AS A FALLBACK.** `code_is_free` forbids the collision, so the
+  order cannot change an answer today. It is written that way so that if one ever existed, the
+  CURRENT owner of a code beats a ghost of it.
+- **⚠ UNIQUENESS HAS TO LIVE IN CODE** — `models.code_is_free(code, exclude_programme=None)`,
+  called by BOTH the create and the rename paths. Neither table's unique constraint can see the
+  other, and a retired code still ROUTES students: handing one to a second gift files applicants
+  against the wrong foundation with no error. PF-1's fault in a new costume.
+- **⚠ RENAMING BACK IS A REAL CASE.** A gift's own aliases are excluded from the check, and the
+  handler DELETES the alias row that would otherwise duplicate the new live code.
+- **⚠ THERE IS ONE WRITER OF `ProgrammeCodeAlias`** — `AdminProgrammeDetailView.patch` — and **NO
+  BACKFILL**. A gift never renamed has no alias, and that is the correct state.
+- **⚠ `apply_url` IS SERVED WHOLE, NEVER ASSEMBLED IN THE BROWSER.** `window.location.origin + …`
+  is right today (one origin) and goes silently wrong the day a tenant has its own domain — which
+  `branding.for_organisation(...).frontend_url` already answers per organisation. It is also the one
+  string somebody copies onto a poster; a half-built one is worse than none.
+  **PER GIFT, NOT PER YEAR** (owner ruling): the code is the gift's permanent identifier, so a
+  printed link survives every intake and the server picks whichever round is open.
+- **⚠ THE COPY FAILURE PATH CARRIES THE LINK.** `navigator.clipboard.writeText` REJECTS on an
+  insecure origin and wherever the permission is withheld; a bare `await` — the shape the repo's one
+  existing copy control uses — leaves somebody pressing a menu item that does nothing at all. On a
+  refusal the banner prints the link itself.
+- **⚠ RE-SELECT ONLY THE GIFT THAT WAS CHOSEN.** The breadcrumb holds a CODE; renaming the gift
+  somebody is inside leaves the shell holding a code the scope list no longer knows, which is the
+  dead "which gift?" screen from 2026-09-07. Re-selecting unconditionally is worse — it moves the
+  reader into a gift they were not in. Both halves have a rendered test.
+- **`codeWarning` WAS CORRECTED IN ALL THREE LANGUAGES.** It had asserted for months that the code
+  "cannot be changed after creation" — true when written, false the moment this shipped, and in no
+  test, no grep and no diff. **When a capability arrives, grep the message file for copy asserting
+  its ABSENCE.**
+
+**⚠ ONE PROCESS FAILURE WORTH READING.** A frontend bite-check's restore-by-string-replacement hit
+the WRONG occurrence — `select(wanted)` appears in the create flow three functions above the rename
+flow, and the first match was replaced. The standing rule (write the original bytes back, never
+`git checkout --`) was followed and was **not enough on its own**: the anchor must be unique to the
+site injected into. Only the suite staying red caught it. **Re-run after every restore and expect
+GREEN; a still-red suite means the restore missed.**
+
+**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0153` MIGRATE-FIRST** via Supabase MCP —
+hand-written Postgres DDL **including `ENABLE ROW LEVEL SECURITY` + the one `service_role` policy**
+is in the migration's own docstring — and record its `django_migrations` row BEFORE the push;
+(2) confirm the Security Advisor reports no new finding; (3) push (**api + web** — Python changed,
+so expect both builds); (4) no env vars, no backfill, no data step.
+**Nothing a student sees changes** unless somebody renames a code — and then their old link still
+works, which is the whole point.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Organisation → Overview → **⋮ on a gift → Copy apply link.** Paste it: it should read
+   `https://halatuju.xyz/scholarship/apply?p=<code>`, and the card should say "Link copied".
+2. **⋮ → Change the short code.** The dialog shows the current link above the box and says the old
+   code keeps working.
+3. Change a SPARE gift's code, then open the **OLD** link — it must still reach the apply page.
+4. Try renaming to the other gift's code — it should be refused.
+5. **ms and ta are first drafts** for the nine new strings.
+
+**⚠ ALSO OPEN, unchanged:** the four organisation-scope surfaces (Reviewers, Sources, Payments,
+Sponsors) still ignore the gift — each needs its own owner ruling, and a reviewer's `programme` is
+nullable where **NULL MEANS EVERY GIFT**. The application DETAIL page still shows whichever gift the
+crumb is on. Archiving a gift blocks creating a payment run for it; TD-236; TD-234; TD-229; TD-231;
+TD-225; TD-221.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-08, after the gift-card follow-ups)
 
 **FOUR OF THE FIVE ARE DEPLOYED AND VERIFIED LIVE 2026-09-08** — `main` at `d696bcc5`; web build
 SUCCESS on `d696bcc` (no Python changed, so web only); serving **halatuju-web-00861-t6j**. Served

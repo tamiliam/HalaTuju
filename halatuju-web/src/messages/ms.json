@@ -5655,7 +5655,7 @@
       "empty": "Tiada program hadiah telah dicipta.",
       "loadFailed": "Program hadiah tidak dapat dimuatkan.",
       "durableNote": "Program hadiah tidak luput. Tahun pengambilannya dibuka dan ditutup di bawahnya.",
-      "codeWarning": "Kod ringkas menjadi sebahagian daripada pautan yang digunakan pemohon, jadi ia tidak boleh diubah selepas dicipta.",
+      "codeWarning": "Kod ringkas menjadi sebahagian daripada pautan yang digunakan pemohon. Ia boleh diubah kemudian, dan kod lama terus berfungsi.",
       "col": {
         "years": "Tahun pengambilan",
         "applications": "Permohonan",
@@ -5664,7 +5664,8 @@
       "field": {
         "name": "Nama",
         "code": "Kod ringkas",
-        "codeHint": "Huruf kecil, nombor dan tanda sempang. Digunakan dalam alamat web."
+        "codeHint": "Huruf kecil, nombor dan tanda sempang. Digunakan dalam alamat web.",
+        "newCode": "Kod ringkas baharu"
       },
       "error": {
         "badCode": "The short code may use lower case letters, numbers and hyphens only.",
@@ -5680,6 +5681,14 @@
         "inUse": "Terdapat rekod yang masih bergantung pada hadiah ini, jadi ia tidak boleh dipadam.",
         "confirmMismatch": "Ia tidak sepadan dengan frasa yang diperlukan. Tiada apa-apa dipadam."
       },
+      "copyLink": "Salin pautan permohonan",
+      "copied": "Pautan disalin",
+      "copyFailed": "Pautan tidak dapat disalin. Pautannya ialah: {url}",
+      "changeCode": "Tukar kod ringkas",
+      "renameTitle": "Tukar kod ringkas untuk {name}",
+      "applyLinkLabel": "Pautan yang diikuti pemohon hari ini",
+      "renameKeeps": "Kod ringkas lama terus berfungsi. Pautan yang telah dicetak atau dihantar masih sampai ke program hadiah ini.",
+      "renameCta": "Tukar kod ringkas",
       "openSettings": "Tetapan",
       "delete": "Padam",
       "deleteTitle": "Padam {name}?",

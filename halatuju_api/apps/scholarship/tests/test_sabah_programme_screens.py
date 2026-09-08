@@ -694,3 +694,111 @@ class TestTheCardsCounts(_Case):
         row = self._row('sab-a-count')
         self.assertEqual(row['applications'], 2)
         self.assertEqual(row['awarded'], 1)
+
+
+class TestTheCodeIsEditableAndTheOldOneSurvives(_Case):
+    """Renaming a gift's code, with the old code kept as an ALIAS (2026-09-09).
+
+    ⚠ THE ALIAS IS NOT A CONVENIENCE. `resolve_open_cohort` filters on `programme__code`, so an
+    unknown code answers "no open round" — a rename with no alias would make every printed
+    `/scholarship/apply?p=<old>` tell a student that applications are closed, with nothing
+    failing anywhere.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = f'{PROGRAMMES}{self.prog_a.id}/'
+
+    def _aliases(self, prog):
+        from apps.scholarship.models import ProgrammeCodeAlias
+        return sorted(ProgrammeCodeAlias.objects.filter(programme=prog)
+                      .values_list('code', flat=True))
+
+    def test_renaming_the_code_keeps_the_old_one_as_an_alias(self):
+        r = self._patch(self.admin_a, self.url, {'code': 'sab-a-renamed'})
+        self.assertEqual(r.status_code, 200)
+        self.prog_a.refresh_from_db()
+        self.assertEqual(self.prog_a.code, 'sab-a-renamed')
+        self.assertEqual(self._aliases(self.prog_a), ['sab-a-flagship'])
+
+    def test_the_alias_records_who_renamed_it(self):
+        self._patch(self.admin_a, self.url, {'code': 'sab-a-renamed'})
+        from apps.scholarship.models import ProgrammeCodeAlias
+        alias = ProgrammeCodeAlias.objects.get(code='sab-a-flagship')
+        self.assertEqual(alias.created_by, self.admin_a.email)
+
+    def test_renaming_twice_keeps_BOTH_old_codes(self):
+        """A poster printed under the first code must keep working after a second rename."""
+        self._patch(self.admin_a, self.url, {'code': 'sab-a-two'})
+        self._patch(self.admin_a, self.url, {'code': 'sab-a-three'})
+        self.assertEqual(self._aliases(self.prog_a), ['sab-a-flagship', 'sab-a-two'])
+
+    def test_saving_the_SAME_code_writes_no_alias(self):
+        """Every PATCH from the screen carries the code box, so a name-only edit must not manufacture
+        an alias equal to the live code."""
+        r = self._patch(self.admin_a, self.url,
+                        {'code': 'sab-a-flagship', 'name_en': 'Still A'})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self._aliases(self.prog_a), [])
+
+    def test_renaming_BACK_removes_the_alias_it_would_duplicate(self):
+        """Otherwise the gift would carry an alias equal to its own live code — harmless to resolve
+        (the live code wins) and a lie on any screen listing retired codes."""
+        self._patch(self.admin_a, self.url, {'code': 'sab-a-two'})
+        self._patch(self.admin_a, self.url, {'code': 'sab-a-flagship'})
+        self.prog_a.refresh_from_db()
+        self.assertEqual(self.prog_a.code, 'sab-a-flagship')
+        self.assertEqual(self._aliases(self.prog_a), ['sab-a-two'])
+
+    def test_a_bad_shape_is_refused(self):
+        r = self._patch(self.admin_a, self.url, {'code': 'Not A Code'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'bad_code')
+        self.prog_a.refresh_from_db()
+        self.assertEqual(self.prog_a.code, 'sab-a-flagship')
+
+    def test_another_tenants_LIVE_code_is_refused(self):
+        r = self._patch(self.admin_a, self.url, {'code': 'sab-b-flagship'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'code_taken')
+
+    def test_another_gifts_RETIRED_code_is_refused(self):
+        """⚠ A retired code still ROUTES students. Handing it to a second gift would file them
+        against the wrong foundation, silently — the PF-1 fault in a new costume."""
+        self._patch(self.admin_b, f'{PROGRAMMES}{self.prog_b.id}/', {'code': 'sab-b-new'})
+        r = self._patch(self.admin_a, self.url, {'code': 'sab-b-flagship'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'code_taken')
+
+    def test_creating_a_gift_on_a_retired_code_is_refused(self):
+        self._patch(self.admin_a, self.url, {'code': 'sab-a-new'})
+        r = self._post(self.admin_a, PROGRAMMES,
+                       {'code': 'sab-a-flagship', 'name_en': 'Impostor'})
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'code_taken')
+
+    def test_a_reviewer_may_not_rename_a_code(self):
+        r = self._patch(self.reviewer_a, self.url, {'code': 'sab-a-sneaky'})
+        self.assertEqual(r.status_code, 403)
+        self.prog_a.refresh_from_db()
+        self.assertEqual(self.prog_a.code, 'sab-a-flagship')
+
+    def test_another_tenants_gift_is_404_never_403(self):
+        r = self._patch(self.admin_a, f'{PROGRAMMES}{self.prog_b.id}/', {'code': 'sab-b-taken'})
+        self.assertEqual(r.status_code, 404)
+
+
+class TestTheApplyLinkIsServedWhole(_Case):
+    @override_settings(FRONTEND_URL='https://halatuju.xyz')
+    def test_the_row_carries_the_whole_apply_link(self):
+        r = self._get(self.admin_a, PROGRAMMES)
+        row = r.data['programmes'][0]
+        self.assertEqual(row['apply_url'],
+                         'https://halatuju.xyz/scholarship/apply?p=sab-a-flagship')
+
+    @override_settings(FRONTEND_URL='https://halatuju.xyz')
+    def test_the_link_follows_a_renamed_code(self):
+        self._patch(self.admin_a, f'{PROGRAMMES}{self.prog_a.id}/', {'code': 'sab-a-renamed'})
+        r = self._get(self.admin_a, PROGRAMMES)
+        self.assertEqual(r.data['programmes'][0]['apply_url'],
+                         'https://halatuju.xyz/scholarship/apply?p=sab-a-renamed')

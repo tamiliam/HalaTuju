@@ -23,6 +23,7 @@ from apps.courses.models import PartnerAdmin, PartnerOrganisation
 from apps.courses.search import apply_people_search
 from apps.courses.views_admin import PartnerAdminMixin
 
+from . import branding
 from . import pool
 from . import reopen as reopen_service
 from . import disbursement as disbursement_service
@@ -6772,6 +6773,15 @@ def _programme_row(p):
         # The year currently taking applications, or None. Named `open_year` rather than `is_open`
         # because a PROGRAMME is never open — one of its years is.
         'open_year': open_year,
+        # ⚠ SERVED WHOLE, NEVER ASSEMBLED IN THE BROWSER. The console and the student site are the
+        # same origin today, so `window.location.origin + …` would be right — and would silently
+        # become wrong the day a tenant is served from its own domain, which is exactly what
+        # `branding.frontend_url` already answers per organisation. It is also the ONE string a
+        # person copies onto a poster; a half-built one is worse than none.
+        # PER GIFT, NOT PER YEAR (owner ruling): the code is the gift's permanent identifier, so a
+        # printed link survives every intake. `resolve_open_cohort` picks the year.
+        'apply_url': '%s/scholarship/apply?p=%s' % (
+            branding.for_organisation(p.organisation).frontend_url, p.code),
     }
 
 
@@ -6944,7 +6954,7 @@ class AdminProgrammeListView(_ProgrammeScopedBase):
         if org is None:
             return Response({'error': 'no_org', 'code': 'no_org'}, status=status.HTTP_400_BAD_REQUEST)
 
-        from .models import Programme
+        from .models import Programme, code_is_free
         code = (request.data.get('code') or '').strip().lower()
         name_en = (request.data.get('name_en') or '').strip()
         if not CODE_RE.match(code):
@@ -6955,7 +6965,10 @@ class AdminProgrammeListView(_ProgrammeScopedBase):
         # `Programme.code` is unique PLATFORM-WIDE, not per organisation, because it is what an
         # apply link carries (`/scholarship/apply?p=<code>`) — PF-1. So the clash a tenant hits may
         # be with another tenant's code, and the message must not say whose.
-        if Programme.objects.filter(code=code).exists():
+        # ⚠ `code_is_free` ALSO refuses a RETIRED code. A code some other gift used to answer to
+        # still routes students there through `resolve_open_cohort`; handing it to a new gift would
+        # send them to the wrong foundation with nothing raising an error.
+        if not code_is_free(code):
             return Response({'error': 'code_taken', 'code': 'code_taken'},
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -6974,7 +6987,14 @@ class AdminProgrammeListView(_ProgrammeScopedBase):
 
 
 class AdminProgrammeDetailView(_ProgrammeScopedBase):
-    """PATCH one gift — its three names and whether it is active. The CODE is never editable."""
+    """PATCH one gift — its three names, its CODE, and whether it is active.
+
+    ⚠ THE CODE IS EDITABLE NOW, AND THE OLD ONE IS KEPT AS AN ALIAS. It is printed on posters and
+    typed into `/scholarship/apply?p=<code>`; an unknown code makes `resolve_open_cohort` answer
+    "no open round", so a rename with no alias would tell every student on a printed link that
+    applications are closed — silently, with nothing failing. This endpoint is the ONE writer of
+    `ProgrammeCodeAlias`.
+    """
 
     def patch(self, request, pk):
         admin, err = self._gate(request)
@@ -6985,6 +7005,31 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
             return err
 
         changed = []
+
+        if 'code' in request.data:
+            from .models import ProgrammeCodeAlias, code_is_free
+            new_code = (request.data.get('code') or '').strip().lower()
+            if not CODE_RE.match(new_code):
+                return Response({'error': 'bad_code', 'code': 'bad_code'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if new_code != p.code:
+                # ⚠ The clash may be with ANOTHER tenant's live code OR with any gift's retired
+                # one — both still route students — so the message must not say whose.
+                if not code_is_free(new_code, exclude_programme=p):
+                    return Response({'error': 'code_taken', 'code': 'code_taken'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                old_code = p.code
+                with transaction.atomic():
+                    # Renaming BACK to a code this gift used to answer to: that alias becomes the
+                    # live code, so the row must go or the gift would alias itself.
+                    ProgrammeCodeAlias.objects.filter(programme=p, code=new_code).delete()
+                    ProgrammeCodeAlias.objects.create(
+                        programme=p, code=old_code, created_by=admin.email or '')
+                    p.code = new_code
+                    p.save(update_fields=['code'])
+                logger.info('AUDIT programme_code_changed old=%s new=%s org=%s by=%s',
+                            old_code, new_code, p.organisation_id, admin.email or '')
+
         for f in ('name_en', 'name_ms', 'name_ta'):
             if f in request.data:
                 v = (request.data.get(f) or '').strip()

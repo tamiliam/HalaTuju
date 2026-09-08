@@ -37,7 +37,8 @@ const programme = (over: Partial<api.AdminProgramme> = {}): api.AdminProgramme =
   id: 1, code: 'bp', name_en: 'BrightPath Bursary', name_ms: '', name_ta: '',
   is_active: true, lifecycle: 'active', intake_years: 1, applications: 143, awarded: 47,
   open_year: 2026,
-  delete_blocked_by: 'has_applications', delete_blocked_count: 143, ...over,
+  delete_blocked_by: 'has_applications', delete_blocked_count: 143,
+  apply_url: 'https://halatuju.xyz/scholarship/apply?p=bp', ...over,
 })
 
 const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => ({

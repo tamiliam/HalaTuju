@@ -1,5 +1,40 @@
 # Architectural Decisions — HalaTuju
 
+## A retired gift code keeps working for STUDENTS only, 2026-09-09
+**Decision:** renaming a gift's short code writes the old one into `ProgrammeCodeAlias`, and
+`services.resolve_open_cohort` falls back to that alias. Nothing else does — the admin console's
+breadcrumb switcher (`_programme_by_code`) resolves live codes only.
+
+**Why the student path:** a code reaches a student on paper. A poster, a school letter, a message
+forwarded twice — none of them can be recalled, and the failure is the worst shape there is: the
+apply page reads "applications are closed" and the family stops. The alias costs one row and one
+fallback query.
+
+**Why NOT the admin path:** an administrator's URL is never printed. Letting a stale code resolve
+in the console would mean a bookmark keeps working after a rename, which sounds kind and is not —
+it hides from the person who made the change that anything changed at all. A 404 there is
+information.
+
+**What follows from it, and must not be tidied:** the live code is tried FIRST and the alias only
+as a fallback. `code_is_free` forbids the collision so the order cannot change an answer today; it
+is written that way so that if one ever existed, the CURRENT owner of a code beats a ghost of it.
+
+**Rejected:** a permanent redirect page at the old code (needs a public surface naming retired
+codes, and still breaks a link typed by hand); refusing renames outright (the owner asked for this
+precisely because a code chosen on day one is often wrong by day thirty).
+
+## Uniqueness spans live codes AND retired ones, 2026-09-09
+**Decision:** `models.code_is_free(code, exclude_programme=None)` checks `Programme.code` and
+`ProgrammeCodeAlias.code` together, and BOTH the create and the rename paths call it.
+
+**Why:** a retired code still routes students. Handing it to a second gift would file applicants
+against the wrong foundation, funded from the wrong money, with no error — PF-1's fault in a new
+costume. Neither table's unique constraint can see the other, so the check has to be in code.
+
+**The exclusion is the subtle half:** renaming a gift BACK to a code it used to answer to must be
+allowed, so its own aliases are excluded; the handler then deletes the alias row that would
+otherwise duplicate the live code.
+
 ## The gift card is the door, and its controls are its siblings, 2026-09-08
 **Decision:** the whole gift card is a `<button>` that opens that gift; the lifecycle badge and a
 new ⋮ menu (Settings · Delete) sit OUTSIDE it, in the same header row, over an `absolute inset-0`

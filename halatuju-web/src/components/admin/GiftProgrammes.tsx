@@ -102,7 +102,7 @@ function LifecycleBadge({ programme: p, busy, onChange }: {
 export default function GiftProgrammes({ token }: { token: string | null }) {
   const { t } = useT()
   const router = useRouter()
-  const { select, reload } = useProgrammeScope()
+  const { chosen, select, reload } = useProgrammeScope()
 
   const [rows, setRows] = useState<AdminProgramme[]>([])
   const [loading, setLoading] = useState(true)
@@ -115,6 +115,12 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
   // dialog. Held as the RECORD, not an id, so the dialog can name what is about to go.
   const [deleting, setDeleting] = useState<AdminProgramme | null>(null)
   const [confirmText, setConfirmText] = useState('')
+  // The gift whose code is being changed, and the code being typed. Held as the RECORD so the
+  // dialog can show the link that is about to change.
+  const [renaming, setRenaming] = useState<AdminProgramme | null>(null)
+  const [newCode, setNewCode] = useState('')
+  // Which gift's link was just copied, so the confirmation names one card rather than all of them.
+  const [copied, setCopied] = useState('')
 
   const load = useCallback(async () => {
     if (!token) return
@@ -219,6 +225,48 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
     router.push(where)
   }
 
+  /**
+   * Put the gift's apply link on the clipboard.
+   *
+   * ⚠ THE LINK IS THE SERVER'S (`p.apply_url`), never assembled here — see `AdminProgramme`.
+   *
+   * ⚠ AND THE FAILURE PATH MATTERS MORE THAN THE HAPPY ONE. `navigator.clipboard.writeText`
+   * REJECTS on an insecure origin and wherever the browser withholds permission, so a bare
+   * `await` would leave somebody pressing a menu item that does nothing at all. On a refusal the
+   * banner prints the link itself, which is the thing they actually came for.
+   */
+  const copyApplyLink = async (p: AdminProgramme) => {
+    setError('')
+    try {
+      await navigator.clipboard.writeText(p.apply_url)
+      setCopied(p.code)
+      setTimeout(() => setCopied(''), 2500)
+    } catch {
+      setError(t('admin.programmes.copyFailed', { url: p.apply_url }))
+    }
+  }
+
+  /**
+   * Change a gift's code. The server keeps the old one as an alias, so every link already printed
+   * keeps working — the dialog says so, because otherwise this reads as a destructive act.
+   *
+   * ⚠ RE-SELECT ONLY WHEN THIS GIFT WAS THE CHOSEN ONE. The breadcrumb holds a CODE, so renaming
+   * the gift somebody is currently inside would leave the shell holding a code the scope list no
+   * longer knows — and `programmeScope` refuses to resolve an unknown code, which is the dead
+   * "which gift?" screen from 2026-09-07. Re-selecting unconditionally would be worse: it would
+   * silently move the reader into a gift they were not in.
+   */
+  const rename = async (p: AdminProgramme) => {
+    const wanted = newCode.trim().toLowerCase()
+    const wasChosen = chosen === p.code
+    const ok = await run(() => updateAdminProgramme(p.id, { code: wanted }, { token: token! }))
+    if (ok) {
+      setRenaming(null); setNewCode('')
+      await reload()
+      if (wasChosen) select(wanted)
+    }
+  }
+
   const inputCls = 'w-full rounded-lg border border-ground-300 px-3 py-2 text-sm'
     + ' focus:border-brand-shape focus:ring-2 focus:ring-brand-shape outline-none'
 
@@ -283,7 +331,18 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                       <LifecycleBadge programme={p} busy={busy} onChange={setLifecycle} />
                     </span>
                   </div>
-                  <p className="mt-0.5 font-mono text-xs text-ground-400">{p.code}</p>
+                  <p className="mt-0.5 flex items-center gap-2 font-mono text-xs text-ground-400">
+                    {p.code}
+                    {/* Beside the code, not in a toast: the code IS the link, so the confirmation
+                        belongs where the reader is already looking, and naming one card keeps two
+                        gifts from both claiming to have been copied. */}
+                    {copied === p.code && (
+                      <span data-testid={`copied-${p.code}`}
+                        className="font-sans font-medium text-positive-700">
+                        {t('admin.programmes.copied')}
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 {/* ⚠ SETTINGS AND DELETE LIVE BEHIND THE THREE DOTS NOW (owner: *"this is not
@@ -300,6 +359,18 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                       </span>
                     }
                   >
+                    {/* ⚠ THE APPLY LINK LIVES HERE, NOT ON THE CARD (owner, 2026-09-08, choosing
+                        between the two: one tap, nothing to mistype, and no height added back to a
+                        card that was just halved). The code is printed on the card for reading;
+                        the LINK is for carrying somewhere else, which is a menu action. */}
+                    <MenuItem onClick={() => void copyApplyLink(p)}>
+                      {t('admin.programmes.copyLink')}
+                    </MenuItem>
+                    <MenuItem onClick={() => {
+                      setError(''); setNewCode(p.code); setRenaming(p)
+                    }}>
+                      {t('admin.programmes.changeCode')}
+                    </MenuItem>
                     <MenuItem onClick={() => enterGift(p, '/admin/programme')}>
                       {t('admin.programmes.openSettings')}
                     </MenuItem>
@@ -417,6 +488,61 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
                 }}
                 className="rounded-lg bg-critical-fill px-4 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50">
                 {t('admin.programmes.deleteCta')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ⚠ THE LINK IS SHOWN WHERE THE CODE IS SET (owner's choice, 2026-09-08). A code changed
+          without seeing the link it drives is a change made blind — this is the one screen where
+          the two facts have to sit together. */}
+      {renaming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !busy && setRenaming(null)}>
+          <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-ground-900">
+              {t('admin.programmes.renameTitle', { name: renaming.name_en })}
+            </h2>
+
+            <p className="mt-4 text-sm font-medium text-ground-700">
+              {t('admin.programmes.applyLinkLabel')}
+            </p>
+            <p data-testid="rename-apply-url"
+              className="mt-1 break-all rounded-lg bg-ground-50 px-3 py-2 font-mono text-xs text-ground-700">
+              {renaming.apply_url}
+            </p>
+
+            <label htmlFor="p-newcode" className="mt-4 block text-sm font-medium text-ground-700">
+              {t('admin.programmes.field.newCode')}
+            </label>
+            <input id="p-newcode" value={newCode} autoComplete="off"
+              onChange={(e) => setNewCode(e.target.value)} className={`mt-1 ${inputCls}`} />
+            <p className="mt-1 text-xs text-ground-500">{t('admin.programmes.field.codeHint')}</p>
+
+            {/* ⚠ SAY THAT THE OLD CODE KEEPS WORKING. Without this sentence the honest reader
+                assumes every poster already printed is about to stop working, and does not rename
+                a code they should. It is also true: the server writes the old code as an alias. */}
+            <div className="mt-4">
+              <InfoBox kind="info">{t('admin.programmes.renameKeeps')}</InfoBox>
+            </div>
+            {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button type="button" onClick={() => setRenaming(null)} disabled={busy}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
+                {t('common.cancel')}
+              </button>
+              <button type="button" data-testid="rename-confirm"
+                // Asleep on an unchanged code as well as a malformed one: the server treats the
+                // same code as a no-op, so offering the press would promise a change that is not
+                // one.
+                disabled={busy || !CODE_OK.test(newCode.trim().toLowerCase())
+                  || newCode.trim().toLowerCase() === renaming.code}
+                onClick={() => void rename(renaming)}
+                className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-semibold text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+                {t('admin.programmes.renameCta')}
               </button>
             </div>
           </div>

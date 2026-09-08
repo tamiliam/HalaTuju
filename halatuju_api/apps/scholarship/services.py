@@ -263,9 +263,30 @@ def resolve_open_cohort(cohort_code='', programme_code=''):
 
     qs = ScholarshipCohort.objects.filter(is_active=True, is_open=True)
     if programme_code:
+        # ⚠ A RETIRED CODE STILL WORKS, AND THIS IS THE ONLY PLACE THAT IS TRUE.
+        # `Programme.code` may be renamed; the old code is kept as a `ProgrammeCodeAlias` so every
+        # poster and forwarded link already in circulation keeps resolving. Without this a rename
+        # would make those links read "no open round" — silently, with no error to notice.
+        #
+        # ⚠ LIVE CODE FIRST, ALIAS ONLY AS A FALLBACK. `code_is_free` forbids the collision, so the
+        # order cannot change an answer today; it is written this way so that if a collision ever
+        # did exist the CURRENT owner of a code wins, never a ghost of it.
+        #
+        # ⚠ AND IT DOES NOT WIDEN ANYTHING. An alias resolves to exactly one programme, which is
+        # then filtered by `is_active` like any other — a link to a switched-off gift still reads
+        # "no open round", as it should.
+        from .models import Programme, ProgrammeCodeAlias
+        resolved = programme_code
+        if not Programme.objects.filter(code=programme_code).exists():
+            alias = (ProgrammeCodeAlias.objects
+                     .filter(code=programme_code)
+                     .values_list('programme__code', flat=True)
+                     .first())
+            if alias:
+                resolved = alias
         # An unknown/inactive programme narrows to nothing → None → "no open round", which is
         # the honest answer for a link naming a programme that is not running.
-        qs = qs.filter(programme__code=programme_code, programme__is_active=True)
+        qs = qs.filter(programme__code=resolved, programme__is_active=True)
     qs = qs.order_by('-year', 'code')
 
     open_cohorts = list(qs[:2])

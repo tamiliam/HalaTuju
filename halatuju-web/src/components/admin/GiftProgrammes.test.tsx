@@ -32,9 +32,14 @@ jest.mock('@/lib/i18n', () => ({
 // the call being asserted.
 const mockPush = jest.fn()
 const mockSelect = jest.fn()
+// Which gift the breadcrumb currently holds. A `let` rather than a constant because renaming the
+// CHOSEN gift and renaming another one must behave differently — see the rename tests.
+let mockChosen = ''
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush }) }))
 jest.mock('@/lib/programmeScope', () => ({
-  useProgrammeScope: () => ({ select: mockSelect, reload: jest.fn().mockResolvedValue(undefined) }),
+  useProgrammeScope: () => ({
+    chosen: mockChosen, select: mockSelect, reload: jest.fn().mockResolvedValue(undefined),
+  }),
 }))
 jest.mock('@/lib/admin-api')
 
@@ -43,7 +48,8 @@ const mockApi = api as jest.Mocked<typeof api>
 const programme = (over: Partial<api.AdminProgramme> = {}): api.AdminProgramme => ({
   id: 7, code: 'test3', name_en: 'Test Three', name_ms: '', name_ta: '',
   is_active: false, lifecycle: 'draft', intake_years: 0, applications: 0, awarded: 0,
-  open_year: null, delete_blocked_by: null, delete_blocked_count: 0, ...over,
+  open_year: null, delete_blocked_by: null, delete_blocked_count: 0,
+  apply_url: 'https://halatuju.xyz/scholarship/apply?p=test3', ...over,
 })
 
 /** A gift that has finished: switched off, and students applied to it. */
@@ -67,7 +73,7 @@ const deleteItem = () =>
 
 const isAsleep = (el: HTMLElement) => el.getAttribute('aria-disabled') === 'true'
 
-beforeEach(() => jest.clearAllMocks())
+beforeEach(() => { jest.clearAllMocks(); mockChosen = '' })
 
 describe('the lifecycle badge', () => {
   it('shows the state, and never paints a draft RED', async () => {
@@ -312,5 +318,139 @@ describe('deleting a gift', () => {
     fireEvent.click(confirm)
     await waitFor(() => expect(mockApi.deleteAdminProgramme)
       .toHaveBeenCalledWith(7, 'delete test3', { token: 'tok' }))
+  })
+})
+
+/**
+ * The apply link and the editable code (2026-09-09).
+ *
+ * ⚠ WHY A RENDERED TEST AND NOT A SOURCE GUARD. Both features live entirely in event handling —
+ * a menu that must be opened, a clipboard call that can REJECT, and a dialog whose confirm button
+ * is asleep until the code both parses and differs. A `/navigator.clipboard/` grep would pass on
+ * a handler wired to nothing.
+ */
+describe('the apply link', () => {
+  const copyItem = () =>
+    screen.getByText('admin.programmes.copyLink').closest('[data-menuitem]') as HTMLElement
+
+  it('copies the link the SERVER served, not one built from the code', async () => {
+    // ⚠ The assertion is the exact string. Rebuilding it here from `window.location.origin` would
+    // pass on this machine and go wrong the day a tenant has its own domain.
+    const writeText = jest.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    await show(programme())
+    openMore()
+    fireEvent.click(copyItem())
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(
+      'https://halatuju.xyz/scholarship/apply?p=test3'))
+  })
+
+  it('says so on the card that was copied', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: jest.fn().mockResolvedValue(undefined) }, configurable: true })
+    await show(programme())
+    openMore()
+    fireEvent.click(copyItem())
+    await waitFor(() => expect(screen.getByTestId('copied-test3')).toBeTruthy())
+  })
+
+  it('prints the link when the browser REFUSES to copy', async () => {
+    // ⚠ THE FAILURE PATH IS THE POINT. `writeText` rejects on an insecure origin and wherever the
+    // permission is withheld; without this the menu item would do nothing at all and say nothing.
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: jest.fn().mockRejectedValue(new Error('denied')) }, configurable: true })
+    await show(programme())
+    openMore()
+    fireEvent.click(copyItem())
+    await waitFor(() => expect(
+      screen.getByText(/admin\.programmes\.copyFailed/)).toBeTruthy())
+    expect(screen.getByText(/copyFailed/).textContent)
+      .toContain('https://halatuju.xyz/scholarship/apply?p=test3')
+  })
+})
+
+describe('changing the short code', () => {
+  const changeItem = () =>
+    screen.getByText('admin.programmes.changeCode').closest('[data-menuitem]') as HTMLElement
+  const openRename = async (p = programme()) => {
+    await show(p)
+    openMore()
+    fireEvent.click(changeItem())
+    await waitFor(() => expect(screen.getByTestId('rename-apply-url')).toBeTruthy())
+  }
+  const codeBox = () => screen.getByLabelText('admin.programmes.field.newCode')
+  const confirm = () => screen.getByTestId('rename-confirm') as HTMLButtonElement
+
+  it('shows the whole apply link beside the box that changes it', async () => {
+    // The owner's choice between the two places the link could live: it is set here, so it is
+    // shown here. A code changed without seeing the link it drives is a change made blind.
+    await openRename()
+    expect(screen.getByTestId('rename-apply-url').textContent)
+      .toBe('https://halatuju.xyz/scholarship/apply?p=test3')
+  })
+
+  it('promises that the old code keeps working', async () => {
+    // ⚠ Without this sentence an honest reader assumes every poster already printed is about to
+    // break, and does not make a rename they should. It is also true — the server writes an alias.
+    await openRename()
+    expect(screen.getByText('admin.programmes.renameKeeps')).toBeTruthy()
+  })
+
+  it('sleeps on the code it already has', async () => {
+    await openRename()
+    expect(confirm().disabled).toBe(true)
+  })
+
+  it('sleeps on a code that cannot be one', async () => {
+    await openRename()
+    fireEvent.change(codeBox(), { target: { value: 'Not A Code' } })
+    expect(confirm().disabled).toBe(true)
+  })
+
+  it('sends the new code, lower-cased', async () => {
+    mockApi.updateAdminProgramme.mockResolvedValue(programme({ code: 'test4' }))
+    await openRename()
+    fireEvent.change(codeBox(), { target: { value: '  TEST4 ' } })
+    expect(confirm().disabled).toBe(false)
+    fireEvent.click(confirm())
+    await waitFor(() => expect(mockApi.updateAdminProgramme)
+      .toHaveBeenCalledWith(7, { code: 'test4' }, { token: 'tok' }))
+  })
+
+  it('re-selects the gift when it was the one the breadcrumb held', async () => {
+    // ⚠ The breadcrumb holds a CODE. Renaming the gift somebody is inside leaves the shell holding
+    // a code the scope list no longer knows, and `programmeScope` refuses an unknown code — the
+    // dead "which gift?" screen from 2026-09-07.
+    mockChosen = 'test3'
+    mockApi.updateAdminProgramme.mockResolvedValue(programme({ code: 'test4' }))
+    await openRename()
+    fireEvent.change(codeBox(), { target: { value: 'test4' } })
+    fireEvent.click(confirm())
+    await waitFor(() => expect(mockSelect).toHaveBeenCalledWith('test4'))
+  })
+
+  it('does NOT move the reader into a gift they were not in', async () => {
+    // The other half of the same rule: re-selecting unconditionally would quietly change which
+    // gift the whole console is looking at.
+    mockChosen = 'somethingelse'
+    mockApi.updateAdminProgramme.mockResolvedValue(programme({ code: 'test4' }))
+    await openRename()
+    fireEvent.change(codeBox(), { target: { value: 'test4' } })
+    fireEvent.click(confirm())
+    await waitFor(() => expect(mockApi.updateAdminProgramme).toHaveBeenCalled())
+    expect(mockSelect).not.toHaveBeenCalled()
+  })
+
+  it('shows the server refusal when the code is already taken', async () => {
+    // Includes a code RETIRED by another gift — the client cannot know those, so the refusal has
+    // to come from the server and be rendered rather than pre-empted.
+    mockApi.updateAdminProgramme.mockRejectedValue({ code: 'code_taken' })
+    await openRename()
+    fireEvent.change(codeBox(), { target: { value: 'taken-code' } })
+    fireEvent.click(confirm())
+    // `getAll`, not `get`: the refusal renders inside the dialog AND in the section banner behind
+    // it — the same shape the create dialog has had since it shipped.
+    await waitFor(() => expect(
+      screen.getAllByText('admin.programmes.error.codeTaken').length).toBeGreaterThan(0))
   })
 })

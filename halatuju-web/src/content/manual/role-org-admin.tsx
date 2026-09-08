@@ -151,6 +151,23 @@ export const roleOrgAdmin: ManualChapter = {
       alt: 'The organisation group in the menu (placeholder)',
     },
     {
+      anchor: 'org-admin-apply-link',
+      title: 'The link applicants follow',
+      body: (
+        <>Every gift programme has its own <strong>apply link</strong>. Open <strong>Overview</strong>, press the
+        <strong> ⋮</strong> at the top-right of a gift&rsquo;s card and choose <strong>Copy apply link</strong>
+        — that is the address to put on a poster, in an email, or on your own website. It belongs to the
+        <em> gift</em>, not to one intake year, so the same link keeps working every year; it opens whichever
+        intake is taking applications at the time, and says so plainly when none is.
+        <br /><br />
+        The last part of the link is the gift&rsquo;s <strong>short code</strong>. You can change it later —
+        <strong> ⋮</strong> then <strong>Change the short code</strong>, which shows you the current link
+        beside the box. <strong>The old code keeps working.</strong> Anything already printed or sent still
+        reaches this gift, so a rename never strands an applicant part-way. A code another gift uses, or used
+        to use, is refused.</>
+      ),
+    },
+    {
       anchor: 'org-admin-payments',
       title: 'Payment runs',
       body: (
