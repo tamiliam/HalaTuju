@@ -1,4 +1,5 @@
 import { adminLanding, mustCompleteProfile } from '@/lib/adminLanding'
+import { defaultRoute, ROLE_NAMES } from '@/lib/navigation'
 import { missingReviewerFields, reviewerProfileComplete } from '@/lib/reviewerProfile'
 import type { ReviewerProfile } from '@/lib/admin-api'
 
@@ -12,9 +13,13 @@ const full: ReviewerProfile = {
 }
 
 describe('adminLanding', () => {
-  it('sends a super/admin to the dashboard', () => {
+  // ⚠ `admin` MOVED, AND THAT IS THE POINT OF THE 2026-09-08 CHANGE. `/admin` is the PLATFORM
+  // dashboard (super + partner); an `admin` never belonged there and was bounced off it to a page
+  // chosen for somebody else. It now lands on its organisation's own Overview. `defaultRoute` in
+  // navigation.test.ts pins the whole table; this file only proves the delegation is real.
+  it('sends a super to the platform dashboard, an admin to their organisation', () => {
     expect(adminLanding({ role: 'super' })).toBe('/admin')
-    expect(adminLanding({ role: 'admin' })).toBe('/admin')
+    expect(adminLanding({ role: 'admin' })).toBe('/admin/organisation')
   })
   it('sends a viewer + a complete reviewer to the workspace', () => {
     expect(adminLanding({ role: 'viewer' })).toBe('/admin/scholarship')
@@ -25,6 +30,17 @@ describe('adminLanding', () => {
   })
   it('never traps on an OLD payload that omits the flag (undefined ≠ false)', () => {
     expect(adminLanding({ role: 'reviewer' })).toBe('/admin/scholarship')
+  })
+
+  // ⚠ THE DOCSTRING CLAIMED THIS FOR MONTHS AND IT WAS NOT TRUE — `adminLanding` held its own
+  // hand-copied copy of the three lines, and they agreed only because nobody had edited either.
+  // Deriving the route from the registry is exactly the change that would have split them.
+  it('is the SAME function as defaultRoute, not a second copy of the rule', () => {
+    for (const r of [...ROLE_NAMES, 'viewer', 'nonsense'] as const) {
+      expect(adminLanding({ role: r })).toBe(defaultRoute({ role: r }))
+    }
+    expect(adminLanding({ role: 'reviewer', reviewer_profile_complete: false }))
+      .toBe(defaultRoute({ role: 'reviewer' }, false))
   })
 })
 

@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { useProgrammeScope } from '@/lib/programmeScope'
 import TableFrame from '@/components/admin/TableFrame'
-import { effectiveRole } from '@/lib/navigation'
+import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getScholarshipApplications,
   getAssignableAdmins,
@@ -46,7 +46,23 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
 export default function AdminScholarshipList() {
   const { token, role } = useAdminAuth()
-  const isSuper = effectiveRole(role) === 'super'
+  const effRole = effectiveRole(role)
+  const isSuper = effRole === 'super'
+  /*
+   * ⚠ THIS PAGE HAD NO CLIENT GUARD AT ALL, AND A REAL ROLE WAS BEING SENT HERE (2026-09-08).
+   * The registry omits `finance` from `applications` deliberately — its `_b40_scope` is 'none', so
+   * every call it makes here can only 403 — yet the old landing rule pushed finance to `/admin`,
+   * which bounced it straight to this page. A finance user's first screen was a list built for
+   * somebody else, failing quietly.
+   *
+   * `defaultRoute` now lands finance on the Overview instead, which is the actual fix. This is the
+   * second line of it: the registry already states who may open this page, so the page should say
+   * the same thing rather than trusting whoever routed here. Cheap, and it means a future routing
+   * mistake surfaces as a plain refusal instead of an empty table.
+   *
+   * ⚠ NOT A FENCE — see `navigation.ts`. The endpoint refuses on its own and is unchanged.
+   */
+  const mayView = canAccess('/admin/scholarship', effRole)
   // Assignment (the "Assigned" column + inline dropdown) is a super or org_admin power —
   // an org_admin assigns their own org's reviewers (backend fences the target + application).
   const canAssign = isSuper || role?.role === 'org_admin'
@@ -117,7 +133,7 @@ export default function AdminScholarshipList() {
   }, [search])
 
   useEffect(() => {
-    if (!token) return
+    if (!token || !mayView) return
     setLoading(true)
     getScholarshipApplications(
       {
@@ -198,6 +214,10 @@ export default function AdminScholarshipList() {
     setter(value)
     setPage(1)
   }
+
+  // ⚠ `role &&` — while the role is still loading we render the page, not a refusal. Showing
+  // "you may not see this" for a frame and then the table is worse than a blank moment.
+  if (role && !mayView) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
   return (
     <div>

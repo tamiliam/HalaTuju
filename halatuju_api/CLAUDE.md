@@ -634,6 +634,80 @@ nobody, but leaving it is amber for no better reason than our own old prompt.
 gift blocks creating a payment run for it; TD-234 (thirteen repair commands with no door); TD-229;
 TD-231; TD-225; TD-221.
 
+## Superseded — previous Next Sprint (as of 2026-09-08, after gift-first navigation)
+
+**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION, NO API CHANGE, WEB ONLY.** Worktree
+`.worktrees/gift-first`, branch `feat/gift-first`, base `c145b677`. 10 files, all under
+`halatuju-web/`. Retro `docs/retrospective-2026-09-08-gift-first-navigation.md`; decisions x2;
+lessons x5. Gates, ALL RUN INSIDE THE WORKTREE: jest **1864** (+11); tsc **24** (baseline); lint
+**0 Errors**; i18n **4887 x 3** (no new keys); `next build` exit 0. **No Python touched**, so
+pytest and `makemigrations --check` are unchanged from main. Six bite-checks landed.
+
+**⚠⚠ THE OWNER ASKED FOR ONE THING AND THE INVESTIGATION FOUND A SECOND — read this first.**
+They asked for the programme menu to stay hidden until a gift is picked. Reading the code to plan
+it turned up that **nobody was landing on the Overview at all**, and that **`finance` was being
+routed to a page the registry omits it from deliberately** (`_b40_scope` -> 'none', so every call
+can only 403). Their first screen after signing in was a list built for somebody else, failing as
+an empty table rather than a refusal. That was not reported and was not asked for.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠⚠ THE RULE IS CONSEQUENCE, NOT ROLE — and that is what dissolves the reviewer knot.**
+  `NavItem.needsProgramme` marks **only** Programme -> Configuration. Applications does **not**
+  carry it and must not. Configuration WRITES a gift's settings, so with nothing chosen it can only
+  ask, and it invites editing the wrong gift's rules; Applications is a READ, and "every gift under
+  a neutral heading" is true, just less specific. **Programme is a reviewer's ONLY sidebar group**
+  (pinned in `navigation.test.ts`), so hiding the GROUP would leave them with an empty rail and no
+  way back to their queue. Marking the configure row and not the work row means the group can never
+  empty — for anybody — and **no role needs an exemption anywhere.**
+- **⚠ HIDDEN, NEVER "SOON".** A Soon pill promises a feature that is coming; this one is here and
+  waiting on the reader.
+- **⚠ `programmeChosen` IS OPTIONAL AND CHECKED AS `=== false`** (the `reviewer_profile_complete`
+  shape). Omitted means SHOW — the Organisation Overview looks hrefs up through `visibleNav` and
+  must not silently lose a row. Do not make it required.
+- **⚠ `scopesLoaded` IS NOT REDUNDANT.** An empty `programmes` array means BOTH "this tenant runs no
+  gifts" and "we have not asked yet". Treating the second as the first hides Configuration on the
+  first paint of every page load and slides it into the rail a moment later. A bite-check pins it.
+- **⚠ LANDING IS DERIVED NOW, NOT NAMED.** `defaultRoute` returns the first non-placeholder,
+  non-dark route in registry order this role may actually open. org_admin / admin / finance ->
+  `/admin/organisation`; qc -> `/admin/scholarship` in one hop; **super and partner unchanged**.
+  Change a role set in the registry and the landing moves with it — that is the point.
+- **⚠ `adminLanding()` REALLY DELEGATES NOW.** Its docstring had claimed so since N2 while two
+  hand-copied implementations sat side by side, agreeing only because nobody had edited either. A
+  test asserts the two agree for every role.
+- **⚠ `AppShell` IS TWO COMPONENTS.** `AppShell` fetches the scopes and PROVIDES the programme
+  context; `Chrome` renders inside it and CONSUMES it. A component cannot read a context it is
+  itself mounting, and lifting the selection up would give the crumb and the pages two holders for
+  one answer — which `ScopeSwitcher`'s docstring forbids.
+- The Applications page gained the client role guard it never had, and the rail now NAMES the gift
+  in the Programme heading (the prop existed from N4 and was fed `undefined`).
+
+**▶ AT DEPLOY: push (WEB ONLY — no Python changed).** No migrate-first, no env vars, no data step.
+**Nothing a student sees changes.** On a single-gift tenant **nothing changes at all** —
+`programmeScope` resolves a sole gift on its own. BrightPath's org_admin has TWO gifts, so they are
+the only person who sees the new behaviour.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Sign in. You should land on **Organisation -> Overview**, not on Applications.
+2. The rail's **Programme** group shows **Applications only** — no Configuration — and the heading
+   reads the word "Programme".
+3. Press a gift in the breadcrumb. **Configuration appears**, and the group heading now reads that
+   gift's name.
+4. Sign in as **tamiliam@gmail.com** (super): the platform Dashboard, exactly as before.
+5. ⚠ A logged-in browser pass is the one thing the tests cannot do — see the retro's honest gaps.
+
+**▶ NEXT, and the owner has already approved the approach:** the **apply link on the gift card**
+(`/scholarship/apply?p=<code>`, per GIFT not per year, shown nowhere today) and an **editable gift
+code with the old code KEPT AS AN ALIAS**. ⚠ The alias is not optional: an unknown code resolves to
+"no open round", so a renamed gift would make every printed link tell a student **"applications
+closed"** — silent and wrong. TD-230's other half. **That sprint has a migration; this one did not.**
+
+**⚠ ALSO OPEN:** the four organisation-scope surfaces (Reviewers, Sources, Payments, Sponsors)
+still ignore the gift and need an owner ruling per screen — a reviewer's `programme` is nullable
+and **NULL MEANS EVERY GIFT**, so a naive filter would hide the organisation-wide reviewers. The
+application DETAIL page still shows whichever gift the crumb is on. Archiving a gift blocks
+creating a payment run for it; TD-229; TD-231; TD-225; TD-221. ms/ta remain first drafts for
+`admin.scholarship.titleAll` and the round-state strings.
+
 **⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
 credit) until it is **inked AND the money has changed hands**, with a bank reference for
 `external_reference`.

@@ -160,6 +160,47 @@ name makes one type eligible again without re-sweeping the whole corpus.
 
 pytest **4657**; `makemigrations --check` clean. Two bite-checks landed, each injection verified.
 
+## Feature: the gift must be known before the menu offers to configure one - 2026-09-08
+
+The owner, looking at the shipped gift switcher: *"I feel the programme shouldn't show up until
+they are selected"* — the Supabase shape, where you pick a project before its pages appear. And
+immediately the knot with it: *"But reviewers do not have access to the overview page. They are
+brought straight to the Application page. So, I think we need to think this through."*
+
+**The rule is CONSEQUENCE, not role, and that is what dissolves the knot.** A row that would go
+wrong without a choice hides; a row that answers correctly stays.
+
+- **Programme > Configuration hides** until a gift is chosen. It writes a gift's settings, so
+  opening it with nothing chosen can only ever ask a question - and worse, it invites somebody to
+  edit the wrong gift's rules.
+- **Programme > Applications stays.** It is a READ: with nothing chosen it lists every gift under
+  a neutral heading, which is true, just less specific. The same line the gift switcher drew
+  inside the pages, applied to the menu.
+- **So no role needs an exemption.** Programme is a reviewer's ONLY sidebar group, so hiding the
+  group would have left them with an empty rail and no way back to their own queue. Marking the
+  configure row and not the work row means the group can never empty, for anybody.
+- The rail now **names the gift** in that group's heading. The prop had existed since N4 and was
+  fed `undefined`, so the heading read the bare word "Programme" whichever gift was open.
+
+**Fix: nobody was landing where they were supposed to, and one role landed somewhere it may not
+go.** Login sent everyone but a reviewer to `/admin`, which is the PLATFORM dashboard
+(`roles: ['super','partner']`), so four roles were bounced off it by the page.
+
+- **`finance` was bounced onto Applications, a page the registry omits it from deliberately** -
+  its `_b40_scope` is 'none', so every call it makes there can only 403. Their first screen after
+  signing in was a list built for somebody else, failing quietly. The page also had no role guard
+  of its own; it has one now.
+- **org_admin, admin and finance now land on their organisation's Overview**, which is the front
+  door the gifts are listed on. qc reaches Applications in one hop instead of two. super and
+  partner are unchanged.
+- Landing is **derived** from the registry - the first route this role may actually open, in the
+  registry's own order - instead of naming `/admin` and letting a page sort it out.
+- **`adminLanding()` now really does delegate to `defaultRoute()`.** The docstring had claimed it
+  for months while the two held separate hand-copied implementations, agreeing only because
+  nobody had edited either.
+
+Web only. No migration, no API change. jest 1853 -> 1864; six bite-checks landed.
+
 ## The payment run reads as cards on a phone - 2026-09-08
 
 First of the phone card layouts, approved by the owner from a drawing before any code. Seven
@@ -337,6 +378,7 @@ the first version of the "every table is framed" guard only asked whether the fi
 TableFrame, so putting Intake years back into a clipping card sailed past it. Counting frames
 against tables instead immediately found a real miss - the Payments funding table, which my own
 survey had never seen because it counted one table per file.
+
 ## An intake round has four states, and one of them is final - 2026-09-08
 
 The owner's third live-review round on Programme -> Configuration, and it started with a question I
@@ -393,6 +435,7 @@ status; `profile_completed_at` is the real submission stamp.
 **MIGRATION `scholarship/0151`** - additive, two nullable columns. **MIGRATE-FIRST.** api + web.
 pytest 5984; jest 1822; tsc 24 (baseline); lint 0; i18n 4884 x 3; `next build` exit 0;
 `makemigrations --check` clean. Three bite-checks, each injection verified as landed.
+
 ## Fix: a matching IC number now vouches for a differently-spelt name (BrightPath #19) - 2026-09-08
 
 Lina's birth certificate and her mother's MyKad carry **the same twelve digits** and two spellings of
@@ -659,6 +702,7 @@ de-orged, the reminder interval hoisted back above the loop, and a signatory key
 registry - each failed its owning test, each restored. i18n +5 keys x3 (ms/ta first drafts).
 
 ## Org Config Sprint E: the document limits become organisation-tunable - 2026-09-07
+
 ## Org Config Sprint E: the document limits become organisation-tunable - 2026-09-07
 
 Four settings join Organisation > Settings > Configuration under a new **Documents** group
@@ -790,6 +834,7 @@ retro `docs/retrospective-2026-09-07-org-config-sprint-d.md`.
 the payload serving a platform constant, the cross-field rule disabled, and the browser
 ignoring the served rules - each failed its owning test, each restored by writing the original
 back. i18n +16 keys x3 (ms/ta first drafts).
+
 ## Students hold a gift, not intake years - 2026-09-07
 
 **NO migration. api + web.** The owner read TD-232 back and said the rule was wrong: *"I don't
@@ -860,6 +905,7 @@ Merged tree (carries the concurrent approve-lockout cockpit fix `260927dc`): pyt
 (+10; `test_org_config.py` 35 -> 45) - jest **1749** (+4 of those are this sprint's) -
 lint **0** - tsc **24** (baseline) - i18n **4816 x 3** (+12 keys are this sprint's; ms/ta first
 drafts) - `next build` clean - `makemigrations --check` clean.
+
 ## Fix: a half-completed Approve no longer locks the reviewer out of her own case - 2026-09-07
 
 One Approve press does two things in order: `record-verdict` saves the decision, then
@@ -2359,6 +2405,7 @@ student the day configuration becomes editable.
 Full pytest suite green (existing tests unmodified bar the one deliberate pin edit) ·
 jest 1470 · `next lint` 0 · i18n 4534×3 (no new keys) · `next build` clean ·
 `makemigrations --check` clean.
+
 ## The eWallet ID box takes 5 digits — Vircle rolled past the 4-digit block - 2026-08-27
 
 **Small change (hotfix).** No migration. api + web.
@@ -4573,6 +4620,7 @@ what the owner asked for ("we want them; we don't want to scare them away").
 - ms/ta are first drafts (TD-183), including the Tamil for all five strings.
 - Nothing collects identity or source-of-funds evidence yet — §10 states the obligation so **TD-192**
   has something to enforce. T2 builds the document; T3 the acceptance wizard and the gate.
+
 ## Console sign-in works on localhost again — 2026-07-28
 
 Google sign-in to the partner console and sponsor portal had been broken on a local address for
@@ -4605,6 +4653,7 @@ anything can touch the key, and uses it only to explain a failure, never to pred
 
 21 tests, including both production hostnames — a guard that ever fired on the live site would send
 admins to their own laptop.
+
 ## The breadcrumb says where you ARE — 2026-07-28
 
 Owner, from three screenshots: *"First should only show halatuju, as it is outside BrightPath. The
@@ -5223,6 +5272,7 @@ Design of record: <https://claude.ai/code/artifact/17d259a8-f15f-4f0a-858e-492f1
 ### Verification
 `npx jest` 841 passed (55 suites, +61); `node scripts/check-i18n.js` 3976 keys × 3; `next build`
 exit 0. No backend change, no migration, pytest untouched.
+
 ## Sponsor module S1 — one sponsor, whole — 2026-07-27
 
 Sprint 1 of `docs/plans/2026-07-27-sponsor-module-roadmap.md` (owner-approved; design of record
@@ -6472,6 +6522,7 @@ Owner request. Web-only, no migration, no new i18n (the witness card reuses `adm
   (it previously loaded for every sourceless student, most of whom are at `shortlisted`).
 - Tests: **+11** asserting both rules across **every** status in the lifecycle, so a status added
   later surfaces as a decision rather than a card appearing in the wrong place.
+
 ## Consent — the share-with-sponsors wording now matches what we actually do — 2026-07-22
 
 The consent form promised away MORE than the platform does. It said we share the student's
@@ -6660,6 +6711,7 @@ Lets the organisation's own super close out an applicant who stalled in the shor
   (**ms/ta are first-drafts pending owner review**). Tests: +17 pytest (roles incl. qc/reviewer
   refused, cross-org 404, blank reason, wrong status, no double-send, reason-never-emailed,
   lockout invariant) +4 jest; org-fence classification.
+
 ## Contract authoring — outline alignment, donor variables, schedule copy, org dropdown — 2026-07-21
 
 Third owner-review pass (module behind the OFF flags):
@@ -6772,6 +6824,7 @@ Vircle hasn't switched on yet. **DARK behind `VIRCLE_ACTIVATION_ENABLED` (defaul
   create the Drive folder `01 BrightPath/03 Vircle/03 Activation`; create Cloud Scheduler
   `halatuju-vircle-activation-request` (48h → `/cron/vircle-activation-request/`); set
   `VIRCLE_ACTIVATION_ENABLED=1` after a real-send check.
+
 ## Contract authoring — render polish, editor layout, counterparty auto-fill — 2026-07-21
 
 Owner-review refinements to the contract module (behind the OFF flags; authoring only).
@@ -6872,6 +6925,7 @@ Owner-review refinements to the contract module (behind the OFF flags; authoring
   defined INSIDE `AdministrationPage`, so each keystroke's re-render minted a new component identity and
   React remounted the whole subtree — including the inputs — losing focus. Hoisted `Section` to module
   scope (it uses only props), matching `IconCard`. Web-only, no migration.
+
 ## Contract authoring — import fidelity + insert-between + bold/variables — 2026-07-21
 
 - **Changed (import fidelity)** — uploading a Word `.docx` now **reads the document's own heading /
@@ -7030,6 +7084,7 @@ Owner-approved (design mockup signed off). Contract module stays behind the OFF 
   and registered with reportlab so **xhtml2pdf embeds them in the PDF** (verified: both Regular +
   Bold subset-embedded, no Helvetica/Times fallback). The browser preview iframe (which can't load
   the .ttf) falls back to a Georgia/Times serif — a close visual match to the embedded PDF font.
+
 ## QC decision gate — Decline routed through QC + QC outright reject — 2026-07-19
 
 Both reviewer outcomes now pass a second pair of eyes, and the QC can end a case itself.
@@ -7302,6 +7357,7 @@ local sqlite only.
   atomically; the seeded draft reproduces today's constants + schedule; Gemini
   mocked (never a live call). **2798 scholarship pytest** green; no migration
   drift; `bursary.py`/`payments.py` untouched.
+
 ## confirm_pathway aligns the institution to the catalogue (this + future) — 2026-07-18
 
 Owner-directed off #43/#115: the cockpit showed the IPG institution in raw ALL-CAPS
@@ -7867,6 +7923,7 @@ One sprint, one deploy, **no migration**. The organisation roles gained the writ
 
 ### Fixed
 - **The set-password page now carries the account email as an `autocomplete="username"` field**, so the browser's password manager attaches the saved credential to a username instead of showing an empty "Username" box in its "Update password?" prompt (the reviewer had to type it manually). The read-only field also shows whose account is being set up. The email comes from the Supabase link session; no server change.
+
 ## Administration panel + surface partition + org_admin role — Sprints A + B — 2026-07-15
 
 Delegation of BrightPath staff management to its programme lead, plus a platform-PII security
@@ -7953,6 +8010,7 @@ pill. Deployed `50149446` (api+web) + `06e38dee` (api hardening); NO migration; 
 
 ### Added
 - **`last_decision_reopen` on `AdminApplicationDetailSerializer`** — the most recent reopen (open or closed) as `{reopened_by, reopened_by_name, reviewer_name, reason, created_at, resulted_in_change}`, or null when the case was never reopened. Backed by the new `reopen.latest_reopen()` helper. This is the audit anchor for the decision trail; the QC's reopen reason was already stored on `DecisionReopen`, just never surfaced on a decided case.
+
 ## School-leaving certificate genuineness model + keep-better + duplicate collapse — 2026-07-15
 
 The *Sijil Berhenti Sekolah* had NO genuineness check — the green "Verified" chip only meant the
@@ -8120,6 +8178,7 @@ A live review of applicant #117 surfaced four defects, three of them systemic. N
 
 ### Changed
 - **The household under-count query fires at a gap of ≥1, not ≥2** (`_ROSTER_UNDERCOUNT_MARGIN` 2 → 1). The household count is the per-capita denominator, so one unaccounted person changes the means test — the owner explicitly overruled the earlier "an under-count of one is benign" justification (#117 described 5 against a stated 6, gap 1, and nothing was asked).
+
 ## One status vocabulary: shared labels + semantic stage colours — 2026-07-14
 
 ### Added
