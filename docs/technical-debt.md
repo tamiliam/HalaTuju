@@ -3475,4 +3475,12 @@ from the same place, or the next person gets the same silent mismatch.
 
 **The trigger:** the next completion report staged from a worktree — i.e. the next one.
 
-(Logged 2026-09-08, BrightPath #23 close.)
+**⚠ THE WORKAROUND, PROVEN THE SAME DAY (#18's completion report):** fast-forward the MAIN checkout
+to the commit you actually deployed (`git pull --ff-only` there) BEFORE running the command from it.
+The stamp is then correct by construction rather than by luck — analysis 54 carries `ef44c723`, the
+exact deployed commit, where #23's analysis 53 carries an unrelated one. Check the shared checkout's
+`git status` first; another agent may be working in it. This does not close the ticket — it depends
+on somebody remembering, which is the shape of thing the lane's own rail says to make impossible or
+loud rather than to write down.
+
+(Logged 2026-09-08, BrightPath #23 close; workaround added the same day.)

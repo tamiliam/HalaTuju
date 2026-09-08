@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Console tables start at twenty-five rows - 2026-09-08
 
+**DEPLOYED AND VERIFIED LIVE.** `main` at `ef44c723`; **only the WEB build fired** (no Python
+changed — the sixth observation agreeing that the api trigger follows PYTHON, not the
+`halatuju_api/**` glob); serving **halatuju-web-00858-xjp**; public routes 200; no web ERROR logs.
+⚠ The live proof is by TEST, not by reading the served bundle: the change is a NUMBER, which
+minifies inline with nothing distinctive to grep for. The reviewers and benefactors pages are
+admin-gated, so the visual check is the owner's.
+
 BrightPath request #18 (small change, 0.5h quoted). `tableView.DEFAULT_PAGE_SIZE` 10 -> 25.
 
 **THEY ASKED FOR TWO PAGES AND WE MOVED THE SHARED DEFAULT INSTEAD**, which is what the posted
