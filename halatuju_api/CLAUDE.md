@@ -636,7 +636,10 @@ TD-231; TD-225; TD-221.
 
 ## Superseded — previous Next Sprint (as of 2026-09-08, after gift-first navigation)
 
-**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION, NO API CHANGE, WEB ONLY.** Worktree
+**DEPLOYED AND VERIFIED LIVE 2026-09-08.** Merged to main at `6fa201fc`; web build SUCCESS on
+`6fa201f`; serving **halatuju-web-00855-wlh** at 100%. **No api build fired — no Python changed**,
+which is correct, not a miss. Served bundle read back (1.70 MB) and carries `needsProgramme` and
+`programmeChosen`; no error logs. **NO MIGRATION, NO API CHANGE, WEB ONLY.** Was worktree
 `.worktrees/gift-first`, branch `feat/gift-first`, base `c145b677`. 10 files, all under
 `halatuju-web/`. Retro `docs/retrospective-2026-09-08-gift-first-navigation.md`; decisions x2;
 lessons x5. Gates, ALL RUN INSIDE THE WORKTREE: jest **1864** (+11); tsc **24** (baseline); lint
@@ -681,12 +684,11 @@ an empty table rather than a refusal. That was not reported and was not asked fo
 - The Applications page gained the client role guard it never had, and the rail now NAMES the gift
   in the Programme heading (the prop existed from N4 and was fed `undefined`).
 
-**▶ AT DEPLOY: push (WEB ONLY — no Python changed).** No migrate-first, no env vars, no data step.
-**Nothing a student sees changes.** On a single-gift tenant **nothing changes at all** —
+**▶ DEPLOYED. Nothing a student sees changed.** On a single-gift tenant **nothing changes at all** —
 `programmeScope` resolves a sole gift on its own. BrightPath's org_admin has TWO gifts, so they are
 the only person who sees the new behaviour.
 
-**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+**▶ OWNER POST-CHECK, STILL OWED (as the BrightPath `org_admin`, elanjelian@me.com):**
 1. Sign in. You should land on **Organisation -> Overview**, not on Applications.
 2. The rail's **Programme** group shows **Applications only** — no Configuration — and the heading
    reads the word "Programme".
