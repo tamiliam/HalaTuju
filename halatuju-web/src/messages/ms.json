@@ -1613,7 +1613,8 @@
         "mismatch": "Tidak sepadan — semak semula",
         "checkNumber": "Nama sepadan — semak nombor KP",
         "checkNumberOneDigit": "Nama sepadan — nombor KP berbeza satu digit (mungkin salah baca imbasan)",
-        "reviewing": "Kami akan semak ini"
+        "reviewing": "Kami akan semak ini",
+        "checkName": "Ejaan berbeza — nombor KP yang sama"
       },
       "strCheck": {
         "recipient": "Nama",
@@ -5691,10 +5692,6 @@
       "subtitle": "Satu pusingan pengambilan setahun.",
       "new": "Tahun pengambilan baharu",
       "createClosed": "Cipta sebagai ditutup",
-      "open": "Dibuka",
-      "closed": "Ditutup",
-      "openIt": "Buka permohonan",
-      "close": "Tutup",
       "empty": "No intake years yet.",
       "noProgrammes": "Program hadiah perlu wujud sebelum tahun pengambilan boleh dicipta.",
       "loadFailed": "Tahun pengambilan tidak dapat dimuatkan.",
@@ -5738,7 +5735,11 @@
         "generic": "Perubahan tidak dapat disimpan. Tiada perubahan dibuat.",
         "windowBackwards": "Tarikh tutup tidak boleh sebelum tarikh buka.",
         "badOpensOn": "Masukkan tarikh pembukaan yang sah.",
-        "badClosesOn": "Masukkan tarikh penutupan yang sah."
+        "badClosesOn": "Masukkan tarikh penutupan yang sah.",
+        "roundFinished": "Pusingan ini telah ditamatkan sepenuhnya dan tidak boleh dibuka semula.",
+        "stillOpen": "Tutup pusingan ini kepada permohonan baharu terlebih dahulu.",
+        "alreadyFinished": "Pusingan ini telah pun ditamatkan sepenuhnya.",
+        "confirmMismatch": "Kod tidak sepadan."
       },
       "windowNote": "Tarikh ini merekodkan bila pusingan dijangka berjalan. Ia tidak membuka atau menutup pusingan; pembukaan kekal sebagai tindakan berasingan. Biarkan kosong jika jadual belum ditetapkan.",
       "edit": "Sunting",
@@ -5750,11 +5751,34 @@
         "after": "Tempoh telah tamat"
       },
       "confirmOpenTitle": "Buka di luar tempoh yang dinyatakan?",
-      "confirmOpenBefore": "Pusingan ini tidak dijadualkan dibuka sehingga {date}.",
-      "confirmOpenAfter": "Pusingan ini dijadualkan ditutup pada {date}.",
+      "confirmOpenBefore": "Tempoh yang dinyatakan dibuka pada {date}.",
+      "confirmOpenAfter": "Tempoh yang dinyatakan ditutup pada {date}.",
       "confirmOpenGeneric": "Pusingan ini berada di luar tempoh yang dinyatakan.",
-      "confirmOpenNote": "Tarikh hanya merekodkan jadual, jadi anda boleh membukanya sekarang. Pelajar boleh memohon sebaik sahaja ia dibuka.",
-      "confirmOpenYes": "Tetap buka permohonan"
+      "confirmOpenNote": "Permohonan akan diterima serta-merta.",
+      "confirmOpenYes": "Buka permohonan",
+      "state": {
+        "draft": "Draf",
+        "open": "Dibuka",
+        "closed": "Ditutup",
+        "finished": "Tamat",
+        "change": "Tukar keadaan {name}",
+        "openIt": "Buka permohonan",
+        "closeIt": "Tutup permohonan",
+        "finishIt": "Tamatkan sepenuhnya",
+        "means": {
+          "draft": "Belum dibuka. Tiada permohonan diterima.",
+          "open": "Pelajar boleh memulakan dan menghantar permohonan.",
+          "closed": "Tiada permohonan baharu. Pemohon yang telah bermula masih boleh menghantar.",
+          "finished": "Pusingan ini telah tamat. Tiada penghantaran diterima dan ia tidak boleh dibuka semula."
+        }
+      },
+      "finish": {
+        "title": "Tamatkan pusingan ini sepenuhnya?",
+        "body": "Pusingan ini tidak akan menerima sebarang penghantaran lagi. Tindakan ini tidak boleh dibatalkan.",
+        "stranded": "{n} pemohon telah memulakan tetapi belum menghantar. Mereka tidak lagi boleh berbuat demikian.",
+        "typeCode": "Taip {code} untuk mengesahkan",
+        "confirm": "Tamatkan sepenuhnya"
+      }
     },
     "orgSettings": {
       "nav": "Tetapan",

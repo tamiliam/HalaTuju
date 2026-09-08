@@ -78,6 +78,7 @@ from .views_admin import (
     AdminProgrammeConfigurationView,
     AdminProgrammeListView, AdminProgrammeDetailView,
     AdminIntakeYearListView, AdminIntakeYearDetailView,
+    AdminIntakeYearFinishView,
     AdminOrganisationThemeView,
     AdminOrganisationThemePublishView,
     AdminOrganisationThemeRevertView,
@@ -408,6 +409,9 @@ urlpatterns = [
     path('admin/scholarship/programmes/<int:pk>/', AdminProgrammeDetailView.as_view()),
     path('admin/scholarship/programmes/<int:pk>/years/', AdminIntakeYearListView.as_view()),
     path('admin/scholarship/intake-years/<int:pk>/', AdminIntakeYearDetailView.as_view()),
+    # ⚠ ITS OWN ROUTE because it is TERMINAL and takes a typed confirmation — see
+    # `AdminIntakeYearFinishView`. Never fold this into the PATCH above.
+    path('admin/scholarship/intake-years/<int:pk>/finish/', AdminIntakeYearFinishView.as_view()),
     path('admin/scholarship/organisation/theme/', AdminOrganisationThemeView.as_view()),
     path('admin/scholarship/organisation/theme/publish/', AdminOrganisationThemePublishView.as_view()),
     path('admin/scholarship/organisation/theme/revert/', AdminOrganisationThemeRevertView.as_view()),

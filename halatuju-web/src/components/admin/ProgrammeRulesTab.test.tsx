@@ -45,6 +45,9 @@ const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => (
   // window, the live 2026 intake among them, and nothing was backfilled. The dates DESCRIBE; they
   // open nothing, so a round without them is normal and this fixture stays a normal round.
   opens_on: null, closes_on: null,
+  // The four served fields the round badge and the finish dialog read. `state` is computed
+  // server-side (`views_admin.round_state`) — never derived here.
+  state: 'closed', finished_at: null, finished_by: '', unsubmitted: 0,
   // BrightPath's LIVE rule: four at A- plus one more at B+, stored as a strong TOTAL of five.
   requirements: {
     min_spm_a_count: 4, min_spm_bplus_count: 5, min_stpm_pngk: null,

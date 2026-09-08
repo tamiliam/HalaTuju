@@ -550,7 +550,88 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-08, after the console layout standard)
+## Next Sprint (as of 2026-09-08, after the round-state sprint)
+
+**SHIPPED, NOT DEPLOYED — the owner gates it, and there is a MIGRATION.** Worktree
+`.worktrees/round-states`, branch `feat/round-states` (base = `origin/main` at `2af14eda`).
+**⚠ MIGRATION `scholarship/0151` — ADDITIVE, TWO NULLABLE COLUMNS, NOT YET APPLIED. MIGRATE-FIRST.**
+api + web. Retro `docs/retrospective-2026-09-08-round-states.md`; decisions ×2; lessons ×5.
+Gates, ALL RUN INSIDE THE WORKTREE: pytest **5984** (+14); jest **1822** (+12); tsc **24**
+(baseline); lint **0**; i18n **4884 × 3** (4 retired, 21 added; ms/ta first drafts);
+`next build` exit 0; `makemigrations --check` clean. Three bite-checks landed.
+
+**⚠⚠ THE FINDING THAT MADE THIS SPRINT, AND IT IS THE THING TO READ FIRST.** The owner asked when
+the 2026 intake closed and said a cron did it. **Nothing auto-closes** — verified across every
+Python writer of `is_open` (two), all 26 Cloud Scheduler jobs, every Cloud Run job, all 47 cron
+tasks and the commits either side. Their two dates (link dead 1 July, submissions until the 7th) are
+**ONE switch plus a grace period nobody had written down**: closing a round stops NEW applications
+and nothing else, because the intake gate is on `ApplicationCreateView` and a returning applicant
+never reaches it again. **Thirty students submitted between 1 and 7 July** on exactly that.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠⚠ CLOSED AND FINISHED ARE DIFFERENT THINGS. DO NOT COLLAPSE THEM.** `round_state` serves
+  **draft · open · closed · finished**. `closed` = no new applications, **anyone already started may
+  still submit**; `finished` ends that. A bite-check that made closing refuse a submission failed
+  exactly the test named for those thirty students.
+- **⚠ FINISHED IS TERMINAL** (owner: *"when an application is finished, can it be opened again? I
+  don't think it should be"*). Nothing in the product clears `finished_at`. **The reopen refusal is
+  on the ENDPOINT**, not merely hidden in the browser. Because it cannot be undone it takes a
+  **typed confirmation** (the round's own code, the delete-a-gift shape), and the dialog **names how
+  many applicants it would shut out** — **one, on the live 2026 round**.
+- **⚠ THE LATE-SUBMISSION REFUSAL LIVES IN `services.confirm_profile`**, not beside the create gate.
+  That is where the grace period ends. `RoundFinishedError` is deliberately NOT an
+  `incomplete_profile` — nothing the student uploads fixes it, so the screen must not send them back
+  to the documents.
+- **⚠ THE BADGE IS THE CONTROL** (owner: *"the button seems odd sitting there, and at present it
+  would sit there in perpetuity"*). The loose Open/Close link is gone. **Four tones, none of them
+  red** — every state is a normal point in a round's life. A finished round offers **no move at all**.
+- **⚠ `state` IS SERVED, NEVER DERIVED IN THE BROWSER** — the gift card's `lifecycle` rule. Two
+  copies would put one badge beside a control doing something else.
+- **⚠ `submitted_at` IS `auto_now_add` AND IS NEVER NULL.** The shut-out count is
+  `status='shortlisted'`. The first cut used `submitted_at__isnull=True` and read zero for
+  everybody. `profile_completed_at` is the real submission stamp.
+- **⚠ `updated_at` ON A COHORT PROVES NOTHING** — the endpoint saves with `update_fields`, which
+  does not touch an `auto_now` column (tested). It nearly produced a false report that the July
+  close had bypassed Django.
+- **`color-scheme` is set in BOTH theme blocks.** Without it the browser draws every native control
+  — date pickers, dropdown arrows, spinners, scrollbars — for a light page; the calendar icon was
+  almost invisible in dark. Do not chase individual glyphs with `filter: invert()`.
+- **The date boxes cap the year at 2000–2099** (Chrome's year slot takes six digits →
+  `07/07/202026`). The out-of-window confirmation was reworded: past tense for a past date.
+
+**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0151` MIGRATE-FIRST** via Supabase MCP —
+hand-write the Postgres DDL (`sqlmigrate` renders SQLite here) — and record its `django_migrations`
+row BEFORE the push; (2) push (**api + web** — Python changed); (3) no env vars, no data step, no
+backfill. **Nothing a student sees changes** unless a round is finished.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. The status column is a **badge you can press**. BrightPath 2026 reads **Closed**; its menu says
+   no new applications, anyone already started can still submit.
+2. **"Close for good"** sits there. Its dialog should say **one** applicant would be shut out, and
+   the button stays asleep until `b40-2026` is typed. **There is no way back.**
+3. After finishing, the badge reads **Finished** and the menu offers nothing.
+4. **Dark mode** — open Edit; the calendar icon should be plainly visible, and so should every
+   dropdown arrow across the console.
+5. **ms and ta are first drafts.** Not click-tested in a browser (TD-182).
+
+**▶ NEXT = THE GIFT SWITCHER (the owner's item 3), ON ITS OWN.** Unchanged. The switcher filters
+nothing (TD-193 / TD-228), and **`admin.scholarship.title` is `'{programmeName} Applicants'` where
+`programmeName` is a BRANDING auto-token** — so it names the tenant's flagship whichever gift is
+picked. **Fix the heading first**, then filter via `?programme=<code>` re-fenced server-side.
+
+**▶ ALSO APPROVED BY THE OWNER, NOT YET BUILT (its own sprint):** the **apply link on the gift card**
+(`/scholarship/apply?p=<code>`, per GIFT not per year, shown nowhere today) and an **editable gift
+code with the old code KEPT AS AN ALIAS**. ⚠ The alias is not optional: an unknown code resolves to
+"no open round", so a renamed gift would make every printed link tell a student **"applications
+closed"** — silent and wrong. TD-230's other half.
+
+**⚠ ALSO OPEN:** archiving a gift blocks creating a payment run for it (named, not fixed); TD-229;
+TD-231; TD-225; TD-221.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+## Superseded — previous Next Sprint (as of 2026-09-08, after the console layout standard)
 
 **SHIPPED.** Worktree `.worktrees/console-layout`, branch `feat/console-layout`. **NO MIGRATION,
 and no Python file changed at all** — web only. Retro

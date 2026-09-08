@@ -1739,6 +1739,70 @@ class TestRelationshipChecklists(TestCase):
                               'bc_mother_name': 'STRANGER WOMAN', 'bc_mother_nric': '111111-11-1111'})
         self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
 
+    def test_bc_mother_SPELT_DIFFERENTLY_but_same_nric_is_amber_not_red(self):
+        """BrightPath #19, application 144 — the mirror of the rule below it.
+
+        Her mother's MyKad reads AGATHAKANAAGAMALOR; the certificate reads AGATHA KANAGA MALAR.
+        Both carry 760201-14-5030. Twelve government-issued digits identify one person; a Tamil
+        name transliterated into Latin script does not, which is why JPN issues a letter attesting
+        that two spellings are the same human being. Today's red told her to fetch "a corrected
+        birth certificate" she cannot get.
+        """
+        from apps.scholarship.income_engine import student_bc_check
+        _parent_ic(self.app, 'AGATHAKANAAGAMALOR A/P ARULANANDAN',
+                   member='mother', nric='760201-14-5030')
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                      fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
+                              'bc_mother_name': 'AGATHA KANAGA MALAR A/P ARULANANDAN',
+                              'bc_mother_nric': '760201-14-5030'})
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'check_name')
+
+    def test_and_OUR_OWN_misread_of_the_mykad_lands_in_the_same_amber(self):
+        """Application 84, the second live case and the one that shows this is not one student's
+        problem: the names differ because OUR OCR read her MyKad as "KAVITA N. SURE NIAM" instead
+        of SUBRAMANIAM. A red there tells a student to correct a document that is already right."""
+        from apps.scholarship.income_engine import student_bc_check
+        _parent_ic(self.app, 'KAVITA N. SURE NIAM', member='mother', nric='721006-10-5234')
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                      fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
+                              'bc_mother_name': 'KAVITA N. SUBRAMANIAM',
+                              'bc_mother_nric': '721006-10-5234'})
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'check_name')
+
+    def test_a_DIFFERENT_WOMAN_still_reads_red(self):
+        """⚠ THE ASSERTION THAT KEEPS THE CHECK A CHECK. Application 5's shape: the certificate
+        names a different woman AND a different number. Nothing vouches for her, so nothing is
+        forgiven. Measured over all 62 live mother rows before shipping — this case and #9 (a
+        father's IC in the mother slot) stay red; only 144 and 84 move."""
+        from apps.scholarship.income_engine import student_bc_check
+        _parent_ic(self.app, 'JEGATHAMBAL A/P ARUMUGAM', member='mother', nric='830211-08-6434')
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                      fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
+                              'bc_mother_name': 'PERMANSURY A/P VALAUTHAN',
+                              'bc_mother_nric': '6106928'})
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
+
+    def test_a_NEAR_nric_never_vouches_for_a_differing_name(self):
+        """⚠ EXACT MATCHES ONLY, and `nric_close` is deliberately not consulted here. Its whole
+        meaning is "these digits are NOT the same"; letting a near number forgive a differing name
+        would forgive both halves of the identity at once."""
+        from apps.scholarship.income_engine import student_bc_check
+        _parent_ic(self.app, 'VANITHA A/P MOHAN', member='mother', nric='760820-02-5230')
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                      fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
+                              'bc_mother_name': 'STRANGER WOMAN',
+                              'bc_mother_nric': '760920-02-5230'})   # one digit out
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
+
+    def test_a_differing_name_with_NO_nric_read_stays_red(self):
+        """Nothing to vouch with. An unread number must not be treated as agreement."""
+        from apps.scholarship.income_engine import student_bc_check
+        _parent_ic(self.app, 'VANITHA A/P MOHAN', member='mother', nric='760820-02-5230')
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                      fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
+                              'bc_mother_name': 'STRANGER WOMAN', 'bc_mother_nric': ''})
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
+
     def test_bc_mother_name_match_one_digit_misread_is_check_near(self):
         # POVIENTHIRAN case: the BC mother NAME matches the verified mother IC, but the AI
         # misread ONE digit of her NRIC off the green JPN security paper (76-08 → 76-09).

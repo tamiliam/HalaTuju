@@ -1,5 +1,50 @@
 # Architectural Decisions — HalaTuju
 
+## An intake round has four states; "finished" is terminal, 2026-09-08
+**Decision:** `draft` · `open` · `closed` · `finished`, served by `views_admin.round_state`. The
+badge is the control. **`finished` cannot be undone** — nothing in the product clears `finished_at`
+and the server refuses to reopen such a round.
+
+**Why four and not two:** `is_open` was answering two questions at once. Closing a round stops NEW
+applications and nothing else — anyone already started may still submit, because the intake gate is
+on the CREATE endpoint and a returning applicant never reaches it again. That grace period is real
+and production ran on it: the 2026 round's switch went off on 1 July and **thirty students who were
+part-way through submitted between then and the 7th**. Nobody had designed it; it fell out of where
+the gate sits, and for two months no screen mentioned it. `finished` is where that period ends.
+
+**Why terminal** (owner: *"when an application is finished, can it be opened again? I don't think it
+should be"*): a round everyone believes is over must not be able to quietly restart. Because it
+cannot be undone it asks for the round's own code to be typed — the same shape as deleting a gift —
+and the dialog names how many applicants it would shut out.
+
+**Where the refusals live:** reopening is refused at the ENDPOINT, not merely hidden on the screen;
+a late submission is refused in `services.confirm_profile`, not beside the create gate, because that
+is where the grace period ends. **A finished round can still be RENAMED** — terminal means it takes
+no more applications, not that its record is frozen.
+
+**Alternatives considered:** (a) **derive "finished" from closed + a later year existing** — correct
+eventually, but BrightPath 2026 is the only round, so it would still read "Closed" today and would
+not have answered the owner's complaint at all; (b) **make it reversible** — declined by the owner;
+(c) **collapse closed into finished** — bite-checked, and it fails the test named for those thirty
+students.
+
+**Revisit if:** an intake is ever finished by mistake. The recovery today is a database correction,
+which is deliberate.
+
+## "When did this round close?" had no answer, and now it does, 2026-09-08
+**Decision:** record `finished_at` / `finished_by`, and write an `AUDIT intake_year_finished` line
+carrying the number of applicants the finish shut out.
+
+**Why:** the owner asked when the 2026 intake closed. The system could not say. Only two things ever
+write `is_open` (the admin screen, a local seed command), the audit line for intake-year edits was
+added on 2026-09-03 — after the fact — and `updated_at` is useless as evidence because the endpoint
+saves with `update_fields`, which does not touch an `auto_now` column (tested, not assumed). The
+best available answer was the last application's timestamp plus the owner's memory. That is the same
+gap TD-203 recorded for `award_amount`, on a switch that decides whether a student can apply at all.
+
+**Alternatives considered:** rely on Cloud Logging — retention had already passed, and a log is not
+a record a screen can show.
+
 ## The window still opens nothing - the owner reversed their own ruling and then kept it, 2026-09-07
 **Decision:** `opens_on`/`closes_on` continue to DESCRIBE when an intake round is meant to run.
 A person still presses Open. What changed is that the dates now say where today sits, and opening

@@ -207,6 +207,9 @@ class TestFenceCoverageCompleteness(TestCase):
         'AdminProgrammeDetailView': 'sabah-s2b-programmes-fenced',
         'AdminIntakeYearListView': 'sabah-s2b-intake-years-fenced',
         'AdminIntakeYearDetailView': 'sabah-s2b-intake-years-fenced',
+        # Same fence as its sibling — the cohort is reached through `_programmes_for(admin)`, so a
+        # round belonging to another tenant is a 404, never a 403.
+        'AdminIntakeYearFinishView': 'sabah-s2b-intake-years-fenced',
         # nav/IA N3a — the breadcrumb switchers. LIST-fenced on the same
         # owning_organisation the fence itself uses, so it cannot widen anything: super sees
         # every active org/programme, everyone else exactly their own, `partner` nothing (a

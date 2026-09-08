@@ -1613,7 +1613,8 @@
         "mismatch": "Doesn't match — re-check",
         "checkNumber": "Name matches — check the IC number",
         "checkNumberOneDigit": "Name matches — IC number differs by one digit (likely a scan misread)",
-        "reviewing": "We'll review this"
+        "reviewing": "We'll review this",
+        "checkName": "Spelt differently — same IC number"
       },
       "strCheck": {
         "recipient": "Name",
@@ -5691,10 +5692,6 @@
       "subtitle": "One intake round per year.",
       "new": "New intake year",
       "createClosed": "Create as closed",
-      "open": "Open",
-      "closed": "Closed",
-      "openIt": "Open applications",
-      "close": "Close",
       "empty": "No intake years yet.",
       "noProgrammes": "A gift programme must exist before an intake year can be created.",
       "loadFailed": "The intake years could not be loaded.",
@@ -5738,7 +5735,11 @@
         "generic": "The change could not be saved. No changes were made.",
         "windowBackwards": "The closing date cannot come before the opening date.",
         "badOpensOn": "Enter a valid opening date.",
-        "badClosesOn": "Enter a valid closing date."
+        "badClosesOn": "Enter a valid closing date.",
+        "roundFinished": "This round was closed for good and cannot be reopened.",
+        "stillOpen": "Close the round to new applications first.",
+        "alreadyFinished": "This round has already been closed for good.",
+        "confirmMismatch": "The code does not match."
       },
       "windowNote": "These dates record when the round is intended to run. They do not open or close it; opening remains a separate action. Leave them blank if the schedule is not yet decided.",
       "edit": "Edit",
@@ -5750,11 +5751,34 @@
         "after": "The window has ended"
       },
       "confirmOpenTitle": "Open outside the stated window?",
-      "confirmOpenBefore": "This round is not due to open until {date}.",
-      "confirmOpenAfter": "This round was due to close on {date}.",
-      "confirmOpenGeneric": "This round falls outside its stated window.",
-      "confirmOpenNote": "The dates only record the schedule, so you can open it now. Students can apply as soon as it is open.",
-      "confirmOpenYes": "Open applications anyway"
+      "confirmOpenBefore": "The stated window opens on {date}.",
+      "confirmOpenAfter": "The stated window closed on {date}.",
+      "confirmOpenGeneric": "This round is outside its stated window.",
+      "confirmOpenNote": "Applications will be accepted immediately.",
+      "confirmOpenYes": "Open applications",
+      "state": {
+        "draft": "Draft",
+        "open": "Open",
+        "closed": "Closed",
+        "finished": "Finished",
+        "change": "Change the state of {name}",
+        "openIt": "Open applications",
+        "closeIt": "Close applications",
+        "finishIt": "Close for good",
+        "means": {
+          "draft": "Not yet opened. Nobody has applied.",
+          "open": "Students can start and submit applications.",
+          "closed": "No new applications. Anyone who already started can still submit.",
+          "finished": "This round is over. It accepts no further submissions and cannot be reopened."
+        }
+      },
+      "finish": {
+        "title": "Close this round for good?",
+        "body": "The round will accept no further submissions. This cannot be undone.",
+        "stranded": "{n} applicant(s) have started but not submitted. They will no longer be able to.",
+        "typeCode": "Type {code} to confirm",
+        "confirm": "Close for good"
+      }
     },
     "orgSettings": {
       "nav": "Settings",

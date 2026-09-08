@@ -34,6 +34,87 @@ the first version of the "every table is framed" guard only asked whether the fi
 TableFrame, so putting Intake years back into a clipping card sailed past it. Counting frames
 against tables instead immediately found a real miss - the Payments funding table, which my own
 survey had never seen because it counted one table per file.
+## An intake round has four states, and one of them is final - 2026-09-08
+
+The owner's third live-review round on Programme -> Configuration, and it started with a question I
+had answered wrongly: *"can you find out when application was closed? I think it was 7/7/2026
+midnight, and it was auto closed."*
+
+**IT WAS NOT AUTO-CLOSED, AND THE INVESTIGATION IS THE FEATURE.** I first said "nothing auto-closes"
+from a grep of one field, which was too quick, so I checked properly: every Python writer of
+`is_open` (two: the admin screen and a local seed command), all 26 Cloud Scheduler jobs, every Cloud
+Run job, all 47 registered cron tasks, and the commits either side. Nothing closes a round on a
+timer. The logs are past retention, so they answer nothing either way.
+
+**THE OWNER'S TWO DATES TURNED OUT TO BE ONE SWITCH PLUS A GRACE PERIOD NOBODY HAD WRITTEN DOWN.**
+Their chronology: the apply link went dead on 1 July; students already part-way through were given
+until the 7th. That is exactly what one flip of `is_open` does, and the apply endpoint says so in a
+comment - *"a closed cohort accepts no NEW applications ... Existing applicants never reach this
+endpoint again"*. **Thirty students submitted between 1 and 7 July**; the last landed on the 7th at
+21:12 MYT. One switch, pressed once. No cron, no second close.
+
+- **⚠ CLOSED AND FINISHED ARE NOW DIFFERENT THINGS, AND THE MIDDLE ONE IS LOAD-BEARING.**
+  `round_state` serves **draft · open · closed · finished**. `closed` means no new applications
+  while anyone already started may still submit - the July behaviour, stated on screen for the
+  first time. `finished` ends that: a late submission is refused, in
+  `services.confirm_profile`, which is where the grace period lives. **Do not collapse the two** -
+  a bite-check that made closing refuse too failed exactly the test named for those thirty students.
+- **⚠ FINISHED IS TERMINAL** (owner: *"when an application is finished, can it be opened again? I
+  don't think it should be"*). Nothing in the product clears `finished_at`, and the refusal is on
+  the SERVER, not just hidden in the browser - a screen that omits a control is a suggestion. Because
+  it cannot be undone it takes a **typed confirmation**, the round's own code, the same shape as
+  deleting a gift. The dialog also **names how many applicants it would shut out** (one, on the live
+  2026 round) - the one fact its reader cannot otherwise see.
+- **⚠ THE BADGE IS THE CONTROL** (owner: *"the button seems odd sitting there, and at present it
+  would sit there in perpetuity"*). The loose Open/Close link is gone. Four tones, **none of them
+  red** - every state is a normal point in a round's life, the gift card's ruling. A finished round
+  offers no move at all and says why.
+- **⚠ OPENING AND CLOSING A ROUND IS NOW RECORDED.** `finished_at` / `finished_by`, plus an
+  `AUDIT intake_year_finished` line carrying the count it shut out. The gap that started all this:
+  the biggest switch on the screen kept no record, so two months later the answer came down to
+  memory. Same shape as TD-203.
+- **The native controls follow the theme.** The stylesheet never set `color-scheme`, so the browser
+  drew every date picker, dropdown arrow and scrollbar for a LIGHT page - the calendar icon was
+  nearly invisible in dark (owner). One declaration per mode fixes all of them, present and future.
+- **The date boxes cap the year at 2000-2099.** Chrome's year slot takes six digits, so typing over
+  an existing value produced `07/07/202026`. The server already refused it; the browser refuses it
+  now, at the keystroke.
+- **The out-of-window confirmation was reworded** - past tense for a past date (owner: it *"is
+  talking about a date that is long past as a 'due to close'"*), two short lines instead of three.
+
+**⚠ A TRAP FOUND WHILE COUNTING:** `ScholarshipApplication.submitted_at` is `auto_now_add`, so it is
+stamped at CREATION and is **never null**. The first cut of the shut-out count used
+`submitted_at__isnull=True` and read zero for everybody. `shortlisted` is the not-yet-submitted
+status; `profile_completed_at` is the real submission stamp.
+
+**MIGRATION `scholarship/0151`** - additive, two nullable columns. **MIGRATE-FIRST.** api + web.
+pytest 5984; jest 1822; tsc 24 (baseline); lint 0; i18n 4884 x 3; `next build` exit 0;
+`makemigrations --check` clean. Three bite-checks, each injection verified as landed.
+## Fix: a matching IC number now vouches for a differently-spelt name (BrightPath #19) - 2026-09-08
+
+Lina's birth certificate and her mother's MyKad carry **the same twelve digits** and two spellings of
+one Tamil name. We read that as a red "the names do not match", asked her for a corrected birth
+certificate she cannot obtain, and she sent us a JPN letter attesting that both spellings are the
+same woman — which the machine could not read either.
+
+- **`income_engine._combine_relationship` gains `check_name`.** Name differs + NRIC matches
+  **exactly** → amber "Spelt differently — same IC number", not red. It is the MIRROR of the rule
+  already in that function, which forgives a misread NUMBER when the name agrees. The number is the
+  stronger of the two: twelve government-issued digits against a transliteration that varies so
+  routinely that JPN issues letters about it.
+- **⚠ AMBER, NEVER GREEN, and only on an exact number match** — never `nric_close`, whose meaning is
+  "these digits are not the same". A person still reads the row.
+- **Blast radius measured, not estimated: 2 of 62 live mother rows move** (144 and 84 — the second
+  is our OWN OCR reading a MyKad as "KAVITA N. SURE NIAM"). The two genuinely-different-person reds
+  stay red: a different woman on #5, a father's IC in the mother slot on #9. Neither number matches.
+- **`officerCockpit.factStatus` and `ScholarshipDocuments.relPill` render it as partial**, with one
+  new string in en/ms/ta (ms/ta my first drafts).
+
+⚠ **THE SECOND FAULT ON THIS RECORD IS NOT FIXED, DELIBERATELY.** Lina's certificate never reached
+the name check at all: `_pdf_first_page_png` reads **page 1 only** of a scanned PDF, and hers is a
+merged scan whose certificate sits on a later page — so doc 2390 reads `not_birth_certificate` with
+no fields. Reading every page of a scanned PDF is its own decision (cost per page, which page wins)
+and was offered to the owner as the alternative to this change. They chose this one.
 
 ## The console's one save bar, and an intake round you can edit - 2026-09-07
 

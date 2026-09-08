@@ -3134,6 +3134,25 @@ export interface AdminIntakeYear {
    *  `null` means no window was stated, which is a normal round — render a dash, not an error. */
   opens_on: string | null
   closes_on: string | null
+  /**
+   * Where the round is in its life — **SERVED, never derived here** (`views_admin.round_state`).
+   *
+   * ⚠⚠ FOUR STATES, THREE BEHAVIOURS, AND THE MIDDLE ONE IS LOAD-BEARING:
+   *   · `open`     — anyone may start and submit.
+   *   · `closed`   — no NEW applications; **anyone already started may still finish**. That grace
+   *                  period is real: the 2026 round closed on 1 July and thirty students who were
+   *                  part-way through submitted between then and the 7th.
+   *   · `finished` — nobody may submit. **TERMINAL** — the server refuses to reopen one.
+   *   · `draft`    — never opened, nobody has applied.
+   */
+  state: 'draft' | 'open' | 'closed' | 'finished'
+  /** When the round was closed for good, and by whom. Null while it can still be reopened. */
+  finished_at: string | null
+  finished_by: string
+  /** How many applicants have STARTED and not yet submitted — the people a finish would shut out.
+   *  ⚠ Counted as `status='shortlisted'` server-side; `submitted_at` is `auto_now_add` and never
+   *  null, so it cannot answer this. */
+  unsubmitted: number
 }
 
 export async function getAdminProgrammes(options?: ApiOptions) {
@@ -3209,4 +3228,17 @@ export async function updateAdminIntakeYear(
 ) {
   return adminMutate<AdminIntakeYear>(
     `/api/v1/admin/scholarship/intake-years/${id}/`, 'PATCH', body, options)
+}
+
+/**
+ * Close a round FOR GOOD. **Terminal — nothing in the product undoes this.**
+ *
+ * ⚠ ITS OWN ENDPOINT, and `confirm` must be the round's own code. The server checks it; the typed
+ * box is not the guard, it is the pause. The round must already be closed (`still_open` otherwise).
+ */
+export async function finishAdminIntakeYear(
+  id: number, confirm: string, options?: ApiOptions,
+) {
+  return adminMutate<AdminIntakeYear>(
+    `/api/v1/admin/scholarship/intake-years/${id}/finish/`, 'POST', { confirm }, options)
 }
