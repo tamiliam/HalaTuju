@@ -9568,3 +9568,46 @@ deliberate stopping point: the alternative is the full component in (a).
 
 **Revisit if:** a third table needs a genuinely different shell (a virtualised list, say), or when
 the phone card layouts land — those replace the table on small screens rather than framing it.
+
+## An unfiltered Applications list is a true answer; an unresolvable filter is not — 2026-09-08
+
+**Decision:** `?programme=<code>` on the Applications list. **Omitted** lists every gift the caller
+may see. **Unknown or another tenant's code** is a **404**, never a silent fall-back to everything.
+
+**Alternatives considered:** (a) ask which gift before showing anything, mirroring the Configuration
+tabs' `mustChoose`; (b) resolve a blank to "the only gift, else the first"; (c) ignore an
+unrecognised code and list everything.
+
+**Rationale:** `programmeScope`'s "never pick silently" rule guards a screen that would otherwise
+**edit** the wrong gift — a wrong silent answer there is a wrong write. A list is a READ, so the
+unfiltered set is a *wider* answer, not a wrong one, and hiding 143 applicants behind a chooser
+costs more than it protects. The asymmetry is the point: (c) is refused for exactly the reason (a)
+is refused on the config screens — it puts the wrong people under a named heading, which is the
+defect this sprint fixed. And a cross-tenant 404 (never 403) keeps the existing rule that a refusal
+must not confirm another tenant's gift exists.
+
+**Trade-offs:** an org_admin with two gifts and no choice made sees a mixed list under a neutral
+heading. Accepted: the heading says so, and one press narrows it.
+
+**Revisit if:** an organisation runs enough gifts that a mixed list is unreadable, or if a
+future surface makes the unfiltered list the *default* for a write.
+
+## The gift filter reaches through the cohort, not just the denormalised column — 2026-09-08
+
+**Decision:** narrow with `Q(programme=p) | Q(cohort__programme=p)` — the same predicate
+`programme_delete_blocker` uses — rather than `filter(programme=p)`.
+
+**Alternatives considered:** the column alone (one join fewer); or backfilling the column so the
+column alone becomes reliable.
+
+**Rationale:** `ScholarshipApplication.programme` is denormalised from the cohort at first save and
+is **set once**, so a cohort moved between gifts leaves its old applications pointing at the OLD
+gift. The column alone would then report a gift's own round as holding nobody — while the delete
+rule, reading the wider predicate, refuses to delete it. Two answers to "whose students are these"
+is precisely what this sprint was fixing. Both sides are single-valued FK chains, so no row
+multiplies.
+
+**Trade-offs:** one extra join on a list query over hundreds of rows. Immeasurable here.
+
+**Revisit if:** the set-once rule is ever replaced by a maintained column, in which case both
+readers change together — never one of them.

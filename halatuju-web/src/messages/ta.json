@@ -3794,6 +3794,7 @@
     "scholarship": {
       "nav": "B40 விண்ணப்பங்கள்",
       "title": "{programmeName} விண்ணப்பதாரர்கள்",
+      "titleAll": "அனைத்து விண்ணப்பதாரர்கள்",
       "countSubtitle": "{count} விண்ணப்பதாரர்கள்",
       "loadFailed": "விண்ணப்பங்களை ஏற்ற முடியவில்லை.",
       "showingRange": "{total} விண்ணப்பங்களில் {start}–{end} காட்டப்படுகிறது",

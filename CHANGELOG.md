@@ -24,6 +24,46 @@ What stays `reading` genuinely runs down the page in one column: one student, on
 template, one reviewer. A test now pins all three widened routes against the reason they were
 widened.
 
+## The gift switcher decides what the Applications list shows - 2026-09-08
+
+The owner's item 3, on its own. The breadcrumb's gift switcher moved the crumb and filtered
+nothing, and the heading above the list named the wrong gift entirely.
+
+**THE HEADING WAS ACTIVELY WRONG, WHICH IS WHY IT WENT FIRST.** `admin.scholarship.title` is
+`'{programmeName} Applicants'`, and `programmeName` is one of the five **branding auto-tokens**
+`t()` injects - the tenant's *flagship* name, never the selected gift. So it read "BrightPath
+Bursary Applicants" while the crumb said Test Programme, over 143 people who were not Test
+Programme's. Passing `programmeName` **explicitly** shadows the auto-token, so the one string
+serves both and the ms/ta translations needed no new key. Nothing chosen drops to a neutral
+heading rather than naming a gift.
+
+- **⚠ THE LIST NOW NARROWS, AND THE SERVER RE-FENCES IT.** `?programme=<code>` on
+  `AdminApplicationListView`, resolved by `_AdminBase._programme_by_code` inside the caller's OWN
+  organisation. It is a NARROWING, never a fence: the organisation wall is still `_org_scoped`, and
+  a client that omits the parameter reaches exactly the rows the fence already allowed. The choice
+  travels as an explicit request value - never a header or a cookie, which would relocate the fence
+  into the client.
+- **⚠ OMITTED MEANS EVERY GIFT, AND THAT IS A REAL ANSWER.** Several gifts with none chosen lists
+  all of them. Deliberately unlike the Configuration tabs, which ask: those would EDIT the wrong
+  gift on a silent pick, while a list is a READ - a wider answer is true, just less specific.
+- **⚠ AN UNKNOWN OR CROSS-TENANT CODE IS 404, NEVER "show everything".** Silently dropping a
+  narrowing the caller asked for is the defect this sprint fixes, and a cross-tenant code must not
+  confirm that gift exists.
+- **⚠ THE FILTER REACHES THROUGH THE COHORT** - `Q(programme=p) | Q(cohort__programme=p)`, the same
+  predicate `programme_delete_blocker` uses. `ScholarshipApplication.programme` is denormalised and
+  **set once**, so a cohort moved between gifts leaves its old applications pointing at the OLD
+  gift; the column alone would call a gift's own round empty.
+- **⚠ THE SCOPE WAS ONE PAGE, MEASURED FROM THE ROUTE REGISTRY.** Only TWO admin routes carry
+  `scope: 'programme'` - Configuration (already filtered) and Applications (this). Reviewers,
+  Sources, Payments and Sponsors are organisation-scope and render **no gift crumb at all**, so
+  nothing there misleads today. Making them gift-aware needs a ruling per screen: a reviewer's
+  `programme` is nullable and **NULL means every gift**, so a naive filter would hide the
+  organisation-wide reviewers.
+
+No migration. api + web. pytest 5997 (+8), jest 1849 (+4), tsc 24 (baseline; one new error in the
+new test was FIXED, not waived), lint 0 Errors, i18n 4887 x 3 (+1), `next build` exit 0. Four
+bite-checks, each injection verified as landed first.
+
 ## The round menu escapes the table, and Save sleeps until there is something to save - 2026-09-08
 
 Two faults the owner found on the deployed round-state screen.
