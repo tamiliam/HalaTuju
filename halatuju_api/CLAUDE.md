@@ -552,14 +552,38 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-09, after the apply page's copy became the GIFT's)
 
-**SHIPPED, NOT DEPLOYED — the owner gates it, AND THERE IS A MIGRATION.** Worktree
-`.worktrees/apply-copy`, branch `feat/apply-copy`, base `origin/main` at `728a1ace`. api + web,
-22 files. **⚠ MIGRATION `scholarship/0154` — ADDITIVE, ONE JSON COLUMN, NOT YET APPLIED.
-MIGRATE-FIRST.** Retro `docs/retrospective-2026-09-09-apply-copy-per-gift.md`; plan
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`8da972e1`**; BOTH Cloud Builds
+SUCCESS on `8da972e` — **waited on the push's OWN build IDs** (web `417cae41…`, api
+`15150301…`), never "the top rows are green". Serving **halatuju-api-01011-cw6** /
+**halatuju-web-00867-5kw** (read from `status.latestReadyRevisionName`, never
+`status.traffic[0]`). All public routes 200; **no api ERROR logs since**.
+
+**⚠ MIGRATION `scholarship/0154` WAS APPLIED MIGRATE-FIRST, BEFORE THE PUSH.** One additive
+`jsonb` column with a `'{}'` default; ledger reconciled after at **scholarship 154/154, courses
+74/74**. No new table, so no RLS work and no Security Advisor step. **Both gifts read `{}`**,
+which MEANS "use the platform default" — so nothing a student sees changed.
+
+**THE SERVED BUNDLES WERE READ BACK, both directions.** The admin bundle (2.12 MB, 21 chunks)
+carries "How it's advertised", "Who can apply — one condition per line", "A programme's
+tax-exempt status" and "Use the standard wording"; it carries **no BrightPath-beside-tax string**
+— an ABSENCE check, because `brand-guard` caught that sentence naming the platform brand and
+being factually wrong for a second tenant. The **student** apply bundle still carries "Apply for
+B40 Education Assistance" and "At least 5 A", which is the proof the default path is untouched.
+Live intake reads `apply_copy: {}` for every code incl. a retired one and gibberish.
+
+Was worktree `.worktrees/apply-copy`, branch `feat/apply-copy`, base `origin/main` at `728a1ace`;
+merged forward once as main moved under it (Vircle V2a + people-actions). api + web. Retro `docs/retrospective-2026-09-09-apply-copy-per-gift.md`; plan
 `docs/plans/2026-09-09-apply-page-copy-per-gift.md`; decisions ×2; lessons ×4.
-Gates, ALL RUN INSIDE THE WORKTREE: pytest **6106** (+25); jest **1931** (+12); tsc **24**
-(baseline); lint **0 Errors**; i18n **4944 × 3** (+25, admin only); `next build` exit 0;
-`makemigrations --check` clean. **Three bite-checks landed**, each injection verified first and
+Gates on the MERGED tree: pytest **6120**; jest **1950**; tsc **24** (baseline); lint
+**0 Errors**; i18n **4946 × 3**; `next build` exit 0; `makemigrations --check` clean.
+
+**⚠⚠ THE MERGE'S OWN LESSON, AND ANOTHER AGENT'S GUARD IS WHAT CAUGHT IT.** Resolving the
+three message-file conflicts by UNION applied every addition and **no deletion**, so V2a's retired
+wallet-ID strings came back from the dead. V2a had written an ABSENCE guard for exactly that, and
+it failed loudly. **A merge is not only additions:** a key present in BASE and unchanged in OURS
+but GONE from THEIRS was deleted on their side. Resolved as a real three-way merge on the parsed
+JSON (base/ours/theirs) rather than by editing conflict markers in a 6,000-line file — which
+also makes a malformed result impossible. **Three bite-checks landed**, each injection verified first and
 restored by writing the original bytes back.
 
 **⚠⚠ THE OWNER ASKED FOR ONE PAGE AND THE PLANNING FOUND A SECOND DEFECT — read this
@@ -623,7 +647,8 @@ second tenant** (the constraint is the FUNDER's), so a style guard caught a corr
 tab-list snapshot pinned "exactly the three tabs"; a fourth is what was asked for, so it was
 updated deliberately with the reason written in.
 
-**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0154` MIGRATE-FIRST** via Supabase MCP
+**▶ THE DEPLOY IS DONE. For the record, the shape was:** (1) apply **`scholarship/0154`
+MIGRATE-FIRST** via Supabase MCP
 — hand-written Postgres DDL is in the migration's own docstring (`sqlmigrate` renders SQLite
 here) — and record its `django_migrations` row BEFORE the push; (2) push (**api + web** —
 Python changed, so expect BOTH builds); (3) no env vars, no backfill, no data step. **No new table,
