@@ -552,7 +552,15 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-09, after Vircle Airtable V2a — the student stops typing the wallet id)
 
-**SHIPPED, NOT YET DEPLOYED at the time of writing. NO MIGRATION. api + web.** Worktree
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`da1ddfa5`**; BOTH Cloud Builds SUCCESS
+on `da1ddfa` — **waited on the push's OWN build IDs** (web `6d6a5cbf…`, api `06cd515a…`), never
+"top rows green". Serving **halatuju-api-01010-w95** / **halatuju-web-00866-q75** (read from
+`status.latestReadyRevisionName`). Site 200, `Server: Google Frontend`; intake 200; **no api ERROR
+logs since the deploy**. **The served bundle was READ BACK** (23 chunks, 2.2 MB): the application
+page's chunk carries `vircle.confirm` + `vircle.mobileHint` and **none** of
+`walletIdEcho`/`walletIdHint`/`errorDuitnow` — the absence check, not just presence.
+
+**NO MIGRATION. api + web.** Worktree
 `.worktrees/vircle-v2a`, branch `feat/vircle-airtable-v2a`. Retro
 `docs/retrospective-2026-09-09-vircle-airtable-v2a.md`; lessons ×2.
 Gates, ALL RUN INSIDE THE WORKTREE and re-run on the MERGED tree (origin/main moved under this
@@ -586,9 +594,8 @@ Airtable callback (`AUDIT vircle_id_set … by=vircle-airtable`).
 - **Email goldens were REGENERATED** (`UPDATE_EMAIL_GOLDEN=1`) for the STEP-2 and install-email
   copy — an owner-approved change, not drift.
 
-**▶ AT DEPLOY:** push (api + web — Python changed, expect BOTH builds; wait on THIS push's build
-IDs/createTime, never "top rows green"). No migrate-first, no env vars, no data step. **What a
-student sees changes**: the Vircle card asks for the mobile only.
+**▶ THE DEPLOY IS DONE** (see the header). No migrate-first, no env vars, no data step. **What a
+student sees changed**: the Vircle card asks for the mobile only.
 
 **▶ OWNER POST-CHECK:** open a test student's Action Centre with an open Vircle task — the card
 shows ONE mobile box and the confirm button, no wallet-ID field. The award email's STEP 2 no
