@@ -491,13 +491,12 @@ AWARD_OFFER_BODIES = {
         "{guardian_note}"
         "STEP 2 — Tell us in the Action Centre.\n"
         "Once your account is active, sign in at {domain} and open your application page. In "
-        "the Action Centre, enter the mobile number you registered with Vircle AND your "
-        "eWallet ID. To find your eWallet ID: open the Vircle app, tap the gear icon at the top "
-        "right of the home screen, then scroll to the bottom of the Settings page — it reads "
-        "\"Your eWallet ID\" followed by a 13-digit number.\n\n"
-        "Step 2 is not optional: we can only arrange your monthly payments after you have told us "
-        "these details. (The attached guide may ask you to message Vircle on WhatsApp — you may, "
-        "but telling us in the Action Centre is what starts your payments.)\n\n"
+        "the Action Centre, enter the mobile number you registered with Vircle and confirm your "
+        "account is active. Vircle then sends us your eWallet details directly — you don't need "
+        "to look anything up or type any numbers.\n\n"
+        "Step 2 is not optional: we can only arrange your monthly payments after you have "
+        "confirmed. (The attached guide may ask you to message Vircle on WhatsApp — you may, "
+        "but confirming in the Action Centre is what starts your payments.)\n\n"
         "A formal offer and bursary contract will follow separately, along with the simple steps to "
         "accept it.\n\n"
         "If you faced any trouble during registration or activation, or have any questions, reply "
@@ -524,13 +523,12 @@ AWARD_OFFER_BODIES = {
         "LANGKAH 2 — Beritahu kami di Pusat Tindakan.\n"
         "Sebaik sahaja akaun anda aktif, log masuk di {domain} dan buka halaman permohonan "
         "anda. Di Pusat Tindakan, masukkan nombor telefon bimbit yang anda daftarkan dengan "
-        "Vircle DAN ID eWallet anda. Untuk mencari ID eWallet anda: buka aplikasi Vircle, tekan "
-        "ikon gear di penjuru kanan atas skrin utama, kemudian skrol ke bahagian bawah halaman "
-        "Settings — tertera \"Your eWallet ID\" diikuti nombor 13 digit.\n\n"
+        "Vircle dan sahkan akaun anda aktif. Vircle kemudian menghantar butiran eWallet anda "
+        "terus kepada kami — anda tidak perlu mencari atau menaip sebarang nombor.\n\n"
         "Langkah 2 bukan pilihan: kami hanya dapat mengaturkan pembayaran bulanan anda selepas "
-        "anda memberitahu kami butiran ini. (Panduan yang disertakan mungkin meminta anda "
-        "menghantar mesej WhatsApp kepada Vircle — anda boleh berbuat demikian, tetapi "
-        "memberitahu kami di Pusat Tindakan itulah yang memulakan pembayaran anda.)\n\n"
+        "anda membuat pengesahan. (Panduan yang disertakan mungkin meminta anda menghantar "
+        "mesej WhatsApp kepada Vircle — anda boleh berbuat demikian, tetapi pengesahan di "
+        "Pusat Tindakan itulah yang memulakan pembayaran anda.)\n\n"
         "Tawaran rasmi dan kontrak biasiswa akan menyusul secara berasingan, berserta langkah mudah "
         "untuk menerimanya.\n\n"
         "Jika anda menghadapi sebarang masalah semasa pendaftaran atau pengaktifan, atau ada "
@@ -555,13 +553,12 @@ AWARD_OFFER_BODIES = {
         "{guardian_note}"
         "படி 2 — Action Centre-இல் எங்களிடம் தெரிவியுங்கள்.\n"
         "உங்கள் கணக்கு செயல்பட்டவுடன், {domain}-இல் உள்நுழைந்து உங்கள் விண்ணப்பப் பக்கத்தைத் "
-        "திறக்கவும். Action Centre-இல், Vircle-இல் நீங்கள் பதிவு செய்த கைபேசி எண்ணையும் உங்கள் "
-        "eWallet ID-யையும் உள்ளிடவும். உங்கள் eWallet ID-ஐக் கண்டறிய: Vircle செயலியைத் திறந்து, "
-        "முகப்புத் திரையின் மேல் வலது மூலையில் உள்ள gear ஐகானை அழுத்தி, Settings பக்கத்தின் "
-        "கீழ்ப்பகுதிக்கு உருட்டவும் — அங்கு \"Your eWallet ID\" என்பதற்குப் பின் 13 இலக்க எண் இருக்கும்.\n\n"
-        "படி 2 விருப்பத்தேர்வு அல்ல: இந்த விவரங்களை நீங்கள் தெரிவித்த பிறகே உங்கள் மாதாந்திரக் "
-        "கட்டணங்களை நாங்கள் ஏற்பாடு செய்ய முடியும். (இணைக்கப்பட்ட வழிகாட்டி Vircle-க்கு WhatsApp "
-        "அனுப்பச் சொல்லலாம் — நீங்கள் அனுப்பலாம்; ஆனால் Action Centre-இல் எங்களிடம் தெரிவிப்பதே உங்கள் "
+        "திறக்கவும். Action Centre-இல், Vircle-இல் நீங்கள் பதிவு செய்த கைபேசி எண்ணை உள்ளிட்டு, "
+        "உங்கள் கணக்கு செயல்பாட்டில் உள்ளதை உறுதிப்படுத்தவும். உங்கள் eWallet விவரங்களை Vircle "
+        "நேரடியாக எங்களுக்கு அனுப்பும் — நீங்கள் எந்த எண்ணையும் தேடவோ தட்டச்சு செய்யவோ தேவையில்லை.\n\n"
+        "படி 2 விருப்பத்தேர்வு அல்ல: நீங்கள் உறுதிப்படுத்திய பிறகே உங்கள் மாதாந்திரக் கட்டணங்களை "
+        "நாங்கள் ஏற்பாடு செய்ய முடியும். (இணைக்கப்பட்ட வழிகாட்டி Vircle-க்கு WhatsApp அனுப்பச் "
+        "சொல்லலாம் — நீங்கள் அனுப்பலாம்; ஆனால் Action Centre-இல் உறுதிப்படுத்துவதே உங்கள் "
         "கட்டணங்களைத் தொடங்கும்.)\n\n"
         "முறையான வழங்கல் (offer) மற்றும் உதவித்தொகை ஒப்பந்தம் (bursary contract), அதை ஏற்கும் எளிய "
         "படிகளுடன், தனியாக அனுப்பப்படும்.\n\n"
@@ -602,15 +599,15 @@ AWARD_OFFER_GUARDIAN_NOTES = {
 _BOLD_PHRASES = {
     'en': ['TWO steps', 'STEP 1 — Install Vircle and activate your account.',
            'STEP 2 — Tell us in the Action Centre.', 'register a Parent account',
-           'photographs the actual card', 'eWallet ID', 'Step 2 is not optional',
+           'photographs the actual card', 'Step 2 is not optional',
            'formal offer and bursary contract'],
     'ms': ['DUA langkah', 'LANGKAH 1 — Pasang Vircle dan aktifkan akaun anda.',
            'LANGKAH 2 — Beritahu kami di Pusat Tindakan.', 'mendaftar Akaun Parent',
-           'memotret kad sebenar', 'ID eWallet', 'Langkah 2 bukan pilihan',
+           'memotret kad sebenar', 'Langkah 2 bukan pilihan',
            'Tawaran rasmi dan kontrak biasiswa'],
     'ta': ['இரண்டு படிகள்', 'படி 1 — Vircle-ஐ நிறுவி உங்கள் கணக்கைச் செயல்படுத்துங்கள்.',
            'படி 2 — Action Centre-இல் எங்களிடம் தெரிவியுங்கள்.', 'Parent கணக்கைப் பதிவு செய்யுமாறு',
-           'உண்மையான அட்டையைப் புகைப்படம் எடுக்கிறது', 'eWallet ID',
+           'உண்மையான அட்டையைப் புகைப்படம் எடுக்கிறது',
            'படி 2 விருப்பத்தேர்வு அல்ல'],
 }
 
@@ -823,10 +820,11 @@ VIRCLE_INSTALL_BODIES = {
         "we'll arrange for you to be added to it.\n\n"
         "The step-by-step guide is attached to this email.\n\n"
         "Once your account is active, please tell us in the Action Centre: enter the mobile "
-        "number you registered with Vircle AND your Vircle Wallet ID (have it ready — it's the "
-        "long number on your Vircle account). We'll take it from there and arrange for your account "
-        "to receive money monthly. (The attached guide asks you to message Vircle on WhatsApp — "
-        "you may do so, but you don't have to. Telling us is what we need.)\n\n"
+        "number you registered with Vircle and confirm your account is active. Vircle sends us "
+        "your eWallet details directly — you don't need to type any numbers. We'll take it from "
+        "there and arrange for your account to receive money monthly. (The attached guide asks "
+        "you to message Vircle on WhatsApp — you may do so, but you don't have to. Telling us is "
+        "what we need.)\n\n"
         "If you faced any trouble during registration or activation, reply to this email or "
         "contact us at {support}.\n\n"
         "Warm regards,\n{signoff}"
@@ -851,11 +849,12 @@ VIRCLE_INSTALL_BODIES = {
         "akaun tersebut.\n\n"
         "Panduan langkah demi langkah disertakan bersama e-mel ini.\n\n"
         "Sebaik sahaja akaun anda aktif, sila beritahu kami di Pusat Tindakan: masukkan nombor "
-        "telefon bimbit yang anda daftarkan dengan Vircle DAN ID Dompet Vircle anda (sediakan ia "
-        "— nombor panjang pada akaun Vircle anda). Kami akan uruskan yang selebihnya dan "
-        "memastikan akaun anda menerima wang setiap bulan. (Panduan yang disertakan meminta anda "
-        "menghantar mesej WhatsApp kepada Vircle — anda boleh berbuat demikian, tetapi ia tidak "
-        "wajib. Memberitahu kami sudah memadai.)\n\n"
+        "telefon bimbit yang anda daftarkan dengan Vircle dan sahkan akaun anda aktif. Vircle "
+        "menghantar butiran eWallet anda terus kepada kami — anda tidak perlu menaip sebarang "
+        "nombor. Kami akan uruskan yang selebihnya dan memastikan akaun anda menerima wang "
+        "setiap bulan. (Panduan yang disertakan meminta anda menghantar mesej WhatsApp kepada "
+        "Vircle — anda boleh berbuat demikian, tetapi ia tidak wajib. Memberitahu kami sudah "
+        "memadai.)\n\n"
         "Jika anda menghadapi sebarang masalah semasa pendaftaran atau pengaktifan, balas e-mel ini "
         "atau hubungi kami di {support}.\n\n"
         "Salam hormat,\n{signoff}"
@@ -879,9 +878,10 @@ VIRCLE_INSTALL_BODIES = {
         "செய்யச் சொல்லுங்கள்; பிறகு {support} இல் எங்களுக்கு மின்னஞ்சல் அனுப்புங்கள் — அந்தக் கணக்கில் "
         "உங்களைச் சேர்ப்பதற்கு நாங்கள் ஏற்பாடு செய்வோம்.\n\n"
         "படிப்படியான வழிகாட்டி இந்த மின்னஞ்சலுடன் இணைக்கப்பட்டுள்ளது.\n\n"
-        "உங்கள் கணக்கு செயல்பட்டவுடன், Action Centre-இல் எங்களிடம் தெரிவித்து, Vircle-இல் நீங்கள் "
-        "பதிவு செய்த கைபேசி எண்ணையும் உங்கள் Vircle வாலட் ID-யையும் உள்ளிடவும் (அதைத் தயாராக "
-        "வைத்திருங்கள் — உங்கள் Vircle கணக்கில் உள்ள நீண்ட எண்). மீதியை நாங்கள் கவனித்து, உங்கள் கணக்கு ஒவ்வொரு மாதமும் "
+        "உங்கள் கணக்கு செயல்பட்டவுடன், Action Centre-இல் எங்களிடம் தெரிவியுங்கள்: Vircle-இல் நீங்கள் "
+        "பதிவு செய்த கைபேசி எண்ணை உள்ளிட்டு, உங்கள் கணக்கு செயல்பாட்டில் உள்ளதை உறுதிப்படுத்தவும். "
+        "உங்கள் eWallet விவரங்களை Vircle நேரடியாக எங்களுக்கு அனுப்பும் — நீங்கள் எந்த எண்ணையும் "
+        "தட்டச்சு செய்யத் தேவையில்லை. மீதியை நாங்கள் கவனித்து, உங்கள் கணக்கு ஒவ்வொரு மாதமும் "
         "பணத்தைப் பெறுவதற்கு ஏற்பாடு செய்வோம். (இணைக்கப்பட்ட வழிகாட்டி Vircle-க்கு WhatsApp அனுப்பச் "
         "சொல்கிறது — நீங்கள் அனுப்பலாம், ஆனால் அது கட்டாயமில்லை. எங்களிடம் தெரிவிப்பதே எங்களுக்குத் "
         "தேவை.)\n\n"

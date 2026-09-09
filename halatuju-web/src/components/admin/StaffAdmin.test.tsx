@@ -54,3 +54,64 @@ it('treats a payload with no pause field as not paused, never as broken', () => 
   draw([row({ id: 4, name: 'Legacy' })])
   expect(ui().getByText('admin.active')).toBeTruthy()
 })
+
+describe('the row actions (2026-09-09)', () => {
+  /** ⚠ SCOPED TO THIS RENDER'S OWN CONTAINER, not `document`. The helper at the top of this file
+   *  reaches for the first `[data-testid="table-scroller"]` in the document, which is fine while
+   *  one test renders once — but these tests each render their own table, and a global lookup
+   *  quietly answered every one of them with the FIRST test's markup. Three assertions passed and
+   *  failed for reasons that had nothing to do with the row under test. */
+  const act = (rows: AdminItem[], on: Partial<Parameters<typeof StaffTable>[0]> = {}) => {
+    const r = render(<StaffTable rows={rows} canAct onResend={jest.fn()} onToggle={jest.fn()}
+      onDelete={jest.fn()} {...on} />)
+    return within(r.container.querySelector('[data-testid="table-scroller"]') as HTMLElement)
+  }
+
+  it('⚠ offers RESEND only to somebody who has not arrived', () => {
+    // The condition used to be `is_active`, so it sat beside every working colleague — and
+    // pressing it OVERWRITES their password with a temporary one and mails it to them. One click
+    // locked a signed-in admin out of their own account (owner: "the Resend link is a bug").
+    const t = act([row({ id: 1, name: 'Waiting',
+                         invitation: { status: 'no_reply' } as AdminItem['invitation'] })])
+    expect(t.getByText('admin.resend')).toBeTruthy()
+  })
+
+  it('⚠ and NEVER to somebody who has already signed in', () => {
+    const t = act([row({ id: 2, name: 'Arrived',
+                         invitation: { status: 'accepted' } as AdminItem['invitation'] })])
+    expect(t.queryByText('admin.resend')).toBeNull()
+  })
+
+  it('offers Delete only where the SERVER said deletable', () => {
+    const t = act([row({ id: 3, name: 'Fresh', role: 'admin', deletable: true,
+                         invitation: { status: 'accepted' } as AdminItem['invitation'] })])
+    expect(t.getByText('admin.delete')).toBeTruthy()
+  })
+
+  it('⚠ and Revoke — never Delete — for somebody with work on record', () => {
+    // The whole rule, in one row: Kulaly has made 25 payment runs. Revoke stays, Delete does not.
+    const t = act([row({ id: 4, name: 'Kulaly', role: 'admin', deletable: false,
+                         work: { payment_runs_made: 25 },
+                         invitation: { status: 'accepted' } as AdminItem['invitation'] })])
+    expect(t.queryByText('admin.delete')).toBeNull()
+    expect(t.getByText('admin.revoke')).toBeTruthy()
+  })
+
+  it('⚠ draws NO controls at all on a row this viewer may not manage', () => {
+    // An org_admin SEES their fellow organisation admins and may not act on them. Drawing a
+    // Revoke the server answers with 404 is worse than drawing nothing.
+    const t = act([row({ id: 5, name: 'Peer Lead', role: 'org_admin', manageable: false,
+                         deletable: false,
+                         invitation: { status: 'accepted' } as AdminItem['invitation'] })])
+    expect(t.queryByText('admin.revoke')).toBeNull()
+    expect(t.queryByText('admin.delete')).toBeNull()
+    expect(t.queryByText('admin.resend')).toBeNull()
+  })
+
+  it('but still draws them for a manageable colleague', () => {
+    // Drive over the bump: a flag read the wrong way round would empty every row of controls.
+    const t = act([row({ id: 6, name: 'Own Rev', manageable: true,
+                         invitation: { status: 'accepted' } as AdminItem['invitation'] })])
+    expect(t.getByText('admin.revoke')).toBeTruthy()
+  })
+})

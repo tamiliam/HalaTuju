@@ -354,3 +354,129 @@ class TestFinanceRoleInvites(_Base):
         self.assertEqual(r.status_code, 404)     # cross-org → no existence leak
         fin_other.refresh_from_db()
         self.assertTrue(fin_other.is_active)
+
+
+class TestSeeingIsNotManaging(_Base):
+    """2026-09-09. An org_admin SEES every colleague in their tenant, including the other
+    organisation admins — and may act on almost none of them.
+
+    The list used to be filtered by `_ORG_ADMIN_MANAGEABLE_ROLES`, which is the right rule for
+    ACTING and the wrong one for LISTING: when Organisation → People took the roster over from
+    Invitations, the owner's two fellow org_admins vanished from the console entirely. The
+    escalation fence did not move — `_staff_target_manageable` still refuses every write.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.peer = PartnerAdmin.objects.create(
+            supabase_user_id='peer-oa', role='org_admin', is_active=True,
+            owning_organisation=cls.bp, name='Peer Lead', email='peer@x.com')
+        cls.own_rev = PartnerAdmin.objects.create(
+            supabase_user_id='see-own-rev', role='reviewer', is_active=True,
+            owning_organisation=cls.bp, name='Own Rev', email='ownrev@x.com')
+        cls.other_rev = PartnerAdmin.objects.create(
+            supabase_user_id='see-other-rev', role='reviewer', is_active=True,
+            owning_organisation=cls.other, name='Other Rev', email='otherrev@x.com')
+
+    def _rows(self):
+        self._auth('oa-uid')
+        return {a['email']: a for a in self.client.get('/api/v1/admin/admins/').json()['admins']}
+
+    def test_a_fellow_organisation_admin_IS_listed(self):
+        self.assertIn('peer@x.com', self._rows())
+
+    def test_but_is_NOT_manageable(self):
+        # The gap between seeing and acting, in one field. Without it the screen would draw a
+        # Revoke the server refuses.
+        self.assertFalse(self._rows()['peer@x.com']['manageable'])
+
+    def test_a_reviewer_still_IS_manageable(self):
+        # Drive over the bump: a flag that were always false would pass the test above and take
+        # every real control off the screen.
+        self.assertTrue(self._rows()['ownrev@x.com']['manageable'])
+
+    def test_revoking_a_fellow_organisation_admin_is_still_refused(self):
+        # ⚠ THE FENCE ITSELF, unchanged. Listing somebody must never become permission to act.
+        self._auth('oa-uid')
+        r = self.client.patch(f'/api/v1/admin/admins/{self.peer.id}/revoke/',
+                              {'action': 'revoke'}, format='json')
+        self.assertEqual(r.status_code, 404, r.content)
+
+    def test_another_organisations_staff_are_still_invisible(self):
+        self.assertNotIn('otherrev@x.com', self._rows())
+
+    def test_a_super_is_still_invisible(self):
+        self.assertNotIn('super@x.com', self._rows())
+
+
+class TestDeletingAStaffAccount(_Base):
+    """2026-09-09. Delete is the narrow answer; revoke is the normal one.
+
+    Owner: an admin *"should only be deleted if they are not doing any work"*. The guard is a
+    FOOTPRINT, not the database's own protections — a `PaymentRun` records its author as an email
+    string with no foreign key, so on production the admin who had made 25 of the 27 runs would
+    have passed a foreign-key check cleanly.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.fresh = PartnerAdmin.objects.create(
+            supabase_user_id='fresh-adm', role='admin', is_active=True,
+            owning_organisation=cls.bp, name='Fresh Admin', email='fresh@x.com')
+        cls.worked = PartnerAdmin.objects.create(
+            supabase_user_id='worked-adm', role='admin', is_active=True,
+            owning_organisation=cls.bp, name='Worked Admin', email='worked@x.com')
+        cls.own_rev = PartnerAdmin.objects.create(
+            supabase_user_id='del-own-rev', role='reviewer', is_active=True,
+            owning_organisation=cls.bp, name='Own Rev', email='delrev@x.com')
+        cls.other_rev = PartnerAdmin.objects.create(
+            supabase_user_id='del-other-rev', role='admin', is_active=True,
+            owning_organisation=cls.other, name='Other Admin', email='otheradm@x.com')
+
+    def _make_a_payment_run(self, email):
+        import datetime
+        from apps.scholarship.models import PaymentRun
+        PaymentRun.objects.create(organisation=self.bp, created_by=email,
+                                  payment_date=datetime.date(2026, 9, 1))
+
+    def _delete(self, target):
+        self._auth('oa-uid')
+        return self.client.delete(f'/api/v1/admin/admins/{target.id}/')
+
+    def test_an_admin_who_never_started_can_be_deleted(self):
+        self.assertEqual(self._delete(self.fresh).status_code, 200)
+        self.assertFalse(PartnerAdmin.objects.filter(id=self.fresh.id).exists())
+
+    def test_an_admin_who_MADE_A_PAYMENT_RUN_cannot(self):
+        # ⚠ THE CASE THAT KILLED THE FOREIGN-KEY VERSION. `created_by` is a plain email column:
+        # nothing points at this account, so every FK check says "safe to delete".
+        self._make_a_payment_run('worked@x.com')
+        r = self._delete(self.worked)
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.json()['code'], 'has_work')
+        self.assertEqual(r.json()['work']['payment_runs_made'], 1)
+        self.assertTrue(PartnerAdmin.objects.filter(id=self.worked.id).exists())
+
+    def test_the_list_says_so_before_the_button_is_pressed(self):
+        self._make_a_payment_run('worked@x.com')
+        self._auth('oa-uid')
+        rows = {a['email']: a for a in self.client.get('/api/v1/admin/admins/').json()['admins']}
+        self.assertTrue(rows['fresh@x.com']['deletable'])
+        self.assertFalse(rows['worked@x.com']['deletable'])
+        self.assertEqual(rows['worked@x.com']['work']['payment_runs_made'], 1)
+
+    def test_a_REVIEWER_is_never_deletable_however_empty(self):
+        # Owner, 2026-09-09: "I am only talking about admin, and not reviewers."
+        r = self._delete(self.own_rev)
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertEqual(r.json()['code'], 'not_deletable')
+        self.assertTrue(PartnerAdmin.objects.filter(id=self.own_rev.id).exists())
+
+    def test_another_organisations_admin_404s_rather_than_refusing(self):
+        # No existence leak: the same answer as a row that does not exist.
+        self.assertEqual(self._delete(self.other_rev).status_code, 404)
+
+    def test_a_super_can_never_be_deleted(self):
+        self.assertEqual(self._delete(self.super).status_code, 404)

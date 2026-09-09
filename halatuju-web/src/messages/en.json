@@ -2324,12 +2324,7 @@
         "stuckTitle": "Having trouble setting it up?",
         "stuckCard": "Use your actual MyKad, not a photocopy or a photo of one — the app photographs the real card and will reject a picture of a picture.",
         "stuckPhone": "A very old phone may fail during registration even if it meets the iOS 16 / Android 10 requirement. If it stalls, try again on a newer phone.",
-        "stuckSupport": "If you faced any problem, WhatsApp our support at +6016-336 6127.",
-        "walletId": "eWallet ID",
-        "walletIdHint": "Enter the last 5 digits of your eWallet ID. To find it: open the Vircle app, tap the gear icon at the top right, then scroll to the bottom of the Settings page.",
-        "walletIdEcho": "Your full eWallet ID will be saved as:",
-        "walletIdCheck": "Check this matches the 13-digit number at the bottom of your Vircle Settings page, digit for digit.",
-        "errorDuitnow": "Those five digits don't look like the end of an eWallet ID. If you took them from the DuitNow Transfer number on the Top Up screen, that's a different number — your eWallet ID is at the bottom of the Settings page (tap the gear icon at the top right)."
+        "stuckSupport": "If you faced any problem, WhatsApp our support at +6016-336 6127."
       },
       "bank": {
         "title": "Add your bank account for payment",
@@ -3102,10 +3097,9 @@
       "nav": "Overview",
       "sub": "Your organisation — its people, its sponsors and its money.",
       "staffSub": "Who can act inside this organisation, and what each of them may do.",
-      "invitesPending": "waiting to reply",
+      "invitesPending": "Awaiting reply",
       "awaitingVetting": "awaiting vetting",
-      "needsAttention": "Needs your attention",
-      "revokedStaff": "{count} no longer has access"
+      "needsAttention": "Needs your attention"
     },
     "organisations": {
       "sub": "The tenant organisations HalaTuju runs, and who leads each one."
@@ -3184,7 +3178,8 @@
       },
       "status": {
         "active": "Active",
-        "paused": "Paused"
+        "paused": "Paused",
+        "revoked": "Revoked"
       },
       "detail": {
         "back": "All reviewers",
@@ -3279,7 +3274,12 @@
       "tabReviewers": "Reviewers",
       "tabEmails": "Emails",
       "tabsAria": "Reviewers panels",
-      "tabTerms": "Terms"
+      "tabTerms": "Terms",
+      "colLastSeen": "Last seen",
+      "lastSeenUnknown": "Not recorded",
+      "revokeConfirm": "Revoke {name}? They will not be able to sign in.",
+      "revokeConfirmOpen": "Revoke {name}? They have {n} open cases. Those stay assigned to them, and they will not be able to open them. To stop new work but keep the cases moving, pause them instead.",
+      "restoreConfirm": "Restore {name}? They will be able to sign in again."
     },
     "sources": {
       "nav": "Sources",
@@ -6061,6 +6061,8 @@
         "english_required": "Write the English version first — the other languages fall back to it.",
         "bad_shape": "Could not read that wording. Please try again."
       }
-    }
+    },
+    "delete": "Delete",
+    "deleteConfirm": "Delete {name}? This cannot be undone."
   }
 }

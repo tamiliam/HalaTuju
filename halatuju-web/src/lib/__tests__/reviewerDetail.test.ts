@@ -14,6 +14,8 @@ import {
 const R = (over: Partial<AdminReviewer> = {}): AdminReviewer => ({
   id: 1, name: 'Aisha', email: 'a@example.org', role: 'reviewer', languages: ['en'],
   open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
+  // Revoked is NOT paused (2026-09-09); `last_seen_at` null means NOT RECORDED.
+  is_active: true, last_seen_at: null,
   // NULL = every gift, the permissive default with no backfill — never "no gift".
   programme_id: null, programme_name: '', ...over,
 })

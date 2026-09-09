@@ -184,6 +184,16 @@ export interface AdminItem {
   /** NULL means NOT RECORDED, never "never signed in" — everyone predating 2026-08-03 is empty. */
   first_seen_at?: string | null
   last_seen_at?: string | null
+  /** ⚠ MAY THIS VIEWER ACT ON THIS ROW? Everybody in the tenant is LISTED; only some may be
+   *  revoked — an org_admin sees their fellow organisation admins and may not touch them. Served
+   *  by the same check the write endpoints enforce, so the screen cannot draw a refused button. */
+  manageable?: boolean
+  /** Whether this account may be DELETED outright rather than only revoked: an admin-shaped role
+   *  with NO recorded work. Reviewers are never deletable (owner, 2026-09-09). */
+  deletable?: boolean
+  /** What this person has DONE, `{what: count}`, empty when nothing. The reason a delete is
+   *  refused, so the screen can name it instead of greying a button for no visible cause. */
+  work?: Record<string, number>
   /** THIS row's dormancy threshold, resolved for the person's own organisation on the server
    *  (Org Config Sprint C). `standingOf` reads it; the old constant is only its fallback. */
   dormant_days?: number
@@ -268,6 +278,24 @@ export async function inviteSponsor(
 ) {
   return adminMutate<{ id: number; emailed: boolean }>(
     '/api/v1/admin/invitations/', 'POST', { audience: 'sponsor', ...data }, options)
+}
+
+/** Delete a staff account outright. ⚠ Only ever offered for an admin-shaped role with NO recorded
+ *  work; the server refuses everything else — 409 `has_work` carries the counts that stopped it,
+ *  400 `not_deletable` means the role can never be deleted (every reviewer). */
+export async function deleteAdmin(adminId: number, options?: ApiOptions) {
+  const headers: Record<string, string> = {}
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/admins/${adminId}/`, {
+    method: 'DELETE', headers,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    const err = new Error(body.error || `Delete failed: ${res.status}`) as Error & { code?: string }
+    err.code = body.code || body.error || ''
+    throw err
+  }
+  return res.json() as Promise<{ message: string }>
 }
 
 export async function revokeAdmin(adminId: number, action: 'revoke' | 'restore', options?: ApiOptions) {
@@ -2816,6 +2844,11 @@ export interface AdminReviewer {
   /** Stepped back from NEW work. Never a revoke — see `PartnerAdmin.paused_at`. */
   paused: boolean
   paused_at: string | null
+  /** ⚠ REVOKED IS NOT PAUSED. False = the account is closed; they keep their row (so Restore is
+   *  reachable) and can never be assigned a case. 2026-09-09. */
+  is_active: boolean
+  /** NULL is "not recorded", NEVER "never signed in" — the backfill is best-effort. */
+  last_seen_at: string | null
   /** The gift they cover. **NULL = every gift**, the permissive default with no backfill —
    *  render it as "every gift", never as a blank cell that reads as missing data. */
   programme_id: number | null

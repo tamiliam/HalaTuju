@@ -662,6 +662,109 @@ same class, other pages, still unlogged as work.
 **⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no
 membership, no credit) until it is **inked AND the money has changed hands**, with a bank reference
 for `external_reference`.
+## Superseded — previous Next Sprint (as of 2026-09-09, after Vircle Airtable V2a — the student stops typing the wallet id)
+
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`da1ddfa5`**; BOTH Cloud Builds SUCCESS
+on `da1ddfa` — **waited on the push's OWN build IDs** (web `6d6a5cbf…`, api `06cd515a…`), never
+"top rows green". Serving **halatuju-api-01010-w95** / **halatuju-web-00866-q75** (read from
+`status.latestReadyRevisionName`). Site 200, `Server: Google Frontend`; intake 200; **no api ERROR
+logs since the deploy**. **The served bundle was READ BACK** (23 chunks, 2.2 MB): the application
+page's chunk carries `vircle.confirm` + `vircle.mobileHint` and **none** of
+`walletIdEcho`/`walletIdHint`/`errorDuitnow` — the absence check, not just presence.
+
+**NO MIGRATION. api + web.** Worktree
+`.worktrees/vircle-v2a`, branch `feat/vircle-airtable-v2a`. Retro
+`docs/retrospective-2026-09-09-vircle-airtable-v2a.md`; lessons ×2.
+Gates, ALL RUN INSIDE THE WORKTREE and re-run on the MERGED tree (origin/main moved under this
+branch — the People-actions sprint landed): pytest **6095** (full `apps/`); jest **1938** (+6 of
+those are this sprint's); tsc **24** (baseline); lint **0**; i18n **4921 × 3** (−5 keys, retired
+in all three locales); `next build` exit 0; `makemigrations --check` clean. **Three bite-checks,
+all bit** (optional-id branch, the inverted email guard, the new source guard).
+⚠ One re-run lesson: two concurrent `next build`s in ONE `.next` directory clobber each other's
+static manifest — the first run's failure was the collision, not the code. Build once, alone.
+
+**WHAT SHIPPED.** V1's two webhooks are live and verified with Vircle; V2a retires the
+student-facing half. **The wallet-ID box is GONE from the Action Centre** — the student enters
+only the mobile they registered with Vircle and confirms; the eWallet ID arrives via Vircle's
+Airtable callback (`AUDIT vircle_id_set … by=vircle-airtable`).
+
+**WHAT MUST NOT BE "TIDIED":**
+- **⚠ `vircle_id` ON THE RESOLVE IS OPTIONAL, NOT IGNORED.** Absent/empty resolves and stores
+  nothing; **supplied-but-bad is still a 400** (an old cached bundle may send one, and the band
+  check is what caught three DuitNow numbers in the first 46 students). Do not collapse the branch.
+- **⚠ THE 48H ACTIVATION EMAIL AND THE RELAY SHEET STAY** (owner ruling) — they are the backstop
+  until a real student flows through the webhook pair. Their tests are untouched.
+- **⚠ THE OLD D10 EMAIL GUARD IS INVERTED, NOT DELETED.**
+  `test_award_offer_email_no_longer_asks_for_the_wallet_id` asserts the gear-icon hunt is ABSENT
+  (per language) and the "Vircle sends us your eWallet details" promise present. An absence check —
+  a presence grep cannot verify a removal.
+- **⚠ `ActionCentre.vircle.test.ts` refuses the box's return** (no `vircle-id` input, no
+  `walletId`/`VIRCLE_PREFIX`/`errorDuitnow`, keys gone from en/ms/ta). Restoring the box is a
+  deliberate decision, not a tidy.
+- **The payments CSV, relay sheet and activation email still say "eWallet ID"** — operator/Vircle
+  surfaces, not student asks. Leave them.
+- **Email goldens were REGENERATED** (`UPDATE_EMAIL_GOLDEN=1`) for the STEP-2 and install-email
+  copy — an owner-approved change, not drift.
+
+**▶ THE DEPLOY IS DONE** (see the header). No migrate-first, no env vars, no data step. **What a
+student sees changed**: the Vircle card asks for the mobile only.
+
+**▶ OWNER POST-CHECK:** open a test student's Action Centre with an open Vircle task — the card
+shows ONE mobile box and the confirm button, no wallet-ID field. The award email's STEP 2 no
+longer mentions the gear icon. **ms and ta are first drafts** for the reworded email copy.
+
+**▶ NEXT = V2b, ON ITS TRIGGER:** retire the 48h activation email AFTER the first real
+confirm/callback pair appears in the logs (`Vircle Airtable push` then
+`AUDIT vircle_id_set … by=vircle-airtable`). The relay sheet stays (owner: it is the
+`Vircle_account` mirror). Known limit carried from V1: Rishvin (#114) — his Vircle account holds
+his FATHER's IC, so his inbound row logs `no_match`; a human reconciles.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-09, after the People-actions sprint — the owner's three faults)
+
+**✅ SHIPPED AND DEPLOYED 2026-09-09.** `main` at **`eb31882e`**; BOTH Cloud Builds SUCCESS;
+serving **halatuju-api-01009-g42** / **halatuju-web-00865-g2c** (read from
+`status.latestReadyRevisionName`, and WAITED ON BY BUILD ID — a `builds list --limit 2` loop
+reported the previous push's green builds an hour earlier). Site 200; no api ERROR logs since.
+
+**WHAT SHIPPED.** The owner walked the new People page and found three real faults. **No migration.**
+
+- **⚠ RESEND WAS A FOOTGUN AND IS NOW SCOPED.** `AdminResendView` **rotates the Supabase password**
+  and sets `must_change_password`; the button sat beside every ACTIVE admin, so one click locked a
+  working colleague out of their own account. It now appears only where the invitation is still
+  open (`invitation.status !== 'accepted'`) — on all three staff pages, so a genuinely waiting
+  invitee keeps it. **Do not re-condition it on `is_active`.**
+- **⚠ AND `StaffTable` HAD AN INLINE COPY OF ITS OWN ACTIONS.** The phone card called `actionsFor`,
+  the desktop `<td>` held a duplicate — so the first fix worked on the half nobody looks at. Both
+  renderings call the helper now. Do not re-inline.
+- **SEEING IS NOT MANAGING.** The staff list returns everyone in the tenant (`PROGRAMME_STAFF_ROLES`)
+  with a per-row `manageable` flag; `_ORG_ADMIN_MANAGEABLE_ROLES` still governs every WRITE and a
+  peer org_admin's revoke still 404s. The two sets answer different questions — do not re-merge.
+- **⚠ THE DELETE GUARD IS A FOOTPRINT, NOT FOREIGN KEYS** (`apps/scholarship/staff_footprint.py`).
+  `PaymentRun.created_by` is an EMAIL STRING: on production the admin who made 25 of 27 runs would
+  have passed any FK check. Any trace of work → revoke only. **Reviewers are never deletable.**
+- **The reviewers table gained Last seen and Revoke**, and a revoked reviewer now STAYS LISTED
+  (reversing 2026-08-02) so Restore is reachable. They still cannot be assigned — assignment has
+  its own `is_active=True` queryset — and pause/set-gift still 404 on a closed account, because
+  `_reviewers()` widens only for the list and the detail page.
+- **`lib/staffStatus` is the one home for "revoked beats paused".** Both tables read it; they had
+  their own copies and had already disagreed twice.
+- Owner's two small ones: the "1 no longer has access" line is gone, and the tile reads
+  **Awaiting reply**.
+
+Worktree `.worktrees/people-actions`, branch `feat/people-actions` (base `origin/main` at
+`81bfcb29`). Retro `docs/retrospective-2026-09-09-people-actions.md`; 3 decisions; 3 lessons.
+Gates: pytest **6094** (+13); jest **1932** (+13); tsc **24** (baseline); lint **0**; i18n
+**4926 × 3**; `next build` exit 0; `makemigrations --check` clean. Six bite-checks, all bit.
+
+**▶ OWNER POST-CHECK:** Organisation → People → Admins should now show **five** rows (the two
+organisation admins are back, with no buttons — you may see them, not revoke them). Resend should
+be gone from everybody who has signed in. Delete should appear beside Yeoh Liew Se and Shanti only
+— never beside Kulaly, who has made 25 payment runs. Reviewers gains **Last seen** and **Revoke**;
+revoking somebody with open cases warns you what it strands.
+
+---
 
 ## Superseded — previous Next Sprint (as of 2026-09-09, after the staff-directory sprint — Invitations means waiting)
 

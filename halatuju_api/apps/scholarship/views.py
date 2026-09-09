@@ -1527,20 +1527,24 @@ class ResolutionItemResolveView(APIView):
             if not mobile:
                 return Response({'error': 'bad_mobile'}, status=status.HTTP_400_BAD_REQUEST)
             text = mobile
-            # Payments D9: the student also supplies their Vircle Wallet ID. The client
-            # assembles the full 13-digit value from the fixed prefix + 3-digit suffix; we
-            # validate + store it on the application (the mobile stays in resolution_text).
+            # V2a (2026-09-09): `vircle_id` is OPTIONAL. The eWallet ID now arrives via
+            # Vircle's Airtable callback (VircleAirtableUpdateView) after the confirm —
+            # the student no longer types it. A value is still accepted (an old cached
+            # bundle may send one) and still validated: supplied-but-bad stays a 400,
+            # because storing a bad id silently is worse than refusing it.
             from . import payments
             vircle_id = ''.join(ch for ch in (request.data.get('vircle_id') or '') if ch.isdigit())
-            if not payments.valid_vircle_id(vircle_id):
-                # `reason` lets the client name the actual mistake. A student who read the Top Up
-                # screen instead of Settings typed a DuitNow Transfer number — telling them to
-                # "check the number" would be wrong, the number is fine, the FIELD was.
-                return Response({'error': 'bad_vircle_id',
-                                 'reason': payments.vircle_id_error(vircle_id)},
-                                status=status.HTTP_400_BAD_REQUEST)
-            item.application.vircle_id = vircle_id
-            item.application.save(update_fields=['vircle_id'])
+            if vircle_id:
+                if not payments.valid_vircle_id(vircle_id):
+                    # `reason` lets the client name the actual mistake. A student who read the
+                    # Top Up screen instead of Settings typed a DuitNow Transfer number —
+                    # telling them to "check the number" would be wrong, the number is fine,
+                    # the FIELD was.
+                    return Response({'error': 'bad_vircle_id',
+                                     'reason': payments.vircle_id_error(vircle_id)},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                item.application.vircle_id = vircle_id
+                item.application.save(update_fields=['vircle_id'])
         # Phase 2 (D2): on a typed answer, Cikgu Gopal nudges ONLY when it is TOTALLY
         # off-topic — keep the task open and return his one-sentence steer, don't resolve.
         # Flag-gated + AI-off-safe (judge defaults to accept). 'pathway_confirm' /
