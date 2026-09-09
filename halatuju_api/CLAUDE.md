@@ -571,6 +571,16 @@ being factually wrong for a second tenant. The **student** apply bundle still ca
 B40 Education Assistance" and "At least 5 A", which is the proof the default path is untouched.
 Live intake reads `apply_copy: {}` for every code incl. a retired one and gibberish.
 
+**⚠ THE PER-GIFT GATE WAS PROVEN IN PRODUCTION, WITH TWO GIFTS IN OPPOSITE STATES.** The
+single-gift read above CANNOT distinguish the fix from the bug — with nothing open anywhere, the
+old platform-wide answer and the new per-gift answer are both `false`. The owner briefly set the
+Test gift Live and opened its round; live intake then read **`test` → open, `testing` (its retired
+alias) → open, `brightpath-flagship` → closed, gibberish → closed**, which is the shape only the
+per-gift code path can produce. The owner also loaded `/scholarship/apply?p=testing`: it rendered
+(no bounce) showing the PLATFORM default B40 wording, since the Test gift has no saved copy —
+`{}` resolving to the default, on a real browser. Round closed and gift returned to Draft after;
+re-verified `testing` → closed and the bare no-code call → closed.
+
 Was worktree `.worktrees/apply-copy`, branch `feat/apply-copy`, base `origin/main` at `728a1ace`;
 merged forward once as main moved under it (Vircle V2a + people-actions). api + web. Retro `docs/retrospective-2026-09-09-apply-copy-per-gift.md`; plan
 `docs/plans/2026-09-09-apply-page-copy-per-gift.md`; decisions ×2; lessons ×4.
