@@ -54,8 +54,8 @@ in `sheets.py`, and the award email carries a selective guardian paragraph gated
 `vircle.can_register`). On such a wallet the parent is `Wallet User` and the student is `Child User`.
 **A join that reads `Wallet User` as the spender will attribute a parent's own shopping to a
 student, and there is nothing on the row that would look wrong.** Join on `wallet_id`, and treat a
-populated `Child User` as the spender. Every row in the sample has `Child User = null`, so **the
-populated case is UNTESTED against real data** — find one before shipping.
+populated `Child User` as the spender. ✅ **Superseded by §0b: it is populated on 28 of 1,368 real
+rows** — a live case, not a hypothetical.
 
 ⚠⚠ **TRAP 2 — A SHOP'S NAME IS OFTEN A PERSON'S NAME.** In the six sample rows, `AZMI BIN BAKA…`
 and `MUHAMMAD N…` sit beside `99 Speedmart` — and both carry `duitnow_type = STATIC_MERCHANT`. They
@@ -63,9 +63,9 @@ are hawker stalls and sundry shops registered to an individual, which is ordinar
 Two consequences, and both are load-bearing:
   * **`transfer` ("Sent to a person") MUST be derived from `duitnow_type`, NEVER from the name
     looking like a person.** Name-shape matching would file half the student's meals as money sent
-    to a friend — the single most damaging thing this card could get wrong. Capture the full set of
-    `duitnow_type` values before writing the rule; only `STATIC_MERCHANT`/`DYNAMIC_MERCHANT` are
-    observed so far, so **the person-QR value has not yet been seen** and must not be guessed.
+    to a friend — the single most damaging thing this card could get wrong. ✅ **Superseded by §0b:
+    the full vocabulary is now measured and the person value is
+    `STATIC_CUSTOMER_QR_CODE_DUITNOW_P2P`** — no longer a guess.
   * **It confirms the owner's privacy ruling was the right one.** "RM3 at Azmi bin Bakar" repeated
     daily locates a named individual's stall next to a campus. Merchant names must never reach a
     sponsor.
@@ -74,6 +74,68 @@ Two consequences, and both are load-bearing:
 recognisable chains and four are not. Real amounts are small (RM2–RM12), so this is daily food from
 independent traders. **Curate the map from the ACTUAL distinct merchant list before the card goes
 live**, or the donut ships as one enormous grey slice — technically honest and useless to a sponsor.
+
+---
+
+## 0b. ⚠ MEASURED ON THE WHOLE CORPUS, 2026-09-10 — read this before designing the sorter
+
+The owner downloaded all eight reports (`Downloads/spending/`, XLSX exports of the Sheets). Analysed
+read-only in the scratchpad; **the raw files hold student names and wallet ids and must never enter
+the repo.** 1,554 raw rows → **1,368 unique** → **1,366 `SPEND`**, **RM10,029** over 5 Jul–30 Aug.
+
+**⚠ THE HEADER LAYOUT CHANGED TWICE IN EIGHT WEEKS. THREE VARIANTS EXIST:**
+
+    A  transaction_date, wallet_id, BrightPath name, transaction_id, Sender, Receiver, …
+    B  transaction_date, wallet_id, transaction_id, Wallet User, Child User, Receiver, …
+    C  transaction_date, wallet_id, transaction_id, Wallet User, Child User, Merchant Name, …
+
+The merchant column is **`Receiver` OR `Merchant Name`**; the student column is **`BrightPath name`
+OR `Wallet User`+`Child User`**. `Sender` existed then vanished. **Resolve every column by trying a
+list of known names, and fail loudly on an unknown header** — a positional parser would already have
+broken twice, and a parser written to any single variant breaks on the archive.
+
+**⚠ `amount` IS SOMETIMES A NUMBER AND SOMETIMES THE STRING `"RM26.90"`** — 1,280 numeric, 88 string,
+*within the same corpus*. Handle both or 88 real payments vanish.
+
+**⚠ 186 TRANSACTION IDS APPEAR IN MORE THAN ONE FILE.** The weekly exports overlap, exactly as the
+July brief warned. Without `transaction_id` dedup the totals are **14% too high**.
+
+**✅ `duitnow_type`'S FULL VOCABULARY IS NOW KNOWN — the person-QR value exists:**
+
+    STATIC_MERCHANT_QR_CODE_DUITNOW      1152
+    DYNAMIC_MERCHANT_QR_CODE_DUITNOW      214
+    STATIC_CUSTOMER_QR_CODE_DUITNOW_P2P     2   ← person-to-person
+
+⚠ **Both P2P rows are `DEBIT` / `RECEIVED`, i.e. money coming IN, not sent out.** So in two months
+**no student sent money to a person.** Keep the `transfer` category — it must exist the day one does
+— but expect it empty, and do not let an empty slice read as a missing feature.
+
+**✅ THE PARENT-WALLET CASE IS REAL AND PRESENT: `Child User` is populated on 28 of 1,368 rows.**
+Not the untested edge §0 assumed. A join that reads `Wallet User` as the spender is wrong on those
+rows today.
+
+**Amounts are small: median RM5.00, p75 RM6.90, p90 RM12.50, max RM300.00.** This is daily food.
+
+**290 distinct merchants. The top 100 cover 82% of rows** — so the map is a few hundred names, not
+thousands, and it grows slowly.
+
+**Keyword rules alone reach 59% of rows** (prototype measured over the corpus):
+
+    local (person-name)  21.6% | food 17.4% | study 11.0% | groceries 4.9%
+    transport 2.4% | online 1.9% | health 0.1% | UNPLACED 40.7%
+
+⚠ **AND THE UNPLACED 41% IS ONE SHAPE: A GENERIC MALAYSIAN BUSINESS SUFFIX.** `BACHOK MAJU
+ENTERPRISE`, `IZAN MEGA ENTERPRISE`, `EZASNY GLOBAL TRADING`, `SZA G RESOURCES`, `DVENDS TECH SDN
+BHD`. `ENTERPRISE`/`TRADING`/`RESOURCES`/`SDN BHD` say *"a registered business"* and nothing about
+what it sells. **Only 91 distinct names** sit in that bucket — small enough to settle in one pass.
+
+**⚠ THEIR AVERAGE SPEND IS THE SIGNAL THE NAME WITHHOLDS.** BACHOK MAJU RM4.00 over 46 visits, IZAN
+MEGA RM4.47 over 43, D ANZ RM3.76 over 29, ATLAS VENDING RM2.16. Repeated RM2–RM6 on a campus is a
+food stall or a vending machine. **This is why the owner's "name AND value" instinct is right** — but
+it is an INFERENCE, so it must land in a category that is honest about being one (see §4c).
+
+**Two real co-op signals worth keeping as rules:** `KOPERASI`/`KOOP` + a campus name is the campus
+shop (150 rows), and `KTMB` is the national railway (transport, median RM10.00).
 
 ---
 
