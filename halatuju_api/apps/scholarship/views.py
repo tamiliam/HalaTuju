@@ -31,6 +31,7 @@ from .serializers import (
     SignUploadSerializer,
     StudentAwardSerializer,
 )
+from . import apply_copy
 from . import in_programme as in_programme_service
 from . import scheduling
 from . import sponsorship as sponsorship_service
@@ -51,6 +52,7 @@ from .services import (
     reconcile_income_route,
     record_consent,
     resolve_open_cohort,
+    resolve_programme_by_code,
     revert_if_profile_incomplete,
     save_application_details,
     score_application,
@@ -163,20 +165,45 @@ class ScholarshipIntakeView(APIView):
 
     def get(self, request):
         programme_code = (request.query_params.get('programme') or '').strip()
+
+        # ⚠ THE COPY IS RESOLVED FROM THE CODE, NOT FROM THE COHORT — and that is the whole
+        # point. `resolve_open_cohort` returns None for a CLOSED round, so reading the gift off
+        # it would serve the platform default on every closed gift: Sabah's page would advertise
+        # BrightPath's criteria, which is the defect this feature exists to remove. A closed gift
+        # must stay identifiable so the page can answer "closed" ABOUT THE RIGHT GIFT.
+        #
+        # ⚠ AN UNKNOWN CODE STAYS SILENT, NEVER 404. This endpoint is public and unauthenticated;
+        # distinguishing "no such gift" from "not open" would let anyone enumerate the platform's
+        # tenants. It reads exactly like a closed gift with no copy — see the docstring.
+        copy = {}
+        if programme_code:
+            p = resolve_programme_by_code(programme_code)
+            if p is not None:
+                copy = apply_copy.for_wire(p)
+
         try:
             cohort = resolve_open_cohort(programme_code=programme_code)
         except AmbiguousOpenCohort:
             # Applications ARE open; nothing here can say which round, so name none — and offer
             # the choice instead of leaving the student to discover the problem at submit.
+            # ⚠ NO COPY HERE ON PURPOSE: nobody has chosen a gift yet, so there is no gift whose
+            # words these would be. The page is showing the chooser; it re-reads once picked.
             return Response({
                 'open': True,
                 'cohort_name': '',
                 'choices': _open_round_choices(),
+                'apply_copy': {},
             })
+
+        # No code + exactly one open round → that round's gift owns the page the student is on.
+        if not copy and cohort is not None and cohort.programme_id:
+            copy = apply_copy.for_wire(cohort.programme)
+
         return Response({
             'open': cohort is not None,
             'cohort_name': cohort.name if cohort else '',
             'choices': [],
+            'apply_copy': copy,
         })
 
 

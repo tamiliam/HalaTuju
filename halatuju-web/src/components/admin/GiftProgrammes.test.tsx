@@ -49,7 +49,8 @@ const programme = (over: Partial<api.AdminProgramme> = {}): api.AdminProgramme =
   id: 7, code: 'test3', name_en: 'Test Three', name_ms: '', name_ta: '',
   is_active: false, lifecycle: 'draft', intake_years: 0, applications: 0, awarded: 0,
   open_year: null, delete_blocked_by: null, delete_blocked_count: 0,
-  apply_url: 'https://halatuju.xyz/scholarship/apply?p=test3', ...over,
+  apply_url: 'https://halatuju.xyz/scholarship/apply?p=test3',
+  apply_copy: {}, apply_copy_sensitive: [], ...over,
 })
 
 /** A gift that has finished: switched off, and students applied to it. */

@@ -6777,6 +6777,18 @@ def programme_delete_blocker(p):
     return None, 0
 
 
+def _apply_copy_terms(p):
+    """Race/ethnicity/religion words anywhere in this gift's stored apply copy. Advisory."""
+    from . import apply_copy as ac
+    parts = []
+    for block in (p.apply_copy or {}).values():
+        if isinstance(block, dict):
+            parts.append(block.get('title') or '')
+            parts.append(block.get('intro') or '')
+            parts.extend(b for b in (block.get('criteria') or []) if isinstance(b, str))
+    return ac.sensitive_terms(*parts)
+
+
 def _programme_row(p):
     """One gift, with the counts its card shows. Deliberately not a serializer: the shape is three
     joins wide and exists only here."""
@@ -6798,6 +6810,16 @@ def _programme_row(p):
         # means nothing is holding it and it may be deleted.
         'delete_blocked_by': blocked_by,
         'delete_blocked_count': blocked_count,
+        # ⚠ THE STORED MAP, VERBATIM — not `apply_copy.for_wire`, which folds ms/ta onto English
+        # for a READER. The tab is an EDITOR: it has to show a blank Malay box as blank, or the
+        # first save would silently promote the English text into a Malay field nobody typed.
+        'apply_copy': p.apply_copy or {},
+        # ⚠ ADVISORY, AND PERSISTENT RATHER THAN ONLY-ON-SAVE. `decisions.md` 2026-05-25 removed
+        # ethnicity from the public copy because MyNadi's s44(6) status requires the programme not
+        # to discriminate by race. The owner ruled 2026-09-09 that this WARNS and does not refuse
+        # (option A) — a tenant may lawfully run an ethnicity-scoped gift. Serving it on every read
+        # means the caution is on screen when somebody opens the tab, not only after they save.
+        'apply_copy_sensitive': list(_apply_copy_terms(p)),
         'intake_years': cohorts.count(),
         # ⚠ COUNTED THROUGH `programme_student_queryset`, NOT `filter(programme=p)` (2026-09-08).
         # `ScholarshipApplication.programme` is denormalised and SET ONCE, so a cohort moved between
@@ -7086,6 +7108,18 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
                     return Response({'error': 'name_required', 'code': 'name_required'},
                                     status=status.HTTP_400_BAD_REQUEST)
                 setattr(p, f, v); changed.append(f)
+
+        if 'apply_copy' in request.data:
+            # ⚠ VALIDATED SERVER-SIDE, NOT ONLY ON THE FORM. This is free text that renders on a
+            # PUBLIC page, and the `parents_occupation` overflow (2026-06-07) is the standing
+            # lesson: a form `maxLength` is a courtesy, the serializer is the guarantee.
+            from . import apply_copy as ac
+            try:
+                p.apply_copy = ac.normalise(request.data.get('apply_copy'))
+            except ac.ApplyCopyError as e:
+                return Response({'error': e.code, 'code': e.code, 'field': e.field},
+                                status=status.HTTP_400_BAD_REQUEST)
+            changed.append('apply_copy')
 
         if 'is_active' in request.data:
             want = bool(request.data.get('is_active'))

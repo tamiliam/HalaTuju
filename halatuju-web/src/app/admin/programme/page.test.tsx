@@ -56,6 +56,7 @@ beforeEach(() => {
       // never derives it. This fixture is the production shape: 41 applications, held.
       delete_blocked_by: 'has_applications', delete_blocked_count: 41,
       apply_url: 'https://halatuju.xyz/scholarship/apply?p=bp',
+      apply_copy: {}, apply_copy_sensitive: [],
     }],
   })
   mockApi.getAdminIntakeYears.mockResolvedValue({
@@ -205,13 +206,18 @@ describe('the tabbed shell', () => {
   // Colours still LEFT the screen entirely (it writes a tenant-wide row and lives under
   // Organisation → Settings). Four sidebar rows collapsed into this one screen, so the tab list is
   // the artefact that has to be right.
-  it('opens on Intake year, and offers exactly the three tabs in the owner order', () => {
+  // ⚠ FOUR TABS SINCE 2026-09-09. "How it's advertised" joined the strip so a gift can write its
+  // own public apply-page copy — until then one fixed string served every gift, so a second gift
+  // advertised BrightPath's B40 criteria on its own link. It sits LAST: the first three follow the
+  // DATA (the rules are columns on the intake year), and advertising is what you do once the gift
+  // is set up.
+  it('opens on Intake year, and offers exactly the four tabs in the owner order', () => {
     render(<AdminProgrammeConfigPage />)
     expect(screen.getByText('admin.programme.title')).toBeTruthy()
     expect(screen.getByText('admin.programme.subtitle')).toBeTruthy()
 
     const tabs = screen.getAllByRole('tab').map((el) => el.getAttribute('data-testid'))
-    expect(tabs).toEqual(['tab-year', 'tab-rules', 'tab-config'])
+    expect(tabs).toEqual(['tab-year', 'tab-rules', 'tab-config', 'tab-copy'])
     expect(screen.getByTestId('tab-year').getAttribute('aria-selected')).toBe('true')
     expect(screen.getByTestId('tab-rules').getAttribute('aria-selected')).toBe('false')
   })

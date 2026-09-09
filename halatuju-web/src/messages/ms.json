@@ -5588,7 +5588,8 @@
       "tab": {
         "config": "Apa yang kami minta",
         "rules": "Peraturan",
-        "year": "Tahun pengambilan"
+        "year": "Tahun pengambilan",
+        "copy": "Cara ia diiklankan"
       }
     },
     "invitations": {
@@ -6033,6 +6034,38 @@
       "desc": "Semua orang yang sudah berada dalam organisasi ini — apa yang mereka pikul, dan siapa yang masih mempunyai akses.",
       "tabsAria": "Panel orang",
       "tabAdmins": "Pentadbir"
+    },
+    "applyCopy": {
+      "hint": "Apa yang pemohon baca pada halaman permohonan bagi hadiah ini. Biarkan semua kotak kosong untuk menggunakan teks piawai platform.",
+      "usingDefault": "Hadiah ini menggunakan teks piawai. Isi kotak di bawah untuk menulis teks anda sendiri.",
+      "fallbackNote": "Biarkan bahasa ini kosong dan pemohon akan melihat teks Bahasa Inggeris.",
+      "sensitiveWarning": "Teks ini menyebut bangsa, etnik atau agama ({terms}). Status pengecualian cukai sesuatu program boleh menghendaki ia tidak memilih atas dasar tersebut. Sila semak sebelum ia disiarkan.",
+      "looserWarning": "Pemohon membaca teks ini. Jika ia menjanjikan syarat yang lebih longgar daripada Peraturan anda, orang ramai akan memohon dan ditolak secara automatik.",
+      "lang": {
+        "en": "Bahasa Inggeris",
+        "ms": "Bahasa Melayu",
+        "ta": "Bahasa Tamil"
+      },
+      "field": {
+        "title": "Tajuk",
+        "intro": "Perenggan pembuka",
+        "criteria": "Siapa yang boleh memohon — satu syarat setiap baris"
+      },
+      "bulletPlaceholder": "cth. Pendapatan bulanan isi rumah dalam lingkungan B40.",
+      "addBullet": "Tambah syarat",
+      "removeBullet": "Buang syarat ini",
+      "saved": "Disimpan. Pemohon kini melihat teks anda.",
+      "cleared": "Dikosongkan. Pemohon melihat teks piawai semula.",
+      "useDefault": "Guna teks piawai",
+      "saveFailed": "Tidak dapat menyimpan. Sila cuba lagi.",
+      "error": {
+        "too_long": "Jawapan itu terlalu panjang ({field}). Sila pendekkan.",
+        "too_many": "Terlalu banyak syarat — lapan sahaja.",
+        "markup": "Sila buang aksara < dan >.",
+        "incomplete": "Berikan tajuk, perenggan pembuka dan sekurang-kurangnya satu syarat — atau biarkan ketiga-tiganya kosong ({field}).",
+        "english_required": "Tulis versi Bahasa Inggeris dahulu — bahasa lain akan merujuk kepadanya.",
+        "bad_shape": "Tidak dapat membaca teks itu. Sila cuba lagi."
+      }
     },
     "delete": "Padam",
     "deleteConfirm": "Padam {name}? Ini tidak boleh dibatalkan."

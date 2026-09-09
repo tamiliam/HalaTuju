@@ -9996,3 +9996,66 @@ belongs to a different family, and the owner's test account).
 **Revisit if:** a real applicant is ever red-blocked AT SUBMISSION by a relationship row they cannot
 fix. The thing to build then is a route past the SUBMISSION gate — **not** a second override at the
 review gate, which is where the first reading of this pointed and was wrong.
+
+## The apply page's public copy is per GIFT, and blank means the platform default — 2026-09-09
+
+**Decision:** `/scholarship/apply?p=<code>` renders a heading, an intro and a bulleted "Who can
+apply" list that belong to the **gift**, stored as one JSON column (`Programme.apply_copy`) and
+edited on a fourth Configuration tab. A gift with no copy renders the platform's own wording,
+which is BrightPath's state and makes this ship byte-identical for it.
+
+**Four sub-rulings, each with a rejected alternative:**
+1. **All-or-nothing per language** — title + intro + ≥1 bullet, or nothing. *Rejected:* per-field
+   fallback, which would render the platform's "Apply for B40 Education Assistance" above Sabah's
+   own bullets — one gift's heading over another gift's criteria, with nothing failing.
+2. **ms/ta fall back to the GIFT's English, never the platform's ms/ta.** *Rejected:*
+   `branding.resolveLang`'s per-locale platform fallback. Falling back to the platform's *name* is
+   harmless; falling back to its *criteria* tells a Malay-reading Sabah applicant they must be B40
+   with five A's. A wrong-language truth beats a right-language falsehood.
+3. **The platform default lives in the message files and is resolved in the BROWSER.** *Rejected:*
+   server-side resolution, which would duplicate 7 strings × 3 languages into Python — the
+   `_SUBJECT_BM` ↔ `subjects.ts` drift trap. Copied the branding endpoint's per-locale-map shape.
+   Consequence: zero new student-facing strings, so no ms/ta debt on the student side.
+4. **JSON column, not nine columns.** The criteria list is variable-length by owner ruling (a gift
+   may advertise three conditions or five), so a column model needs JSON for it anyway.
+
+**⚠ The advertised bar stays deliberately stricter than the engine.** Sprint 8 (2026-05-24) ruled
+that the public page says 5 A's / PNGK 3.0 while `shortlisting.evaluate()` runs 4 A− / PNGK 2.9,
+to catch near-misses; the owner reaffirmed it on 2026-09-09 (*"the public facing text need not be
+exactly same as the internal filter"*). **Nothing may derive this copy from a round's
+thresholds.**
+
+**Rationale:** BrightPath Sabah is ~2 weeks out and would otherwise advertise BrightPath's B40
+criteria on its own apply link.
+
+**Revisit if:** a tenant needs the "Who can apply" heading itself to change, or the landing page
+and sign-in prompt (same class of defect, other pages) are brought into scope.
+
+## Ethnicity in a tenant's public criteria: warn, do not refuse — 2026-09-09
+
+**Decision:** the "How it's advertised" tab detects race / ethnicity / religion terms in a gift's
+public criteria and shows a caution naming them. **It saves anyway.** The detector and its word
+list ship in full; only the ACTION is soft.
+
+**Alternatives considered:** (a) refuse platform-wide; (b) refuse for the organisation whose
+funding carries the constraint, as a stored setting.
+
+**Rationale:** `decisions.md` 2026-05-25 removed every mention of Indian descent from the public
+copy because MyNadi Foundation's **s44(6)** tax-exempt status requires the programme not to
+discriminate by race. That decision was written when the copy was OURS; this tab hands it to an
+organisation, so the constraint needs a voice on the screen. But a platform-wide refusal would
+bind a future tenant to **our funder's** terms — ethnicity-scoped scholarships are ordinary and
+lawful in Malaysia — and a per-organisation refusal buys a stored setting for a tenant that does
+not exist. A warning is proportionate here and not on donor copy (where "tax deductible" DOES
+refuse) because the person typing carries the s44(6) risk themselves, the text is on a PUBLIC page
+so a mistake is highly visible, and the fix is one edit.
+
+**⚠ A LANGUAGE IS NOT AN ETHNICITY.** "Bahasa Melayu" / "Bahasa Tamil" are subject names an
+ordinary criterion will mention, and are stripped before the scan. A warning that fires on
+everything is a warning nobody reads. Pinned by a test.
+
+**Trade-offs:** an org_admin can publish ethnicity-scoped criteria on a page funded under s44(6).
+Mitigated by visibility, not by refusal.
+
+**Revisit if:** a tenant asks to run an ethnicity-scoped programme (the scope becomes
+per-organisation — alternative (b)), or MyNadi's s44(6) position changes.

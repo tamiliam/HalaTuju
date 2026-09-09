@@ -53,8 +53,11 @@ import { useProgrammeScope } from '@/lib/programmeScope'
 import ProgrammeRulesTab from '@/components/admin/ProgrammeRulesTab'
 import ProgrammeConfigTab from '@/components/admin/ProgrammeConfigTab'
 import IntakeYearTab from '@/components/admin/IntakeYearTab'
+import ApplyCopyTab from '@/components/admin/ApplyCopyTab'
 
-const TABS = ['year', 'rules', 'config'] as const
+// ⚠ 'copy' IS LAST ON PURPOSE. The first three follow the DATA (the rules are columns on the
+// intake year); advertising the gift is what you do once it is set up, so it reads last.
+const TABS = ['year', 'rules', 'config', 'copy'] as const
 type Tab = (typeof TABS)[number]
 
 const isTab = (v: string): v is Tab => (TABS as readonly string[]).includes(v)
@@ -116,7 +119,8 @@ export default function AdminProgrammePage() {
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'year' ? <IntakeYearTab />
           : tab === 'rules' ? <ProgrammeRulesTab goToYear={() => setTab('year')} />
-            : <ProgrammeConfigTab />}
+            : tab === 'config' ? <ProgrammeConfigTab />
+              : <ApplyCopyTab />}
       </div>
     </div>
   )

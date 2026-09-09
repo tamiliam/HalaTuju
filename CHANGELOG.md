@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+<<<<<<< HEAD
+## The apply page's copy belongs to the gift - 2026-09-09
+
+**Shipped, not deployed.** ⚠ Migration `scholarship/0154` (additive, one JSON column) is
+**NOT YET APPLIED** — migrate-first.
+
+The public apply page's heading, intro and "Who can apply" bullets were ONE fixed string each,
+platform-wide. BrightPath Sabah is about two weeks out and would have advertised **BrightPath's
+B40 criteria on its own apply link**. They are now per GIFT, edited on a fourth Configuration tab
+("How it's advertised"). **Blank means the platform default, so BrightPath needs no data entry and
+its page is byte-identical.**
+
+**A second defect was found while planning it and folded in:** `getScholarshipIntake()` sent no
+programme code, so the apply page's open/closed gate asked *"is anything open anywhere?"*. With
+Sabah open and BrightPath closed, a student on an old BrightPath poster would have been shown the
+whole form and refused at submit — PF-1's "right refusal, wrong moment" on the per-gift path. The
+fix is the same line the copy needed: send the code.
+
+**Rules that must not be tidied:** the advertised bar stays deliberately stricter than the engine
+(Sprint 8, reaffirmed by the owner); all-or-nothing per language, so a gift's bullets never sit
+under the platform's heading; ms/ta fall back to the GIFT's English and never the platform's
+(a wrong-language truth beats a right-language falsehood); the platform default stays in the
+message files and is resolved in the browser, so no strings are duplicated into Python and the
+sprint adds no student-facing translation debt.
+
+An ethnicity/religion **warning** rides on the tab — the funding foundation's s44(6) status
+forbids selecting on race, but that constraint follows the funder, not the platform, so it warns
+and saves (owner ruling). "Bahasa Melayu" is a subject, not an ethnicity, and is exempt.
+
+pytest 6106 (+25) · jest 1931 (+12) · tsc 24 (baseline) · lint 0 · i18n 4944x3 · build 0 ·
+`makemigrations --check` clean. Three bite-checks landed. Retro
+`docs/retrospective-2026-09-09-apply-copy-per-gift.md`; decisions x2; lessons x4.
+=======
 ## Vircle Airtable V2a — the student stops typing the wallet id - 2026-09-09
 
 V1 (deployed and verified with Vircle end-to-end earlier today) made the eWallet ID arrive from
@@ -73,6 +106,7 @@ worse than it looked.
   inform decision or action"*), and "waiting to reply" reads **Awaiting reply**.
 
 +13 pytest, +13 jest. No migration.
+>>>>>>> origin/main
 
 ## Invitations means waiting; everybody who is in lives in People - 2026-09-09
 

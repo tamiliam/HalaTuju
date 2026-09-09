@@ -1,6 +1,7 @@
 /**
  * API client for HalaTuju Django backend.
  */
+import type { Locale } from './branding'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -1597,12 +1598,26 @@ export interface IntakeChoice {
  *  ⚠ `choices` IS POPULATED ONLY WHEN THE SERVER CANNOT SAY WHICH ROUND — several are open and
  *  nothing named one. It is how the apply page ASKS before the form instead of letting the
  *  student discover the refusal at submit. Empty in every other case, including today's. */
-export async function getScholarshipIntake(): Promise<{
+/** One gift's own apply-page copy, per locale. Absent/empty = use the platform default. */
+export interface ApplyCopyBlock {
+  title: string
+  intro: string
+  criteria: string[]
+}
+
+export async function getScholarshipIntake(programme?: string): Promise<{
   open: boolean
   cohort_name: string
   choices?: IntakeChoice[]
+  apply_copy?: Partial<Record<Locale, ApplyCopyBlock>>
 }> {
-  return apiRequest('/api/v1/scholarship/intake/')
+  // ⚠ THE PROGRAMME CODE IS NOT OPTIONAL IN PRACTICE — pass it whenever the URL carries one.
+  // Without it this asks "is anything open ANYWHERE?", which is a different question: with one
+  // gift open and another closed, a student on the closed gift's own link was shown the whole
+  // form and refused at submit. Sabah makes that reachable (2026-09-09).
+  const code = (programme || '').trim()
+  const qs = code ? `?programme=${encodeURIComponent(code)}` : ''
+  return apiRequest(`/api/v1/scholarship/intake/${qs}`)
 }
 
 // ── Interview scheduling (student books a proposed slot) ──────────────────────

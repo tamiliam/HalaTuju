@@ -550,7 +550,154 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-09, after Vircle Airtable V2a — the student stops typing the wallet id)
+## Next Sprint (as of 2026-09-09, after the apply page's copy became the GIFT's)
+
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`8da972e1`**; BOTH Cloud Builds
+SUCCESS on `8da972e` — **waited on the push's OWN build IDs** (web `417cae41…`, api
+`15150301…`), never "the top rows are green". Serving **halatuju-api-01011-cw6** /
+**halatuju-web-00867-5kw** (read from `status.latestReadyRevisionName`, never
+`status.traffic[0]`). All public routes 200; **no api ERROR logs since**.
+
+**⚠ MIGRATION `scholarship/0154` WAS APPLIED MIGRATE-FIRST, BEFORE THE PUSH.** One additive
+`jsonb` column with a `'{}'` default; ledger reconciled after at **scholarship 154/154, courses
+74/74**. No new table, so no RLS work and no Security Advisor step. **Both gifts read `{}`**,
+which MEANS "use the platform default" — so nothing a student sees changed.
+
+**THE SERVED BUNDLES WERE READ BACK, both directions.** The admin bundle (2.12 MB, 21 chunks)
+carries "How it's advertised", "Who can apply — one condition per line", "A programme's
+tax-exempt status" and "Use the standard wording"; it carries **no BrightPath-beside-tax string**
+— an ABSENCE check, because `brand-guard` caught that sentence naming the platform brand and
+being factually wrong for a second tenant. The **student** apply bundle still carries "Apply for
+B40 Education Assistance" and "At least 5 A", which is the proof the default path is untouched.
+Live intake reads `apply_copy: {}` for every code incl. a retired one and gibberish.
+
+**⚠ THE PER-GIFT GATE WAS PROVEN IN PRODUCTION, WITH TWO GIFTS IN OPPOSITE STATES.** The
+single-gift read above CANNOT distinguish the fix from the bug — with nothing open anywhere, the
+old platform-wide answer and the new per-gift answer are both `false`. The owner briefly set the
+Test gift Live and opened its round; live intake then read **`test` → open, `testing` (its retired
+alias) → open, `brightpath-flagship` → closed, gibberish → closed**, which is the shape only the
+per-gift code path can produce. The owner also loaded `/scholarship/apply?p=testing`: it rendered
+(no bounce) showing the PLATFORM default B40 wording, since the Test gift has no saved copy —
+`{}` resolving to the default, on a real browser. Round closed and gift returned to Draft after;
+re-verified `testing` → closed and the bare no-code call → closed.
+
+Was worktree `.worktrees/apply-copy`, branch `feat/apply-copy`, base `origin/main` at `728a1ace`;
+merged forward once as main moved under it (Vircle V2a + people-actions). api + web. Retro `docs/retrospective-2026-09-09-apply-copy-per-gift.md`; plan
+`docs/plans/2026-09-09-apply-page-copy-per-gift.md`; decisions ×2; lessons ×4.
+Gates on the MERGED tree: pytest **6120**; jest **1950**; tsc **24** (baseline); lint
+**0 Errors**; i18n **4946 × 3**; `next build` exit 0; `makemigrations --check` clean.
+
+**⚠⚠ THE MERGE'S OWN LESSON, AND ANOTHER AGENT'S GUARD IS WHAT CAUGHT IT.** Resolving the
+three message-file conflicts by UNION applied every addition and **no deletion**, so V2a's retired
+wallet-ID strings came back from the dead. V2a had written an ABSENCE guard for exactly that, and
+it failed loudly. **A merge is not only additions:** a key present in BASE and unchanged in OURS
+but GONE from THEIRS was deleted on their side. Resolved as a real three-way merge on the parsed
+JSON (base/ours/theirs) rather than by editing conflict markers in a 6,000-line file — which
+also makes a malformed result impossible. **Three bite-checks landed**, each injection verified first and
+restored by writing the original bytes back.
+
+**⚠⚠ THE OWNER ASKED FOR ONE PAGE AND THE PLANNING FOUND A SECOND DEFECT — read this
+first.** They asked for the apply page's heading, intro and bullets to belong to the gift. Reading
+the code turned up that **`getScholarshipIntake()` sent no programme code**, so the apply page's
+open/closed bounce asked *"is anything open ANYWHERE?"* — a platform answer on a per-gift page.
+Harmless with one gift. The day **Sabah is open and BrightPath is closed**, a student on an old
+BrightPath poster gets the WHOLE form, fills it in, and is refused at submit. That is PF-1's
+"right refusal, wrong moment" on the per-gift-closed path. **Folded in, because the fix is the
+same one line the copy needed: send the code.**
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠⚠ THE ADVERTISED BAR IS DELIBERATELY STRICTER THAN THE ENGINE.** Sprint 8
+  (2026-05-24) ruled the public page says 5 A's / PNGK 3.0 while `shortlisting.evaluate()` runs
+  4 A- / PNGK 2.9, to catch near-misses; the owner reaffirmed it 2026-09-09. **Anything that
+  derives this copy from a round's thresholds reverses a standing ruling.** Said at the top of
+  `apply_copy.py` AND `ApplyCopyTab.tsx`.
+- **⚠ BLANK MEANS THE PLATFORM DEFAULT, and that is BrightPath's state.** Zero data entry; its
+  page is byte-identical after this ships. Never a copied default (the `OrganisationConfiguration`
+  rule).
+- **⚠ ALL-OR-NOTHING PER LANGUAGE.** Title + intro + >=1 bullet, or nothing. Per-FIELD fallback
+  would render the platform's "Apply for B40 Education Assistance" above Sabah's own bullets —
+  one gift's heading over another gift's criteria, with nothing failing. Refused server-side
+  (`incomplete`).
+- **⚠ ms/ta FALL BACK TO THE GIFT'S OWN ENGLISH, NEVER THE PLATFORM'S ms/ta**, and this
+  deliberately DIFFERS from `branding.resolveLang`. Falling back to the platform's *name* is
+  harmless; falling back to its *criteria* tells a Malay-reading Sabah applicant they must be B40
+  with five A's. **A wrong-language truth beats a right-language falsehood.** Do not "make it
+  consistent" with branding.
+- **⚠ THE PLATFORM DEFAULT STAYS IN THE MESSAGE FILES AND RESOLVES IN THE BROWSER.** The first
+  plan had the SERVER fold it in — 7 strings × 3 languages duplicated into Python, the
+  `_SUBJECT_BM` drift trap. Corrected at sprint-start by copying the branding endpoint's shape:
+  server answers WHICH GIFT, browser answers which locale. **Consequence: no new student-facing
+  strings, so no ms/ta debt on the student side.**
+- **⚠ `services.resolve_programme_by_code` IS THE ONE HOME for code → gift**, extracted
+  from inside `resolve_open_cohort` (where only the open-round path understood a RETIRED code). It
+  answers about ANY gift, active or not, open or closed — **narrowing is the caller's job**,
+  because the intake endpoint needs a closed gift to stay identifiable to answer "closed" about the
+  RIGHT one.
+- **⚠ AN UNKNOWN CODE READS CLOSED, NEVER 404.** The endpoint is public and unauthenticated;
+  the difference would let anyone enumerate the platform's tenants.
+- **⚠ THE ADMIN ROW SERVES THE STORED MAP VERBATIM**, not `for_wire`. The tab is an EDITOR: a
+  blank Malay box must render blank, or the first save silently promotes English into a field
+  nobody typed.
+- **"Who can apply" stays a platform string** (generic; a fourth box is friction with no gain).
+- **Every sub-component in `ApplyCopyTab` is at MODULE scope** — the 2026-07-21 invite-form
+  remount defect, repeated 2026-09-03.
+
+**⚠ THE ETHNICITY WARNING, AND WHY IT DOES NOT REFUSE (owner ruling, option A).**
+`decisions.md` 2026-05-25 removed ethnicity from the public copy because the administering
+foundation's **s44(6)** tax status forbids selecting on race. **That decision was written when the
+copy was OURS; this tab hands it to an organisation.** It WARNS and saves: a platform-wide refusal
+would bind tenant three to tenant one's tax position, and ethnicity-scoped scholarships are lawful
+here. **The word list ships anyway** so tightening is one branch, not a new feature. **"Bahasa
+Melayu" is a SUBJECT, not an ethnicity, and is stripped before the scan** — a warning that
+fires on everything is a warning nobody reads.
+
+**⚠ TWO GUARDS FIRED DURING THE GATES AND BOTH WERE RIGHT.** `brand-guard` refused the warning
+copy for naming BrightPath in a message value — and the sentence was **factually wrong for a
+second tenant** (the constraint is the FUNDER's), so a style guard caught a correctness bug. The
+tab-list snapshot pinned "exactly the three tabs"; a fourth is what was asked for, so it was
+updated deliberately with the reason written in.
+
+**▶ THE DEPLOY IS DONE. For the record, the shape was:** (1) apply **`scholarship/0154`
+MIGRATE-FIRST** via Supabase MCP
+— hand-written Postgres DDL is in the migration's own docstring (`sqlmigrate` renders SQLite
+here) — and record its `django_migrations` row BEFORE the push; (2) push (**api + web** —
+Python changed, so expect BOTH builds); (3) no env vars, no backfill, no data step. **No new table,
+so no RLS work and no Security Advisor step. Nothing a student sees changes** — BrightPath's
+`apply_copy` is `{}`.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. **The flagship's tab exists and its boxes are blank.** Programme → Configuration →
+   **How it's advertised**. Nothing a student sees changes; the words wait for the next intake.
+2. `https://halatuju.xyz/scholarship/apply?p=brightpath-flagship` still bounces to
+   `/scholarship`, exactly as today.
+3. On the **Test** gift: write three bullets → save → open its round → `?p=testing`
+   shows them, and `?p=test` (the RETIRED code) shows the same. Close the round again.
+4. **⚠ THE TWO-GIFT CHECK, the one worth doing properly.** With the Test round OPEN and
+   BrightPath CLOSED, open `?p=brightpath-flagship`. It must **bounce** — not render a
+   BrightPath form that would be refused at submit. That is the second defect, and this is the only
+   way to see it.
+5. Clear the boxes → the page returns to the default text. **ms and ta are first drafts** for
+   the 25 new admin strings.
+6. **Not click-tested in a browser** (TD-182 still breaks admin Google sign-in on localhost).
+
+**▶ NEXT, ALREADY PLANNED AND OWNER-APPROVED AS ITS OWN SPRINT:** the **officer income
+vocabulary** (`docs/plans/2026-09-09-officer-income-vocabulary.md`). Eleven officer strings say
+"B40". **⚠ The owner first asked to link them to the GIFT'S NAME; that is wrong and the
+correction is recorded** — B40 is Malaysia's income band, not a gift name, so "Income
+(BrightPath Sabah)" is nonsense. The real defect is that a gift may set NULL income ceilings
+(**the Test round already does**) and the screen still reasons about "the B40 line". **STR keeps
+its name** — it is a government programme.
+
+**▶ ALSO LOGGED, NOT BUILT:** **TD-237** — Applications shows in the rail before a gift is
+chosen. Owner chose gating it for the four roles that HAVE an Overview to choose from; **reviewer
+and qc keep it**, because Overview excludes them and the gift chooser lives there. Small change,
+~3 files. And the **landing page + sign-in prompt** carry the same platform-wide B40 copy —
+same class, other pages, still unlogged as work.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no
+membership, no credit) until it is **inked AND the money has changed hands**, with a bank reference
+for `external_reference`.
+## Superseded — previous Next Sprint (as of 2026-09-09, after Vircle Airtable V2a — the student stops typing the wallet id)
 
 **✅ DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`da1ddfa5`**; BOTH Cloud Builds SUCCESS
 on `da1ddfa` — **waited on the push's OWN build IDs** (web `6d6a5cbf…`, api `06cd515a…`), never
