@@ -298,6 +298,75 @@ class TestTheFourKinds(TestCase):
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestItListsTheWaitingOnesOnly(TestCase):
+    """2026-09-09. The page is named for the asking, so it lists only what is unanswered.
+
+    Before this, it listed every invitation ever sent: on production that was 18 accepted rows and
+    2 waiting ones, and it would have got WORSE on its own as each waiting sponsor registered.
+    Who is already in is the People directory's question now.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.org = PartnerOrganisation.objects.create(code='w1', name='Waiting Org')
+        cls.oa = PartnerAdmin.objects.create(
+            supabase_user_id='w-oa', role='org_admin', is_active=True,
+            owning_organisation=cls.org, name='Dina', email='dina@w.test')
+
+        def staff(email, role):
+            pa = PartnerAdmin.objects.create(
+                supabase_user_id=f'w-{email}', role=role, is_active=True,
+                owning_organisation=cls.org, name=email.split('@')[0], email=email)
+            inv = invitations.create_or_refresh(
+                audience='staff', email=email, name=pa.name, role=role,
+                organisation=cls.org, partner_admin=pa)
+            return pa, inv
+
+        cls.waiting_pa, _ = staff('waiting@w.test', 'reviewer')
+        cls.arrived_pa, _ = staff('arrived@w.test', 'reviewer')
+        cls.revoked_pa, cls.revoked_inv = staff('revoked@w.test', 'admin')
+        invitations.accept_for_admin(cls.arrived_pa)
+        # Somebody who accepted and was LATER switched off. The overview used to report this
+        # person as "invited, not yet accepted" — the fault the owner reported on 2026-09-09.
+        invitations.accept_for_admin(cls.revoked_pa)
+        cls.revoked_pa.is_active = False
+        cls.revoked_pa.save(update_fields=['is_active'])
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("w-oa")}')
+
+    def _emails(self, kind, **params):
+        q = ''.join(f'&{k}={v}' for k, v in params.items())
+        r = self.client.get(f'{URL}?kind={kind}{q}')
+        self.assertEqual(r.status_code, 200, r.content)
+        return {x['email'] for x in r.json()['invitations']}
+
+    def test_somebody_who_has_not_answered_is_listed(self):
+        # Drive over the bump: a filter that simply emptied the table would pass every
+        # assertion below it. This is the row the page exists for.
+        self.assertIn('waiting@w.test', self._emails('reviewers'))
+
+    def test_somebody_who_has_arrived_is_NOT_listed(self):
+        self.assertNotIn('arrived@w.test', self._emails('reviewers'))
+
+    def test_an_accepted_then_REVOKED_person_is_NOT_waiting(self):
+        # ⚠ The owner's report, as a test. Switched off ≠ never answered. She accepted; the
+        # account was closed afterwards. Reporting her as waiting sent the owner looking on this
+        # page for somebody who was never there.
+        self.assertNotIn('revoked@w.test', self._emails('admins'))
+
+    def test_the_badge_and_the_table_cannot_disagree(self):
+        # Both read `invitations.open_only`. If one ever grew its own predicate, this fails.
+        r = self.client.get(f'{URL}?kind=reviewers').json()
+        self.assertEqual(len(r['invitations']), r['waiting']['reviewers'])
+
+    def test_the_full_history_is_still_reachable_with_all(self):
+        self.assertEqual(self._emails('reviewers', all=1),
+                         {'waiting@w.test', 'arrived@w.test'})
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestInvitingASponsor(TestCase):
     """Admin-extended sponsor invitations. ⚠ NOTHING IS SKIPPED — owner's constraint."""
 

@@ -550,7 +550,52 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-09, after Vircle Airtable V1 — the two webhooks)
+## Next Sprint (as of 2026-09-09, after the staff-directory sprint — Invitations means waiting)
+
+**WHAT SHIPPED.** One rule — *what does "waiting" mean?* — landed in four surfaces that had been
+answering it separately. **No migration.**
+
+- **Invitations lists only unanswered invitations.** `invitations.open_only` is THE definition,
+  shared by the table, the badge on each button and the overview tile. `?all=1` returns the full
+  history; nothing in the console passes it.
+- **Organisation → Reviewers is now → People**, tabs `Reviewers | Admins`. ⚠ **THE ROUTE AND THE NAV
+  `id` ARE UNCHANGED** (`/admin/organisation/reviewers`, id `reviewers`) — only the label moved,
+  exactly as the Staff → Invitations rename did, so bookmarks, the ⌘K chord and the highlight rules
+  keep working. Do not "tidy" the route to match the word.
+- **Revoke / Restore live on the person now**, beside Pause. The Revoke arm on `InvitationsTable`
+  is DELETED, not disabled — the table holds only people who have not arrived, so it could never
+  fire again. Its gate did not widen: `super` + `org_admin`, same as before.
+- **The overview tile reads the server.** It used to print `all staff − active staff` under
+  "invited, not yet accepted" — which measures who is SWITCHED OFF, so a revoked admin was reported
+  as somebody still to reply, and it never saw the two sponsor invitations that really were
+  waiting. Three tiles now (People / Invitations / Sponsors), each linking to the page that owns
+  its number. ⚠ **A COUNT ON THAT PAGE IS READ, NEVER DERIVED.**
+- **`kind_totals` exists for one sentence.** With the table filtered, an empty list means either
+  "nobody asked yet" or "everybody asked has arrived", and the browser cannot tell them apart. The
+  empty state is now this page's USUAL state, so it picks between two sentences rather than
+  printing the old one, which would have claimed nobody was invited over 13 reviewers who all
+  accepted.
+
+**⚠ TWO PLACES STILL ASSERT THE TWO CATEGORIES** and must be changed together: `adminStaff.ts`
+`CATEGORY` (which rows go on which People tab) and `invitations.KIND_ROLES` (which invitations go in
+which table). They agree today; a role added to one alone puts somebody on a tab whose invitation
+lands in the other table. Deliberately not merged — one is presentation, the other server-side
+grouping, and folding them would make a display map look like a permission rule.
+
+Worktree `.worktrees/staff-directory`, branch `feat/staff-directory` (base `origin/main` at
+`1b042d8c`). Retro `docs/retrospective-2026-09-09-staff-directory.md`; 1 decision; 3 lessons.
+Gates: pytest **6081** (+13); jest **1919** (+16); tsc **24** (baseline); lint **0**; i18n
+**4919 × 3**; `next build` exit 0; `makemigrations --check` clean. Five bite-checks, all bit.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):** the Organisation
+overview should now read **People 15** (with "1 no longer has access" under it — that is Shanti),
+**Invitations 2**, **Sponsors 0**. Open Invitations and every tab but Sponsor should say nobody is
+waiting, with a link across to People. Reviewers is now called **People** and has an Admins tab
+where Revoke lives.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-09, after Vircle Airtable V1 — the two webhooks)
 
 **SHIPPED, NOT DEPLOYED (owner gates it). NO MIGRATION. Backend only.** Retro
 `docs/retrospective-2026-09-09-vircle-airtable-v1.md`; decision ×1 (supersedes the 2026-07-30

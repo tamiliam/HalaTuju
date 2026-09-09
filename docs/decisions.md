@@ -1,5 +1,42 @@
 # Architectural Decisions — HalaTuju
 
+## Invitations is the asking; People is everybody who is in — 2026-09-09
+**Decision:** Organisation → **Invitations** lists only invitations still awaiting an answer.
+Organisation → **Reviewers** becomes **People**, with `Reviewers` and `Admins` tabs, and is the one
+place a person who is already in appears. **Revoke and Restore move there**, beside Pause.
+`invitations.open_only` is the single definition of "waiting", read by the table, the badge on each
+button and the organisation overview tile.
+
+**Why.** The rule was already recorded in `navigation.ts` from request #10 — *"Staff invites and
+revokes; Reviewers is where you LOOK at somebody"* — and had only been half-applied. On production
+the two reviewer lists held **the same 13 people, with an empty set difference in both directions**,
+and 18 of the Invitations page's 20 rows were accepted invitations. Nothing filtered by status, so
+the page was set to degrade further as each waiting sponsor registered.
+
+**Alternatives considered.** (a) **A new `Staff` menu row** — the literal reading of what was
+agreed; rejected as a 12th row in an 11-row group for a list of five, where the page next door
+already had the tab idiom and the right two categories. (b) **One "People" page absorbing the
+reviewers directory, deleting the separate page** — rejected because it buries *"who is free to
+take this case?"*, asked daily, inside a page about invitations, asked once per person ever. (c)
+**Leaving the roster on Invitations and only fixing the tile** — rejected: it leaves two screens
+answering "who is in" and the duplication returns the next time either is edited.
+
+**Trade-offs.** The two categories are now asserted in two places — `adminStaff.ts` (which rows go
+on which tab) and `invitations.KIND_ROLES` (which invitations go in which table). They agree today
+and both cite the owner's 2026-08-03 ruling; a role added to one and not the other would put
+somebody on a tab whose invitation lands in the other table. Accepted rather than merged, because
+one is a presentation split and the other is server-side grouping, and folding them would make a
+display map look like a permission rule.
+
+**Consequences.** The route stays `/admin/organisation/reviewers` and the nav `id` stays
+`reviewers`, so bookmarks, the ⌘K chord and the highlight rules keep working — the same ruling the
+Staff → Invitations rename made. The overview grows to three tiles, each linking to the page that
+owns its number. `?all=1` keeps the full invitation history reachable; nothing in the console
+passes it.
+
+**Revisit if:** a third category of person appears (a Source Partner login, which the fourth
+invitation kind is reserved for) — then People takes a third tab rather than a new page.
+
 ## The Vircle wallet id comes FROM Vircle; the student stops typing it, 2026-09-09
 **Decision:** the eWallet ID's source of truth is Vircle's Airtable, flowing to us through their
 outbound automation (`vircle_airtable.py` + `VircleAirtableUpdateView`). We push

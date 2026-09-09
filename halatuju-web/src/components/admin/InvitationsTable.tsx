@@ -14,9 +14,12 @@ import type { InvitationRow } from '@/lib/admin-api'
  * ⚠ THE STATUS CARRIES ITS DATE: "No reply yet (21/07/2026)". A status without one is a fact you
  * cannot act on — knowing somebody has not replied is only useful beside how long it has been.
  *
- * ⚠ THE ACTION IS CONTEXTUAL, and that is what lets one table serve both purposes. Somebody still
- * waiting gets **Resend**; somebody who has arrived gets **Revoke**. A sponsor invitation gets
- * neither — it provisions no account, so there is nothing of theirs for us to revoke.
+ * ⚠ **THE ONLY ACTION IS RESEND (2026-09-09).** It used to be contextual — Resend while waiting,
+ * Revoke once somebody had arrived — because the table listed accepted invitations too. It no
+ * longer does: the endpoint serves the WAITING ones only, so the Revoke branch could never have
+ * fired again and is deleted rather than left as a dead arm. **Revoke and Restore now live on the
+ * person**, in Organisation → People, beside Pause — one screen decides whether somebody is in.
+ * A sponsor invitation still gets nothing but Resend: it provisions no account.
  *
  * ⚠ **ROLE IS THE SAME STORY, AND THE COLUMN IS DROPPED RATHER THAN DASHED** (owner, 2026-09-08,
  * on seeing a live sponsors table). The two staff tables each hold several roles — Admin · Finance ·
@@ -30,15 +33,19 @@ import type { InvitationRow } from '@/lib/admin-api'
  * on a staff table the day one arrives with a blank role — a real value gone missing, reported as
  * nothing at all.
  */
-export default function InvitationsTable({ rows, canAct, busyId, onResend, onRevoke,
-                                           showRole = true }: {
+export default function InvitationsTable({ rows, canAct, busyId, onResend,
+                                           showRole = true, empty }: {
   rows: InvitationRow[]
   canAct?: boolean
   busyId?: number | null
   onResend?: (r: InvitationRow) => void
-  onRevoke?: (r: InvitationRow) => void
   /** Whether this kind's invitations carry a staff role. False for sponsors and sources. */
   showRole?: boolean
+  /** What to say when there is nothing to list. ⚠ **THE EMPTY STATE IS NOW THE USUAL STATE** —
+   *  the table holds only unanswered invitations, and on a settled organisation that is nothing at
+   *  all. The PAGE supplies these words because only the page knows which of the two empties this
+   *  is (nobody asked yet vs everybody arrived) and where the directory lives. */
+  empty?: React.ReactNode
 }) {
   const { t } = useT()
   const paged = usePagedRows(rows)
@@ -46,7 +53,7 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-dashed bg-ground-0 p-6 text-center text-sm text-ground-500">
-        {t('admin.invitations.noneInKind')}
+        {empty ?? t('admin.invitations.noneInKind')}
       </div>
     )
   }
@@ -113,23 +120,11 @@ export default function InvitationsTable({ rows, canAct, busyId, onResend, onRev
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {canAct && (
-                      <div className="flex items-center gap-3">
-                        {waiting && onResend && (
-                          <button disabled={busyId === r.id} onClick={() => onResend(r)}
-                            className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
-                            {t('admin.resend')}
-                          </button>
-                        )}
-                        {/* A sponsor invitation has no account behind it (`admin_id` null), so
-                            there is nothing to revoke — the control is absent, not disabled. */}
-                        {!waiting && r.admin_id && onRevoke && (
-                          <button disabled={busyId === r.id} onClick={() => onRevoke(r)}
-                            className="text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
-                            {t(r.is_active === false ? 'admin.restore' : 'admin.revoke')}
-                          </button>
-                        )}
-                      </div>
+                    {canAct && waiting && onResend && (
+                      <button disabled={busyId === r.id} onClick={() => onResend(r)}
+                        className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
+                        {t('admin.resend')}
+                      </button>
                     )}
                   </td>
                 </tr>

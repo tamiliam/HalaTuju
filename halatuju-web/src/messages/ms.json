@@ -3102,9 +3102,10 @@
       "nav": "Gambaran keseluruhan",
       "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
       "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
-      "invitesPending": "{count} dijemput, belum diterima",
+      "invitesPending": "menunggu jawapan",
       "awaitingVetting": "menunggu semakan",
-      "needsAttention": "Perlu perhatian anda"
+      "needsAttention": "Perlu perhatian anda",
+      "revokedStaff": "{count} tiada akses lagi"
     },
     "organisations": {
       "sub": "Organisasi penyewa yang dikendalikan HalaTuju, dan siapa yang mengetuainya."
@@ -3143,7 +3144,7 @@
       "billingRates": "Kadar bil",
       "staff": "Kakitangan",
       "programmeOverview": "Gambaran keseluruhan",
-      "reviewers": "Penilai",
+      "reviewers": "Orang",
       "soon": "Akan datang",
       "group": {
         "platform": "Platform",
@@ -5587,7 +5588,7 @@
     },
     "invitations": {
       "title": "Jemputan",
-      "subtitle": "Siapa yang telah dijemput menyertai organisasi ini, dan siapa yang sudah ada.",
+      "subtitle": "Siapa yang telah dijemput menyertai organisasi ini dan belum menjawab.",
       "send": {
         "sent": "Sampai",
         "failed": "Gagal",
@@ -5642,7 +5643,11 @@
         }
       },
       "resent": "Jemputan dihantar semula.",
-      "resendFailed": "Kami tidak dapat menghantarnya. Baris di bawah menunjukkan apa yang berlaku."
+      "resendFailed": "Kami tidak dapat menghantarnya. Baris di bawah menunjukkan apa yang berlaku.",
+      "waitingHeading": "Menunggu jawapan",
+      "allAccepted": "Tiada sesiapa menunggu — semua yang dijemput telah menerima.",
+      "seePeople": "Lihat siapa yang ada",
+      "seeSponsors": "Lihat penderma"
     },
     "soon": "Akan datang",
     "programmes": {
@@ -6017,6 +6022,12 @@
       "noYear": "Hadiah ini tiada tahun pengambilan. Kriteria disimpan pada tahun pengambilan, jadi ciptakan satu terlebih dahulu.",
       "saved": "Disimpan",
       "goToYear": "Cipta tahun pengambilan"
+    },
+    "people": {
+      "title": "Orang",
+      "desc": "Semua orang yang sudah berada dalam organisasi ini — apa yang mereka pikul, dan siapa yang masih mempunyai akses.",
+      "tabsAria": "Panel orang",
+      "tabAdmins": "Pentadbir"
     }
   }
 }

@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Invitations means waiting; everybody who is in lives in People - 2026-09-09
+
+The owner looked at five console screens and asked one question: *"Reviewers are displayed in two
+places. Could this be consolidated?"* Checked against production, the two lists were not merely
+similar — **13 reviewer accounts, 13 reviewer invitations, and the set difference empty in both
+directions.** A straight duplicate. The wider fault was that **18 of the Invitations page's 20 rows
+were finished business**, and nothing filtered by status, so the page would have got *worse* on its
+own as each waiting sponsor registered.
+
+The split was already written down in `navigation.ts` from request #10 — *"Staff invites and
+revokes; Reviewers is where you LOOK at somebody"* — and had only been half-applied: reviewers got
+a directory, the roster was never taken off Invitations, and admins never got a directory at all.
+
+- **Invitations lists only what is unanswered.** `invitations.open_only` is now the ONE definition
+  of waiting, shared by the table, the badge on each button and the overview tile. Two rows today.
+- **Organisation → Reviewers is now → People**, with `Reviewers` and `Admins` tabs. That split is
+  the owner's own, recorded in `adminStaff.ts` on 2026-08-03: *"There are two categories of people
+  here: reviewers and admins."* **The route is unchanged** — bookmarks, the ⌘K key and the
+  highlight rules all keep working, exactly as the Staff → Invitations rename did.
+- **Revoke and Restore moved onto the person**, beside Pause. One screen decides whether somebody
+  is in; the two controls used to sit on different pages. The Revoke arm on the invitations table
+  is deleted rather than left dead — it could never fire again.
+- **⚠ THE OVERVIEW TILE WAS WRONG TWICE, and the owner caught it.** It printed
+  `all staff − active staff` under the words *"invited, not yet accepted"* — which measures who has
+  been **switched off**. On BrightPath that was one admin who accepted on 15 June and was revoked
+  afterwards, so the owner went looking for her on a page where she rightly was not. And because it
+  only ever read staff, it missed the only genuinely waiting invitations in the system: two
+  sponsors. Now three tiles — People / Invitations / Sponsors — each reading the server and each
+  linking to the page that owns its number.
+- **The empty state is now the USUAL state, so it says which empty it is.** The server sends
+  `totals` beside `waiting`, because "nobody has been asked" and "everybody asked has arrived" are
+  different sentences and an empty list cannot tell them apart. The old copy would have claimed
+  nobody had been invited, over thirteen reviewers who all accepted.
+
++13 pytest, +16 jest, all bite-checked; the overview page had **no rendered test at all**, which is
+why nothing could see the fault. No migration.
+
 ## Vircle Airtable V1 — we tell Vircle who, Vircle tells us the wallet - 2026-09-09
 
 **Sprint (Vircle Airtable roadmap, V1 of 2).** No migration. Backend only; the old flow (typed

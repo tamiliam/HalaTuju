@@ -214,10 +214,16 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'staff', href: '/admin/organisation/staff', labelKey: 'admin.nav.invitations', chord: 'T',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, match: ['/admin/invite'] },
-      // Sibling of Staff, and deliberately next to it: Staff invites and revokes, Reviewers is
-      // where you LOOK at somebody. Same four roles, because Staff already shows all four who the
-      // reviewers are. Organisation scope, not programme — a `PartnerAdmin` belongs to a tenant and
-      // has no programme field at all (request #10, 2026-08-02).
+      // Sibling of Invitations, and deliberately next to it. **Invitations asks; People is where
+      // everybody who is already in lives** — reviewers and admins, one tab each, and Revoke now
+      // sits here rather than on a page about asking (2026-09-09). Same four roles as Invitations.
+      // Organisation scope, not programme — a `PartnerAdmin` belongs to a tenant and has no
+      // programme field at all (request #10, 2026-08-02).
+      //
+      // ⚠ THE ROUTE STAYS `/admin/organisation/reviewers` THOUGH THE LABEL IS NOW "People", for
+      // exactly the reason the Staff → Invitations rename kept its own route: bookmarks, the
+      // highlight rules and the ⌘K key all keep working, and only the word changed. The `id` is
+      // likewise still `reviewers` — it is the snapshot key, never derived from the label.
       { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' } },

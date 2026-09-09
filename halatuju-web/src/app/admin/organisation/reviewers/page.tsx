@@ -18,10 +18,28 @@ import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { Pagination } from '@/components/Pagination'
 import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
 import { roleBadgeClass } from '@/lib/roleBadge'
+import { byCategory } from '@/lib/adminStaff'
+import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
 
-// The reviewers directory (request #10). Staff invites and revokes; this is where you LOOK at
-// somebody before handing them the next case. Sorted by open caseload on arrival, because that is
-// the question the page is opened to answer.
+// Organisation → **People**: the directory of everybody who is already in.
+//
+// It began as the reviewers directory (request #10) — "Invitations invites; this is where you LOOK
+// at somebody before handing them the next case" — and on 2026-09-09 it took the **Admins** tab as
+// well, closing the two faults the owner reported:
+//   * the 13 reviewers were listed HERE and on Invitations, identically, and
+//   * the 5 admins had no directory at all, so their only home was a page about asking.
+// The two tabs are the owner's own split, recorded in `adminStaff.ts` on 2026-08-03: *"There are
+// two categories of people here: reviewers and admins. QC is a reviewer as well. And finance is
+// also an admin."* Same two categories the Invitations page groups by, so nobody has to learn a
+// second vocabulary.
+//
+// ⚠ **REVOKE AND RESTORE LIVE HERE NOW, not on Invitations.** Revoking is something you do to
+// somebody who has ARRIVED, and Invitations no longer lists anybody who has. They sit beside Pause
+// (on a reviewer's detail page) so one place decides whether a person is in — the two controls
+// used to be on different screens.
+//
+// The reviewers tab is the default and stays sorted by open caseload, because "who can take this
+// case?" is asked daily and "who still has access?" is not.
 //
 // A corrections count is deliberately absent and must stay absent unless the owner says
 // otherwise: it reads as a competence score, and the reopens live on the detail page WITH their
@@ -64,14 +82,21 @@ export default function AdminReviewersList() {
   const { t } = useT()
   // UX only — the endpoint is the fence. This just avoids rendering a table that would 403.
   const mayView = canAccess('/admin/organisation/reviewers', effectiveRole(role))
-  // Two panels, the same pill idiom the Sponsors and Sources screens use, so the console has one
-  // way of doing this. Reviewers is the default: the list is what the page is for, and editing
-  // what volunteers are told is a deliberate second click.
-  const [panel, setPanel] = useState<'reviewers' | 'emails'>('reviewers')
+  // The same pill idiom the Sponsors and Sources screens use, so the console has one way of doing
+  // this. Reviewers is the default: "who can take this case?" is the daily question, and both
+  // "who still has access?" and "what are volunteers told?" are deliberate second clicks.
+  const [panel, setPanel] = useState<'reviewers' | 'admins' | 'emails'>('reviewers')
   // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
   // endpoint is the authority; this only avoids offering a 403.
   const mayEditEmails = ['super', 'org_admin', 'admin'].includes(effectiveRole(role))
+  // ⚠ THE SAME GATE REVOKE HAD ON INVITATIONS, moved with the control and not widened: only a
+  // super or an organisation admin may switch somebody off. `admin` and `finance` still READ the
+  // tab — the endpoint is the authority, and `soleOrgAdmin` keeps the last org_admin's Revoke off
+  // the screen because the backend refuses it anyway.
+  const canManage = ['super', 'org_admin'].includes(effectiveRole(role))
+  const { admins, message: staffMessage, busyId: staffBusyId, resend, toggle, soleOrgAdmin } =
+    useStaffAdmin(token)
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
   // How many gifts the organisation runs. Only the COUNT is used here: with one, every reviewer
   // covers it and the gift would say the same thing on every row — the owner's own 2026-08-02
@@ -105,24 +130,41 @@ export default function AdminReviewersList() {
 
   return (
     <div>
-      <h1 className="text-xl sm:text-2xl font-bold">{t('admin.reviewers.title')}</h1>
-      <p className="text-sm text-ground-500 mt-1 mb-4">{t('admin.reviewers.desc')}</p>
+      <h1 className="text-xl sm:text-2xl font-bold">{t('admin.people.title')}</h1>
+      <p className="text-sm text-ground-500 mt-1 mb-4">{t('admin.people.desc')}</p>
 
-      {mayEditEmails && (
-        <PanelTabs ariaLabelKey="admin.reviewers.tabsAria" active={panel}
-          onSelect={(k) => setPanel(k as 'reviewers' | 'emails')}
-          tabs={[
-            { key: 'reviewers', labelKey: 'admin.reviewers.tabReviewers' },
-            { key: 'emails', labelKey: 'admin.reviewers.tabEmails' },
-            // Reviewers sign nothing today. Shown disabled so the three surfaces look alike and
-            // the panel reads as coming rather than as missing (owner, 2026-08-04).
-            { key: 'terms', labelKey: 'admin.reviewers.tabTerms', disabled: true },
-          ]} />
-      )}
+      {/* ⚠ THE TAB BAR NOW RENDERS FOR EVERYONE WHO MAY READ THE PAGE. It used to appear only for
+          the roles that may edit the emails, which was harmless while Emails was the only other
+          panel — but Admins is a READING tab, and hiding the bar would have left `finance` with no
+          way to reach it at all. Each tab keeps its own gate instead. */}
+      <PanelTabs ariaLabelKey="admin.people.tabsAria" active={panel}
+        onSelect={(k) => setPanel(k as 'reviewers' | 'admins' | 'emails')}
+        tabs={[
+          { key: 'reviewers', labelKey: 'admin.reviewers.tabReviewers' },
+          { key: 'admins', labelKey: 'admin.people.tabAdmins' },
+          ...(mayEditEmails ? [{ key: 'emails', labelKey: 'admin.reviewers.tabEmails' }] : []),
+          // Reviewers sign nothing today. Shown disabled so the surfaces look alike and the panel
+          // reads as coming rather than as missing (owner, 2026-08-04).
+          { key: 'terms', labelKey: 'admin.reviewers.tabTerms', disabled: true },
+        ]} />
 
       {/* Mounted only while its tab is selected, so each reveal re-reads the templates and an
           emails hiccup can never take the reviewers table down with it. */}
       {panel === 'emails' && mayEditEmails && <ReviewerEmailsCard token={token} t={t} />}
+
+      {panel === 'admins' && (<>
+        <MessageBanner message={staffMessage} />
+        {/* The SAME table the platform's two staff screens use — one component, so a third copy
+            of "who is in, and may I switch them off" cannot drift from the other two. It already
+            knows that revoked beats paused, and already draws phone cards. */}
+        <StaffTable rows={byCategory(admins).admins} busyId={staffBusyId} canAct={canManage}
+          onResend={canManage ? resend : undefined}
+          onToggle={canManage ? toggle : undefined}
+          soleOrgAdmin={soleOrgAdmin} />
+        {!canManage && (
+          <p className="mt-3 text-sm text-ground-500">{t('admin.administration.viewOnlyNote')}</p>
+        )}
+      </>)}
 
       {panel === 'reviewers' && (<>
       {error && <div className="text-critical-600 mb-3">{error}</div>}

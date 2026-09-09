@@ -40,12 +40,28 @@ const REVIEWERS = [
  *  renders above one, per the ruling at the top of `page.tsx`. */
 let giftChoices: api.AdminReviewerGift[] = []
 
+/** The staff behind the Admins tab (2026-09-09). ⚠ Deliberately mixed: an org_admin who is IN, a
+ *  finance admin who has been REVOKED, and a reviewer who must NOT appear on this tab — the split
+ *  is the owner's two categories, so a reviewer leaking in would mean the tab is the whole staff
+ *  list wearing a different name. */
+const ADMINS = [
+  { id: 11, name: 'Dina Ismail', email: 'dina@example.org', role: 'org_admin',
+    is_active: true, is_super_admin: false, org_name: null, created_at: '2026-01-01T00:00:00Z' },
+  { id: 12, name: 'Shanti Subramaniam', email: 'shanti@example.org', role: 'finance',
+    is_active: false, is_super_admin: false, org_name: null, created_at: '2026-01-01T00:00:00Z' },
+  { id: 13, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
+    is_active: true, is_super_admin: false, org_name: null, created_at: '2026-01-01T00:00:00Z' },
+] as unknown as api.AdminItem[]
+
 beforeEach(() => {
   jest.clearAllMocks()
   viewerRole = { role: 'org_admin' }
   // One gift by default — today's BrightPath shape, where the gift line does not render.
   giftChoices = [{ id: 7, code: 'flagship', name: 'BrightPath Bursary', is_active: true }]
   mockApi.listReviewers.mockResolvedValue({ reviewers: REVIEWERS, programmes: giftChoices })
+  // The Admins tab reads the staff list through `useStaffAdmin`, which loads on mount — the
+  // auto-mock must answer it or the hook throws before anything renders.
+  mockApi.getAdmins.mockResolvedValue({ admins: ADMINS })
 })
 
 /** ⚠ THE SAME ROWS ARE RENDERED TWICE (2026-09-08): once as phone cards, once as the desktop
@@ -224,5 +240,60 @@ describe('failure', () => {
     mockApi.listReviewers.mockResolvedValue({ reviewers: [], programmes: giftChoices })
     render(<AdminReviewersList />)
     await waitFor(() => expect(screen.getByText('admin.reviewers.empty')).toBeTruthy())
+  })
+})
+
+describe('the Admins tab (2026-09-09)', () => {
+  /** The admins TABLE, not its phone cards — `StaffTable` draws both, like every list here. */
+  const staffTable = () => within(document.querySelector('table.min-w-full, table') as HTMLElement)
+
+  const openAdmins = async () => {
+    await loaded()
+    fireEvent.click(screen.getByText('admin.people.tabAdmins'))
+    await waitFor(() => expect(screen.getAllByText('Dina Ismail').length).toBeGreaterThan(0))
+  }
+
+  it('lists the admins — the five people who had no directory at all until now', async () => {
+    await openAdmins()
+    expect(screen.getAllByText('Dina Ismail').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Shanti Subramaniam').length).toBeGreaterThan(0)
+  })
+
+  it('⚠ does NOT list reviewers on it — the two tabs are the owner\'s two categories', async () => {
+    // If a reviewer leaked in, the tab would be the whole staff list under a narrower name, and
+    // this page would be showing the same person twice — the fault the sprint exists to remove.
+    await openAdmins()
+    expect(screen.queryByText('Kavitha Raman')).toBeNull()
+  })
+
+  it('⚠ offers Revoke here, which is where it now lives', async () => {
+    // It used to sit on Invitations. That page lists only people who have NOT arrived, and
+    // revoking is something you do to somebody who has.
+    await openAdmins()
+    expect(screen.getAllByText('admin.revoke').length).toBeGreaterThan(0)
+  })
+
+  it('offers Restore on somebody switched off, not a second Revoke', async () => {
+    await openAdmins()
+    expect(screen.getAllByText('admin.restore').length).toBeGreaterThan(0)
+  })
+
+  it('⚠ shows finance the tab and NO way to switch anybody off', async () => {
+    // Reading who has access is not the same power as removing it. Same gate Revoke had on
+    // Invitations, moved with the control rather than widened.
+    viewerRole = { role: 'finance' }
+    await openAdmins()
+    expect(screen.getAllByText('Dina Ismail').length).toBeGreaterThan(0)
+    expect(screen.queryByText('admin.revoke')).toBeNull()
+    expect(screen.queryByText('admin.restore')).toBeNull()
+  })
+
+  it('⚠ still offers the tab bar to finance, who may not edit the emails', async () => {
+    // The bar used to render only for the roles that may edit emails. Admins is a READING tab, so
+    // that gate would have hidden it from `finance` entirely.
+    viewerRole = { role: 'finance' }
+    await loaded()
+    expect(screen.getByText('admin.people.tabAdmins')).toBeTruthy()
+    expect(screen.queryByText('admin.reviewers.tabEmails')).toBeNull()
   })
 })

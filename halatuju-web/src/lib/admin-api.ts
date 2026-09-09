@@ -239,6 +239,11 @@ export interface InvitationsPayload {
   /** Unanswered count for EVERY kind, not just the one on screen — only one table is visible at a
    *  time, so a waiting invitation elsewhere would otherwise be invisible. */
   waiting: Record<InvitationKind, number>
+  /** EVERY invitation ever sent, per kind. ⚠ `invitations` holds the WAITING ones only, so an
+   *  empty table has two meanings — nobody asked yet, or everybody asked has arrived — and this is
+   *  the only thing that tells them apart. Without it the empty state would have claimed "nobody
+   *  has been invited" over thirteen reviewers who had all accepted. */
+  totals: Record<InvitationKind, number>
   /** Roles this caller may grant in this kind. ⚠ NOT the roles LISTED: `org_admin` appears in the
    *  admins table but is appointed at platform level by a super, never from here. */
   invitable_roles: string[]

@@ -102,6 +102,18 @@ def for_kind(qs, kind):
     return qs.filter(role__in=roles) if roles else qs
 
 
+def open_only(qs):
+    """Narrow a queryset to the invitations still AWAITING AN ANSWER.
+
+    ⚠ **THE ONE DEFINITION OF "WAITING", AND EVERY SURFACE MUST READ IT.** The badge on each
+    button, the table the Invitations page lists, and the organisation overview's tile are three
+    views of this single question; before 2026-09-09 the overview answered it privately, by
+    subtracting active staff from all staff, and so reported a REVOKED admin as somebody who had
+    not accepted yet. `is_open` below is the per-row twin — same rule, one row at a time.
+    """
+    return qs.filter(accepted_at__isnull=True, revoked_at__isnull=True)
+
+
 def waiting_counts(qs, now=None):
     """`{kind: n}` of invitations still unanswered, for the badge on each button.
 
@@ -111,7 +123,22 @@ def waiting_counts(qs, now=None):
     """
     now = now or timezone.now()
     out = {k: 0 for k in KINDS}
-    for inv in qs.filter(accepted_at__isnull=True, revoked_at__isnull=True):
+    for inv in open_only(qs):
+        out[kind_of(inv)] += 1
+    return out
+
+
+def kind_totals(qs):
+    """`{kind: n}` of EVERY invitation ever sent, answered or not.
+
+    ⚠ It exists for one sentence. Since the table lists only the waiting ones, an empty table has
+    two completely different meanings — *nobody has ever been asked* and *everyone we asked has
+    arrived* — and the browser cannot tell them apart from an empty list. Without this the page
+    would have to print one of them and be wrong half the time; on this tenant it would have said
+    "nobody has been invited in this group yet" over thirteen reviewers who all accepted.
+    """
+    out = {k: 0 for k in KINDS}
+    for inv in qs:
         out[kind_of(inv)] += 1
     return out
 
@@ -145,15 +172,14 @@ def status_of(inv, now=None):
 
 
 def is_open(inv):
-    """Still awaiting an answer — the worklist predicate the top table draws from."""
+    """Still awaiting an answer — the per-ROW twin of `open_only`. Keep the two in step."""
     return inv.accepted_at is None and inv.revoked_at is None
 
 
 # ── writing ──────────────────────────────────────────────────────────────────────
 def open_invitation(audience, email):
-    return Invitation.objects.filter(
-        audience=audience, email=(email or '').strip().lower(),
-        accepted_at__isnull=True, revoked_at__isnull=True).first()
+    return open_only(Invitation.objects.filter(
+        audience=audience, email=(email or '').strip().lower())).first()
 
 
 def create_or_refresh(*, audience, email, name='', role='', organisation=None, invited_by=None,

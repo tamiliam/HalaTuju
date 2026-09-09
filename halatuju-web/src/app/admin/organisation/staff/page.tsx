@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAdminAuth } from '@/lib/admin-auth-context'
@@ -28,10 +29,18 @@ const asStaffRow = (row: InvitationRow) =>
   ({ id: row.admin_id as number, is_active: row.is_active ?? true } as AdminItem)
 
 /**
- * Organisation → **Invitations**. Who has been asked to join this organisation.
+ * Organisation → **Invitations**. Who has been asked and **has not answered yet**.
  *
  * Owner's shape, 2026-08-03. FOUR kinds — admins, reviewers, source, sponsors — with **one table
  * on screen at a time**, chosen by the same buttons that decide what you are inviting.
+ *
+ * ⚠ **IT LISTS THE WAITING ONES ONLY (owner, 2026-09-09), AND THAT IS WHAT THE PAGE IS FOR.** It
+ * used to list every invitation ever sent, so it drifted into being a staff roster: on this tenant
+ * 18 of its 20 rows were accepted, the 13 reviewers duplicated the Reviewers page exactly, and it
+ * would have got worse on its own as each waiting sponsor registered. Who is already in is now
+ * answered in ONE place — Organisation → **People** — which is also where Revoke and Restore went.
+ * The server does the filtering (`invitations.open_only`), so this page and the badge on each
+ * button cannot disagree.
  *
  * ⚠ **THE WAITING COUNT ON EACH BUTTON IS LOAD-BEARING, not decoration.** Only one table is
  * visible, so an unanswered invitation under a kind you are not looking at would be invisible —
@@ -55,7 +64,7 @@ export default function OrganisationInvitationsPage() {
   const canManage = r === 'super' || r === 'org_admin'
   const mayView = canAccess('/admin/organisation/staff', r)
 
-  const { message, setMessage, busy, busyId, invite, resend, toggle } = useStaffAdmin(token)
+  const { message, setMessage, busy, busyId, invite, resend } = useStaffAdmin(token)
   // Which SPONSOR row is mid-resend. The staff actions carry their own `busyId` from the hook;
   // a sponsor invitation has no staff account, so it needs its own.
   const [resendingId, setResendingId] = useState<number | null>(null)
@@ -147,6 +156,27 @@ export default function OrganisationInvitationsPage() {
   const rows = data?.invitations ?? []
   const waiting = data?.waiting
   const invitable = data?.invitable_roles ?? []
+
+  /**
+   * What an empty table means — and it is TWO different things, which is why the server sends
+   * `totals` beside `waiting`.
+   *
+   * ⚠ **AN EMPTY TABLE IS THE NORMAL STATE HERE, so these words are the page.** The table lists
+   * only unanswered invitations; on a settled organisation three of the four kinds are empty every
+   * day. The old sentence — "Nobody has been invited in this group yet" — would have been printed
+   * over thirteen reviewers who had all accepted, which is not a smaller truth but the opposite
+   * one. The second case earns a route to where those people actually are.
+   */
+  const total = data?.totals?.[kind] ?? 0
+  const peopleHref = kind === 'sponsors' ? '/admin/sponsors' : '/admin/organisation/reviewers'
+  const emptyWords = total === 0 ? t('admin.invitations.noneInKind') : (
+    <>
+      {t('admin.invitations.allAccepted')}{' '}
+      <Link href={peopleHref} className="font-medium text-primary-600 hover:text-primary-800">
+        {t(kind === 'sponsors' ? 'admin.invitations.seeSponsors' : 'admin.invitations.seePeople')}
+      </Link>
+    </>
+  )
   const giftChoices = data?.programmes ?? []
   const canInviteHere = canManage && (kind === 'sponsors' || invitable.length > 0)
 
@@ -254,8 +284,12 @@ export default function OrganisationInvitationsPage() {
           ) : null}
         </div>
 
+        {/* ⚠ THE HEADING NAMES THE STATE, NOT THE KIND (2026-09-09). Which kind you are looking at
+            is already said by the pressed button above; what the table holds is no longer "the
+            reviewers" but "the reviewers who have not answered", and a heading reading "Reviewers
+            (0)" over a settled organisation says the opposite of the truth. */}
         <h2 className="mb-2 text-sm font-semibold text-ground-900">
-          {t(`admin.invitations.kind.${kind}`)}{' '}
+          {t('admin.invitations.waitingHeading')}{' '}
           <span className="font-normal text-ground-400">({rows.length})</span>
         </h2>
         {kind === 'source' ? (
@@ -272,9 +306,10 @@ export default function OrganisationInvitationsPage() {
                Named by KIND, never derived from the rows: a staff row arriving with a blank role
                is a missing value to show, not a column to drop. */
             showRole={kind === 'admins' || kind === 'reviewers'}
-            /* `resend` and `toggle` act on the ACCOUNT, so they take the staff row behind the
-               invitation. Both read only `id` and `is_active`; a sponsor invitation has no
-               account, and the table never offers these for one. */
+            /* `resend` acts on the ACCOUNT, so it takes the staff row behind the invitation.
+               ⚠ REVOKE USED TO SIT BESIDE IT AND HAS MOVED to Organisation → People, beside
+               Pause: this table now holds only people who have NOT arrived, and revoking is
+               something you do to somebody who has. */
             /* ⚠ TWO KINDS OF RESEND BEHIND ONE LINK, and the fork is the account. A STAFF
                invitation resends through the account (it also rotates the temporary password, so
                it must go through `resend`); a DONOR invitation has no account and resends by
@@ -284,9 +319,7 @@ export default function OrganisationInvitationsPage() {
               if (row.admin_id) void resend(asStaffRow(row)).then(load)
               else void resendSponsor(row)
             } : undefined}
-            onRevoke={canManage ? (row: InvitationRow) => {
-              if (row.admin_id) void toggle(asStaffRow(row)).then(load)
-            } : undefined}
+            empty={emptyWords}
           />
         )}
         {!canManage && (

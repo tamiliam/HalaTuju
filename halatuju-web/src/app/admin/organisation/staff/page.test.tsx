@@ -28,6 +28,10 @@ const row = (over: Partial<api.InvitationRow>): api.InvitationRow => ({
 })
 
 const WAITING = { admins: 1, reviewers: 0, source: 0, sponsors: 2 }
+// EVERY invitation ever sent, per kind. ⚠ Bigger than WAITING on purpose: the accepted ones are no
+// longer listed (2026-09-09), and `totals` is the only thing that lets the empty state tell
+// "nobody asked yet" apart from "everybody asked has arrived".
+const TOTALS = { admins: 2, reviewers: 13, source: 0, sponsors: 2 }
 
 /** The organisation's ACTIVE gifts. Default one — today's BrightPath shape, where the invite
  *  form asks nothing. Tests that need the picker pass two. */
@@ -37,24 +41,28 @@ let giftChoices: api.InvitationsPayload['programmes'] =
 const payloadFor = (kind: api.InvitationKind): api.InvitationsPayload => {
   if (kind === 'admins') {
     return {
-      kind, waiting: WAITING, invitable_roles: ['admin', 'finance'],
+      kind, waiting: WAITING, totals: TOTALS, invitable_roles: ['admin', 'finance'],
       programmes: giftChoices,
+      // ⚠ ONE ROW, AND SHE HAS NOT REPLIED. The server serves the WAITING ones only since
+      // 2026-09-09; an accepted admin (there is one, hence TOTALS.admins = 2) belongs to
+      // Organisation → People now. Putting an accepted row back in this fixture would test a
+      // payload the endpoint cannot produce.
       invitations: [
         row({ id: 1, name: 'Yeoh Liew Se', role: 'admin', status: 'no_reply',
               accepted_at: null, admin_id: 10 }),
-        row({ id: 2, name: 'Suresh', role: 'org_admin', status: 'accepted', admin_id: 11 }),
       ],
     }
   }
   if (kind === 'sponsors') {
     return {
-      kind, waiting: WAITING, invitable_roles: [], programmes: giftChoices,
+      kind, waiting: WAITING, totals: TOTALS, invitable_roles: [], programmes: giftChoices,
       invitations: [row({ id: 3, name: 'Donor', role: '', status: 'invited',
                           accepted_at: null, admin_id: null, is_active: null,
                           programme: 'flagship', programme_name: 'BrightPath Bursary' })],
     }
   }
-  return { kind, waiting: WAITING, invitable_roles: kind === 'reviewers' ? ['reviewer', 'qc'] : [],
+  return { kind, waiting: WAITING, totals: TOTALS,
+           invitable_roles: kind === 'reviewers' ? ['reviewer', 'qc'] : [],
            programmes: giftChoices, invitations: [] }
 }
 
@@ -88,12 +96,15 @@ describe('the four kinds', () => {
     }
   })
 
-  it('⚠ names the BUTTON in the singular and the TABLE in the plural', async () => {
-    // Owner, 2026-08-04. The button completes "Invite as … Admin"; the heading sits above a list.
-    // Asserted together because the temptation is to collapse them back onto one key.
+  it('⚠ names the KIND on the button and the STATE on the heading', async () => {
+    // Owner, 2026-08-04, then 2026-09-09. The button completes "Invite as … Admin". The heading
+    // used to repeat the kind ("Admins"), which over a waiting-only table read as a roster and
+    // said "Admins (0)" on an organisation with five of them. It names what the rows ARE instead;
+    // which kind you are looking at is already said by the pressed button.
     await loaded()
     expect(screen.getByText('admin.invitations.kindOne.admins')).toBeTruthy()
-    expect(screen.getByText('admin.invitations.kind.admins')).toBeTruthy()
+    expect(screen.getByText('admin.invitations.waitingHeading')).toBeTruthy()
+    expect(screen.queryByText('admin.invitations.kind.admins')).toBeNull()
   })
 
   it('⚠ shows the waiting count for kinds NOT on screen', async () => {
@@ -114,10 +125,10 @@ describe('the four kinds', () => {
 })
 
 describe('listed is not the same as invitable', () => {
-  it('lists an organisation admin in the Admins table', async () => {
-    await loaded()
-    expect(screen.getByText('Suresh')).toBeTruthy()
-  })
+  // ⚠ THE "LISTED" HALF OF THIS PAIR MOVED TO ORGANISATION → PEOPLE ON 2026-09-09. An organisation
+  // admin who has ACCEPTED is not shown here any more — nobody who has accepted is — so the claim
+  // "an org_admin appears in the admins table" is now the People page's to make, and its test
+  // makes it. What survives here is the half that was always the point: they are never OFFERED.
 
   it('⚠ never OFFERS organisation admin in the selector', async () => {
     // Appointing one is a platform act a super performs. Offering it here would let an org_admin
@@ -138,13 +149,20 @@ describe('listed is not the same as invitable', () => {
 })
 
 describe('what each kind can do', () => {
-  it('offers Resend to somebody still waiting, and Revoke to somebody who arrived', async () => {
+  it('offers Resend to somebody still waiting', async () => {
     await loaded()
     expect(screen.getByText('admin.resend')).toBeTruthy()
-    expect(screen.getByText('admin.revoke')).toBeTruthy()
   })
 
-  it('⚠ offers NO revoke on a sponsor invitation, which has no account behind it', async () => {
+  it('⚠ offers REVOKE to nobody at all — it moved to Organisation → People', async () => {
+    // The table holds only people who have NOT arrived, and revoking is something you do to
+    // somebody who has. Leaving the control here would have been a button that could never fire.
+    await loaded()
+    expect(screen.queryByText('admin.revoke')).toBeNull()
+    expect(screen.queryByText('admin.restore')).toBeNull()
+  })
+
+  it('⚠ offers NO action at all on a sponsor invitation beyond resending it', async () => {
     await loaded()
     await pick('sponsors')
     await waitFor(() => expect(screen.getByText('Donor')).toBeTruthy())
@@ -234,9 +252,11 @@ describe('which gift a sponsor is invited into', () => {
 
   it('⚠ and KEEPS it on the staff tables, where it separates Admin from Finance', async () => {
     // The other direction, and the one that matters: this must not become "hide Role everywhere".
+    // The role read is `admin` rather than `org_admin` since 2026-09-09 — the accepted org_admin
+    // row left with every other accepted row; what is asserted is the COLUMN, not which role.
     await loaded()
     expect(screen.getByText('admin.roleHeader')).toBeTruthy()
-    expect(screen.getByText('admin.role.org_admin')).toBeTruthy()
+    expect(screen.getByText('admin.role.admin')).toBeTruthy()
   })
 
   it('⚠ the note is a TEXTAREA inside the form, which is what stops Enter sending (#17)', async () => {
@@ -311,6 +331,44 @@ describe('which gift a sponsor is invited into', () => {
     await loaded()
     const row = screen.getByText('Yeoh Liew Se').closest('td')!
     expect(row.querySelectorAll('div').length).toBe(0)
+  })
+})
+
+describe('an empty table says WHICH empty it is', () => {
+  // ⚠ THE EMPTY STATE IS THE USUAL STATE HERE since the table went waiting-only, so these words
+  // are most of what the page shows on a settled organisation. Two different empties reach it and
+  // they must not print the same sentence: on this tenant "nobody has been invited in this group
+  // yet" would have sat over thirteen reviewers who all accepted.
+
+  it('says everyone has accepted, and points at where they are', async () => {
+    await loaded()
+    await pick('reviewers')          // 0 waiting, 13 sent — TOTALS.reviewers
+    await waitFor(() => expect(screen.getByText('admin.invitations.allAccepted')).toBeTruthy())
+    const link = screen.getByText('admin.invitations.seePeople').closest('a')!
+    expect(link.getAttribute('href')).toBe('/admin/organisation/reviewers')
+  })
+
+  it('⚠ but says nobody has been ASKED when nobody has — the other empty', async () => {
+    // Drive over the bump: a page that always printed "everyone has accepted" would pass the
+    // test above and lie about a group nobody has ever been invited into.
+    mockApi.getInvitations.mockImplementation(async (kind) => ({
+      ...payloadFor(kind), totals: { ...TOTALS, reviewers: 0 },
+    }))
+    await loaded()
+    await pick('reviewers')
+    await waitFor(() => expect(screen.getByText('admin.invitations.noneInKind')).toBeTruthy())
+    expect(screen.queryByText('admin.invitations.allAccepted')).toBeNull()
+  })
+
+  it('sends a benefactor to the benefactors, not to the staff directory', async () => {
+    // Only the sponsors kind is emptied — `loaded()` waits for the admins table to arrive.
+    mockApi.getInvitations.mockImplementation(async (kind) => (
+      kind === 'sponsors' ? { ...payloadFor(kind), invitations: [] } : payloadFor(kind)))
+    await loaded()
+    await pick('sponsors')
+    await waitFor(() => expect(screen.getByText('admin.invitations.allAccepted')).toBeTruthy())
+    expect(screen.getByText('admin.invitations.seeSponsors').closest('a')!.getAttribute('href'))
+      .toBe('/admin/sponsors')
   })
 })
 

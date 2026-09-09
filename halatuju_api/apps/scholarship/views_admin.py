@@ -2798,12 +2798,18 @@ class AdminReviewerSystemEmailsView(_ReviewersBase):
 
 
 class AdminInvitationsView(_ReviewersBase):
-    """GET admin/invitations/[?kind=] — who has been asked to join this organisation.
+    """GET admin/invitations/[?kind=][&all=1] — who has been asked and **has not answered yet**.
 
     The Invitations page (owner's shape, 2026-08-03) is organised into FOUR kinds — admins,
     reviewers, source, sponsors — with one table on screen at a time, so this serves one kind plus
     the waiting counts for all four (the badge on each button; without it an invitation waiting
     under an unselected kind is invisible, which is what the page exists to prevent).
+
+    ⚠ **IT LISTS THE WAITING ONES ONLY (2026-09-09).** `invitations.open_only` is the single
+    definition of waiting, shared with `waiting_counts`, so the table and its own badge can never
+    disagree. Everybody who has already accepted belongs to the People directory, not here.
+    `?all=1` returns the full history for a caller that genuinely wants it; nothing in the console
+    passes it today.
 
     ⚠ **FENCED ON `Invitation.organisation`, NOT through `PartnerAdmin`.** A sponsor invitation has
     no staff row to fence through — that is the whole point of a sponsor invitation, which creates
@@ -2827,12 +2833,23 @@ class AdminInvitationsView(_ReviewersBase):
             qs = qs.filter(organisation_id=org_id)
 
         counts = inv_service.waiting_counts(qs)
+        totals = inv_service.kind_totals(qs)
         kind = (request.GET.get('kind') or inv_service.KIND_ADMINS).strip()
         if kind not in inv_service.KINDS:
             kind = inv_service.KIND_ADMINS
 
+        # ⚠ WAITING-ONLY IS THE DEFAULT, AND THAT IS THE POINT OF THIS PAGE (2026-09-09).
+        # It used to list every invitation ever sent, which on this tenant meant 18 accepted rows
+        # and 2 waiting ones — a page named "Invitations" that was really a staff roster, and one
+        # that would have got WORSE on its own as each waiting sponsor registered. Who is already
+        # in is answered by the People directory; this endpoint answers who has not replied.
+        # `?all=1` keeps the full history reachable for a caller that genuinely wants it.
+        listed = inv_service.for_kind(qs, kind)
+        if (request.GET.get('all') or '').strip() not in ('1', 'true'):
+            listed = inv_service.open_only(listed)
+
         rows = []
-        for i in inv_service.for_kind(qs, kind).order_by('-created_at'):
+        for i in listed.order_by('-created_at'):
             pa = i.partner_admin
             rows.append({
                 'id': i.id,
@@ -2863,6 +2880,9 @@ class AdminInvitationsView(_ReviewersBase):
             'kind': kind,
             'invitations': rows,
             'waiting': counts,
+            # Every invitation ever sent, per kind. The page needs it to tell an empty table
+            # apart: nobody asked yet, or everybody asked has arrived. See `kind_totals`.
+            'totals': totals,
             # What this caller may actually grant here. The FE renders the sub-selection from it
             # rather than keeping its own copy, so the two cannot drift.
             'invitable_roles': list(inv_service.KIND_INVITABLE_ROLES.get(kind, ())),
