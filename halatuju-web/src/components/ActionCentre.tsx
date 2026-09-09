@@ -16,6 +16,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useT } from '@/lib/i18n'
+import { accountWarningKey, expectedAccountType, type VircleAccountType } from '@/lib/vircleAccount'
 import {
   getResolutionItems,
   resolveResolutionItem,
@@ -652,6 +653,12 @@ function VircleTask({
 }) {
   const { t } = useT()
   const [mobile, setMobile] = useState(() => formatMyMobile(contactPhone))
+  // Account-type self-check (owner, 2026-09-09): defaults to what Vircle's birth-year rule
+  // expects (served as `vircle_expected`); a disagreeing pick COACHES, it never blocks —
+  // see lib/vircleAccount.ts for why.
+  const expected = expectedAccountType(item.vircle_expected)
+  const [accountType, setAccountType] = useState<VircleAccountType>(expected)
+  const warnKey = accountWarningKey(accountType, expected)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const valid = isValidMyMobile(mobile)
@@ -661,7 +668,8 @@ function VircleTask({
     setBusy(true)
     setError(null)
     try {
-      await resolveResolutionItem(item.id, `+60${localMobileDigits(mobile)}`, { token })
+      await resolveResolutionItem(item.id, `+60${localMobileDigits(mobile)}`, { token },
+                                  undefined, undefined, accountType)
       onResolved()
     } catch {
       setError(t('scholarship.actionCentre.vircle.error'))
@@ -694,6 +702,27 @@ function VircleTask({
               />
             </div>
             <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.vircle.mobileHint')}</p>
+          </div>
+
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-ground-700" htmlFor="vircle-account-type">
+              {t('scholarship.actionCentre.vircle.accountType')}
+            </label>
+            <select
+              id="vircle-account-type"
+              className="input mt-1 w-full"
+              value={accountType}
+              onChange={(e) => setAccountType(e.target.value === 'child' ? 'child' : 'principal')}
+              disabled={busy}
+            >
+              <option value="principal">{t('scholarship.actionCentre.vircle.accountPrincipal')}</option>
+              <option value="child">{t('scholarship.actionCentre.vircle.accountChild')}</option>
+            </select>
+            {warnKey && (
+              <p className="mt-2 rounded-lg border border-caution-100 bg-caution-50/40 px-3 py-2 text-sm text-ground-700">
+                {t(warnKey)}
+              </p>
+            )}
           </div>
 
           <button

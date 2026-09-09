@@ -24,6 +24,14 @@ saved as eWallet IDs, and a hard-coded prefix that would have refused legitimate
 - **KEPT, deliberately**: the 48h activation email to Vircle and the relay sheet (owner: the
   `Vircle_account` mirror stays). Retiring the 48h email is V2b, gated on the first real
   `AUDIT vircle_id_set … by=vircle-airtable` in the logs.
+- **Follow-up (owner, same day): an account-type self-check on the card.** A dropdown — Parent
+  (Principal) / Child — defaulting to what Vircle's own birth-year rule expects (1 January is the
+  transition: born 31/12/2008 is 18, born 1/1/2009 is not; `vircle.can_register` already counts
+  this way and the serializer SERVES it as `vircle_expected`). A disagreeing pick COACHES with a
+  direction-specific note (adult-on-Child → re-register as Parent; minor-on-Principal → a parent
+  registers) and never blocks — an 18-year-old genuinely added as a child under a parent's account
+  is legitimate. The claim is stored in the item's `params.account_type` for the human reconciling
+  a `no_match` callback row; the Airtable push keeps deriving Type from the birth year.
 
 pytest 6082 (full `apps/`), jest 1925 (+6), tsc 24 (baseline), lint 0, i18n **4914 × 3** (−5
 keys), `next build` exit 0, `makemigrations --check` clean. Three bite-checks, all bit. No

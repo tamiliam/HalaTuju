@@ -190,6 +190,43 @@ class TestConfirm(_Base):
         self.app.refresh_from_db()
         self.assertEqual(self.app.vircle_id, '')
 
+    def test_account_type_claim_is_stored_on_the_item(self):
+        # Owner 2026-09-09: the card's self-check ("Principal or Child?") travels with the
+        # confirm and lands in params for the human reconciling a `no_match` callback row.
+        payload = {'text': '012-345 6789', 'account_type': 'child'}
+        r = self.client.post(f'/api/v1/scholarship/resolution-items/{self.item.id}/resolve/',
+                             payload, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.item.refresh_from_db()
+        self.assertEqual((self.item.params or {}).get('account_type'), 'child')
+
+    def test_junk_account_type_is_dropped_not_stored(self):
+        payload = {'text': '012-345 6789', 'account_type': 'grandparent'}
+        r = self.client.post(f'/api/v1/scholarship/resolution-items/{self.item.id}/resolve/',
+                             payload, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.item.refresh_from_db()
+        self.assertNotIn('account_type', self.item.params or {})
+
+    def test_vircle_expected_is_served_by_birth_year(self):
+        # Vircle counts 1 January as the transition (owner, 2026-09-09): born 2008 -> adult
+        # (principal expected); born 2009 -> child. Served, never derived in the browser.
+        from apps.scholarship.serializers import ResolutionItemSerializer
+        self.assertEqual(ResolutionItemSerializer(self.item).data['vircle_expected'],
+                         'principal')                    # _make default nric = born 2008
+        minor_app = self._make('u-minor', nric='090101-08-1234')
+        raise_setup_task(minor_app)
+        minor_item = minor_app.resolution_items.get(code=VIRCLE_CODE)
+        self.assertEqual(ResolutionItemSerializer(minor_item).data['vircle_expected'], 'child')
+
+    def test_vircle_expected_is_none_on_other_items(self):
+        from apps.scholarship.models import ResolutionItem
+        from apps.scholarship.serializers import ResolutionItemSerializer
+        other = ResolutionItem.objects.create(
+            application=self.app, fact='income', code='household_size_confirm',
+            kind='clarify', status='open', source='check2')
+        self.assertIsNone(ResolutionItemSerializer(other).data['vircle_expected'])
+
     def test_bad_vircle_id_is_rejected(self):
         # Supplied-but-bad is still a 400 — storing a wrong id silently is worse than refusing.
         for bad in ('8000400175', '9000400175123', '800040017512x'):

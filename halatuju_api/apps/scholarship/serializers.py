@@ -1063,13 +1063,27 @@ class ResolutionItemSerializer(serializers.ModelSerializer):
     """A resolution ticket (S3). Read-only to the client; the `code` resolves to
     `admin.scholarship.verdict.item.<code>` copy on the frontend (officer items
     carry their own `prompt`)."""
+    vircle_expected = serializers.SerializerMethodField()
+
     class Meta:
         model = ResolutionItem
         fields = [
             'id', 'fact', 'code', 'params', 'prompt', 'kind', 'doc_type',
             'status', 'source', 'resolution_text', 'created_at', 'resolved_at',
+            'vircle_expected',
         ]
         read_only_fields = fields
+
+    def get_vircle_expected(self, obj):
+        """Vircle setup task only: the account type Vircle's own birth-year rule expects —
+        'principal' (born 2008 or earlier) or 'child'. SERVED, not derived in the browser,
+        because the rule lives in vircle.can_register (owner-confirmed against Vircle's
+        1-January counting: born 31/12/2008 is 18, born 1/1/2009 is not). None elsewhere."""
+        from .resolution import VIRCLE_CODE
+        if obj.code != VIRCLE_CODE:
+            return None
+        from .vircle import can_register
+        return 'principal' if can_register(obj.application) else 'child'
 
 
 

@@ -2162,6 +2162,10 @@ export interface ResolutionItem {
   resolution_text: string
   created_at: string
   resolved_at: string | null
+  // Vircle setup task only: the account type Vircle's birth-year rule expects the student to
+  // have registered ('principal' born ≤2008, 'child' after). null on every other item; a
+  // payload predating the field degrades to 'principal' in the card (lib/vircleAccount.ts).
+  vircle_expected?: 'principal' | 'child' | null
 }
 
 export async function getResolutionItems(
@@ -2181,10 +2185,14 @@ export async function resolveResolutionItem(
   // Action Centre no longer sends this. Kept because the server still accepts (and
   // validates) a supplied value — an old cached bundle may send one.
   vircleId?: string,
+  // Vircle setup only: the student's own claim of which account type they registered
+  // ('principal'/'child') — stored on the item for the human reconciling a callback
+  // `no_match`; the coaching happens in the card before this is sent.
+  accountType?: string,
 ): Promise<ResolutionItem & { resolved?: boolean; nudge?: string }> {
   return apiRequest(`/api/v1/scholarship/resolution-items/${id}/resolve/`, {
     method: 'POST',
-    body: JSON.stringify({ text, question, vircle_id: vircleId }),
+    body: JSON.stringify({ text, question, vircle_id: vircleId, account_type: accountType }),
     ...options,
   })
 }

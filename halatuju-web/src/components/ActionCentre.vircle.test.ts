@@ -31,6 +31,16 @@ describe('V2a: the Vircle task asks for the mobile only', () => {
     expect(SRC).toContain('localMobileDigits')
     expect(SRC).toContain("t('scholarship.actionCentre.vircle.confirm')")
   })
+
+  it('carries the account-type self-check, wired to the shared rule', () => {
+    // Owner 2026-09-09 (V2a follow-up): the dropdown defaults to what Vircle's birth-year
+    // rule expects, and a disagreeing pick coaches. The rule lives in lib/vircleAccount.ts —
+    // this pins the card USES it rather than growing its own copy.
+    expect(SRC).toContain('vircle-account-type')
+    expect(SRC).toContain('expectedAccountType')
+    expect(SRC).toContain('accountWarningKey')
+    expect(SRC).toContain('item.vircle_expected')
+  })
 })
 
 describe('V2a: the retired wallet-ID strings are gone from all three locales', () => {

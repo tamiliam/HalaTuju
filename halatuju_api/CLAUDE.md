@@ -591,6 +591,13 @@ Airtable callback (`AUDIT vircle_id_set … by=vircle-airtable`).
   deliberate decision, not a tidy.
 - **The payments CSV, relay sheet and activation email still say "eWallet ID"** — operator/Vircle
   surfaces, not student asks. Leave them.
+- **⚠ THE ACCOUNT-TYPE DROPDOWN (same-day follow-up) IS A SELF-CHECK THAT COACHES, NEVER A
+  BLOCK.** Default = `vircle_expected`, SERVED off `vircle.can_register` (Vircle counts by birth
+  YEAR, 1 January transition — owner-confirmed). A mismatch shows a direction-specific note; the
+  confirm stays live because an 18-year-old genuinely on a parent's account as child is
+  legitimate. The claim lands in `params.account_type` (reconciliation aid only); **the Airtable
+  push keeps deriving Type from the birth year — never from the claim.** Rule + reasons live in
+  `lib/vircleAccount.ts`; do not fork a second copy into the card.
 - **Email goldens were REGENERATED** (`UPDATE_EMAIL_GOLDEN=1`) for the STEP-2 and install-email
   copy — an owner-approved change, not drift.
 

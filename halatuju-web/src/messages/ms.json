@@ -2324,7 +2324,12 @@
         "stuckTitle": "Menghadapi masalah semasa menyediakannya?",
         "stuckCard": "Gunakan MyKad sebenar anda, bukan fotostat atau gambar salinan — aplikasi memotret kad sebenar dan akan menolak gambar daripada gambar.",
         "stuckPhone": "Telefon yang terlalu lama mungkin gagal semasa pendaftaran walaupun memenuhi syarat iOS 16 / Android 10. Jika ia tersekat, cuba semula dengan telefon yang lebih baharu.",
-        "stuckSupport": "Jika anda menghadapi sebarang masalah, hantar WhatsApp kepada sokongan kami di +6016-336 6127."
+        "stuckSupport": "Jika anda menghadapi sebarang masalah, hantar WhatsApp kepada sokongan kami di +6016-336 6127.",
+        "accountType": "Akaun Vircle yang manakah anda daftarkan?",
+        "accountPrincipal": "Akaun Parent (Principal) — akaun saya sendiri",
+        "accountChild": "Akaun Child — ditambah di bawah akaun ibu bapa",
+        "warnChildAdult": "Akaun Child tidak boleh menerima pembayaran anda. Sila buka Vircle dan daftarkan akaun Parent anda sendiri, kemudian sahkan di sini dengan nombor telefon bimbit akaun tersebut. (Jika ibu bapa anda memang mendaftar akaun Parent dan menambah anda sebagai child, masukkan nombor telefon bimbit yang MEREKA daftarkan.)",
+        "warnPrincipalMinor": "Anda yang lahir selepas tahun 2008 belum boleh memegang akaun Vircle sendiri. Minta ibu bapa atau penjaga mendaftar akaun Parent, menambah anda ke dalamnya, dan masukkan di sini nombor telefon bimbit yang MEREKA daftarkan."
       },
       "bank": {
         "title": "Tambah akaun bank anda untuk pembayaran",

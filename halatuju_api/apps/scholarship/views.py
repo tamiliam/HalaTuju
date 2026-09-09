@@ -1544,6 +1544,14 @@ class ResolutionItemResolveView(APIView):
         if item.code == VIRCLE_CODE:
             from . import vircle_airtable
             vircle_airtable.push_recipient(item)
+            # The student's own claim of WHICH account type they registered (owner, 2026-09-09):
+            # a self-check the card coaches on before sending. Stored for the human reconciling
+            # a `no_match` callback row — NEVER trusted over the birth-year derivation
+            # (push_recipient keeps deriving Type from vircle.can_register). Junk is dropped.
+            claimed = str(request.data.get('account_type') or '').strip().lower()
+            if claimed in ('principal', 'child'):
+                item.params = {**(item.params or {}), 'account_type': claimed}
+                item.save(update_fields=['params'])
         # The ask-first informal clarify: READ the answer once, here, and store what it claims
         # (#126, owner 2026-07-13). If the student says the earner does have a payslip/EPF, the
         # suppressed document request re-opens (income_engine.informal_payslip_claimed) and the

@@ -2324,7 +2324,12 @@
         "stuckTitle": "Having trouble setting it up?",
         "stuckCard": "Use your actual MyKad, not a photocopy or a photo of one — the app photographs the real card and will reject a picture of a picture.",
         "stuckPhone": "A very old phone may fail during registration even if it meets the iOS 16 / Android 10 requirement. If it stalls, try again on a newer phone.",
-        "stuckSupport": "If you faced any problem, WhatsApp our support at +6016-336 6127."
+        "stuckSupport": "If you faced any problem, WhatsApp our support at +6016-336 6127.",
+        "accountType": "Which Vircle account did you register?",
+        "accountPrincipal": "Parent (Principal) account — my own",
+        "accountChild": "Child account — added under a parent's account",
+        "warnChildAdult": "A Child account cannot receive your payments. Please open Vircle and register your own Parent account, then confirm here with that account's mobile number. (If a parent really registered the Parent account and added you as a child, enter the parent's registered mobile instead.)",
+        "warnPrincipalMinor": "Born after 2008, you can't hold your own Vircle account yet. Ask a parent or guardian to register a Parent account, add you to it, and enter the mobile number THEY registered here."
       },
       "bank": {
         "title": "Add your bank account for payment",
