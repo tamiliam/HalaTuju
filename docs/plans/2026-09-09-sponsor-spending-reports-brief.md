@@ -26,11 +26,54 @@ What it recorded, from the real files:
 the export is used ONLY to cross-check the wallet mapping and is NEVER STORED** — the join is
 `wallet_id → application`, which the payments run CSV already pairs.
 
-⚠ **BUT VERIFY THE FORMAT AGAIN BEFORE PARSING.** July says **transaction-level XLSX** in a folder
-called `03 Vircle/02 Student Spending`; the September screenshot shows **Google Sheets** in
-`03 Payments, Vircle/06 Student Spending`. The tree was renamed (see §3) and the file type may have
-changed with it. Anchor the parser on the header row **by NAME, not position**, and fail loudly
-listing unexpected headers.
+⚠ **THE FORMAT HAS CHANGED SINCE JULY — DO NOT PARSE TO THE JULY SHAPE.** Read off the real
+`2026-08-30` report on 2026-09-09 (screenshot of row 1 + rows 2–7). It is now a **Google Sheet**,
+not XLSX, with **eleven** columns:
+
+| # | Header | Example | Note |
+|---|---|---|---|
+| A | `transaction_date` | `30 Aug 2026` | **DATE ONLY — the time of day is gone.** July had `12 Jul 2026, 20:37:59`. |
+| B | `wallet_id` | `8000400176805` | 13 digits — the SAME shape as our stored `vircle_id`. This is the join. |
+| C | `transaction_id` | `1026083032545` | The idempotency key. Appears to encode the date; do not rely on that. |
+| D | `Wallet User` | `THAVASRI A/P …` | **The ACCOUNT HOLDER — not necessarily the student.** See below. |
+| E | `Child User` | `null` | New since July. See below. |
+| F | `Merchant Name` | `99 Speedmart` | July called this `Receiver`. |
+| G | `duitnow_type` | `STATIC_MERCHANT` / `DYNAMIC_MERCHANT` | The only trustworthy person-vs-shop signal. |
+| H | `Entry Type` | `CREDIT` | ⚠ Reads `CREDIT` on a **Spend** — it is the counterparty's view. Do not gate on it. |
+| I | `TX Type` | `Spend` | Gate on this. |
+| J | `amount` | `2`, `12.4` | **A NUMBER now, not the string `"RM25.50"`.** July's currency-string parser is wrong. |
+| K | `Status` | `00` | `00` = success. Gate on this. |
+
+July's `Sender` column is gone. Anchor the parser on the header row **by NAME, not position**, and
+fail loudly listing unexpected headers.
+
+⚠⚠ **TRAP 1 — `Wallet User` IS NOT ALWAYS THE STUDENT, AND `Child User` IS WHY THE COLUMN EXISTS.**
+Vircle will not let someone **born after 2008** hold their own account: a parent registers and the
+student is added as a **child** on it (this is already a live, named case — `STATUS_PARENT_ACCOUNT`
+in `sheets.py`, and the award email carries a selective guardian paragraph gated on
+`vircle.can_register`). On such a wallet the parent is `Wallet User` and the student is `Child User`.
+**A join that reads `Wallet User` as the spender will attribute a parent's own shopping to a
+student, and there is nothing on the row that would look wrong.** Join on `wallet_id`, and treat a
+populated `Child User` as the spender. Every row in the sample has `Child User = null`, so **the
+populated case is UNTESTED against real data** — find one before shipping.
+
+⚠⚠ **TRAP 2 — A SHOP'S NAME IS OFTEN A PERSON'S NAME.** In the six sample rows, `AZMI BIN BAKA…`
+and `MUHAMMAD N…` sit beside `99 Speedmart` — and both carry `duitnow_type = STATIC_MERCHANT`. They
+are hawker stalls and sundry shops registered to an individual, which is ordinary in Malaysia.
+Two consequences, and both are load-bearing:
+  * **`transfer` ("Sent to a person") MUST be derived from `duitnow_type`, NEVER from the name
+    looking like a person.** Name-shape matching would file half the student's meals as money sent
+    to a friend — the single most damaging thing this card could get wrong. Capture the full set of
+    `duitnow_type` values before writing the rule; only `STATIC_MERCHANT`/`DYNAMIC_MERCHANT` are
+    observed so far, so **the person-QR value has not yet been seen** and must not be guessed.
+  * **It confirms the owner's privacy ruling was the right one.** "RM3 at Azmi bin Bakar" repeated
+    daily locates a named individual's stall next to a campus. Merchant names must never reach a
+    sponsor.
+
+⚠ **TRAP 3 — EXPECT "NOT YET SORTED" TO DOMINATE AT FIRST.** Of the six sampled merchants, two are
+recognisable chains and four are not. Real amounts are small (RM2–RM12), so this is daily food from
+independent traders. **Curate the map from the ACTUAL distinct merchant list before the card goes
+live**, or the donut ships as one enormous grey slice — technically honest and useless to a sponsor.
 
 ---
 
