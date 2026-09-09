@@ -111,17 +111,29 @@ class TestTheTable(_Base):
         r = self.client.get(LIST)
         self.assertEqual(r.status_code, 200, r.content)
         names = {x['name'] for x in r.json()['reviewers']}
-        self.assertEqual(names, {'Anand', 'Kavitha'})   # not the other org's, not the revoked one
+        # Not the other organisation's. The revoked one IS here since 2026-09-09 — see below.
+        self.assertEqual(names, {'Anand', 'Kavitha', 'Gone'})
 
     def test_a_super_sees_every_organisations_reviewers(self):
         self._auth('rv-su')
         names = {x['name'] for x in self.client.get(LIST).json()['reviewers']}
         self.assertIn('Intruder', names)
 
-    def test_a_revoked_reviewer_is_absent(self):
-        # Revoking is an account kill-switch; they cannot act, so they are not staff to look at.
+    def test_a_revoked_reviewer_is_LISTED_and_marked(self):
+        """⚠ THIS TEST ASSERTED THE OPPOSITE UNTIL 2026-09-09, and the reversal is deliberate.
+
+        The old rule: *"revoking is an account kill-switch; they cannot act, so they are not staff
+        to look at."* True while revoking happened on a different screen. The owner then asked for
+        Revoke ON THIS TABLE — and a kill-switch you cannot see or undo from the only screen that
+        lists people is a trap: press it and the row vanishes with no way back.
+
+        So they stay, marked. What did NOT change is what they may DO: assignment reads its own
+        `is_active=True` queryset, and pause/set-gift still 404 on a revoked account — the tests
+        below and in `test_reviewer_pause` pin both.
+        """
         self._auth('rv-oa')
-        self.assertNotIn('Gone', {x['name'] for x in self.client.get(LIST).json()['reviewers']})
+        row = next(x for x in self.client.get(LIST).json()['reviewers'] if x['name'] == 'Gone')
+        self.assertFalse(row['is_active'])
 
     def test_the_row_key_set_is_exact(self):
         # An allowlist, pinned — a column added to PartnerAdmin cannot reach this screen by accident.
@@ -130,6 +142,10 @@ class TestTheTable(_Base):
         self.assertEqual(set(row), {
             'id', 'name', 'email', 'role', 'languages',
             'open_now', 'completed', 'turnaround_days', 'paused', 'paused_at',
+            # 2026-09-09: the table now shows who still has access and when they were last here.
+            # `is_active` because revoked is NOT paused and the screen has to say which;
+            # `last_seen_at` because NULL means not recorded, never "never signed in".
+            'is_active', 'last_seen_at',
             'programme_id', 'programme_name'})
 
     def test_the_gift_column_is_back_because_its_own_trigger_fired(self):

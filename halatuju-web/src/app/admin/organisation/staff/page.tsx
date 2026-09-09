@@ -168,7 +168,10 @@ export default function OrganisationInvitationsPage() {
    * one. The second case earns a route to where those people actually are.
    */
   const total = data?.totals?.[kind] ?? 0
-  const peopleHref = kind === 'sponsors' ? '/admin/sponsors' : '/admin/organisation/reviewers'
+  // ⚠ THE TAB IS PART OF THE ANSWER (owner, 2026-09-09). Sent bare, this link dropped an
+  // org_admin who had just asked about ADMINS onto the Reviewers tab — a different question.
+  const peopleHref = kind === 'sponsors' ? '/admin/sponsors'
+    : `/admin/organisation/reviewers?tab=${kind === 'admins' ? 'admins' : 'reviewers'}`
   const emptyWords = total === 0 ? t('admin.invitations.noneInKind') : (
     <>
       {t('admin.invitations.allAccepted')}{' '}

@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import PanelTabs from '@/components/admin/PanelTabs'
-import { listReviewers, type AdminReviewer } from '@/lib/admin-api'
+import { listReviewers, type AdminItem, type AdminReviewer } from '@/lib/admin-api'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { isFree, orderedLanguages, turnaroundBand } from '@/lib/reviewerDetail'
 import {
@@ -18,6 +19,9 @@ import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { Pagination } from '@/components/Pagination'
 import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
 import { roleBadgeClass } from '@/lib/roleBadge'
+import { formatDate } from '@/lib/formatDate'
+import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
+import { revokeAdmin, deleteAdmin } from '@/lib/admin-api'
 import { byCategory } from '@/lib/adminStaff'
 import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/StaffAdmin'
 
@@ -85,7 +89,14 @@ export default function AdminReviewersList() {
   // The same pill idiom the Sponsors and Sources screens use, so the console has one way of doing
   // this. Reviewers is the default: "who can take this case?" is the daily question, and both
   // "who still has access?" and "what are volunteers told?" are deliberate second clicks.
-  const [panel, setPanel] = useState<'reviewers' | 'admins' | 'emails'>('reviewers')
+  // ⚠ THE TAB IS IN THE URL because another page links straight to one. The Invitations empty
+  // state says "everyone invited has accepted — see who is in", and under the ADMINS kind that
+  // link must land on the Admins tab; without this it dropped you on Reviewers, which is a
+  // different answer to the question you asked (owner, 2026-09-09).
+  const search = useSearchParams()
+  const asked = search?.get('tab')
+  const [panel, setPanel] = useState<'reviewers' | 'admins' | 'emails'>(
+    asked === 'admins' ? 'admins' : 'reviewers')
   // Editing what every reviewer is told is an editorial power, not a reading one — so the tab is
   // offered to the roles the endpoint admits and not to `finance`, which may read the list. The
   // endpoint is the authority; this only avoids offering a 403.
@@ -95,8 +106,56 @@ export default function AdminReviewersList() {
   // tab — the endpoint is the authority, and `soleOrgAdmin` keeps the last org_admin's Revoke off
   // the screen because the backend refuses it anyway.
   const canManage = ['super', 'org_admin'].includes(effectiveRole(role))
-  const { admins, message: staffMessage, busyId: staffBusyId, resend, toggle, soleOrgAdmin } =
-    useStaffAdmin(token)
+  const { admins, message: staffMessage, setMessage: setStaffMessage, busyId: staffBusyId,
+          resend, toggle, soleOrgAdmin, reload: reloadStaff } = useStaffAdmin(token)
+  // Which reviewer row is mid-revoke. The staff actions carry their own busy id from the hook;
+  // the reviewers table acts on the same endpoint but keeps its own list, so it needs its own.
+  const [busyId, setBusyId] = useState<number | null>(null)
+
+  /**
+   * Revoke or restore a REVIEWER, from the reviewers table (owner, 2026-09-09).
+   *
+   * ⚠ **IT SAYS WHAT IT STRANDS.** Revoke flips one flag and touches nothing else — the cases
+   * assigned to this person stay assigned to them, and they will not be able to open one. On
+   * production a single reviewer holds twelve. Pause is the tool for somebody stepping back;
+   * revoke is for somebody who has gone, and the difference has to be said out loud BEFORE the
+   * click, not discovered afterwards by a student whose case stopped moving.
+   */
+  const toggleReviewer = async (r: AdminReviewer) => {
+    if (!token) return
+    const going = r.is_active
+    const warn = going && r.open_now > 0
+      ? t('admin.reviewers.revokeConfirmOpen', { name: r.name, n: String(r.open_now) })
+      : t(going ? 'admin.reviewers.revokeConfirm' : 'admin.reviewers.restoreConfirm',
+          { name: r.name })
+    if (!window.confirm(warn)) return
+    setBusyId(r.id)
+    try {
+      await revokeAdmin(r.id, going ? 'revoke' : 'restore', { token })
+      load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('admin.actionFailed'))
+    } finally { setBusyId(null) }
+  }
+
+  /**
+   * Delete an ADMIN outright — offered only where the server said `deletable`.
+   *
+   * ⚠ The confirmation NAMES THE PERSON rather than asking "are you sure?", because the row it
+   * was pressed on is the only thing that distinguishes this action from the Revoke beside it.
+   */
+  const removeAdmin = async (a: AdminItem) => {
+    if (!token) return
+    if (!window.confirm(t('admin.deleteConfirm', { name: a.name }))) return
+    try {
+      const r = await deleteAdmin(a.id, { token })
+      setStaffMessage({ type: 'success', text: r.message })
+    } catch (e) {
+      // 409 `has_work` is the interesting one: somebody did work between the page loading and
+      // the click. The server's sentence names them, so it is shown rather than replaced.
+      setStaffMessage({ type: 'error', text: e instanceof Error ? e.message : t('admin.actionFailed') })
+    } finally { reloadStaff() }
+  }
   const [reviewers, setReviewers] = useState<AdminReviewer[]>([])
   // How many gifts the organisation runs. Only the COUNT is used here: with one, every reviewer
   // covers it and the gift would say the same thing on every row — the owner's own 2026-08-02
@@ -160,6 +219,7 @@ export default function AdminReviewersList() {
         <StaffTable rows={byCategory(admins).admins} busyId={staffBusyId} canAct={canManage}
           onResend={canManage ? resend : undefined}
           onToggle={canManage ? toggle : undefined}
+          onDelete={canManage ? removeAdmin : undefined}
           soleOrgAdmin={soleOrgAdmin} />
         {!canManage && (
           <p className="mt-3 text-sm text-ground-500">{t('admin.administration.viewOnlyNote')}</p>
@@ -203,8 +263,8 @@ export default function AdminReviewersList() {
                     <div className="mt-0.5 truncate text-[11px] text-ground-500">{r.email || '—'}</div>
                   </div>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    r.paused ? 'bg-caution-100 text-caution-700' : 'bg-positive-100 text-positive-700'}`}>
-                    {t(`admin.reviewers.status.${r.paused ? 'paused' : 'active'}`)}
+                    STAFF_STATUS_TONE[staffStatusKey(r)]}`}>
+                    {t(`admin.reviewers.status.${staffStatusKey(r)}`)}
                   </span>
                 </div>
 
@@ -246,7 +306,7 @@ export default function AdminReviewersList() {
           })}
         </div>
 
-        <TableFrame className="hidden md:block" minWidth={900} label={t('admin.reviewers.title')}>
+        <TableFrame className="hidden md:block" minWidth={1120} label={t('admin.reviewers.title')}>
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
@@ -260,6 +320,15 @@ export default function AdminReviewersList() {
                 <SortHeader col="completed" sort={sort} onSort={onSort} align="right" t={t} />
                 <SortHeader col="turnaround" sort={sort} onSort={onSort} align="right" t={t} />
                 <SortHeader col="status" sort={sort} onSort={onSort} t={t} />
+                {/* Plain headers, not sortable: "last seen" sorts by a column that is empty for
+                    anybody predating it, which would bunch "not recorded" at one end and read as
+                    an ordering of people. The action column has nothing to sort by at all. */}
+                <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-ground-600">
+                  {t('admin.reviewers.colLastSeen')}
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider text-ground-600">
+                  {t('admin.actionHeader')}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ground-100">
@@ -322,11 +391,32 @@ export default function AdminReviewersList() {
                         ? <span className="text-ground-400">{t('admin.reviewers.noTurnaround')}</span>
                         : t('admin.reviewers.days', { days: String(r.turnaround_days) })}
                     </td>
+                    {/* ⚠ NOT `r.paused` ANY MORE. Revoked beats paused, and the rule lives in
+                        `lib/staffStatus` so this table and the staff table cannot disagree —
+                        which they have done twice. */}
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        r.paused ? 'bg-caution-100 text-caution-700' : 'bg-positive-100 text-positive-700'}`}>
-                        {t(`admin.reviewers.status.${r.paused ? 'paused' : 'active'}`)}
+                        STAFF_STATUS_TONE[staffStatusKey(r)]}`}>
+                        {t(`admin.reviewers.status.${staffStatusKey(r)}`)}
                       </span>
+                    </td>
+                    {/* ⚠ "NOT RECORDED" IS NOT "NEVER SIGNED IN". The column is best-effort and
+                        empty for everybody predating it, so a blank must never read as an
+                        accusation. 20 of 21 staff carry a value. */}
+                    <td className="px-4 py-3 text-ground-700">
+                      {r.last_seen_at
+                        ? formatDate(r.last_seen_at)
+                        : <span className="text-ground-400">{t('admin.reviewers.lastSeenUnknown')}</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {canManage && (
+                        <button disabled={busyId === r.id} onClick={() => toggleReviewer(r)}
+                          className={`text-xs font-medium disabled:opacity-50 ${
+                            r.is_active ? 'text-critical-600 hover:text-critical-800'
+                                        : 'text-primary-600 hover:text-primary-800'}`}>
+                          {t(r.is_active ? 'admin.revoke' : 'admin.restore')}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )

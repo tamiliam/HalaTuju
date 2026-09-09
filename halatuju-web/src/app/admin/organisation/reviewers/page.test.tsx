@@ -29,10 +29,12 @@ const REVIEWERS = [
   {
     id: 5, name: 'Kavitha Raman', email: 'kavitha@example.org', role: 'reviewer',
     languages: ['ta', 'en'], open_now: 3, completed: 12, turnaround_days: 4.5, paused: false, paused_at: null,
+    is_active: true, last_seen_at: '2026-09-04T09:00:00Z',
   },
   {
     id: 6, name: 'Hafiz Rahman', email: 'hafiz@example.org', role: 'qc',
     languages: [], open_now: 0, completed: 0, turnaround_days: null, paused: false, paused_at: null,
+    is_active: true, last_seen_at: null,
   },
 ] as unknown as api.AdminReviewer[]
 
@@ -295,5 +297,55 @@ describe('the Admins tab (2026-09-09)', () => {
     await loaded()
     expect(screen.getByText('admin.people.tabAdmins')).toBeTruthy()
     expect(screen.queryByText('admin.reviewers.tabEmails')).toBeNull()
+  })
+})
+
+describe('what the reviewers table gained (2026-09-09)', () => {
+  it('says when somebody was last here', async () => {
+    await loaded()
+    expect(ui().getByText('04/09/2026')).toBeTruthy()
+  })
+
+  it('⚠ says NOT RECORDED for a blank, never "never signed in"', async () => {
+    // The column is best-effort and empty for everybody predating it. A blank is our gap, not
+    // theirs, and must never read as an accusation.
+    await loaded()
+    expect(ui().getByText('admin.reviewers.lastSeenUnknown')).toBeTruthy()
+  })
+
+  it('offers Revoke on a reviewer who still has access', async () => {
+    await loaded()
+    expect(ui().getAllByText('admin.revoke').length).toBeGreaterThan(0)
+  })
+
+  it('⚠ and Restore on a revoked one, who is STILL LISTED', async () => {
+    // The reversal that makes Revoke usable at all: a revoked reviewer used to vanish from this
+    // table, so pressing the button removed the only route back.
+    mockApi.listReviewers.mockResolvedValue({
+      reviewers: [{ ...REVIEWERS[0], is_active: false }] as unknown as api.AdminReviewer[],
+      programmes: giftChoices,
+    })
+    render(<AdminReviewersList />)
+    await waitFor(() => expect(screen.getAllByText('Kavitha Raman').length).toBeGreaterThan(0))
+    expect(ui().getByText('admin.reviewers.status.revoked')).toBeTruthy()
+    expect(ui().getByText('admin.restore')).toBeTruthy()
+  })
+
+  it('⚠ warns what a revoke STRANDS when they hold open cases', async () => {
+    // Revoke flips one flag and touches nothing else: the cases stay assigned to somebody who
+    // cannot open them. Kavitha holds three. The count has to be in the question.
+    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(false)
+    await loaded()
+    fireEvent.click(ui().getAllByText('admin.revoke')[0])
+    expect(confirm).toHaveBeenCalledWith(
+      expect.stringContaining('admin.reviewers.revokeConfirmOpen'))
+    expect(mockApi.revokeAdmin).not.toHaveBeenCalled()   // said no; nothing happened
+    confirm.mockRestore()
+  })
+
+  it('⚠ shows finance no Revoke at all', async () => {
+    viewerRole = { role: 'finance' }
+    await loaded()
+    expect(ui().queryByText('admin.revoke')).toBeNull()
   })
 })

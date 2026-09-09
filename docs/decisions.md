@@ -1,5 +1,59 @@
 # Architectural Decisions — HalaTuju
 
+## A staff delete is guarded by a FOOTPRINT, never by foreign keys — 2026-09-09
+**Decision:** an admin account may be deleted only when it has done **no recorded work**
+(`apps.scholarship.staff_footprint`), and **a reviewer may never be deleted at all**. Everyone
+else is revoked, permanently. The footprint counts two kinds of trace: foreign keys (assignments,
+interview slots, org requests) **and recorded emails** (payment runs made or signed, benefactors
+vetted, applications decided).
+
+**Why not the database's own protections,** which is how the gift-programme delete works and was
+the first proposal: `PaymentRun.created_by` is a `CharField` holding an email, not a foreign key.
+Nothing points at the account. On production the admin who had created **25 of the 27 runs** and
+signed 8 would have passed a foreign-key check cleanly, and deleting her would have left 25 runs
+naming an address with nobody behind it. Foreign keys answer *"would this break a row?"*; they do
+not answer *"is this person doing a job?"*
+
+**Why not "delete once somebody else is assigned",** which is how the owner first put it: nobody is
+*assigned* to payments. The right to author a run is granted by ROLE (`_PAYMENTS_WRITE_ROLES`),
+never to a named person, so there is no assignment record to hand over and no handover the system
+could verify. Approximating one would have been a guard that looks like a check and is not. The
+stricter rule was stated plainly and the owner took it.
+
+**Trade-offs:** an admin who did one thing years ago can never be deleted, only revoked. Accepted —
+the record of who made run 34 has to keep meaning something, and revoke already removes access.
+
+**Revisit if:** duties ever become a stored assignment rather than a role grant. Then "reassign,
+then delete" becomes checkable, and this rule can soften.
+
+## Seeing is not managing — 2026-09-09
+**Decision:** the staff list returns **everyone in the tenant**, including the caller's fellow
+organisation admins, with a per-row `manageable` flag. It used to filter the LIST by
+`_ORG_ADMIN_MANAGEABLE_ROLES`, the set that governs ACTING.
+
+**Why:** when Organisation → People took the roster over from Invitations (which fences on the
+invitation's organisation, not on role) the owner's two fellow org_admins silently vanished from
+the console. The anti-escalation rule is right and unchanged — `_staff_target_manageable` still
+refuses every write, and a peer org_admin's revoke still 404s — but it was never a rule about who
+may be *seen*.
+
+**Consequences:** two role sets that must be read for what they mean —
+`PROGRAMME_STAFF_ROLES` (see) and `_ORG_ADMIN_MANAGEABLE_ROLES` (act) — and a test asserting both
+halves, because "listed" alone and "not manageable" alone are each a different bug.
+
+## A revoked reviewer stays on the reviewers table — 2026-09-09
+**Decision:** reverses the 2026-08-02 ruling that a revoked reviewer is *"not staff to look at"*.
+
+**Why the earlier ruling no longer holds:** it was written when revoking happened on another
+screen. Revoke now lives on this table, and a kill-switch you cannot see or undo from the only
+screen that lists people is a trap — press it and the row disappears with no route back.
+
+**What did not change:** they still cannot be given work. Assignment reads its own `is_active=True`
+queryset, and pause / set-gift still 404 on a closed account — `_reviewers()` widens only for the
+LIST and the DETAIL page. Revoke's confirmation names what it strands ("they have N open cases,
+which stay assigned to them"), because revoke flips one flag and touches nothing else; **pause**
+remains the tool for somebody stepping back.
+
 ## Invitations is the asking; People is everybody who is in — 2026-09-09
 **Decision:** Organisation → **Invitations** lists only invitations still awaiting an answer.
 Organisation → **Reviewers** becomes **People**, with `Reviewers` and `Admins` tabs, and is the one

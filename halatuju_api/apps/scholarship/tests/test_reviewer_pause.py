@@ -124,15 +124,33 @@ class TestPauseIsNotRevoke(_Base):
         self.assertTrue(row['paused'])
         self.assertIsNotNone(row['paused_at'])
 
-    def test_a_REVOKED_reviewer_is_absent_where_a_paused_one_is_present(self):
-        # The contrast in one assertion: revoke removes, pause annotates.
+    def test_a_REVOKED_reviewer_reads_differently_from_a_paused_one(self):
+        """The contrast, which is the whole point of this class — but no longer by ABSENCE.
+
+        ⚠ Until 2026-09-09 this asserted that revoking REMOVED somebody from the table while pause
+        merely annotated them. Both are now listed, because Revoke lives on that table and a person
+        you cannot see is a person you cannot restore. The distinction is carried by two different
+        fields instead, which is stronger: absence could never say WHY somebody was missing.
+        """
         self.reviewer.is_active = False
         self.reviewer.save(update_fields=['is_active'])
         self._pause(self.other_reviewer)
         self._auth('pz-oa')
-        ids = {r['id'] for r in self.client.get(LIST).json()['reviewers']}
-        self.assertNotIn(self.reviewer.id, ids)
-        self.assertIn(self.other_reviewer.id, ids)
+        rows = {r['id']: r for r in self.client.get(LIST).json()['reviewers']}
+        self.assertFalse(rows[self.reviewer.id]['is_active'])          # revoked: no access
+        self.assertFalse(rows[self.reviewer.id]['paused'])             # and NOT paused
+        self.assertTrue(rows[self.other_reviewer.id]['is_active'])     # paused: still has access
+        self.assertTrue(rows[self.other_reviewer.id]['paused'])
+
+    def test_a_revoked_reviewer_still_cannot_be_PAUSED(self):
+        # Listing them did not make them actionable: `_reviewers` widens only for the list and the
+        # detail page, so pause 404s on a closed account exactly as it did before.
+        self.reviewer.is_active = False
+        self.reviewer.save(update_fields=['is_active'])
+        self._auth('pz-oa')
+        r = self.client.post(f'/api/v1/admin/reviewers/{self.reviewer.id}/pause/',
+                             {'paused': True}, format='json')
+        self.assertEqual(r.status_code, 404, r.content)
 
 
 class TestPauseStopsNewWorkOnly(_Base):

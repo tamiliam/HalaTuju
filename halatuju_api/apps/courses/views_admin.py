@@ -588,6 +588,33 @@ def _fmt_json(value):
 # it has no B40 scope at all — and it cannot manage staff, so it can never appoint anyone.
 _ORG_ADMIN_MANAGEABLE_ROLES = {'reviewer', 'admin', 'qc', 'finance'}
 
+# Everyone who belongs to a TENANT's own staff list — what an org_admin may SEE. Wider than
+# `_ORG_ADMIN_MANAGEABLE_ROLES` by exactly one role, `org_admin`, and the gap is the point: you can
+# see your fellow organisation admins, you cannot revoke them. Mirrors the frontend's
+# `adminStaff.PROGRAMME_STAFF_ROLES`; `super` and `partner` are platform-world and never here.
+PROGRAMME_STAFF_ROLES = {'reviewer', 'admin', 'qc', 'finance', 'org_admin'}
+
+# The roles a staff account may be DELETED in (owner, 2026-09-09: *"I am only talking about admin,
+# and not reviewers"*). A reviewer is never deletable however empty their record looks — they are
+# the people a student's case passes through, and revoking is the answer for one who has left.
+_DELETABLE_ROLES = {'admin', 'finance', 'org_admin'}
+
+
+def _deletable_now(caller, target):
+    """Whether ``caller`` may DELETE ``target`` outright, rather than only revoke them.
+
+    Three conditions, all required, and each is refused again by `AdminDeleteView`:
+      * the caller may manage them at all (`_staff_target_manageable`);
+      * the role is admin-shaped (`_DELETABLE_ROLES`) — never a reviewer, owner 2026-09-09;
+      * they have done NO recorded work (`staff_footprint`).
+    """
+    from apps.scholarship import staff_footprint
+    if not _staff_target_manageable(caller, target):
+        return False
+    if target.is_super or target.role not in _DELETABLE_ROLES:
+        return False
+    return not staff_footprint.has_footprint(target)
+
 
 def _staff_target_manageable(caller, target):
     """Whether ``caller`` may manage (resend/revoke) the staff row ``target``. A platform
@@ -944,10 +971,17 @@ class AdminListView(PartnerAdminMixin, APIView):
 
         admins = PartnerAdmin.objects.select_related('org', 'owning_organisation').order_by('-created_at')
         if not admin.is_super:
-            # org_admin: only their own org's manageable staff (never supers / other orgs).
+            # ⚠ **SEEING IS NOT MANAGING (2026-09-09).** This used to filter the LIST by
+            # `_ORG_ADMIN_MANAGEABLE_ROLES`, so an org_admin could not see the OTHER org_admins of
+            # their own organisation at all. That is the right rule for acting on somebody and the
+            # wrong one for listing them: when Organisation → People took over the roster from
+            # Invitations (which fences on the invitation's organisation, not on role) the owner's
+            # two fellow organisation admins simply vanished from the console. Everyone in the
+            # tenant is listed; `manageable` below says who may be acted on, and
+            # `_staff_target_manageable` still refuses at every write endpoint.
             admins = admins.filter(
                 owning_organisation_id=admin.owning_organisation_id,
-                role__in=_ORG_ADMIN_MANAGEABLE_ROLES,
+                role__in=PROGRAMME_STAFF_ROLES,
                 is_super_admin=False,
             )
         admins = list(admins)
@@ -957,6 +991,7 @@ class AdminListView(PartnerAdminMixin, APIView):
         # The FE (`invitations.standingOf`) uses the served number; its constant is only the
         # fallback for a payload predating this field. Cached per org id.
         from . import org_config
+        from apps.scholarship import staff_footprint
         _dormant_cache = {}
 
         def _dormant_for(a):
@@ -996,6 +1031,17 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'first_seen_at': a.first_seen_at.isoformat() if a.first_seen_at else None,
                 'last_seen_at': a.last_seen_at.isoformat() if a.last_seen_at else None,
                 'dormant_days': _dormant_for(a),
+                # ⚠ MAY THIS CALLER ACT ON THIS ROW? Everyone in the tenant is LISTED; only some
+                # may be revoked. Computed by the same `_staff_target_manageable` the write
+                # endpoints enforce, so the screen cannot offer a button the server will refuse.
+                'manageable': _staff_target_manageable(admin, a),
+                # ⚠ AND MAY THEY BE DELETED? A staff row is deletable only when it belongs to an
+                # admin-shaped role AND has never done any recorded work — see
+                # `staff_footprint`, and `AdminDeleteView` for why a footprint rather than the
+                # database's own protections. `work` says what stops it, so the screen can name
+                # the reason instead of hiding a button for no visible cause.
+                'deletable': _deletable_now(admin, a),
+                'work': staff_footprint.footprint(a),
                 # The invitation behind this person, and how far it got. Computed server-side so
                 # the screen renders a word rather than re-deriving the rule — the same split
                 # `_reviewer_dict` / `reviewerTable.ts` uses.
@@ -1043,6 +1089,56 @@ class AdminRevokeView(PartnerAdminMixin, APIView):
             return Response({'message': f'{target.name} access restored'})
         else:
             return Response({'error': 'action must be "revoke" or "restore"'}, status=400)
+
+
+class AdminDeleteView(PartnerAdminMixin, APIView):
+    """DELETE /api/v1/admin/admins/<id>/ — remove a staff account that never started.
+
+    ⚠ **REVOKE IS THE NORMAL ANSWER; THIS IS THE NARROW ONE.** Owner, 2026-09-09: an admin *"should
+    only be deleted if they are not doing any work"*. Once somebody has done something, the record
+    of who did it has to keep meaning something — so they are revoked, for ever, and this refuses.
+
+    ⚠ **THE GUARD IS A FOOTPRINT, NOT THE DATABASE'S OWN PROTECTIONS**, and the difference is not
+    academic. A `PaymentRun` stores its author as `created_by`, an EMAIL STRING with no foreign key:
+    on production one admin had made 25 of the 27 runs and signed 8, and a foreign-key rule would
+    have declared her safe to delete and left 25 runs naming an address with nobody behind it. See
+    `apps.scholarship.staff_footprint`.
+
+    ⚠ **REVIEWERS ARE NEVER DELETABLE** (`_DELETABLE_ROLES`), however empty their record looks —
+    the owner scoped this to admins explicitly, and a reviewer is who a student's case passed
+    through.
+
+    Refusals are separated on purpose: 404 for a row this caller may not touch (no existence leak),
+    400 for a role that is never deletable, and **409 with the counts** when there is work — so the
+    screen can say *what* is stopping it rather than greying a button for no visible reason.
+    """
+
+    def delete(self, request, admin_id):
+        from apps.scholarship import staff_footprint
+        admin = self.get_admin(request)
+        if not admin or not (admin.is_super or admin.role == 'org_admin'):
+            return Response({'error': 'Super admin access required'}, status=403)
+
+        target = PartnerAdmin.objects.filter(id=admin_id).first()
+        if target is None or not _staff_target_manageable(admin, target):
+            return Response({'error': 'Admin not found'}, status=404)
+        if target.is_super_admin or target.is_super:
+            return Response({'error': 'Cannot delete a super admin', 'code': 'not_deletable'},
+                            status=400)
+        if target.role not in _DELETABLE_ROLES:
+            return Response({'error': 'Only an admin account can be deleted',
+                             'code': 'not_deletable'}, status=400)
+
+        work = staff_footprint.footprint(target)
+        if work:
+            return Response({'error': f'{target.name} has work on record and can only be revoked.',
+                             'code': 'has_work', 'work': work}, status=409)
+
+        name = target.name
+        target.delete()
+        logger.info('AUDIT staff_deleted by=%s target=%s email=%s',
+                    admin.email, admin_id, target.email)
+        return Response({'message': f'{name} deleted.'})
 
 
 class AdminProfileView(PartnerAdminMixin, APIView):
