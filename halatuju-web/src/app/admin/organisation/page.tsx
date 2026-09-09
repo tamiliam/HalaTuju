@@ -80,9 +80,10 @@ export default function OrganisationOverviewPage() {
   const orgName = role?.owning_org_name || role?.org_name || ''
   const staff = programmeStaff(admins)
   const activeStaff = staff.filter((a) => a.is_active).length
-  // The same subtraction as before, finally under its own name: these people are REVOKED. It is a
-  // real fact worth showing — it just was never "waiting to reply".
-  const revokedStaff = staff.length - activeStaff
+  // ⚠ THE REVOKED COUNT IS GONE FROM THIS TILE (owner, 2026-09-09: *"doesn't inform decision or
+  // action"*), and so is the subtraction that produced it. It was only ever here because the tile
+  // used to print it under the WRONG name; corrected, it turned out to be a number nobody needed
+  // — Organisation → People already says Revoked beside the person it means.
 
   // Where each row of the sidebar's organisation group actually goes — reused so a shortcut
   // here can never point somewhere the menu does not.
@@ -95,9 +96,7 @@ export default function OrganisationOverviewPage() {
   // you to the page about people who are not, and its second line named the wrong fact entirely.
   // People / Invitations / Sponsors, one number each, each linking to the page that owns it.
   const tiles = [
-    { k: t('admin.nav.reviewers'), v: String(activeStaff),
-      d: revokedStaff > 0 ? t('admin.orgPage.revokedStaff', { count: String(revokedStaff) }) : '',
-      href: hrefOf('reviewers') },
+    { k: t('admin.nav.reviewers'), v: String(activeStaff), d: '', href: hrefOf('reviewers') },
     { k: t('admin.nav.invitations'), v: waiting === null ? '—' : String(waiting),
       d: t('admin.orgPage.invitesPending'), href: hrefOf('staff') },
     { k: t('admin.sponsors.nav'), v: String(pendingSponsors),

@@ -3102,10 +3102,9 @@
       "nav": "Gambaran keseluruhan",
       "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
       "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
-      "invitesPending": "menunggu jawapan",
+      "invitesPending": "Menunggu jawapan",
       "awaitingVetting": "menunggu semakan",
-      "needsAttention": "Perlu perhatian anda",
-      "revokedStaff": "{count} tiada akses lagi"
+      "needsAttention": "Perlu perhatian anda"
     },
     "organisations": {
       "sub": "Organisasi penyewa yang dikendalikan HalaTuju, dan siapa yang mengetuainya."
@@ -3184,7 +3183,8 @@
       },
       "status": {
         "active": "Aktif",
-        "paused": "Dijeda"
+        "paused": "Dijeda",
+        "revoked": "Ditarik balik"
       },
       "detail": {
         "back": "Semua penilai",
@@ -3279,7 +3279,12 @@
       "tabReviewers": "Penilai",
       "tabEmails": "E-mel",
       "tabsAria": "Panel penilai",
-      "tabTerms": "Terma"
+      "tabTerms": "Terma",
+      "colLastSeen": "Kali terakhir dilihat",
+      "lastSeenUnknown": "Tiada rekod",
+      "revokeConfirm": "Tarik balik akses {name}? Mereka tidak akan dapat log masuk.",
+      "revokeConfirmOpen": "Tarik balik akses {name}? Mereka ada {n} kes terbuka. Kes itu kekal ditugaskan kepada mereka, dan mereka tidak akan dapat membukanya. Untuk menghentikan kerja baharu sahaja, jeda mereka.",
+      "restoreConfirm": "Pulihkan {name}? Mereka boleh log masuk semula."
     },
     "sources": {
       "nav": "Sumber",
@@ -6028,6 +6033,8 @@
       "desc": "Semua orang yang sudah berada dalam organisasi ini — apa yang mereka pikul, dan siapa yang masih mempunyai akses.",
       "tabsAria": "Panel orang",
       "tabAdmins": "Pentadbir"
-    }
+    },
+    "delete": "Padam",
+    "deleteConfirm": "Padam {name}? Ini tidak boleh dibatalkan."
   }
 }

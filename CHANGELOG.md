@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## Seeing is not managing, and Resend was a footgun - 2026-09-09
+
+The owner walked the new People page and found three things. All three were real, and one was
+worse than it looked.
+
+- **⚠ RESEND LOCKED PEOPLE OUT OF THEIR OWN ACCOUNTS.** The button sat beside every ACTIVE admin,
+  and `AdminResendView` **rotates the Supabase password** and sets `must_change_password`. One
+  click on a working colleague overwrote their password and emailed them a temporary one. It is a
+  re-send of *sign-in details*, so it now appears only for somebody whose invitation is still
+  open — the same rule the Invitations page runs on.
+- **⚠ AND THE FIX ONLY WORKED ON HALF THE SCREEN AT FIRST.** `StaffTable`'s desktop rows held an
+  inline COPY of the action buttons while the phone cards called `actionsFor`. Changing the rule
+  fixed the cards and left the table — the half the owner was looking at — unchanged. The
+  duplicate is deleted; both renderings call the helper. The module's own docstring says it exists
+  to stop exactly this.
+- **The two organisation admins had vanished.** Moving the roster onto the staff endpoint
+  inherited a rule written for ACTING: an org_admin may not manage a peer org_admin, so the list
+  filtered them out entirely. **Seeing is not managing** — everyone in the tenant is listed now,
+  with a `manageable` flag deciding who gets controls. The escalation fence did not move; the
+  write endpoints still refuse.
+- **Delete, for an admin who never started.** ⚠ **The guard is a FOOTPRINT, not the database's own
+  protections** — and that distinction is the whole point. A `PaymentRun` records its author as
+  `created_by`, **an email string with no foreign key**: on production one admin had made 25 of the
+  27 runs and signed 8, and a foreign-key rule would have declared her safe to delete. Any trace of
+  work at all — a run made or signed, a benefactor vetted, a request raised — and the row keeps
+  Revoke instead. **Reviewers are never deletable** (owner's scope).
+- **Reviewers gained Last seen and Revoke.** Revoke says what it strands: *"They have 12 open
+  cases. Those stay assigned to them, and they will not be able to open them."* A revoked reviewer
+  now stays LISTED rather than vanishing — a kill-switch you cannot see or undo from the only
+  screen that lists people is a trap. What did not change is what they may do: assignment reads its
+  own `is_active=True` queryset, and pause still 404s on a closed account.
+- **One status rule, one home.** `lib/staffStatus` — revoked beats paused. The two tables had
+  their own copies and had already disagreed twice.
+- **Two small ones the owner asked for:** the "1 no longer has access" line is gone (*"doesn't
+  inform decision or action"*), and "waiting to reply" reads **Awaiting reply**.
+
++13 pytest, +13 jest. No migration.
+
 ## Invitations means waiting; everybody who is in lives in People - 2026-09-09
 
 The owner looked at five console screens and asked one question: *"Reviewers are displayed in two

@@ -9,6 +9,7 @@ import {
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import { roleBadgeClass } from '@/lib/roleBadge'
+import { STAFF_STATUS_TONE, staffStatusKey } from '@/lib/staffStatus'
 
 /**
  * Everything the four staff-facing pages share, in one place.
@@ -51,13 +52,16 @@ function roleBadge(rl: string) {
   return roleBadgeClass(rl)
 }
 
-export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle, soleOrgAdmin }: {
+export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onResend, onToggle,
+                             onDelete, soleOrgAdmin }: {
   rows: AdminItem[]
   showOrg?: boolean
   canAct?: boolean
   busyId?: number | null
   onResend?: (a: AdminItem) => void
   onToggle?: (a: AdminItem) => void
+  /** Delete outright. Only ever called for a row the SERVER marked `deletable`. */
+  onDelete?: (a: AdminItem) => void
   /** The sole active org_admin of a tenant cannot be revoked — the backend enforces it; this
    *  just keeps a dead affordance off the screen. */
   soleOrgAdmin?: (a: AdminItem) => boolean
@@ -65,25 +69,36 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
   const { t } = useT()
   const cols = 3 + (showOrg ? 1 : 0) + (canAct ? 1 : 0)
 
-  /** The status a row shows. ⚠ REVOKED BEATS PAUSED — a revoked account cannot be brought back
-   *  by un-pausing, so showing "Paused" over it would name the smaller of two facts. Extracted
-   *  when the phone cards arrived, so the two renderings cannot drift the way this screen and
-   *  the Reviewers table did until 2026-08-03 (one said Active while the other said Paused). */
-  const statusOf = (a: AdminItem) => (
-    !a.is_active
-      ? { tone: 'bg-critical-100 text-critical-600', label: t('admin.revoked') }
-      : a.paused
-        ? { tone: 'bg-caution-100 text-caution-700', label: t('admin.reviewers.status.paused') }
-        : { tone: 'bg-positive-100 text-positive-700', label: t('admin.active') })
+  /** The status a row shows. ⚠ THE RULE ITSELF NOW LIVES IN `lib/staffStatus` (2026-09-09) —
+   *  the Reviewers table needed the same one the moment Revoke arrived on it, and this file
+   *  having its own copy is exactly how those two screens came to disagree twice before. */
+  const statusOf = (a: AdminItem) => {
+    const key = staffStatusKey(a)
+    return {
+      tone: STAFF_STATUS_TONE[key],
+      label: t(key === 'revoked' ? 'admin.revoked'
+        : key === 'paused' ? 'admin.reviewers.status.paused' : 'admin.active'),
+    }
+  }
 
   /** The row's actions, or none. Same conditions as the table — a super is never actionable,
    *  and the sole active org_admin of a tenant keeps no Revoke (the backend enforces it; this
    *  only keeps a dead affordance off the screen). */
   const actionsFor = (a: AdminItem) => {
-    if (!canAct || a.is_super_admin || a.role === 'super') return null
+    // ⚠ `manageable === false` MEANS THE SERVER WILL REFUSE. An org_admin sees their fellow
+    // organisation admins and may not act on them, so the row draws no controls rather than
+    // controls that 404. Undefined = a payload predating the field; treat it as manageable, which
+    // is what the screen assumed before it existed.
+    if (!canAct || a.is_super_admin || a.role === 'super' || a.manageable === false) return null
     return (
       <div className="flex items-center gap-3">
-        {a.is_active && onResend && (
+        {/* ⚠ RESEND IS FOR SOMEBODY WHO HAS NOT ARRIVED — AND IT USED TO BE THE OPPOSITE.
+            The condition was `a.is_active`, so it appeared beside every working colleague, and
+            pressing it OVERWRITES THEIR PASSWORD with a temporary one and mails it to them
+            (`AdminResendView` rotates the Supabase password and sets must_change_password). One
+            click locked a signed-in admin out of their own account. It is a re-send of sign-in
+            details, so it belongs only to somebody whose invitation is still open. */}
+        {a.invitation && a.invitation.status !== 'accepted' && onResend && (
           <button disabled={busyId === a.id} onClick={() => onResend(a)}
             className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
             {busyId === a.id ? t('admin.resending') : t('admin.resend')}
@@ -95,6 +110,16 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
               a.is_active ? 'text-critical-600 hover:text-critical-800'
                           : 'text-primary-600 hover:text-primary-800'}`}>
             {a.is_active ? t('admin.revoke') : t('admin.restore')}
+          </button>
+        )}
+        {/* ⚠ DELETE IS THE NARROW ACTION AND THE SERVER DECIDES. `deletable` is true only for an
+            admin-shaped role with NO recorded work — never a reviewer. It is not offered with a
+            reason attached because the reason is absence: somebody who has done anything keeps
+            Revoke instead. See `staff_footprint`. */}
+        {a.deletable && onDelete && (
+          <button disabled={busyId === a.id} onClick={() => onDelete(a)}
+            className="text-xs font-medium text-critical-600 hover:text-critical-800 disabled:opacity-50">
+            {t('admin.delete')}
           </button>
         )}
       </div>
@@ -173,28 +198,12 @@ export function StaffTable({ rows, showOrg = false, canAct = true, busyId, onRes
                   {statusOf(a).label}
                 </span>
               </td>
-              {canAct && (
-                <td className="px-4 py-3">
-                  {!a.is_super_admin && a.role !== 'super' && (
-                    <div className="flex items-center gap-3">
-                      {a.is_active && onResend && (
-                        <button disabled={busyId === a.id} onClick={() => onResend(a)}
-                          className="text-xs font-medium text-primary-600 hover:text-primary-800 disabled:opacity-50">
-                          {busyId === a.id ? t('admin.resending') : t('admin.resend')}
-                        </button>
-                      )}
-                      {onToggle && !(a.is_active && soleOrgAdmin?.(a)) && (
-                        <button disabled={busyId === a.id} onClick={() => onToggle(a)}
-                          className={`text-xs font-medium disabled:opacity-50 ${
-                            a.is_active ? 'text-critical-600 hover:text-critical-800'
-                                        : 'text-primary-600 hover:text-primary-800'}`}>
-                          {a.is_active ? t('admin.revoke') : t('admin.restore')}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </td>
-              )}
+              {/* ⚠ `actionsFor`, NOT A SECOND COPY. This cell held its own inline duplicate of the
+                  buttons until 2026-09-09 — the phone cards called the helper and the desktop
+                  table did not — so fixing the Resend rule in one place fixed exactly half the
+                  screen, and the half the owner was looking at kept the bug. Two renderings, one
+                  source of actions. */}
+              {canAct && <td className="px-4 py-3">{actionsFor(a)}</td>}
             </tr>
           ))}
           {rows.length === 0 && (
@@ -264,5 +273,8 @@ export function useStaffAdmin(token: string | null | undefined, wantOrgs = false
     && admins.filter((x) => x.role === 'org_admin' && x.is_active
       && x.owning_org_id === a.owning_org_id).length <= 1, [admins])
 
-  return { admins, orgs, message, setMessage, busy, busyId, invite, resend, toggle, soleOrgAdmin }
+  // `reload` is exported so a page that DELETES a row can re-read the list — the hook's own
+  // actions all reload themselves, but a delete lives on the page that owns the confirmation.
+  return { admins, orgs, message, setMessage, busy, busyId, invite, resend, toggle,
+           soleOrgAdmin, reload: load }
 }

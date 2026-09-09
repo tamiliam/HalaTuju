@@ -2564,6 +2564,16 @@ def _reviewer_dict(admin, work):
         'turnaround_days': work['turnaround_days'],
         'paused': admin.paused_at is not None,
         'paused_at': admin.paused_at,
+        # ⚠ REVOKED IS NOT PAUSED, AND THE TABLE HAS TO SAY WHICH (2026-09-09). Paused means
+        # stepped back from NEW work and still able to sign in; revoked means the account is
+        # closed. The staff list served `is_active` and this one did not, so the two screens
+        # showing the same people could disagree — the same drift that made one say Active while
+        # the other said Paused until 2026-08-03.
+        'is_active': admin.is_active,
+        # ⚠ NULL IS "NOT RECORDED", NEVER "never signed in" — the backfill is best-effort and
+        # everybody predating the column is empty. 20 of 21 staff carry a value on production; the
+        # screen must say "not recorded" rather than accuse somebody of never turning up.
+        'last_seen_at': admin.last_seen_at,
         # ⚠ THE GIFT COLUMN IS BACK, AND ITS OWN TRIGGER IS WHY (S-ASSIGN, 2026-09-04). This
         # used to be an explicit ABSENCE: "with one programme every reviewer serves it, so the
         # column could only ever say one thing… it returns when a second programme exists". The
@@ -2595,12 +2605,27 @@ class _ReviewersBase(_AdminBase):
         org_id = None if self.has_role(admin, 'super') else admin.owning_organisation_id
         return admin, org_id, None
 
-    def _reviewers(self, org_id):
+    def _reviewers(self, org_id, include_revoked=False):
+        """The organisation's reviewers. ACTIONABLE ones by default; the LIST and the DETAIL page
+        pass ``include_revoked`` and get the closed accounts too.
+
+        ⚠ **THE SPLIT IS NEW (2026-09-09) AND REVERSES A NARROWER RULING ON PURPOSE.** Until now a
+        revoked reviewer was absent everywhere — *"revoking is an account kill-switch; they cannot
+        act, so they are not staff to look at"*. That held while revoking happened on another
+        screen. The owner has now asked for Revoke on this table, and a kill-switch you cannot see
+        or undo from the only screen that lists people is a trap: revoke somebody and they vanish,
+        with no way back. So they stay LISTED, marked revoked, with Restore beside them.
+        **What did NOT change is what they may do:** pause and set-gift still take the default and
+        404 on a revoked account, and assignment reads its own `is_active=True` queryset
+        (`AdminAssignableView`), so a revoked reviewer can still never be handed a case.
+        """
         from django.db.models import Q
         # org-fence: narrowed by owning_organisation for a non-super (org_id set by `_side`).
-        qs = (PartnerAdmin.objects.filter(is_active=True)
+        qs = (PartnerAdmin.objects
               .filter(Q(is_super_admin=True) | Q(role__in=['reviewer', 'qc']))
               .select_related('reviewer_profile', 'programme').order_by('name'))
+        if not include_revoked:
+            qs = qs.filter(is_active=True)
         if org_id is not None:
             qs = qs.filter(owning_organisation_id=org_id, is_super_admin=False)
         return qs
@@ -2629,7 +2654,7 @@ class AdminReviewerListView(_ReviewersBase):
         admin, org_id, err = self._side(request)
         if err:
             return err
-        rows = list(self._reviewers(org_id))
+        rows = list(self._reviewers(org_id, include_revoked=True))
         work = _reviewer_workloads(rows, organisation_id=org_id)
         return Response({
             'reviewers': [_reviewer_dict(r, work[r.id]) for r in rows],
@@ -2653,7 +2678,9 @@ class AdminReviewerDetailView(_ReviewersBase):
             return err
         # org-fence: `_reviewers` is already narrowed, so a cross-org id 404s rather than resolving.
         # ⚠ 404, never 403 — a 403 would confirm that another tenant's staff member exists.
-        target = self._reviewers(org_id).filter(pk=pk).first()
+        # ⚠ `include_revoked`: a closed account's record must still OPEN, or Restore on the list
+        # would send somebody to a 404 (2026-09-09).
+        target = self._reviewers(org_id, include_revoked=True).filter(pk=pk).first()
         if target is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         work = _reviewer_workloads([target], organisation_id=org_id)[target.id]
@@ -2706,6 +2733,8 @@ class AdminReviewerPauseView(_ReviewersBase):
         if not (admin.is_super or self.has_role(admin, 'org_admin')):
             return self._deny_role()
         # org-fence: `_reviewers` is already narrowed, so a cross-org id 404s rather than resolving.
+        # ⚠ NO `include_revoked` HERE, deliberately: pausing a closed account is meaningless, so a
+        # revoked target 404s exactly as it did before.
         target = self._reviewers(org_id).filter(pk=pk).first()
         if target is None:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)

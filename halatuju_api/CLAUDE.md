@@ -550,7 +550,47 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-09, after the staff-directory sprint — Invitations means waiting)
+## Next Sprint (as of 2026-09-09, after the People-actions sprint — the owner's three faults)
+
+**WHAT SHIPPED.** The owner walked the new People page and found three real faults. **No migration.**
+
+- **⚠ RESEND WAS A FOOTGUN AND IS NOW SCOPED.** `AdminResendView` **rotates the Supabase password**
+  and sets `must_change_password`; the button sat beside every ACTIVE admin, so one click locked a
+  working colleague out of their own account. It now appears only where the invitation is still
+  open (`invitation.status !== 'accepted'`) — on all three staff pages, so a genuinely waiting
+  invitee keeps it. **Do not re-condition it on `is_active`.**
+- **⚠ AND `StaffTable` HAD AN INLINE COPY OF ITS OWN ACTIONS.** The phone card called `actionsFor`,
+  the desktop `<td>` held a duplicate — so the first fix worked on the half nobody looks at. Both
+  renderings call the helper now. Do not re-inline.
+- **SEEING IS NOT MANAGING.** The staff list returns everyone in the tenant (`PROGRAMME_STAFF_ROLES`)
+  with a per-row `manageable` flag; `_ORG_ADMIN_MANAGEABLE_ROLES` still governs every WRITE and a
+  peer org_admin's revoke still 404s. The two sets answer different questions — do not re-merge.
+- **⚠ THE DELETE GUARD IS A FOOTPRINT, NOT FOREIGN KEYS** (`apps/scholarship/staff_footprint.py`).
+  `PaymentRun.created_by` is an EMAIL STRING: on production the admin who made 25 of 27 runs would
+  have passed any FK check. Any trace of work → revoke only. **Reviewers are never deletable.**
+- **The reviewers table gained Last seen and Revoke**, and a revoked reviewer now STAYS LISTED
+  (reversing 2026-08-02) so Restore is reachable. They still cannot be assigned — assignment has
+  its own `is_active=True` queryset — and pause/set-gift still 404 on a closed account, because
+  `_reviewers()` widens only for the list and the detail page.
+- **`lib/staffStatus` is the one home for "revoked beats paused".** Both tables read it; they had
+  their own copies and had already disagreed twice.
+- Owner's two small ones: the "1 no longer has access" line is gone, and the tile reads
+  **Awaiting reply**.
+
+Worktree `.worktrees/people-actions`, branch `feat/people-actions` (base `origin/main` at
+`81bfcb29`). Retro `docs/retrospective-2026-09-09-people-actions.md`; 3 decisions; 3 lessons.
+Gates: pytest **6094** (+13); jest **1932** (+13); tsc **24** (baseline); lint **0**; i18n
+**4926 × 3**; `next build` exit 0; `makemigrations --check` clean. Six bite-checks, all bit.
+
+**▶ OWNER POST-CHECK:** Organisation → People → Admins should now show **five** rows (the two
+organisation admins are back, with no buttons — you may see them, not revoke them). Resend should
+be gone from everybody who has signed in. Delete should appear beside Yeoh Liew Se and Shanti only
+— never beside Kulaly, who has made 25 payment runs. Reviewers gains **Last seen** and **Revoke**;
+revoking somebody with open cases warns you what it strands.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-09, after the staff-directory sprint — Invitations means waiting)
 
 **✅ SHIPPED AND DEPLOYED 2026-09-09.** `main` at **`9b05a938`**; BOTH Cloud Builds SUCCESS
 (Python changed, so both triggers fired); serving **halatuju-api-01008-lpw** /

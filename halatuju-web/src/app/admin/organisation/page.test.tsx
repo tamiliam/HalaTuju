@@ -97,12 +97,16 @@ describe('the people tile', () => {
     await waitFor(() => expect(tile('admin.nav.reviewers').getByText('15')).toBeTruthy())
   })
 
-  it('⚠ reports the revoked one under its own name, not as somebody who has not replied',
-    async () => {
-      await loaded()
-      await waitFor(() =>
-        expect(tile('admin.nav.reviewers').getByText('admin.orgPage.revokedStaff')).toBeTruthy())
-    })
+  it('⚠ says NOTHING about revoked staff, however many there are', async () => {
+    // Owner, 2026-09-09: *"Remove '1 no longer has access' — doesn't inform decision or action."*
+    // It only existed because the tile used to print that subtraction under the WRONG name; once
+    // corrected, the number turned out to be one nobody needed. Organisation → People already
+    // shows "Revoked" beside the person it means. STAFF still carries a revoked row, so this
+    // fails the moment the line comes back.
+    await loaded()
+    await waitFor(() => expect(tile('admin.nav.reviewers').getByText('15')).toBeTruthy())
+    expect(screen.queryByText('admin.orgPage.revokedStaff')).toBeNull()
+  })
 
   it('⚠ points at People, where those 15 actually are', async () => {
     // It used to link to Invitations: the count of people who are IN sent you to the page about
@@ -112,11 +116,11 @@ describe('the people tile', () => {
       .toBe('/admin/organisation/reviewers')
   })
 
-  it('says nothing about revoked staff when nobody is revoked', async () => {
-    // Drive over the bump: a line that always rendered would pass the assertion above.
+  it('counts only the ACTIVE staff, so a revoked row never inflates it', async () => {
+    // Drive over the bump for the count itself: STAFF holds 16 rows and one is switched off.
+    // Reading `staff.length` would print 16 and quietly overstate the team by one.
     mockApi.getAdmins.mockResolvedValue({ admins: STAFF.filter((a) => a.is_active) })
     await loaded()
     await waitFor(() => expect(tile('admin.nav.reviewers').getByText('15')).toBeTruthy())
-    expect(screen.queryByText('admin.orgPage.revokedStaff')).toBeNull()
   })
 })
