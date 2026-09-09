@@ -552,6 +552,16 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-09, after the staff-directory sprint — Invitations means waiting)
 
+**✅ SHIPPED AND DEPLOYED 2026-09-09.** `main` at **`9b05a938`**; BOTH Cloud Builds SUCCESS
+(Python changed, so both triggers fired); serving **halatuju-api-01008-lpw** /
+**halatuju-web-00864-h47** (read from `status.latestReadyRevisionName`). Site 200; **no api ERROR
+logs since**.
+
+**⚠ A NEAR-MISS WORTH KEEPING: the build watch read the WRONG BUILDS.** A loop polling
+`builds list --limit 2` returned two SUCCESS rows from the PREVIOUS push, because this push's
+builds had not registered yet — so it reported success before anything had been built. Wait on
+the build IDs, or check `createTime`; never on "the top N rows are green".
+
 **WHAT SHIPPED.** One rule — *what does "waiting" mean?* — landed in four surfaces that had been
 answering it separately. **No migration.**
 
