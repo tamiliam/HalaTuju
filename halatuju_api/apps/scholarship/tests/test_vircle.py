@@ -144,7 +144,8 @@ class TestConfirm(_Base):
         self.item = self.app.resolution_items.get(code=VIRCLE_CODE)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("u1")}')
 
-    # Payments D9: the confirmation now also carries the 13-digit Vircle Wallet ID.
+    # V2a (2026-09-09): the eWallet ID is OPTIONAL on the confirm — it arrives via Vircle's
+    # Airtable callback. A supplied value (old cached bundle) is still validated + stored.
     _VALID_VIRCLE = '8000400175123'
 
     def _resolve(self, text, vircle_id=_VALID_VIRCLE):
@@ -172,14 +173,25 @@ class TestConfirm(_Base):
         self.app.refresh_from_db()
         self.assertEqual(self.app.vircle_id, '8000400175777')
 
-    def test_missing_vircle_id_is_rejected(self):
+    def test_missing_vircle_id_resolves_and_stores_nothing(self):
+        # V2a: the student no longer types the id — Vircle's Airtable callback fills it.
+        # A confirm with no id must succeed and leave vircle_id blank for the callback.
         r = self._resolve('012-345 6789', vircle_id=None)
-        self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.json()['error'], 'bad_vircle_id')
+        self.assertEqual(r.status_code, 200)
         self.item.refresh_from_db()
-        self.assertEqual(self.item.status, 'open')       # not resolved
+        self.assertEqual(self.item.status, 'resolved')
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.vircle_id, '')
+
+    def test_empty_vircle_id_resolves_too(self):
+        # An explicit empty string (the shape an old bundle might send) is the same as absent.
+        r = self._resolve('012-345 6789', vircle_id='')
+        self.assertEqual(r.status_code, 200)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.vircle_id, '')
 
     def test_bad_vircle_id_is_rejected(self):
+        # Supplied-but-bad is still a 400 — storing a wrong id silently is worse than refusing.
         for bad in ('8000400175', '9000400175123', '800040017512x'):
             r = self._resolve('012-345 6789', vircle_id=bad)
             self.assertEqual(r.status_code, 400, bad)

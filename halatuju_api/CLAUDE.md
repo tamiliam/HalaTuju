@@ -550,7 +550,56 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-09, after the staff-directory sprint — Invitations means waiting)
+## Next Sprint (as of 2026-09-09, after Vircle Airtable V2a — the student stops typing the wallet id)
+
+**SHIPPED, NOT YET DEPLOYED at the time of writing. NO MIGRATION. api + web.** Worktree
+`.worktrees/vircle-v2a`, branch `feat/vircle-airtable-v2a`. Retro
+`docs/retrospective-2026-09-09-vircle-airtable-v2a.md`; lessons ×2.
+Gates, ALL RUN INSIDE THE WORKTREE: pytest **6082** (full `apps/`); jest **1925** (+6); tsc **24**
+(baseline); lint **0**; i18n **4914 × 3** (−5 keys, retired in all three locales); `next build`
+exit 0; `makemigrations --check` clean. **Three bite-checks, all bit** (optional-id branch, the
+inverted email guard, the new source guard).
+
+**WHAT SHIPPED.** V1's two webhooks are live and verified with Vircle; V2a retires the
+student-facing half. **The wallet-ID box is GONE from the Action Centre** — the student enters
+only the mobile they registered with Vircle and confirms; the eWallet ID arrives via Vircle's
+Airtable callback (`AUDIT vircle_id_set … by=vircle-airtable`).
+
+**WHAT MUST NOT BE "TIDIED":**
+- **⚠ `vircle_id` ON THE RESOLVE IS OPTIONAL, NOT IGNORED.** Absent/empty resolves and stores
+  nothing; **supplied-but-bad is still a 400** (an old cached bundle may send one, and the band
+  check is what caught three DuitNow numbers in the first 46 students). Do not collapse the branch.
+- **⚠ THE 48H ACTIVATION EMAIL AND THE RELAY SHEET STAY** (owner ruling) — they are the backstop
+  until a real student flows through the webhook pair. Their tests are untouched.
+- **⚠ THE OLD D10 EMAIL GUARD IS INVERTED, NOT DELETED.**
+  `test_award_offer_email_no_longer_asks_for_the_wallet_id` asserts the gear-icon hunt is ABSENT
+  (per language) and the "Vircle sends us your eWallet details" promise present. An absence check —
+  a presence grep cannot verify a removal.
+- **⚠ `ActionCentre.vircle.test.ts` refuses the box's return** (no `vircle-id` input, no
+  `walletId`/`VIRCLE_PREFIX`/`errorDuitnow`, keys gone from en/ms/ta). Restoring the box is a
+  deliberate decision, not a tidy.
+- **The payments CSV, relay sheet and activation email still say "eWallet ID"** — operator/Vircle
+  surfaces, not student asks. Leave them.
+- **Email goldens were REGENERATED** (`UPDATE_EMAIL_GOLDEN=1`) for the STEP-2 and install-email
+  copy — an owner-approved change, not drift.
+
+**▶ AT DEPLOY:** push (api + web — Python changed, expect BOTH builds; wait on THIS push's build
+IDs/createTime, never "top rows green"). No migrate-first, no env vars, no data step. **What a
+student sees changes**: the Vircle card asks for the mobile only.
+
+**▶ OWNER POST-CHECK:** open a test student's Action Centre with an open Vircle task — the card
+shows ONE mobile box and the confirm button, no wallet-ID field. The award email's STEP 2 no
+longer mentions the gear icon. **ms and ta are first drafts** for the reworded email copy.
+
+**▶ NEXT = V2b, ON ITS TRIGGER:** retire the 48h activation email AFTER the first real
+confirm/callback pair appears in the logs (`Vircle Airtable push` then
+`AUDIT vircle_id_set … by=vircle-airtable`). The relay sheet stays (owner: it is the
+`Vircle_account` mirror). Known limit carried from V1: Rishvin (#114) — his Vircle account holds
+his FATHER's IC, so his inbound row logs `no_match`; a human reconciles.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-09, after the staff-directory sprint — Invitations means waiting)
 
 **✅ SHIPPED AND DEPLOYED 2026-09-09.** `main` at **`9b05a938`**; BOTH Cloud Builds SUCCESS
 (Python changed, so both triggers fired); serving **halatuju-api-01008-lpw** /

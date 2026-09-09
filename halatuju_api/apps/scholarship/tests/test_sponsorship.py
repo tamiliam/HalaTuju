@@ -494,20 +494,32 @@ class TestAwardOfferEmail(TestCase):
         self.assertNotIn('RM', msg.body)
         self.assertNotIn('sponsor', msg.body.lower())
 
-    def test_award_offer_email_mentions_vircle_wallet_id(self):
-        # Payments D10: the award-offer email must tell the student to have their Vircle Wallet ID
-        # ready and enter it when confirming — in every language. Guards the P2 copy change so a
-        # future edit can't silently drop the Wallet-ID ask.
+    def test_award_offer_email_no_longer_asks_for_the_wallet_id(self):
+        # V2a (2026-09-09) INVERTS the old D10 guard: the student must NOT be asked to hunt down
+        # and type their eWallet ID — Vircle's Airtable callback delivers it. ABSENCE check on the
+        # old gear-icon hunt, in every language, plus a presence check that the email says Vircle
+        # sends the details to us.
         from apps.scholarship.emails import send_award_offer_email
-        wallet_phrase = {
-            'en': 'eWallet ID',
-            'ms': 'ID eWallet',
-            'ta': 'eWallet ID',
+        old_hunt = {
+            'en': 'gear icon',
+            'ms': 'ikon gear',
+            'ta': 'gear ஐகான்',
         }
-        for lang, phrase in wallet_phrase.items():
+        new_promise = {
+            'en': 'sends us your eWallet details',
+            'ms': 'menghantar butiran eWallet anda',
+            'ta': 'eWallet விவரங்களை Vircle',
+        }
+        for lang in ('en', 'ms', 'ta'):
             mail.outbox = []
             self.assertTrue(send_award_offer_email('x@y.example', 'Aisyah', lang=lang))
-            self.assertIn(phrase, mail.outbox[0].body, f'award email ({lang}) omits the eWallet-ID ask')
+            body = mail.outbox[0].body
+            self.assertNotIn(old_hunt[lang], body,
+                             f'award email ({lang}) still tells the student to hunt the eWallet ID')
+            self.assertNotIn('Your eWallet ID', body,
+                             f'award email ({lang}) still quotes the Settings-page label')
+            self.assertIn(new_promise[lang], body,
+                          f'award email ({lang}) does not say Vircle sends us the details')
 
     def test_award_offer_guardian_note_is_selective(self):
         # Owner 2026-07-17: the parent/guardian paragraph goes ONLY to a student born after 2008.

@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## Vircle Airtable V2a — the student stops typing the wallet id - 2026-09-09
+
+V1 (deployed and verified with Vircle end-to-end earlier today) made the eWallet ID arrive from
+Vircle's own Airtable callback. V2a retires the student-facing half of the old flow: **the
+wallet-ID box is gone from the Action Centre.** The student now enters only the mobile they
+registered with Vircle and confirms the account is active; Vircle's automation sends us the id.
+Typing the id was the source of every wallet-id defect on record — three DuitNow Transfer numbers
+saved as eWallet IDs, and a hard-coded prefix that would have refused legitimate ids at roll-over.
+
+- **Action Centre (`VircleTask`)**: mobile + confirm only. The prefix/suffix input, the 13-digit
+  echo and the DuitNow error are deleted; five i18n keys retired in en/ms/ta. A source guard
+  (`ActionCentre.vircle.test.ts`) fails if the box is restored without a deliberate decision.
+- **Backend (`resolve` on the Vircle item)**: `vircle_id` is now OPTIONAL. Absent/empty resolves
+  and stores nothing (the callback fills it); supplied-but-bad is still a 400 — an old cached
+  bundle may send a value, and storing a wrong id silently is worse than refusing it.
+- **Award email STEP 2 + the standalone install email** no longer send the student hunting for the
+  id behind the gear icon; they say Vircle sends us the details directly. All three languages;
+  email goldens regenerated (owner-approved copy change). The old D10 test guard is INVERTED — it
+  now asserts the gear-icon hunt is absent and the new promise present.
+- **KEPT, deliberately**: the 48h activation email to Vircle and the relay sheet (owner: the
+  `Vircle_account` mirror stays). Retiring the 48h email is V2b, gated on the first real
+  `AUDIT vircle_id_set … by=vircle-airtable` in the logs.
+
+pytest 6082 (full `apps/`), jest 1925 (+6), tsc 24 (baseline), lint 0, i18n **4914 × 3** (−5
+keys), `next build` exit 0, `makemigrations --check` clean. Three bite-checks, all bit. No
+migration.
+
 ## Invitations means waiting; everybody who is in lives in People - 2026-09-09
 
 The owner looked at five console screens and asked one question: *"Reviewers are displayed in two

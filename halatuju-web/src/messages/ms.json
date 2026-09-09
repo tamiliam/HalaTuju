@@ -2324,12 +2324,7 @@
         "stuckTitle": "Menghadapi masalah semasa menyediakannya?",
         "stuckCard": "Gunakan MyKad sebenar anda, bukan fotostat atau gambar salinan — aplikasi memotret kad sebenar dan akan menolak gambar daripada gambar.",
         "stuckPhone": "Telefon yang terlalu lama mungkin gagal semasa pendaftaran walaupun memenuhi syarat iOS 16 / Android 10. Jika ia tersekat, cuba semula dengan telefon yang lebih baharu.",
-        "stuckSupport": "Jika anda menghadapi sebarang masalah, hantar WhatsApp kepada sokongan kami di +6016-336 6127.",
-        "walletId": "ID eWallet",
-        "walletIdHint": "Masukkan 5 digit terakhir ID eWallet anda. Untuk mencarinya: buka aplikasi Vircle, tekan ikon gear di penjuru kanan atas, kemudian skrol ke bahagian bawah halaman Settings.",
-        "walletIdEcho": "ID eWallet penuh anda akan disimpan sebagai:",
-        "walletIdCheck": "Pastikan ini sama dengan nombor 13 digit di bahagian bawah halaman Settings Vircle anda, digit demi digit.",
-        "errorDuitnow": "Lima digit itu tidak kelihatan seperti hujung ID eWallet. Jika anda mengambilnya daripada nombor DuitNow Transfer di halaman Top Up, itu nombor yang berbeza — ID eWallet anda ada di bahagian bawah halaman Settings (tekan ikon gear di penjuru kanan atas)."
+        "stuckSupport": "Jika anda menghadapi sebarang masalah, hantar WhatsApp kepada sokongan kami di +6016-336 6127."
       },
       "bank": {
         "title": "Tambah akaun bank anda untuk pembayaran",

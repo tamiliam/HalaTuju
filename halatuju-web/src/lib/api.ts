@@ -2177,8 +2177,9 @@ export async function resolveResolutionItem(
   // The displayed question — sent so the backend can judge a typed answer's relevance
   // (Phase 2). Off-topic → response is `{ resolved: false, nudge }` (task stays open).
   question?: string,
-  // Payments D9: the full 13-digit Vircle Wallet ID (prefix + 3-digit suffix) sent with the
-  // Vircle setup confirmation; ignored by other item types.
+  // V2a (2026-09-09): the eWallet ID now arrives via Vircle's Airtable callback, so the
+  // Action Centre no longer sends this. Kept because the server still accepts (and
+  // validates) a supplied value — an old cached bundle may send one.
   vircleId?: string,
 ): Promise<ResolutionItem & { resolved?: boolean; nudge?: string }> {
   return apiRequest(`/api/v1/scholarship/resolution-items/${id}/resolve/`, {

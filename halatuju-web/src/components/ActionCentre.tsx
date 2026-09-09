@@ -637,7 +637,11 @@ function BankDetailsTask({
  *    pre-filled but editable, validated, and shown back before they commit.
  *  - The "stuck?" note repeats the two blockers that strand people mid-setup (a photo of a
  *    photocopy is rejected; a very old phone can fail activation). A stuck student is looking at
- *    THIS card, not hunting back through their inbox for the email. */
+ *    THIS card, not hunting back through their inbox for the email.
+ *
+ *  V2a (2026-09-09): the wallet-ID box is GONE. The eWallet ID now arrives from Vircle's own
+ *  Airtable callback after the confirm — typing it was the source of every wallet-id defect on
+ *  record (DuitNow truncations, roll-over refusals). Do not add the box back. */
 function VircleTask({
   item, token, contactPhone, onResolved,
 }: {
@@ -648,32 +652,19 @@ function VircleTask({
 }) {
   const { t } = useT()
   const [mobile, setMobile] = useState(() => formatMyMobile(contactPhone))
-  const [suffix, setSuffix] = useState('')   // D9: the student types the final 5 digits (was 4 until 2026-08-27)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // 8-digit fixed prefix; must match settings VIRCLE_ID_PREFIX. Shortened from 9 on 2026-08-27:
-  // Vircle's sequence rolled past 800040017xxxx and a 4-digit box could not take the new numbers.
-  const VIRCLE_PREFIX = '80004001'
-  const SUFFIX_LEN = 13 - VIRCLE_PREFIX.length
-  const suffixOk = new RegExp(`^\\d{${SUFFIX_LEN}}$`).test(suffix)
-  const valid = isValidMyMobile(mobile) && suffixOk
+  const valid = isValidMyMobile(mobile)
 
   const onConfirmDone = async () => {
     if (!token || !valid || busy) return
     setBusy(true)
     setError(null)
     try {
-      await resolveResolutionItem(
-        item.id, `+60${localMobileDigits(mobile)}`, { token }, undefined, VIRCLE_PREFIX + suffix)
+      await resolveResolutionItem(item.id, `+60${localMobileDigits(mobile)}`, { token })
       onResolved()
-    } catch (e) {
-      // The server says WHICH mistake this is. A student who read the Top Up screen typed a
-      // DuitNow Transfer number — "check the number and try again" would be wrong (the number is
-      // fine) and would send them back to the same field. Name the right field instead.
-      const reason = (e as { fieldErrors?: { reason?: string } })?.fieldErrors?.reason
-      setError(t(reason === 'duitnow'
-        ? 'scholarship.actionCentre.vircle.errorDuitnow'
-        : 'scholarship.actionCentre.vircle.error'))
+    } catch {
+      setError(t('scholarship.actionCentre.vircle.error'))
       setBusy(false)
     }
   }
@@ -703,38 +694,6 @@ function VircleTask({
               />
             </div>
             <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.vircle.mobileHint')}</p>
-          </div>
-
-          <div className="mt-3">
-            <label className="block text-sm font-medium text-ground-700" htmlFor="vircle-id">
-              {t('scholarship.actionCentre.vircle.walletId')}
-            </label>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="rounded-lg bg-ground-100 px-3 py-2 text-sm tabular-nums text-ground-600">{VIRCLE_PREFIX}</span>
-              <input
-                id="vircle-id"
-                className="input w-28 tabular-nums"
-                inputMode="numeric"
-                maxLength={SUFFIX_LEN}
-                placeholder="79897"
-                value={suffix}
-                onChange={(e) => setSuffix(e.target.value.replace(/\D/g, '').slice(0, SUFFIX_LEN))}
-                disabled={busy}
-              />
-            </div>
-            <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.vircle.walletIdHint')}</p>
-            {/* Echo the assembled id as ONE continuous 13-digit run — the way the Vircle Settings
-                page prints it. Split across two boxes it is hard to compare, which is how three
-                students saved a DuitNow Transfer number without noticing. Costs no extra typing. */}
-            {suffix.length === SUFFIX_LEN && (
-              <div className="mt-2 rounded-lg bg-ground-50 px-3 py-2">
-                <p className="text-sm text-ground-700">
-                  {t('scholarship.actionCentre.vircle.walletIdEcho')}{' '}
-                  <span className="font-semibold tabular-nums tracking-wide">{VIRCLE_PREFIX + suffix}</span>
-                </p>
-                <p className="mt-1 text-xs text-ground-500">{t('scholarship.actionCentre.vircle.walletIdCheck')}</p>
-              </div>
-            )}
           </div>
 
           <button
