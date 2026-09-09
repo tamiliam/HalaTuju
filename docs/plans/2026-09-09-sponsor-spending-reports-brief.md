@@ -6,6 +6,34 @@ point, not a plan — the plan needs `implementation-planning.md` after the owne
 
 ---
 
+## 0. ⚠⚠ READ `docs/plans/2026-07-18-bursary-spend-reporting-brief.md` FIRST
+
+**A full implementation brief for this exact feature already exists, written 2026-07-18 from REAL
+Vircle exports.** This document was written without knowing that. It carries the thing §5 below asks
+for — **the verified column shape** — plus models, an ingest command, tests and sizing (~18–24
+files). **Nothing was built** (`BursarySpendTxn` / `MerchantCategory` / `ingest_bursary_spending`
+appear in no source file, only in that brief).
+
+What it recorded, from the real files:
+
+    transaction_date ("12 Jul 2026, 20:37:59") · wallet_id · student full name ·
+    transaction_id (UNIQUE — the idempotency key) · Sender · Receiver (merchant, OR an
+    individual person for DuitNow person QR) · duitnow_type · Entry Type · TX Type ·
+    amount ("RM25.50" as a STRING) · Status ('00' = success)
+
+⚠ **Two things it says that must survive into any plan:** the weekly exports **OVERLAP**, so
+`transaction_id` uniqueness is the only thing stopping double-counting; and the student's **NAME in
+the export is used ONLY to cross-check the wallet mapping and is NEVER STORED** — the join is
+`wallet_id → application`, which the payments run CSV already pairs.
+
+⚠ **BUT VERIFY THE FORMAT AGAIN BEFORE PARSING.** July says **transaction-level XLSX** in a folder
+called `03 Vircle/02 Student Spending`; the September screenshot shows **Google Sheets** in
+`03 Payments, Vircle/06 Student Spending`. The tree was renamed (see §3) and the file type may have
+changed with it. Anchor the parser on the header row **by NAME, not position**, and fail loudly
+listing unexpected headers.
+
+---
+
 ## 1. The ask, verbatim
 
 > *"I want you to look at reporting student usage of funds to sponsors. The spending reports are
@@ -58,19 +86,76 @@ Everything above is from an image. **Re-list the folder before relying on any of
   inbound sheet READ, built for the Vircle activation relay — plus `_find_folder_path(drive, path)`,
   `_find_folder`, and the shared `_services()` credentials. No new integration is needed, only a new
   caller.
-- **⚠ THE FOLDER NAMING IN SETTINGS DOES NOT MATCH THE SCREENSHOT.** `base.py` has
-  `VIRCLE_PAYMENTS_FOLDER = '01 BrightPath/03 Vircle/01 Payment'` and
-  `VIRCLE_GUIDE_FOLDER = '03 Vircle/05 Student Guide'`; the screenshot's breadcrumb says
-  **"03 Payments, Vircle"**. Either the tree was renamed or these are different roots. **Resolve by
-  the folder ID, not by a path string**, and check whether the existing two settings still point at
-  anything real — a silently-wrong folder path is how the guide fetch would fall back to its bundled
-  copy without saying so.
-- The service account and its Drive scope are live and proven (payments CSV filing, guide fetch,
-  relay sheet). **Whether it can see THIS folder is untested** — that is task zero.
+- **✅ THE FOLDER-NAMING WORRY IS CLOSED — production was already right.** `base.py`'s DEFAULTS are
+  stale (`'03 Vircle/…'`), but **every one of them is env-overridden on the live service**, read from
+  `gcloud run services describe halatuju-api` on 2026-09-09:
+
+      MEET_ORGANISER_EMAIL      = admin@halatuju.xyz
+      VIRCLE_DRIVE_FOLDER       = 01 BrightPath/03 Payments, Vircle
+      VIRCLE_ACTIVATION_FOLDER  = 01 BrightPath/03 Payments, Vircle/01 Activation
+      VIRCLE_PAYMENTS_FOLDER    = 01 BrightPath/03 Payments, Vircle/04 Payment Execution Docs for Vircle
+      VIRCLE_GUIDE_FOLDER       = 01 BrightPath/03 Payments, Vircle/05 Student Guide
+
+  So the tree WAS renamed and the env vars followed it. Nothing is silently falling back. **Read a
+  folder path from the running service, never from a settings default** — the stale defaults would
+  have sent this sprint hunting a bug that does not exist. The new setting follows the same shape:
+  `VIRCLE_SPENDING_FOLDER = '01 BrightPath/03 Payments, Vircle/06 Student Spending'`.
+- **✅ ACCESS IS SETTLED IN PRINCIPLE.** The SA impersonates **admin@halatuju.xyz**, who is the
+  **owner** of `06 Student Spending` (the screenshot's "me"). `fetch_drive_pdf` already walks this
+  exact tree with the full `drive` scope and is proven live against `05 Student Guide` next door.
+  ⚠ `drive.readonly` is NOT in this SA's delegation allowlist — requesting it fails
+  `unauthorized_client`; the granted `drive` scope is the one that works.
+- **⚠ THE CLAUDE DRIVE CONNECTOR CANNOT SEE ANY OF THIS, and that is not a fault.** It is signed in
+  as `tamiliam@gmail.com`; the folder lives in `admin@halatuju.xyz`'s Drive. Four searches returned
+  empty. Do not read that as "the folder is missing" — check WHICH identity is asking.
 
 ---
 
-## 4. ⚠ THE OWNER MUST RULE ON THIS BEFORE ANY CODE — it is not an engineering choice
+## 4. ✅ THE OWNER HAS RULED (2026-09-09) — shape 1, categories and totals only
+
+> *"We won't share where they shopped. We'll categorise the expenses into, say, 10 categories.
+> There should also be payment given. So the sponsor knows how much has been released and how much
+> spent and for what category."*
+
+**Merchant names, dates and times NEVER reach a sponsor.** That is inside the live consent
+(`CONSENT_VERSION 2026-draft-6`: sponsors receive an anonymised summary; documents are never
+shared), so **no consent-version bump is needed**. Anything wider later IS a consent change.
+
+**The four numbers, in this order:**
+
+    RM2,000 promised · RM1,400 released so far · RM1,120 spent · RM280 left in their wallet
+
+`promised` = `award_amount`; `released` = `payments.paid_to_date(application)` (SUM of **released**
+`Disbursement` rows — our own record, the authoritative one); `spent` and `left` come from Vircle.
+
+⚠ **"SPENT" CAN EXCEED "RELEASED", AND THAT IS NOT A BUG.** The Vircle wallet is the student's own;
+a parent may top it up. We cannot tell our ringgit from theirs. The copy must never imply the
+student overspent our money — and the arithmetic must not go negative on screen.
+
+**The ten categories** (owner, 2026-09-09) — the fixed sponsor-safe vocabulary:
+
+`food` Food & drink · `groceries` Groceries · `transport` Transport · `study` Books & study supplies ·
+`phone` Phone & internet · `hostel` Hostel & bills · `health` Health & pharmacy ·
+`clothing` Clothing & shoes · `transfer` **Sent to a person** · `unsorted` **Not yet sorted**
+
+⚠ **THE LAST TWO ARE THE HONEST ONES AND MUST NOT BE QUIETLY DROPPED.** `transfer` is the
+DuitNow-person-QR case — the one line a steward most needs to see — and it is assigned
+automatically, never by merchant name. `unsorted` is every shop not yet in the map; showing it is
+what stops the other nine reading as complete when they are not.
+
+**Time window (owner): ALL TIME, refreshed weekly.** No month picker in v1 — the reports arrive
+weekly, so the card simply restates the whole picture each week. One "as at DD/MM/YYYY" stamp.
+
+**Chart (owner): DONUT + RANKED LIST.** Top 6 categories as slices, everything else folded into one
+`Other` slice; beside it the full ranked list with ringgit amounts, which is what people actually
+read. ⚠ **The released-vs-spent line is NOT the donut** — it is one horizontal bar (a fuel gauge).
+Two questions, two shapes; do not merge them.
+
+**Per student, not programme-aggregate** — the reserved card is on `my-students/[id]`.
+
+---
+
+## 4b. The superseded question, kept for the reasoning
 
 **How much of a student's spending may a sponsor see?**
 
