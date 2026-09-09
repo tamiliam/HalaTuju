@@ -555,10 +555,13 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 **SHIPPED, NOT YET DEPLOYED at the time of writing. NO MIGRATION. api + web.** Worktree
 `.worktrees/vircle-v2a`, branch `feat/vircle-airtable-v2a`. Retro
 `docs/retrospective-2026-09-09-vircle-airtable-v2a.md`; lessons ×2.
-Gates, ALL RUN INSIDE THE WORKTREE: pytest **6082** (full `apps/`); jest **1925** (+6); tsc **24**
-(baseline); lint **0**; i18n **4914 × 3** (−5 keys, retired in all three locales); `next build`
-exit 0; `makemigrations --check` clean. **Three bite-checks, all bit** (optional-id branch, the
-inverted email guard, the new source guard).
+Gates, ALL RUN INSIDE THE WORKTREE and re-run on the MERGED tree (origin/main moved under this
+branch — the People-actions sprint landed): pytest **6095** (full `apps/`); jest **1938** (+6 of
+those are this sprint's); tsc **24** (baseline); lint **0**; i18n **4921 × 3** (−5 keys, retired
+in all three locales); `next build` exit 0; `makemigrations --check` clean. **Three bite-checks,
+all bit** (optional-id branch, the inverted email guard, the new source guard).
+⚠ One re-run lesson: two concurrent `next build`s in ONE `.next` directory clobber each other's
+static manifest — the first run's failure was the collision, not the code. Build once, alone.
 
 **WHAT SHIPPED.** V1's two webhooks are live and verified with Vircle; V2a retires the
 student-facing half. **The wallet-ID box is GONE from the Action Centre** — the student enters
