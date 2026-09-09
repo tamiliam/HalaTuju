@@ -3504,3 +3504,39 @@ on somebody remembering, which is the shape of thing the lane's own rail says to
 loud rather than to write down.
 
 (Logged 2026-09-08, BrightPath #23 close; workaround added the same day.)
+
+### [TD-237] Applications shows in the rail before a gift is chosen — low
+
+**Found:** owner, live, 2026-09-09. *"When an admin signs in, the Application menu item shows. It
+shouldn't. The gate is through the programme 'button' in the Overview page."*
+
+**What:** `NavItem.needsProgramme` is carried by **only** Programme → Configuration
+(`lib/navigation.ts:286`). Applications (`:281`) does not carry it, so it renders before the reader
+has picked a gift, and pressing it lists every gift's applicants under a neutral heading. The owner
+wants the gift card on Overview to be the way in.
+
+**⚠ THE RULE IT REVERSES, AND WHY IT WAS WRITTEN THAT WAY (2026-09-08).** The gift-first sprint
+marked the CONFIGURE row and deliberately not the WORK row: *"the rule is consequence, not role."*
+Configuration WRITES a gift's settings, so with nothing chosen it can only ask; Applications is a
+READ, and "every gift under a neutral heading" is true, just less specific. Marking only the write
+row meant the Programme group could never empty for anybody, and **no role needed an exemption.**
+
+**⚠ THE STRUCTURAL REASON A BLANKET HIDE IS WRONG, VERIFIED IN THE REGISTRY.** Organisation →
+Overview is `roles: ['super', 'org_admin', 'admin', 'finance']` (`:199`) — **reviewer and qc are
+not on it.** The gift card lives on that page. So hiding Applications for everybody leaves a
+reviewer signing in with no route to their own queue and no page on which to choose a gift. Their
+Programme group would be empty and only the utility rows (Profile, Guide, FAQ) would remain.
+
+**THE RULING — owner, 2026-09-09, Option A: gate it for the roles that have an Overview to choose
+from** (super, org_admin, admin, finance); **reviewer and qc keep Applications always.** The owner
+noted this may be revisited.
+
+⚠ This is a **role exemption**, which the 2026-09-08 rule was written to avoid. It is defensible
+only because it is structural, not stylistic: those two roles have no other door. **If a reviewer
+ever gains a gift chooser of their own, delete the exemption rather than widening it** — and
+`navigation.test.ts` should pin the exemption to those two roles by name so it cannot quietly grow.
+
+**Size:** small change (~3 files: `lib/navigation.ts`, `navigation.test.ts`, and whichever shell
+test pins the reviewer rail). No backend, no migration, no i18n.
+
+(Logged 2026-09-09 from the apply-copy planning conversation.)
