@@ -54,6 +54,26 @@ class Programme(models.Model):
     name_ms = models.CharField(max_length=200, blank=True, default='')
     name_ta = models.CharField(max_length=200, blank=True, default='')
     is_active = models.BooleanField(default=True)
+
+    # ── What the PUBLIC apply page says about this gift (2026-09-09) ─────────────────────────
+    #
+    # ⚠ BLANK MEANS THE PLATFORM DEFAULT, and blank is the correct state for BrightPath. The
+    # stored map holds ONLY what an organisation wrote — never a copied default, which rots the
+    # day the platform's own wording moves (the `OrganisationConfiguration` rule).
+    #
+    # ⚠ JSON RATHER THAN NINE COLUMNS, and the reason is the bullets: the criteria list is
+    # variable-length (the owner's ruling — a gift may advertise three conditions or five), so a
+    # column model needs a JSON column for it anyway; splitting title/intro out would buy six
+    # more migrations' worth of drift and nothing else.
+    #
+    # ⚠ IT IS NOT DERIVED FROM THE ROUND'S THRESHOLDS AND MUST NEVER BE. The advertised bar is
+    # deliberately stricter than `shortlisting.evaluate()` — see `apply_copy.py`.
+    apply_copy = models.JSONField(
+        default=dict, blank=True,
+        help_text='Public apply-page copy per language: '
+                  '{"en": {"title": …, "intro": …, "criteria": […]}, "ms": {…}, "ta": {…}}. '
+                  'Blank means the platform default. Validated by apply_copy.normalise.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

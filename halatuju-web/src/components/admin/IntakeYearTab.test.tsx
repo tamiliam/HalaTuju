@@ -38,7 +38,8 @@ const programme = (over: Partial<api.AdminProgramme> = {}): api.AdminProgramme =
   is_active: true, lifecycle: 'active', intake_years: 1, applications: 143, awarded: 47,
   open_year: 2026,
   delete_blocked_by: 'has_applications', delete_blocked_count: 143,
-  apply_url: 'https://halatuju.xyz/scholarship/apply?p=bp', ...over,
+  apply_url: 'https://halatuju.xyz/scholarship/apply?p=bp',
+  apply_copy: {}, apply_copy_sensitive: [], ...over,
 })
 
 const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => ({

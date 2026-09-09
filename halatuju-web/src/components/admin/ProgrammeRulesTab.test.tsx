@@ -37,7 +37,8 @@ const programme = (over: Partial<api.AdminProgramme> = {}): api.AdminProgramme =
   open_year: 2026,
   // Held by its 41 applications — the server's answer, which is what the Delete control reads.
   delete_blocked_by: 'has_applications', delete_blocked_count: 41,
-  apply_url: 'https://halatuju.xyz/scholarship/apply?p=bp', ...over,
+  apply_url: 'https://halatuju.xyz/scholarship/apply?p=bp',
+  apply_copy: {}, apply_copy_sensitive: [], ...over,
 })
 
 const year = (over: Partial<api.AdminIntakeYear> = {}): api.AdminIntakeYear => ({

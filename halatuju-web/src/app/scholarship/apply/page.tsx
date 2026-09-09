@@ -66,6 +66,7 @@ import {
   type ChosenProgramme,
   type TopChoice,
 } from '@/lib/scholarship'
+import { applyCard, type ServedCopy } from '@/lib/applyCopy'
 import { collegesForTrack } from '@/data/matric-colleges'
 import { stpmSchoolsForStream } from '@/data/stpm-schools'
 
@@ -114,6 +115,8 @@ export default function ScholarshipApplyPage() {
   // Populated ONLY when several rounds are open and nothing named one; empty in every other
   // case, including every visitor today. See the intake effect below.
   const [choices, setChoices] = useState<IntakeChoice[]>([])
+  /** The chosen gift's own apply-page copy. Undefined/empty ⇒ the platform default. */
+  const [copy, setCopy] = useState<ServedCopy>(undefined)
   const [chosen, setChosen] = useState('')
   // Income field shows raw digits while focused (easy to edit) and a formatted
   // "3,000.00" when blurred. The stored value (form.householdIncome) stays raw.
@@ -168,13 +171,21 @@ export default function ScholarshipApplyPage() {
   // continue via /scholarship/application, not here.
   useEffect(() => {
     let active = true
-    getScholarshipIntake().then(r => {
+    // ⚠ THE GIFT'S CODE GOES WITH THE QUESTION. Without it this asks "is anything open ANYWHERE?"
+    // — so with Sabah open and BrightPath closed, a student on an old BrightPath poster was shown
+    // the entire form and refused only at submit. Same defect PF-1's choices screen cured for the
+    // ambiguous case; this is the per-gift-closed half of it (2026-09-09).
+    const code = rememberApplyProgramme(window.location.search)
+    getScholarshipIntake(code).then(r => {
       if (!active) return
+      // The gift's own words, if it wrote any. Set BEFORE the closed-bounce so a future screen
+      // that shows a closed gift's page still has them.
+      setCopy(r.apply_copy)
       if (!r.open) { router.replace('/scholarship'); return }
       // ⚠ ASK BEFORE THE FORM, NOT AT SUBMIT. With several rounds open and nothing naming one,
       // `resolve_open_cohort` refuses to guess — rightly — but that refusal used to arrive as a
       // 409 after the whole form was filled in. Same refusal, moved to the front door.
-      if (needsProgrammeChoice(rememberApplyProgramme(window.location.search), r.choices)) {
+      if (needsProgrammeChoice(code, r.choices)) {
         setChoices(r.choices ?? [])
       }
     }).catch(() => {})
@@ -409,11 +420,20 @@ export default function ScholarshipApplyPage() {
 
   // ── Render (all hooks are above this line — Rules of Hooks) ──
 
+  // ⚠ THE GIFT'S OWN WORDS IF IT WROTE ANY, ELSE THE PLATFORM'S. The platform default is resolved
+  // HERE, from the message files — its one home. The server never carries a copy of it.
+  const card = applyCard(copy, locale, {
+    title: t('scholarship.apply.title'),
+    intro: t('scholarship.apply.intro'),
+    criteria: ['criteria1', 'criteria2', 'criteria3', 'criteria4']
+      .map(k => t(`scholarship.apply.${k}`)),
+  })
+
   function wrap(children: React.ReactNode) {
     return (
       <main className="container mx-auto px-6 py-10 max-w-2xl lg:max-w-4xl">
-        <h1 className="text-2xl font-bold text-ground-900 mb-2">{t('scholarship.apply.title')}</h1>
-        <p className="text-ground-600 mb-6">{t('scholarship.apply.intro')}</p>
+        <h1 className="text-2xl font-bold text-ground-900 mb-2">{card.title}</h1>
+        <p className="text-ground-600 mb-6">{card.intro}</p>
         {children}
       </main>
     )
@@ -421,14 +441,16 @@ export default function ScholarshipApplyPage() {
 
   const criteria = (
     <div className="bg-primary-50 rounded-2xl p-5 mb-5">
+      {/* ⚠ "Who can apply" STAYS A PLATFORM STRING — it is generic, works for any gift, and a
+          fourth box on the editor would be friction with no gain (owner, 2026-09-09). */}
       <h2 className="font-semibold text-ground-900 mb-3 text-sm uppercase tracking-wide">{t('scholarship.apply.criteriaTitle')}</h2>
       <ul className="space-y-2.5 text-sm text-ground-700">
-        {['criteria1', 'criteria2', 'criteria3', 'criteria4'].map((k) => (
-          <li key={k} className="flex items-start gap-2">
+        {card.criteria.map((line, i) => (
+          <li key={i} className="flex items-start gap-2">
             <svg className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {t(`scholarship.apply.${k}`)}
+            {line}
           </li>
         ))}
       </ul>

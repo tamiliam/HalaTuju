@@ -114,14 +114,46 @@ The apply page **already calls the public intake endpoint** (`GET /api/v1/schola
 `AllowAny`) and already reads `choices` off it (`page.tsx:177`). So the copy rides on a call the
 page makes anyway: no new endpoint, no auth, and **the retired-code alias keeps working for free**.
 
-Add one key to the reply:
+Add one key to the reply — **the per-locale map exactly as stored, nothing folded in**:
 
 ```json
-{"open": false, "cohort_name": "", "choices": [], "apply_copy": {"title": "…", "intro": "…", "criteria": ["…"]}}
+{"open": false, "cohort_name": "", "choices": [],
+ "apply_copy": {"en": {"title": "…", "intro": "…", "criteria": ["…"]}, "ms": {}, "ta": {}}}
 ```
 
-Resolved server-side for the caller's language, already folded back onto the platform default, so
-the browser renders what it is handed and decides nothing. (`serve, don't derive`.)
+### ⚠ CORRECTED AT SPRINT-START: the server does NOT resolve the platform default
+
+The first draft had the server fold the platform default in and serve one resolved string. That
+would have put the English, Malay and Tamil of `scholarship.apply.title/intro/criteria1..4` into
+**Python as well as the message files** — 21 strings duplicated across two deployables, which is
+the `_SUBJECT_BM`↔`subjects.ts` drift trap, recorded in `lessons.md` three times.
+
+**The house pattern already exists and is the branding endpoint's:** `GET /api/v1/branding/<code>/`
+serves `programme_name` as a `Partial<Record<Locale, string>>` and the browser resolves it with
+`branding.resolveLang`. Copy that. **The platform default stays in the message files, its one
+home**, and the browser reaches for it only when the gift supplies nothing.
+
+Split of responsibility:
+- **Server** — WHICH GIFT (live code, else alias), and the stored map verbatim.
+- **Browser** — which locale, and the fall-through to `t('scholarship.apply.*')`.
+
+This is not a "serve, don't derive" breach: that rule bans a screen PREDICTING A SERVER REFUSAL.
+There is no refusal here, and the platform default is the browser's own text to begin with.
+
+### ⚠ ALL-OR-NOTHING PER GIFT, AND ms/ta FALL BACK TO THE GIFT'S OWN ENGLISH
+
+Two fallback rules that look like fussiness and are the opposite:
+
+1. **A gift either supplies its whole card or none of it.** The tab requires English **title +
+   intro + at least one bullet** together, or all three blank. Per-FIELD fallback would render
+   *"Apply for B40 Education Assistance"* above Sabah's own bullets — a heading from one gift over
+   the criteria of another, with nothing failing.
+2. **A blank `ms`/`ta` falls back to the GIFT's English, never to the platform's Malay/Tamil.**
+   This deliberately DIFFERS from `resolveLang`'s behaviour for branding, and the difference is the
+   whole point: falling back to the platform's *name* is harmless, but falling back to the
+   platform's *criteria* would tell a Malay-reading Sabah applicant they must be B40 with five A's.
+   **A wrong-language truth beats a right-language falsehood.** Write this reason at the helper —
+   the next person will otherwise "make it consistent" with branding.
 
 ### ⚠⚠ THE REAL TRAP, AND IT IS A SECOND DEFECT SABAH WILL HIT IN TWO WEEKS
 
@@ -211,6 +243,90 @@ Under the bullet editor:
 
 The owner accepted the divergence between advertisement and engine deliberately; the tab has to
 say out loud what that costs, or the next org_admin discovers it through a rejected student.
+
+---
+
+## 6b. ⚠⚠ A STANDING DECISION THIS SPRINT COULD BREACH — found at sprint-start, 2026-09-09
+
+`docs/decisions.md`, **2026-05-25, "Drop 'Indian descent' from all public copy"**:
+
+> *The B40 public copy makes **no mention of Indian descent / ethnicity anywhere — not even as a
+> pilot framing**… MyNadi Foundation's **Section 44(6)** tax-exempt status requires the programme
+> not to discriminate on the basis of race.*
+
+**This sprint hands an organisation a free-text box that renders on that exact public page.** An
+org_admin typing *"Open to students of Indian descent"* into a criteria bullet publishes precisely
+the sentence that decision removed, on the page it was removed from, with nothing to stop them.
+The decision predates multi-tenancy and was written when the copy was ours to control; this sprint
+is what takes it out of our hands.
+
+**⚠ A PLATFORM-WIDE HARD BAN IS NOT OBVIOUSLY RIGHT.** Ethnicity-scoped scholarships are ordinary
+and lawful in Malaysia, and a future tenant may run one legitimately. The constraint above is
+**MyNadi's**, arising from how *this* foundation is funded — not a platform invariant.
+
+**✅ OWNER RULING, 2026-09-09 — OPTION A: WARN, DO NOT REFUSE.**
+
+The tab names the s44(6) constraint beside the criteria box; the save goes through. Rejected:
+refusing platform-wide (safest today, wrong for tenant three, and un-doing it later is a real
+argument) and a per-organisation refusal (correct in principle, but a new stored setting bought
+for a tenant that does not exist).
+
+**Why a warning is proportionate here, stated so it can be re-judged rather than re-guessed:** the
+person typing is that same foundation's own administrator, who carries the s44(6) risk themselves;
+the text is on a PUBLIC page, so a mistake is highly visible; and the fix is one edit. None of
+those hold for the tax-relief ban on donor copy, which is why that one refuses and this one does
+not.
+
+**⚠ BUILD THE WORD LIST ANYWAY, EVEN THOUGH NOTHING REFUSES.** The detector ships and drives the
+warning; only the ACTION is soft. Tightening to a refusal is then one branch, not a new feature —
+and the phrases are written down where the next person can read them instead of re-deriving which
+words were meant. Reuse `email_templates.banned_phrases(banned, *parts)`, the same helper behind
+the "tax deductible" refusal, so there is one matcher on the platform.
+
+**Revisit if:** a tenant asks to run an ethnicity-scoped programme (then the scope becomes
+per-organisation, shape 2), or MyNadi's s44(6) position changes.
+
+---
+
+## 6c. Lessons applied (sprint-start step 2 — `docs/lessons.md`)
+
+Each one is live in this sprint's scope, not a recital:
+
+- **"A prop that is never fed will stay never fed"** (gift-first nav, 2026-09-08). This sprint's
+  whole shape is a new value threaded end to end: `apply_copy` onto the payload, and a programme
+  code INTO `getScholarshipIntake()`. A default parameter and a starved one render identically.
+  **→ the jest test must PASS the code and assert the request URL carries `?programme=`**, not
+  merely that the function accepts an argument.
+- **"i18n parity only proves en == ms == ta — it does NOT prove a key EXISTS"** (Sponsor R7) and
+  **"a key ASSEMBLED at runtime is invisible to a static scanner"** (2026-07-23). The platform
+  fallback resolves `scholarship.apply.criteria1..4` **server-side**, so those keys move from a
+  static `t('…')` literal in `page.tsx` to strings built in Python. **→ the FE scanner will stop
+  seeing them; add a backend test asserting every platform-default key resolves in all three
+  locale files**, or they become deletable-by-accident.
+- **"When you filter a list down, re-read its empty state"** (staff directory, 2026-09-09) and
+  **"an empty list is two facts"** (2026-09-08). `apply_copy = {}` means *"use the platform
+  default"*, never *"this gift advertises nothing"*. **→ the tab's empty state must NAME the
+  default underneath each blank box** (the `OrganisationConfiguration` pattern), and the payload
+  must never serve an empty criteria list.
+- **"A sentence in the UI can be a claim about the system, and it goes stale"** (2026-09-09).
+  **→ before shipping, grep all three message files for copy asserting this text is fixed or
+  platform-wide.**
+- **"A presence grep cannot verify a RENAME — verify by ABSENCE"** (2026-09-08). **→ the deploy
+  read-back proves BrightPath is unchanged by finding its text still present, and proves the tab
+  shipped by finding the new admin strings — two different questions, both asked.**
+- **"Imported/external text will overflow any `CharField(max_length=N)`"** (2026-07-21) and the
+  `parents_occupation` overflow (2026-06-07). Caps live in §6 and are enforced **server-side**,
+  not only on the form.
+- **"`sqlmigrate` renders for SQLite — never paste it into a Postgres migrate-first"**
+  (2026-06-21). **→ hand-write the DDL in the migration docstring.**
+- **"`git checkout --` destroyed a real edit during a bite-check"** (2026-09-08) and **"restoring
+  by string replacement hit the wrong occurrence"** (2026-09-09). **→ restore by writing the
+  original bytes back, anchored uniquely, and re-run expecting GREEN.**
+- **"`next build` OOMs on the 8 GB box after a full pytest run"** (2026-07-02). The box is 32 GB
+  now, but **→ do not run the full suite and `next build` back to back** without watching for it.
+- **"A change that breaks no test is the moment to ask what SHOULD have broken"** (2026-09-08).
+  Applies to the platform-default path: it is the branch that keeps BrightPath identical, so a
+  broken implementation of it looks exactly like success.
 
 ---
 

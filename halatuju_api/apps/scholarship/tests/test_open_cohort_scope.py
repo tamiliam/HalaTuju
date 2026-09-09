@@ -170,14 +170,15 @@ class TestIntakeStatusDoesNotNameAnotherTenantsRound(TestCase):
         resp = self.client.get('/api/v1/scholarship/intake/')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(),
-                         {'open': True, 'cohort_name': 'Cohort a-2026', 'choices': []})
+                         {'open': True, 'cohort_name': 'Cohort a-2026', 'choices': [],
+                          'apply_copy': {}})
 
     def test_a_closed_intake_still_reads_closed(self):
         self.cohort_a.is_open = False
         self.cohort_a.save(update_fields=['is_open'])
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/').json(),
-            {'open': False, 'cohort_name': '', 'choices': []},
+            {'open': False, 'cohort_name': '', 'choices': [], 'apply_copy': {}},
         )
 
     def test_two_open_rounds_stay_OPEN_but_name_neither(self):
@@ -341,7 +342,8 @@ class TestApplyLinkEndToEnd(TestCase):
     def test_intake_status_answers_for_the_named_programme_only(self):
         body = self.client.get('/api/v1/scholarship/intake/?programme=tenant-b-bursary').json()
         self.assertEqual(body,
-                         {'open': True, 'cohort_name': 'Cohort b-2026', 'choices': []})
+                         {'open': True, 'cohort_name': 'Cohort b-2026', 'choices': [],
+                          'apply_copy': {}})
 
     def test_intake_status_hides_whether_an_unknown_programme_exists(self):
         """Public and unauthenticated — 'closed' rather than 404, or anyone could enumerate
@@ -353,7 +355,7 @@ class TestApplyLinkEndToEnd(TestCase):
         """
         self.assertEqual(
             self.client.get('/api/v1/scholarship/intake/?programme=nope').json(),
-            {'open': False, 'cohort_name': '', 'choices': []},
+            {'open': False, 'cohort_name': '', 'choices': [], 'apply_copy': {}},
         )
 
 

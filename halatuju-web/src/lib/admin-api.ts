@@ -3086,6 +3086,16 @@ export interface ProgrammeRequirements {
   per_capita_ceiling: number | null
 }
 
+/** One language's block of the gift's public apply-page copy. */
+export interface AdminApplyCopyBlock {
+  title: string
+  intro: string
+  criteria: string[]
+}
+
+/** The gift's copy as STORED — an absent locale means that box is blank, not English. */
+export type AdminApplyCopy = Partial<Record<'en' | 'ms' | 'ta', AdminApplyCopyBlock>>
+
 export interface AdminProgramme {
   id: number
   code: string
@@ -3093,6 +3103,23 @@ export interface AdminProgramme {
   name_ms: string
   name_ta: string
   is_active: boolean
+  /**
+   * What the PUBLIC apply page says about this gift. `{}` = the platform's own wording.
+   *
+   * ⚠ THE STORED MAP, VERBATIM — the reader-facing endpoint folds ms/ta onto English, this does
+   * NOT. The tab is an editor: a blank Malay box must render blank, or the first save would
+   * silently promote the English text into a field nobody typed.
+   */
+  apply_copy: AdminApplyCopy
+  /**
+   * Race / ethnicity / religion words found in that copy. ADVISORY — nothing refuses on it.
+   *
+   * ⚠ `decisions.md` 2026-05-25 removed ethnicity from the public copy because MyNadi's s44(6)
+   * tax status requires the programme not to discriminate by race. The owner ruled 2026-09-09
+   * that this WARNS rather than refuses: an ethnicity-scoped gift is lawful in Malaysia and the
+   * constraint is our funder's, not the platform's.
+   */
+  apply_copy_sensitive: string[]
   /**
    * Where the gift is in its life — the badge on its card.
    *
@@ -3210,7 +3237,13 @@ export async function updateAdminProgramme(
   id: number,
   // ⚠ `code` IS EDITABLE, AND THE SERVER KEEPS THE OLD ONE AS AN ALIAS. Sending it unchanged is a
   // no-op — no alias is written — so the rename dialog may post the box as it stands.
-  body: Partial<{ code: string; name_en: string; name_ms: string; name_ta: string; is_active: boolean }>,
+  // ⚠ `apply_copy` IS ALL-OR-NOTHING PER LANGUAGE and the SERVER validates it — length caps,
+  // no markup, and "title + intro + a bullet, or none". Send `{}` to return the gift to the
+  // platform's own wording.
+  body: Partial<{
+    code: string; name_en: string; name_ms: string; name_ta: string; is_active: boolean
+    apply_copy: AdminApplyCopy
+  }>,
   options?: ApiOptions,
 ) {
   return adminMutate<AdminProgramme>(

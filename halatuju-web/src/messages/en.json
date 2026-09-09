@@ -5583,7 +5583,8 @@
       "tab": {
         "config": "What we ask for",
         "rules": "Rules",
-        "year": "Intake year"
+        "year": "Intake year",
+        "copy": "How it’s advertised"
       }
     },
     "invitations": {
@@ -6028,6 +6029,38 @@
       "desc": "Everybody who is already in this organisation — what they carry, and who still has access.",
       "tabsAria": "People panels",
       "tabAdmins": "Admins"
+    },
+    "applyCopy": {
+      "hint": "What applicants read on this gift’s own apply page. Leave every box blank to use the platform’s standard wording.",
+      "usingDefault": "This gift uses the standard wording. Fill in the boxes below to write your own.",
+      "fallbackNote": "Leave this language blank and applicants will see the English text.",
+      "sensitiveWarning": "This wording mentions race, ethnicity or religion ({terms}). A programme’s tax-exempt status can require it not to select on those grounds. Please review before it goes live.",
+      "looserWarning": "Applicants read this. If it promises easier terms than your Rules, people will apply and be turned down automatically.",
+      "lang": {
+        "en": "English",
+        "ms": "Malay",
+        "ta": "Tamil"
+      },
+      "field": {
+        "title": "Heading",
+        "intro": "Opening paragraph",
+        "criteria": "Who can apply — one condition per line"
+      },
+      "bulletPlaceholder": "e.g. Household monthly income within the B40 band.",
+      "addBullet": "Add a condition",
+      "removeBullet": "Remove this condition",
+      "saved": "Saved. Applicants now see your wording.",
+      "cleared": "Cleared. Applicants see the standard wording again.",
+      "useDefault": "Use the standard wording",
+      "saveFailed": "Could not save. Please try again.",
+      "error": {
+        "too_long": "That answer is too long ({field}). Please shorten it.",
+        "too_many": "Too many conditions — eight at most.",
+        "markup": "Please remove the < and > characters.",
+        "incomplete": "Give a heading, an opening paragraph and at least one condition — or leave all three blank ({field}).",
+        "english_required": "Write the English version first — the other languages fall back to it.",
+        "bad_shape": "Could not read that wording. Please try again."
+      }
     }
   }
 }
