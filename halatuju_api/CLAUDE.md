@@ -731,8 +731,14 @@ Airtable callback (`AUDIT vircle_id_set … by=vircle-airtable`).
   until a real student flows through the webhook pair. Their tests are untouched.
 - **⚠ THE OLD D10 EMAIL GUARD IS INVERTED, NOT DELETED.**
   `test_award_offer_email_no_longer_asks_for_the_wallet_id` asserts the gear-icon hunt is ABSENT
-  (per language) and the "Vircle sends us your eWallet details" promise present. An absence check —
-  a presence grep cannot verify a removal.
+  (per language). An absence check — a presence grep cannot verify a removal. **2026-09-10
+  follow-up (owner):** the "Vircle sends us your eWallet details" sentence was CUT from the award
+  AND install emails (it adds nothing for the student), so the guard now also asserts THAT
+  sentence absent and the surviving "confirm your account is active" ask present. **And the
+  account-type warnings were REWORDED** (owner, off two real Child-account students): a Child
+  account DOES receive money (via the parent's wallet) and the mobile we need is always the
+  STUDENT'S OWN registered number — never word `warnChildAdult` as a refusal, never ask for the
+  parent's number.
 - **⚠ `ActionCentre.vircle.test.ts` refuses the box's return** (no `vircle-id` input, no
   `walletId`/`VIRCLE_PREFIX`/`errorDuitnow`, keys gone from en/ms/ta). Restoring the box is a
   deliberate decision, not a tidy.

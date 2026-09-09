@@ -497,18 +497,24 @@ class TestAwardOfferEmail(TestCase):
     def test_award_offer_email_no_longer_asks_for_the_wallet_id(self):
         # V2a (2026-09-09) INVERTS the old D10 guard: the student must NOT be asked to hunt down
         # and type their eWallet ID — Vircle's Airtable callback delivers it. ABSENCE check on the
-        # old gear-icon hunt, in every language, plus a presence check that the email says Vircle
-        # sends the details to us.
+        # old gear-icon hunt, in every language. Owner follow-up (2026-09-10): the "Vircle sends
+        # us your eWallet details" sentence was CUT too — it adds nothing for the student — so it
+        # is also an absence check now; the surviving STEP-2 ask (confirm the mobile) must remain.
         from apps.scholarship.emails import send_award_offer_email
         old_hunt = {
             'en': 'gear icon',
             'ms': 'ikon gear',
             'ta': 'gear ஐகான்',
         }
-        new_promise = {
+        cut_promise = {
             'en': 'sends us your eWallet details',
             'ms': 'menghantar butiran eWallet anda',
             'ta': 'eWallet விவரங்களை Vircle',
+        }
+        surviving_ask = {
+            'en': 'confirm your account is active',
+            'ms': 'sahkan akaun anda aktif',
+            'ta': 'உங்கள் கணக்கு செயல்பாட்டில் உள்ளதை உறுதிப்படுத்தவும்',
         }
         for lang in ('en', 'ms', 'ta'):
             mail.outbox = []
@@ -518,8 +524,10 @@ class TestAwardOfferEmail(TestCase):
                              f'award email ({lang}) still tells the student to hunt the eWallet ID')
             self.assertNotIn('Your eWallet ID', body,
                              f'award email ({lang}) still quotes the Settings-page label')
-            self.assertIn(new_promise[lang], body,
-                          f'award email ({lang}) does not say Vircle sends us the details')
+            self.assertNotIn(cut_promise[lang], body,
+                             f'award email ({lang}) still carries the cut eWallet-details sentence')
+            self.assertIn(surviving_ask[lang], body,
+                          f'award email ({lang}) lost the STEP-2 confirm ask')
 
     def test_award_offer_guardian_note_is_selective(self):
         # Owner 2026-07-17: the parent/guardian paragraph goes ONLY to a student born after 2008.

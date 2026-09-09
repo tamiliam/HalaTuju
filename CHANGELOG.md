@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-<<<<<<< HEAD
+## Vircle card and emails say the true thing about Child accounts - 2026-09-10
+
+Two owner corrections off the live V2a surfaces. (1) The Action-Centre account-type warnings were
+factually wrong: a Child account CAN receive the money — Vircle pays the parent's wallet and the
+parent passes it on (two real students run this way) — and the mobile we need is always the
+STUDENT'S OWN registered number, never the parent's. Both warnings (`warnChildAdult`,
+`warnPrincipalMinor`) rewritten in en/ms/ta; the child-side note now explains, it never refuses.
+(2) The award email's STEP 2 and the install email lose the sentence "Vircle then sends us your
+eWallet details directly…" — it adds nothing for the student. Email goldens regenerated
+(owner-approved copy change); the inverted D10 guard now asserts that sentence ABSENT and the
+surviving confirm ask present. Also repaired: committed merge-conflict markers left in this file
+by the 2026-09-09 merge.
+
+pytest full `apps/` green · jest 1956 · tsc 24 (baseline) · lint 0 · i18n 4951x3 · build 0.
+No migration.
+
 ## The apply page's copy belongs to the gift - 2026-09-09
 
 **Shipped, not deployed.** ⚠ Migration `scholarship/0154` (additive, one JSON column) is
@@ -34,7 +49,7 @@ and saves (owner ruling). "Bahasa Melayu" is a subject, not an ethnicity, and is
 pytest 6106 (+25) · jest 1931 (+12) · tsc 24 (baseline) · lint 0 · i18n 4944x3 · build 0 ·
 `makemigrations --check` clean. Three bite-checks landed. Retro
 `docs/retrospective-2026-09-09-apply-copy-per-gift.md`; decisions x2; lessons x4.
-=======
+
 ## Vircle Airtable V2a — the student stops typing the wallet id - 2026-09-09
 
 V1 (deployed and verified with Vircle end-to-end earlier today) made the eWallet ID arrive from
@@ -106,7 +121,6 @@ worse than it looked.
   inform decision or action"*), and "waiting to reply" reads **Awaiting reply**.
 
 +13 pytest, +13 jest. No migration.
->>>>>>> origin/main
 
 ## Invitations means waiting; everybody who is in lives in People - 2026-09-09
 

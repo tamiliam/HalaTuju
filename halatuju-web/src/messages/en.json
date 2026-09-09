@@ -2328,8 +2328,8 @@
         "accountType": "Which Vircle account did you register?",
         "accountPrincipal": "Parent (Principal) account — my own",
         "accountChild": "Child account — added under a parent's account",
-        "warnChildAdult": "A Child account cannot receive your payments. Please open Vircle and register your own Parent account, then confirm here with that account's mobile number. (If a parent really registered the Parent account and added you as a child, enter the parent's registered mobile instead.)",
-        "warnPrincipalMinor": "Born after 2008, you can't hold your own Vircle account yet. Ask a parent or guardian to register a Parent account, add you to it, and enter the mobile number THEY registered here."
+        "warnChildAdult": "A Child account works too — Vircle sends the money to your parent's wallet first, and your parent passes it to you. Enter YOUR OWN mobile number here — the one registered for you in Vircle.",
+        "warnPrincipalMinor": "Born after 2008, you can't open your own Parent account yet. Ask a parent or guardian to register a Parent account and add you as a Child. Then pick Child account here and enter YOUR OWN mobile number — the one registered for you in Vircle."
       },
       "bank": {
         "title": "Add your bank account for payment",

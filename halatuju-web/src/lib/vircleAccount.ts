@@ -19,7 +19,10 @@ export function expectedAccountType(served?: string | null): VircleAccountType {
 
 /** The i18n key of the coaching note for a selection that disagrees with the expectation,
  *  or null when they agree (no note). One key per direction — the advice differs:
- *  an adult on a Child account should re-register; a minor cannot register at all. */
+ *  an adult on a Child account is FINE (owner, 2026-09-10: the money goes to the parent's
+ *  wallet and the parent passes it on — two real students run this way), so that note only
+ *  explains the flow and asks for the CHILD's own registered mobile; a minor cannot open a
+ *  Parent account at all. Never word the child note as a refusal. */
 export function accountWarningKey(
   selected: VircleAccountType, expected: VircleAccountType,
 ): string | null {

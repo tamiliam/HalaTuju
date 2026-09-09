@@ -2328,8 +2328,8 @@
         "accountType": "Akaun Vircle yang manakah anda daftarkan?",
         "accountPrincipal": "Akaun Parent (Principal) — akaun saya sendiri",
         "accountChild": "Akaun Child — ditambah di bawah akaun ibu bapa",
-        "warnChildAdult": "Akaun Child tidak boleh menerima pembayaran anda. Sila buka Vircle dan daftarkan akaun Parent anda sendiri, kemudian sahkan di sini dengan nombor telefon bimbit akaun tersebut. (Jika ibu bapa anda memang mendaftar akaun Parent dan menambah anda sebagai child, masukkan nombor telefon bimbit yang MEREKA daftarkan.)",
-        "warnPrincipalMinor": "Anda yang lahir selepas tahun 2008 belum boleh memegang akaun Vircle sendiri. Minta ibu bapa atau penjaga mendaftar akaun Parent, menambah anda ke dalamnya, dan masukkan di sini nombor telefon bimbit yang MEREKA daftarkan."
+        "warnChildAdult": "Akaun Child juga boleh — Vircle menghantar wang ke dompet ibu bapa anda dahulu, dan ibu bapa anda menyerahkannya kepada anda. Masukkan nombor telefon bimbit ANDA SENDIRI di sini — nombor yang didaftarkan untuk anda dalam Vircle.",
+        "warnPrincipalMinor": "Anda yang lahir selepas tahun 2008 belum boleh membuka akaun Parent sendiri. Minta ibu bapa atau penjaga mendaftar akaun Parent dan menambah anda sebagai Child. Kemudian pilih akaun Child di sini dan masukkan nombor telefon bimbit ANDA SENDIRI — nombor yang didaftarkan untuk anda dalam Vircle."
       },
       "bank": {
         "title": "Tambah akaun bank anda untuk pembayaran",
