@@ -552,6 +552,11 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-09, after the People-actions sprint — the owner's three faults)
 
+**✅ SHIPPED AND DEPLOYED 2026-09-09.** `main` at **`eb31882e`**; BOTH Cloud Builds SUCCESS;
+serving **halatuju-api-01009-g42** / **halatuju-web-00865-g2c** (read from
+`status.latestReadyRevisionName`, and WAITED ON BY BUILD ID — a `builds list --limit 2` loop
+reported the previous push's green builds an hour earlier). Site 200; no api ERROR logs since.
+
 **WHAT SHIPPED.** The owner walked the new People page and found three real faults. **No migration.**
 
 - **⚠ RESEND WAS A FOOTGUN AND IS NOW SCOPED.** `AdminResendView` **rotates the Supabase password**
