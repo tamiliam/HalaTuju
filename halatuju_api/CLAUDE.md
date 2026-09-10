@@ -550,7 +550,78 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after sponsor spending S1 — a Vircle report becomes rows)
+## Next Sprint (as of 2026-09-10, after sponsor spending S2 — the reports arrive on their own)
+
+**S1 + S2 BOTH SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree
+`.worktrees/spending-ingest`, branch `feat/spending-ingest` (pushed; **NOT on main, so nothing
+has built**). Backend only — **no web file changed**. Retros
+`docs/retrospective-2026-09-10-spending-ingest-s1.md` + `…-spending-drive-s2.md`;
+decisions ×12; lessons ×5. Roadmap `docs/plans/2026-09-10-sponsor-spending-roadmap.md`
+(5 sprints; **S1 + S2 done**); requirements + the measured corpus
+`docs/plans/2026-09-09-sponsor-spending-reports-brief.md`.
+Gates: pytest full `apps/` **6179** (+55); `makemigrations --check` clean. **Eleven bite-checks
+landed** (two came back SILENT on the first pass and each got the test that would have spoken).
+Ledger vs production: scholarship **154/155**, courses **74/74**.
+
+**⚠ MIGRATION `scholarship/0155` (S1) — TWO NEW TABLES, NOT YET APPLIED. MIGRATE-FIRST.** DDL +
+RLS + one `service_role` policy each is in the migration's own docstring. **S2 adds none.**
+
+**WHAT SHIPPED.** `spending_import.py` (the one parser + the ingest), `BursarySpendTxn` +
+`MerchantCategory`, `manage.py ingest_spending --file/--dir/--drive [--apply] [--no-email]`,
+`sheets.spending_reports_in` + `read_spending_report`, `emails.send_spending_alert_email`, and
+cron **`spending-ingest`** (DAILY, `--drive --apply`).
+
+**⚠ VERIFIED AGAINST THE EIGHT REAL EXPORTS, NOT FIXTURES:** 1,368 unique transactions, 1,366
+`SPEND`, **RM10,650.22**, 0 unparsed anything, 28 parent-held wallets, 2 person-to-person rows,
+coverage 1 Jul → 30 Aug 2026. `TestRealCorpus` **SKIPS when the corpus is absent** — those files
+carry student names and never enter the repo.
+
+**WHAT MUST NOT BE "TIDIED":**
+- **⚠ THE FILE SHAPE HAS DRIFTED FIVE TIMES IN EIGHT WEEKS, ALL MEASURED.** Merchant column
+  `Receiver` OR `Merchant Name`; student column `BrightPath name` OR `Wallet User`+`Child User`;
+  `amount` a number in 1,280 rows and the STRING `"RM26.90"` in 88; `transaction_date` with a
+  time in the two oldest reports; and **the filename is NOT the coverage window** (the 26 July
+  report covers FOURTEEN days). **Add aliases, never replace them.**
+- **⚠ A MISSING REQUIRED COLUMN REFUSES THAT FILE; AN UNKNOWN EXTRA ONE ONLY REPORTS.** Parsing
+  past a header we cannot read is the one failure that files money against the WRONG student.
+- **⚠ EVERY SKIP IS COUNTED AND NAMED.** An earlier probe reported **RM10,029.03** for a true
+  **RM10,650.22** by summing only the values that were already numbers.
+- **⚠ A NEW FILE IS THE TRIGGER, NEVER THE CALENDAR** (owner, 2026-09-10 — the officer uploads by
+  hand and not on a fixed day). Which files to fetch is **new-or-changed**, from Drive's
+  `modifiedTime` against our own `imported_at`, with **no state of our own**. A seen-list was
+  refused because it silently misses an EDIT, and these files get edited.
+- **⚠ A QUIET DAY DOES NOTHING AND SAYS NOTHING, AND THE GUARD IS LOAD-BEARING.** Without it a
+  STANDING finding (a funded student with no wallet) emails every single day for ever.
+- **⚠ NO WEEKLY ALL-CLEAR** (owner ruling). The alert names wallets and application ids, never a
+  student, and carries no merchant and no amount. Plain `EmailMessage` with an EXPLICIT sender —
+  `_send_html` defaults to the interview alias.
+- **⚠ "SENT TO A PERSON" COMES FROM `duitnow_type`, NEVER FROM THE MERCHANT NAME.** Half the real
+  merchants are registered under an individual's name.
+- **⚠ `Wallet User` IS NOT ALWAYS THE STUDENT** (28 real rows have a `Child User`). Join on
+  `wallet_id`; a wallet claimed by TWO students is skipped and named, never guessed.
+- **⚠ THE EXPORT FILENAME PATTERN IS A GUARD** — S4 files a summary back into this tree, and
+  without it the next run would parse our own output. The subfolder is the second lock.
+- **⚠ `CronRunView.JOBS` NOW ALSO TAKES A `(name, args)` TUPLE** (immutable — readers put it in
+  sets). `_registered_commands()` in `test_repair_commands_have_a_door.py` unwraps it.
+
+**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0155` MIGRATE-FIRST** + record its ledger row
+BEFORE the push; (2) Security Advisor shows no new finding; (3) merge + push (**api only** —
+expect ONE build); (4) set **`VIRCLE_SPENDING_FOLDER`** if the live tree differs from the default
+(**read it from `gcloud run services describe`, never from a settings default** — every other
+`VIRCLE_*` folder is already overridden there); (5) **⚠ RUN `ingest_spending --drive` WITHOUT
+`--apply` ONCE AND READ IT** — the service-account key exists nowhere but the live service, so
+this is the ONLY real proof of the Drive hop; (6) only then create the DAILY Cloud Scheduler job
+hitting `spending-ingest`. **Nothing a student or sponsor sees changes.**
+
+**▶ NEXT = S3 (the sorter).** Four rungs: `duitnow_type` → keyword rules (~100 of 290 merchants)
+→ the spend-pattern inference (**per TRANSACTION, with the RM20 ceiling** — a merchant-level
+verdict would have filed a RM200 payment as a campus meal) → Gemini on the ~91 leftovers, batched,
+merchant names only, answers outside the ten-code vocabulary discarded, each name stored so it is
+never re-asked. `owner` outranks every rung. **No migration** — `category` and `decided_by` are
+already there. Then S4 the officer view + a summary filed back to Drive **in a subfolder**, S5 the
+sponsor card (**Stitch first**).
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after sponsor spending S1 — a Vircle report becomes rows)
 
 **SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree `.worktrees/spending-ingest`,
 branch `feat/spending-ingest` (pushed; **NOT on main, so nothing has built**). Backend only —

@@ -645,6 +645,10 @@ and is **not** a service dependency — the service will read the Sheets API.
 unparseable value is counted and named, never skipped. "Sent to a person" comes from `duitnow_type`,
 never from a merchant name that looks like a person's.
 Plan: `docs/plans/2026-09-10-sponsor-spending-roadmap.md`.
+**S2 (2026-09-10) added the Drive half.** `sheets.spending_reports_in` / `read_spending_report` list and fetch the exports; `spending_import.drive_sources` adapts them onto the SAME parser; cron `spending-ingest` runs DAILY.
+⚠ **A NEW FILE is the trigger, never the calendar** — the officer uploads by hand and not on a fixed day. Which files to fetch is **new-or-changed**, compared from Drive's `modifiedTime` against our own `imported_at`, with **no state of our own**.
+⚠ `emails.send_spending_alert_email` fires ONLY when a human is needed — never an all-clear — and names wallets and application ids, never a student. A staleness nudge fires on day 14 and every multiple, derived, never stored.
+⚠ `CronRunView.JOBS` now also accepts a `(name, args)` TUPLE; `_registered_commands()` in `test_repair_commands_have_a_door.py` is the reader that unwraps it.
 
 ### Backend Root Files
 

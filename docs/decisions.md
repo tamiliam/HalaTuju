@@ -10145,3 +10145,91 @@ the sprint's actual acceptance criterion unasserted, which is the only claim tha
 fixture tests carry every RULE; this one carries the FIGURES.
 **Revisit if:** a synthetic corpus is ever generated that reproduces all five drift shapes, at which
 point it can be committed and the skip removed.
+
+## A NEW FILE is the trigger, not the calendar — Spending S2, 2026-09-10
+**Decision:** the `spending-ingest` cron runs DAILY, lists the Drive folder, and acts only on files
+it has not already ingested. A day with nothing new does nothing and says nothing.
+**Alternatives considered:** a weekly cron pinned to a weekday, which is what the roadmap first said.
+**Rationale (owner, 2026-09-10):** Vircle publishes into Data Studio and a BrightPath officer
+extracts and uploads each week BY HAND — *"it may not happen exactly at the same time every week
+without fail. It may not even happen on the same day of the week."* A Monday cron leaves a Thursday
+upload unread for six days. Reacting to the artefact rather than the clock also makes two uploads in
+one day, or a fortnight caught up at once, ordinary instead of exceptional.
+**Trade-offs:** a daily job that usually does nothing. Cheap — one folder listing — and its silence
+is the design, not a smell.
+**Revisit if:** Vircle ever delivers the export to us directly, at which point the arrival itself is
+the trigger and the poll disappears.
+
+## Which files to download is NEW OR CHANGED, with no state of our own — Spending S2, 2026-09-10
+**Decision (owner, option C):** compare Drive's `modifiedTime` against the newest `imported_at` we
+hold for that `source_file`. Both sides already exist from S1; nothing new is stored.
+**Alternatives considered:** (a) re-read every file every day and let `txn_id` dedup sort it out;
+(b) keep a table of files already seen.
+**Rationale:** the owner rejected (a) as wasteful and was right — on a quiet day it downloads every
+report ever filed to find nothing. (b) is cheap and **silently misses an edit**, and these files ARE
+edited: on 2026-09-10 the owner opened one and removed 186 duplicated rows. (c) costs one folder
+listing on a quiet day, downloads only what is new or changed, and needs no memory to go stale.
+⚠ My first argument for (a) was wrong and the owner caught it: I justified it by duplicates, which
+`txn_id` dedup handles whatever we download. The real question was only ever EDITS.
+**Trade-offs:** a file that stored nothing (an all-duplicate export) is re-read every run, because
+no `source_file` records it. Accepted, and honest — we have no evidence we ever read it.
+**Revisit if:** the folder grows large enough that even the listing is slow, or Drive stops
+returning a trustworthy `modifiedTime`.
+
+## The staleness nudge fires on MULTIPLES and is derived, never stored — Spending S2, 2026-09-10
+**Decision:** if nothing has been imported for `SPENDING_REPORT_QUIET_DAYS` (14) the job emails
+once, and again on every multiple while it stays quiet. Derived from `MAX(imported_at)`.
+**Alternatives considered:** the owner's literal ask — one nudge, then silence until something
+arrives — which needs a stored "already nudged" flag.
+**Rationale:** a forgotten manual upload fails silently, and an absent file is indistinguishable
+from a quiet week; this is the only signal that separates them. A stored flag set on a day the job
+happened to fail means **nobody is ever told**, which is the failure mode that matters. A fortnightly
+tap is not the daily nag the owner objected to. Put to the owner with that reasoning and accepted.
+**Trade-offs:** a genuinely quiet programme would be nudged repeatedly. Acceptable — it is a
+fortnight apart, and the cure is to upload or to raise the setting.
+**Revisit if:** the nudge is ever felt as noise; the fix is the env var, not a flag.
+⚠ Nothing ever imported is deliberately NOT a nudge — that is a system nobody has started, not one
+that has gone quiet.
+
+## `CronRunView.JOBS` accepts a `(name, args)` pair — Spending S2, 2026-09-10
+**Decision:** a job may be a command name, or a `(name, args_tuple)` pair when its cron behaviour
+needs flags. `spending-ingest` is `('ingest_spending', ('--drive', '--apply'))`.
+**Alternatives considered:** (a) the house pattern of an env var read by the command
+(`REEXTRACT_DOC_TYPE`, `PARTNER_EMAIL_RESET_KINDS`); (b) a thin wrapper command whose only job is to
+call another with flags.
+**Rationale:** the env-var shape is deliberate for dangerous ONE-OFFS — a door you open, use and
+close — and is the wrong tool for a job that runs every day, where the flags should be readable in
+the registry rather than living in a console somebody must remember to set. (b) is a file whose
+entire content is an argument list.
+**Trade-offs:** it widens a structure 47 jobs flow through. Additive — a plain string behaves
+exactly as before, pinned by a test — but it did break a two-sprint-old guard doing
+`set(JOBS.values())`, now taught to unwrap through `_registered_commands()`. The entry is a TUPLE,
+not a list, precisely because readers put this dict in sets.
+**Revisit if:** a third job wants flags and the pair starts carrying more than a short argument
+list — then it wants a small dataclass, not a longer tuple.
+
+## The spending alert uses a plain `EmailMessage`, not `_send_html` — Spending S2, 2026-09-10
+**Decision:** `send_spending_alert_email` builds a plain `EmailMessage` with an explicit
+`from_email=settings.DEFAULT_FROM_EMAIL`, mirroring `send_vircle_activation_email`.
+**Alternatives considered:** `_send_html`, the shared multipart sender most emails use.
+**Rationale:** `_send_html` DEFAULTS its sender and reply-to to the **interview alias**, because
+interview mail is its main caller — *"the correct call and the wrong call look identical, and the
+wrong one is shorter"* (lessons, 2026-08-01, after a student email went out from `interview@`). An
+internal ops alert has no business carrying interview headers. One rendered instance was built and
+READ before this was called done.
+**Trade-offs:** plain text only. Correct for a message whose whole content is a list of findings.
+**Revisit if:** the alert ever needs a link or a table, at which point it takes `_send_html` WITH an
+explicit `from_email` and `reply_to`.
+
+## The export filename pattern is a GUARD, not a convenience — Spending S2, 2026-09-10
+**Decision:** `spending_reports_in` returns only Google Sheets matching
+`^\d{4}-\d{2}-\d{2}\b.*usage report`, and S4's summary will be written to a SUBFOLDER.
+**Alternatives considered:** list every spreadsheet in the folder and let the header check reject
+anything that is not a report.
+**Rationale:** S4 files a Gemini-written summary back into this same tree, so without the filter the
+next run would try to parse **our own output** as a Vircle export. Two independent locks — the
+pattern and the subfolder — because one lock is a convention and two is a design. Relying on the
+header refusal instead would turn our own file into a daily "unreadable export" alert.
+**Trade-offs:** an export named differently is invisible. Deliberate, and it fails loudly the day
+nothing is found rather than quietly mis-parsing. Brand-neutral, so a second tenant still matches.
+**Revisit if:** Vircle changes the export's naming, which is a one-line change to the pattern.

@@ -51,46 +51,13 @@ and `spending_import.ingest(sources, apply=False)` is the whole store-and-report
 
 ---
 
-## S2 — Fetch the reports from Drive, when they arrive
+## S2 — Fetch the reports from Drive ✅ SHIPPED 2026-09-10
 
-**⚠⚠ THE UPLOAD IS A MANUAL STEP AND ITS TIMING IS NOT DEPENDABLE — owner, 2026-09-10.** Vircle
-publishes into Data Studio; a BrightPath officer extracts the week and uploads it by hand. *"It may
-not happen exactly at the same time every week without fail. It may not even happen on the same day
-of the week."*
+**Done.** Retro `docs/retrospective-2026-09-10-spending-drive-s2.md`; the rules a later reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in the modules' docstrings. **No migration.**
 
-**THEREFORE THE CALENDAR IS NOT THE TRIGGER — A NEW FILE IS.** A weekly cron pinned to a day would
-sit idle when the officer is late and leave a Thursday upload unread until the following Monday.
-The job runs **daily**, lists the folder, and acts **only on files it has not already ingested**
-(tracked by Drive file id + modified time). A day with no new file does nothing at all: no work, no
-log noise, no email. This also makes a two-uploads-in-one-day week, or a fortnight's catch-up,
-ordinary rather than exceptional.
+**⚠ THE ONE THING S2 COULD NOT PROVE, AND S3 MUST NOT ASSUME:** the Drive hop has never run. The service-account key exists nowhere but the live service, so `--drive --report` on production is still owed and is the only real verification.
 
-⚠ **This is the same reasoning as the 2026-07-26 partner-milestone ruling** (*"a sweep over current
-state, not the edge that entered it"*) — the difference being that here the edge is outside our
-system entirely and cannot notify us.
-
-**Goal.** The same ingest, fed by Drive, reacting to new files.
-
-**Scope.**
-- `VIRCLE_SPENDING_FOLDER` setting (default matching the live shape — see brief §3).
-- `sheets.py`: list a folder's files + download one, reusing `_drive_for_upload` + `_find_folder_path`
-  and the already-granted `drive` scope.
-- `--drive` mode on the command; a seen-files record so a re-run is a no-op; register in
-  `CronRunView.JOBS`; a **daily** Cloud Scheduler job.
-- **A staleness nudge, ONE per quiet spell** — if no new file has landed for
-  `SPENDING_REPORT_QUIET_DAYS` (start at 14, env-overridable), email once and then stay silent
-  until something arrives. ⚠ **A manual step that is forgotten fails silently, and the absence of a
-  file is indistinguishable from a quiet week** — this is the only signal that tells the two apart.
-  Once per spell, never a running reminder, or it becomes the all-clear email the owner rejected.
-
-**Acceptance.** A `--report` run on the LIVE service lists the eight files and re-derives the same
-totals. Running twice ingests nothing the second time. A missing folder logs and does nothing.
-**Coverage is reported from the `transaction_date` values, never from the filenames** (brief §0b).
-
-**⚠ EXTERNAL BLOCKER: this cannot be verified locally.** The proof is a live report-mode run.
-**⚠ Do not let a Drive failure break anything** — best-effort, the same contract as the guide fetch.
-
-**Complexity: LOW–MEDIUM.** ~5 files. **No migration. No sponsor-visible change.**
+**What S3 inherits:** `spending-ingest` (daily, `--drive --apply`) already imports whatever arrives, and `BursarySpendTxn.category` / `decided_by` are stored and blank. S3 fills them; it adds no ingest, no schedule and no migration.
 
 ---
 
