@@ -186,8 +186,34 @@ spending reaches the discovery/pool card.
    the data: it is not missing.** The 26 July report covers fourteen days and holds that week.
    Coverage is unbroken 1 Jul → 30 Aug. **Consequence for S1: coverage is derived from the
    `transaction_date` values, NEVER from the filename or the file count** (brief §0b).
-2. **How far back do we ingest?** All eight files, or from a chosen date?
-3. **Does an unknown wallet need chasing?** S1 lists them; nothing acts on them.
+2. ~~How far back do we ingest?~~ **ANSWERED, 2026-09-10: from the start.** All eight reports,
+   1 Jul 2026 onward. The corpus IS the history; there is no earlier data.
+3. ~~Does an unknown wallet need chasing?~~ **ANSWERED, 2026-09-10 (owner): *"This shouldn't happen.
+   If it did, we need to be alerted somehow."*** So the weekly job carries an alert.
+
+### ✅ THE ALERT — owner ruling, 2026-09-10
+
+**The weekly job emails `ADMIN_NOTIFY_EMAIL` when, and only when, a human is needed.** Four
+conditions, all of them "this should not happen":
+
+| Condition | Why it is an alert, not a log line |
+|---|---|
+| **A wallet in the report matches no student** | Money moved on an account we do not recognise. |
+| **A funded student has no `vircle_id` recorded** | The opposite gap — we hold the student, not the wallet. A different fault with a different fix, so a **separate list** (lessons: *"never happened" and "failed" are different states*). |
+| **An unrecognised column header** | The layout has already changed FOUR times (names, money format, date format, coverage span). This is the likeliest failure and the quietest. |
+| **A repeated `transaction_id` whose fields DISAGREE** | Every repeat so far is identical, so a disagreement is a CORRECTION and must never be silently dropped (brief §0b). |
+
+⚠ **SILENCE MUST MEAN "NOTHING TO REPORT" — no weekly "all clear" email.** A message that arrives
+every week regardless is a message nobody opens, and the one week it matters it is skimmed with the
+rest. This is the same reasoning that keeps the activation cron quiet when its list is empty.
+
+⚠ **THE ALERT NAMES THE WALLET, NEVER THE STUDENT'S NAME.** It goes to staff, so it may carry the
+wallet id and the application id — the two things needed to fix it. It carries no merchant and no
+amount, because neither helps and both widen the blast radius of a forwarded email.
+
+⚠ **AN ALERT NEVER STOPS THE INGEST.** Unknown-wallet rows are skipped and counted; everything else
+still lands. The exception is the unrecognised header, which **must** stop that file — parsing on
+past a header we cannot read is how wrong money gets attributed to a real student.
 
 ---
 
