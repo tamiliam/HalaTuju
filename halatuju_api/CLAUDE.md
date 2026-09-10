@@ -556,8 +556,10 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 `.worktrees/apply-copy-v2`, branch `feat/apply-copy-v2`, base `origin/main` at `4c6c15e2`.
 api + web. Retro `docs/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
 `docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
-Gates, ALL RUN INSIDE THE WORKTREE: pytest **6144**; jest **1971**; tsc **24** (baseline);
-lint **0 Errors**; i18n **4972 × 3**; `next build` exit 0; `makemigrations --check` clean.
+Gates, run inside the worktree AND re-run on the MERGED tree (origin/main moved under this branch
+— the Vircle installed-and-registered tick landed): pytest **6146**; jest **1975**; tsc **24**
+(baseline); lint **0 Errors**; i18n **4973 × 3**; `next build` exit 0; `makemigrations --check`
+clean.
 **Three bite-checks, all bit**, each injection verified as landed and each restored by writing the
 original bytes back.
 
