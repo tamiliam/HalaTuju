@@ -208,6 +208,31 @@ class TestConfirm(_Base):
         self.item.refresh_from_db()
         self.assertNotIn('account_type', self.item.params or {})
 
+    def test_installed_confirmed_tick_is_stored_on_the_item(self):
+        # Owner 2026-09-10, off a real student who confirmed without ever registering
+        # (Vircle: "could not find his IC"): the card's explicit installed-and-registered
+        # tick travels with the confirm and is RECORDED in params.
+        payload = {'text': '012-345 6789', 'installed_confirmed': True}
+        r = self.client.post(f'/api/v1/scholarship/resolution-items/{self.item.id}/resolve/',
+                             payload, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.item.refresh_from_db()
+        self.assertIs((self.item.params or {}).get('installed_confirmed'), True)
+
+    def test_missing_or_junk_installed_confirmed_still_resolves_and_stores_nothing(self):
+        # The server never REQUIRES the tick — an old cached bundle sends nothing and must
+        # keep resolving. Junk (a string 'true') is not boolean True and is dropped.
+        for payload in ({'text': '012-345 6789'},
+                        {'text': '012-345 6789', 'installed_confirmed': 'true'}):
+            self.item.status = 'open'
+            self.item.params = {}
+            self.item.save(update_fields=['status', 'params'])
+            r = self.client.post(f'/api/v1/scholarship/resolution-items/{self.item.id}/resolve/',
+                                 payload, format='json')
+            self.assertEqual(r.status_code, 200)
+            self.item.refresh_from_db()
+            self.assertNotIn('installed_confirmed', self.item.params or {})
+
     def test_vircle_expected_is_served_by_birth_year(self):
         # Vircle counts 1 January as the transition (owner, 2026-09-09): born 2008 -> adult
         # (principal expected); born 2009 -> child. Served, never derived in the browser.

@@ -1576,8 +1576,17 @@ class ResolutionItemResolveView(APIView):
             # a `no_match` callback row — NEVER trusted over the birth-year derivation
             # (push_recipient keeps deriving Type from vircle.can_register). Junk is dropped.
             claimed = str(request.data.get('account_type') or '').strip().lower()
+            extra = {}
             if claimed in ('principal', 'child'):
-                item.params = {**(item.params or {}), 'account_type': claimed}
+                extra['account_type'] = claimed
+            # The explicit installed-and-registered tick (owner, 2026-09-10, off a real student
+            # who confirmed without ever registering — Vircle: "could not find his IC"). The
+            # CARD refuses to submit unticked; the server only RECORDS the claim, never
+            # requires it, so an old cached bundle (which sends nothing) still resolves.
+            if request.data.get('installed_confirmed') is True:
+                extra['installed_confirmed'] = True
+            if extra:
+                item.params = {**(item.params or {}), **extra}
                 item.save(update_fields=['params'])
         # The ask-first informal clarify: READ the answer once, here, and store what it claims
         # (#126, owner 2026-07-13). If the student says the earner does have a payslip/EPF, the

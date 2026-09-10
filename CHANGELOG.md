@@ -23,6 +23,18 @@ Gates: pytest **6144** · jest **1971** · tsc **24** (baseline) · lint **0** �
 `next build` exit 0 · `makemigrations --check` clean. Three bite-checks, all bit.
 Retro `docs/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
 `docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
+## The Vircle confirm needs an explicit installed-and-registered tick - 2026-09-10
+
+Owner request, off a real failure the same morning: a student pressed Confirm on the Vircle card
+without ever registering in Vircle, and Vircle's automation could not find his IC. The button was
+doubling as the declaration. The card now carries a required checkbox — "I have installed the
+Vircle app and registered my account with this mobile number" — and the Confirm button (relabelled
+to a plain "Confirm") stays asleep until it is ticked. The tick travels with the confirm and is
+RECORDED on the item (`params.installed_confirmed`); the server never REQUIRES it, so an old
+cached bundle still resolves. Bite-checked (stamp disabled → the new test fails).
+
+pytest 6126 (+2) · jest 1960 (+4) · tsc 24 (baseline) · lint 0 · i18n 4952x3 (+1 key) · build 0 ·
+`makemigrations --check` clean. No migration.
 
 ## Vircle card and emails say the true thing about Child accounts - 2026-09-10
 
