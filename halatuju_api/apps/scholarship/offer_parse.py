@@ -168,8 +168,15 @@ def _info_block_pairs(lines, label_names):
 
 # Anchored to a LABEL-ONLY line (block layout: labels alone, values in the block below) so a value
 # like 'KOLEJ MATRIKULASI PAHANG' can't re-match the 'Kolej:' label and corrupt the pairing.
+#
+# ⚠ THE JURUSAN KEY IS 'stream', NOT 'programme'. The Gemini schema (vision.py) states it plainly:
+# *"stream" = the Form-Six "Bidang" ... OR the matriculation "Jurusan"*. This parser used to file
+# the Jurusan under 'programme' and return NO 'stream' key at all, so a matriculation letter read
+# HERE reached the pathway check with its stream axis empty, while the same letter read by Gemini
+# reached it populated. Measured on production 2026-09-10: 26/26 Gemini-read matric letters carried
+# a stream; 0/4 parser-read ones did. One letter, two readers, two different homes for one fact.
 _MATRIC_LABELS = [
-    ('programme', re.compile(r'^\s*Jurusan\s*:?\s*$', re.IGNORECASE)),
+    ('stream', re.compile(r'^\s*Jurusan\s*:?\s*$', re.IGNORECASE)),
     ('duration', re.compile(r'^\s*Tempoh\s+Pengajian\s*:?\s*$', re.IGNORECASE)),
     ('institution', re.compile(r'^\s*Kolej\s*:?\s*$', re.IGNORECASE)),
     ('online_reg', re.compile(r'^\s*Pendaftaran\s+dalam\s+talian\s*:?\s*$', re.IGNORECASE)),
@@ -187,7 +194,14 @@ def _parse_matric(lines, up):
     sm = re.search(r'SESI\D{0,8}(20\d{2}(?:\s*/\s*20\d{2})?)', up)
     intake = sm.group(1).replace(' ', '') if sm else ''
     pairs = _info_block_pairs(lines, _MATRIC_LABELS)
-    jurusan = pairs.get('programme', '')
+    jurusan = pairs.get('stream', '')
+    # ⚠ THE BRACKET IS OURS, NOT THE LETTER'S. No KPM matriculation letter prints "Program
+    # Matrikulasi (SAINS)" — this f-string builds it, and the pathway check then reads whatever is
+    # inside the bracket as part of the programme NAME. It is kept because FIVE call sites derive
+    # the matric track from this string (`offer_pathway.parse_matric_track`, via services.py:1549 +
+    # :1846, offer_pathway.py:562 and the backfill command). The Jurusan is ALSO emitted as
+    # `stream` above, which is its proper home; retiring the bracket is a separate, measurable
+    # change and must not be done here as a tidy-up.
     programme = f'Program Matrikulasi ({jurusan})' if jurusan else 'Program Matrikulasi'
     # 'Kolej Matrikulasi <state>' is unmistakable — take it directly (robust to a messy value block).
     institution = next((ln.strip() for ln in lines
@@ -196,7 +210,7 @@ def _parse_matric(lines, up):
     rm = _DMY_RE.search(reporting)
     return {
         'candidate_name': name, 'candidate_nric': nric, 'programme': programme,
-        'institution': institution, 'intake': intake,
+        'institution': institution, 'stream': jurusan, 'intake': intake,
         'reporting_date': rm.group(1).strip() if rm else '',
         'reporting_date_label': 'Tarikh Kemasukan ke kolej' if rm else '',
         'offer_date': _offer_date(lines),
@@ -282,7 +296,14 @@ _REQUIRED = ('candidate_name', 'candidate_nric', 'programme', 'intake')
 # Parser version — bump on ANY change to the deterministic capture (doc-recognition versioning
 # rule) so re-runs are traceable. 1.1.0: poly slot-guard for the #125 block-misalignment.
 # 1.2.0: reject a clause-number stream/institution/programme (#47) → defer to Gemini.
-PARSER_VERSION = '1.2.0'
+# A bare ringgit amount ("RM499.00") — the matriculation letter's "Yuran Pendaftaran" value, and a
+# tell that the positional block pairing has shifted if it turns up in a text slot.
+_MONEY_RE = re.compile(r'^RM\s*[\d,]+(?:\.\d{2})?$', re.IGNORECASE)
+
+# 1.3.0 (2026-09-10) — the matriculation Jurusan is emitted as `stream` (its home per the Gemini
+# schema) as well as inside `programme`, and a shifted label→value pairing now defers to Gemini
+# instead of shipping a date as a jurusan.
+PARSER_VERSION = '1.3.0'
 
 
 def parse_govt_offer(text: str):
@@ -301,8 +322,32 @@ def parse_govt_offer(text: str):
     # went wrong (#47: the STPM section labels '2.4.'/'2.5.' latched as stream/institution). Don't
     # trust a corrupt deterministic read — defer the whole offer to Gemini (which reads the body
     # correctly). A bare N.N. token is NEVER a valid stream / institution / programme.
-    from .card_display import looks_like_clause_number
+    from .card_display import looks_like_clause_number, looks_like_date
     if any(looks_like_clause_number(fields.get(k, '')) for k in ('stream', 'institution', 'programme')):
+        return None
+    # ⚠ THE LABEL→VALUE PAIRING IS POSITIONAL, SO IT CAN SHIP BY ONE AND NOTHING OBJECTS.
+    # `_info_block_pairs` zips the labels to the value lines beneath them BY INDEX — it never asks
+    # whether the value in the "Jurusan" slot could possibly be a jurusan. #142 (2026-09-10): the
+    # value from the "Tarikh Kemasukan ke kolej" slot landed in the Jurusan slot, so the offer read
+    # its programme as "Program Matrikulasi (8 JUN 2026)" AND came back with reporting_date EMPTY —
+    # one shift, two wrong fields, no error anywhere. The Pathway chip then went red on a correct
+    # offer and the Institution tick was withheld behind it.
+    #
+    # ⚠⚠ THIS EXACT FAULT ALREADY HAPPENED ONCE AND THE FIX WAS SCOPED TO ONE PARSER. App #125 was
+    # the polytechnic version of #142 — the same `_info_block_pairs` zip, the same shift, the
+    # institution into the programme slot and a 'Tarikh…' line into the institution slot. It was
+    # fixed by `_guard_poly_slots`, whose docstring states the right rule in general terms
+    # ("anchor to SHAPE, never trust the positional pair blindly") — and then guards ONLY the
+    # polytechnic family. Matriculation uses the same pairing and got nothing, so the same bug came
+    # back through the other door six weeks later. THIS guard is therefore at the single exit point
+    # and covers ALL THREE families; do not move it back into a per-family helper.
+    #
+    # A DATE or a RINGGIT AMOUNT is never a stream, an institution or a programme. Seeing one means
+    # the block pairing went wrong, and a partly-wrong deterministic read is worth less than no
+    # deterministic read: defer the whole offer to Gemini, which reads this template correctly
+    # (measured 2026-09-10: 26/26 Gemini-read matric letters carried a stream, 0/4 parser-read).
+    if any(looks_like_date(fields.get(k, '')) or _MONEY_RE.match((fields.get(k, '') or '').strip())
+           for k in ('stream', 'institution', 'programme')):
         return None
     fields['_family'] = fam
     fields['_offer_parser_version'] = PARSER_VERSION

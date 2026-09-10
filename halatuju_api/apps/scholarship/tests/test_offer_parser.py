@@ -130,6 +130,15 @@ class TestGovtOfferParser(SimpleTestCase):
         self.assertEqual(r['intake'], '2026/2027')
         self.assertEqual(r['institution'], 'KOLEJ MATRIKULASI PAHANG')
         self.assertIn('JUN 2026', r['reporting_date'])
+        # ⚠ THE JURUSAN IS THE STREAM. Its absence here is what starved the pathway check's track
+        # axis for every matriculation letter this parser read (0/4 on production 2026-09-10,
+        # against 26/26 for the same letters read by Gemini, whose schema says so explicitly).
+        self.assertEqual(r['stream'], 'SAINS')
+        # ⚠ AND IT IS STILL INSIDE `programme` TOO — not a leftover. Five call sites derive the
+        # matric track from this string (offer_pathway.parse_matric_track via services.py:1549 and
+        # :1846, offer_pathway.py:562, backfill_pre_u_track). Retiring the bracket is a separate,
+        # measurable change; dropping it here would silently blank those tracks.
+        self.assertEqual(r['programme'], 'Program Matrikulasi (SAINS)')
 
     def test_polytechnic(self):
         r = parse_govt_offer(POLY)
@@ -153,3 +162,81 @@ class TestGovtOfferParser(SimpleTestCase):
 
     def test_empty(self):
         self.assertIsNone(parse_govt_offer(''))
+
+
+# ⚠ THE SAME KPM LETTER, WITH ITS VALUE LINES INTERLEAVED AMONG THE LABELS instead of forming one
+# block beneath them — which is how application #142's PDF text layer emitted it (the value "SAINS"
+# renders on its own line beside "Jurusan:", not below "Yuran Pendaftaran:"). `_info_block_pairs`
+# collects values only from AFTER THE LAST label, so here it sees ['8 JUN 2026', 'RM499.00'] and
+# zips them onto ('stream', 'duration') BY INDEX. Nothing checks that a date could never be a
+# jurusan.
+MATRIC_INTERLEAVED = """KEMENTERIAN PENDIDIKAN
+Bahagian Matrikulasi
+Tarikh: 27 APRIL 2026
+AHBINAAYAH A/P CHANDRA
+K/P: 080602141410
+TAWARAN KEMASUKAN PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN SESI 2026/2027
+SAINS
+Jurusan:
+Tempoh Pengajian:
+DUA SEMESTER (10 BULAN)
+Kolej:
+KOLEJ MATRIKULASI SELANGOR
+Pendaftaran dalam talian:
+13 MEI HINGGA 06 JUN 2026
+Tarikh Kemasukan ke kolej:
+Yuran Pendaftaran:
+8 JUN 2026
+RM499.00
+"""
+
+# The fee value alone in the stream slot — the same shift one step further along.
+MATRIC_FEE_IN_STREAM = MATRIC_INTERLEAVED.replace('8 JUN 2026\nRM499.00', 'RM499.00')
+
+
+class TestMatricBlockShift(SimpleTestCase):
+    """⚠ A POSITIONAL PAIRING CAN SHIP BY ONE AND NOTHING OBJECTS — application #142, 2026-09-10.
+
+    The offer read its programme as "Program Matrikulasi (8 JUN 2026)" and its reporting date as
+    EMPTY: one shift, two wrong fields, no error raised. On screen the officer saw a RED Pathway
+    chip on a perfectly good offer, no Institution tick behind it, and no reporting-date tick.
+    The letter was fine. The pairing was not.
+    """
+
+    def test_the_shift_reproduces_142_exactly(self):
+        # Pinned as the MECHANISM, not as an aspiration: these are the three values that were
+        # actually stored on #142's document. If this stops reproducing them, the cause has moved.
+        from apps.scholarship.offer_parse import _parse_matric
+        lines = [ln.rstrip() for ln in MATRIC_INTERLEAVED.splitlines()]
+        raw = _parse_matric(lines, MATRIC_INTERLEAVED.upper())
+        self.assertEqual(raw['programme'], 'Program Matrikulasi (8 JUN 2026)')
+        self.assertEqual(raw['stream'], '8 JUN 2026')
+        self.assertEqual(raw['reporting_date'], '')
+        # The institution survived — it is read by its own unmistakable 'KOLEJ MATRIKULASI <state>'
+        # scan, not by the block pairing. That is why the Institution matched while the Pathway
+        # chip went red, and why the tick was withheld rather than wrong.
+        self.assertEqual(raw['institution'], 'KOLEJ MATRIKULASI SELANGOR')
+
+    def test_a_date_in_the_jurusan_slot_defers_to_gemini(self):
+        # ⚠ THE ABSENCE IS THE POINT. A partly-wrong deterministic read is worth LESS than no
+        # deterministic read: returning None hands the letter to Gemini, which reads this template
+        # correctly (26/26 on production 2026-09-10, against 0/4 for the parser).
+        self.assertIsNone(parse_govt_offer(MATRIC_INTERLEAVED))
+
+    def test_a_ringgit_amount_in_the_jurusan_slot_defers_too(self):
+        self.assertIsNone(parse_govt_offer(MATRIC_FEE_IN_STREAM))
+
+    def test_a_healthy_block_still_parses(self):
+        # The guard must not make the parser useless: the well-formed letter is unaffected.
+        r = parse_govt_offer(MATRIC)
+        self.assertIsNotNone(r)
+        self.assertEqual(r['stream'], 'SAINS')
+        self.assertEqual(r['_offer_parser_version'], '1.3.0')
+
+    def test_no_text_slot_may_ever_hold_a_date(self):
+        # The general rule, stated once: whatever the layout, a date never belongs in any of these.
+        from apps.scholarship.card_display import looks_like_date
+        r = parse_govt_offer(MATRIC)
+        for key in ('stream', 'institution', 'programme'):
+            self.assertFalse(looks_like_date(r.get(key, '')),
+                             f'{key} holds a date: {r.get(key)!r}')

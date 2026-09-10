@@ -335,6 +335,37 @@ a merchant name that looks like a person's.
 pytest full `apps/` **6156 passed** (+32) · `makemigrations --check` clean. No web change, so the
 frontend gates are unchanged from main. **Five bite-checks landed**, each injection verified before
 the run and restored by writing the original bytes back.
+## 2026-09-10 — A matriculation offer read a DATE as the student's jurusan
+
+Application **#142** showed a RED Pathway chip and no Institution tick on a perfectly good KPM
+matriculation offer. The letter was fine. **Our own parser was not.** api only. **No migration.**
+
+- **⚠ THE LABEL→VALUE PAIRING IS POSITIONAL AND IT SHIPPED BY ONE.** `_info_block_pairs` zips the
+  info-block labels to the value lines beneath them BY INDEX, and never asks whether the value in
+  the "Jurusan" slot could possibly be a jurusan. On #142 the value from the "Tarikh Kemasukan ke
+  kolej" slot landed in the Jurusan slot: the offer's programme read **"Program Matrikulasi
+  (8 JUN 2026)"** and its `reporting_date` came back **EMPTY**. One shift, two wrong fields, no
+  error raised anywhere. Reproduced exactly in a test from the interleaved layout.
+- **⚠⚠ THE SAME BUG WAS FIXED SIX WEEKS AGO ON A DIFFERENT LETTER.** App **#125** was the
+  polytechnic version — same zip, same shift, institution into the programme slot. `_guard_poly_
+  slots` states the correct rule in general terms ("anchor to SHAPE, never trust the positional
+  pair blindly") and then guards ONLY the polytechnic family. Matriculation uses the same pairing
+  and got nothing. **The new guard is at `parse_govt_offer`'s single exit and covers all three
+  families.** A date or a ringgit amount in the stream / institution / programme slot now defers
+  the whole letter to Gemini rather than shipping an incoherent read.
+- **⚠ THE JURUSAN NOW GOES IN `stream`, ITS HOME PER THE GEMINI SCHEMA** ("stream" = the Form-Six
+  Bidang OR the matriculation Jurusan). This parser filed it under `programme` and returned NO
+  `stream` key at all, so one letter had two readers and two different homes for one fact.
+  Measured on production 2026-09-10: **26/26** Gemini-read matric letters carried a stream;
+  **0/4** parser-read ones did. It is ALSO still inside `programme` — five call sites derive the
+  matric track from that string, and retiring the bracket is a separate, measurable change.
+- `PARSER_VERSION` **1.2.0 → 1.3.0**. ⚠ That stamp is WRITTEN BUT NEVER READ, so bumping it
+  re-processes nothing — the four affected letters need a deliberate cockpit **Re-run**.
+
+Gates: pytest **6166** (baseline 6161 + 5) · `makemigrations --check` clean. No web file changed,
+so the web gates are unchanged by construction. Two bite-checks, both bit.
+Retro `docs/retrospective-2026-09-10-matric-offer-jurusan.md`; decisions ×1; lessons ×3.
+
 ## 2026-09-10 — The officer screens stop calling every gift a B40 gift
 
 **B40 is Malaysia's national income band, not the name of a gift.** A gift may set no income

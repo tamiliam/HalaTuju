@@ -1101,6 +1101,87 @@ sprint that an earlier version of this note called pending **has since SHIPPED A
   sign-in prompt carrying the same platform-wide B40 copy — same class, other pages.
 - **⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing until it is inked AND the money
   has changed hands.
+## Superseded — previous Next Sprint (as of 2026-09-10, after the matriculation offer jurusan fix)
+
+**✅ DEPLOYED 2026-09-10.** `main` at **`fdc85786`**; Cloud Build **SUCCESS** on `fdc8578`
+— **waited on the push's OWN build ID** (`2cdaf838…`). Serving **halatuju-api-01020-jvk** (read from
+`status.latestReadyRevisionName`). Site 200; **no api ERROR logs on the new revision**.
+**ONE build fired, not two** — the web trigger correctly stayed quiet, and **halatuju-web-00873-85w
+is unchanged**: this is api-only, `git diff` was two Python files and five docs.
+
+**⚠ THE DEPLOY IS VERIFIED; THE FIX'S EFFECT IS NOT, AND CANNOT BE UNTIL A DOCUMENT IS RE-READ.**
+A server-side parser leaves nothing in a JS bundle to grep, and `PARSER_VERSION` is only stamped
+when a letter is actually parsed. What is proven: the build ran on the right SHA and a new revision
+is serving cleanly. What is NOT yet proven: that a re-read produces `stream` and a sane programme.
+**That evidence only arrives with the Re-run below.** Do not record this fix as confirmed working
+until then.
+
+Was branch `fix/matric-offer-jurusan`, worktree `.worktrees/matric-offer`. **NO MIGRATION, NO ENV
+VAR.** ⚠ **THERE IS A DATA STEP: four documents need a cockpit Re-run** (see below).
+
+Gates: pytest **6166** (baseline 6161 + 5) · `makemigrations --check` clean. The web gates were NOT
+re-run and did not need to be — `git diff --stat` shows two Python files. **Two bite-checks, both
+bit** (disabling the shape guard reddened the two deferral tests; dropping the `stream` key
+reddened four).
+
+**⚠⚠ WHAT WAS WRONG — read this before touching `offer_parse.py`.** Application #142 showed a RED
+Pathway chip and no Institution tick on a perfectly good KPM matriculation offer. **The letter was
+fine; our own parser was not.** `_info_block_pairs` zips info-block labels to the value lines
+beneath them **BY INDEX**, and never asks whether the value landing in a slot could belong there.
+On #142 the value from "Tarikh Kemasukan ke kolej" landed in the **Jurusan** slot:
+
+| | #134 (fine) | #142 (broken) |
+|---|---|---|
+| `programme` | `Program Matrikulasi (SAINS)` | `Program Matrikulasi (8 JUN 2026)` |
+| `reporting_date` | `8 JUN 2026` | **empty** |
+
+Same date, right slot on one and the jurusan's slot on the other. **One shift, two wrong fields, no
+error anywhere.** A test reproduces all three stored values exactly from an interleaved layout.
+
+- **⚠ THE GUARD IS AT `parse_govt_offer`'s SINGLE EXIT AND COVERS ALL THREE FAMILIES. DO NOT move
+  it back into a per-family helper.** This bug was ALREADY FIXED ONCE: app **#125** was the
+  polytechnic version, and `_guard_poly_slots` states the rule in general terms ("anchor to SHAPE,
+  never trust the positional pair blindly") while guarding only `_parse_poly`. Matriculation uses
+  the same pairing, got nothing, and the identical fault returned six weeks later.
+- **⚠ THE JURUSAN IS EMITTED AS `stream` — AND IS STILL INSIDE `programme` TOO. Do not "finish the
+  job" by removing the bracket.** FIVE call sites derive the matric track from that string
+  (`offer_pathway.parse_matric_track` via `services.py:1549` and `:1846`, `offer_pathway.py:562`,
+  and `backfill_pre_u_track`). Dropping it would silently blank those tracks. A test pins BOTH.
+- Why `stream` was missing at all: the Gemini schema says *"stream" = the Form-Six Bidang OR the
+  matriculation Jurusan*; the parser filed it under `programme` and emitted no `stream` key.
+  Measured on production 2026-09-10: **26/26** Gemini-read matric letters carried a stream,
+  **0/4** parser-read ones did.
+
+**▶ THE DATA STEP — FOUR DOCUMENTS STILL CARRY THE OLD READ. Code alone fixes nothing stored.**
+Offer letters on **#77, #101, #134** (stream missing, otherwise correct) and **#142** (the date in
+the jurusan slot). Re-read them with the cockpit **Re-run** button on the LIVE service.
+**⚠ NEVER re-run extraction from a local checkout** — no Storage access, it reads "no text" and
+destroys `vision_fields`. ⚠ It costs Gemini calls: **ask the owner before running it.**
+⚠ **#142 is `awarded`**; its band is protected (`pathway_confirmed_at` set 2026-08-01), so the red
+chip never docked it — a display fault, not a decision fault. Expect the ticks back and the band
+UNCHANGED; if the band moves, stop and read why.
+
+**⚠ `_offer_parser_version` IS WRITTEN BUT NEVER READ.** `PARSER_VERSION` 1.2.0 → **1.3.0**, and
+that bump re-processes NOTHING. It is a forensic stamp — it is how the four records were found —
+not a cache key.
+
+**▶ LOGGED, NOT BUILT — the pathway comparison still pits a TRACK against a PROGRAMME NAME.** For
+a pre-U record whose declaration came off the offer, `_declared_pathway` falls back to
+`pre_u_track` ("sains") for the PROGRAMME axis and compares it against the letter's programme text.
+Those can never agree on meaning — they agreed on a WORD, because most matric letters print the
+jurusan inside the programme line. **Measured: the INSTITUTION axis matches on ALL 56 live pre-U
+records, so the programme axis has never once decided anything; dropping it changes exactly ONE
+record (#142, mismatch → match) and nothing else.** The parser fix removes the trigger; this would
+remove the mechanism.
+
+**▶ ALSO STILL LOGGED, NOT BUILT:** `profile_engine.py`'s B40 vocabulary (needs a `PROMPT_VERSION`
+bump, which re-dates every profile draft on production); **TD-237**; the landing page + sign-in
+prompt B40 copy.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
 ## Superseded — previous Next Sprint (as of 2026-09-10, after the officer income vocabulary)
 
 **✅ DEPLOYED AND VERIFIED LIVE 2026-09-10.** `main` at **`22ecfec2`**; BOTH Cloud Builds

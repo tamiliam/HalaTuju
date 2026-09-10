@@ -1,5 +1,36 @@
 # Architectural Decisions — HalaTuju
 
+## A shifted offer-letter block defers to Gemini rather than shipping a partial read — 2026-09-10
+
+**Decision:** `parse_govt_offer` returns `None` — handing the letter to the Gemini image read —
+whenever a DATE or a bare RINGGIT AMOUNT appears in the `stream`, `institution` or `programme`
+slot, for **all three** government families (STPM / matriculation / polytechnic). The check sits at
+the function's single exit, not in a per-family helper. Separately, the matriculation Jurusan is
+emitted as `stream` (its home in the Gemini schema) **as well as** inside `programme`.
+
+**Alternatives considered:** (a) per-label recovery for matriculation — re-read each value from its
+own label when the block pairing looks wrong, as `_parse_poly` does for the #125 shape; (b) extend
+`_guard_poly_slots` to matriculation; (c) move the Jurusan out of `programme` entirely and update
+the five call sites that derive the matric track from it; (d) add month names to the pathway
+comparison's stopword list, which is where the symptom surfaced.
+
+**Rationale:** (a) is more code on the path that just proved unreliable, and it has to be written
+twice more for the other families; deferring costs one Gemini call and is measured to work — 26/26
+Gemini-read matriculation letters carried a correct stream against 0/4 for the parser. (b) repeats
+the exact mistake this sprint exists to fix: a guard bound to a family rather than to the shared
+mechanism. (c) is right eventually but changes what five live call sites read, including two that
+write `pre_u_track`; it needs its own measurement pass and must not ride along here. (d) treats the
+symptom — the next stray token in that slot re-fires it, and it leaves `reporting_date` still empty.
+
+**Trade-offs stated plainly:** a letter whose text layer interleaves labels and values now costs a
+Gemini call where it previously (wrongly) parsed for free, and the "Exact read" badge becomes an
+"AI" read for those documents. Accepted — a wrong Exact is worth less than a correct AI read, and
+the guard only fires on a value that is provably in the wrong slot.
+
+**Revisit if:** the deferral rate on government letters climbs enough to matter on cost, at which
+point per-label recovery (a) becomes worth writing ONCE, shared across the three families.
+
+
 ## The officer's income copy names the GIFT'S OWN LIMIT, never an income band — 2026-09-10
 
 **Decision:** every officer-facing income string states the gift's own threshold and quotes the
