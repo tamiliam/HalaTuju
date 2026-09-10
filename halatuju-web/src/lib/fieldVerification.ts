@@ -82,21 +82,32 @@ export function fieldVerifications(
   if (docs.some((d) => usableOffer(d) && d.pathway_check?.pathway === 'match')) {
     out.chosenProgramme = { source: 'offerLetter' }
   }
-  // Pre-U institution (matric/STPM): the offer's institution matches the SHOWN pre-U institution AND
-  // the offer isn't an overall pathway mismatch (so a green tick can't contradict a red Pathway chip
-  // — #117, where the school matches but the stream clashes).
-  if (docs.some((d) => usableOffer(d)
-    && d.pathway_check?.institution_status === 'match'
-    && d.pathway_check?.pathway !== 'mismatch')) {
+  // ⚠ A TICK IS A FIELD-LEVEL FACT, NOT A SUMMARY OF THE DOCUMENT (owner, 2026-09-10:
+  // *"I wonder if we could only tick the institution, as they do match."*).
+  //
+  // Both of these used to carry `&& pathway !== 'mismatch'` — a guard whose stated reason was that
+  // "a green tick can't contradict a red Pathway chip" (#117: the school matches but the stream
+  // clashes). That was an implementation choice copied forward from the pre-U tick, never an owner
+  // ruling, and it conflates two different questions. The tick answers *"was THIS field verified
+  // against the letter?"*; the chip answers *"does this document establish the declared pathway?"*
+  // A student whose school matches exactly and whose STREAM differs has a verified institution and
+  // an open pathway question — and the screen should say both, not suppress the true half.
+  //
+  // ⚠ THE RULE STAYS HONEST BECAUSE IT STILL KEYS ON THE INSTITUTION'S OWN VERDICT. Measured on
+  // the four live records reading `mismatch` (2026-09-10): #33, #99 and #120 gain the tick — their
+  // institution genuinely matches — and #14 gains nothing, because its institution genuinely
+  // differs ("Temeloh" vs "TEMERLOH"). Removing the guard cannot tick a field that disagrees.
+  //
+  // Pre-U institution (matric/STPM): the offer's institution matches the SHOWN pre-U institution.
+  if (docs.some((d) => usableOffer(d) && d.pathway_check?.institution_status === 'match')) {
     out.preUInstitution = { source: 'offerLetter' }
   }
   // Tertiary institution (poly / UA diploma / asasi / PISMP): the offer's institution matches the
   // SHOWN chosen_programme.institution (pre_u_institution is blank for these, so `institution_status`
-  // can't tick them). Same red-chip guard — never green while the offer is an overall pathway
-  // mismatch. The cockpit uses this for a tertiary student; a pre-U student uses `preUInstitution`.
-  if (docs.some((d) => usableOffer(d)
-    && d.pathway_check?.chosen_institution_status === 'match'
-    && d.pathway_check?.pathway !== 'mismatch')) {
+  // can't tick them). The cockpit uses this for a tertiary student; a pre-U student uses
+  // `preUInstitution`. NB `chosen_institution_status` already returns 'unknown' for an institution
+  // copied off the letter itself, so this cannot tick a value that was never independently stated.
+  if (docs.some((d) => usableOffer(d) && d.pathway_check?.chosen_institution_status === 'match')) {
     out.institution = { source: 'offerLetter' }
   }
   // Reporting date: the date READ off the offer (the shown value IS the offer's date).

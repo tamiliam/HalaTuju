@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-09-10 — A matching school is ticked even when the pathway question is still open
+
+Owner, seeing #33 and #120 side by side: *"I wonder if we could only tick the institution, as they
+do match."* web only. **No migration. No data step.**
+
+- **⚠ A TICK IS A FIELD-LEVEL FACT, NOT A SUMMARY OF THE DOCUMENT.** The Institution tick used to
+  be suppressed whenever the offer was an overall pathway `mismatch` — a guard whose stated reason
+  was that "a green tick can't contradict a red Pathway chip" (#117: the school matches, the STREAM
+  clashes). It was an implementation choice copied forward from the pre-U tick, **never an owner
+  ruling**, and it conflates two questions. The tick answers *"was THIS field verified against the
+  letter?"*; the chip answers *"does this document establish the declared pathway?"* A Semester-3
+  STPM student who changed stream has a verified school AND an open pathway question. The screen
+  now says both instead of hiding the true half.
+- **⚠ IT STAYS HONEST BECAUSE IT STILL KEYS ON THE INSTITUTION'S OWN VERDICT.** Measured on the
+  four live records reading `mismatch`: **#33, #99 and #120 gain the tick** — their school really
+  matches — and **#14 gains nothing**, because "Temeloh" really is not "TEMERLOH". Dropping the
+  guard cannot tick a field that disagrees.
+- Both twins changed together (pre-U `preUInstitution` and tertiary `institution`); the two tests
+  that pinned the old rule were REVERSED in place, each recording what it used to assert and why.
+
+Gates: jest **1995** (baseline 1993 + 2) · tsc **24** (TD-221 baseline) · lint **0** ·
+`next build` exit 0. One bite-check, it bit.
+
 ## 2026-09-10 — A stream is no longer compared against a programme name
 
 The mechanism behind #142's red Pathway chip, removed. The offer-parser fix took away the

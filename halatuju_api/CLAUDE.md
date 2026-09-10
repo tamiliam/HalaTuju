@@ -550,7 +550,30 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after the pathway track-axis removal)
+## Next Sprint (as of 2026-09-10, after the pathway track-axis removal + the institution tick)
+
+**⚠ SECOND CHANGE ON THIS BRANCH — THE INSTITUTION TICK NO LONGER WAITS FOR THE PATHWAY.**
+web only, `halatuju-web/src/lib/fieldVerification.ts`. Owner, 2026-09-10, comparing #33 and #120:
+*"I wonder if we could only tick the institution, as they do match."*
+
+Both Institution ticks (pre-U `preUInstitution` and tertiary `institution`) used to carry
+`&& pathway !== 'mismatch'` — a guard reading "a green tick can't contradict a red Pathway chip"
+(#117: the school matches, the STREAM clashes). **It was an implementation choice copied forward
+from the pre-U tick, never an owner ruling** (its reason lived only in a code comment and the body
+of commit `e8db600c`, never in `decisions.md`). It conflated two questions: a TICK says *this field
+was verified against the letter*; a CHIP says *this document establishes the declared pathway*.
+
+- **⚠ IT CANNOT TICK A FIELD THAT DISAGREES — the rule still keys on the institution's own
+  verdict.** Measured on the four live records reading `mismatch`: **#33, #99, #120 GAIN the tick**
+  (their school really matches); **#14 gains nothing** ("Temeloh" really is not "TEMERLOH").
+- Two existing tests pinned the old rule and were **REVERSED IN PLACE**, each recording what it used
+  to assert and why. Do not "restore" the guard.
+- Gates for this half: jest **1995** (baseline 1993 + 2) · tsc **24** · lint **0** · build exit 0.
+
+**⚠ WHAT THIS DELIBERATELY DOES *NOT* DO.** The Pathway CHIP stays red and the Pathway TILE keeps
+its own logic. Owner judged the fuller options (send `pathway_confirmed_at` to the browser; teach
+the stream axis about intake years) as **minimal benefit for now** — they remain logged below.
+
 
 **⚠⚠ BUILT AND GATED, *NOT DEPLOYED*.** Branch **`fix/pathway-track-axis`**, worktree
 `.worktrees/pathway-axis`. **api ONLY.** **NO MIGRATION, NO ENV VAR, NO DATA STEP.**
