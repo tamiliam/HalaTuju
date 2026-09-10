@@ -95,8 +95,6 @@ def sponsor_card(application) -> dict | None:
     empty donut beside four zeroes reads as *"they have spent nothing"*, which is a claim we cannot
     make: the far likelier truth is that no report has reached us yet. The panel is simply absent.
     """
-    from django.utils import timezone
-
     from . import payments
     from .models import SPEND_CATEGORY_CHOICES, BursarySpendTxn
 
