@@ -3650,3 +3650,52 @@ is small.
 
 (Logged 2026-09-10 at the owner's prompt during Spending S5 planning. Explicitly deferred by
 the owner: *"This could be a discussion for a different time."*)
+
+### [TD-242] A transient Drive read drops a whole FILE silently, and the run reports success — medium
+
+**Observed on production at the first real import, 2026-09-11.** Two runs, twenty minutes
+apart, against an unchanged folder:
+
+```
+read-only : files read 8 · rows 1368 · SPEND RM10,650.22
+applied   : files read 7 · rows 1305 · SPEND RM10,284.84   <- 2026-07-12 missing
+```
+
+**63 payments and RM365.38 vanished from the run, and the output said `APPLIED` with no
+warning of any kind.** A re-run picked up exactly that one file, and the stored totals then
+reproduced the measured figures to the sen. Nothing was lost permanently; what was lost was
+the ABILITY TO TELL.
+
+**Root cause.** `spending_import.drive_sources` does this:
+
+```python
+values = sheets.read_spending_report(file_id)
+if not values:
+    continue          # "Empty is NOT the same as unreadable"
+```
+
+The comment is half right. `read_spending_report` is best-effort — it logs its own failure and
+returns `None`. **An export with only a header row and a failed READ are indistinguishable at
+this line**, and the second is treated as the first: skipped, uncounted, unreported. Drive had
+already LISTED the file, so we knew it existed and knew we got nothing from it.
+
+**Why it matters more than it looks.** The whole feature is built on the rule that *every skip
+is counted and named* — the lesson written in blood after an early probe under-reported the
+corpus by RM621. This is that same failure, one layer up: not a row silently skipped, a whole
+FILE. And it is invisible in exactly the situation the alert email was designed for.
+
+**Why it did not do lasting harm.** The owner-ruled "new-or-changed, keep no state of our own"
+rule (decisions.md, S2) means a file that stored nothing has no `source_file` row, so the next
+run reads it again. **The design self-healed on the very next run** — which is a real point in
+that decision's favour, and not a reason to leave this open.
+
+**Fix.** Have `read_spending_report` distinguish "read failed" from "the sheet is empty" — it
+already knows, it just discards the distinction — and have `drive_sources` count a failed read
+into `IngestReport` as its own named finding, so `needs_attention` becomes true and the alert
+email fires. A file Drive listed and we could not read is precisely "a human is needed".
+Small: one return value, one report field, one line in `lines()`.
+
+**⚠ Until it is fixed:** after any import, compare `files read` against the number of exports
+in the folder. They must be equal.
+
+(Logged 2026-09-11, from the first production import.)

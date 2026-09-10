@@ -642,38 +642,52 @@ credit) until it is **inked AND the money has changed hands**, with a bank refer
 
 ## Superseded — previous Next Sprint (as of 2026-09-10, after sponsor spending S5 — THE ARC IS COMPLETE)
 
-**⚠⚠ DEPLOY IN PROGRESS — 2026-09-11. READ THIS BEFORE ACTING ON ANYTHING BELOW IT.**
+**⚠⚠ DEPLOYED AND VERIFIED LIVE — 2026-09-11. READ THIS BEFORE ACTING ON ANYTHING BELOW IT.**
 The text under this note was written before the deploy and describes a state that no longer
-exists. What is TRUE right now:
+exists. What is TRUE:
 
-| Step | State |
+| | |
 |---|---|
-| `scholarship/0155` | **✅ APPLIED to production 2026-09-11**, both tables live, RLS on with |
-| | one `service_role` policy each, **ledger row recorded**. ⚠ **DO NOT APPLY IT AGAIN.** |
-| Security Advisor | ✅ neither new table appears in any finding |
-| `main` | ✅ merged and built — api + web both SUCCESS |
-| `VIRCLE_SPENDING_FOLDER` | ✅ set live |
-| `VIRCLE_SPENDING_SUMMARY_FOLDER` | ✅ set live |
-| Read-only Drive fetch | ✅ **RUN AND VERIFIED**: 8 files, 1,368 rows, 1,366 SPEND, |
-| | **RM10,650.22**, coverage 1 Jul → 30 Aug — the laptop figures, exactly |
-| Rows imported | ❌ **NOT YET** — nothing is stored |
-| Gemini rung | ❌ never run anywhere |
-| Drive WRITE | ❌ never run anywhere |
-| Daily Scheduler job | ❌ not created |
+| `scholarship/0155` | ✅ APPLIED, both tables live, RLS + one `service_role` policy each, |
+| | **ledger row recorded**. ⚠ **DO NOT APPLY IT AGAIN.** |
+| Security Advisor | ✅ neither new table in any finding |
+| `main` | ✅ merged and built, api + web |
+| Folder settings | ✅ `VIRCLE_SPENDING_FOLDER` + `VIRCLE_SPENDING_SUMMARY_FOLDER` set live |
+| Drive FETCH | ✅ **RUN** — 8 files, 1,368 rows, 1,366 SPEND, **RM10,650.22**, 1 Jul→30 Aug |
+| Rows imported | ✅ **1,368 stored**, 43 students, 28 parent-held, 2 person transfers |
+| Gemini rung | ✅ **RUN** — 102 shops asked, **102 answered**, prompt `spend-cat-v1` |
+| Sorting applied | ✅ 288 merchants remembered: 126 rule, 60 pattern, 102 model, 0 owner |
+| Daily Scheduler | ✅ `halatuju-spending-ingest`, `0 7 * * *` Asia/Kuala_Lumpur, ENABLED |
+| Quiet-day rule | ✅ proven live — a run with nothing new printed only "nothing new to read" |
+| **Drive WRITE** | ❌ **STILL NEVER RUN — see below** |
 
-**⚠ ONE REAL FINDING FROM THE VERIFIED RUN:** eight funded students have no wallet id —
-applications **16, 43, 73, 106, 124, 129, 142, 144**. The opposite direction is clean: every
-wallet in the reports matched a student, so no money is moving on an unrecognised account.
+Live category split (`RM10,650.22` total): food 986/RM5,574.30 · **unsorted 149/RM2,656.98**
+· groceries 65/RM1,203.25 · study 139/RM578.70 · transport 21/RM336.54 · health 2/RM169.45 ·
+clothing 3/RM106.00 · phone 1/RM25.00. **Six payments (RM424) held back by the RM20 ceiling**,
+exactly the six predicted.
 
-**▶ WHERE THE DEPLOY STOPPED, AND WHAT COMES NEXT:**
-1. `spending-import-only` — stores the 1,368 rows, sorts nothing, files nothing.
-2. `spending-sort-report` — read-only; **the first real Gemini call**, and the first chance to
-   see what it decides before anything is written.
-3. `spending-sort` — applies it. **⚠ THIS IS THE MOMENT THE SPONSOR CARD GOES LIVE.**
-4. `spending-ingest` — the full weekly job; its first run writes the first Drive summary.
-5. Create the DAILY Cloud Scheduler job on `spending-ingest`.
-6. Open the Drive folder: the summary must be in `Summaries/`, not beside the exports.
+**⚠ THE DRIVE WRITE CANNOT BE PROVEN UNTIL THE OFFICER UPLOADS AGAIN, AND THAT IS BY DESIGN.**
+The summary is written only after an import that STORED something. Everything is stored, so
+the daily job now correctly does nothing — and correctly writes no summary. **The first
+summary will appear with the next weekly upload.** When it does, OPEN THE FOLDER: it must be
+in `Summaries/`, NOT beside the exports. If it is beside them, stop the scheduler job
+immediately — the next import would try to parse our own report.
 
+**⚠ TWO REAL FINDINGS FROM THE DEPLOY:**
+1. **TD-242 — a transient Drive read dropped a whole FILE silently and the run said APPLIED.**
+   First import read 7 of 8 files; 63 payments and RM365.38 vanished with no warning. A re-run
+   recovered them exactly (the "keep no state of our own" rule self-heals). **Until it is
+   fixed, after any import check `files read` equals the number of exports in the folder.**
+2. **Eight funded students have no wallet id** — applications 16, 43, 73, 106, 124, 129, 142,
+   144. The opposite direction is clean: every wallet in the reports matched a student.
+
+**⚠ THE SPONSOR CARD IS LIVE** for 43 sponsorships across 5 sponsors. A quarter of the money
+reads "Not yet sorted", which is honest, and the officer screen at `/admin/spending` is where
+it gets improved — an `owner` correction outranks every rung for ever.
+
+**▶ WHAT IS LEFT:** nothing blocking. Watch the first real weekly upload (the Drive write, the
+alert email, and the summary's placement all get their first exercise then). Standing debt:
+TD-242, TD-241, TD-240, TD-239, TD-238.
 **⚠ THE ARC IS BUILT; PARTS OF IT ARE NOW DEPLOYED.** Worktree `.worktrees/spending-ingest`,
 branch `feat/spending-ingest`, **merged to `main` and built**.
 
