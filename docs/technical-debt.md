@@ -3540,3 +3540,41 @@ ever gains a gift chooser of their own, delete the exemption rather than widenin
 test pins the reviewer rail). No backend, no migration, no i18n.
 
 (Logged 2026-09-09 from the apply-copy planning conversation.)
+
+### [TD-238] Nobody is watching how many merchants the model is asked about — low
+
+**What.** `sort_spending` reports `merchants asked` and `merchants answered` on stdout. On the
+live service that stdout goes to the cron job's log, which nobody reads on a quiet week. The
+cost design says the first run is expensive (~102 merchants, 3 batched calls) and every run
+after is near zero — **and nothing would tell us if that stopped being true.**
+
+**Why it does not bite today.** The model is asked per MERCHANT and every answer is stored, so
+a runaway needs a genuine flood of new shops. `usage_context(source='spend_category')` already
+meters every call, so the data exists; nothing surfaces it.
+
+**When it bites.** A drift in the merchant column (it has changed twice already) that leaves
+names slightly different each week would make every shop look new for ever, and the bill would
+climb with nothing failing.
+
+**Fix.** S4's officer view already plans "this week's AI decisions". Add the count and the
+metered spend beside it. Small — no backend beyond a query.
+
+(Logged 2026-09-10 at Spending S3 close.)
+
+### [TD-239] Bumping `PROMPT_VERSION` re-asks nothing — low
+
+**What.** `spend_category.PROMPT_VERSION` is stamped into `MerchantCategory.reason` on every
+`ai` verdict, so the officer view can tell which answers came from which prompt. **Nothing acts
+on it.** A materially better prompt would apply only to merchants nobody has asked about yet;
+every name already answered keeps its old verdict for ever.
+
+**Why it does not bite today.** There is one prompt version and it has never run in anger.
+
+**When it bites.** The first prompt redesign. The symptom is subtle: the new prompt looks like
+it did nothing, because the 102 merchants it was written for are all already stored.
+
+**Fix.** A `--reask-version <v>` flag on `sort_spending` that clears `ai` verdicts whose
+`reason` is not the current version, then re-runs. Deliberately NOT automatic on a version
+bump — that would re-bill the whole merchant list on a typo. Small.
+
+(Logged 2026-09-10 at Spending S3 close.)

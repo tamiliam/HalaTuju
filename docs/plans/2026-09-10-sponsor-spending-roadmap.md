@@ -61,27 +61,21 @@ and `spending_import.ingest(sources, apply=False)` is the whole store-and-report
 
 ---
 
-## S3 — Sort the spending
+## S3 — Sort the spending ✅ SHIPPED 2026-09-10
 
-**Goal.** Every transaction carries one of the ten categories, decided by brief §4c's four rungs.
+**Done.** Retro `docs/retrospective-2026-09-10-spending-sorter-s3.md`; the rules a later reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in `spend_category.py`'s own docstring. **No migration.**
 
-**Scope.**
-- `apps/scholarship/spend_category.py` — the ten-code vocabulary; rung 1 (`duitnow_type`), rung 2
-  (keyword rules), rung 3 (the spend-pattern inference **per transaction**, with the RM20 ceiling).
-- Rung 4: a batched Gemini call over **merchant name strings only** — no amount, no student, no date
-  — through the existing seam, metered by `usage_context`, answers outside the vocabulary discarded.
-  A name once answered is stored and never asked again.
-- Wire into the weekly job, after ingest.
+**Measured over the eight real exports with the SHIPPED rules** (a regression pin, not a target — the plan had estimated ~100 for rung 2):
 
-**Acceptance.** Over the real corpus: rung 2 places ~100 merchants, rung 3 ~62 merchants / 681 rows.
-**Two regression tests pinned by name** — `AL HUDHA ENTERPRISE`'s single RM200 and
-`TEGUH ENIGMA (MATRIK 1)`'s RM119.50 must NOT be food (brief §4c). An `owner` verdict survives a
-re-run. Rung 4 is never asked about a merchant already decided.
+    288 merchants: 126 by keyword rule, 60 by spend pattern, 102 left for the model
+    food 976 rows RM5,383.60 · unsorted 173 rows RM3,182.33 · groceries 55 rows RM1,030.60
+    study 139 rows RM578.70 · transport 21 rows RM336.54 · clothing 1 · health 1 · transfer 2
 
-**Complexity: MEDIUM–HIGH.** ~10 files. **No migration.** **No sponsor-visible change.**
+**⚠ THE TWO THINGS S3 COULD NOT PROVE, AND S4 MUST NOT ASSUME:** the Drive hop has still never run, and **now neither has the model rung** — every test mocks `vision._call_gemini_json`, so rung 4 is exactly as unproven as the Drive fetch. Both are owed on the live service.
+
+**What S4 inherits:** every stored row carries `category` and `decided_by`, and `decided_by='owner'` already outranks all four rungs and survives a full `--all` re-sort — so the correction screen has nothing to build in the sorter, only a way to write that verdict.
 
 ---
-
 ## S4 — The officer view, and the correction
 
 **Goal.** The owner can see every transaction, see what the AI decided, and correct it — **before a

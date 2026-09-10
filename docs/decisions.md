@@ -10233,3 +10233,142 @@ header refusal instead would turn our own file into a daily "unreadable export" 
 **Trade-offs:** an export named differently is invisible. Deliberate, and it fails loudly the day
 nothing is found rather than quietly mis-parsing. Brand-neutral, so a second tenant still matches.
 **Revisit if:** Vircle changes the export's naming, which is a one-line change to the pattern.
+
+
+## Sorting is a SEPARATE command, and it gets its own cron door — Spending S3, 2026-09-10
+
+**Decision:** `manage.py sort_spending [--apply] [--all] [--no-ai]` is its own command, and
+`CronRunView.JOBS['spending-sort'] = ('sort_spending', ('--all', '--apply'))` gives it a route
+to production. **It is not on a schedule.**
+
+**Alternatives considered:** (a) fold the sorting into `ingest_spending` only, with no separate
+command; (b) a separate command with no cron entry.
+
+**Rationale (owner, 2026-09-10, option B):** keyword rules get tuned, and tuning them must not
+mean re-importing eight spreadsheets. (b) was what the sprint actually built first, and it was
+wrong for a reason this repo has already paid for: a command that writes, with no route to the
+live service, is finished and unreachable — `backfill_untagged_income_docs` sat that way for a
+fortnight and from the outside it looked exactly like finished. The database is only reachable
+from the running service, so the door is the cron endpoint.
+
+**Trade-offs:** one more registry entry, and a `--all` sweep behind a URL. Mitigated by the
+thing that makes `--all` safe at all: **it can never touch an `owner` row**, asserted through
+the endpoint rather than only on the function.
+
+**Revisit if:** the officer view (S4) grows a "re-sort now" button, which would make the cron
+door redundant for humans — though it would still be the route a script uses.
+
+## The daily job stays ONE Cloud Scheduler entry — Spending S3, 2026-09-10
+
+**Decision:** `ingest_spending --apply` finishes by calling `spend_category.sort_transactions`
+when rows actually landed. `--no-sort` opts out. No second scheduled job is created.
+
+**Alternatives considered:** a second Cloud Scheduler job hitting `spending-sort` daily.
+
+**Rationale:** the two are one operation from the operator's point of view — a file arrives,
+it is read, the rows are placed. Two schedules means two things to create, two to remember, and
+a window in which imported rows sit uncategorised. The sort is gated on `--apply` **and** on
+`rows_stored` being non-zero, so a quiet day still does nothing and says nothing (the S2 rule).
+
+**Trade-offs:** a model outage inside the sort would surface in the ingest job's log rather
+than its own. Accepted: `ask_model` swallows a failed call, leaves those names undecided, and
+they are re-asked next run — an outage is never stored as an answer.
+
+**Revisit if:** the model rung ever becomes slow enough to threaten the cron timeout.
+
+## The model is asked per MERCHANT and the answer is stored for ever — Spending S3, 2026-09-10
+
+**Decision:** rung 4 sends a batch of merchant NAME STRINGS, stores one `MerchantCategory` row
+per name, and never asks about that name again. `ask_model(names)` takes nothing else.
+
+**Alternatives considered:** ask per transaction; ask per merchant but re-ask periodically.
+
+**Rationale:** 288 shops produced 1,366 payments in two months and the shop list grows slowly,
+so per-transaction asking pays for the same answer for years. The privacy half matters more:
+a name-only call cannot leak an amount, a student, a wallet or a date **because the function
+cannot receive them** — the `help_engine` admin↔student wall, same shape, and a signature test
+asserts the parameter list. The vocabulary is enforced in Python after the answer returns, so a
+category outside the ten is discarded rather than re-prompted.
+
+**Trade-offs:** a shop that changes what it sells keeps its old category until somebody
+corrects it. Accepted — the officer view (S4) is where that correction lives, and an `owner`
+verdict outranks every rung.
+
+**Revisit if:** `PROMPT_VERSION` is bumped for a materially better prompt — see TD-239, because
+nothing currently re-asks on a version change.
+
+## `transfer` is unreachable from the model and from every keyword rule — Spending S3, 2026-09-10
+
+**Decision:** `transfer` is excluded from `AI_VOCABULARY`, no keyword rule may produce it, and
+both are asserted by tests. It comes from `duitnow_type` alone.
+
+**Alternatives considered:** let the model recognise a personal name as a transfer.
+
+**Rationale:** half the real merchants are registered under an individual's name — `SYAHIR
+AZHAR` is a stall visited 40 times for RM2.00, `FAIZUL BIN HAT` 16 times for RM4.00. A model
+reading names would file those as money sent to a person, which is a different and much worse
+claim about a student than a wrong shop category. The bank already tells us, exactly, in
+`STATIC_CUSTOMER_QR_CODE_DUITNOW_P2P`.
+
+**Trade-offs:** a genuine person-to-person payment made outside DuitNow P2P would not be
+labelled. Accepted: two rows in the whole corpus are P2P and both are money coming IN.
+
+**Revisit if:** Vircle stops emitting `duitnow_type`, which would make this rung blind.
+
+## A keyword rule is re-derived every run; a stored model answer never is — Spending S3, 2026-09-10
+
+**Decision:** `merchant_verdicts` recomputes rung 2 for every merchant on every run, and reuses
+a stored `ai` verdict without asking again. Rung 3 outranks a stored `ai` verdict.
+
+**Alternatives considered:** treat a stored verdict of any kind as final.
+
+**Rationale:** the two are not the same kind of answer. A keyword rule is deterministic, free,
+and readable in a diff — recomputing it is how a newly added rule reaches merchants an earlier
+run already stored, which is the entire point of `--all`. A model answer costs money and is a
+guess from a name alone, so it is the weakest evidence in the ladder and must yield to a shop
+that has since accumulated a real spending pattern.
+
+**Trade-offs:** a badly written keyword rule now overwrites a good model answer. Mitigated by
+rules being code under review, and by `owner` outranking both.
+
+**Revisit if:** rule count grows past the point where a diff is readable.
+
+## The RM20 ceiling lives on the TRANSACTION, though the verdict is stored per merchant — Spending S3, 2026-09-10
+
+**Decision:** rung 3 stores `(food, inferred)` against the MERCHANT — so rung 4 never pays to
+ask about it — while the RM20 ceiling is applied per ROW at sort time. A row over the ceiling
+at a food-looking shop becomes `('unsorted', '')`.
+
+**Alternatives considered:** a pure merchant-level verdict; not storing rung 3 at all.
+
+**Rationale:** a median hides an outlier by design. Six real payments across four shops sit
+above the ceiling at shops that are genuinely cheap food stalls — `AL HUDHA ENTERPRISE` RM200,
+`TEGUH ENIGMA (MATRIK 1)` RM97.70 and RM21.80, `RAMLI BIN SURATMAN` RM50.60 and RM24.20,
+`MES IBAS ENTERPRISE` RM30 — **RM424 that a merchant-level verdict would have filed as campus
+meals, silently.** Not storing rung 3 would instead send 60 already-placed merchants to the
+model every run.
+
+**Trade-offs:** those six rows land in `unsorted` with no better home, so the honest bucket
+carries them until an officer corrects them. That is the intended reading of `unsorted`.
+
+**Revisit if:** the officer view shows the over-ceiling rows clustering somewhere real — a
+campus bookshop, say — which would argue for a rule rather than a correction each time.
+
+## `category=''` and `category='unsorted'` are different states — Spending S3, 2026-09-10
+
+**Decision:** blank means the sorter has never run on this row. `unsorted` means it ran and
+honestly could not place it. A row left unplaced keeps `decided_by=''`, which is what makes it
+eligible for a normal (non-`--all`) re-run.
+
+**Alternatives considered:** collapse the two into `unsorted`.
+
+**Rationale:** they answer different questions and the sponsor card depends on the difference —
+`unsorted` is what stops the other nine categories reading as complete when they are not. The
+operational half matters too: keeping `decided_by` blank on an unplaced row means the next run
+reconsiders it for free, so a merchant crossing its third visit is picked up without `--all`.
+
+**Trade-offs:** unplaced rows are re-evaluated every run. Cheap — no model call is made,
+because the merchant either has a stored verdict or is asked once and stored.
+
+**Revisit if:** the sponsor card ever needs to distinguish "we tried and failed" from "we tried,
+failed, and a human agreed" — that would be a third state, not a merge of these two.

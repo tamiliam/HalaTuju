@@ -2079,6 +2079,13 @@ class CronRunView(APIView):
         # nothing and says nothing. ⚠ `--apply` is what makes it write; without it the job is a
         # report. It emails ONLY when a human is needed — never an all-clear.
         'spending-ingest': ('ingest_spending', ('--drive', '--apply')),
+        # ⚠ THE DOOR FOR THE SORTER, AND IT IS NOT ON A SCHEDULE. `spending-ingest` already
+        # sorts what it stores, so the daily job stays a single Scheduler entry. This entry
+        # exists for the OTHER case: a keyword rule is tuned and every already-sorted row must
+        # be reconsidered. Without a door that would be a command that can only run on a laptop
+        # with no database - finished and unreachable, which from the outside looks exactly like
+        # finished (BrightPath #20). `--all` never touches an `owner` row.
+        'spending-sort': ('sort_spending', ('--all', '--apply')),
         'partner-digests': 'send_partner_digests',  # weekly (Mon 08:00 MYT): partner stage summary + chase list
         'partner-milestones': 'send_partner_milestones',  # hourly: awaiting-review + awarded, batched per organisation
         # one-off/idempotent (S3): create the nine sponsor-email templates. The three that

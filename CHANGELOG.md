@@ -2,6 +2,81 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor spending S3 — every payment gets a category - 2026-09-10
+
+Third sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. NO
+MIGRATION. Nothing a sponsor or student sees changes; nothing is deployed.**
+`apps/scholarship/spend_category.py` (the four-rung ladder), `manage.py sort_spending
+[--apply] [--all] [--no-ai]`, `--no-sort` on `ingest_spending`, and cron job
+**`spending-sort`** (a door, NOT a schedule).
+
+**THE LADDER. Each rung sees only what the rung above could not place.**
+
+| Rung | Decides from | `decided_by` | Reach on the eight real exports |
+|---|---|---|---|
+| 1 | `duitnow_type` | `duitnow` | 2 rows |
+| 2 | keyword rules on the name | `rule` | **126 of 288 merchants** |
+| 3 | spend pattern, per TRANSACTION | `inferred` | **60 merchants, 689 rows** |
+| 4 | Gemini, merchant NAME STRINGS only | `ai` | the remaining **102 merchants** |
+
+**⚠⚠ RUNG 3 CLASSIFIES THE TRANSACTION, NOT THE SHOP, AND THE RM20 PER-ROW CEILING IS WHY.**
+A merchant-level verdict would sweep every row along with it. `AL HUDHA ENTERPRISE` is RM7.20
+nine times **and once RM200**; `TEGUH ENIGMA (MATRIK 1)` is RM0.80 five times **and RM97.70
+once**. A median hides an outlier by design, so without the ceiling **RM424 of large one-off
+purchases across six real payments would have been filed as campus meals** and nobody would
+ever have found out. Both cases are pinned by name, against the real corpus, in
+`test_spend_category.py`.
+
+**⚠ THE MODEL NEVER SEES MONEY, A STUDENT, A WALLET OR A DATE.** `ask_model(names)` takes a
+list of merchant name strings and nothing else, and a signature test asserts exactly that —
+the data is ABSENT rather than merely unmentioned in a prompt (the `help_engine` wall, same
+shape). It is reached through `vision._call_gemini_json`, the one Gemini seam, so the whole AI
+surface mocks by patching a single function and CI makes no billable call. The ten-code
+vocabulary is enforced **in Python after the answer returns**; anything outside it is discarded,
+never re-prompted. `transfer` is not in the model vocabulary at all.
+
+**⚠ "SENT TO A PERSON" COMES FROM `duitnow_type`, NEVER FROM A NAME.** Half the real merchants
+are registered under an individual's name — `SYAHIR AZHAR` is a stall visited 40 times for
+RM2.00. A person-transfer row also never contributes its merchant to rung 4, so we never pay to
+ask the model about somebody's name.
+
+**⚠ A MERCHANT IS ASKED ABOUT ONCE AND STORED FOR EVER.** That is the cost design: 288 shops
+produced 1,366 payments in two months and the list grows slowly. The test asserts the **call
+count** of the seam, not the stored value — a stored answer that is still re-asked is a silent
+bill nothing else would notice. A keyword rule, being deterministic and free, is deliberately
+re-derived every run so a newly added rule reaches merchants an earlier run had already stored.
+
+**⚠ AN `owner` VERDICT OUTRANKS ALL FOUR RUNGS AND IS NEVER OVERWRITTEN**, at row level and at
+merchant level, including by a full `--all` re-sort.
+
+**⚠ `category=''` AND `category='unsorted'` ARE DIFFERENT STATES.** Blank means the sorter has
+never run; `unsorted` means it ran and honestly could not place it. `decided_by=''` beside
+`unsorted` is what makes the row eligible for a later run when a new keyword rule lands.
+
+**⚠ THE SORTER GOT A DOOR.** `spending-sort` is registered in `CronRunView.JOBS` as
+`('sort_spending', ('--all', '--apply'))`. It is **not** a second schedule — `ingest_spending
+--apply` already sorts what it stored, so the daily job stays one Scheduler entry. The door
+exists for the other case: a keyword rule is tuned and every already-sorted row must be
+reconsidered. Without it that would be a command runnable only on a laptop with no database —
+finished and unreachable, which from the outside looks exactly like finished (BrightPath #20).
+
+**What this run produces over the eight real exports, rungs 1–3 only (no model call):**
+
+```
+food        976 rows   RM5,383.60     (287 by rule, 689 inferred)
+unsorted    173 rows   RM3,182.33     102 merchants, for rung 4
+groceries    55 rows   RM1,030.60
+study       139 rows   RM  578.70     campus co-ops
+transport    21 rows   RM  336.54
+clothing      1 row    RM   99.00
+health        1 row    RM   39.45
+transfer      2 rows   RM   12.50
+TOTAL      1368 rows  RM10,662.72     = RM10,650.22 spent + RM12.50 received
+```
+
+Gates: pytest full `apps/` **6236 passed** (+57); `makemigrations --check` clean.
+**Thirteen bite-checks injected, thirteen bit, none silent.**
+
 ## Sponsor spending S2 — the reports arrive on their own - 2026-09-10
 
 Second sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. NO MIGRATION.

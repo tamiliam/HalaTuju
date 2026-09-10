@@ -8,9 +8,12 @@
 write, and `spending_import.ingest` holds the single `bulk_create` behind that flag. Read the
 report before applying it: a prediction in a plan is a claim, not a result.
 
-⚠ **THIS SPRINT READS LOCAL FILES ONLY.** S2 adds the Drive fetch, which reuses
-`spending_import.ingest` unchanged by handing it rows from the Sheets API instead. Nothing about
-the drift rules or the wallet join lives here.
+⚠ **THE DRIVE FETCH REUSES `spending_import.ingest` UNCHANGED** by handing it rows from the Sheets
+API instead of from openpyxl. Nothing about the drift rules or the wallet join lives here.
+
+⚠ **AN `--apply` RUN FINISHES BY SORTING WHAT IT STORED** (`spend_category.sort_transactions`), so
+the daily job remains ONE Cloud Scheduler entry. `--no-sort` opts out. The standalone
+`sort_spending` command is the same ladder by hand, for re-sorting after a keyword rule is tuned.
 
 ⚠ **AN UNREADABLE HEADER REFUSES THAT FILE AND THE RUN CONTINUES.** One bad export must not stop
 the other seven from loading, and the refusal has to reach a person rather than a log nobody reads
@@ -24,7 +27,7 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.scholarship import emails, spending_import
+from apps.scholarship import emails, spend_category, spending_import
 
 
 class Command(BaseCommand):
@@ -43,6 +46,9 @@ class Command(BaseCommand):
                             help='Write the new transactions. Without it, nothing is stored.')
         parser.add_argument('--no-email', action='store_true',
                             help='Never send the alert, whatever is found. For a manual run.')
+        parser.add_argument('--no-sort', action='store_true',
+                            help='Do not sort the new rows into categories afterwards. Without '
+                                 'this, an --apply run finishes by running the ladder.')
 
     def handle(self, *args, **options):
         use_drive = options['drive']
@@ -90,6 +96,16 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING('NEEDS ATTENTION - see the sections above.'))
             else:
                 self.stdout.write(self.style.SUCCESS('Nothing needs a human.'))
+
+            # ⚠ THE SORTER RUNS HERE SO THE DAILY JOB STAYS ONE SCHEDULER ENTRY. It is deliberately
+            # gated on `--apply` AND on rows having actually landed: a report run must stay unable
+            # to write, and a run that stored nothing has nothing new to place. `sort_spending` is
+            # the same ladder, by hand, for when a keyword rule is tuned.
+            if options['apply'] and not options['no_sort'] and report.rows_stored:
+                sort_report = spend_category.sort_transactions(apply=True)
+                self.stdout.write('--- sorting the new rows ---')
+                for line in sort_report.lines():
+                    self.stdout.write(line)
 
         # The staleness nudge. Derived from the newest import, never stored — see
         # `spending_import.days_since_last_report`.

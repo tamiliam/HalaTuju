@@ -550,7 +550,116 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after sponsor spending S2 — the reports arrive on their own)
+## Next Sprint (as of 2026-09-10, after sponsor spending S3 — every payment gets a category)
+
+**S1 + S2 + S3 ALL SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree
+`.worktrees/spending-ingest`, branch `feat/spending-ingest` (pushed; **NOT on main, so nothing
+has built**). Backend only — **no web file changed in any of the three**. Retros
+`docs/retrospective-2026-09-10-spending-ingest-s1.md`, `…-spending-drive-s2.md`,
+`…-spending-sorter-s3.md`; decisions ×19; lessons ×9; **TD-238 + TD-239** logged.
+Roadmap `docs/plans/2026-09-10-sponsor-spending-roadmap.md` (5 sprints; **S1+S2+S3 done**);
+requirements + the measured corpus `docs/plans/2026-09-09-sponsor-spending-reports-brief.md`.
+Gates: pytest full `apps/` **6236** (+57); `makemigrations --check` clean. **Thirteen
+bite-checks injected this sprint, thirteen bit, none silent.** Ledger vs production:
+scholarship **154/155**, courses **74/74**.
+
+**⚠ MIGRATION `scholarship/0155` (S1) — TWO NEW TABLES, STILL NOT APPLIED. MIGRATE-FIRST.**
+DDL + RLS + one `service_role` policy each is in the migration's own docstring. Both tables
+were re-confirmed ABSENT on production at this close. **S2 and S3 add none.**
+
+**WHAT S3 SHIPPED.** `spend_category.py` (the four-rung ladder — the ONLY place a rule, a
+threshold or the prompt lives), `manage.py sort_spending [--apply] [--all] [--no-ai]`,
+`--no-sort` on `ingest_spending`, and cron **`spending-sort`** (a DOOR, not a schedule).
+
+**⚠ MEASURED WITH THE SHIPPED RULES OVER THE EIGHT REAL EXPORTS** — a regression pin, not a
+target (the plan had estimated ~100 for rung 2 and it is 126):
+
+    288 merchants: 126 by keyword rule · 60 by spend pattern · 102 left for the model
+    food 976 rows RM5,383.60 · unsorted 173 rows RM3,182.33 · groceries 55 rows RM1,030.60
+    study 139 rows RM578.70 · transport 21 rows RM336.54 · clothing 1 · health 1 · transfer 2
+    1,368 rows RM10,662.72 = the RM10,650.22 spent + RM12.50 received
+
+**WHAT MUST NOT BE "TIDIED" — S3:**
+- **⚠⚠ THE RM20 PER-ROW CEILING IS LOAD-BEARING AND CAUGHT SIX REAL PAYMENTS.** Rung 3 stores
+  a MERCHANT-level verdict (so rung 4 never pays to ask) and applies the ceiling per ROW.
+  `AL HUDHA ENTERPRISE` RM200, `TEGUH ENIGMA (MATRIK 1)` RM97.70 + RM21.80, `RAMLI BIN
+  SURATMAN` RM50.60 + RM24.20, `MES IBAS ENTERPRISE` RM30 — **RM424 that a merchant-level
+  verdict would have filed as campus meals.** All at shops that genuinely ARE cheap food
+  stalls; a median hides an outlier by design. Pinned by name against the real corpus.
+- **⚠ `ask_model(names)` TAKES NAME STRINGS AND NOTHING ELSE.** No amount, no student, no
+  wallet, no date. A SIGNATURE test asserts the parameter list — the wall is structural, not a
+  prompt asking the model to behave. Reached through `vision._call_gemini_json`, the one Gemini
+  seam, so CI makes zero billable calls.
+- **⚠ THE TEN-CODE VOCABULARY IS ENFORCED IN PYTHON AFTER THE ANSWER RETURNS**, never
+  re-prompted. `transfer` is absent from `AI_VOCABULARY` AND from every keyword rule: "sent to
+  a person" comes from `duitnow_type` alone, because half the real merchants are registered
+  under an individual's name (`SYAHIR AZHAR` = 40 visits at RM2.00).
+- **⚠ A MERCHANT IS ASKED ABOUT ONCE AND STORED FOR EVER** — the whole cost design. The test
+  asserts the seam's CALL COUNT, not the stored value: a stored answer still being re-asked is
+  a silent bill. A keyword rule, being free and deterministic, IS re-derived every run so a new
+  rule reaches merchants an earlier run already stored.
+- **⚠ KEYWORD RULE ORDER IS LOAD-BEARING AND MATCHING IS WHOLE-WORD.** Food is first: a
+  `DUNKIN' - BHP KARAK` is a doughnut counter inside a petrol station. Substring matching would
+  file `SMART-ACC SOLUTIONS` as groceries. Campus co-op keywords sit above grocery ones.
+- **⚠ `category=''` AND `category='unsorted'` ARE DIFFERENT STATES.** Blank = never sorted;
+  `unsorted` = sorted and honestly unplaceable. An unplaced row keeps `decided_by=''` so the
+  next run reconsiders it free of charge (that is how a shop crossing its 3rd visit is picked
+  up without `--all`).
+- **⚠ `decided_by='owner'` OUTRANKS ALL FOUR RUNGS**, at row AND merchant level, and survives
+  `--all`. The registered cron flags ARE `--all --apply`, and a test asserts through the
+  ENDPOINT that an owner row is still untouched.
+- **⚠ THE VISIT HISTORY IS READ FROM THE WHOLE TABLE, NEVER FROM THE BATCH BEING SORTED.** The
+  weekly job sorts a handful of new rows; counting visits from that batch would make a stall
+  visited forty times look like a first visit every single week and nothing would ever be
+  inferred — silently. Pinned by its own test.
+- **⚠ `spending-sort` IS A DOOR, NOT A SCHEDULE.** `ingest_spending --apply` already sorts what
+  it stored, so the daily job stays ONE Scheduler entry. The door exists for the other case: a
+  keyword rule is tuned and every already-sorted row must be reconsidered. Without it the
+  command runs only on a laptop with no database — finished and unreachable (BrightPath #20).
+
+**WHAT MUST NOT BE "TIDIED" — S1/S2, still true:**
+- **⚠ THE FILE SHAPE HAS DRIFTED FIVE TIMES IN EIGHT WEEKS, ALL MEASURED.** Merchant column
+  `Receiver` OR `Merchant Name`; student column `BrightPath name` OR `Wallet User`+`Child`
+  `User`; `amount` a number in 1,280 rows and the STRING `"RM26.90"` in 88; `transaction_date`
+  with a time in the two oldest; and **the filename is NOT the coverage window** (the 26 July
+  report covers FOURTEEN days). **Add aliases, never replace them.**
+- **⚠ A MISSING REQUIRED COLUMN REFUSES THAT FILE; AN UNKNOWN EXTRA ONE ONLY REPORTS.**
+- **⚠ EVERY SKIP IS COUNTED AND NAMED.** An early probe reported **RM10,029.03** for a true
+  **RM10,650.22** by summing only the values that were already numbers.
+- **⚠ A NEW FILE IS THE TRIGGER, NEVER THE CALENDAR** (owner). Which files to fetch is
+  new-or-changed, from Drive's `modifiedTime` against our own `imported_at`, **no state of our
+  own**. A seen-list was refused because it silently misses an EDIT, and these files get edited.
+- **⚠ A QUIET DAY DOES NOTHING AND SAYS NOTHING** — without that guard a STANDING finding
+  emails every single day for ever. **NO WEEKLY ALL-CLEAR** (owner ruling). The alert names
+  wallets and application ids, never a student, and carries no merchant and no amount. Plain
+  `EmailMessage` with an EXPLICIT sender — `_send_html` defaults to the interview alias.
+- **⚠ `Wallet User` IS NOT ALWAYS THE STUDENT** (28 real rows have a `Child User`). Join on
+  `wallet_id`; a wallet claimed by TWO students is skipped and named, never guessed.
+- **⚠ THE EXPORT FILENAME PATTERN IS A GUARD** — S4 files a summary back into this tree, and
+  without it the next run would parse our own output. The subfolder is the second lock.
+- **⚠ `CronRunView.JOBS` TAKES A `(name, args)` TUPLE** (immutable — readers put it in sets).
+  `_registered_commands()` in `test_repair_commands_have_a_door.py` unwraps it.
+
+**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0155` MIGRATE-FIRST** + record its ledger
+row BEFORE the push; (2) Security Advisor shows no new finding; (3) merge + push (**api only**
+— expect ONE build); (4) set **`VIRCLE_SPENDING_FOLDER`** if the live tree differs from the
+default (**read it from `gcloud run services describe`, never from a settings default**);
+(5) **⚠ RUN `ingest_spending --drive` WITHOUT `--apply` ONCE AND READ IT** — the service-account
+key exists nowhere but the live service, so this is the ONLY real proof of the Drive hop;
+(6) **⚠ RUN `sort_spending` WITHOUT `--apply` ONCE AND READ WHICH MERCHANTS IT WOULD ASK ABOUT**
+— the model rung has never run either; expect ~102 merchants in 3 batched calls on the first
+real run, then near zero for ever; (7) only then create the DAILY Cloud Scheduler job hitting
+`spending-ingest`. **Nothing a student or sponsor sees changes.**
+
+**▶ NEXT = S4 (the officer view + the correction).** An admin surface: per-student spending, the
+MERCHANT-level table, this week's AI decisions, unknown wallets, and a one-click `owner`
+override (the sorter already honours it — S4 only needs a way to WRITE it). Plus the Gemini
+summary report filed back to Drive **in a subfolder** — ⚠ **we compute every number in Python;
+Gemini only writes the prose around them** (the `verdict_narrative.py` house pattern), and the
+report is INTERNAL so it may name merchants but must never reach a sponsor. Reuses the existing
+admin gates. **No migration.** Then S5 the sponsor card (**Stitch prototype first**).
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after sponsor spending S2 — the reports arrive on their own)
 
 **S1 + S2 BOTH SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree
 `.worktrees/spending-ingest`, branch `feat/spending-ingest` (pushed; **NOT on main, so nothing
