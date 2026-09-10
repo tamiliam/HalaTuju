@@ -550,7 +550,84 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after "How it's advertised" round two)
+## Next Sprint (as of 2026-09-10, after the officer income vocabulary)
+
+**⚠⚠ BUILT AND GATED, *NOT DEPLOYED*.** Branch **`feat/officer-income-vocabulary`**, worktree
+`.worktrees/income-vocab`. Committed locally; **nothing has been pushed, so nothing has been
+built or served.** A push is a REQUEST to deploy — wait for BOTH builds and read their status
+before saying deployed. api + web. **NO MIGRATION, NO ENV VAR, NO DATA STEP.**
+
+Gates on the branch: pytest **6161** (baseline 6150 + 11) · jest **1993** (1988 + 5) · tsc **24**
+(TD-221 baseline, unchanged) · lint **0 Errors** · i18n **4975 × 3** (4974 + the one new key) ·
+`next build` exit 0 · `makemigrations --check` clean. **Two bite-checks, both bit** (putting "B40"
+back into the fact tile failed the absence guard; collapsing the no-means-test branch failed the
+empty-state test).
+
+**⚠⚠ THE REAL DEFECT WAS NOT THE LABEL — read this first.** `income_engine.income_headroom`
+returns the band `'unknown'` for TWO different facts: the income could not be computed, and
+**the gift configures no income test at all** (the guard is `if pc is None or not size or not
+pc_ceiling`). `'unknown'` prints *"income can't be document-verified (informal / no payslip)"* —
+so the **Test round**, which has BOTH ceilings NULL on production (measured 2026-09-09), accused
+perfectly readable payslips of being unreadable.
+
+- **The fix is a PREDICATE, not a new band.** `income_engine.income_test_configured(application)`
+  asks the cohort directly. `income_headroom`'s return set is UNTOUCHED — it feeds the verdict
+  tiles on both routes, and widening it would put every caller in the scope of a wording sprint.
+- **⚠ THE VERDICT BAND DOES NOT MOVE.** Amber ('recommend') before, amber after; a human places
+  income, nothing is blocked. A test pins both directions. **If a band moves here, something is
+  wrong.**
+- **⚠ BOTH ITEM CODES ARE WRITTEN AS LITERALS.** `test_verdict_item_i18n` walks the AST for
+  `_item('...')` and refuses a dynamic code — it caught the first draft, which chose the code with
+  a conditional inside the call. Do not "tidy" the two branches back into one expression.
+- The new line is deliberately **NOT** in `views_admin._NEEDS_INTERVIEW_AMBERS`: "this gift does
+  not test income" is the opposite of an interview talking point. A test holds that too.
+
+**WHAT ELSE SHIPPED, and the parts that must not be "tidied":**
+- **Twelve strings × three languages, not the eleven in the plan.** `utility_percapita_high`
+  ("M40/T20") was missing from the owner-approved list and carried the identical fault pointing
+  the other way.
+- **⚠ STR KEEPS ITS NAME.** STR is a real Malaysian government programme. Only its trailing
+  "— B40 status confirmed" clause changed, to "— the government's own means test is satisfied":
+  an officer still needs to know the check has weight, it is simply not this gift's threshold.
+- **⚠ THE KEY NAMES KEEP THEIR `b40`** (`income_above_b40_line`, `utility_percapita_b40`). Internal
+  identifiers no officer reads. **A decision, not an oversight** — do not "finish the job".
+- **⚠ THE OUT-OF-SCOPE FENCE IS A TEST.** `incomeVocabulary.test.ts` asserts the apply page and
+  the landing page **STILL SAY B40**. Those are student- and sponsor-facing and belong to a
+  separate, already-planned sprint. Sweeping them in here changes what applicants are told.
+- **The absence guard walks whole trees** (every leaf under `verdict.*`, `agenda.*`, `anomaly.*` in
+  en/ms/ta) plus a whole-file sweep for the eight retired sentences — not the twelve keys that were
+  fixed. `utility_percapita_high` is the receipt for why.
+- `verdict_narrative._CODE_GLOSS` is a SECOND English copy of the same sentences (it grounds the
+  Check-2 case summary) and was fixed in step; `CASE_SUMMARY_VERSION` → `2026-09-10.1` so cached
+  summaries regenerate.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com), AFTER a deploy:**
+1. Open any BrightPath application → AI Prediction. The income tile reads **Income**, not
+   "Income (B40)". **Everything else should read as it did yesterday** — BrightPath has ceilings
+   set, so only the label left.
+2. The threshold lines now say **"this gift's income limit"** and still quote the same RM figure.
+3. Open a **Test Programme** application → the income line should say the gift applies **no
+   household income limit**, NOT that the documents could not be verified.
+4. **ms and ta are FIRST DRAFTS.** Malay uses *"had pendapatan pemberian ini"*, Tamil
+   *"இந்தக் கொடையின் வருமான வரம்பு"*, both matching the app's existing words for a gift.
+
+**▶ LOGGED, NOT BUILT — `profile_engine.py` is now the twin that can go stale.** It holds a
+second, larger B40 vocabulary: `PROFILE_PROMPT`, `_BELOW_LINE_AFFIRM`, `_ABOVE_LINE_CAUTION`, and
+**`_OFFICER_FACT_LABELS['income'] = 'Household income (B40 need)'`** — the direct mirror of the
+tile this sprint renamed. Left alone deliberately: every edit there needs a `PROMPT_VERSION` bump,
+which **re-dates every existing profile draft on production**. That is a data and cost consequence,
+not a wording one. Treat it as owed work.
+
+**▶ ALSO STILL LOGGED, NOT BUILT:** **TD-237** — Applications shows in the rail before a gift is
+chosen (owner chose gating it for the four roles that HAVE an Overview; reviewer and qc keep it).
+And the **landing page + sign-in prompt** carry the same platform-wide B40 copy — same class, other
+pages, still unlogged as work.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after "How it's advertised" round two)
 
 **✅ DEPLOYED AND VERIFIED LIVE 2026-09-10.** `main` at **`f36047e3`**; BOTH Cloud Builds
 SUCCESS on `f36047e` — **waited on the push's OWN build IDs** (api `b6ec0458…`, web

@@ -1,5 +1,60 @@
 # Architectural Decisions — HalaTuju
 
+## The officer's income copy names the GIFT'S OWN LIMIT, never an income band — 2026-09-10
+
+**Decision:** every officer-facing income string states the gift's own threshold and quotes the
+round's `income_ceiling` / `per_capita_ceiling` figure — *"over this gift's income limit
+(RM1,584)"*. The fact tile reads **"Income"**. **STR keeps its name**; only its trailing
+"— B40 status confirmed" clause was replaced (with "the government's own means test is satisfied").
+The scope is the officer's surfaces only: the verdict card, the interview agenda, the anomaly
+flags. The student- and sponsor-facing pages keep their B40 copy, and a test asserts they do.
+
+**Alternatives considered:** (a) link the wording to the GIFT'S NAME, as the owner first asked;
+(b) let an organisation NAME its income band in a setting, so a gift can say "M40" or
+"low-income"; (c) leave it — every live gift today is in fact B40-focused.
+
+**Rationale:** (a) is a category error and the owner accepted the correction the same day: B40 is
+Malaysia's income band, so the substitution yields *"Income (BrightPath Sabah)"* and *"over the
+BrightPath Sabah line"*. (b) adds a tenant-editable string that can drift from the ceiling it
+claims to describe, and buys nothing the number does not already say. (c) was already false on
+production — the Test round has both ceilings NULL, and BrightPath Sabah was two weeks away when
+this was written.
+
+**Trade-offs stated plainly:** "this gift's income limit" is longer and less familiar to an officer
+who has read "the B40 line" for months, and the phrase repeats across five strings. Accepted — the
+figure is quoted beside it every time, so the sentence is self-explaining even to a reader meeting
+it fresh.
+
+**Revisit if:** a tenant asks for their band BY NAME. Then (b) becomes a setting, and the name must
+be rendered beside the number rather than in place of it.
+
+## A gift with no income ceiling says so, and it is not a pass — 2026-09-10
+
+**Decision:** when a gift sets neither `income_ceiling` nor `per_capita_ceiling`, the income fact
+carries `income_not_means_tested` — *"this gift applies no household income limit, so income is
+not an eligibility test here"* — instead of the "can't be document-verified" line. **The verdict
+status does not change: it stays 'recommend' (amber), a human places it, nothing is blocked.**
+Implemented as `income_engine.income_test_configured(application)`, a predicate on the cohort.
+
+**Alternatives considered:** (a) add an `'untested'` band to `income_headroom`; (b) let the income
+fact go GREEN, since there is no test to fail; (c) hide the income tile entirely for such a gift;
+(d) leave it — the officer works it out.
+
+**Rationale:** (a) was the first draft and is the wrong shape — `income_headroom` feeds the tiles
+on both verdict routes, so widening its return set drags every caller into a wording sprint. (b)
+claims a check that never ran; an officer reading green stops looking. (c) removes the documents
+from view, and they are still on file and still worth a human's eye. (d) is the status quo, which
+told the officer their readable payslips could not be read.
+
+**Trade-offs:** amber forever on a gift that means-tests nothing may read as an unfinished case.
+Accepted — it is unfinished: a human still has to place income, they simply have no threshold to
+place it against. The narrative gloss states explicitly that the absence of a limit is not a pass,
+so the case summary cannot infer one.
+
+**Revisit if:** a gift wants income excluded from the verdict altogether rather than handed to the
+officer — that is a configuration question, not a copy one.
+
+
 ## The ethnicity advisory matches at a WORD START, and accepts the recall it loses — 2026-09-10
 
 **Decision:** `apply_copy.sensitive_terms` requires each term to begin a word — not preceded by

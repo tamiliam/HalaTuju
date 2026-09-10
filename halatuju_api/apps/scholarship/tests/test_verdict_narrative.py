@@ -110,3 +110,42 @@ class TestVerdictCaseSummary(SimpleTestCase):
         self.assertIn('NOT an STR', p)                      # glossed open finding
         self.assertIn('GROSS', p)                           # the gross/per-capita rule
         self.assertIn('never', p.lower())                   # the "never invent / never take-home" rules
+
+
+class TestNoIncomeBandVocabulary(SimpleTestCase):
+    """⚠ THE PYTHON GLOSS IS THE TWIN OF THE MESSAGE FILES, AND TWINS GO STALE SEPARATELY.
+
+    ``_CODE_GLOSS`` is a SECOND English copy of the same officer sentences — it grounds the
+    Check-2 case summary. The web guard (`incomeVocabulary.test.ts`) cannot see it, so a fix
+    applied only to `en.json` would leave the LLM still reasoning about "the B40 line" while
+    the tile beside it said nothing of the kind.
+
+    B40 / M40 / T20 are DOSM's national income bands. A gift may set no income ceiling at
+    all, so none of them belongs in copy that describes a gift's own threshold.
+    """
+    BANDS = ('B40', 'M40', 'T20')
+
+    def test_no_band_in_any_gloss(self):
+        hits = []
+        for code, gloss in vn._CODE_GLOSS.items():
+            texts = gloss.values() if isinstance(gloss, dict) else [gloss]
+            for t in texts:
+                for band in self.BANDS:
+                    if band in t:
+                        hits.append(f'{code}: {band}')
+        self.assertEqual(hits, [])
+
+    def test_scanned_a_real_corpus(self):
+        # A gloss map that failed to import reads empty, and an empty loop passes.
+        self.assertGreater(len(vn._CODE_GLOSS), 15)
+
+    def test_no_band_in_the_prompt_head(self):
+        for band in self.BANDS:
+            self.assertNotIn(band, vn._PROMPT_HEAD)
+
+    def test_the_no_means_test_gloss_forbids_threshold_reasoning(self):
+        # ⚠ The model is told the ABSENCE of a limit is not a pass. Without that sentence a
+        # summariser reads "income: no limit" as "income cleared".
+        g = vn._CODE_GLOSS['income_not_means_tested']
+        self.assertIn('NO household income limit', g)
+        self.assertIn('not treat the absence of one as a pass', g)

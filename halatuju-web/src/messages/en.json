@@ -4078,7 +4078,7 @@
         "openQuery": "Carried-over query — confirm with the student at the interview.",
         "needsInterview": {
           "income_unverified_needs_interview": "Confirm the household's income sources and amounts (informal / no payslip) at the interview.",
-          "income_above_b40_line": "Household income reads above the B40 line (about RM {amount} vs RM {ceiling} per person) — explore the full financial picture at the interview. Interviewer note only: do not raise the figure with the student as a message.",
+          "income_above_b40_line": "Household income reads above this gift's income limit (about RM {amount} vs RM {ceiling} per person) — explore the full financial picture at the interview. Interviewer note only: do not raise the figure with the student as a message.",
           "academic_grade_uncertain": "A grade could not be verified against the results slip — confirm the student's actual results at the interview.",
           "ic_service_down": "Identity could not be auto-verified (an ID-service issue) — confirm the student's MyKad at the interview."
         },
@@ -4111,7 +4111,7 @@
           "question": "JKM often supports families with disability or caregiving needs. Could you tell me what your family is receiving JKM for?"
         },
         "household_size_one": {
-          "fact": "Household size is 1 — unusual for a B40 student.",
+          "fact": "Household size is 1 — unusual for a student applying for financial assistance.",
           "question": "You mentioned you live alone — can you tell me about that? Are you a student living away from family?"
         },
         "utility_high_vs_income": {
@@ -4263,7 +4263,7 @@
         "fact": {
           "identity": "Identity",
           "academic": "Academic",
-          "income": "Income (B40)",
+          "income": "Income",
           "pathway": "Pathway"
         },
         "status": {
@@ -4288,7 +4288,7 @@
           "income_proof_epf": "EPF statement provided.",
           "income_proof_salary": "Salary slip provided.",
           "utility_bills_present": "Utility bills provided (a wealth-level proxy).",
-          "str_verified": "STR document verified — B40 status confirmed.",
+          "str_verified": "STR document verified — the government's own means test is satisfied.",
           "offer_reporting_official": "The letter carries the institution's official registration summons (date + label verified against a public issuer).",
           "offer_programme": "Offer letter: {programme} at {institution}.",
           "offer_name_ok": "Offer letter is in the student's name.",
@@ -4317,23 +4317,24 @@
           "guardianship_letter_not_genuine": "The document in the guardianship-letter slot couldn't be read as a complete letter — it may be cropped or the wrong document, so the guardian↔student link can't be read off it. The student has been asked to upload the full, uncropped letter.",
           "guardianship_letter_unreadable": "Nothing at all could be read off the guardianship letter on file — it is the right kind of document, we simply couldn't read it. The student has been asked for a clearer copy. Do not read this as 'nothing wrong'.",
           "str_not_current_wrong_type": "Not an STR document — it doesn't count as STR proof. Assessing the salary documents; a valid STR is required from the student.",
-          "str_not_current_rejected": "STR rejected (Ditolak) — it fails as STR proof. Assessing the salary documents for B40 instead.",
+          "str_not_current_rejected": "STR rejected (Ditolak) — it fails as STR proof. Assessing the salary documents instead.",
           "str_not_current_stale": "Approved last cycle only — that's stale, not proof of current need. The current cycle's status is required from the student before this counts.",
           "str_not_current_unreadable": "Recognised STR page, but the approval line didn't read and no payment is shown — don't assume Lulus. A clear status is required from the student before this counts.",
           "str_not_current_unconfirmed": "Approved (Lulus), no payment date — treat as probable, not confirmed; verify the current cycle (Maklumat Pembayaran / live portal) before relying on it.",
           "str_recipient_mismatch": "The STR recipient isn't the declared earner — the name/IC on the STR doesn't match the earner's IC. Confirm.",
           "income_unverified_needs_interview": "Income can't be document-verified (informal / no payslip) — confirm during the interview via household size, dependents and lifestyle. Do NOT block.",
-          "income_per_capita_ok": "Per-capita income RM{amount} is below the B40 line (RM{ceiling}) — within the threshold.",
-          "income_above_b40_line": "Per-capita income RM{amount} is over the B40 line (RM{ceiling}) — recommend reject on income; override only if the interview surfaces genuine qualifying circumstances.",
-          "income_salary_probable": "Salary documents put gross household income ~RM{amount}/month clearly under the B40 line — supports approval; confirm the household at interview.",
-          "income_salary_unsure": "Gross household income ~RM{amount}/month sits near the B40 line — not a clear pass. Confirm the household composition (size, and whether another member is working) at interview to establish the true gross and per-capita before approving.",
-          "income_declared_accepted_str": "Declared income for {members} is accepted — a valid STR already establishes the household's B40 need, so the stated wage counts without a payslip. Included in the per-capita.",
+          "income_per_capita_ok": "Per-capita income RM{amount} is below this gift's income limit (RM{ceiling}) — within the threshold.",
+          "income_above_b40_line": "Per-capita income RM{amount} is over this gift's income limit (RM{ceiling}) — recommend reject on income; override only if the interview surfaces genuine qualifying circumstances.",
+          "income_not_means_tested": "This gift applies no household income limit, so income is not an eligibility test here — the documents are on file for your judgement, not for a threshold.",
+          "income_salary_probable": "Salary documents put gross household income ~RM{amount}/month clearly under this gift's income limit — supports approval; confirm the household at interview.",
+          "income_salary_unsure": "Gross household income ~RM{amount}/month sits near this gift's income limit — not a clear pass. Confirm the household composition (size, and whether another member is working) at interview to establish the true gross and per-capita before approving.",
+          "income_declared_accepted_str": "Declared income for {members} is accepted — a valid STR already establishes the household's need, so the stated wage counts without a payslip. Included in the per-capita.",
           "income_declared_accepted_evidenced": "Declared income for {members} is accepted — a supporting document (employer/wage letter, bank statements, or a community letter) backs the stated wage. Included in the per-capita.",
           "income_declared_needs_evidence": "{members} declared a wage, but there's no payslip, no valid STR, and no supporting document — so it can't count yet. Proof is required from the student: any one of an employer/wage letter, bank statements showing income, or a community/penghulu letter. The request has been raised in the Action Centre.",
           "unemployment_epf_corroborated": "EPF corroborates that {members} isn't currently employed (no active employer / lapsed contributions) — supports the household's limited-income picture. Soft signal.",
           "household_size_confirm": "The people described add up to {described}, but household size is entered as {size} — a smaller size overstates per-capita income. Confirm the true household size at interview. Soft signal.",
-          "utility_percapita_b40": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — consistent with a B40 household (soft, imperfect signal).",
-          "utility_percapita_high": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — high (M40/T20 consumption pattern). Worth probing at interview (soft signal).",
+          "utility_percapita_b40": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — consistent with a low-income household (soft, imperfect signal).",
+          "utility_percapita_high": "Utility proxy: combined water + electricity ~RM{amount}/capita/month — high (a higher-income consumption pattern). Worth probing at interview (soft signal).",
           "utility_hardship": "Hardship signal: the utility bills carry meaningful arrears (unpaid balance) — supports financial need.",
           "earner_ic_present": "Earner's IC on file: {name}.",
           "relationship_confirmed": "Earner confirmed as the student's parent/guardian.",
