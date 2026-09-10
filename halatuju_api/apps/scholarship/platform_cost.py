@@ -30,6 +30,13 @@ from decimal import Decimal
 ATTRIBUTABLE_SKU_MARKERS = (
     'document text detection',   # Cloud Vision — one call per applicant document
     'generate content',          # Gemini — per applicant report / extraction
+    # ⚠ THE SAME SKU, SPELT WITH AN UNDERSCORE, AND IT WAS BEING MISSED. Google bills it as
+    # 'Generate_content text output token count for …', which the spaced marker above does not
+    # match — so every Gemini line fell through to `platform`, the most tenant-driven cost on the
+    # invoice counted as our own. Found on 2026-09-11 when the July and August pulls were read
+    # line by line for the first time. It is RM0.03 today and it is the line that grows.
+    'generate_content',
+    'gemini api',                # the service name, so a future Gemini SKU cannot slip past too
     'services cpu',              # Cloud Run request-serving (NOT 'Jobs CPU')
     'services memory',           # ditto
     'data transfer',             # egress — serving responses to real users
