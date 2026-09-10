@@ -550,7 +550,57 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-11, after AI model visibility)
+## Next Sprint (as of 2026-09-11, after the verdict engine got a version)
+
+**⚠⚠ BUILT AND GATED, *NOT DEPLOYED*.** Branch **`feat/verdict-engine-version`**, worktree
+`.worktrees/verdict-version`. api + web. ⚠ **MIGRATION 0156** (one additive column) and
+⚠ **A DATA STEP** (see below). Gates: pytest **6426** · jest **2059** · tsc **24** (TD-221) ·
+lint **0** · i18n **5047 × 3** · `next build` exit 0 · `makemigrations --check` clean.
+**Two bite-checks, both bit.**
+
+**⚠⚠ WHY — the learning loop existed and was unlabelled.** `ai_verdict_snapshot` (what the AI
+said) against `officer_verdict` (what the human said), compared per fact by
+`audit.compute_overrides`, rolled up by `override_metrics`, shown as the AI Reliability card.
+**88 pairs, 2026-06-17 → 2026-09-01, with nothing recording which `verdict_engine` predicted.**
+So the scorecard averaged every generation as one model. `_declared_pathway` changed on 2026-09-10
+and no stored row can tell you. Owner, 2026-09-11: *"The model is what predicts whether a student
+qualifies... Otherwise where does the learning from predicting and being corrected sit?"*
+
+- **`VERDICT_ENGINE_VERSION`** sits beside `build_verdict` with the bump rule AT the constant:
+  **bump when a change can alter a fact's status, band or red-chip count** — including anything
+  `build_verdict` reads (`pathway_engine`, `income_engine`, the genuineness ladder).
+- **⚠ IT IS STAMPED IN THE SAME BREATH AS THE SNAPSHOT.** What the AI said and which engine said
+  it are ONE fact; stamping elsewhere or later re-creates the gap.
+- **⚠ NEVER RE-RUN `build_verdict` OVER OLD SNAPSHOTS.** A snapshot is the historical record of
+  what the AI asserted at the time. Regenerating replaces the evidence with today's answer and
+  destroys the only basis the scorecard has. `test_THE_SNAPSHOT_IS_NEVER_REGENERATED` pins it.
+- **⚠ THE RATE IS STILL BLENDED, DELIBERATELY** (owner: *"A now, and B in future"*). The card
+  discloses the mix when `engineVersions.length > 1`. **Do not "fix" the blend by splitting the
+  roll-up until a second version has enough decided applications to compare** — 88 sit under
+  `pre-versioning`.
+- **⚠ NOT `MODEL_VERSION`, NOT `ai_registry`.** The former versions whether ONE DOCUMENT looks
+  genuine; the latter answers "which LLM would this job call now" and RESOLVES, NEVER RECORDS. This
+  engine calls no model at all.
+
+**▶ THE DATA STEP — 88 live rows, AFTER the deploy.**
+`backfill_verdict_engine_version` stamps `pre-versioning` on decided rows with no version.
+**DRY RUN IS THE DEFAULT**; `--apply` writes. Door: `CronRunView.JOBS['backfill-verdict-engine-version']`
+(this repo FAILS a test for any `backfill_*` with no route to the live service).
+⚠ **NEVER run it from a local checkout** — TD-206 retired exporting DB_* onto a laptop.
+It writes ONE column: it does not touch the snapshot, and leaves UNDECIDED rows empty so a future
+decision stamps the real engine.
+
+**▶ LOGGED, NOT BUILT:** split `override_metrics` per version once there is enough to compare
+(alternative (c) in the decision); `profile_engine.py`'s B40 vocabulary; **TD-237**; the landing
+page + sign-in prompt B40 copy; sending `pathway_confirmed_at` to the browser; teaching the stream
+axis about intake years (⚠ "sync the record to the letter" would be the WRONG fix — it overwrites
+a continuing student's current stream with their year-old admission stream).
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-11, after AI model visibility)
 
 **✅ SHIPPED AND DEPLOYED 2026-09-11.** `main` at **`a87028a7`**; BOTH Cloud Builds SUCCESS;
 serving **halatuju-api-01026-tdc** / **halatuju-web-00876-z4d** (read from

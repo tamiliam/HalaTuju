@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-09-11 — The predictor now says which predictor it was
+
+Owner, 2026-09-11: *"I understand the version more wholistically. The model is what predicts
+whether a student qualifies. Genuineness of the document is one stage, but it not all. Otherwise
+where does the learning from predicting and being corrected sit?"* api + web.
+⚠ **MIGRATION 0156** (one additive column). ⚠ **DATA STEP: a backfill over 88 live rows.**
+
+- **⚠ THE LEARNING LOOP EXISTED AND WAS UNLABELLED.** `ai_verdict_snapshot` (what the AI said)
+  against `officer_verdict` (what the human said), compared per fact by `audit.compute_overrides`
+  and rolled up by `override_metrics` into the AI Reliability card — **88 pairs banked
+  2026-06-17 → 2026-09-01**. Nothing recorded WHICH `verdict_engine` produced each prediction, so
+  the scorecard averaged every generation as one model. Not hypothetical: `_declared_pathway`
+  changed on 2026-09-10 and no stored row can tell you.
+- **`VERDICT_ENGINE_VERSION`** now lives beside `build_verdict`, with the bump rule stated at the
+  constant: *bump when a change can alter a fact's status, band or red-chip count.*
+- **A sibling column `ai_verdict_engine_version`**, stamped in the SAME breath as the snapshot —
+  what the AI said and which engine said it are one fact.
+- **`override_metrics` reports `engine_versions`**, and the card says so when it spans more than
+  one. **The rate stays blended, deliberately** (owner: *"A now, and B in future"*) — with 88 under
+  `pre-versioning` and a handful under anything newer, per-version rates would be noise for months.
+  This makes the blend legible now and leaves the split for when there is enough to compare.
+- **A backfill labels the past** as `pre-versioning` — not a version number, so it can never be
+  read as a generation. **Dry-run by default**, and wired into `CronRunView.JOBS` in the same
+  commit, because this repo fails a test for any `backfill_*` with no door to the live service.
+- **⚠ IT NEVER RE-RUNS `build_verdict`.** A snapshot is the historical record of what the AI
+  asserted at the time; regenerating it would destroy the only evidence the scorecard rests on. A
+  test asserts the stored snapshot is byte-identical after the backfill.
+
+**⚠ THIS IS NOT `MODEL_VERSION` AND NOT `ai_registry`.** `genuineness/*.MODEL_VERSION` versions
+whether ONE DOCUMENT looks genuine — one input to one fact. `halatuju.ai_registry` (2026-09-11)
+answers "which LLM would this job call right now" and explicitly RESOLVES, NEVER RECORDS. The
+verdict engine calls no model at all.
+
+Gates: pytest **6426** · jest **2059** · tsc **24** (TD-221) · lint **0** · i18n **5047 × 3** ·
+`next build` exit 0 · `makemigrations --check` clean. Two bite-checks, both bit.
+
 ## Which AI version are we running, and which actually ran - 2026-09-11
 
 The owner asked whether an organisation could pick its own AI version per task, to track versions
