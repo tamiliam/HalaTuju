@@ -552,8 +552,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-10, after the clear button and the draft-from-English)
 
-**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION.** Worktree
-`.worktrees/apply-copy-v2`, branch `feat/apply-copy-v2`, base `origin/main` at `4c6c15e2`.
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-10.** `main` at **`577cf246`**; BOTH Cloud Builds
+SUCCESS on `577cf24` — **waited on the push's OWN build IDs** (web `4b00836f…`, api
+`3d86dc5c…`), never "the top rows are green". Serving **halatuju-api-01017-nqs** /
+**halatuju-web-00871-kf4** (read from `status.latestReadyRevisionName`, never
+`status.traffic[0]`). Site and apply page 200; the new draft route answers **401 with a body**
+(gated, not 404/500 — a bodyless POST returns 411 from the LB, which is the known quirk, not a
+fault); **no api ERROR logs since**.
+
+**THE SERVED ADMIN BUNDLE WAS READ BACK, BOTH DIRECTIONS** (1.64 MB across 21 chunks): it carries
+"Clear all wording", "Draft from English", "You will lose what you wrote in" and "Save your English
+first" — and it carries **no "Use the standard wording"** in any language. That last one is the
+ABSENCE check, and it is the only question that answers a rename: the retired label could have sat
+right beside the new one and a presence grep would have passed.
+
+**NO MIGRATION, NO ENV VAR, NO DATA STEP.** `APPLY_COPY_DRAFT_MODEL` has a working default and
+`GEMINI_API_KEY` was already on the service. **Nothing a student sees changed** — both gifts still
+read `apply_copy: {}`.
+
+Was worktree `.worktrees/apply-copy-v2`, branch `feat/apply-copy-v2`, base `origin/main` at
+`4c6c15e2`; merged forward once as main moved under it (the Vircle installed-and-registered tick).
 api + web. Retro `docs/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
 `docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
 Gates, run inside the worktree AND re-run on the MERGED tree (origin/main moved under this branch
@@ -608,10 +626,7 @@ merge — markers only, no content lost, found at sprint-start and fixed separat
 three JSON message files were resolved by a script that parsed them; the markdown was resolved by
 eye, and the eye missed it. **Grep the whole tree for conflict markers before committing a merge.**
 
-**▶ AT DEPLOY: push (api + web — Python changed, so expect BOTH builds).** No migrate-first, no
-env vars, no data step. **Nothing a student sees changes** — both gifts still read `apply_copy:
-{}` unless somebody types wording. `APPLY_COPY_DRAFT_MODEL` has a working default, so no Cloud Run
-env var is needed; `GEMINI_API_KEY` is already set on the service.
+**▶ THE DEPLOY IS DONE** — see the header. Python changed, so both builds fired, as expected.
 
 **▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
 1. Configuration → **How it's advertised** → Test Programme. The save bar now reads **Clear all
