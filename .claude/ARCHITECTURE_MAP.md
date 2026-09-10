@@ -631,6 +631,21 @@ in `lib/api.ts`. Sprint 5b added `components/Scholarship{Documents,Referee,Conse
 upload + referee + consent flow with guardian fields for minors) as next-steps steps 4–6, plus the
 document/referee/consent client functions in `lib/api.ts`.
 
+**Vircle spending (sponsor spending reporting, S1 2026-09-10).**
+`apps/scholarship/spending_import.py` reads a Vircle "Bursary Usage Report" and stores it as
+`BursarySpendTxn` rows joined to a student by `wallet_id → ScholarshipApplication.vircle_id`;
+`MerchantCategory` remembers one shop's category so it is decided once and never re-asked.
+Driven by `manage.py ingest_spending --file/--dir [--apply]` — **report-only unless `--apply`**.
+⚠ **`rows_from_values(header, value_rows, source)` IS THE ONE PARSER** and takes plain lists: the
+local `.xlsx` adapter and the Drive/Sheets path (S2) both feed it, so the five measured drift rules
+(two merchant column names, two student column shapes, two amount formats, two date formats, and
+"the filename is NOT the coverage window") exist in exactly one place. openpyxl is imported lazily
+and is **not** a service dependency — the service will read the Sheets API.
+⚠ A missing REQUIRED column refuses that file; an unknown EXTRA column is only reported. Every
+unparseable value is counted and named, never skipped. "Sent to a person" comes from `duitnow_type`,
+never from a merchant name that looks like a person's.
+Plan: `docs/plans/2026-09-10-sponsor-spending-roadmap.md`.
+
 ### Backend Root Files
 
 ```

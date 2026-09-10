@@ -32,68 +32,22 @@ categories with a ranked list, then a note stating our assumptions. Weekly, for 
 
 ---
 
-## S1 — Read a spending report correctly (from a local file)
+## S1 — Read a spending report correctly ✅ SHIPPED 2026-09-10
 
-**Goal.** Turn a Vircle report file into stored transactions, joined to the right student, with no
-double-counting — proven against all eight real reports.
+**Done.** Retro `docs/retrospective-2026-09-10-spending-ingest-s1.md`; the rules a later reader must
+not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in the modules' own docstrings.
+`apps/scholarship/spending_import.py` + `BursarySpendTxn` + `MerchantCategory` + migration `0155`
+(**NOT YET APPLIED — migrate-first**) + `manage.py ingest_spending`, report-only by default.
 
-**Scope.**
-- Models `BursarySpendTxn` + `MerchantCategory` (per the July brief, plus a `decided_by` column so
-  §4c's four rungs are distinguishable from day one — that is why S3 needs no migration).
-- `apps/scholarship/spending_import.py` — header resolution by NAME across the three known variants;
-  the amount parser (number **or** `"RM26.90"`); `transaction_id` dedup; `TX Type`/`Status` gating.
-- The wallet join: `wallet_id → ScholarshipApplication.vircle_id`; **a populated `Child User` means
-  the child is the spender** (28 real rows).
-- `ingest_spending --file <path> [--apply]`, report-first.
-- Fixtures shaped like each of the three real header variants, with invented names and wallets.
+**The measured baseline S2 must keep reproducing**, from the eight real exports:
 
-**Acceptance.** All eight real reports ingest to **1,368 transactions, of which 1,366 are `SPEND`
-totalling RM10,650.22** (all rows RM10,662.72), matching brief §0b. **⚠ The parser must report a
-count of amounts it could NOT parse, and that count must be 0** — an earlier probe of mine quoted
-RM10,029.03 by silently skipping the 88 string amounts, which is the same class of fault as the bug
-it was measuring. Re-running is a no-op. An unknown header **fails loudly**. A repeated
-`transaction_id` whose fields DISAGREE is reported, never silently dropped. Unknown wallets listed.
+    1,368 unique transactions · 1,366 SPEND · RM10,650.22
+    0 unparsed amounts · 0 unparsed dates · 0 unknown columns
+    28 parent-held wallets · 2 person-to-person rows · coverage 1 Jul -> 30 Aug 2026
 
-**Complexity: HIGH.** ~14 files. **Has a migration — migrate-first, two new tables, RLS + one
-`service_role` policy each.** **No sponsor-visible change.**
-
-### S1 — lessons from `docs/lessons.md` that bind this sprint
-
-Read at sprint-start 2026-09-10. Each names how it is being obeyed, not merely noted.
-
-- **"Fixed at the seams that fire" (Billing attribution, 2026-08-18)** — *a fix whose correctness
-  depends on every future caller remembering something is a convention, not a fix.* The header
-  layout has already changed twice. So an unrecognised header **RAISES**; it never falls back to a
-  position or a guess. The variant list is one table in one module, and the failure names the
-  header it did not recognise. **Make the omission loud.**
-- **"A unit test on a helper does not prove the helper is CALLED" (Parentage marker, 2026-07-30)** —
-  the load-bearing test is not on the amount parser; it is the whole command over the eight real
-  files reproducing **1,366 SPEND rows / RM10,650.22**. Unit tests on `"RM26.90"` would pass with the parser
-  unwired.
-- **"Run the repair in REPORT mode and read every line" (BrightPath #20, 2026-09-08)** — `--report`
-  is the default and its output gets READ before `--apply`, not skimmed. A prediction in this
-  roadmap is a claim, not a result.
-- **"Read-only BY CONSTRUCTION, not by intent" (Course Data health, 2026-06-13)** — report mode
-  must be unable to write. A test asserts the row count is unchanged after a report run.
-- **"A column named for an event may be stamped at creation" (Round states, 2026-09-08)** — open
-  every field definition before trusting its name. Already applied once: `Entry Type` reads `CREDIT`
-  on a spend, so the gate is `TX Type`, not the word that sounds right.
-- **"'The existing tests pass' is a FULL-SUITE claim" (S-ASSIGN, 2026-09-04)** — new models touch
-  shared fixtures, so the gate is the whole `apps/` suite, not `test_spending*.py`.
-- **"A bite-check that cannot be injected has told you NOTHING" (S-ASSIGN, 2026-09-04)** — line
-  endings are per FILE in this repo. Read the bytes before writing an anchor, verify the injection
-  LANDED, restore by writing the original bytes back (never `git checkout --`), and re-run
-  expecting green.
-- **"A 'never happened' state and a 'service is down' state are different" (IC OCR, 2026-06-23)** —
-  a wallet with no matching student and a wallet we have not yet imported are different findings and
-  are reported as two lists.
-- **Project rule, `halatuju_api/CLAUDE.md`** — the deploy does NOT run `migrate`. Migrate-first via
-  Supabase MCP with **hand-written Postgres DDL** (`sqlmigrate` renders SQLite here), **RLS enabled
-  + one `service_role` policy per new table**, ledger row recorded BEFORE the push, Security Advisor
-  checked after. Next migration number is **`0155`**.
-- **Privacy, from the brief** — the corpus in `Downloads/spending/` holds student names and wallet
-  ids. It never enters the repo; fixtures carry invented names and wallets. The student NAME in a
-  report is used only to cross-check the wallet mapping and is **never stored**.
+**⚠ The two things S2 inherits rather than rebuilds:** `rows_from_values(header, value_rows, source)`
+is the ONE parser and takes plain lists — hand it Sheets API values and every drift rule comes free;
+and `spending_import.ingest(sources, apply=False)` is the whole store-and-report half, unchanged.
 
 ---
 

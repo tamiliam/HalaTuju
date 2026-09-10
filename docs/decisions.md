@@ -10059,3 +10059,89 @@ Mitigated by visibility, not by refusal.
 
 **Revisit if:** a tenant asks to run an ethnicity-scoped programme (the scope becomes
 per-organisation — alternative (b)), or MyNadi's s44(6) position changes.
+
+## Non-SPEND rows are STORED, not filtered at import — Spending S1, 2026-09-10
+**Decision:** `ingest_spending` stores every row the report contains, including the two
+`TX Type = RECEIVED` rows in the first two months (money INTO a wallet from a person). Readers
+narrow on `tx_type`; the importer does not.
+**Alternatives considered:** filter to `SPEND` at read time — the obvious reading of "report the
+student's spending", and one line shorter.
+**Rationale:** we were handed the data; discarding it at the door makes the table unable to answer
+a question it holds the answer to, and the discard is invisible afterwards. The reporting layer can
+always narrow; it can never un-drop.
+**Trade-offs:** every reader must remember to filter. Mitigated by `spend_rows`/`spend_total` on the
+report and by the `is_spend` property, so the narrowing has one spelling.
+**Revisit if:** a non-SPEND row is ever found to carry money that is not the student's, in which
+case the question becomes whether to store it at all rather than where to filter it.
+
+## The parser takes plain lists, so S2 reuses it and openpyxl stays off the service — Spending S1, 2026-09-10
+**Decision:** `spending_import.rows_from_values(header, value_rows, source)` is the whole parser and
+takes ordinary Python sequences. `rows_from_xlsx` is a thin adapter that imports openpyxl LAZILY,
+and **openpyxl is deliberately absent from `requirements.txt`**.
+**Alternatives considered:** (a) a parser that takes a file path, with the Drive path downloading to
+a temp file — simpler now, and it would put a spreadsheet library in the production image for a
+laptop-only operation; (b) add openpyxl to requirements anyway "in case".
+**Rationale:** S2 reads the **Sheets API**, which returns values with no spreadsheet library at all.
+Splitting at the values boundary means the five drift rules (two merchant names, two student
+shapes, two amount formats, two date formats, the coverage rule) are implemented exactly once and
+S2 inherits them. Mirrors `sheets.py`'s lazy Google imports.
+**Trade-offs:** reading a local `.xlsx` needs `pip install openpyxl`; the command says so.
+**Revisit if:** the service ever has to read an uploaded `.xlsx` directly — then openpyxl becomes a
+real dependency and the lazy import becomes a normal one.
+
+## A missing required column REFUSES the file; an unknown extra column only reports — Spending S1, 2026-09-10
+**Decision:** `resolve_columns` raises `UnreadableReport` naming every required field it could not
+find, and that file is skipped whole while the rest of the run continues. An unrecognised EXTRA
+header is reported and the file loads normally.
+**Alternatives considered:** (a) fall back to column POSITION — the layout is stable-ish; (b) refuse
+on any unrecognised header, extra ones included.
+**Rationale:** the shape has already drifted five times in eight weeks, so a positional fallback is
+a live hazard, not a theoretical one — and parsing past a header we cannot read is the single
+failure that can file money against the **wrong student**, silently, on a real person's record. An
+extra column cannot misattribute anything, so refusing on it would stop a whole week's data for a
+change that costs nothing. **A renamed column presents as both at once (a required field missing,
+an unknown extra present) and therefore raises**, which is the case that matters.
+**Trade-offs:** a genuinely new required column stops the file until someone adds the alias. That is
+the intended cost.
+**Revisit if:** Vircle ever ships a stable, versioned export contract.
+
+## A wallet claimed by two students is SKIPPED, never guessed — Spending S1, 2026-09-10
+**Decision:** `_wallet_map` returns unique matches and a separate ambiguous map. Rows on an
+ambiguous wallet are skipped, counted and named in the report; they are never filed against either
+application.
+**Alternatives considered:** pick the lowest application id; pick the most recently awarded.
+**Rationale:** two siblings on one parent-held account produce this, and Vircle refuses an own
+account to anyone born after 2008 — so the shape is expected, not exotic. Either heuristic files one
+student's spending against the other, and the resulting chart is wrong in a way no later reader can
+detect.
+**Trade-offs:** those rows stay unimported until a human resolves the mapping. Correct: unimported
+is recoverable, misattributed is not.
+**Revisit if:** a legitimate shared wallet is ever confirmed, which would need a per-transaction
+attribution signal Vircle does not currently give us.
+
+## `WALLET_EXPECTED_STATES` is its own constant, though it equals `pool.RECENTLY_FUNDED_STATES` — Spending S1, 2026-09-10
+**Decision:** a separate tuple `('awarded', 'active', 'maintenance')` in `spending_import`, with the
+reason written at the definition.
+**Alternatives considered:** import `pool.RECENTLY_FUNDED_STATES` — identical today, and DRY.
+**Rationale:** that constant answers *"whose card lingers in the discovery pool?"*; this one answers
+*"who should have somewhere for money to land?"*. Two filters that look identical and mean different
+things is exactly how one silently acquires the other's rule when its own question changes — the
+2026-09-09 People-page defect in a new costume.
+**Trade-offs:** two tuples to keep in mind. Accepted; they are allowed to diverge, which is the
+point.
+**Revisit if:** the two are ever shown to be the same QUESTION rather than the same answer.
+
+## The real-corpus test SKIPS rather than committing fixtures built from real data — Spending S1, 2026-09-10
+**Decision:** `TestRealCorpus` asserts the acceptance figures against the eight downloaded exports
+and calls `self.skipTest` when the folder is absent. Applications are built at runtime FROM the
+wallets found in the files.
+**Alternatives considered:** (a) commit a redacted sample of the real reports; (b) drop the check and
+rely on hand-written fixtures alone.
+**Rationale:** the exports carry student names and wallet ids and must never enter the repo, and a
+redaction is a judgement that has to be right every time. Building applications from the wallets
+proves the whole path — parse, join, store, total — with no real identity present. (b) would leave
+the sprint's actual acceptance criterion unasserted, which is the only claim that matters.
+**Trade-offs:** CI never runs it, so it protects only a machine that holds the corpus. Accepted: the
+fixture tests carry every RULE; this one carries the FIGURES.
+**Revisit if:** a synthetic corpus is ever generated that reproduces all five drift shapes, at which
+point it can be committed and the skip removed.

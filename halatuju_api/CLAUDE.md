@@ -550,7 +550,76 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-09, after the apply page's copy became the GIFT's)
+## Next Sprint (as of 2026-09-10, after sponsor spending S1 — a Vircle report becomes rows)
+
+**SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree `.worktrees/spending-ingest`,
+branch `feat/spending-ingest` (pushed; **NOT on main, so nothing has built**). Backend only —
+**no web file changed**, so the frontend gates are unchanged from main. Retro
+`docs/retrospective-2026-09-10-spending-ingest-s1.md`; decisions x6; lessons x2.
+Gates: pytest full `apps/` **6156** (+32); `makemigrations --check` clean. **Five bite-checks
+landed**, each injection verified on disk first and restored by writing the original bytes back.
+Ledger vs production: scholarship **154/155** (only `0155`, deliberately unapplied — **both its
+tables confirmed ABSENT**), courses **74/74**.
+
+**⚠ MIGRATION `scholarship/0155` — TWO NEW TABLES, NOT YET APPLIED. MIGRATE-FIRST.** The
+hand-written Postgres DDL, **including `ENABLE ROW LEVEL SECURITY` + one `service_role` policy per
+table**, is in the migration's own docstring (`sqlmigrate` renders SQLite here).
+
+**WHAT SHIPPED.** `apps/scholarship/spending_import.py` + `BursarySpendTxn` + `MerchantCategory` +
+`manage.py ingest_spending --file/--dir [--apply]`, report-only by default. Roadmap
+`docs/plans/2026-09-10-sponsor-spending-roadmap.md` (5 sprints; **S1 done**); requirements + the
+measured corpus `docs/plans/2026-09-09-sponsor-spending-reports-brief.md`.
+
+**⚠ VERIFIED AGAINST THE EIGHT REAL EXPORTS, NOT AGAINST FIXTURES:** 1,368 unique transactions,
+1,366 `SPEND`, **RM10,650.22**, 0 unparsed amounts, 0 unparsed dates, 0 unknown columns, 28
+parent-held wallets, 2 person-to-person rows, coverage 1 Jul -> 30 Aug 2026. That check is
+`TestRealCorpus`, which **SKIPS when the corpus folder is absent** — those files carry student
+names and never enter the repo, so CI must not depend on them.
+
+**WHAT MUST NOT BE "TIDIED":**
+- **⚠ THE FILE SHAPE HAS DRIFTED FIVE TIMES IN EIGHT WEEKS, ALL MEASURED.** The merchant column is
+  `Receiver` OR `Merchant Name`; the student column is `BrightPath name` OR `Wallet User`+`Child
+  User`; `amount` is a number in 1,280 rows and the STRING `"RM26.90"` in 88; `transaction_date`
+  carries a time in the two oldest reports and not after; and **the filename is NOT the coverage
+  window** (the 26 July report covers FOURTEEN days). **Add aliases, never replace them** — the
+  archive is the history and is re-read from the start.
+- **⚠ A MISSING REQUIRED COLUMN REFUSES THAT FILE; AN UNKNOWN EXTRA COLUMN ONLY REPORTS.** Parsing
+  past a header we cannot read is the one failure that files money against the WRONG student. A
+  renamed column presents as both at once and therefore raises, which is the case that matters.
+- **⚠ EVERY SKIP IS COUNTED AND NAMED.** An earlier probe of this corpus summed only the values
+  that were already numbers, lost the 88 string amounts and reported **RM10,029.03** for a true
+  **RM10,650.22** — 5.8% short, with nothing looking wrong. `IngestReport.unparsed_amount` /
+  `unparsed_date` exist because of that, and the corpus test asserts they are EMPTY.
+- **⚠ REPORT MODE CANNOT WRITE.** One `bulk_create`, behind `--apply`, with a test asserting the
+  row count is unchanged after a report run.
+- **⚠ "SENT TO A PERSON" COMES FROM `duitnow_type`, NEVER FROM THE MERCHANT'S NAME.** Half the real
+  merchants are registered under an individual's name (hawker stalls, sundry shops), so name-shape
+  matching would file a student's daily meals as money sent to a friend. The observed value is
+  `STATIC_CUSTOMER_QR_CODE_DUITNOW_P2P`; in two months NO student sent money to a person.
+- **⚠ `Wallet User` IS NOT ALWAYS THE STUDENT** — Vircle refuses an own account to anyone born
+  after 2008, so a parent holds it and the student is `Child User` (28 real rows). Join on
+  `wallet_id`. **A wallet claimed by TWO students is skipped and named, never guessed.**
+- **⚠ NON-`SPEND` ROWS ARE STORED, NOT FILTERED AT IMPORT.** Readers narrow; the importer does not.
+- **⚠ THE STUDENT'S NAME IN THE REPORT IS NEVER STORED** — read to cross-check the wallet, then
+  discarded.
+- **⚠ `rows_from_values` IS THE ONE PARSER** and takes plain lists, so S2's Sheets path reuses it
+  unchanged. **openpyxl is lazily imported and deliberately NOT in `requirements.txt`.**
+
+**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0155` MIGRATE-FIRST** via Supabase MCP + record
+its `django_migrations` row BEFORE the push; (2) confirm the Security Advisor reports no new
+finding; (3) merge + push (**api only** — no web file changed, so expect ONE build). **Nothing a
+student or sponsor sees changes, and nothing runs on its own** — the command is manual until S2.
+
+**▶ NEXT = S2 (Drive fetch + the schedule).** ⚠ **THE OFFICER UPLOADS BY HAND AND NOT ON A FIXED
+DAY** (owner, 2026-09-10), so **a NEW FILE is the trigger, never the calendar**: run daily, act only
+on files not already ingested, do nothing on a quiet day. One nudge after a long silence (a
+forgotten manual step fails silently and an absent file looks exactly like a quiet week), then
+silence. **Alert emails only when a human is needed — no weekly all-clear** (owner ruling).
+Then S3 the sorter, S4 the officer view + a Gemini-written summary filed back to Drive
+(**⚠ in a SUBFOLDER, and the reader accepts only the Vircle filename pattern — our own output must
+never be read back as an input**), S5 the sponsor card (Stitch first).
+
+## Superseded — previous Next Sprint (as of 2026-09-09, after the apply page's copy became the GIFT's)
 
 **✅ DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`8da972e1`**; BOTH Cloud Builds
 SUCCESS on `8da972e` — **waited on the push's OWN build IDs** (web `417cae41…`, api
