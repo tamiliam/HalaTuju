@@ -280,6 +280,79 @@ Two questions, two shapes; do not merge them.
 
 ---
 
+## 4c. ✅ HOW A SHOP GETS A CATEGORY — owner ruled option B, 2026-09-10
+
+> *"Let's go with food. And add a clarification note somewhere on assumptions we have made."*
+
+**A four-rung ladder. Each rung only sees what the rung above could not place.**
+
+**1 — `duitnow_type`, not the name.** `STATIC_CUSTOMER_QR_CODE_DUITNOW_P2P` → `transfer`.
+⚠ **NEVER decide this from the name looking like a person** — see §0 Trap 2.
+
+**2 — Keyword rules on the merchant name.** Free, instant, readable in a diff, and it is CODE not a
+guess. Reaches **100 of 290 merchants**. The two non-obvious ones worth keeping: `KOPERASI`/`KOOP`
++ a campus name is the campus shop (`study`), and `KTMB` is the national railway (`transport`).
+
+**3 — THE SPEND-PATTERN INFERENCE (this is option B).** For a merchant whose name says nothing —
+`BACHOK MAJU ENTERPRISE`, `SYAHIR AZHAR` — read the money instead:
+
+    a merchant with >= 3 visits AND a median <= RM8.00   →  food
+    ...but ONLY the rows of that merchant at or under RM20.00
+
+**Measured on the corpus: 62 merchants, 681 rows (49.9%), RM2,974 (27.9%).**
+
+⚠⚠ **THE PER-ROW CEILING IS NOT TIDINESS — IT CAUGHT TWO REAL CASES.** A merchant-level verdict
+would have swept every row along with it. `AL HUDHA ENTERPRISE` is RM7.20 nine times **and once
+RM200**. `TEGUH ENIGMA (MATRIK 1)` is RM0.80 five times **and RM119.50 across two**. A median hides
+an outlier by design. Without the ceiling, **RM320 of large one-off purchases would have been filed
+as campus meals** and nobody would ever have found out. **Classify the TRANSACTION, not the shop.**
+
+**4 — `unsorted`.** Everything left: **129 merchants, 170 rows (12.4%), RM3,088 (29.0%)**. Note it
+is only 12% of ROWS but 29% of MONEY — the leftovers are the big, rare, genuinely-unknown purchases
+(`GLASSEYE EYEWEAR TRADING` RM130, `IBIBO (REDBUS)` RM80.44, a RM50 temple donation, a RM99 apparel
+shop). **This is the bucket Gemini works on**, and its being money-heavy is the argument for doing
+so: a quarter of the picture is sitting in it.
+
+**⚠ Gemini's job is rung 4 ONLY, and it is small.** It never sees rungs 1–3, never sees an amount it
+could be swayed by, and never sees a student. It is handed a **list of merchant name strings** and
+must answer with one of the ten codes or `unsorted`. Anything outside the vocabulary is discarded.
+A name once answered is **stored**, so the same shop is never asked about twice — which is why the
+cost falls to near zero after the first run and stays there.
+
+**⚠ `local` IS NOT A CATEGORY.** An earlier draft proposed "Small local shops" for personal-name
+traders. Option B dissolves it: `SYAHIR AZHAR` (40 × RM2.00) and `FAIZUL BIN HAT` (16 × RM4.00) are
+food by rung 3. The list stays at ten.
+
+**Every merchant carries HOW it was decided** — `rule` / `inferred` / `ai` / `owner`. Without that
+column the card cannot tell a fact from an estimate, and §4d below becomes unwriteable.
+**An `owner` verdict is never overwritten by any rung.**
+
+---
+
+## 4d. ✅ THE ASSUMPTIONS NOTE — owner asked for it, 2026-09-10
+
+**Rung 3 is an inference and the card must say so.** A sponsor reading "Food RM3,000" is entitled to
+know that part of it was deduced from the size of the payments, not read off a receipt.
+
+**On the sponsor card**, under the donut, plain and short — not buried in a tooltip:
+
+> **How we work this out.** Vircle tells us the shop's name and the amount. It never tells us what
+> was bought. Where the shop's name says what it sells, we use that. Where it does not — and a
+> student visits often for small amounts — we have counted it as food. That is our best estimate,
+> not the shop's own description. Anything we cannot place is shown as **Not yet sorted**.
+
+⚠ **THREE THINGS THAT NOTE MUST NEVER DO:** name a shop (that is the whole privacy ruling); state
+the RM8/RM20/3-visit thresholds (a number in prose rots the day it is tuned — say "small amounts");
+or apologise. It is a statement of method, not a disclaimer.
+
+**In the officer view**, the fuller version: the same text plus the live thresholds, the count of
+merchants at each rung, and a list of everything the AI decided this week so a wrong call can be
+corrected. **Correcting one is a one-click `owner` verdict, which then outranks every rung.**
+
+**i18n:** en/ms/ta, under `sponsorPortal.myStudents.detail.spending.*`. ms/ta will be first drafts.
+
+---
+
 ## 4b. The superseded question, kept for the reasoning
 
 **How much of a student's spending may a sponsor see?**
