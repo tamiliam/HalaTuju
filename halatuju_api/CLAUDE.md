@@ -911,11 +911,110 @@ Then S3 the sorter, S4 the officer view + a Gemini-written summary filed back to
 (**⚠ in a SUBFOLDER, and the reader accepts only the Vircle filename pattern — our own output must
 never be read back as an input**), S5 the sponsor card (Stitch first).
 
-**▶ ALSO STANDING, FROM `main` AND NOT PART OF THIS BRANCH:** the **officer income vocabulary**
-sprint (`docs/plans/2026-09-09-officer-income-vocabulary.md`), already planned and
-owner-approved — eleven officer strings say "B40" when a gift may set NULL income ceilings
-(the Test round already does). Merged in here at 2026-09-10; whichever sprint runs first, the
-other keeps its plan file. Also logged, not built: **TD-237**.
+**▶ ALSO STANDING, FROM `main` AND NOT PART OF THIS BRANCH.** ⚠ The officer income vocabulary
+sprint that an earlier version of this note called pending **has since SHIPPED AND DEPLOYED**
+(`main` `d3131f3c`), merged in here 2026-09-10. What it leaves owed:
+- **`profile_engine.py` is now the twin that can go stale** — it holds a second, larger B40
+  vocabulary (`PROFILE_PROMPT`, `_BELOW_LINE_AFFIRM`, `_ABOVE_LINE_CAUTION`,
+  `_OFFICER_FACT_LABELS['income']`). Left alone deliberately: every edit there needs a
+  `PROMPT_VERSION` bump, which **re-dates every existing profile draft on production**. That is
+  a data and cost consequence, not a wording one.
+- **TD-237** (Applications in the rail before a gift is chosen), and the landing page +
+  sign-in prompt carrying the same platform-wide B40 copy — same class, other pages.
+- **⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing until it is inked AND the money
+  has changed hands.
+## Superseded — previous Next Sprint (as of 2026-09-10, after the officer income vocabulary)
+
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-10.** `main` at **`22ecfec2`**; BOTH Cloud Builds
+SUCCESS on `22ecfec` — **waited on the push's OWN build IDs** (`ffbb4a73…`, `8d97e613…`).
+Serving **halatuju-api-01019-snn** / **halatuju-web-00873-85w** (read from
+`status.latestReadyRevisionName`, never `status.traffic[0]`). Site 200 (`Server: Google
+Frontend`); **no api ERROR logs on the new revision**. Was branch `feat/officer-income-vocabulary`,
+worktree `.worktrees/income-vocab`. api + web. **NO MIGRATION, NO ENV VAR, NO DATA STEP.**
+
+**THE SERVED ADMIN BUNDLE WAS READ BACK, THREE WAYS** (1.64 MB across 23 chunks). PRESENT: "is
+over this gift", "is below this gift", "This gift applies no household income limit", "own means
+test is satisfied", "consistent with a low-income household", "a higher-income consumption
+pattern", "unusual for a student applying for financial assistance". **GONE:** "Income (B40)",
+"B40 status confirmed", "the B40 line", "household's B40 need", "salary documents for B40",
+"consistent with a B40 household", "M40/T20 consumption pattern", "unusual for a B40 student".
+**STILL INTACT (the out-of-scope fence):** "Apply for B40 Education Assistance", "the national B40
+threshold". **RESULT: PASS.**
+
+**⚠ A PROBE CONTAINING AN APOSTROPHE READS "MISSING" ON A CORRECT DEPLOY.** The bundler escapes
+`'` as `'`, so a literal `gift's income limit` never matches the served JS. The first read-back
+reported two false failures on correct work; the probes are apostrophe-free now. Do not
+"re-fix" the copy on that signal — grep for `is over this gift` instead.
+
+Gates on the branch: pytest **6161** (baseline 6150 + 11) · jest **1993** (1988 + 5) · tsc **24**
+(TD-221 baseline, unchanged) · lint **0 Errors** · i18n **4975 × 3** (4974 + the one new key) ·
+`next build` exit 0 · `makemigrations --check` clean. **Two bite-checks, both bit** (putting "B40"
+back into the fact tile failed the absence guard; collapsing the no-means-test branch failed the
+empty-state test).
+
+**⚠⚠ THE REAL DEFECT WAS NOT THE LABEL — read this first.** `income_engine.income_headroom`
+returns the band `'unknown'` for TWO different facts: the income could not be computed, and
+**the gift configures no income test at all** (the guard is `if pc is None or not size or not
+pc_ceiling`). `'unknown'` prints *"income can't be document-verified (informal / no payslip)"* —
+so the **Test round**, which has BOTH ceilings NULL on production (measured 2026-09-09), accused
+perfectly readable payslips of being unreadable.
+
+- **The fix is a PREDICATE, not a new band.** `income_engine.income_test_configured(application)`
+  asks the cohort directly. `income_headroom`'s return set is UNTOUCHED — it feeds the verdict
+  tiles on both routes, and widening it would put every caller in the scope of a wording sprint.
+- **⚠ THE VERDICT BAND DOES NOT MOVE.** Amber ('recommend') before, amber after; a human places
+  income, nothing is blocked. A test pins both directions. **If a band moves here, something is
+  wrong.**
+- **⚠ BOTH ITEM CODES ARE WRITTEN AS LITERALS.** `test_verdict_item_i18n` walks the AST for
+  `_item('...')` and refuses a dynamic code — it caught the first draft, which chose the code with
+  a conditional inside the call. Do not "tidy" the two branches back into one expression.
+- The new line is deliberately **NOT** in `views_admin._NEEDS_INTERVIEW_AMBERS`: "this gift does
+  not test income" is the opposite of an interview talking point. A test holds that too.
+
+**WHAT ELSE SHIPPED, and the parts that must not be "tidied":**
+- **Twelve strings × three languages, not the eleven in the plan.** `utility_percapita_high`
+  ("M40/T20") was missing from the owner-approved list and carried the identical fault pointing
+  the other way.
+- **⚠ STR KEEPS ITS NAME.** STR is a real Malaysian government programme. Only its trailing
+  "— B40 status confirmed" clause changed, to "— the government's own means test is satisfied":
+  an officer still needs to know the check has weight, it is simply not this gift's threshold.
+- **⚠ THE KEY NAMES KEEP THEIR `b40`** (`income_above_b40_line`, `utility_percapita_b40`). Internal
+  identifiers no officer reads. **A decision, not an oversight** — do not "finish the job".
+- **⚠ THE OUT-OF-SCOPE FENCE IS A TEST.** `incomeVocabulary.test.ts` asserts the apply page and
+  the landing page **STILL SAY B40**. Those are student- and sponsor-facing and belong to a
+  separate, already-planned sprint. Sweeping them in here changes what applicants are told.
+- **The absence guard walks whole trees** (every leaf under `verdict.*`, `agenda.*`, `anomaly.*` in
+  en/ms/ta) plus a whole-file sweep for the eight retired sentences — not the twelve keys that were
+  fixed. `utility_percapita_high` is the receipt for why.
+- `verdict_narrative._CODE_GLOSS` is a SECOND English copy of the same sentences (it grounds the
+  Check-2 case summary) and was fixed in step; `CASE_SUMMARY_VERSION` → `2026-09-10.1` so cached
+  summaries regenerate.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com), AFTER a deploy:**
+1. Open any BrightPath application → AI Prediction. The income tile reads **Income**, not
+   "Income (B40)". **Everything else should read as it did yesterday** — BrightPath has ceilings
+   set, so only the label left.
+2. The threshold lines now say **"this gift's income limit"** and still quote the same RM figure.
+3. Open a **Test Programme** application → the income line should say the gift applies **no
+   household income limit**, NOT that the documents could not be verified.
+4. **ms and ta are FIRST DRAFTS.** Malay uses *"had pendapatan pemberian ini"*, Tamil
+   *"இந்தக் கொடையின் வருமான வரம்பு"*, both matching the app's existing words for a gift.
+
+**▶ LOGGED, NOT BUILT — `profile_engine.py` is now the twin that can go stale.** It holds a
+second, larger B40 vocabulary: `PROFILE_PROMPT`, `_BELOW_LINE_AFFIRM`, `_ABOVE_LINE_CAUTION`, and
+**`_OFFICER_FACT_LABELS['income'] = 'Household income (B40 need)'`** — the direct mirror of the
+tile this sprint renamed. Left alone deliberately: every edit there needs a `PROMPT_VERSION` bump,
+which **re-dates every existing profile draft on production**. That is a data and cost consequence,
+not a wording one. Treat it as owed work.
+
+**▶ ALSO STILL LOGGED, NOT BUILT:** **TD-237** — Applications shows in the rail before a gift is
+chosen (owner chose gating it for the four roles that HAVE an Overview; reviewer and qc keep it).
+And the **landing page + sign-in prompt** carry the same platform-wide B40 copy — same class, other
+pages, still unlogged as work.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
 
 ## Superseded — previous Next Sprint (as of 2026-09-10, after "How it's advertised" round two)
 

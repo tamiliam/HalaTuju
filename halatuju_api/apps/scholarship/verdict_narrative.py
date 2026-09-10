@@ -24,7 +24,7 @@ from .profile_engine import _call_gemini_text
 logger = logging.getLogger(__name__)
 
 # Bump when the prompt or gloss changes so cached summaries regenerate.
-CASE_SUMMARY_VERSION = '2026-07-01.1'
+CASE_SUMMARY_VERSION = '2026-09-10.1'
 
 # ── Band label — MUST mirror officerCockpit.factTileTone + TONE_BAND_KEY (halatuju-web).
 # A divergence would make the summary state a different band than the tile shows. Keep in step.
@@ -74,16 +74,18 @@ _CODE_GLOSS = {
     'guardianship_letter_missing': "income shown is a guardian's, but no guardianship letter was uploaded",
     'income_earner_undeclared': 'the student has not said whose income is shown (the income wizard is incomplete)',
     # salary route / per-capita (GROSS income → per-capita; never take-home/net)
-    'income_salary_probable': 'gross household income ~RM{amount}/month is clearly UNDER the B40 line — supports approval',
-    'income_salary_unsure': ('gross household income ~RM{amount}/month sits NEAR the B40 line — not a clear pass; the '
+    'income_salary_probable': "gross household income ~RM{amount}/month is clearly UNDER this gift's income limit — supports approval",
+    'income_salary_unsure': ("gross household income ~RM{amount}/month sits NEAR this gift's income limit — not a clear pass; the "
                              'household composition (its size, and whether another member works) sets the true gross and per-capita'),
-    'income_above_b40_line': 'per-capita income RM{amount} is OVER the B40 line (RM{ceiling}) — income does not support B40',
-    'income_per_capita_ok': 'per-capita income RM{amount} is below the B40 line (RM{ceiling})',
+    'income_above_b40_line': "per-capita income RM{amount} is OVER this gift's income limit (RM{ceiling}) — income does not support the application",
+    'income_per_capita_ok': "per-capita income RM{amount} is below this gift's income limit (RM{ceiling})",
     'income_unverified_needs_interview': 'income cannot be document-verified (informal / no payslip) — confirm at interview',
+    'income_not_means_tested': ('this gift applies NO household income limit, so income is not an eligibility test here — '
+                                'do not reason about a threshold, and do not treat the absence of one as a pass'),
     # utility (soft signals)
     'utility_hardship': 'the utility bills carry meaningful arrears (unpaid balance) — supports financial need',
-    'utility_percapita_b40': 'utility proxy ~RM{amount}/capita/month — consistent with a B40 household (soft signal)',
-    'utility_percapita_high': 'utility proxy ~RM{amount}/capita/month — high (M40/T20 pattern); probe at interview (soft signal)',
+    'utility_percapita_b40': 'utility proxy ~RM{amount}/capita/month — consistent with a low-income household (soft signal)',
+    'utility_percapita_high': 'utility proxy ~RM{amount}/capita/month — high (a higher-income consumption pattern); probe at interview (soft signal)',
 }
 
 
@@ -128,7 +130,7 @@ _PROMPT_HEAD = (
     "the action (what has been requested from the student / what the reviewer must confirm).\n"
     "RULES: use ONLY the facts, names and figures in the verdict — never invent or alter a number, "
     "name, document, or the band. Income is assessed on GROSS household income and the resulting "
-    "PER-CAPITA income (gross / household size) against the B40 line — NEVER take-home or net pay; "
+    "PER-CAPITA income (gross / household size) against the gift's own income limit — NEVER take-home or net pay; "
     "when income is the sticking point the gap is usually the household composition (its size, and "
     "whether another member works). State the earner's relationship precisely ('confirmed as the "
     "student's parent/guardian', never 'a confirmed parent'). Firm fiscal-steward voice guarding the "

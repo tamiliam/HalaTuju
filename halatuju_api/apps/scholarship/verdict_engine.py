@@ -63,6 +63,31 @@ def _fact(name, status, evidence, unresolved):
             'evidence': evidence, 'unresolved': unresolved}
 
 
+def _income_open_item(application):
+    """The line an officer reads when income could not be settled by machine.
+
+    ⚠ TWO DIFFERENT FACTS WORE THE SAME SENTENCE until 2026-09-10. *"Income can't be
+    document-verified (informal / no payslip)"* describes a defect in the EVIDENCE. A gift
+    that configures no income ceiling has no such defect — it simply does not means-test
+    income, and telling its officer that readable payslips "can't be verified" is false.
+
+    ⚠ THE STATUS DOES NOT MOVE. Both cases stay 'recommend' (amber — a human places it,
+    never blocked). Only the sentence differs. A band moving here would be a bug.
+
+    NB deliberately NOT added to ``views_admin._NEEDS_INTERVIEW_AMBERS``: "this gift does
+    not test income" is the opposite of an interview talking point — there is nothing to
+    confirm.
+
+    ⚠ BOTH CODES ARE WRITTEN AS LITERALS, deliberately. `test_verdict_item_i18n` walks the AST
+    for `_item('...')` and can only check a code it can SEE; a conditional inside the call
+    would hide both from the guard that stops a raw key path rendering in the cockpit. It
+    caught exactly that on the first run of this sprint."""
+    from .income_engine import income_test_configured
+    if income_test_configured(application):
+        return _item('income_unverified_needs_interview')
+    return _item('income_not_means_tested')
+
+
 # ── document readers ─────────────────────────────────────────────────────────
 
 # Phase 2 (version history): these three are the MAIN verdict read funnel — every one
@@ -561,7 +586,7 @@ def _verdict_income(application):
     # father→patronymic, guardian→letter). An unconfirmed relationship → a human places it.
     if str_verified and rel == 'match':
         return _fact('income', 'verified', evidence, [])
-    return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
+    return _fact('income', 'recommend', evidence, [_income_open_item(application)])
 
 
 def _verdict_income_salary(application, student_name, present, any_route=False):
@@ -748,11 +773,11 @@ def _verdict_income_salary(application, student_name, present, any_route=False):
             return _fact('income', 'verified', evidence, [])
         # 'unknown' — couldn't compute (unreadable income / no household size) and no dispositive STR
         # (precedence would have settled one) → a human places it at interview.
-        return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
+        return _fact('income', 'recommend', evidence, [_income_open_item(application)])
     # Assembled but a human still places it: no payslip/EPF (informal) or a relationship
     # we couldn't machine-confirm. Never blocks. (A dispositive STR would already have been
     # settled by STR precedence upstream, so there is none to lean on here.)
-    return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
+    return _fact('income', 'recommend', evidence, [_income_open_item(application)])
 
 
 # ── Pathway (offer letter) ───────────────────────────────────────────────────

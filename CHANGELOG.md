@@ -245,6 +245,37 @@ a merchant name that looks like a person's.
 pytest full `apps/` **6156 passed** (+32) · `makemigrations --check` clean. No web change, so the
 frontend gates are unchanged from main. **Five bite-checks landed**, each injection verified before
 the run and restored by writing the original bytes back.
+## 2026-09-10 — The officer screens stop calling every gift a B40 gift
+
+**B40 is Malaysia's national income band, not the name of a gift.** A gift may set no income
+ceiling at all, and the officer's verdict card still said "Income (B40)" and reasoned about "the
+B40 line". **No migration.** api + web.
+
+- **⚠ A GIFT WITH NO INCOME TEST WAS TOLD ITS DOCUMENTS HAD FAILED.** `income_headroom` returns
+  the band `'unknown'` both when the income could not be computed AND when the gift sets no
+  ceiling — and `'unknown'` prints *"income can't be document-verified (informal / no payslip)"*.
+  On the Test round (both ceilings NULL on production) the payslips may read perfectly. A new
+  predicate, `income_test_configured`, separates the two, and a new line says what is actually
+  true: **this gift applies no household income limit, so income is not an eligibility test here.**
+  The verdict band does NOT move — amber before, amber after, with a test on it.
+- **Twelve strings × three languages, not eleven.** The fact tile reads **Income**; the threshold
+  lines read **"this gift's income limit"** and keep quoting the round's own figure. The
+  owner-approved list missed `utility_percapita_high`, which named **M40/T20** — the same fault
+  pointing the other way. It is in.
+- **⚠ STR keeps its name, and its clause was replaced rather than deleted.** STR is a real
+  Malaysian government programme. "STR document verified — B40 status confirmed" is now
+  "— the government's own means test is satisfied": an officer still needs to know the check has
+  weight, it is simply not this gift's threshold.
+- **An absence guard walks every leaf** under the verdict, agenda and anomaly trees in all three
+  locales, plus a whole-file sweep for the eight retired sentences — and a fence asserting the
+  student- and sponsor-facing B40 copy is STILL THERE (a separate, already-planned sprint).
+- The AI case-summary gloss carried a second English copy of the same sentences; it is fixed too,
+  and `CASE_SUMMARY_VERSION` bumped so cached summaries regenerate.
+
+Gates: pytest **6161** · jest **1993** · tsc **24** (TD-221 baseline) · lint **0** ·
+i18n **4975 × 3** · `next build` exit 0 · `makemigrations --check` clean. Two bite-checks, both bit.
+Retro `docs/retrospective-2026-09-10-officer-income-vocabulary.md`; decisions ×2; lessons ×3.
+
 ## 2026-09-10 — "How it's advertised": one instruction block, one clear control, and a warning that stops crying wolf
 
 Five owner findings from the live tab, and one bug found inside their own screenshot. **No

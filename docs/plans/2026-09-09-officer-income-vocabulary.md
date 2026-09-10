@@ -1,6 +1,9 @@
 # Plan — the officer screens say "B40" about gifts that are not B40
 
-**Status:** PLANNED, NOT BUILT. Owner approved logging it as its own sprint, 2026-09-09.
+**Status:** ✅ **BUILT 2026-09-10** on `feat/officer-income-vocabulary`. Owner approved logging it
+as its own sprint, 2026-09-09. Shape (b) taken, as recommended in §4. Twelve strings, not eleven —
+`utility_percapita_high` ("M40/T20") carried the identical fault in the other direction and was
+missing from §3's list. See §7 below for what the build found that this plan did not know.
 **Size:** one sprint, small. ~8 files. **Probably NO migration** — see §4.
 **Trigger:** BrightPath **Sabah**, expected live ~2 weeks from 2026-09-09. Owner, 2026-09-09:
 *"each gift would have its own text and preferences. And they need not be B40 focused."*
@@ -106,3 +109,40 @@ already does. This sprint changes wording and the no-ceiling branch, **not** the
 - The landing page and the sign-in prompt (`scholarship.landing.req.item2`, `authGate.applyReason`)
   — same class, different pages, still unlogged as work.
 - The two **sponsor-facing** B40 strings on the sponsor landing.
+
+---
+
+## 7. What the build found that this plan did not know (2026-09-10)
+
+**§2 understated the defect.** The plan says a NULL-ceiling gift "still reads Income (B40)". It
+does — and it also tells the officer something false about the documents:
+
+```python
+# income_engine.income_headroom, line ~1411
+if pc is None or not size or not pc_ceiling:
+    return 'unknown', {'all_known': all_known}
+```
+
+`not pc_ceiling` is **the gift having no income test**. It returns the SAME band as *"we could not
+read the documents"*, and 'unknown' prints:
+
+> "Income can't be document-verified (informal / no payslip) — confirm during the interview…"
+
+On the Test round (both ceilings NULL) the payslips may read perfectly. **The engine conflated a
+property of the GIFT with a defect in the EVIDENCE**, and the screen renders them identically.
+
+**Built as a predicate, not a new band.** `income_engine.income_test_configured(application)` asks
+the cohort directly. `income_headroom`'s return set is untouched, so no caller of it is dragged
+into a wording sprint. New item code `income_not_means_tested`; **the verdict status does not
+move** — amber before, amber after, a test pins it.
+
+**Both codes are written as literals.** `test_verdict_item_i18n` walks the AST for `_item('...')`
+and caught the first version, which chose the code with a conditional inside the call. A dynamic
+code escapes the guard that stops a raw key path rendering in the cockpit.
+
+**`profile_engine.py` is LOGGED, NOT BUILT.** It holds a second, larger B40 vocabulary — the
+sponsor-facing profile prompt, `_BELOW_LINE_AFFIRM`, `_ABOVE_LINE_CAUTION`, and
+`_OFFICER_FACT_LABELS['income'] = 'Household income (B40 need)'`. It is deliberately untouched:
+every edit there requires a `PROMPT_VERSION` bump, which re-dates every existing profile draft on
+production — a data and cost consequence well outside "wording and empty state". ⚠ The label is
+now the twin that can go stale; treat it as owed work, not as a settled state.

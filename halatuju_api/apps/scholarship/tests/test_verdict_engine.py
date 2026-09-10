@@ -2082,3 +2082,83 @@ class TestGenuinenessLadder(_Base):
         f = _facts(self.app)['pathway']
         self.assertEqual(f['status'], 'recommend')
         self.assertIn('pathway_confirm', _codes(f['unresolved']))
+
+
+class TestGiftWithNoIncomeTest(_Base):
+    """⚠ A GIFT MAY RUN NO MEANS TEST AT ALL, and the officer must not be told the documents
+    failed. ``income_headroom`` collapses "no ceiling is configured" and "we could not compute
+    the income" into ONE 'unknown' band, so until 2026-09-10 a gift with both ceilings NULL
+    printed *"income can't be document-verified (informal / no payslip)"* over payslips that
+    read perfectly. Measured on production 2026-09-09: the ``test`` round has BOTH NULL.
+    """
+
+    def _no_income_test(self):
+        self.cohort.income_ceiling = None
+        self.cohort.per_capita_ceiling = None
+        self.cohort.save()
+        self.app.refresh_from_db()
+
+    def _wizard(self, members):
+        self.profile.name = 'DIVASHINI A/P MURUGAN'   # patronymic → MURUGAN
+        self.profile.save()
+        self.app.income_route = 'salary'
+        self.app.income_working_members = members
+        self.app.save()
+
+    def test_predicate_reads_the_cohort(self):
+        from apps.scholarship.income_engine import income_test_configured
+        # The fixture cohort takes the model default per_capita_ceiling = 1584.
+        self.assertTrue(income_test_configured(self.app))
+        self._no_income_test()
+        self.assertFalse(income_test_configured(self.app))
+
+    def test_a_gross_ceiling_alone_is_still_a_test(self):
+        # Either ceiling on its own means the gift means-tests income — only BOTH being
+        # NULL is "not applied" (Cohort.income_ceiling help_text).
+        from apps.scholarship.income_engine import income_test_configured
+        self.cohort.income_ceiling = 5860
+        self.cohort.per_capita_ceiling = None
+        self.cohort.save()
+        self.app.refresh_from_db()
+        self.assertTrue(income_test_configured(self.app))
+
+    def test_no_ceilings_says_not_means_tested(self):
+        self._no_income_test()
+        self._wizard(['father'])
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='father',
+                 fields={'name': 'MURUGAN A/L KESAVAN', 'gross_income': 'RM2,000'})
+        codes = _codes(_facts(self.app)['income']['unresolved'])
+        self.assertIn('income_not_means_tested', codes)
+        # ⚠ THE ABSENCE IS THE HALF THAT MATTERS: the retired sentence asserted a defect in
+        # the evidence. These payslips are readable; the gift simply sets no limit.
+        self.assertNotIn('income_unverified_needs_interview', codes)
+
+    def test_a_gift_that_does_test_income_keeps_the_old_sentence(self):
+        self._wizard(['father'])
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        codes = _codes(_facts(self.app)['income']['unresolved'])
+        self.assertIn('income_unverified_needs_interview', codes)
+        self.assertNotIn('income_not_means_tested', codes)
+
+    def test_the_verdict_band_does_not_move(self):
+        # Plan §5: this sprint changes the SENTENCE, never the tile. Amber either way —
+        # a human places income, and nothing is blocked. A band moving here is a bug.
+        self._wizard(['father'])
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        self.assertEqual(_facts(self.app)['income']['status'], 'recommend')
+        self._no_income_test()
+        self.assertEqual(_facts(self.app)['income']['status'], 'recommend')
+
+    def test_not_an_interview_talking_point(self):
+        # "This gift does not test income" is the OPPOSITE of something to confirm at
+        # interview, so it must never join the agenda ambers.
+        from apps.scholarship.views_admin import _NEEDS_INTERVIEW_AMBERS
+        self.assertNotIn('income_not_means_tested', _NEEDS_INTERVIEW_AMBERS)
+
+    def test_the_narrative_glosses_the_new_code(self):
+        # An un-glossed code degrades to "income not means tested" — readable, but the LLM
+        # would then reason about a threshold. The gloss forbids that explicitly.
+        from apps.scholarship.verdict_narrative import _CODE_GLOSS
+        gloss = _CODE_GLOSS['income_not_means_tested']
+        self.assertIn('NO household income limit', gloss)

@@ -4078,7 +4078,7 @@
         "openQuery": "Pertanyaan terbawa — sahkan dengan pelajar semasa temubual.",
         "needsInterview": {
           "income_unverified_needs_interview": "Sahkan sumber dan jumlah pendapatan isi rumah (tidak formal / tiada slip gaji) semasa temubual.",
-          "income_above_b40_line": "Pendapatan isi rumah membaca melebihi garis B40 (kira-kira RM {amount} berbanding RM {ceiling} sekapita) — terokai gambaran kewangan penuh semasa temubual. Nota penemubual sahaja: jangan sebut angka ini kepada pelajar sebagai mesej.",
+          "income_above_b40_line": "Pendapatan isi rumah membaca melebihi had pendapatan pemberian ini (kira-kira RM {amount} berbanding RM {ceiling} sekapita) — terokai gambaran kewangan penuh semasa temubual. Nota penemubual sahaja: jangan sebut angka ini kepada pelajar sebagai mesej.",
           "academic_grade_uncertain": "Satu gred tidak dapat disahkan dengan slip keputusan — sahkan keputusan sebenar pelajar semasa temubual.",
           "ic_service_down": "Identiti tidak dapat disahkan automatik (masalah perkhidmatan ID) — sahkan MyKad pelajar semasa temubual."
         },
@@ -4111,7 +4111,7 @@
           "question": "JKM sering menyokong keluarga dengan keperluan OKU atau penjagaan. Bolehkah anda kongsi apa yang keluarga anda terima JKM untuk?"
         },
         "household_size_one": {
-          "fact": "Saiz isi rumah ialah 1 — luar biasa untuk pelajar B40.",
+          "fact": "Saiz isi rumah ialah 1 — luar biasa untuk pelajar yang memohon bantuan kewangan.",
           "question": "Anda menyebut anda tinggal sendirian — bolehkah anda kongsi tentang itu? Adakah anda pelajar yang tinggal jauh dari keluarga?"
         },
         "utility_high_vs_income": {
@@ -4263,7 +4263,7 @@
         "fact": {
           "identity": "Identiti",
           "academic": "Akademik",
-          "income": "Pendapatan (B40)",
+          "income": "Pendapatan",
           "pathway": "Laluan"
         },
         "status": {
@@ -4288,7 +4288,7 @@
           "income_proof_epf": "Penyata KWSP diberikan.",
           "income_proof_salary": "Slip gaji diberikan.",
           "utility_bills_present": "Bil utiliti diberikan (petunjuk tahap kemampuan).",
-          "str_verified": "Dokumen STR disahkan — status B40 disahkan.",
+          "str_verified": "Dokumen STR disahkan — ujian pendapatan kerajaan sendiri telah dipenuhi.",
           "offer_reporting_official": "Surat ini mengandungi saman pendaftaran rasmi institusi (tarikh + label disahkan dengan penerbit awam).",
           "offer_programme": "Surat tawaran: {programme} di {institution}.",
           "offer_name_ok": "Surat tawaran atas nama pelajar.",
@@ -4317,23 +4317,24 @@
           "guardianship_letter_not_genuine": "Dokumen dalam slot surat penjagaan tidak dapat dibaca sebagai surat yang lengkap — mungkin terpotong atau dokumen yang salah, jadi kaitan penjaga↔pelajar tidak dapat dibaca daripadanya. Pelajar diminta memuat naik surat penuh tanpa dipotong.",
           "guardianship_letter_unreadable": "Tiada apa-apa dapat dibaca daripada surat penjagaan dalam fail — ia jenis dokumen yang betul, cuma tidak dapat dibaca. Pelajar telah diminta menghantar salinan yang lebih jelas. Jangan anggap ini sebagai 'tiada masalah'.",
           "str_not_current_wrong_type": "Bukan dokumen STR — ia tidak dikira sebagai bukti STR. Menilai dokumen gaji; STR yang sah diperlukan daripada pelajar.",
-          "str_not_current_rejected": "STR ditolak (Ditolak) — ia gagal sebagai bukti STR. Menilai dokumen gaji untuk B40 sebaliknya.",
+          "str_not_current_rejected": "STR ditolak (Ditolak) — ia gagal sebagai bukti STR. Menilai dokumen gaji sebaliknya.",
           "str_not_current_stale": "Diluluskan kitaran lalu sahaja — ia sudah lapuk, bukan bukti keperluan semasa. Status kitaran semasa diperlukan daripada pelajar sebelum ini dikira.",
           "str_not_current_unreadable": "Halaman STR yang dikenali, tetapi baris status tidak terbaca dan tiada bayaran ditunjukkan — jangan andaikan Lulus. Status yang jelas diperlukan daripada pelajar sebelum ini dikira.",
           "str_not_current_unconfirmed": "Diluluskan (Lulus), tiada tarikh bayaran — anggap sebagai berkemungkinan, belum disahkan; sahkan kitaran semasa (Maklumat Pembayaran / portal langsung) sebelum bergantung padanya.",
           "str_recipient_mismatch": "Penerima STR bukan pencari nafkah yang diisytiharkan — nama/KP pada STR tidak sepadan dengan KP pencari nafkah. Sahkan.",
           "income_unverified_needs_interview": "Pendapatan tidak dapat disahkan melalui dokumen (tidak formal / tiada slip gaji) — sahkan semasa temu duga melalui saiz isi rumah, tanggungan dan gaya hidup. JANGAN sekat.",
-          "income_per_capita_ok": "Pendapatan per kapita RM{amount} di bawah garis B40 (RM{ceiling}) — dalam ambang.",
-          "income_above_b40_line": "Pendapatan per kapita RM{amount} melebihi garis B40 (RM{ceiling}) — disyorkan tolak atas pendapatan; batalkan hanya jika temu duga mendedahkan keadaan yang benar-benar melayakkan.",
-          "income_salary_probable": "Dokumen gaji menunjukkan pendapatan kasar isi rumah ~RM{amount}/bulan jelas di bawah garis B40 — menyokong kelulusan; sahkan isi rumah semasa temu duga.",
-          "income_salary_unsure": "Pendapatan kasar isi rumah ~RM{amount}/bulan hampir dengan garis B40 — bukan lulus yang jelas. Sahkan komposisi isi rumah (bilangan ahli, dan sama ada ada ahli lain yang bekerja) semasa temu duga untuk menentukan pendapatan kasar dan per kapita sebenar sebelum meluluskan.",
-          "income_declared_accepted_str": "Pendapatan yang diisytiharkan untuk {members} diterima — STR yang sah sudah mengesahkan keperluan B40 isi rumah, jadi gaji yang dinyatakan dikira tanpa slip gaji. Dimasukkan dalam per kapita.",
+          "income_per_capita_ok": "Pendapatan per kapita RM{amount} di bawah had pendapatan pemberian ini (RM{ceiling}) — dalam ambang.",
+          "income_above_b40_line": "Pendapatan per kapita RM{amount} melebihi had pendapatan pemberian ini (RM{ceiling}) — disyorkan tolak atas pendapatan; batalkan hanya jika temu duga mendedahkan keadaan yang benar-benar melayakkan.",
+          "income_not_means_tested": "Pemberian ini tidak menetapkan had pendapatan isi rumah, jadi pendapatan bukan ujian kelayakan di sini — dokumen ada dalam fail untuk pertimbangan anda, bukan untuk sesuatu ambang.",
+          "income_salary_probable": "Dokumen gaji menunjukkan pendapatan kasar isi rumah ~RM{amount}/bulan jelas di bawah had pendapatan pemberian ini — menyokong kelulusan; sahkan isi rumah semasa temu duga.",
+          "income_salary_unsure": "Pendapatan kasar isi rumah ~RM{amount}/bulan hampir dengan had pendapatan pemberian ini — bukan lulus yang jelas. Sahkan komposisi isi rumah (bilangan ahli, dan sama ada ada ahli lain yang bekerja) semasa temu duga untuk menentukan pendapatan kasar dan per kapita sebenar sebelum meluluskan.",
+          "income_declared_accepted_str": "Pendapatan yang diisytiharkan untuk {members} diterima — STR yang sah sudah mengesahkan keperluan isi rumah, jadi gaji yang dinyatakan dikira tanpa slip gaji. Dimasukkan dalam per kapita.",
           "income_declared_accepted_evidenced": "Pendapatan yang diisytiharkan untuk {members} diterima — dokumen sokongan (surat majikan/gaji, penyata bank, atau surat komuniti) menyokong gaji yang dinyatakan. Dimasukkan dalam per kapita.",
           "income_declared_needs_evidence": "{members} mengisytiharkan gaji, tetapi tiada slip gaji, tiada STR yang sah, dan tiada dokumen sokongan — jadi ia belum boleh dikira. Bukti diperlukan daripada pelajar: mana-mana satu daripada surat majikan/gaji, penyata bank yang menunjukkan pendapatan, atau surat komuniti/penghulu. Permintaan telah dibangkitkan di Pusat Tindakan.",
           "unemployment_epf_corroborated": "KWSP mengesahkan {members} tidak bekerja sekarang (tiada majikan aktif / caruman terhenti) — menyokong gambaran pendapatan terhad isi rumah. Isyarat lembut.",
           "household_size_confirm": "Orang yang diterangkan berjumlah {described}, tetapi saiz isi rumah dimasukkan sebagai {size} — saiz yang lebih kecil membesarkan pendapatan per kapita. Sahkan saiz isi rumah sebenar semasa temu duga. Isyarat lembut.",
-          "utility_percapita_b40": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — konsisten dengan isi rumah B40 (isyarat lembut, tidak sempurna).",
-          "utility_percapita_high": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — tinggi (corak penggunaan M40/T20). Wajar disiasat semasa temu duga (isyarat lembut).",
+          "utility_percapita_b40": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — konsisten dengan isi rumah berpendapatan rendah (isyarat lembut, tidak sempurna).",
+          "utility_percapita_high": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — tinggi (corak penggunaan berpendapatan lebih tinggi). Wajar disiasat semasa temu duga (isyarat lembut).",
           "utility_hardship": "Isyarat kesusahan: bil utiliti mempunyai tunggakan yang ketara (baki belum dibayar) — menyokong keperluan kewangan.",
           "earner_ic_present": "KP pencari nafkah dalam fail: {name}.",
           "relationship_confirmed": "Pencari nafkah disahkan sebagai ibu bapa/penjaga pelajar.",

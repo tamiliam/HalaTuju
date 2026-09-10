@@ -1385,6 +1385,28 @@ def income_per_capita(application, members):
 _HEADROOM_THIN_RM = 1584.0
 
 
+def income_test_configured(application):
+    """Does this gift apply a household-income test AT ALL?
+
+    ⚠ NOT the same question as "could we compute the household's income?", and until
+    2026-09-10 the officer screen could not tell them apart. ``income_headroom`` returns
+    'unknown' for BOTH — see its ``not pc_ceiling`` guard — and 'unknown' prints
+    *"income can't be document-verified (informal / no payslip)"*. On a gift that runs no
+    means test that sentence is simply false: the payslips may be perfectly readable.
+
+    Both ceilings NULL = the financial test is not applied (``Cohort.income_ceiling``'s own
+    help_text). Measured on production 2026-09-09: BrightPath ``b40-2026`` sets 5860/1584,
+    the ``test`` round sets NULL/NULL — so this is a live configuration, not a hypothetical.
+
+    Deliberately a PREDICATE rather than a new ``income_headroom`` band: the band feeds the
+    verdict tiles on both routes, and widening its return set would put every caller in
+    scope of a wording sprint. This asks the cohort directly and changes no maths.
+    """
+    cohort = getattr(application, 'cohort', None)
+    return bool(getattr(cohort, 'income_ceiling', None)
+                or getattr(cohort, 'per_capita_ceiling', None))
+
+
 def income_headroom(application, members):
     """Margin-graded B40 confidence for the SALARY route (docs/scholarship/str-proof-spec.md §7.1).
 
