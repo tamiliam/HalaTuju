@@ -93,6 +93,8 @@ def sponsor_card(application) -> dict | None:
     empty donut beside four zeroes reads as *"they have spent nothing"*, which is a claim we cannot
     make: the far likelier truth is that no report has reached us yet. The panel is simply absent.
     """
+    from django.utils import timezone
+
     from . import payments
     from .models import SPEND_CATEGORY_CHOICES, BursarySpendTxn
 
@@ -134,7 +136,13 @@ def sponsor_card(application) -> dict | None:
         'spent': str(_rounded(spent)),
         'left': str(_rounded(left)),
         # ⚠ The IMPORT date, never the newest transaction date. See the module docstring.
-        'as_at': newest.date().isoformat(),
+        #
+        # ⚠⚠ AND IT IS THE DATE IN MALAYSIA, NOT IN UTC. `imported_at` is stored UTC, so a bare
+        # `.date()` is yesterday for the eight hours between midnight MYT and 08:00 MYT — a sponsor
+        # opening the card over breakfast would be told the figures were "as at" the day before,
+        # every single morning. Caught by the clock rolling past midnight mid-deploy, which is the
+        # only reason it was ever going to be caught at all.
+        'as_at': timezone.localtime(newest).date().isoformat(),
         'categories': [{'code': r['code'], 'label': r['label'], 'total': str(r['total'])}
                        for r in category_rows(rows, labels)],
     }

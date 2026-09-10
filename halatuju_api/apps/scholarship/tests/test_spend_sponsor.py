@@ -225,6 +225,25 @@ class TestTheAsAtStampIsTheImportNotThePurchase(TestCase):
         txn(app, 'A SHOP', 10, 'food', when=datetime.date(2026, 7, 4))
         self.assertEqual(sp.sponsor_card(app)['as_at'], timezone.localtime().date().isoformat())
 
+    def test_the_stamp_is_the_date_in_MALAYSIA_not_in_UTC(self):
+        """⚠⚠ FOUND BY THE CLOCK ROLLING PAST MIDNIGHT MID-DEPLOY, 2026-09-11.
+
+         is stored UTC. A bare  on it is YESTERDAY for the eight hours
+        between midnight MYT and 08:00 MYT - so a sponsor opening the card over breakfast would be
+        told the figures were "as at" the day before, every single morning. Nothing else would
+        ever have caught it; the suite happened to run at 00:0x MYT.
+        """
+        from django.utils import timezone
+        from apps.scholarship.models import BursarySpendTxn
+        app = make_app()
+        row = txn(app, 'A SHOP', 10, 'food')
+        # 16:30 UTC = 00:30 the NEXT day in Malaysia (UTC+8).
+        utc_evening = datetime.datetime(2026, 9, 10, 16, 30, tzinfo=datetime.timezone.utc)
+        BursarySpendTxn.objects.filter(pk=row.pk).update(imported_at=utc_evening)
+        stamp = sp.sponsor_card(app)['as_at']
+        self.assertEqual(stamp, timezone.localtime(utc_evening).date().isoformat())
+        self.assertEqual(stamp, '2026-09-11', 'the Malaysian date, not the UTC one')
+
 
 # ── the wall ──────────────────────────────────────────────────────────────────
 

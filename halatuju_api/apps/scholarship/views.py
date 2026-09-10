@@ -2107,6 +2107,15 @@ class CronRunView(APIView):
         # rehearsal from alerting anybody; `sort_spending` with no flags is report-only AND
         # still calls the model, which is exactly what makes it the proof.
         'spending-ingest-report': ('ingest_spending', ('--drive', '--no-email')),
+        # ⚠ IMPORT ONLY — store the rows, sort NOTHING, file NOTHING. Also not scheduled.
+        # The daily job sorts and files a summary straight after importing, which is right for
+        # a routine week and wrong for the FIRST run: the first sort is the first time the
+        # model is asked anything AND the moment the sponsor card goes live, and the first
+        # summary is the first file we have ever written into the owner's Drive. This lets the
+        # first run stop after the import so both can be looked at before they happen.
+        'spending-import-only': ('ingest_spending',
+                                 ('--drive', '--apply', '--no-sort', '--no-summary',
+                                  '--no-email')),
         'spending-sort-report': 'sort_spending',
         'partner-digests': 'send_partner_digests',  # weekly (Mon 08:00 MYT): partner stage summary + chase list
         'partner-milestones': 'send_partner_milestones',  # hourly: awaiting-review + awarded, batched per organisation
