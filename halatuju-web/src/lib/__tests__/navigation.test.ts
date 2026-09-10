@@ -61,7 +61,7 @@ describe('visibleNav per role', () => {
   const EXPECTED: Record<AdminRoleName, string[]> = {
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
+      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'spending',
       'contracts', 'billing',
       'applications', 'programmeConfig',
       'profile', 'guide', 'faq',
@@ -82,13 +82,13 @@ describe('visibleNav per role', () => {
     // real loss is `finance`, which is no longer offered the reserved `fund` slot — it never had a
     // page, so this removes a disabled row rather than a power.
     org_admin: [
-      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
+      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'spending',
       'contracts', 'billing',
       'applications', 'programmeConfig',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments',
+      'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'spending',
       'applications',
       'profile', 'guide', 'faq',
     ],

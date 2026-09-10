@@ -10467,3 +10467,126 @@ because the merchant either has a stored verdict or is asked once and stored.
 
 **Revisit if:** the sponsor card ever needs to distinguish "we tried and failed" from "we tried,
 failed, and a human agreed" — that would be a third state, not a merge of these two.
+
+## The officer screen is fenced at the QUERY, not at the serializer — Spending S4a, 2026-09-10
+
+**Decision:** every read goes through `spend_report._txns(org)`, filtered on
+`application__owning_organisation`. `_SpendingBase` resolves the organisation once and refuses
+`no_org` rather than falling through unfenced. The endpoint and the service each assert it.
+
+**Alternatives considered:** rely on an allowlist serializer, as the sponsor pool does.
+
+**Rationale:** TD-201 (2026-07-31) states it exactly — an allowlist protects a COLUMN and does
+nothing about a ROW, and the two failures look identical in review. "May this officer see this
+student's spending at all?" is a row question, so the filter belongs beside the query, once.
+The `no_org` refusal matters as much: a super with no organisation context defaulting to
+unfenced is how "every tenant's students" happens by accident.
+
+**Trade-offs:** a super must pick an organisation before the page shows anything. Accepted —
+the Payments funding summary already behaves this way for the same reason.
+
+**Revisit if:** a genuine platform-wide spending view is ever wanted, which would be a
+different endpoint with its own decision, not a loosened fence on this one.
+
+## A merchant verdict is GLOBAL; the list an officer sees is FENCED — Spending S4a, 2026-09-10
+
+**Decision:** `MerchantCategory` stays unique on the merchant name with no organisation column.
+A correction applies to that shop everywhere. The fence on the WRITE is on **who may set it**:
+the merchant must be one this organisation's own students actually used.
+
+**Alternatives considered:** a per-organisation verdict (needs a migration and a new unique
+key); refusing cross-tenant effects by only updating the caller's own rows.
+
+**Rationale:** "99 Speedmart sells groceries" is a fact about a shop, not about a tenant.
+Per-tenant verdicts would ask every organisation to re-answer the same question and pay the
+model again for the same answer — the exact cost the store exists to avoid. Updating only the
+caller's rows is worse than either: the same shop would read two ways on two screens with
+nothing to explain it.
+
+**Trade-offs:** one tenant's officer changes what another tenant's totals say. Bounded
+deliberately — the write moves a CATEGORY and nothing else, no row crosses a boundary, and no
+tenant can read another's data. It carries the only `org-fence: DELIBERATELY CROSS-
+ORGANISATION` pragma in the feature.
+
+**Revisit if:** a tenant ever disputes another's categorisation, which would argue for a
+per-tenant override layered ON TOP of the shared verdict rather than replacing it.
+
+## `finance` cannot open the spending screen, though Payments admits it — Spending S4a, 2026-09-10
+
+**Decision:** read and write are `super` / `org_admin` / `admin`. `finance` is refused by the
+backend, by the navigation registry and by the page.
+
+**Alternatives considered:** mirror the neighbouring Payments roles exactly.
+
+**Rationale:** `_b40_scope` states that a finance admin never sees an applicant file, document,
+income figure or verdict, and that **its only student data is the Payments funding summary**
+allowlist. This screen carries student names beside what they bought. Copying the neighbour's
+role set for symmetry would have quietly widened a boundary another docstring promises is
+closed — and nothing would have failed.
+
+**Trade-offs:** a finance officer investigating a disbursement cannot see the spending side.
+Accepted: releasing money and auditing purchases are different jobs.
+
+**Revisit if:** the role matrix is re-cut, in which case both docstrings move together.
+
+## The payload is built key by key, with a planted-identifier test instead of a serializer — Spending S4a, 2026-09-10
+
+**Decision:** `AdminSpendingView` assembles its response from plain dicts, field by field. No
+serializer class. `TestNothingIdentifyingLeaks` plants a real NRIC, phone, address, email and
+school on the fixture and asserts none reaches the rendered JSON — while the student NAME must.
+
+**Alternatives considered:** a plain `Serializer` with explicit `SerializerMethodField`s, the
+sponsor-pool pattern.
+
+**Rationale:** the sponsor-pool lesson values two things — allowlist BY CONSTRUCTION, and a
+planted-identifier test that PROVES it. Dicts built field by field already give the first (no
+model passthrough exists to leak through), and a serializer over a dict adds a layer without
+adding a guarantee. The test is the half that actually holds, and it is written here in the
+sharper form: it asserts what must NOT appear **and** what must, because this surface shows
+names on purpose and a test that only forbids would drift toward forbidding those too.
+
+**Trade-offs:** no declarative schema to read at a glance; the shape lives in the view.
+Mitigated by the frontend `SpendingOverview` interface mirroring it and `next build` failing
+on drift.
+
+**Revisit if:** a second endpoint needs the same rows, at which point the shape is worth
+naming once rather than twice.
+
+## The category control is a native `<select>`, and a test asserts the ELEMENT — Spending S4a, 2026-09-10
+
+**Decision:** the correction control is a native `<select>` in both renderings, pinned by
+`expect(control.tagName).toBe('SELECT')`.
+
+**Alternatives considered:** a styled custom dropdown; the `Menu` primitive.
+
+**Rationale:** `TableFrame` establishes TWO clipping contexts — `overflow-hidden` for the
+corners and `overflow-x-auto` for the scroller — so an absolutely-positioned panel inside a
+cell is sliced off at the table's edge. That is not hypothetical: it happened to the Intake
+years badge on 2026-09-08 and the owner reported a panel that opens and cannot be seen. `Menu`
+solves it with a portal and is the right tool for a rich pop-out; for a ten-item single choice
+a native select is simpler, keyboard- and screen-reader-correct for free, and drawn by the
+browser outside the document where nothing can clip it.
+
+**Trade-offs:** the control looks like the platform, not like the design system.
+
+**Revisit if:** the choice ever needs icons, grouping or search — then it is `Menu`, never a
+bare absolute panel.
+
+## A correction re-reads the whole overview rather than patching the row — Spending S4a, 2026-09-10
+
+**Decision:** after a successful correction the page refetches `getSpendingOverview` and
+replaces its state.
+
+**Alternatives considered:** patch the row in place; patch the row and recompute the totals in
+the browser.
+
+**Rationale:** one change moves the shop, every payment at it, the four headline figures and
+the "shops to check" count. A local patch would leave the percentage at the top disagreeing
+with the table beneath it, on the same screen, with nothing failing — and recomputing the
+totals in the browser would put the same arithmetic in two languages, which is how they drift.
+
+**Trade-offs:** one extra round trip per correction. Negligible on an officer screen, and the
+server is the only thing that knows the answer anyway.
+
+**Revisit if:** the table grows large enough that a refetch is felt, which would argue for the
+endpoint returning the recomputed totals with the write.

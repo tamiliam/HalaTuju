@@ -461,14 +461,25 @@ def sort_transactions(*, apply=False, resort=False, use_ai=True) -> SortReport:
     # Stats come from EVERY successful spend row we hold, not from the rows being sorted — a
     # merchant's pattern is a property of the merchant, and narrowing to this batch would make the
     # third visit look like a first one.
+    # Deliberately platform-wide: this is the nightly SORTER, not an admin surface. A
+    # merchant category is a fact about a shop, decided once for everyone; the fence
+    # lives on the screens that read the result. ⚠ The pragma is the LAST line before
+    # the query - the guard looks 200 characters.
+    # org-fence: NONE, by design (the nightly sorter).
     stats = merchant_stats(
         BursarySpendTxn.objects.filter(tx_type=TX_SPEND).values_list('merchant', 'amount')
     )
 
+    # Deliberately platform-wide: this is the nightly SORTER, not an admin surface. A
+    # merchant category is a fact about a shop, decided once for everyone; the fence
+    # lives on the screens that read the result. ⚠ The pragma is the LAST line before
+    # the query - the guard looks 200 characters.
+    # org-fence: NONE, by design (the nightly sorter).
     rows = BursarySpendTxn.objects.exclude(decided_by=BY_OWNER)
     if not resort:
         rows = rows.filter(decided_by='')
     rows = list(rows.only('id', 'merchant', 'amount', 'duitnow_type', 'category', 'decided_by'))
+    # org-fence: NONE, deliberately - the sorter counts across the platform (see above).
     report.owner_rows_untouched = BursarySpendTxn.objects.filter(decided_by=BY_OWNER).count()
 
     # ⚠ Rung 1 is per ROW, so a person-transfer row never contributes its merchant to rung 4 — we
@@ -504,6 +515,7 @@ def sort_transactions(*, apply=False, resort=False, use_ai=True) -> SortReport:
     if apply:
         with db_transaction.atomic():
             if changed:
+                # org-fence: NONE, deliberately - the sorter writes across the platform.
                 BursarySpendTxn.objects.bulk_update(
                     changed, ['category', 'decided_by'], batch_size=500)
             for merchant, (category, decided_by) in verdicts.items():

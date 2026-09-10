@@ -2591,6 +2591,85 @@ export async function getFundingSummary(options?: ApiOptions) {
 export async function getPaymentRuns(options?: ApiOptions) {
   return adminFetch<{ runs: PaymentRunSummary[] }>('/api/v1/admin/scholarship/payment-runs/', options)
 }
+
+// ── Sponsor spending S4 — the officer's screen ───────────────────────
+//
+// ⚠ Money arrives as a STRING and stays one. It is summed, compared against a released total
+// and shown to a person; a float would round it. Format at the edge, never parse to Number
+// and back.
+//
+// ⚠ `last_seen` is a DATE with no time, and cannot be otherwise: the hour is discarded at
+// import so that nothing downstream can ever show what time a student ate.
+export interface SpendingMerchantRow {
+  merchant: string
+  category: string
+  /** Which rung decided it: '' | 'duitnow' | 'rule' | 'inferred' | 'ai' | 'owner'. */
+  decided_by: string
+  visits: number
+  total: string
+  last_seen: string | null
+  /** Payments the RM20 per-row ceiling kept out of `food` at a food-pattern shop. */
+  held_back: number
+}
+
+export interface SpendingStudentRow {
+  application_id: number
+  name: string
+  payments: number
+  spent: string
+  unplaced: string
+}
+
+export interface SpendingModelDecision {
+  merchant: string
+  category: string
+  reason: string
+  decided_at: string | null
+}
+
+export interface SpendingOverview {
+  totals: {
+    spent: string
+    placed: string
+    unplaced: string
+    placed_pct: number
+    merchants_to_check: number
+  }
+  merchants: SpendingMerchantRow[]
+  students: SpendingStudentRow[]
+  model_decisions: SpendingModelDecision[]
+  wallet_gaps: {
+    students_without_wallet: number[]
+    shared_wallets: Record<string, number[]>
+  }
+  /** The ten codes, served BY THE SERVER from the model choices so the dropdown cannot drift
+   *  away from what the database will accept. Never hard-code this list here. */
+  categories: { code: string; label: string }[]
+}
+
+export async function getSpendingOverview(options?: ApiOptions) {
+  return adminFetch<SpendingOverview>('/api/v1/admin/scholarship/spending/', options)
+}
+
+/** Correct one shop's category. The verdict outranks every rung of the sorter, for ever. */
+export async function setSpendingCategory(
+  merchant: string, category: string, options?: ApiOptions,
+) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/scholarship/spending/category/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ merchant, category }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.code || body.error || `Admin API error: ${res.status}`)
+  }
+  return res.json() as Promise<{
+    merchant: string; category: string; decided_by: string; rows_changed: number
+  }>
+}
 /**
  * Create a DRAFT run. `programme_id` is **which gift the money comes from** (P2b).
  *

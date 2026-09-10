@@ -550,7 +550,119 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after sponsor spending S3 — every payment gets a category)
+## Next Sprint (as of 2026-09-10, after sponsor spending S4a — the officer can see it)
+
+**S1 + S2 + S3 + S4a SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree
+`.worktrees/spending-ingest`, branch `feat/spending-ingest`. **`origin/main` was merged in at
+S4a** (eight web commits) — re-merge before the next frontend line. Retros
+`docs/retrospective-2026-09-10-spending-{ingest-s1,drive-s2,sorter-s3,officer-s4a}.md`;
+decisions ×25; lessons ×14; **TD-238, TD-239, TD-240** logged. Roadmap
+`docs/plans/2026-09-10-sponsor-spending-roadmap.md` (**S1+S2+S3+S4a done**; S4 was SPLIT on the
+owner's call into the screen and the Drive summary); requirements + the measured corpus
+`docs/plans/2026-09-09-sponsor-spending-reports-brief.md`.
+Gates: pytest **6304**; jest **2015** (124 suites); `tsc` **24** (baseline); `next lint` 0;
+`next build` compiled; `makemigrations --check` clean. **15 bite-checks this sprint, one
+silent — and it was a real defect, not just a missing test.** Ledger vs production:
+scholarship **154/155**, courses **74/74**.
+
+**⚠ MIGRATION `scholarship/0155` (S1) — TWO NEW TABLES, STILL NOT APPLIED. MIGRATE-FIRST.**
+Both tables re-confirmed ABSENT on production at this close. **S2, S3 and S4a add none.**
+
+**⚠ S4a IS THE FIRST SPRINT IN THIS ARC TO TOUCH WEB — THE DEPLOY PUSH BUILDS BOTH SERVICES.**
+Every earlier note in this arc saying "api only, expect ONE build" is now wrong. Expect TWO.
+
+**WHAT S4a SHIPPED.** `/admin/spending` (console page beside Payments),
+`apps/scholarship/spend_report.py` (the read model AND the one write), `AdminSpendingView` +
+`AdminSpendingCategoryView`, the `admin.spending.*` namespace in en/ms/ta, and a nav row
+(chord `X`). One row per **SHOP**, not per payment.
+
+**WHAT MUST NOT BE "TIDIED" — S4a:**
+- **⚠⚠ A CORRECTION WRITES AN `owner` VERDICT AGAINST THE SHOP AS WELL AS EVERY EXISTING ROW,
+  AND THE SHOP HALF IS THE ONE THAT MATTERS.** Without it, next week's payment at that shop
+  lands undecided, the ladder re-decides it from a keyword rule, and the correction quietly
+  stops applying — at a shop the officer had already fixed, with nothing failing. **Found by a
+  bite-check that came back SILENT**: every test until then watched the rows move, which stays
+  true while the merchant verdict is corrupt. Pinned by
+  `test_a_correction_also_claims_the_payments_THAT_HAVE_NOT_ARRIVED_YET`.
+- **⚠ THE FENCE IS ON THE QUERY, BECAUSE THIS IS A ROW QUESTION** (TD-201 — an allowlist
+  protects a COLUMN). Everything reads through `spend_report._txns(org)`;
+  `_SpendingBase` resolves the organisation ONCE and refuses `no_org` rather than running
+  unfenced. A super with no org context sees nothing, not everything.
+- **⚠ A MERCHANT VERDICT IS GLOBAL; THE LIST IS FENCED.** A shop's category is a fact about the
+  shop, so per-tenant verdicts would re-ask and re-pay for the same answer. The fence on the
+  WRITE is on **who may set it** — the merchant must be one this organisation's students used.
+  This is the only `org-fence: DELIBERATELY CROSS-ORGANISATION` pragma in the feature.
+- **⚠ `finance` IS REFUSED HERE THOUGH PAYMENTS NEXT DOOR ADMITS IT.** `_b40_scope` promises a
+  finance admin never sees student data beyond the Payments allowlist, and this screen carries
+  names beside purchases. Backend (`_SPENDING_ROLES`), nav registry and page all refuse it, and
+  a jest test pins the pair APART. Copying the neighbour's role set for symmetry is the
+  mistake this guards against.
+- **⚠ NO TIME OF DAY, ANYWHERE.** The hour is discarded at import. The Stitch mockup drew
+  "Today, 2:14 pm"; the page ships date-only and a test asserts no `HH:MM` renders at all.
+- **⚠ THE CATEGORY CONTROL IS A NATIVE `<select>` AND MUST STAY ONE.** `TableFrame` establishes
+  two clipping contexts, so a hand-rolled absolute panel in a cell is sliced off at the
+  table's edge (the Intake years defect, 2026-09-08). The test asserts the ELEMENT. A rich
+  pop-out would have to be `Menu` (a portal), never a bare absolute panel.
+- **⚠ EVERY SHOP RENDERS TWICE** (a phone card and a desktop row). The tests assert BOTH by
+  count — a fix that reaches only the rendering a query happened to grab is the StaffTable
+  defect of 2026-09-09.
+- **⚠ A CORRECTION RE-READS THE WHOLE OVERVIEW**, never patches the row: one change moves the
+  shop, every payment at it, and all four headline figures.
+- **⚠ `TestOrgFenceStaticGuard` NOW SCANS FOUR FILES** — `views_admin`, `spend_report`,
+  `spend_category`, `spending_import` — with TWO FLOOR TESTS, because a name-scoped scan is
+  structurally blind to code moved one file sideways. **A pragma must be the LAST line before
+  its query; the guard reads a 200-character window.** `views_sponsor.py` has never been
+  scanned (**TD-240**) and is named in `NOT_YET_SCANNED` with its reason — a ledger, not an
+  exemption list.
+- **⚠ `admin-spending-i18n.test.ts` ENUMERATES THE DYNAMIC KEY FAMILIES.** Parity proves
+  en == ms == ta, never that a key EXISTS, and most of this page's keys are built at runtime.
+  Adding a rung or a refusal code on the Python side surfaces as a missing translation there.
+- **⚠ THE CHORD IS `X`. `G` IS `CHORD_PREFIX`** — the key that ARMS a chord, so it can never BE
+  one.
+
+**WHAT MUST NOT BE "TIDIED" — S1/S2/S3, all still true:**
+- **⚠ THE FILE SHAPE HAS DRIFTED FIVE TIMES IN EIGHT WEEKS, ALL MEASURED.** Add aliases, never
+  replace them. A MISSING required column refuses that file; an unknown EXTRA one only reports.
+- **⚠ EVERY SKIP IS COUNTED AND NAMED.** An early probe reported **RM10,029.03** for a true
+  **RM10,650.22** by summing only the values that were already numbers.
+- **⚠⚠ THE RM20 PER-ROW CEILING IS LOAD-BEARING AND CAUGHT SIX REAL PAYMENTS (RM424).**
+  Rung 3 stores a MERCHANT verdict and applies the ceiling per ROW.
+- **⚠ `ask_model(names)` TAKES NAME STRINGS AND NOTHING ELSE** (signature test). Vocabulary
+  enforced in Python after the answer returns. `transfer` comes from `duitnow_type` alone.
+- **⚠ A MERCHANT IS ASKED ABOUT ONCE AND STORED FOR EVER** — the test asserts the seam CALL
+  COUNT, not the stored value.
+- **⚠ `category=''` AND `category='unsorted'` ARE DIFFERENT STATES.**
+- **⚠ A NEW FILE IS THE TRIGGER, NEVER THE CALENDAR.** A quiet day does nothing and says
+  nothing. **NO WEEKLY ALL-CLEAR.** The alert names wallets and application ids, never a
+  student, and uses a plain `EmailMessage` with an EXPLICIT sender.
+- **⚠ `Wallet User` IS NOT ALWAYS THE STUDENT** (28 real rows have a `Child User`).
+- **⚠ `CronRunView.JOBS` TAKES A `(name, args)` TUPLE.** `spending-sort` is a DOOR, not a
+  schedule.
+
+**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0155` MIGRATE-FIRST** + record its ledger
+row BEFORE the push; (2) Security Advisor shows no new finding; (3) merge + push — **⚠ TWO
+BUILDS now, api AND web**; (4) set **`VIRCLE_SPENDING_FOLDER`** if the live tree differs
+(**read it from `gcloud run services describe`, never a settings default**); (5) **⚠ RUN
+`ingest_spending --drive` WITHOUT `--apply` ONCE AND READ IT** — the SA key exists nowhere but
+the live service; (6) **⚠ RUN `sort_spending` WITHOUT `--apply` ONCE AND READ IT** — the model
+rung has still never run anywhere; expect ~102 merchants in 3 batched calls the first time,
+then near zero for ever; (7) only then create the DAILY Cloud Scheduler job on
+`spending-ingest`. **⚠ Until (1) and (5) are done, `/admin/spending` renders its EMPTY STATES —
+that is correct, not a bug.** Nothing a student or sponsor sees changes.
+
+**▶ NEXT = S4b (the summary filed back to Drive).** Written after every successful ingest of a
+new file, riding the ingest job (which already has a door) — not a new schedule. **⚠ WE COMPUTE
+EVERY FIGURE AND GEMINI ONLY WRITES THE PROSE AROUND THEM** (the `verdict_narrative.py` house
+pattern — that module's docstring says the LLM *"NEVER computes or changes the verdict"*);
+`spend_report` already computes most of them, fenced. **⚠ TWO INDEPENDENT GUARDS AGAINST
+READING OUR OWN OUTPUT: a SUBFOLDER (`06 Student Spending/Summaries/`) AND the Vircle filename
+pattern the reader already enforces from S2.** The report is INTERNAL — it may name merchants,
+and no part of it is reused on the sponsor card. Reuses `sheets.file_csv_to_folder`'s shape,
+metered through `usage_context`. ~8 files, no migration. Then S5 the sponsor card
+(**Stitch prototype first; the officer payload is NOT reusable — it names merchants and
+students on purpose, so S5 builds its own allowlist and its own anonymity tests**).
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after sponsor spending S3 — every payment gets a category)
 
 **S1 + S2 + S3 ALL SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree
 `.worktrees/spending-ingest`, branch `feat/spending-ingest` (pushed; **NOT on main, so nothing

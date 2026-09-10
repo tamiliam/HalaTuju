@@ -3578,3 +3578,30 @@ it did nothing, because the 102 merchants it was written for are all already sto
 bump — that would re-bill the whole merchant list on a typo. Small.
 
 (Logged 2026-09-10 at Spending S3 close.)
+
+### [TD-240] The org-fence static guard has never scanned `views_sponsor.py` — medium
+
+**What.** `TestOrgFenceStaticGuard` fails any raw query on a watched model that carries no
+`# org-fence:` pragma. It scanned `views_admin.py` alone until S4 widened it. Widening it
+surfaced that **`views_sponsor.py` queries watched models and has never been in scope** — a gap
+that PRE-DATES S4 by months and that nothing would have reported.
+
+**Why it does not bite today.** The sponsor endpoints are fenced — on the SPONSORSHIP rather
+than on `owning_organisation`, which is the right fence for a sponsor and the reason they read
+as unpragma-ed. No leak is known or suspected. What is missing is the mechanical guard, not the
+fence itself.
+
+**When it bites.** The next sponsor endpoint that reaches for an application directly. The
+reviewer would be looking for a fence that the file has never been asked to declare.
+
+**Why it was NOT done inside S4.** A sponsor fence speaks a different vocabulary, so adding the
+file blind would have meant either burying real findings among false ones, or sprinkling
+noise-pragmas that make the guard weaker than not having it. It is named in
+`TestOrgFenceStaticGuard.NOT_YET_SCANNED` with that reason, so it is a decision on the record
+rather than a silence.
+
+**Fix.** Audit each watched query in `views_sponsor.py`, give each a pragma naming the
+sponsorship fence, then move the file from `NOT_YET_SCANNED` into `SCANNED`. Medium — the
+reading is the work.
+
+(Logged 2026-09-10 at Spending S4, from the guard widening that found it.)

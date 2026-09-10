@@ -122,6 +122,8 @@ from .views_admin import (
     AdminReleaseNricLockView,
     AdminVerifyAcceptView,
     AdminPaymentRunListView,
+    AdminSpendingView,
+    AdminSpendingCategoryView,
     AdminPaymentRunDetailView,
     AdminPaymentRunItemView,
     AdminPaymentRunSignView,
@@ -280,6 +282,12 @@ urlpatterns = [
     path('admin/scholarship/billing/rates/', AdminBillingRatesView.as_view()),
     path('admin/scholarship/billing/hours/<int:org_id>/', AdminOrgBuildHoursView.as_view()),
     path('admin/scholarship/payment-runs/', AdminPaymentRunListView.as_view()),
+
+    # Sponsor spending S4 — the officer's view of what students spent, and the one
+    # correction that outranks every rung of the sorter. Sits under `scholarship/` beside
+    # payment-runs because released money and spent money are two halves of one story.
+    path('admin/scholarship/spending/', AdminSpendingView.as_view()),
+    path('admin/scholarship/spending/category/', AdminSpendingCategoryView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/', AdminPaymentRunDetailView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/items/<int:item_id>/', AdminPaymentRunItemView.as_view()),
     path('admin/scholarship/payment-runs/<int:pk>/sign/', AdminPaymentRunSignView.as_view()),

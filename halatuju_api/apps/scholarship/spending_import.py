@@ -476,6 +476,11 @@ def files_needing_read(listing) -> list:
 
     from .models import BursarySpendTxn
 
+    # Deliberately platform-wide: this is the nightly IMPORT, not an admin surface. A
+    # Vircle export carries every tenant's students, and the fence lives on the SCREENS
+    # that read the result. ⚠ The pragma is the LAST line before the query - the guard
+    # looks 200 characters, so an explanation wedged between the two makes it fail.
+    # org-fence: NONE, by design (the nightly import).
     newest = {
         name: when for name, when in BursarySpendTxn.objects
         .values_list('source_file')
@@ -531,6 +536,11 @@ def days_since_last_report() -> int | None:
 
     from .models import BursarySpendTxn
 
+    # Deliberately platform-wide: this is the nightly IMPORT, not an admin surface. A
+    # Vircle export carries every tenant's students, and the fence lives on the SCREENS
+    # that read the result. ⚠ The pragma is the LAST line before the query - the guard
+    # looks 200 characters, so an explanation wedged between the two makes it fail.
+    # org-fence: NONE, by design (the nightly import).
     newest = BursarySpendTxn.objects.order_by('-imported_at').values_list(
         'imported_at', flat=True).first()
     if newest is None:
@@ -554,6 +564,11 @@ def _wallet_map() -> tuple[dict[str, int], dict[str, list]]:
     from .models import ScholarshipApplication
 
     owners: dict[str, list] = {}
+    # Deliberately platform-wide: this is the nightly IMPORT, not an admin surface. A
+    # Vircle export carries every tenant's students, and the fence lives on the SCREENS
+    # that read the result. ⚠ The pragma is the LAST line before the query - the guard
+    # looks 200 characters, so an explanation wedged between the two makes it fail.
+    # org-fence: NONE, by design (the nightly import).
     rows = (ScholarshipApplication.objects
             .exclude(vircle_id='')
             .values_list('id', 'vircle_id'))
@@ -569,6 +584,11 @@ def _wallet_map() -> tuple[dict[str, int], dict[str, list]]:
 def _students_without_wallet() -> list:
     from .models import ScholarshipApplication
 
+    # Deliberately platform-wide: this is the nightly IMPORT, not an admin surface. A
+    # Vircle export carries every tenant's students, and the fence lives on the SCREENS
+    # that read the result. ⚠ The pragma is the LAST line before the query - the guard
+    # looks 200 characters, so an explanation wedged between the two makes it fail.
+    # org-fence: NONE, by design (the nightly import).
     return list(ScholarshipApplication.objects
                 .filter(status__in=WALLET_EXPECTED_STATES, vircle_id='')
                 .values_list('id', flat=True))
@@ -591,6 +611,11 @@ def ingest(sources, *, apply=False) -> IngestReport:
     report = IngestReport()
     wallets, ambiguous_map = _wallet_map()
     existing = {}
+    # Deliberately platform-wide: this is the nightly IMPORT, not an admin surface. A
+    # Vircle export carries every tenant's students, and the fence lives on the SCREENS
+    # that read the result. ⚠ The pragma is the LAST line before the query - the guard
+    # looks 200 characters, so an explanation wedged between the two makes it fail.
+    # org-fence: NONE, by design (the nightly import).
     for txn in BursarySpendTxn.objects.all().only(
             'txn_id', 'txn_date', 'wallet_id', 'merchant', 'amount', 'tx_type', 'status'):
         existing[txn.txn_id] = (txn.txn_date, txn.wallet_id, txn.merchant,
@@ -668,5 +693,7 @@ def ingest(sources, *, apply=False) -> IngestReport:
 
     if apply and to_create:
         with transaction.atomic():
+            # org-fence: NONE, deliberately - the import writes for every tenant; each row
+            # carries its own application, so the SCREENS fence on that.
             BursarySpendTxn.objects.bulk_create(to_create, batch_size=500)
     return report

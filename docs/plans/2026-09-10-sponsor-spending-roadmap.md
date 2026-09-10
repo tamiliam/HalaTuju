@@ -76,106 +76,64 @@ and `spending_import.ingest(sources, apply=False)` is the whole store-and-report
 **What S4 inherits:** every stored row carries `category` and `decided_by`, and `decided_by='owner'` already outranks all four rungs and survives a full `--all` re-sort — so the correction screen has nothing to build in the sorter, only a way to write that verdict.
 
 ---
-## S4 — The officer view, and the correction
+## S4a — The officer view, and the correction ✅ SHIPPED 2026-09-10
 
-**Goal.** The owner can see every transaction, see what the AI decided, and correct it — **before a
-sponsor sees anything**.
+**Done.** Retro `docs/retrospective-2026-09-10-spending-officer-s4a.md`; the rules a later
+reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in
+`spend_report.py`'s own docstring. **No migration.** api + web — the first sprint in this arc
+to touch web, so **the deploy push builds BOTH services**.
 
-**Scope.** An admin surface: per-student spending, the **merchant-level** table (oversight is their
-job), this week's AI decisions, unknown wallets, and a one-click `owner` override that outranks every
-rung. Reuses the existing admin gates.
+`/admin/spending` + `apps/scholarship/spend_report.py` + two endpoints. One row per SHOP.
+pytest 6304, jest 2015, 15 bite-checks (one silent, and it was a real defect).
 
-**Acceptance.** Correcting a merchant changes the totals on a re-read and is never overwritten.
-Person-to-person transactions are flagged. Nothing here is reachable by a sponsor.
+**⚠ WHAT S4b MUST NOT ASSUME:** the Drive hop has never run, and neither has the model rung.
+S4a added no model call at all, so both remain exactly as unproven as they were after S3.
 
-### S4 — the summary report written back to Drive (owner, 2026-09-10)
-
-> *"Instead of an email, or perhaps in addition to an email, Gemini creates a summary report … and
-> saves it in the same folder."*
-
-**Both, because they do different jobs.** An **alert is PUSH** — nobody discovers a broken import by
-opening a folder, so a fault still emails. A **summary is PULL** — it belongs where the data lives,
-next to the file it describes, for whoever goes looking. Neither replaces the other.
-
-**Written after every successful ingest of a new file**, not on a schedule — same trigger as S2.
-
-**⚠ WE COMPUTE THE NUMBERS; GEMINI ONLY WRITES THE PROSE AROUND THEM.** This is the house pattern
-already proven in `verdict_narrative.py` (*"the LLM only narrates the deterministic band … forbidden
-to invent/change the band"*). Every figure in the report — totals, category splits, per-student
-lines, coverage dates — is computed in Python and handed over. Gemini may not calculate, may not
-add a figure, and may not draw a conclusion the numbers do not carry.
-
-**⚠ THE REPORT IS INTERNAL, SO IT MAY NAME MERCHANTS — and it must still never leave that folder.**
-It is written for the officer and the owner: merchant names, unknown wallets and this week's AI
-category decisions are exactly what makes it useful. **It is not the sponsor's document and no part
-of it is reused on the sponsor card.**
-
-**⚠⚠ NEVER WRITE OUR OWN OUTPUT WHERE THE READER WILL PICK IT UP AS AN INPUT.** A summary dropped
-beside the Vircle exports is a file the next ingest would try to parse as a report. Two independent
-guards, both required: write into a **subfolder** (`06 Student Spending/Summaries/`), **and** have
-the reader accept only filenames matching the Vircle export pattern. One guard is a convention; two
-is a design.
-
-Reuses `sheets.file_csv_to_folder`'s shape (proven by the payments CSV and the activation CSV).
-Metered through `usage_context`.
-
-**Complexity: MEDIUM.** ~14 files with the summary folded in. **No migration.**
-
-### S4 sprint-start notes — 2026-09-10
-
-**⚠ FIRST, BEFORE ANY FRONTEND LINE: MERGE `origin/main`.** S1–S3 were backend-only so a stale
-branch cost nothing. `main` has moved **8 commits** since, and they are web commits
-(apply-copy round two, the clear button, the Vircle confirm tick). Writing a console page on top
-of stale web code is how a merge conflict becomes a rewrite. Re-run every gate on the merged
-tree, not on the pre-merge one.
-
-**⚠ SECOND: STITCH BEFORE TEMPLATE CODE** (house rule, workspace `CLAUDE.md`). This is a new
-console page, so it qualifies. And per `lessons.md` (Verification-verdict S5): **for a dense
-DESKTOP admin screen, prototype ONE pattern at a time** — the all-in-one cockpit prompt timed
-out twice and persisted late as duplicates. So: the merchant table alone first, then reuse the
-approved console patterns for the rest. HalaTuju Stitch project = `10844973747787673276`.
-
-**Lessons from `docs/lessons.md` that bind this sprint, and how each is answered:**
-
-1. *"A field allowlist protects a COLUMN and does nothing about a ROW"* (TD-201, 2026-07-31) —
-   this screen is officer-only, so the question is a ROW question. The filter goes in the
-   service beside the query, once, and is asserted at BOTH the serializer and the endpoint so
-   bypassing it fails twice. **No spending row may be reachable by a sponsor or a student.**
-2. *"Before adding a payload to an admin screen, grep for the dict that already serialises that
-   model"* (Sponsor S1) — grep for any existing spend/merchant serialiser before writing one.
-3. *"i18n parity proves en==ms==ta, NOT that a `t()` key EXISTS"* (Sponsor Redesign R7) — every
-   new key goes in all three locales AND the existing `admin-scholarship-i18n.test.ts` scanner
-   must cover this page, or it ships rendering raw key paths on a surface nobody looks at yet.
-4. *"A new read-serializer field must be added to EVERY frontend type that mirrors that
-   endpoint"* (Post-award S6) — jest does not catch it; `next build` does. Run `next build`.
-5. *"Use a plain `Serializer` with explicit `SerializerMethodField`s for a hard leak boundary,
-   and prove it with a PLANTED identifier"* (v2.24.0) — the officer payload may name merchants,
-   so the planted-identifier test here guards the opposite direction: a **student name** must
-   never appear (we never stored one), and no sponsor-facing serializer may gain a spending
-   field by accident.
-6. *"Any hand-declared serializer field written by `setattr` MUST carry an explicit
-   `max_length`"* (input-length-guards, 2026-06-07) — the correction writes
-   `MerchantCategory.decided_by_email` (254) and `reason` (255). Declare both.
-7. *"Design a guard's test from the HARM it prevents"* (S2, 2026-09-10) — the correction's test
-   is not "the field is written". It is: **a corrected merchant survives the next `--all`
-   sweep, and its rows change on a re-read.** That is the whole promise of the screen.
-8. *"The door question belongs to every command that WRITES"* (S3, 2026-09-10) — the Drive
-   summary is written by the ingest job, which already has a door. Say so explicitly rather
-   than assuming it.
-9. *"DERIVE a bite anchor's newline from the file"* (S2) — web files, `views.py` and the docs
-   are CRLF; the spending modules are LF.
-10. *"A predicted figure and a measured figure must never be written in the same shape"*
-    (S3) — any number this screen prints is computed, and the summary's numbers likewise.
-
-**⚠ THE SUMMARY'S OWN RULE, RESTATED BECAUSE IT IS THE EASY ONE TO SOFTEN:** we compute every
-figure in Python and hand it over; **Gemini may not calculate, may not add a figure, and may not
-draw a conclusion the numbers do not carry** (the `verdict_narrative.py` house pattern — that
-module's own docstring says the LLM "NEVER computes or changes the verdict"). It reaches the
-model through the same one seam and is metered by `usage_context`.
-
+**What S5 inherits:** `spend_report.totals(org)` already computes spent / placed / unplaced /
+percentage from the fenced query, and the ten-code vocabulary is served BY THE SERVER from the
+model choices. **⚠ None of it is reusable as-is on the sponsor card** — this payload names
+merchants and students on purpose. S5 builds its own allowlist and its own anonymity tests.
 
 ---
 
+## S4b — The summary written back to Drive
+
+> *"Instead of an email, or perhaps in addition to an email, Gemini creates a summary report …
+> and saves it in the same folder."* (owner, 2026-09-10)
+
+**Both, because they do different jobs.** An **alert is PUSH** — nobody discovers a broken
+import by opening a folder, so a fault still emails. A **summary is PULL** — it belongs where
+the data lives, next to the file it describes, for whoever goes looking. Neither replaces the
+other.
+
+**Written after every successful ingest of a new file**, not on a schedule — same trigger as
+S2. It rides the ingest job, which already has a cron door.
+
+**⚠ WE COMPUTE THE NUMBERS; GEMINI ONLY WRITES THE PROSE AROUND THEM.** The house pattern
+proven in `verdict_narrative.py`, whose own docstring says the LLM *"NEVER computes or changes
+the verdict"*. Every figure — totals, category splits, per-student lines, coverage dates — is
+computed in Python and handed over. **`spend_report` already computes most of them**, fenced.
+Gemini may not calculate, may not add a figure, and may not draw a conclusion the numbers do
+not carry.
+
+**⚠ THE REPORT IS INTERNAL, SO IT MAY NAME MERCHANTS — and it must still never leave that
+folder.** It is written for the officer and the owner. **It is not the sponsor's document and
+no part of it is reused on the sponsor card.**
+
+**⚠⚠ NEVER WRITE OUR OWN OUTPUT WHERE THE READER WILL PICK IT UP AS AN INPUT.** A summary
+dropped beside the Vircle exports is a file the next ingest would try to parse as a report.
+Two independent guards, both required: write into a **subfolder**
+(`06 Student Spending/Summaries/`), **and** have the reader accept only filenames matching the
+Vircle export pattern (**already shipped in S2** — this is the second lock, not the first).
+
+Reuses `sheets.file_csv_to_folder`'s shape (proven by the payments CSV and the activation
+CSV). Metered through `usage_context`, through the one Gemini seam.
+
+**Complexity: MEDIUM.** ~8 files. **No migration.** **No sponsor-visible change.**
+**⚠ Untestable from a laptop, like the Drive fetch — so the sprint ships the generator fully
+tested with the Drive write mocked, and the write itself is proved on the live service.**
+
+---
 ## S5 — The sponsor card
 
 **Goal.** Fill the reserved panel on `sponsor/(portal)/my-students/[id]` — the dashed card whose own

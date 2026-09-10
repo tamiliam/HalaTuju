@@ -235,6 +235,18 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title', chord: 'Y',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' } },
+      // Sponsor spending S4 — what students actually spent, and the one correction that
+      // outranks the sorter. Sits beside Payments because released money and spent money are
+      // two halves of one story.
+      // ⚠ `finance` is DELIBERATELY ABSENT, unlike its neighbour. The backend refuses it for
+      // the same reason: `_b40_scope` promises a finance admin never sees student data beyond
+      // the Payments allowlist, and this screen carries names beside purchases. This row and
+      // `_SPENDING_ROLES` in views_admin.py must agree; the page's own test pins the pair.
+      // ⚠ NOT 'G' — that is CHORD_PREFIX, the key that ARMS a chord, so it can never be one.
+      // 'X' for expenses; 'S' is Students and 'P' is Sponsors.
+      { id: 'spending', href: '/admin/spending', labelKey: 'admin.spending.nav', chord: 'X',
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin'],
+        gate: { mode: 'always' } },
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
         scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title', chord: 'B',

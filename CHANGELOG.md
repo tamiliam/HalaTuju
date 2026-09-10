@@ -2,6 +2,70 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor spending S4a — the officer can see it, and correct it - 2026-09-10
+
+Fourth sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`, **split from S4 on the
+owner's call**: the screen ships here, the Gemini-written Drive summary follows as S4b. **api +
+web. NO MIGRATION. Nothing a sponsor or student sees changes; nothing is deployed.**
+`/admin/spending`, `apps/scholarship/spend_report.py`, `AdminSpendingView` +
+`AdminSpendingCategoryView`, en/ms/ta.
+
+**⚠ THE ROW IS A SHOP, NOT A PAYMENT.** You fix a shop once and every payment at it follows; a
+per-payment screen would ask the same question forty times for one stall. Four computed
+figures on top, then the shop table, then per-student, then what the model decided in the last
+fortnight, then the wallet gaps.
+
+**⚠⚠ A CORRECTION CLAIMS THE PAYMENTS THAT HAVE NOT ARRIVED YET, AND THAT IS THE WHOLE
+PROMISE.** It writes an `owner` verdict against the SHOP as well as against every existing row.
+Without the shop half, next week's payment lands undecided, the ladder re-decides it from a
+keyword rule, and the correction quietly stops applying — at a shop the officer had already
+fixed, with nothing failing. **Found by a bite-check that came back SILENT**; every test until
+then had watched the rows move, which stays true while the shop verdict is corrupt.
+
+**⚠ THE FENCE IS ON THE QUERY, BECAUSE THIS IS A ROW QUESTION.** An allowlist protects a
+column and does nothing about a row (TD-201). Every read goes through `spend_report._txns`,
+fenced on `application__owning_organisation`; `_SpendingBase` resolves the organisation ONCE
+and refuses `no_org` rather than defaulting to unfenced.
+
+**⚠ A MERCHANT VERDICT IS GLOBAL; THE LIST IS FENCED.** "99 Speedmart sells groceries" is a
+fact about a shop, not about a tenant, and per-tenant verdicts would make every organisation
+re-answer the same question and pay the model again. So the fence on the WRITE is on **who may
+set it**: the merchant must be one this organisation's own students actually used.
+
+**⚠ `finance` IS REFUSED, THOUGH PAYMENTS NEXT DOOR ADMITS IT.** `_b40_scope` promises a
+finance admin never sees student data beyond the Payments allowlist, and this screen carries
+names beside purchases. Backend, navigation registry and page all refuse it, and a test pins
+the pair apart.
+
+**⚠ NO TIME OF DAY, ANYWHERE.** The hour is discarded at import so no surface can show when a
+student ate. The Stitch mockup drew "Today, 2:14 pm"; the page ships date-only and a test
+asserts no `HH:MM` appears anywhere on it.
+
+**⚠ THE CATEGORY CONTROL IS A NATIVE `<select>` AND MUST STAY ONE.** `TableFrame` establishes
+two clipping contexts, so a hand-rolled absolute dropdown in a cell is sliced off at the
+table's edge — the Intake years defect of 2026-09-08. A native select's list is drawn by the
+browser outside the document. The test asserts the ELEMENT.
+
+**⚠ THE ORG-FENCE STATIC GUARD NOW SCANS FOUR FILES, NOT ONE.** It scanned `views_admin.py` by
+filename, so admin queries moved into `spend_report.py` were structurally invisible to it.
+Widening it found three things at once: a deliberate cross-organisation write of mine carrying
+prose but no pragma; the two cron modules that query unfenced **correctly** and had never had
+to say so; and **`views_sponsor.py`, never scanned, pre-dating this by months** — logged as
+**TD-240** in a `NOT_YET_SCANNED` ledger rather than silently excluded. Two floor tests now
+stop the scan quietly watching nothing.
+
+**⚠ `admin-spending-i18n.test.ts`** — parity proves en == ms == ta, never that a key EXISTS,
+and most of this page's keys are built dynamically. The sponsor redesign shipped ~47
+non-existent keys undetected for four sprints on exactly this combination.
+
+Three console-standard guards also fired and each found something real: the chord `G` is
+`CHORD_PREFIX` and can never be a chord (now `X`); a list surface owes phone cards; a menu row
+owes a glyph.
+
+Gates: pytest **6304** (+42); jest **2015** (+27); `tsc` **24** (baseline); `next lint` 0;
+`next build` compiled; `makemigrations --check` clean. **Fifteen bite-checks, one silent, all
+fifteen bit after the test it was missing was written.**
+
 ## Sponsor spending S3 — every payment gets a category - 2026-09-10
 
 Third sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. NO

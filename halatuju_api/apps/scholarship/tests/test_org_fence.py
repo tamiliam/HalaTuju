@@ -203,6 +203,20 @@ class TestFenceCoverageCompleteness(TestCase):
         # screen's `_programme_for` — you cannot switch a gift on if you cannot see it. That widens
         # what is LISTED, never across the organisation boundary.
         '_ProgrammeScopedBase': 'sabah-s2b-programme-scoped-base',
+        # Sponsor spending S4 — the officer's spending screen. FENCED on
+        # `application__owning_organisation` inside `spend_report._txns`, the same fence the
+        # Payments funding summary uses; `_SpendingBase._spending_admin` resolves the
+        # organisation ONCE and refuses `no_org` rather than defaulting to unfenced, because a
+        # super with no org context is how "every tenant's students" happens by accident.
+        # ⚠ The merchant VERDICT is global on purpose (a shop's category is a fact about the
+        # shop, not about a tenant) — so the fence on the WRITE is on who may set it: the
+        # merchant must be one this organisation's own students actually used.
+        # ⚠ `finance` is absent by decision, not omission: `_b40_scope` promises a finance
+        # admin never sees student data beyond the Payments allowlist, and this screen carries
+        # names beside purchases.
+        '_SpendingBase': 'spending-s4-org-fenced',
+        'AdminSpendingView': 'spending-s4-org-fenced',
+        'AdminSpendingCategoryView': 'spending-s4-org-fenced',
         'AdminProgrammeListView': 'sabah-s2b-programmes-fenced',
         'AdminProgrammeDetailView': 'sabah-s2b-programmes-fenced',
         # Reaches its gift through the SAME `_programme_or_404`, so another tenant's gift is 404
@@ -481,20 +495,81 @@ class TestOrgFenceStaticGuard(TestCase):
         # the engineer's hours, neither of which the requesting organisation may ever see. Reached
         # through req.analyses so the request's own fence covers it.
         'OrgRequestAnalysis.objects',
+        # Sponsor spending S4. A row says what a named student bought and for how much, so an
+        # unfenced manager query is the leak. Every read goes through `spend_report._txns`;
+        # the ONE deliberate cross-organisation write (an owner verdict applies to the shop
+        # everywhere) carries its own pragma saying so.
+        'BursarySpendTxn.objects',
     )
 
+    #: ⚠ THE SCAN'S SCOPE IS ITS STRENGTH AND ITS BLIND SPOT AT ONCE. It began as
+    #: views_admin.py alone; S4 put admin-facing queries in `spend_report.py`, which the guard
+    #: would have been structurally unable to see. **A new module that queries a watched model
+    #: for an admin surface belongs on this list on the day it is written.**
+    SCANNED = ('views_admin.py', 'spend_report.py', 'spend_category.py',
+               'spending_import.py')
+
+    #: ⚠ A LEDGER, NOT AN EXEMPTION LIST — the same idea as `NO_DOOR`. A file here is a
+    #: DECISION somebody wrote down, and the reason is the check. Adding a name without a
+    #: reason is the thing this is meant to make impossible.
+    NOT_YET_SCANNED = {
+        'views_sponsor.py':
+            'TD-240 — surfaced by this guard when S4 widened it, and PRE-DATES S4. The sponsor '
+            'endpoints fence on the sponsorship rather than on `owning_organisation`, so they '
+            'need their own audit and their own pragma vocabulary; doing it blind inside a '
+            'spending sprint would either bury real findings or add noise-pragmas that make the '
+            'guard weaker. Logged rather than silently excluded.',
+    }
+
+    def test_every_scanned_file_is_real_and_actually_carries_a_watched_query(self):
+        """THE FLOOR. A scan that silently matches nothing makes every assertion above vacuous,
+        and the guard then passes for ever while protecting nothing. This is the same shape as
+        the repair-door guard's own floor, and it exists because S4 widened SCANNED: dropping a
+        file from that tuple must FAIL here rather than quietly stop looking."""
+        base = os.path.dirname(views_admin.__file__)
+        for filename in self.SCANNED:
+            path = os.path.join(base, filename)
+            self.assertTrue(os.path.isfile(path), f'SCANNED names a missing file: {filename}')
+            with open(path, encoding='utf-8') as fh:
+                src = fh.read()
+            self.assertTrue(
+                any(tok in src for tok in self.WATCHED),
+                f'{filename} carries no watched query - it is either the wrong file or the '
+                f'queries moved, and either way this guard is now watching nothing.')
+
+    def test_the_modules_that_query_watched_models_are_all_scanned(self):
+        """The other half: a NEW admin-facing module that queries a watched model must join
+        SCANNED. Without this, S4's own mistake repeats - move the query one file sideways and
+        the guard is structurally blind to it."""
+        base = os.path.dirname(views_admin.__file__)
+        candidates = ('views_admin.py', 'views_sponsor.py', 'views_branding.py',
+                      'spend_report.py', 'spend_category.py', 'spending_import.py')
+        unscanned = []
+        for filename in candidates:
+            path = os.path.join(base, filename)
+            if (not os.path.isfile(path) or filename in self.SCANNED
+                    or filename in self.NOT_YET_SCANNED):
+                continue
+            with open(path, encoding='utf-8') as fh:
+                src = fh.read()
+            if any(tok in src for tok in self.WATCHED):
+                unscanned.append(filename)
+        self.assertEqual(unscanned, [], 
+                         f'These query a watched model and are not in SCANNED: {unscanned}')
+
     def test_raw_admin_queries_are_fenced(self):
-        path = os.path.join(os.path.dirname(views_admin.__file__), 'views_admin.py')
-        with open(path, encoding='utf-8') as fh:
-            src = fh.read()
+        base = os.path.dirname(views_admin.__file__)
         offenders = []
-        for tok in self.WATCHED:
-            for m in re.finditer(re.escape(tok), src):
-                # Window spans a pragma placed on the line(s) just above or just below.
-                window = src[max(0, m.start() - 200):m.start() + 200]
-                if 'org-fence:' not in window:
-                    line = src.count('\n', 0, m.start()) + 1
-                    offenders.append(f'views_admin.py:{line} — {tok}')
+        for filename in self.SCANNED:
+            with open(os.path.join(base, filename), encoding='utf-8') as fh:
+                src = fh.read()
+            for tok in self.WATCHED:
+                for m in re.finditer(re.escape(tok), src):
+                    # Window spans a pragma placed on the line(s) just above or just below.
+                    window = src[max(0, m.start() - 200):m.start() + 200]
+                    if 'org-fence:' not in window:
+                        line = src.count('\n', 0, m.start()) + 1
+                        offenders.append(f'{filename}:{line} — {tok}')
         self.assertEqual(
             offenders, [],
             'Raw admin query without an `# org-fence:` pragma (cross-tenant read/write risk):\n'

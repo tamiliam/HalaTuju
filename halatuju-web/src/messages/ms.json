@@ -5382,6 +5382,64 @@
       "programmeHint": "Satu larian membayar daripada satu hadiah sahaja. Pelajar hadiah lain tidak pernah disertakan.",
       "programmeRequired": "Organisasi anda menjalankan lebih daripada satu hadiah, jadi sila nyatakan yang mana membayar larian ini."
     },
+    "spending": {
+      "nav": "Perbelanjaan",
+      "title": "Perbelanjaan pelajar",
+      "subtitle": "Apa yang pelajar beli dengan biasiswa mereka, mengikut kedai. Tiada apa-apa di sini sampai kepada penaja.",
+      "loadFailed": "Angka perbelanjaan tidak dapat dimuatkan.",
+      "saveFailed": "Perubahan itu tidak disimpan.",
+      "empty": "Belum ada perbelanjaan direkodkan.",
+      "kept": "Apa sahaja yang anda ubah di sini akan kekal. Ia tidak akan ditulis ganti.",
+      "stat": {
+        "spent": "Dibelanjakan",
+        "sorted": "Telah diasingkan",
+        "unsorted": "Belum diasingkan",
+        "toCheck": "Kedai untuk disemak"
+      },
+      "col": {
+        "shop": "Kedai",
+        "countedAs": "Dikira sebagai",
+        "decidedBy": "Cara kami tentukan",
+        "visits": "Kunjungan",
+        "total": "Jumlah",
+        "lastSeen": "Kali terakhir"
+      },
+      "by": {
+        "rule": "Peraturan",
+        "inferred": "Corak",
+        "ai": "Model",
+        "owner": "Anda",
+        "duitnow": "Bank",
+        "none": "Belum ditentukan"
+      },
+      "heldBack": "{count} bayaran terlalu besar untuk makanan",
+      "students": {
+        "title": "Mengikut pelajar",
+        "name": "Pelajar",
+        "payments": "Bayaran",
+        "spent": "Dibelanjakan",
+        "unsorted": "Belum diasingkan",
+        "empty": "Belum ada pelajar yang berbelanja."
+      },
+      "model": {
+        "title": "Keputusan model baru-baru ini",
+        "help": "Semak semasa ia masih baharu. Mengubah satu di sini menjadikannya milik anda selamanya.",
+        "empty": "Model tidak membuat sebarang keputusan dalam dua minggu lepas.",
+        "decidedAt": "Ditentukan"
+      },
+      "gaps": {
+        "title": "Dompet untuk dibetulkan",
+        "noWallet": "Pelajar berbiasiswa tanpa dompet direkodkan",
+        "shared": "Dompet dituntut oleh lebih daripada seorang pelajar",
+        "none": "Tiada apa-apa untuk dibetulkan.",
+        "note": "Dompet yang langsung tidak sepadan dengan mana-mana pelajar dihantar melalui e-mel kepada kakitangan, bukan dipaparkan di sini."
+      },
+      "error": {
+        "unknown_merchant": "Kedai itu bukan milik anda.",
+        "unknown_category": "Itu bukan kategori yang kami guna.",
+        "merchant_required": "Tiada kedai dinamakan."
+      }
+    },
     "contracts": {
       "title": "Templat kontrak",
       "subtitle": "Karang, sahkan dan lancarkan perjanjian biasiswa — berversi mengikut organisasi.",

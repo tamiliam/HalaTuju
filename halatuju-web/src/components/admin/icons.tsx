@@ -24,6 +24,9 @@ const PATHS: Record<string, string> = {
   staff: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
   sponsors: 'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.7 1.1-1a5.5 5.5 0 0 0 0-7.8z',
   payments: 'M2 5h20v14H2zM2 10h20',
+  // Spending — a receipt with a torn foot. Payments (a card) is money going OUT of the
+  // programme; this is the record of what came back, which is a different question.
+  spending: 'M5 2h14v20l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
   contracts: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8',
   sources: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
   billing: 'M3 3v18h18M7 16v-5M12 16V8M17 16v-3',
