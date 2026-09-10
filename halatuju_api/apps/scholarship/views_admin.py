@@ -7229,6 +7229,42 @@ class AdminProgrammeDetailView(_ProgrammeScopedBase):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class AdminApplyCopyDraftView(_ProgrammeScopedBase):
+    """POST a target locale -> a DRAFTED Malay/Tamil block, from this gift's own English.
+
+    ⚠⚠ IT RETURNS THE DRAFT AND SAVES NOTHING. The browser fills the boxes with it; the person
+    reads it and presses Save, which is the existing PATCH and the existing validation. Making
+    this write would put a machine's wording on a public page with no human between — the rule
+    `decisions.md` settled for the document engines (*the model extracts, a person decides*), and
+    the reason `apply_copy` exists at all is that an organisation owns what its gift advertises.
+
+    ⚠ IT IS BILLABLE. One Gemini call per press, metered through `usage_context` like every other
+    seam, so a tenant's drafting shows up on their own usage row rather than the platform's.
+    """
+
+    def post(self, request, pk):
+        admin, err = self._gate(request)
+        if err:
+            return err
+        p, err = self._programme_or_404(admin, pk)
+        if err:
+            return err
+
+        from . import apply_copy_draft as acd, usage
+        locale = (request.data.get('locale') or '').strip().lower()
+        try:
+            with usage.usage_context(source='apply_copy_draft',
+                                     organisation_id=p.organisation_id):
+                block = acd.draft(p, locale)
+        except acd.DraftError as e:
+            return Response({'error': e.code, 'code': e.code},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        logger.info('AUDIT apply_copy_drafted code=%s locale=%s by=%s',
+                    p.code, locale, admin.email or '')
+        return Response({'locale': locale, 'block': block})
+
+
 def _requirements_from(data):
     """Read the tick boxes. A key that is ABSENT is left alone; a key that is present and null
     UNTICKS that requirement. Both matter: a PATCH sends only what changed, and clearing a value is

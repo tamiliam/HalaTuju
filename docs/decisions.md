@@ -1,5 +1,53 @@
 # Architectural Decisions — HalaTuju
 
+## The apply-copy drafter proposes; a person publishes — 2026-09-10
+
+**Decision:** the "Draft from English" button calls an endpoint that returns a drafted Malay/Tamil
+block and **writes nothing**. The wording reaches the public apply page only through the existing
+`AdminProgrammeDetailView.patch`, pressed by a person, through the same validation typed wording
+goes through. The model used is **`gemini-2.5-flash`** (owner decision, cost).
+
+**Alternatives considered:** (a) draft AND save in one press, with an undo; (b) draft into a
+preview pane the reader accepts or rejects; (c) no drafting at all, leaving ms/ta to whoever the
+organisation can find.
+
+**Rationale:** this is the document-engine rule (2026-05-31, *Gemini extracts, deterministic
+matchers decide the verdict*) applied to copy. A gift's advertised criteria decide who believes
+they may apply and who is turned away automatically; a machine must not be the last hand on them.
+(a) makes the machine the publisher and the human the corrector, which is the wrong way round for
+a public claim. (b) is (a) with more screens — the boxes ARE the preview, and editing in place is
+what somebody actually wants to do to a draft. (c) is the status quo, and the status quo is that a
+gift writing English only serves its own English to Malay and Tamil readers.
+
+**Trade-offs:** a drafted block sitting in the boxes looks exactly like typed wording, so a reader
+who does not read it can save a machine translation. The label ("Draft", not "Translate") and the
+status line ("Read every line and correct anything wrong before you Save") are what carry that;
+neither is enforcement.
+
+**Revisit if:** a real organisation is observed saving drafts unread — then the preview pane in
+(b) earns its cost.
+
+## The clear button is named for its action and asks first — 2026-09-10
+
+**Decision:** `admin.applyCopy.useDefault` ("Use the standard wording") is **retired**, replaced by
+**"Clear all wording"** behind a confirm dialog that names every language holding text. It stays a
+whole-gift action; it is NOT made per-language.
+
+**Alternatives considered:** (a) leave it — it is recoverable by retyping; (b) make it clear only
+the language on screen; (c) move it out of the save bar entirely.
+
+**Rationale:** the button deletes every language, appears whenever ENGLISH is saved, and sat on
+whichever language tab the reader was on — so it stood live and unlabelled beside an empty Malay
+form, one click from taking the English. Naming it for the outcome ("use the standard wording")
+made it read as a peer of Save rather than as a delete. (b) was rejected because dropping one
+language is ALREADY possible — empty its boxes and Save — so it would give one screen two ways to
+remove wording, with the difference invisible. (c) was rejected because `SaveBar`'s buttons-right
+layout is an owner ruling (2026-09-07) and a destructive action hidden elsewhere is the
+2026-09-08 "moving a control into a menu undoes its ruling" trap.
+
+**Trade-offs:** a confirm step on a recoverable action is friction, and the action is pressed
+rarely. Accepted: the recovery is retyping three languages of copy somebody wrote carefully.
+
 ## A staff delete is guarded by a FOOTPRINT, never by foreign keys — 2026-09-09
 **Decision:** an admin account may be deleted only when it has done **no recorded work**
 (`apps.scholarship.staff_footprint`), and **a reviewer may never be deleted at all**. Everyone

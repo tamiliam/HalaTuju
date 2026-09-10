@@ -126,6 +126,12 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 # lesser model — if the configured model is unavailable/errors, raise, don't degrade.
 # (Deliberately NOT the reports MODEL_CASCADE.)
 CONTRACT_QUIZ_MODEL = os.environ.get('CONTRACT_QUIZ_MODEL', 'gemini-2.5-pro')
+# "How it's advertised" — the model that DRAFTS a gift's Malay/Tamil apply-page copy from its own
+# English (`apply_copy_draft`). Flash by owner decision (2026-09-10): a few hundred words a press,
+# and a person reads every line before it can be saved, so the pro model's cost buys nothing here.
+# ⚠ It drafts and never saves — see that module's docstring.
+APPLY_COPY_DRAFT_MODEL = os.environ.get('APPLY_COPY_DRAFT_MODEL', 'gemini-2.5-flash')
+
 # Contract module (Sprint 5) — the Google Drive folder the executed signed agreement
 # PDF is filed into (best-effort; mirrors VIRCLE_PAYMENTS_FOLDER). Env-overridable.
 CONTRACTS_DRIVE_FOLDER = os.environ.get('CONTRACTS_DRIVE_FOLDER', '04 Contracts')

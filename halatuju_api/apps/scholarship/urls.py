@@ -77,7 +77,7 @@ from .views_admin import (
     AdminAssignableAdminsView,
     AdminScopeListView,
     AdminProgrammeConfigurationView,
-    AdminProgrammeListView, AdminProgrammeDetailView,
+    AdminProgrammeListView, AdminProgrammeDetailView, AdminApplyCopyDraftView,
     AdminIntakeYearListView, AdminIntakeYearDetailView,
     AdminIntakeYearFinishView,
     AdminOrganisationThemeView,
@@ -411,6 +411,10 @@ urlpatterns = [
     # organisation, cross-tenant => 404 not 403, org_admin + super only.
     path('admin/scholarship/programmes/', AdminProgrammeListView.as_view()),
     path('admin/scholarship/programmes/<int:pk>/', AdminProgrammeDetailView.as_view()),
+    # Drafts this gift's ms/ta apply-page copy from its own English. DRAFTS ONLY — the save is
+    # still the PATCH above, pressed by a person.
+    path('admin/scholarship/programmes/<int:pk>/apply-copy/draft/',
+         AdminApplyCopyDraftView.as_view()),
     path('admin/scholarship/programmes/<int:pk>/years/', AdminIntakeYearListView.as_view()),
     path('admin/scholarship/intake-years/<int:pk>/', AdminIntakeYearDetailView.as_view()),
     # ⚠ ITS OWN ROUTE because it is TERMINAL and takes a typed confirmation — see

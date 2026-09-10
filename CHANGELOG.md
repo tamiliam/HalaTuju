@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-09-10 — "How it's advertised": a safer clear, and a draft from English
+
+Two owner findings from using the live tab. **No migration.** api + web.
+
+- **The clear button no longer deletes three languages on one unlabelled click.** It was named for
+  its outcome ("Use the standard wording"), read as a peer of Save, appeared whenever ENGLISH was
+  saved, and sat on whichever language tab the reader was on — so it stood live beside an empty
+  Malay form, one press from taking the English with it. Now **"Clear all wording"**, behind a
+  confirm dialog that names every language that will be lost. `useDefault` is RETIRED from all
+  three message files (an absence guard holds it out).
+- **"Draft from English"** on the Malay and Tamil tabs — fills the boxes with a machine draft of
+  the gift's own saved English, and **saves nothing**. New `apps/scholarship/apply_copy_draft.py`
+  + `POST admin/scholarship/programmes/<pk>/apply-copy/draft/`; `gemini-2.5-flash`; one mockable
+  seam, metered through `usage_context`, org-fenced through the same `_programme_or_404`.
+  The bullet count is asserted against the English — a translation that merged two conditions
+  would advertise a lower bar in one language only, and `normalise` would store it happily.
+
+Gates: pytest **6144** · jest **1971** · tsc **24** (baseline) · lint **0** · i18n **4972 × 3** ·
+`next build` exit 0 · `makemigrations --check` clean. Three bite-checks, all bit.
+Retro `docs/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
+`docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
+
 ## Vircle card and emails say the true thing about Child accounts - 2026-09-10
 
 Two owner corrections off the live V2a surfaces. (1) The Action-Centre account-type warnings were

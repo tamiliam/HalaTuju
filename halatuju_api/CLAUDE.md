@@ -550,7 +550,94 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-09, after the apply page's copy became the GIFT's)
+## Next Sprint (as of 2026-09-10, after the clear button and the draft-from-English)
+
+**SHIPPED, NOT DEPLOYED — the owner gates it. NO MIGRATION.** Worktree
+`.worktrees/apply-copy-v2`, branch `feat/apply-copy-v2`, base `origin/main` at `4c6c15e2`.
+api + web. Retro `docs/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
+`docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
+Gates, ALL RUN INSIDE THE WORKTREE: pytest **6144**; jest **1971**; tsc **24** (baseline);
+lint **0 Errors**; i18n **4972 × 3**; `next build` exit 0; `makemigrations --check` clean.
+**Three bite-checks, all bit**, each injection verified as landed and each restored by writing the
+original bytes back.
+
+**⚠⚠ THE OWNER'S REPORT WAS RIGHT AND ITS REASONING WAS INVERTED — read this first.** They said
+the clear button "is misplaced… only appropriate when all the textboxes are empty". Its timing is
+already the OPPOSITE: it appears only when ENGLISH is SAVED, and is absent from a gift that has
+written nothing. Correcting that and moving on would have closed a live footgun as
+working-as-designed, because the code also showed it **deletes every language**, **appears on
+whichever language tab you happen to be on**, and **asked nothing first**. The dangerous case was
+never the empty gift — it was somebody on an empty MALAY form pressing what reads as a formatting
+preference and losing yesterday's English.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ THE CLEAR BUTTON IS NAMED FOR ITS ACTION AND ASKS FIRST.** "Use the standard wording" →
+  **"Clear all wording"**, behind a confirm dialog that NAMES every language holding text
+  (`writtenLocales`). **`admin.applyCopy.useDefault` IS RETIRED from all three message files**, and
+  an ABSENCE guard holds it out — a presence check on the new label proves nothing about a rename.
+- **⚠ IT STAYS A WHOLE-GIFT ACTION AND MUST NOT BECOME PER-LANGUAGE.** Dropping one language is
+  ALREADY possible: empty its boxes and Save. A second way to remove wording, differing invisibly
+  from the first, is how a screen starts lying about what a button did.
+- **⚠⚠ "DRAFT FROM ENGLISH" DRAFTS AND NEVER SAVES.** `POST
+  admin/scholarship/programmes/<pk>/apply-copy/draft/` returns a block; the browser fills the
+  boxes; the wording reaches a public page only through the existing PATCH, pressed by a person.
+  That is `decisions.md` 2026-05-31 (*the model extracts, the deterministic layer decides*) applied
+  to copy. `test_a_draft_NEVER_writes_to_the_gift` is the load-bearing test.
+- **⚠ THE SOURCE IS THE GIFT'S OWN SAVED ENGLISH, NEVER THE PLATFORM DEFAULT.** Drafting from the
+  platform would translate ANOTHER gift's criteria into this gift's Malay — the right-language
+  falsehood `applyCopy.ts` exists to prevent. The button is also ASLEEP while English has unsaved
+  edits (`englishUnsaved`, asked about English ALONE so a Malay edit cannot lock the Tamil button).
+- **⚠ THE BULLET COUNT IS ASSERTED AGAINST THE ENGLISH, and it is a correctness rule.** Each
+  bullet is one condition. A translation folding two into one advertises a **lower bar in one
+  language only**, and `apply_copy.normalise` would store it happily — all-or-nothing is per
+  LANGUAGE, not per bullet. A drafted line over the stored cap is REFUSED rather than offered, or
+  the reader would be left guessing which box the Save is objecting to.
+- **⚠ LABELLED "DRAFT", NOT "TRANSLATE".** The word is what makes the reader want to check it;
+  the endpoint's inability to write is what makes checking matter.
+- **Qualification names are kept verbatim in every language** (SPM, STPM, PNGK, IPTA, B40, STR…) —
+  a criterion a student cannot match against the certificate in their hand is worse than English.
+- **`gemini-2.5-flash`** (owner decision, cost), settings key `APPLY_COPY_DRAFT_MODEL`. One
+  mockable seam (`_gemini_generate`), no downgrade fallback, metered through `usage_context`,
+  org-fenced through the same `_programme_or_404` — another tenant's gift is 404 **before a token
+  is spent**, and a reviewer cannot spend one at all.
+
+**⚠ A MERGE-CONFLICT BLOCK HAD BEEN COMMITTED INTO `docs/lessons.md`** by the previous evening's
+merge — markers only, no content lost, found at sprint-start and fixed separately (`0835b6b9`). The
+three JSON message files were resolved by a script that parsed them; the markdown was resolved by
+eye, and the eye missed it. **Grep the whole tree for conflict markers before committing a merge.**
+
+**▶ AT DEPLOY: push (api + web — Python changed, so expect BOTH builds).** No migrate-first, no
+env vars, no data step. **Nothing a student sees changes** — both gifts still read `apply_copy:
+{}` unless somebody types wording. `APPLY_COPY_DRAFT_MODEL` has a working default, so no Cloud Run
+env var is needed; `GEMINI_API_KEY` is already set on the service.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Configuration → **How it's advertised** → Test Programme. The save bar now reads **Clear all
+   wording**; pressing it ASKS, and the dialog names English (the only language holding text).
+2. Press **Malay**. The **Draft from English** button is live; press it and the boxes fill. Read
+   it. Nothing is saved until you press Save.
+3. Clear the English (unsaved) and the draft button should go to sleep with the reason underneath.
+4. **ms and ta are FIRST DRAFTS** for the 23 new admin strings, the Tamil especially.
+5. **No live model call has ever been made** — every test mocks the seam. Your first press is also
+   the first evidence the prompt and the parser agree.
+
+**▶ NEXT, ALREADY PLANNED AND OWNER-APPROVED AS ITS OWN SPRINT:** the **officer income
+vocabulary** (`docs/plans/2026-09-09-officer-income-vocabulary.md`). Eleven officer strings say
+"B40". ⚠ The owner first asked to link them to the GIFT'S NAME; that is wrong and the correction
+is recorded — B40 is Malaysia's income band, not a gift name. The real defect is that a gift may
+set NULL income ceilings (**the Test round already does**) and the screen still reasons about "the
+B40 line". **STR keeps its name** — it is a government programme.
+
+**▶ ALSO LOGGED, NOT BUILT:** **TD-237** — Applications shows in the rail before a gift is chosen
+(owner chose gating it for the four roles that HAVE an Overview; reviewer and qc keep it). And the
+**landing page + sign-in prompt** carry the same platform-wide B40 copy — same class, other pages,
+still unlogged as work.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-09, after the apply page's copy became the GIFT's)
 
 **✅ DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`8da972e1`**; BOTH Cloud Builds
 SUCCESS on `8da972e` — **waited on the push's OWN build IDs** (web `417cae41…`, api
