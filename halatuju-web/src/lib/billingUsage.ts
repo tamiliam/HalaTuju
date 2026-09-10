@@ -18,9 +18,15 @@ export const SERVICE_ORDER: string[] = ['gemini', 'vision_ocr', 'openai', 'email
 // the row is shown so the reader knows it exists and costs nothing right now.
 export const PAUSED_SERVICES: string[] = ['sms_verify']
 
-// Free, non-metered services listed in the footnote (label keys). Google Workspace
-// (Meet/Calendar/Drive/Sheets) + Cloudflare Turnstile (contact-form verification).
-export const FREE_SERVICE_KEYS: string[] = ['workspace', 'turnstile']
+// Free, non-metered services listed in the footnote (label keys). Cloudflare Turnstile
+// (contact-form verification).
+//
+// ⚠ **Google Workspace was removed on 2026-09-11 and must not come back.** It was listed here
+// as free, and it is not: the owner's August invoice charges MYR 18.90 for it, and it now has
+// its own `PlatformCost` source and its own line in the cost section below. A paid subscription
+// named in a "these cost nothing" footnote is not a cosmetic error — it is the page telling the
+// only person who reads it that a recurring bill does not exist.
+export const FREE_SERVICE_KEYS: string[] = ['turnstile']
 
 /** Order a block's service rows by SERVICE_ORDER (known first in that order, any unknown
  * service appended alphabetically). Returns a new array; never mutates the input. */

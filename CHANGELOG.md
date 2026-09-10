@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## What it cost, what we charge, and the screen that sets the rates - 2026-09-11
+
+The owner sent August's real invoices — GCP RM23.92, Supabase $25, Google Workspace RM18.90,
+Twilio $1.77 — and said none of it reaches the Usage & Billing page, along with the work we do
+fulfilling requests. Then: build the Billing rates screen.
+
+**The investigation found almost all of it already built, and starved.** The `PlatformCost`
+ledger, the BigQuery `sync_gcp_costs` puller, the hand-entry command, `month_totals`/`reconcile`,
+and the `BillingRate` endpoint all shipped in July 2026. **Nothing fed the ledger after June and
+no endpoint had ever read it**, so real invoices reached no screen at all. The rates endpoint had
+sat unread for six weeks — it was the nav's one legitimate reserved slot.
+
+**What shipped:**
+
+- **`AdminPlatformCostsView` — the first reader the ledger has ever had.** Super-only, **403 not
+  404**, matching the rates endpoint: what the platform pays and the margin on it is a commercial
+  disclosure, but there is nothing to hide about the route existing.
+- **⚠ The truthfulness flags now reach the screen.** `month_totals` computes `entered_sources`,
+  `is_complete` and `period_caveats` and they had died in a docstring. **A total that mixes
+  measured and hand-typed figures without saying so is not an audit** — the module's own words.
+  A held invoice makes the month's total a **floor**, and the page says so.
+- **The Billing rates screen** (`/admin/billing-rates`), against the endpoint that shipped
+  2026-07-27. ⚠ **Saving never edits a rate — it adds an effective-dated one**, so a rate typed in
+  September cannot re-price August. The page says so in words, because the mechanism is invisible
+  otherwise. ⚠ **An unset rate is DRAWN, not hidden**: the hourly rate being blank is the most
+  important thing the screen can say, since until it exists no development work can be billed.
+- **`OrgBillingAdjustment` — July is shown in full and charged nothing.** Owner: *"we do not bill
+  anything for July. 100% discount. But show the values."* Both halves. The month computes in
+  full, then a recorded discount reduces it, and the card reads subtotal → discount → charged.
+  ⚠ A boolean "not billed" flag was **rejected**: it loses why, loses who, and makes a deliberate
+  waiver indistinguishable from a bug that produced zero. `reason` is required.
+- **⚠ Metered and infrastructure are REFUSED, never zeroed.** There is no unit-price table
+  (Sprint 13a, "NO prices in v1") and no agreed rule for splitting platform cost between tenants
+  — June measured 72% of the GCP bill as our own crons and deploys, so sharing it out is a pricing
+  decision, not a default. Each says so on the card. **A line the reader can see is missing gets
+  fixed; a RM0.00 gets believed.**
+- **Finished request work is found.** 27.5 quoted hours sat on production and reached no invoice
+  because nothing joined `OrgRequest.quote_hours` to `OrgBuildHours`. ⚠ It is **reported, not
+  auto-billed**: a request has no completion date, so which month it belongs to is a human call.
+  Recording one writes a `[REQ-n]`-tagged `OrgBuildHours` row whose `basis` names the request.
+- **`workspace` became its own `PlatformCost` source** — and was **removed from the page's "free
+  services" footnote**, where it had been listed as costing nothing while we pay MYR 18.90 a month
+  for it. A paid subscription in a "these are free" list tells the only person who reads the page
+  that a recurring bill does not exist.
+- **The nav's last reserved slot is gone.** `billingRates` earned its `placeholder` honestly and
+  has now been filled. The disabled-slot mechanism stays proven against a synthetic row.
+
+**One migration** (`0156`), additive: the new table plus the `workspace` choice.
+
 ## Which AI version are we running, and which actually ran - 2026-09-11
 
 The owner asked whether an organisation could pick its own AI version per task, to track versions

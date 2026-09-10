@@ -3345,6 +3345,11 @@ class PlatformCost(models.Model):
     SOURCE_CHOICES = [
         ('gcp', 'Google Cloud Platform'),
         ('supabase', 'Supabase'),
+        # 2026-09-11. Its OWN source, not `other`. Google Workspace is a standing monthly line
+        # (the halatuju.xyz mailboxes) and it will be on every invoice from here on. Left in
+        # `other` it becomes indistinguishable from every future one-off, and the by-source
+        # breakdown — the whole reason the column exists — stops answering "what is this?".
+        ('workspace', 'Google Workspace'),
         ('brevo', 'Brevo'),
         ('twilio', 'Twilio'),
         ('other', 'Other'),
@@ -3544,6 +3549,63 @@ class OrgBuildHours(models.Model):
 
     def __str__(self):
         return f'{self.period_month} {self.organisation_id}: {self.hours}h {self.module}'
+
+
+class OrgBillingAdjustment(models.Model):
+    """A discount applied to ONE organisation's bill for ONE month.
+
+    Owner requirement 2026-09-11: *"we do not bill anything for July. 100% discount. But show
+    the values."* Those two sentences are the whole design. July is computed in full, every
+    line visible, and THEN reduced to zero by a row that says so — subtotal, discount, charged.
+
+    ⚠ **A boolean "not billed" flag was rejected.** It loses why, loses who, and above all makes
+    a deliberate waiver indistinguishable from a bug that happened to produce zero. Six months
+    later nobody can tell the difference, and the only way to find out is to re-derive the month
+    — which is exactly the work an audit trail exists to avoid.
+
+    **Separate from `BillingRate`, and the difference is the grain.** A rate is platform-wide
+    and effective-DATED: it applies to everyone from a day onward. A discount is a commercial
+    term agreed with ONE tenant for ONE named month. Storing it as an effective-dated rate would
+    mean a July waiver silently continued into August until somebody remembered to end it.
+
+    `reason` is required, for the same purpose `OrgBuildHours.basis` serves: a number nobody can
+    explain later is not auditable. "Pre-launch goodwill period" is a term; "0" is a mystery.
+    """
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        related_name='billing_adjustments',
+        help_text='The tenant whose bill is reduced. PROTECT: a billing decision must outlive '
+                  'any tidy-up of the organisation record.')
+    period_month = models.CharField(
+        max_length=7,
+        help_text="The single month this applies to, 'YYYY-MM'. Never a range: a waiver that "
+                  'rolls forward on its own is how an unbilled year happens.')
+    discount_pct = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        help_text='Percent off the computed charge. 100 = the month is shown in full and '
+                  'charged nothing. Decimal, never float — this lands on an invoice.')
+    reason = models.TextField(
+        help_text='REQUIRED. Why this month was discounted, in words a stranger reading the '
+                  'ledger next year can act on.')
+    set_by_email = models.EmailField(
+        blank=True, default='',
+        help_text='Who decided it. Waiving a charge is a commercial act and needs a name.')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'org_billing_adjustments'
+        ordering = ['-period_month', 'organisation']
+        constraints = [
+            # One adjustment per (org, month). Two rows would mean two answers to "what was
+            # charged?", and the code would have to pick one — silently.
+            models.UniqueConstraint(
+                fields=['organisation', 'period_month'],
+                name='org_billing_adjustment_unique_month'),
+        ]
+
+    def __str__(self):
+        return f'{self.period_month} {self.organisation_id}: -{self.discount_pct}%'
 
 
 # ── Partner-organisation comms (2026-07-26) ───────────────────────────────────

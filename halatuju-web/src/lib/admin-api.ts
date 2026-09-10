@@ -2334,6 +2334,150 @@ export async function getBillingUsage(
   return adminFetch(`/api/v1/admin/scholarship/billing/usage/${q}`, options)
 }
 
+// ── The COST side + the bill (2026-09-11) ───────────────────────────────────────
+// SUPER-ONLY, every one of these. What the platform pays and what margin sits on top is a
+// commercial disclosure; a 403 (not a 404) says so, because there is nothing to hide about the
+// routes existing — only about their contents.
+//
+// ⚠ Every money figure crosses as a STRING. These are Decimals on the server and a JavaScript
+// number cannot hold them without drifting — `0.1 + 0.2` is the reason invoices are not floats.
+// Format for display; never do arithmetic on them here.
+
+/** An invoice line we could not price, and why. Rendered, never swallowed: a category the reader
+ *  can see is missing gets fixed, whereas a RM0.00 gets believed. */
+export interface BillingBlockedLine {
+  category: string
+  reason: string
+}
+
+/** An invoice we hold but cannot yet state in ringgit — an unconverted foreign bill. It is
+ *  COUNTED and named, never dropped, which is what makes the month's total honest about being a
+ *  floor rather than a total. */
+export interface BillingUnconverted {
+  source: string
+  invoice_ref: string
+  currency: string
+  amount_original: string | null
+}
+
+export interface PlatformCostBlock {
+  lines: number
+  total_myr: string | null
+  /** The slice that moves with TENANT activity. June measured this at 23% of the GCP bill. */
+  attributable_myr: string | null
+  /** Ours: crons, CI, deploys. A platform fee, not a metered charge. */
+  platform_myr: string | null
+  tax_myr: string | null
+  by_source: Record<string, string | null>
+  /** Which sources this month rest on a human reading a PDF. */
+  entered_sources: string[]
+  /** False = the total below is a FLOOR. See `unconverted`. */
+  is_complete: boolean
+  unconverted: BillingUnconverted[]
+  /** Providers whose billing window is not the calendar month (Supabase bills the 8th–7th). */
+  period_caveats: string[]
+  metered_events: number
+  metered_org_null: number
+  metered_org_null_pct: number
+}
+
+export interface BillingChargeLine {
+  category: string
+  hours: string | null
+  rate_myr: string | null
+  margin_pct: string | null
+  amount_myr: string | null
+  detail: { module: string; hours: string | null; basis: string }[]
+}
+
+/** One tenant's bill for one month: shown in full, then discounted. The owner's July rule —
+ *  *"we do not bill anything for July. 100% discount. But show the values."* */
+export interface BillingCharge {
+  organisation_id: number
+  organisation: string
+  lines: BillingChargeLine[]
+  subtotal_myr: string | null
+  discount_pct: string | null
+  discount_myr: string | null
+  discount_reason: string
+  discount_set_by: string
+  charged_myr: string | null
+  blocked: BillingBlockedLine[]
+}
+
+/** Finished request work carrying quoted hours that has never reached an invoice. Reported, not
+ *  auto-billed: a request has no completion date, so which MONTH it belongs to is a human call. */
+export interface UnbilledRequest {
+  request_id: number
+  organisation_id: number
+  organisation: string
+  title: string
+  hours: string | null
+  /** Prefilled for the "record these hours" action, tag included. */
+  module: string
+}
+
+export interface BillingCostsPayload {
+  month: string
+  /** Months the LEDGER holds rows for — never a generated range. A month with no rows is one
+   *  nobody has entered, and offering it would read as "we paid nothing". */
+  months: string[]
+  costs: PlatformCostBlock
+  charges: BillingCharge[]
+  unbilled_requests: UnbilledRequest[]
+}
+
+export async function getBillingCosts(
+  options?: ApiOptions & { month?: string }
+): Promise<BillingCostsPayload> {
+  const q = options?.month ? `?month=${encodeURIComponent(options.month)}` : ''
+  return adminFetch(`/api/v1/admin/scholarship/billing/costs/${q}`, options)
+}
+
+/** Record a discount against ONE organisation and ONE month. `reason` is required server-side. */
+export async function setBillingAdjustment(
+  data: { organisation_id: number; period_month: string; discount_pct: string; reason: string },
+  options?: ApiOptions
+): Promise<{ id: number }> {
+  return adminMutate('/api/v1/admin/scholarship/billing/costs/', 'POST', data, options)
+}
+
+export interface BillingRateRow {
+  id: number
+  /** 'infrastructure' | 'metered' | 'development' */
+  category: string
+  /** 'margin_pct' | 'hourly_rate' */
+  kind: string
+  value: string
+  effective_from: string
+  updated_by_email: string
+  note: string
+}
+
+export async function getBillingRates(options?: ApiOptions): Promise<{ rates: BillingRateRow[] }> {
+  return adminFetch('/api/v1/admin/scholarship/billing/rates/', options)
+}
+
+/** ⚠ This never EDITS a rate. It writes a NEW effective-dated row, so setting a rate in
+ *  September cannot re-price August. The history is the audit trail. */
+export async function setBillingRate(
+  data: { category: string; kind: string; value: string; effective_from?: string; note?: string },
+  options?: ApiOptions
+): Promise<BillingRateRow> {
+  return adminMutate('/api/v1/admin/scholarship/billing/rates/', 'POST', data, options)
+}
+
+/** Record build hours against a tenant and a month. `basis` is required server-side — an hours
+ *  figure with no stated reconstruction is not auditable. */
+export async function recordBuildHours(
+  orgId: number,
+  data: { period_month: string; module: string; hours: string; basis: string },
+  options?: ApiOptions
+): Promise<{ id: number }> {
+  return adminMutate(
+    `/api/v1/admin/scholarship/billing/hours/${orgId}/`, 'POST', data, options)
+}
+
 export async function createOrgRequest(
   data: {
     kind: string; title: string; description: string; organisation_id?: number

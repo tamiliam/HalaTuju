@@ -3120,6 +3120,35 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "billingRates": {
+      "title": "Kadar bil",
+      "subtitle": "Margin dan kadar sejam yang menukar apa yang kami bayar, dan jam yang kami kerjakan, kepada apa yang kami caj.",
+      "neverRetroactive": "Menyimpan tidak mengubah kadar. Ia menambah kadar baharu bermula dari bulan yang anda pilih, dan nilai lama kekal. Kadar yang anda tetapkan hari ini tidak boleh mengubah harga bulan yang sudah dibil.",
+      "loading": "Memuatkan kadar…",
+      "notSet": "Belum ditetapkan",
+      "inForceSince": "Berkuat kuasa dari {date}",
+      "setBy": "Ditetapkan oleh {email}",
+      "newMargin": "Margin baharu %",
+      "newRate": "Kadar baharu RM/jam",
+      "from": "Dari",
+      "why": "Sebab",
+      "save": "Simpan",
+      "history": "{n} nilai terdahulu",
+      "category": {
+        "infrastructure": "Infrastruktur",
+        "metered": "Penggunaan bermeter",
+        "development": "Pembangunan"
+      },
+      "kind": {
+        "margin_pct": "Margin ditambah di atas (%)",
+        "hourly_rate": "Kadar sejam (RM)"
+      },
+      "blocked": {
+        "infrastructure": "Selagi ini belum ditetapkan, tiada margin ditambah pada kos infrastruktur.",
+        "metered": "Selagi ini belum ditetapkan, tiada margin ditambah pada penggunaan bermeter.",
+        "development": "Selagi ini belum ditetapkan, jam pembangunan langsung tidak boleh dicaj. Bil akan menyatakannya, bukan memaparkan sifar."
+      }
+    },
     "table": {
       "scrollHint": "Leret jadual ke sisi untuk melihat selebihnya."
     },
@@ -5059,7 +5088,7 @@
     },
     "billing": {
       "title": "Pengebilan & penggunaan",
-      "subtitleSuper": "Penggunaan bermeter merentas setiap organisasi, serta asas platform yang dikongsi. Unit dan token sahaja — tiada caj dipaparkan.",
+      "subtitleSuper": "Penggunaan bermeter merentas setiap organisasi, asas platform yang dikongsi, kos platform, dan caj bagi setiap organisasi.",
       "subtitleOrg": "Penggunaan bermeter organisasi anda bagi bulan ini. Unit dan token sahaja — tiada caj dipaparkan.",
       "loading": "Memuatkan penggunaan…",
       "comingSoon": "Pengebilan & penggunaan akan datang tidak lama lagi.",
@@ -5072,6 +5101,58 @@
       "paused": "Dijeda",
       "freeNote": "Tidak bermeter (perkhidmatan percuma):",
       "tokensLine": "{in} masuk / {out} keluar token",
+      "cost": {
+        "title": "Kos platform",
+        "sub": "Invois sebenar daripada Google Cloud, Supabase, Google Workspace dan Twilio. Super sahaja.",
+        "total": "Jumlah dibayar",
+        "floor": "Sekurang-kurangnya sebanyak ini — satu invois belum ditukar kepada ringgit",
+        "attributable": "Didorong oleh organisasi",
+        "attributableSub": "OCR, AI dan trafik — bergerak mengikut aktiviti organisasi",
+        "platform": "Didorong oleh kami",
+        "platformSub": "Kerja berjadual, binaan dan penggunaan — yuran platform, bukan caj bermeter",
+        "tax": "Cukai",
+        "none": "Tiada kos direkodkan bagi bulan ini.",
+        "byHand": "Ditaip secara manual",
+        "col": {
+          "source": "Pembekal",
+          "amount": "Jumlah"
+        },
+        "caveat": {
+          "incomplete": "Satu invois dipegang tetapi belum ditukar kepada ringgit, jadi jumlah di atas ialah paras minimum, bukan jumlah penuh",
+          "entered": "Angka ini dibaca daripada invois oleh seseorang, bukan diukur",
+          "caveat": "Seorang pembekal mengebil di luar bulan kalendar"
+        },
+        "source": {
+          "gcp": "Google Cloud",
+          "supabase": "Supabase",
+          "workspace": "Google Workspace",
+          "twilio": "Twilio",
+          "brevo": "Brevo",
+          "other": "Lain-lain"
+        }
+      },
+      "charge": {
+        "title": "Caj kami",
+        "sub": "Setiap baris dipaparkan sepenuhnya, kemudian sebarang diskaun ditolak daripadanya.",
+        "subtotal": "Jumlah kecil",
+        "charged": "Dicaj",
+        "discount": "Diskaun ({pct})",
+        "workedAt": "{hours} pada {rate} tambah {margin}",
+        "setDiscount": "Tetapkan diskaun bagi {month}",
+        "pct": "Diskaun %",
+        "reason": "Sebab (wajib)",
+        "apply": "Guna",
+        "line": {
+          "development": "Jam pembangunan",
+          "metered": "Penggunaan bermeter",
+          "infrastructure": "Infrastruktur"
+        }
+      },
+      "unbilled": {
+        "title": "Kerja siap yang belum dicaj",
+        "sub": "Permintaan bertanda selesai yang mempunyai jam sebut harga. Merekodkannya meletakkan jam itu dalam {month}.",
+        "record": "Rekod"
+      },
       "service": {
         "gemini": "Panggilan AI (Gemini)",
         "vision_ocr": "OCR dokumen (Cloud Vision)",

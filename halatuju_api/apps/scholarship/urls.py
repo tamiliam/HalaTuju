@@ -136,6 +136,7 @@ from .views_admin import (
     AdminBillingRatesView,
     AdminBillingUsageView,
     AdminOrgBuildHoursView,
+    AdminPlatformCostsView,
     AdminOrgRequestListView,
     AdminOrgRequestCountView,
     AdminOrgRequestDetailView,
@@ -281,6 +282,9 @@ urlpatterns = [
     # org_admin reads its own). Owner design 2026-07-27.
     path('admin/scholarship/billing/rates/', AdminBillingRatesView.as_view()),
     path('admin/scholarship/billing/hours/<int:org_id>/', AdminOrgBuildHoursView.as_view()),
+    # The COST side + the bill (2026-09-11). SUPER only, 403 not 404 — same ruling as rates.
+    # GET reads the ledger through `reconcile`; POST records a per-org, per-month discount.
+    path('admin/scholarship/billing/costs/', AdminPlatformCostsView.as_view()),
     path('admin/scholarship/payment-runs/', AdminPaymentRunListView.as_view()),
 
     # Sponsor spending S4 — the officer's view of what students spent, and the one

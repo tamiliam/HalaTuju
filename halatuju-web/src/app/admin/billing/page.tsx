@@ -5,12 +5,19 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
-import { getBillingUsage, type BillingUsagePayload, type BillingOrgBlock } from '@/lib/admin-api'
+import {
+  getBillingUsage, getBillingCosts, setBillingAdjustment, recordBuildHours,
+  type BillingUsagePayload, type BillingOrgBlock, type BillingCostsPayload,
+  type BillingCharge, type UnbilledRequest,
+} from '@/lib/admin-api'
 import {
   orderedServices, formatBytes, formatCount, formatMonth,
   PAUSED_SERVICES, FREE_SERVICE_KEYS,
   orderedModels, jobsByModel, fixedJobs, secondProviderJobs,
 } from '@/lib/billingUsage'
+import {
+  formatMyr, formatPct, formatHours, orderedCostSources, costCaveats, unbilledByOrg,
+} from '@/lib/billingCosts'
 
 // Billing & usage v1 (Sprint 13a) — the super/org_admin usage readout. Ships DARK behind
 // BILLING_USAGE_ENABLED: a 404 from the API means the feature is off, so we show the "coming
@@ -147,6 +154,244 @@ function OrgCard({ block, t }: {
   )
 }
 
+/**
+ * What the platform PAID this month, and how honest that figure is.
+ *
+ * ⚠ The health warnings are not decoration and must not be collapsed into the total. The cost
+ * module's own words: **a total that mixes measured and hand-typed figures without saying so is
+ * not an audit.** Three things can make this number less true than it looks — a held invoice we
+ * cannot yet state in ringgit (the total is then a FLOOR), a source somebody read off a PDF, and
+ * a provider whose billing window is not the calendar month. Each says so in its own words.
+ */
+function CostSection({ costs, t }: {
+  costs: BillingCostsPayload['costs']
+  t: (k: string, vars?: Record<string, string>) => string
+}) {
+  const caveats = costCaveats(costs)
+  const sources = orderedCostSources(costs)
+
+  return (
+    <div className="mt-8" data-testid="cost-section">
+      <h2 className="text-sm font-semibold text-ground-900">{t('admin.billing.cost.title')}</h2>
+      <p className="mt-1 text-xs text-ground-500">{t('admin.billing.cost.sub')}</p>
+
+      <div className="mt-3 grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <Tile label={t('admin.billing.cost.total')} value={formatMyr(costs.total_myr)}
+          sub={costs.is_complete ? undefined : t('admin.billing.cost.floor')} />
+        <Tile label={t('admin.billing.cost.attributable')} value={formatMyr(costs.attributable_myr)}
+          sub={t('admin.billing.cost.attributableSub')} />
+        <Tile label={t('admin.billing.cost.platform')} value={formatMyr(costs.platform_myr)}
+          sub={t('admin.billing.cost.platformSub')} />
+        <Tile label={t('admin.billing.cost.tax')} value={formatMyr(costs.tax_myr)} />
+      </div>
+
+      {caveats.length > 0 && (
+        <ul className="mt-3 space-y-1" data-testid="cost-caveats">
+          {caveats.map((c, i) => (
+            <li key={`${c.kind}-${i}`}
+              className={`rounded-lg px-3 py-2 text-xs ${c.kind === 'incomplete'
+                ? 'bg-caution-100 text-caution-700' : 'bg-ground-50 text-ground-600'}`}>
+              {t(`admin.billing.cost.caveat.${c.kind}`)}{c.detail ? ` — ${c.detail}` : ''}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <TableFrame className="mt-4" minWidth={520} label={t('admin.billing.cost.title')}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-ground-600">
+              <th className="text-left px-4 py-2 font-medium">{t('admin.billing.cost.col.source')}</th>
+              <th className="text-right px-4 py-2 font-medium">{t('admin.billing.cost.col.amount')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sources.length === 0 && (
+              <tr><td colSpan={2} className="px-4 py-4 text-center text-ground-400">
+                {t('admin.billing.cost.none')}
+              </td></tr>
+            )}
+            {sources.map((s) => (
+              <tr key={s.source} className="border-b last:border-0">
+                <td className="px-4 py-2 text-ground-900">
+                  {t(`admin.billing.cost.source.${s.source}`)}
+                  {costs.entered_sources.includes(s.source) && (
+                    <span className="ml-2 rounded bg-ground-100 px-1.5 py-0.5 text-[10px] uppercase text-ground-500">
+                      {t('admin.billing.cost.byHand')}
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-right tabular-nums text-ground-700">{formatMyr(s.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableFrame>
+    </div>
+  )
+}
+
+/** One tenant's bill: every line shown, THEN the discount. The owner's July rule — shown in
+ *  full, charged nothing — only works if the subtotal survives to the screen. */
+function ChargeCard({ charge, month, t, onDiscount, busy }: {
+  charge: BillingCharge
+  month: string
+  t: (k: string, vars?: Record<string, string>) => string
+  onDiscount: (orgId: number, pct: string, reason: string) => void
+  busy: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [pct, setPct] = useState('100')
+  const [reason, setReason] = useState('')
+
+  return (
+    <div className="rounded-xl border bg-ground-0 p-4 shadow-sm"
+      data-testid={`charge-${charge.organisation_id}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-ground-900">{charge.organisation}</h3>
+        <span className="text-2xl font-semibold text-ground-900">{formatMyr(charge.charged_myr)}</span>
+      </div>
+
+      <dl className="mt-3 space-y-1 text-sm">
+        {charge.lines.map((ln) => (
+          <div key={ln.category} className="flex justify-between gap-4">
+            <dt className="text-ground-600">
+              {t(`admin.billing.charge.line.${ln.category}`)}
+              {ln.hours && (
+                <span className="text-ground-400">
+                  {' · '}{t('admin.billing.charge.workedAt', {
+                    hours: formatHours(ln.hours),
+                    rate: formatMyr(ln.rate_myr),
+                    margin: formatPct(ln.margin_pct),
+                  })}
+                </span>
+              )}
+            </dt>
+            <dd className="tabular-nums text-ground-900">{formatMyr(ln.amount_myr)}</dd>
+          </div>
+        ))}
+        <div className="flex justify-between gap-4 border-t pt-1">
+          <dt className="text-ground-600">{t('admin.billing.charge.subtotal')}</dt>
+          <dd className="tabular-nums text-ground-900">{formatMyr(charge.subtotal_myr)}</dd>
+        </div>
+        {/* ⚠ The discount is its own LINE, never a quietly smaller total. A waiver you cannot see
+            is indistinguishable from a bug that produced zero. */}
+        {Number(charge.discount_pct) > 0 && (
+          <div className="flex justify-between gap-4" data-testid="discount-line">
+            <dt className="text-ground-600">
+              {t('admin.billing.charge.discount', { pct: formatPct(charge.discount_pct) })}
+              {charge.discount_reason && (
+                <span className="block text-xs text-ground-400">{charge.discount_reason}</span>
+              )}
+            </dt>
+            <dd className="tabular-nums text-ground-900">−{formatMyr(charge.discount_myr)}</dd>
+          </div>
+        )}
+        <div className="flex justify-between gap-4 border-t pt-1 font-semibold">
+          <dt className="text-ground-900">{t('admin.billing.charge.charged')}</dt>
+          <dd className="tabular-nums text-ground-900">{formatMyr(charge.charged_myr)}</dd>
+        </div>
+      </dl>
+
+      {/* ⚠ Every category we could NOT price, with its reason. Never rendered as RM0.00 —
+          a line the reader can see is missing gets fixed; a zero gets believed. */}
+      {charge.blocked.length > 0 && (
+        <ul className="mt-3 space-y-1" data-testid={`blocked-${charge.organisation_id}`}>
+          {charge.blocked.map((b) => (
+            <li key={b.category} className="rounded-lg bg-ground-50 px-3 py-2 text-xs text-ground-600">
+              <span className="font-medium text-ground-700">
+                {t(`admin.billing.charge.line.${b.category}`)}
+              </span>
+              {' — '}{b.reason}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-3">
+        <button type="button" className="text-xs text-ground-500 underline"
+          onClick={() => setOpen((v) => !v)}>
+          {t('admin.billing.charge.setDiscount', { month: formatMonth(month) })}
+        </button>
+        {open && (
+          <div className="mt-2 grid gap-2 sm:grid-cols-[6rem_1fr_auto] sm:items-end">
+            <label className="block">
+              <span className="block text-[11px] text-ground-500">{t('admin.billing.charge.pct')}</span>
+              <input type="number" min="0" max="100" step="0.01" inputMode="decimal"
+                className="mt-0.5 w-full rounded-lg border bg-ground-0 px-3 py-1.5 text-sm"
+                value={pct} onChange={(e) => setPct(e.target.value)}
+                aria-label={t('admin.billing.charge.pct')} />
+            </label>
+            <label className="block">
+              <span className="block text-[11px] text-ground-500">{t('admin.billing.charge.reason')}</span>
+              <input type="text"
+                className="mt-0.5 w-full rounded-lg border bg-ground-0 px-3 py-1.5 text-sm"
+                value={reason} onChange={(e) => setReason(e.target.value)}
+                aria-label={t('admin.billing.charge.reason')} />
+            </label>
+            <button type="button"
+              /* The reason is required here as well as on the server, so the refusal is a
+                 disabled button rather than a round-trip and an error message. */
+              disabled={busy || reason.trim() === ''}
+              className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+              onClick={() => onDiscount(charge.organisation_id, pct.trim(), reason.trim())}>
+              {t('admin.billing.charge.apply')}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Finished request work that has never reached an invoice.
+ *
+ * ⚠ It is REPORTED, not auto-billed. A request carries no completion date — only `updated_at`,
+ * which any later edit moves — so which MONTH the work belongs to is a human call, and getting it
+ * wrong would bill it under the wrong month's terms. Recording it writes an `OrgBuildHours` row
+ * whose `basis` names the request, which is what makes the choice reviewable afterwards. */
+function UnbilledSection({ payload, month, t, onRecord, busy }: {
+  payload: BillingCostsPayload
+  month: string
+  t: (k: string, vars?: Record<string, string>) => string
+  onRecord: (row: UnbilledRequest) => void
+  busy: boolean
+}) {
+  const groups = unbilledByOrg(payload)
+  if (groups.length === 0) return null
+
+  return (
+    <div className="mt-8" data-testid="unbilled-requests">
+      <h2 className="text-sm font-semibold text-ground-900">{t('admin.billing.unbilled.title')}</h2>
+      <p className="mt-1 text-xs text-ground-500">
+        {t('admin.billing.unbilled.sub', { month: formatMonth(month) })}
+      </p>
+      <div className="mt-3 space-y-3">
+        {groups.map((g) => (
+          <div key={g.organisation_id} className="rounded-xl border bg-ground-0 p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-ground-900">{g.organisation}</h3>
+            <ul className="mt-2 space-y-1">
+              {g.rows.map((r) => (
+                <li key={r.request_id} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+                  <span className="text-ground-700">#{r.request_id} {r.title}</span>
+                  <span className="flex items-baseline gap-3">
+                    <span className="tabular-nums text-ground-900">{formatHours(r.hours)}</span>
+                    <button type="button" disabled={busy}
+                      className="text-ground-500 underline disabled:opacity-40"
+                      onClick={() => onRecord(r)}>
+                      {t('admin.billing.unbilled.record')}
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminBillingPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
@@ -157,6 +402,13 @@ export default function AdminBillingPage() {
   const [month, setMonth] = useState('')
   const [loading, setLoading] = useState(true)
   const [dark, setDark] = useState(false)
+  // The COST side. SUPER-ONLY and fetched separately, because it is a different endpoint with a
+  // different fence: what the platform pays and what margin sits on it is a commercial
+  // disclosure, and an org_admin gets a 403 from it. A failure here must NEVER darken the usage
+  // screen an org_admin can legitimately see, so it lands in its own state.
+  const [costs, setCosts] = useState<BillingCostsPayload | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [costError, setCostError] = useState('')
 
   const load = useCallback((m?: string) => {
     if (!token) return
@@ -169,7 +421,49 @@ export default function AdminBillingPage() {
       .finally(() => setLoading(false))
   }, [token])
 
+  const loadCosts = useCallback((m?: string) => {
+    if (!token || !isSuper) return
+    getBillingCosts({ token, month: m })
+      .then((d) => { setCosts(d); setCostError('') })
+      .catch((e) => { setCosts(null); setCostError(String(e)) })
+  }, [token, isSuper])
+
   useEffect(() => { load() }, [load])
+  useEffect(() => { loadCosts() }, [loadCosts])
+
+  const pickMonth = useCallback((m: string) => {
+    setMonth(m)
+    load(m)
+    loadCosts(m)
+  }, [load, loadCosts])
+
+  const applyDiscount = useCallback((orgId: number, pct: string, reason: string) => {
+    if (!token) return
+    setBusy(true)
+    setBillingAdjustment(
+      { organisation_id: orgId, period_month: month, discount_pct: pct, reason }, { token })
+      // Re-read: a discount changes the subtotal line, the discount line and the charged total
+      // at once. Patching one of the three would leave the card disagreeing with itself.
+      .then(() => loadCosts(month))
+      .catch((e) => setCostError(String(e)))
+      .finally(() => setBusy(false))
+  }, [token, month, loadCosts])
+
+  const recordRequestHours = useCallback((row: UnbilledRequest) => {
+    if (!token) return
+    setBusy(true)
+    recordBuildHours(row.organisation_id, {
+      period_month: month,
+      module: row.module,
+      hours: row.hours ?? '0',
+      // `basis` is required by the model and is the point of it: an hours figure with no stated
+      // reconstruction is not auditable. Written by the code so it always names the source.
+      basis: `Quoted on request #${row.request_id} (${row.title}); recorded against ${month}.`,
+    }, { token })
+      .then(() => loadCosts(month))
+      .catch((e) => setCostError(String(e)))
+      .finally(() => setBusy(false))
+  }, [token, month, loadCosts])
 
   if (role && !mayView) {
     return <p className="text-critical-600 p-6">{t('apiErrors.superAdminRequired')}</p>
@@ -198,7 +492,7 @@ export default function AdminBillingPage() {
         <select
           className="border rounded-lg px-3 py-1.5 text-sm bg-ground-0"
           value={month}
-          onChange={(e) => { setMonth(e.target.value); load(e.target.value) }}
+          onChange={(e) => pickMonth(e.target.value)}
         >
           {(data.months.length ? data.months : [data.month]).map((m) => (
             <option key={m} value={m}>{formatMonth(m)}</option>
@@ -214,6 +508,33 @@ export default function AdminBillingPage() {
           <OrgCard key={b.organisation_id ?? 'platform'} block={b} t={t} />
         ))}
       </div>
+
+      {/* ── What it COST, and what each tenant is charged. SUPER-ONLY (the endpoint 403s an
+             org_admin). The ledger, the BigQuery sync and this reconciliation were all built in
+             July 2026 and starved: nothing fed the ledger after June and no screen ever read it,
+             so real invoices reached nobody. This is that gap closed. ── */}
+      {costError && (
+        <p className="mt-6 text-sm text-critical-600" role="alert" data-testid="cost-error">
+          {costError}
+        </p>
+      )}
+      {costs && <CostSection costs={costs.costs} t={t} />}
+      {costs && costs.charges.length > 0 && (
+        <div className="mt-8" data-testid="charges">
+          <h2 className="text-sm font-semibold text-ground-900">{t('admin.billing.charge.title')}</h2>
+          <p className="mt-1 text-xs text-ground-500">{t('admin.billing.charge.sub')}</p>
+          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+            {costs.charges.map((c) => (
+              <ChargeCard key={c.organisation_id} charge={c} month={month} t={t}
+                onDiscount={applyDiscount} busy={busy} />
+            ))}
+          </div>
+        </div>
+      )}
+      {costs && (
+        <UnbilledSection payload={costs} month={month} t={t}
+          onRecord={recordRequestHours} busy={busy} />
+      )}
 
       {/* ── The upgrade checklist. SUPER-ONLY, and absent from an org_admin payload entirely,
              so this renders for nobody else even if the component were reused. Which model a job

@@ -4218,6 +4218,156 @@ class AdminBillingUsageView(_AdminBase):
         return Response(payload)
 
 
+class AdminPlatformCostsView(_AdminBase):
+    """SUPER-ONLY: what the platform PAID this month, and what each tenant is charged.
+
+    The gap the owner found on 2026-09-11: the ledger, the BigQuery sync, the reconciliation
+    maths and the rates endpoint were all built in July 2026 and then starved. Nothing fed the
+    ledger after June and **no endpoint ever read it**, so real invoices — GCP, Supabase,
+    Workspace, Twilio — reached no screen at all.
+
+    **Super-only, 403 not 404**, matching `AdminBillingRatesView`: what the platform pays and
+    what margin sits on top is a commercial disclosure, but there is nothing to hide about the
+    route existing. Unlike the usage screen there is no dark-ship flag — this never had one.
+
+    ⚠ The payload carries `month_totals`' truthfulness flags verbatim — `entered_sources`,
+    `is_complete`, `period_caveats` — and the screen renders them. **A total that mixes measured
+    and hand-typed figures without saying so is not an audit** (the module's own words). That is
+    the reason this calls `reconcile()` rather than re-summing rows in the view: a second summing
+    would be a second place for those flags to be forgotten.
+    """
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+
+        month = (request.query_params.get('month') or '').strip()
+        if month and not _MONTH_RE.match(month):
+            return Response({'error': 'bad_month', 'code': 'bad_month'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not month:
+            # TD-209: localtime, never `timezone.now()`. See AdminBillingUsageView's note —
+            # the same eight-hour window would open this page on the wrong month.
+            month = timezone.localtime().strftime('%Y-%m')
+
+        from apps.courses.models import PartnerOrganisation
+
+        from . import platform_cost
+        from .models import PlatformCost
+
+        costs = platform_cost.reconcile(month)
+
+        def _money(v):
+            return str(v) if v is not None else None
+
+        payload = {
+            'month': month,
+            # Every month the ledger holds anything for, newest first — the picker's options.
+            # Read from the LEDGER, not generated from a range: a month with no rows is a month
+            # nobody has entered yet, and offering it would look like "we paid nothing".
+            'months': list(PlatformCost.objects.order_by('-period_month')
+                           .values_list('period_month', flat=True).distinct()),
+            'costs': {
+                'lines': costs['lines'],
+                'total_myr': _money(costs['total_myr']),
+                'attributable_myr': _money(costs['attributable_myr']),
+                'platform_myr': _money(costs['platform_myr']),
+                'tax_myr': _money(costs['tax_myr']),
+                'by_source': {k: _money(v) for k, v in costs['by_source'].items()},
+                'entered_sources': costs['entered_sources'],
+                'is_complete': costs['is_complete'],
+                'unconverted': [{**u, 'amount_original': _money(u['amount_original'])}
+                                for u in costs['unconverted']],
+                'period_caveats': costs['period_caveats'],
+                'metered_events': costs['metered_events'],
+                'metered_org_null': costs['metered_org_null'],
+                'metered_org_null_pct': costs['metered_org_null_pct'],
+            },
+            'charges': [],
+            'unbilled_requests': [{**u, 'hours': _money(u['hours'])}
+                                  for u in platform_cost.unbilled_request_hours()],
+        }
+
+        # ⚠ `.tenants()`, never `.filter(is_active=True)`. This table is dual-role: ten rows on
+        # production, exactly one of them a tenant. The plain queryset would put a bill against
+        # nine schools and NGOs that have never been customers.
+        for org in PartnerOrganisation.objects.tenants().order_by('name'):
+            c = platform_cost.charge_for(org, month)
+            payload['charges'].append({
+                'organisation_id': org.id,
+                'organisation': org.name,
+                'lines': [{**ln,
+                           'hours': _money(ln.get('hours')),
+                           'rate_myr': _money(ln.get('rate_myr')),
+                           'margin_pct': _money(ln.get('margin_pct')),
+                           'amount_myr': _money(ln.get('amount_myr')),
+                           'detail': [{**d, 'hours': _money(d['hours'])}
+                                      for d in ln.get('detail', [])]}
+                          for ln in c['lines']],
+                'subtotal_myr': _money(c['subtotal_myr']),
+                'discount_pct': _money(c['discount_pct']),
+                'discount_myr': _money(c['discount_myr']),
+                'discount_reason': c['discount_reason'],
+                'discount_set_by': c['discount_set_by'],
+                'charged_myr': _money(c['charged_myr']),
+                'blocked': c['blocked'],
+            })
+        return Response(payload)
+
+    def post(self, request):
+        """Record a discount for one organisation and one month.
+
+        The owner's July instruction — *"we do not bill anything for July. 100% discount. But
+        show the values."* A row here is what makes that a decision rather than a gap.
+
+        `reason` is REQUIRED and refused when blank, exactly as `OrgBuildHours.basis` is: a
+        waived month with no stated reason is indistinguishable from a bug, and this endpoint
+        is the only place that can insist.
+        """
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+
+        from decimal import Decimal, InvalidOperation
+
+        from .models import OrgBillingAdjustment
+
+        month = (request.data.get('period_month') or '').strip()
+        if not _MONTH_RE.match(month):
+            return Response({'error': 'bad_month', 'code': 'bad_month'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        org = _org_or_none(request.data.get('organisation_id'))
+        if org is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            pct = Decimal(str(request.data.get('discount_pct')))
+        except (InvalidOperation, TypeError):
+            return Response({'error': 'bad_value', 'code': 'bad_value'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if pct < 0 or pct > 100:
+            return Response({'error': 'bad_value', 'code': 'bad_value'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        reason = (request.data.get('reason') or '').strip()
+        if not reason:
+            return Response({'error': 'reason_required', 'code': 'reason_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        row, _created = OrgBillingAdjustment.objects.update_or_create(
+            organisation=org, period_month=month,
+            defaults={'discount_pct': pct, 'reason': reason,
+                      'set_by_email': (admin.email or '')})
+        return Response({'id': row.id, 'organisation_id': org.id,
+                         'period_month': row.period_month,
+                         'discount_pct': str(row.discount_pct),
+                         'reason': row.reason},
+                        status=status.HTTP_201_CREATED)
+
+
 class AdminBillingRatesView(_AdminBase):
     """SUPER-ONLY: read + set the conversion rate and per-category margins.
 

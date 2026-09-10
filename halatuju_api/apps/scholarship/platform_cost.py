@@ -212,6 +212,141 @@ def apply_margin(amount_myr, category, period_month):
             * (Decimal('1') + margin / Decimal('100'))).quantize(Decimal('0.01'))
 
 
+# ── The bill (2026-09-11) ─────────────────────────────────────────────────────
+
+def request_module_tag(request_id) -> str:
+    """The marker that ties an `OrgBuildHours` line back to the request it came from.
+
+    A convention, not a foreign key, because `OrgBuildHours` deliberately predates this and
+    holds hours that never came from a request at all. The tag is what makes a request
+    countable as billed without narrowing the model to requests only.
+    """
+    return f'[REQ-{request_id}]'
+
+
+def unbilled_request_hours(organisation=None):
+    """Finished request work that carries quoted hours and has NEVER been billed.
+
+    The gap the owner found: *"You also need to include the work we do fulfilling requests,
+    which are billed."* Requests carry `quote_hours`; `OrgBuildHours` carries what is billed;
+    on production the first held 27.5 hours and the second held nothing at all. Nothing joined
+    them, so finished work simply never reached an invoice.
+
+    ⚠ **This does NOT bill anything, and that is deliberate.** A request has no completion date
+    — only `updated_at`, which any later edit moves — so there is no honest way to decide which
+    MONTH a finished request belongs to. Inventing one would put work in the wrong month and
+    then discount or charge it by that wrong month's terms. So this REPORTS the outstanding
+    work and the owner records it against a month through `OrgBuildHours`, where `basis` makes
+    the choice explicit and reviewable.
+
+    A request counts as billed once an `OrgBuildHours` row names it — matched on the request id
+    written into `module`, which is what the screen prefills.
+    """
+    from .models import OrgBuildHours, OrgRequest
+
+    qs = OrgRequest.objects.filter(status='done').exclude(quote_hours=None)
+    if organisation is not None:
+        qs = qs.filter(organisation=organisation)
+
+    recorded = list(OrgBuildHours.objects.values_list('module', flat=True))
+    out = []
+    for r in qs.select_related('organisation').order_by('id'):
+        tag = request_module_tag(r.id)
+        if any(tag in m for m in recorded):
+            continue
+        out.append({
+            'request_id': r.id,
+            'organisation_id': r.organisation_id,
+            'organisation': r.organisation.name,
+            'title': r.title,
+            'hours': r.quote_hours,
+            # Prefilled for the screen's "record these hours" action, so the tag that makes the
+            # request countable as billed is written by the code, not typed by a human.
+            'module': f'{tag} {r.title}'[:200],
+        })
+    return out
+
+
+def adjustment_for(organisation, period_month):
+    """The discount agreed for this organisation and this month, or None."""
+    from .models import OrgBillingAdjustment
+
+    return (OrgBillingAdjustment.objects
+            .filter(organisation=organisation, period_month=period_month)
+            .first())
+
+
+def charge_for(organisation, period_month):
+    """What this organisation is charged for a month — and what could NOT be worked out.
+
+    Returns every line with its own status, never a single number. Three categories exist and
+    only one of them can honestly be billed today:
+
+      * **development** — hours x rate x margin. Real. Computed here.
+      * **metered** — refused: there is no unit-price table (Sprint 13a, "NO prices in v1"), so
+        a per-event charge would have to invent prices, and an invented price on an invoice is
+        an invoice you withdraw.
+      * **infrastructure** — refused: the platform cost is a PLATFORM total. Splitting it across
+        tenants needs an allocation rule nobody has agreed. June measured 72% of the GCP bill as
+        our own crons and deploys, so "share it out per tenant" is not a neutral default; it is
+        a pricing decision, and it is the owner's to make.
+
+    Each refusal is REPORTED in `blocked`, never rendered as RM0.00. A line the reader can see
+    is missing gets fixed; a zero gets believed.
+
+    The discount is applied LAST and shown as its own line, so the month reads
+    subtotal -> discount -> charged. That is the owner's July requirement: shown in full,
+    charged nothing.
+    """
+    blocked = []
+    lines = []
+    subtotal = Decimal('0.00')
+
+    try:
+        dev = development_charge(organisation, period_month)
+    except RateMissing as exc:
+        dev = None
+        blocked.append({'category': 'development', 'reason': str(exc)})
+    if dev is not None and dev['hours']:
+        lines.append({
+            'category': 'development',
+            'hours': dev['hours'],
+            'rate_myr': dev['rate_myr'],
+            'margin_pct': dev['margin_pct'],
+            'amount_myr': dev['charge_myr'],
+            'detail': dev['lines'],
+        })
+        subtotal += dev['charge_myr']
+
+    blocked.append({
+        'category': 'metered',
+        'reason': 'No unit prices are set, so metered usage cannot be priced. The meter counts '
+                  'events; it does not yet know what an event costs.'})
+    blocked.append({
+        'category': 'infrastructure',
+        'reason': 'Platform cost is recorded for the whole platform. No rule has been agreed '
+                  'for sharing it between tenants, so it is not charged to any of them.'})
+
+    adj = adjustment_for(organisation, period_month)
+    discount_pct = adj.discount_pct if adj else Decimal('0.00')
+    discount = (subtotal * discount_pct / Decimal('100')).quantize(Decimal('0.01'))
+
+    return {
+        'month': period_month,
+        'organisation_id': organisation.id if organisation else None,
+        'lines': lines,
+        'subtotal_myr': subtotal,
+        'discount_pct': discount_pct,
+        'discount_myr': discount,
+        'discount_reason': adj.reason if adj else '',
+        'discount_set_by': adj.set_by_email if adj else '',
+        'charged_myr': (subtotal - discount).quantize(Decimal('0.01')),
+        # Why a category is absent. Rendered on the screen — a silent omission is the thing
+        # this whole module exists to stop.
+        'blocked': blocked,
+    }
+
+
 def reconcile(period_month):
     """Compare what the METER recorded against the attributable slice of the real invoice.
 

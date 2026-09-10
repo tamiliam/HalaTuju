@@ -115,9 +115,13 @@ export interface NavItem {
   /**
    * A reserved slot: the sidebar renders it disabled with a "soon" pill and it links nowhere.
    *
-   * ⚠ EXACTLY ONE SLOT IS RESERVED, AND THE THREE THAT WENT SHOW WHERE THE LINE IS (owner,
-   * 2026-09-03). `billingRates` stays: its endpoint SHIPPED on 2026-07-27, super-only, and what
-   * is missing is only the page — a slot for a thing that demonstrably exists. The Programme
+   * ⚠ **NO SLOT IS RESERVED TODAY.** `billingRates` was the last one and its page shipped on
+   * 2026-09-11, so the field is now unused — kept because the rule it encodes is what governs
+   * the next request for one, not because anything wears it.
+   *
+   * ⚠ THE FOUR THAT WENT SHOW WHERE THE LINE IS (owner, 2026-09-03). `billingRates` earned its
+   * slot: its endpoint SHIPPED on 2026-07-27, super-only, and what was missing was only the
+   * page — a slot for a thing that demonstrably existed, and it was duly filled. The Programme
    * group's three (reviewer scoping, the fund, the rules) each reserved a page for work nobody
    * had scoped, and each guessed its SHAPE wrongly: rules are a section of the programme's own
    * configuration, reviewer scoping is a field on a reviewer's record, and the fund is a report.
@@ -148,8 +152,8 @@ export interface NavGroup {
  * `sponsors` and `requests` have NO client guard — they rely on the backend alone. Their role
  * sets here drive menu visibility only and add no client-side block.
  *
- * `billingRates` is the only item marked `placeholder` — see that field's own note for why the
- * Programme group's three reserved slots were removed rather than filled.
+ * NO item is marked `placeholder` — `billingRates` was the last one and its page shipped on
+ * 2026-09-11. See that field's own note for the rule that governs the next request for one.
  */
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
@@ -177,8 +181,11 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
       // Reserved. `billing_rates` shipped 2026-07-27 (super-only, 403 for org_admin — the margin
       // applied to a tenant is a commercial disclosure) but has no page yet.
+      // 2026-09-11: the page landed, so the reserved slot is gone. It was the registry's only
+      // `placeholder` and it earned that status honestly — the endpoint had shipped on
+      // 2026-07-27 and only the screen was missing.
       { id: 'billingRates', href: '/admin/billing-rates', labelKey: 'admin.nav.billingRates',
-        scope: 'platform', roles: ['super'], gate: { mode: 'always' }, placeholder: true },
+        scope: 'platform', roles: ['super'], gate: { mode: 'always' } },
     ],
   },
   {
