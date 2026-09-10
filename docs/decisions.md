@@ -1,5 +1,65 @@
 # Architectural Decisions — HalaTuju
 
+## A super sees EVERY organisation's spending — S6, 2026-09-11 (supersedes the S4a refusal)
+
+**Decision:** `_SpendingBase._spending_admin` hands a super `spend_report.ALL_ORGS`, a scope that
+reads every organisation. Everyone else gets their own organisation or `no_org`. A super's own
+`owning_organisation`, if they have one, is ignored.
+
+**What this replaces.** The S4a ruling below ("The officer screen is fenced at the QUERY") refused
+a super outright, reasoning that *"a super with no organisation context defaulting to unfenced is
+how every tenant's students happens by accident"*. That decision listed its own trigger — *"a
+genuine platform-wide spending view is ever wanted"* — and the trigger fired: the owner opened
+their own console as super and was refused by it.
+
+**Why the old reasoning does not carry over.** It is an argument against a DEFAULT, not against a
+scope. The danger was falling through to unfenced; `ALL_ORGS` cannot be fallen into.
+
+**⚠ WHY IT IS A SENTINEL OBJECT AND NOT `None`.** Every accident that loses an organisation — an
+unset attribute, a missed keyword, a `.get()` on a dict — produces `None`. Handed to `_txns`,
+`None` filters `owning_organisation=None`, which matches applications belonging to no organisation:
+an empty read, and a safe one. Had the platform scope been spelled `None`, each of those accidents
+would have widened a tenant's page to the platform instead. `is ALL_ORGS` cannot be arrived at by
+accident. `test_None_is_NOT_the_platform_scope_and_still_reads_nothing` is what stops somebody
+"simplifying" the sentinel away.
+
+**Alternatives considered:**
+(a) *A super picks an organisation from the breadcrumb.* Rejected for this sprint: the breadcrumb
+    is a DISPLAY preference by written decision (`ScopeSwitcher`), and the organisation crumb has
+    no page-facing store the way `programmeScope` does for gifts. It would also mean a super saw
+    one tenant here and every tenant on the Payments list next door, with nothing explaining which
+    screens narrow. Revisit when a second tenant actually has spending.
+(b) *Leave the refusal and tell the owner to use the org_admin account.* Rejected — the owner has
+    two admin accounts and asking which one a screen works on is a defect, not a workaround.
+
+**Trade-offs:** a super's figures pool tenants, so on a multi-tenant future the merchant table
+mixes two organisations' shops with nothing distinguishing them. Accepted while one tenant has
+spending; the ROW-level fence for everybody else is unchanged and now tested at the endpoint too.
+
+**Revisit if:** a second organisation starts importing spending — at which point the pooled
+merchant table needs an organisation column, or (a) above.
+
+## The Unsorted tab is defined on MONEY, not on confidence — S6, 2026-09-11
+
+**Decision:** the Unsorted tab lists shops whose category is blank or `unsorted`, **plus** shops
+where the RM20 per-payment ceiling held payments back (`held_back > 0`). It does NOT list every
+shop no human has confirmed.
+
+**Rationale:** the header already carries two different numbers — *Not yet sorted* (money) and
+*Shops to check* (confidence). A tab pairing with the first is a list that ADDS UP to a figure the
+reader can see. Pairing it with the second would give a longer list that adds up to neither.
+The ceiling shops are in because their category reads `food` while some of their ringgit are
+honestly unplaced — on production that is six payments worth RM424, and a filter written only on
+the category hides every one of them.
+
+**Trade-offs:** a shop the model guessed at, and guessed right, is not in this tab. It is not
+missing from the page — *What the model decided recently* sits in the same tab, which is the
+review queue for exactly that.
+
+**Revisit if:** the owner asks for the tab to hold the "Shops to check" number instead, in which
+case the header figure and the tab should be computed by ONE function rather than two.
+
+
 ## An organisation may NOT choose its own AI model — 2026-09-11
 **Decision:** which AI version a job runs on stays a PLATFORM setting. `halatuju/ai_registry.py`
 makes it visible; nothing on any screen changes it. A tenant sees which versions did THEIR work
@@ -10631,6 +10691,11 @@ because the merchant either has a stored verdict or is asked once and stored.
 failed, and a human agreed" — that would be a third state, not a merge of these two.
 
 ## The officer screen is fenced at the QUERY, not at the serializer — Spending S4a, 2026-09-10
+
+**⚠ THE `no_org` HALF OF THIS DECISION WAS SUPERSEDED ON 2026-09-11** — a super now gets
+`ALL_ORGS`. See "A super sees EVERY organisation's spending" at the top of this file. **The rest
+of it stands unchanged**: the fence is still on the query, still in one place, and is now also
+asserted at the endpoint.
 
 **Decision:** every read goes through `spend_report._txns(org)`, filtered on
 `application__owning_organisation`. `_SpendingBase` resolves the organisation once and refuses

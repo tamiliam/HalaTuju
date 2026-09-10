@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## The spending page in three tabs, and a super can finally open it - 2026-09-11
+
+The owner opened `/admin/spending` as **super admin** and was refused: *"Could not load the
+spending figures."* As BrightPath's organisation admin the same page worked. They also asked for
+three tabs, the console's standard paging, and click-to-sort headings.
+
+**⚠ THE REFUSAL WAS DELIBERATE, AND IS NOW REVERSED.** S4a decided a super must pick an
+organisation first, because "defaulting to unfenced is how a super with no org context sees the
+platform". That reasoning is about a DEFAULT. The scope is now an explicit
+`spend_report.ALL_ORGS`, handed out by `_spending_admin` and nothing else, and the S4a decision
+named this exact trigger for revisiting itself. **It is a sentinel OBJECT, never `None`** - so
+every accident that loses an organisation still reads `owning_organisation=None`, which matches
+nothing, instead of silently widening a tenant's page into a platform-wide one. An `org_admin`
+with no organisation is still refused.
+
+**What changed on screen:**
+
+- **Three tabs.** *Shops* (every shop and the box you correct it in), *Students* (who spent what),
+  *Unsorted* (money we could not place, the model's recent guesses, and the wallet faults - one
+  tab for everything wanting a human).
+- **The four figures stay ABOVE the tabs.** They describe the whole page; a headline that moved as
+  you switched tab would be a headline nobody could quote. A test pins it.
+- **Paging and click-to-sort**, from the console's existing `lib/tableView` + `Pagination` - 25 a
+  page, 10/25/50, and the footer hides itself on a short list. Money sorts as a NUMBER (as text,
+  RM900 outranks RM2,000); "How we decided" ranks by how settled the answer is rather than
+  alphabetically, so reversing it brings the guesses to the top; a shop never seen and a student
+  with no name recorded sort LAST in both directions.
+- **`components/admin/SortHeader`** - the console's one sortable heading. Reviewers and Sponsors
+  each carried a byte-identical local copy; **both were moved onto it in this change**, because a
+  partial extraction is more dangerous than none.
+- **`components/admin/SpendingShops`** draws the shop list for BOTH tabs. One component, so a rule
+  about a shop row cannot be fixed in one of two places.
+
+**⚠ WHAT THE BITE-CHECKS FOUND, and both were real:**
+
+1. **No test proved the ENDPOINT gives the right scope.** Widening `_spending_admin` to hand every
+   caller `ALL_ORGS` failed only an orphan-account test - an `org_admin` **with** an organisation
+   would have seen every tenant's students' purchases, through the endpoint, with a green suite.
+   `test_a_tenant_admin_sees_ONLY_their_own_tenant_through_the_endpoint` now asserts it at the door.
+2. **My own "sorts the whole list, then pages" test was decorative.** Its fixture already arrived
+   in name order, so sorting the page and sorting the list produced an identical first page and the
+   deliberate fault sailed through. The fixture now arrives in the server's own order.
+
+Gates: **6419 pytest** (+7), **2084 jest** (+29), lint clean, production build succeeds.
+No migration. No AI behaviour changed.
+
 ## Which AI version are we running, and which actually ran - 2026-09-11
 
 The owner asked whether an organisation could pick its own AI version per task, to track versions

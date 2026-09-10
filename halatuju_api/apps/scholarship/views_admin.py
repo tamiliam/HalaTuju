@@ -7559,21 +7559,37 @@ _SPENDING_ROLES = ('admin', 'org_admin')
 
 
 class _SpendingBase(_AdminBase):
-    """Shared gate for the spending endpoints: an active admin, the right role, and an
-    organisation to fence on.
+    """Shared gate for the spending endpoints: an active admin, the right role, and the SCOPE to
+    read within.
 
-    ⚠ The organisation is returned rather than looked up again downstream, so there is exactly
-    ONE place the fence can be forgotten. A caller with no organisation is refused with
-    `no_org` — there is no "every tenant's spending" reading of this page, and defaulting to
-    unfenced is how a super with no org context sees the platform.
+    ⚠ The scope is returned rather than looked up again downstream, so there is exactly ONE place
+    the fence can be forgotten. **This method is the only door to the platform-wide scope in the
+    whole feature** — `spend_report.ALL_ORGS` appears nowhere else outside its own module.
+
+    ⚠⚠ **A SUPER GETS `ALL_ORGS`; EVERYONE ELSE GETS THEIR OWN ORGANISATION OR NOTHING.** Until
+    2026-09-11 a super was refused `no_org`, on the reasoning that "defaulting to unfenced is how a
+    super with no org context sees the platform" — which is true of a DEFAULT and not of an
+    explicit scope. The owner opened their own console as super, was refused, and asked for the
+    platform view (`docs/decisions.md`, 2026-09-11, superseding the S4a ruling). It is spelled as
+    a sentinel object precisely so that it can only ever be chosen, never fallen into.
+
+    ⚠ A super's own `owning_organisation`, if they have one, is deliberately IGNORED here. A super
+    who saw one tenant on this page and every tenant on the neighbouring Payments list would have
+    to work out which screens narrow and which do not; `admin.is_super` means the same thing on
+    both. An `org_admin` with no organisation is still `no_org` — that is a broken account, not a
+    scope.
     """
 
     def _spending_admin(self, request):
+        from . import spend_report
+
         admin = self.get_admin(request)
         if not admin:
             return None, None, self._deny()
         if not (admin.is_super or admin.role in _SPENDING_ROLES):
             return None, None, self._deny_role()
+        if admin.is_super:
+            return admin, spend_report.ALL_ORGS, None
         org = admin.owning_organisation
         if org is None:
             return None, None, Response({'error': 'no_org', 'code': 'no_org'},

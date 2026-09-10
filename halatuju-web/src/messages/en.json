@@ -5432,6 +5432,19 @@
         "unsorted": "Not yet sorted",
         "toCheck": "Shops to check"
       },
+      "tabs": {
+        "aria": "Spending sections"
+      },
+      "tab": {
+        "shops": "Shops",
+        "students": "Students",
+        "unsorted": "Unsorted"
+      },
+      "unplaced": {
+        "title": "Money we could not place",
+        "help": "These shops have payments no rule, pattern or model could put in a category. Choosing one here settles that shop for good.",
+        "empty": "Every ringgit has a category. Nothing to place."
+      },
       "col": {
         "shop": "Shop",
         "countedAs": "Counted as",

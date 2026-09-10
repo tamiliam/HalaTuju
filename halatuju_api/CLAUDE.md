@@ -550,7 +550,48 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-11, after AI model visibility)
+## Next Sprint (as of 2026-09-11, after the spending page was reorganised — S6)
+
+**✅ BUILT AND FULLY TESTED. ⚠ NOT DEPLOYED — the owner has not pushed it.** Branch
+`feat/spending-tabs`. **No migration.** Gates: **6419 pytest**, **2084 jest**, lint clean,
+`next build` succeeds.
+
+**WHAT CHANGED.** The owner opened `/admin/spending` as super admin and was refused; they also
+asked for three tabs, paging and sortable headings.
+
+- **⚠⚠ A SUPER NOW SEES EVERY ORGANISATION** — `spend_report.ALL_ORGS`, handed out by
+  `_SpendingBase._spending_admin` and by nothing else. **It is a sentinel OBJECT and must never
+  become `None`**: `None` still filters `owning_organisation=None` (matches nothing), so every
+  accident that loses an organisation stays an EMPTY read instead of widening to the platform.
+  `test_None_is_NOT_the_platform_scope_and_still_reads_nothing` exists to stop that simplification.
+  **This SUPERSEDES the S4a `no_org` refusal** (`docs/decisions.md`, both entries) — do not
+  "restore" it. An `org_admin` with no organisation is still refused.
+- **Three tabs**: Shops · Students · Unsorted. The four figures stay **above** them (a test pins
+  it — a headline that moves with the tab is a headline nobody can quote).
+- **⚠ The Unsorted tab is defined on MONEY, not confidence** — blank/`unsorted` categories PLUS
+  shops with `held_back > 0`. It pairs with the *Not yet sorted* figure, so the list adds up to a
+  number on screen. The six ceiling-held payments (RM424 live) are only visible because of the
+  second half of that filter.
+- **`components/admin/SortHeader`** is now the console's one sortable heading; the byte-identical
+  local copies on **Reviewers and Sponsors were migrated in the same change**.
+- **`components/admin/SpendingShops`** draws the shop list for BOTH tabs — one component, so no
+  rule about a shop row can be fixed in one of two places.
+
+**⚠ TWO REAL FINDINGS FROM THE BITE-CHECKS:**
+1. **No test proved the ENDPOINT picks the right scope.** Giving every caller `ALL_ORGS` failed
+   only an orphan-account test; a real `org_admin` would have read every tenant's students'
+   purchases with a green suite. Now asserted at the door.
+2. **A test of mine was decorative** — its fixture already arrived in the order it sorted by, so a
+   "sorts only the visible page" fault passed. Fixtures for sort-then-page tests must arrive in the
+   SERVER's order.
+
+**▶ NEXT:** the owner decides when to push (push = deploy). Nothing blocking. Standing debt:
+TD-242 (after any import check `files read` equals the number of exports), TD-241, TD-240,
+TD-239, TD-238.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-11, after AI model visibility)
 
 **✅ SHIPPED AND DEPLOYED 2026-09-11.** `main` at **`a87028a7`**; BOTH Cloud Builds SUCCESS;
 serving **halatuju-api-01026-tdc** / **halatuju-web-00876-z4d** (read from

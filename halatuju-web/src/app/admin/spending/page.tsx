@@ -1,51 +1,66 @@
 'use client'
-// Student spending (sponsor spending S4) — the officer's view of what students bought, by SHOP,
-// and the one correction that outranks every rung of the sorter.
+// Student spending — the officer's view of what students bought, by SHOP, and the one correction
+// that outranks every rung of the sorter.
 //
 // Access: super / org_admin / admin. ⚠ `finance` is DELIBERATELY ABSENT, unlike the neighbouring
 // Payments page: `_b40_scope` promises a finance admin never sees student data beyond the Payments
 // allowlist, and this screen carries names beside purchases. The backend refuses it too — this is
 // not the fence, only the door.
 //
-// ⚠ THE ROW IS A SHOP, NOT A PAYMENT. You fix a shop once and every payment at it follows; a
-// per-payment screen would ask the same question forty times for one stall.
+// ⚠ **A SUPER SEES EVERY ORGANISATION HERE (S6, 2026-09-11).** Until then a super was refused
+// outright — the owner opened their own console and got "Could not load the spending figures".
+// Nothing about that scope is decided in this file: `_spending_admin` resolves it server-side and
+// the page renders whatever it is handed. The breadcrumb's organisation is a DISPLAY preference
+// and must never become the thing that decides what this page fetches.
 //
-// ⚠ THE CATEGORY CONTROL IS A NATIVE `<select>` AND MUST STAY ONE. `TableFrame` establishes two
-// clipping contexts (rounded corners + the horizontal scroller), so a hand-rolled absolute
-// dropdown inside a cell is sliced off at the table's edge — that really happened on the Intake
-// years badge (2026-09-08) and the owner reported it as a panel that opens and cannot be seen. A
-// native select's list is drawn by the browser outside the document, so it cannot be clipped.
-// `page.test.tsx` pins this.
+// ── S6 reorganised this page into three tabs (owner, 2026-09-11) ──────────────────────────────
+//
+// It was one long scroll: four figures, every shop, every student, the model's recent guesses, the
+// wallet faults. The four figures stay ABOVE the tabs, because they describe the whole page and a
+// figure that changes when you switch tab is a figure nobody trusts. Under them:
+//
+//   Shops     — every shop, and the box you correct it in.
+//   Students  — who spent what.
+//   Unsorted  — the work: shops with money we could not place, the model's recent guesses, and
+//               the wallet faults. One tab holding everything that wants a human.
+//
+// ⚠ **THE SHOPS LIST IS DRAWN BY ONE COMPONENT IN BOTH TABS** (`SpendingShops`). Copying it would
+// set up the failure `StaffAdmin` already had — a rule fixed in one of two renderings of the same
+// row, with nothing failing at the time.
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import PanelTabs, { type PanelTab } from '@/components/admin/PanelTabs'
+import SortHeader from '@/components/admin/SortHeader'
+import SpendingShops, { rm } from '@/components/admin/SpendingShops'
 import TableFrame from '@/components/admin/TableFrame'
+import { Pagination } from '@/components/Pagination'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { formatDate } from '@/lib/formatDate'
+import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
+import { usePagedRows, useSort } from '@/lib/usePagedRows'
+import {
+  STUDENT_DEFAULT_SORT, STUDENT_SORT_LABEL, shopsWithUnplacedMoney, sortStudents, studentFirstDir,
+  type StudentSortKey,
+} from '@/lib/spendingTable'
 import {
   getSpendingOverview, setSpendingCategory, type SpendingOverview,
 } from '@/lib/admin-api'
 
-// Thousands grouping, hand-formatted so server and browser render identically (no locale drift).
-// ⚠ The value arrives as a STRING and is never parsed to a Number and back — this is money.
-const rm = (v: string) => {
-  const [whole, cents = '00'] = String(v).split('.')
-  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${cents}`
-}
-
-/** The pill under "How we decided". Only `owner` — your own answer — carries the accent. */
-function decidedPill(decidedBy: string) {
-  return decidedBy === 'owner'
-    ? 'bg-info-100 text-info-700'
-    : 'bg-ground-100 text-ground-600'
-}
+const TABS: readonly PanelTab<'shops' | 'students' | 'unsorted'>[] = [
+  { key: 'shops', labelKey: 'admin.spending.tab.shops' },
+  { key: 'students', labelKey: 'admin.spending.tab.students' },
+  { key: 'unsorted', labelKey: 'admin.spending.tab.unsorted' },
+]
+type Tab = (typeof TABS)[number]['key']
 
 export default function SpendingPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = canAccess('/admin/spending', effectiveRole(role))
 
+  const [tab, setTab] = useState<Tab>('shops')
   const [data, setData] = useState<SpendingOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -63,8 +78,9 @@ export default function SpendingPage() {
   useEffect(() => { load() }, [load])
 
   // ⚠ Re-read the whole overview after a correction rather than patching the row in place. One
-  // change moves the shop's category, every payment at it, and all four figures at the top; a
-  // local patch would leave the headline percentage disagreeing with the table under it.
+  // change moves the shop's category, every payment at it, all four figures at the top, and
+  // whether the shop still belongs in the Unsorted tab at all; a local patch would leave the
+  // headline percentage disagreeing with the table under it.
   async function correct(merchant: string, category: string) {
     if (!token) return
     setSaving(merchant)
@@ -84,12 +100,29 @@ export default function SpendingPage() {
     }
   }
 
+  // ── the student table's own sort and page ──
+  const { sort: studentSort, setSort: setStudentSort } =
+    useSort<StudentSortKey>(STUDENT_DEFAULT_SORT)
+  const students = usePagedRows(
+    sortStudents(data?.students ?? [], studentSort.key, studentSort.dir))
+  const onStudentSort = (col: StudentSortKey) =>
+    setStudentSort(nextSort(studentSort, col, studentFirstDir(col)))
+
+  // ── the model's recent guesses get a page of their own ──
+  // Live today: 102 of them. An unpaged list of 102 shops below two other blocks is a list nobody
+  // reaches the bottom of.
+  const decisions = usePagedRows(data?.model_decisions ?? [])
+
   if (role && !allowed) {
     return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
   }
 
   const totals = data?.totals
   const categories = data?.categories ?? []
+  const merchants = data?.merchants ?? []
+  const unplaced = shopsWithUnplacedMoney(merchants)
+  const noWallet = data?.wallet_gaps.students_without_wallet ?? []
+  const shared = Object.entries(data?.wallet_gaps.shared_wallets ?? {})
 
   return (
     <div>
@@ -98,7 +131,9 @@ export default function SpendingPage() {
 
       {error && <p className="mt-4 text-sm text-critical-600" role="alert">{error}</p>}
 
-      {/* ── the four figures. Every one COMPUTED by the server; none is an estimate. ── */}
+      {/* ── the four figures. Every one COMPUTED by the server; none is an estimate.
+          ⚠ THEY SIT ABOVE THE TABS ON PURPOSE. They describe the whole page, and a headline that
+          changed as you switched tab would be a headline nobody could quote. ── */}
       <dl className="mt-6 grid grid-cols-2 gap-6 border-b border-ground-200 pb-6 md:grid-cols-4"
         data-testid="spending-totals">
         {[
@@ -116,199 +151,172 @@ export default function SpendingPage() {
         ))}
       </dl>
 
-      {/* ── the shops, and the correction ── */}
-      {/* ── PHONE: one card per shop (the console standard, owner 2026-09-08). A six-column table
-          dragged sideways is safe but wrong-shaped for the screen people actually check things on.
-          The SHOP and its category lead, because this list is scanned for what to correct.
-          ⚠ The student table below stays table-only on purpose: four short numeric columns that
-          already fit, the same reasoning the billing page's exemption records. ── */}
-      <div className="mt-6 space-y-2.5 md:hidden" data-testid="merchant-cards">
-        {(data?.merchants ?? []).map((m) => (
-          <div key={m.merchant}
-            className="rounded-xl border border-ground-200 bg-ground-0 p-3">
-            <div className="flex items-start justify-between gap-3">
-              <span className="text-sm font-semibold text-ground-900">{m.merchant}</span>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${decidedPill(m.decided_by)}`}>
-                {t(`admin.spending.by.${m.decided_by || 'none'}`)}
-              </span>
-            </div>
-            <div className="mt-2">
-              <select
-                aria-label={`${t('admin.spending.col.countedAs')} — ${m.merchant}`}
-                className="w-full rounded-md border border-ground-200 bg-ground-0 px-2 py-1.5 text-sm text-ground-700"
-                value={m.category || 'unsorted'}
-                disabled={saving === m.merchant}
-                onChange={(e) => correct(m.merchant, e.target.value)}
-              >
-                {categories.map((c) => (
-                  <option key={c.code} value={c.code}>{c.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-600">
-              <span className="tabular-nums">RM{rm(m.total)}</span>
-              <span>{t('admin.spending.col.visits')}{' '}
-                <span className="tabular-nums">{m.visits}</span></span>
-              {m.last_seen && <span>{formatDate(m.last_seen)}</span>}
-            </div>
-            {m.held_back > 0 && (
-              <p className="mt-1 text-[11px] text-ground-500">
-                {t('admin.spending.heldBack', { count: String(m.held_back) })}
+      <div className="mt-6">
+        <PanelTabs tabs={TABS} active={tab} onSelect={setTab}
+          ariaLabelKey="admin.spending.tabs.aria" />
+      </div>
+
+      {/* ── Shops ── */}
+      {tab === 'shops' && (
+        <>
+          <SpendingShops
+            rows={merchants} categories={categories} onCorrect={correct}
+            saving={saving} loading={loading}
+            emptyKey="admin.spending.empty" labelKey="admin.spending.title"
+            testId="merchant"
+          />
+          <p className="mt-2 text-xs text-ground-500">{t('admin.spending.kept')}</p>
+        </>
+      )}
+
+      {/* ── Students ── */}
+      {tab === 'students' && (
+        <>
+          {/* PHONE: one card per student. Four short numeric columns would survive a sideways
+              drag, but this is a list of PEOPLE, and the guard's own rule says those get cards. */}
+          <div className="space-y-2.5 md:hidden" data-testid="student-cards">
+            {students.rows.map((s) => (
+              <div key={s.application_id}
+                className="rounded-xl border border-ground-200 bg-ground-0 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-sm font-semibold text-ground-900">{s.name}</span>
+                  <span className="shrink-0 text-sm font-medium tabular-nums text-ground-900">
+                    RM{rm(s.spent)}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-600">
+                  <span>{t('admin.spending.students.payments')}{' '}
+                    <span className="tabular-nums">{s.payments}</span></span>
+                  <span>{t('admin.spending.students.unsorted')}{' '}
+                    <span className="tabular-nums">RM{rm(s.unplaced)}</span></span>
+                </div>
+              </div>
+            ))}
+            {!loading && students.rows.length === 0 && (
+              <p className="py-6 text-center text-sm text-ground-400">
+                {t('admin.spending.students.empty')}
               </p>
             )}
           </div>
-        ))}
-        {!loading && (data?.merchants ?? []).length === 0 && (
-          <p className="py-6 text-center text-sm text-ground-400">{t('admin.spending.empty')}</p>
-        )}
-      </div>
 
-      <TableFrame className="mt-6 hidden md:block" minWidth={760} label={t('admin.spending.title')}>
-        <table className="w-full text-sm">
-          <thead className="bg-ground-50 border-b">
-            <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
-              <th className="px-4 py-3 font-semibold">{t('admin.spending.col.shop')}</th>
-              <th className="px-4 py-3 font-semibold">{t('admin.spending.col.countedAs')}</th>
-              <th className="px-4 py-3 font-semibold">{t('admin.spending.col.decidedBy')}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t('admin.spending.col.visits')}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t('admin.spending.col.total')}</th>
-              <th className="px-4 py-3 font-semibold">{t('admin.spending.col.lastSeen')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-ground-100">
-            {(data?.merchants ?? []).map((m) => (
-              <tr key={m.merchant} className="hover:bg-info-50/40">
-                <td className="px-4 py-3 font-medium text-ground-900">
-                  {m.merchant}
-                  {m.held_back > 0 && (
-                    <span className="mt-0.5 block text-[11px] font-normal text-ground-500">
-                      {t('admin.spending.heldBack', { count: String(m.held_back) })}
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  {/* ⚠ NATIVE select — see the file header. Do not replace with a custom panel. */}
-                  <select
-                    aria-label={`${t('admin.spending.col.countedAs')} — ${m.merchant}`}
-                    className="rounded-md border border-ground-200 bg-ground-0 px-2 py-1 text-sm text-ground-700"
-                    value={m.category || 'unsorted'}
-                    disabled={saving === m.merchant}
-                    onChange={(e) => correct(m.merchant, e.target.value)}
-                  >
-                    {categories.map((c) => (
-                      <option key={c.code} value={c.code}>{c.label}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${decidedPill(m.decided_by)}`}>
-                    {t(`admin.spending.by.${m.decided_by || 'none'}`)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ground-700">{m.visits}</td>
-                <td className="px-4 py-3 text-right font-medium tabular-nums text-ground-900">
-                  RM{rm(m.total)}
-                </td>
-                <td className="px-4 py-3 text-ground-500">
-                  {m.last_seen ? formatDate(m.last_seen) : '—'}
-                </td>
-              </tr>
+          <TableFrame className="hidden md:block" minWidth={560}
+            label={t('admin.spending.students.title')}>
+            <table className="w-full text-sm">
+              <thead className="bg-ground-50 border-b">
+                <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
+                  <SortHeader col="name" label={t(STUDENT_SORT_LABEL.name)}
+                    sort={studentSort} onSort={onStudentSort} />
+                  <SortHeader col="payments" label={t(STUDENT_SORT_LABEL.payments)}
+                    sort={studentSort} onSort={onStudentSort} align="right" />
+                  <SortHeader col="spent" label={t(STUDENT_SORT_LABEL.spent)}
+                    sort={studentSort} onSort={onStudentSort} align="right" />
+                  <SortHeader col="unplaced" label={t(STUDENT_SORT_LABEL.unplaced)}
+                    sort={studentSort} onSort={onStudentSort} align="right" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ground-100">
+                {students.rows.map((s) => (
+                  <tr key={s.application_id}>
+                    <td className="px-4 py-3 text-ground-900">{s.name}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ground-700">{s.payments}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ground-900">RM{rm(s.spent)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ground-500">RM{rm(s.unplaced)}</td>
+                  </tr>
+                ))}
+                {!loading && students.rows.length === 0 && (
+                  <tr><td colSpan={4} className="px-4 py-8 text-center text-ground-400">
+                    {t('admin.spending.students.empty')}
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </TableFrame>
+
+          {students.visible && (
+            <div className="mt-3">
+              <Pagination
+                page={students.page} totalPages={students.totalPages} pageSize={students.pageSize}
+                onPageChange={students.setPage}
+                pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={students.setPageSize}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Unsorted: everything that wants a human ── */}
+      {tab === 'unsorted' && (
+        <>
+          <h2 className="text-lg font-semibold text-ground-900">
+            {t('admin.spending.unplaced.title')}
+          </h2>
+          <p className="mt-1 mb-3 text-sm text-ground-600">{t('admin.spending.unplaced.help')}</p>
+          <SpendingShops
+            rows={unplaced} categories={categories} onCorrect={correct}
+            saving={saving} loading={loading}
+            emptyKey="admin.spending.unplaced.empty"
+            labelKey="admin.spending.unplaced.title"
+            testId="unplaced"
+          />
+          <p className="mt-2 text-xs text-ground-500">{t('admin.spending.kept')}</p>
+
+          {/* ── what the model decided lately ── */}
+          <h2 className="mt-10 text-lg font-semibold text-ground-900">
+            {t('admin.spending.model.title')}
+          </h2>
+          <p className="mt-1 text-sm text-ground-600">{t('admin.spending.model.help')}</p>
+          <ul className="mt-3 space-y-1.5" data-testid="model-decisions">
+            {decisions.rows.map((d) => (
+              <li key={d.merchant} className="flex flex-wrap items-baseline gap-x-3 text-sm">
+                <span className="font-medium text-ground-900">{d.merchant}</span>
+                <span className="text-ground-600">
+                  {categories.find((c) => c.code === d.category)?.label ?? d.category}
+                </span>
+                {d.decided_at && (
+                  <span className="text-xs text-ground-400">{formatDate(d.decided_at.slice(0, 10))}</span>
+                )}
+              </li>
             ))}
-            {!loading && (data?.merchants ?? []).length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-ground-400">
-                {t('admin.spending.empty')}
-              </td></tr>
+            {!loading && decisions.rows.length === 0 && (
+              <li className="text-sm text-ground-400">{t('admin.spending.model.empty')}</li>
             )}
-          </tbody>
-        </table>
-      </TableFrame>
+          </ul>
+          {decisions.visible && (
+            <div className="mt-3">
+              <Pagination
+                page={decisions.page} totalPages={decisions.totalPages}
+                pageSize={decisions.pageSize} onPageChange={decisions.setPage}
+                pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={decisions.setPageSize}
+              />
+            </div>
+          )}
 
-      <p className="mt-2 text-xs text-ground-500">{t('admin.spending.kept')}</p>
-
-      {/* ── by student ── */}
-      <h2 className="mt-10 text-lg font-semibold text-ground-900">
-        {t('admin.spending.students.title')}
-      </h2>
-      <TableFrame className="mt-3" minWidth={560} label={t('admin.spending.students.title')}>
-        <table className="w-full text-sm">
-          <thead className="bg-ground-50 border-b">
-            <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
-              <th className="px-4 py-3 font-semibold">{t('admin.spending.students.name')}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t('admin.spending.students.payments')}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t('admin.spending.students.spent')}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t('admin.spending.students.unsorted')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-ground-100">
-            {(data?.students ?? []).map((s) => (
-              <tr key={s.application_id}>
-                <td className="px-4 py-3 text-ground-900">{s.name}</td>
-                <td className="px-4 py-3 text-right tabular-nums text-ground-700">{s.payments}</td>
-                <td className="px-4 py-3 text-right tabular-nums text-ground-900">RM{rm(s.spent)}</td>
-                <td className="px-4 py-3 text-right tabular-nums text-ground-500">RM{rm(s.unplaced)}</td>
-              </tr>
-            ))}
-            {!loading && (data?.students ?? []).length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-ground-400">
-                {t('admin.spending.students.empty')}
-              </td></tr>
+          {/* ── the two wallet gaps that ARE derivable. The third reaches staff by email. ── */}
+          <h2 className="mt-10 text-lg font-semibold text-ground-900">
+            {t('admin.spending.gaps.title')}
+          </h2>
+          <div className="mt-3 space-y-2 text-sm" data-testid="wallet-gaps">
+            {noWallet.length > 0 && (
+              <p className="text-ground-700">
+                {t('admin.spending.gaps.noWallet')}:{' '}
+                <span className="tabular-nums">{noWallet.join(', ')}</span>
+              </p>
             )}
-          </tbody>
-        </table>
-      </TableFrame>
-
-      {/* ── what the model decided lately ── */}
-      <h2 className="mt-10 text-lg font-semibold text-ground-900">
-        {t('admin.spending.model.title')}
-      </h2>
-      <p className="mt-1 text-sm text-ground-600">{t('admin.spending.model.help')}</p>
-      <ul className="mt-3 space-y-1.5" data-testid="model-decisions">
-        {(data?.model_decisions ?? []).map((d) => (
-          <li key={d.merchant} className="flex flex-wrap items-baseline gap-x-3 text-sm">
-            <span className="font-medium text-ground-900">{d.merchant}</span>
-            <span className="text-ground-600">
-              {categories.find((c) => c.code === d.category)?.label ?? d.category}
-            </span>
-            {d.decided_at && (
-              <span className="text-xs text-ground-400">{formatDate(d.decided_at.slice(0, 10))}</span>
+            {shared.length > 0 && (
+              <p className="text-ground-700">
+                {t('admin.spending.gaps.shared')}:{' '}
+                <span className="tabular-nums">
+                  {shared.map(([wallet, ids]) => `${wallet} (${ids.join(', ')})`).join(' · ')}
+                </span>
+              </p>
             )}
-          </li>
-        ))}
-        {!loading && (data?.model_decisions ?? []).length === 0 && (
-          <li className="text-sm text-ground-400">{t('admin.spending.model.empty')}</li>
-        )}
-      </ul>
-
-      {/* ── the two wallet gaps that ARE derivable. The third reaches staff by email. ── */}
-      <h2 className="mt-10 text-lg font-semibold text-ground-900">
-        {t('admin.spending.gaps.title')}
-      </h2>
-      <div className="mt-3 space-y-2 text-sm" data-testid="wallet-gaps">
-        {(data?.wallet_gaps.students_without_wallet ?? []).length > 0 && (
-          <p className="text-ground-700">
-            {t('admin.spending.gaps.noWallet')}:{' '}
-            <span className="tabular-nums">
-              {(data?.wallet_gaps.students_without_wallet ?? []).join(', ')}
-            </span>
-          </p>
-        )}
-        {Object.keys(data?.wallet_gaps.shared_wallets ?? {}).length > 0 && (
-          <p className="text-ground-700">
-            {t('admin.spending.gaps.shared')}:{' '}
-            <span className="tabular-nums">
-              {Object.entries(data?.wallet_gaps.shared_wallets ?? {})
-                .map(([wallet, ids]) => `${wallet} (${ids.join(', ')})`)
-                .join(' · ')}
-            </span>
-          </p>
-        )}
-        {!loading
-          && (data?.wallet_gaps.students_without_wallet ?? []).length === 0
-          && Object.keys(data?.wallet_gaps.shared_wallets ?? {}).length === 0 && (
-          <p className="text-ground-400">{t('admin.spending.gaps.none')}</p>
-        )}
-        <p className="text-xs text-ground-500">{t('admin.spending.gaps.note')}</p>
-      </div>
+            {!loading && noWallet.length === 0 && shared.length === 0 && (
+              <p className="text-ground-400">{t('admin.spending.gaps.none')}</p>
+            )}
+            <p className="text-xs text-ground-500">{t('admin.spending.gaps.note')}</p>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -205,9 +205,12 @@ class TestFenceCoverageCompleteness(TestCase):
         '_ProgrammeScopedBase': 'sabah-s2b-programme-scoped-base',
         # Sponsor spending S4 — the officer's spending screen. FENCED on
         # `application__owning_organisation` inside `spend_report._txns`, the same fence the
-        # Payments funding summary uses; `_SpendingBase._spending_admin` resolves the
-        # organisation ONCE and refuses `no_org` rather than defaulting to unfenced, because a
-        # super with no org context is how "every tenant's students" happens by accident.
+        # Payments funding summary uses; `_SpendingBase._spending_admin` resolves the scope ONCE.
+        # ⚠ S6 (2026-09-11) added a SECOND scope: a super gets `spend_report.ALL_ORGS`, which
+        # reads every organisation. `_spending_admin` is the only door to it in the feature, and
+        # it is a sentinel OBJECT, never `None` — so an accident that loses an organisation still
+        # filters `owning_organisation=None` (empty), rather than widening to the platform. An
+        # `org_admin` with no organisation is still refused `no_org`.
         # ⚠ The merchant VERDICT is global on purpose (a shop's category is a fact about the
         # shop, not about a tenant) — so the fence on the WRITE is on who may set it: the
         # merchant must be one this organisation's own students actually used.

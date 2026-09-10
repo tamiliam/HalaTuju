@@ -5432,6 +5432,19 @@
         "unsorted": "Belum diasingkan",
         "toCheck": "Kedai untuk disemak"
       },
+      "tabs": {
+        "aria": "Bahagian perbelanjaan"
+      },
+      "tab": {
+        "shops": "Kedai",
+        "students": "Pelajar",
+        "unsorted": "Belum diasingkan"
+      },
+      "unplaced": {
+        "title": "Wang yang tidak dapat dikategorikan",
+        "help": "Kedai ini mempunyai bayaran yang tidak dapat dikategorikan oleh mana-mana peraturan, corak atau model. Memilih satu di sini menetapkan kedai itu selamanya.",
+        "empty": "Setiap ringgit sudah ada kategori. Tiada apa-apa untuk dikategorikan."
+      },
       "col": {
         "shop": "Kedai",
         "countedAs": "Dikira sebagai",

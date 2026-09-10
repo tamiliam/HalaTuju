@@ -15,7 +15,8 @@ import {
   DEFAULT_SORT, SPONSOR_SORT_LABEL, firstDirFor, sortSponsors,
   type SponsorSortKey,
 } from '@/lib/sponsorTable'
-import { PAGE_SIZE_OPTIONS, nextSort, sortIndicator } from '@/lib/tableView'
+import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
+import SortHeader from '@/components/admin/SortHeader'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { Pagination } from '@/components/Pagination'
 import SponsorEmailsCard from '@/components/sponsors/SponsorEmailsCard'
@@ -68,29 +69,6 @@ const actionsFor = (status: string): Array<'approve' | 'reject' | 'suspend'> =>
     : status === 'approved' ? ['suspend']
       : ['approve'] // rejected / suspended → reconsider
 
-/** A sortable header. Every column except Actions uses this, so none can drift. */
-function SortHeader({ col, sort, onSort, align, t }: {
-  col: SponsorSortKey
-  sort: { key: SponsorSortKey; dir: 'asc' | 'desc' }
-  onSort: (col: SponsorSortKey) => void
-  align?: 'right'
-  t: (k: string) => string
-}) {
-  const active = sort.key === col
-  return (
-    <th className={`px-4 py-3 ${align === 'right' ? 'text-right' : 'text-left'}`}
-      aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <button type="button" onClick={() => onSort(col)}
-        className={`inline-flex items-center gap-1 font-semibold text-xs uppercase tracking-wider hover:text-primary-600 ${
-          active ? 'text-primary-600' : 'text-ground-600'}`}>
-        {t(SPONSOR_SORT_LABEL[col])}
-        <span aria-hidden className="text-[9px] leading-none">
-          {sortIndicator(active, sort.dir)}
-        </span>
-      </button>
-    </th>
-  )
-}
 
 const actionStyle: Record<string, string> = {
   approve: 'bg-positive-600 hover:bg-positive-700',
@@ -254,12 +232,12 @@ export default function AdminSponsorsList() {
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
-                <SortHeader col="name" sort={sort} onSort={onSort} t={t} />
-                <SortHeader col="status" sort={sort} onSort={onSort} t={t} />
-                <SortHeader col="given" sort={sort} onSort={onSort} align="right" t={t} />
-                <SortHeader col="students" sort={sort} onSort={onSort} align="right" t={t} />
-                <SortHeader col="lastSeen" sort={sort} onSort={onSort} t={t} />
-                <SortHeader col="registered" sort={sort} onSort={onSort} t={t} />
+                <SortHeader col="name" label={t(SPONSOR_SORT_LABEL.name)} sort={sort} onSort={onSort} />
+                <SortHeader col="status" label={t(SPONSOR_SORT_LABEL.status)} sort={sort} onSort={onSort} />
+                <SortHeader col="given" label={t(SPONSOR_SORT_LABEL.given)} sort={sort} onSort={onSort} align="right" />
+                <SortHeader col="students" label={t(SPONSOR_SORT_LABEL.students)} sort={sort} onSort={onSort} align="right" />
+                <SortHeader col="lastSeen" label={t(SPONSOR_SORT_LABEL.lastSeen)} sort={sort} onSort={onSort} />
+                <SortHeader col="registered" label={t(SPONSOR_SORT_LABEL.registered)} sort={sort} onSort={onSort} />
                 {/* Actions is the one unsortable column — there is nothing to order it by. */}
                 <th className="text-right px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">{t('admin.sponsors.actions')}</th>
               </tr>
