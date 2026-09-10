@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-09-10 — A stream is no longer compared against a programme name
+
+The mechanism behind #142's red Pathway chip, removed. The offer-parser fix took away the
+trigger; this takes away the fault itself. api only. **No migration. No data step.**
+
+- **⚠ `_declared_pathway` NO LONGER FALLS BACK TO `pre_u_track` FOR THE PROGRAMME.** For a pre-U
+  record whose `chosen_programme` was auto-filled off the offer, the #117(c) circularity break
+  correctly refuses that value — and then used to fill the PROGRAMME slot with the student's
+  TRACK. A track is a stream ('sains'); the offer's programme is a course name ('Program
+  Matrikulasi'). They can never agree on MEANING; they agreed on a WORD, because most matriculation
+  letters print the jurusan inside the programme line and our own parser's f-string glued it there.
+  **26 matric students passed on that coincidence**; #142's letter carried a date there instead.
+- **⚠ THE TRACK IS NOT LOST.** It still reaches `offer_pathway_match` through `declared_track`,
+  its own axis, against the letter's own `stream`. This removed a DUPLICATE, mis-typed use — a
+  real Sains-Sosial-student-holding-a-Sains-offer still flags, with a test on it.
+- **Measured twice.** Before: the INSTITUTION axis matches on all 58 live pre-U records, so the
+  programme axis had never once decided a pre-U verdict — pure exposure carrying no signal. After
+  the offer-parser fix landed: dropping it changes **ZERO** records.
+- One existing test broke and was AMENDED, not deleted: it had pinned the track-as-programme
+  behaviour alongside the #117(c) principle. The principle survives and is now asserted more
+  precisely; the half that failed was the bug.
+
+Gates: pytest **6171** (baseline 6166 + 5) · `makemigrations --check` clean. No web file changed.
+One bite-check, it bit. Retro `docs/retrospective-2026-09-10-matric-offer-jurusan.md` (same
+investigation); decisions ×1; lessons ×1.
+
 ## Sponsor spending S5 — the sponsor card. THE ARC IS COMPLETE - 2026-09-10
 
 **api + web. NO MIGRATION. Nothing is deployed.** The reserved panel on

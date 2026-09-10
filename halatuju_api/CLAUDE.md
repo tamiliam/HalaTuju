@@ -550,7 +550,74 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after sponsor spending S5 — THE ARC IS COMPLETE)
+## Next Sprint (as of 2026-09-10, after the pathway track-axis removal)
+
+**⚠⚠ BUILT AND GATED, *NOT DEPLOYED*.** Branch **`fix/pathway-track-axis`**, worktree
+`.worktrees/pathway-axis`. **api ONLY.** **NO MIGRATION, NO ENV VAR, NO DATA STEP.**
+Gates: pytest **6171** (baseline 6166 + 5) · `makemigrations --check` clean. No web file changed.
+**One bite-check, it bit.**
+
+**WHAT THIS REMOVES.** `_declared_pathway` no longer falls back to `pre_u_track` for the
+PROGRAMME. For a pre-U record whose `chosen_programme` came off the offer, the #117(c) circularity
+break refuses that value — and then used to fill the programme slot with the student's TRACK.
+**A track is a stream ('sains'); the offer's programme is a course name ('Program Matrikulasi').**
+They agreed on a WORD, not a meaning, because most matriculation letters print the jurusan inside
+the programme line and our own parser's f-string glued it there. 26 matric students passed on that
+coincidence; #142's letter carried a date there instead and the whole thing collapsed into a red
+chip on a correct offer.
+
+- **⚠ THE TRACK IS NOT LOST — do not "restore" the fallback.** It reaches `offer_pathway_match`
+  through `declared_track`, its own axis, against the letter's own `stream`. A real
+  Sains-Sosial-student-holding-a-Sains-offer still flags. Five tests pin this, including the #142
+  regression shape and the real-clash protection.
+- **Measured twice, both times on live data.** Before: the INSTITUTION axis matches on ALL 58 live
+  pre-U records — the programme axis had never once decided a pre-U verdict. After the
+  offer-parser fix: dropping it changes **ZERO** records. This is hardening, not behaviour change.
+- **⚠ ONE EXISTING TEST WAS AMENDED, NOT DELETED.**
+  `test_pathway_engine.TestDeclaredPathwayCircularity.test_offer_autofilled_pick_falls_back_to_pre_u`
+  had ONE assertion carrying TWO rules: the #117(c) principle (right, kept, now asserted in three
+  parts) and the track-as-programme fallback (the bug). Read its docstring before touching it again.
+
+**▶▶ LOGGED, NOT BUILT — THE STREAM AXIS HAS NO SENSE OF TIME, and the owner spotted it.**
+Owner, 2026-09-10: *"STPM students do change stream after they join the programme. It is likely all
+three students sat for SPM in 2024 and are now in second year of STPM."* Measured, and they are
+right for two of the three:
+
+| App | Letter intake | Letter dated | Reports | Uploaded | Confirmed? |
+|---|---|---|---|---|---|
+| **#99** | **2025** | 19 Mei 2025 | 10 Jun 2025 | 2026-06-28 | **NO** |
+| **#120** | **2025** | 19 Mei 2025 | 10 Jun 2025 | 2026-07-15 | yes |
+| #33 | 2026 | 24 April 2026 | 08 Jun 2026 | 2026-06-07 | no |
+
+#99 and #120 entered Form 6 in **June 2025**; their letters are `Tingkatan Enam Semester 1`, the
+ADMISSION record. They applied to us a year later and are in **Semester 3**. So the check compares
+the stream they were ADMITTED to in 2025 against the stream they say they are IN NOW — and calls
+the newer statement a clash against the older document. **That is backwards.** A stream change
+between Semester 1 and Semester 3 is normal.
+**⚠ #99 is NOT pathway-confirmed, so its red chip IS docking its Pathway band today**, probably on
+a legitimate stream change. #33 is genuinely contemporaneous (2026 letter, 2026 application) and
+remains a fair question.
+**Two options, owner's call:** (a) do not clash on stream when the letter's intake is EARLIER than
+the current one — a year-old letter cannot describe this semester; (b) keep the clash but demote it
+to an interview note, no red chip. **(a) is the recommendation**; measure it the same way first.
+
+**▶ ALSO STILL LOGGED, NOT BUILT:** `profile_engine.py`'s B40 vocabulary (needs a `PROMPT_VERSION`
+bump, which re-dates every profile draft on production); **TD-237**; the landing page + sign-in
+prompt B40 copy.
+
+**▶ IGNORED BY OWNER DECISION (2026-09-10):** application **#14**'s `pre_u_institution` reads
+"Sekolah Menengah Kebangsaan Temeloh" against a letter saying TEMERLOH. **The school lists are NOT
+at fault** — checked all three (`institutions` table, `secondary-schools.json`,
+`stpm-schools.json`); every one spells Temerloh correctly and "Temeloh" appears nowhere in the
+repo. It is a single stale row written from an old text read before the confirm-sync existed —
+every other STPM record stores the short picker form, #14 alone stores the expanded
+`clean_school_name` form. Owner: *"Ignore 14."* Do not re-raise it.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after sponsor spending S5 — THE ARC IS COMPLETE)
 
 **⚠⚠ THERE IS NO NEXT SPRINT HERE. THE WHOLE ARC IS BUILT AND NONE OF IT IS DEPLOYED.** The
 next action is a DEPLOY, and it is owner-gated. Worktree `.worktrees/spending-ingest`, branch

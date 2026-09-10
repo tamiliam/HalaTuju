@@ -408,13 +408,35 @@ class TestDeclaredPathwayCircularity(SimpleTestCase):
         return SimpleNamespace(chosen_programme=cp, pre_u_track=track, pre_u_institution=inst)
 
     def test_offer_autofilled_pick_falls_back_to_pre_u(self):
+        """⚠ AMENDED 2026-09-10, AND THE AMENDMENT IS THE POINT. This case used to assert
+        ``('sains_sosial', 'SMK (P) TEMENGGONG IBRAHIM')`` — the track standing in for the
+        PROGRAMME. That half was the bug, not the principle.
+
+        #117 (c) is about PROVENANCE: a value written from the offer is not a declaration, so it
+        must not be compared against the offer. That still holds, and this test still proves it —
+        the offer's own 'SAINS' is ignored, and the institution still falls back to the student's
+        own school.
+
+        What was bolted onto it was a second, wrong choice: filling the PROGRAMME slot with
+        ``pre_u_track``. A track is a stream; the offer's programme is a course name. They can only
+        ever agree by coincidence — and when app #142's letter carried a date in that position, the
+        coincidence failed and a correct offer went red. The track is not lost: it reaches
+        ``offer_pathway_match`` through ``declared_track``, its own axis, against the letter's own
+        ``stream``."""
         from apps.scholarship.pathway_engine import _declared_pathway
         app = self._app(
             {'course_name': 'SAINS', 'institution': 'KOLEJ TINGKATAN ENAM GOMBAK',
              'source': 'offer_letter_auto'},
             track='sains_sosial', inst='SMK (P) TEMENGGONG IBRAHIM')
-        # The offer's own values are ignored; the student's real declaration is returned.
-        self.assertEqual(_declared_pathway(app), ('sains_sosial', 'SMK (P) TEMENGGONG IBRAHIM'))
+        prog, inst = _declared_pathway(app)
+        # The PRINCIPLE, unchanged: the offer's own values are ignored...
+        self.assertNotEqual(prog, 'SAINS')
+        self.assertNotEqual(inst, 'KOLEJ TINGKATAN ENAM GOMBAK')
+        # ...and the student's own school is still the institution declaration.
+        self.assertEqual(inst, 'SMK (P) TEMENGGONG IBRAHIM')
+        # The CORRECTION: there is no programme declaration to compare — NOT the track.
+        self.assertEqual(prog, '')
+        self.assertNotEqual(prog, 'sains_sosial')
 
     def test_genuine_student_pick_is_still_used(self):
         from apps.scholarship.pathway_engine import _declared_pathway

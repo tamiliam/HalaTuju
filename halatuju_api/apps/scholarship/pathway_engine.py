@@ -132,15 +132,32 @@ def offer_pathway_match(declared_programme: str, declared_institution: str,
 
 def _declared_pathway(application) -> tuple:
     """The student's declared (programme, institution) from the apply-form fields.
-    Prefers the structured ``chosen_programme`` (eligibility-filter pick), falling
-    back to the pre-U school/track for STPM/Matriculation. Either may be ''.
+    Prefers the structured ``chosen_programme`` (eligibility-filter pick), falling back to the
+    pre-U SCHOOL for the institution. Either may be ''.
 
     #117 (c) — break the circularity. ``services.autofill_pathway_from_offer`` writes
     ``chosen_programme`` FROM the offer letter and stamps ``source='offer_letter_auto'``; using that
     value AS "the declaration" means ``offer_pathway_match`` compares the offer against ITSELF (45
     live applications carry this source, so their pathway clash is invisible). When the pick came
     from the offer it is NOT a student declaration — fall back to the student's own pre-U
-    school/track. This can only REVEAL clashes we are currently blind to, never create a false one."""
+    school/track. This can only REVEAL clashes we are currently blind to, never create a false one.
+
+    ⚠⚠ THE PROGRAMME NO LONGER FALLS BACK TO ``pre_u_track``, AND MUST NOT BE MADE TO AGAIN
+    (2026-09-10). A track is a STREAM ('sains'); the offer's ``programme`` is a COURSE NAME
+    ('Program Matrikulasi'). Those two can never agree on MEANING — they agreed on a WORD, because
+    most matriculation letters print the jurusan inside the programme line and our own parser's
+    f-string glued it there. That coincidence carried 26 matric students. App #142's letter carried
+    a DATE in that position instead, so the comparison read 'sains' against 'jun', called it a
+    clash, and painted a correct offer with a red Pathway chip, no Institution tick (a tick is never
+    green while the pathway is a mismatch), and a student asked to confirm a pathway already right.
+
+    The track is NOT lost: it reaches ``offer_pathway_match`` through ``declared_track``, its own
+    axis, compared against the letter's own ``stream``. This removes a DUPLICATE, mis-typed use.
+
+    Measured on all 58 live pre-U records before the change: the INSTITUTION axis matches on every
+    one of them, so the programme axis had never once decided a pre-U verdict — pure exposure
+    carrying no signal. Measured again after the offer-parser fix landed: dropping it changes
+    **zero** records."""
     cp = getattr(application, 'chosen_programme', None)
     cp = cp if isinstance(cp, dict) else {}
     from_offer = cp.get('source') == 'offer_letter_auto'
@@ -148,8 +165,6 @@ def _declared_pathway(application) -> tuple:
     inst = '' if from_offer else (cp.get('institution') or '').strip()
     if not inst:
         inst = (getattr(application, 'pre_u_institution', '') or '').strip()
-    if not prog:
-        prog = (getattr(application, 'pre_u_track', '') or '').strip()
     return prog, inst
 
 

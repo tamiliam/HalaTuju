@@ -701,3 +701,86 @@ class TestAnInstitutionCopiedFromTheLetterCannotVerifyIt(_Base):
         chk = student_offer_check(self._offer(app, 'Program Matrikulasi (SAINS)', school))
         self.assertEqual(chk['chosen_institution_status'], 'match')
         self.assertEqual(chk['pathway'], 'match')
+
+
+class TestATrackIsNotAProgrammeName(_Base):
+    """⚠⚠ THE PATHWAY CHECK USED TO COMPARE A STREAM AGAINST A COURSE NAME — app #142, 2026-09-10.
+
+    For a pre-U record whose `chosen_programme` was auto-filled off the offer, `_declared_pathway`
+    refuses that value (the #117(c) circularity break) and used to fall back to `pre_u_track` for
+    the PROGRAMME axis. A track is 'sains'; the offer's programme is 'Program Matrikulasi'. Those
+    can never agree on MEANING — they agreed on a WORD, because most matriculation letters print
+    the jurusan inside the programme line and our own parser's f-string glued it there.
+
+    26 matric students passed on that coincidence. #142's letter carried a DATE in that position,
+    so the check read 'sains' against 'jun', called it a clash, and painted a correct offer RED.
+
+    Measured before the change: the INSTITUTION axis matches on all 58 live pre-U records, so the
+    programme axis had never once decided a pre-U verdict. Measured after the offer-parser fix:
+    dropping it changes ZERO records.
+    """
+
+    def _matric(self, **over):
+        school = over.pop('school', 'Kolej Matrikulasi Selangor')
+        return self._app(chosen_pathway='matric', pre_u_institution=school,
+                         pre_u_track=over.pop('track', 'sains'),
+                         chosen_programme={'course_name': 'Program Matrikulasi',
+                                           'institution': school,
+                                           'source': 'offer_letter_auto'}, **over)
+
+    def _offer_with_stream(self, app, programme, institution, stream):
+        prof = app.profile
+        return ApplicantDocument.objects.create(
+            application=app, doc_type='offer_letter', storage_path=f'{app.id}/offer/x',
+            vision_fields={'fields': {
+                'candidate_name': prof.name, 'candidate_nric': prof.nric.replace('-', ''),
+                'programme': programme, 'institution': institution, 'stream': stream},
+                'student_verdict': 'ok', 'warnings': [], 'error': ''},
+            vision_run_at=timezone.now())
+
+    def test_the_declared_programme_is_empty_for_an_offer_derived_pre_u_record(self):
+        # The rule itself, stated once and directly: there is no programme DECLARATION to compare.
+        from apps.scholarship.pathway_engine import _declared_pathway
+        prog, inst = _declared_pathway(self._matric())
+        self.assertEqual(prog, '')
+        self.assertEqual(inst, 'Kolej Matrikulasi Selangor')
+
+    def test_142_a_date_in_the_programme_line_is_no_longer_a_clash(self):
+        # ⚠ THE REGRESSION PIN. Before 2026-09-10 this read 'sains' vs 'jun' and returned
+        # 'mismatch' — a red Pathway chip and a withheld Institution tick on a correct offer.
+        app = self._matric()
+        chk = student_offer_check(self._offer_with_stream(
+            app, 'Program Matrikulasi (8 JUN 2026)', 'KOLEJ MATRIKULASI SELANGOR', ''))
+        self.assertEqual(chk['pathway'], 'match')
+
+    def test_the_ordinary_matric_letter_is_unchanged(self):
+        # The 26 that used to pass on the coincidence must still pass — now on the institution and
+        # the letter's real stream, which is what the evidence actually is.
+        app = self._matric()
+        chk = student_offer_check(self._offer_with_stream(
+            app, 'Program Matrikulasi (SAINS)', 'KOLEJ MATRIKULASI SELANGOR', 'SAINS'))
+        self.assertEqual(chk['pathway'], 'match')
+
+    def test_the_track_still_flags_a_REAL_stream_clash(self):
+        # ⚠ THE TRACK IS NOT LOST — it reaches the comparison through `declared_track`, its own
+        # axis, against the letter's own `stream`. Removing the DUPLICATE must not remove the
+        # protection: a Sains Sosial student holding a Sains offer still flags (#33 / #99 / #120).
+        app = self._app(chosen_pathway='stpm', pre_u_institution='KTE Tuanku Muhriz',
+                        pre_u_track='sains_sosial',
+                        chosen_programme={'course_name': 'Tingkatan Enam',
+                                          'institution': 'Kolej Tingkatan Enam Tuanku Muhriz',
+                                          'source': 'offer_letter_auto'})
+        chk = student_offer_check(self._offer_with_stream(
+            app, 'Tingkatan Enam Semester 1', 'KOLEJ TINGKATAN ENAM TUANKU MUHRIZ', 'SAINS'))
+        self.assertEqual(chk['pathway'], 'mismatch')
+
+    def test_a_real_student_declaration_is_still_compared(self):
+        # The change is scoped to the offer-derived fallback. A tertiary record carrying the
+        # student's OWN course pick still compares programme against programme, as it always did.
+        app = self._app(chosen_pathway='poly',
+                        chosen_programme={'course_name': 'Diploma Perakaunan',
+                                          'institution': 'Politeknik Seberang Perai',
+                                          'source': ''})
+        chk = student_offer_check(self._offer(app, 'DIPLOMA PERAKAUNAN',
+                                              'Politeknik Seberang Perai'))
+        self.assertEqual(chk['pathway'], 'match')

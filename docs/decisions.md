@@ -1,5 +1,36 @@
 # Architectural Decisions — HalaTuju
 
+## The pre-U TRACK is compared on the stream axis only, never as a programme name — 2026-09-10
+
+**Decision:** `pathway_engine._declared_pathway` returns `''` for the PROGRAMME when the record's
+`chosen_programme` came from the offer letter. It no longer falls back to `pre_u_track`. The
+institution still falls back to `pre_u_institution`. The track continues to reach
+`offer_pathway_match` through `declared_track`, compared against the letter's own `stream`.
+
+**Alternatives considered:** (a) keep the fallback and add month names to `_GENERIC_TOKENS`, which
+is where #142's symptom surfaced; (b) keep the fallback but make the programme axis advisory — a
+clash there warns rather than mismatching; (c) canonicalise the track before comparing, so 'sains'
+is expanded to something programme-shaped; (d) leave it — the offer-parser fix already removed the
+only failing case.
+
+**Rationale:** (a) treats the symptom: the next stray token in that slot re-fires it, and the axis
+still carries no information. (b) keeps a comparison that is meaningless in both directions — an
+advisory built on a category error is still a category error. (c) invents a programme name the
+student never declared, which is worse than declaring nothing. (d) is tempting and was rejected on
+the measurement: the axis has never once decided a pre-U verdict, so it is pure exposure, and the
+next letter that prints something unexpected in its programme line brings the fault back.
+
+**Trade-offs stated plainly:** a pre-U record whose declaration came off the offer now has NO
+programme axis at all — the verdict rests on the institution and the stream. That is a genuinely
+smaller comparison. Accepted, because the removed axis was comparing two different kinds of thing:
+its agreement was luck and its disagreement was noise. Measured on all 58 live pre-U records:
+the institution matches on every one, and dropping the programme axis changes zero verdicts.
+
+**Revisit if:** a pre-U record ever carries a real, student-typed programme declaration distinct
+from its track — then it belongs on the programme axis and the fallback should read THAT field,
+never the track.
+
+
 ## A shifted offer-letter block defers to Gemini rather than shipping a partial read — 2026-09-10
 
 **Decision:** `parse_govt_offer` returns `None` — handing the letter to the Gemini image read —
