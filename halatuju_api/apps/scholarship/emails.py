@@ -4111,3 +4111,45 @@ def send_sponsor_invitation_email(to_email, *, org_name='', note='', code='', in
     except Exception as e:      # noqa: BLE001
         logger.warning('Failed to send sponsor invitation to %s', to_email, exc_info=True)
         return False, str(e)[:300]
+
+
+def send_spending_alert_email(lines, *, subject_hint=''):
+    """Tell a human that the spending import needs one. Best-effort → bool.
+
+    ⚠ **SENT ONLY WHEN `IngestReport.needs_attention` IS TRUE** (owner ruling, 2026-09-10). There
+    is deliberately **no weekly all-clear**: a message that arrives every week regardless is a
+    message nobody opens, and the week it matters it gets skimmed with the rest. Silence means
+    nothing to report.
+
+    ⚠ **IT NAMES WALLETS AND APPLICATION IDS, NEVER A STUDENT'S NAME.** Those two are what a person
+    needs to fix the problem; a name is not, and this mail gets forwarded. It carries no merchant
+    and no amount for the same reason.
+
+    ⚠ **PLAIN `EmailMessage` WITH AN EXPLICIT `from_email`, NOT `_send_html`.** `_send_html`
+    DEFAULTS its sender to the interview alias because interview mail is its main caller — the
+    correct call and the wrong call look identical and the wrong one is shorter, which is how a
+    student email once went out from `interview@` (2026-08-01). Internal alerts follow
+    `send_vircle_activation_email`'s shape instead.
+    """
+    recipient = (getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or '').strip()
+    if not recipient or not lines:
+        return False
+    from django.utils import timezone
+    today = timezone.localdate()
+    body = (
+        'The bursary spending import needs a person to look at something.\n\n'
+        + '\n'.join(lines)
+        + '\n\nThis message is sent only when something needs attention. A run that finds '
+          'nothing wrong sends nothing at all.\n\n'
+          'Thank you,\n'
+        + _TEAM_EN
+    )
+    try:
+        EmailMessage(
+            subject=(f'{_PROG_EN} — spending import needs attention'
+                     f'{": " + subject_hint if subject_hint else ""} — {today:%d %B %Y}'),
+            body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient]).send()
+        return True
+    except Exception:
+        logger.warning('Failed to send the spending alert email', exc_info=True)
+        return False

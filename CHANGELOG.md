@@ -2,6 +2,73 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor spending S2 — the reports arrive on their own - 2026-09-10
+
+Second sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. NO MIGRATION.
+Nothing a sponsor or student sees changes; nothing is deployed.** `sheets.spending_reports_in` +
+`read_spending_report`, `spending_import.files_needing_read` / `drive_sources` /
+`days_since_last_report` / `should_nudge`, `--drive` on the command, `emails
+.send_spending_alert_email`, and cron job **`spending-ingest`** (daily, `--drive --apply`).
+
+**⚠⚠ THE TRIGGER IS A NEW FILE, NOT THE CALENDAR** (owner, 2026-09-10). A BrightPath officer
+extracts each week from Vircle's Data Studio and uploads it BY HAND — *"not exactly at the same
+time every week … not even the same day"*. A weekday-pinned cron would leave a Thursday upload
+unread until the following Monday. The job runs daily and **a day with nothing new does nothing and
+says nothing**.
+
+**⚠ WHICH FILES TO DOWNLOAD IS "NEW OR CHANGED", WITH NO STATE OF OUR OWN** (owner ruling, option
+C). Drive's `modifiedTime` compared against our newest `imported_at` for that `source_file` — both
+already stored by S1. The owner rejected re-reading everything daily as wasteful, and they were
+right; a remembered seen-list was rejected because it **silently misses an edit**, and the officer
+edits these files (the owner removed 186 duplicated rows from one on 2026-09-10). A file that
+stored nothing is re-read: we have no evidence we ever read it, and that is the honest answer.
+
+**⚠ THE ALERT EMAIL FIRES ONLY WHEN A HUMAN IS NEEDED — THERE IS NO WEEKLY ALL-CLEAR.** It names
+wallets and application ids, never a student's name, and carries no merchant and no amount. It uses
+a plain `EmailMessage` with an explicit `from_email`: **`_send_html` defaults its sender to the
+interview alias**, which is how a student email once went out from `interview@`. One rendered
+instance was built and READ before this was called done.
+
+**⚠ THE STALENESS NUDGE FIRES ON DAY 14 AND EVERY MULTIPLE, DERIVED, NEVER STORED.** A forgotten
+manual upload fails silently and an absent file is indistinguishable from a quiet week. One-and-done
+would need a stored flag, and a flag set on a day the job happened to fail means nobody is ever
+told. Nothing ever imported is deliberately NOT a nudge — that is a system nobody has started.
+
+**⚠ `CronRunView.JOBS` NOW ACCEPTS `(command, [args])` AS WELL AS A NAME** — additive, every
+existing job unchanged, with a test that a plain string still runs. The flags live in the registry
+where they can be read, rather than in an env var somebody must set and then remember to unset;
+that env-var shape is deliberate for dangerous ONE-OFFS and wrong for a daily job.
+
+**⚠ THE FILENAME PATTERN IS A GUARD, NOT A CONVENIENCE.** Only `YYYY-MM-DD … Usage Report` sheets
+are listed, because S4 files a Gemini-written summary back into the same tree and the next run would
+otherwise parse our own output as a Vircle report. Brand-neutral, so a second tenant's export still
+matches.
+
+**⚠ TWO BITE-CHECKS CAME BACK SILENT AND BOTH WERE REAL GAPS.** (1) Removing the quiet-day guard
+changed no assertion — what it actually prevents is a STANDING finding (a funded student with no
+wallet) emailing every single day for ever, which is the all-clear email in a finding's clothes.
+(2) Three tests on the filename pattern were blind to whether anything CALLS it — the
+"a unit test does not prove the helper is used" lesson, landing a second time. A test was written
+for each, and both then bit. Also: two anchors matched nothing because `views.py` and `sheets.py`
+are **CRLF** while the new modules are LF — a match count of 0 is an UNPROVEN bite, not a finding.
+
+**⚠ AND THE FULL SUITE CAUGHT WHAT THE TARGETED ONE COULD NOT.** `test_repair_commands_have_a_door`
+does `set(CronRunView.JOBS.values())` — my `(name, [args])` entry made that `TypeError: unhashable
+type: 'list'`, in a guard two sprints old that I had no reason to open. Fixed properly rather than
+worked around: the registry entry is now an immutable tuple, and the guard unwraps a pair through a
+named `_registered_commands()` helper — because its QUESTION is *"is this command reachable?"*, so a
+future `repair_*` job registered with flags must not read as stranded. **Changing a shared shape
+puts every reader in scope**, and the only thing that found them was running the whole suite.
+
+pytest full `apps/` **6179 passed** (+23) · `makemigrations --check` clean · **no migration**. No web
+change, so the frontend gates are unchanged from main. Six bite-checks landed.
+
+**▶ AT DEPLOY:** S1's `scholarship/0155` still applies MIGRATE-FIRST. Then set
+`VIRCLE_SPENDING_FOLDER` if the live tree differs from the default, and create a **daily** Cloud
+Scheduler job hitting `spending-ingest`. ⚠ **Run `--drive` WITHOUT `--apply` once first and read
+it** — that live report is S2's only real proof, because the service-account key exists nowhere
+else.
+
 ## Sponsor spending S1 — a Vircle report becomes stored transactions - 2026-09-10
 
 First sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. Nothing a

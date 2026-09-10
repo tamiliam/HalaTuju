@@ -72,9 +72,18 @@ def _repair_commands():
     return found
 
 
+def _registered_commands():
+    """The command NAMES in the registry. A job is a name, or a ``(name, args)`` pair when
+    the cron behaviour needs flags (added 2026-09-10 for `spending-ingest`) — this guard asks
+    which commands are REACHABLE, so it wants the name either way. Without the unwrap a
+    future `repair_*` command registered with flags would read as stranded, which is the
+    opposite of what this file is for."""
+    return {e[0] if isinstance(e, tuple) else e for e in CronRunView.JOBS.values()}
+
+
 class TestEveryRepairHasADoor(SimpleTestCase):
     def test_every_repair_command_is_reachable_or_declared(self):
-        registered = set(CronRunView.JOBS.values())
+        registered = _registered_commands()
         stranded = sorted(c for c in _repair_commands()
                           if c not in registered and c not in NO_DOOR)
         self.assertEqual(stranded, [], (
@@ -92,7 +101,7 @@ class TestEveryRepairHasADoor(SimpleTestCase):
     def test_a_declared_command_is_not_also_registered(self):
         """The two lists answer the same question and must not both claim a command — a name in
         both says one of them was not read."""
-        both = sorted(set(NO_DOOR) & set(CronRunView.JOBS.values()))
+        both = sorted(set(NO_DOOR) & _registered_commands())
         self.assertEqual(both, [], f'Both registered and declared door-less: {both}')
 
     def test_the_scan_actually_finds_the_commands(self):

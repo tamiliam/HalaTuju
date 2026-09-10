@@ -26,6 +26,7 @@ NEVER call this with a live network in CI — tests patch ``_services`` (the sin
 from __future__ import annotations
 
 import logging
+import re
 
 from django.conf import settings
 
@@ -325,6 +326,86 @@ def read_sheet_values(spreadsheet_id, cell_range):
     except Exception:
         logger.warning('Sheet read failed for %r %r', spreadsheet_id, cell_range, exc_info=True)
         return []
+
+
+# ── Vircle spending reports (sponsor spending reporting, S2) ──────────────────
+
+#: A Vircle export is `YYYY-MM-DD <programme> Bursary_Bursary Usage Report_Table`.
+#:
+#: ⚠⚠ THIS PATTERN IS A GUARD, NOT A CONVENIENCE. S4 writes a Gemini-written summary back into the
+#: same tree; without this filter the next run would try to parse OUR OWN OUTPUT as a Vircle
+#: report. The summary also goes in a SUBFOLDER — two independent locks, because one lock is a
+#: convention and two is a design.
+#: Deliberately brand-neutral (no "BrightPath"): a second tenant's export would carry its own name.
+_SPENDING_FILENAME_RE = re.compile(r'^\d{4}-\d{2}-\d{2}\b.*usage report', re.I)
+
+#: Wide enough for any report seen (the busiest week was 377 rows x 11 columns) with headroom.
+#: The API trims trailing empties, so over-asking costs nothing.
+_SPENDING_RANGE = 'A1:Z5000'
+
+
+def spending_reports_in(folder_path):
+    """List the Vircle spending exports in ``folder_path`` → ``[(file_id, name, modified)]``.
+
+    ``modified`` is Drive's own `modifiedTime`, an aware UTC datetime — **the whole reason this
+    returns it.** It is what lets the caller skip a file it has already read AND still notice one
+    the officer has edited since, with no state of our own to keep (see
+    ``spending_import.files_needing_read``).
+
+    Best-effort: `[]` on disabled / missing folder / any error, logged and never raised. A Drive
+    hiccup must not break the job, exactly as `fetch_drive_pdf` does not break an email send.
+
+    ⚠ Only Google Sheets matching `_SPENDING_FILENAME_RE` are returned — see the constant.
+    """
+    if not sheets_enabled() or not folder_path:
+        return []
+    try:
+        from datetime import datetime, timezone
+
+        drive = _drive_for_upload()
+        if drive is None:
+            return []
+        folder_id = _find_folder_path(drive, folder_path)
+        if not folder_id:
+            logger.warning('Spending: folder path %r not found in the Drive of %s',
+                           folder_path, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
+            return []
+        q = (f"'{folder_id}' in parents and trashed=false and "
+             f"mimeType='application/vnd.google-apps.spreadsheet'")
+        out, page = [], None
+        while True:
+            res = drive.files().list(
+                q=q, fields='nextPageToken, files(id,name,modifiedTime)',
+                orderBy='name', pageSize=200, pageToken=page,
+            ).execute()
+            for item in res.get('files') or []:
+                name = item.get('name') or ''
+                if not _SPENDING_FILENAME_RE.match(name):
+                    continue
+                raw = (item.get('modifiedTime') or '').replace('Z', '+00:00')
+                try:
+                    modified = datetime.fromisoformat(raw)
+                except ValueError:
+                    # ⚠ An unreadable timestamp must mean "read it", never "skip it". Skipping on
+                    # a parse failure would silently drop a real report.
+                    modified = datetime.now(timezone.utc)
+                out.append((item['id'], name, modified))
+            page = res.get('nextPageToken')
+            if not page:
+                break
+        return out
+    except Exception:
+        logger.warning('Spending: could not list %r', folder_path, exc_info=True)
+        return []
+
+
+def read_spending_report(file_id):
+    """One export's cells → ``[[...], ...]``, or `[]` (logged) on any failure.
+
+    Thin on purpose: `read_sheet_values` already holds the credentials, the least-privilege
+    `spreadsheets` scope and the best-effort contract. This only pins the range.
+    """
+    return read_sheet_values(file_id, _SPENDING_RANGE)
 
 
 def file_csv_to_folder(folder_path, filename, text):

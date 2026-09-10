@@ -275,6 +275,20 @@ VIRCLE_GUIDE_FOLDER = os.environ.get('VIRCLE_GUIDE_FOLDER', '03 Vircle/05 Studen
 # exact-name match (not "any PDF") picks the right one. Also the name shown to the recipient.
 VIRCLE_GUIDE_FILENAME = os.environ.get(
     'VIRCLE_GUIDE_FILENAME', 'BrightPath Bursary eWallet by Vircle - Installation Guide.pdf')
+# The folder a BrightPath officer uploads the weekly Vircle spending exports into, read by
+# `ingest_spending --drive`. Same SA + `drive` scope as the payments filer above.
+# ⚠ THESE DEFAULTS ARE STALE ON PURPOSE-OF-RECORD: every VIRCLE_* folder above is env-overridden
+# on the live service to the RENAMED tree ('01 BrightPath/03 Payments, Vircle/...'), read back
+# from `gcloud run services describe` on 2026-09-09. Never quote a folder path from a settings
+# default — read it from the running service.
+VIRCLE_SPENDING_FOLDER = os.environ.get(
+    'VIRCLE_SPENDING_FOLDER', '01 BrightPath/03 Payments, Vircle/06 Student Spending')
+# Days of silence before the spending job nudges a human. The upload is a MANUAL step whose
+# timing is not dependable (owner, 2026-09-10), so an absent file is indistinguishable from a
+# quiet week — this is the only signal that tells them apart. It nudges ON this many days and
+# every multiple thereafter, so a forgotten step is raised again; it is not a daily nag, and a
+# run that finds new data resets it to silence.
+SPENDING_REPORT_QUIET_DAYS = int(os.environ.get('SPENDING_REPORT_QUIET_DAYS', '14'))
 # Cache the fetched bytes this long (seconds) so a batch send doesn't re-download per email; an
 # owner edit in Drive reflects within this window. 0 disables caching (always fetch fresh).
 VIRCLE_GUIDE_CACHE_SECONDS = int(os.environ.get('VIRCLE_GUIDE_CACHE_SECONDS', '600'))

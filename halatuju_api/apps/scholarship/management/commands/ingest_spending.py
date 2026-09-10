@@ -21,9 +21,10 @@ from __future__ import annotations
 import glob
 import os
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.scholarship import spending_import
+from apps.scholarship import emails, spending_import
 
 
 class Command(BaseCommand):
@@ -34,10 +35,17 @@ class Command(BaseCommand):
                             help='A single .xlsx export. Repeatable.')
         parser.add_argument('--dir', default='',
                             help='A folder; every .xlsx in it is read, oldest name first.')
+        parser.add_argument('--drive', action='store_true',
+                            help='Read new/changed exports from VIRCLE_SPENDING_FOLDER in Drive. '
+                                 'The cron mode; needs the service account, so it only works on '
+                                 'the live service.')
         parser.add_argument('--apply', action='store_true',
                             help='Write the new transactions. Without it, nothing is stored.')
+        parser.add_argument('--no-email', action='store_true',
+                            help='Never send the alert, whatever is found. For a manual run.')
 
     def handle(self, *args, **options):
+        use_drive = options['drive']
         paths = list(options['file'])
         folder = options['dir']
         if folder:
@@ -47,10 +55,13 @@ class Command(BaseCommand):
             # them with a permission error that reads like a corrupt export.
             paths += sorted(p for p in glob.glob(os.path.join(folder, '*.xlsx'))
                             if not os.path.basename(p).startswith('~$'))
-        if not paths:
-            raise CommandError('nothing to read - pass --file or --dir')
+        if not paths and not use_drive:
+            raise CommandError('nothing to read - pass --file, --dir or --drive')
 
         sources, unreadable = [], []
+        if use_drive:
+            drive_folder = getattr(settings, 'VIRCLE_SPENDING_FOLDER', '')
+            sources, unreadable = spending_import.drive_sources(drive_folder)
         for path in paths:
             name = os.path.basename(path)
             try:
@@ -60,15 +71,44 @@ class Command(BaseCommand):
                 continue
             sources.append((name, rows, unknown))
 
-        report = spending_import.ingest(sources, apply=options['apply'])
-        report.unreadable_files.extend(unreadable)
-
-        mode = 'APPLIED' if options['apply'] else 'REPORT ONLY - nothing was written'
-        self.stdout.write(f'--- ingest_spending ({mode}) ---')
-        for line in report.lines():
-            self.stdout.write(line)
-        if report.needs_attention:
-            self.stdout.write(self.style.WARNING(
-                'NEEDS ATTENTION - see the sections above.'))
+        # ⚠ A DRIVE RUN WITH NOTHING NEW DOES NOTHING AT ALL — no ingest, no log noise, no email.
+        # The officer uploads by hand and not on a fixed day (owner, 2026-09-10), so most days
+        # there is genuinely nothing to do and the job must be silent about it. The ONLY thing
+        # that speaks on a quiet day is the staleness nudge below.
+        quiet_run = use_drive and not sources and not unreadable
+        if quiet_run:
+            report = None
+            self.stdout.write('--- ingest_spending (drive) --- nothing new to read.')
         else:
-            self.stdout.write(self.style.SUCCESS('Nothing needs a human.'))
+            report = spending_import.ingest(sources, apply=options['apply'])
+            report.unreadable_files.extend(unreadable)
+            mode = 'APPLIED' if options['apply'] else 'REPORT ONLY - nothing was written'
+            self.stdout.write(f'--- ingest_spending ({mode}) ---')
+            for line in report.lines():
+                self.stdout.write(line)
+            if report.needs_attention:
+                self.stdout.write(self.style.WARNING('NEEDS ATTENTION - see the sections above.'))
+            else:
+                self.stdout.write(self.style.SUCCESS('Nothing needs a human.'))
+
+        # The staleness nudge. Derived from the newest import, never stored — see
+        # `spending_import.days_since_last_report`.
+        quiet_days = getattr(settings, 'SPENDING_REPORT_QUIET_DAYS', 14)
+        silent_for = spending_import.days_since_last_report()
+        nudge = (use_drive and not sources
+                 and spending_import.should_nudge(silent_for, quiet_days))
+        if nudge:
+            self.stdout.write(self.style.WARNING(
+                f'No spending report has arrived for {silent_for} days.'))
+
+        if options['no_email']:
+            return
+        # ⚠ ONE EMAIL PER RUN AT MOST, and only when a human is needed. Never an all-clear.
+        if report is not None and report.needs_attention:
+            emails.send_spending_alert_email(report.lines(), subject_hint='import findings')
+        elif nudge:
+            emails.send_spending_alert_email(
+                [f'No spending report has arrived for {silent_for} days.',
+                 'The weekly export is uploaded by hand, so this may simply have been missed.',
+                 'Nothing is broken; there is just nothing new to read.'],
+                subject_hint='no report for a while')

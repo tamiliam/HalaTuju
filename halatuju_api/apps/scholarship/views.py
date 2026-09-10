@@ -2073,6 +2073,12 @@ class CronRunView(APIView):
         # 5 reviewer (#10). ⚠ RUN IT AFTER A DEPLOY THAT ADDS A KIND, never before — it seeds what
         # the RUNNING code knows about, so an earlier run silently skips the new rows.
         'seed-partner-emails': 'seed_partner_email_templates',
+        # DAILY, and it is a NEW-FILE trigger, not a calendar one: a BrightPath officer extracts
+        # the week from Vircle's Data Studio and uploads it BY HAND, "not exactly at the same time
+        # every week … not even the same day" (owner, 2026-09-10). A day with nothing new does
+        # nothing and says nothing. ⚠ `--apply` is what makes it write; without it the job is a
+        # report. It emails ONLY when a human is needed — never an all-clear.
+        'spending-ingest': ('ingest_spending', ('--drive', '--apply')),
         'partner-digests': 'send_partner_digests',  # weekly (Mon 08:00 MYT): partner stage summary + chase list
         'partner-milestones': 'send_partner_milestones',  # hourly: awaiting-review + awarded, batched per organisation
         # one-off/idempotent (S3): create the nine sponsor-email templates. The three that
@@ -2111,9 +2117,18 @@ class CronRunView(APIView):
         command = self.JOBS.get(job)
         if not command:
             return Response({'error': 'unknown job'}, status=status.HTTP_404_NOT_FOUND)
+        # A job is a command NAME, or a (name, [args]) pair when the cron behaviour needs flags.
+        # ⚠ ADDITIVE — a plain string behaves exactly as before, which is what every other job is.
+        # The pair exists so a recurring job's flags live HERE, visible in the registry, instead of
+        # in an env var somebody has to set and then remember to unset. That env-var shape is
+        # deliberate for dangerous ONE-OFFS (`REEXTRACT_DOC_TYPE`, `PARTNER_EMAIL_RESET_KINDS`) —
+        # a door you can close — and is the wrong tool for a job that runs every day.
+        args = []
+        if isinstance(command, tuple):
+            command, args = command[0], list(command[1])
         out = io.StringIO()
         try:
-            call_command(command, stdout=out)
+            call_command(command, *args, stdout=out)
         except Exception as e:  # noqa: BLE001 — report, never 500 into scheduler retries
             logging.getLogger(__name__).warning('Cron job %s failed: %s', job, e, exc_info=True)
             return Response({'job': job, 'error': str(e)[:300]}, status=status.HTTP_200_OK)

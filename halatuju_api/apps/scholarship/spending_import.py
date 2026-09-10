@@ -447,6 +447,103 @@ class IngestReport:
         return out
 
 
+def files_needing_read(listing) -> list:
+    """Of the files Drive is offering, which do we actually have to download?
+
+    `listing` is `[(file_id, name, modified)]` from `sheets.spending_reports_in`. Returns the same
+    shape, filtered.
+
+    ⚠⚠ **THE RULE IS "NEW OR CHANGED", AND IT KEEPS NO STATE OF ITS OWN** (owner ruling
+    2026-09-10, option C). A file is downloaded when we have never imported anything from it, OR
+    when Drive says it was modified after our newest import from it. Everything needed is already
+    on `BursarySpendTxn`: `source_file` and `imported_at`.
+
+    Why not the two obvious alternatives:
+      * **Re-read everything daily** — correct, and wasteful: on a quiet day it downloads every
+        report ever filed to find nothing. The owner refused it, rightly.
+      * **Remember which files we have seen** — cheap, needs a table, and **silently misses an
+        edit**. The officer edits these files: on 2026-09-10 the owner opened one and deleted 186
+        duplicated rows. A seen-list would never look at that file again.
+
+    ⚠ **A FILE THAT PRODUCED NO ROWS IS RE-READ EVERY RUN, AND THAT IS THE HONEST ANSWER.** An
+    all-duplicate export stores nothing, so no `source_file` records it and we have no evidence we
+    ever read it. One small sheet, bounded, and preferable to inventing a memory we do not have.
+
+    ⚠ Duplicate ROWS are not this function's problem — `ingest` dedups on `txn_id` whatever gets
+    downloaded. This decides only what to fetch.
+    """
+    from django.db.models import Max
+
+    from .models import BursarySpendTxn
+
+    newest = {
+        name: when for name, when in BursarySpendTxn.objects
+        .values_list('source_file')
+        .annotate(latest=Max('imported_at'))
+        .values_list('source_file', 'latest')
+        if name
+    }
+    out = []
+    for file_id, name, modified in listing:
+        seen_at = newest.get(name)
+        if seen_at is None or modified is None or modified > seen_at:
+            out.append((file_id, name, modified))
+    return out
+
+
+def drive_sources(folder_path):
+    """Every spending report in `folder_path` that needs reading, parsed → `ingest` input.
+
+    Returns `(sources, unreadable)` in the command's own shape, so the Drive path and the local
+    `--file` path hand `ingest` exactly the same thing. **No parsing rule lives here** — this is an
+    adapter, and `rows_from_values` remains the one parser.
+    """
+    from . import sheets
+
+    listing = sheets.spending_reports_in(folder_path)
+    sources, unreadable = [], []
+    for file_id, name, _modified in files_needing_read(listing):
+        values = sheets.read_spending_report(file_id)
+        if not values:
+            # ⚠ Empty is NOT the same as unreadable. `read_spending_report` is best-effort and
+            # logs its own failure; an export with only a header row is also legitimately empty.
+            # Either way there is nothing to parse and nothing to report as a fault.
+            continue
+        try:
+            rows, unknown = rows_from_values(values[0], values[1:], name)
+        except UnreadableReport as exc:
+            unreadable.append((name, str(exc)))
+            continue
+        sources.append((name, rows, unknown))
+    return sources, unreadable
+
+
+def days_since_last_report() -> int | None:
+    """Days since the newest transaction was imported, or `None` if nothing ever has been.
+
+    ⚠ Derived, never stored. The nudge that uses this fires ON `SPENDING_REPORT_QUIET_DAYS` and
+    every multiple after, so a forgotten upload is raised again rather than once — a single
+    one-and-done nudge needs a stored flag, and a flag set on a day the job happened to fail means
+    nobody is ever told. `None` (nothing imported at all) is deliberately NOT a nudge: that is a
+    system nobody has started yet, not one that has gone quiet.
+    """
+    from django.utils import timezone
+
+    from .models import BursarySpendTxn
+
+    newest = BursarySpendTxn.objects.order_by('-imported_at').values_list(
+        'imported_at', flat=True).first()
+    if newest is None:
+        return None
+    return (timezone.now() - newest).days
+
+
+def should_nudge(days, quiet_days) -> bool:
+    """True on the quiet-day threshold and every multiple of it. Pure, so it is testable."""
+    return bool(days is not None and quiet_days > 0 and days >= quiet_days
+                and days % quiet_days == 0)
+
+
 def _wallet_map() -> tuple[dict[str, int], dict[str, list]]:
     """`{wallet digits: application id}` plus any wallet claimed by more than one application.
 
