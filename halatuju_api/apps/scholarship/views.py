@@ -2095,6 +2095,19 @@ class CronRunView(APIView):
         # with no database - finished and unreachable, which from the outside looks exactly like
         # finished (BrightPath #20). `--all` never touches an `owner` row.
         'spending-sort': ('sort_spending', ('--all', '--apply')),
+        # ⚠⚠ THE READ-ONLY DOORS, AND THEY ARE NOT SCHEDULED. Added at the first deploy
+        # (2026-09-10), when the plan's own verification step turned out to be impossible: it
+        # says "run it WITHOUT --apply once and read it" — the only real proof of the Drive
+        # hop and of the model rung, neither of which can run on a laptop — and every
+        # registered job carried `--apply`. Flags come from THIS registry and never from the
+        # request (accepting them there would let anyone holding the secret choose the
+        # command's behaviour), so a read-only run needs its own entry.
+        # ⚠ NEITHER MAY EVER GAIN `--apply`. They exist to be safe to run at any moment.
+        # `ingest_spending` with no `--apply` cannot write and `--no-email` keeps a manual
+        # rehearsal from alerting anybody; `sort_spending` with no flags is report-only AND
+        # still calls the model, which is exactly what makes it the proof.
+        'spending-ingest-report': ('ingest_spending', ('--drive', '--no-email')),
+        'spending-sort-report': 'sort_spending',
         'partner-digests': 'send_partner_digests',  # weekly (Mon 08:00 MYT): partner stage summary + chase list
         'partner-milestones': 'send_partner_milestones',  # hourly: awaiting-review + awarded, batched per organisation
         # one-off/idempotent (S3): create the nine sponsor-email templates. The three that

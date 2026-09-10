@@ -564,6 +564,34 @@ class TestTheSorterHasADoor(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertNotIn('error', res.json())
 
+    def test_the_read_only_doors_exist_and_can_never_write(self):
+        """⚠⚠ THE VERIFICATION STEP OF THE DEPLOY PLAN DEPENDS ON THESE.
+
+        Found at the first deploy: the plan says "run it WITHOUT --apply once and read it",
+        and every registered job carried `--apply`, so the step was impossible. The danger now
+        is the opposite one — somebody "tidying" the registry by giving these the same flags as
+        their scheduled siblings. Then a rehearsal would write, silently.
+        """
+        from apps.scholarship.views import CronRunView
+        ingest = CronRunView.JOBS['spending-ingest-report']
+        self.assertEqual(ingest, ('ingest_spending', ('--drive', '--no-email')))
+        self.assertNotIn('--apply', ingest[1])
+        # A bare string means NO arguments at all, which is report-only by default.
+        self.assertEqual(CronRunView.JOBS['spending-sort-report'], 'sort_spending')
+
+    def test_a_read_only_run_through_the_endpoint_stores_nothing(self):
+        """The harm, not the registry entry: prove it cannot write."""
+        app = make_app()
+        row = txn(app, 'DELIMA MATANG CAFE', 5)
+        with self.settings(CRON_SECRET='test-secret'):
+            with mock.patch(SEAM):
+                res = self.client.post('/api/v1/internal/cron/spending-sort-report/',
+                                       data='{}', content_type='application/json',
+                                       HTTP_X_CRON_SECRET='test-secret')
+        self.assertEqual(res.status_code, 200)
+        row.refresh_from_db()
+        self.assertEqual((row.category, row.decided_by), ('', ''))
+
     def test_the_door_never_touches_an_owner_row(self):
         """⚠ The registered flags include `--all`. If that ever came to mean "everything", a
         person's correction would be erased by a routine re-sort."""

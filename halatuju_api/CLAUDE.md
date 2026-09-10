@@ -589,10 +589,18 @@ courses **74/74**.
    differs. **Read both from `gcloud run services describe`, never from a settings default** —
    every other `VIRCLE_*` folder is already overridden there. ⚠ The summary folder's PARENT
    must already exist; only the `Summaries` segment is created for us.
-5. **⚠ `ingest_spending --drive` WITHOUT `--apply`, ONCE, AND READ IT.** Expect the eight files
-   and the S1 figures re-derived.
-6. **⚠ `sort_spending` WITHOUT `--apply`, ONCE, AND READ IT.** Expect ~102 merchants proposed
-   for the model in 3 batched calls the first time, then near zero for ever.
+5. **⚠ POST TO THE READ-ONLY DOOR `spending-ingest-report`** with the `X-Cron-Secret` header.
+   Expect the eight files and the S1 figures re-derived. **⚠ NOT `spending-ingest`** — that one
+   carries `--apply`.
+6. **⚠ POST TO THE READ-ONLY DOOR `spending-sort-report`.** Expect ~102 merchants proposed for
+   the model in 3 batched calls, stored nowhere. **⚠ NOT `spending-sort`** — that one carries
+   `--all --apply`.
+   **⚠⚠ THE TWO REPORT DOORS EXIST BECAUSE THIS STEP WAS ONCE IMPOSSIBLE.** At the first
+   deploy every registered job carried `--apply`, so the plan's own verification could not be
+   performed at all. Flags come from the registry and NEVER from the request (accepting them
+   there would let anyone holding the secret choose the behaviour). **Neither door may ever
+   gain `--apply`** — they exist to be safe to run at any moment, and
+   `test_spend_category.py` pins both.
 7. Create the DAILY Cloud Scheduler job on **`spending-ingest`**.
 8. **⚠ OPEN THE DRIVE FOLDER.** The summary must be in `Summaries/`, NOT beside the exports —
    the one thing no test on a laptop can prove.
