@@ -37,11 +37,17 @@ organisation and service only. Owner chose to make it VISIBLE and not yet select
 - **The job list is SUPER-ONLY.** Which model a job uses is a platform fact a tenant cannot change.
   A tenant's own usage split by model is theirs and stays.
 
-**⚠ AND A LIVE BUG FOUND BY THIS SPRINT'S OWN SUITE, IN A MODULE IT DOES NOT TOUCH.** The sponsor
+**⚠ A LIVE BUG THIS SPRINT'S SUITE HIT — AND ANOTHER AGENT FIXED IT AN HOUR EARLIER.** The sponsor
 spending card's `as_at` took `.date()` off a UTC timestamp, so between midnight and 08:00 Malaysian
 time **a sponsor was shown yesterday's date** on a report imported today. TD-209 for the third
-time — and the existing test compared against `timezone.localtime()`, the same moving clock, so it
-could only ever catch it in a third of the day. Fixed, with a replacement test that PINS the clock.
+time. **Two agents hit it independently on the same evening** — one from a deploy as the clock
+rolled past midnight, this one from running the full suite at 01:40 — and neither was looking for
+it. Their fix landed on `main` first and is the one kept; this branch's identical fix was dropped
+in the merge, one of the two duplicate tests removed, and the surviving docstring repaired (two
+backticked names had been eaten before it was committed, leaving a sentence with no subject).
+**The lesson survives from here:** the old test compared against `timezone.localtime()` — the same
+moving clock as the bug — so it agreed with the fault for sixteen hours a day and could only ever
+have failed in the small hours. The replacement PINS the clock.
 
 +16 pytest, +9 jest, all bite-checked. No migration; no AI behaviour changed.
 

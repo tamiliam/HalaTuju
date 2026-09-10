@@ -568,11 +568,14 @@ ran. **No migration; no AI behaviour changed** — no model, setting or cascade 
   change (owner's decision — `docs/decisions.md`, 2026-09-11). A tenant's own usage split by model
   IS theirs and stays.
 
-**⚠⚠ A LIVE BUG FIXED THAT THIS SPRINT DID NOT GO LOOKING FOR.** `spend_sponsor.sponsor_card()`
+**⚠⚠ A LIVE BUG TWO AGENTS FIXED THE SAME EVENING, NEITHER LOOKING FOR IT.** `spend_sponsor.sponsor_card()`
 took `.date()` off a UTC timestamp, so **a sponsor saw yesterday's date for the eight hours between
 midnight and 08:00 MYT**. TD-209's THIRD instance. Its own test compared against
 `timezone.localtime()` — the same moving clock — so it was green for two-thirds of every day and
 only failed because this sprint ran the suite at 01:40. Replaced with a clock-PINNED test.
+Another agent hit it an hour earlier from a deploy crossing midnight and landed on `main` first;
+their fix is the one kept (the code line was identical), the duplicate test was dropped in the
+merge, and their docstring repaired.
 **`.date()` on a stored datetime in this codebase is almost always missing a `timezone.localtime()`.**
 
 **WHAT THE SURVEY FOUND, and none of it was on a screen before:** 19 AI jobs but only **two shared
@@ -683,9 +686,40 @@ credit) until it is **inked AND the money has changed hands**, with a bank refer
 
 ## Superseded — previous Next Sprint (as of 2026-09-10, after sponsor spending S5 — THE ARC IS COMPLETE)
 
-**⚠⚠ THERE IS NO NEXT SPRINT HERE. THE WHOLE ARC IS BUILT AND NONE OF IT IS DEPLOYED.** The
-next action is a DEPLOY, and it is owner-gated. Worktree `.worktrees/spending-ingest`, branch
-`feat/spending-ingest`, **not on `main`, so nothing has ever built**.
+**⚠⚠ DEPLOY IN PROGRESS — 2026-09-11. READ THIS BEFORE ACTING ON ANYTHING BELOW IT.**
+The text under this note was written before the deploy and describes a state that no longer
+exists. What is TRUE right now:
+
+| Step | State |
+|---|---|
+| `scholarship/0155` | **✅ APPLIED to production 2026-09-11**, both tables live, RLS on with |
+| | one `service_role` policy each, **ledger row recorded**. ⚠ **DO NOT APPLY IT AGAIN.** |
+| Security Advisor | ✅ neither new table appears in any finding |
+| `main` | ✅ merged and built — api + web both SUCCESS |
+| `VIRCLE_SPENDING_FOLDER` | ✅ set live |
+| `VIRCLE_SPENDING_SUMMARY_FOLDER` | ✅ set live |
+| Read-only Drive fetch | ✅ **RUN AND VERIFIED**: 8 files, 1,368 rows, 1,366 SPEND, |
+| | **RM10,650.22**, coverage 1 Jul → 30 Aug — the laptop figures, exactly |
+| Rows imported | ❌ **NOT YET** — nothing is stored |
+| Gemini rung | ❌ never run anywhere |
+| Drive WRITE | ❌ never run anywhere |
+| Daily Scheduler job | ❌ not created |
+
+**⚠ ONE REAL FINDING FROM THE VERIFIED RUN:** eight funded students have no wallet id —
+applications **16, 43, 73, 106, 124, 129, 142, 144**. The opposite direction is clean: every
+wallet in the reports matched a student, so no money is moving on an unrecognised account.
+
+**▶ WHERE THE DEPLOY STOPPED, AND WHAT COMES NEXT:**
+1. `spending-import-only` — stores the 1,368 rows, sorts nothing, files nothing.
+2. `spending-sort-report` — read-only; **the first real Gemini call**, and the first chance to
+   see what it decides before anything is written.
+3. `spending-sort` — applies it. **⚠ THIS IS THE MOMENT THE SPONSOR CARD GOES LIVE.**
+4. `spending-ingest` — the full weekly job; its first run writes the first Drive summary.
+5. Create the DAILY Cloud Scheduler job on `spending-ingest`.
+6. Open the Drive folder: the summary must be in `Summaries/`, not beside the exports.
+
+**⚠ THE ARC IS BUILT; PARTS OF IT ARE NOW DEPLOYED.** Worktree `.worktrees/spending-ingest`,
+branch `feat/spending-ingest`, **merged to `main` and built**.
 
 | | |
 |---|---|
@@ -790,7 +824,7 @@ Gates: pytest **6348**; jest **2020** (unchanged — S4b touched no web file); `
 `next lint` 0; `makemigrations --check` clean. Ledger: scholarship **154/155**, courses
 **74/74**.
 
-**⚠ MIGRATION `scholarship/0155` (S1) — TWO NEW TABLES, STILL NOT APPLIED. MIGRATE-FIRST.**
+**⚠ MIGRATION `scholarship/0155` — ✅ APPLIED 2026-09-11 (see the deploy note at the head of the S5 block). DO NOT APPLY IT AGAIN.**
 Both tables re-confirmed ABSENT at this close. **S2, S3, S4a and S4b add none.**
 
 **⚠ THE DEPLOY PUSH BUILDS BOTH SERVICES** (S4a touched web). Any older note in this arc

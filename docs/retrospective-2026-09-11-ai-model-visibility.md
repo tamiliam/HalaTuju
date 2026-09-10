@@ -64,7 +64,7 @@ Plus one live bug fixed that the sprint did not go looking for — see below.
   Cheap because the test asserted against `timezone.localtime()` rather than a hardcoded string —
   which is the only reason it failed at all.
 
-**2. The same bug was live in somebody else's module, and had been passing CI for weeks.**
+**2. The same bug was live in somebody else's module — and another agent fixed it an hour before I did.**
 
 - *Symptom:* the full-suite run failed on `test_spend_sponsor.py`, in the sponsor spending arc,
   which this sprint does not touch.
@@ -78,9 +78,17 @@ Plus one live bug fixed that the sprint did not go looking for — see below.
 - *System change:* fixed with `timezone.localtime()`, and the test replaced with one that PINS the
   clock — an import at 22:00 UTC must report 2026-07-05 in Malaysia, whatever time the test runs.
   Bite-checked against the old code.
-- *Scope note:* this is outside the sprint's plan and was fixed anyway — one line, the identical
-  fault, in the file next door, with the reasoning already written. Flagged rather than folded in
-  quietly.
+- *Scope note:* outside this sprint's plan and fixed anyway — one line, the identical fault, in
+  the file next door. Flagged rather than folded in quietly.
+- *And then it collided.* Another agent hit the same bug the same evening (their deploy crossed
+  midnight; my suite ran at 01:40) and landed on `main` first. The merge kept THEIR fix — the code
+  line was byte-identical — dropped my duplicate test, and repaired their docstring, which had
+  lost two backticked names before it was committed and read *"` is stored UTC. A bare  on it is
+  YESTERDAY`"*. The one thing my version carried that theirs did not is now in it: that the OLD
+  test could never have caught this, because it read the same clock as the bug.
+- *The real signal:* **two agents, neither looking, found the same class of fault within an hour.**
+  That is not luck, it is the frequency of the pattern — which is why the lesson filed is a
+  mechanical tell (`.date()` on a stored datetime) rather than "remember timezones".
 
 **3. TD-209 is now three-for-three, which makes it a pattern rather than a bug.**
 

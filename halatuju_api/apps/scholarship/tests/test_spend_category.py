@@ -592,6 +592,17 @@ class TestTheSorterHasADoor(TestCase):
         row.refresh_from_db()
         self.assertEqual((row.category, row.decided_by), ('', ''))
 
+    def test_the_import_only_door_sorts_nothing_and_files_nothing(self):
+        """⚠ It exists so the FIRST run can stop after the import. If it ever loses `--no-sort`
+        or `--no-summary` it silently becomes the daily job, and the first look — at what the
+        model decides, and at the first file written into the owner's Drive — is skipped.
+        """
+        from apps.scholarship.views import CronRunView
+        entry = CronRunView.JOBS['spending-import-only']
+        self.assertEqual(entry[0], 'ingest_spending')
+        for flag in ('--drive', '--apply', '--no-sort', '--no-summary', '--no-email'):
+            self.assertIn(flag, entry[1], flag)
+
     def test_the_door_never_touches_an_owner_row(self):
         """⚠ The registered flags include `--all`. If that ever came to mean "everything", a
         person's correction would be erased by a routine re-sort."""

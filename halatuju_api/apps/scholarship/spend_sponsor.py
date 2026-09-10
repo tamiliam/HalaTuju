@@ -95,6 +95,8 @@ def sponsor_card(application) -> dict | None:
     empty donut beside four zeroes reads as *"they have spent nothing"*, which is a claim we cannot
     make: the far likelier truth is that no report has reached us yet. The panel is simply absent.
     """
+    from django.utils import timezone
+
     from . import payments
     from .models import SPEND_CATEGORY_CHOICES, BursarySpendTxn
 
@@ -136,12 +138,19 @@ def sponsor_card(application) -> dict | None:
         'spent': str(_rounded(spent)),
         'left': str(_rounded(left)),
         # ⚠ The IMPORT date, never the newest transaction date. See the module docstring.
-        # ⚠ **LOCALTIME BEFORE `.date()`, AND THAT IS TD-209 AGAIN (fixed 2026-09-11).** `newest`
-        # is a UTC timestamp; taking `.date()` off it directly showed a sponsor YESTERDAY's date
-        # for the eight hours between midnight and 08:00 Malaysian time. Found by the AI-model
-        # sprint's own suite run at 01:40 MYT, in a module that sprint did not touch — the
-        # existing test compares against `timezone.localtime()`, so it was only ever going to
-        # catch this in a third of the day.
+        #
+        # ⚠⚠ AND IT IS THE DATE IN MALAYSIA, NOT IN UTC. `imported_at` is stored UTC, so a bare
+        # `.date()` is yesterday for the eight hours between midnight MYT and 08:00 MYT — a sponsor
+        # opening the card over breakfast would be told the figures were "as at" the day before,
+        # every single morning.
+        #
+        # ⚠ **TD-209's THIRD INSTANCE, and two agents fixed it within an hour of each other on
+        # 2026-09-11** — one from the clock rolling past midnight mid-deploy, one from an unrelated
+        # sprint running the full suite at 01:40 MYT. Neither was looking for it. **`.date()` on a
+        # stored datetime in this codebase is almost always missing a `timezone.localtime()`**, and
+        # the reason it survives review is that the two agree for two-thirds of every day. The test
+        # beside this one now PINS THE CLOCK rather than comparing against `timezone.localtime()`,
+        # which is the same moving clock as the bug and could only ever catch it in the small hours.
         'as_at': timezone.localtime(newest).date().isoformat(),
         'categories': [{'code': r['code'], 'label': r['label'], 'total': str(r['total'])}
                        for r in category_rows(rows, labels)],
