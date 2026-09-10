@@ -108,6 +108,32 @@ class TestTheEthnicityWarning(TestCase):
             {'en': {**CARD['en'], 'criteria': ['Open to students of Indian descent.']}})
         self.assertTrue(out['en']['criteria'])
 
+    # ── The word-start rule (2026-09-10) ─────────────────────────────────────────────────────
+    #
+    # ⚠⚠ THIS FIRED IN PRODUCTION, ON A GIFT'S OWN TAMIL, OVER THE WORD FOR "CONSENT".
+    # சம்மதம் (consent) ends with மதம் (religion), so a plain substring scan reported a religion
+    # criterion on a bullet that said "willing to be contacted". A warning that fires on ordinary
+    # wording is the failure this module's own docstring names.
+
+    def test_THE_TAMIL_WORD_FOR_CONSENT_IS_NOT_A_RELIGION_CLAIM(self):
+        self.assertEqual(
+            apply_copy.sensitive_terms('உங்கள் விண்ணப்பம் குறித்துச் சம்மதம் தெரிவிப்பவர்கள்.'), ())
+
+    def test_but_a_real_religion_criterion_still_flags(self):
+        """The guard must narrow the match, never remove it."""
+        self.assertIn('மதம்', apply_copy.sensitive_terms('இந்த மதம் சார்ந்தவர்கள் மட்டும்.'))
+
+    def test_a_term_inside_an_english_word_is_not_a_claim(self):
+        """`race` in `brace`. The same rule, in the language most of the list is written in."""
+        self.assertEqual(apply_copy.sensitive_terms('A student wearing a back brace.'), ())
+        self.assertIn('race', apply_copy.sensitive_terms('Open to any race.'))
+
+    def test_one_word_is_reported_once(self):
+        """"Indian" begins with "india", and both are listed. Two findings for one word reads as
+        two problems."""
+        self.assertEqual(
+            apply_copy.sensitive_terms('Open to students of Indian descent'), ('indian',))
+
 
 # ── The public endpoint ──────────────────────────────────────────────────────────────────────
 

@@ -14,6 +14,16 @@
  */
 import type { ApplyCopyBlock } from './api'
 import type { Locale } from './branding'
+import en from '@/messages/en.json'
+import ms from '@/messages/ms.json'
+import ta from '@/messages/ta.json'
+
+/** The `scholarship.apply.*` block per language — the one home for the platform default. */
+const MESSAGES: Record<Locale, Record<string, string>> = {
+  en: (en as never)['scholarship']['apply'],
+  ms: (ms as never)['scholarship']['apply'],
+  ta: (ta as never)['scholarship']['apply'],
+}
 
 export interface ApplyCard {
   title: string
@@ -24,6 +34,30 @@ export interface ApplyCard {
 }
 
 export type ServedCopy = Partial<Record<Locale, ApplyCopyBlock>> | undefined | null
+
+/**
+ * The PLATFORM's standard wording for one language, read straight from the message files.
+ *
+ * ⚠ IT READS THE MESSAGE FILES BY LOCALE, NOT THROUGH `t()`, and that is the point. `t()` answers
+ * in the READER's language; the editor has to show what an applicant reading MALAY would get while
+ * an administrator works in English. Same source either way — the message files are still the one
+ * home for the platform default (this module's docstring), and nothing here duplicates a string.
+ *
+ * ⚠ THE BULLETS ARE `criteria1..N`, read until one is missing. A hard-coded four would silently
+ * drop a fifth the day somebody adds one.
+ */
+export function platformApplyCard(locale: Locale): {
+  title: string; intro: string; criteria: string[]
+} {
+  const bundle = MESSAGES[locale] ?? MESSAGES.en
+  const criteria: string[] = []
+  for (let n = 1; ; n += 1) {
+    const line = bundle[`criteria${n}`]
+    if (!line) break
+    criteria.push(line)
+  }
+  return { title: bundle.title ?? '', intro: bundle.intro ?? '', criteria }
+}
 
 /**
  * `served` is the intake endpoint's `apply_copy`; `platform` is what `t()` resolved from the

@@ -26,6 +26,7 @@ import { useT } from '@/lib/i18n'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
+import { platformApplyCard } from '@/lib/applyCopy'
 import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admin/SaveBar'
 import {
   draftApplyCopy, updateAdminProgramme,
@@ -102,6 +103,36 @@ export function englishUnsaved(draft: Draft, saved: Draft): boolean {
 }
 
 // ── Module-scope pieces (see the remount warning above) ──────────────────────────────────────
+
+/**
+ * The platform's standard wording for the language on screen, shown rather than merely named.
+ *
+ * ⚠ THE HINT PROMISED IT AND THE SCREEN DID NOT SHOW IT (owner, 2026-09-10). "Leave every box
+ * blank to use the platform's standard wording" asks somebody to choose between their own words
+ * and words they cannot read. Collapsed by default — it is reference, not the task.
+ */
+function StandardWording({ locale, t }: {
+  locale: Loc
+  t: (k: string, p?: Record<string, string>) => string
+}) {
+  const card = platformApplyCard(locale)
+  if (!card.title) return null
+  return (
+    <details className="mb-5 rounded-lg border border-ground-200 bg-ground-50 px-4 py-3"
+      data-testid="standard-wording">
+      <summary className="cursor-pointer text-sm font-medium text-ground-700">
+        {t('admin.applyCopy.standardHeading')}
+      </summary>
+      <div className="mt-3 space-y-2 text-sm text-ground-700">
+        <p className="font-semibold">{card.title}</p>
+        <p>{card.intro}</p>
+        <ul className="list-disc pl-5 space-y-1">
+          {card.criteria.map((line, i) => <li key={i}>{line}</li>)}
+        </ul>
+      </div>
+    </details>
+  )
+}
 
 function ConfirmDialog({ ask, languages, busy, onCancel, onConfirm, t }: {
   ask: Exclude<Ask, null>
@@ -322,7 +353,28 @@ export default function ApplyCopyTab() {
 
   return (
     <div data-testid="apply-copy-tab">
-      <p className="text-sm text-ground-600 mb-4">{t('admin.applyCopy.hint')}</p>
+      {/* ⚠⚠ EVERY STANDING INSTRUCTION SITS HERE, ONCE (owner, 2026-09-10). They were scattered —
+          one under the tab strip, one per language tab, one under the criteria, one beside the
+          translate button — so a reader met the same guidance three times and read it none. Do not
+          push a sentence back down beside the control it governs. */}
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div className="text-sm text-ground-600 space-y-1 max-w-3xl" data-testid="apply-copy-hint">
+          <p>{t('admin.applyCopy.hint')}</p>
+          <p>{t('admin.applyCopy.hintBlank')}</p>
+          <p>{t('admin.applyCopy.hintExact')}</p>
+          <p>{t('admin.applyCopy.hintTranslate')}</p>
+        </div>
+        {/* ⚠ ONCE, ON ENGLISH, AT THE TOP — never on the other tabs (owner, 2026-09-10). It clears
+            EVERY language, so offering it from a Malay tab invites a reader to destroy work they
+            cannot see. English is where the gift's wording begins, so it is where it ends. */}
+        {configured && lang === 'en' && (
+          <button type="button" className={SAVE_BAR_SECONDARY} disabled={busy}
+            data-testid="use-default"
+            onClick={() => setAsk('clear')}>
+            {t('admin.applyCopy.clearAll')}
+          </button>
+        )}
+      </div>
 
       {/* ⚠ ADVISORY, NEVER A REFUSAL (owner ruling 2026-09-09, option A). MyNadi's s44(6) tax
           status requires its programme not to discriminate by race — but that constraint follows
@@ -344,25 +396,23 @@ export default function ApplyCopyTab() {
 
       <LangTabs active={lang} onPick={setLang} t={t} />
 
+      {/* ⚠ THE ONLY THING THAT MAY SIT BESIDE A CONTROL IS THE REASON IT IS ASLEEP — that is
+          particular to this moment, not standing guidance, so it belongs nowhere else. */}
       {lang !== 'en' && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-ground-500">{t('admin.applyCopy.fallbackNote')}</p>
-          {/* ⚠ "DRAFT", NOT "TRANSLATE" — the word sets the expectation the feature depends on:
-              a person reads every line before any of it can be saved. */}
-          <div className="text-right">
-            <button type="button" className={SAVE_BAR_SECONDARY}
-              disabled={busy || Boolean(draftBlocked)}
-              title={draftBlocked || undefined}
-              data-testid="draft-from-english"
-              onClick={() => (targetHasText ? setAsk('overwrite') : runDraft(lang))}>
-              {busy ? t('admin.applyCopy.drafting') : t('admin.applyCopy.draft')}
-            </button>
-            <p className="mt-1 text-xs text-ground-500 max-w-xs" data-testid="draft-hint">
-              {draftBlocked || t('admin.applyCopy.draftHint')}
-            </p>
-          </div>
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+          {draftBlocked && (
+            <p className="text-xs text-ground-500" data-testid="draft-hint">{draftBlocked}</p>
+          )}
+          <button type="button" className={SAVE_BAR_SECONDARY}
+            disabled={busy || Boolean(draftBlocked)}
+            data-testid="draft-from-english"
+            onClick={() => (targetHasText ? setAsk('overwrite') : runDraft(lang))}>
+            {busy ? t('admin.applyCopy.drafting') : t('admin.applyCopy.draft')}
+          </button>
         </div>
       )}
+
+      <StandardWording locale={lang} t={t} />
 
       <div className="space-y-5">
         <div>
@@ -386,10 +436,10 @@ export default function ApplyCopyTab() {
             {t('admin.applyCopy.field.criteria')}
           </label>
           <Bullets value={block.criteria} onChange={(criteria) => set({ criteria })} t={t} />
-          {/* ⚠ THE COST OF THE DIVERGENCE, SAID OUT LOUD. The owner accepted that the advertised
-              bar may differ from the Rules tab; the tab has to name what that costs, or the next
+          {/* ⚠ THE COST OF THE DIVERGENCE IS STILL SAID — it moved to the instruction block at the
+              top (`hintExact`), it was not dropped. The owner accepted that the advertised bar may
+              differ from the Rules tab, and the tab has to name what that costs, or the next
               org_admin discovers it through a student who was turned down automatically. */}
-          <p className="text-sm text-ground-600 mt-3">{t('admin.applyCopy.looserWarning')}</p>
         </div>
       </div>
 
@@ -403,18 +453,10 @@ export default function ApplyCopyTab() {
                   : null
         }
       >
-        {/* ⚠⚠ THIS DELETES EVERY LANGUAGE, AND IT USED TO DO SO ON ONE CLICK, FROM A TAB THAT
-            SHOWS ONLY ONE. It was labelled by its OUTCOME ("Use the standard wording"), which
-            reads as a peer of Save rather than as a delete, and it appears whenever ENGLISH is
-            saved — so it sat, live and unlabelled, beside an empty Malay form whose Cancel-less
-            press would take the English with it. Named for the ACTION now, and it asks first. */}
-        {configured && (
-          <button type="button" className={SAVE_BAR_SECONDARY} disabled={busy}
-            data-testid="use-default"
-            onClick={() => setAsk('clear')}>
-            {t('admin.applyCopy.clearAll')}
-          </button>
-        )}
+        {/* ⚠⚠ THE CLEAR CONTROL IS NOT IN THIS BAR, AND MUST NOT COME BACK. It deletes EVERY
+            language, so beside Save it read as a peer of Save — a second way to submit — and it
+            appeared on whichever language tab the reader happened to be on. It now sits ONCE, at
+            the top of the ENGLISH tab, behind a confirm that names what will be lost. */}
         <button type="button" className={SAVE_BAR_PRIMARY} disabled={busy || !dirty}
           title={dirty ? undefined : t('common.nothingToSave')}
           data-testid="copy-save"

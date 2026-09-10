@@ -13,6 +13,7 @@
  */
 import { toDraft, toPayload, writtenLocales, englishUnsaved } from '@/components/admin/ApplyCopyTab'
 import { draftApplyCopy } from '../admin-api'
+import { platformApplyCard } from '../applyCopy'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
@@ -50,12 +51,73 @@ describe('the button is named for what it DOES', () => {
     expect(String(bundles.en.clearBody).toLowerCase()).toContain('every language')
   })
 
-  it('the drafting control says "draft", never "translate"', () => {
-    // The word sets the expectation the whole feature depends on: a person reads it before it
-    // can reach anybody.
-    const label = String(bundles.en.draft).toLowerCase()
-    expect(label).toContain('draft')
-    expect(label).not.toContain('translate')
+  // ⚠ THIS TEST WAS INVERTED ON 2026-09-10, DELIBERATELY, ON THE OWNER'S RULING. It used to
+  // require "draft" and forbid "translate", because the word carried the expectation the feature
+  // depends on: a person reads every line before any of it can be saved. The owner asked for
+  // "Translate from English" in plain terms, so the label is theirs — and the expectation moved
+  // rather than being dropped: `hintTranslate` now states, in the standing instructions, that this
+  // produces a MACHINE TRANSLATION that must be reviewed before saving. That sentence is what the
+  // assertions below protect.
+  it('the control says "translate", as the owner asked', () => {
+    expect(String(bundles.en.draft).toLowerCase()).toContain('translate')
+  })
+
+  it('⚠ and the standing instructions still say a machine wrote it, and must be checked', () => {
+    const note = String(bundles.en.hintTranslate).toLowerCase()
+    expect(note).toContain('machine')
+    expect(note).toMatch(/review|check/)
+  })
+
+  it.each(['en', 'ms', 'ta'])('%s says a machine produced it', (loc) => {
+    // Every language, because the reader of the Tamil tab is the one being asked to check Tamil.
+    expect(String(bundles[loc].hintTranslate).length).toBeGreaterThan(20)
+    expect(bundles[loc]).toHaveProperty('drafted')
+  })
+})
+
+describe('the instructions live in one place', () => {
+  // ⚠ ABSENCE, AGAIN — the owner's report was that guidance repeated on every language tab. The
+  // question is not whether the top block exists; it is whether the scattered sentences are GONE.
+  const bundles: Record<string, Record<string, unknown>> = {
+    en: (en as never)['admin']['applyCopy'],
+    ms: (ms as never)['admin']['applyCopy'],
+    ta: (ta as never)['admin']['applyCopy'],
+  }
+
+  it.each(['en', 'ms', 'ta'])('%s no longer carries the per-tab sentences', (loc) => {
+    expect(bundles[loc]).not.toHaveProperty('fallbackNote')   // was under every language tab
+    expect(bundles[loc]).not.toHaveProperty('looserWarning')  // was under the criteria
+    expect(bundles[loc]).not.toHaveProperty('draftHint')      // was beside the button
+  })
+
+  it.each(['en', 'ms', 'ta'])('%s carries all four standing instructions', (loc) => {
+    for (const k of ['hint', 'hintBlank', 'hintExact', 'hintTranslate']) {
+      expect(String(bundles[loc][k] ?? '').length).toBeGreaterThan(20)
+    }
+  })
+
+  it('the blank-language rule still states BOTH outcomes', () => {
+    // Losing either half would make it a lie: blank means the PLATFORM default, unless English is
+    // written, in which case ms/ta readers get the gift's English.
+    const s = String(bundles.en.hintBlank).toLowerCase()
+    expect(s).toContain('standard wording')
+    expect(s).toContain('english')
+  })
+})
+
+describe('the standard wording is shown, not just named', () => {
+  it('reads the platform default for the language on screen, not the reader’s', () => {
+    // An administrator working in English must be able to see what a MALAY applicant would read.
+    const enCard = platformApplyCard('en')
+    const taCard = platformApplyCard('ta')
+    expect(enCard.title).not.toBe(taCard.title)
+    expect(enCard.criteria.length).toBeGreaterThan(0)
+    expect(taCard.criteria.length).toBe(enCard.criteria.length)
+  })
+
+  it('⚠ counts the bullets rather than assuming four', () => {
+    // A hard-coded four would silently drop a fifth the day somebody adds one.
+    expect(platformApplyCard('ms').criteria.every(l => l.trim().length > 0)).toBe(true)
   })
 })
 
