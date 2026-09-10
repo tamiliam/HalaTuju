@@ -552,10 +552,21 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-10, after the matriculation offer jurusan fix)
 
-**⚠⚠ BUILT AND GATED, *NOT DEPLOYED*.** Branch **`fix/matric-offer-jurusan`**, worktree
-`.worktrees/matric-offer`. **api ONLY — no web file changed.** **NO MIGRATION, NO ENV VAR.**
-⚠ **THERE IS A DATA STEP: four documents need a cockpit Re-run AFTER the deploy** (see below).
-A push is a REQUEST to deploy — wait for the build and read its status before saying deployed.
+**✅ DEPLOYED 2026-09-10.** `main` at **`fdc85786`**; Cloud Build **SUCCESS** on `fdc8578`
+— **waited on the push's OWN build ID** (`2cdaf838…`). Serving **halatuju-api-01020-jvk** (read from
+`status.latestReadyRevisionName`). Site 200; **no api ERROR logs on the new revision**.
+**ONE build fired, not two** — the web trigger correctly stayed quiet, and **halatuju-web-00873-85w
+is unchanged**: this is api-only, `git diff` was two Python files and five docs.
+
+**⚠ THE DEPLOY IS VERIFIED; THE FIX'S EFFECT IS NOT, AND CANNOT BE UNTIL A DOCUMENT IS RE-READ.**
+A server-side parser leaves nothing in a JS bundle to grep, and `PARSER_VERSION` is only stamped
+when a letter is actually parsed. What is proven: the build ran on the right SHA and a new revision
+is serving cleanly. What is NOT yet proven: that a re-read produces `stream` and a sane programme.
+**That evidence only arrives with the Re-run below.** Do not record this fix as confirmed working
+until then.
+
+Was branch `fix/matric-offer-jurusan`, worktree `.worktrees/matric-offer`. **NO MIGRATION, NO ENV
+VAR.** ⚠ **THERE IS A DATA STEP: four documents need a cockpit Re-run** (see below).
 
 Gates: pytest **6166** (baseline 6161 + 5) · `makemigrations --check` clean. The web gates were NOT
 re-run and did not need to be — `git diff --stat` shows two Python files. **Two bite-checks, both
