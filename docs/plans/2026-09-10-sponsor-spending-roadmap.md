@@ -94,18 +94,41 @@ Read at sprint-start 2026-09-10. Each names how it is being obeyed, not merely n
 
 ---
 
-## S2 — Fetch the reports from Drive, weekly
+## S2 — Fetch the reports from Drive, when they arrive
 
-**Goal.** The same ingest, fed by Drive instead of a path, on a schedule.
+**⚠⚠ THE UPLOAD IS A MANUAL STEP AND ITS TIMING IS NOT DEPENDABLE — owner, 2026-09-10.** Vircle
+publishes into Data Studio; a BrightPath officer extracts the week and uploads it by hand. *"It may
+not happen exactly at the same time every week without fail. It may not even happen on the same day
+of the week."*
+
+**THEREFORE THE CALENDAR IS NOT THE TRIGGER — A NEW FILE IS.** A weekly cron pinned to a day would
+sit idle when the officer is late and leave a Thursday upload unread until the following Monday.
+The job runs **daily**, lists the folder, and acts **only on files it has not already ingested**
+(tracked by Drive file id + modified time). A day with no new file does nothing at all: no work, no
+log noise, no email. This also makes a two-uploads-in-one-day week, or a fortnight's catch-up,
+ordinary rather than exceptional.
+
+⚠ **This is the same reasoning as the 2026-07-26 partner-milestone ruling** (*"a sweep over current
+state, not the edge that entered it"*) — the difference being that here the edge is outside our
+system entirely and cannot notify us.
+
+**Goal.** The same ingest, fed by Drive, reacting to new files.
 
 **Scope.**
 - `VIRCLE_SPENDING_FOLDER` setting (default matching the live shape — see brief §3).
 - `sheets.py`: list a folder's files + download one, reusing `_drive_for_upload` + `_find_folder_path`
   and the already-granted `drive` scope.
-- `--drive` mode on the command; register in `CronRunView.JOBS`; a weekly Cloud Scheduler job.
+- `--drive` mode on the command; a seen-files record so a re-run is a no-op; register in
+  `CronRunView.JOBS`; a **daily** Cloud Scheduler job.
+- **A staleness nudge, ONE per quiet spell** — if no new file has landed for
+  `SPENDING_REPORT_QUIET_DAYS` (start at 14, env-overridable), email once and then stay silent
+  until something arrives. ⚠ **A manual step that is forgotten fails silently, and the absence of a
+  file is indistinguishable from a quiet week** — this is the only signal that tells the two apart.
+  Once per spell, never a running reminder, or it becomes the all-clear email the owner rejected.
 
 **Acceptance.** A `--report` run on the LIVE service lists the eight files and re-derives the same
-totals. Ingest is idempotent across runs. A missing folder logs and does nothing.
+totals. Running twice ingests nothing the second time. A missing folder logs and does nothing.
+**Coverage is reported from the `transaction_date` values, never from the filenames** (brief §0b).
 
 **⚠ EXTERNAL BLOCKER: this cannot be verified locally.** The proof is a live report-mode run.
 **⚠ Do not let a Drive failure break anything** — best-effort, the same contract as the guide fetch.
@@ -147,7 +170,38 @@ rung. Reuses the existing admin gates.
 **Acceptance.** Correcting a merchant changes the totals on a re-read and is never overwritten.
 Person-to-person transactions are flagged. Nothing here is reachable by a sponsor.
 
-**Complexity: MEDIUM.** ~9 files. **No migration.**
+### S4 — the summary report written back to Drive (owner, 2026-09-10)
+
+> *"Instead of an email, or perhaps in addition to an email, Gemini creates a summary report … and
+> saves it in the same folder."*
+
+**Both, because they do different jobs.** An **alert is PUSH** — nobody discovers a broken import by
+opening a folder, so a fault still emails. A **summary is PULL** — it belongs where the data lives,
+next to the file it describes, for whoever goes looking. Neither replaces the other.
+
+**Written after every successful ingest of a new file**, not on a schedule — same trigger as S2.
+
+**⚠ WE COMPUTE THE NUMBERS; GEMINI ONLY WRITES THE PROSE AROUND THEM.** This is the house pattern
+already proven in `verdict_narrative.py` (*"the LLM only narrates the deterministic band … forbidden
+to invent/change the band"*). Every figure in the report — totals, category splits, per-student
+lines, coverage dates — is computed in Python and handed over. Gemini may not calculate, may not
+add a figure, and may not draw a conclusion the numbers do not carry.
+
+**⚠ THE REPORT IS INTERNAL, SO IT MAY NAME MERCHANTS — and it must still never leave that folder.**
+It is written for the officer and the owner: merchant names, unknown wallets and this week's AI
+category decisions are exactly what makes it useful. **It is not the sponsor's document and no part
+of it is reused on the sponsor card.**
+
+**⚠⚠ NEVER WRITE OUR OWN OUTPUT WHERE THE READER WILL PICK IT UP AS AN INPUT.** A summary dropped
+beside the Vircle exports is a file the next ingest would try to parse as a report. Two independent
+guards, both required: write into a **subfolder** (`06 Student Spending/Summaries/`), **and** have
+the reader accept only filenames matching the Vircle export pattern. One guard is a convention; two
+is a design.
+
+Reuses `sheets.file_csv_to_folder`'s shape (proven by the payments CSV and the activation CSV).
+Metered through `usage_context`.
+
+**Complexity: MEDIUM.** ~14 files with the summary folded in. **No migration.**
 
 ---
 
