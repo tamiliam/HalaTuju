@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## Which AI version are we running, and which actually ran - 2026-09-11
+
+The owner asked whether an organisation could pick its own AI version per task, to track versions
+and upgrade them periodically. The survey found the tracking half was **already collected and
+never read**: `UsageEvent.model` is written on every AI call, and `usage.monthly_usage` grouped by
+organisation and service only. Owner chose to make it VISIBLE and not yet selectable.
+
+**What the survey found**, and none of it was on a screen anywhere:
+
+- **19 AI jobs, but only TWO shared doors** — `vision._call_gemini_json` (structured reads) and
+  `profile_engine._call_gemini_text` (prose). Six jobs bypass both with their own client and
+  their own setting; two batch commands hardcode a model outright.
+- **Only two models have ever run on production** — `gemini-2.5-flash` (353 calls) and
+  `gemini-2.5-pro` (72), of 1,101 metered events since 2026-07-24. The fallbacks in the code
+  (`gemini-2.5-flash-lite`, `gemini-2.0-flash`, `gpt-4o-mini`) have **never fired once**, and no
+  `*_MODEL` env var is set on the live service.
+
+**What shipped:**
+
+- **`halatuju/ai_registry.py` — the upgrade checklist.** Every AI job with the model it is set to.
+  ⚠ **It RESOLVES and never records:** an entry names a Django setting, a cascade or a literal, and
+  reads that source live. A stored copy would be wrong the first time somebody moved a setting.
+- **⚠ AND IT CANNOT GO STALE.** `test_ai_registry.py` COUNTS the AI seams in the codebase and fails
+  the build if a job meters a model without appearing on the list. A guard that greps for a module
+  name is satisfied by the import line; this one is not.
+- **The billing page names which AI version did the work**, per service, with call counts and the
+  date each was last used. Rendered under the service rather than as a column: only two of the five
+  services have a model, and a column of dashes reads as data we failed to fetch.
+- **Grouped BY MODEL on the super view**, because the question an upgrade asks is not "what does
+  this job use" (19 answers) but "if this version is replaced, what must I touch" (one group).
+  Two jobs are flagged **needs a deploy** (hardcoded) and one **falls back to a different
+  provider** — the three rows an upgrade pass would otherwise walk straight past.
+- **The job list is SUPER-ONLY.** Which model a job uses is a platform fact a tenant cannot change.
+  A tenant's own usage split by model is theirs and stays.
+
+**⚠ AND A LIVE BUG FOUND BY THIS SPRINT'S OWN SUITE, IN A MODULE IT DOES NOT TOUCH.** The sponsor
+spending card's `as_at` took `.date()` off a UTC timestamp, so between midnight and 08:00 Malaysian
+time **a sponsor was shown yesterday's date** on a report imported today. TD-209 for the third
+time — and the existing test compared against `timezone.localtime()`, the same moving clock, so it
+could only ever catch it in a third of the day. Fixed, with a replacement test that PINS the clock.
+
++16 pytest, +9 jest, all bite-checked. No migration; no AI behaviour changed.
+
+
 ## 2026-09-10 — A matching school is ticked even when the pathway question is still open
 
 Owner, seeing #33 and #120 side by side: *"I wonder if we could only tick the institution, as they

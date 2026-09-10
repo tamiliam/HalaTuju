@@ -159,14 +159,42 @@ class TestBillingUsageEndpoint(TestCase):
     # ── exact-key snapshots (the allowlist contract, per role) ────────────────
     def test_super_payload_exact_keys(self):
         data = self._get('super-uid').json()
-        self.assertEqual(set(data), {'month', 'months', 'can_see_platform', 'organisations'})
+        # `ai_jobs` + `ai_models_in_use` are SUPER-ONLY (2026-09-11) — the job → model list is a
+        # platform fact. `test_and_NEVER_an_org_admin` pins the other side of that.
+        self.assertEqual(set(data), {'month', 'months', 'can_see_platform', 'organisations',
+                                     'ai_jobs', 'ai_models_in_use'})
         block = data['organisations'][0]
         self.assertEqual(set(block), {'organisation_id', 'organisation', 'is_platform',
                                       'services', 'totals', 'storage_bytes'})
         self.assertEqual(set(block['totals']),
                          {'events', 'quantity', 'input_tokens', 'output_tokens'})
         svc = next(s for o in data['organisations'] for s in o['services'])
-        self.assertEqual(set(svc), {'service', 'events', 'quantity', 'input_tokens', 'output_tokens'})
+        # `models` joined the allowlist on 2026-09-11: which AI VERSION did the work. It was
+        # already recorded on every call and never read back. Still no prices.
+        self.assertEqual(set(svc), {'service', 'events', 'quantity', 'input_tokens',
+                                    'output_tokens', 'models'})
+
+    def test_the_job_model_list_reaches_a_super(self):
+        """The upgrade checklist: which AI version each job is set to."""
+        data = self._get('super-uid').json()
+        jobs = {j['key']: j for j in data['ai_jobs']}
+        self.assertIn('doc_read', jobs)
+        self.assertTrue(jobs['doc_read']['model'])          # resolved, never blank
+        self.assertIn('gemini-2.5-pro', data['ai_models_in_use'])
+
+    def test_and_NEVER_an_org_admin(self):
+        """⚠ Which model a job uses is a PLATFORM fact a tenant cannot change. Their own usage
+        split by model is theirs and stays; the list of jobs is not."""
+        data = self._get('oa-a').json()
+        self.assertNotIn('ai_jobs', data)
+        self.assertNotIn('ai_models_in_use', data)
+
+    def test_but_an_org_admin_DOES_see_which_version_did_their_work(self):
+        # Drive over the bump: hiding the whole subject from a tenant would pass the test above
+        # and take away the half that is genuinely theirs.
+        data = self._get('oa-a').json()
+        svc = next(s for o in data['organisations'] for s in o['services'])
+        self.assertIn('models', svc)
 
     def test_org_admin_payload_exact_keys(self):
         data = self._get('oa-a').json()

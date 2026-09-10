@@ -4,7 +4,9 @@
  * Node-testable, no React, no i18n objects: label KEYS only (the page resolves them via
  * t()). Units and token counts ONLY — there are NO prices anywhere in v1.
  */
-import type { BillingOrgBlock, BillingServiceRow } from '@/lib/admin-api'
+import type {
+  AiJobRow, BillingModelRow, BillingOrgBlock, BillingServiceRow,
+} from '@/lib/admin-api'
 
 // The metered services, in the order the breakdown table renders them. Each maps to an
 // i18n label key admin.billing.service.<service>. (SMS verification is NOT metered — it is
@@ -66,4 +68,48 @@ export function formatMonth(month: string): string {
   const idx = parseInt(m[2], 10) - 1
   if (idx < 0 || idx > 11) return month
   return `${names[idx]} ${m[1]}`
+}
+
+// ── Which AI version did the work, and which is each job set to (2026-09-11) ───────────────
+
+/** Models a service ran, busiest first, then by name so the order never wobbles between loads.
+ *  Returns a new array; never mutates the input. An empty list means the service HAS no model
+ *  (email, WhatsApp, Cloud Vision OCR) — the caller renders nothing, never "unknown". */
+export function orderedModels(row: BillingServiceRow): BillingModelRow[] {
+  const rows = row?.models ? [...row.models] : []
+  return rows.sort((a, b) => (b.events - a.events) || a.model.localeCompare(b.model))
+}
+
+/** Group the AI jobs by the model they are SET TO, busiest group first.
+ *
+ * ⚠ THIS IS THE SHAPE AN UPGRADE IS PLANNED IN. Reading nineteen rows one at a time answers
+ * "what does this job use"; the question actually being asked is the other way round — "if
+ * gemini-2.5-flash is replaced, what do I have to touch?" — and that is one group.
+ */
+export function jobsByModel(jobs: AiJobRow[]): Array<{ model: string; jobs: AiJobRow[] }> {
+  const groups = new Map<string, AiJobRow[]>()
+  for (const j of jobs || []) {
+    const list = groups.get(j.model)
+    if (list) list.push(j)
+    else groups.set(j.model, [j])
+  }
+  // `Array.from`, not a spread: this project's tsc target refuses to iterate a Map directly
+  // (TS2802), and the repo has 24 of those errors already without adding a 25th.
+  return Array.from(groups.entries())
+    .map(([model, list]) => ({ model, jobs: list }))
+    .sort((a, b) => (b.jobs.length - a.jobs.length) || a.model.localeCompare(b.model))
+}
+
+/** The jobs whose model is written into the source, so changing it needs a deploy rather than a
+ *  setting. ⚠ Surfaced, not hidden: on an upgrade these are the ones that do NOT move by
+ *  themselves, which is the single most useful thing this list can tell its reader. */
+export function fixedJobs(jobs: AiJobRow[]): AiJobRow[] {
+  return (jobs || []).filter((j) => j.fixed)
+}
+
+/** Jobs that fall through to a DIFFERENT PROVIDER when their own runs out of options — a second
+ *  key and a second bill. Exactly one today, and it has never fired, which is why an upgrade pass
+ *  would otherwise walk straight past it. */
+export function secondProviderJobs(jobs: AiJobRow[]): AiJobRow[] {
+  return (jobs || []).filter((j) => !!j.fallback_provider)
 }

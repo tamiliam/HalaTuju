@@ -37,6 +37,8 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 
+from django.utils import timezone
+
 logger = logging.getLogger(__name__)
 
 _ZERO = Decimal('0.00')
@@ -134,7 +136,13 @@ def sponsor_card(application) -> dict | None:
         'spent': str(_rounded(spent)),
         'left': str(_rounded(left)),
         # ⚠ The IMPORT date, never the newest transaction date. See the module docstring.
-        'as_at': newest.date().isoformat(),
+        # ⚠ **LOCALTIME BEFORE `.date()`, AND THAT IS TD-209 AGAIN (fixed 2026-09-11).** `newest`
+        # is a UTC timestamp; taking `.date()` off it directly showed a sponsor YESTERDAY's date
+        # for the eight hours between midnight and 08:00 Malaysian time. Found by the AI-model
+        # sprint's own suite run at 01:40 MYT, in a module that sprint did not touch — the
+        # existing test compares against `timezone.localtime()`, so it was only ever going to
+        # catch this in a third of the day.
+        'as_at': timezone.localtime(newest).date().isoformat(),
         'categories': [{'code': r['code'], 'label': r['label'], 'total': str(r['total'])}
                        for r in category_rows(rows, labels)],
     }

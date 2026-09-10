@@ -219,6 +219,26 @@ class TestTheAsAtStampIsTheImportNotThePurchase(TestCase):
         card = sp.sponsor_card(app)
         self.assertNotEqual(card['as_at'], '2026-07-04')
 
+    def test_it_reads_the_stamp_in_MALAYSIAN_time_not_UTC(self):
+        """⚠ A REAL BUG, LIVE, FOR EIGHT HOURS A DAY (fixed 2026-09-11).
+
+        `imported_at` is stored UTC and `as_at` took `.date()` straight off it, so between
+        midnight and 08:00 in Malaysia a sponsor was shown YESTERDAY's date on a report imported
+        today. TD-209 for the third time.
+
+        ⚠ **AND THE TEST BELOW COULD ONLY EVER CATCH IT IN A THIRD OF THE DAY**, because it
+        compares against `timezone.localtime()` — the same moving clock. It went green on every CI
+        run and failed at 01:40 MYT during an unrelated sprint's suite. This one PINS THE CLOCK
+        instead: an import at 22:00 UTC is already tomorrow in Malaysia, and the answer must say
+        so whatever time the test itself runs.
+        """
+        app = make_app()
+        txn(app, 'A SHOP', 10, 'food', when=datetime.date(2026, 7, 4))
+        # 2026-07-04 22:00 UTC == 2026-07-05 06:00 in Malaysia (UTC+8).
+        utc_evening = datetime.datetime(2026, 7, 4, 22, 0, tzinfo=datetime.timezone.utc)
+        BursarySpendTxn.objects.filter(application=app).update(imported_at=utc_evening)
+        self.assertEqual(sp.sponsor_card(app)['as_at'], '2026-07-05')
+
     def test_it_is_the_date_of_the_newest_import(self):
         from django.utils import timezone
         app = make_app()

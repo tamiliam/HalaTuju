@@ -2264,6 +2264,45 @@ export interface BillingServiceRow {
   quantity: number
   input_tokens: number
   output_tokens: number
+  /** Which AI versions did this service's work. Empty for a non-AI service. */
+  models: BillingModelRow[]
+}
+
+/** One AI version's share of a service. ⚠ Present ONLY on an AI service (gemini, openai); email,
+ *  WhatsApp and Cloud Vision OCR record no model because they have none, so their `models` is an
+ *  EMPTY LIST — never render that as "unknown". */
+export interface BillingModelRow {
+  model: string
+  events: number
+  input_tokens: number
+  output_tokens: number
+  /** Malaysian dates ('YYYY-MM-DD'), matching how the month itself is grouped. */
+  first_seen: string | null
+  last_seen: string | null
+}
+
+/** One AI job and the model it is SET TO — the upgrade checklist. ⚠ SUPER-ONLY: which model a job
+ *  uses is a platform fact a tenant cannot change (owner, 2026-09-11). Resolved live on the
+ *  server, never stored, so it cannot disagree with the engine. */
+export interface AiJobRow {
+  key: string
+  label: string
+  module: string
+  /** Which shared door it goes through; two of them carry most of the platform. */
+  seam: string
+  provider: string
+  /** 'setting' | 'cascade' | 'literal' — WHY the model is what it is. */
+  source: string
+  /** The setting name, cascade name, or the literal model itself. */
+  source_name: string
+  /** Written into the source: changing it needs a deploy, not a setting. */
+  fixed: boolean
+  model: string
+  /** The rest of the cascade, in order. Never repeats `model`. */
+  fallbacks: string[]
+  /** The counsellor report alone falls through to a SECOND PROVIDER. Blank everywhere else. */
+  fallback_provider: string
+  fallback_model: string
 }
 
 export interface BillingOrgBlock {
@@ -2280,6 +2319,10 @@ export interface BillingUsagePayload {
   months: string[]
   can_see_platform: boolean
   organisations: BillingOrgBlock[]
+  /** SUPER-ONLY, absent for an org_admin: every AI job and the model it is set to. */
+  ai_jobs?: AiJobRow[]
+  /** SUPER-ONLY: every distinct model any job could reach today — the set an upgrade covers. */
+  ai_models_in_use?: string[]
 }
 
 /** The super/org_admin usage readout. 404s while BILLING_USAGE_ENABLED is off (dark ship) →

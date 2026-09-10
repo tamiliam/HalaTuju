@@ -219,6 +219,80 @@ class TestAggregation(TestCase):
         self.assertEqual(set(block), {'organisation_id', 'organisation', 'is_platform',
                                       'services', 'totals', 'storage_bytes'})
         self.assertEqual(set(block['services'][0]),
-                         {'service', 'events', 'quantity', 'input_tokens', 'output_tokens'})
+                         {'service', 'events', 'quantity', 'input_tokens', 'output_tokens',
+                          # 2026-09-11: which AI version did the work. See `_model_row`.
+                          'models'})
         self.assertEqual(set(block['totals']),
                          {'events', 'quantity', 'input_tokens', 'output_tokens'})
+
+
+class TestWhichAiVersionDidTheWork(TestCase):
+    """2026-09-11. The model name was written on every AI call from the start and nothing read it
+    back — `monthly_usage` grouped by organisation and service only. The owner asked which AI
+    versions we run and how to track them for upgrades; this is the "what actually ran" half.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.month = timezone.localtime().strftime('%Y-%m')
+        cls.a = PartnerOrganisation.objects.create(code='m1', name='Model Org')
+        cls.b = PartnerOrganisation.objects.create(code='m2', name='Other Org')
+        # Org A ran two versions, one of them twice.
+        UsageEvent.objects.create(organisation=cls.a, service='gemini', source='doc_extract',
+                                  model='gemini-2.5-flash', input_tokens=100, output_tokens=40)
+        UsageEvent.objects.create(organisation=cls.a, service='gemini', source='doc_extract',
+                                  model='gemini-2.5-flash', input_tokens=60, output_tokens=10)
+        UsageEvent.objects.create(organisation=cls.a, service='gemini', source='contract_quiz',
+                                  model='gemini-2.5-pro', input_tokens=200, output_tokens=80)
+        # Services with NO model of their own — they must not invent one.
+        UsageEvent.objects.create(organisation=cls.a, service='email', source='send_ack')
+        UsageEvent.objects.create(organisation=cls.a, service='vision_ocr', source='ocr')
+        # Another organisation, another version. The fence has to hold over this new grouping too.
+        UsageEvent.objects.create(organisation=cls.b, service='gemini', source='doc_extract',
+                                  model='gemini-2.0-flash', input_tokens=10, output_tokens=5)
+
+    def _gemini(self, payload, org):
+        block = next(b for b in payload['organisations'] if b['organisation_id'] == org.id)
+        return next(s for s in block['services'] if s['service'] == 'gemini')
+
+    def test_it_names_each_version_and_counts_its_share(self):
+        row = self._gemini(usage.monthly_usage(self.month, include_platform=True), self.a)
+        by_model = {m['model']: m for m in row['models']}
+        self.assertEqual(set(by_model), {'gemini-2.5-flash', 'gemini-2.5-pro'})
+        self.assertEqual(by_model['gemini-2.5-flash']['events'], 2)
+        self.assertEqual(by_model['gemini-2.5-flash']['input_tokens'], 160)
+        self.assertEqual(by_model['gemini-2.5-pro']['events'], 1)
+
+    def test_the_service_total_still_covers_every_version(self):
+        # Drive over the bump: a breakdown that silently dropped a model would leave the parts
+        # short of the whole, and nothing else on the screen would say so.
+        row = self._gemini(usage.monthly_usage(self.month, include_platform=True), self.a)
+        self.assertEqual(row['events'], sum(m['events'] for m in row['models']))
+        self.assertEqual(row['input_tokens'], sum(m['input_tokens'] for m in row['models']))
+
+    def test_it_says_WHEN_a_version_was_last_used(self):
+        # The upgrade question is "are we still running the old one", which a date settles.
+        row = self._gemini(usage.monthly_usage(self.month, include_platform=True), self.a)
+        m = next(m for m in row['models'] if m['model'] == 'gemini-2.5-pro')
+        self.assertEqual(m['last_seen'], timezone.localtime().date().isoformat())
+        self.assertEqual(m['first_seen'], m['last_seen'])
+
+    def test_a_service_with_no_model_gets_an_EMPTY_list_not_an_unknown_row(self):
+        # ⚠ Email, WhatsApp and Cloud Vision OCR record no model because they have none. A row
+        # reading "unknown" would invent a mystery out of three services working as designed.
+        payload = usage.monthly_usage(self.month, include_platform=True)
+        block = next(b for b in payload['organisations'] if b['organisation_id'] == self.a.id)
+        for name in ('email', 'vision_ocr'):
+            with self.subTest(service=name):
+                row = next(s for s in block['services'] if s['service'] == name)
+                self.assertEqual(row['models'], [])
+
+    def test_ANOTHER_ORGANISATIONS_VERSIONS_ARE_NEVER_VISIBLE(self):
+        # ⚠ THE FENCE, over the new grouping. The model pass runs over the SAME filtered queryset
+        # as the totals, so it inherits the restriction rather than re-deriving it — but a second
+        # query is exactly where a fence gets forgotten, so it is asserted rather than assumed.
+        payload = usage.monthly_usage(self.month, restrict_org_id=self.a.id)
+        seen = {m['model'] for b in payload['organisations']
+                for s in b['services'] for m in s['models']}
+        self.assertEqual(seen, {'gemini-2.5-flash', 'gemini-2.5-pro'})
+        self.assertNotIn('gemini-2.0-flash', seen)     # Beta Org's, and only Beta Org's
