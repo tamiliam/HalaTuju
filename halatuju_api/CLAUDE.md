@@ -552,6 +552,10 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-11, after AI model visibility)
 
+**✅ SHIPPED AND DEPLOYED 2026-09-11.** `main` at **`a87028a7`**; BOTH Cloud Builds SUCCESS;
+serving **halatuju-api-01026-tdc** / **halatuju-web-00876-z4d** (read from
+`status.latestReadyRevisionName`, and waited on BY BUILD ID). Site 200; no api ERROR logs since.
+
 **WHAT SHIPPED.** You can now see which AI version every job is set to, and which versions actually
 ran. **No migration; no AI behaviour changed** — no model, setting or cascade moved.
 
