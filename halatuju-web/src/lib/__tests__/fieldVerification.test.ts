@@ -70,11 +70,34 @@ describe('fieldVerifications', () => {
     ])).preUInstitution).toBeUndefined()
   })
 
-  it('does NOT tick preUInstitution when the offer is an overall pathway mismatch (#117 stream clash)', () => {
+  it('STILL ticks preUInstitution when the school matches but the pathway is a mismatch — owner 2026-09-10', () => {
+    // ⚠ REVERSED. This case used to assert `toBeUndefined()`: a matching school was suppressed
+    // whenever anything else about the offer disagreed, so "a green tick can't contradict a red
+    // Pathway chip" (#117 — the school matches, the STREAM clashes). That guard was an
+    // implementation choice copied forward, never an owner ruling, and it conflates two questions.
+    // Owner, 2026-09-10: *"I wonder if we could only tick the institution, as they do match."*
+    //
+    // A tick answers "was THIS field verified against the letter?"; the chip answers "does this
+    // document establish the declared pathway?". A Semester-3 STPM student who changed stream has
+    // a genuinely verified school AND a genuinely open pathway question — the screen should say
+    // both, not hide the true half.
     const fv = fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'match', pathway: 'mismatch' } },
     ]))
-    expect(fv.preUInstitution).toBeUndefined()
+    expect(fv.preUInstitution).toEqual({ source: 'offerLetter' })
+  })
+
+  it('a pathway mismatch cannot CREATE a tick — the institution verdict still rules', () => {
+    // ⚠ THE HALF THAT KEEPS IT HONEST. Removing the guard must not tick a field that disagrees.
+    // Measured on the four live records reading `mismatch` (2026-09-10): #33, #99 and #120 gain
+    // the tick because their school really matches; #14 gains nothing, because "Temeloh" really
+    // is not "TEMERLOH".
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { institution_status: 'clash', pathway: 'mismatch' } },
+    ])).preUInstitution).toBeUndefined()
+    expect(fieldVerifications(app([
+      { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'clash', pathway: 'mismatch' } },
+    ])).institution).toBeUndefined()
   })
 
   it('ticks tertiary institution when a genuine offer institution matches the chosen programme', () => {
@@ -84,16 +107,23 @@ describe('fieldVerifications', () => {
     expect(fv.institution).toEqual({ source: 'offerLetter' })
   })
 
-  it('does NOT tick tertiary institution on a clash / unknown / pathway mismatch', () => {
+  it('does NOT tick tertiary institution on a clash / unknown', () => {
     expect(fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'clash' } },
     ])).institution).toBeUndefined()
     expect(fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'unknown' } },
     ])).institution).toBeUndefined()
+    // ⚠ The third case here used to be `chosen_institution_status: 'match', pathway: 'mismatch'`
+    // → undefined. Reversed 2026-09-10 with its pre-U twin; it now ticks, and lives in the test
+    // above. `chosen_institution_status` already returns 'unknown' for an institution copied off
+    // the letter itself, so dropping the pathway guard cannot tick an unverified value.
+  })
+
+  it('STILL ticks tertiary institution when the institution matches but the pathway is a mismatch', () => {
     expect(fieldVerifications(app([
       { doc_type: 'offer_letter', authenticity: { status: 'genuine' }, pathway_check: { chosen_institution_status: 'match', pathway: 'mismatch' } },
-    ])).institution).toBeUndefined()
+    ])).institution).toEqual({ source: 'offerLetter' })
   })
 
   it('a SUSPECT offer still ticks (only a genuine FAKE fails) — owner 2026-07-16', () => {
