@@ -134,6 +134,33 @@ reported, never silently dropped. Count and log the disagreements.
 Not the untested edge §0 assumed. A join that reads `Wallet User` as the spender is wrong on those
 rows today.
 
+**✅ THE 2026-07-19 "MISSING WEEK" IS NOT MISSING — the owner spotted it, 2026-09-10.** The 26 July
+report covers **FOURTEEN days**, not seven. Coverage is unbroken:
+
+    2026-07-05    1 Jul → 5 Jul     5d   (first report, partial)
+    2026-07-12    6 Jul → 12 Jul    7d
+    2026-07-26   13 Jul → 26 Jul   14d   ← holds the "missing" 19 Jul week
+    2026-08-02   27 Jul → 2 Aug     7d
+    2026-08-09    3 Aug → 9 Aug     7d
+    2026-08-16   10 Aug → 16 Aug    7d
+    2026-08-23   17 Aug → 23 Aug    7d
+    2026-08-30   24 Aug → 30 Aug    7d
+
+**1 July → 30 August with no gap and no overlap** (once the 2 Aug duplicates are removed).
+
+⚠⚠ **THEREFORE THE FILENAME DATE IS NOT THE COVERAGE WINDOW, AND NOTHING MAY TREAT IT AS ONE.** A
+missing FILE is not a missing WEEK. Derive coverage from the `transaction_date` values inside, never
+from the filename or the file count — a "one file per week" reader would have reported a gap that
+does not exist, and would miss a real one the day two weeks land in one file again.
+
+**⚠ AND THERE ARE TWO DATE FORMATS, not one.** The early files carry a TIME:
+
+    2026-07-05 / 2026-07-12    "5 Jul 2026, 15:14:59"   ← with time of day
+    2026-07-26 onwards         "26 Jul 2026"            ← date only
+
+Brief §0 says the time "is gone" — true of new reports, **false of the archive**. Parse both, and
+**discard the time** rather than storing it: it is not needed, and a sponsor must never see it.
+
 **Amounts are small: median RM5.00, p75 RM6.90, p90 RM12.50, max RM300.00.** This is daily food.
 
 **290 distinct merchants. The top 100 cover 82% of rows** — so the map is a few hundred names, not
