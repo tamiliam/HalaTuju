@@ -4202,6 +4202,19 @@ class AdminBillingUsageView(_AdminBase):
             # org_admin: its OWN organisation only — fenced by construction (no platform,
             # no other org can appear). A misconfigured org_admin with no org sees nothing.
             payload = usage.monthly_usage(month, restrict_org_id=admin.owning_organisation_id)
+
+        # ⚠ **THE JOB → MODEL LIST IS SUPER-ONLY, and that is the same call as the platform row
+        # above.** Which AI version a job is set to is a PLATFORM fact: every organisation runs
+        # the same models, and a tenant cannot change one (owner, 2026-09-11 — see
+        # `docs/decisions.md`). Showing a tenant a list they can only look at would be furniture.
+        # What a tenant DOES get is the per-model split of their own usage, which is theirs.
+        #
+        # Read-only, and cheap: a few `getattr`s over Django settings plus three lazy imports.
+        # It RESOLVES rather than remembers, so it cannot disagree with the engine.
+        if is_super:
+            from halatuju import ai_registry
+            payload['ai_jobs'] = ai_registry.snapshot()
+            payload['ai_models_in_use'] = ai_registry.models_in_use()
         return Response(payload)
 
 

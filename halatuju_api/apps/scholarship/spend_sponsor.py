@@ -37,6 +37,8 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 
+from django.utils import timezone
+
 logger = logging.getLogger(__name__)
 
 _ZERO = Decimal('0.00')
@@ -140,8 +142,15 @@ def sponsor_card(application) -> dict | None:
         # ⚠⚠ AND IT IS THE DATE IN MALAYSIA, NOT IN UTC. `imported_at` is stored UTC, so a bare
         # `.date()` is yesterday for the eight hours between midnight MYT and 08:00 MYT — a sponsor
         # opening the card over breakfast would be told the figures were "as at" the day before,
-        # every single morning. Caught by the clock rolling past midnight mid-deploy, which is the
-        # only reason it was ever going to be caught at all.
+        # every single morning.
+        #
+        # ⚠ **TD-209's THIRD INSTANCE, and two agents fixed it within an hour of each other on
+        # 2026-09-11** — one from the clock rolling past midnight mid-deploy, one from an unrelated
+        # sprint running the full suite at 01:40 MYT. Neither was looking for it. **`.date()` on a
+        # stored datetime in this codebase is almost always missing a `timezone.localtime()`**, and
+        # the reason it survives review is that the two agree for two-thirds of every day. The test
+        # beside this one now PINS THE CLOCK rather than comparing against `timezone.localtime()`,
+        # which is the same moving clock as the bug and could only ever catch it in the small hours.
         'as_at': timezone.localtime(newest).date().isoformat(),
         'categories': [{'code': r['code'], 'label': r['label'], 'total': str(r['total'])}
                        for r in category_rows(rows, labels)],

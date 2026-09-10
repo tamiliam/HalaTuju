@@ -550,7 +550,55 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after the pathway track-axis removal + the institution tick)
+## Next Sprint (as of 2026-09-11, after AI model visibility)
+
+**✅ SHIPPED AND DEPLOYED 2026-09-11.** `main` at **`a87028a7`**; BOTH Cloud Builds SUCCESS;
+serving **halatuju-api-01026-tdc** / **halatuju-web-00876-z4d** (read from
+`status.latestReadyRevisionName`, and waited on BY BUILD ID). Site 200; no api ERROR logs since.
+
+**WHAT SHIPPED.** You can now see which AI version every job is set to, and which versions actually
+ran. **No migration; no AI behaviour changed** — no model, setting or cascade moved.
+
+- **`halatuju/ai_registry.py` is the upgrade checklist.** 19 AI jobs, each with its model.
+  ⚠ **IT RESOLVES AND NEVER RECORDS** — an entry names a Django setting, a cascade or a literal
+  and reads that source live. Do not "simplify" it by storing model names: a stored copy is wrong
+  the moment somebody moves a setting, and wrong invisibly.
+- **⚠ `test_ai_registry.py` COUNTS the AI seams and fails if a job is unregistered.** A new AI job
+  cannot ship invisible. It counts by FILE, which an import line cannot fake.
+- **The billing page names which AI version did the work**, per service, with counts and last-used
+  dates. Super also gets the job list, **grouped BY MODEL** — the shape an upgrade is planned in.
+  Two jobs are flagged *needs a deploy* (hardcoded) and one *falls back to a different provider*.
+- **⚠ THE JOB LIST IS SUPER-ONLY.** Which model a job uses is a platform fact a tenant cannot
+  change (owner's decision — `docs/decisions.md`, 2026-09-11). A tenant's own usage split by model
+  IS theirs and stays.
+
+**⚠⚠ A LIVE BUG TWO AGENTS FIXED THE SAME EVENING, NEITHER LOOKING FOR IT.** `spend_sponsor.sponsor_card()`
+took `.date()` off a UTC timestamp, so **a sponsor saw yesterday's date for the eight hours between
+midnight and 08:00 MYT**. TD-209's THIRD instance. Its own test compared against
+`timezone.localtime()` — the same moving clock — so it was green for two-thirds of every day and
+only failed because this sprint ran the suite at 01:40. Replaced with a clock-PINNED test.
+Another agent hit it an hour earlier from a deploy crossing midnight and landed on `main` first;
+their fix is the one kept (the code line was identical), the duplicate test was dropped in the
+merge, and their docstring repaired.
+**`.date()` on a stored datetime in this codebase is almost always missing a `timezone.localtime()`.**
+
+**WHAT THE SURVEY FOUND, and none of it was on a screen before:** 19 AI jobs but only **two shared
+seams** carry twelve of them; **only two models have ever run on production** (flash 353 calls, pro
+72, of 1,101 metered events since 2026-07-24); **no fallback has ever fired**; **no `*_MODEL` env
+var is set** on the live service.
+
+Worktree `.worktrees/ai-models`, branch `feat/ai-model-visibility` (base `origin/main` at
+`1c38a90d`). Retro `docs/retrospective-2026-09-11-ai-model-visibility.md`; 2 decisions; 3 lessons.
+Gates: pytest **6411** (+16); jest **2055** (+9); tsc **24** (baseline); lint **0**; i18n
+**5046 × 3**; `next build` exit 0; `makemigrations --check` clean. Four bite-checks, all bit.
+
+**▶ OWNER POST-CHECK (as super):** Organisation → Billing. Each service now names the AI versions
+under it. Below the table, a super-only block groups all 19 jobs by model — that is your upgrade
+list. Nothing on it is clickable, by design.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after the pathway track-axis removal + the institution tick)
 
 **⚠ SECOND CHANGE ON THIS BRANCH — THE INSTITUTION TICK NO LONGER WAITS FOR THE PATHWAY.**
 web only, `halatuju-web/src/lib/fieldVerification.ts`. Owner, 2026-09-10, comparing #33 and #120:

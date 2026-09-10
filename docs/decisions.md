@@ -1,5 +1,50 @@
 # Architectural Decisions — HalaTuju
 
+## An organisation may NOT choose its own AI model — 2026-09-11
+**Decision:** which AI version a job runs on stays a PLATFORM setting. `halatuju/ai_registry.py`
+makes it visible; nothing on any screen changes it. A tenant sees which versions did THEIR work
+(their own usage, split by model); the job → model list is super-only.
+
+**Why the owner asked.** To track the versions in use and upgrade them periodically — both of
+which the visibility half delivers on its own.
+
+**Why not per-organisation selection.** Three reasons, in order of weight:
+1. **These prompts are tuned per model.** A tenant choosing a cheaper one would silently degrade
+   document reading, and it would present as a fault in our engine rather than as a setting they
+   chose. The house rule is *"Gemini extracts, deterministic matchers decide"* — the extraction is
+   not a preference.
+2. **The config tab is a catalogue of values WE defined** (org_config's Layer 0 rule): a minute, a
+   ringgit, a date, bounded. A provider model name is a platform internal, and the Org Config arc
+   ruled those out explicitly.
+3. **Nobody is asking.** One live tenant; two models have ever run; no fallback has ever fired; no
+   `*_MODEL` env var is set on the live service.
+
+**Alternatives considered.** (a) **Per-organisation model choice** — rejected above; the
+organisation IS already threaded to most AI calls for billing, so it is buildable, which is what
+makes writing down the refusal worth doing. (b) **Show only the observed models and no registry**
+— rejected: it cannot show a job that has not run this month, and cannot say a job is hardcoded,
+which is exactly what an upgrade needs to know.
+
+**Trade-offs:** an organisation with a strong opinion about models has no lever. Accepted, and
+revisitable — the registry is the list such a feature would need anyway.
+
+**Revisit if:** a second organisation asks for it, or a model is retired in a way that forces
+different tenants onto different versions.
+
+## The AI registry resolves; it never records — 2026-09-11
+**Decision:** each entry names HOW its model is chosen (a Django setting, a named cascade, or a
+literal) and reads that source live. No model name is stored in the registry.
+
+**Why:** a stored copy is a second source of truth and would be wrong the first time somebody moved
+a setting without opening the file — and wrong invisibly, because the screen would look right. A
+test overrides `CONTRACT_QUIZ_MODEL` and asserts the answer moves with it.
+
+**Consequences:** the registry is grouped BY MODEL on screen rather than listed job by job, because
+the question an upgrade asks is *"if this version is replaced, what must I touch?"*. Two jobs are
+flagged **needs a deploy** (model written into the source) and one **falls back to a different
+provider** — the three rows an upgrade pass would otherwise walk past. `test_ai_registry.py`
+counts the AI seams in the codebase so the list cannot go stale.
+
 ## The pre-U TRACK is compared on the stream axis only, never as a programme name — 2026-09-10
 
 **Decision:** `pathway_engine._declared_pathway` returns `''` for the PROGRAMME when the record's

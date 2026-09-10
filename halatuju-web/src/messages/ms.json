@@ -5090,6 +5090,17 @@
       "free": {
         "workspace": "Google Workspace (Meet, Kalendar, Drive, Sheets)",
         "turnstile": "Cloudflare Turnstile (pengesahan borang hubungi)"
+      },
+      "modelCalls": "{n} panggilan",
+      "modelLastUsed": "terakhir digunakan {date}",
+      "ai": {
+        "title": "Versi AI yang digunakan oleh setiap tugas",
+        "sub": "Dikumpulkan mengikut model, supaya naik taraf muncul sebagai satu senarai. Dibaca terus daripada tetapan semasa — tiada salinan disimpan.",
+        "jobCount": "{n} tugas",
+        "needsDeploy": "perlu pelaksanaan semula",
+        "secondProvider": "beralih kepada {model}",
+        "reachable": "Semua versi yang boleh dicapai hari ini, termasuk sandaran:",
+        "walkPastNote": "Baris bertanda tidak berubah dengan sendirinya: satu ditulis dalam kod, dan satu beralih kepada pembekal yang berbeza."
       }
     },
     "requests": {

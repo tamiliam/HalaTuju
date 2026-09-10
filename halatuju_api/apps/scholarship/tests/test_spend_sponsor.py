@@ -228,10 +228,16 @@ class TestTheAsAtStampIsTheImportNotThePurchase(TestCase):
     def test_the_stamp_is_the_date_in_MALAYSIA_not_in_UTC(self):
         """⚠⚠ FOUND BY THE CLOCK ROLLING PAST MIDNIGHT MID-DEPLOY, 2026-09-11.
 
-         is stored UTC. A bare  on it is YESTERDAY for the eight hours
+        `imported_at` is stored UTC. A bare `.date()` on it is YESTERDAY for the eight hours
         between midnight MYT and 08:00 MYT - so a sponsor opening the card over breakfast would be
-        told the figures were "as at" the day before, every single morning. Nothing else would
-        ever have caught it; the suite happened to run at 00:0x MYT.
+        told the figures were "as at" the day before, every single morning.
+
+        ⚠ THE OLD TEST COULD NEVER HAVE CAUGHT IT. It compared the rendered stamp against
+        `timezone.localtime().date()` — the SAME MOVING CLOCK as the bug — so it agreed with the
+        fault for sixteen hours a day and disagreed for eight. It passed every CI run for weeks.
+        Two agents hit it within an hour of each other on 2026-09-11 (this one from a deploy at
+        00:0x MYT, the other from an unrelated sprint's suite at 01:40) and neither was looking.
+        Hence the PINNED clock below: the answer must hold whatever time this test itself runs.
         """
         from django.utils import timezone
         from apps.scholarship.models import BursarySpendTxn

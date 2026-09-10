@@ -5090,6 +5090,17 @@
       "free": {
         "workspace": "Google Workspace (Meet, Calendar, Drive, Sheets)",
         "turnstile": "Cloudflare Turnstile (contact-form verification)"
+      },
+      "modelCalls": "{n} calls",
+      "modelLastUsed": "last used {date}",
+      "ai": {
+        "title": "Which AI version each job uses",
+        "sub": "Grouped by model, so an upgrade shows as one list. Read live from the running settings — this never stores a copy.",
+        "jobCount": "{n} jobs",
+        "needsDeploy": "needs a deploy",
+        "secondProvider": "falls back to {model}",
+        "reachable": "Every version reachable today, including fallbacks:",
+        "walkPastNote": "The marked rows do not move on their own: one is written into the code, and one falls through to a different provider."
       }
     },
     "requests": {

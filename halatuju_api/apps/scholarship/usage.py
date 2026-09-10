@@ -149,13 +149,50 @@ def available_months():
             for d in UsageEvent.objects.dates('created_at', 'month', order='DESC')]
 
 
-def _service_row(service, agg):
+def _service_row(service, agg, models=()):
+    """One service's totals, plus WHICH AI VERSIONS did the work.
+
+    ⚠ **AN ALLOWLIST, DELIBERATELY WIDENED (2026-09-09 → 2026-09-11).** Every row this function
+    builds is typed out by hand so no column of `UsageEvent` can reach a screen by accident; the
+    view says so. `models` is the one field added since, and it is added for a reason the owner
+    asked for out loud: **the model name was already written on every AI call and nothing ever
+    read it back.** Units and token sums only — still NO prices.
+
+    `models` is empty for a non-AI service (email, WhatsApp, Cloud Vision OCR), which have no
+    model name to record. Never render an empty list as "unknown".
+    """
     return {
         'service': service,
         'events': int(agg.get('events') or 0),
         'quantity': int(agg.get('quantity') or 0),
         'input_tokens': int(agg.get('input_tokens') or 0),
         'output_tokens': int(agg.get('output_tokens') or 0),
+        'models': list(models),
+    }
+
+
+def _model_row(agg):
+    """One AI version's share of a service. `first_seen`/`last_seen` are dates, not timestamps —
+    the question this answers is "are we still running the old one", which a date settles.
+
+    ⚠ **LOCALTIME BEFORE `.date()`, AND THAT IS TD-209 AGAIN.** `created_at` is stored UTC; the
+    month grouping above filters on `created_at__year`/`__month`, which Django evaluates in the
+    project's timezone. Taking `.date()` off the raw UTC value put a call made this evening in
+    Malaysia on YESTERDAY — so a version used today could read as last used the day before, and
+    on the 1st of a month it would fall outside the very month it was grouped into.
+    """
+    from django.utils import timezone   # lazy: this module is imported at app load
+
+    def _day(dt):
+        return timezone.localtime(dt).date().isoformat() if dt else None
+
+    return {
+        'model': agg.get('model') or '',
+        'events': int(agg.get('events') or 0),
+        'input_tokens': int(agg.get('input_tokens') or 0),
+        'output_tokens': int(agg.get('output_tokens') or 0),
+        'first_seen': _day(agg.get('first')),
+        'last_seen': _day(agg.get('last')),
     }
 
 
@@ -228,7 +265,7 @@ def monthly_usage(month, *, restrict_org_id=None, include_platform=False):
       * super — pass ``restrict_org_id=None`` + ``include_platform=True`` for every
         organisation PLUS the platform (NULL-org) row. The platform block is SUPER-ONLY.
     """
-    from django.db.models import Count, Sum
+    from django.db.models import Count, Max, Min, Sum
     from apps.courses.models import PartnerOrganisation
     from .models import UsageEvent
 
@@ -246,6 +283,23 @@ def monthly_usage(month, *, restrict_org_id=None, include_platform=False):
                       input_tokens=Sum('input_tokens'), output_tokens=Sum('output_tokens'))
             .order_by('organisation_id', 'service'))
 
+    # WHICH AI VERSION did the work, inside each service (2026-09-11). A second grouped pass over
+    # the SAME filtered queryset, so it inherits the org fence above by construction rather than
+    # re-deriving it — the fence is the thing that must never be written twice.
+    #
+    # ⚠ BLANK MODELS ARE DROPPED, NOT SHOWN AS "unknown". Email, WhatsApp and Cloud Vision OCR
+    # record no model because they have none; a row reading "unknown: 402 events" would invent a
+    # mystery out of three services that are working exactly as designed.
+    model_rows = (qs.exclude(model='')
+                  .values('organisation_id', 'service', 'model')
+                  .annotate(events=Count('id'), input_tokens=Sum('input_tokens'),
+                            output_tokens=Sum('output_tokens'),
+                            first=Min('created_at'), last=Max('created_at'))
+                  .order_by('organisation_id', 'service', '-events'))
+    by_service_model = {}
+    for r in model_rows:
+        by_service_model.setdefault((r['organisation_id'], r['service']), []).append(_model_row(r))
+
     by_org = {}
     for r in rows:
         by_org.setdefault(r['organisation_id'], []).append(r)
@@ -258,7 +312,9 @@ def monthly_usage(month, *, restrict_org_id=None, include_platform=False):
         names = dict(PartnerOrganisation.objects.filter(pk__in=ids).values_list('id', 'name'))
 
     def org_block(org_id, service_rows):
-        services = [_service_row(r['service'], r) for r in service_rows]
+        services = [_service_row(r['service'], r,
+                                 by_service_model.get((org_id, r['service']), []))
+                    for r in service_rows]
         totals = {
             'events': sum(s['events'] for s in services),
             'quantity': sum(s['quantity'] for s in services),
