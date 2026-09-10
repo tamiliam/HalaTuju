@@ -552,10 +552,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-10, after the officer income vocabulary)
 
-**⚠⚠ BUILT AND GATED, *NOT DEPLOYED*.** Branch **`feat/officer-income-vocabulary`**, worktree
-`.worktrees/income-vocab`. Committed locally; **nothing has been pushed, so nothing has been
-built or served.** A push is a REQUEST to deploy — wait for BOTH builds and read their status
-before saying deployed. api + web. **NO MIGRATION, NO ENV VAR, NO DATA STEP.**
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-10.** `main` at **`22ecfec2`**; BOTH Cloud Builds
+SUCCESS on `22ecfec` — **waited on the push's OWN build IDs** (`ffbb4a73…`, `8d97e613…`).
+Serving **halatuju-api-01019-snn** / **halatuju-web-00873-85w** (read from
+`status.latestReadyRevisionName`, never `status.traffic[0]`). Site 200 (`Server: Google
+Frontend`); **no api ERROR logs on the new revision**. Was branch `feat/officer-income-vocabulary`,
+worktree `.worktrees/income-vocab`. api + web. **NO MIGRATION, NO ENV VAR, NO DATA STEP.**
+
+**THE SERVED ADMIN BUNDLE WAS READ BACK, THREE WAYS** (1.64 MB across 23 chunks). PRESENT: "is
+over this gift", "is below this gift", "This gift applies no household income limit", "own means
+test is satisfied", "consistent with a low-income household", "a higher-income consumption
+pattern", "unusual for a student applying for financial assistance". **GONE:** "Income (B40)",
+"B40 status confirmed", "the B40 line", "household's B40 need", "salary documents for B40",
+"consistent with a B40 household", "M40/T20 consumption pattern", "unusual for a B40 student".
+**STILL INTACT (the out-of-scope fence):** "Apply for B40 Education Assistance", "the national B40
+threshold". **RESULT: PASS.**
+
+**⚠ A PROBE CONTAINING AN APOSTROPHE READS "MISSING" ON A CORRECT DEPLOY.** The bundler escapes
+`'` as `'`, so a literal `gift's income limit` never matches the served JS. The first read-back
+reported two false failures on correct work; the probes are apostrophe-free now. Do not
+"re-fix" the copy on that signal — grep for `is over this gift` instead.
 
 Gates on the branch: pytest **6161** (baseline 6150 + 11) · jest **1993** (1988 + 5) · tsc **24**
 (TD-221 baseline, unchanged) · lint **0 Errors** · i18n **4975 × 3** (4974 + the one new key) ·
