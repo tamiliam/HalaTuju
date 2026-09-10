@@ -81,7 +81,16 @@ live**, or the donut ships as one enormous grey slice — technically honest and
 
 The owner downloaded all eight reports (`Downloads/spending/`, XLSX exports of the Sheets). Analysed
 read-only in the scratchpad; **the raw files hold student names and wallet ids and must never enter
-the repo.** 1,554 raw rows → **1,368 unique** → **1,366 `SPEND`**, **RM10,029** over 5 Jul–30 Aug.
+the repo.** 1,554 raw rows → **1,368 unique** → **1,366 `SPEND`**, **RM10,650.22** over 5 Jul–30 Aug.
+
+⚠⚠ **CORRECTED 2026-09-10 — AN EARLIER DRAFT OF THIS LINE SAID RM10,029.03, AND IT WAS WRONG BY
+RM621 (5.8%) IN EXACTLY THE WAY THIS DOCUMENT WARNS ABOUT.** The first probe summed only the values
+openpyxl already handed back as numbers, so the **88 rows whose amount is the STRING `"RM26.90"`**
+were silently skipped — the same defect flagged two paragraphs below as *"handle both or 88 real
+payments vanish"*. Writing the warning is not the same as obeying it. The true figures, with every
+amount parsed as a `Decimal`: **1,366 SPEND rows = RM10,650.22**; all 1,368 rows = RM10,662.72 (the
+two `RECEIVED` rows are RM12.50). **A sum that silently skips what it cannot parse reports a smaller
+number that looks entirely plausible** — count the skips and print them, or the total is a guess.
 
 **⚠ THE HEADER LAYOUT CHANGED TWICE IN EIGHT WEEKS. THREE VARIANTS EXIST:**
 

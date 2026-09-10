@@ -47,8 +47,11 @@ double-counting — proven against all eight real reports.
 - `ingest_spending --file <path> [--apply]`, report-first.
 - Fixtures shaped like each of the three real header variants, with invented names and wallets.
 
-**Acceptance.** All eight real reports ingest to **1,368 transactions / RM10,029.03**, matching the
-measured figures in brief §0b. Re-running is a no-op. An unknown header **fails loudly**. A repeated
+**Acceptance.** All eight real reports ingest to **1,368 transactions, of which 1,366 are `SPEND`
+totalling RM10,650.22** (all rows RM10,662.72), matching brief §0b. **⚠ The parser must report a
+count of amounts it could NOT parse, and that count must be 0** — an earlier probe of mine quoted
+RM10,029.03 by silently skipping the 88 string amounts, which is the same class of fault as the bug
+it was measuring. Re-running is a no-op. An unknown header **fails loudly**. A repeated
 `transaction_id` whose fields DISAGREE is reported, never silently dropped. Unknown wallets listed.
 
 **Complexity: HIGH.** ~14 files. **Has a migration — migrate-first, two new tables, RLS + one
@@ -65,7 +68,7 @@ Read at sprint-start 2026-09-10. Each names how it is being obeyed, not merely n
   header it did not recognise. **Make the omission loud.**
 - **"A unit test on a helper does not prove the helper is CALLED" (Parentage marker, 2026-07-30)** —
   the load-bearing test is not on the amount parser; it is the whole command over the eight real
-  files reproducing **1,368 / RM10,029.03**. Unit tests on `"RM26.90"` would pass with the parser
+  files reproducing **1,366 SPEND rows / RM10,650.22**. Unit tests on `"RM26.90"` would pass with the parser
   unwired.
 - **"Run the repair in REPORT mode and read every line" (BrightPath #20, 2026-09-08)** — `--report`
   is the default and its output gets READ before `--apply`, not skimmed. A prediction in this

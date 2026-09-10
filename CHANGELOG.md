@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor spending S1 — a Vircle report becomes stored transactions - 2026-09-10
+
+First sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`. **Backend only. Nothing a
+sponsor or a student sees changes; nothing is deployed.** New `apps/scholarship/spending_import.py`
+(the whole parser + the ingest), two models (`BursarySpendTxn`, `MerchantCategory`), and
+`manage.py ingest_spending --file/--dir [--apply]`, report-only by default.
+
+**⚠ MIGRATION `scholarship/0155` — TWO NEW TABLES, NOT YET APPLIED. MIGRATE-FIRST**, with
+hand-written Postgres DDL + RLS + one `service_role` policy each in the migration's own docstring.
+
+**Verified against the eight real exports** (1 Jul – 30 Aug 2026, outside the repo): **1,368 unique
+transactions, 1,366 `SPEND`, RM10,650.22**, 0 unparsed amounts, 0 unparsed dates, 0 unknown
+columns, 28 parent-held wallets, 2 person-to-person rows. That check runs as a test which SKIPS
+when the corpus is absent, so CI never depends on data that carries student names.
+
+**⚠ THE FILE SHAPE HAS DRIFTED FIVE TIMES IN EIGHT WEEKS, ALL MEASURED, ALL HANDLED:** the merchant
+column is `Receiver` or `Merchant Name`; the student column is `BrightPath name` or
+`Wallet User`+`Child User`; `amount` is a number in 1,280 rows and the string `"RM26.90"` in 88;
+`transaction_date` carries a time in the two oldest reports and not after; and **the filename is
+not the coverage window** (the 26 July report covers fourteen days, so a missing FILE is not a
+missing WEEK — coverage is derived from the dates inside).
+
+**⚠ AN EARLIER ANALYSIS OF THIS CORPUS WAS WRONG BY RM621 AND IS WHY THE "COUNT THE SKIPS" RULE
+EXISTS.** It summed only the values openpyxl already returned as numbers, silently lost the 88
+string amounts, and reported RM10,029.03 — a smaller number that looked entirely plausible. Both
+plan documents are corrected; every skip is now counted and listed by name.
+
+Other rules the code enforces and a later reader must not tidy away: a missing required column
+**refuses that file** (an unknown EXTRA column is only reported); report mode holds the single
+`bulk_create` behind `--apply`; the student's name in the report is read to cross-check the wallet
+and **never stored**; a wallet claimed by two students is skipped, not guessed; non-`SPEND` rows are
+stored rather than filtered at import; and "sent to a person" comes from `duitnow_type`, never from
+a merchant name that looks like a person's.
+
+pytest full `apps/` **6156 passed** (+32) · `makemigrations --check` clean. No web change, so the
+frontend gates are unchanged from main. **Five bite-checks landed**, each injection verified before
+the run and restored by writing the original bytes back.
+
 ## Vircle card and emails say the true thing about Child accounts - 2026-09-10
 
 Two owner corrections off the live V2a surfaces. (1) The Action-Centre account-type warnings were
