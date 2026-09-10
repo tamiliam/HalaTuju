@@ -738,7 +738,11 @@ Airtable callback (`AUDIT vircle_id_set … by=vircle-airtable`).
   account-type warnings were REWORDED** (owner, off two real Child-account students): a Child
   account DOES receive money (via the parent's wallet) and the mobile we need is always the
   STUDENT'S OWN registered number — never word `warnChildAdult` as a refusal, never ask for the
-  parent's number.
+  parent's number. **And the confirm now needs an explicit installed-and-registered CHECKBOX**
+  (owner, 2026-09-10, off a real student who confirmed without registering — Vircle: "could not
+  find his IC"): the tick gates the button CLIENT-SIDE and is recorded in
+  `params.installed_confirmed`; the server deliberately never requires it (an old cached bundle
+  must keep resolving) — do not "harden" it into a server-side refusal.
 - **⚠ `ActionCentre.vircle.test.ts` refuses the box's return** (no `vircle-id` input, no
   `walletId`/`VIRCLE_PREFIX`/`errorDuitnow`, keys gone from en/ms/ta). Restoring the box is a
   deliberate decision, not a tidy.

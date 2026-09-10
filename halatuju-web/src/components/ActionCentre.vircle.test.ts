@@ -41,6 +41,27 @@ describe('V2a: the Vircle task asks for the mobile only', () => {
     expect(SRC).toContain('accountWarningKey')
     expect(SRC).toContain('item.vircle_expected')
   })
+
+  it('requires the installed-and-registered tick before the confirm wakes', () => {
+    // Owner 2026-09-10, off a real student who confirmed without ever registering in
+    // Vircle ("could not find his IC"): the declaration is an explicit checkbox now,
+    // not the button's own label. The button must gate on it, and the guard clause in
+    // onConfirmDone must refuse too (disabled alone is a style, not a rule).
+    expect(SRC).toContain('vircle-installed')
+    expect(SRC).toContain("t('scholarship.actionCentre.vircle.installedDeclare')")
+    expect(SRC).toContain('disabled={!valid || !installed || busy}')
+    expect(SRC).toContain('if (!token || !valid || !installed || busy) return')
+  })
+})
+
+describe('the installed-declaration string exists in all three locales', () => {
+  for (const locale of ['en', 'ms', 'ta'] as const) {
+    it(`${locale}.json carries installedDeclare`, () => {
+      const messages = fs.readFileSync(
+        path.join(__dirname, '..', 'messages', `${locale}.json`), 'utf8')
+      expect(messages).toContain('"installedDeclare"')
+    })
+  }
 })
 
 describe('V2a: the retired wallet-ID strings are gone from all three locales', () => {

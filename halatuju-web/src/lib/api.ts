@@ -2204,10 +2204,18 @@ export async function resolveResolutionItem(
   // ('principal'/'child') — stored on the item for the human reconciling a callback
   // `no_match`; the coaching happens in the card before this is sent.
   accountType?: string,
+  // Vircle setup only (owner, 2026-09-10, off a real "confirmed but never registered" case):
+  // the student's explicit tick that they installed AND registered before confirming. The
+  // card refuses to send without it; the server stores the claim but does not require it,
+  // so an old cached bundle keeps working.
+  installedConfirmed?: boolean,
 ): Promise<ResolutionItem & { resolved?: boolean; nudge?: string }> {
   return apiRequest(`/api/v1/scholarship/resolution-items/${id}/resolve/`, {
     method: 'POST',
-    body: JSON.stringify({ text, question, vircle_id: vircleId, account_type: accountType }),
+    body: JSON.stringify({
+      text, question, vircle_id: vircleId, account_type: accountType,
+      installed_confirmed: installedConfirmed,
+    }),
     ...options,
   })
 }
