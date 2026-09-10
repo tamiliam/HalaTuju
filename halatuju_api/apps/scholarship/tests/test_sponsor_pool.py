@@ -6,7 +6,7 @@ eligibility rule, the SPONSOR_POOL_ENABLED gate, approved-sponsor gating, and th
 admin generate/publish flow. All on synthetic data; the AI call is mocked.
 """
 import json
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -877,3 +877,103 @@ class TestMyStudentDetail(TestCase):
             if label == 'school':
                 continue  # the secondary school IS shown to sponsors (owner 2026-07-18)
             self.assertNotIn(value, blob)
+
+
+# ─── the spending panel on my-students (sponsor spending S5) ────────────────
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+                   SPONSOR_POOL_ENABLED=True)
+class TestMyStudentSpendingPanel(TestCase):
+    """The `spending` field on GET /sponsor/my-students/<pk>/ — categories and totals only.
+
+    ⚠⚠ A unit test on `spend_sponsor.sponsor_card` proves the FUNCTION; it does not prove the
+    serializer calls it, and it does not prove what reaches the wire. These do both — and the
+    leak test here plants a MERCHANT, a TRANSACTION ID, a WALLET and a PURCHASE DATE, which the
+    existing `IDENTIFIERS` set knows nothing about because they did not exist until S1.
+    """
+    MERCHANT = 'DELIMA MATANG CAFE'
+    TXN_ID = 'VIRCLE-TXN-55501'
+    PURCHASE_DATE = date(2026, 7, 4)
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='sc', name='B40', year=2026)
+        cls.app = _make_eligible_app(cls.cohort)
+        cls.app.status = 'maintenance'
+        cls.app.vircle_id = '8000400170001'
+        cls.app.save(update_fields=['status', 'vircle_id'])
+        cls.mine = Sponsor.objects.create(
+            supabase_user_id='spend-uid', email='s@x.com', name='S', phone='0123',
+            source='friend', consent_at=timezone.now(), status='approved')
+        Sponsorship.objects.create(sponsor=cls.mine, application=cls.app,
+                                   amount=Decimal('2000'), status='active')
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {_token("spend-uid", "s@x.com")}')
+
+    def _url(self):
+        return f'/api/v1/sponsor/my-students/{self.app.id}/'
+
+    def _spend(self, merchant, amount, category, **over):
+        from apps.scholarship.models import BursarySpendTxn
+        opts = {'txn_id': f'T{BursarySpendTxn.objects.count() + 1:06d}',
+                'txn_date': self.PURCHASE_DATE}
+        opts.update(over)
+        return BursarySpendTxn.objects.create(
+            application=self.app, wallet_id=self.app.vircle_id, merchant=merchant,
+            amount=Decimal(str(amount)), tx_type='SPEND', status='00',
+            duitnow_type='STATIC_MERCHANT_QR_CODE_DUITNOW', category=category,
+            decided_by='rule', source_file='r.xlsx', **opts)
+
+    def test_the_field_is_served_at_all(self):
+        """⚠ The half a unit test cannot reach: is the serializer wired?"""
+        self._spend(self.MERCHANT, 30, 'food', txn_id=self.TXN_ID)
+        body = self.client.get(self._url()).json()
+        self.assertIn('spending', body)
+        self.assertIsNotNone(body['spending'])
+        self.assertEqual(body['spending']['spent'], '30.00')
+
+    def test_a_student_with_no_spending_gets_NO_PANEL_not_an_empty_one(self):
+        """Four zeroes would claim they have spent nothing; the likelier truth is that no
+        report has reached us yet."""
+        self.assertIsNone(self.client.get(self._url()).json()['spending'])
+
+    def test_no_merchant_no_transaction_id_no_wallet_no_purchase_date_on_the_wire(self):
+        """⚠⚠ THE PROMISE. Planted, then asserted absent from the whole response."""
+        self._spend(self.MERCHANT, 30, 'food', txn_id=self.TXN_ID)
+        self._spend('PALANI MINI MART', 70, 'groceries')
+        blob = json.dumps(self.client.get(self._url()).json())
+        self.assertNotIn(self.MERCHANT, blob)
+        self.assertNotIn('PALANI', blob)
+        self.assertNotIn(self.TXN_ID, blob)
+        self.assertNotIn('8000400170001', blob)
+        self.assertNotIn(self.PURCHASE_DATE.isoformat(), blob)
+
+    def test_the_existing_identifier_set_still_does_not_leak_with_a_panel_present(self):
+        """The panel must not widen what was already proved closed."""
+        self._spend(self.MERCHANT, 30, 'food')
+        blob = json.dumps(self.client.get(self._url()).json())
+        for label, value in IDENTIFIERS.items():
+            if label == 'school':
+                continue  # the secondary school IS shown to sponsors (owner 2026-07-18)
+            self.assertNotIn(value, blob)
+
+    def test_a_sponsor_who_does_not_fund_this_student_gets_nothing_at_all(self):
+        """⚠ Spending is only ever visible for a student you actually fund. The discovery pool
+        must stay silent about it — this is the 404 that already guards the page, re-asserted
+        now that the page carries money."""
+        self._spend(self.MERCHANT, 30, 'food')
+        Sponsor.objects.create(
+            supabase_user_id='stranger-uid', email='x@x.com', name='X', phone='0123',
+            source='friend', consent_at=timezone.now(), status='approved')
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {_token("stranger-uid", "x@x.com")}')
+        self.assertEqual(self.client.get(self._url()).status_code, 404)
+
+    def test_the_pool_card_serializer_never_gained_a_spending_field(self):
+        """⚠ The discovery pool shows students a sponsor could fund. Nothing about spending may
+        appear there, and the cheapest way for that to break is somebody adding the field to
+        the shared card serializer."""
+        from apps.scholarship.serializers import SponsorPoolCardSerializer
+        self.assertNotIn('spending', SponsorPoolCardSerializer().get_fields())

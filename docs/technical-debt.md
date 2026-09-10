@@ -3605,3 +3605,48 @@ sponsorship fence, then move the file from `NOT_YET_SCANNED` into `SCANNED`. Med
 reading is the work.
 
 (Logged 2026-09-10 at Spending S4, from the guard widening that found it.)
+
+### [TD-241] Payments and Spending sit under ORGANISATION, and the money model says GIFT — medium
+
+**Raised by the owner, 2026-09-10**, while reviewing where the new Spending page sits:
+*"I am thinking if both payment and spending should be parked under gift programme, instead of
+organisation."*
+
+**The code already agrees with the instinct.** `PaymentRun.programme` carries this comment,
+written at P2b:
+
+> *A run pays students of ONE programme, so a benefactor's money can never leave the gift it
+> was given to and each programme reconciles on its own.*
+
+Spending inherits the same shape — a `BursarySpendTxn` reaches a gift through
+`application → cohort → programme`. So the navigation is now the last place that still
+organises money by TENANT while the data organises it by GIFT.
+
+**Why it is not a two-line move.** The Programme group is gift-gated (gift-first navigation,
+2026-09-08): a reader must choose a gift before those rows appear. Moving Payments and Spending
+there changes three things at once:
+1. **What the lists show** — one gift instead of every gift in the organisation. An org running
+   several gifts and reconciling against ONE bank statement would then check N screens. That is
+   the real trade-off, and it is about which question is asked more often, not which model is
+   more correct.
+2. **Who can reach them** — `finance` is on Payments today. It has an Overview to choose a gift
+   from, so it would not be stranded (unlike reviewer/qc, per the 2026-09-08 ruling), but the
+   route gets longer for the role that uses it most.
+3. **Where an organisation-wide total lives**, if anywhere. Today it is implicit in the list.
+
+**⚠ WHATEVER IS DECIDED, THE TWO MOVE TOGETHER.** Payments is money going out and Spending is
+what happened to it — two halves of one story. Splitting them across two groups would be worse
+than either arrangement. They were deliberately made adjacent in S4a so that this stays ONE
+decision later rather than two.
+
+**⚠ The navigation is not the fence.** Both pages fence on `owning_organisation` in the
+service, and moving a nav row changes no access. Any move must keep the fence exactly where it
+is and re-run `test_org_fence.py`.
+
+**Fix.** A short IA sprint: move both rows to the Programme group, narrow both lists to the
+chosen gift, decide whether an org-wide roll-up survives and where, and update
+`navigation.test.ts` role lists and the chord map. Medium — the decision is the work; the code
+is small.
+
+(Logged 2026-09-10 at the owner's prompt during Spending S5 planning. Explicitly deferred by
+the owner: *"This could be a discussion for a different time."*)

@@ -200,8 +200,32 @@
         "overSems": "over {n} semesters",
         "profile": "About this student",
         "spending": "Spending overview",
-        "spendingSoon": "Coming soon — a breakdown of how the student uses their support (Vircle).",
-        "soon": "Soon"
+        "spend": {
+          "title": "How your student is spending",
+          "asAt": "as at {date}",
+          "promised": "Promised",
+          "released": "Released",
+          "spent": "Spent",
+          "left": "Left",
+          "barLabel": "How much of the promised support has been released so far",
+          "chartLabel": "Spending by category",
+          "other": "Other",
+          "none": "We have not received any spending information for this student yet.",
+          "noteTitle": "How we work this out.",
+          "note": "We are told the shop's name and the amount. We are never told what was bought. Where the shop’s name says what it sells, we use that. Where it does not, and a student visits often for small amounts, we have counted it as food. That is our best estimate, not the shop’s own description. Anything we cannot place is shown as Not yet sorted.",
+          "cat": {
+            "food": "Food & drink",
+            "groceries": "Groceries",
+            "transport": "Transport",
+            "study": "Books & study supplies",
+            "phone": "Phone & internet",
+            "hostel": "Hostel & bills",
+            "health": "Health & pharmacy",
+            "clothing": "Clothing & shoes",
+            "transfer": "Sent to a person",
+            "unsorted": "Not yet sorted"
+          }
+        }
       }
     },
     "notify": {

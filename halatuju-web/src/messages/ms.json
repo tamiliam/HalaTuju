@@ -200,8 +200,32 @@
         "overSems": "selama {n} semester",
         "profile": "Tentang pelajar ini",
         "spending": "Ringkasan perbelanjaan",
-        "spendingSoon": "Akan datang — pecahan cara pelajar menggunakan tajaan (Vircle).",
-        "soon": "Akan datang"
+        "spend": {
+          "title": "Bagaimana pelajar anda berbelanja",
+          "asAt": "sehingga {date}",
+          "promised": "Dijanjikan",
+          "released": "Dikeluarkan",
+          "spent": "Dibelanjakan",
+          "left": "Baki",
+          "barLabel": "Berapa banyak bantuan yang dijanjikan telah dikeluarkan setakat ini",
+          "chartLabel": "Perbelanjaan mengikut kategori",
+          "other": "Lain-lain",
+          "none": "Kami belum menerima sebarang maklumat perbelanjaan bagi pelajar ini.",
+          "noteTitle": "Bagaimana kami mengiranya.",
+          "note": "Kami diberitahu nama kedai dan jumlahnya. Kami tidak pernah diberitahu apa yang dibeli. Jika nama kedai menunjukkan apa yang dijualnya, kami gunakan itu. Jika tidak, dan pelajar kerap ke situ dengan jumlah yang kecil, kami kira ia sebagai makanan. Itu anggaran terbaik kami, bukan keterangan kedai itu sendiri. Apa yang tidak dapat kami tentukan ditunjukkan sebagai Belum diasingkan.",
+          "cat": {
+            "food": "Makanan & minuman",
+            "groceries": "Barangan runcit",
+            "transport": "Pengangkutan",
+            "study": "Buku & alat tulis",
+            "phone": "Telefon & internet",
+            "hostel": "Asrama & bil",
+            "health": "Kesihatan & farmasi",
+            "clothing": "Pakaian & kasut",
+            "transfer": "Dihantar kepada seseorang",
+            "unsorted": "Belum diasingkan"
+          }
+        }
       }
     },
     "notify": {

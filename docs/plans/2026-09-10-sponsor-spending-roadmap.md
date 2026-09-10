@@ -113,27 +113,18 @@ card** — both name merchants on purpose. S5 builds its own allowlist and its o
 tests.
 
 ---
-## S5 — The sponsor card
+## S5 — The sponsor card ✅ SHIPPED 2026-09-10 — **THE ARC IS COMPLETE**
 
-**Goal.** Fill the reserved panel on `sponsor/(portal)/my-students/[id]` — the dashed card whose own
-comment already says *"Reserved for the Vircle spending panel (a later sprint)"*.
+**Done.** Retro `docs/retrospective-2026-09-10-spending-sponsor-card-s5.md`; the rules a later
+reader must not tidy away are in `halatuju_api/CLAUDE.md` and in `spend_sponsor.py`'s own
+docstring. **No migration.** api + web.
 
-**Scope.**
-- **⚠ Stitch prototype approved BEFORE any page code** (house rule).
-- The four numbers as one bar; the donut (top 6 + Other) beside a ranked list; the assumptions note
-  from brief §4d; an "as at" stamp.
-- **Allowlist serializer extension**, plus anonymity tests: a merchant name, a transaction id or a
-  date appearing in the payload is a **test failure**.
-- i18n en/ms/ta (ms/ta first drafts).
-
-**Acceptance.** A sponsor sees categories and totals only. `spent > released` renders sensibly (brief
-§4 — the wallet is the student's own). An empty `transfer` slice is absent, not "0". Nothing about
-spending reaches the discovery/pool card.
-
-**Complexity: MEDIUM.** ~11 files. **No migration.**
+All five parts are built and none is deployed. **⚠ FOUR PATHS HAVE NEVER RUN ANYWHERE:** the
+Drive fetch, the Gemini sorting rung, the Drive write, and every screen against real data.
+The deploy order is in `halatuju_api/CLAUDE.md` under Next Sprint and must be followed as
+written — migrate-first, then two read-only runs that are READ before anything writes.
 
 ---
-
 ## Sequence, and what blocks what
 
     S1 ─→ S2 ─→ S3 ─→ S4 ─→ S5

@@ -550,7 +550,96 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after sponsor spending S4b — the summary files itself)
+## Next Sprint (as of 2026-09-10, after sponsor spending S5 — THE ARC IS COMPLETE)
+
+**⚠⚠ THERE IS NO NEXT SPRINT HERE. THE WHOLE ARC IS BUILT AND NONE OF IT IS DEPLOYED.** The
+next action is a DEPLOY, and it is owner-gated. Worktree `.worktrees/spending-ingest`, branch
+`feat/spending-ingest`, **not on `main`, so nothing has ever built**.
+
+| | |
+|---|---|
+| S1 | read a Vircle report correctly — 1,368 payments, **RM10,650.22** |
+| S2 | fetch new reports from Drive when they arrive |
+| S3 | sort every payment into one of ten categories |
+| S4a | the officer screen — see it, and correct it |
+| S4b | a written summary files itself back to Drive |
+| S5 | the sponsor card — **the only sponsor-visible part** |
+
+Retros `docs/retrospective-2026-09-10-spending-{ingest-s1,drive-s2,sorter-s3,officer-s4a,
+summary-s4b,sponsor-card-s5}.md`; decisions ×36; lessons ×23; **TD-238, TD-239, TD-240,
+TD-241**. Roadmap `docs/plans/2026-09-10-sponsor-spending-roadmap.md` (all five ✅).
+Gates: pytest **6381**; jest **2044** (128 suites); `tsc` **24** (baseline); `next lint` 0;
+`next build` compiled; `makemigrations --check` clean. Ledger: scholarship **154/155**,
+courses **74/74**.
+
+**⚠⚠ FOUR PATHS HAVE NEVER RUN ANYWHERE, AND EVERY ONE NEEDS THE LIVE SERVICE:**
+1. the Drive **FETCH** — the service-account key exists nowhere but the live service;
+2. the Gemini **sorting rung** — every test mocks `vision._call_gemini_json`;
+3. the Drive **WRITE** — everything before S4b only read;
+4. **every screen against real data** — both were built against fixtures and the corpus.
+
+**▶ THE DEPLOY, IN ORDER. Do not reorder it.**
+1. **`scholarship/0155` MIGRATE-FIRST** — two tables, RLS + one `service_role` policy each,
+   DDL in the migration's own docstring. Apply by hand, verify, **then record its
+   `django_migrations` row**, all BEFORE the push. Both tables re-confirmed ABSENT at this
+   close.
+2. Security Advisor shows no new finding.
+3. Merge + push. **⚠ TWO BUILDS — api AND web.** S4a and S5 both touch web.
+4. Set **`VIRCLE_SPENDING_FOLDER`** and **`VIRCLE_SPENDING_SUMMARY_FOLDER`** if the live tree
+   differs. **Read both from `gcloud run services describe`, never from a settings default** —
+   every other `VIRCLE_*` folder is already overridden there. ⚠ The summary folder's PARENT
+   must already exist; only the `Summaries` segment is created for us.
+5. **⚠ `ingest_spending --drive` WITHOUT `--apply`, ONCE, AND READ IT.** Expect the eight files
+   and the S1 figures re-derived.
+6. **⚠ `sort_spending` WITHOUT `--apply`, ONCE, AND READ IT.** Expect ~102 merchants proposed
+   for the model in 3 batched calls the first time, then near zero for ever.
+7. Create the DAILY Cloud Scheduler job on **`spending-ingest`**.
+8. **⚠ OPEN THE DRIVE FOLDER.** The summary must be in `Summaries/`, NOT beside the exports —
+   the one thing no test on a laptop can prove.
+9. **⚠ ONLY NOW DOES A SPONSOR SEE ANYTHING.** Before the migration and the first import the
+   officer screen shows empty states and the sponsor panel is ABSENT — both correct, neither a
+   bug. **Check one real student’s card yourself before telling any sponsor it exists.**
+
+**WHAT MUST NOT BE "TIDIED" — the whole arc, in one place:**
+- **⚠ THE FILE SHAPE HAS DRIFTED FIVE TIMES IN EIGHT WEEKS, ALL MEASURED.** Add aliases, never
+  replace. A MISSING required column refuses that file; an unknown EXTRA one only reports.
+- **⚠ EVERY SKIP IS COUNTED AND NAMED.** An early probe reported **RM10,029.03** for a true
+  **RM10,650.22** by summing only the values that were already numbers.
+- **⚠⚠ THE RM20 PER-ROW CEILING CAUGHT SIX REAL PAYMENTS (RM424).** Rung 3 stores a MERCHANT
+  verdict and applies the ceiling per ROW.
+- **⚠ `ask_model(names)` TAKES NAME STRINGS AND NOTHING ELSE** (signature test); the vocabulary
+  is enforced in Python after the answer returns; a merchant is asked once and stored for ever
+  (the test asserts the seam CALL COUNT); `transfer` comes from `duitnow_type` alone.
+- **⚠⚠ A CORRECTION WRITES AN `owner` VERDICT AGAINST THE SHOP AS WELL AS EVERY ROW**, or it
+  stops applying to next week's payments at a shop already fixed.
+- **⚠ THE OFFICER FENCE IS ON THE QUERY** (`spend_report._txns`); `no_org` is refused rather
+  than running unfenced; `finance` is refused though Payments admits it.
+- **⚠⚠ `spend_sponsor.py` SHARES NOTHING WITH `spend_report.py`.** Planted merchant /
+  transaction id / wallet / purchase DATE are asserted absent at the function and through the
+  endpoint. `transfer` and `unsorted` are never folded into "Other". The stamp is the last
+  IMPORT. No card rather than an empty one. **Money crosses as a STRING** — a bare `Decimal` in
+  a plain dict renders as a FLOAT.
+- **⚠ NO TIME OF DAY ANYWHERE**, on any surface, ever.
+- **⚠ `category=''` AND `'unsorted'` ARE DIFFERENT STATES.** **⚠ A NEW FILE is the trigger,
+  never the calendar**; a quiet day says nothing; **NO WEEKLY ALL-CLEAR**.
+- **⚠⚠ `_numbers_agree` GUARDS THE SUMMARY, NOT THE PROMPT.** Prose containing a figure we did
+  not supply is discarded. **Two locks against reading our own output:** the SUBFOLDER, and a
+  filename that cannot match `sheets._SPENDING_FILENAME_RE`. `FILENAME_STEM` must stay a word
+  starting with a LETTER.
+- **⚠ `TestOrgFenceStaticGuard` SCANS SIX FILES** with two floor tests. **A pragma must be the
+  LAST line before its query** — the guard reads 200 characters. `views_sponsor.py` has never
+  been scanned: **TD-240**, named in `NOT_YET_SCANNED` with its reason.
+- **⚠ NO RAW HEX ANYWHERE** — `theme.test.ts` reads inline styles and SVG fills. Categories use
+  the `category-N` swatches; never a TONE for a category.
+
+**▶ AFTER THE DEPLOY, THE STANDING WORK:** **TD-241** — Payments and Spending sit under
+ORGANISATION while `PaymentRun.programme` says money reconciles per GIFT; the owner raised it
+on 2026-09-10 and deferred it. **⚠ Whatever is decided, the two move TOGETHER.** Also
+**TD-238** (nobody watches how many merchants the model is asked about), **TD-239** (bumping
+`PROMPT_VERSION` re-asks nothing), **TD-237**, and the `profile_engine.py` B40 vocabulary twin
+(a `PROMPT_VERSION` bump there re-dates every profile draft on production).
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after sponsor spending S4b — the summary files itself)
 
 **S1 + S2 + S3 + S4a + S4b SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree
 `.worktrees/spending-ingest`, branch `feat/spending-ingest`. **`origin/main` merged in TWICE**

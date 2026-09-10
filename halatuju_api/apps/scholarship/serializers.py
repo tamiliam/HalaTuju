@@ -314,10 +314,27 @@ class SponsorMyStudentDetailSerializer(SponsorSponsorshipSerializer):
     status / journey signals) + the anonymised student card + the generated anon PROFILE markdown.
     Still an allowlist — only the reviewed anon_markdown is added, never the named profile."""
     anon_profile = serializers.SerializerMethodField()
+    spending = serializers.SerializerMethodField()
 
     def get_anon_profile(self, sponsorship):
         sp = getattr(sponsorship.application, 'sponsor_profile', None)
         return (sp.anon_markdown or '') if sp else ''
+
+    def get_spending(self, sponsorship):
+        """Categories and totals only — see `spend_sponsor`, which builds the payload one
+        aggregate at a time.
+
+        ⚠ **NEVER reuse `spend_report` here.** That module serves the OFFICER and names
+        merchants and students deliberately; this field serves an outsider. Two audiences that
+        different must not share a payload, or a field added for the officer arrives on the
+        sponsor card by accident.
+
+        ⚠ `None` (not an empty card) when nothing has been imported: four zeroes and an empty
+        donut would claim the student has spent nothing, and the likelier truth is that no
+        report has reached us yet.
+        """
+        from . import spend_sponsor
+        return spend_sponsor.sponsor_card(sponsorship.application)
 
 
 class StudentAwardSerializer(serializers.Serializer):

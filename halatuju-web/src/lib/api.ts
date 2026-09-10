@@ -846,8 +846,33 @@ export interface SponsorSponsorship {
 
 // A student the sponsor OWNS — the portfolio detail page (any lifecycle status), with the full
 // generated anon profile. Reached by clicking a My-students card; read-only, no funding controls.
+/** What a sponsor may see about their student's spending: CATEGORIES AND TOTALS ONLY.
+ *
+ * ⚠⚠ There is deliberately no merchant, no transaction id, no wallet and no purchase date in
+ * this shape, and the server builds it one aggregate at a time so none can arrive by
+ * accident (`spend_sponsor.py`). If you are adding a field here, the question to answer
+ * first is whether a SPONSOR may see it.
+ *
+ * ⚠ Money is a STRING and stays one — it is only parsed for chart geometry, never for
+ * display. A bare Decimal once reached this wire as a float; see `spend_sponsor`.
+ *
+ * ⚠ `as_at` is the date of the last IMPORT, not the day the student last bought something. */
+export interface SponsorSpending {
+  promised: string
+  released: string
+  spent: string
+  left: string
+  as_at: string
+  /** Ranked by value. `other` is last when it exists; `transfer` and `unsorted` are NEVER
+   *  folded into it, however small (owner, 2026-09-10). */
+  categories: Array<{ code: string; label: string; total: string }>
+}
+
 export interface SponsorMyStudentDetail extends SponsorSponsorship {
   anon_profile: string  // the reviewed anonymous profile (markdown)
+  /** null — not an empty card — when nothing has been imported for this student yet. Four
+   *  zeroes would claim they have spent nothing; the likelier truth is no report has arrived. */
+  spending: SponsorSpending | null
 }
 
 /** A student the caller sponsors (by application id). 404 if the caller doesn't sponsor them. */

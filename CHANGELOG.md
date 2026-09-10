@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor spending S5 — the sponsor card. THE ARC IS COMPLETE - 2026-09-10
+
+**api + web. NO MIGRATION. Nothing is deployed.** The reserved panel on
+`sponsor/(portal)/my-students/[id]` — the dashed box whose own comment had said *"Reserved for
+the Vircle spending panel (a later sprint)"* since the page was written.
+`apps/scholarship/spend_sponsor.py`, one serializer field, `SpendingCard.tsx`, en/ms/ta.
+**This is the ONLY sponsor-visible part of the whole arc.**
+
+**⚠⚠ A MERCHANT NAME, A TRANSACTION ID, A WALLET AND A PURCHASE DATE ARE PLANTED AND ASSERTED
+ABSENT** — at the function AND through the real endpoint. The payload is built one aggregate at
+a time, so a field added to `BursarySpendTxn` cannot reach a sponsor unless somebody writes a
+line for it. `spend_sponsor.py` shares NOTHING with `spend_report.py`, which names merchants
+and students deliberately: two audiences that different must not share a payload.
+
+**⚠ `transfer` AND `unsorted` ARE NEVER FOLDED INTO "Other"** (owner, 2026-09-10). They are the
+honest categories — money sent to a person is the one line a careful sponsor most needs to see,
+and "not yet sorted" is what stops the other nine reading as complete when they are not.
+
+**⚠ THE "AS AT" STAMP IS THE LAST IMPORT, NOT THE LAST PURCHASE.** They look interchangeable
+and are not: the newest `txn_date` is *the day this student last bought something*, a
+transaction date wearing a different hat. The Stitch mockup drew "Today, 2:14 pm" — pixel
+perfect, and a quiet breach of a privacy decision three sprints old.
+
+**⚠ NO CARD AT ALL rather than an empty one** when nothing has been imported. Four zeroes and
+an empty donut read as *"they have spent nothing"* — a claim about a real person we cannot
+make. **⚠ "Spent" may exceed "released"** (a parent may top the wallet up): `left` floors at
+zero, the bar is clamped, and no copy implies the student overspent the sponsor's money.
+
+**⚠ MONEY CROSSES AS A STRING.** A bare `Decimal` in a plain dict is rendered by DRF as a
+FLOAT, so `30.00` went out as `30.0` — and the unit test was green throughout, because the
+values ARE Decimals inside the function. Only a test driving the real endpoint could see it.
+
+The donut is one SVG circle per slice on the repo's `category-N` swatches — **no chart library,
+no new dependency, and no raw hex** (the theme guard reads SVG fills precisely because colour
+hides there). The retired "coming soon" copy is gone from all three locales: copy asserting a
+capability's ABSENCE goes stale the day it ships.
+
+Gates: pytest **6381** (+33); jest **2044** (+24), 128 suites; `tsc` **24** (baseline);
+`next lint` 0; `next build` compiled; `makemigrations --check` clean. **Fourteen bite-checks:
+two came back silent and BOTH were real defects — money as a float, and a page decision no test
+covered — plus one dead line that had a comment vouching for it.**
+
+**THE ARC: S1 read · S2 fetch · S3 sort · S4a see and correct · S4b report · S5 the card.**
+⚠ Four paths have still never run anywhere: the Drive fetch, the Gemini rung, the Drive write,
+and every screen against real data.
+
 ## Sponsor spending S4b — the summary files itself back to Drive - 2026-09-10
 
 The other half of S4. **Backend only. NO MIGRATION. Nothing a sponsor or student sees changes;

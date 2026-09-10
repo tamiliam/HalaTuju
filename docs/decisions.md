@@ -10739,3 +10739,112 @@ a data fault, and the S2 alert rule says silence must mean "nothing to report".
 
 **Revisit if:** summaries start failing repeatedly, which is a folder or permission problem and
 belongs in the alert email rather than the log.
+
+## The sponsor payload lives in its OWN module — Spending S5, 2026-09-10
+
+**Decision:** `apps/scholarship/spend_sponsor.py` shares no code, no helper and no file with
+`spend_report.py`. Two modules, two audiences.
+
+**Alternatives considered:** one module with a `for_sponsor=True` flag; reusing
+`spend_report.totals(org)` and stripping fields at the serializer.
+
+**Rationale:** `spend_report` names merchants and student names DELIBERATELY — that is what
+makes a wrong category correctable. A flag on a shared function means the safe behaviour is one
+boolean away from the unsafe one, and the next field is added to the shared shape by somebody
+who only had the officer in mind. Separation makes the sponsor payload allowlist-by-
+construction: it can only contain what somebody wrote a line for.
+
+**Trade-offs:** the four figures are computed in two places. Accepted — they are four
+aggregates, and the duplication is the cost of the wall.
+
+**Revisit if:** a third audience appears, which would be an argument for a shared PURE
+aggregate layer with per-audience assembly on top — never a flag.
+
+## Money crosses to a sponsor as a STRING — Spending S5, 2026-09-10
+
+**Decision:** `sponsor_card` returns money as `str`, not `Decimal`.
+
+**Alternatives considered:** leave the `Decimal` and let DRF render it; a `DecimalField` on a
+serializer.
+
+**Rationale:** a bare `Decimal` in a plain dict is rendered by DRF as a **float**, so `30.00`
+reached the wire as `30.0`. `COERCE_DECIMAL_TO_STRING` governs `DecimalField`, not raw dict
+values, and this payload is assembled by hand precisely so no model field can leak. Stringify
+at the boundary — the same choice the officer endpoint made — and the browser formats without
+ever parsing.
+
+**Trade-offs:** the client parses for chart geometry. Bounded to geometry; every figure on
+screen renders from the string.
+
+**Revisit if:** a serializer ever wraps this payload, at which point `DecimalField` does the
+job properly.
+
+## `transfer` and `unsorted` are never folded into "Other" — Spending S5, 2026-09-10
+
+**Decision:** the top six categories by value get their own slices and everything else folds —
+**except** `transfer` and `unsorted`, which keep their own rows however small.
+
+**Alternatives considered:** fold strictly by rank (the brief's literal wording).
+
+**Rationale (owner, 2026-09-10):** they are the honest categories. `transfer` is money sent to
+a person — the one line a careful sponsor most needs to see, and it comes from the bank code,
+never from a name. `unsorted` is what stops the other nine reading as complete when they are
+not. Folding either into "Other" is quietly dropping it, which is what §4 of the brief forbids
+in so many words.
+
+**Trade-offs:** the list can run to eight rows. Trivial; the list is the part people read.
+
+**Revisit if:** `unsorted` ever falls near zero, which would mean the sorter has won and the
+exception costs nothing either way.
+
+## The "as at" stamp is the last IMPORT, not the last purchase — Spending S5, 2026-09-10
+
+**Decision:** `as_at` is `max(imported_at).date()`.
+
+**Alternatives considered:** the newest `txn_date` (what the mockup drew); the coverage end.
+
+**Rationale:** the newest transaction date is *the day this student last bought something* — a
+transaction date wearing a different hat, and transaction dates never reach a sponsor. The
+import date answers the question the stamp actually asks — how fresh is this? — and reveals
+nothing about the student. The distinction is invisible on screen and total in what it leaks.
+
+**Trade-offs:** on a week with no new report the stamp does not move, which is correct: the
+figures did not move either.
+
+**Revisit if:** never, on privacy grounds. A newer stamp would have to come from a newer
+import.
+
+## No card at all, rather than an empty one — Spending S5, 2026-09-10
+
+**Decision:** `sponsor_card` returns `None` when nothing has been imported, and the page
+renders a short sentence instead of the panel.
+
+**Alternatives considered:** render the card with zeroes; render it with a spinner.
+
+**Rationale:** four zeroes and an empty donut read as *"they have spent nothing"*. That is a
+claim about a real person, made to their donor, and we cannot support it — the likelier truth
+is that no report has reached us yet. The sentence says exactly that. This is the same rule as
+the ingest's *"never happened" and "failed" are different states*.
+
+**Trade-offs:** a sponsor sees less on day one. Correct: we know less on day one.
+
+**Revisit if:** the panel ever needs to distinguish "no report yet" from "reports arrived, this
+student spent nothing" — which would be a third state and a genuinely different sentence.
+
+## The donut is hand-drawn SVG on the category swatches — Spending S5, 2026-09-10
+
+**Decision:** one `<circle>` per slice with `strokeDasharray`, coloured by
+`stroke-category-N-dot`. No charting library.
+
+**Alternatives considered:** recharts / chart.js; a conic-gradient.
+
+**Rationale:** the whole chart is about thirty lines, and a library would be a new dependency,
+a bundle cost and a theme problem on one card. The conic-gradient shape is already known bad
+here — the giving donut carried its colours in an inline style and stayed a light-mode island
+in dark (Layer 1 F1). `category-N` exists for exactly this: swatches that MEAN NOTHING, so one
+arbitrary category can be told from the next, with a standing warning never to use a TONE for a
+category. `other` takes a ground token because it is not a category — it is the absence of one.
+
+**Trade-offs:** no tooltips, no animation, no legend component.
+
+**Revisit if:** a second chart appears, at which point a shared primitive beats a third copy.

@@ -10,6 +10,7 @@ import { getMyStudentDetail, type SponsorMyStudentDetail } from '@/lib/api'
 import { conceptFieldImageUrl } from '@/lib/fieldImage'
 import { portfolioBadgeTone, rmWhole } from '@/lib/poolCard'
 import { journeyStages } from '@/lib/sponsorJourney'
+import SpendingCard from '@/components/sponsor/SpendingCard'
 
 
 /**
@@ -133,14 +134,25 @@ export default function MyStudentDetailPage() {
             </div>
           )}
 
-          {/* Reserved for the Vircle spending panel (a later sprint). */}
-          <div className="mt-6 rounded-xl border border-dashed p-4 relative">
-            <span className="absolute top-3 right-3 text-[10px] uppercase tracking-wide bg-ground-100 text-ground-400 rounded-full px-2 py-0.5 font-semibold">
-              {t('sponsorPortal.myStudents.detail.soon')}
-            </span>
-            <p className="text-[11px] uppercase tracking-wide text-ground-400 font-semibold">{t('sponsorPortal.myStudents.detail.spending')}</p>
-            <p className="text-xs text-ground-400 mt-2 max-w-md">{t('sponsorPortal.myStudents.detail.spendingSoon')}</p>
-          </div>
+          {/* The Vircle spending panel (S5) — this box was reserved for it since the page
+              was built. ⚠ CATEGORIES AND TOTALS ONLY; never a shop, a date or a time.
+              ⚠ `spending` is null when nothing has been imported yet, and then the panel is
+              ABSENT rather than showing four zeroes — zeroes would claim the student has
+              spent nothing, and the likelier truth is that no report has reached us. The
+              placeholder that stood here said "coming soon", which stops being true the day
+              this ships; it now says what is actually the case. */}
+          {detail.spending ? (
+            <SpendingCard spending={detail.spending} />
+          ) : (
+            <div className="mt-6 rounded-xl border border-dashed p-4">
+              <p className="text-[11px] uppercase tracking-wide text-ground-400 font-semibold">
+                {t('sponsorPortal.myStudents.detail.spending')}
+              </p>
+              <p className="text-xs text-ground-400 mt-2 max-w-md">
+                {t('sponsorPortal.myStudents.detail.spend.none')}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
