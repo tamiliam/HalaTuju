@@ -1,5 +1,52 @@
 # Architectural Decisions — HalaTuju
 
+## The ethnicity advisory matches at a WORD START, and accepts the recall it loses — 2026-09-10
+
+**Decision:** `apply_copy.sensitive_terms` requires each term to begin a word — not preceded by
+`\w` **nor by any character in the Tamil block (U+0B80–U+0BFF)** — and reports only the longest of
+several terms matching the same word.
+
+**Alternatives considered:** (a) leave the substring scan and add சம்மதம் to the existing
+`_LANGUAGE_PHRASES` exclusion list; (b) stem the terms and match a word prefix; (c) drop the Tamil
+terms entirely.
+
+**Rationale:** (a) is whack-a-mole — the next ordinary Tamil word containing a term re-fires it, and
+the list only grows with each live embarrassment. (b) over-matches badly in Tamil: stemming மதம் to
+மத makes it match மதிப்பெண் (marks/scores), which is worse than the bug being fixed. (c) removes a
+protection the s44(6) ruling exists to provide. The word-start rule is one mechanism for all three
+languages and fixes an English case nobody had reported (`race` in `brace`).
+
+**Trade-offs stated plainly:** an inflected Tamil mention (மதத்தின்) no longer matches, because the
+term carries its own pulli. Under-warning is the correct side to err on for an **advisory that never
+refuses**: a reader who has learned to dismiss the banner ignores it on the day it is right.
+
+**Revisit if:** a real ethnicity-scoped criterion is observed passing unflagged — then add the
+inflected stems to `SENSITIVE_TERMS`, which needs no change to the matching rule.
+
+## Standing guidance lives in one block; only a control's own refusal sits beside it — 2026-09-10
+
+**Decision:** every standing instruction on the "How it's advertised" tab renders once, at the top.
+The only text permitted beside a control is the reason that control is currently asleep. The clear
+action appears once, on the English tab. The platform's standard wording is SHOWN, per tab locale,
+in a collapsible panel.
+
+**Alternatives considered:** (a) keep each sentence beside the thing it governs (the state that
+prompted the report); (b) move only the duplicated per-language line and leave the rest; (c) show
+the standard wording as ghost placeholder text inside each empty box.
+
+**Rationale:** (a) is what produced the complaint — a reader met the same guidance three times and
+absorbed none of it. (b) leaves the tab arguing with itself about where guidance belongs. (c) was
+rejected because a placeholder disappears the moment somebody types, which is exactly when they want
+to compare their wording with the default; and a placeholder cannot show four bullets.
+
+**Trade-offs:** four sentences at the top is a wall to skim past, and the accuracy caution is now
+further from the criteria box it is about. Accepted — an unread sentence next to the box is not
+closer in any sense that matters.
+
+**Revisit if:** the block grows past four sentences, at which point it needs structure rather than
+relocation.
+
+
 ## The apply-copy drafter proposes; a person publishes — 2026-09-10
 
 **Decision:** the "Draft from English" button calls an endpoint that returns a drafted Malay/Tamil

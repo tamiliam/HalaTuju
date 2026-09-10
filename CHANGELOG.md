@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-09-10 — "How it's advertised": one instruction block, one clear control, and a warning that stops crying wolf
+
+Five owner findings from the live tab, and one bug found inside their own screenshot. **No
+migration.** api + web.
+
+- **⚠ THE ETHNICITY WARNING FIRED ON THE TAMIL WORD FOR CONSENT.** Sensitive terms were matched as
+  bare substrings, and சம்மதம் (consent) ends with மதம் (religion) — so a gift's own drafted Tamil
+  was reported as selecting on religion, over a bullet that said "willing to be contacted". A term
+  must now **begin a word**. `(?<!\w)` alone does NOT fix it: the character before the match is the
+  pulli (U+0BCD), a combining mark Python does not count as `\w`, so the Tamil block is named
+  explicitly. Same rule fixes English ("race" no longer matches "brace"), and a word matching both
+  "indian" and "india" is reported once.
+- **Every standing instruction sits at the top, once.** They were scattered across four places, so a
+  reader met the same guidance three times and read it none. The scattered keys are RETIRED, with an
+  absence guard. "Saved." stays in the save bar — it answers an action.
+- **Clear all wording appears ONCE, on the English tab.** It clears every language; offering it from
+  a Malay tab invited a reader to destroy work they could not see.
+- **"Draft from English" → "Translate from English"** (owner's word, reversing the previous day's
+  choice). The expectation the old word carried MOVED rather than being dropped: the standing
+  instructions now state that this produces a machine translation to be reviewed before saving, and
+  a test holds that sentence in all three languages.
+- **The standard wording is SHOWN, not merely named** — a collapsible panel reading the message files
+  BY TAB LOCALE, so an administrator working in English sees what a Malay applicant would read.
+- **Formal register throughout.**
+
+Gates: pytest **6150** · jest **1988** · tsc **24** (baseline) · lint **0** · i18n **4974 × 3** ·
+`next build` exit 0 · `makemigrations --check` clean. Two bite-checks, both bit.
+Retro `docs/retrospective-2026-09-10-apply-copy-instructions-and-warning.md`; decisions ×2;
+lessons ×3.
+
 ## 2026-09-10 — "How it's advertised": a safer clear, and a draft from English
 
 Two owner findings from using the live tab. **No migration.** api + web.
