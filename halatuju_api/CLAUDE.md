@@ -550,7 +550,96 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-10, after sponsor spending S4a — the officer can see it)
+## Next Sprint (as of 2026-09-10, after sponsor spending S4b — the summary files itself)
+
+**S1 + S2 + S3 + S4a + S4b SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree
+`.worktrees/spending-ingest`, branch `feat/spending-ingest`. **`origin/main` merged in TWICE**
+(S4a and S4b) — re-merge before the next frontend line. Retros
+`docs/retrospective-2026-09-10-spending-{ingest-s1,drive-s2,sorter-s3,officer-s4a,summary-s4b}
+.md`; decisions ×30; lessons ×18; **TD-238, TD-239, TD-240** logged. Roadmap
+`docs/plans/2026-09-10-sponsor-spending-roadmap.md` (**S1-S4b done; only S5 remains**).
+Gates: pytest **6348**; jest **2020** (unchanged — S4b touched no web file); `tsc` 24;
+`next lint` 0; `makemigrations --check` clean. Ledger: scholarship **154/155**, courses
+**74/74**.
+
+**⚠ MIGRATION `scholarship/0155` (S1) — TWO NEW TABLES, STILL NOT APPLIED. MIGRATE-FIRST.**
+Both tables re-confirmed ABSENT at this close. **S2, S3, S4a and S4b add none.**
+
+**⚠ THE DEPLOY PUSH BUILDS BOTH SERVICES** (S4a touched web). Any older note in this arc
+saying "api only, ONE build" is wrong.
+
+**⚠⚠ THREE PATHS HAVE NEVER RUN ANYWHERE, AND S4b ADDED THE THIRD:**
+1. the Drive **FETCH** — the service-account key exists nowhere but the live service;
+2. the Gemini **sorting rung** — every test mocks `vision._call_gemini_json`;
+3. the Drive **WRITE** — everything before S4b only READ from Drive.
+Run `ingest_spending --drive` and `sort_spending` on production WITHOUT `--apply` and read
+both before anything writes.
+
+**WHAT S4b SHIPPED.** `spend_summary.py`, `sheets.file_text_to_folder` +
+`_find_or_create_folder`, `--no-summary` on `ingest_spending`,
+`VIRCLE_SPENDING_SUMMARY_FOLDER`.
+
+**WHAT MUST NOT BE "TIDIED" — S4b:**
+- **⚠⚠ `_numbers_agree` IS THE GUARD; THE PROMPT IS ONLY A REQUEST.** Prose containing any
+  number that was not in the computed facts is DISCARDED and the figures are filed alone. A
+  summary with no prose is a small disappointment; one that invents a total is a document
+  somebody quotes in a meeting.
+- **⚠⚠ TWO LOCKS AGAINST READING OUR OWN OUTPUT, AND BOTH ARE REQUIRED:** the SUBFOLDER, and a
+  filename that cannot match `sheets._SPENDING_FILENAME_RE`. The second is asserted against the
+  READER'S OWN REGEX, imported — a copy would drift and go quiet. `FILENAME_STEM` must stay a
+  word starting with a LETTER: emptying it once passed every test by accident, on a leading
+  space.
+- **⚠ THE PROMPT IS TOLD TODAY'S DATE** (a summary reasons about dates; the model does not know
+  what day it is) and **the prompt version is stamped into the DOCUMENT**, not merely a field.
+- **⚠ IT NAMES SHOPS AND NAMES NO STUDENT.** Wallets and application ids only, as the alert
+  email does. It stays in that folder; no part of it reaches a sponsor.
+- **⚠ IT IS THE LAST THING A RUN DOES, AND THAT ORDERING IS THE SAFETY.** Everything is stored
+  and sorted first, so a Drive outage costs a document and nothing else. It never raises, and
+  the failure is PRINTED — a summary that silently never appears looks exactly like a week
+  nobody opened the folder.
+- **⚠ `file_csv_to_folder` DELEGATES to `file_text_to_folder`** — one Drive text-write path.
+  Generalising it revealed it had NO test in the repo, nor did its one caller (the Vircle
+  activation archive); both are covered now. **`_find_or_create_folder` creates only the LAST
+  segment** of a path we own; a mistyped parent is still a loud failure.
+
+**WHAT MUST NOT BE "TIDIED" — S1-S4a, all still true:** the five measured drift shapes (add
+aliases, never replace); a MISSING required column refuses the file, an unknown EXTRA one only
+reports; every skip counted and named (an early probe said RM10,029.03 for a true
+**RM10,650.22**); the **RM20 per-row ceiling** (six real payments, RM424); `ask_model(names)`
+takes name strings and NOTHING else; a merchant is asked once and stored for ever (the test
+asserts the seam CALL COUNT); `category=''` and `'unsorted'` are different states; a NEW FILE
+is the trigger, never the calendar, and a quiet day says nothing; **NO WEEKLY ALL-CLEAR**;
+`Wallet User` is not always the student; **a correction writes an `owner` verdict against the
+SHOP as well as every row**, or it stops applying to next week's payments; the fence is on the
+QUERY; `finance` is refused on the spending screen though Payments admits it; no time of day
+anywhere; the category control is a native `<select>`; `TestOrgFenceStaticGuard` scans FIVE
+files now with two floor tests, and a pragma must be the LAST line before its query.
+
+**▶ AT DEPLOY, IN ORDER:** (1) apply **`scholarship/0155` MIGRATE-FIRST** + record its ledger
+row BEFORE the push; (2) Security Advisor; (3) merge + push — **TWO BUILDS**; (4) set
+**`VIRCLE_SPENDING_FOLDER`** and **`VIRCLE_SPENDING_SUMMARY_FOLDER`**, both read from
+`gcloud run services describe`, never from a settings default — **⚠ the summary folder's
+PARENT must already exist; only the `Summaries` segment is created for us**; (5) **⚠ RUN
+`ingest_spending --drive` WITHOUT `--apply` ONCE AND READ IT**; (6) **⚠ RUN `sort_spending`
+WITHOUT `--apply` ONCE AND READ IT** (~102 merchants in 3 batched calls the first time, then
+near zero); (7) create the DAILY Cloud Scheduler job on `spending-ingest`; (8) **⚠ AFTER THE
+FIRST REAL RUN, OPEN THE DRIVE FOLDER AND CONFIRM THE SUMMARY IS IN `Summaries/` AND NOT
+BESIDE THE EXPORTS** — the one thing no test on a laptop can prove. **⚠ Until (1) and (5),
+`/admin/spending` renders its EMPTY STATES; that is correct, not a bug.** Nothing a student or
+sponsor sees changes.
+
+**▶ NEXT = S5, THE SPONSOR CARD — THE FIRST AND ONLY SPONSOR-VISIBLE PART OF THIS ARC.** Fill
+the reserved panel on `sponsor/(portal)/my-students/[id]` (its own comment already says
+*"Reserved for the Vircle spending panel (a later sprint)"*). **⚠ STITCH PROTOTYPE APPROVED
+BEFORE ANY PAGE CODE** (house rule). The four numbers as one bar; the donut (top 6 + Other)
+beside a ranked list; the assumptions note from brief §4d; an "as at" stamp. **⚠⚠ NOTHING FROM
+S4a OR S4b IS REUSABLE — both name merchants on purpose.** S5 builds its OWN allowlist
+serializer plus anonymity tests: a merchant name, a transaction id or a date appearing in the
+payload is a TEST FAILURE. i18n en/ms/ta. `spent > released` must render sensibly (the wallet
+is the student's own); an empty `transfer` slice is absent, not "0"; nothing about spending
+reaches the discovery/pool card. ~11 files, no migration.
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after sponsor spending S4a — the officer can see it)
 
 **S1 + S2 + S3 + S4a SHIPPED, NOT MERGED, NOT DEPLOYED (owner gates it).** Worktree
 `.worktrees/spending-ingest`, branch `feat/spending-ingest`. **`origin/main` was merged in at

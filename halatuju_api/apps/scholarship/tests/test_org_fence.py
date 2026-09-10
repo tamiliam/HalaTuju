@@ -507,7 +507,7 @@ class TestOrgFenceStaticGuard(TestCase):
     #: would have been structurally unable to see. **A new module that queries a watched model
     #: for an admin surface belongs on this list on the day it is written.**
     SCANNED = ('views_admin.py', 'spend_report.py', 'spend_category.py',
-               'spending_import.py')
+               'spending_import.py', 'spend_summary.py')
 
     #: ⚠ A LEDGER, NOT AN EXEMPTION LIST — the same idea as `NO_DOOR`. A file here is a
     #: DECISION somebody wrote down, and the reason is the check. Adding a name without a
@@ -543,7 +543,8 @@ class TestOrgFenceStaticGuard(TestCase):
         the guard is structurally blind to it."""
         base = os.path.dirname(views_admin.__file__)
         candidates = ('views_admin.py', 'views_sponsor.py', 'views_branding.py',
-                      'spend_report.py', 'spend_category.py', 'spending_import.py')
+                      'spend_report.py', 'spend_category.py', 'spending_import.py',
+                      'spend_summary.py')
         unscanned = []
         for filename in candidates:
             path = os.path.join(base, filename)

@@ -96,42 +96,21 @@ merchants and students on purpose. S5 builds its own allowlist and its own anony
 
 ---
 
-## S4b — The summary written back to Drive
+## S4b — The summary written back to Drive ✅ SHIPPED 2026-09-10
 
-> *"Instead of an email, or perhaps in addition to an email, Gemini creates a summary report …
-> and saves it in the same folder."* (owner, 2026-09-10)
+**Done.** Retro `docs/retrospective-2026-09-10-spending-summary-s4b.md`; the rules a later
+reader must not tidy away are in `halatuju_api/CLAUDE.md` under Next Sprint and in
+`spend_summary.py`'s own docstring. **No migration, no new schedule** — it rides
+`ingest_spending --apply`, which already has a cron door.
 
-**Both, because they do different jobs.** An **alert is PUSH** — nobody discovers a broken
-import by opening a folder, so a fault still emails. A **summary is PULL** — it belongs where
-the data lives, next to the file it describes, for whoever goes looking. Neither replaces the
-other.
+**⚠ WHAT S5 MUST NOT ASSUME:** three paths have still never run anywhere — the Drive FETCH,
+the Gemini sorting rung, and now the Drive WRITE. S4b is the first thing in this arc that
+writes to Drive at all; everything before it only read.
 
-**Written after every successful ingest of a new file**, not on a schedule — same trigger as
-S2. It rides the ingest job, which already has a cron door.
-
-**⚠ WE COMPUTE THE NUMBERS; GEMINI ONLY WRITES THE PROSE AROUND THEM.** The house pattern
-proven in `verdict_narrative.py`, whose own docstring says the LLM *"NEVER computes or changes
-the verdict"*. Every figure — totals, category splits, per-student lines, coverage dates — is
-computed in Python and handed over. **`spend_report` already computes most of them**, fenced.
-Gemini may not calculate, may not add a figure, and may not draw a conclusion the numbers do
-not carry.
-
-**⚠ THE REPORT IS INTERNAL, SO IT MAY NAME MERCHANTS — and it must still never leave that
-folder.** It is written for the officer and the owner. **It is not the sponsor's document and
-no part of it is reused on the sponsor card.**
-
-**⚠⚠ NEVER WRITE OUR OWN OUTPUT WHERE THE READER WILL PICK IT UP AS AN INPUT.** A summary
-dropped beside the Vircle exports is a file the next ingest would try to parse as a report.
-Two independent guards, both required: write into a **subfolder**
-(`06 Student Spending/Summaries/`), **and** have the reader accept only filenames matching the
-Vircle export pattern (**already shipped in S2** — this is the second lock, not the first).
-
-Reuses `sheets.file_csv_to_folder`'s shape (proven by the payments CSV and the activation
-CSV). Metered through `usage_context`, through the one Gemini seam.
-
-**Complexity: MEDIUM.** ~8 files. **No migration.** **No sponsor-visible change.**
-**⚠ Untestable from a laptop, like the Drive fetch — so the sprint ships the generator fully
-tested with the Drive write mocked, and the write itself is proved on the live service.**
+**What S5 inherits:** `spend_report.totals(org)` computes spent / placed / unplaced /
+percentage from the fenced query. **⚠ Nothing from S4a or S4b is reusable as-is on the sponsor
+card** — both name merchants on purpose. S5 builds its own allowlist and its own anonymity
+tests.
 
 ---
 ## S5 — The sponsor card

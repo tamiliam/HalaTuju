@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sponsor spending S4b — the summary files itself back to Drive - 2026-09-10
+
+The other half of S4. **Backend only. NO MIGRATION. Nothing a sponsor or student sees changes;
+nothing is deployed.** `apps/scholarship/spend_summary.py`, `sheets.file_text_to_folder` +
+`_find_or_create_folder`, `--no-summary` on `ingest_spending`,
+`VIRCLE_SPENDING_SUMMARY_FOLDER`.
+
+**⚠⚠ WE COMPUTE EVERY FIGURE; THE MODEL ONLY WRITES THE PROSE AROUND THEM** — the house
+pattern from `verdict_narrative.py`, whose docstring says the LLM *"NEVER computes or changes
+the verdict"*. **And the prompt is not the guard: `_numbers_agree` is.** The generated prose is
+scanned for every number it contains, and if any of them was not in the computed facts the
+whole paragraph is **discarded** and the figures are filed alone. A summary with no prose is a
+small disappointment; a summary that invents a total is a document somebody quotes in a
+meeting.
+
+**⚠⚠ TWO INDEPENDENT LOCKS AGAINST READING OUR OWN OUTPUT.** It is written into a **SUBFOLDER**
+(`…/06 Student Spending/Summaries`), **and** its filename cannot match
+`sheets._SPENDING_FILENAME_RE`. The second is asserted against **the reader's own regex,
+imported** — not a copy, which would drift and go quiet. Without both, the next import would
+try to parse our report as a Vircle export, refuse it, and email a fault every day for ever.
+
+**⚠ THE PROMPT IS TOLD TODAY'S DATE.** A weekly summary reasons about dates constantly and the
+model does not know what day it is. The prompt version is stamped into the **document**, not
+merely a field, so a reader holding the file can tell which prompt produced it.
+
+**⚠ INTERNAL, SO IT MAY NAME SHOPS — AND IT NAMES NO STUDENT.** Wallets and application ids
+only, exactly as the alert email does. It stays in that folder and no part of it reaches a
+sponsor.
+
+**⚠ BEST-EFFORT, AND IT IS THE LAST THING A RUN DOES.** Everything is stored and sorted before
+it starts, so a Drive hiccup costs a document and nothing else. It never raises, and a failure
+is PRINTED — a summary that silently never appears is indistinguishable from a week nobody
+opened the folder.
+
+**⚠ `file_csv_to_folder` NOW DELEGATES** to the generalised `file_text_to_folder` — one Drive
+write path, not two. Doing so revealed it had **no test anywhere in the repo**, nor did its one
+caller; both are covered now. `_find_or_create_folder` creates **only the last segment** of an
+output path we own, so a mistyped parent is still a loud failure rather than a tree of empty
+folders.
+
+Gates: pytest **6348** (+33); `makemigrations --check` clean; no web file changed. **Twelve
+bite-checks: one came back silent, one reported BIT while running nothing, and both findings
+were real — the second exposed a completely untested Drive-write path.**
+
 ## Sponsor spending S4a — the officer can see it, and correct it - 2026-09-10
 
 Fourth sprint of `docs/plans/2026-09-10-sponsor-spending-roadmap.md`, **split from S4 on the

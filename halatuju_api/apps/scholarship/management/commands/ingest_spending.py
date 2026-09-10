@@ -27,7 +27,7 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.scholarship import emails, spend_category, spending_import
+from apps.scholarship import emails, spend_category, spend_summary, spending_import
 
 
 class Command(BaseCommand):
@@ -49,6 +49,9 @@ class Command(BaseCommand):
         parser.add_argument('--no-sort', action='store_true',
                             help='Do not sort the new rows into categories afterwards. Without '
                                  'this, an --apply run finishes by running the ladder.')
+        parser.add_argument('--no-summary', action='store_true',
+                            help='Do not file the written summary back to Drive. Without this, '
+                                 'an --apply run that stored something files one.')
 
     def handle(self, *args, **options):
         use_drive = options['drive']
@@ -106,6 +109,23 @@ class Command(BaseCommand):
                 self.stdout.write('--- sorting the new rows ---')
                 for line in sort_report.lines():
                     self.stdout.write(line)
+
+            # ⚠ THE SUMMARY IS THE LAST THING THE RUN DOES, AND THAT IS THE WHOLE CONTRACT.
+            # Everything above it has already been stored and sorted, so a Drive hiccup here
+            # costs a document and nothing else. It never raises; `file_summary` returns what
+            # happened and the failure is PRINTED, because a summary that silently never
+            # appears is indistinguishable from a week nobody opened the folder.
+            # ⚠ Gated on `--apply` AND on rows having landed: a report run must stay unable to
+            # write anything at all, including to Drive.
+            if options['apply'] and not options['no_summary'] and report.rows_stored:
+                filed = spend_summary.file_summary(report)
+                if filed['filed']:
+                    self.stdout.write(
+                        f"summary filed        : {filed['filename']}"
+                        f"{'' if filed['prose'] else ' (figures only - no prose)'}")
+                else:
+                    self.stdout.write(self.style.WARNING(
+                        f"summary NOT filed    : {filed['error'] or 'unknown reason'}"))
 
         # The staleness nudge. Derived from the newest import, never stored — see
         # `spending_import.days_since_last_report`.

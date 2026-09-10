@@ -121,6 +121,26 @@ def _find_folder(drive, name, parent_id=None):
     return files[0]['id']
 
 
+def _find_or_create_folder(drive, name, parent_id):
+    """The folder's id, creating it under ``parent_id`` if it is not there.
+
+    ⚠ ONLY for a folder WE own the contents of — today, the spending `Summaries` subfolder.
+    `_find_folder_path` deliberately creates nothing, because walking to a folder somebody else
+    maintains and conjuring it when the name is wrong would hide a misconfiguration. Creating
+    the LAST segment of an output path is a different question: without it a missing subfolder
+    makes our own report silently never appear, which is worse. `_find_or_create_sheet` already
+    creates on the same reasoning.
+    """
+    found = _find_folder(drive, name, parent_id=parent_id)
+    if found:
+        return found
+    created = drive.files().create(
+        body={'name': name, 'mimeType': 'application/vnd.google-apps.folder',
+              'parents': [parent_id]},
+        fields='id',
+    ).execute()
+    return created['id']
+
 def _find_folder_path(drive, path):
     """Walk a '/'-separated folder path (e.g. '03 Vircle/01 Payment') and return the final
     folder's id, or None if any segment is missing. Folders are never created here."""
@@ -408,23 +428,44 @@ def read_spending_report(file_id):
     return read_sheet_values(file_id, _SPENDING_RANGE)
 
 
-def file_csv_to_folder(folder_path, filename, text):
-    """Best-effort: write a CSV file into the Drive ``folder_path`` (which must already exist) and
-    return its URL — or None (logged, never raised). Mirrors ``write_payment_csv``, generalised so
-    other flows (e.g. the activation-request archive) can file their own CSV for the record."""
+def file_text_to_folder(folder_path, filename, text, *, mimetype='text/csv',
+                        create_missing=False):
+    """Best-effort: write a text file into the Drive ``folder_path`` and return its URL — or
+    None (logged, never raised).
+
+    **The one Drive text-write path.** `file_csv_to_folder` delegates here rather than holding a
+    second copy: two write paths is where the next fix lands on only one of them.
+
+    ``create_missing`` creates the FINAL path segment if it is absent — for an output folder we
+    own (see `_find_or_create_folder`). Every earlier segment must already exist either way, so
+    a mistyped parent path is still a loud None rather than a new tree of empty folders.
+    """
     if not sheets_enabled():
         return None
     try:
         drive = _drive_for_upload()
         if drive is None:
             return None
-        folder_id = _find_folder_path(drive, folder_path)
+        segments = [s.strip() for s in (folder_path or '').split('/') if s.strip()]
+        if not segments:
+            return None
+        if create_missing:
+            parent = _find_folder_path(drive, '/'.join(segments[:-1])) \
+                if len(segments) > 1 else None
+            if len(segments) > 1 and not parent:
+                logger.warning('Drive write: parent path %r not found in the Drive of %s',
+                               '/'.join(segments[:-1]),
+                               getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
+                return None
+            folder_id = _find_or_create_folder(drive, segments[-1], parent)
+        else:
+            folder_id = _find_folder_path(drive, folder_path)
         if not folder_id:
             logger.warning('Drive write: folder path %r not found in the Drive of %s',
                            folder_path, getattr(settings, 'MEET_ORGANISER_EMAIL', ''))
             return None
         from googleapiclient.http import MediaInMemoryUpload  # type: ignore
-        media = MediaInMemoryUpload(text.encode('utf-8'), mimetype='text/csv')
+        media = MediaInMemoryUpload(text.encode('utf-8'), mimetype=mimetype)
         created = drive.files().create(
             body={'name': filename, 'parents': [folder_id]},
             media_body=media, fields='id, webViewLink',
@@ -434,6 +475,17 @@ def file_csv_to_folder(folder_path, filename, text):
     except Exception:
         logger.warning('Drive write failed for %r/%r', folder_path, filename, exc_info=True)
         return None
+
+
+def file_csv_to_folder(folder_path, filename, text):
+    """Best-effort: write a CSV file into the Drive ``folder_path`` (which must already exist)
+    and return its URL — or None (logged, never raised). Mirrors ``write_payment_csv``,
+    generalised so other flows (e.g. the activation-request archive) can file their own CSV.
+
+    Delegates to `file_text_to_folder`; the CSV mimetype and "the folder must exist" are the
+    only things it fixes.
+    """
+    return file_text_to_folder(folder_path, filename, text, mimetype='text/csv')
 
 
 def write_payment_csv(run):

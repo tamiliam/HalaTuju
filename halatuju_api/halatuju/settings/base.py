@@ -295,6 +295,15 @@ VIRCLE_SPENDING_FOLDER = os.environ.get(
 # every multiple thereafter, so a forgotten step is raised again; it is not a daily nag, and a
 # run that finds new data resets it to silence.
 SPENDING_REPORT_QUIET_DAYS = int(os.environ.get('SPENDING_REPORT_QUIET_DAYS', '14'))
+# Where the written summary is filed after an import. ⚠ A SUBFOLDER OF THE FOLDER WE READ, and
+# that is lock number one against parsing our own output as an input; the reader's filename
+# pattern is lock number two. ⚠ The last segment is created if missing (it is ours); every
+# earlier segment must already exist, so a mistyped parent stays a loud failure rather than a
+# new tree of empty folders. ⚠ Like every other VIRCLE_* default, read the LIVE value from
+# `gcloud run services describe` before quoting it anywhere.
+VIRCLE_SPENDING_SUMMARY_FOLDER = os.environ.get(
+    'VIRCLE_SPENDING_SUMMARY_FOLDER',
+    '01 BrightPath/03 Payments, Vircle/06 Student Spending/Summaries')
 # Cache the fetched bytes this long (seconds) so a batch send doesn't re-download per email; an
 # owner edit in Drive reflects within this window. 0 disables caching (always fetch fresh).
 VIRCLE_GUIDE_CACHE_SECONDS = int(os.environ.get('VIRCLE_GUIDE_CACHE_SECONDS', '600'))

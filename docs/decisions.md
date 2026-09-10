@@ -10645,3 +10645,97 @@ server is the only thing that knows the answer anyway.
 
 **Revisit if:** the table grows large enough that a refetch is felt, which would argue for the
 endpoint returning the recomputed totals with the write.
+
+## The summary is scoped to the IMPORT RUN, not to a tenant — Spending S4b, 2026-09-10
+
+**Decision:** `build_facts` reads back the rows this run stored, by `source_file`. No
+organisation fence. The document names the file it describes and is filed beside it.
+
+**Alternatives considered:** one summary per organisation, org-fenced like `spend_report`.
+
+**Rationale:** `VIRCLE_SPENDING_FOLDER` is a single configured folder in one organisation's
+Drive, so the ingest is already single-folder by configuration. A report that lands in that
+folder describes that folder's import; wrapping it in a fence it cannot meaningfully use would
+be theatre, and would raise the question "whose organisation?" for a job that reads one folder.
+
+**Trade-offs:** the design does not generalise to two tenants as it stands.
+
+**Revisit if:** a second tenant gets its own spending folder — then the summary follows the
+FOLDER, one report per folder, and the scope question answers itself.
+
+## Prose containing a figure we did not supply is DISCARDED — Spending S4b, 2026-09-10
+
+**Decision:** `_numbers_agree` compares every number in the generated prose against the numbers
+handed to the model. A mismatch drops the whole paragraph; the computed figures are filed
+alone, unaffected.
+
+**Alternatives considered:** trust the prompt's "never invent a number"; ask the model to
+rewrite; file the prose with a caveat.
+
+**Rationale:** the prompt is a request and this document is about money. A re-ask costs
+another call and can fail the same way. A caveat asks the reader to distrust a specific
+sentence in a document they are skimming. Dropping the prose is the only option whose failure
+mode is "less writing" rather than "a wrong number in a file somebody quotes". Bare years and
+small counts are allowed because they appear in ordinary English.
+
+**Trade-offs:** an entirely correct paragraph is lost if one number is formatted unusually.
+Accepted, and the direction of the error is the right one.
+
+**Revisit if:** the discard rate is high enough to notice in the logs, which would argue for
+tightening the prompt rather than loosening the check.
+
+## The summary is Markdown, through ONE generalised Drive-write path — Spending S4b, 2026-09-10
+
+**Decision:** `file_text_to_folder(folder, name, text, *, mimetype, create_missing)` is the one
+Drive text write. `file_csv_to_folder` delegates to it with `text/csv` and no creation.
+
+**Alternatives considered:** a second, near-identical function for Markdown; filing the
+summary as CSV.
+
+**Rationale:** prose in a CSV is wrong for the reader, and two write paths is where the next
+fix lands on only one of them. Generalising forced a change to the CSV helper — which is how we
+found it had no test anywhere in the repo, nor did its one caller.
+
+**Trade-offs:** one more keyword argument on a helper that had none.
+
+**Revisit if:** a third format needs a genuinely different upload shape (resumable, say).
+
+## Only the LAST segment of the summary path is created — Spending S4b, 2026-09-10
+
+**Decision:** `_find_or_create_folder` creates the final folder of an output path when the
+caller passes `create_missing`. Every earlier segment must already exist.
+
+**Alternatives considered:** keep `sheets`'s rule that folders are never created and require
+the owner to make `Summaries/` by hand; or create the whole path.
+
+**Rationale:** the existing rule is right for walking to a folder somebody else maintains —
+conjuring it when the name is wrong hides a misconfiguration. It is wrong for an output folder
+we own, where the alternative is a report that never arrives and nobody notices for weeks.
+Creating the whole path would resurrect exactly the failure the original rule prevents. The
+precedent already existed: `_find_or_create_sheet` creates on the same reasoning.
+
+**Trade-offs:** a typo in the LAST segment silently makes a new folder rather than failing.
+Bounded — it is one folder inside a parent that must already be correct.
+
+**Revisit if:** a second caller wants `create_missing` for a folder it does not own.
+
+## The summary is the LAST thing an import does — Spending S4b, 2026-09-10
+
+**Decision:** it runs after the store and after the sort, gated on `--apply` and on rows
+having landed. It never raises; `file_summary` returns what happened and the command prints a
+failure.
+
+**Alternatives considered:** write it first (so a long sort cannot delay it); raise on failure
+so nothing is half-done.
+
+**Rationale:** the ordering IS the safety. By the time it runs, every row is stored and sorted,
+so the worst a Drive outage can cost is a document — which matches `sheets`'s standing
+best-effort contract. Raising would let a Drive hiccup fail a job whose real work had already
+succeeded. Printing the failure matters as much as swallowing it: a summary that silently never
+appears is indistinguishable from a week nobody opened the folder.
+
+**Trade-offs:** a failure is visible only in the cron log, not by email. Deliberate — it is not
+a data fault, and the S2 alert rule says silence must mean "nothing to report".
+
+**Revisit if:** summaries start failing repeatedly, which is a folder or permission problem and
+belongs in the alert email rather than the log.
