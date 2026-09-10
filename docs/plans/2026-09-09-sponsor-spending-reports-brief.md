@@ -97,8 +97,28 @@ broken twice, and a parser written to any single variant breaks on the archive.
 **⚠ `amount` IS SOMETIMES A NUMBER AND SOMETIMES THE STRING `"RM26.90"`** — 1,280 numeric, 88 string,
 *within the same corpus*. Handle both or 88 real payments vanish.
 
-**⚠ 186 TRANSACTION IDS APPEAR IN MORE THAN ONE FILE.** The weekly exports overlap, exactly as the
-July brief warned. Without `transaction_id` dedup the totals are **14% too high**.
+**⚠ 186 TRANSACTION IDS APPEAR IN MORE THAN ONE FILE — AND THE PATTERN IS NOT WHAT JULY PREDICTED.**
+July expected a rolling overlap on every export. The measured truth is narrower and more useful:
+**exactly one pair of files overlaps** — `2026-08-02` re-includes 186 of `2026-07-26`'s 196 rows.
+Six of the eight files contribute nothing but new rows:
+
+    2026-07-05   25 rows,  25 new,   0 repeat
+    2026-07-12   63 rows,  63 new,   0 repeat
+    2026-07-26  196 rows, 196 new,   0 repeat
+    2026-08-02  326 rows, 140 new, 186 repeat   ← the only one
+    2026-08-09  377 rows, 377 new,   0 repeat
+    2026-08-16  299 rows, 299 new,   0 repeat
+    2026-08-23  169 rows, 169 new,   0 repeat
+    2026-08-30   99 rows,  99 new,   0 repeat
+
+So this reads as a **one-off human export slip** (a date range started a week early), not a standing
+property of the feed. **The guard is still mandatory** — it happened once in eight weeks, it will
+happen again, and nothing in the file announces it. Without dedup the corpus total is 14% too high.
+
+✅ **All 186 repeated pairs are byte-identical on date, wallet, merchant and amount — ZERO disagree.**
+So dedup is safe as "first copy wins"; there is no reconciliation problem to solve. ⚠ Do not read
+that as a guarantee: if a future repeat ever DISAGREES, that is a corrected figure and must be
+reported, never silently dropped. Count and log the disagreements.
 
 **✅ `duitnow_type`'S FULL VOCABULARY IS NOW KNOWN — the person-QR value exists:**
 
