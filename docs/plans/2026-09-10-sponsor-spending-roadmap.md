@@ -121,6 +121,59 @@ Metered through `usage_context`.
 
 **Complexity: MEDIUM.** ~14 files with the summary folded in. **No migration.**
 
+### S4 sprint-start notes — 2026-09-10
+
+**⚠ FIRST, BEFORE ANY FRONTEND LINE: MERGE `origin/main`.** S1–S3 were backend-only so a stale
+branch cost nothing. `main` has moved **8 commits** since, and they are web commits
+(apply-copy round two, the clear button, the Vircle confirm tick). Writing a console page on top
+of stale web code is how a merge conflict becomes a rewrite. Re-run every gate on the merged
+tree, not on the pre-merge one.
+
+**⚠ SECOND: STITCH BEFORE TEMPLATE CODE** (house rule, workspace `CLAUDE.md`). This is a new
+console page, so it qualifies. And per `lessons.md` (Verification-verdict S5): **for a dense
+DESKTOP admin screen, prototype ONE pattern at a time** — the all-in-one cockpit prompt timed
+out twice and persisted late as duplicates. So: the merchant table alone first, then reuse the
+approved console patterns for the rest. HalaTuju Stitch project = `10844973747787673276`.
+
+**Lessons from `docs/lessons.md` that bind this sprint, and how each is answered:**
+
+1. *"A field allowlist protects a COLUMN and does nothing about a ROW"* (TD-201, 2026-07-31) —
+   this screen is officer-only, so the question is a ROW question. The filter goes in the
+   service beside the query, once, and is asserted at BOTH the serializer and the endpoint so
+   bypassing it fails twice. **No spending row may be reachable by a sponsor or a student.**
+2. *"Before adding a payload to an admin screen, grep for the dict that already serialises that
+   model"* (Sponsor S1) — grep for any existing spend/merchant serialiser before writing one.
+3. *"i18n parity proves en==ms==ta, NOT that a `t()` key EXISTS"* (Sponsor Redesign R7) — every
+   new key goes in all three locales AND the existing `admin-scholarship-i18n.test.ts` scanner
+   must cover this page, or it ships rendering raw key paths on a surface nobody looks at yet.
+4. *"A new read-serializer field must be added to EVERY frontend type that mirrors that
+   endpoint"* (Post-award S6) — jest does not catch it; `next build` does. Run `next build`.
+5. *"Use a plain `Serializer` with explicit `SerializerMethodField`s for a hard leak boundary,
+   and prove it with a PLANTED identifier"* (v2.24.0) — the officer payload may name merchants,
+   so the planted-identifier test here guards the opposite direction: a **student name** must
+   never appear (we never stored one), and no sponsor-facing serializer may gain a spending
+   field by accident.
+6. *"Any hand-declared serializer field written by `setattr` MUST carry an explicit
+   `max_length`"* (input-length-guards, 2026-06-07) — the correction writes
+   `MerchantCategory.decided_by_email` (254) and `reason` (255). Declare both.
+7. *"Design a guard's test from the HARM it prevents"* (S2, 2026-09-10) — the correction's test
+   is not "the field is written". It is: **a corrected merchant survives the next `--all`
+   sweep, and its rows change on a re-read.** That is the whole promise of the screen.
+8. *"The door question belongs to every command that WRITES"* (S3, 2026-09-10) — the Drive
+   summary is written by the ingest job, which already has a door. Say so explicitly rather
+   than assuming it.
+9. *"DERIVE a bite anchor's newline from the file"* (S2) — web files, `views.py` and the docs
+   are CRLF; the spending modules are LF.
+10. *"A predicted figure and a measured figure must never be written in the same shape"*
+    (S3) — any number this screen prints is computed, and the summary's numbers likewise.
+
+**⚠ THE SUMMARY'S OWN RULE, RESTATED BECAUSE IT IS THE EASY ONE TO SOFTEN:** we compute every
+figure in Python and hand it over; **Gemini may not calculate, may not add a figure, and may not
+draw a conclusion the numbers do not carry** (the `verdict_narrative.py` house pattern — that
+module's own docstring says the LLM "NEVER computes or changes the verdict"). It reaches the
+model through the same one seam and is metered by `usage_context`.
+
+
 ---
 
 ## S5 — The sponsor card

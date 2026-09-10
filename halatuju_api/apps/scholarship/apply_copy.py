@@ -77,16 +77,42 @@ _LANGUAGE_PHRASES = (
     'மலாய் மொழி', 'தமிழ் மொழி', 'சீன மொழி',
 )
 
+# ⚠⚠ A TERM MUST BEGIN A WORD, AND THE TAMIL BLOCK IS WHY THIS IS NOT PLAIN `\w`.
+# A bare substring scan reported the Tamil word for CONSENT — சம்மதம் — as the Tamil word for
+# RELIGION, because மதம் sits at its end. That fired live, on a gift's own drafted Tamil, over a
+# criterion that said nothing about religion. It is exactly the failure this module's own docstring
+# names: *a warning that fires on everything is a warning nobody reads.*
+#
+# ⚠ `(?<!\w)` ALONE DOES NOT FIX IT. The character before the match in சம்மதம் is the pulli
+# (U+0BCD), a combining mark in category Mn, which Python does NOT count as `\w` — so the lookbehind
+# passes and the false positive stands. The Tamil block (U+0B80–U+0BFF) has to be named explicitly.
+#
+# ⚠ THE COST, STATED: an inflected Tamil mention (மதத்தின்) no longer matches, because the term
+# carries its own pulli. Under-warning is the right side to err on for an ADVISORY that never
+# refuses — a cried-wolf warning is ignored on the day it is right. Add inflected stems to
+# SENSITIVE_TERMS if a real case is missed.
+def _term_pattern(term):
+    return re.compile(r'(?<![\w஀-௿])' + re.escape(term))
+
+
+#: Compiled once — the scan runs on every admin row read.
+_TERM_PATTERNS = tuple((t, _term_pattern(t)) for t in SENSITIVE_TERMS)
+
 
 def sensitive_terms(*parts):
     """Terms in `parts` that touch race, ethnicity or religion. Sorted, case-insensitive.
 
-    Advisory ONLY — no caller refuses on this. See the block above for why.
+    Advisory ONLY — no caller refuses on this. See the blocks above for why, and for why a match
+    must begin a word.
     """
     haystack = ' '.join(p or '' for p in parts).lower()
     for phrase in _LANGUAGE_PHRASES:
         haystack = haystack.replace(phrase, ' ')
-    return tuple(sorted({t for t in SENSITIVE_TERMS if t in haystack}))
+    hits = {t for t, pat in _TERM_PATTERNS if pat.search(haystack)}
+    # "Indian" matches both `indian` and `india`, because the shorter one also begins that word.
+    # Reporting both reads as two findings where the reader sees one word, so keep the longer.
+    return tuple(sorted(t for t in hits
+                        if not any(o != t and o.startswith(t) for o in hits)))
 
 
 # ── Validation + normalisation ───────────────────────────────────────────────────────────────

@@ -205,6 +205,9 @@ class TestFenceCoverageCompleteness(TestCase):
         '_ProgrammeScopedBase': 'sabah-s2b-programme-scoped-base',
         'AdminProgrammeListView': 'sabah-s2b-programmes-fenced',
         'AdminProgrammeDetailView': 'sabah-s2b-programmes-fenced',
+        # Reaches its gift through the SAME `_programme_or_404`, so another tenant's gift is 404
+        # before a single token is spent.
+        'AdminApplyCopyDraftView': 'sabah-s2b-programmes-fenced',
         'AdminIntakeYearListView': 'sabah-s2b-intake-years-fenced',
         'AdminIntakeYearDetailView': 'sabah-s2b-intake-years-fenced',
         # Same fence as its sibling — the cohort is reached through `_programmes_for(admin)`, so a

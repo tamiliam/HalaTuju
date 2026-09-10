@@ -659,17 +659,22 @@ function VircleTask({
   const expected = expectedAccountType(item.vircle_expected)
   const [accountType, setAccountType] = useState<VircleAccountType>(expected)
   const warnKey = accountWarningKey(accountType, expected)
+  // Owner, 2026-09-10: a real student confirmed here without ever registering in Vircle
+  // (Vircle: "could not find his IC"). The confirm now needs an explicit tick that the app
+  // is installed AND the account registered — the button alone was doubling as the
+  // declaration. Client-side gate only; the server stores the claim but never requires it.
+  const [installed, setInstalled] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const valid = isValidMyMobile(mobile)
 
   const onConfirmDone = async () => {
-    if (!token || !valid || busy) return
+    if (!token || !valid || !installed || busy) return
     setBusy(true)
     setError(null)
     try {
       await resolveResolutionItem(item.id, `+60${localMobileDigits(mobile)}`, { token },
-                                  undefined, undefined, accountType)
+                                  undefined, undefined, accountType, true)
       onResolved()
     } catch {
       setError(t('scholarship.actionCentre.vircle.error'))
@@ -725,8 +730,22 @@ function VircleTask({
             )}
           </div>
 
+          <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg border border-ground-200 bg-ground-50 px-3 py-2">
+            <input
+              id="vircle-installed"
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
+              checked={installed}
+              onChange={(e) => setInstalled(e.target.checked)}
+              disabled={busy}
+            />
+            <span className="text-sm text-ground-700">
+              {t('scholarship.actionCentre.vircle.installedDeclare')}
+            </span>
+          </label>
+
           <button
-            type="button" onClick={onConfirmDone} disabled={!valid || busy}
+            type="button" onClick={onConfirmDone} disabled={!valid || !installed || busy}
             className="mt-3 w-full rounded-xl bg-brand-fill px-4 py-2.5 text-sm font-semibold text-brand-fill-ink transition-colors hover:bg-brand-fill-hover disabled:opacity-50"
           >
             {busy ? t('scholarship.actionCentre.vircle.confirming') : t('scholarship.actionCentre.vircle.confirm')}

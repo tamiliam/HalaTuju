@@ -181,6 +181,69 @@ a merchant name that looks like a person's.
 pytest full `apps/` **6156 passed** (+32) · `makemigrations --check` clean. No web change, so the
 frontend gates are unchanged from main. **Five bite-checks landed**, each injection verified before
 the run and restored by writing the original bytes back.
+## 2026-09-10 — "How it's advertised": one instruction block, one clear control, and a warning that stops crying wolf
+
+Five owner findings from the live tab, and one bug found inside their own screenshot. **No
+migration.** api + web.
+
+- **⚠ THE ETHNICITY WARNING FIRED ON THE TAMIL WORD FOR CONSENT.** Sensitive terms were matched as
+  bare substrings, and சம்மதம் (consent) ends with மதம் (religion) — so a gift's own drafted Tamil
+  was reported as selecting on religion, over a bullet that said "willing to be contacted". A term
+  must now **begin a word**. `(?<!\w)` alone does NOT fix it: the character before the match is the
+  pulli (U+0BCD), a combining mark Python does not count as `\w`, so the Tamil block is named
+  explicitly. Same rule fixes English ("race" no longer matches "brace"), and a word matching both
+  "indian" and "india" is reported once.
+- **Every standing instruction sits at the top, once.** They were scattered across four places, so a
+  reader met the same guidance three times and read it none. The scattered keys are RETIRED, with an
+  absence guard. "Saved." stays in the save bar — it answers an action.
+- **Clear all wording appears ONCE, on the English tab.** It clears every language; offering it from
+  a Malay tab invited a reader to destroy work they could not see.
+- **"Draft from English" → "Translate from English"** (owner's word, reversing the previous day's
+  choice). The expectation the old word carried MOVED rather than being dropped: the standing
+  instructions now state that this produces a machine translation to be reviewed before saving, and
+  a test holds that sentence in all three languages.
+- **The standard wording is SHOWN, not merely named** — a collapsible panel reading the message files
+  BY TAB LOCALE, so an administrator working in English sees what a Malay applicant would read.
+- **Formal register throughout.**
+
+Gates: pytest **6150** · jest **1988** · tsc **24** (baseline) · lint **0** · i18n **4974 × 3** ·
+`next build` exit 0 · `makemigrations --check` clean. Two bite-checks, both bit.
+Retro `docs/retrospective-2026-09-10-apply-copy-instructions-and-warning.md`; decisions ×2;
+lessons ×3.
+
+## 2026-09-10 — "How it's advertised": a safer clear, and a draft from English
+
+Two owner findings from using the live tab. **No migration.** api + web.
+
+- **The clear button no longer deletes three languages on one unlabelled click.** It was named for
+  its outcome ("Use the standard wording"), read as a peer of Save, appeared whenever ENGLISH was
+  saved, and sat on whichever language tab the reader was on — so it stood live beside an empty
+  Malay form, one press from taking the English with it. Now **"Clear all wording"**, behind a
+  confirm dialog that names every language that will be lost. `useDefault` is RETIRED from all
+  three message files (an absence guard holds it out).
+- **"Draft from English"** on the Malay and Tamil tabs — fills the boxes with a machine draft of
+  the gift's own saved English, and **saves nothing**. New `apps/scholarship/apply_copy_draft.py`
+  + `POST admin/scholarship/programmes/<pk>/apply-copy/draft/`; `gemini-2.5-flash`; one mockable
+  seam, metered through `usage_context`, org-fenced through the same `_programme_or_404`.
+  The bullet count is asserted against the English — a translation that merged two conditions
+  would advertise a lower bar in one language only, and `normalise` would store it happily.
+
+Gates: pytest **6144** · jest **1971** · tsc **24** (baseline) · lint **0** · i18n **4972 × 3** ·
+`next build` exit 0 · `makemigrations --check` clean. Three bite-checks, all bit.
+Retro `docs/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
+`docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
+## The Vircle confirm needs an explicit installed-and-registered tick - 2026-09-10
+
+Owner request, off a real failure the same morning: a student pressed Confirm on the Vircle card
+without ever registering in Vircle, and Vircle's automation could not find his IC. The button was
+doubling as the declaration. The card now carries a required checkbox — "I have installed the
+Vircle app and registered my account with this mobile number" — and the Confirm button (relabelled
+to a plain "Confirm") stays asleep until it is ticked. The tick travels with the confirm and is
+RECORDED on the item (`params.installed_confirmed`); the server never REQUIRES it, so an old
+cached bundle still resolves. Bite-checked (stamp disabled → the new test fails).
+
+pytest 6126 (+2) · jest 1960 (+4) · tsc 24 (baseline) · lint 0 · i18n 4952x3 (+1 key) · build 0 ·
+`makemigrations --check` clean. No migration.
 
 ## Vircle card and emails say the true thing about Child accounts - 2026-09-10
 

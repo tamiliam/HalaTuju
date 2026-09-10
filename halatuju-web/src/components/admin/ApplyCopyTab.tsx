@@ -26,9 +26,11 @@ import { useT } from '@/lib/i18n'
 import { useSelectedProgramme } from '@/lib/useSelectedProgramme'
 import InfoBox from '@/components/InfoBox'
 import ChooseProgramme from '@/components/admin/ChooseProgramme'
+import { platformApplyCard } from '@/lib/applyCopy'
 import SaveBar, { SAVE_BAR_PRIMARY, SAVE_BAR_SECONDARY } from '@/components/admin/SaveBar'
 import {
-  updateAdminProgramme, type AdminApplyCopy, type AdminProgramme,
+  draftApplyCopy, updateAdminProgramme,
+  type AdminApplyCopy, type AdminApplyCopyBlock, type AdminProgramme,
 } from '@/lib/admin-api'
 
 const LOCALES = ['en', 'ms', 'ta'] as const
@@ -50,7 +52,12 @@ type Outcome =
   | { kind: 'idle' }
   | { kind: 'saved' }
   | { kind: 'cleared' }
+  | { kind: 'drafted' }
   | { kind: 'error'; message: string }
+
+/** Which dialog is open. `null` = none. Two questions, one dialog: both are "this replaces
+ *  something you cannot get back by pressing Cancel afterwards". */
+type Ask = null | 'clear' | 'overwrite'
 
 /** Stored map → editable draft. A missing locale is BLANK, never the English text: this is an
  *  editor, and pre-filling would silently promote English into a field nobody typed. */
@@ -79,7 +86,100 @@ export function toPayload(draft: Draft): AdminApplyCopy {
   return out
 }
 
+/** Which languages hold something. Drives the confirm dialog's list, so a reader is told what
+ *  they are about to lose BY NAME rather than "your wording". */
+export function writtenLocales(copy: AdminApplyCopy): Loc[] {
+  return LOCALES.filter(l => Boolean(copy[l]))
+}
+
+/** Has the ENGLISH been edited since the last save?
+ *
+ *  ⚠ THE DRAFT IS MADE FROM THE SAVED ENGLISH, because the server reads the stored row — so
+ *  drafting over unsaved English would translate wording the reader can no longer see, and the
+ *  result would look like a bad translation rather than a stale one. Asked about English ALONE:
+ *  editing Malay must not lock the Tamil button. */
+export function englishUnsaved(draft: Draft, saved: Draft): boolean {
+  return JSON.stringify(toPayload(draft).en ?? null) !== JSON.stringify(toPayload(saved).en ?? null)
+}
+
 // ── Module-scope pieces (see the remount warning above) ──────────────────────────────────────
+
+/**
+ * The platform's standard wording for the language on screen, shown rather than merely named.
+ *
+ * ⚠ THE HINT PROMISED IT AND THE SCREEN DID NOT SHOW IT (owner, 2026-09-10). "Leave every box
+ * blank to use the platform's standard wording" asks somebody to choose between their own words
+ * and words they cannot read. Collapsed by default — it is reference, not the task.
+ */
+function StandardWording({ locale, t }: {
+  locale: Loc
+  t: (k: string, p?: Record<string, string>) => string
+}) {
+  const card = platformApplyCard(locale)
+  if (!card.title) return null
+  return (
+    <details className="mb-5 rounded-lg border border-ground-200 bg-ground-50 px-4 py-3"
+      data-testid="standard-wording">
+      <summary className="cursor-pointer text-sm font-medium text-ground-700">
+        {t('admin.applyCopy.standardHeading')}
+      </summary>
+      <div className="mt-3 space-y-2 text-sm text-ground-700">
+        <p className="font-semibold">{card.title}</p>
+        <p>{card.intro}</p>
+        <ul className="list-disc pl-5 space-y-1">
+          {card.criteria.map((line, i) => <li key={i}>{line}</li>)}
+        </ul>
+      </div>
+    </details>
+  )
+}
+
+function ConfirmDialog({ ask, languages, busy, onCancel, onConfirm, t }: {
+  ask: Exclude<Ask, null>
+  languages: string
+  busy: boolean
+  onCancel: () => void
+  onConfirm: () => void
+  t: (k: string, p?: Record<string, string>) => string
+}) {
+  const clearing = ask === 'clear'
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      data-testid={`confirm-${ask}`}
+      onClick={() => !busy && onCancel()}>
+      <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}>
+        <h2 className={`text-lg font-semibold ${clearing ? 'text-critical-700' : 'text-ground-900'}`}>
+          {t(clearing ? 'admin.applyCopy.clearTitle' : 'admin.applyCopy.overwriteTitle')}
+        </h2>
+        <p className="mt-2 text-sm text-ground-700">
+          {t(clearing ? 'admin.applyCopy.clearBody' : 'admin.applyCopy.overwriteBody')}
+        </p>
+        {/* ⚠ NAME THE LANGUAGES. The button lives on ONE language's tab and clears ALL of them —
+            somebody standing on an empty Malay form has no way to know English goes too. */}
+        {clearing && languages && (
+          <p className="mt-2 text-sm text-ground-700" data-testid="clear-languages">
+            {t('admin.applyCopy.clearLanguages', { languages })}
+          </p>
+        )}
+        <div className="mt-5 flex justify-end gap-3">
+          <button type="button" onClick={onCancel} disabled={busy}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-ground-600 hover:text-ground-900 disabled:opacity-50">
+            {t('common.cancel')}
+          </button>
+          <button type="button" onClick={onConfirm} disabled={busy}
+            data-testid={`confirm-${ask}-go`}
+            className={clearing
+              ? 'rounded-lg bg-critical-fill px-4 py-2 text-sm font-semibold text-critical-fill-ink hover:bg-critical-fill-hover disabled:opacity-50'
+              : SAVE_BAR_PRIMARY}>
+            {t(clearing ? 'admin.applyCopy.clearCta' : 'admin.applyCopy.overwriteCta')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 function Bullets({ value, onChange, t }: {
   value: string[]
@@ -147,6 +247,7 @@ export default function ApplyCopyTab() {
   const [saved, setSaved] = useState<Draft>(() => toDraft(undefined))
   const [flagged, setFlagged] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  const [ask, setAsk] = useState<Ask>(null)
   const [outcome, setOutcome] = useState<Outcome>({ kind: 'idle' })
 
   const programmeId = programme?.id ?? null
@@ -158,6 +259,7 @@ export default function ApplyCopyTab() {
     setDraft(asDraft)
     setSaved(asDraft)
     setFlagged(programme?.apply_copy_sensitive ?? [])
+    setAsk(null)
     setOutcome({ kind: 'idle' })
   }, [programmeId, programme])
 
@@ -192,6 +294,40 @@ export default function ApplyCopyTab() {
       })
     } finally {
       setBusy(false)
+      setAsk(null)
+    }
+  }, [token, programmeId, t])
+
+  /** ⚠ FILLS THE BOXES. IT NEVER SAVES — the server refuses to write, and so does this. The
+   *  reader corrects the draft and presses Save, which is the same PATCH and the same
+   *  validation any typed wording goes through. */
+  const runDraft = useCallback(async (loc: Loc) => {
+    // English is the SOURCE, so it can never be a target. The button renders only on the other
+    // two tabs; this is the type-level statement of the same thing.
+    if (!token || programmeId === null || loc === 'en') return
+    setBusy(true)
+    try {
+      const block: AdminApplyCopyBlock = await draftApplyCopy(programmeId, loc, { token })
+      setDraft(d => ({
+        ...d,
+        [loc]: {
+          title: block.title || '',
+          intro: block.intro || '',
+          criteria: [...(block.criteria ?? [])],
+        },
+      }))
+      setOutcome({ kind: 'drafted' })
+    } catch (e) {
+      const code = (e as { code?: string })?.code || ''
+      const known = ['english_required', 'bad_locale', 'bullet_count', 'draft_too_long',
+        'bad_reply', 'ai_unconfigured', 'ai_unavailable', 'ai_failed'].includes(code)
+      setOutcome({
+        kind: 'error',
+        message: known ? t(`admin.applyCopy.error.${code}`) : t('admin.applyCopy.draftFailed'),
+      })
+    } finally {
+      setBusy(false)
+      setAsk(null)
     }
   }, [token, programmeId, t])
 
@@ -205,9 +341,40 @@ export default function ApplyCopyTab() {
   const set = (patchBlock: Partial<Block>) =>
     setDraft({ ...draft, [lang]: { ...block, ...patchBlock } })
 
+  // The draft is made from the SAVED English, so it is offered only when there IS saved English
+  // and nothing unsaved is hiding it. Each refusal says which of the two it is.
+  const staleEnglish = englishUnsaved(draft, saved)
+  const draftBlocked = !configured
+    ? t('admin.applyCopy.draftNeedsEnglish')
+    : staleEnglish ? t('admin.applyCopy.draftEnglishUnsaved') : ''
+  const targetHasText = Boolean(toPayload(draft)[lang])
+  const clearList = writtenLocales(toPayload(saved))
+    .map(l => t(`admin.applyCopy.lang.${l}`)).join(', ')
+
   return (
     <div data-testid="apply-copy-tab">
-      <p className="text-sm text-ground-600 mb-4">{t('admin.applyCopy.hint')}</p>
+      {/* ⚠⚠ EVERY STANDING INSTRUCTION SITS HERE, ONCE (owner, 2026-09-10). They were scattered —
+          one under the tab strip, one per language tab, one under the criteria, one beside the
+          translate button — so a reader met the same guidance three times and read it none. Do not
+          push a sentence back down beside the control it governs. */}
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div className="text-sm text-ground-600 space-y-1 max-w-3xl" data-testid="apply-copy-hint">
+          <p>{t('admin.applyCopy.hint')}</p>
+          <p>{t('admin.applyCopy.hintBlank')}</p>
+          <p>{t('admin.applyCopy.hintExact')}</p>
+          <p>{t('admin.applyCopy.hintTranslate')}</p>
+        </div>
+        {/* ⚠ ONCE, ON ENGLISH, AT THE TOP — never on the other tabs (owner, 2026-09-10). It clears
+            EVERY language, so offering it from a Malay tab invites a reader to destroy work they
+            cannot see. English is where the gift's wording begins, so it is where it ends. */}
+        {configured && lang === 'en' && (
+          <button type="button" className={SAVE_BAR_SECONDARY} disabled={busy}
+            data-testid="use-default"
+            onClick={() => setAsk('clear')}>
+            {t('admin.applyCopy.clearAll')}
+          </button>
+        )}
+      </div>
 
       {/* ⚠ ADVISORY, NEVER A REFUSAL (owner ruling 2026-09-09, option A). MyNadi's s44(6) tax
           status requires its programme not to discriminate by race — but that constraint follows
@@ -229,9 +396,23 @@ export default function ApplyCopyTab() {
 
       <LangTabs active={lang} onPick={setLang} t={t} />
 
+      {/* ⚠ THE ONLY THING THAT MAY SIT BESIDE A CONTROL IS THE REASON IT IS ASLEEP — that is
+          particular to this moment, not standing guidance, so it belongs nowhere else. */}
       {lang !== 'en' && (
-        <p className="text-sm text-ground-500 mb-4">{t('admin.applyCopy.fallbackNote')}</p>
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+          {draftBlocked && (
+            <p className="text-xs text-ground-500" data-testid="draft-hint">{draftBlocked}</p>
+          )}
+          <button type="button" className={SAVE_BAR_SECONDARY}
+            disabled={busy || Boolean(draftBlocked)}
+            data-testid="draft-from-english"
+            onClick={() => (targetHasText ? setAsk('overwrite') : runDraft(lang))}>
+            {busy ? t('admin.applyCopy.drafting') : t('admin.applyCopy.draft')}
+          </button>
+        </div>
       )}
+
+      <StandardWording locale={lang} t={t} />
 
       <div className="space-y-5">
         <div>
@@ -255,10 +436,10 @@ export default function ApplyCopyTab() {
             {t('admin.applyCopy.field.criteria')}
           </label>
           <Bullets value={block.criteria} onChange={(criteria) => set({ criteria })} t={t} />
-          {/* ⚠ THE COST OF THE DIVERGENCE, SAID OUT LOUD. The owner accepted that the advertised
-              bar may differ from the Rules tab; the tab has to name what that costs, or the next
+          {/* ⚠ THE COST OF THE DIVERGENCE IS STILL SAID — it moved to the instruction block at the
+              top (`hintExact`), it was not dropped. The owner accepted that the advertised bar may
+              differ from the Rules tab, and the tab has to name what that costs, or the next
               org_admin discovers it through a student who was turned down automatically. */}
-          <p className="text-sm text-ground-600 mt-3">{t('admin.applyCopy.looserWarning')}</p>
         </div>
       </div>
 
@@ -267,17 +448,15 @@ export default function ApplyCopyTab() {
         status={
           outcome.kind === 'saved' ? t('admin.applyCopy.saved')
             : outcome.kind === 'cleared' ? t('admin.applyCopy.cleared')
-              : outcome.kind === 'error' ? outcome.message
-                : null
+              : outcome.kind === 'drafted' ? t('admin.applyCopy.drafted')
+                : outcome.kind === 'error' ? outcome.message
+                  : null
         }
       >
-        {configured && (
-          <button type="button" className={SAVE_BAR_SECONDARY} disabled={busy}
-            data-testid="use-default"
-            onClick={() => patch({}, { kind: 'cleared' })}>
-            {t('admin.applyCopy.useDefault')}
-          </button>
-        )}
+        {/* ⚠⚠ THE CLEAR CONTROL IS NOT IN THIS BAR, AND MUST NOT COME BACK. It deletes EVERY
+            language, so beside Save it read as a peer of Save — a second way to submit — and it
+            appeared on whichever language tab the reader happened to be on. It now sits ONCE, at
+            the top of the ENGLISH tab, behind a confirm that names what will be lost. */}
         <button type="button" className={SAVE_BAR_PRIMARY} disabled={busy || !dirty}
           title={dirty ? undefined : t('common.nothingToSave')}
           data-testid="copy-save"
@@ -285,6 +464,15 @@ export default function ApplyCopyTab() {
           {t('common.save')}
         </button>
       </SaveBar>
+
+      {ask && (
+        <ConfirmDialog
+          ask={ask} languages={clearList} busy={busy} t={t}
+          onCancel={() => setAsk(null)}
+          onConfirm={() => (ask === 'clear'
+            ? patch({}, { kind: 'cleared' })
+            : runDraft(lang))} />
+      )}
     </div>
   )
 }

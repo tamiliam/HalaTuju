@@ -799,6 +799,204 @@ Then S3 the sorter, S4 the officer view + a Gemini-written summary filed back to
 (**⚠ in a SUBFOLDER, and the reader accepts only the Vircle filename pattern — our own output must
 never be read back as an input**), S5 the sponsor card (Stitch first).
 
+**▶ ALSO STANDING, FROM `main` AND NOT PART OF THIS BRANCH:** the **officer income vocabulary**
+sprint (`docs/plans/2026-09-09-officer-income-vocabulary.md`), already planned and
+owner-approved — eleven officer strings say "B40" when a gift may set NULL income ceilings
+(the Test round already does). Merged in here at 2026-09-10; whichever sprint runs first, the
+other keeps its plan file. Also logged, not built: **TD-237**.
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after "How it's advertised" round two)
+
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-10.** `main` at **`f36047e3`**; BOTH Cloud Builds
+SUCCESS on `f36047e` — **waited on the push's OWN build IDs** (api `b6ec0458…`, web
+`4122413a…`). Serving **halatuju-api-01018-65q** / **halatuju-web-00872-x76** (read from
+`status.latestReadyRevisionName`, never `status.traffic[0]`). Site 200; **no api ERROR logs since**.
+
+**THE SERVED ADMIN BUNDLE WAS READ BACK, BOTH DIRECTIONS** (1.64 MB across 21 chunks). PRESENT:
+"Translate from English", "The platform's standard wording", "produces a machine translation",
+"State each condition exactly", "in the language each applicant has chosen". **GONE:** "Draft from
+English", "Leave this language blank and applicants will see", "Applicants read this. If it
+promises easier terms", "Fills these boxes with a machine draft", "Use the standard wording".
+**RESULT: PASS.** The absence half is the only thing that answers a rename or a consolidation —
+a presence grep passes while a retired sentence still sits beside the new one.
+
+**NO MIGRATION, NO ENV VAR, NO DATA STEP. Nothing a student sees changed** — both gifts still
+read `apply_copy: {}`.
+
+Was worktree `.worktrees/apply-copy-v3`, branch `feat/apply-copy-v3`. api + web. Retro
+`docs/retrospective-2026-09-10-apply-copy-instructions-and-warning.md`; decisions ×2; lessons
+×3. Gates: pytest **6150**; jest **1988**; tsc **24** (baseline); lint **0**; i18n **4974 × 3**;
+`next build` exit 0; `makemigrations --check` clean. **Two bite-checks, both bit** (reverting the
+Tamil word-boundary rule failed the consent + brace tests; re-adding `looserWarning` failed the
+instructions-in-one-place guard).
+
+**⚠⚠ THE ETHNICITY WARNING FIRED ON THE TAMIL WORD FOR CONSENT — read this first.** Nobody
+reported it; it was found by reading the owner's own screenshot as a Tamil reader. Sensitive terms
+were matched as **bare substrings**, and சம்மதம் (consent) ends with மதம் (religion) — so a
+gift's own drafted Tamil was accused of selecting on religion over a bullet that said "willing to
+be contacted". The same fault was live in English the whole time (`race` inside `brace`).
+
+- **⚠ `(?<!\w)` ALONE DOES NOT FIX IT, and this is the part to remember.** The character before the
+  match in சம்மதம் is the **pulli (U+0BCD), a combining mark in category Mn**, which Python does
+  NOT count as `\w` — so the lookbehind passes and the false positive stands. The Tamil block
+  (U+0B80–U+0BFF) must be named explicitly: `(?<![\w஀-௿])`.
+- **⚠ THE RECALL LOSS IS DELIBERATE AND IS WRITTEN DOWN.** An inflected Tamil mention (மதத்தின்)
+  no longer matches, because the term carries its own pulli. Under-warning is the correct side to
+  err on for an **ADVISORY THAT NEVER REFUSES** — a cried-wolf banner is ignored on the day it is
+  right. If a real ethnicity-scoped criterion is ever seen passing unflagged, add the inflected
+  stems to `SENSITIVE_TERMS`; the matching rule needs no change.
+- A word matching both `indian` and `india` is reported **once** (longest wins).
+
+**WHAT ELSE SHIPPED, and the parts that must not be "tidied":**
+- **⚠ EVERY STANDING INSTRUCTION SITS AT THE TOP, ONCE, AND AN ABSENCE GUARD HOLDS THE OLD ONES
+  OUT.** Four sentences had accreted beside the things they governed, so a reader met the same
+  guidance three times and read it none. **A moved sentence and a dropped sentence look identical
+  in a diff** — the accuracy caution ("terms easier than your Rules attract applications that are
+  declined automatically") could have vanished with the tidy-up and nothing would have failed. Each
+  retired key was checked into the new block BY NAME; the guard fails if any reappears.
+- **"Saved." stays in the save bar** — it answers an action, not the form.
+- **⚠ CLEAR ALL WORDING APPEARS ONCE, ON THE ENGLISH TAB.** It clears every language; offering it
+  from a Malay tab invites a reader to destroy work they cannot see.
+- **⚠ "Draft from English" → "Translate from English" (owner's word), AND THE CAUTION MOVED RATHER
+  THAN BEING DROPPED.** The previous day's ruling picked "Draft" precisely because it makes a reader
+  want to check. The standing instructions now state that this produces a machine translation to be
+  read and corrected before saving, and a **test holds that sentence in all three languages**. Do
+  not re-argue the label; the caution is the load-bearing half and it is no longer in the label.
+- **⚠ THE PLATFORM'S STANDARD WORDING IS SHOWN, BY TAB LOCALE** — a collapsible panel reading the
+  message files, so an administrator on the Malay tab sees what a Malay applicant would read.
+  `platformApplyCard(locale)` in `applyCopy.ts` is the ONE reader; it walks `criteria1..n` until a
+  key is missing rather than hard-coding four.
+- **Formal register throughout.**
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Configuration → **How it's advertised**. Every instruction is in one block at the top; the
+   language tabs carry none.
+2. **Clear all wording** sits beside that block on the **English** tab only.
+3. Open **The platform's standard wording** on the Malay tab — it should show the MALAY default.
+4. Press **Malay** → the button reads **Translate from English**.
+5. **ms and ta are FIRST DRAFTS**, `hintExact` and `hintTranslate` especially. The Tamil accuracy
+   caution is the one to read first.
+
+**▶ NEXT, ALREADY PLANNED AND OWNER-APPROVED AS ITS OWN SPRINT:** the **officer income
+vocabulary** (`docs/plans/2026-09-09-officer-income-vocabulary.md`). Eleven officer strings say
+"B40". ⚠ The owner first asked to link them to the GIFT'S NAME; that is wrong and the correction is
+recorded — B40 is Malaysia's income band, not a gift name. The real defect is that a gift may set
+NULL income ceilings (**the Test round already does**) and the screen still reasons about "the B40
+line". **STR keeps its name** — it is a government programme.
+
+**▶ ALSO LOGGED, NOT BUILT:** **TD-237** — Applications shows in the rail before a gift is chosen
+(owner chose gating it for the four roles that HAVE an Overview; reviewer and qc keep it). And the
+**landing page + sign-in prompt** carry the same platform-wide B40 copy — same class, other pages,
+still unlogged as work.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-10, after the clear button and the draft-from-English)
+
+**✅ DEPLOYED AND VERIFIED LIVE 2026-09-10.** `main` at **`577cf246`**; BOTH Cloud Builds
+SUCCESS on `577cf24` — **waited on the push's OWN build IDs** (web `4b00836f…`, api
+`3d86dc5c…`), never "the top rows are green". Serving **halatuju-api-01017-nqs** /
+**halatuju-web-00871-kf4** (read from `status.latestReadyRevisionName`, never
+`status.traffic[0]`). Site and apply page 200; the new draft route answers **401 with a body**
+(gated, not 404/500 — a bodyless POST returns 411 from the LB, which is the known quirk, not a
+fault); **no api ERROR logs since**.
+
+**THE SERVED ADMIN BUNDLE WAS READ BACK, BOTH DIRECTIONS** (1.64 MB across 21 chunks): it carries
+"Clear all wording", "Draft from English", "You will lose what you wrote in" and "Save your English
+first" — and it carries **no "Use the standard wording"** in any language. That last one is the
+ABSENCE check, and it is the only question that answers a rename: the retired label could have sat
+right beside the new one and a presence grep would have passed.
+
+**NO MIGRATION, NO ENV VAR, NO DATA STEP.** `APPLY_COPY_DRAFT_MODEL` has a working default and
+`GEMINI_API_KEY` was already on the service. **Nothing a student sees changed** — both gifts still
+read `apply_copy: {}`.
+
+Was worktree `.worktrees/apply-copy-v2`, branch `feat/apply-copy-v2`, base `origin/main` at
+`4c6c15e2`; merged forward once as main moved under it (the Vircle installed-and-registered tick).
+api + web. Retro `docs/retrospective-2026-09-10-apply-copy-clear-and-draft.md`; plan
+`docs/plans/2026-09-10-apply-copy-clear-and-draft.md`; decisions ×2; lessons ×4.
+Gates, run inside the worktree AND re-run on the MERGED tree (origin/main moved under this branch
+— the Vircle installed-and-registered tick landed): pytest **6146**; jest **1975**; tsc **24**
+(baseline); lint **0 Errors**; i18n **4973 × 3**; `next build` exit 0; `makemigrations --check`
+clean.
+**Three bite-checks, all bit**, each injection verified as landed and each restored by writing the
+original bytes back.
+
+**⚠⚠ THE OWNER'S REPORT WAS RIGHT AND ITS REASONING WAS INVERTED — read this first.** They said
+the clear button "is misplaced… only appropriate when all the textboxes are empty". Its timing is
+already the OPPOSITE: it appears only when ENGLISH is SAVED, and is absent from a gift that has
+written nothing. Correcting that and moving on would have closed a live footgun as
+working-as-designed, because the code also showed it **deletes every language**, **appears on
+whichever language tab you happen to be on**, and **asked nothing first**. The dangerous case was
+never the empty gift — it was somebody on an empty MALAY form pressing what reads as a formatting
+preference and losing yesterday's English.
+
+**WHAT SHIPPED, and the parts that must not be "tidied":**
+- **⚠ THE CLEAR BUTTON IS NAMED FOR ITS ACTION AND ASKS FIRST.** "Use the standard wording" →
+  **"Clear all wording"**, behind a confirm dialog that NAMES every language holding text
+  (`writtenLocales`). **`admin.applyCopy.useDefault` IS RETIRED from all three message files**, and
+  an ABSENCE guard holds it out — a presence check on the new label proves nothing about a rename.
+- **⚠ IT STAYS A WHOLE-GIFT ACTION AND MUST NOT BECOME PER-LANGUAGE.** Dropping one language is
+  ALREADY possible: empty its boxes and Save. A second way to remove wording, differing invisibly
+  from the first, is how a screen starts lying about what a button did.
+- **⚠⚠ "DRAFT FROM ENGLISH" DRAFTS AND NEVER SAVES.** `POST
+  admin/scholarship/programmes/<pk>/apply-copy/draft/` returns a block; the browser fills the
+  boxes; the wording reaches a public page only through the existing PATCH, pressed by a person.
+  That is `decisions.md` 2026-05-31 (*the model extracts, the deterministic layer decides*) applied
+  to copy. `test_a_draft_NEVER_writes_to_the_gift` is the load-bearing test.
+- **⚠ THE SOURCE IS THE GIFT'S OWN SAVED ENGLISH, NEVER THE PLATFORM DEFAULT.** Drafting from the
+  platform would translate ANOTHER gift's criteria into this gift's Malay — the right-language
+  falsehood `applyCopy.ts` exists to prevent. The button is also ASLEEP while English has unsaved
+  edits (`englishUnsaved`, asked about English ALONE so a Malay edit cannot lock the Tamil button).
+- **⚠ THE BULLET COUNT IS ASSERTED AGAINST THE ENGLISH, and it is a correctness rule.** Each
+  bullet is one condition. A translation folding two into one advertises a **lower bar in one
+  language only**, and `apply_copy.normalise` would store it happily — all-or-nothing is per
+  LANGUAGE, not per bullet. A drafted line over the stored cap is REFUSED rather than offered, or
+  the reader would be left guessing which box the Save is objecting to.
+- **⚠ LABELLED "DRAFT", NOT "TRANSLATE".** The word is what makes the reader want to check it;
+  the endpoint's inability to write is what makes checking matter.
+- **Qualification names are kept verbatim in every language** (SPM, STPM, PNGK, IPTA, B40, STR…) —
+  a criterion a student cannot match against the certificate in their hand is worse than English.
+- **`gemini-2.5-flash`** (owner decision, cost), settings key `APPLY_COPY_DRAFT_MODEL`. One
+  mockable seam (`_gemini_generate`), no downgrade fallback, metered through `usage_context`,
+  org-fenced through the same `_programme_or_404` — another tenant's gift is 404 **before a token
+  is spent**, and a reviewer cannot spend one at all.
+
+**⚠ A MERGE-CONFLICT BLOCK HAD BEEN COMMITTED INTO `docs/lessons.md`** by the previous evening's
+merge — markers only, no content lost, found at sprint-start and fixed separately (`0835b6b9`). The
+three JSON message files were resolved by a script that parsed them; the markdown was resolved by
+eye, and the eye missed it. **Grep the whole tree for conflict markers before committing a merge.**
+
+**▶ THE DEPLOY IS DONE** — see the header. Python changed, so both builds fired, as expected.
+
+**▶ OWNER POST-CHECK (as the BrightPath `org_admin`, elanjelian@me.com):**
+1. Configuration → **How it's advertised** → Test Programme. The save bar now reads **Clear all
+   wording**; pressing it ASKS, and the dialog names English (the only language holding text).
+2. Press **Malay**. The **Draft from English** button is live; press it and the boxes fill. Read
+   it. Nothing is saved until you press Save.
+3. Clear the English (unsaved) and the draft button should go to sleep with the reason underneath.
+4. **ms and ta are FIRST DRAFTS** for the 23 new admin strings, the Tamil especially.
+5. **No live model call has ever been made** — every test mocks the seam. Your first press is also
+   the first evidence the prompt and the parser agree.
+
+**▶ NEXT, ALREADY PLANNED AND OWNER-APPROVED AS ITS OWN SPRINT:** the **officer income
+vocabulary** (`docs/plans/2026-09-09-officer-income-vocabulary.md`). Eleven officer strings say
+"B40". ⚠ The owner first asked to link them to the GIFT'S NAME; that is wrong and the correction
+is recorded — B40 is Malaysia's income band, not a gift name. The real defect is that a gift may
+set NULL income ceilings (**the Test round already does**) and the screen still reasons about "the
+B40 line". **STR keeps its name** — it is a government programme.
+
+**▶ ALSO LOGGED, NOT BUILT:** **TD-237** — Applications shows in the rail before a gift is chosen
+(owner chose gating it for the four roles that HAVE an Overview; reviewer and qc keep it). And the
+**landing page + sign-in prompt** carry the same platform-wide B40 copy — same class, other pages,
+still unlogged as work.
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
 ## Superseded — previous Next Sprint (as of 2026-09-09, after the apply page's copy became the GIFT's)
 
 **✅ DEPLOYED AND VERIFIED LIVE 2026-09-09.** `main` at **`8da972e1`**; BOTH Cloud Builds
@@ -987,7 +1185,11 @@ Airtable callback (`AUDIT vircle_id_set … by=vircle-airtable`).
   account-type warnings were REWORDED** (owner, off two real Child-account students): a Child
   account DOES receive money (via the parent's wallet) and the mobile we need is always the
   STUDENT'S OWN registered number — never word `warnChildAdult` as a refusal, never ask for the
-  parent's number.
+  parent's number. **And the confirm now needs an explicit installed-and-registered CHECKBOX**
+  (owner, 2026-09-10, off a real student who confirmed without registering — Vircle: "could not
+  find his IC"): the tick gates the button CLIENT-SIDE and is recorded in
+  `params.installed_confirmed`; the server deliberately never requires it (an old cached bundle
+  must keep resolving) — do not "harden" it into a server-side refusal.
 - **⚠ `ActionCentre.vircle.test.ts` refuses the box's return** (no `vircle-id` input, no
   `walletId`/`VIRCLE_PREFIX`/`errorDuitnow`, keys gone from en/ms/ta). Restoring the box is a
   deliberate decision, not a tidy.

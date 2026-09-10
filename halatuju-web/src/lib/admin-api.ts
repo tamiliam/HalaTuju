@@ -3284,6 +3284,25 @@ export async function updateAdminProgramme(
 }
 
 /**
+ * Draft this gift's Malay or Tamil apply-page copy from ITS OWN saved English.
+ *
+ * ⚠⚠ IT RETURNS A DRAFT AND SAVES NOTHING. The caller puts the block in the boxes; the wording
+ * only ever reaches a public page through `updateAdminProgramme`, pressed by a person. That is
+ * the same division the document engines keep — the model proposes, a human decides.
+ *
+ * ⚠ IT READS THE SAVED ENGLISH, not what is on screen, so a caller must not offer it while the
+ * English has unsaved edits: the draft would translate wording the reader can no longer see.
+ * ⚠ It is BILLABLE — one model call per invocation.
+ */
+export async function draftApplyCopy(
+  id: number, locale: 'ms' | 'ta', options?: ApiOptions,
+): Promise<AdminApplyCopyBlock> {
+  const r = await adminMutate<{ locale: string; block: AdminApplyCopyBlock }>(
+    `/api/v1/admin/scholarship/programmes/${id}/apply-copy/draft/`, 'POST', { locale }, options)
+  return r.block
+}
+
+/**
  * Delete a gift that never became anything.
  *
  * ⚠ `confirm` MUST BE THE GIFT'S OWN CODE, and the SERVER checks it — this is not a client
