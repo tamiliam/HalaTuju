@@ -3357,8 +3357,30 @@ class PlatformCost(models.Model):
     SOURCE_CHOICES = [
         ('gcp', 'Google Cloud Platform'),
         ('supabase', 'Supabase'),
+        # 2026-09-11. Its OWN source, not `other`. Google Workspace is a standing monthly line
+        # (the halatuju.xyz mailboxes) and it will be on every invoice from here on. Left in
+        # `other` it becomes indistinguishable from every future one-off, and the by-source
+        # breakdown — the whole reason the column exists — stops answering "what is this?".
+        ('workspace', 'Google Workspace'),
         ('brevo', 'Brevo'),
         ('twilio', 'Twilio'),
+        # 2026-09-11, owner: *"My biggest cost is Claude, which needs to be included via the
+        # request hours."* It is a cost of DELIVERING DEVELOPMENT HOURS, not of running the
+        # platform, so `platform_cost.cost_bucket` files it under development and it never
+        # reaches the infrastructure charge — recovering it twice would be the obvious mistake.
+        ('anthropic', 'Anthropic (Claude)'),
+        # `OPENAI_API_KEY` is set on the live service as the counsellor report's second
+        # provider. The AI registry says it has never fired, so there is no bill yet — but it
+        # bills OUTSIDE Google Cloud, so without a source here the first time it does fire the
+        # cost would land nowhere at all.
+        ('openai', 'OpenAI'),
+        # ⚠ FREE TODAY, LISTED ANYWAY (owner, 2026-09-11). Cloudflare (Turnstile), Brevo above,
+        # and GitHub (the repositories and every CI minute) all cost nothing on their current
+        # plans. They are named here and in the page's free-services footnote because a
+        # dependency nobody has written down is one nobody re-prices when its free tier ends —
+        # and the ledger should have somewhere to put the first bill other than `other`.
+        ('cloudflare', 'Cloudflare'),
+        ('github', 'GitHub'),
         ('other', 'Other'),
     ]
     # How this row came to exist. The distinction is load-bearing: only MEASURED rows can be
@@ -3366,6 +3388,18 @@ class PlatformCost(models.Model):
     # human error. A reconciliation that mixes them without saying so is not an audit.
     PROVENANCE_CHOICES = [
         ('measured', 'Measured — pulled from the provider\'s own billing data'),
+        # 2026-09-11. Owner ruling: *"Don't use typed by hand. Everything should be extracted
+        # from the relevant systems."* So a third state, and it is genuinely a third state
+        # rather than a rename of `entered`.
+        #
+        # `extracted` is REPRODUCIBLE: the provider's own PDF is the input, a deterministic
+        # parser is the method, and anybody holding the file gets the identical figure — and
+        # the parser refuses outright unless its lines reconcile to the total printed on the
+        # invoice. What separates it from `measured` is only that a layout change can break it,
+        # where a billing API cannot. What separates it from `entered` is everything: an entered
+        # row is one person's reading, checkable by nobody.
+        ('extracted', "Extracted — parsed from the provider's own invoice, reconciled to its "
+                      'printed total'),
         ('entered', 'Entered by hand from an invoice'),
     ]
 
@@ -3556,6 +3590,63 @@ class OrgBuildHours(models.Model):
 
     def __str__(self):
         return f'{self.period_month} {self.organisation_id}: {self.hours}h {self.module}'
+
+
+class OrgBillingAdjustment(models.Model):
+    """A discount applied to ONE organisation's bill for ONE month.
+
+    Owner requirement 2026-09-11: *"we do not bill anything for July. 100% discount. But show
+    the values."* Those two sentences are the whole design. July is computed in full, every
+    line visible, and THEN reduced to zero by a row that says so — subtotal, discount, charged.
+
+    ⚠ **A boolean "not billed" flag was rejected.** It loses why, loses who, and above all makes
+    a deliberate waiver indistinguishable from a bug that happened to produce zero. Six months
+    later nobody can tell the difference, and the only way to find out is to re-derive the month
+    — which is exactly the work an audit trail exists to avoid.
+
+    **Separate from `BillingRate`, and the difference is the grain.** A rate is platform-wide
+    and effective-DATED: it applies to everyone from a day onward. A discount is a commercial
+    term agreed with ONE tenant for ONE named month. Storing it as an effective-dated rate would
+    mean a July waiver silently continued into August until somebody remembered to end it.
+
+    `reason` is required, for the same purpose `OrgBuildHours.basis` serves: a number nobody can
+    explain later is not auditable. "Pre-launch goodwill period" is a term; "0" is a mystery.
+    """
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        related_name='billing_adjustments',
+        help_text='The tenant whose bill is reduced. PROTECT: a billing decision must outlive '
+                  'any tidy-up of the organisation record.')
+    period_month = models.CharField(
+        max_length=7,
+        help_text="The single month this applies to, 'YYYY-MM'. Never a range: a waiver that "
+                  'rolls forward on its own is how an unbilled year happens.')
+    discount_pct = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        help_text='Percent off the computed charge. 100 = the month is shown in full and '
+                  'charged nothing. Decimal, never float — this lands on an invoice.')
+    reason = models.TextField(
+        help_text='REQUIRED. Why this month was discounted, in words a stranger reading the '
+                  'ledger next year can act on.')
+    set_by_email = models.EmailField(
+        blank=True, default='',
+        help_text='Who decided it. Waiving a charge is a commercial act and needs a name.')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'org_billing_adjustments'
+        ordering = ['-period_month', 'organisation']
+        constraints = [
+            # One adjustment per (org, month). Two rows would mean two answers to "what was
+            # charged?", and the code would have to pick one — silently.
+            models.UniqueConstraint(
+                fields=['organisation', 'period_month'],
+                name='org_billing_adjustment_unique_month'),
+        ]
+
+    def __str__(self):
+        return f'{self.period_month} {self.organisation_id}: -{self.discount_pct}%'
 
 
 # ── Partner-organisation comms (2026-07-26) ───────────────────────────────────

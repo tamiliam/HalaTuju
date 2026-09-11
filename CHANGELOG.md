@@ -2,6 +2,137 @@
 
 All notable changes to this project will be documented in this file.
 
+## What it cost, what we charge, and the screen that sets the rates - 2026-09-11
+
+The owner sent August's real invoices — GCP RM23.92, Supabase $25, Google Workspace RM18.90,
+Twilio $1.77 — and said none of it reaches the Usage & Billing page, along with the work we do
+fulfilling requests. Then: build the Billing rates screen.
+
+**The investigation found almost all of it already built, and starved.** The `PlatformCost`
+ledger, the BigQuery `sync_gcp_costs` puller, the hand-entry command, `month_totals`/`reconcile`,
+and the `BillingRate` endpoint all shipped in July 2026. **Nothing fed the ledger after June and
+no endpoint had ever read it**, so real invoices reached no screen at all. The rates endpoint had
+sat unread for six weeks — it was the nav's one legitimate reserved slot.
+
+**What shipped:**
+
+- **`AdminPlatformCostsView` — the first reader the ledger has ever had.** Super-only, **403 not
+  404**, matching the rates endpoint: what the platform pays and the margin on it is a commercial
+  disclosure, but there is nothing to hide about the route existing.
+- **⚠ The truthfulness flags now reach the screen.** `month_totals` computes `entered_sources`,
+  `is_complete` and `period_caveats` and they had died in a docstring. **A total that mixes
+  measured and hand-typed figures without saying so is not an audit** — the module's own words.
+  A held invoice makes the month's total a **floor**, and the page says so.
+- **The Billing rates screen** (`/admin/billing-rates`), against the endpoint that shipped
+  2026-07-27. ⚠ **Saving never edits a rate — it adds an effective-dated one**, so a rate typed in
+  September cannot re-price August. The page says so in words, because the mechanism is invisible
+  otherwise. ⚠ **An unset rate is DRAWN, not hidden**: the hourly rate being blank is the most
+  important thing the screen can say, since until it exists no development work can be billed.
+- **`OrgBillingAdjustment` — July is shown in full and charged nothing.** Owner: *"we do not bill
+  anything for July. 100% discount. But show the values."* Both halves. The month computes in
+  full, then a recorded discount reduces it, and the card reads subtotal → discount → charged.
+  ⚠ A boolean "not billed" flag was **rejected**: it loses why, loses who, and makes a deliberate
+  waiver indistinguishable from a bug that produced zero. `reason` is required.
+- **⚠ Metered and infrastructure are REFUSED, never zeroed.** There is no unit-price table
+  (Sprint 13a, "NO prices in v1") and no agreed rule for splitting platform cost between tenants
+  — June measured 72% of the GCP bill as our own crons and deploys, so sharing it out is a pricing
+  decision, not a default. Each says so on the card. **A line the reader can see is missing gets
+  fixed; a RM0.00 gets believed.**
+- **Finished request work is found.** 27.5 quoted hours sat on production and reached no invoice
+  because nothing joined `OrgRequest.quote_hours` to `OrgBuildHours`. ⚠ It is **reported, not
+  auto-billed**: a request has no completion date, so which month it belongs to is a human call.
+  Recording one writes a `[REQ-n]`-tagged `OrgBuildHours` row whose `basis` names the request.
+- **`workspace` became its own `PlatformCost` source** — and was **removed from the page's "free
+  services" footnote**, where it had been listed as costing nothing while we pay MYR 18.90 a month
+  for it. A paid subscription in a "these are free" list tells the only person who reads the page
+  that a recurring bill does not exist.
+- **The nav's last reserved slot is gone.** `billingRates` earned its `placeholder` honestly and
+  has now been filled. The disabled-slot mechanism stays proven against a synthetic row.
+
+**One migration** (`0157`), additive: the new table plus the `workspace` choice.
+
+### Nothing is typed by hand — the invoices read themselves (same day, second pass)
+
+Owner: *"I've placed all the invoices for Jul and Aug 26 in the Downloads/Billing folder… Don't
+use typed by hand. Everything should be extracted from the relevant systems. We want to avoid
+anything manual."* Plus: use the exchange rate at the end of the billing month, and apply the
+margins to everything.
+
+- **⚠ THE GCP PULLER WAS OVERSTATING THE BILL BY 29%, AND HAD BEEN SINCE JULY.** Reading the
+  statements line by line against BigQuery found two independent faults: it grouped by
+  `DATE(usage_start_time)` instead of Google's own `invoice.month`, and it summed `cost` while
+  ignoring the `credits` array — free-tier and committed-use discounts, a fifth to a quarter of
+  every month's bill. June was recorded as **RM88.44**; Google charged **RM68.36**. It was the
+  only month ever synced. Fixed, and the query now reproduces all three statements exactly:
+  `202606 → RM68.36`, `202607 → RM85.15`, `202608 → RM23.92`.
+- **`invoice_parsers.py` — deterministic parsing, NOT AI.** All eight invoices are text PDFs, so
+  the figures are READ, not recognised. The platform has Gemini document extraction and it is the
+  wrong tool here: money must come out identical every time and be re-derivable by anybody
+  holding the file. ⚠ **Every parser reconciles to the total printed on the invoice** or refuses
+  to produce a row at all.
+- **⚠ That self-check earned its keep on the first run.** Twilio's own July invoice lists three
+  products summing to **$4.30** and prints a total of **$4.29** — it rounds each product for
+  display and totals the unrounded figures. Refusing would be wrong; trusting the lines would put
+  the ledger a cent above the bill. The gap now becomes its own named **`Rounding`** line, so the
+  ledger still sums to what we paid and the discrepancy is visible rather than absorbed.
+- **`fx.py` — the rate is fetched, never typed.** ECB closing rate for the last day of the billed
+  month (owner's ruling, which supersedes the old "use the card rate" preference — the card rate
+  is truer to the cent but is not reproducible at all). ⚠ It records **the date the ECB actually
+  published on**, not the date asked for, because a month ending at a weekend has no rate of its
+  own. A failed lookup **raises**; it never falls back to last month or a cache.
+- **A third provenance, `extracted`**, and it is genuinely a third state: reproducible like
+  `measured`, but breakable by a layout change. ⚠ It is rendered as a NOTE, never a warning —
+  dressing it as a caution would train the reader to ignore `entered`, which is the one that is.
+- **⚠ Gemini was being charged to us, not to tenants.** Google renamed the SKU after June
+  (`Generate content…` → `Generate_content…`), the marker stopped matching, and every Gemini line
+  fell through to the platform bucket. RM0.03 in August — which is exactly why nobody noticed —
+  and it is the line that grows with every applicant report.
+- **Margins now apply to everything**, as instructed: the platform-driven slice at the
+  infrastructure margin, the tenant-driven slice at the metered margin, hours at the development
+  margin. ⚠ **Tax is shared pro-rata between the two cost lines**, so the charge still starts from
+  exactly what the providers billed us. A missing margin still refuses rather than showing RM0.00.
+- **⚠ The per-tenant split is written down before it is ever needed.** Metered cost is weighted by
+  each tenant's share of usage events (measured, from the same table the usage screen counts);
+  infrastructure is split equally, because a standing cost does not move with activity. There is
+  ONE tenant today, so both return 100% — which is precisely when the rule is worth stating, so
+  the second tenant makes it a decision somebody reviews rather than a default nobody noticed.
+
+**Second migration** (`0158`), additive: the `extracted` provenance choice.
+
+### Claude is a cost of delivering hours, not of running the platform (same day, third pass)
+
+Owner: *"My biggest cost is Claude, which needs to be included via the request hours."* Plus:
+Brevo, Cloudflare and GitHub are free for now and must be mentioned.
+
+- **⚠ A THIRD COST BUCKET, AND IT PREVENTS THE EXPENSIVE MISTAKE.** Leaving Claude in the platform
+  bucket would mark it up as the infrastructure line **and** leave the hourly rate recovering it —
+  the same ringgit taken twice, on an invoice, quietly. `cost_bucket()` now files it under
+  `development`: counted in the month's total (it is real money) but held out of `platform_myr`.
+  Five tests fail if it ever leaks back.
+- **The development line shows what the TOOLS cost beside what the hours earn**, so *"is RM50/hour
+  enough?"* is a figure on a screen rather than a feeling. Shown, never added.
+- **Tools bought in a month with no billable hours are reported, not hidden.** Silence would read
+  as "nothing was spent"; a real cost was carried and recovered by nothing.
+- **The Anthropic receipts parse themselves** — $100/month Max 5x plus 8% SST, in USD. ⚠ The tax
+  line is NAMED with the word "tax" because Anthropic prints only "SST"; widening `is_tax` to
+  match SST/GST/VAT was rejected, since "vat" is a substring of ordinary words like "innovate" and
+  would silently turn real charges into tax.
+- **⚠ NORMALISATION, AND IT IS NOT COSMETIC.** `pypdf` returns Anthropic's en-dash as a literal
+  **NUL byte** — `'Sep 3\0Oct 3, 2026'`. A NUL is not whitespace to `\s`, so every pattern
+  spanning it failed, and the failure looked exactly like a provider changing its layout.
+- **A month that has not ended says so**, instead of reporting what reads like an exchange-rate
+  outage. September's receipt is recorded unconverted and the month reports itself a FLOOR.
+- **New sources**: `anthropic`, `openai`, `cloudflare`, `github`. ⚠ `OPENAI_API_KEY` is set on the
+  live service as the counsellor report's second provider; it has never fired, but it bills
+  outside Google Cloud, so without a source the first bill would land nowhere at all.
+- **Brevo, Cloudflare and GitHub are NAMED in the free-services footnote.** A dependency nobody
+  has written down is one nobody re-prices when its free tier ends.
+- **Google AI was already covered** — Gemini and Cloud Vision bill inside the HalaTuju GCP project
+  as their own lines. The RM8.32 of Gemini in August belongs to **FicusValue**, a different
+  project on the same billing account, and the ledger correctly excludes it.
+
+**Third migration** (`0159`), additive: the four new source choices.
+
 ## The spending page, round two - search, filters, counts - 2026-09-11
 
 The owner's five follow-ups after using the tabbed page. Four shipped here; the fifth (moving

@@ -49,6 +49,24 @@ class TestClassification(TestCase):
         self.assertTrue(platform_cost.classify_sku('Cloud Run', 'Services CPU Tier 2'))
         self.assertFalse(platform_cost.classify_sku('Cloud Run', 'Jobs CPU in asia-southeast1'))
 
+    def test_gemini_is_tenant_driven_however_google_spells_the_sku(self):
+        """⚠ A REAL MISCLASSIFICATION, CAUGHT ON 2026-09-11.
+
+        June's invoice said 'Generate content output token count gemini 2'. July's and August's
+        say **'Generate_content text output token count for …'** — Google changed the spelling,
+        and the spaced marker stopped matching. Every Gemini line therefore fell through to
+        `platform`: the single most tenant-driven cost on the bill, counted as our own.
+
+        It was RM0.03 in August, which is exactly why nobody would have noticed — and it is the
+        line that grows with every applicant report. Both spellings are pinned here, plus the
+        service name, so the next rename cannot repeat it silently.
+        """
+        for sku in ('Generate content output token count gemini 2',
+                    'Generate_content text output token count for gemini-2.5-flash',
+                    'Generate_content input token count for gemini-2.5-pro'):
+            with self.subTest(sku=sku):
+                self.assertTrue(platform_cost.classify_sku('Gemini API', sku))
+
     def test_an_unrecognised_sku_defaults_to_platform(self):
         """Conservative by design: a new Google SKU must not silently start billing tenants."""
         self.assertFalse(platform_cost.classify_sku('Some New Service', 'Some New SKU'))

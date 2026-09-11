@@ -158,14 +158,28 @@ describe('the Go-to chip', () => {
     expect(within(staff).getByText(/admin.shell.goTo/).getAttribute('aria-hidden')).toBe('true')
   })
 
-  // `super`: the shape sprint left Billing rates as the only reserved slot, and it is platform-
-  // scoped. The rule under test is unchanged — a chord chip on a row that goes nowhere would
-  // advertise a shortcut that cannot fire.
+  // ⚠ A FABRICATED reserved slot. The registry has held none since Billing rates shipped its
+  // page on 2026-09-11 — but the rule outlives whichever item wears the flag, so it is proven
+  // against a synthetic row rather than deleted along with the last real one. A chord chip on a
+  // row that goes nowhere would advertise a shortcut that cannot fire.
   it('offers no chip on a reserved slot', () => {
-    const nav = renderRail('super')
+    const groups = groupsFor('super').map((g) => ({
+      ...g,
+      items: g.items.map((i) =>
+        i.id === 'billingRates' ? { ...i, placeholder: true } : i),
+    }))
+    const nav = renderRail('super', { groups })
     const slot = within(nav).getByText('admin.nav.billingRates')
       .closest('[aria-disabled]') as HTMLElement
+    expect(slot).toBeTruthy()
     expect(within(slot).queryByText(/admin.shell.goTo/)).toBeNull()
+  })
+
+  // The other half of the same change: with no flag on it, the row is a real link with a chip.
+  it('offers a chip on Billing rates now that the page exists', () => {
+    const nav = renderRail('super')
+    const link = within(nav).getByText('admin.nav.billingRates').closest('a') as HTMLElement
+    expect(link.getAttribute('href')).toBe('/admin/billing-rates')
   })
 })
 

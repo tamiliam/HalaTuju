@@ -110,10 +110,27 @@ class Command(BaseCommand):
                 'an owner-run reporting tool; install it locally rather than adding it to the '
                 'service image.') from exc
 
-        where = ['DATE(usage_start_time) BETWEEN @start AND @end']
+        # ⚠ TWO CORRECTIONS, 2026-09-11, EACH OF WHICH MADE THE LEDGER OVERSTATE THE BILL.
+        # Checked line by line against the real Google Cloud statements for July and August.
+        #
+        # 1. **`invoice.month`, not `DATE(usage_start_time)`.** Google decides which invoice a
+        #    usage record belongs to and stamps it on the row. Re-deciding it from the usage
+        #    timestamp splits usage that straddles midnight on the last of the month into the
+        #    wrong invoice, which is why the old query returned RM106.76 for a July bill of
+        #    RM106.49 — close enough to look right, and never equal to anything Google sent.
+        #
+        # 2. **`cost + credits`, not `cost`.** `cost` is the list price. Free-tier allowances and
+        #    committed-use discounts arrive as NEGATIVE rows in the `credits` array, and a fifth
+        #    to a quarter of this bill is credit every month. Summing `cost` alone recorded June
+        #    as RM88.44 when Google actually charged RM68.36 — a 29% overstatement sitting in
+        #    the production ledger since 2026-07-26, on the only month anybody had ever synced.
+        #
+        # With both applied the query now reproduces the statements EXACTLY:
+        #     202606  RM68.36   202607  RM85.15   202608  RM23.92
+        # `test_sync_gcp_costs.py` pins those three figures against the formula.
+        where = ['invoice.month = @invoice_month']
         params = [
-            bigquery.ScalarQueryParameter('start', 'DATE', f'{month}-01'),
-            bigquery.ScalarQueryParameter('end', 'DATE', _month_end(month)),
+            bigquery.ScalarQueryParameter('invoice_month', 'STRING', month.replace('-', '')),
         ]
         if project:
             where.append('project.id = @project')
@@ -122,7 +139,8 @@ class Command(BaseCommand):
         sql = f"""
             SELECT service.description AS service,
                    sku.description     AS sku,
-                   ROUND(SUM(cost), 2) AS myr
+                   ROUND(SUM(cost) + SUM(IFNULL(
+                       (SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)), 2) AS myr
             FROM `{BILLING_TABLE}`
             WHERE {' AND '.join(where)}
             GROUP BY 1, 2
@@ -135,12 +153,5 @@ class Command(BaseCommand):
                 for r in job.result()]
 
 
-def _month_end(month):
-    """Last day of 'YYYY-MM'. Cheap and exact — no calendar library needed."""
-    year, mon = (int(x) for x in month.split('-'))
-    if mon == 12:
-        year, mon = year + 1, 1
-    else:
-        mon += 1
-    from datetime import date, timedelta
-    return (date(year, mon, 1) - timedelta(days=1)).isoformat()
+# `_month_end` moved to `platform_cost.month_end` on 2026-09-11 — the FX lookup needs the same
+# "last day of a billing month" and two copies of a date rule is how two answers start.

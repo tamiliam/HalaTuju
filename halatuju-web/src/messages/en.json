@@ -3120,6 +3120,35 @@
     "accessRestored": "Access restored"
   },
   "admin": {
+    "billingRates": {
+      "title": "Billing rates",
+      "subtitle": "The margins and the hourly rate that turn what we pay, and the hours we work, into what we charge.",
+      "neverRetroactive": "Saving does not change a rate. It adds a new one starting from the month you pick, and the old value stays where it is. A rate you set today can never re-price a month that has already been billed.",
+      "loading": "Loading rates…",
+      "notSet": "Not set",
+      "inForceSince": "In force from {date}",
+      "setBy": "Set by {email}",
+      "newMargin": "New margin %",
+      "newRate": "New rate RM/h",
+      "from": "From",
+      "why": "Why",
+      "save": "Save",
+      "history": "{n} earlier values",
+      "category": {
+        "infrastructure": "Infrastructure",
+        "metered": "Metered usage",
+        "development": "Development"
+      },
+      "kind": {
+        "margin_pct": "Margin added on top (%)",
+        "hourly_rate": "Rate per hour (RM)"
+      },
+      "blocked": {
+        "infrastructure": "Until this is set, no margin is added to what we pay for infrastructure.",
+        "metered": "Until this is set, no margin is added to metered usage.",
+        "development": "Until this is set, development hours cannot be charged at all. The bill says so rather than showing zero."
+      }
+    },
     "table": {
       "scrollHint": "Swipe the table sideways to see the rest."
     },
@@ -5060,7 +5089,7 @@
     },
     "billing": {
       "title": "Billing & usage",
-      "subtitleSuper": "Metered usage across every organisation, plus the shared platform base. Units and tokens only — no charges are shown.",
+      "subtitleSuper": "Metered usage across every organisation, plus the shared platform base, what the platform cost, and what each organisation is charged.",
       "subtitleOrg": "Your organisation's metered usage for the month. Units and tokens only — no charges are shown.",
       "loading": "Loading usage…",
       "comingSoon": "Billing & usage is coming soon.",
@@ -5073,6 +5102,69 @@
       "paused": "Paused",
       "freeNote": "Not metered (free services):",
       "tokensLine": "{in} in / {out} out tokens",
+      "cost": {
+        "title": "What the platform cost",
+        "sub": "Real invoices from Google Cloud, Supabase, Google Workspace and Twilio. Super only.",
+        "total": "Total paid",
+        "floor": "At least this much — one invoice is not yet in ringgit",
+        "attributable": "Driven by organisations",
+        "attributableSub": "OCR, AI and traffic — moves with what organisations do",
+        "platform": "Driven by us",
+        "platformSub": "Scheduled jobs, builds and deploys — a platform fee, not a metered charge",
+        "development": "Delivering hours",
+        "developmentSub": "Claude and the tools that build features — recovered by the hourly rate, not the platform fee",
+        "tax": "Tax",
+        "none": "No costs recorded for this month.",
+        "byHand": "Typed by hand",
+        "fromInvoice": "From the invoice",
+        "col": {
+          "source": "Provider",
+          "amount": "Amount"
+        },
+        "caveat": {
+          "extracted": "These figures were read from the provider's own invoice and checked against the total printed on it",
+          "incomplete": "An invoice is held but not yet converted to ringgit, so the total above is a floor, not a total",
+          "entered": "These figures were read off an invoice by a person, not measured",
+          "caveat": "A provider bills outside the calendar month"
+        },
+        "source": {
+          "gcp": "Google Cloud",
+          "supabase": "Supabase",
+          "workspace": "Google Workspace",
+          "twilio": "Twilio",
+          "anthropic": "Anthropic (Claude)",
+          "openai": "OpenAI",
+          "cloudflare": "Cloudflare",
+          "github": "GitHub",
+          "brevo": "Brevo",
+          "other": "Other"
+        }
+      },
+      "charge": {
+        "title": "What we charge",
+        "sub": "Every line is shown in full, then any discount is taken off it.",
+        "subtotal": "Subtotal",
+        "charged": "Charged",
+        "discount": "Discount ({pct})",
+        "workedAt": "{hours} at {rate} plus {margin}",
+        "costPlus": "we paid {cost}, plus {margin}",
+        "share": "this organisation's share: {pct}",
+        "toolCost": "the tools for these hours cost us {cost}",
+        "setDiscount": "Set a discount for {month}",
+        "pct": "Discount %",
+        "reason": "Why (required)",
+        "apply": "Apply",
+        "line": {
+          "development": "Development hours",
+          "metered": "Metered usage",
+          "infrastructure": "Infrastructure"
+        }
+      },
+      "unbilled": {
+        "title": "Finished work not yet billed",
+        "sub": "Requests marked done that carry quoted hours. Recording one puts those hours in {month}.",
+        "record": "Record"
+      },
       "service": {
         "gemini": "AI calls (Gemini)",
         "vision_ocr": "Document OCR (Cloud Vision)",
@@ -5090,7 +5182,9 @@
       },
       "free": {
         "workspace": "Google Workspace (Meet, Calendar, Drive, Sheets)",
-        "turnstile": "Cloudflare Turnstile (contact-form verification)"
+        "turnstile": "Cloudflare Turnstile (contact-form verification)",
+        "brevo": "Brevo (sending email)",
+        "github": "GitHub (code and deployments)"
       },
       "modelCalls": "{n} calls",
       "modelLastUsed": "last used {date}",

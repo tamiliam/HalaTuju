@@ -453,18 +453,20 @@ describe('visibleNav groups', () => {
     })
   })
 
-  it('marks reserved slots so the sidebar can disable them', () => {
-    const platform = visibleNav(ctx('super')).find((g) => g.scope === 'platform')!
-    expect(platform.items.find((i) => i.id === 'students')!.placeholder).toBeFalsy()
-    expect(platform.items.find((i) => i.id === 'billingRates')!.placeholder).toBe(true)
+  // ⚠ LITERAL ON PURPOSE, like the role matrix. A reserved slot is a promise about where a thing
+  // will live, and three of the four that ever existed guessed the shape wrongly (see the
+  // `placeholder` note in navigation.ts). The fourth, `billingRates`, earned its slot because its
+  // endpoint had SHIPPED — and on 2026-09-11 its page shipped too, so nothing is reserved now.
+  // Adding a slot should cost somebody a deliberate edit here and a stated reason.
+  it('reserves nothing today', () => {
+    expect(NAV_ITEMS.filter((i) => i.placeholder).map((i) => i.id)).toEqual([])
   })
 
-  // ⚠ LITERAL ON PURPOSE, like the role matrix. A reserved slot is a promise about where a thing
-  // will live, and three of the four that existed guessed the shape wrongly (see the `placeholder`
-  // note in navigation.ts). `billingRates` survives because its endpoint SHIPPED and only the page
-  // is missing. Adding a fifth slot should cost somebody a deliberate edit here and a reason.
-  it('reserves exactly one slot, and it is the one with a shipped endpoint behind it', () => {
-    expect(NAV_ITEMS.filter((i) => i.placeholder).map((i) => i.id)).toEqual(['billingRates'])
+  it('billing rates is a real destination now, not a reserved slot', () => {
+    const platform = visibleNav(ctx('super')).find((g) => g.scope === 'platform')!
+    const item = platform.items.find((i) => i.id === 'billingRates')!
+    expect(item.placeholder).toBeFalsy()
+    expect(item.href).toBe('/admin/billing-rates')
   })
 })
 
@@ -472,10 +474,18 @@ describe('visibleNav groups', () => {
 describe('searchNav', () => {
   const L = (id: string, label: string): LabelledNavItem =>
     ({ item: NAV_ITEMS.find((i) => i.id === id)!, label })
+  // ⚠ A FABRICATED reserved slot, not a real one. The registry has held no `placeholder` since
+  // `billingRates` shipped its page on 2026-09-11 — but the rule that search must never offer a
+  // slot with nowhere to go outlives whichever item happens to wear the flag, so it is tested
+  // against a synthetic item rather than deleted along with the last real one.
+  const RESERVED: LabelledNavItem = {
+    item: { ...NAV_ITEMS.find((i) => i.id === 'billingRates')!, placeholder: true },
+    label: 'Billing rates',
+  }
   const items = [
     L('overview', 'Dashboard'), L('students', 'Students'),
     L('payments', 'Payments'), L('applications', 'Applications'),
-    L('billingRates', 'Billing rates'),      // reserved
+    RESERVED,
   ]
 
   it('an empty query lists everything navigable, in registry order', () => {

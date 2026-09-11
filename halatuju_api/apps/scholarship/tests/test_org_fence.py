@@ -373,6 +373,12 @@ class TestFenceCoverageCompleteness(TestCase):
         # super may read or write it (403 for org_admin, not 404: the route's existence is not
         # the secret, its contents are).
         'AdminBillingRatesView': 'super-only (platform commercial config, no tenant data)',
+        # What the PLATFORM paid (one ledger for the whole platform, not per tenant) plus each
+        # tenant's charge. Super-only for the same reason as the rates above — what we pay and
+        # the margin on it is a commercial disclosure — so a 403, not a 404. The per-tenant
+        # charges it returns are not org-fenced BECAUSE only a super ever sees the payload;
+        # the tenant list itself comes from `.tenants()`, never a bare `is_active` filter.
+        'AdminPlatformCostsView': 'super-only (platform cost ledger + every tenant\'s charge)',
         # Org-scoped: filtered on organisation_id, cross-org is 404. Super writes (a charge
         # against a tenant), org_admin reads its own only.
         'AdminOrgBuildHoursView': 'org-fenced (org_admin own org read; super writes)',

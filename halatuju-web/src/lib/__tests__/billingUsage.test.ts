@@ -85,7 +85,24 @@ describe('service constants', () => {
   test('metered order + paused + free are stable', () => {
     expect(SERVICE_ORDER).toEqual(['gemini', 'vision_ocr', 'openai', 'email', 'whatsapp'])
     expect(PAUSED_SERVICES).toEqual(['sms_verify'])
-    expect(FREE_SERVICE_KEYS).toEqual(['workspace', 'turnstile'])
+    expect(FREE_SERVICE_KEYS).toEqual(['brevo', 'turnstile', 'github'])
+  })
+
+  test('the free services we depend on are NAMED, not left unsaid', () => {
+    // ⚠ Owner, 2026-09-11. Brevo sends the mail, Turnstile verifies the contact form, GitHub
+    // holds every repository and runs every CI minute. All free on their current plans — and a
+    // dependency nobody has written down is one nobody re-prices when its free tier ends.
+    for (const k of ['brevo', 'turnstile', 'github']) {
+      expect(FREE_SERVICE_KEYS).toContain(k)
+    }
+  })
+
+  test('Google Workspace is NOT listed as free — we pay for it', () => {
+    // 2026-09-11. It was in this list, and the owner's August invoice charges MYR 18.90 for it.
+    // It now has its own PlatformCost source and its own line in the cost section. A paid
+    // subscription named in a "these cost nothing" footnote tells the one person who reads this
+    // page that a recurring bill does not exist.
+    expect(FREE_SERVICE_KEYS).not.toContain('workspace')
   })
 })
 

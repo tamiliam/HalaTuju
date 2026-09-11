@@ -18,9 +18,20 @@ export const SERVICE_ORDER: string[] = ['gemini', 'vision_ocr', 'openai', 'email
 // the row is shown so the reader knows it exists and costs nothing right now.
 export const PAUSED_SERVICES: string[] = ['sms_verify']
 
-// Free, non-metered services listed in the footnote (label keys). Google Workspace
-// (Meet/Calendar/Drive/Sheets) + Cloudflare Turnstile (contact-form verification).
-export const FREE_SERVICE_KEYS: string[] = ['workspace', 'turnstile']
+// Services we depend on that cost nothing TODAY, named in the footnote (label keys).
+//
+// ⚠ **NAMING THEM IS THE POINT** (owner, 2026-09-11). Brevo sends the mail, Cloudflare Turnstile
+// verifies the contact form, GitHub holds every repository and runs every CI minute. All three
+// are free on their current plans — and a dependency nobody has written down is one nobody
+// re-prices when its free tier ends. Each also has a `PlatformCost` source waiting, so the first
+// bill has somewhere to go other than "other".
+//
+// ⚠ **Google Workspace was removed from this list on 2026-09-11 and must not come back.** It was
+// listed here as free, and it is not: the owner's August invoice charges MYR 18.90 for it, and it
+// now has its own source and its own line in the cost section. A paid subscription named in a
+// "these cost nothing" footnote is not a cosmetic error — it is the page telling the only person
+// who reads it that a recurring bill does not exist.
+export const FREE_SERVICE_KEYS: string[] = ['brevo', 'turnstile', 'github']
 
 /** Order a block's service rows by SERVICE_ORDER (known first in that order, any unknown
  * service appended alphabetically). Returns a new array; never mutates the input. */
