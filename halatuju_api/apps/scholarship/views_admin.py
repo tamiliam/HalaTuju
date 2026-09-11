@@ -4275,6 +4275,7 @@ class AdminPlatformCostsView(_AdminBase):
                 'total_myr': _money(costs['total_myr']),
                 'attributable_myr': _money(costs['attributable_myr']),
                 'platform_myr': _money(costs['platform_myr']),
+                'development_myr': _money(costs['development_myr']),
                 'tax_myr': _money(costs['tax_myr']),
                 'by_source': {k: _money(v) for k, v in costs['by_source'].items()},
                 'entered_sources': costs['entered_sources'],
@@ -4305,6 +4306,7 @@ class AdminPlatformCostsView(_AdminBase):
                            'rate_myr': _money(ln.get('rate_myr')),
                            'margin_pct': _money(ln.get('margin_pct')),
                            'cost_myr': _money(ln.get('cost_myr')),
+                           'tool_cost_myr': _money(ln.get('tool_cost_myr')),
                            'share_pct': _money(ln.get('share_pct')),
                            'amount_myr': _money(ln.get('amount_myr')),
                            'detail': [{**d, 'hours': _money(d['hours'])}

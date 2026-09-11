@@ -5110,6 +5110,8 @@
         "attributableSub": "OCR, AI and traffic — moves with what organisations do",
         "platform": "Driven by us",
         "platformSub": "Scheduled jobs, builds and deploys — a platform fee, not a metered charge",
+        "development": "Delivering hours",
+        "developmentSub": "Claude and the tools that build features — recovered by the hourly rate, not the platform fee",
         "tax": "Tax",
         "none": "No costs recorded for this month.",
         "byHand": "Typed by hand",
@@ -5129,6 +5131,10 @@
           "supabase": "Supabase",
           "workspace": "Google Workspace",
           "twilio": "Twilio",
+          "anthropic": "Anthropic (Claude)",
+          "openai": "OpenAI",
+          "cloudflare": "Cloudflare",
+          "github": "GitHub",
           "brevo": "Brevo",
           "other": "Other"
         }
@@ -5142,6 +5148,7 @@
         "workedAt": "{hours} at {rate} plus {margin}",
         "costPlus": "we paid {cost}, plus {margin}",
         "share": "this organisation's share: {pct}",
+        "toolCost": "the tools for these hours cost us {cost}",
         "setDiscount": "Set a discount for {month}",
         "pct": "Discount %",
         "reason": "Why (required)",
@@ -5174,7 +5181,9 @@
       },
       "free": {
         "workspace": "Google Workspace (Meet, Calendar, Drive, Sheets)",
-        "turnstile": "Cloudflare Turnstile (contact-form verification)"
+        "turnstile": "Cloudflare Turnstile (contact-form verification)",
+        "brevo": "Brevo (sending email)",
+        "github": "GitHub (code and deployments)"
       },
       "modelCalls": "{n} calls",
       "modelLastUsed": "last used {date}",

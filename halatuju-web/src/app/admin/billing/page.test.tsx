@@ -52,6 +52,7 @@ const COSTS = (over: Partial<api.BillingCostsPayload> = {}): api.BillingCostsPay
   months: ['2026-08', '2026-07'],
   costs: {
     lines: 4, total_myr: '150.19', attributable_myr: '23.92', platform_myr: '126.27',
+    development_myr: '0.00',
     tax_myr: '0.00',
     by_source: { gcp: '23.92', supabase: '105.00', workspace: '18.90', twilio: '2.37' },
     entered_sources: [],
@@ -305,5 +306,43 @@ describe('the two halves of this page are fenced apart', () => {
     expect(mockApi.getBillingUsage).toHaveBeenCalledTimes(2)
     expect(mockApi.getBillingCosts.mock.calls[1][0]!.month).toBe('2026-07')
     expect(mockApi.getBillingUsage.mock.calls[1][0]!.month).toBe('2026-07')
+  })
+})
+
+describe('Claude is shown as a cost of delivering hours, and charged only once', () => {
+  // ⚠ Owner, 2026-09-11: "My biggest cost is Claude, which needs to be included via the request
+  // hours." Leaving it in the platform bucket would mark it up as infrastructure AND leave the
+  // hourly rate recovering it — the same ringgit taken twice, on an invoice, quietly.
+
+  it('gets its own tile, separate from what we spend running the platform', async () => {
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      costs: { ...COSTS().costs, development_myr: '400.00' },
+    }))
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('cost-section'))
+    expect(within(section).getByText('admin.billing.cost.development')).not.toBeNull()
+    expect(within(section).getByText('RM400.00')).not.toBeNull()
+  })
+
+  it('no tile at all in a month where no tools were bought', async () => {
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('cost-section'))
+    expect(within(section).queryByText('admin.billing.cost.development')).toBeNull()
+  })
+
+  it('the development line says what the tools cost, beside what the hours are charged', async () => {
+    // Shown, never added — the rate already recovers it. It exists so "is RM50/hour enough?" is
+    // a figure on a screen rather than a feeling.
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      charges: [{
+        ...COSTS().charges[0],
+        lines: [{ ...COSTS().charges[0].lines[0], tool_cost_myr: '400.00' }],
+      }],
+    }))
+    const { container } = render(<BillingPage />)
+    const card = await waitFor(() => within(container).getByTestId('charge-1'))
+    expect(within(card).getByText(/admin\.billing\.charge\.toolCost.*RM400\.00/)).not.toBeNull()
+    // And it is NOT added into the charge.
+    expect(within(card).getAllByText('RM4,950.00').length).toBeGreaterThan(0)
   })
 })

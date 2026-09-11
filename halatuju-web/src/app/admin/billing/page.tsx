@@ -183,6 +183,14 @@ function CostSection({ costs, t }: {
           sub={t('admin.billing.cost.attributableSub')} />
         <Tile label={t('admin.billing.cost.platform')} value={formatMyr(costs.platform_myr)}
           sub={t('admin.billing.cost.platformSub')} />
+        {/* ⚠ ITS OWN TILE, not folded into "driven by us". This is what it costs to DELIVER
+            HOURS — Claude — and it is recovered by the hourly rate, not by the platform fee.
+            Folding it in would mark it up as infrastructure and take the same ringgit twice. */}
+        {Number(costs.development_myr) > 0 && (
+          <Tile label={t('admin.billing.cost.development')}
+            value={formatMyr(costs.development_myr)}
+            sub={t('admin.billing.cost.developmentSub')} />
+        )}
         <Tile label={t('admin.billing.cost.tax')} value={formatMyr(costs.tax_myr)} />
       </div>
 
@@ -272,13 +280,24 @@ function ChargeCard({ charge, month, t, onDiscount, busy }: {
             <dt className="text-ground-600">
               {t(`admin.billing.charge.line.${ln.category}`)}
               {ln.hours ? (
-                <span className="text-ground-400">
-                  {' · '}{t('admin.billing.charge.workedAt', {
-                    hours: formatHours(ln.hours),
-                    rate: formatMyr(ln.rate_myr),
-                    margin: formatPct(ln.margin_pct),
-                  })}
-                </span>
+                <>
+                  <span className="text-ground-400">
+                    {' · '}{t('admin.billing.charge.workedAt', {
+                      hours: formatHours(ln.hours),
+                      rate: formatMyr(ln.rate_myr),
+                      margin: formatPct(ln.margin_pct),
+                    })}
+                  </span>
+                  {/* ⚠ WHAT THE TOOLS COST US, beside what the hours are charged at. Shown,
+                      never added — the hourly rate already recovers it, and adding it would
+                      take the same ringgit twice. It exists so "is the rate enough?" is a
+                      figure on a screen rather than a feeling. */}
+                  {ln.tool_cost_myr && Number(ln.tool_cost_myr) > 0 && (
+                    <span className="block text-[11px] text-ground-400">
+                      {t('admin.billing.charge.toolCost', { cost: formatMyr(ln.tool_cost_myr) })}
+                    </span>
+                  )}
+                </>
               ) : (
                 /* ⚠ WHAT WE PAID, BESIDE WHAT WE CHARGE. A single marked-up figure hides the
                    markup, and the markup is the thing the reader is here to check. */

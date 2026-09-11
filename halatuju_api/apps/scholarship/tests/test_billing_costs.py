@@ -95,6 +95,77 @@ class TestWorkspaceIsItsOwnSource(_Base):
         self.assertNotIn('other', totals['by_source'])
 
 
+class TestClaudeIsRecoveredByTheHourlyRateAndNotTwice(_Base):
+    """Owner, 2026-09-11: *"My biggest cost is Claude, which needs to be included via the request
+    hours."* That sentence decides where the cost belongs, and it is neither of the other two
+    buckets.
+
+    ⚠ The mistake this class exists to prevent is the expensive one: leaving Claude in the
+    PLATFORM bucket would mark it up as infrastructure AND leave the hourly rate recovering it as
+    well — the same ringgit taken twice, on an invoice, quietly.
+    """
+
+    def _claude(self, amount, month='2026-08'):
+        return self._cost('anthropic', amount, month=month,
+                          service='Anthropic', sku='Claude Max subscription',
+                          provenance='extracted')
+
+    def test_a_claude_cost_is_a_development_cost_not_a_platform_one(self):
+        self.assertEqual(
+            platform_cost.cost_bucket('Anthropic', 'Claude Max subscription'), 'development')
+        # And the ordinary buckets are unmoved by the new one.
+        self.assertEqual(platform_cost.cost_bucket('Cloud Run', 'Jobs CPU'), 'platform')
+        self.assertEqual(
+            platform_cost.cost_bucket('Cloud Vision API', 'Document Text Detection Operations'),
+            'metered')
+        self.assertEqual(platform_cost.cost_bucket('Invoice', 'Tax'), 'tax')
+
+    def test_it_is_counted_in_the_month_total_but_kept_out_of_the_platform_slice(self):
+        """It is a real cost, so the total must include it. It is not a platform cost, so the
+        figure that gets marked up as infrastructure must not."""
+        self._cost('gcp', '100.00', service='Cloud Run', sku='Jobs CPU')
+        self._claude('400.00')
+        totals = platform_cost.month_totals('2026-08')
+        self.assertEqual(totals['total_myr'], Decimal('500.00'))
+        self.assertEqual(totals['platform_myr'], Decimal('100.00'))
+        self.assertEqual(totals['development_myr'], Decimal('400.00'))
+
+    def test_the_infrastructure_charge_does_not_include_it(self):
+        """⚠ THE DOUBLE-CHARGE TEST. If Claude ever leaks into the platform bucket this figure
+        moves, and the tenant is billed for it twice."""
+        BillingRate.objects.create(category='infrastructure', kind='margin_pct',
+                                   value=Decimal('15'), effective_from=date(2026, 7, 1))
+        self._cost('gcp', '100.00', service='Cloud Run', sku='Jobs CPU')
+        self._claude('400.00')
+        c = platform_cost.charge_for(self.org, '2026-08')
+        infra = next(ln for ln in c['lines'] if ln['category'] == 'infrastructure')
+        self.assertEqual(infra['cost_myr'], Decimal('100.00'))
+        self.assertEqual(infra['amount_myr'], Decimal('115.00'))
+
+    def test_the_development_line_shows_what_the_tools_cost_beside_what_we_charge(self):
+        """The reason it is a development cost rather than a platform one: it turns
+        'is RM50/hour enough?' into a figure on a screen."""
+        self._rates(hourly='50', margin='15')
+        self._claude('400.00')
+        self._hours('10.0')
+        c = platform_cost.charge_for(self.org, '2026-08')
+        dev = next(ln for ln in c['lines'] if ln['category'] == 'development')
+        self.assertEqual(dev['tool_cost_myr'], Decimal('400.00'))
+        # 10h x RM50 = RM500, +15% = RM575. The tool cost is SHOWN, never added.
+        self.assertEqual(dev['amount_myr'], Decimal('575.00'))
+        self.assertEqual(c['subtotal_myr'], Decimal('575.00'))
+
+    def test_tools_bought_in_a_month_with_no_billable_hours_are_reported_not_hidden(self):
+        """Silence would read as 'nothing was spent'. A real cost was carried and recovered by
+        nothing, and that is worth somebody seeing."""
+        self._rates(hourly='50', margin='15')
+        self._claude('400.00')
+        c = platform_cost.charge_for(self.org, '2026-08')
+        blocked = {b['category']: b['reason'] for b in c['blocked']}
+        self.assertIn('development', blocked)
+        self.assertIn('400.00', blocked['development'])
+
+
 class TestTheChargeShowsItsWorking(_Base):
     """A charge is a set of lines with reasons, never a single unexplained number."""
 

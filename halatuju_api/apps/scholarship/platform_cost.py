@@ -65,6 +65,47 @@ PLATFORM_SKU_MARKERS = (
 )
 
 
+# ── The third bucket: what it costs us to DELIVER HOURS ──────────────────────
+# Owner, 2026-09-11: *"My biggest cost is Claude, which needs to be included via the request
+# hours."* That sentence decides where this cost belongs, and it is neither of the other two.
+#
+# ⚠ IT MUST NOT SIT IN THE PLATFORM BUCKET. Platform cost is marked up and charged as the
+# infrastructure line; development hours are marked up and charged as the development line. Claude
+# is an input to the SECOND. Leaving it in `platform` would recover the same ringgit twice — once
+# through the infrastructure fee and again through the hourly rate — which is the single most
+# expensive kind of quiet mistake an invoice can carry.
+#
+# What it buys instead: the development line can show what the hours COST beside what they are
+# CHARGED, so "is RM50/hour enough?" becomes a figure on a screen rather than a feeling.
+DEVELOPMENT_SKU_MARKERS = (
+    'anthropic',
+    'claude',
+)
+
+
+def is_development_cost(service: str, sku: str) -> bool:
+    """True when this line is an input to billable development hours, not to running the site."""
+    hay = f'{service or ""} {sku or ""}'.lower()
+    return any(m in hay for m in DEVELOPMENT_SKU_MARKERS)
+
+
+def cost_bucket(service: str, sku: str, attributable=None) -> str:
+    """Which of the four buckets a ledger line belongs in.
+
+    ``'tax'`` | ``'development'`` | ``'metered'`` | ``'platform'``. One place, so the sync, the
+    month totals and the charge cannot disagree about a line.
+
+    `attributable` is the flag already stored on the row; pass it to respect what was recorded
+    at sync time, or leave it None to re-derive from the SKU.
+    """
+    if is_tax(service, sku):
+        return 'tax'
+    if is_development_cost(service, sku):
+        return 'development'
+    attr = classify_sku(service, sku) if attributable is None else attributable
+    return 'metered' if attr else 'platform'
+
+
 def classify_sku(service: str, sku: str) -> bool:
     """True if this invoice line moves with TENANT activity.
 
@@ -94,7 +135,7 @@ def month_totals(period_month):
     from .models import PlatformCost
 
     rows = PlatformCost.objects.filter(period_month=period_month)
-    total = attributable = platform = tax = Decimal('0.00')
+    total = attributable = platform = tax = development = Decimal('0.00')
     by_source = {}
     entered_sources = set()
     # ⚠ TRACKED SEPARATELY FROM `entered_sources`, and the difference is the whole point of the
@@ -123,9 +164,12 @@ def month_totals(period_month):
             continue
         total += r.amount_myr
         by_source[r.source] = by_source.get(r.source, Decimal('0.00')) + r.amount_myr
-        if is_tax(r.service, r.sku):
+        bucket = cost_bucket(r.service, r.sku, r.attributable)
+        if bucket == 'tax':
             tax += r.amount_myr
-        elif r.attributable:
+        elif bucket == 'development':
+            development += r.amount_myr
+        elif bucket == 'metered':
             attributable += r.amount_myr
         else:
             platform += r.amount_myr
@@ -136,6 +180,10 @@ def month_totals(period_month):
         'total_myr': total,
         'attributable_myr': attributable,
         'platform_myr': platform,
+        # ⚠ What it costs us to DELIVER HOURS (Claude), held apart from `platform_myr` so it is
+        # never marked up as infrastructure. It is recovered through the hourly rate instead —
+        # charging it in both places would take the same ringgit twice.
+        'development_myr': development,
         'tax_myr': tax,
         'by_source': by_source,
         # Which sources in this month rest on a human reading a PDF. Surfaced, never hidden:
@@ -423,17 +471,23 @@ def charge_for(organisation, period_month):
     share = shares.get(getattr(organisation, 'id', None),
                        {'metered': Decimal('0'), 'infrastructure': Decimal('0'), 'rule': ''})
 
-    # Tax pro-rata over the two buckets. Guarded against a month that is all tax — then there is
-    # nothing to apportion it over and it stays out rather than being invented into a bucket.
-    cost_base = totals['attributable_myr'] + totals['platform_myr']
+    # Tax pro-rata over the three cost buckets. Guarded against a month that is all tax — then
+    # there is nothing to apportion it over and it stays out rather than being invented into one.
+    cost_base = (totals['attributable_myr'] + totals['platform_myr']
+                 + totals['development_myr'])
     tax = totals['tax_myr']
     if cost_base > 0:
-        metered_cost = totals['attributable_myr'] + (
-            tax * totals['attributable_myr'] / cost_base)
-        infra_cost = totals['platform_myr'] + (tax * totals['platform_myr'] / cost_base)
+        def _with_tax(part):
+            return part + (tax * part / cost_base)
     else:
-        metered_cost = totals['attributable_myr']
-        infra_cost = totals['platform_myr']
+        def _with_tax(part):
+            return part
+    metered_cost = _with_tax(totals['attributable_myr'])
+    infra_cost = _with_tax(totals['platform_myr'])
+    # ⚠ NOT marked up here. It is what the hours COST us, carried onto the development line so
+    # the rate can be judged against it. Marking it up as infrastructure would recover Claude
+    # twice — once in the fee and again in the hourly rate.
+    dev_cost = _with_tax(totals['development_myr']).quantize(Decimal('0.01'))
 
     for category, cost, weight in (
         (BillingRate.CATEGORY_INFRASTRUCTURE, infra_cost, share['infrastructure']),
@@ -477,10 +531,22 @@ def charge_for(organisation, period_month):
             'cost_myr': dev['subtotal_myr'],
             'share_pct': None,
             'share_rule': '',
+            # ⚠ WHAT THE TOOLS COST US THIS MONTH, beside what the hours are charged at. This is
+            # the only place the two meet, and it is the whole reason Claude is a development
+            # cost rather than a platform one: it turns "is RM50/hour enough?" into a figure on
+            # a screen. It is NOT added to the charge — it is already recovered by the rate.
+            'tool_cost_myr': dev_cost,
             'amount_myr': dev['charge_myr'],
             'detail': dev['lines'],
         })
         subtotal += dev['charge_myr']
+    elif dev_cost > 0:
+        # Tools cost money in a month with no billable hours. Silence would read as "nothing was
+        # spent"; this says a real cost was carried and recovered by nothing.
+        blocked.append({
+            'category': 'development',
+            'reason': f'Tools for development cost RM{dev_cost} this month, and no billable '
+                      f'hours were recorded against it — so nothing recovers that cost.'})
 
     adj = adjustment_for(organisation, period_month)
     discount_pct = adj.discount_pct if adj else Decimal('0.00')

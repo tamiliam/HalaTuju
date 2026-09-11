@@ -2367,6 +2367,9 @@ export interface PlatformCostBlock {
   attributable_myr: string | null
   /** Ours: crons, CI, deploys. A platform fee, not a metered charge. */
   platform_myr: string | null
+  /** What it costs to DELIVER HOURS (Claude). Held apart from `platform_myr` so it is never
+   *  marked up as infrastructure — it is recovered through the hourly rate instead. */
+  development_myr: string | null
   tax_myr: string | null
   by_source: Record<string, string | null>
   /** Which sources this month rest on a human reading a PDF. A WARNING. The owner's standing
@@ -2399,6 +2402,10 @@ export interface BillingChargeLine {
   share_pct: string | null
   /** How that share was decided, in words — usage-weighted or split equally. */
   share_rule: string
+  /** Development line only: what the TOOLS for these hours cost us (Claude). ⚠ Shown, never
+   *  added — it is already recovered by the hourly rate, and adding it would take the same
+   *  ringgit twice. It exists so "is the rate enough?" is a figure rather than a feeling. */
+  tool_cost_myr?: string | null
   amount_myr: string | null
   detail: { module: string; hours: string | null; basis: string }[]
 }

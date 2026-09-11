@@ -3352,6 +3352,23 @@ class PlatformCost(models.Model):
         ('workspace', 'Google Workspace'),
         ('brevo', 'Brevo'),
         ('twilio', 'Twilio'),
+        # 2026-09-11, owner: *"My biggest cost is Claude, which needs to be included via the
+        # request hours."* It is a cost of DELIVERING DEVELOPMENT HOURS, not of running the
+        # platform, so `platform_cost.cost_bucket` files it under development and it never
+        # reaches the infrastructure charge — recovering it twice would be the obvious mistake.
+        ('anthropic', 'Anthropic (Claude)'),
+        # `OPENAI_API_KEY` is set on the live service as the counsellor report's second
+        # provider. The AI registry says it has never fired, so there is no bill yet — but it
+        # bills OUTSIDE Google Cloud, so without a source here the first time it does fire the
+        # cost would land nowhere at all.
+        ('openai', 'OpenAI'),
+        # ⚠ FREE TODAY, LISTED ANYWAY (owner, 2026-09-11). Cloudflare (Turnstile), Brevo above,
+        # and GitHub (the repositories and every CI minute) all cost nothing on their current
+        # plans. They are named here and in the page's free-services footnote because a
+        # dependency nobody has written down is one nobody re-prices when its free tier ends —
+        # and the ledger should have somewhere to put the first bill other than `other`.
+        ('cloudflare', 'Cloudflare'),
+        ('github', 'GitHub'),
         ('other', 'Other'),
     ]
     # How this row came to exist. The distinction is load-bearing: only MEASURED rows can be

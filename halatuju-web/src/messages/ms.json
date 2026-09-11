@@ -5110,6 +5110,8 @@
         "attributableSub": "OCR, AI dan trafik — bergerak mengikut aktiviti organisasi",
         "platform": "Didorong oleh kami",
         "platformSub": "Kerja berjadual, binaan dan penggunaan — yuran platform, bukan caj bermeter",
+        "development": "Menyampaikan jam kerja",
+        "developmentSub": "Claude dan alat yang membina ciri — dipulihkan melalui kadar sejam, bukan yuran platform",
         "tax": "Cukai",
         "none": "Tiada kos direkodkan bagi bulan ini.",
         "byHand": "Ditaip secara manual",
@@ -5129,6 +5131,10 @@
           "supabase": "Supabase",
           "workspace": "Google Workspace",
           "twilio": "Twilio",
+          "anthropic": "Anthropic (Claude)",
+          "openai": "OpenAI",
+          "cloudflare": "Cloudflare",
+          "github": "GitHub",
           "brevo": "Brevo",
           "other": "Lain-lain"
         }
@@ -5142,6 +5148,7 @@
         "workedAt": "{hours} pada {rate} tambah {margin}",
         "costPlus": "kami bayar {cost}, tambah {margin}",
         "share": "bahagian organisasi ini: {pct}",
+        "toolCost": "alat bagi jam ini menelan kos {cost}",
         "setDiscount": "Tetapkan diskaun bagi {month}",
         "pct": "Diskaun %",
         "reason": "Sebab (wajib)",
@@ -5174,7 +5181,9 @@
       },
       "free": {
         "workspace": "Google Workspace (Meet, Kalendar, Drive, Sheets)",
-        "turnstile": "Cloudflare Turnstile (pengesahan borang hubungi)"
+        "turnstile": "Cloudflare Turnstile (pengesahan borang hubungi)",
+        "brevo": "Brevo (menghantar e-mel)",
+        "github": "GitHub (kod dan penggunaan)"
       },
       "modelCalls": "{n} panggilan",
       "modelLastUsed": "terakhir digunakan {date}",

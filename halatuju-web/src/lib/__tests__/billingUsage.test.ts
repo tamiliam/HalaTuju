@@ -85,7 +85,16 @@ describe('service constants', () => {
   test('metered order + paused + free are stable', () => {
     expect(SERVICE_ORDER).toEqual(['gemini', 'vision_ocr', 'openai', 'email', 'whatsapp'])
     expect(PAUSED_SERVICES).toEqual(['sms_verify'])
-    expect(FREE_SERVICE_KEYS).toEqual(['turnstile'])
+    expect(FREE_SERVICE_KEYS).toEqual(['brevo', 'turnstile', 'github'])
+  })
+
+  test('the free services we depend on are NAMED, not left unsaid', () => {
+    // ⚠ Owner, 2026-09-11. Brevo sends the mail, Turnstile verifies the contact form, GitHub
+    // holds every repository and runs every CI minute. All free on their current plans — and a
+    // dependency nobody has written down is one nobody re-prices when its free tier ends.
+    for (const k of ['brevo', 'turnstile', 'github']) {
+      expect(FREE_SERVICE_KEYS).toContain(k)
+    }
   })
 
   test('Google Workspace is NOT listed as free — we pay for it', () => {

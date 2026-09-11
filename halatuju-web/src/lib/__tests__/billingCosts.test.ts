@@ -12,6 +12,7 @@ const costs = (over: Partial<PlatformCostBlock> = {}): PlatformCostBlock => ({
   total_myr: '128.92',
   attributable_myr: '23.92',
   platform_myr: '105.00',
+  development_myr: '0.00',
   tax_myr: '0.00',
   by_source: { gcp: '23.92', supabase: '105.00' },
   entered_sources: [],

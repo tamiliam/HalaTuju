@@ -5110,6 +5110,8 @@
         "attributableSub": "OCR, செயற்கை நுண்ணறிவு, போக்குவரத்து — நிறுவனங்களின் செயலுக்கு ஏற்ப மாறும்",
         "platform": "நம்மால் ஏற்படுவது",
         "platformSub": "திட்டமிட்ட பணிகள், கட்டமைப்பு, பதிவேற்றம் — அளக்கப்படும் கட்டணம் அல்ல, தளக் கட்டணம்",
+        "development": "மணிநேரம் வழங்குதல்",
+        "developmentSub": "Claude மற்றும் அம்சங்களை உருவாக்கும் கருவிகள் — தளக் கட்டணத்தால் அல்ல, மணிநேர விகிதத்தால் ஈடுசெய்யப்படுகிறது",
         "tax": "வரி",
         "none": "இந்த மாதத்துக்குச் செலவு எதுவும் பதியப்படவில்லை.",
         "byHand": "கையால் பதிந்தது",
@@ -5129,6 +5131,10 @@
           "supabase": "Supabase",
           "workspace": "Google Workspace",
           "twilio": "Twilio",
+          "anthropic": "Anthropic (Claude)",
+          "openai": "OpenAI",
+          "cloudflare": "Cloudflare",
+          "github": "GitHub",
           "brevo": "Brevo",
           "other": "பிற"
         }
@@ -5142,6 +5148,7 @@
         "workedAt": "{hours} · ஒரு மணிக்கு {rate} · மேலும் {margin}",
         "costPlus": "நாம் {cost} செலுத்தினோம், மேலும் {margin}",
         "share": "இந்த நிறுவனத்தின் பங்கு: {pct}",
+        "toolCost": "இந்த மணிநேரத்துக்கான கருவிகளுக்கு நமக்கு {cost} ஆனது",
         "setDiscount": "{month} மாதத்துக்குத் தள்ளுபடி அமைக்கவும்",
         "pct": "தள்ளுபடி %",
         "reason": "காரணம் (கட்டாயம்)",
@@ -5174,7 +5181,9 @@
       },
       "free": {
         "workspace": "Google Workspace (Meet, Calendar, Drive, Sheets)",
-        "turnstile": "Cloudflare Turnstile (தொடர்புப் படிவச் சரிபார்ப்பு)"
+        "turnstile": "Cloudflare Turnstile (தொடர்புப் படிவச் சரிபார்ப்பு)",
+        "brevo": "Brevo (மின்னஞ்சல் அனுப்புதல்)",
+        "github": "GitHub (நிரலும் பதிவேற்றமும்)"
       },
       "modelCalls": "{n} அழைப்புகள்",
       "modelLastUsed": "கடைசியாக {date} அன்று பயன்படுத்தப்பட்டது",
