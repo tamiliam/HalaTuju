@@ -164,35 +164,6 @@ class TestMerchantRows(TestCase):
         self.assertEqual(row['held_back'], 0)
 
 
-class TestModelDecisions(TestCase):
-
-    def setUp(self):
-        self.org, self.cohort = make_org('mod')
-        self.app = make_app(self.org, self.cohort)
-
-    def test_it_lists_what_the_model_decided_lately(self):
-        MerchantCategory.objects.create(
-            merchant='EY VENTURE', category='groceries', decided_by='ai', reason='spend-cat-v1')
-        txn(self.app, 'EY VENTURE', 5, category='groceries', decided_by='ai')
-        rows = sr.model_decisions(self.org)
-        self.assertEqual([r['merchant'] for r in rows], ['EY VENTURE'])
-        self.assertEqual(rows[0]['reason'], 'spend-cat-v1')
-
-    def test_a_rule_or_an_owner_verdict_is_not_the_model_s_work(self):
-        MerchantCategory.objects.create(
-            merchant='DELIMA MATANG CAFE', category='food', decided_by='rule')
-        txn(self.app, 'DELIMA MATANG CAFE', 5, category='food', decided_by='rule')
-        self.assertEqual(sr.model_decisions(self.org), [])
-
-    def test_an_old_decision_falls_out_of_the_window(self):
-        m = MerchantCategory.objects.create(
-            merchant='EY VENTURE', category='groceries', decided_by='ai')
-        txn(self.app, 'EY VENTURE', 5, category='groceries', decided_by='ai')
-        MerchantCategory.objects.filter(pk=m.pk).update(
-            decided_at=timezone.now() - datetime.timedelta(days=sr.MODEL_REVIEW_DAYS + 1))
-        self.assertEqual(sr.model_decisions(self.org), [])
-
-
 class TestWalletGaps(TestCase):
 
     def setUp(self):
@@ -335,10 +306,17 @@ class TestTheFenceIsOnTheQuery(TestCase):
         self.assertEqual((changed, err), (0, 'unknown_merchant'))
         self.assertFalse(MerchantCategory.objects.filter(merchant='SHOP B').exists())
 
-    def test_the_model_decision_list_is_fenced_even_though_the_table_is_global(self):
+    def test_a_global_verdict_still_only_reaches_the_tenant_that_used_the_shop(self):
+        """⚠ REPLACES `test_the_model_decision_list_is_fenced…` (S7, 2026-09-11). That list is
+        gone; the verdict it showed now rides on the shop ROW, so the same property has to be
+        proved where the data moved to. `MerchantCategory` is global by design — what is fenced
+        is WHOSE shops are listed."""
         MerchantCategory.objects.create(merchant='SHOP B', category='food', decided_by='ai')
-        self.assertEqual(sr.model_decisions(self.org_a), [])
-        self.assertEqual([r['merchant'] for r in sr.model_decisions(self.org_b)], ['SHOP B'])
+        self.assertEqual([r['merchant'] for r in sr.merchant_rows(self.org_a)], ['SHOP A'])
+        b = sr.merchant_rows(self.org_b)
+        self.assertEqual([r['merchant'] for r in b], ['SHOP B'])
+        self.assertEqual(b[0]['decided_by'], 'ai')
+        self.assertIsNotNone(b[0]['decided_at'])
 
 
 class TestThePlatformScope(TestCase):
@@ -420,7 +398,7 @@ class TestTheEndpointServesTheScreen(_EndpointBase):
         txn(self.app, 'DELIMA MATANG CAFE', 5, category='food', decided_by='rule')
         self.auth('ep-admin')
         body = self.client.get(self.URL).json()
-        for key in ('totals', 'merchants', 'students', 'model_decisions', 'wallet_gaps',
+        for key in ('totals', 'merchants', 'students', 'wallet_gaps',
                     'categories'):
             self.assertIn(key, body, key)
 

@@ -6,14 +6,16 @@
  * like a table, and nobody reports it.
  */
 import {
-  MERCHANT_SORT_LABEL, STUDENT_SORT_LABEL, merchantFirstDir, shopsWithUnplacedMoney,
+  MERCHANT_SORT_LABEL, STUDENT_SORT_LABEL, filterMerchants, filterStudents,
+  merchantFirstDir, shopsWithUnplacedMoney,
   sortMerchants, sortStudents, studentFirstDir, type MerchantSortKey, type StudentSortKey,
 } from '../spendingTable'
 import type { SpendingMerchantRow, SpendingStudentRow } from '../admin-api'
 
 const shop = (over: Partial<SpendingMerchantRow>): SpendingMerchantRow => ({
   merchant: 'A SHOP', category: 'food', decided_by: 'rule', visits: 1,
-  total: '10.00', last_seen: '2026-08-01', held_back: 0, ...over,
+  total: '10.00', last_seen: '2026-08-01', held_back: 0, decided_at: '2026-08-02T00:00:00Z',
+  ...over,
 })
 
 const student = (over: Partial<SpendingStudentRow>): SpendingStudentRow => ({
@@ -125,12 +127,87 @@ describe('sorting the students', () => {
   })
 })
 
+describe('searching and filtering the shops', () => {
+  const rows = [
+    shop({ merchant: '99 SPEEDMART', category: 'groceries', decided_by: 'rule' }),
+    shop({ merchant: 'SHOPEE MARKETPLACE', category: 'unsorted', decided_by: 'ai' }),
+    shop({ merchant: 'APAM BALIK SELAYANG', category: 'food', decided_by: '' }),
+  ]
+
+  test('the search ignores case and surrounding spaces, because people paste', () => {
+    expect(filterMerchants(rows, { query: '  ShOpEe ' }).map((r) => r.merchant))
+      .toEqual(['SHOPEE MARKETPLACE'])
+  })
+
+  test('an empty or blank search changes nothing', () => {
+    expect(filterMerchants(rows, {})).toHaveLength(3)
+    expect(filterMerchants(rows, { query: '   ' })).toHaveLength(3)
+  })
+
+  test('it matches ANYWHERE in the name, not just the start', () => {
+    // Shop names arrive as Vircle wrote them, so the distinctive word is often in the middle.
+    expect(filterMerchants(rows, { query: 'balik' }).map((r) => r.merchant))
+      .toEqual(['APAM BALIK SELAYANG'])
+  })
+
+  test('the category filter treats a BLANK category as unsorted, exactly like the screen does', () => {
+    // A never-sorted row renders under "Not yet sorted"; a filter that disagreed with the label
+    // in front of the reader would look broken while being technically defensible.
+    const blank = [shop({ merchant: 'NEVER', category: '' })]
+    expect(filterMerchants(blank, { category: 'unsorted' })).toHaveLength(1)
+  })
+
+  test('⚠ "not decided" is a CHOOSABLE state, not the absence of a choice', () => {
+    // The blank rung means the sorter has not reached this shop. A dropdown cannot offer '' as a
+    // value without it reading as the "any" option, so `none` names it — in the filter and in the
+    // pill alike.
+    expect(filterMerchants(rows, { decidedBy: 'none' }).map((r) => r.merchant))
+      .toEqual(['APAM BALIK SELAYANG'])
+    expect(filterMerchants(rows, { decidedBy: '' })).toHaveLength(3)
+  })
+
+  test('filters combine — search AND category AND how it was decided', () => {
+    expect(filterMerchants(rows, { query: 'shop', category: 'unsorted', decidedBy: 'ai' }))
+      .toHaveLength(1)
+    expect(filterMerchants(rows, { query: 'shop', category: 'food', decidedBy: 'ai' }))
+      .toHaveLength(0)
+  })
+
+  test('it never mutates the list it was given', () => {
+    const before = rows.map((r) => r.merchant)
+    filterMerchants(rows, { query: 'speed' })
+    expect(rows.map((r) => r.merchant)).toEqual(before)
+  })
+})
+
+describe('searching and filtering the students', () => {
+  const rows = [
+    student({ application_id: 1, name: 'NURUL TEST', unplaced: '20.00' }),
+    student({ application_id: 2, name: 'AMIR TEST', unplaced: '0.00' }),
+  ]
+
+  test('the search is by name, case-insensitively', () => {
+    expect(filterStudents(rows, { query: 'amir' }).map((r) => r.application_id)).toEqual([2])
+  })
+
+  test('⚠ "ONLY UNSORTED" COMPARES A NUMBER — the money is a STRING and "0.00" IS TRUTHY', () => {
+    // This is the whole test. `if (r.unplaced)` keeps a student with exactly zero unsorted money,
+    // so the filter appears to do nothing at all — and the reason is invisible in the code.
+    expect(filterStudents(rows, { onlyUnplaced: true }).map((r) => r.application_id)).toEqual([1])
+  })
+
+  test('off by default, and combinable with the search', () => {
+    expect(filterStudents(rows, {})).toHaveLength(2)
+    expect(filterStudents(rows, { query: 'test', onlyUnplaced: true })).toHaveLength(1)
+  })
+})
+
 describe('every column can be sorted and every column has a name', () => {
   // ⚠ A column added to the table without a comparator or without a label is invisibly broken:
   // the header renders, the click does nothing, or the header reads as a raw dotted key. These
   // two lists are the only place that pairing is written down, so they are asserted complete.
   const MERCHANT_KEYS: MerchantSortKey[] =
-    ['shop', 'countedAs', 'decidedBy', 'visits', 'total', 'lastSeen']
+    ['shop', 'countedAs', 'decidedBy', 'visits', 'total', 'lastSeen', 'decidedAt']
   const STUDENT_KEYS: StudentSortKey[] = ['name', 'payments', 'spent', 'unplaced']
 
   test('shops', () => {

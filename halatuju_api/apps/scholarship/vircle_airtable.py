@@ -133,6 +133,27 @@ def _match_application(nric: str):
     return None
 
 
+def _alert(application_id, outcome, wallet, *, stored=''):
+    """Email a human about a wallet write on this door. **Never raises, never blocks the reply.**
+
+    ⚠ **THE WHOLE CONTRACT IS THAT VIRCLE STILL GETS ITS 200.** This endpoint answers somebody
+    else's automation; an exception escaping here would turn our mail server's bad afternoon into
+    their retry storm, about our data question. Same fault-injection contract as the outbound push
+    and the usage meter: it fails alone.
+
+    ⚠ **A `set` IS ALERTED AFTER THE SAVE, NOT BEFORE.** Emailing "wallet now 8000400170001" and
+    then failing to save it would hand a person a fact that is not true and no way to tell — the
+    email is a claim ABOUT stored state, so it waits for the state. A `mismatch` writes nothing,
+    so it alerts where it happens.
+    """
+    try:
+        from . import emails
+        emails.send_vircle_wallet_alert_email(application_id, outcome, wallet, stored=stored)
+    except Exception:  # noqa: BLE001 — an alert must never cost Vircle their 200
+        logger.warning('Vircle wallet alert failed (app_id=%s, %s)',
+                       application_id, outcome, exc_info=True)
+
+
 def apply_update(payload: dict) -> dict:
     """One inbound Airtable row → at most two writes on the matched application.
 
@@ -151,6 +172,7 @@ def apply_update(payload: dict) -> dict:
 
     result = {'ok': True, 'application': app.id, 'wallet': 'none', 'activated': 'none'}
     fields = []
+    pending_alert = None
 
     wallet = _digits(_first(payload, _WALLET_KEYS))
     if wallet:
@@ -161,6 +183,7 @@ def apply_update(payload: dict) -> dict:
             logger.error('Vircle Airtable inbound: WALLET MISMATCH app_id=%s stored=%s vircle=%s',
                          app.id, app.vircle_id, wallet)
             result['wallet'] = 'mismatch'
+            _alert(app.id, 'mismatch', wallet, stored=app.vircle_id)
         elif not payments.valid_vircle_id(wallet):
             logger.warning('Vircle Airtable inbound: invalid wallet app_id=%s value=%s',
                            app.id, wallet)
@@ -171,6 +194,9 @@ def apply_update(payload: dict) -> dict:
             app.vircle_id = wallet
             fields.append('vircle_id')
             result['wallet'] = 'set'
+            # ⚠ Queued here, SENT after the save below — see `_alert`'s note. A wallet emailed
+            # about and then not saved would be worse than no email at all.
+            pending_alert = (app.id, 'set', wallet, '')
 
     activated_raw = _first(payload, _ACTIVATED_KEYS)
     if activated_raw and activated_raw.lower() not in ('false', '0', 'no'):
@@ -185,4 +211,6 @@ def apply_update(payload: dict) -> dict:
 
     if fields:
         app.save(update_fields=fields)
+    if pending_alert:
+        _alert(*pending_alert[:3], stored=pending_alert[3])
     return result

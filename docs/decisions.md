@@ -1,5 +1,75 @@
 # Architectural Decisions — HalaTuju
 
+## A tab's count is of the WHOLE list; the filter's count is beside the filter — S7, 2026-09-11
+
+**Decision:** `PanelTab.count` is the unfiltered row count. A second, quieter count appears next to
+the search box saying "showing N of M", and only while something is actually filtered.
+
+**Rationale:** the two numbers answer different questions — *how many are there* and *how many am I
+looking at* — and a reader needs both. If the tab followed the filter, the first question would
+have no answer anywhere on screen the moment you typed, and the tab would stop being a stable thing
+to quote.
+
+**Trade-offs:** two numbers on screen can disagree, which looks wrong for a second until you read
+the labels. Accepted; the alternative loses information outright.
+
+**Also settled here:** `count` is optional and `0` is a real answer — only `undefined` hides the
+pill. While the fetch is in flight the counts are `undefined`, because a tab reading "0" before the
+data arrives says *there are none*, which is a different claim from *we do not know yet*.
+
+## The Unsorted tab's list is defined on MONEY; the model's guesses are a FILTER — S7, 2026-09-11
+
+**Decision:** "What the model decided recently" is deleted. `decided_at` becomes a sortable column
+on the shop row, and `decided_by` becomes a filter.
+
+**Why it was there.** The model is the least trustworthy rung, so its guesses were surfaced as a
+review queue to be checked while fresh.
+
+**Why that was wrong.** It was the same data, filtered, rendered READ-ONLY beside a table that can
+be corrected — so the action it implied could not be taken from where it was shown. The owner asked
+what action was expected and there wasn't one. A filtered view of a table is a filter, not a
+section.
+
+**Alternatives considered:** give the list its own correction control — that is two places to fix a
+shop, which is the `StaffAdmin` duplication fault by another name; keep it read-only as a "recent
+activity" note — a log nobody reads, next to the thing it logs.
+
+**Trade-offs:** the 14-day window is gone as a built-in. Sorting by "Decided" descending gives the
+same answer and is not capped at a fortnight.
+
+
+## The Vircle wallet door emails on `set` AND on refused `mismatch` — 2026-09-11
+
+**Decision:** `vircle_airtable.apply_update` emails `ADMIN_NOTIFY_EMAIL` when it sets a
+`vircle_id`, and when it REFUSES to change one. Nothing else on that path emails.
+
+**Why the refused one is in, and why it is the more important half.** A `mismatch` writes nothing,
+so it is invisible by construction — and it is precisely the shape an attack on an already-funded
+student takes: the attacker has the secret and an NRIC, and the only thing stopping them is the
+never-overwrite rule. A refusal that nobody hears is a refusal nobody can act on.
+
+**Why `kept` / `invalid` / `no_match` / activation-only stay silent.** An alert that arrives when
+nothing happened gets filtered, and the one that matters gets filtered with it. Same reasoning as
+`send_spending_alert_email`'s no-weekly-all-clear ruling (2026-09-10).
+
+**Why an email and not a dashboard.** The write already reached `logger.info('AUDIT vircle_id_set…')`
+and had done since the door was built. Nobody reads an application log. The question this answers is
+"would we find out the same day?", and only a push channel answers it.
+
+**Alternatives considered:** (a) rotate the secret immediately — deferred by the owner, because
+rotating requires Vircle to change their Airtable automation and the logs showed the door had never
+been used in anger; (b) put the secret behind a signed timestamp / HMAC over the body — a better
+lock, but it is a change to somebody else's integration and belongs in a conversation with them,
+not in a unilateral deploy; (c) refuse inbound wallet writes entirely and make every wallet manual
+— that reintroduces exactly the typing errors the Airtable flow was built to remove.
+
+**Trade-offs:** a genuine week of activations now produces one email per student. Accepted: that is
+a handful of mails a term, each about the field that decides where money goes.
+
+**Revisit if:** the volume ever makes these routine — at which point the answer is a digest, not
+silence. And when the secret is rotated, note it here; the alert is a mitigation, not the fix.
+
+
 ## A super sees EVERY organisation's spending — S6, 2026-09-11 (supersedes the S4a refusal)
 
 **Decision:** `_SpendingBase._spending_admin` hands a super `spend_report.ALL_ORGS`, a scope that

@@ -28,11 +28,16 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
+import { useState } from 'react'
 import {
-  MERCHANT_DEFAULT_SORT, MERCHANT_SORT_LABEL, merchantFirstDir, sortMerchants,
+  MERCHANT_DEFAULT_SORT, MERCHANT_SORT_LABEL, filterMerchants, merchantFirstDir, sortMerchants,
   type MerchantSortKey,
 } from '@/lib/spendingTable'
 import type { SpendingMerchantRow } from '@/lib/admin-api'
+
+/** The rungs a shop's category can come from, in the order the filter offers them. `none` is the
+ *  blank — a real state (the sorter has not reached this shop), not an absence. */
+const DECIDED_BY_OPTIONS = ['owner', 'rule', 'inferred', 'ai', 'duitnow', 'none'] as const
 
 /** Thousands grouping by hand, so server and browser render identically (no locale drift).
  *  ⚠ The value arrives as a STRING and is never parsed to a Number and back — this is money. */
@@ -65,13 +70,19 @@ export default function SpendingShops({
 }) {
   const { t } = useT()
   const { sort, setSort } = useSort<MerchantSortKey>(MERCHANT_DEFAULT_SORT)
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('')
+  const [decidedBy, setDecidedBy] = useState('')
   const labels: Record<string, string> = {}
   categories.forEach((c) => { labels[c.code] = c.label })
 
-  // Sort the WHOLE list, then take a page of the sorted result. The other order sorts one page at
-  // a time and shuffles rows between pages.
-  const paged = usePagedRows(sortMerchants(rows, sort.key, sort.dir, labels))
+  // ⚠ FILTER, then SORT, then PAGE. Any other order is a defect with a plausible-looking screen:
+  // sorting a page shuffles rows between pages, and paging before filtering shows a first page
+  // with holes in it. `page.test.tsx` pins the sort/page half of this.
+  const shown = filterMerchants(rows, { query, category, decidedBy })
+  const paged = usePagedRows(sortMerchants(shown, sort.key, sort.dir, labels))
   const onSort = (col: MerchantSortKey) => setSort(nextSort(sort, col, merchantFirstDir(col)))
+  const filtered = shown.length !== rows.length
 
   /** The correction control. Drawn twice (card + row), so it is written once. */
   const categoryBox = (m: SpendingMerchantRow, className: string) => (
@@ -94,10 +105,65 @@ export default function SpendingShops({
       : null
   )
 
-  const empty = !loading && rows.length === 0
+  // ⚠ TWO DIFFERENT EMPTIES, AND SAYING THE WRONG ONE IS A LIE. "No spending recorded" on a list
+  // that is merely filtered down to nothing tells a reader their data is missing. The filtered
+  // case says so, and offers the way back.
+  const empty = !loading && paged.rows.length === 0
+  const emptyMessage = empty && filtered ? t('admin.spending.noMatch') : t(emptyKey)
+
+  const clear = () => { setQuery(''); setCategory(''); setDecidedBy('') }
+
+  const controls = (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t('admin.spending.searchShops')}
+        aria-label={t('admin.spending.searchShops')}
+        className="min-w-0 flex-1 rounded-md border border-ground-200 bg-ground-0 px-3 py-1.5 text-sm text-ground-800 placeholder:text-ground-placeholder sm:max-w-xs"
+      />
+      <select
+        aria-label={t('admin.spending.filter.categoryLabel')}
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+        className="rounded-md border border-ground-200 bg-ground-0 px-2 py-1.5 text-sm text-ground-700"
+      >
+        <option value="">{t('admin.spending.filter.allCategories')}</option>
+        {categories.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+      </select>
+      <select
+        aria-label={t('admin.spending.filter.decidedByLabel')}
+        value={decidedBy}
+        onChange={(e) => setDecidedBy(e.target.value)}
+        className="rounded-md border border-ground-200 bg-ground-0 px-2 py-1.5 text-sm text-ground-700"
+      >
+        <option value="">{t('admin.spending.filter.anyDecidedBy')}</option>
+        {DECIDED_BY_OPTIONS.map((d) => (
+          <option key={d} value={d}>{t(`admin.spending.by.${d}`)}</option>
+        ))}
+      </select>
+      {filtered && (
+        <button type="button" onClick={clear}
+          className="text-xs font-medium text-primary-600 hover:underline">
+          {t('admin.spending.filter.clear')}
+        </button>
+      )}
+      {/* ⚠ The count of what is SHOWING, beside the controls that changed it — deliberately not
+          on the tab, where the number must keep meaning "how many are there in total". */}
+      {filtered && (
+        <span className="text-xs tabular-nums text-ground-500" data-testid={`${testId}-showing`}>
+          {t('admin.spending.filter.showing', {
+            shown: String(shown.length), total: String(rows.length),
+          })}
+        </span>
+      )}
+    </div>
+  )
 
   return (
     <>
+      {controls}
       {/* ── PHONE: one card per shop (the console standard, owner 2026-09-08). A six-column table
           dragged sideways is safe but wrong-shaped for the screen people actually check things
           on. The SHOP and its category lead, because this list is scanned for what to correct. ── */}
@@ -122,7 +188,7 @@ export default function SpendingShops({
             {heldBack(m, 'mt-1 text-[11px] text-ground-500')}
           </div>
         ))}
-        {empty && <p className="py-6 text-center text-sm text-ground-400">{t(emptyKey)}</p>}
+        {empty && <p className="py-6 text-center text-sm text-ground-400">{emptyMessage}</p>}
       </div>
 
       <TableFrame className="hidden md:block" minWidth={760} label={t(labelKey)}>
@@ -135,6 +201,7 @@ export default function SpendingShops({
               <SortHeader col="visits" label={t(MERCHANT_SORT_LABEL.visits)} sort={sort} onSort={onSort} align="right" />
               <SortHeader col="total" label={t(MERCHANT_SORT_LABEL.total)} sort={sort} onSort={onSort} align="right" />
               <SortHeader col="lastSeen" label={t(MERCHANT_SORT_LABEL.lastSeen)} sort={sort} onSort={onSort} />
+              <SortHeader col="decidedAt" label={t(MERCHANT_SORT_LABEL.decidedAt)} sort={sort} onSort={onSort} />
             </tr>
           </thead>
           <tbody className="divide-y divide-ground-100">
@@ -160,11 +227,14 @@ export default function SpendingShops({
                 <td className="px-4 py-3 text-ground-500">
                   {m.last_seen ? formatDate(m.last_seen) : '—'}
                 </td>
+                <td className="px-4 py-3 text-ground-500">
+                  {m.decided_at ? formatDate(m.decided_at.slice(0, 10)) : '—'}
+                </td>
               </tr>
             ))}
             {empty && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-ground-400">
-                {t(emptyKey)}
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-ground-400">
+                {emptyMessage}
               </td></tr>
             )}
           </tbody>

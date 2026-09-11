@@ -49,29 +49,27 @@ const OVERVIEW: api.SpendingOverview = {
       // ringgit are not. It must appear in BOTH tabs.
       merchant: 'AL HUDHA ENTERPRISE', category: 'food', decided_by: 'inferred',
       visits: 9, total: '259.20', last_seen: '2026-08-30', held_back: 1,
+      decided_at: '2026-09-01T00:00:00Z',
     },
     {
       merchant: '99 SPEEDMART', category: 'groceries', decided_by: 'rule',
       visits: 15, total: '272.25', last_seen: '2026-08-23', held_back: 0,
+      decided_at: '2026-08-20T00:00:00Z',
     },
     {
       merchant: 'GLASSEYE EYEWEAR TRADING', category: 'health', decided_by: 'owner',
       visits: 1, total: '130.00', last_seen: '2026-08-09', held_back: 0,
+      decided_at: '2026-08-10T00:00:00Z',
     },
     {
       merchant: 'SHOPEE MARKETPLACE', category: 'unsorted', decided_by: 'ai',
       visits: 16, total: '401.03', last_seen: '2026-08-29', held_back: 0,
+      decided_at: '2026-09-05T00:00:00Z',
     },
   ],
   students: [
     { application_id: 7, name: 'NURUL TEST', payments: 24, spent: '400.00', unplaced: '20.00' },
     { application_id: 8, name: 'AMIR TEST', payments: 3, spent: '90.00', unplaced: '0.00' },
-  ],
-  model_decisions: [
-    {
-      merchant: 'EY VENTURE', category: 'groceries', reason: 'spend-cat-v1',
-      decided_at: '2026-09-09T10:00:00Z',
-    },
   ],
   wallet_gaps: { students_without_wallet: [], shared_wallets: {} },
   categories: [
@@ -83,9 +81,19 @@ const OVERVIEW: api.SpendingOverview = {
   ],
 }
 
-/** Open one of the three tabs. The mocked `t` returns the key, so that is the button's name. */
+/** The tab label prefix, BUILT rather than written out, so this file never contains a literal
+ *  that looks like an `admin.spending.*` key the page does not have. */
+const KEY = `admin.spending.${'tab'}.`
+
+/** Open one of the three tabs.
+ *
+ * ⚠ A REGEX, NOT AN EXACT NAME. Since S7 the tab's accessible name is the label PLUS its
+ * count (the shops tab reads as its key with a 4 glued on), so an exact match finds nothing
+ * and the failure
+ * reads as "the tab is missing" rather than "its name grew". */
 async function openTab(name: 'shops' | 'students' | 'unsorted') {
-  fireEvent.click(await screen.findByRole('tab', { name: `admin.spending.tab.${name}` }))
+  fireEvent.click(await screen.findByRole('tab',
+                                          { name: new RegExp(`tab\.${name}`) }))
 }
 
 /** The DESKTOP table's data rows, in the order they are drawn. Phone cards are `div`s, so they
@@ -109,8 +117,14 @@ describe('the three tabs', () => {
   it('opens on Shops, and offers exactly three', async () => {
     render(<SpendingPage />)
     const tabs = await screen.findAllByRole('tab')
+    // ⚠ ASSERTED AS LABEL + COUNT SEPARATELY, NOT AS ONE GLUED STRING.
+    // Gluing the label and the count into one quoted string was the first attempt, and it
+    // broke the i18n scanner: that guard greps the whole of `src/` for quoted keys under this
+    // namespace and checks each resolves — and it does NOT skip comments, so even writing the
+    // offending string in an explanation re-breaks it. A test must never mint a fake key, in
+    // code or in prose.
     expect(tabs.map((b) => b.textContent)).toEqual([
-      'admin.spending.tab.shops', 'admin.spending.tab.students', 'admin.spending.tab.unsorted',
+      `${KEY}shops4`, `${KEY}students2`, `${KEY}unsorted2`,
     ])
     expect(tabs[0].getAttribute('aria-selected')).toBe('true')
   })
@@ -159,10 +173,15 @@ describe('the Shops tab', () => {
   })
 
   it('says how each shop was decided, and marks yours differently', async () => {
+    // ⚠ COUNTED INSIDE THE TABLE. Since S7 the same six words are also the options of the
+    // "how we decided" FILTER, so a page-wide count of two is simply wrong — and it would
+    // have been wrong in a way that still passed for a while.
     render(<SpendingPage />)
-    expect(await screen.findAllByText('admin.spending.by.owner')).toHaveLength(2)
-    expect(screen.getAllByText('admin.spending.by.rule')).toHaveLength(2)
-    expect(screen.getAllByText('admin.spending.by.inferred')).toHaveLength(2)
+    await screen.findAllByText('99 SPEEDMART')
+    const table = within(screen.getAllByRole('table')[0])
+    expect(table.getAllByText('admin.spending.by.owner')).toHaveLength(1)
+    expect(table.getAllByText('admin.spending.by.rule')).toHaveLength(1)
+    expect(table.getAllByText('admin.spending.by.inferred')).toHaveLength(1)
   })
 
   it('names the payments the ceiling held back, and only where the ceiling ran', async () => {
@@ -228,6 +247,7 @@ describe('paging a long list', () => {
   const shops = (total: (i: number) => number) => Array.from({ length: 30 }, (_, i) => ({
     merchant: `SHOP ${String(i).padStart(2, '0')}`, category: 'food', decided_by: 'rule',
     visits: 1, total: `${total(i)}.00`, last_seen: '2026-08-01', held_back: 0,
+    decided_at: null,
   }))
 
   /** Money ranks the same way as the name, so the default view reads SHOP 00 … SHOP 29. */
@@ -270,6 +290,25 @@ describe('paging a long list', () => {
     expect(screen.getAllByText('SHOP 29').length).toBeGreaterThan(0)
   })
 
+  it('⚠ FILTERS THE WHOLE LIST, THEN PAGES — never pages first and filters the page', () => {
+    // FOUND BY A BITE-CHECK THAT THE FOUR-SHOP FIXTURE COULD NOT SEE: with one page, "filter then
+    // page" and "page then filter" are identical. It takes a list longer than a page, and a
+    // search that matches rows on BOTH pages, to tell them apart.
+    //
+    // The harm is a first page with holes in it. Thirty shops named SHOP 00…29 arrive biggest
+    // first; "SHOP 2" matches the ten from SHOP 20. Filtering first finds all ten. Paging first
+    // takes SHOP 00…24 and then filters THOSE — five rows — while the screen still says it is
+    // showing you everything that matched.
+    mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, merchants: many })
+    render(<SpendingPage />)
+    return waitFor(() => expect(bodyRows().length).toBeGreaterThan(0)).then(() => {
+      fireEvent.change(screen.getByLabelText('admin.spending.searchShops'),
+                       { target: { value: 'SHOP 2' } })
+      expect(bodyRows()).toHaveLength(10)
+      expect(screen.getAllByText('SHOP 29')).toHaveLength(2)
+    })
+  })
+
   it('⚠ SORTS THE WHOLE LIST, THEN TAKES A PAGE — never the other way round', async () => {
     // The reversed order sorts one page at a time, so rows migrate between pages as you click and
     // the first page is whatever the SERVER's order put there. It looks like sorting works,
@@ -293,8 +332,133 @@ describe('paging a long list', () => {
     expect(bodyRows()).toHaveLength(5)
 
     mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, merchants: many.slice(0, 26) })
-    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'study' } })
+    // ⚠ BY LABEL, not by position. The filters are comboboxes too since S7, and the first one
+    // on the page is now the category FILTER — changing that would silently test nothing.
+    fireEvent.change(screen.getAllByLabelText(/SHOP 2[0-9]/)[0], { target: { value: 'study' } })
     await waitFor(() => expect(bodyRows()).toHaveLength(25))
+  })
+})
+
+describe('searching and filtering', () => {
+  const typeSearch = (value: string) =>
+    fireEvent.change(screen.getByLabelText('admin.spending.searchShops'), { target: { value } })
+
+  it('narrows the shops as you type, in BOTH renderings', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    typeSearch('speed')
+    expect(screen.getAllByText('99 SPEEDMART')).toHaveLength(2)
+    expect(screen.queryByText('SHOPEE MARKETPLACE')).toBeNull()
+  })
+
+  it('ignores case and surrounding spaces, because people paste', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    typeSearch('  ShOpEe  ')
+    expect(screen.getAllByText('SHOPEE MARKETPLACE')).toHaveLength(2)
+    expect(screen.queryByText('99 SPEEDMART')).toBeNull()
+  })
+
+  it('filters by how we decided, which is what replaced the model list', async () => {
+    // ⚠ THE WHOLE CASE FOR DELETING THAT SECTION. Picking "Model" here gives the same list it
+    // gave — and this one you can correct from.
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    fireEvent.change(screen.getByLabelText('admin.spending.filter.decidedByLabel'),
+                     { target: { value: 'ai' } })
+    expect(screen.getAllByText('SHOPEE MARKETPLACE')).toHaveLength(2)
+    expect(screen.queryByText('99 SPEEDMART')).toBeNull()
+    expect(screen.queryByText('GLASSEYE EYEWEAR TRADING')).toBeNull()
+  })
+
+  it('filters by category', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    fireEvent.change(screen.getByLabelText('admin.spending.filter.categoryLabel'),
+                     { target: { value: 'groceries' } })
+    expect(screen.getAllByText('99 SPEEDMART')).toHaveLength(2)
+    expect(screen.queryByText('AL HUDHA ENTERPRISE')).toBeNull()
+  })
+
+  it('⚠ SAYS "NOTHING MATCHES", NOT "NO SPENDING RECORDED"', async () => {
+    // Telling somebody their data is missing when they have merely typed a typo is the worst
+    // wording available. The two empties mean opposite things.
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    typeSearch('zzzz')
+    expect(screen.getAllByText('admin.spending.noMatch').length).toBeGreaterThan(0)
+    expect(screen.queryByText('admin.spending.empty')).toBeNull()
+  })
+
+  it('clears back to the whole list', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    typeSearch('speed')
+    fireEvent.click(screen.getByRole('button', { name: 'admin.spending.filter.clear' }))
+    expect(screen.getAllByText('SHOPEE MARKETPLACE')).toHaveLength(2)
+  })
+
+  it('shows no "clear" and no count until something is actually filtered', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    expect(screen.queryByRole('button', { name: 'admin.spending.filter.clear' })).toBeNull()
+    expect(screen.queryByTestId('merchant-showing')).toBeNull()
+  })
+
+  it('⚠ THE TAB COUNT DOES NOT MOVE WHEN YOU FILTER', async () => {
+    // The tab answers "how many are there", the count beside the search answers "how many am I
+    // looking at". If the tab followed the filter, the first question would have no answer left
+    // on screen.
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    const shopsTab = () => screen.getByRole('tab', { name: /admin\.spending\.tab\.shops/ })
+    expect(shopsTab().textContent).toContain('4')
+    typeSearch('speed')
+    expect(shopsTab().textContent).toContain('4')
+    expect(screen.getByTestId('merchant-showing')).not.toBeNull()
+  })
+
+  it('each tab filters on its own — the Unsorted search is not the Shops search', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    typeSearch('speed')
+    await openTab('unsorted')
+    expect(screen.getAllByText('SHOPEE MARKETPLACE')).toHaveLength(2)
+  })
+
+  it('searches the students by name, and can show only those with unsorted money', async () => {
+    render(<SpendingPage />)
+    await openTab('students')
+    fireEvent.change(screen.getByLabelText('admin.spending.searchStudents'),
+                     { target: { value: 'amir' } })
+    expect(screen.getAllByText('AMIR TEST')).toHaveLength(2)
+    expect(screen.queryByText('NURUL TEST')).toBeNull()
+
+    fireEvent.change(screen.getByLabelText('admin.spending.searchStudents'),
+                     { target: { value: '' } })
+    fireEvent.click(screen.getByLabelText('admin.spending.filter.onlyUnplaced'))
+    // ⚠ AMIR's `unplaced` is the STRING '0.00', which is truthy. A filter written on truthiness
+    // would keep him and look completely broken to nobody.
+    expect(screen.getAllByText('NURUL TEST')).toHaveLength(2)
+    expect(screen.queryByText('AMIR TEST')).toBeNull()
+  })
+})
+
+describe('the decided date', () => {
+  it('is a column on the shop row now, sortable, and blank when there is no verdict', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue({
+      ...OVERVIEW,
+      merchants: [
+        { ...OVERVIEW.merchants[0], merchant: 'NEWEST', decided_at: '2026-09-09T00:00:00Z' },
+        { ...OVERVIEW.merchants[1], merchant: 'OLDEST', decided_at: '2026-01-01T00:00:00Z' },
+        { ...OVERVIEW.merchants[2], merchant: 'NO VERDICT', decided_at: null },
+      ],
+    })
+    render(<SpendingPage />)
+    await screen.findAllByText('NEWEST')
+    fireEvent.click(screen.getByRole('button', { name: /admin\.spending\.col\.decidedAt/ }))
+    // Newest first, and the shop with no verdict at the BOTTOM — not treated as 1970.
+    expect(shopOrder()).toEqual(['NEWEST', 'OLDEST', 'NO VERDICT'])
   })
 })
 
@@ -330,11 +494,15 @@ describe('the Unsorted tab', () => {
     expect(screen.getAllByText('admin.spending.unplaced.empty').length).toBeGreaterThan(0)
   })
 
-  it('holds the model’s recent decisions and the wallet faults', async () => {
+  it('⚠ HOLDS THE SHOPS AND NOTHING ELSE — the model list and the wallets have gone', async () => {
+    // The model list was DELETED (it duplicated this table and could not be acted on) and the
+    // wallets MOVED to Students (a wallet is a fact about a student). Asserting their absence
+    // here is what stops either quietly coming back.
     render(<SpendingPage />)
     await openTab('unsorted')
-    expect(screen.getByTestId('model-decisions').textContent).toContain('EY VENTURE')
-    expect(screen.getByTestId('wallet-gaps')).not.toBeNull()
+    expect(screen.queryByTestId('model-decisions')).toBeNull()
+    expect(screen.queryByTestId('wallet-gaps')).toBeNull()
+    expect(screen.getAllByText('SHOPEE MARKETPLACE')).toHaveLength(2)
   })
 })
 
@@ -427,7 +595,7 @@ describe('the wallet faults', () => {
     // ⚠ A wallet matching NO student is never stored, so it CANNOT be shown here. Saying so on
     // the page is what stops a reader assuming an empty section means "nothing is wrong".
     render(<SpendingPage />)
-    await openTab('unsorted')
+    await openTab('students')
     expect(screen.getByText('admin.spending.gaps.note')).not.toBeNull()
   })
 
@@ -437,7 +605,7 @@ describe('the wallet faults', () => {
       wallet_gaps: { students_without_wallet: [42], shared_wallets: { '8000400170001': [7, 8] } },
     })
     render(<SpendingPage />)
-    await openTab('unsorted')
+    await openTab('students')
     const gaps = within(screen.getByTestId('wallet-gaps'))
     expect(gaps.getByText(/42/)).not.toBeNull()
     expect(gaps.getByText(/8000400170001/)).not.toBeNull()

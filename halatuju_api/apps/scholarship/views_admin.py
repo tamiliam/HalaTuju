@@ -7805,6 +7805,10 @@ class AdminSpendingView(_SpendingBase):
                 'total': str(r['total']),
                 'last_seen': r['last_seen'].isoformat() if r['last_seen'] else None,
                 'held_back': r['held_back'],
+                # ⚠ WHEN THE VERDICT WAS REACHED, not when a student last shopped here. Added S7
+                # when the separate "what the model decided recently" list was deleted: that list
+                # held exactly one fact this table did not, and a fact is a column.
+                'decided_at': r['decided_at'].isoformat() if r['decided_at'] else None,
             } for r in spend_report.merchant_rows(org)],
             'students': [{
                 'application_id': r['application_id'],
@@ -7813,12 +7817,11 @@ class AdminSpendingView(_SpendingBase):
                 'spent': str(r['spent']),
                 'unplaced': str(r['unplaced']),
             } for r in spend_report.student_rows(org)],
-            'model_decisions': [{
-                'merchant': r['merchant'],
-                'category': r['category'],
-                'reason': r['reason'],
-                'decided_at': r['decided_at'].isoformat() if r['decided_at'] else None,
-            } for r in spend_report.model_decisions(org)],
+            # ⚠ `model_decisions` WAS HERE AND IS DELETED (S7, 2026-09-11). It was this same data
+            # filtered to `ai` within 14 days, rendered read-only beside a table that CAN be
+            # corrected — so a reader found a wrong guess there and had to scroll up to fix it.
+            # The owner asked what action it expected; the answer was none. Filter the shops table
+            # by "how we decided" instead. Do not reintroduce it.
             'wallet_gaps': spend_report.wallet_gaps(org),
             'categories': [{'code': c, 'label': label} for c, label in SPEND_CATEGORY_CHOICES],
         })

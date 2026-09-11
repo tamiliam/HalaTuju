@@ -49,7 +49,7 @@ sat unread for six weeks — it was the nav's one legitimate reserved slot.
 - **The nav's last reserved slot is gone.** `billingRates` earned its `placeholder` honestly and
   has now been filled. The disabled-slot mechanism stays proven against a synthetic row.
 
-**One migration** (`0156`), additive: the new table plus the `workspace` choice.
+**One migration** (`0157`), additive: the new table plus the `workspace` choice.
 
 ### Nothing is typed by hand — the invoices read themselves (same day, second pass)
 
@@ -97,7 +97,7 @@ margins to everything.
   ONE tenant today, so both return 100% — which is precisely when the rule is worth stating, so
   the second tenant makes it a decision somebody reviews rather than a default nobody noticed.
 
-**Second migration** (`0157`), additive: the `extracted` provenance choice.
+**Second migration** (`0158`), additive: the `extracted` provenance choice.
 
 ### Claude is a cost of delivering hours, not of running the platform (same day, third pass)
 
@@ -131,7 +131,88 @@ Brevo, Cloudflare and GitHub are free for now and must be mentioned.
   as their own lines. The RM8.32 of Gemini in August belongs to **FicusValue**, a different
   project on the same billing account, and the ledger correctly excludes it.
 
-**Third migration** (`0158`), additive: the four new source choices.
+**Third migration** (`0159`), additive: the four new source choices.
+
+## The spending page, round two - search, filters, counts - 2026-09-11
+
+The owner's five follow-ups after using the tabbed page. Four shipped here; the fifth (moving
+Payments and Spending from Organisation to Programme) is a sprint of its own and is next.
+
+- **"What the model decided recently" is DELETED, not moved.** The owner asked what action it
+  expected. The honest answer was none: it was the shops table filtered to `ai` within 14 days,
+  rendered read-only beside a table that CAN be corrected, so a reader found a wrong guess in it
+  and had to scroll up to act. The only fact it held that the row did not was WHEN - so
+  `decided_at` is now a sortable COLUMN, and "how we decided" is a filter. One list, and you can
+  act on it.
+- **A search box and filters on every table.** Shops and Unsorted: search the shop name, filter by
+  category and by how it was decided. Students: search the name, and "only students with money not
+  yet sorted".
+- **Each tab carries its count** - of the WHOLE list, never of the filtered view. The count beside
+  the search answers "how many am I looking at"; the tab answers "how many are there", and a tab
+  that moved as you typed would leave the second question with no answer on screen.
+- **"Wallets to fix" moved to the Students tab** (owner): a wallet is a fact about a STUDENT, not
+  about money that could not be categorised.
+- **Two empties, not one.** A list filtered down to nothing says "nothing matches", never "no
+  spending has been recorded" - telling somebody their data is missing when they have typed a typo
+  is the worst wording available.
+
+**⚠ SIX BITE-CHECKS. FIVE BIT; ONE WAS SILENT AND FOUND A REAL GAP:** paging BEFORE filtering
+passed every test, because the four-shop fixture fits one page and the two orders only disagree on
+a list longer than a page. The harm is a first page with holes in it while the screen still claims
+to show everything that matched. `⚠ FILTERS THE WHOLE LIST, THEN PAGES` now uses thirty shops and a
+search that matches rows on both pages.
+
+**⚠ TWO EXISTING GUARDS CAUGHT ME, both correctly:**
+- `theme.test.ts` - both new search boxes used `placeholder:text-ground-400`. Placeholder text has
+  its own token and is deliberately fainter than the ink bar; darkening it makes an empty field
+  read as a filled one.
+- The `admin.spending` i18n scanner - a test asserting the tab's text as one glued literal
+  (`…tab.shops` + its count) minted a key that does not exist. **It does not skip comments**, so
+  even explaining the mistake in prose re-broke it. Asserted as label + count separately now.
+
+Gates: **6439 pytest**, **2110 jest**, lint clean, `next build` exit 0. No migration.
+
+## The wallet door now shouts - 2026-09-11
+
+`POST /api/v1/internal/vircle/airtable/` is a **public route held shut by one shared secret**.
+Anybody holding that secret and a student's NRIC can set `vircle_id` on a student who does not
+have one yet - **the field that decides where that student's bursary is paid**. The write was
+already audited, to an application log nobody reads.
+
+Two events now email `ADMIN_NOTIFY_EMAIL`:
+
+- **a wallet was SET** - the normal way a wallet arrives, emailed because the only other record
+  was a server log; and
+- **an overwrite was REFUSED** (`mismatch`) - which is the door being *pushed at*, and is exactly
+  what an attempt on an already-funded student looks like. It writes nothing, so without an email
+  it left no trace a person would ever see.
+
+Nothing else emails: `kept`, `invalid`, `no_match` and activation-only rows stay silent, because an
+alert that arrives when nothing happened is one that gets filtered - and then the one that matters
+is filtered with it.
+
+⚠ **The alert NEVER costs Vircle their 200.** It is best-effort, like the outbound push and the
+usage meter: an exception in our mail path must not put somebody else's automation into retries
+over our data question. ⚠ **It names a wallet and an application id, never a student's name** (nor
+the NRIC they were matched on) - internal alerts get forwarded.
+
+**Why now:** the secret was exposed in a session transcript on 2026-09-11 while reading live
+settings. The logs were checked immediately - **no wallet has ever been set through that door and
+no mismatch has ever been recorded**; all its traffic is from 8-9 September, when it was built. The
+owner chose to rotate the secret at the next natural contact with Vircle (rotating requires them to
+change their Airtable automation) and to make the door audible in the meantime.
+
+**⚠ TWO SILENT BITES, BOTH REAL:**
+1. **Emailing BEFORE the save passed every test.** The email is a claim about STORED state, so
+   sending it first means a save failure hands a person a fact that is not true about where money
+   goes. Ordering is invisible to tests that only count emails on the happy path;
+   `test_a_FAILED_SAVE_sends_NOTHING` makes the save fail.
+2. **The email function's own outcome guard was unreachable** - `_alert` is only called from the
+   two branches that do something, so deleting the guard changed nothing. It is kept as a defence
+   at the email boundary and is now driven DIRECTLY, because a guard that cannot fail has not been
+   tested.
+
+Gates: **6442 pytest** (+9). No migration. No web change.
 
 ## The spending page in three tabs, and a super can finally open it - 2026-09-11
 
