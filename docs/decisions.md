@@ -1,5 +1,37 @@
 # Architectural Decisions — HalaTuju
 
+## The Vircle wallet door emails on `set` AND on refused `mismatch` — 2026-09-11
+
+**Decision:** `vircle_airtable.apply_update` emails `ADMIN_NOTIFY_EMAIL` when it sets a
+`vircle_id`, and when it REFUSES to change one. Nothing else on that path emails.
+
+**Why the refused one is in, and why it is the more important half.** A `mismatch` writes nothing,
+so it is invisible by construction — and it is precisely the shape an attack on an already-funded
+student takes: the attacker has the secret and an NRIC, and the only thing stopping them is the
+never-overwrite rule. A refusal that nobody hears is a refusal nobody can act on.
+
+**Why `kept` / `invalid` / `no_match` / activation-only stay silent.** An alert that arrives when
+nothing happened gets filtered, and the one that matters gets filtered with it. Same reasoning as
+`send_spending_alert_email`'s no-weekly-all-clear ruling (2026-09-10).
+
+**Why an email and not a dashboard.** The write already reached `logger.info('AUDIT vircle_id_set…')`
+and had done since the door was built. Nobody reads an application log. The question this answers is
+"would we find out the same day?", and only a push channel answers it.
+
+**Alternatives considered:** (a) rotate the secret immediately — deferred by the owner, because
+rotating requires Vircle to change their Airtable automation and the logs showed the door had never
+been used in anger; (b) put the secret behind a signed timestamp / HMAC over the body — a better
+lock, but it is a change to somebody else's integration and belongs in a conversation with them,
+not in a unilateral deploy; (c) refuse inbound wallet writes entirely and make every wallet manual
+— that reintroduces exactly the typing errors the Airtable flow was built to remove.
+
+**Trade-offs:** a genuine week of activations now produces one email per student. Accepted: that is
+a handful of mails a term, each about the field that decides where money goes.
+
+**Revisit if:** the volume ever makes these routine — at which point the answer is a digest, not
+silence. And when the secret is rotated, note it here; the alert is a mitigation, not the fix.
+
+
 ## A super sees EVERY organisation's spending — S6, 2026-09-11 (supersedes the S4a refusal)
 
 **Decision:** `_SpendingBase._spending_admin` hands a super `spend_report.ALL_ORGS`, a scope that

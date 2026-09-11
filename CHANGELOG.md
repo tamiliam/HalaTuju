@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## The wallet door now shouts - 2026-09-11
+
+`POST /api/v1/internal/vircle/airtable/` is a **public route held shut by one shared secret**.
+Anybody holding that secret and a student's NRIC can set `vircle_id` on a student who does not
+have one yet - **the field that decides where that student's bursary is paid**. The write was
+already audited, to an application log nobody reads.
+
+Two events now email `ADMIN_NOTIFY_EMAIL`:
+
+- **a wallet was SET** - the normal way a wallet arrives, emailed because the only other record
+  was a server log; and
+- **an overwrite was REFUSED** (`mismatch`) - which is the door being *pushed at*, and is exactly
+  what an attempt on an already-funded student looks like. It writes nothing, so without an email
+  it left no trace a person would ever see.
+
+Nothing else emails: `kept`, `invalid`, `no_match` and activation-only rows stay silent, because an
+alert that arrives when nothing happened is one that gets filtered - and then the one that matters
+is filtered with it.
+
+⚠ **The alert NEVER costs Vircle their 200.** It is best-effort, like the outbound push and the
+usage meter: an exception in our mail path must not put somebody else's automation into retries
+over our data question. ⚠ **It names a wallet and an application id, never a student's name** (nor
+the NRIC they were matched on) - internal alerts get forwarded.
+
+**Why now:** the secret was exposed in a session transcript on 2026-09-11 while reading live
+settings. The logs were checked immediately - **no wallet has ever been set through that door and
+no mismatch has ever been recorded**; all its traffic is from 8-9 September, when it was built. The
+owner chose to rotate the secret at the next natural contact with Vircle (rotating requires them to
+change their Airtable automation) and to make the door audible in the meantime.
+
+**⚠ TWO SILENT BITES, BOTH REAL:**
+1. **Emailing BEFORE the save passed every test.** The email is a claim about STORED state, so
+   sending it first means a save failure hands a person a fact that is not true about where money
+   goes. Ordering is invisible to tests that only count emails on the happy path;
+   `test_a_FAILED_SAVE_sends_NOTHING` makes the save fail.
+2. **The email function's own outcome guard was unreachable** - `_alert` is only called from the
+   two branches that do something, so deleting the guard changed nothing. It is kept as a defence
+   at the email boundary and is now driven DIRECTLY, because a guard that cannot fail has not been
+   tested.
+
+Gates: **6442 pytest** (+9). No migration. No web change.
+
 ## The spending page in three tabs, and a super can finally open it - 2026-09-11
 
 The owner opened `/admin/spending` as **super admin** and was refused: *"Could not load the

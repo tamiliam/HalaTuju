@@ -14,13 +14,14 @@ The load-bearing behaviours, in the order they can hurt someone:
 from unittest import mock
 
 import jwt
+from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
-from apps.scholarship import vircle_airtable
+from apps.scholarship import emails, vircle_airtable
 from apps.scholarship.resolution import VIRCLE_CODE
 from apps.scholarship.vircle import raise_setup_task
 
@@ -184,6 +185,131 @@ class TestApplyUpdate(_Base):
         app.refresh_from_db()
         self.assertEqual(out['reason'], 'no_match')
         self.assertEqual(app.vircle_id, '')
+
+
+# ── The alert on the money-routing write ─────────────────────────────────────
+@override_settings(ADMIN_NOTIFY_EMAIL='contact@halatuju.xyz')
+class TestTheWalletDoorShouts(_Base):
+    """⚠⚠ THE DOOR THAT CAN REDIRECT MONEY MUST NOT ONLY WHISPER (owner, 2026-09-11).
+
+    `VircleAirtableUpdateView` is a PUBLIC route held shut by one shared secret. Anybody holding
+    that secret and a student's NRIC can set `vircle_id` on a student who has none yet — the field
+    that decides where that student's bursary is paid. Until this, the only record was a line in
+    an application log, which nobody reads. These tests are written from that harm.
+    """
+
+    def test_setting_a_wallet_emails_a_person(self):
+        app = self._make('u1', nric='080214-08-1234')
+        vircle_airtable.apply_update({'NRIC': '080214081234', 'Wallet ID': '8000400181509'})
+        self.assertEqual(len(mail.outbox), 1)
+        body = mail.outbox[0].body
+        self.assertIn('8000400181509', body)
+        self.assertIn(str(app.id), body)
+
+    def test_a_REFUSED_overwrite_also_emails_and_says_both_numbers(self):
+        """⚠ THE ONE THAT MATTERS MOST. A refused change is the door being PUSHED AT, and it is
+        exactly what an attempt on an already-funded student looks like. It writes nothing, so
+        without an email it leaves no trace a person will ever see."""
+        app = self._make('u1', vircle_id='8000400175123')
+        out = vircle_airtable.apply_update({'NRIC': '080214-08-1234',
+                                            'Wallet ID': '8000400179999'})
+        self.assertEqual(out['wallet'], 'mismatch')
+        self.assertEqual(len(mail.outbox), 1)
+        body = mail.outbox[0].body
+        self.assertIn('8000400175123', body)   # what we hold
+        self.assertIn('8000400179999', body)   # what they sent
+        self.assertIn(str(app.id), body)
+        app.refresh_from_db()
+        self.assertEqual(app.vircle_id, '8000400175123')   # still refused
+
+    def test_it_NEVER_names_the_student(self):
+        """⚠ Wallet + application id are what a person needs to check the row. A name is not, and
+        internal alerts get forwarded. Same rule as `send_spending_alert_email`."""
+        self._make('u1', nric='080214-08-1234', name='KAVITHA A/P SURESH')
+        vircle_airtable.apply_update({'NRIC': '080214081234', 'Wallet ID': '8000400181509'})
+        self.assertEqual(len(mail.outbox), 1)
+        whole = mail.outbox[0].body + mail.outbox[0].subject
+        self.assertNotIn('KAVITHA', whole.upper())
+        self.assertNotIn('080214', whole)          # nor the NRIC they were matched on
+
+    def test_a_FAILED_SAVE_sends_NOTHING(self):
+        """⚠⚠ FOUND BY A BITE-CHECK THAT NOTHING ELSE CAUGHT. Moving the alert to before the
+        save passed all seven tests above.
+
+        The harm is specific: the email is a claim ABOUT STORED STATE — *"wallet now
+        8000400181509"* — so sending it before the write means that on any save failure a person
+        is handed a fact that is not true, about the field that decides where money goes, with
+        nothing to tell them otherwise. Ordering is invisible to a test that only counts emails on
+        the happy path; it takes a failing save to see it at all.
+        """
+        self._make('u1', nric='080214-08-1234')
+        with mock.patch.object(ScholarshipApplication, 'save',
+                               side_effect=RuntimeError('database went away')):
+            with self.assertRaises(RuntimeError):
+                vircle_airtable.apply_update({'NRIC': '080214081234',
+                                              'Wallet ID': '8000400181509'})
+        self.assertEqual(mail.outbox, [])
+
+    def test_the_email_itself_refuses_an_outcome_where_nothing_happened(self):
+        """⚠ DRIVEN DIRECTLY, BECAUSE THROUGH `apply_update` THIS GUARD IS UNREACHABLE.
+
+        A bite-check deleting the `outcome not in ('set', 'mismatch')` check changed nothing —
+        `_alert` is only ever called from the two branches that DO something, so the guard could
+        never fire and was, on the evidence, decorative. It is kept because it defends the email
+        boundary against the next caller, and a guard that is kept has to be provable: this drives
+        the function itself. (The 2026-09-10 lesson: dead code that looks like a safeguard is
+        worse than none, because it invites trust.)
+        """
+        for outcome in ('kept', 'none', 'invalid', '', 'set '):
+            self.assertFalse(
+                emails.send_vircle_wallet_alert_email(7, outcome, '8000400181509'), outcome)
+        self.assertEqual(mail.outbox, [])
+        # …and the two that DO mean something still send.
+        self.assertTrue(emails.send_vircle_wallet_alert_email(7, 'set', '8000400181509'))
+        self.assertTrue(emails.send_vircle_wallet_alert_email(
+            7, 'mismatch', '8000400179999', stored='8000400175123'))
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_nothing_changing_sends_nothing(self):
+        """No email for `kept`, `invalid`, `no_match` or an activation-only row. An alert that
+        arrives when nothing happened is an alert that gets filtered, and then the one that
+        matters is filtered with it."""
+        self._make('u1', nric='080214-08-1234', vircle_id='8000400175123')
+        vircle_airtable.apply_update({'NRIC': '080214081234',
+                                      'Wallet ID': '8000400175123'})          # kept
+        vircle_airtable.apply_update({'NRIC': '080214081234',
+                                      'Activated On': '08/09/2026'})          # activation only
+        vircle_airtable.apply_update({'NRIC': '999999999999',
+                                      'Wallet ID': '8000400188888'})          # no_match
+        self.assertEqual(mail.outbox, [])
+
+    def test_an_invalid_wallet_is_refused_AND_silent(self):
+        self._make('u1', nric='080214-08-1234')
+        out = vircle_airtable.apply_update({'NRIC': '080214081234', 'Wallet ID': '123'})
+        self.assertEqual(out['wallet'], 'invalid')
+        self.assertEqual(mail.outbox, [])
+
+    def test_a_BROKEN_MAIL_SERVER_STILL_LEAVES_VIRCLE_WITH_A_200(self):
+        """⚠⚠ THE CONTRACT. This endpoint answers somebody else's automation. An exception
+        escaping the alert would turn our mail server's bad afternoon into Vircle's retry storm,
+        about our data question — and, worse here, would abort the wallet write that had already
+        been saved. The alert fails ALONE."""
+        app = self._make('u1', nric='080214-08-1234')
+        with mock.patch('apps.scholarship.emails.send_vircle_wallet_alert_email',
+                        side_effect=RuntimeError('smtp is down')):
+            out = vircle_airtable.apply_update({'NRIC': '080214081234',
+                                                'Wallet ID': '8000400181509'})
+        self.assertEqual(out['wallet'], 'set')
+        app.refresh_from_db()
+        self.assertEqual(app.vircle_id, '8000400181509')   # the write survived the alert
+
+    @override_settings(ADMIN_NOTIFY_EMAIL='')
+    def test_with_no_recipient_configured_it_is_simply_quiet(self):
+        self._make('u1', nric='080214-08-1234')
+        out = vircle_airtable.apply_update({'NRIC': '080214081234',
+                                            'Wallet ID': '8000400181509'})
+        self.assertEqual(out['wallet'], 'set')
+        self.assertEqual(mail.outbox, [])
 
 
 # ── The endpoint: inert without the secret ───────────────────────────────────
