@@ -44,7 +44,6 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from datetime import timedelta
 
 from .spending_import import TX_SPEND, WALLET_EXPECTED_STATES, norm_text
 
@@ -56,10 +55,6 @@ _ZERO = Decimal('0.00')
 #: are both "not placed" for the purpose of the headline percentage — they are different states but
 #: neither is an answer a sponsor could read.
 UNPLACED = ('', 'unsorted')
-
-#: How far back "what the model decided recently" looks. A window, not a stored flag — the same
-#: reasoning as the staleness nudge: a flag set on a day the job failed means nobody is ever told.
-MODEL_REVIEW_DAYS = 14
 
 
 class _AllOrganisations:
@@ -147,9 +142,15 @@ def merchant_rows(org) -> list:
     """
     from .models import MerchantCategory
 
+    # ⚠ `decided_at` RIDES ALONG HERE SINCE S7 (2026-09-11), and it replaced a whole section.
+    # There used to be a separate "what the model decided recently" list beside this table. The
+    # owner asked what action it expected and the honest answer was NONE: it was this same data,
+    # filtered to `ai` and 14 days, with no way to correct anything from it — so a reader found a
+    # wrong guess there and had to scroll back up to fix it. The only fact it held that the table
+    # did not was WHEN, which is a column. One list you can act on beats two you cannot.
     verdicts = {
-        m: (c, d) for m, c, d in
-        MerchantCategory.objects.values_list('merchant', 'category', 'decided_by')
+        m: (c, d, when) for m, c, d, when in
+        MerchantCategory.objects.values_list('merchant', 'category', 'decided_by', 'decided_at')
     }
     agg: dict[str, dict] = {}
     for merchant, category, decided_by, amount, when in _txns(org).filter(
@@ -170,8 +171,9 @@ def merchant_rows(org) -> list:
     out = []
     for merchant, row in agg.items():
         stored = verdicts.get(merchant)
+        decided_at = None
         if stored:
-            category, decided_by = stored
+            category, decided_by, decided_at = stored
         else:
             # No merchant verdict (a person-transfer shop, or nothing has run). Report what the
             # ROWS say rather than inventing a verdict: the commonest, ties broken by name so the
@@ -189,6 +191,9 @@ def merchant_rows(org) -> list:
             'total': row['total'],
             'last_seen': row['last_seen'],
             'held_back': held_back,
+            # When the stored verdict was reached — `None` for a shop with no verdict at all.
+            # ⚠ NOT the same question as `last_seen`, which is when a student last bought here.
+            'decided_at': decided_at,
         })
     out.sort(key=lambda r: (-r['total'], r['merchant']))
     return out
@@ -213,27 +218,6 @@ def student_rows(org) -> list:
             row['unplaced'] += amount or _ZERO
     out = sorted(agg.values(), key=lambda r: (-r['spent'], r['name']))
     return out
-
-
-def model_decisions(org, days=MODEL_REVIEW_DAYS) -> list:
-    """What the model decided lately, so it is checked while it is fresh.
-
-    ⚠ Only merchants THIS organisation's students actually used — the verdict table is global but
-    the list is not (see the module docstring).
-    """
-    from django.utils import timezone
-
-    from .models import MerchantCategory
-
-    mine = set(_txns(org).values_list('merchant', flat=True).distinct())
-    if not mine:
-        return []
-    since = timezone.now() - timedelta(days=days)
-    rows = (MerchantCategory.objects
-            .filter(decided_by='ai', decided_at__gte=since, merchant__in=mine)
-            .order_by('-decided_at')
-            .values_list('merchant', 'category', 'reason', 'decided_at'))
-    return [{'merchant': m, 'category': c, 'reason': r, 'decided_at': d} for m, c, r, d in rows]
 
 
 def wallet_gaps(org) -> dict:

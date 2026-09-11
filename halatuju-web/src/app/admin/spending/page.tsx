@@ -20,9 +20,15 @@
 // figure that changes when you switch tab is a figure nobody trusts. Under them:
 //
 //   Shops     — every shop, and the box you correct it in.
-//   Students  — who spent what.
-//   Unsorted  — the work: shops with money we could not place, the model's recent guesses, and
-//               the wallet faults. One tab holding everything that wants a human.
+//   Students  — who spent what, and the wallet faults (owner, 2026-09-11: a wallet is a fact
+//               about a STUDENT, so it belongs beside them, not in a tab about money).
+//   Unsorted  — the shops with money we could not place.
+//
+// ⚠ **"WHAT THE MODEL DECIDED RECENTLY" WAS DELETED HERE (S7), NOT MOVED.** It was this same
+// shop data filtered to `ai` within 14 days, rendered READ-ONLY beside a table that can be
+// corrected — so a reader found a wrong guess in it and had to scroll up to act. The owner
+// asked what action it expected; there wasn't one. Filter the shops table by "how we decided"
+// instead, and the decided DATE is now a column. Do not reintroduce it.
 //
 // ⚠ **THE SHOPS LIST IS DRAWN BY ONE COMPONENT IN BOTH TABS** (`SpendingShops`). Copying it would
 // set up the failure `StaffAdmin` already had — a rule fixed in one of two renderings of the same
@@ -41,8 +47,8 @@ import { formatDate } from '@/lib/formatDate'
 import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import {
-  STUDENT_DEFAULT_SORT, STUDENT_SORT_LABEL, shopsWithUnplacedMoney, sortStudents, studentFirstDir,
-  type StudentSortKey,
+  STUDENT_DEFAULT_SORT, STUDENT_SORT_LABEL, filterStudents, shopsWithUnplacedMoney,
+  sortStudents, studentFirstDir, type StudentSortKey,
 } from '@/lib/spendingTable'
 import {
   getSpendingOverview, setSpendingCategory, type SpendingOverview,
@@ -100,18 +106,20 @@ export default function SpendingPage() {
     }
   }
 
-  // ── the student table's own sort and page ──
+  // ── the student table's own search, sort and page ──
   const { sort: studentSort, setSort: setStudentSort } =
     useSort<StudentSortKey>(STUDENT_DEFAULT_SORT)
+  const [studentQuery, setStudentQuery] = useState('')
+  const [onlyUnplaced, setOnlyUnplaced] = useState(false)
+  const allStudents = data?.students ?? []
+  // ⚠ FILTER, then SORT, then PAGE — the same order the shops list uses, for the same reason.
+  const shownStudents = filterStudents(allStudents,
+                                       { query: studentQuery, onlyUnplaced })
   const students = usePagedRows(
-    sortStudents(data?.students ?? [], studentSort.key, studentSort.dir))
+    sortStudents(shownStudents, studentSort.key, studentSort.dir))
   const onStudentSort = (col: StudentSortKey) =>
     setStudentSort(nextSort(studentSort, col, studentFirstDir(col)))
-
-  // ── the model's recent guesses get a page of their own ──
-  // Live today: 102 of them. An unpaged list of 102 shops below two other blocks is a list nobody
-  // reaches the bottom of.
-  const decisions = usePagedRows(data?.model_decisions ?? [])
+  const studentsFiltered = shownStudents.length !== allStudents.length
 
   if (role && !allowed) {
     return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
@@ -123,6 +131,17 @@ export default function SpendingPage() {
   const unplaced = shopsWithUnplacedMoney(merchants)
   const noWallet = data?.wallet_gaps.students_without_wallet ?? []
   const shared = Object.entries(data?.wallet_gaps.shared_wallets ?? {})
+
+  // ⚠ COUNTS OF THE WHOLE LIST, and only once the data has arrived. While `data` is null the
+  // counts are `undefined`, which hides the pills — a tab reading "0" before the fetch returns
+  // would say "there are none", which is a different claim from "we do not know yet".
+  const tabs = TABS.map((tab) => ({
+    ...tab,
+    count: !data ? undefined
+      : tab.key === 'shops' ? merchants.length
+        : tab.key === 'students' ? (data.students ?? []).length
+          : unplaced.length,
+  }))
 
   return (
     <div>
@@ -152,7 +171,7 @@ export default function SpendingPage() {
       </dl>
 
       <div className="mt-6">
-        <PanelTabs tabs={TABS} active={tab} onSelect={setTab}
+        <PanelTabs tabs={tabs} active={tab} onSelect={setTab}
           ariaLabelKey="admin.spending.tabs.aria" />
       </div>
 
@@ -172,6 +191,30 @@ export default function SpendingPage() {
       {/* ── Students ── */}
       {tab === 'students' && (
         <>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={studentQuery}
+              onChange={(e) => setStudentQuery(e.target.value)}
+              placeholder={t('admin.spending.searchStudents')}
+              aria-label={t('admin.spending.searchStudents')}
+              className="min-w-0 flex-1 rounded-md border border-ground-200 bg-ground-0 px-3 py-1.5 text-sm text-ground-800 placeholder:text-ground-placeholder sm:max-w-xs"
+            />
+            <label className="flex items-center gap-1.5 text-sm text-ground-700">
+              <input type="checkbox" checked={onlyUnplaced}
+                onChange={(e) => setOnlyUnplaced(e.target.checked)} />
+              {t('admin.spending.filter.onlyUnplaced')}
+            </label>
+            {studentsFiltered && (
+              <span className="text-xs tabular-nums text-ground-500"
+                data-testid="student-showing">
+                {t('admin.spending.filter.showing', {
+                  shown: String(shownStudents.length), total: String(allStudents.length),
+                })}
+              </span>
+            )}
+          </div>
+
           {/* PHONE: one card per student. Four short numeric columns would survive a sideways
               drag, but this is a list of PEOPLE, and the guard's own rule says those get cards. */}
           <div className="space-y-2.5 md:hidden" data-testid="student-cards">
@@ -241,57 +284,10 @@ export default function SpendingPage() {
               />
             </div>
           )}
-        </>
-      )}
-
-      {/* ── Unsorted: everything that wants a human ── */}
-      {tab === 'unsorted' && (
-        <>
-          <h2 className="text-lg font-semibold text-ground-900">
-            {t('admin.spending.unplaced.title')}
-          </h2>
-          <p className="mt-1 mb-3 text-sm text-ground-600">{t('admin.spending.unplaced.help')}</p>
-          <SpendingShops
-            rows={unplaced} categories={categories} onCorrect={correct}
-            saving={saving} loading={loading}
-            emptyKey="admin.spending.unplaced.empty"
-            labelKey="admin.spending.unplaced.title"
-            testId="unplaced"
-          />
-          <p className="mt-2 text-xs text-ground-500">{t('admin.spending.kept')}</p>
-
-          {/* ── what the model decided lately ── */}
-          <h2 className="mt-10 text-lg font-semibold text-ground-900">
-            {t('admin.spending.model.title')}
-          </h2>
-          <p className="mt-1 text-sm text-ground-600">{t('admin.spending.model.help')}</p>
-          <ul className="mt-3 space-y-1.5" data-testid="model-decisions">
-            {decisions.rows.map((d) => (
-              <li key={d.merchant} className="flex flex-wrap items-baseline gap-x-3 text-sm">
-                <span className="font-medium text-ground-900">{d.merchant}</span>
-                <span className="text-ground-600">
-                  {categories.find((c) => c.code === d.category)?.label ?? d.category}
-                </span>
-                {d.decided_at && (
-                  <span className="text-xs text-ground-400">{formatDate(d.decided_at.slice(0, 10))}</span>
-                )}
-              </li>
-            ))}
-            {!loading && decisions.rows.length === 0 && (
-              <li className="text-sm text-ground-400">{t('admin.spending.model.empty')}</li>
-            )}
-          </ul>
-          {decisions.visible && (
-            <div className="mt-3">
-              <Pagination
-                page={decisions.page} totalPages={decisions.totalPages}
-                pageSize={decisions.pageSize} onPageChange={decisions.setPage}
-                pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={decisions.setPageSize}
-              />
-            </div>
-          )}
-
-          {/* ── the two wallet gaps that ARE derivable. The third reaches staff by email. ── */}
+          {/* ── the wallet faults. ⚠ MOVED HERE FROM THE UNSORTED TAB (owner, 2026-09-11): a
+              wallet is a fact about a STUDENT, so it belongs beside the students rather than in
+              a tab about money that could not be categorised. The two derivable faults only —
+              the third (a wallet matching NO student) is never stored, and the note says so. ── */}
           <h2 className="mt-10 text-lg font-semibold text-ground-900">
             {t('admin.spending.gaps.title')}
           </h2>
@@ -315,6 +311,25 @@ export default function SpendingPage() {
             )}
             <p className="text-xs text-ground-500">{t('admin.spending.gaps.note')}</p>
           </div>
+        </>
+      )}
+
+      {/* ── Unsorted: everything that wants a human ── */}
+      {tab === 'unsorted' && (
+        <>
+          <h2 className="text-lg font-semibold text-ground-900">
+            {t('admin.spending.unplaced.title')}
+          </h2>
+          <p className="mt-1 mb-3 text-sm text-ground-600">{t('admin.spending.unplaced.help')}</p>
+          <SpendingShops
+            rows={unplaced} categories={categories} onCorrect={correct}
+            saving={saving} loading={loading}
+            emptyKey="admin.spending.unplaced.empty"
+            labelKey="admin.spending.unplaced.title"
+            testId="unplaced"
+          />
+          <p className="mt-2 text-xs text-ground-500">{t('admin.spending.kept')}</p>
+
         </>
       )}
     </div>

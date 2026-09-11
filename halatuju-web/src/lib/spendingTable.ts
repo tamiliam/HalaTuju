@@ -25,7 +25,7 @@ import type { SpendingMerchantRow, SpendingStudentRow } from './admin-api'
 // ── shops ─────────────────────────────────────────────────────────────────────
 
 export type MerchantSortKey =
-  'shop' | 'countedAs' | 'decidedBy' | 'visits' | 'total' | 'lastSeen'
+  'shop' | 'countedAs' | 'decidedBy' | 'visits' | 'total' | 'lastSeen' | 'decidedAt'
 
 export const MERCHANT_SORT_LABEL: Record<MerchantSortKey, string> = {
   shop: 'admin.spending.col.shop',
@@ -34,6 +34,7 @@ export const MERCHANT_SORT_LABEL: Record<MerchantSortKey, string> = {
   visits: 'admin.spending.col.visits',
   total: 'admin.spending.col.total',
   lastSeen: 'admin.spending.col.lastSeen',
+  decidedAt: 'admin.spending.col.decidedAt',
 }
 
 /**
@@ -53,7 +54,7 @@ const DECIDED_UNKNOWN = 5
 /** The tables start biggest/newest-first; names start A→Z. Clicking flips from there. */
 const MERCHANT_FIRST_DIR: Record<MerchantSortKey, SortDir> = {
   shop: 'asc', countedAs: 'asc', decidedBy: 'desc',
-  visits: 'desc', total: 'desc', lastSeen: 'desc',
+  visits: 'desc', total: 'desc', lastSeen: 'desc', decidedAt: 'desc',
 }
 
 export function merchantFirstDir(key: MerchantSortKey): SortDir {
@@ -86,6 +87,7 @@ export function sortMerchants(
     visits: (a, b) => byNumber(a.visits, b.visits),
     total: (a, b) => byNumber(a.total, b.total),
     lastSeen: (a, b) => byDate(a.last_seen, b.last_seen),
+    decidedAt: (a, b) => byDate(a.decided_at, b.decided_at),
   }
   // ⚠ `isUnknown` for the DATE column only. A shop never seen has no `last_seen`, which is "no
   // record", not "longest ago" — it belongs at the bottom whichever way the column points.
@@ -96,8 +98,68 @@ export function sortMerchants(
   // Ties keep the order the server sent, because `Array.sort` is stable and the server's own
   // order is deterministic (`-total`, then name). So the list does not reshuffle itself when a
   // correction re-fetches it.
-  return sortRows(rows, compare[key], dir,
-                  key === 'lastSeen' ? (r) => !r.last_seen : undefined)
+  const unknown: Partial<Record<MerchantSortKey, (r: SpendingMerchantRow) => boolean>> = {
+    lastSeen: (r) => !r.last_seen,
+    decidedAt: (r) => !r.decided_at,
+  }
+  return sortRows(rows, compare[key], dir, unknown[key])
+}
+
+// ── searching and filtering ───────────────────────────────────────────────────
+//
+// ⚠ **FILTER FIRST, THEN SORT, THEN PAGE — and never any other order.** Sorting a filtered list is
+// cheap and correct; paging before either is the fault the page tests already pin.
+
+/** Case- and space-insensitive "does this text contain what was typed". */
+function matches(haystack: string, needle: string): boolean {
+  const q = needle.trim().toLowerCase()
+  return !q || (haystack || '').toLowerCase().includes(q)
+}
+
+export interface MerchantFilters {
+  /** Free text, matched against the shop name. */
+  query?: string
+  /** A category CODE, or '' for every category. */
+  category?: string
+  /** A `decided_by` value, or '' for any. `'none'` means the sorter has not reached it. */
+  decidedBy?: string
+}
+
+/**
+ * Narrow the shops. Pure, and deliberately separate from sorting.
+ *
+ * ⚠ **`decidedBy: 'none'` SELECTS THE BLANK**, because a blank is a real state — the sorter has
+ * never reached this shop — and a dropdown cannot offer an empty string as a choosable value
+ * without it looking like the "any" option. The same token names it in the pill and in `by.none`.
+ */
+export function filterMerchants(
+  rows: SpendingMerchantRow[], f: MerchantFilters = {},
+): SpendingMerchantRow[] {
+  return rows.filter((r) => {
+    if (!matches(r.merchant, f.query || '')) return false
+    if (f.category && (r.category || 'unsorted') !== f.category) return false
+    if (f.decidedBy && (r.decided_by || 'none') !== f.decidedBy) return false
+    return true
+  })
+}
+
+export interface StudentFilters {
+  /** Free text, matched against the student's name. */
+  query?: string
+  /** Only students with money we could not place. */
+  onlyUnplaced?: boolean
+}
+
+export function filterStudents(
+  rows: SpendingStudentRow[], f: StudentFilters = {},
+): SpendingStudentRow[] {
+  return rows.filter((r) => {
+    if (!matches(r.name, f.query || '')) return false
+    // ⚠ Compared as a NUMBER. `unplaced` is a money STRING, so `'0.00'` is truthy — a plain
+    // truthiness test here would show every student and look like a broken filter.
+    if (f.onlyUnplaced && Number(r.unplaced || 0) <= 0) return false
+    return true
+  })
 }
 
 /**

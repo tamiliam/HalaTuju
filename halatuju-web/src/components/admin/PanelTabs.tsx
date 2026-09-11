@@ -8,6 +8,18 @@ export interface PanelTab<K extends string> {
   /** Rendered greyed and unclickable. Use when the tab has no content YET — never to gate
    *  permission, which belongs in the role check that decides whether to offer the tab at all. */
   disabled?: boolean
+  /**
+   * How many rows are behind this tab. Drawn as a quiet pill after the label.
+   *
+   * ⚠ **OPTIONAL, AND `0` IS A REAL ANSWER.** Only `undefined` hides the pill — a tab that has
+   * genuinely nothing behind it should say "0", because an absent number reads as "not counted
+   * yet" and the two mean opposite things to somebody deciding whether to click.
+   *
+   * ⚠ It is the count of the WHOLE list, not of the current page or the current filter. A number
+   * that moved as you typed in a search box would stop being the thing you came to the tab to
+   * read. (Owner, 2026-09-11.)
+   */
+  count?: number
 }
 
 /**
@@ -43,6 +55,12 @@ export default function PanelTabs<K extends string>({ tabs, active, onSelect, ar
                 : on ? 'border-info-600 bg-brand-fill text-brand-fill-ink'
                      : 'border-ground-200 bg-ground-0 text-ground-600 hover:bg-ground-50'}`}>
             {t(tab.labelKey)}
+            {tab.count !== undefined && (
+              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${
+                on ? 'bg-ground-0/25 text-brand-fill-ink' : 'bg-ground-100 text-ground-500'}`}>
+                {tab.count}
+              </span>
+            )}
             {tab.disabled && (
               <span className="ml-1.5 rounded-full bg-ground-200 px-1.5 py-0.5 text-[10px] text-ground-500">
                 {t('admin.soon')}

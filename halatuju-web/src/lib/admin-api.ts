@@ -2656,6 +2656,11 @@ export interface SpendingMerchantRow {
   last_seen: string | null
   /** Payments the RM20 per-row ceiling kept out of `food` at a food-pattern shop. */
   held_back: number
+  /** When the stored verdict was REACHED — not when a student last shopped here (`last_seen`).
+   *  `null` for a shop with no stored verdict at all. Added S7 when the separate
+   *  "what the model decided recently" list was deleted: it held exactly one fact this row did
+   *  not, so the fact became a column on the row you can actually correct. */
+  decided_at: string | null
 }
 
 export interface SpendingStudentRow {
@@ -2664,13 +2669,6 @@ export interface SpendingStudentRow {
   payments: number
   spent: string
   unplaced: string
-}
-
-export interface SpendingModelDecision {
-  merchant: string
-  category: string
-  reason: string
-  decided_at: string | null
 }
 
 export interface SpendingOverview {
@@ -2683,7 +2681,6 @@ export interface SpendingOverview {
   }
   merchants: SpendingMerchantRow[]
   students: SpendingStudentRow[]
-  model_decisions: SpendingModelDecision[]
   wallet_gaps: {
     students_without_wallet: number[]
     shared_wallets: Record<string, number[]>

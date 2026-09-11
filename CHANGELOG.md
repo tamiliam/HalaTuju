@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## The spending page, round two - search, filters, counts - 2026-09-11
+
+The owner's five follow-ups after using the tabbed page. Four shipped here; the fifth (moving
+Payments and Spending from Organisation to Programme) is a sprint of its own and is next.
+
+- **"What the model decided recently" is DELETED, not moved.** The owner asked what action it
+  expected. The honest answer was none: it was the shops table filtered to `ai` within 14 days,
+  rendered read-only beside a table that CAN be corrected, so a reader found a wrong guess in it
+  and had to scroll up to act. The only fact it held that the row did not was WHEN - so
+  `decided_at` is now a sortable COLUMN, and "how we decided" is a filter. One list, and you can
+  act on it.
+- **A search box and filters on every table.** Shops and Unsorted: search the shop name, filter by
+  category and by how it was decided. Students: search the name, and "only students with money not
+  yet sorted".
+- **Each tab carries its count** - of the WHOLE list, never of the filtered view. The count beside
+  the search answers "how many am I looking at"; the tab answers "how many are there", and a tab
+  that moved as you typed would leave the second question with no answer on screen.
+- **"Wallets to fix" moved to the Students tab** (owner): a wallet is a fact about a STUDENT, not
+  about money that could not be categorised.
+- **Two empties, not one.** A list filtered down to nothing says "nothing matches", never "no
+  spending has been recorded" - telling somebody their data is missing when they have typed a typo
+  is the worst wording available.
+
+**⚠ SIX BITE-CHECKS. FIVE BIT; ONE WAS SILENT AND FOUND A REAL GAP:** paging BEFORE filtering
+passed every test, because the four-shop fixture fits one page and the two orders only disagree on
+a list longer than a page. The harm is a first page with holes in it while the screen still claims
+to show everything that matched. `⚠ FILTERS THE WHOLE LIST, THEN PAGES` now uses thirty shops and a
+search that matches rows on both pages.
+
+**⚠ TWO EXISTING GUARDS CAUGHT ME, both correctly:**
+- `theme.test.ts` - both new search boxes used `placeholder:text-ground-400`. Placeholder text has
+  its own token and is deliberately fainter than the ink bar; darkening it makes an empty field
+  read as a filled one.
+- The `admin.spending` i18n scanner - a test asserting the tab's text as one glued literal
+  (`…tab.shops` + its count) minted a key that does not exist. **It does not skip comments**, so
+  even explaining the mistake in prose re-broke it. Asserted as label + count separately now.
+
+Gates: **6439 pytest**, **2110 jest**, lint clean, `next build` exit 0. No migration.
+
 ## The wallet door now shouts - 2026-09-11
 
 `POST /api/v1/internal/vircle/airtable/` is a **public route held shut by one shared secret**.

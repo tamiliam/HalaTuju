@@ -1,5 +1,43 @@
 # Architectural Decisions — HalaTuju
 
+## A tab's count is of the WHOLE list; the filter's count is beside the filter — S7, 2026-09-11
+
+**Decision:** `PanelTab.count` is the unfiltered row count. A second, quieter count appears next to
+the search box saying "showing N of M", and only while something is actually filtered.
+
+**Rationale:** the two numbers answer different questions — *how many are there* and *how many am I
+looking at* — and a reader needs both. If the tab followed the filter, the first question would
+have no answer anywhere on screen the moment you typed, and the tab would stop being a stable thing
+to quote.
+
+**Trade-offs:** two numbers on screen can disagree, which looks wrong for a second until you read
+the labels. Accepted; the alternative loses information outright.
+
+**Also settled here:** `count` is optional and `0` is a real answer — only `undefined` hides the
+pill. While the fetch is in flight the counts are `undefined`, because a tab reading "0" before the
+data arrives says *there are none*, which is a different claim from *we do not know yet*.
+
+## The Unsorted tab's list is defined on MONEY; the model's guesses are a FILTER — S7, 2026-09-11
+
+**Decision:** "What the model decided recently" is deleted. `decided_at` becomes a sortable column
+on the shop row, and `decided_by` becomes a filter.
+
+**Why it was there.** The model is the least trustworthy rung, so its guesses were surfaced as a
+review queue to be checked while fresh.
+
+**Why that was wrong.** It was the same data, filtered, rendered READ-ONLY beside a table that can
+be corrected — so the action it implied could not be taken from where it was shown. The owner asked
+what action was expected and there wasn't one. A filtered view of a table is a filter, not a
+section.
+
+**Alternatives considered:** give the list its own correction control — that is two places to fix a
+shop, which is the `StaffAdmin` duplication fault by another name; keep it read-only as a "recent
+activity" note — a log nobody reads, next to the thing it logs.
+
+**Trade-offs:** the 14-day window is gone as a built-in. Sorting by "Decided" descending gives the
+same answer and is not capped at a fortnight.
+
+
 ## The Vircle wallet door emails on `set` AND on refused `mismatch` — 2026-09-11
 
 **Decision:** `vircle_airtable.apply_update` emails `ADMIN_NOTIFY_EMAIL` when it sets a

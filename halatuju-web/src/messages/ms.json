@@ -5426,6 +5426,18 @@
       "loadFailed": "Angka perbelanjaan tidak dapat dimuatkan.",
       "saveFailed": "Perubahan itu tidak disimpan.",
       "empty": "Belum ada perbelanjaan direkodkan.",
+      "searchShops": "Cari kedai",
+      "searchStudents": "Cari pelajar",
+      "noMatch": "Tiada apa-apa yang sepadan dengan carian anda.",
+      "filter": {
+        "allCategories": "Semua kategori",
+        "anyDecidedBy": "Ditentukan dengan apa-apa cara",
+        "categoryLabel": "Tapis mengikut kategori",
+        "decidedByLabel": "Tapis mengikut cara ditentukan",
+        "onlyUnplaced": "Hanya pelajar dengan wang yang belum diasingkan",
+        "clear": "Kosongkan",
+        "showing": "Memaparkan {shown} daripada {total}"
+      },
       "kept": "Apa sahaja yang anda ubah di sini akan kekal. Ia tidak akan ditulis ganti.",
       "stat": {
         "spent": "Dibelanjakan",
@@ -5452,7 +5464,8 @@
         "decidedBy": "Cara kami tentukan",
         "visits": "Kunjungan",
         "total": "Jumlah",
-        "lastSeen": "Kali terakhir"
+        "lastSeen": "Kali terakhir",
+        "decidedAt": "Ditentukan"
       },
       "by": {
         "rule": "Peraturan",
@@ -5470,12 +5483,6 @@
         "spent": "Dibelanjakan",
         "unsorted": "Belum diasingkan",
         "empty": "Belum ada pelajar yang berbelanja."
-      },
-      "model": {
-        "title": "Keputusan model baru-baru ini",
-        "help": "Semak semasa ia masih baharu. Mengubah satu di sini menjadikannya milik anda selamanya.",
-        "empty": "Model tidak membuat sebarang keputusan dalam dua minggu lepas.",
-        "decidedAt": "Ditentukan"
       },
       "gaps": {
         "title": "Dompet untuk dibetulkan",
