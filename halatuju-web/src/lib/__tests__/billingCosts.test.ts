@@ -1,6 +1,6 @@
 import {
   formatMyr, formatPct, formatHours, orderedCostSources, costCaveats,
-  hasDiscount, unbilledByOrg, rateGrid, rateMonthOptions,
+  hasDiscount, unbilledByOrg, rateGrid, rateMonthOptions, isCostWarning,
   COST_SOURCE_ORDER, RATE_CATEGORIES, RATE_KINDS, RATE_MONTHS_BACK,
 } from '@/lib/billingCosts'
 import type {
@@ -15,6 +15,7 @@ const costs = (over: Partial<PlatformCostBlock> = {}): PlatformCostBlock => ({
   tax_myr: '0.00',
   by_source: { gcp: '23.92', supabase: '105.00' },
   entered_sources: [],
+  extracted_sources: [],
   is_complete: true,
   unconverted: [],
   period_caveats: [],
@@ -199,5 +200,35 @@ describe('the effective-from month list', () => {
     const out = rateMonthOptions(new Date(2026, 11, 1))   // December 2026
     expect(out).toContain('2027-01')
     expect(out.every((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m))).toBe(true)
+  })
+})
+
+describe('where a figure came from', () => {
+  test('an extracted source is reported, and is NOT a warning', () => {
+    // ⚠ The distinction the provenance column exists for. An extracted figure is a parse of the
+    // provider's own PDF, refused unless it reconciles to the printed total — reproducible by
+    // anyone holding the file. Styling that as a caution would train the reader to ignore the
+    // one entry here that IS a caution.
+    const out = costCaveats(costs({ extracted_sources: ['supabase', 'twilio', 'workspace'] }))
+    expect(out).toHaveLength(1)
+    expect(out[0].kind).toBe('extracted')
+    expect(isCostWarning('extracted')).toBe(false)
+  })
+
+  test('a hand-typed source IS a warning, and outranks the extracted note', () => {
+    const out = costCaveats(costs({
+      entered_sources: ['supabase'],
+      extracted_sources: ['twilio'],
+    }))
+    expect(out.map((c) => c.kind)).toEqual(['entered', 'extracted'])
+    expect(isCostWarning('entered')).toBe(true)
+    expect(isCostWarning('incomplete')).toBe(true)
+    expect(isCostWarning('caveat')).toBe(false)
+  })
+
+  test('a month with no extracted rows says nothing about extraction', () => {
+    expect(costCaveats(costs({ extracted_sources: [] }))).toEqual([])
+    // A payload from before the field existed must not crash the page.
+    expect(costCaveats(costs({ extracted_sources: undefined as unknown as string[] }))).toEqual([])
   })
 })

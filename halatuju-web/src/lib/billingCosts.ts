@@ -102,16 +102,31 @@ export function orderedCostSources(
  *
  *   - `incomplete` — an invoice we hold but cannot state in ringgit. The total is a FLOOR.
  *   - `entered`    — some sources are somebody's reading of a PDF, not measured data.
+ *   - `extracted`  — some sources were parsed from the provider's own invoice.
  *   - `caveat`     — a provider whose billing window is not the calendar month.
  *
- * Returned in that order: severity first. A floor is a wrong number; the other two are true
- * numbers that need context.
+ * Returned in that order: severity first. A floor is a wrong number; the rest are true numbers
+ * that need context.
+ *
+ * ⚠ `extracted` is NOT a warning and must not be styled as one. It says where a figure came
+ * from — a deterministic parse of the provider's own PDF, refused unless it reconciles to the
+ * printed total. Dressing that up as a caution would train the reader to ignore the one entry
+ * here that IS a caution, `entered`, which is a person's unverifiable reading.
  */
+export type CostCaveatKind = 'incomplete' | 'entered' | 'extracted' | 'caveat'
+
+/** Which of these is a PROBLEM as opposed to a note. Only these two get warning styling. */
+export const COST_CAVEAT_WARNINGS: CostCaveatKind[] = ['incomplete', 'entered']
+
+export function isCostWarning(kind: CostCaveatKind): boolean {
+  return COST_CAVEAT_WARNINGS.indexOf(kind) !== -1
+}
+
 export function costCaveats(
   costs: PlatformCostBlock | null | undefined
-): { kind: 'incomplete' | 'entered' | 'caveat'; detail: string }[] {
+): { kind: CostCaveatKind; detail: string }[] {
   if (!costs) return []
-  const out: { kind: 'incomplete' | 'entered' | 'caveat'; detail: string }[] = []
+  const out: { kind: CostCaveatKind; detail: string }[] = []
   if (costs.is_complete === false) {
     out.push({
       kind: 'incomplete',
@@ -122,6 +137,9 @@ export function costCaveats(
   }
   if ((costs.entered_sources || []).length > 0) {
     out.push({ kind: 'entered', detail: costs.entered_sources.join(', ') })
+  }
+  if ((costs.extracted_sources || []).length > 0) {
+    out.push({ kind: 'extracted', detail: costs.extracted_sources.join(', ') })
   }
   for (const c of costs.period_caveats || []) {
     out.push({ kind: 'caveat', detail: c })

@@ -17,6 +17,7 @@ import {
 } from '@/lib/billingUsage'
 import {
   formatMyr, formatPct, formatHours, orderedCostSources, costCaveats, unbilledByOrg,
+  isCostWarning,
 } from '@/lib/billingCosts'
 
 // Billing & usage v1 (Sprint 13a) — the super/org_admin usage readout. Ships DARK behind
@@ -187,9 +188,13 @@ function CostSection({ costs, t }: {
 
       {caveats.length > 0 && (
         <ul className="mt-3 space-y-1" data-testid="cost-caveats">
+          {/* ⚠ Only a real problem gets warning styling. `extracted` says where a figure came
+              from — a parse of the provider's own PDF that refuses unless it reconciles to the
+              printed total — and dressing that as a caution would train the reader to ignore
+              `entered`, which is the one that IS a caution. */}
           {caveats.map((c, i) => (
             <li key={`${c.kind}-${i}`}
-              className={`rounded-lg px-3 py-2 text-xs ${c.kind === 'incomplete'
+              className={`rounded-lg px-3 py-2 text-xs ${isCostWarning(c.kind)
                 ? 'bg-caution-100 text-caution-700' : 'bg-ground-50 text-ground-600'}`}>
               {t(`admin.billing.cost.caveat.${c.kind}`)}{c.detail ? ` — ${c.detail}` : ''}
             </li>
@@ -215,9 +220,18 @@ function CostSection({ costs, t }: {
               <tr key={s.source} className="border-b last:border-0">
                 <td className="px-4 py-2 text-ground-900">
                   {t(`admin.billing.cost.source.${s.source}`)}
+                  {/* WHERE the figure came from. Three states, and they are genuinely three:
+                      measured (a billing API), extracted (the provider's own PDF, parsed and
+                      reconciled to its printed total), and typed by hand — which the owner's
+                      standing instruction says should never appear again. */}
                   {costs.entered_sources.includes(s.source) && (
-                    <span className="ml-2 rounded bg-ground-100 px-1.5 py-0.5 text-[10px] uppercase text-ground-500">
+                    <span className="ml-2 rounded bg-caution-100 px-1.5 py-0.5 text-[10px] uppercase text-caution-700">
                       {t('admin.billing.cost.byHand')}
+                    </span>
+                  )}
+                  {costs.extracted_sources?.includes(s.source) && (
+                    <span className="ml-2 rounded bg-ground-100 px-1.5 py-0.5 text-[10px] uppercase text-ground-500">
+                      {t('admin.billing.cost.fromInvoice')}
                     </span>
                   )}
                 </td>
@@ -257,13 +271,30 @@ function ChargeCard({ charge, month, t, onDiscount, busy }: {
           <div key={ln.category} className="flex justify-between gap-4">
             <dt className="text-ground-600">
               {t(`admin.billing.charge.line.${ln.category}`)}
-              {ln.hours && (
+              {ln.hours ? (
                 <span className="text-ground-400">
                   {' · '}{t('admin.billing.charge.workedAt', {
                     hours: formatHours(ln.hours),
                     rate: formatMyr(ln.rate_myr),
                     margin: formatPct(ln.margin_pct),
                   })}
+                </span>
+              ) : (
+                /* ⚠ WHAT WE PAID, BESIDE WHAT WE CHARGE. A single marked-up figure hides the
+                   markup, and the markup is the thing the reader is here to check. */
+                <span className="text-ground-400">
+                  {' · '}{t('admin.billing.charge.costPlus', {
+                    cost: formatMyr(ln.cost_myr),
+                    margin: formatPct(ln.margin_pct),
+                  })}
+                </span>
+              )}
+              {/* The tenant's share of a platform-wide cost, and the rule behind it. With one
+                  tenant this reads 100% — which is exactly when it is worth writing down. */}
+              {ln.share_pct && (
+                <span className="block text-[11px] text-ground-400">
+                  {t('admin.billing.charge.share', { pct: formatPct(ln.share_pct) })}
+                  {ln.share_rule ? ` — ${ln.share_rule}` : ''}
                 </span>
               )}
             </dt>

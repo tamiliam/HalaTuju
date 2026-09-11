@@ -51,6 +51,54 @@ sat unread for six weeks — it was the nav's one legitimate reserved slot.
 
 **One migration** (`0156`), additive: the new table plus the `workspace` choice.
 
+### Nothing is typed by hand — the invoices read themselves (same day, second pass)
+
+Owner: *"I've placed all the invoices for Jul and Aug 26 in the Downloads/Billing folder… Don't
+use typed by hand. Everything should be extracted from the relevant systems. We want to avoid
+anything manual."* Plus: use the exchange rate at the end of the billing month, and apply the
+margins to everything.
+
+- **⚠ THE GCP PULLER WAS OVERSTATING THE BILL BY 29%, AND HAD BEEN SINCE JULY.** Reading the
+  statements line by line against BigQuery found two independent faults: it grouped by
+  `DATE(usage_start_time)` instead of Google's own `invoice.month`, and it summed `cost` while
+  ignoring the `credits` array — free-tier and committed-use discounts, a fifth to a quarter of
+  every month's bill. June was recorded as **RM88.44**; Google charged **RM68.36**. It was the
+  only month ever synced. Fixed, and the query now reproduces all three statements exactly:
+  `202606 → RM68.36`, `202607 → RM85.15`, `202608 → RM23.92`.
+- **`invoice_parsers.py` — deterministic parsing, NOT AI.** All eight invoices are text PDFs, so
+  the figures are READ, not recognised. The platform has Gemini document extraction and it is the
+  wrong tool here: money must come out identical every time and be re-derivable by anybody
+  holding the file. ⚠ **Every parser reconciles to the total printed on the invoice** or refuses
+  to produce a row at all.
+- **⚠ That self-check earned its keep on the first run.** Twilio's own July invoice lists three
+  products summing to **$4.30** and prints a total of **$4.29** — it rounds each product for
+  display and totals the unrounded figures. Refusing would be wrong; trusting the lines would put
+  the ledger a cent above the bill. The gap now becomes its own named **`Rounding`** line, so the
+  ledger still sums to what we paid and the discrepancy is visible rather than absorbed.
+- **`fx.py` — the rate is fetched, never typed.** ECB closing rate for the last day of the billed
+  month (owner's ruling, which supersedes the old "use the card rate" preference — the card rate
+  is truer to the cent but is not reproducible at all). ⚠ It records **the date the ECB actually
+  published on**, not the date asked for, because a month ending at a weekend has no rate of its
+  own. A failed lookup **raises**; it never falls back to last month or a cache.
+- **A third provenance, `extracted`**, and it is genuinely a third state: reproducible like
+  `measured`, but breakable by a layout change. ⚠ It is rendered as a NOTE, never a warning —
+  dressing it as a caution would train the reader to ignore `entered`, which is the one that is.
+- **⚠ Gemini was being charged to us, not to tenants.** Google renamed the SKU after June
+  (`Generate content…` → `Generate_content…`), the marker stopped matching, and every Gemini line
+  fell through to the platform bucket. RM0.03 in August — which is exactly why nobody noticed —
+  and it is the line that grows with every applicant report.
+- **Margins now apply to everything**, as instructed: the platform-driven slice at the
+  infrastructure margin, the tenant-driven slice at the metered margin, hours at the development
+  margin. ⚠ **Tax is shared pro-rata between the two cost lines**, so the charge still starts from
+  exactly what the providers billed us. A missing margin still refuses rather than showing RM0.00.
+- **⚠ The per-tenant split is written down before it is ever needed.** Metered cost is weighted by
+  each tenant's share of usage events (measured, from the same table the usage screen counts);
+  infrastructure is split equally, because a standing cost does not move with activity. There is
+  ONE tenant today, so both return 100% — which is precisely when the rule is worth stating, so
+  the second tenant makes it a decision somebody reviews rather than a default nobody noticed.
+
+**Second migration** (`0157`), additive: the `extracted` provenance choice.
+
 ## Which AI version are we running, and which actually ran - 2026-09-11
 
 The owner asked whether an organisation could pick its own AI version per task, to track versions

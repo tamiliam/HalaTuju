@@ -4278,6 +4278,7 @@ class AdminPlatformCostsView(_AdminBase):
                 'tax_myr': _money(costs['tax_myr']),
                 'by_source': {k: _money(v) for k, v in costs['by_source'].items()},
                 'entered_sources': costs['entered_sources'],
+                'extracted_sources': costs['extracted_sources'],
                 'is_complete': costs['is_complete'],
                 'unconverted': [{**u, 'amount_original': _money(u['amount_original'])}
                                 for u in costs['unconverted']],
@@ -4303,6 +4304,8 @@ class AdminPlatformCostsView(_AdminBase):
                            'hours': _money(ln.get('hours')),
                            'rate_myr': _money(ln.get('rate_myr')),
                            'margin_pct': _money(ln.get('margin_pct')),
+                           'cost_myr': _money(ln.get('cost_myr')),
+                           'share_pct': _money(ln.get('share_pct')),
                            'amount_myr': _money(ln.get('amount_myr')),
                            'detail': [{**d, 'hours': _money(d['hours'])}
                                       for d in ln.get('detail', [])]}

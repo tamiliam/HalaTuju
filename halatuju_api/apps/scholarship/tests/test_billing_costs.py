@@ -43,12 +43,15 @@ def _token(uid):
 class _Base(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.org = PartnerOrganisation.objects.create(code='bp', name='BrightPath')
+        # ⚠ THE SEEDED ORGANISATION, not a new one. A data migration creates BrightPath Bursary
+        # and it already qualifies as a tenant, so creating a second would give this test world
+        # TWO tenants where production has exactly one — and every allocation figure below would
+        # silently halve. Reusing it keeps the split at 100%, which is the real situation the
+        # charge arithmetic has to be right about today.
+        cls.org = PartnerOrganisation.objects.get(code='brightpath')
         cls.super = PartnerAdmin.objects.create(
             supabase_user_id='super-uid', is_super_admin=True, is_active=True,
             name='Super', email='super@x.com')
-        # An ACTIVE org_admin is what makes `org` a tenant to `.tenants()` — the queryset the
-        # endpoint uses. Without one the org is a referral partner and carries no bill.
         cls.org_admin = PartnerAdmin.objects.create(
             supabase_user_id='oa', role='org_admin', is_active=True,
             owning_organisation=cls.org, name='OA', email='oa@x.com')
@@ -104,19 +107,113 @@ class TestTheChargeShowsItsWorking(_Base):
         self.assertEqual(c['charged_myr'], Decimal('1800.00'))
         self.assertEqual([ln['category'] for ln in c['lines']], ['development'])
 
-    def test_metered_and_infrastructure_are_refused_with_a_reason_not_zeroed(self):
-        """The rule that stops an invented price reaching an invoice."""
-        self._rates()
+    def test_a_category_with_no_margin_set_is_refused_with_a_reason_not_zeroed(self):
+        """The rule that stops an unpriced line reaching an invoice as RM0.00.
+
+        Only the development margin is set here, so the two cost lines must REFUSE — and say so.
+        """
+        self._rates()                       # development only
+        self._cost('gcp', '100.00')
         self._hours('4.0')
         c = platform_cost.charge_for(self.org, '2026-08')
         blocked = {b['category']: b['reason'] for b in c['blocked']}
         self.assertIn('metered', blocked)
         self.assertIn('infrastructure', blocked)
-        self.assertTrue(blocked['metered'])
-        self.assertTrue(blocked['infrastructure'])
         # And neither appears as a RM0.00 line, which is what would get believed.
         self.assertNotIn('metered', [ln['category'] for ln in c['lines']])
         self.assertNotIn('infrastructure', [ln['category'] for ln in c['lines']])
+
+
+class TestTheCostsWePaidAreChargedOnWithTheirMargin(_Base):
+    """Owner ruling 2026-09-11: *"For everything apply the markup/margin as determined by the
+    rate that is set."* The two cost lines are grounded in the real invoices, not in a
+    unit-price table nobody has written."""
+
+    def _margin(self, category, pct, on='2026-07-01'):
+        BillingRate.objects.create(
+            category=category, kind='margin_pct', value=Decimal(str(pct)),
+            effective_from=date.fromisoformat(on))
+
+    def test_the_platform_driven_slice_is_charged_at_the_infrastructure_margin(self):
+        self._margin('infrastructure', '15')
+        # RM100 of our own cron/CI cost, no tenant-driven cost, no tax.
+        self._cost('gcp', '100.00', service='Cloud Run', sku='Jobs CPU')
+        c = platform_cost.charge_for(self.org, '2026-08')
+        line = next(ln for ln in c['lines'] if ln['category'] == 'infrastructure')
+        self.assertEqual(line['cost_myr'], Decimal('100.00'))     # what we paid
+        self.assertEqual(line['amount_myr'], Decimal('115.00'))   # +15%
+        self.assertEqual(c['charged_myr'], Decimal('115.00'))
+
+    def test_the_tenant_driven_slice_is_charged_at_the_metered_margin(self):
+        self._margin('metered', '30')
+        self._cost('gcp', '50.00', service='Cloud Vision API',
+                   sku='Document Text Detection Operations', attributable=True)
+        c = platform_cost.charge_for(self.org, '2026-08')
+        line = next(ln for ln in c['lines'] if ln['category'] == 'metered')
+        self.assertEqual(line['cost_myr'], Decimal('50.00'))
+        self.assertEqual(line['amount_myr'], Decimal('65.00'))
+
+    def test_tax_is_shared_between_the_two_lines_so_nothing_is_billed_below_cost(self):
+        """⚠ Tax belongs to neither bucket on its own. Dropping it would quietly bill under
+        what the providers actually charged us."""
+        self._margin('infrastructure', '0')
+        self._margin('metered', '0')
+        self._cost('gcp', '75.00', service='Cloud Run', sku='Jobs CPU')
+        self._cost('gcp', '25.00', service='Cloud Vision API',
+                   sku='Document Text Detection Operations', attributable=True)
+        self._cost('gcp', '8.00', service='Invoice', sku='Tax')
+
+        c = platform_cost.charge_for(self.org, '2026-08')
+        by = {ln['category']: ln for ln in c['lines']}
+        # 75/100 of the tax to infrastructure, 25/100 to metered.
+        self.assertEqual(by['infrastructure']['cost_myr'], Decimal('81.00'))
+        self.assertEqual(by['metered']['cost_myr'], Decimal('27.00'))
+        # At a zero margin the charge is exactly the whole bill back — nothing lost, nothing
+        # invented.
+        self.assertEqual(c['charged_myr'], Decimal('108.00'))
+
+    def test_a_month_of_pure_tax_does_not_invent_a_bucket_to_put_it_in(self):
+        self._margin('infrastructure', '10')
+        self._margin('metered', '10')
+        self._cost('gcp', '5.00', service='Invoice', sku='Tax')
+        c = platform_cost.charge_for(self.org, '2026-08')
+        self.assertEqual(c['subtotal_myr'], Decimal('0.00'))
+
+    def test_the_single_tenant_carries_the_whole_platform_cost_and_says_which_rule(self):
+        """⚠ There is ONE tenant, so the split is 100% and has never been exercised. The rule is
+        stated in the payload so a second tenant makes it a decision somebody reviews."""
+        self._margin('infrastructure', '0')
+        self._cost('gcp', '40.00', service='Cloud Run', sku='Jobs CPU')
+        c = platform_cost.charge_for(self.org, '2026-08')
+        line = next(ln for ln in c['lines'] if ln['category'] == 'infrastructure')
+        self.assertEqual(line['share_pct'], Decimal('100.00'))
+        self.assertTrue(line['share_rule'])
+
+    def test_all_three_lines_add_up_and_then_discount(self):
+        """The whole bill end to end, and the July rule on top of it."""
+        self._margin('infrastructure', '15')
+        self._margin('metered', '15')
+        self._rates(hourly='150', margin='20')
+        self._cost('gcp', '100.00', service='Cloud Run', sku='Jobs CPU')
+        self._cost('gcp', '20.00', service='Cloud Vision API',
+                   sku='Document Text Detection Operations', attributable=True)
+        self._hours('10.0')
+
+        c = platform_cost.charge_for(self.org, '2026-08')
+        self.assertEqual(
+            sorted(ln['category'] for ln in c['lines']),
+            ['development', 'infrastructure', 'metered'])
+        # 115.00 + 23.00 + 1800.00
+        self.assertEqual(c['subtotal_myr'], Decimal('1938.00'))
+        self.assertEqual(c['blocked'], [])
+
+    def test_a_rate_set_later_does_not_re_price_an_earlier_month(self):
+        """The effective-dating, proved through the cost line rather than only the hourly rate."""
+        self._margin('infrastructure', '10', on='2026-07-01')
+        self._margin('infrastructure', '50', on='2026-09-01')
+        self._cost('gcp', '100.00', month='2026-08', service='Cloud Run', sku='Jobs CPU')
+        c = platform_cost.charge_for(self.org, '2026-08')
+        self.assertEqual(c['charged_myr'], Decimal('110.00'))
 
     def test_hours_with_no_hourly_rate_block_the_line_rather_than_billing_nothing(self):
         """No rate set. The month must say it cannot be worked out."""
@@ -233,7 +330,7 @@ class TestTheCostsEndpoint(_Base):
         self._hours('10.0')
         res = self._client('super-uid').get(f'{COSTS_URL}?month=2026-08')
         names = [c['organisation'] for c in res.data['charges']]
-        self.assertIn('BrightPath', names)
+        self.assertIn(self.org.name, names)
         # ⚠ The point of the test. This table is dual-role — ten rows on production and one
         # tenant — so `.filter(is_active=True)` would put a bill against nine schools and NGOs
         # that have never been customers. Sri Murugan Centre is one of those real rows.

@@ -3359,6 +3359,18 @@ class PlatformCost(models.Model):
     # human error. A reconciliation that mixes them without saying so is not an audit.
     PROVENANCE_CHOICES = [
         ('measured', 'Measured — pulled from the provider\'s own billing data'),
+        # 2026-09-11. Owner ruling: *"Don't use typed by hand. Everything should be extracted
+        # from the relevant systems."* So a third state, and it is genuinely a third state
+        # rather than a rename of `entered`.
+        #
+        # `extracted` is REPRODUCIBLE: the provider's own PDF is the input, a deterministic
+        # parser is the method, and anybody holding the file gets the identical figure — and
+        # the parser refuses outright unless its lines reconcile to the total printed on the
+        # invoice. What separates it from `measured` is only that a layout change can break it,
+        # where a billing API cannot. What separates it from `entered` is everything: an entered
+        # row is one person's reading, checkable by nobody.
+        ('extracted', "Extracted — parsed from the provider's own invoice, reconciled to its "
+                      'printed total'),
         ('entered', 'Entered by hand from an invoice'),
     ]
 

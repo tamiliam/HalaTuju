@@ -2369,8 +2369,13 @@ export interface PlatformCostBlock {
   platform_myr: string | null
   tax_myr: string | null
   by_source: Record<string, string | null>
-  /** Which sources this month rest on a human reading a PDF. */
+  /** Which sources this month rest on a human reading a PDF. A WARNING. The owner's standing
+   *  instruction (2026-09-11) is that nothing is typed by hand, so this should be empty. */
   entered_sources: string[]
+  /** Sources parsed from the provider's own invoice by a parser that refuses unless its lines
+   *  reconcile to the printed total. A NOTE, not a warning — reproducible by anyone holding
+   *  the file, which is exactly what `entered` is not. */
+  extracted_sources: string[]
   /** False = the total below is a FLOOR. See `unconverted`. */
   is_complete: boolean
   unconverted: BillingUnconverted[]
@@ -2386,6 +2391,14 @@ export interface BillingChargeLine {
   hours: string | null
   rate_myr: string | null
   margin_pct: string | null
+  /** What WE paid for this slice, before the margin. Shown beside the charge so the markup is
+   *  visible rather than baked into one unexplained figure. */
+  cost_myr: string | null
+  /** This tenant's share of a platform-wide cost. Null on the development line, which is
+   *  already tenant-specific. */
+  share_pct: string | null
+  /** How that share was decided, in words — usage-weighted or split equally. */
+  share_rule: string
   amount_myr: string | null
   detail: { module: string; hours: string | null; basis: string }[]
 }

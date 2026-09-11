@@ -41,6 +41,9 @@ ATTRIBUTABLE_SKU_MARKERS = (
     'services memory',           # ditto
     'data transfer',             # egress — serving responses to real users
     'standard storage',          # Cloud Storage — the documents tenants uploaded
+    # ── Twilio (2026-09-11, once its invoices reached the ledger) ────────────
+    'programmable messaging',    # WhatsApp + SMS TO APPLICANTS — one send per real person
+    'account security',          # Authy / Verify — one code per real person signing in
 )
 
 # Explicitly NOT attributable, listed so the reasoning survives review rather than living in
@@ -51,6 +54,14 @@ PLATFORM_SKU_MARKERS = (
     'artifact registry',         # CI images — a function of OUR deploy pace
     'cloud scheduler',           # the cron schedule itself
     'cloud build',               # CI
+    # ── The other three providers (2026-09-11) ──────────────────────────────
+    # Each is a STANDING charge: it is the same whether one applicant uses the platform or a
+    # thousand do, which is the definition this module works to. Listed rather than left to the
+    # conservative default so the reasoning survives review.
+    'phone numbers',             # Twilio — one number, rented monthly, used or not
+    'business starter',          # Google Workspace — our own mailboxes
+    'google workspace',
+    'pro plan',                  # Supabase — the database base fee, flat
 )
 
 
@@ -86,6 +97,12 @@ def month_totals(period_month):
     total = attributable = platform = tax = Decimal('0.00')
     by_source = {}
     entered_sources = set()
+    # ⚠ TRACKED SEPARATELY FROM `entered_sources`, and the difference is the whole point of the
+    # provenance column. An EXTRACTED figure is reproducible — the provider's PDF parsed by a
+    # parser that refuses unless it reconciles to the printed total. An ENTERED one is a person's
+    # reading, checkable by nobody. Collapsing them would put a warning on a sound figure and,
+    # far worse, make a hand-typed figure look sound.
+    extracted_sources = set()
     # Rows whose ringgit cost is not yet known — a held invoice awaiting its FX rate. They are
     # COUNTED and reported, never dropped: a total that quietly omits a RM100 line is worse
     # than one that says "incomplete", because only the second prompts anyone to go and look.
@@ -94,6 +111,8 @@ def month_totals(period_month):
     for r in rows:
         if r.provenance == 'entered':
             entered_sources.add(r.source)
+        elif r.provenance == 'extracted':
+            extracted_sources.add(r.source)
         if r.amount_myr is None:
             unconverted.append({
                 'source': r.source,
@@ -122,6 +141,10 @@ def month_totals(period_month):
         # Which sources in this month rest on a human reading a PDF. Surfaced, never hidden:
         # a total that mixes measured and entered figures without saying so is not an audit.
         'entered_sources': sorted(entered_sources),
+        # Sources read from the provider's own invoice by a parser that reconciles to the
+        # printed total. Reported so the reader knows WHERE each figure came from, but it is a
+        # note, not a warning — unlike `entered_sources`, which is one.
+        'extracted_sources': sorted(extracted_sources),
         # Truthfulness flags. `is_complete` False means the total below is a FLOOR, not a total.
         'unconverted': unconverted,
         'is_complete': not unconverted,
@@ -148,6 +171,18 @@ def _month_start(period_month):
     from datetime import date
     year, mon = (int(x) for x in str(period_month).split('-'))
     return date(year, mon, 1)
+
+
+def month_end(period_month):
+    """Last day of 'YYYY-MM' as a date. One home, because two date rules give two answers.
+
+    Used by the GCP sync's month bounds and by the FX lookup, which takes the rate at the END of
+    the billing month (owner ruling, 2026-09-11).
+    """
+    from datetime import date, timedelta
+    year, mon = (int(x) for x in str(period_month).split('-'))
+    year, mon = (year + 1, 1) if mon == 12 else (year, mon + 1)
+    return date(year, mon, 1) - timedelta(days=1)
 
 
 def rate_in_force(category, kind, on_date):
@@ -283,32 +318,151 @@ def adjustment_for(organisation, period_month):
             .first())
 
 
+def tenant_shares(period_month):
+    """Each tenant's share of the month's platform cost, and the rule that decided it.
+
+    Owner ruling, 2026-09-11: *"For everything apply the markup/margin as determined by the rate
+    that is set."* Applying a margin to a platform-wide cost means first deciding whose cost it
+    is, so the split has to be stated rather than assumed.
+
+    Two rules, because the two cost buckets genuinely differ:
+
+      * **metered** — split by each tenant's share of METERED EVENTS that month. Measured, not
+        invented: it is the same `UsageEvent` table the usage screen already counts. That is what
+        "metered" means, and a tenant that ran nothing pays nothing.
+      * **infrastructure** — split EQUALLY. It is a standing cost: the database, the mailboxes,
+        the phone number and the cron schedule are the same size whether a tenant is busy or
+        idle, so usage-weighting it would charge the active tenant for the idle one's readiness.
+
+    ⚠ **There is ONE tenant today, so both rules return 100% and neither has ever been exercised
+    in anger.** They are written down here, and returned in the payload, precisely so that the
+    day a second tenant arrives the split is a decision somebody reviews rather than a default
+    nobody noticed. Events with no organisation — platform-base work — are excluded from the
+    weighting; they belong to nobody and must not dilute anyone's share.
+
+    Returns ``{org_id: {'metered': Decimal, 'infrastructure': Decimal, 'rule': str}}``.
+    """
+    from django.db.models import Count
+
+    from apps.courses.models import PartnerOrganisation
+
+    from .models import UsageEvent
+
+    # `.tenants()`, never a bare `is_active` filter: this table is dual-role and holds referral
+    # partners alongside tenants. Ten rows on production, one tenant.
+    tenants = list(PartnerOrganisation.objects.tenants().order_by('id'))
+    if not tenants:
+        return {}
+    equal = Decimal('1') / Decimal(len(tenants))
+
+    try:
+        year, mon = (int(x) for x in str(period_month).split('-'))
+    except (ValueError, AttributeError):
+        year = mon = 0
+    counts = {
+        r['organisation_id']: r['n']
+        for r in (UsageEvent.objects
+                  .filter(created_at__year=year, created_at__month=mon,
+                          organisation__isnull=False)
+                  .values('organisation_id')
+                  .annotate(n=Count('id')))
+    }
+    total_events = sum(counts.values())
+
+    out = {}
+    for org in tenants:
+        if total_events:
+            metered = Decimal(counts.get(org.id, 0)) / Decimal(total_events)
+            rule = 'metered by share of usage events; infrastructure split equally'
+        else:
+            metered = equal
+            rule = ('no metered events this month, so both split equally')
+        out[org.id] = {'metered': metered, 'infrastructure': equal, 'rule': rule}
+    return out
+
+
 def charge_for(organisation, period_month):
     """What this organisation is charged for a month — and what could NOT be worked out.
 
-    Returns every line with its own status, never a single number. Three categories exist and
-    only one of them can honestly be billed today:
+    Returns every line with its own status, never a single number. Three categories, and each is
+    a real cost we paid or real time we spent, marked up by the margin in force for it:
 
-      * **development** — hours x rate x margin. Real. Computed here.
-      * **metered** — refused: there is no unit-price table (Sprint 13a, "NO prices in v1"), so
-        a per-event charge would have to invent prices, and an invented price on an invoice is
-        an invoice you withdraw.
-      * **infrastructure** — refused: the platform cost is a PLATFORM total. Splitting it across
-        tenants needs an allocation rule nobody has agreed. June measured 72% of the GCP bill as
-        our own crons and deploys, so "share it out per tenant" is not a neutral default; it is
-        a pricing decision, and it is the owner's to make.
+      * **infrastructure** — the platform-driven slice of the month's bill (crons, CI, the
+        database, the mailboxes, the phone number), this tenant's share, plus the infrastructure
+        margin.
+      * **metered** — the tenant-driven slice (OCR, AI, egress, messages), this tenant's share,
+        plus the metered margin.
+      * **development** — hours x hourly rate x the development margin.
 
-    Each refusal is REPORTED in `blocked`, never rendered as RM0.00. A line the reader can see
-    is missing gets fixed; a zero gets believed.
+    Owner ruling, 2026-09-11: *"For everything apply the markup/margin as determined by the rate
+    that is set."* So a category is charged whenever its margin exists, and the two cost lines are
+    grounded in the LEDGER — real invoices — rather than in a unit-price table nobody has written.
+    That is what replaced the earlier refusal to price them at all.
+
+    ⚠ **Tax is shared pro-rata between the two cost lines**, in proportion to their size, so the
+    charged total still starts from exactly what the providers charged us. Tax belongs to neither
+    bucket on its own, and dropping it would quietly bill below cost.
+
+    ⚠ **A missing margin still REFUSES.** `rate_in_force` raises, the category lands in `blocked`
+    with its reason, and nothing is rendered as RM0.00. A line the reader can see is missing gets
+    fixed; a zero gets believed. That is unchanged and is the point of the rate table.
 
     The discount is applied LAST and shown as its own line, so the month reads
     subtotal -> discount -> charged. That is the owner's July requirement: shown in full,
     charged nothing.
     """
+    from .models import BillingRate
+
     blocked = []
     lines = []
     subtotal = Decimal('0.00')
 
+    # ── The two lines that come from the invoices we actually paid ───────────
+    totals = month_totals(period_month)
+    shares = tenant_shares(period_month)
+    share = shares.get(getattr(organisation, 'id', None),
+                       {'metered': Decimal('0'), 'infrastructure': Decimal('0'), 'rule': ''})
+
+    # Tax pro-rata over the two buckets. Guarded against a month that is all tax — then there is
+    # nothing to apportion it over and it stays out rather than being invented into a bucket.
+    cost_base = totals['attributable_myr'] + totals['platform_myr']
+    tax = totals['tax_myr']
+    if cost_base > 0:
+        metered_cost = totals['attributable_myr'] + (
+            tax * totals['attributable_myr'] / cost_base)
+        infra_cost = totals['platform_myr'] + (tax * totals['platform_myr'] / cost_base)
+    else:
+        metered_cost = totals['attributable_myr']
+        infra_cost = totals['platform_myr']
+
+    for category, cost, weight in (
+        (BillingRate.CATEGORY_INFRASTRUCTURE, infra_cost, share['infrastructure']),
+        (BillingRate.CATEGORY_METERED, metered_cost, share['metered']),
+    ):
+        ours = (cost * weight).quantize(Decimal('0.01'))
+        try:
+            amount = apply_margin(ours, category, period_month)
+        except RateMissing as exc:
+            blocked.append({'category': category, 'reason': str(exc)})
+            continue
+        margin = rate_in_force(category, BillingRate.KIND_MARGIN_PCT,
+                               _month_start(period_month))
+        lines.append({
+            'category': category,
+            'hours': None,
+            'rate_myr': None,
+            'margin_pct': margin,
+            # What WE paid for this slice, before the margin. Shown beside the charge so the
+            # markup is visible rather than baked into one unexplained figure.
+            'cost_myr': ours,
+            'share_pct': (weight * 100).quantize(Decimal('0.01')),
+            'share_rule': share['rule'],
+            'amount_myr': amount,
+            'detail': [],
+        })
+        subtotal += amount
+
+    # ── The line that comes from the hours we spent ──────────────────────────
     try:
         dev = development_charge(organisation, period_month)
     except RateMissing as exc:
@@ -320,19 +474,13 @@ def charge_for(organisation, period_month):
             'hours': dev['hours'],
             'rate_myr': dev['rate_myr'],
             'margin_pct': dev['margin_pct'],
+            'cost_myr': dev['subtotal_myr'],
+            'share_pct': None,
+            'share_rule': '',
             'amount_myr': dev['charge_myr'],
             'detail': dev['lines'],
         })
         subtotal += dev['charge_myr']
-
-    blocked.append({
-        'category': 'metered',
-        'reason': 'No unit prices are set, so metered usage cannot be priced. The meter counts '
-                  'events; it does not yet know what an event costs.'})
-    blocked.append({
-        'category': 'infrastructure',
-        'reason': 'Platform cost is recorded for the whole platform. No rule has been agreed '
-                  'for sharing it between tenants, so it is not charged to any of them.'})
 
     adj = adjustment_for(organisation, period_month)
     discount_pct = adj.discount_pct if adj else Decimal('0.00')

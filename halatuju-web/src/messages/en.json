@@ -5113,11 +5113,13 @@
         "tax": "Tax",
         "none": "No costs recorded for this month.",
         "byHand": "Typed by hand",
+        "fromInvoice": "From the invoice",
         "col": {
           "source": "Provider",
           "amount": "Amount"
         },
         "caveat": {
+          "extracted": "These figures were read from the provider's own invoice and checked against the total printed on it",
           "incomplete": "An invoice is held but not yet converted to ringgit, so the total above is a floor, not a total",
           "entered": "These figures were read off an invoice by a person, not measured",
           "caveat": "A provider bills outside the calendar month"
@@ -5138,6 +5140,8 @@
         "charged": "Charged",
         "discount": "Discount ({pct})",
         "workedAt": "{hours} at {rate} plus {margin}",
+        "costPlus": "we paid {cost}, plus {margin}",
+        "share": "this organisation's share: {pct}",
         "setDiscount": "Set a discount for {month}",
         "pct": "Discount %",
         "reason": "Why (required)",

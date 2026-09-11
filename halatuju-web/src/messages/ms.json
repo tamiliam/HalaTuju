@@ -5113,11 +5113,13 @@
         "tax": "Cukai",
         "none": "Tiada kos direkodkan bagi bulan ini.",
         "byHand": "Ditaip secara manual",
+        "fromInvoice": "Daripada invois",
         "col": {
           "source": "Pembekal",
           "amount": "Jumlah"
         },
         "caveat": {
+          "extracted": "Angka ini dibaca daripada invois pembekal sendiri dan disemak dengan jumlah yang tercetak padanya",
           "incomplete": "Satu invois dipegang tetapi belum ditukar kepada ringgit, jadi jumlah di atas ialah paras minimum, bukan jumlah penuh",
           "entered": "Angka ini dibaca daripada invois oleh seseorang, bukan diukur",
           "caveat": "Seorang pembekal mengebil di luar bulan kalendar"
@@ -5138,6 +5140,8 @@
         "charged": "Dicaj",
         "discount": "Diskaun ({pct})",
         "workedAt": "{hours} pada {rate} tambah {margin}",
+        "costPlus": "kami bayar {cost}, tambah {margin}",
+        "share": "bahagian organisasi ini: {pct}",
         "setDiscount": "Tetapkan diskaun bagi {month}",
         "pct": "Diskaun %",
         "reason": "Sebab (wajib)",

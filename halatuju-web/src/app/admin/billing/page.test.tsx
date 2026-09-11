@@ -54,7 +54,8 @@ const COSTS = (over: Partial<api.BillingCostsPayload> = {}): api.BillingCostsPay
     lines: 4, total_myr: '150.19', attributable_myr: '23.92', platform_myr: '126.27',
     tax_myr: '0.00',
     by_source: { gcp: '23.92', supabase: '105.00', workspace: '18.90', twilio: '2.37' },
-    entered_sources: ['supabase', 'twilio', 'workspace'],
+    entered_sources: [],
+    extracted_sources: ['supabase', 'twilio', 'workspace'],
     is_complete: true, unconverted: [], period_caveats: [],
     metered_events: 500, metered_org_null: 50, metered_org_null_pct: 10,
   },
@@ -62,6 +63,7 @@ const COSTS = (over: Partial<api.BillingCostsPayload> = {}): api.BillingCostsPay
     organisation_id: 1, organisation: 'BrightPath',
     lines: [{
       category: 'development', hours: '27.5', rate_myr: '150.00', margin_pct: '20.00',
+      cost_myr: '4125.00', share_pct: null, share_rule: '',
       amount_myr: '4950.00', detail: [],
     }],
     subtotal_myr: '4950.00', discount_pct: '0.00', discount_myr: '0.00',
@@ -100,10 +102,34 @@ describe('what the platform cost', () => {
     expect(within(section).getByText('RM18.90')).not.toBeNull()
   })
 
-  it('names the sources somebody typed by hand', async () => {
+  it('says which figures were read from the provider\'s own invoice', async () => {
     const { container } = render(<BillingPage />)
     const caveats = await waitFor(() => within(container).getByTestId('cost-caveats'))
-    expect(within(caveats).getByText(/admin\.billing\.cost\.caveat\.entered/)).not.toBeNull()
+    const note = within(caveats).getByText(/admin\.billing\.cost\.caveat\.extracted/)
+    expect(note.textContent).toContain('supabase')
+    // ⚠ NOT styled as a caution. An extracted figure is a parse of the provider's own PDF that
+    // refuses unless it reconciles to the printed total. Dressing it as a warning would train
+    // the reader to ignore `entered`, which is the one that IS a warning.
+    expect(note.className).not.toContain('caution')
+  })
+
+  it('names the sources somebody typed by hand, and marks those as a warning', async () => {
+    // The owner's standing instruction (2026-09-11) is that nothing is typed by hand, so this
+    // should be empty on a healthy month — which is exactly why it has to be loud when it is not.
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      costs: { ...COSTS().costs, entered_sources: ['supabase'], extracted_sources: [] },
+    }))
+    const { container } = render(<BillingPage />)
+    const caveats = await waitFor(() => within(container).getByTestId('cost-caveats'))
+    const warn = within(caveats).getByText(/admin\.billing\.cost\.caveat\.entered/)
+    expect(warn.className).toContain('caution')
+  })
+
+  it('marks each provider row with where its figure came from', async () => {
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('cost-section'))
+    expect(within(section).getAllByText('admin.billing.cost.fromInvoice').length).toBe(3)
+    expect(within(section).queryByText('admin.billing.cost.byHand')).toBeNull()
   })
 
   it('says the total is a FLOOR when an invoice is not yet in ringgit', async () => {
@@ -120,7 +146,7 @@ describe('what the platform cost', () => {
 
   it('a clean measured month carries no warnings at all', async () => {
     mockApi.getBillingCosts.mockResolvedValue(COSTS({
-      costs: { ...COSTS().costs, entered_sources: [] },
+      costs: { ...COSTS().costs, entered_sources: [], extracted_sources: [] },
     }))
     const { container } = render(<BillingPage />)
     await waitFor(() => within(container).getByTestId('cost-section'))
@@ -134,6 +160,29 @@ describe('what we charge', () => {
     const blocked = await waitFor(() => within(container).getByTestId('blocked-1'))
     expect(within(blocked).getByText(/No unit prices are set/)).not.toBeNull()
     expect(within(blocked).getByText(/No rule has been agreed/)).not.toBeNull()
+  })
+
+  it('a cost line shows what WE paid and the margin on top, not just the charge', async () => {
+    // ⚠ A single marked-up figure hides the markup, and the markup is the thing the reader is
+    // here to check. Owner, 2026-09-11: apply the margin as determined by the rate that is set.
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      charges: [{
+        ...COSTS().charges[0],
+        lines: [{
+          category: 'infrastructure', hours: null, rate_myr: null, margin_pct: '15.00',
+          cost_myr: '126.27', share_pct: '100.00',
+          share_rule: 'infrastructure split equally', amount_myr: '145.21', detail: [],
+        }],
+        subtotal_myr: '145.21', charged_myr: '145.21', blocked: [],
+      }],
+    }))
+    const { container } = render(<BillingPage />)
+    const card = await waitFor(() => within(container).getByTestId('charge-1'))
+    expect(within(card).getByText(/admin\.billing\.charge\.costPlus.*RM126\.27.*15%/)).not.toBeNull()
+    // And the tenant's share of a platform-wide cost, with the rule behind it. With one tenant
+    // this reads 100% — which is exactly when it is worth writing down.
+    expect(within(card).getByText(/admin\.billing\.charge\.share.*100%/)).not.toBeNull()
+    expect(within(card).getByText(/split equally/)).not.toBeNull()
   })
 
   it('an undiscounted month shows no discount line', async () => {
