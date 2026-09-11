@@ -4296,7 +4296,13 @@ class AdminPlatformCostsView(_AdminBase):
                 'metered_org_null_pct': costs['metered_org_null_pct'],
             },
             'charges': [],
-            'unbilled_requests': [{**u, 'hours': _money(u['hours'])}
+            # ⚠ NOT filtered to the month being viewed. Outstanding work is outstanding whatever
+            # month you happen to be looking at, and each row carries the month IT belongs to —
+            # `worked_month` — so the reader sees everything unbilled and records each against
+            # the month we actually worked.
+            'unbilled_requests': [{**u,
+                                   'hours': _money(u['hours']),
+                                   'worked_on': u['worked_on'].isoformat()}
                                   for u in platform_cost.unbilled_request_hours()],
         }
 

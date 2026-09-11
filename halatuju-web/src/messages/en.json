@@ -5162,8 +5162,9 @@
       },
       "unbilled": {
         "title": "Finished work not yet billed",
-        "sub": "Requests marked done that carry quoted hours. Recording one puts those hours in {month}.",
-        "record": "Record"
+        "sub": "Requests marked done that carry quoted hours. Recording one files those hours against the month we WORKED, not the month it was raised.",
+        "record": "Record",
+        "worked": "worked {date} ({basis}) — goes to {month}"
       },
       "service": {
         "gemini": "AI calls (Gemini)",

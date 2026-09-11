@@ -2438,6 +2438,13 @@ export interface UnbilledRequest {
   hours: string | null
   /** Prefilled for the "record these hours" action, tag included. */
   module: string
+  /** ⚠ WHEN WE WORKED, never when the request was raised (owner, 2026-09-11). On production the
+   *  two differ: by raised date July carries 4 hours, by worked date it carries none. */
+  worked_on: string
+  worked_month: string
+  /** 'scheduled' (the day the work was slotted in) or 'last touched' (weaker — any later edit
+   *  moves it). Shown, so the reader knows how firm the month is. */
+  worked_basis: string
 }
 
 export interface BillingCostsPayload {

@@ -238,6 +238,8 @@ describe('what we charge', () => {
 
     await waitFor(() => expect(mockApi.setBillingAdjustment).toHaveBeenCalled())
     const [body] = mockApi.setBillingAdjustment.mock.calls[0]
+    // ⚠ THE WORKED MONTH, not the month being viewed. The page is showing 2026-08 here,
+    // so this test is strengthened below by viewing a DIFFERENT month.
     expect(body.period_month).toBe('2026-08')
     expect(body.reason).toBe('Pre-launch goodwill period')
     await waitFor(() => expect(mockApi.getBillingCosts).toHaveBeenCalledTimes(2))
@@ -249,6 +251,9 @@ describe('finished work not yet billed', () => {
     unbilled_requests: [{
       request_id: 12, organisation_id: 1, organisation: 'BrightPath',
       title: 'Add a spending report', hours: '7.5', module: '[REQ-12] Add a spending report',
+      // ⚠ RAISED in July, WORKED in August — the exact shape the owner caught on
+      // 2026-09-11. Recording must file it under August.
+      worked_on: '2026-08-01', worked_month: '2026-08', worked_basis: 'scheduled',
     }],
   })
 
@@ -344,5 +349,53 @@ describe('Claude is shown as a cost of delivering hours, and charged only once',
     expect(within(card).getByText(/admin\.billing\.charge\.toolCost.*RM400\.00/)).not.toBeNull()
     // And it is NOT added into the charge.
     expect(within(card).getAllByText('RM4,950.00').length).toBeGreaterThan(0)
+  })
+})
+
+describe('hours are filed by when we WORKED', () => {
+  // ⚠ OWNER CORRECTION, 2026-09-11: "we should consider only when we worked and not when the
+  // request was raised." Measured on production the same day: by raised date July carried 4.0
+  // hours and August 23.5; by WORKED date July carried none at all. Two requests raised on 30
+  // July were both scheduled and finished on 1 August — and July is 100% discounted, so those
+  // hours would have been waived rather than charged.
+  const workedInAugust = () => COSTS({
+    unbilled_requests: [{
+      request_id: 3, organisation_id: 1, organisation: 'BrightPath',
+      title: 'Email notification', hours: '3.5', module: '[REQ-3] Email notification',
+      worked_on: '2026-08-01', worked_month: '2026-08', worked_basis: 'scheduled',
+    }],
+  })
+
+  it('records against the worked month even while a DIFFERENT month is on screen', async () => {
+    mockApi.getBillingUsage.mockResolvedValue({ ...USAGE, month: '2026-07' })
+    mockApi.getBillingCosts.mockResolvedValue({ ...workedInAugust(), month: '2026-07' })
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('unbilled-requests'))
+    fireEvent.click(within(section).getByText('admin.billing.unbilled.record'))
+
+    await waitFor(() => expect(mockApi.recordBuildHours).toHaveBeenCalled())
+    const [, body] = mockApi.recordBuildHours.mock.calls[0]
+    // The page is showing JULY. The work happened in AUGUST. August wins.
+    expect(body.period_month).toBe('2026-08')
+    expect(body.basis).toContain('2026-08-01')
+    expect(body.basis).toContain('scheduled')
+  })
+
+  it('says on screen which month the hours will go to, and how firm that is', async () => {
+    mockApi.getBillingCosts.mockResolvedValue(workedInAugust())
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('unbilled-requests'))
+    expect(within(section).getByText(/admin\.billing\.unbilled\.worked.*scheduled/)).not.toBeNull()
+  })
+
+  it('a weaker fallback says so rather than looking equally firm', async () => {
+    mockApi.getBillingCosts.mockResolvedValue(COSTS({
+      unbilled_requests: [{
+        ...workedInAugust().unbilled_requests[0], worked_basis: 'last touched',
+      }],
+    }))
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('unbilled-requests'))
+    expect(within(section).getByText(/last touched/)).not.toBeNull()
   })
 })

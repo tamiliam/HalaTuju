@@ -5162,8 +5162,9 @@
       },
       "unbilled": {
         "title": "Kerja siap yang belum dicaj",
-        "sub": "Permintaan bertanda selesai yang mempunyai jam sebut harga. Merekodkannya meletakkan jam itu dalam {month}.",
-        "record": "Rekod"
+        "sub": "Permintaan bertanda selesai yang mempunyai jam sebut harga. Merekodkannya memfailkan jam itu pada bulan kami BEKERJA, bukan bulan ia dikemukakan.",
+        "record": "Rekod",
+        "worked": "dikerjakan {date} ({basis}) — masuk {month}"
       },
       "service": {
         "gemini": "Panggilan AI (Gemini)",

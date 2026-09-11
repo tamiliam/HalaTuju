@@ -135,9 +135,9 @@ describe('unbilled request work', () => {
 
   test('groups by organisation, ordered by name', () => {
     const out = unbilledByOrg(payload([
-      { request_id: 2, organisation_id: 9, organisation: 'Zenith', title: 'B', hours: '3.0', module: '[REQ-2] B' },
-      { request_id: 1, organisation_id: 1, organisation: 'BrightPath', title: 'A', hours: '7.5', module: '[REQ-1] A' },
-      { request_id: 3, organisation_id: 1, organisation: 'BrightPath', title: 'C', hours: '2.0', module: '[REQ-3] C' },
+      { request_id: 2, organisation_id: 9, organisation: 'Zenith', title: 'B', hours: '3.0', module: '[REQ-2] B', worked_on: '2026-08-01', worked_month: '2026-08', worked_basis: 'scheduled' },
+      { request_id: 1, organisation_id: 1, organisation: 'BrightPath', title: 'A', hours: '7.5', module: '[REQ-1] A', worked_on: '2026-07-01', worked_month: '2026-07', worked_basis: 'scheduled' },
+      { request_id: 3, organisation_id: 1, organisation: 'BrightPath', title: 'C', hours: '2.0', module: '[REQ-3] C', worked_on: '2026-09-01', worked_month: '2026-09', worked_basis: 'scheduled' },
     ]))
     expect(out.map((g) => g.organisation)).toEqual(['BrightPath', 'Zenith'])
     expect(out[0].rows).toHaveLength(2)
