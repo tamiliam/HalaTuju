@@ -162,6 +162,35 @@ Jul 1 2026 - Jul 31 2026
  Page 1  of 2
 """
 
+ANTHROPIC_SEP = """
+Page 1 of 1
+Receipt
+Invoice number ZOX36MBZ 0011
+Receipt number 2535 4368 0581
+Date paid September 3, 2026
+VAT Registration Malaysia Reg. No: 26000029
+Anthropic, PBC @anthropic
+548 Market Street
+San Francisco, California 94104
+Bill to
+tamiliam@gmail.com's Organization
+Malaysia
+$108.00 paid on September 3, 2026
+Description Qty Unit price Tax Amount
+Max plan - 5x
+Sep 3 Oct 3, 2026
+1 $100.00 8% $100.00
+
+Subtotal $100.00
+Total excluding tax $100.00
+SST - Malaysia  8% on $100.00  $8.00
+Total $108.00
+Amount paid $108.00
+"""
+
+ANTHROPIC_AUG = ANTHROPIC_SEP.replace('Sep 3 Oct 3, 2026', 'Aug 3 Sep 3, 2026') \
+                             .replace('ZOX36MBZ 0011', 'ZOX36MBZ 0010')
+
 GCP_STATEMENT_AUG = """Page 1 of 2
 Statement
 To
@@ -259,6 +288,68 @@ class TestTwilio(SimpleTestCase):
         self.assertTrue(platform_cost.classify_sku('Twilio', 'Programmable Messaging'))
         self.assertTrue(platform_cost.classify_sku('Twilio', 'Account Security'))
         self.assertFalse(platform_cost.classify_sku('Twilio', 'Phone Numbers'))
+
+
+class TestAnthropic(SimpleTestCase):
+    """⚠ The receipt whose dashes arrive as NUL BYTES. See `TestNormalisation` below."""
+
+    def test_it_reads_the_plan_and_the_tax_as_separate_lines(self):
+        inv = ip.parse_text(ANTHROPIC_SEP)
+        self.assertEqual(inv.source, 'anthropic')
+        self.assertEqual(inv.invoice_ref, 'ZOX36MBZ 0011')
+        self.assertEqual(inv.currency, 'USD')
+        self.assertEqual(inv.total, Decimal('108.00'))
+        self.assertEqual([(ln.sku, ln.amount) for ln in inv.lines],
+                         [('Max plan - 5x', Decimal('100.00')),
+                          ('Sales tax (SST 8%)', Decimal('8.00'))])
+
+    def test_the_tax_line_is_NAMED_so_the_tax_matcher_finds_it(self):
+        """⚠ Anthropic prints only 'SST'. Widening `is_tax` to match SST/GST/VAT was rejected:
+        'vat' is a substring of ordinary words like 'innovate', so it would silently turn real
+        charges into tax. Naming the line correctly is precise; loosening the matcher is not."""
+        from apps.scholarship import platform_cost
+        _plan, tax = ip.parse_text(ANTHROPIC_SEP).lines
+        self.assertTrue(platform_cost.is_tax(tax.service, tax.sku))
+
+    def test_the_plan_is_a_DEVELOPMENT_cost_and_never_a_platform_one(self):
+        """⚠ THE DOUBLE-CHARGE GUARD, at the parser. If this line were bucketed as platform it
+        would be marked up as infrastructure AND recovered again by the hourly rate."""
+        from apps.scholarship import platform_cost
+        plan, _tax = ip.parse_text(ANTHROPIC_SEP).lines
+        self.assertEqual(platform_cost.cost_bucket(plan.service, plan.sku), 'development')
+
+    def test_the_month_is_when_the_PLAN_STARTS_not_when_it_was_paid(self):
+        """The receipt dated 3 September buys 3 Sep to 3 Oct, so it belongs to September. Filing
+        by the payment date would be right by accident and wrong the moment a provider bills in
+        arrears. Same rule as Supabase."""
+        self.assertEqual(ip.parse_text(ANTHROPIC_SEP).period_month, '2026-09')
+        self.assertEqual(ip.parse_text(ANTHROPIC_AUG).period_month, '2026-08')
+
+    def test_the_3rd_to_3rd_window_is_recorded(self):
+        self.assertIn('Sep 3', ip.parse_text(ANTHROPIC_SEP).period_note)
+        self.assertIn('Oct 3', ip.parse_text(ANTHROPIC_SEP).period_note)
+
+
+class TestNormalisation(SimpleTestCase):
+    """⚠ NOT COSMETIC, AND IT COST A DEBUGGING ROUND.
+
+    `pypdf` hands back Anthropic's en-dash as a literal NUL byte, so the service window reads
+    `'Sep 3\\x00Oct 3, 2026'`. A NUL is not whitespace to `\\s`, so every pattern spanning it
+    fails — and the failure looks exactly like a provider having changed its layout.
+    """
+
+    def test_a_NUL_where_a_dash_should_be_does_not_break_the_parse(self):
+        raw = ANTHROPIC_SEP.replace('Sep 3 Oct 3', 'Sep 3\x00Oct 3')
+        self.assertEqual(ip.parse_text(raw).period_month, '2026-09')
+
+    def test_non_breaking_spaces_and_fancy_dashes_are_flattened(self):
+        self.assertEqual(ip.normalise('a\xa0b'), 'a b')
+        self.assertEqual(ip.normalise('a–b'), 'a-b')
+        self.assertEqual(ip.normalise('a\x00b'), 'a b')
+
+    def test_it_survives_empty_input(self):
+        self.assertEqual(ip.normalise(''), '')
+        self.assertEqual(ip.normalise(None), '')
 
 
 class TestTheSelfCheck(SimpleTestCase):

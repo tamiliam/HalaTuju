@@ -56,6 +56,18 @@ def closing_rate(currency, on_date):
     if code in ('', 'MYR'):
         return Decimal('1'), (on_date if isinstance(on_date, _date) else None)
 
+    # ⚠ A MONTH THAT HAS NOT ENDED HAS NO CLOSING RATE, and that is not a fault. The owner's rule
+    # is the rate at the END of the billing month; for the current month that date is in the
+    # future and the ECB answers "not found". Saying so plainly matters, because the generic
+    # message below reads like an outage and would send somebody looking for a problem that does
+    # not exist. The invoice is recorded unconverted, the month reports itself as a FLOOR, and
+    # re-running after the month closes fills it in. Nothing is lost and nothing is guessed.
+    if on_date > _date.today():
+        raise RateUnavailable(
+            f'{on_date} has not happened yet, so there is no closing rate for it. The invoice '
+            f'is recorded with no ringgit amount and the month will report itself incomplete '
+            f'until the month ends and this is re-run.')
+
     url = ECB_ENDPOINT.format(date=on_date.isoformat())
     url = f'{url}?base={code}&symbols=MYR'
     # ⚠ A User-Agent is REQUIRED. The host answers urllib's default `Python-urllib/3.x` with a

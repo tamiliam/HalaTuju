@@ -38,6 +38,29 @@ class InvoiceParseError(Exception):
     """
 
 
+def normalise(text: str) -> str:
+    """Flatten the characters a PDF extractor leaves behind, before any pattern sees the text.
+
+    ⚠ THIS IS NOT COSMETIC. Anthropic's receipt prints its service window as 'Sep 3 – Oct 3',
+    and `pypdf` hands back the en-dash as a literal **NUL byte**: `'Sep 3\\x00Oct 3, 2026'`.
+    A NUL is not whitespace to `\\s`, so every pattern spanning it fails — and the failure looks
+    exactly like a provider having changed its layout. It cost one debugging round to find.
+
+    Non-breaking spaces and the three dash characters get the same treatment, for the same
+    reason: the figure a human reads and the bytes a regex reads must be the same thing.
+    """
+    if not text:
+        return ''
+    # ⚠ `chr()` rather than escape sequences, deliberately. A literal NUL written into a Python
+    # source file is a SyntaxError nobody enjoys diagnosing, and this line has to name one.
+    # NUL, non-breaking space, figure space, narrow no-break space.
+    for bad in (chr(0), chr(0xa0), chr(0x2007), chr(0x202f)):
+        text = text.replace(bad, ' ')
+    for dash in ('–', '—', '‐', '−'):
+        text = text.replace(dash, '-')
+    return text
+
+
 def _money(text) -> Decimal:
     try:
         return Decimal(str(text).replace(',', '').replace('$', '').strip())
@@ -204,6 +227,70 @@ def parse_supabase(text: str) -> ParsedInvoice:
     )
 
 
+# ── Anthropic ─────────────────────────────────────────────────────────────────
+# Invoiced in USD, billed 3rd-to-3rd rather than by calendar month, and — unlike every other
+# provider here — it is a cost of DELIVERING HOURS, not of running the platform. See
+# `platform_cost.DEVELOPMENT_SKU_MARKERS`: the word "Anthropic" in the service name is what keeps
+# it out of the infrastructure charge, so that the hourly rate is the only thing recovering it.
+
+_AN_REF = re.compile(r'Invoice number\s+([A-Z0-9]+\s+\d+)')
+_AN_PAID = re.compile(r'Amount paid\s+\$([\d,.]+)')
+_AN_SUBTOTAL = re.compile(r'Subtotal\s+\$([\d,.]+)')
+# 'SST - Malaysia  8% on $100.00  $8.00' — the percentage and the amount, in one shape.
+_AN_TAX = re.compile(r'(SST|GST|VAT)[^\n]*?([\d.]+)%\s*on\s*\$[\d,.]+\s*\$([\d,.]+)')
+_AN_PLAN = re.compile(r'(Max plan[^\n]*|Pro plan[^\n]*|Team plan[^\n]*)', re.IGNORECASE)
+# The service window, printed under the plan name. The PDF extraction drops the en-dash, so the
+# separator is optional.
+_AN_WINDOW = re.compile(
+    r'(?:Max|Pro|Team) plan[^\n]*\n\s*(\w{3})\s+(\d+)\s*[–-]?\s*(\w{3})\s+(\d+),\s*(\d{4})',
+    re.IGNORECASE)
+
+
+def detect_anthropic(text: str) -> bool:
+    return 'Anthropic' in text and 'Invoice number' in text
+
+
+def parse_anthropic(text: str) -> ParsedInvoice:
+    ref = _AN_REF.search(text)
+    paid = _AN_PAID.search(text)
+    subtotal = _AN_SUBTOTAL.search(text)
+    window = _AN_WINDOW.search(text)
+    if not (ref and paid and subtotal and window):
+        raise InvoiceParseError(
+            'Anthropic: could not find the invoice number, the amount paid, the subtotal and '
+            'the plan window. All four are required.')
+
+    plan = _AN_PLAN.search(text)
+    plan_name = plan.group(1).strip() if plan else 'Plan'
+    lines = [InvoiceLine('Anthropic', plan_name, _money(subtotal.group(1)))]
+
+    tax = _AN_TAX.search(text)
+    if tax:
+        # ⚠ NAMED WITH THE WORD "tax" ON PURPOSE. `platform_cost.is_tax` recognises a line by
+        # that word, and Anthropic prints only "SST". Widening `is_tax` to match SST/GST/VAT was
+        # the alternative and was rejected: 'vat' is a substring of ordinary words like
+        # "innovate", so it would silently turn real charges into tax. Naming the line correctly
+        # is precise; loosening the matcher is not.
+        lines.append(InvoiceLine(
+            'Invoice', f'Sales tax ({tax.group(1)} {tax.group(2)}%)', _money(tax.group(3))))
+
+    start_mon, start_day, end_mon, end_day, year = window.groups()
+    # ⚠ THE MONTH THE SERVICE PERIOD OPENS, not the date paid — the same rule as Supabase. The
+    # receipt dated 3 September buys the plan for 3 September to 3 October, so filing it by the
+    # payment date would be right by accident here and wrong the moment a provider bills in
+    # arrears instead.
+    return ParsedInvoice(
+        source='anthropic',
+        invoice_ref=ref.group(1),
+        currency='USD',
+        period_month=_period_month(start_mon, year),
+        total=_money(paid.group(1)),
+        lines=lines,
+        period_note=(f'Anthropic bills {start_mon} {start_day} to {end_mon} {end_day}, '
+                     f'not the calendar month.'),
+    )
+
+
 # ── Twilio ────────────────────────────────────────────────────────────────────
 # Invoiced in USD, on a clean calendar month, with a per-product summary that is already the
 # grain the ledger wants.
@@ -298,6 +385,7 @@ def parse_gcp_statement(text: str):
 PARSERS = (
     ('workspace', detect_workspace, parse_workspace),
     ('supabase', detect_supabase, parse_supabase),
+    ('anthropic', detect_anthropic, parse_anthropic),
     ('twilio', detect_twilio, parse_twilio),
 )
 
@@ -315,7 +403,7 @@ def pdf_text(path) -> str:
             'pypdf is not installed. This is an owner-run reporting tool; install it locally '
             'rather than adding it to the service image.') from exc
     reader = PdfReader(str(path))
-    return '\n'.join((page.extract_text() or '') for page in reader.pages)
+    return normalise('\n'.join((page.extract_text() or '') for page in reader.pages))
 
 
 def parse_text(text: str):
@@ -324,6 +412,9 @@ def parse_text(text: str):
     ⚠ Returns ``None`` for an unrecognised file rather than guessing at one. A parser applied to
     the wrong provider's invoice is how a Twilio total ends up filed as Supabase.
     """
+    # Normalised here too, not only in `pdf_text`: a caller with raw text (a test, a paste) must
+    # get the same answer as the command, or the tests stop proving anything about the command.
+    text = normalise(text)
     for _source, detect, parse in PARSERS:
         if detect(text):
             return parse(text)

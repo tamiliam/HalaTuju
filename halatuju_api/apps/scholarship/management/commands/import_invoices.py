@@ -114,8 +114,13 @@ class Command(BaseCommand):
             myr = ((line.amount * rate).quantize(Decimal('0.01'))
                    if rate is not None else None)
             is_attr = platform_cost.classify_sku(line.service, line.sku)
-            flag = ('tax' if platform_cost.is_tax(line.service, line.sku)
-                    else ('TENANT' if is_attr else 'platform'))
+            # ⚠ The printed flag must be `cost_bucket`, not the attributable boolean. The boolean
+            # has no word for the development bucket, so Claude printed as "platform" — the one
+            # thing it must never be taken for, since that is where it would get charged twice.
+            # The STORED row was always right; the operator's screen was not.
+            flag = {'tax': 'tax', 'development': 'DEV-TOOL',
+                    'metered': 'TENANT', 'platform': 'platform'}[
+                        platform_cost.cost_bucket(line.service, line.sku, is_attr)]
             self.stdout.write(
                 f'    {line.sku[:44]:46}{line.amount:>9} {invoice.currency}'
                 f'{(str(myr) + " MYR") if myr is not None else "     —    ":>14}  {flag}')
