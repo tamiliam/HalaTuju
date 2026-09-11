@@ -111,15 +111,20 @@ def relay_bucket(application):
 
 def relay_row(application):
     """One sheet row: Application · Name · NRIC · Email · Emailed on · Confirmed on · Mobile ·
-    eWallet ID.
+    eWallet ID · Activated On.
 
-    The two dates are load-bearing and mean DIFFERENT things when blank. Blank "Emailed on" = we
-    never asked this student. Blank "Confirmed on" = they haven't answered. Reading one as the
-    other is how someone gets chased who was never contacted — or, worse, is never chased at all.
+    The THREE dates are load-bearing and mean DIFFERENT things when blank. Blank "Emailed on" = we
+    never asked this student. Blank "Confirmed on" = they haven't answered. Blank "Activated On" =
+    Vircle has not told us the account is live. Reading one as another is how someone gets chased
+    who was never contacted — or, worse, is never chased at all.
 
     eWallet ID is the student's PRINCIPAL Vircle wallet id — the one we pay into and Vircle reports
-    on (never the parent's supplementary/transfer-only wallet). It's the last GENERATED column;
-    the owner's own columns (e.g. "Activated On") live to the right of it and are preserved on sync.
+    on (never the parent's supplementary/transfer-only wallet).
+
+    ⚠ "Activated On" is WRITTEN BY US now (owner, 2026-09-11), off `vircle_activated_at`. It was
+    the owner's own hand-kept column until Vircle's webhook started reporting activation; the
+    database is the single home for that fact and this column is its mirror. Any owner notes must
+    live to the RIGHT of this one — everything up to here is cleared and rewritten on every sync.
     """
     profile = getattr(application, 'profile', None)
     task = setup_task(application)
@@ -133,6 +138,7 @@ def relay_row(application):
         _date(getattr(done, 'resolved_at', None)),  # blank → not yet confirmed
         (done.resolution_text or '') if done else '',
         application.vircle_id or '',                 # eWallet ID (principal) — column H
+        _date(application.vircle_activated_at),      # blank → Vircle has not reported it live
     ]
 
 
@@ -154,96 +160,13 @@ def relay_rows(applications):
     return [relay_row(app) for app in sorted(applications, key=key)]
 
 
-# ── 48h activation request ───────────────────────────────────────────────────
-# Reads the SAME relay sheet BACK (the one net-new inbound read) to find accounts the student has
-# installed (eWallet ID present) but that Vircle hasn't switched on yet — tracked by the owner's
-# MANUAL "Activated On" column (I). That column is the prune signal: once the owner fills it, the
-# account drops out of the request. Activation is never known to the app itself, so the sheet is
-# the only source of truth for it.
-
-def pending_activation_rows():
-    """Accounts INSTALLED but NOT yet activated, read from the relay sheet: rows with an eWallet ID
-    AND a blank 'Activated On'. Each → {name, nric, installed_on, phone, ewallet}. [] if unreadable.
-    Columns are located by header name (case-insensitive) so a reorder can't silently misread."""
-    from django.conf import settings
-    from . import sheets
-    values = sheets.read_sheet_values(getattr(settings, 'VIRCLE_SHEET_ID', ''), 'A1:I1000')
-    if not values:
-        return []
-    header = [str(h).strip().lower() for h in values[0]]
-
-    def idx(name):
-        try:
-            return header.index(name.lower())
-        except ValueError:
-            return None
-
-    i_name, i_nric = idx('name'), idx('nric')
-    i_installed = idx('confirmed on')                    # 'Installed Date' ← 'Confirmed on'
-    i_phone = idx('mobile registered with vircle')
-    i_ewallet, i_activated = idx('ewallet id'), idx('activated on')
-
-    def cell(row, i):
-        return (str(row[i]).strip() if (i is not None and i < len(row)) else '')
-
-    out = []
-    for row in values[1:]:
-        ewallet = cell(row, i_ewallet)
-        if ewallet and not cell(row, i_activated):       # installed, not activated
-            out.append({
-                'name': cell(row, i_name),
-                'nric': cell(row, i_nric),
-                'installed_on': cell(row, i_installed),
-                'phone': cell(row, i_phone),
-                'ewallet': ewallet,
-            })
-    return out
-
-
-def _activation_sheet():
-    """(header list lower-cased, data rows) from the relay sheet, or (None, []) if unreadable.
-    Shared by pending_activation_rows and activated_rows so both locate columns identically."""
-    from django.conf import settings
-    from . import sheets
-    values = sheets.read_sheet_values(getattr(settings, 'VIRCLE_SHEET_ID', ''), 'A1:I1000')
-    if not values:
-        return None, []
-    return [str(h).strip().lower() for h in values[0]], values[1:]
-
-
-def activated_rows():
-    """Accounts the owner has marked ACTIVATED in the relay sheet: rows with an eWallet ID AND a
-    non-blank 'Activated On'. The complement of pending_activation_rows. Each →
-    {ewallet, activated_raw}. [] if the sheet is unreadable. Column located by header name."""
-    header, data = _activation_sheet()
-    if header is None:
-        return []
-
-    def idx(name):
-        try:
-            return header.index(name.lower())
-        except ValueError:
-            return None
-
-    i_ewallet, i_activated = idx('ewallet id'), idx('activated on')
-    if i_ewallet is None or i_activated is None:
-        return []
-
-    def cell(row, i):
-        return (str(row[i]).strip() if (i is not None and i < len(row)) else '')
-
-    out = []
-    for row in data:
-        ewallet, activated = cell(row, i_ewallet), cell(row, i_activated)
-        if ewallet and activated:
-            out.append({'ewallet': ewallet, 'activated_raw': activated})
-    return out
-
-
 def _parse_activated_date(raw):
-    """Best-effort parse of the owner-typed 'Activated On' cell into an aware datetime, else None.
+    """Best-effort parse of a date Vircle sends us into an aware datetime, else None.
+
     Presence is the signal that matters — the date is advisory only, never gates money, so an
-    unparseable-but-present value still counts as activated (the caller falls back to now())."""
+    unparseable-but-present value still counts as activated (the caller falls back to now()).
+    Its one caller is `vircle_airtable.apply_update`; the hand-typed relay-sheet column it was
+    written for is gone (owner, 2026-09-11 — Vircle's webhook reports activation now)."""
     from datetime import datetime
     from django.utils import timezone
     for fmt in ('%d/%m/%Y', '%Y-%m-%d', '%d-%m-%Y', '%d/%m/%y', '%d %b %Y', '%d %B %Y', '%d.%m.%Y'):
@@ -253,50 +176,6 @@ def _parse_activated_date(raw):
         except (ValueError, TypeError):
             continue
     return None
-
-
-def sync_activation_status():
-    """Mirror the relay sheet's manual 'Activated On' column into ScholarshipApplication.
-    vircle_activated_at (the system-of-record fact the payment surface reads). One-way sheet→DB:
-    the owner's sheet stays the source of truth; we only STAMP set-if-null (never clear, never
-    overwrite) so a manual DB correction is respected. Join on the eWallet ID (the sheet is
-    generated from the DB, so its 'eWallet ID' column IS vircle_id). Returns the count stamped.
-    """
-    from django.utils import timezone
-    from .models import ScholarshipApplication
-    now = timezone.now()
-    stamped = 0
-    for row in activated_rows():
-        ewallet = (row.get('ewallet') or '').strip()
-        if not ewallet:
-            continue
-        when = _parse_activated_date(row.get('activated_raw') or '') or now
-        stamped += (ScholarshipApplication.objects
-                    .filter(vircle_id=ewallet, vircle_activated_at__isnull=True)
-                    .update(vircle_activated_at=when))
-    return stamped
-
-
-def activation_csv_text(rows):
-    """The activation-request CSV — the owner's headers, one line per pending account.
-
-    The trailing BLANK column is deliberate: it turns "reply with any corrections" into filling a
-    cell, which is the difference between a request that gets actioned and one that gets read. The
-    eWallet ID is student-supplied and three of the first 46 were a DuitNow Transfer number typed
-    into the wrong box — Vircle is the only party who can tell us so.
-    """
-    import csv
-    import io
-    buf = io.StringIO()
-    w = csv.writer(buf)
-    w.writerow(['Name', 'NRIC', 'Installed Date', 'Phone number', 'eWallet ID',
-                'Correct eWallet ID (if different)'])
-    for r in rows:
-        # Excel-safe: a bare 13-digit id renders as 8.0004E+12; ="…" keeps it text.
-        ewallet = f'="{r["ewallet"]}"' if r.get('ewallet') else ''
-        w.writerow([r.get('name', ''), r.get('nric', ''), r.get('installed_on', ''),
-                    r.get('phone', ''), ewallet, ''])
-    return buf.getvalue()
 
 
 def awarded_applications():

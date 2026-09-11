@@ -467,10 +467,11 @@ class ScholarshipApplication(models.Model):
     vircle_id = models.CharField(
         max_length=30, blank=True, default='',
         help_text="Vircle eWallet account ID (13 digits, prefix 8000400175).")
-    # Payments module: when Vircle actually ACTIVATED (switched on) this eWallet. Vircle reports
-    # nothing back to us, so the ONLY activation signal is the owner's MANUAL 'Activated On' column
-    # in the relay sheet; `vircle.sync_activation_status` mirrors that column into this field (the
-    # sheet stays the source of truth). ADVISORY only — the payment run surfaces a "not yet
+    # Payments module: when Vircle actually ACTIVATED (switched on) this eWallet. ⚠ THIS FIELD IS
+    # NOW THE SOURCE OF TRUTH, and the relay sheet's 'Activated On' column is its mirror — the
+    # reverse of the arrangement until 2026-09-11, when the owner's hand-kept column was retired
+    # because Vircle's inbound webhook reports activation itself (a row whose Status reads "Done";
+    # `vircle_airtable.apply_update` stamps it, set-once). ADVISORY only — the payment run surfaces a "not yet
     # activated" flag off this, but it does NOT gate eligibility (owner: don't block payouts on the
     # manual step; a payment to a non-activated wallet bounces, it isn't lost). NULL = not (yet)
     # recorded as activated. See docs/decisions.md.

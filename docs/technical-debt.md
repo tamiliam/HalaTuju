@@ -3728,3 +3728,22 @@ each bucket is comparable. `engine_versions` already carries the counts needed t
 Medium-sized: the response shape changes and `AiReliabilityCard` needs rewriting.
 
 (Logged 2026-09-11 at the verdict-engine-version close.)
+
+### [TD-244] Nothing watches a student whose wallet never gets switched on — low
+
+**Status:** Open (2026-09-12)
+
+Retiring the 48-hour chaser removed the only thing that chased Vircle. Their webhook REPORTS an
+activation; it does not ASK for one. So a student who installs, confirms, gets a wallet id, and is
+then left un-activated now sits silently: nothing emails Vircle, and nothing tells us.
+
+The condition is a one-line query — `vircle_id` present, `vircle_activated_at` null, status funded —
+and it read **zero** at the close, which is why this is low rather than a blocker. The payment run
+already greys such a student (`vircle_unconfirmed` / no id), so money does not go astray; what is
+missing is the nudge that used to make it somebody's problem.
+
+**Fix when it bites:** a REPORT (a row on the payments screen, or a line in an existing digest), not
+a resurrected email — the retired one read a spreadsheet column the system now writes, which is
+exactly why it had to go. See `docs/decisions.md`, "The 48-hour activation chaser is retired".
+
+**Trigger:** the first student who reaches a payment run with a wallet id and no activation date.

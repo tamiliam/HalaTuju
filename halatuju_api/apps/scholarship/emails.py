@@ -3908,59 +3908,6 @@ def send_payment_finance_check_email(run):
     return sent
 
 
-def send_vircle_activation_email(rows, csv_text=None):
-    """The 48h activation request to Vircle: the accounts installed but not yet activated, with a
-    CSV attached and a Bcc reference copy. Recipient = VIRCLE_ACTIVATION_EMAIL, else the payments
-    contact. Best-effort; returns True on send, False if disabled / empty / send failed."""
-    recipient = ((getattr(settings, 'VIRCLE_ACTIVATION_EMAIL', '') or '').strip()
-                 or (getattr(settings, 'VIRCLE_PAYMENTS_EMAIL', '') or '').strip())
-    if not recipient or not rows:
-        return False
-    from django.utils import timezone
-
-    from . import vircle
-    if csv_text is None:
-        csv_text = vircle.activation_csv_text(rows)
-    today = timezone.localdate()
-    n = len(rows)
-    # Reference copy (owner A+B): Bcc a mailbox, and the command also files the CSV to Drive.
-    bcc = [e for e in [((getattr(settings, 'VIRCLE_ACTIVATION_BCC', '') or '')
-                        or (getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or '')).strip()] if e]
-    listing = '\n'.join(
-        f"  {i}. {r['name']} — NRIC {r['nric']} — eWallet ID {r['ewallet']} — "
-        f"mobile {r['phone']} — installed {r['installed_on']}"
-        for i, r in enumerate(rows, 1))
-    body = (
-        'Dear Vircle team,\n\n'
-        'The student(s) below have installed the ' + _PROG_EN + ' eWallet and given us their '
-        'account details. Our records do not yet show their accounts as active — though some may '
-        'already be active, if the student has messaged you on WhatsApp.\n\n'
-        'For each student listed, please:\n\n'
-        '1. ACTIVATE the account, if it is not already active.\n\n'
-        '2. CONFIRM the eWallet ID we hold is correct — and reply with the correct one if it is '
-        'not. We use this ID in the monthly payment instruction, so a wrong ID means the payment '
-        'goes to the wrong destination. Students supply the ID themselves, and some have sent us '
-        'their DuitNow Transfer number by mistake; we have no way to tell the two apart.\n\n'
-        f'Accounts we cannot yet confirm as active: {n}  (full details in the attached CSV)\n\n'
-        f'{listing}\n\n'
-        'Once we know an account is active we remove it from this list. This reminder is sent '
-        'every 48 hours for any account we cannot yet confirm.\n\n'
-        'Thank you,\n'
-        + _TEAM_EN
-    )
-    try:
-        msg = EmailMessage(
-            subject=(f'' + _PROG_EN + ' — eWallet activation & ID confirmation '
-                     f'({n} account{"" if n == 1 else "s"}) — {today:%d %B %Y}'),
-            body=body, from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient], bcc=bcc)
-        msg.attach(f'vircle-activation-{today:%Y-%m-%d}.csv', csv_text, 'text/csv')
-        msg.send()
-        return True
-    except Exception:
-        logger.warning('Failed to send the Vircle activation email', exc_info=True)
-        return False
-
-
 def send_payment_run_email(run):
     """Payments D7 — on countersignature, email Vircle the payment instruction with the run's
     CSV attached. Enabled when ``VIRCLE_PAYMENTS_EMAIL`` is set (default gokula@vircle.com);
@@ -4128,8 +4075,8 @@ def send_spending_alert_email(lines, *, subject_hint=''):
     ⚠ **PLAIN `EmailMessage` WITH AN EXPLICIT `from_email`, NOT `_send_html`.** `_send_html`
     DEFAULTS its sender to the interview alias because interview mail is its main caller — the
     correct call and the wrong call look identical and the wrong one is shorter, which is how a
-    student email once went out from `interview@` (2026-08-01). Internal alerts follow
-    `send_vircle_activation_email`'s shape instead.
+    student email once went out from `interview@` (2026-08-01). Internal alerts name their sender
+    outright, as this one does.
     """
     recipient = (getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or '').strip()
     if not recipient or not lines:

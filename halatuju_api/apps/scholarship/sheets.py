@@ -44,8 +44,14 @@ _DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 # NOT asked that student yet, and "Confirmed on" is blank iff they have not answered — so the two
 # empties say different things, and neither may be read as the other. The explicit Status column
 # was dropped at the owner's request; the buckets survive only as the ROW ORDER (see relay_rows).
+#
+# ⚠ "Activated On" (column I) IS A GENERATED COLUMN AS OF 2026-09-11 AND MUST NOT GO BACK TO BEING
+# TYPED. It used to be the owner's own column, read BACK out of this sheet to decide who Vircle
+# still had to switch on. Vircle's webhook now tells us that directly, so the database holds the
+# fact and the sheet mirrors it. Two writers of one fact is how a sheet starts disagreeing with
+# the system that pays people.
 _HEADER = ['Application', 'Name', 'NRIC', 'Email', 'Emailed on', 'Confirmed on',
-           'Mobile registered with Vircle', 'eWallet ID']
+           'Mobile registered with Vircle', 'eWallet ID', 'Activated On']
 
 # The buckets a student can be in. Deliberately plain language: this sheet is read by us and by
 # Vircle, not by the code.

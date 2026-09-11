@@ -45,7 +45,14 @@ _NRIC_KEYS = ('NRIC', 'nric', 'MYKAD', 'MyKad', 'mykad', 'ic', 'IC')
 _WALLET_KEYS = ('Wallet ID', 'wallet_id', 'Principal Wallet ID', 'principal_wallet_id',
                 'eWallet ID', 'ewallet_id', 'ewallet', 'wallet')
 _ACTIVATED_KEYS = ('Activated', 'activated', 'Activated On', 'activated_on', 'Activated Date',
-                   'activated_date')
+                   'activated_date', 'QR Activated Date', 'qr_activated_date')
+# Their Recipients table carries a Status column whose DONE value means the account is live
+# (the other observed value is "Pending Vircle Activation"). Owner ruling 2026-09-11 off their own
+# screenshots: treat the moment we receive a row reading Done as the activation date, because
+# `QR Activated Date` is blank on every row they have sent so far. A status we do not recognise —
+# including the pending one — must NEVER stamp an activation.
+_STATUS_KEYS = ('Status', 'status')
+_ACTIVE_STATUS = 'done'
 
 
 def _digits(value) -> str:
@@ -160,6 +167,11 @@ def apply_update(payload: dict) -> dict:
     wallet: 'set' | 'kept' (already identical) | 'mismatch' (stored differs — logged, NOT
             overwritten) | 'invalid' (fails `valid_vircle_id` — logged, not written) | 'none'
     activated: 'set' | 'kept' | 'none'
+
+    ⚠ WE READ `Principal Wallet ID` AND NEVER `Supp Wallet ID`, AND THAT IS A MONEY RULE, NOT AN
+    OVERSIGHT. Owner, 2026-09-11: money can only be paid into the PRINCIPAL wallet; on a Child
+    account the parent holds it and passes the money on, and the spending reports are keyed to the
+    principal too. Adding the supplementary column here would pay a wallet nobody reconciles.
     """
     from . import payments
     from .vircle import _parse_activated_date
@@ -199,12 +211,15 @@ def apply_update(payload: dict) -> dict:
             pending_alert = (app.id, 'set', wallet, '')
 
     activated_raw = _first(payload, _ACTIVATED_KEYS)
-    if activated_raw and activated_raw.lower() not in ('false', '0', 'no'):
+    if activated_raw.lower() in ('false', '0', 'no'):
+        activated_raw = ''
+    status_done = _first(payload, _STATUS_KEYS).strip().lower() == _ACTIVE_STATUS
+    if activated_raw or status_done:
         if app.vircle_activated_at:
             result['activated'] = 'kept'
         else:
             # Presence is the signal; an unparseable date still counts as activated NOW —
-            # the same rule as the relay sheet's manual column (`sync_activation_status`).
+            # the rule the retired relay-sheet column followed before this became the one writer.
             app.vircle_activated_at = _parse_activated_date(activated_raw) or timezone.now()
             fields.append('vircle_activated_at')
             result['activated'] = 'set'

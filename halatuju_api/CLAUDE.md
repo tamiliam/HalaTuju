@@ -550,7 +550,62 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-11, after the spending page was reorganised — S6)
+## Next Sprint (as of 2026-09-12, after Vircle started telling us when an account goes live)
+
+**✅ SHIPPED AND VERIFIED LIVE 2026-09-12.** `main` at **`bb1f7de1`**; build `c8f5b112` on
+`bb1f7de` SUCCESS (waited on THAT id); serving **halatuju-api-01036-6kh** — and the running
+**image digest was matched to this commit's tag**, not merely "the newest revision". Site 200,
+public intake 200, **no api ERROR logs**. **Web correctly did NOT build** (no web file changed).
+Gates: pytest **6524** · `makemigrations --check` clean. **No migration.** Retro
+`docs/retrospective-2026-09-12-vircle-activation.md`; decisions ×3; lessons ×5; **TD-244**.
+
+**WHAT CHANGED.** Vircle's callback delivered six eWallet ids on 2026-09-11 and no activation.
+
+- **⚠⚠ THEIR ACTIVATION SIGNAL IS THE `Status` WORD, NOT A DATE COLUMN.** `Done` = live,
+  `Pending Vircle Activation` = not yet. **`QR Activated Date` is EMPTY on all 64 rows of their own
+  export** — they never fill it. The alias ships anyway and wins if it is ever populated, but a
+  reader built on it alone waits forever with every test green. Owner: *"Done is activation. The
+  date you receive the confirmation is the activation date."*
+- **⚠ AN UNRECOGNISED STATUS STAMPS NOTHING.** `Pending Vircle Activation` is a NON-EMPTY string, so
+  a presence check would mark an unusable wallet live on the path that decides where money goes.
+  `test_status_Pending_Vircle_Activation_activates_NOTHING` is the bite; do not relax the comparison.
+- **⚠ THE RELAY SHEET'S "Activated On" (column I) IS NOW WRITTEN BY US**, off `vircle_activated_at`.
+  It was hand-typed and was the ONLY activation signal we had. **The database is the single home;
+  the sheet is its mirror.** The owner's own notes must live to the RIGHT of column I — everything
+  up to it is cleared and rewritten every 15 minutes by `halatuju-vircle-sheet-sync`.
+- **⚠ THE 48h CHASER IS DELETED** (owner ruling): two commands, two cron doors, the email, the CSV,
+  the sheet→DB sync, four `VIRCLE_ACTIVATION_*` settings — ~500 lines. Its Cloud Scheduler job
+  `halatuju-vircle-activation-request` is **PAUSED**. **Accepted with it: nothing nags Vircle any
+  more** — their webhook reports an activation, it does not ask for one (**TD-244**; the fix when it
+  bites is a REPORT on the database, never a resurrected email reading a spreadsheet).
+- **⚠ WE READ `Principal Wallet ID` AND NEVER `Supp Wallet ID`** (owner): money is only ever paid
+  into the principal, the parent passes it on, and the spending reports key on the principal too.
+  Their export has 2 rows with a supplementary id; both also carry a principal.
+- **`_parse_activated_date` SURVIVES** (its one caller is `vircle_airtable.apply_update`), and so
+  does `sheets.read_sheet_values` — the spending import uses it.
+
+**LIVE DATA CORRECTED THE SAME DAY, both on written evidence:**
+- The **six** activated on 11 Sep stamped at their rows' arrival time (10:02 UTC).
+- **Rishvin (#114) `8000400181851` → `8000400183456`.** The old id was his **FATHER's** account,
+  keyed in by hand because he could not register with his own IC; he has since opened his own and
+  had the father's suspended. BrightPath confirmed with him that all **RM600** (Jul/Aug/Sep) reached
+  him. ⚠ **Payment-run snapshots keep the old id** — that is the historical record, leave it.
+
+**▶ OPEN WITH VIRCLE (Kulaly is raising it):** **four rows in their Recipients table carry another
+student's MYKAD** — Ambbrishbusen, Bhavatharani, Darshan, Divashini A/P Murugan. Names and wallets
+are right; the IC cell is not. **We match on IC**, so those rows point at the wrong student, and
+only the never-overwrite guard stands between that and a wallet on the wrong record.
+
+**▶ OPEN, OWNER:** **Lina (#144)** is the last funded student with no wallet — she has never
+confirmed her Vircle setup. And **eyeball column I** of the relay sheet once: the six should read
+11/09/2026, every pre-existing date must be unchanged, Lina blank. **We no longer read that sheet
+back, so that check is a human's.**
+
+**▶ NEXT:** nothing queued. Standing debt: TD-244, TD-242, TD-240, TD-239, TD-238.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-11, after the spending page was reorganised — S6)
 
 **✅ TD-241 SHIPPED — `main` at `e5501cd6`, VERIFIED LIVE 2026-09-11.** Serving
 **halatuju-api-01034-694** / **halatuju-web-00881-c47**; both builds SUCCESS (BY BUILD ID: api

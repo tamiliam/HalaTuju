@@ -290,7 +290,7 @@ class TestConfirm(_Base):
 
 # ── The relay sheet (what we hand Vircle) ────────────────────────────────────
 # Columns: 0 Application · 1 Name · 2 NRIC · 3 Email · 4 Emailed on · 5 Confirmed on · 6 Mobile ·
-#          7 eWallet ID (the owner keeps their own columns, e.g. "Activated On", to the RIGHT)
+#          7 eWallet ID · 8 Activated On (the owner's own notes live to the RIGHT of these)
 @override_settings(VIRCLE_SETUP_ENABLED=True)
 class TestRelayRows(_Base):
     def test_confirmed_row_carries_the_mobile_and_both_dates(self):
@@ -337,6 +337,21 @@ class TestRelayRows(_Base):
         app = self._make('u9')
         row = relay_rows([app])[0]
         self.assertEqual(row[7], '')
+
+    def test_activated_on_is_written_from_the_database(self):
+        # Owner, 2026-09-11: the sheet's column I stops being hand-typed and becomes a mirror of
+        # `vircle_activated_at`, which Vircle's webhook now fills. Written by us, read by nobody.
+        from datetime import datetime
+        app = self._make('u11')
+        app.vircle_activated_at = timezone.make_aware(
+            datetime(2026, 9, 11, 18, 2), timezone.get_current_timezone())
+        app.save(update_fields=['vircle_activated_at'])
+        self.assertEqual(relay_rows([app])[0][8], '11/09/2026')
+
+    def test_activated_on_is_blank_until_vircle_says_so(self):
+        # Blank must keep meaning "not reported live", never "we forgot to write it".
+        app = self._make('u12')
+        self.assertEqual(relay_rows([app])[0][8], '')
 
     def test_header_width_matches_row_width(self):
         # The clear range in write_relay_sheet is computed from len(_HEADER); if the header and the
@@ -512,202 +527,8 @@ class TestInstallEmail(TestCase):
         self.assertNotIn('verif', VIRCLE_INSTALL_BODIES['en'].lower())
 
 
-# ── 48h activation request (installed but not activated → email Vircle) ───────
-_ACT_HEADER = ['Application', 'Name', 'NRIC', 'Email', 'Emailed on', 'Confirmed on',
-               'Mobile registered with Vircle', 'eWallet ID', 'Activated On']
-
-
-class TestPendingActivation(TestCase):
-    def _sheet(self):
-        return [
-            _ACT_HEADER,
-            ['1', 'ALICE', 'a', 'e', '28/06/2026', '29/06/2026', '+60123', '8000400175001', '30/06/2026'],  # activated
-            ['2', 'BOB', 'b', 'e', '28/06/2026', '29/06/2026', '+60124', '8000400175002', ''],              # pending
-            ['3', 'CARA', 'c', 'e', '', '', '', '', ''],                                                     # not installed
-            ['4', 'DEE', 'd', 'e', '28/06/2026', '29/06/2026', '+60125', '8000400175003'],                  # pending (col I trimmed off)
-        ]
-
-    @mock.patch('apps.scholarship.sheets.read_sheet_values')
-    def test_only_installed_and_not_activated_rows_are_returned(self, read):
-        from apps.scholarship import vircle
-        read.return_value = self._sheet()
-        rows = vircle.pending_activation_rows()
-        self.assertEqual([r['name'] for r in rows], ['BOB', 'DEE'])   # ALICE activated, CARA not installed
-        bob = rows[0]
-        self.assertEqual(bob['ewallet'], '8000400175002')
-        self.assertEqual(bob['phone'], '+60124')
-        self.assertEqual(bob['installed_on'], '29/06/2026')          # Installed Date <- Confirmed on
-
-    @mock.patch('apps.scholarship.sheets.read_sheet_values', return_value=[])
-    def test_unreadable_sheet_returns_empty(self, _read):
-        from apps.scholarship import vircle
-        self.assertEqual(vircle.pending_activation_rows(), [])
-
-    def test_csv_has_owner_headers_and_excel_safe_ewallet(self):
-        from apps.scholarship import vircle
-        text = vircle.activation_csv_text([
-            {'name': 'BOB', 'nric': 'b', 'installed_on': '29/06/2026', 'phone': '+60124',
-             'ewallet': '8000400175002'}])
-        self.assertIn('Name,NRIC,Installed Date,Phone number,eWallet ID', text)
-        self.assertIn('8000400175002', text)          # the id survives
-        # csv quotes the ="…" field and doubles the inner quotes → Excel keeps it as text
-        self.assertIn('=""8000400175002""', text)
-
-    def test_csv_carries_a_blank_correction_column(self):
-        """Vircle fills this in rather than composing a reply — see activation_csv_text."""
-        from apps.scholarship import vircle
-        text = vircle.activation_csv_text([
-            {'name': 'BOB', 'nric': 'b', 'installed_on': '29/06/2026', 'phone': '+60124',
-             'ewallet': '8000400175002'}])
-        self.assertIn('Correct eWallet ID (if different)', text)
-        # the data row ends with an empty cell for them to complete
-        data_row = [ln for ln in text.splitlines() if 'BOB' in ln][0]
-        self.assertTrue(data_row.endswith(','), data_row)
-
-
-class TestActivationEmail(TestCase):
-    ROWS = [{'name': 'BOB', 'nric': 'b', 'installed_on': '29/06/2026', 'phone': '+60124',
-             'ewallet': '8000400175002'}]
-
-    @override_settings(VIRCLE_ACTIVATION_EMAIL='vircle@example.com',
-                       VIRCLE_ACTIVATION_BCC='ref@example.com')
-    def test_sends_with_csv_and_bcc(self):
-        from django.core import mail
-        from apps.scholarship.emails import send_vircle_activation_email
-        mail.outbox = []
-        self.assertTrue(send_vircle_activation_email(self.ROWS))
-        msg = mail.outbox[0]
-        self.assertEqual(msg.to, ['vircle@example.com'])
-        self.assertEqual(msg.bcc, ['ref@example.com'])
-        self.assertIn('activation & id confirmation', msg.subject.lower())
-        self.assertEqual(len(msg.attachments), 1)                    # the CSV
-        self.assertIn('8000400175002', msg.attachments[0][1])
-
-    @override_settings(VIRCLE_ACTIVATION_EMAIL='vircle@example.com')
-    def test_body_asks_vircle_to_confirm_the_id_and_states_why(self):
-        """This email is NOT in the 113-email golden set, so it has no snapshot protection — a
-        2026-07-24 refactor left `{month}` unrendered in a sibling and the goldens stayed green.
-        Assert the ask, the reason, and that NOTHING is left unrendered."""
-        from django.core import mail
-        from apps.scholarship.emails import send_vircle_activation_email
-        mail.outbox = []
-        self.assertTrue(send_vircle_activation_email(self.ROWS))
-        body = mail.outbox[0].body
-        self.assertIn('CONFIRM the eWallet ID we hold is correct', body)
-        self.assertIn('payment instruction', body)            # states the consequence
-        self.assertIn('DuitNow Transfer number', body)        # names the actual mistake
-        self.assertIn('ACTIVATE the account, if it is not already active', body)
-        self.assertNotIn('{', body)                           # no placeholder survived
-        self.assertNotIn('}', body)
-
-    @override_settings(VIRCLE_ACTIVATION_EMAIL='vircle@example.com')
-    def test_body_does_not_assert_the_account_is_inactive(self):
-        """The guide tells students to WhatsApp Vircle themselves, so by the time this sends the
-        account may already be active — we cannot know. Claiming otherwise misleads the reader."""
-        from django.core import mail
-        from apps.scholarship.emails import send_vircle_activation_email
-        mail.outbox = []
-        self.assertTrue(send_vircle_activation_email(self.ROWS))
-        body = mail.outbox[0].body
-        self.assertNotIn('are not yet activated', body)
-        self.assertIn('may', body.split('For each student')[0])   # hedged, not asserted
-
-    @override_settings(VIRCLE_ACTIVATION_EMAIL='', VIRCLE_PAYMENTS_EMAIL='gokula@vircle.com')
-    def test_recipient_falls_back_to_payments_contact(self):
-        from django.core import mail
-        from apps.scholarship.emails import send_vircle_activation_email
-        mail.outbox = []
-        self.assertTrue(send_vircle_activation_email(self.ROWS))
-        self.assertEqual(mail.outbox[0].to, ['gokula@vircle.com'])
-
-    @override_settings(VIRCLE_ACTIVATION_EMAIL='vircle@example.com')
-    def test_empty_rows_send_nothing(self):
-        from django.core import mail
-        from apps.scholarship.emails import send_vircle_activation_email
-        mail.outbox = []
-        self.assertFalse(send_vircle_activation_email([]))
-        self.assertEqual(len(mail.outbox), 0)
-
-
-# ── Activation sync: relay-sheet 'Activated On' → vircle_activated_at (advisory) ──
-# The relay sheet is the ONLY activation signal (Vircle reports nothing back). This mirrors its
-# manual 'Activated On' column into the DB so the payment surface can see it. One-way, set-if-null.
-_ACT_HEADER = ['Application', 'Name', 'NRIC', 'Email', 'Emailed on', 'Confirmed on',
-               'Mobile registered with Vircle', 'eWallet ID', 'Activated On']
-
-
-def _act_sheet(rows):
-    return [_ACT_HEADER] + rows
-
-
-class TestActivationSync(_Base):
-    def _app(self, uid, vircle_id):
-        app = self._make(uid)
-        app.vircle_id = vircle_id
-        app.save(update_fields=['vircle_id'])
-        return app
-
-    @mock.patch('apps.scholarship.sheets.read_sheet_values')
-    def test_activated_rows_only_returns_rows_with_activated_on(self, m):
-        m.return_value = _act_sheet([
-            ['1', 'A', '', '', '', '', '', '8000400175001', '05/07/2026'],  # activated
-            ['2', 'B', '', '', '', '', '', '8000400175002', ''],            # installed, not activated
-            ['3', 'C', '', '', '', '', '', '', '05/07/2026'],               # no eWallet id → skipped
-        ])
-        from apps.scholarship import vircle
-        rows = vircle.activated_rows()
-        self.assertEqual([r['ewallet'] for r in rows], ['8000400175001'])
-        self.assertEqual(rows[0]['activated_raw'], '05/07/2026')
-
-    @mock.patch('apps.scholarship.sheets.read_sheet_values')
-    def test_sync_stamps_the_matching_application_with_the_parsed_date(self, m):
-        app = self._app('u1', '8000400175001')
-        m.return_value = _act_sheet([['1', 'A', '', '', '', '', '', '8000400175001', '05/07/2026']])
-        from apps.scholarship import vircle
-        self.assertEqual(vircle.sync_activation_status(), 1)
-        app.refresh_from_db()
-        self.assertIsNotNone(app.vircle_activated_at)
-        self.assertEqual(timezone.localtime(app.vircle_activated_at).strftime('%Y-%m-%d'), '2026-07-05')
-
-    @mock.patch('apps.scholarship.sheets.read_sheet_values')
-    def test_sync_is_set_if_null_never_overwrites(self, m):
-        app = self._app('u1', '8000400175001')
-        m.return_value = _act_sheet([['1', 'A', '', '', '', '', '', '8000400175001', '05/07/2026']])
-        from apps.scholarship import vircle
-        self.assertEqual(vircle.sync_activation_status(), 1)
-        app.refresh_from_db()
-        first = app.vircle_activated_at
-        # A later sheet edit shows a different date; set-if-null must NOT overwrite, and re-run is a no-op.
-        m.return_value = _act_sheet([['1', 'A', '', '', '', '', '', '8000400175001', '09/09/2026']])
-        self.assertEqual(vircle.sync_activation_status(), 0)
-        app.refresh_from_db()
-        self.assertEqual(app.vircle_activated_at, first)
-
-    @mock.patch('apps.scholarship.sheets.read_sheet_values')
-    def test_not_yet_activated_stays_null(self, m):
-        app = self._app('u1', '8000400175002')
-        m.return_value = _act_sheet([['2', 'B', '', '', '', '', '', '8000400175002', '']])
-        from apps.scholarship import vircle
-        self.assertEqual(vircle.sync_activation_status(), 0)
-        app.refresh_from_db()
-        self.assertIsNone(app.vircle_activated_at)
-
-    @mock.patch('apps.scholarship.sheets.read_sheet_values')
-    def test_unparseable_date_still_counts_as_activated(self, m):
-        # Presence is the signal; an owner-typed value we can't parse still means "activated".
-        app = self._app('u1', '8000400175003')
-        m.return_value = _act_sheet([['3', 'C', '', '', '', '', '', '8000400175003', 'done ✔']])
-        from apps.scholarship import vircle
-        self.assertEqual(vircle.sync_activation_status(), 1)
-        app.refresh_from_db()
-        self.assertIsNotNone(app.vircle_activated_at)
-
-    @mock.patch('apps.scholarship.sheets.read_sheet_values')
-    def test_unreadable_sheet_is_a_safe_no_op(self, m):
-        app = self._app('u1', '8000400175004')
-        m.return_value = []
-        from apps.scholarship import vircle
-        self.assertEqual(vircle.activated_rows(), [])
-        self.assertEqual(vircle.sync_activation_status(), 0)
-        app.refresh_from_db()
-        self.assertIsNone(app.vircle_activated_at)
+# ── The 48h activation request is GONE (owner, 2026-09-11) ────────────────────
+# It read the relay sheet back to find accounts Vircle had not switched on, tracked by the
+# owner's hand-typed 'Activated On' column. Vircle's webhook reports activation itself now, so
+# the chaser, its CSV, its email and the sheet→DB sync were all deleted rather than left to rot
+# beside a column the system writes. Activation coverage lives in test_vircle_airtable.py.
