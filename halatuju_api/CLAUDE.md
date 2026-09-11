@@ -552,9 +552,19 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-11, after the spending page was reorganised — S6)
 
-**✅ BUILT AND FULLY TESTED. ⚠ NOT DEPLOYED — the owner has not pushed it.** Branch
-`feat/spending-tabs`. **No migration.** Gates: **6419 pytest**, **2084 jest**, lint clean,
-`next build` succeeds.
+**✅ SHIPPED AND DEPLOYED 2026-09-11 — VERIFIED LIVE.** `main` at **`da883e10`** (a merge: the
+spending tabs plus another agent's verdict-engine-version sprint, already on `main`). **No
+migration of its own.** BOTH Cloud Builds SUCCESS (waited on BY BUILD ID: web `f6cd46a1`, api
+`8f466db3`). Serving **halatuju-api-01029-plr** / **halatuju-web-00878-xd2**, read from
+`status.latestReadyRevisionName`. `halatuju.xyz` 200 (`Server: Google Frontend`);
+`/admin/spending` 200; the endpoint 401s unauthenticated; **no ERROR logs on either service**.
+Gates on the MERGED tree: **6433 pytest** · **2088 jest** · `makemigrations --check` clean ·
+`next build` exit 0.
+
+⚠ **DEPLOYED FROM THE WORKTREE, WITHOUT EVER CHECKING `main` OUT** — `git push origin HEAD:main`
+from `.worktrees/spending-ingest`, because other agents were working and `main` is shared by every
+worktree. The first attempt merged in the main checkout, was aborted with `git merge --abort`, and
+left that checkout exactly as found. **Use this route whenever another agent may be active.**
 
 **WHAT CHANGED.** The owner opened `/admin/spending` as super admin and was refused; they also
 asked for three tabs, paging and sortable headings.
