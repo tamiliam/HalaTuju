@@ -1,7 +1,7 @@
 import {
   formatMyr, formatPct, formatHours, orderedCostSources, costCaveats,
   hasDiscount, unbilledByOrg, rateGrid, rateMonthOptions, isCostWarning,
-  COST_SOURCE_ORDER, RATE_CATEGORIES, RATE_KINDS, RATE_MONTHS_BACK,
+  COST_SOURCE_ORDER, RATE_SLOTS, RATE_MONTHS_BACK, blockedKey,
 } from '@/lib/billingCosts'
 import type {
   BillingCharge, BillingCostsPayload, BillingRateRow, PlatformCostBlock,
@@ -150,10 +150,37 @@ describe('unbilled request work', () => {
 })
 
 describe('the rate grid', () => {
-  test('every category and kind gets a row, even ones nobody has set', () => {
+  test('every rate that EXISTS gets a row, even ones nobody has set', () => {
     const grid = rateGrid([])
-    expect(grid).toHaveLength(RATE_CATEGORIES.length * RATE_KINDS.length)
+    expect(grid).toHaveLength(RATE_SLOTS.length)
     expect(grid.every((r) => r.current === null)).toBe(true)
+  })
+
+  test('⚠ it offers only the FOUR rates the charge actually reads', () => {
+    // The first version drew every category crossed with every kind, so it offered
+    // "Infrastructure - rate per hour" and "Metered usage - rate per hour". You do not bill
+    // infrastructure by the hour, and `charge_for` never read either: the two cost lines take a
+    // MARGIN only, and the hourly rate belongs to development alone. Two boxes that could never
+    // do anything, beside four that decide what every tenant pays.
+    expect(rateGrid([]).map((r) => `${r.category}.${r.kind}`)).toEqual([
+      'infrastructure.margin_pct',
+      'metered.margin_pct',
+      'development.margin_pct',
+      'development.hourly_rate',
+    ])
+  })
+
+  test('no category is billed by the hour except development', () => {
+    const hourly = RATE_SLOTS.filter((s) => s.kind === 'hourly_rate')
+    expect(hourly.map((s) => s.category)).toEqual(['development'])
+  })
+
+  test('each box gets its OWN unset message, keyed by category AND kind', () => {
+    // Keyed by category alone, the two hourly-rate cards showed the margin's sentence and said
+    // something untrue about themselves.
+    const keys = rateGrid([]).map((r) => blockedKey(r.category, r.kind))
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(keys).toContain('admin.billingRates.blocked.development_hourly_rate')
   })
 
   test('an unset hourly rate is present and null, NOT skipped', () => {

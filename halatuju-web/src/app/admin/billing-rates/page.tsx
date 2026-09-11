@@ -6,7 +6,7 @@ import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { getBillingRates, setBillingRate, type BillingRateRow } from '@/lib/admin-api'
 import {
-  rateGrid, formatMyr, formatPct, rateMonthOptions, RATE_MONTHS_BACK,
+  rateGrid, formatMyr, formatPct, rateMonthOptions, RATE_MONTHS_BACK, blockedKey,
 } from '@/lib/billingCosts'
 
 /**
@@ -94,7 +94,7 @@ function RateCard({
         </p>
       )}
       {!current && (
-        <p className="mt-2 text-xs text-caution-700">{t(`admin.billingRates.blocked.${category}`)}</p>
+        <p className="mt-2 text-xs text-caution-700">{t(blockedKey(category, kind))}</p>
       )}
 
       <div className="mt-4 grid gap-2 sm:grid-cols-[7rem_10rem_1fr_auto] sm:items-end">
@@ -131,10 +131,15 @@ function RateCard({
             aria-label={t('admin.billingRates.why')}
           />
         </label>
+        {/* ⚠ GREY WHEN THERE IS NOTHING TO SAVE, not a faded blue (owner, 2026-09-11). A
+            40%-opacity primary button still reads as a live button that is merely quiet — the
+            owner looked at a screen of them and could not tell which one would do anything. A
+            disabled control has to look like a different KIND of thing, not a dimmer one. */}
         <button
           type="button"
           disabled={saving || value.trim() === ''}
-          className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium bg-primary-600 text-white
+            disabled:bg-ground-200 disabled:text-ground-400 disabled:cursor-not-allowed"
           onClick={() => onSave(category, kind, value.trim(), month, note.trim())}
         >
           {t('admin.billingRates.save')}

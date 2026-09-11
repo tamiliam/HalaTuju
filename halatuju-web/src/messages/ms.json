@@ -3144,9 +3144,10 @@
         "hourly_rate": "Kadar sejam (RM)"
       },
       "blocked": {
-        "infrastructure": "Selagi ini belum ditetapkan, tiada margin ditambah pada kos infrastruktur.",
-        "metered": "Selagi ini belum ditetapkan, tiada margin ditambah pada penggunaan bermeter.",
-        "development": "Selagi ini belum ditetapkan, jam pembangunan langsung tidak boleh dicaj. Bil akan menyatakannya, bukan memaparkan sifar."
+        "infrastructure_margin_pct": "Selagi ini belum ditetapkan, tiada margin ditambah pada kos infrastruktur, dan baris itu tidak muncul pada bil.",
+        "metered_margin_pct": "Selagi ini belum ditetapkan, penggunaan bermeter langsung tidak dicaj. Bil akan menyatakannya, bukan memaparkan sifar.",
+        "development_margin_pct": "Selagi ini belum ditetapkan, jam pembangunan langsung tidak boleh dicaj, walaupun ada kadar sejam.",
+        "development_hourly_rate": "Selagi ini belum ditetapkan, jam pembangunan langsung tidak boleh dicaj. Bil akan menyatakannya, bukan memaparkan sifar."
       }
     },
     "table": {

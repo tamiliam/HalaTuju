@@ -42,11 +42,32 @@ export function rateMonthOptions(today: Date): string[] {
   return out
 }
 
-/** The three rate categories, in the order the rates screen lists them. */
+/** The three rate categories, and the two kinds a rate can be. The vocabulary, not the screen —
+ *  see `RATE_SLOTS` for which COMBINATIONS actually exist. */
 export const RATE_CATEGORIES: string[] = ['infrastructure', 'metered', 'development']
-
-/** The two kinds a rate can be. A category may carry either, both, or neither. */
 export const RATE_KINDS: string[] = ['margin_pct', 'hourly_rate']
+
+/**
+ * The rates that actually exist, in the order the screen lists them.
+ *
+ * ⚠ **NOT every category crossed with every kind, and that was a real bug** (owner, 2026-09-11:
+ * *"I can't type the rates and margins as long they remain unbuilt"* — then, on seeing the page,
+ * that three of its six boxes made no sense). The first version drew the full 3 × 2 product, so
+ * it offered **Infrastructure — rate per hour** and **Metered usage — rate per hour**. You do not
+ * bill infrastructure by the hour. Nothing in `platform_cost.charge_for` ever read them: the two
+ * cost lines take a MARGIN only (`apply_margin`), and the hourly rate belongs to development
+ * alone (`development_charge`).
+ *
+ * Two boxes that could never do anything, sitting beside four that decide what every tenant pays.
+ * The list is now explicit, so adding a rate is a deliberate edit rather than a side effect of
+ * arithmetic.
+ */
+export const RATE_SLOTS: { category: string; kind: string }[] = [
+  { category: 'infrastructure', kind: 'margin_pct' },
+  { category: 'metered', kind: 'margin_pct' },
+  { category: 'development', kind: 'margin_pct' },
+  { category: 'development', kind: 'hourly_rate' },
+]
 
 /** Ringgit for display: "RM1,800.00". Null/blank becomes an em dash, NEVER "RM0.00" — a figure
  *  we do not have and a figure that is zero are different claims, and only one of them is safe
@@ -187,21 +208,26 @@ export function rateGrid(rows: BillingRateRow[] | null | undefined): {
   history: BillingRateRow[]
 }[] {
   const all = rows || []
-  const out: { category: string; kind: string; current: BillingRateRow | null; history: BillingRateRow[] }[] = []
-  for (const category of RATE_CATEGORIES) {
-    for (const kind of RATE_KINDS) {
-      // Newest first. `effective_from` is 'YYYY-MM-DD', so a plain string compare is a date
-      // compare — no Date objects, and therefore no timezone to get wrong.
-      const matching = all
-        .filter((r) => r.category === category && r.kind === kind)
-        .sort((a, b) => b.effective_from.localeCompare(a.effective_from))
-      out.push({
-        category,
-        kind,
-        current: matching[0] || null,
-        history: matching.slice(1),
-      })
+  return RATE_SLOTS.map(({ category, kind }) => {
+    // Newest first. `effective_from` is 'YYYY-MM-DD', so a plain string compare is a date
+    // compare — no Date objects, and therefore no timezone to get wrong.
+    const matching = all
+      .filter((r) => r.category === category && r.kind === kind)
+      .sort((a, b) => b.effective_from.localeCompare(a.effective_from))
+    return {
+      category,
+      kind,
+      current: matching[0] || null,
+      history: matching.slice(1),
     }
-  }
-  return out
+  })
+}
+
+/** The i18n key for "what happens while this one is unset".
+ *
+ * ⚠ Keyed by category AND kind. The first version keyed it by category alone, so the two
+ * hourly-rate cards displayed the MARGIN's sentence and said something untrue about themselves.
+ * Every slot now has its own words. */
+export function blockedKey(category: string, kind: string): string {
+  return `admin.billingRates.blocked.${category}_${kind}`
 }
