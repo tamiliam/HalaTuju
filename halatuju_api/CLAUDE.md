@@ -552,6 +552,32 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-11, after the spending page was reorganised — S6)
 
+**✅ ROUND TWO ALSO SHIPPED — `main` at `d06a1f86`, VERIFIED LIVE 2026-09-11.** Serving
+**halatuju-api-01031-vhv** / **halatuju-web-00879-57l**; both builds SUCCESS (waited on BY BUILD
+ID: web `ff9ccb21`, api `9150af9d`); site 200, `/admin/spending` 200, **no ERROR logs**. Gates on
+the merged tree: **6442 pytest** · **2110 jest** · `makemigrations --check` clean · `next build`
+exit 0. **No migration.**
+
+Round two answered four owner follow-ups: **search + filters on every table**; **a count on each
+tab** (of the WHOLE list — the filtered count sits beside the search); **"Wallets to fix" moved to
+the Students tab**; and **"What the model decided recently" DELETED**. ⚠ That section was the
+shops table filtered to `ai`, rendered READ-ONLY beside a table that can be corrected — the owner
+asked what action it expected and there wasn't one. `decided_at` is a sortable column now and
+`decided_by` is a filter. **Do not reintroduce it.**
+
+⚠ **A SILENT BITE FOUND A REAL GAP:** the list paged BEFORE filtering, which a four-row fixture
+cannot see (it fits one page). On the live 288 shops that is a first page with holes in it while
+the screen claims to show everything matching. **Any "do X then slice" test needs a fixture longer
+than a page, selecting rows on BOTH sides of the boundary** — second time in two sprints.
+
+**▶ NEXT = TD-241: move Payments AND Spending from ORGANISATION to PROGRAMME** (owner asked
+2026-09-11; the two move TOGETHER). ⚠ Not a menu change: Payments has `PaymentRun.programme` but
+its LIST does not filter by it and the page carries its own gift picker that would fight the
+breadcrumb; Spending has **no** programme link at all and reaches one only via
+`application__cohort__programme`. It touches money, so it is a sprint of its own.
+
+---
+
 **✅ SHIPPED AND DEPLOYED 2026-09-11 — VERIFIED LIVE.** `main` at **`da883e10`** (a merge: the
 spending tabs plus another agent's verdict-engine-version sprint, already on `main`). **No
 migration of its own.** BOTH Cloud Builds SUCCESS (waited on BY BUILD ID: web `f6cd46a1`, api
