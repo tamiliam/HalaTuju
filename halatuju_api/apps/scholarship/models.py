@@ -1113,6 +1113,18 @@ class ScholarshipApplication(models.Model):
         help_text="The four-fact verification verdict (build_verdict) captured when the "
                   "officer recorded their decision. List of {fact,status,evidence,unresolved}.",
     )
+    # ⚠ WHICH PREDICTOR PRODUCED THE SNAPSHOT ABOVE. Without it the AI Reliability card averages
+    # every generation of `verdict_engine` as if it were one model — 88 pairs were banked between
+    # 2026-06-17 and 2026-09-01 with no way to tell, and the engine changed on 2026-09-10.
+    # `verdict_engine.VERDICT_ENGINE_VERSION` at capture; `PRE_VERSIONING` for rows that predate it.
+    # A SIBLING COLUMN rather than a key inside `ai_verdict_snapshot`: every reader of that field
+    # (audit._snapshot_status_map, compute_overrides, the serializer, the cockpit) iterates it as a
+    # LIST of facts, so a wrapper would be a data migration plus four call sites for no gain.
+    ai_verdict_engine_version = models.CharField(
+        max_length=32, blank=True, default='',
+        help_text="The verdict_engine version that produced ai_verdict_snapshot. "
+                  "'pre-versioning' = decided before this was recorded. Empty = never decided.",
+    )
     officer_verdict = models.JSONField(
         default=dict, blank=True,
         help_text="The officer's own four-fact decision at the cockpit: "

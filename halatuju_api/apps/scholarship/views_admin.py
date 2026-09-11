@@ -3156,15 +3156,19 @@ class AdminRecordVerdictView(_AdminBase):
                  'code': 'verdict_incomplete', 'facts': incomplete},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        from .verdict_engine import build_verdict
+        # ⚠ STAMP THE PREDICTOR WITH ITS SNAPSHOT, IN THE SAME BREATH. The two are one fact: what
+        # the AI said, and which engine said it. Splitting them (stamping elsewhere, or later)
+        # re-creates the gap this exists to close — a snapshot whose generation is unknowable.
+        from .verdict_engine import VERDICT_ENGINE_VERSION
         app.ai_verdict_snapshot = build_verdict(app)
+        app.ai_verdict_engine_version = VERDICT_ENGINE_VERSION
         app.officer_verdict = officer_verdict
         app.verdict_reason = (request.data.get('reason') or '').strip()
         app.verdict_decided_by = getattr(admin, 'email', '') or ''
         app.verdict_decided_at = timezone.now()
         verdict_fields = [
-            'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
-            'verdict_decided_by', 'verdict_decided_at',
+            'ai_verdict_snapshot', 'ai_verdict_engine_version', 'officer_verdict',
+            'verdict_reason', 'verdict_decided_by', 'verdict_decided_at',
         ]
 
         # Standardised assistance (owner decision 2026-06-29): the amount is fixed by the
@@ -3493,13 +3497,16 @@ class AdminVerdictMetricsView(_AdminBase):
         # org-fence: _org_scoped applied below (fences the metrics roll-up).
         qs = (ScholarshipApplication.objects
               .filter(verdict_decided_at__isnull=False)
-              .only('ai_verdict_snapshot', 'officer_verdict', 'cohort_id'))
+              .only('ai_verdict_snapshot', 'ai_verdict_engine_version',
+                    'officer_verdict', 'cohort_id'))
         qs = self._org_scoped(qs, admin)   # super global
         cohort = request.query_params.get('cohort')
         if cohort:
             qs = qs.filter(cohort_id=cohort)
-        pairs = ((a.ai_verdict_snapshot, a.officer_verdict) for a in qs)
-        return Response(override_metrics(pairs))
+        # ⚠ TRIPLES, NOT PAIRS — the engine version rides with the prediction it produced, so the
+        # roll-up can say which generations it is averaging (`engine_versions` in the response).
+        rows = ((a.ai_verdict_snapshot, a.officer_verdict, a.ai_verdict_engine_version) for a in qs)
+        return Response(override_metrics(rows))
 
 
 class AdminAssignReviewerView(_AdminBase):

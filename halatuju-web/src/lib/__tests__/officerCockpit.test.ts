@@ -1158,6 +1158,35 @@ describe('verdictReliability (the scorekeeper)', () => {
     expect(r.perFact).toHaveLength(4)
     expect(r.perFact.every((f) => f.pct === 0 && f.decided === 0)).toBe(true)
   })
+
+  // ⚠⚠ THE SCORECARD MUST SAY WHICH PREDICTORS IT AVERAGED. `verdict_engine` changes — it changed
+  // on 2026-09-10 — and until 2026-09-11 nothing recorded which generation produced a prediction,
+  // so this figure blended them invisibly. It still blends them (owner: surface the mix now, split
+  // per version once there is enough under each); `engineVersions` is what makes that legible.
+  const base = { applications: 3, fact_decisions: 12, overrides: 2, override_rate: 0.1667, per_fact: {} }
+
+  it('carries every engine version through, sorted', () => {
+    const r = verdictReliability({ ...base, engine_versions: { '2026-09-11.1': 1, 'pre-versioning': 2 } })
+    expect(r.engineVersions).toEqual(['2026-09-11.1', 'pre-versioning'])
+  })
+
+  it('drops the empty key — an absence of provenance is not a version', () => {
+    // '' means a caller did not say which engine ran. Listing it would invent a generation.
+    const r = verdictReliability({ ...base, engine_versions: { '': 5, '2026-09-11.1': 1 } })
+    expect(r.engineVersions).toEqual(['2026-09-11.1'])
+  })
+
+  it('is empty when the server sends no versions at all', () => {
+    // An older api build: the card must simply say nothing rather than crash or guess.
+    expect(verdictReliability(base).engineVersions).toEqual([])
+  })
+
+  it('a single version is reported, so the card can stay quiet on purpose', () => {
+    // The card only warns when length > 1. One version must still come through as one, not zero —
+    // otherwise "quiet" would mean two different things.
+    const r = verdictReliability({ ...base, engine_versions: { '2026-09-11.1': 3 } })
+    expect(r.engineVersions).toEqual(['2026-09-11.1'])
+  })
 })
 
 // ── Officer-decision gates (lifted from page.tsx — TD audit 2026-06-14) ─────────

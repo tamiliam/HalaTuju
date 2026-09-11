@@ -59,6 +59,40 @@ review queue for exactly that.
 **Revisit if:** the owner asks for the tab to hold the "Shops to check" number instead, in which
 case the header figure and the tab should be computed by ONE function rather than two.
 
+## The verdict engine carries its own version, and the scorecard says which ones it blended — 2026-09-11
+
+**Decision:** `verdict_engine.VERDICT_ENGINE_VERSION` is stamped into a new column
+`ScholarshipApplication.ai_verdict_engine_version` at the moment `ai_verdict_snapshot` is captured.
+`audit.override_metrics` returns `engine_versions: {version: applications}`; the AI Reliability
+card discloses the mix when it spans more than one. Rows decided before the column exists are
+labelled `pre-versioning` by a backfill. **The headline rate remains blended.**
+
+**Alternatives considered:** (a) put the version inside `ai_verdict_snapshot` by turning the list
+into `{version, facts}`; (b) append a pseudo-fact carrying the version; (c) split the whole roll-up
+per version instead of only disclosing the mix; (d) re-run `build_verdict` over the 88 historical
+rows so they all carry the current engine; (e) register the version in `halatuju.ai_registry`.
+
+**Rationale:** (a) and (b) both fight the four existing readers that iterate the snapshot as a list
+of facts — a data migration and four call sites, for a value that is not a fact. (c) is the right
+end state and is **deferred by the owner** (*"A now, and B in future"*): with 88 decisions under
+`pre-versioning` and a handful under anything newer, per-version rates would be noise for months,
+while the response shape and the card would both have to change today. (d) is the dangerous one —
+a snapshot is the historical record of what the AI asserted when the officer decided, so
+regenerating it would replace the evidence with today's answer and destroy the only basis the
+scorecard has; a test now asserts the backfill leaves snapshots byte-identical. (e) misreads what
+the registry is: it answers *which LLM a job would call right now* and states of itself that it
+RESOLVES, NEVER RECORDS — while this engine calls no model at all and needs a value recorded ONTO
+the row so a past prediction can still say which logic produced it.
+
+**Trade-offs stated plainly:** the reliability figure still averages predictors, and will keep
+doing so until (c) lands. What changes today is that a reader can SEE it. A disclosure is weaker
+than a split; it is also honest, and it is available immediately rather than after months of
+accumulating comparable decisions.
+
+**Revisit when:** a second engine version has enough decided applications to compare — then split
+`override_metrics` per version (alternative (c)) and let the card show a trend rather than a
+caveat.
+
 
 ## An organisation may NOT choose its own AI model — 2026-09-11
 **Decision:** which AI version a job runs on stays a PLATFORM setting. `halatuju/ai_registry.py`

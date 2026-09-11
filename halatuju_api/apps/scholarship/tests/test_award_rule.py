@@ -198,3 +198,22 @@ class TestAutoApplyOnVerdict(TestCase):
         data = AdminApplicationDetailSerializer(app).data
         self.assertEqual(data['proposed_award_amount'], '2000')
         self.assertEqual(data['award_disqualifier'], 'offer_not_official')
+
+
+    def test_the_engine_version_is_stamped_with_the_snapshot(self):
+        """⚠ WHAT THE AI SAID AND WHICH ENGINE SAID IT ARE ONE FACT, written in one breath.
+
+        Before 2026-09-11 the snapshot was stored and its generation was not, so the AI Reliability
+        roll-up averaged every version of `verdict_engine` as if it were one model (88 pairs, and
+        the engine changed on 2026-09-10). This is the assertion that the gap stays closed.
+        """
+        from apps.scholarship.verdict_engine import VERDICT_ENGINE_VERSION
+        app = self._app_assigned('stpm', 'ver1')
+        self.assertEqual(app.ai_verdict_engine_version, '')   # nothing decided yet
+        r = self._record(app, 'accept')
+        self.assertEqual(r.status_code, 200, r.content)
+        app.refresh_from_db()
+        self.assertEqual(app.ai_verdict_engine_version, VERDICT_ENGINE_VERSION)
+        # ⚠ And it rides WITH a snapshot — a version on an empty snapshot would be a label with
+        # nothing under it, which is worse than no label.
+        self.assertTrue(app.ai_verdict_snapshot)

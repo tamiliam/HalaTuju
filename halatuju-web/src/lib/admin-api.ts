@@ -1267,6 +1267,9 @@ export interface VerdictMetrics {
   overrides: number
   override_rate: number
   per_fact: Record<string, { decided: number; overrides: number }>
+  /** Which verdict_engine generations this roll-up averaged, {version: applications}.
+   *  More than one key means the rate below BLENDS predictors — see the card. */
+  engine_versions?: Record<string, number>
 }
 
 async function adminMutate<T>(path: string, method: string, body: unknown, options?: ApiOptions): Promise<T> {

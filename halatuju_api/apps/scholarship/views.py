@@ -2066,6 +2066,7 @@ class CronRunView(APIView):
         'auto-sponsor': 'auto_sponsor',                # R6: hourly AutoSponsor allocation
         'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
         'rescore-pending': 'rescore_pending_decisions',  # on-demand after a policy change
+        'backfill-verdict-engine-version': 'backfill_verdict_engine_version',  # one-off: label the 88 predictions banked before verdict_engine had a version (DRY RUN unless --apply)
         'backup-documents': 'backup_documents',  # weekly: mirror the private doc bucket to GCS
         'refresh-reminder': 'send_refresh_reminder',  # annual: nudge the admin to refresh the course catalogue
         'course-data-check': 'course_data_check',  # weekly: READ-ONLY audit + link reachability for the dashboard

@@ -4279,7 +4279,8 @@
         "title": "Kebolehharapan AI",
         "subtitle": "Berapa kerap cadangan AI sepadan dengan keputusan penyemak — merentas {n} permohonan yang telah disemak.",
         "overall": "Keseluruhan",
-        "empty": "Belum ada permohonan yang disemak — kebolehharapan AI akan dipaparkan di sini setelah penyemak merekod keputusan mereka."
+        "empty": "Belum ada permohonan yang disemak — kebolehharapan AI akan dipaparkan di sini setelah penyemak merekod keputusan mereka.",
+        "mixedEngines": "Angka ini ialah purata bagi {n} versi enjin pemeriksaan ({versions}). Enjin telah berubah selepas sebahagian daripada keputusan ini direkodkan, jadi tafsirkan aliran ini dengan berhati-hati."
       },
       "verdict": {
         "title": "Ramalan AI",
