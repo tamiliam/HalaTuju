@@ -11159,3 +11159,64 @@ category. `other` takes a ground token because it is not a category — it is th
 **Trade-offs:** no tooltips, no animation, no legend component.
 
 **Revisit if:** a second chart appears, at which point a shared primitive beats a third copy.
+
+## Vircle's Status word is the activation signal, not their date column — 2026-09-12
+
+**Decision:** an inbound Recipients row whose `Status` reads `Done` marks the account activated,
+dated by the row's own `QR Activated Date` when present and otherwise by the moment the message
+arrives. Any other status — including `Pending Vircle Activation` — stamps nothing.
+
+**Alternatives considered:** (a) read `QR Activated Date` alone, the column that is actually named
+for this; (b) read their `Received date` column; (c) keep the owner typing the date by hand.
+
+**Rationale:** (a) is empty on all 64 rows of their own export — they never fill it, so a reader
+built on it waits forever and every test still passes. (b) is when Vircle received OUR push, not
+when they switched the account on. Owner ruling, 2026-09-12: *"Done is activation. The date you
+receive the confirmation is the activation date."*
+
+**Trade-offs:** the date is the arrival time, not Vircle's own moment of activation, so it can lag
+by up to however long their automation takes to fire. The field is advisory — it never gates a
+payment — so a day's drift costs nothing. The alias for `QR Activated Date` ships anyway, and wins
+when it is ever populated.
+
+**Revisit if:** Vircle starts filling `QR Activated Date`, or adds a third status word.
+
+## The relay sheet's "Activated On" column is now written by us — 2026-09-12
+
+**Decision:** column I of the Vircle relay sheet becomes a GENERATED column, mirroring
+`vircle_activated_at`. The sheet→database sync is deleted; the database is the single home.
+
+**Alternatives considered:** leave the column hand-typed and let the webhook write the database
+separately (two writers); stop writing the sheet at all.
+
+**Rationale:** the owner keeps the Drive file for now and asked for the date to appear in it. Two
+writers of one fact, one of them a human and one a webhook, is how a sheet starts disagreeing with
+the system that pays people — and this particular fact is read by the payment surface.
+
+**Trade-offs:** the owner loses a column they could annotate; their notes must live to the RIGHT of
+column I, because everything up to it is cleared and rewritten on each sync. We also lose the only
+code path that read that sheet BACK, so verifying the column now means opening it.
+
+**Revisit if:** the Drive file is discontinued (the owner's stated intention, "after a while"), at
+which point `relay_row` and the sync job go with it.
+
+## The 48-hour activation chaser is retired, and nothing replaces it — 2026-09-12
+
+**Decision:** delete the chaser — both commands, both cron doors, the email, the CSV builder, the
+sheet reads and the four `VIRCLE_ACTIVATION_*` settings — and pause its Cloud Scheduler job.
+
+**Alternatives considered:** switch the flag off and keep the code; keep the chaser but source its
+"not yet activated" list from the database instead of the sheet.
+
+**Rationale:** owner, 2026-09-12 — *"the 48 hour chaser is no longer necessary; we are communicating
+with Vircle via webhooks, to and fro"*. Keeping it alive beside a column the system now writes is
+the drift the direction flip exists to prevent: it would read our own generated cell and email
+Vircle about accounts already live.
+
+**Trade-offs, stated rather than hidden:** **nothing nags Vircle any more.** Their webhook REPORTS
+an activation; it does not ASK for one. If they sit on a student, no message goes out. What replaces
+it is visibility, not pressure — a wallet id with no activation date is now a plain query, which is
+the shape a report should read.
+
+**Revisit if:** a student's account stalls unnoticed. The fix then is a REPORT on the database, not
+a resurrected email that reads a spreadsheet.
