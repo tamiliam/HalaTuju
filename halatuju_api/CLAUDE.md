@@ -607,11 +607,35 @@ TD-239, TD-238.
 
 **⚠ ITS "NOT DEPLOYED" LINE IS STALE.** It shipped on 2026-09-11; `0156` is APPLIED on production (23:30 UTC) and both Cloud Builds succeeded. Read it for the DATA STEP and the bite-check findings, not for the deploy state.
 
-**⚠⚠ BUILT AND GATED, *NOT DEPLOYED*.** Branch **`feat/verdict-engine-version`**, worktree
-`.worktrees/verdict-version`. api + web. ⚠ **MIGRATION 0156** (one additive column) and
-⚠ **A DATA STEP** (see below). Gates: pytest **6426** · jest **2059** · tsc **24** (TD-221) ·
-lint **0** · i18n **5047 × 3** · `next build` exit 0 · `makemigrations --check` clean.
-**Two bite-checks, both bit.**
+**✅ DEPLOYED AND THE DATA STEP IS DONE, 2026-09-11.** `main` at **`8a02f8c7`**; BOTH builds
+SUCCESS on `8a02f8c` — waited on the push's OWN ids (api `25cc2cbb…`, web `67318328…`). Serving
+**halatuju-api-01028-ngv** / **halatuju-web-00877-bgv**, and the running **image digests were
+matched against this commit's tags** — other agents deploy this repo, so "the newest revision" is
+not evidence. Site 200; no api ERROR logs on the new revision.
+Gates: pytest **6429** · jest **2059** · tsc **24** (TD-221) · lint **0** · i18n **5047 × 3** ·
+`next build` exit 0 · `makemigrations --check` clean. **Three bite-checks, all bit.**
+
+**⚠⚠ I DEPLOYED CODE BEFORE THE MIGRATION, AND THAT WAS WRONG.** This project is **migrate-first
+via Supabase MCP**, then push. I pushed first, so for a window the live api referenced
+`ai_verdict_engine_version` and the column did not exist — `record-verdict` and `verdict-metrics`
+would both have 500'd. **Every signal said fine**: green builds, ready revisions, 200, empty error
+log. The log was empty only because nobody clicked. Repaired via MCP (`ADD COLUMN` + the
+`django_migrations` row, both idempotent) and verified: column `varchar(32) NOT NULL`, ledger row
+present. **For the next migration in this thread: apply it BEFORE the push, and verify the column
+exists as part of the deploy step — a green deploy proves the container started, not that the
+schema it expects is there.**
+
+**▶ THE BACKFILL IS DONE.** 88 decided rows stamped `pre-versioning` on 2026-09-11; verified
+after: 88 labelled (all decided, all with a snapshot) and 55 empty (all undecided, none with a
+snapshot). **It ran via Supabase MCP, not via its own command**, because the door as first
+registered could only dry-run — see below. `ai_verdict_snapshot` was NOT touched.
+
+**⚠ THE DOOR NOW WRITES, VIA AN ENV VAR, AND THAT SHAPE IS DELIBERATE.** `CronRunView` calls a
+command with NO arguments, so a `--apply`-only switch made the job reachable but incapable — the
+door test's own defect one layer in. The switch is **`BACKFILL_VERDICT_VERSION_APPLY=1`** (set,
+POST the job, then UNSET): *"a door you can close"*, which is what this repo prescribes for a
+dangerous one-off. **Do NOT re-register it as `(command, ['--apply'])`** — that makes every call to
+the door write. Only the literal `'1'` opens it; a test pins that `true`/`yes`/`0` do not.
 
 **⚠⚠ WHY — the learning loop existed and was unlabelled.** `ai_verdict_snapshot` (what the AI
 said) against `officer_verdict` (what the human said), compared per fact by
