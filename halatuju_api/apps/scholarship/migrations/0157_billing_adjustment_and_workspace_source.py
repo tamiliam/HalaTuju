@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('courses', '0074_organisationconfiguration'),
-        ('scholarship', '0155_spending_txns'),
+        ('scholarship', '0156_verdict_engine_version'),
     ]
 
     operations = [
