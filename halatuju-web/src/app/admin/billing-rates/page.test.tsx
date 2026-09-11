@@ -149,17 +149,20 @@ describe('saving', () => {
     await waitFor(() => expect(mockApi.getBillingRates).toHaveBeenCalledTimes(2))
   })
 
-  it('an empty value cannot be saved, and the button goes GREY to say so', async () => {
-    // Owner, 2026-09-11: "the save button should become grey when there is nothing to save."
-    // A 40%-opacity primary button still reads as a live button that is merely quiet. A
-    // disabled control has to look like a different KIND of thing, not a dimmer one.
+  it('an empty value cannot be saved, and the button fades like every other', async () => {
+    // ⚠ Owner, 2026-09-12: "the default behaviour… as everywhere else -- not plain grey."
+    // `disabled:opacity-50` is what 164 other controls in this console already do. Two earlier
+    // passes invented a treatment for this one screen — plain grey, then opacity-40. A button
+    // that behaves like every other button teaches the reader nothing new, which is the point.
     const { container } = render(<BillingRatesPage />)
     const card = await waitFor(() =>
       within(container).getByTestId('rate-metered-margin_pct'))
     const btn = within(card).getByText('admin.billingRates.save') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
-    expect(btn.className).toContain('disabled:bg-ground-200')
-    expect(btn.className).not.toContain('disabled:opacity')
+    expect(btn.className).toContain('disabled:opacity-50')
+    // And it stays the primary colour — fading it is the whole mechanism, not recolouring it.
+    expect(btn.className).toContain('bg-primary-600')
+    expect(btn.className).not.toContain('disabled:bg-')
   })
 
   it('typing a value makes the button live again', async () => {

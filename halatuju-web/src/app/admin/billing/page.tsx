@@ -383,10 +383,8 @@ function ChargeCard({ charge, month, t, onDiscount, busy }: {
               /* The reason is required here as well as on the server, so the refusal is a
                  disabled button rather than a round-trip and an error message. */
               disabled={busy || reason.trim() === ''}
-              /* Grey when there is nothing to apply — the same rule as the rates screen's Save.
-                 A disabled control looks like a different kind of thing, not a dimmer one. */
-              className="rounded-lg px-3 py-1.5 text-sm font-medium bg-primary-600 text-white
-                disabled:bg-ground-200 disabled:text-ground-400 disabled:cursor-not-allowed"
+              /* The console's default disabled button, same as the rates screen's Save. */
+              className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
               onClick={() => onDiscount(charge.organisation_id, pct.trim(), reason.trim())}>
               {t('admin.billing.charge.apply')}
             </button>

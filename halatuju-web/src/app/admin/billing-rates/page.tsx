@@ -131,15 +131,15 @@ function RateCard({
             aria-label={t('admin.billingRates.why')}
           />
         </label>
-        {/* ⚠ GREY WHEN THERE IS NOTHING TO SAVE, not a faded blue (owner, 2026-09-11). A
-            40%-opacity primary button still reads as a live button that is merely quiet — the
-            owner looked at a screen of them and could not tell which one would do anything. A
-            disabled control has to look like a different KIND of thing, not a dimmer one. */}
+        {/* ⚠ THE CONSOLE'S DEFAULT DISABLED BUTTON — faded blue, `disabled:opacity-50`, which
+            164 other controls already use (owner, 2026-09-12: *"the default behaviour… as
+            everywhere else"*). A first pass made this one plain grey and a second used
+            opacity-40; both invented a treatment for one screen. A button that behaves like
+            every other button teaches nothing new, which is the point. */}
         <button
           type="button"
           disabled={saving || value.trim() === ''}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium bg-primary-600 text-white
-            disabled:bg-ground-200 disabled:text-ground-400 disabled:cursor-not-allowed"
+          className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
           onClick={() => onSave(category, kind, value.trim(), month, note.trim())}
         >
           {t('admin.billingRates.save')}
