@@ -98,3 +98,42 @@ class TestItHasADoorToTheLiveService(TestCase):
         # test_repair_commands_have_a_door.py covers this too; this states it at the command.
         from apps.scholarship.views import CronRunView
         self.assertIn('backfill_verdict_engine_version', CronRunView.JOBS.values())
+
+
+class TestTheDoorCanActuallyWrite(_Base):
+    """⚠ REGISTERED IS NOT THE SAME AS RUNNABLE, and the first version of this was not runnable.
+
+    `CronRunView` calls the command with no arguments, so a `--apply`-only switch meant the door
+    could ONLY ever dry-run — a repair reachable but unable to repair, which is the door test's
+    defect wearing a different hat. The switch is an ENV VAR because that is what this project
+    prescribes for a dangerous one-off: *"a door you can close"*. Registering the job as
+    `(command, ['--apply'])` would instead have made every call to the door write.
+    """
+
+    def test_the_env_var_alone_makes_it_write(self):
+        import os
+        from unittest import mock
+        app = self._app(decided=True)
+        with mock.patch.dict(os.environ, {'BACKFILL_VERDICT_VERSION_APPLY': '1'}):
+            self._run()                      # no --apply: the door's exact call shape
+        app.refresh_from_db()
+        self.assertEqual(app.ai_verdict_engine_version, PRE_VERSIONING)
+
+    def test_any_other_value_is_still_a_dry_run(self):
+        # ⚠ Only the literal '1' opens the door. 'true'/'yes'/'0' must not, so a half-set variable
+        # left on the service cannot quietly turn a report into a write.
+        import os
+        from unittest import mock
+        for value in ('', '0', 'true', 'yes'):
+            app = self._app(decided=True, tag=f'v{value}')
+            with mock.patch.dict(os.environ, {'BACKFILL_VERDICT_VERSION_APPLY': value}):
+                out = self._run()
+            app.refresh_from_db()
+            self.assertEqual(app.ai_verdict_engine_version, '', value)
+            self.assertIn('DRY RUN', out)
+
+    def test_the_registered_job_passes_no_flags(self):
+        # If someone later registers it as (command, ['--apply']) the door becomes write-by-default.
+        from apps.scholarship.views import CronRunView
+        entry = CronRunView.JOBS['backfill-verdict-engine-version']
+        self.assertIsInstance(entry, str)
