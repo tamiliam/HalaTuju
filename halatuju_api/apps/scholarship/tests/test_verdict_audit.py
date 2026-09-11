@@ -3,12 +3,13 @@ record-verdict + verdict-metrics admin endpoints."""
 from unittest.mock import patch
 
 import jwt
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import audit
+from apps.scholarship import verdict_engine as vengine
 from apps.scholarship.models import (
     InterviewSession, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
 )
@@ -241,3 +242,57 @@ class TestVerdictMetricsEndpoint(TestCase):
         self.assertEqual(self.client.get('/api/v1/admin/scholarship/verdict-metrics/').status_code, 401)
         self._auth(STUDENT)
         self.assertEqual(self.client.get('/api/v1/admin/scholarship/verdict-metrics/').status_code, 403)
+
+
+class TestTheScorecardSaysWhichPredictorItAveraged(SimpleTestCase):
+    """⚠⚠ THE PREDICTOR CHANGES, AND UNTIL 2026-09-11 NOTHING RECORDED WHICH ONE PREDICTED.
+
+    `ai_verdict_snapshot` (what the AI said) against `officer_verdict` (what the human said) IS the
+    learning loop — 88 pairs banked 2026-06-17..2026-09-01. `verdict_engine` changed on 2026-09-10
+    (`_declared_pathway` stopped comparing a track against a programme name), so those pairs and
+    every later one come from different predictors, and `override_rate` averaged them as one model.
+
+    Owner, 2026-09-11: *"The model is what predicts whether a student qualifies... Otherwise where
+    does the learning from predicting and being corrected sit?"*
+    """
+
+    def test_it_reports_the_versions_it_spans(self):
+        records = [
+            (_snapshot(identity='verified'), {'identity': 'fail', 'academic': '', 'income': '', 'pathway': ''}, 'pre-versioning'),
+            (_snapshot(identity='verified'), {'identity': 'fail', 'academic': '', 'income': '', 'pathway': ''}, 'pre-versioning'),
+            (_snapshot(identity='verified'), {'identity': 'pass', 'academic': '', 'income': '', 'pathway': ''}, '2026-09-11.1'),
+        ]
+        m = audit.override_metrics(records)
+        self.assertEqual(m['engine_versions'], {'pre-versioning': 2, '2026-09-11.1': 1})
+        # ⚠ THE RATE IS STILL BLENDED, DELIBERATELY (owner: "A now, and B in future"). This field
+        # exists so a reader can SEE that it is blended, not so the blend silently disappears.
+        self.assertEqual(m['applications'], 3)
+
+    def test_a_single_version_still_reports_itself(self):
+        # The card must be able to say "one engine" as confidently as "two" — an absent key would
+        # read as "nobody asked", which is a different claim.
+        records = [(_snapshot(), {'identity': '', 'academic': '', 'income': '', 'pathway': ''}, '2026-09-11.1')]
+        self.assertEqual(audit.override_metrics(records)['engine_versions'], {'2026-09-11.1': 1})
+
+    def test_an_old_style_PAIR_counts_as_unknown_not_as_the_current_engine(self):
+        # ⚠ A 2-tuple means the CALLER did not say. Defaulting it to the running version would
+        # invent provenance — exactly the fault this sprint exists to remove.
+        records = [(_snapshot(), {'identity': '', 'academic': '', 'income': '', 'pathway': ''})]
+        m = audit.override_metrics(records)
+        self.assertEqual(m['engine_versions'], {'': 1})
+        self.assertNotIn(vengine.VERDICT_ENGINE_VERSION, m['engine_versions'])
+
+    def test_empty_input_reports_no_versions(self):
+        self.assertEqual(audit.override_metrics([])['engine_versions'], {})
+
+    def test_the_sentinel_can_never_be_read_as_an_engine_generation(self):
+        # 'pre-versioning' is deliberately not a version number. If someone "tidies" it into
+        # something like '0.0.0' it starts sorting and comparing as a real generation.
+        self.assertEqual(vengine.PRE_VERSIONING, 'pre-versioning')
+        self.assertFalse(vengine.PRE_VERSIONING[0].isdigit())
+        self.assertNotEqual(vengine.PRE_VERSIONING, vengine.VERDICT_ENGINE_VERSION)
+
+    def test_the_engine_declares_a_version_at_all(self):
+        # The whole sprint in one assertion: the predictor is versioned.
+        self.assertTrue(vengine.VERDICT_ENGINE_VERSION)
+        self.assertRegex(vengine.VERDICT_ENGINE_VERSION, r'^\d{4}-\d{2}-\d{2}\.\d+$')

@@ -68,6 +68,19 @@ export default function AiReliabilityCard({ token }: { token: string | null }) {
             <span className="w-10 shrink-0 text-right text-sm font-bold text-ground-900">{pct(r.overall.pct)}</span>
             <span className="w-16 shrink-0" />
           </div>
+          {/* ⚠ SAY WHEN THE NUMBER ABOVE IS AN AVERAGE OF DIFFERENT PREDICTORS. `verdict_engine`
+              changes; before 2026-09-11 nothing recorded which generation made a prediction, so
+              this figure silently blended them. It still blends them — deliberately, until there
+              are enough decisions under each version to compare — and this line is what stops that
+              being invisible. One version → say nothing; the reader has no question to ask. */}
+          {r.engineVersions.length > 1 && (
+            <p className="!mt-3 text-xs text-ground-400">
+              {t('admin.scholarship.reliability.mixedEngines', {
+                n: String(r.engineVersions.length),
+                versions: r.engineVersions.join(', '),
+              })}
+            </p>
+          )}
         </div>
       )}
     </div>

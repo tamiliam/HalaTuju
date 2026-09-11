@@ -9,9 +9,14 @@ Requirements: `docs/plans/2026-09-10-sponsor-spending-roadmap.md` S4 and
 
 ────────────────────────────────────────────────────────────────────────────────────────────────
 ⚠⚠ **THIS IS A ROW QUESTION, NOT A FIELD QUESTION, SO THE FENCE IS ON THE QUERY.** An allowlist
-serializer protects a COLUMN; it does nothing about a row. Every function here takes an
-organisation and filters `application__owning_organisation`, once, at the query — and the view
+serializer protects a COLUMN; it does nothing about a row. Every function here takes a SCOPE and
+filters `application__owning_organisation`, once, at the query — and the view
 re-asserts it. Bypassing the fence has to fail twice (TD-201, 2026-07-31).
+
+⚠ **THERE ARE EXACTLY TWO SCOPES: AN ORGANISATION, AND `ALL_ORGS`.** The second is the platform
+view a super gets, added 2026-09-11 because a super was refused by their own console. It is a
+sentinel object rather than `None` on purpose — see the note on `ALL_ORGS` — so no accident that
+loses an organisation can widen a tenant's page into a platform-wide one.
 
 ⚠ **THE OFFICER MAY SEE MERCHANTS AND STUDENT NAMES; A SPONSOR MAY SEE NEITHER.** This is the
 internal surface — oversight is the officer's job and a shop name is exactly what makes a wrong
@@ -57,10 +62,42 @@ UNPLACED = ('', 'unsorted')
 MODEL_REVIEW_DAYS = 14
 
 
+class _AllOrganisations:
+    """The platform-wide scope. See `ALL_ORGS`."""
+
+    __slots__ = ()
+
+    def __repr__(self):  # pragma: no cover - debugging affordance only
+        return 'ALL_ORGS'
+
+
+#: **Every organisation's spending, pooled.** Only `_SpendingBase` may hand this out, and only to a
+#: super with no organisation of their own.
+#:
+#: ⚠⚠ **IT IS A SENTINEL OBJECT AND MUST NEVER BECOME `None`.** The whole point is that the two
+#: cannot be confused. `None` reaching `_txns` filters `application__owning_organisation=None`,
+#: which matches applications belonging to NO organisation — an empty result on production, and a
+#: safe one. If the platform scope were spelled `None`, then every bug that loses an organisation
+#: (an unset attribute, a missed keyword, a `.get()` on a dict) would silently widen a tenant's
+#: page into a platform-wide one. An `is ALL_ORGS` identity check cannot be arrived at by accident.
+#:
+#: ⚠ This REVERSES the S4a ruling that a super must pick an organisation first (`docs/decisions.md`,
+#: 2026-09-10). That decision named its own trigger — *"a genuine platform-wide spending view is
+#: ever wanted"* — and the owner asked for one on 2026-09-11 after being refused by their own
+#: console. The reversal is recorded there; this is not a loosened fence, it is a second scope with
+#: exactly one door into it.
+ALL_ORGS = _AllOrganisations()
+
+
 def _txns(org):
-    """Every spend transaction this organisation may see. **The fence, in one place.**"""
+    """Every spend transaction this scope may see. **The fence, in one place.**"""
     from .models import BursarySpendTxn
 
+    if org is ALL_ORGS:
+        # ⚠ THE PRAGMA SITS DIRECTLY ABOVE THE QUERY BECAUSE THE GUARD LOOKS 200 CHARACTERS.
+        # org-fence: DELIBERATELY UNFENCED — the platform scope, reachable only via `ALL_ORGS`,
+        # which only `_SpendingBase` hands out and only to a super. See the note on the sentinel.
+        return BursarySpendTxn.objects.all()
     # org-fence: application__owning_organisation, the same fence the Payments funding summary
     # uses. A caller with no organisation is refused by the view before reaching here.
     return BursarySpendTxn.objects.filter(application__owning_organisation=org)
@@ -204,8 +241,12 @@ def wallet_gaps(org) -> dict:
     the third one, which is not, and reaches a human by email instead."""
     from .models import ScholarshipApplication
 
-    # org-fence: owning_organisation, the same fence _txns uses.
-    scope = ScholarshipApplication.objects.filter(owning_organisation=org)
+    if org is ALL_ORGS:
+        # org-fence: DELIBERATELY UNFENCED — the platform scope. Same door as `_txns`.
+        scope = ScholarshipApplication.objects.all()
+    else:
+        # org-fence: owning_organisation, the same fence _txns uses.
+        scope = ScholarshipApplication.objects.filter(owning_organisation=org)
     without = list(scope.filter(status__in=WALLET_EXPECTED_STATES, vircle_id='')
                    .values_list('id', flat=True))
     owners: dict[str, list] = {}
@@ -228,6 +269,11 @@ def set_owner_category(merchant, category, email, org):
     ⚠ **THE MERCHANT MUST BE ONE THIS ORGANISATION ACTUALLY USED.** Without that check the endpoint
     would let any tenant's admin write a verdict for any shop in the platform by guessing a name —
     the verdict is global (by design), so the FENCE has to be on who may set it.
+
+    ⚠ Under `ALL_ORGS` that check widens to "a shop SOMEBODY's students used", which is the correct
+    reading for a super: the verdict was always global, and a super is the one caller entitled to
+    every organisation's list. It is still not a free-text write — an invented shop name is
+    `unknown_merchant` for a super exactly as it is for a tenant.
 
     ⚠ Both stored strings are length-capped to their columns here. `MerchantCategory.reason` is
     varchar(255) and `decided_by_email` varchar(254); a plain `Serializer` does not inherit a

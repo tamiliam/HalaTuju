@@ -4308,7 +4308,8 @@
         "title": "AI reliability",
         "subtitle": "How often the AI's suggestion matched the reviewer's decision — across {n} reviewed application(s).",
         "overall": "Overall",
-        "empty": "No reviewed applications yet — the AI's reliability will appear here once reviewers record their verdicts."
+        "empty": "No reviewed applications yet — the AI's reliability will appear here once reviewers record their verdicts.",
+        "mixedEngines": "This figure averages {n} versions of the checking engine ({versions}). The engine has changed since some of these decisions were recorded, so read the trend with care."
       },
       "verdict": {
         "title": "AI Prediction",
@@ -5525,6 +5526,19 @@
         "sorted": "Sorted",
         "unsorted": "Not yet sorted",
         "toCheck": "Shops to check"
+      },
+      "tabs": {
+        "aria": "Spending sections"
+      },
+      "tab": {
+        "shops": "Shops",
+        "students": "Students",
+        "unsorted": "Unsorted"
+      },
+      "unplaced": {
+        "title": "Money we could not place",
+        "help": "These shops have payments no rule, pattern or model could put in a category. Choosing one here settles that shop for good.",
+        "empty": "Every ringgit has a category. Nothing to place."
       },
       "col": {
         "shop": "Shop",

@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  *
- * The officer's spending screen (sponsor spending S4).
+ * The officer's spending screen (S4, reorganised into tabs in S6).
  *
  * ⚠ THE TESTS THAT CARRY THIS FILE ARE WRITTEN FROM THE HARM:
  *
@@ -16,8 +16,16 @@
  *  * `finance cannot open this page` — the neighbouring Payments page admits finance and this one
  *    must not; `_b40_scope` promises a finance admin never sees student data beyond the Payments
  *    allowlist, and this screen carries names beside purchases.
+ *  * `the figures do not move when you change tab` — they describe the whole page. A headline that
+ *    changed under the tabs would be a headline nobody could quote.
+ *  * `correcting from the Unsorted tab works too` — the shops list is ONE component drawn in two
+ *    tabs, and the whole point of that is that neither tab can quietly lose the correction.
+ *
+ * ⚠ EVERY SHOP IS DRAWN TWICE — a phone card and a desktop row, both in the DOM because jsdom
+ * applies no breakpoints. `getAllBy*` with a COUNT is the honest assertion; a singular query would
+ * pass by reaching whichever copy comes first (StaffTable, 2026-09-09).
  */
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import SpendingPage from './page'
 import * as api from '@/lib/admin-api'
 import { canAccess } from '@/lib/navigation'
@@ -37,6 +45,8 @@ const OVERVIEW: api.SpendingOverview = {
   },
   merchants: [
     {
+      // `inferred` with money held back by the RM20 ceiling — placed as food, yet some of its
+      // ringgit are not. It must appear in BOTH tabs.
       merchant: 'AL HUDHA ENTERPRISE', category: 'food', decided_by: 'inferred',
       visits: 9, total: '259.20', last_seen: '2026-08-30', held_back: 1,
     },
@@ -48,9 +58,14 @@ const OVERVIEW: api.SpendingOverview = {
       merchant: 'GLASSEYE EYEWEAR TRADING', category: 'health', decided_by: 'owner',
       visits: 1, total: '130.00', last_seen: '2026-08-09', held_back: 0,
     },
+    {
+      merchant: 'SHOPEE MARKETPLACE', category: 'unsorted', decided_by: 'ai',
+      visits: 16, total: '401.03', last_seen: '2026-08-29', held_back: 0,
+    },
   ],
   students: [
     { application_id: 7, name: 'NURUL TEST', payments: 24, spent: '400.00', unplaced: '20.00' },
+    { application_id: 8, name: 'AMIR TEST', payments: 3, spent: '90.00', unplaced: '0.00' },
   ],
   model_decisions: [
     {
@@ -68,6 +83,20 @@ const OVERVIEW: api.SpendingOverview = {
   ],
 }
 
+/** Open one of the three tabs. The mocked `t` returns the key, so that is the button's name. */
+async function openTab(name: 'shops' | 'students' | 'unsorted') {
+  fireEvent.click(await screen.findByRole('tab', { name: `admin.spending.tab.${name}` }))
+}
+
+/** The DESKTOP table's data rows, in the order they are drawn. Phone cards are `div`s, so they
+ *  are not rows and cannot be confused with these. */
+const bodyRows = () => screen.getAllByRole('row').slice(1)
+
+/** The shop names down the desktop table, in order. The first cell also carries the held-back
+ *  note on a ceiling shop, so it is trimmed off rather than asserted around. */
+const shopOrder = () => bodyRows().map((r) =>
+  (within(r).getAllByRole('cell')[0].textContent || '').split('admin.spending')[0].trim())
+
 beforeEach(() => {
   jest.clearAllMocks()
   mockApi.getSpendingOverview.mockResolvedValue(OVERVIEW)
@@ -76,11 +105,40 @@ beforeEach(() => {
   })
 })
 
-describe('the screen', () => {
+describe('the three tabs', () => {
+  it('opens on Shops, and offers exactly three', async () => {
+    render(<SpendingPage />)
+    const tabs = await screen.findAllByRole('tab')
+    expect(tabs.map((b) => b.textContent)).toEqual([
+      'admin.spending.tab.shops', 'admin.spending.tab.students', 'admin.spending.tab.unsorted',
+    ])
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('shows one tab at a time — a student is not on the Shops tab', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    expect(screen.queryByText('NURUL TEST')).toBeNull()
+    await openTab('students')
+    expect(screen.getAllByText('NURUL TEST').length).toBeGreaterThan(0)
+    expect(screen.queryByText('99 SPEEDMART')).toBeNull()
+  })
+
+  it('⚠ THE FOUR FIGURES DO NOT MOVE WHEN YOU CHANGE TAB', async () => {
+    // They describe the whole page. A headline that changed under the tabs would be a headline
+    // nobody could quote — and the "Not yet sorted" figure is exactly what the Unsorted tab is
+    // there to explain, so it has to still be on screen when you get there.
+    render(<SpendingPage />)
+    const before = (await screen.findByTestId('spending-totals')).textContent
+    for (const tab of ['students', 'unsorted', 'shops'] as const) {
+      await openTab(tab)
+      expect(screen.getByTestId('spending-totals').textContent).toEqual(before)
+    }
+  })
+})
+
+describe('the Shops tab', () => {
   it('draws every shop with its money, in BOTH renderings', async () => {
-    // ⚠ Every shop is drawn twice — a phone card and a desktop row. Asserting only the one a
-    // query happens to reach first is how a fix lands on the half nobody looks at (StaffTable,
-    // 2026-09-09). Both are pinned by count.
     render(<SpendingPage />)
     expect(await screen.findAllByText('AL HUDHA ENTERPRISE')).toHaveLength(2)
     expect(screen.getAllByText('99 SPEEDMART')).toHaveLength(2)
@@ -95,9 +153,9 @@ describe('the screen', () => {
   it('shows the four figures the server computed', async () => {
     render(<SpendingPage />)
     const strip = await screen.findByTestId('spending-totals')
-    expect((strip).textContent).toContain('70%')
-    expect((strip).textContent).toContain('RM3,182.33')
-    expect((strip).textContent).toContain('12')
+    expect(strip.textContent).toContain('70%')
+    expect(strip.textContent).toContain('RM3,182.33')
+    expect(strip.textContent).toContain('12')
   })
 
   it('says how each shop was decided, and marks yours differently', async () => {
@@ -109,7 +167,7 @@ describe('the screen', () => {
 
   it('names the payments the ceiling held back, and only where the ceiling ran', async () => {
     render(<SpendingPage />)
-    // Three shops, one of them `inferred` with held_back 1 — one note per rendering, so two.
+    // Four shops, one of them `inferred` with held_back 1 — one note per rendering, so two.
     expect(await screen.findAllByText('admin.spending.heldBack')).toHaveLength(2)
   })
 
@@ -118,6 +176,165 @@ describe('the screen', () => {
     render(<SpendingPage />)
     await screen.findAllByText('AL HUDHA ENTERPRISE')
     expect(document.body.textContent).not.toMatch(/\d{1,2}:\d{2}/)
+  })
+})
+
+describe('sorting a column', () => {
+  it('starts on the biggest total, whichever order the server sent', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    expect(shopOrder()).toEqual([
+      'SHOPEE MARKETPLACE', '99 SPEEDMART', 'AL HUDHA ENTERPRISE', 'GLASSEYE EYEWEAR TRADING',
+    ])
+  })
+
+  it('reorders on a header click, and flips on a second', async () => {
+    render(<SpendingPage />)
+    const header = () => screen.getByRole('button', { name: /admin\.spending\.col\.shop/ })
+    await waitFor(() => expect(header()).not.toBeNull())
+
+    fireEvent.click(header())
+    expect(shopOrder()).toEqual([
+      '99 SPEEDMART', 'AL HUDHA ENTERPRISE', 'GLASSEYE EYEWEAR TRADING', 'SHOPEE MARKETPLACE',
+    ])
+
+    fireEvent.click(header())
+    expect(shopOrder()).toEqual([
+      'SHOPEE MARKETPLACE', 'GLASSEYE EYEWEAR TRADING', 'AL HUDHA ENTERPRISE', '99 SPEEDMART',
+    ])
+  })
+
+  it('tells a screen reader which column is sorted and which way', async () => {
+    // ⚠ `aria-sort` is the only thing announcing the order to somebody who cannot see the arrow.
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    const sorted = screen.getAllByRole('columnheader')
+      .filter((h) => h.getAttribute('aria-sort') !== 'none')
+    expect(sorted).toHaveLength(1)
+    expect(sorted[0].textContent).toContain('admin.spending.col.total')
+    expect(sorted[0].getAttribute('aria-sort')).toBe('descending')
+  })
+
+  it('sorts the students table on its own, without touching the shops', async () => {
+    render(<SpendingPage />)
+    await openTab('students')
+    expect(bodyRows()[0].textContent).toContain('NURUL TEST')   // spent, descending
+    fireEvent.click(screen.getByRole('button', { name: /admin\.spending\.students\.name/ }))
+    expect(bodyRows()[0].textContent).toContain('AMIR TEST')    // name, A→Z
+  })
+})
+
+describe('paging a long list', () => {
+  const shops = (total: (i: number) => number) => Array.from({ length: 30 }, (_, i) => ({
+    merchant: `SHOP ${String(i).padStart(2, '0')}`, category: 'food', decided_by: 'rule',
+    visits: 1, total: `${total(i)}.00`, last_seen: '2026-08-01', held_back: 0,
+  }))
+
+  /** Money ranks the same way as the name, so the default view reads SHOP 00 … SHOP 29. */
+  const many = shops((i) => 100 - i)
+
+  /**
+   * ⚠⚠ **ARRIVES IN THE SERVER'S OWN ORDER — BIGGEST TOTAL FIRST — AND NOT IN NAME ORDER. THAT IS
+   * THE ENTIRE POINT OF THIS FIXTURE, AND THE FIRST VERSION OF IT DID NOT DO IT.**
+   *
+   * A bite-check proved that version worthless: with the rows arriving as SHOP 00 … SHOP 29,
+   * "sort the whole list then take a page" and "take a page then sort it" BOTH yield SHOP 00 … 24,
+   * so the deliberate fault passed every test. The discriminator is that the incoming order must
+   * disagree with the sort being asked for, exactly as the live payload does (`spend_report`
+   * returns `-total`, then name).
+   */
+  const scrambled = shops((i) => ((i * 7) % 30) + 1)
+    .slice().sort((a, b) => Number(b.total) - Number(a.total))
+
+  /** The list has arrived. Not keyed on a shop NAME: which shop is on page one depends on the
+   *  fixture's money, and a test should not have to work that out to know the page loaded. */
+  const loaded = () => waitFor(() => expect(bodyRows().length).toBeGreaterThan(0))
+
+  it('shows no pager on a short list — four shops fit one page', async () => {
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    expect(screen.queryAllByRole('button', { name: /admin\.next/ })).toHaveLength(0)
+  })
+
+  it('pages a long one, and the second page holds the rest', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, merchants: many })
+    render(<SpendingPage />)
+    await loaded()
+    expect(bodyRows()).toHaveLength(25)
+    expect(screen.queryByText('SHOP 29')).toBeNull()
+
+    // ⚠ The pager renders a mobile AND a desktop copy, both in the DOM (docs/lessons.md,
+    // 2026-07-28). `getAllBy` and click the first is the honest way to drive it.
+    fireEvent.click(screen.getAllByRole('button', { name: /admin\.next/ })[0])
+    expect(bodyRows()).toHaveLength(5)
+    expect(screen.getAllByText('SHOP 29').length).toBeGreaterThan(0)
+  })
+
+  it('⚠ SORTS THE WHOLE LIST, THEN TAKES A PAGE — never the other way round', async () => {
+    // The reversed order sorts one page at a time, so rows migrate between pages as you click and
+    // the first page is whatever the SERVER's order put there. It looks like sorting works,
+    // because page one is genuinely in order; only the rows that should have arrived from page
+    // two are missing, and nobody counts.
+    mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, merchants: scrambled })
+    render(<SpendingPage />)
+    await loaded()
+    fireEvent.click(screen.getByRole('button', { name: /admin\.spending\.col\.shop/ }))
+    expect(shopOrder()).toEqual(
+      Array.from({ length: 25 }, (_, i) => `SHOP ${String(i).padStart(2, '0')}`))
+  })
+
+  it('goes back to page one when the list under it changes', async () => {
+    // Correcting a shop from the Unsorted tab shortens that list. A stale page number would show
+    // an empty table and read as "you have finished", which is the opposite of true.
+    mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, merchants: many })
+    render(<SpendingPage />)
+    await loaded()
+    fireEvent.click(screen.getAllByRole('button', { name: /admin\.next/ })[0])
+    expect(bodyRows()).toHaveLength(5)
+
+    mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, merchants: many.slice(0, 26) })
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'study' } })
+    await waitFor(() => expect(bodyRows()).toHaveLength(25))
+  })
+})
+
+describe('the Unsorted tab', () => {
+  it('lists only the shops with money we could not place', async () => {
+    render(<SpendingPage />)
+    await openTab('unsorted')
+    // SHOPEE is `unsorted`; AL HUDHA reads `food` but the ceiling holds one of its payments.
+    // 99 SPEEDMART and GLASSEYE are fully placed and must not be here.
+    expect(screen.getAllByText('SHOPEE MARKETPLACE')).toHaveLength(2)
+    expect(screen.getAllByText('AL HUDHA ENTERPRISE')).toHaveLength(2)
+    expect(screen.queryByText('99 SPEEDMART')).toBeNull()
+    expect(screen.queryByText('GLASSEYE EYEWEAR TRADING')).toBeNull()
+  })
+
+  it('⚠ CORRECTING FROM THIS TAB WORKS — it is the same list, not a read-only copy', async () => {
+    render(<SpendingPage />)
+    await openTab('unsorted')
+    const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
+    expect(controls).toHaveLength(2)
+    fireEvent.change(controls[0], { target: { value: 'study' } })
+    await waitFor(() => expect(mockApi.setSpendingCategory)
+      .toHaveBeenCalledWith('AL HUDHA ENTERPRISE', 'study', { token: 'tok' }))
+  })
+
+  it('says so plainly when nothing is left to place', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue({
+      ...OVERVIEW,
+      merchants: OVERVIEW.merchants.filter((m) => m.decided_by === 'owner'),
+    })
+    render(<SpendingPage />)
+    await openTab('unsorted')
+    expect(screen.getAllByText('admin.spending.unplaced.empty').length).toBeGreaterThan(0)
+  })
+
+  it('holds the model’s recent decisions and the wallet faults', async () => {
+    render(<SpendingPage />)
+    await openTab('unsorted')
+    expect(screen.getByTestId('model-decisions').textContent).toContain('EY VENTURE')
+    expect(screen.getByTestId('wallet-gaps')).not.toBeNull()
   })
 })
 
@@ -181,29 +398,37 @@ describe('the correction', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('admin.spending.saveFailed')
   })
 
-  it('promises, in words, that a correction is kept', async () => {
+  it('promises, in words, that a correction is kept — on both tabs that offer one', async () => {
     render(<SpendingPage />)
     expect(await screen.findByText('admin.spending.kept')).not.toBeNull()
+    await openTab('unsorted')
+    expect(screen.getByText('admin.spending.kept')).not.toBeNull()
   })
 })
 
-describe('the other sections', () => {
-  it('lists each student and what they spent', async () => {
+describe('the Students tab', () => {
+  it('lists each student and what they spent, in both renderings', async () => {
     render(<SpendingPage />)
-    expect(await screen.findByText('NURUL TEST')).not.toBeNull()
-    expect(screen.getByText('RM400.00')).not.toBeNull()
+    await openTab('students')
+    expect(screen.getAllByText('NURUL TEST')).toHaveLength(2)
+    expect(screen.getAllByText('RM400.00')).toHaveLength(2)
   })
 
-  it('lists what the model decided lately', async () => {
+  it('says so when nobody has spent anything', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, students: [] })
     render(<SpendingPage />)
-    expect((await screen.findByTestId('model-decisions')).textContent).toContain('EY VENTURE')
+    await openTab('students')
+    expect(screen.getAllByText('admin.spending.students.empty').length).toBeGreaterThan(0)
   })
+})
 
+describe('the wallet faults', () => {
   it('says the unmatched wallet is emailed rather than shown', async () => {
     // ⚠ A wallet matching NO student is never stored, so it CANNOT be shown here. Saying so on
     // the page is what stops a reader assuming an empty section means "nothing is wrong".
     render(<SpendingPage />)
-    expect(await screen.findByText('admin.spending.gaps.note')).not.toBeNull()
+    await openTab('unsorted')
+    expect(screen.getByText('admin.spending.gaps.note')).not.toBeNull()
   })
 
   it('shows the wallet gaps when there are any', async () => {
@@ -212,9 +437,10 @@ describe('the other sections', () => {
       wallet_gaps: { students_without_wallet: [42], shared_wallets: { '8000400170001': [7, 8] } },
     })
     render(<SpendingPage />)
-    const gaps = await screen.findByTestId('wallet-gaps')
-    expect((gaps).textContent).toContain('42')
-    expect((gaps).textContent).toContain('8000400170001')
+    await openTab('unsorted')
+    const gaps = within(screen.getByTestId('wallet-gaps'))
+    expect(gaps.getByText(/42/)).not.toBeNull()
+    expect(gaps.getByText(/8000400170001/)).not.toBeNull()
   })
 })
 

@@ -99,6 +99,122 @@ margins to everything.
 
 **Second migration** (`0157`), additive: the `extracted` provenance choice.
 
+### Claude is a cost of delivering hours, not of running the platform (same day, third pass)
+
+Owner: *"My biggest cost is Claude, which needs to be included via the request hours."* Plus:
+Brevo, Cloudflare and GitHub are free for now and must be mentioned.
+
+- **⚠ A THIRD COST BUCKET, AND IT PREVENTS THE EXPENSIVE MISTAKE.** Leaving Claude in the platform
+  bucket would mark it up as the infrastructure line **and** leave the hourly rate recovering it —
+  the same ringgit taken twice, on an invoice, quietly. `cost_bucket()` now files it under
+  `development`: counted in the month's total (it is real money) but held out of `platform_myr`.
+  Five tests fail if it ever leaks back.
+- **The development line shows what the TOOLS cost beside what the hours earn**, so *"is RM50/hour
+  enough?"* is a figure on a screen rather than a feeling. Shown, never added.
+- **Tools bought in a month with no billable hours are reported, not hidden.** Silence would read
+  as "nothing was spent"; a real cost was carried and recovered by nothing.
+- **The Anthropic receipts parse themselves** — $100/month Max 5x plus 8% SST, in USD. ⚠ The tax
+  line is NAMED with the word "tax" because Anthropic prints only "SST"; widening `is_tax` to
+  match SST/GST/VAT was rejected, since "vat" is a substring of ordinary words like "innovate" and
+  would silently turn real charges into tax.
+- **⚠ NORMALISATION, AND IT IS NOT COSMETIC.** `pypdf` returns Anthropic's en-dash as a literal
+  **NUL byte** — `'Sep 3\0Oct 3, 2026'`. A NUL is not whitespace to `\s`, so every pattern
+  spanning it failed, and the failure looked exactly like a provider changing its layout.
+- **A month that has not ended says so**, instead of reporting what reads like an exchange-rate
+  outage. September's receipt is recorded unconverted and the month reports itself a FLOOR.
+- **New sources**: `anthropic`, `openai`, `cloudflare`, `github`. ⚠ `OPENAI_API_KEY` is set on the
+  live service as the counsellor report's second provider; it has never fired, but it bills
+  outside Google Cloud, so without a source the first bill would land nowhere at all.
+- **Brevo, Cloudflare and GitHub are NAMED in the free-services footnote.** A dependency nobody
+  has written down is one nobody re-prices when its free tier ends.
+- **Google AI was already covered** — Gemini and Cloud Vision bill inside the HalaTuju GCP project
+  as their own lines. The RM8.32 of Gemini in August belongs to **FicusValue**, a different
+  project on the same billing account, and the ledger correctly excludes it.
+
+**Third migration** (`0158`), additive: the four new source choices.
+
+## The spending page in three tabs, and a super can finally open it - 2026-09-11
+
+The owner opened `/admin/spending` as **super admin** and was refused: *"Could not load the
+spending figures."* As BrightPath's organisation admin the same page worked. They also asked for
+three tabs, the console's standard paging, and click-to-sort headings.
+
+**⚠ THE REFUSAL WAS DELIBERATE, AND IS NOW REVERSED.** S4a decided a super must pick an
+organisation first, because "defaulting to unfenced is how a super with no org context sees the
+platform". That reasoning is about a DEFAULT. The scope is now an explicit
+`spend_report.ALL_ORGS`, handed out by `_spending_admin` and nothing else, and the S4a decision
+named this exact trigger for revisiting itself. **It is a sentinel OBJECT, never `None`** - so
+every accident that loses an organisation still reads `owning_organisation=None`, which matches
+nothing, instead of silently widening a tenant's page into a platform-wide one. An `org_admin`
+with no organisation is still refused.
+
+**What changed on screen:**
+
+- **Three tabs.** *Shops* (every shop and the box you correct it in), *Students* (who spent what),
+  *Unsorted* (money we could not place, the model's recent guesses, and the wallet faults - one
+  tab for everything wanting a human).
+- **The four figures stay ABOVE the tabs.** They describe the whole page; a headline that moved as
+  you switched tab would be a headline nobody could quote. A test pins it.
+- **Paging and click-to-sort**, from the console's existing `lib/tableView` + `Pagination` - 25 a
+  page, 10/25/50, and the footer hides itself on a short list. Money sorts as a NUMBER (as text,
+  RM900 outranks RM2,000); "How we decided" ranks by how settled the answer is rather than
+  alphabetically, so reversing it brings the guesses to the top; a shop never seen and a student
+  with no name recorded sort LAST in both directions.
+- **`components/admin/SortHeader`** - the console's one sortable heading. Reviewers and Sponsors
+  each carried a byte-identical local copy; **both were moved onto it in this change**, because a
+  partial extraction is more dangerous than none.
+- **`components/admin/SpendingShops`** draws the shop list for BOTH tabs. One component, so a rule
+  about a shop row cannot be fixed in one of two places.
+
+**⚠ WHAT THE BITE-CHECKS FOUND, and both were real:**
+
+1. **No test proved the ENDPOINT gives the right scope.** Widening `_spending_admin` to hand every
+   caller `ALL_ORGS` failed only an orphan-account test - an `org_admin` **with** an organisation
+   would have seen every tenant's students' purchases, through the endpoint, with a green suite.
+   `test_a_tenant_admin_sees_ONLY_their_own_tenant_through_the_endpoint` now asserts it at the door.
+2. **My own "sorts the whole list, then pages" test was decorative.** Its fixture already arrived
+   in name order, so sorting the page and sorting the list produced an identical first page and the
+   deliberate fault sailed through. The fixture now arrives in the server's own order.
+
+Gates: **6419 pytest** (+7), **2084 jest** (+29), lint clean, production build succeeds.
+No migration. No AI behaviour changed.
+
+## 2026-09-11 — The predictor now says which predictor it was
+
+Owner, 2026-09-11: *"I understand the version more wholistically. The model is what predicts
+whether a student qualifies. Genuineness of the document is one stage, but it not all. Otherwise
+where does the learning from predicting and being corrected sit?"* api + web.
+⚠ **MIGRATION 0156** (one additive column). ⚠ **DATA STEP: a backfill over 88 live rows.**
+
+- **⚠ THE LEARNING LOOP EXISTED AND WAS UNLABELLED.** `ai_verdict_snapshot` (what the AI said)
+  against `officer_verdict` (what the human said), compared per fact by `audit.compute_overrides`
+  and rolled up by `override_metrics` into the AI Reliability card — **88 pairs banked
+  2026-06-17 → 2026-09-01**. Nothing recorded WHICH `verdict_engine` produced each prediction, so
+  the scorecard averaged every generation as one model. Not hypothetical: `_declared_pathway`
+  changed on 2026-09-10 and no stored row can tell you.
+- **`VERDICT_ENGINE_VERSION`** now lives beside `build_verdict`, with the bump rule stated at the
+  constant: *bump when a change can alter a fact's status, band or red-chip count.*
+- **A sibling column `ai_verdict_engine_version`**, stamped in the SAME breath as the snapshot —
+  what the AI said and which engine said it are one fact.
+- **`override_metrics` reports `engine_versions`**, and the card says so when it spans more than
+  one. **The rate stays blended, deliberately** (owner: *"A now, and B in future"*) — with 88 under
+  `pre-versioning` and a handful under anything newer, per-version rates would be noise for months.
+  This makes the blend legible now and leaves the split for when there is enough to compare.
+- **A backfill labels the past** as `pre-versioning` — not a version number, so it can never be
+  read as a generation. **Dry-run by default**, and wired into `CronRunView.JOBS` in the same
+  commit, because this repo fails a test for any `backfill_*` with no door to the live service.
+- **⚠ IT NEVER RE-RUNS `build_verdict`.** A snapshot is the historical record of what the AI
+  asserted at the time; regenerating it would destroy the only evidence the scorecard rests on. A
+  test asserts the stored snapshot is byte-identical after the backfill.
+
+**⚠ THIS IS NOT `MODEL_VERSION` AND NOT `ai_registry`.** `genuineness/*.MODEL_VERSION` versions
+whether ONE DOCUMENT looks genuine — one input to one fact. `halatuju.ai_registry` (2026-09-11)
+answers "which LLM would this job call right now" and explicitly RESOLVES, NEVER RECORDS. The
+verdict engine calls no model at all.
+
+Gates: pytest **6426** · jest **2059** · tsc **24** (TD-221) · lint **0** · i18n **5047 × 3** ·
+`next build` exit 0 · `makemigrations --check` clean. Two bite-checks, both bit.
+
 ## Which AI version are we running, and which actually ran - 2026-09-11
 
 The owner asked whether an organisation could pick its own AI version per task, to track versions

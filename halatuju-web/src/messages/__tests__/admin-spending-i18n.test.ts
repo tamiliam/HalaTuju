@@ -19,6 +19,7 @@ import * as path from 'path'
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
+import { MERCHANT_SORT_LABEL, STUDENT_SORT_LABEL } from '@/lib/spendingTable'
 
 const SRC_DIR = path.join(__dirname, '..', '..') // .../src
 const NS = 'admin.spending'
@@ -107,6 +108,41 @@ describe('admin.spending i18n hygiene', () => {
     expect(e.length).toBeGreaterThan(0)
     expect(m.sort()).toEqual(e.slice().sort())
     expect(t.sort()).toEqual(e.slice().sort())
+  })
+
+  test('every SORTABLE COLUMN NAME resolves in all three locales', () => {
+    // ⚠ These arrive at the header through `label={t(MERCHANT_SORT_LABEL[col])}` — a lookup in a
+    // map in another file, which the static scan above sees only because the map's VALUES happen
+    // to be literals. Asserting the maps themselves is the version that survives somebody
+    // building a key by hand there. A column whose name does not resolve renders the raw dotted
+    // string inside a button nobody would think to translate.
+    const missing: string[] = []
+    const keys = [...Object.values(MERCHANT_SORT_LABEL), ...Object.values(STUDENT_SORT_LABEL)]
+    expect(keys.length).toBe(10)
+    for (const key of keys) {
+      for (const [name, loc] of [['en', en], ['ms', ms], ['ta', ta]] as const) {
+        if (typeof resolve(loc, key) !== 'string') missing.push(`${name}: ${key}`)
+      }
+    }
+    expect(missing).toEqual([])
+  })
+
+  test('every TAB NAME and the tab bar’s accessible name resolve in all three locales', () => {
+    // ⚠ `admin.spending.tabs.aria` is an ACCESSIBLE NAME — invisible twice over. It is never
+    // drawn, so no screenshot shows it missing, and i18n PARITY cannot see it either, because an
+    // invented key is absent from all three locales identically. Five keys of exactly this shape
+    // shipped unresolved on the console-layout sprint (docs/lessons.md, 2026-09-08).
+    const missing: string[] = []
+    const keys = ['admin.spending.tabs.aria', 'admin.spending.tab.shops',
+                  'admin.spending.tab.students', 'admin.spending.tab.unsorted',
+                  'admin.spending.unplaced.title', 'admin.spending.unplaced.help',
+                  'admin.spending.unplaced.empty']
+    for (const key of keys) {
+      for (const [name, loc] of [['en', en], ['ms', ms], ['ta', ta]] as const) {
+        if (typeof resolve(loc, key) !== 'string') missing.push(`${name}: ${key}`)
+      }
+    }
+    expect(missing).toEqual([])
   })
 
   test('the navigation label exists in every locale', () => {

@@ -550,7 +550,136 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-11, after AI model visibility)
+## Next Sprint (as of 2026-09-11, after the spending page was reorganised — S6)
+
+**✅ SHIPPED AND DEPLOYED 2026-09-11 — VERIFIED LIVE.** `main` at **`da883e10`** (a merge: the
+spending tabs plus another agent's verdict-engine-version sprint, already on `main`). **No
+migration of its own.** BOTH Cloud Builds SUCCESS (waited on BY BUILD ID: web `f6cd46a1`, api
+`8f466db3`). Serving **halatuju-api-01029-plr** / **halatuju-web-00878-xd2**, read from
+`status.latestReadyRevisionName`. `halatuju.xyz` 200 (`Server: Google Frontend`);
+`/admin/spending` 200; the endpoint 401s unauthenticated; **no ERROR logs on either service**.
+Gates on the MERGED tree: **6433 pytest** · **2088 jest** · `makemigrations --check` clean ·
+`next build` exit 0.
+
+⚠ **DEPLOYED FROM THE WORKTREE, WITHOUT EVER CHECKING `main` OUT** — `git push origin HEAD:main`
+from `.worktrees/spending-ingest`, because other agents were working and `main` is shared by every
+worktree. The first attempt merged in the main checkout, was aborted with `git merge --abort`, and
+left that checkout exactly as found. **Use this route whenever another agent may be active.**
+
+**WHAT CHANGED.** The owner opened `/admin/spending` as super admin and was refused; they also
+asked for three tabs, paging and sortable headings.
+
+- **⚠⚠ A SUPER NOW SEES EVERY ORGANISATION** — `spend_report.ALL_ORGS`, handed out by
+  `_SpendingBase._spending_admin` and by nothing else. **It is a sentinel OBJECT and must never
+  become `None`**: `None` still filters `owning_organisation=None` (matches nothing), so every
+  accident that loses an organisation stays an EMPTY read instead of widening to the platform.
+  `test_None_is_NOT_the_platform_scope_and_still_reads_nothing` exists to stop that simplification.
+  **This SUPERSEDES the S4a `no_org` refusal** (`docs/decisions.md`, both entries) — do not
+  "restore" it. An `org_admin` with no organisation is still refused.
+- **Three tabs**: Shops · Students · Unsorted. The four figures stay **above** them (a test pins
+  it — a headline that moves with the tab is a headline nobody can quote).
+- **⚠ The Unsorted tab is defined on MONEY, not confidence** — blank/`unsorted` categories PLUS
+  shops with `held_back > 0`. It pairs with the *Not yet sorted* figure, so the list adds up to a
+  number on screen. The six ceiling-held payments (RM424 live) are only visible because of the
+  second half of that filter.
+- **`components/admin/SortHeader`** is now the console's one sortable heading; the byte-identical
+  local copies on **Reviewers and Sponsors were migrated in the same change**.
+- **`components/admin/SpendingShops`** draws the shop list for BOTH tabs — one component, so no
+  rule about a shop row can be fixed in one of two places.
+
+**⚠ TWO REAL FINDINGS FROM THE BITE-CHECKS:**
+1. **No test proved the ENDPOINT picks the right scope.** Giving every caller `ALL_ORGS` failed
+   only an orphan-account test; a real `org_admin` would have read every tenant's students'
+   purchases with a green suite. Now asserted at the door.
+2. **A test of mine was decorative** — its fixture already arrived in the order it sorted by, so a
+   "sorts only the visible page" fault passed. Fixtures for sort-then-page tests must arrive in the
+   SERVER's order.
+
+**▶ NEXT:** the owner decides when to push (push = deploy). Nothing blocking. Standing debt:
+TD-242 (after any import check `files read` equals the number of exports), TD-241, TD-240,
+TD-239, TD-238.
+
+---
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-11, after the verdict engine got a version)
+
+**⚠ ITS "NOT DEPLOYED" LINE IS STALE.** It shipped on 2026-09-11; `0156` is APPLIED on production (23:30 UTC) and both Cloud Builds succeeded. Read it for the DATA STEP and the bite-check findings, not for the deploy state.
+
+**✅ DEPLOYED AND THE DATA STEP IS DONE, 2026-09-11.** `main` at **`8a02f8c7`**; BOTH builds
+SUCCESS on `8a02f8c` — waited on the push's OWN ids (api `25cc2cbb…`, web `67318328…`). Serving
+**halatuju-api-01028-ngv** / **halatuju-web-00877-bgv**, and the running **image digests were
+matched against this commit's tags** — other agents deploy this repo, so "the newest revision" is
+not evidence. Site 200; no api ERROR logs on the new revision.
+Gates: pytest **6429** · jest **2059** · tsc **24** (TD-221) · lint **0** · i18n **5047 × 3** ·
+`next build` exit 0 · `makemigrations --check` clean. **Three bite-checks, all bit.**
+
+**⚠⚠ I DEPLOYED CODE BEFORE THE MIGRATION, AND THAT WAS WRONG.** This project is **migrate-first
+via Supabase MCP**, then push. I pushed first, so for a window the live api referenced
+`ai_verdict_engine_version` and the column did not exist — `record-verdict` and `verdict-metrics`
+would both have 500'd. **Every signal said fine**: green builds, ready revisions, 200, empty error
+log. The log was empty only because nobody clicked. Repaired via MCP (`ADD COLUMN` + the
+`django_migrations` row, both idempotent) and verified: column `varchar(32) NOT NULL`, ledger row
+present. **For the next migration in this thread: apply it BEFORE the push, and verify the column
+exists as part of the deploy step — a green deploy proves the container started, not that the
+schema it expects is there.**
+
+**▶ THE BACKFILL IS DONE.** 88 decided rows stamped `pre-versioning` on 2026-09-11; verified
+after: 88 labelled (all decided, all with a snapshot) and 55 empty (all undecided, none with a
+snapshot). **It ran via Supabase MCP, not via its own command**, because the door as first
+registered could only dry-run — see below. `ai_verdict_snapshot` was NOT touched.
+
+**⚠ THE DOOR NOW WRITES, VIA AN ENV VAR, AND THAT SHAPE IS DELIBERATE.** `CronRunView` calls a
+command with NO arguments, so a `--apply`-only switch made the job reachable but incapable — the
+door test's own defect one layer in. The switch is **`BACKFILL_VERDICT_VERSION_APPLY=1`** (set,
+POST the job, then UNSET): *"a door you can close"*, which is what this repo prescribes for a
+dangerous one-off. **Do NOT re-register it as `(command, ['--apply'])`** — that makes every call to
+the door write. Only the literal `'1'` opens it; a test pins that `true`/`yes`/`0` do not.
+
+**⚠⚠ WHY — the learning loop existed and was unlabelled.** `ai_verdict_snapshot` (what the AI
+said) against `officer_verdict` (what the human said), compared per fact by
+`audit.compute_overrides`, rolled up by `override_metrics`, shown as the AI Reliability card.
+**88 pairs, 2026-06-17 → 2026-09-01, with nothing recording which `verdict_engine` predicted.**
+So the scorecard averaged every generation as one model. `_declared_pathway` changed on 2026-09-10
+and no stored row can tell you. Owner, 2026-09-11: *"The model is what predicts whether a student
+qualifies... Otherwise where does the learning from predicting and being corrected sit?"*
+
+- **`VERDICT_ENGINE_VERSION`** sits beside `build_verdict` with the bump rule AT the constant:
+  **bump when a change can alter a fact's status, band or red-chip count** — including anything
+  `build_verdict` reads (`pathway_engine`, `income_engine`, the genuineness ladder).
+- **⚠ IT IS STAMPED IN THE SAME BREATH AS THE SNAPSHOT.** What the AI said and which engine said
+  it are ONE fact; stamping elsewhere or later re-creates the gap.
+- **⚠ NEVER RE-RUN `build_verdict` OVER OLD SNAPSHOTS.** A snapshot is the historical record of
+  what the AI asserted at the time. Regenerating replaces the evidence with today's answer and
+  destroys the only basis the scorecard has. `test_THE_SNAPSHOT_IS_NEVER_REGENERATED` pins it.
+- **⚠ THE RATE IS STILL BLENDED, DELIBERATELY** (owner: *"A now, and B in future"*). The card
+  discloses the mix when `engineVersions.length > 1`. **Do not "fix" the blend by splitting the
+  roll-up until a second version has enough decided applications to compare** — 88 sit under
+  `pre-versioning`.
+- **⚠ NOT `MODEL_VERSION`, NOT `ai_registry`.** The former versions whether ONE DOCUMENT looks
+  genuine; the latter answers "which LLM would this job call now" and RESOLVES, NEVER RECORDS. This
+  engine calls no model at all.
+
+**▶ THE DATA STEP — 88 live rows, AFTER the deploy.**
+`backfill_verdict_engine_version` stamps `pre-versioning` on decided rows with no version.
+**DRY RUN IS THE DEFAULT**; `--apply` writes. Door: `CronRunView.JOBS['backfill-verdict-engine-version']`
+(this repo FAILS a test for any `backfill_*` with no route to the live service).
+⚠ **NEVER run it from a local checkout** — TD-206 retired exporting DB_* onto a laptop.
+It writes ONE column: it does not touch the snapshot, and leaves UNDECIDED rows empty so a future
+decision stamps the real engine.
+
+**▶ LOGGED, NOT BUILT:** split `override_metrics` per version once there is enough to compare
+(alternative (c) in the decision); `profile_engine.py`'s B40 vocabulary; **TD-237**; the landing
+page + sign-in prompt B40 copy; sending `pathway_confirmed_at` to the browser; teaching the stream
+axis about intake years (⚠ "sync the record to the letter" would be the WRONG fix — it overwrites
+a continuing student's current stream with their year-old admission stream).
+
+**⚠ THE OWNER GATE ON SABAH STILL STANDS** — record nothing (no `Programme` row, no membership, no
+credit) until it is **inked AND the money has changed hands**, with a bank reference for
+`external_reference`.
+
+## Superseded — previous Next Sprint (as of 2026-09-11, after AI model visibility)
 
 **✅ SHIPPED AND DEPLOYED 2026-09-11.** `main` at **`a87028a7`**; BOTH Cloud Builds SUCCESS;
 serving **halatuju-api-01026-tdc** / **halatuju-web-00876-z4d** (read from

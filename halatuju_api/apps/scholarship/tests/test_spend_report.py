@@ -14,6 +14,7 @@
 Merchant names below are shops. Student identifiers are invented.
 """
 import datetime
+import json
 from decimal import Decimal
 from unittest import mock
 
@@ -340,6 +341,60 @@ class TestTheFenceIsOnTheQuery(TestCase):
         self.assertEqual([r['merchant'] for r in sr.model_decisions(self.org_b)], ['SHOP B'])
 
 
+class TestThePlatformScope(TestCase):
+    """`ALL_ORGS` — the second scope, added S6 (2026-09-11) because a super was refused by their
+    own console. Everything here is about the ONE property that makes it safe to exist."""
+
+    def setUp(self):
+        self.org_a, self.cohort_a = make_org('all-a')
+        self.org_b, self.cohort_b = make_org('all-b')
+        self.app_a = make_app(self.org_a, self.cohort_a, '8000400170001')
+        self.app_b = make_app(self.org_b, self.cohort_b, '8000400170002')
+        txn(self.app_a, 'SHOP A', 10, category='food', decided_by='rule')
+        txn(self.app_b, 'SHOP B', 99, category='food', decided_by='rule')
+
+    def test_it_pools_every_tenant(self):
+        self.assertEqual(sr.totals(sr.ALL_ORGS)['spent'], D('109.00'))
+        self.assertEqual(sorted(r['merchant'] for r in sr.merchant_rows(sr.ALL_ORGS)),
+                         ['SHOP A', 'SHOP B'])
+        self.assertEqual(sorted(r['application_id'] for r in sr.student_rows(sr.ALL_ORGS)),
+                         sorted([self.app_a.id, self.app_b.id]))
+
+    def test_it_pools_the_wallet_gaps_too(self):
+        """The gaps read a DIFFERENT queryset from `_txns`, so widening one and forgetting the
+        other would give a super a platform table above a single tenant's fault list."""
+        make_app(self.org_a, self.cohort_a, wallet='')
+        make_app(self.org_b, self.cohort_b, wallet='')
+        self.assertEqual(len(sr.wallet_gaps(sr.ALL_ORGS)['students_without_wallet']), 2)
+        self.assertEqual(len(sr.wallet_gaps(self.org_a)['students_without_wallet']), 1)
+
+    def test_a_super_may_correct_a_shop_from_any_tenant(self):
+        changed, err = sr.set_owner_category('SHOP B', 'study', 's@x.com', sr.ALL_ORGS)
+        self.assertEqual((changed, err), (1, None))
+        self.assertEqual(MerchantCategory.objects.get(merchant='SHOP B').decided_by, 'owner')
+
+    def test_a_super_still_cannot_invent_a_shop(self):
+        """The platform scope widens WHOSE shops are listed. It is not a free-text write."""
+        self.assertEqual(sr.set_owner_category('NO SUCH SHOP', 'food', 's@x.com', sr.ALL_ORGS),
+                         (0, 'unknown_merchant'))
+
+    def test_None_is_NOT_the_platform_scope_and_still_reads_nothing(self):
+        """⚠⚠ THE WHOLE REASON `ALL_ORGS` IS A SENTINEL OBJECT AND NOT `None`.
+
+        Every accident that loses an organisation — an unset attribute, a missed keyword, a
+        `.get()` on a dict — hands `None` to these functions. That must stay an EMPTY read
+        (`owning_organisation=None` matches applications belonging to no organisation), never a
+        silent widening to every tenant. If somebody ever "simplifies" the sentinel away to
+        `None`, this test is what fails.
+        """
+        self.assertEqual(sr.totals(None)['spent'], D('0.00'))
+        self.assertEqual(sr.merchant_rows(None), [])
+        self.assertEqual(sr.student_rows(None), [])
+        self.assertEqual(sr.wallet_gaps(None)['students_without_wallet'], [])
+        self.assertEqual(sr.set_owner_category('SHOP A', 'food', 's@x.com', None),
+                         (0, 'unknown_merchant'))
+
+
 # ── the endpoints ─────────────────────────────────────────────────────────────
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -438,12 +493,55 @@ class TestWhoMayOpenIt(_EndpointBase):
         """401, not 403: no token is "who are you?", a wrong role is "not you"."""
         self.assertEqual(self.client.get(self.URL).status_code, 401)
 
-    def test_an_admin_with_no_organisation_gets_no_org_not_every_tenant(self):
-        """⚠ Defaulting to unfenced is exactly how "every tenant's students" happens by accident."""
+    def test_a_super_with_no_organisation_sees_the_platform(self):
+        """⚠ **REVERSED IN PLACE, 2026-09-11 (S6).** This test used to assert the opposite — a
+        super with no organisation got `400 no_org` — on the S4a reasoning that "defaulting to
+        unfenced is how every tenant's students happens by accident". That reasoning is about a
+        DEFAULT, and the scope is now an explicit sentinel that `_spending_admin` alone hands out.
+        The owner opened their own console as super, was refused, and asked for the platform view
+        (`docs/decisions.md`, 2026-09-11). **Do not "restore" the refusal** — the property that
+        replaced it is `test_None_is_NOT_the_platform_scope_and_still_reads_nothing`.
+        """
         PartnerAdmin.objects.create(
             supabase_user_id='ep-super', is_super_admin=True, is_active=True,
             name='Super', email='s@x.com')
         self.auth('ep-super')
+        res = self.client.get(self.URL)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('totals', res.json())
+
+    def test_a_tenant_admin_sees_ONLY_their_own_tenant_through_the_endpoint(self):
+        """⚠⚠ **THIS TEST EXISTS BECAUSE A BITE-CHECK FOUND ITS ABSENCE (S6, 2026-09-11).**
+
+        `TestTheFenceIsOnTheQuery` proves `spend_report` fences a scope it is GIVEN. Nothing
+        proved the VIEW gives it the right one. Widening `_spending_admin` to hand every caller
+        `ALL_ORGS` failed only the orphan-account test above — an org_admin WITH an organisation
+        would have seen every tenant's students' purchases, through the endpoint, silently, with
+        a green suite. That is the exact fault adding a second scope can introduce, so the
+        property is now asserted where it lives: at the door.
+        """
+        other_org, other_cohort = make_org('ep-other')
+        other_app = make_app(other_org, other_cohort, '8000400179999')
+        StudentProfile.objects.filter(pk=other_app.profile_id).update(
+            name='SOMEBODY ELSES STUDENT')
+        txn(other_app, 'ANOTHER TENANTS SHOP', 500, category='food', decided_by='rule')
+        txn(self.app, 'MY OWN SHOP', 7, category='food', decided_by='rule')
+
+        self.auth('ep-admin')
+        body = self.client.get(self.URL).json()
+        self.assertEqual(body['totals']['spent'], '7.00')
+        self.assertEqual([m['merchant'] for m in body['merchants']], ['MY OWN SHOP'])
+        rendered = json.dumps(body)
+        self.assertNotIn('ANOTHER TENANTS SHOP', rendered)
+        self.assertNotIn('SOMEBODY ELSES STUDENT', rendered)
+
+    def test_an_org_admin_with_no_organisation_still_gets_no_org(self):
+        """⚠ THE HALF THAT DID NOT CHANGE. Widening the super's scope must not turn a broken
+        account — an org_admin whose organisation was never set — into a platform reader."""
+        PartnerAdmin.objects.create(
+            supabase_user_id='ep-orphan', role='org_admin', is_active=True,
+            name='Orphan', email='o@x.com')
+        self.auth('ep-orphan')
         res = self.client.get(self.URL)
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], 'no_org')

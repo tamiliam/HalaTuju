@@ -14,7 +14,8 @@ import {
   DEFAULT_SORT, REVIEWER_SORT_LABEL, firstDirFor, sortReviewers,
   type ReviewerSortKey,
 } from '@/lib/reviewerTable'
-import { PAGE_SIZE_OPTIONS, nextSort, sortIndicator } from '@/lib/tableView'
+import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
+import SortHeader from '@/components/admin/SortHeader'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
 import { Pagination } from '@/components/Pagination'
 import ReviewerEmailsCard from '@/components/reviewers/ReviewerEmailsCard'
@@ -57,29 +58,6 @@ import { MessageBanner, StaffTable, useStaffAdmin } from '@/components/admin/Sta
 
 const roleBadge = (r: string) => roleBadgeClass(r)
 
-/** A sortable header. Every column except Languages uses this, so none can drift. */
-function SortHeader({ col, sort, onSort, align, t }: {
-  col: ReviewerSortKey
-  sort: { key: ReviewerSortKey; dir: 'asc' | 'desc' }
-  onSort: (col: ReviewerSortKey) => void
-  align?: 'right'
-  t: (k: string) => string
-}) {
-  const active = sort.key === col
-  return (
-    <th className={`px-4 py-3 ${align === 'right' ? 'text-right' : 'text-left'}`}
-      aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
-      <button type="button" onClick={() => onSort(col)}
-        className={`inline-flex items-center gap-1 font-semibold text-xs uppercase tracking-wider hover:text-primary-600 ${
-          active ? 'text-primary-600' : 'text-ground-600'}`}>
-        {t(REVIEWER_SORT_LABEL[col])}
-        <span aria-hidden className="text-[9px] leading-none">
-          {sortIndicator(active, sort.dir)}
-        </span>
-      </button>
-    </th>
-  )
-}
 
 export default function AdminReviewersList() {
   const { token, role } = useAdminAuth()
@@ -310,16 +288,16 @@ export default function AdminReviewersList() {
           <table className="w-full text-sm">
             <thead className="bg-ground-50/80 border-b">
               <tr>
-                <SortHeader col="name" sort={sort} onSort={onSort} t={t} />
-                <SortHeader col="role" sort={sort} onSort={onSort} t={t} />
+                <SortHeader col="name" label={t(REVIEWER_SORT_LABEL.name)} sort={sort} onSort={onSort} />
+                <SortHeader col="role" label={t(REVIEWER_SORT_LABEL.role)} sort={sort} onSort={onSort} />
                 {/* Languages is the one unsortable column — a set has no order to put it in. */}
                 <th className="text-left px-4 py-3 font-semibold text-ground-600 text-xs uppercase tracking-wider">
                   {t('admin.reviewers.colLanguages')}
                 </th>
-                <SortHeader col="openNow" sort={sort} onSort={onSort} align="right" t={t} />
-                <SortHeader col="completed" sort={sort} onSort={onSort} align="right" t={t} />
-                <SortHeader col="turnaround" sort={sort} onSort={onSort} align="right" t={t} />
-                <SortHeader col="status" sort={sort} onSort={onSort} t={t} />
+                <SortHeader col="openNow" label={t(REVIEWER_SORT_LABEL.openNow)} sort={sort} onSort={onSort} align="right" />
+                <SortHeader col="completed" label={t(REVIEWER_SORT_LABEL.completed)} sort={sort} onSort={onSort} align="right" />
+                <SortHeader col="turnaround" label={t(REVIEWER_SORT_LABEL.turnaround)} sort={sort} onSort={onSort} align="right" />
+                <SortHeader col="status" label={t(REVIEWER_SORT_LABEL.status)} sort={sort} onSort={onSort} />
                 {/* Plain headers, not sortable: "last seen" sorts by a column that is empty for
                     anybody predating it, which would bunch "not recorded" at one end and read as
                     an ordering of people. The action column has nothing to sort by at all. */}

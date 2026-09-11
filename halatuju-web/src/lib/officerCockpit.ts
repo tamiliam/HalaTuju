@@ -231,6 +231,11 @@ export interface Reliability {
   applications: number
   perFact: FactReliability[]
   overall: { decided: number; agree: number; pct: number }
+  /** ⚠ THE HONESTY FIELD. Every version of `verdict_engine` that produced a prediction in
+   *  this roll-up. The rate above BLENDS them (owner 2026-09-11: surface the mix now, split
+   *  the roll-up per version once there is enough under each to compare). Sorted, so the
+   *  card renders the same order every time. */
+  engineVersions: string[]
 }
 
 /** Turn the raw override metrics (how often the human DISAGREED with the AI) into the
@@ -247,6 +252,9 @@ export function verdictReliability(m: VerdictMetrics): Reliability {
     applications: m.applications,
     perFact,
     overall: { decided: m.fact_decisions, agree, pct: m.fact_decisions ? agree / m.fact_decisions : 0 },
+    // Empty keys ('' = a caller that did not say) are dropped: they are an absence of
+    // provenance, not a generation, and listing '' as a version would invent one.
+    engineVersions: Object.keys(m.engine_versions || {}).filter(Boolean).sort(),
   }
 }
 

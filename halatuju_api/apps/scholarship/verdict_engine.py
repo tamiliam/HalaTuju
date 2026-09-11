@@ -46,6 +46,35 @@ from .vision import name_match
 from .genuineness.bands import canonical_status
 
 
+# ⚠⚠ THE PREDICTOR'S OWN VERSION. BUMP IT WHEN A CHANGE HERE CAN ALTER A FACT'S STATUS, ITS BAND,
+# OR ITS RED-CHIP COUNT — including a change in anything `build_verdict` reads (pathway_engine,
+# income_engine, the genuineness ladder). Wording-only edits do not count; a moved threshold does.
+#
+# WHY IT EXISTS (owner, 2026-09-11): *"The model is what predicts whether a student qualifies.
+# Genuineness of the document is one stage, but it not all. Otherwise where does the learning from
+# predicting and being corrected sit?"* It sits in `ScholarshipApplication.ai_verdict_snapshot`
+# (what THIS engine said) against `officer_verdict` (what the human said), compared per fact by
+# `audit.compute_overrides` and rolled up by `audit.override_metrics` into the AI Reliability card.
+# 88 such pairs were banked between 2026-06-17 and 2026-09-01 with NOTHING recording which engine
+# produced them — so the scorecard averaged every generation as if it were one model. It is not
+# hypothetical: `_declared_pathway` changed on 2026-09-10, and no stored row can tell you.
+#
+# ⚠ THIS IS NOT `MODEL_VERSION`, AND NOT `ai_registry`. `genuineness/*.MODEL_VERSION` versions
+# whether ONE DOCUMENT looks genuine — one input to one fact. `halatuju.ai_registry` answers "which
+# LLM would this job call right now" and explicitly RESOLVES, NEVER RECORDS. This engine calls no
+# model at all; it is deterministic Python, and this constant is recorded ONTO the row so a past
+# prediction can still say which logic produced it.
+#
+# ⚠ NEVER re-run `build_verdict` over old snapshots to "fill this in". A snapshot is the historical
+# record of what the AI asserted at the time; re-running destroys the only evidence the scorecard
+# rests on. Rows decided before this constant existed carry the sentinel `PRE_VERSIONING`.
+VERDICT_ENGINE_VERSION = '2026-09-11.1'
+
+#: Stamped on decided rows that predate the version column. NOT a version number — deliberately
+#: unmistakable, so it can never be read as an engine generation.
+PRE_VERSIONING = 'pre-versioning'
+
+
 @dataclass(frozen=True)
 class Item:
     """One evidence / unresolved line. ``params`` interpolate into the matching

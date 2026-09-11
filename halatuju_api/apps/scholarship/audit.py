@@ -75,18 +75,36 @@ def compute_overrides(ai_verdict_snapshot, officer_verdict) -> dict:
 
 
 def override_metrics(decided_records) -> dict:
-    """Aggregate override stats across decided applications. ``decided_records`` is
-    an iterable of ``(ai_verdict_snapshot, officer_verdict)`` pairs (already
+    """Aggregate override stats across decided applications. ``decided_records`` is an iterable of
+    ``(ai_verdict_snapshot, officer_verdict)`` pairs, or ``(…, …, engine_version)`` TRIPLES (already
     filtered to verdict_decided_at IS NOT NULL by the caller).
 
     Returns ``{applications, fact_decisions, overrides, override_rate,
-    per_fact: {fact: {decided, overrides}}}``. ``override_rate`` is fact-level
-    (overrides / fact_decisions), 0.0 when nothing has been decided yet.
+    per_fact: {fact: {decided, overrides}}, engine_versions: {version: applications}}``.
+    ``override_rate`` is fact-level (overrides / fact_decisions), 0.0 when nothing is decided.
+
+    ⚠ ``engine_versions`` IS THE HONESTY FIELD, and it is why the rate above may not mean what a
+    reader assumes. Every prediction here came from ``verdict_engine``, and that engine CHANGES —
+    `_declared_pathway` changed on 2026-09-10, for one. Until 2026-09-11 nothing recorded which
+    generation produced a snapshot, so this roll-up averaged them all as if they were one model.
+    A caller that shows `override_rate` must show this beside it when it holds more than one key.
+
+    ⚠ THE RATE IS STILL BLENDED, DELIBERATELY (owner, 2026-09-11: *"A now, and B in future"*).
+    Splitting the roll-up per version was the alternative; with 88 decisions banked under
+    `pre-versioning` and a handful under anything newer, per-version rates would be noise for
+    months. This surfaces the mix NOW and leaves the split for when there is enough to compare.
+
+    Tuples stay accepted so existing callers and fixtures are not a rewrite; a 2-tuple counts its
+    application under ``''`` (unknown), which reads as "this caller did not say".
     """
     per_fact = {f: {'decided': 0, 'overrides': 0} for f in FACTS}
+    engine_versions: dict = {}
     applications = fact_decisions = overrides = 0
-    for ai_snapshot, officer_verdict in decided_records:
+    for record in decided_records:
+        ai_snapshot, officer_verdict = record[0], record[1]
+        version = record[2] if len(record) > 2 else ''
         applications += 1
+        engine_versions[version or ''] = engine_versions.get(version or '', 0) + 1
         result = compute_overrides(ai_snapshot, officer_verdict)
         fact_decisions += result['decided_count']
         overrides += result['override_count']
@@ -97,4 +115,5 @@ def override_metrics(decided_records) -> dict:
                 per_fact[row['fact']]['overrides'] += 1
     rate = round(overrides / fact_decisions, 4) if fact_decisions else 0.0
     return {'applications': applications, 'fact_decisions': fact_decisions,
-            'overrides': overrides, 'override_rate': rate, 'per_fact': per_fact}
+            'overrides': overrides, 'override_rate': rate, 'per_fact': per_fact,
+            'engine_versions': engine_versions}
