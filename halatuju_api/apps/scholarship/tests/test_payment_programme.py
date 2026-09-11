@@ -211,12 +211,82 @@ class TestBackfillLeavesRunsAlone(_Base):
         self.assertIsNone(run.programme_id)
 
 
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET='test-supabase-jwt-secret')
+class TestTheRunLISTNarrowsByGift(_Base):
+    """TD-241 (2026-09-11) — Payments moved to the PROGRAMME section, so the list narrows.
+
+    ⚠⚠ **THIS CLASS EXISTS BECAUSE A BITE-CHECK FOUND ITS ABSENCE.** Deleting the narrowing from
+    `AdminPaymentRunListView` failed NOTHING: the create path was covered from three directions
+    and the READ path from none. A list that ignored the gift would show a reader every run in
+    the organisation under a breadcrumb naming one gift — two funds' money on one screen, each
+    row looking like it belonged there.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.reader = PartnerAdmin.objects.create(
+            supabase_user_id='p2b-rd', role='admin', is_active=True,
+            owning_organisation=cls.org, name='Reader', email='rd@x.com')
+        cls.run_flag = PaymentRun.objects.create(
+            organisation=cls.org, programme=cls.flagship, reference='PR-FLAG-01',
+            payment_date=date(2026, 8, 1), period_month=date(2026, 8, 1))
+        cls.run_sabah = PaymentRun.objects.create(
+            organisation=cls.org, programme=cls.sabah, reference='PR-SABAH-01',
+            payment_date=date(2026, 8, 2), period_month=date(2026, 8, 1))
+
+    def _get(self, query=''):
+        import jwt
+        from rest_framework.test import APIClient
+        c = APIClient()
+        token = jwt.encode({'sub': 'p2b-rd', 'aud': 'authenticated', 'role': 'authenticated'},
+                           'test-supabase-jwt-secret', algorithm='HS256')
+        c.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        return c.get(f'/api/v1/admin/scholarship/payment-runs/{query}')
+
+    def test_naming_a_gift_lists_only_that_gifts_runs(self):
+        r = self._get(f'?programme={self.sabah.code}')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual([x['reference'] for x in r.json()['runs']], ['PR-SABAH-01'])
+
+    def test_naming_no_gift_still_lists_the_whole_organisation(self):
+        """⚠ An absent gift means DO NOT NARROW. A client that never learned about the parameter
+        reaches exactly what it always did — the narrowing can only ever subtract."""
+        r = self._get()
+        self.assertEqual(sorted(x['reference'] for x in r.json()['runs']),
+                         ['PR-FLAG-01', 'PR-SABAH-01'])
+
+    def test_another_tenants_gift_is_404_and_lists_nothing(self):
+        """⚠ 404, never 403, and never another tenant's runs. A cross-tenant code must not
+        confirm that gift exists, and must certainly not widen what this reader can see."""
+        other = _org(code='p2b-o3', name='Other Org 3')
+        foreign = _programme(other, 'p2b-f3', 'Foreign Bursary')
+        PaymentRun.objects.create(
+            organisation=other, programme=foreign, reference='PR-FOREIGN-01',
+            payment_date=date(2026, 8, 3), period_month=date(2026, 8, 1))
+        r = self._get(f'?programme={foreign.code}')
+        self.assertEqual(r.status_code, 404)
+        self.assertNotIn('PR-FOREIGN-01', r.content.decode())
+
+    def test_an_unknown_gift_is_the_same_answer(self):
+        self.assertEqual(self._get('?programme=no-such-gift').status_code, 404)
+
+
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET='test-supabase-jwt-secret',
                    BURSARY_AGREEMENT_ENABLED=False)
 class TestCreateEndpointChoosesTheGift(_Base):
     """Owner decision (2026-07-26): the OPERATOR states which gift a run pays from. The endpoint
     preselects when there is only one — which is BrightPath today, so nothing visibly changes —
-    and refuses to guess when there are two."""
+    and refuses to guess when there are two.
+
+    ⚠ **THE GIFT IS NAMED BY CODE SINCE TD-241 (2026-09-11), NOT BY `programme_id`.** These two
+    tests were REVERSED IN PLACE: Payments moved to the Programme section and the page's own
+    gift picker was removed, so the breadcrumb is the only control that answers "which gift",
+    and it carries a CODE. **The rules themselves did not change** — preselect one, refuse to
+    guess between two, 404 another tenant's gift — only the spelling of the parameter. Do not
+    "restore" `programme_id`: a second way to name the gift is a second way to create a run
+    against one you are not looking at.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -247,15 +317,28 @@ class TestCreateEndpointChoosesTheGift(_Base):
         self.assertEqual(PaymentRun.objects.count(), 0)
 
     def test_the_named_gift_is_used(self):
-        r = self._post({'payment_date': '2026-08-01', 'programme_id': self.sabah.id})
+        r = self._post({'payment_date': '2026-08-01', 'programme': self.sabah.code})
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.json()['programme'], {'id': self.sabah.id, 'name': 'Sabah Bursary'})
         self.assertEqual([i['application_id'] for i in r.json()['items']], [self.app_sabah.id])
 
+    def test_the_code_may_ride_as_a_QUERY_parameter_too(self):
+        """The breadcrumb sends `?programme=<code>` on every other Programme-scope call, so
+        the create endpoint accepts it there as well as in the body. One spelling of the
+        VALUE (a code); two places it may sit, because the page already had both habits."""
+        with mock.patch('apps.scholarship.payments.timezone.localdate',
+                        return_value=date(2026, 7, 20)):
+            r = self._client().post(
+                f'/api/v1/admin/scholarship/payment-runs/?programme={self.sabah.code}',
+                {'payment_date': '2026-08-01'}, format='json')
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()['programme']['id'], self.sabah.id)
+
     def test_another_tenants_programme_is_404_not_403(self):
+        """⚠ 404, never 403 — a cross-tenant code must not confirm that gift exists."""
         other_org = _org(code='p2b-o2', name='Other Org 2')
         foreign = _programme(other_org, 'p2b-f2', 'Foreign Bursary')
-        r = self._post({'payment_date': '2026-08-01', 'programme_id': foreign.id})
+        r = self._post({'payment_date': '2026-08-01', 'programme': foreign.code})
         self.assertEqual(r.status_code, 404)
         self.assertEqual(PaymentRun.objects.count(), 0)
 

@@ -12,10 +12,11 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
 import { canAccess, effectiveRole } from '@/lib/navigation'
+import { useProgrammeParam } from '@/lib/programmeScope'
 import { formatDate } from '@/lib/formatDate'
 import {
-  getPaymentRuns, createPaymentRun, getFundingSummary, getAdminScopes,
-  type PaymentRunSummary, type FundingSummary, type AdminScopeProgramme,
+  getPaymentRuns, createPaymentRun, getFundingSummary,
+  type PaymentRunSummary, type FundingSummary,
 } from '@/lib/admin-api'
 import { statusPill, monthLabel } from '@/lib/paymentStatus'
 
@@ -65,37 +66,33 @@ export default function PaymentsLandingPage() {
   //
   // ⚠ NOT a fence, and must never become one. `scopes` is a display list derived from the same
   // `owning_organisation` the fence uses; a client ignoring it reaches exactly the same data.
-  const [programmes, setProgrammes] = useState<AdminScopeProgramme[]>([])
-  const [programmeId, setProgrammeId] = useState<number | null>(null)
+  // ⚠⚠ **THE PAGE'S OWN GIFT PICKER WAS REMOVED — TD-241, owner, 2026-09-11.** Payments moved
+  // into the PROGRAMME section, so the breadcrumb already answers "which gift", and two
+  // controls answering it is two chances to create a run against a gift you are not looking
+  // at — on the one screen where the mistake moves money. One control, one answer.
+  //
+  // ⚠ IT IS STILL NOT A FENCE. The code travels as an explicit request value the server
+  // re-resolves inside the caller's own organisation (`_gift_narrowing`); a client sending
+  // nothing reaches exactly what the organisation fence already allowed, and the server still
+  // refuses `programme_required` rather than picking between two.
+  const programme = useProgrammeParam()
 
   useEffect(() => {
     if (!token || !allowed) { setLoading(false); return }
-    getPaymentRuns({ token })
+    getPaymentRuns(programme, { token })
       .then((d) => setRuns(d.runs))
       .catch(() => setError(t('admin.payments.loadFailed')))
       .finally(() => setLoading(false))
     // Best-effort: the funding summary is a supplementary section, so a failure here hides it
     // rather than breaking the runs list this page exists for.
-    getFundingSummary({ token }).then(setFunding).catch(() => setFunding(null))
-    // Also best-effort, and the fallback is SAFE rather than merely quiet: with no list the
-    // picker does not render and no `programme_id` is sent, which is exactly today's behaviour —
-    // the server then uses the org's only gift, or refuses with `programme_required` if there are
-    // two. A failed fetch can therefore never cause a run to be paid from the wrong fund.
-    getAdminScopes(locale, { token })
-      .then((s) => setProgrammes(
-        (s?.programmes ?? []).filter((p) => p.organisation_id === role?.owning_org_id)))
-      .catch(() => setProgrammes([]))
+    getFundingSummary(programme, { token }).then(setFunding).catch(() => setFunding(null))
+    // ⚠ `programme` IS A DEPENDENCY — switching gift in the breadcrumb must re-read both
+    // lists, or the crumb names one gift while the runs below belong to another.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, allowed])
+  }, [token, allowed, programme])
 
   if (role && !allowed) return <p className="text-critical-600">{t('apiErrors.superAdminRequired')}</p>
 
-  // ⚠ ONE gift → NO picker, and nothing sent. A control with a single option is furniture, and
-  // BrightPath must see the screen it has always seen. The moment a second gift exists the
-  // operator states which one — never a default, because a preselected fund is how one
-  // benefactor's money quietly pays another's students (`payments.create_run`'s own argument for
-  // taking the programme positionally).
-  const needsProgramme = programmes.length > 1
   const cancelledCount = runs.filter((r) => r.status === 'cancelled').length
   const visibleRuns = showCancelled ? runs : runs.filter((r) => r.status !== 'cancelled')
 
@@ -103,10 +100,11 @@ export default function PaymentsLandingPage() {
     if (!token || !payDate) return
     setBusy(true); setError('')
     try {
-      // `null` when the picker is not shown — the org runs one gift, so the server resolves it
-      // unambiguously. See `createPaymentRun`'s docstring for why absence is safe here.
+      // `undefined` when the breadcrumb could not say — one gift resolves itself, several with
+      // none chosen stays empty and the SERVER refuses with `programme_required`. Absence can
+      // only ever produce a question, never a run paid from the wrong fund.
       const run = await createPaymentRun(
-        payDate, payMonth || payDate.slice(0, 7), needsProgramme ? programmeId : null, { token })
+        payDate, payMonth || payDate.slice(0, 7), programme, { token })
       router.push(`/admin/payments/${run.id}`)
     } catch (e) {
       const code = (e as { code?: string })?.code
@@ -138,7 +136,7 @@ export default function PaymentsLandingPage() {
           <p className="mt-1 text-sm text-ground-500">{t('admin.payments.subtitle')}</p>
         </div>
         {canCreate && (
-          <button onClick={() => { setPayDate(''); setPayMonth(''); setProgrammeId(null); setError(''); setDialogOpen(true) }}
+          <button onClick={() => { setPayDate(''); setPayMonth(''); setError(''); setDialogOpen(true) }}
             className="shrink-0 rounded-lg bg-brand-fill px-4 py-2.5 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover">
             + {t('admin.payments.newRun')}
           </button>
@@ -295,25 +293,10 @@ export default function PaymentsLandingPage() {
           onClick={() => !busy && setDialogOpen(false)}>
           <div className="w-full max-w-md rounded-2xl bg-ground-0 p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-ground-900">{t('admin.payments.newRun')}</h2>
-            {needsProgramme && (
-              <>
-                {/* First field on purpose: which fund the money leaves is a bigger decision than
-                    when it leaves, and it is the one with no undo once a run is signed. */}
-                <label htmlFor="run-programme" className="mt-4 block text-sm font-medium text-ground-700">
-                  {t('admin.payments.programme')}
-                </label>
-                <select id="run-programme" className={`mt-1 ${inputCls}`}
-                  value={programmeId === null ? '' : String(programmeId)}
-                  onChange={(e) => setProgrammeId(e.target.value ? Number(e.target.value) : null)}>
-                  {/* Blank first, and no auto-selection — the operator states the gift. */}
-                  <option value="">{t('admin.payments.programmeChoose')}</option>
-                  {programmes.map((p) => (
-                    <option key={p.id} value={String(p.id)}>{p.name}</option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-ground-500">{t('admin.payments.programmeHint')}</p>
-              </>
-            )}
+            {/* ⚠ THE GIFT PICKER WAS HERE AND IS DELETED (TD-241). The breadcrumb names the
+                gift now, so this dialog asks only WHEN the money leaves. The safety did not
+                move: the server still refuses `programme_required` rather than picking
+                between two gifts, and the message for it is still handled below. */}
             {/* `htmlFor`/`id` added with the picker: these two labels were never associated with
                 their inputs, so a screen reader announced an unnamed date field on a money form.
                 Four attributes, no visual change. */}
@@ -326,7 +309,7 @@ export default function PaymentsLandingPage() {
             {error && <p className="mt-2 text-sm text-critical-600">{error}</p>}
             <div className="mt-5 flex items-center justify-end gap-3">
               <button onClick={() => setDialogOpen(false)} disabled={busy} className="text-sm font-medium text-ground-500 hover:text-ground-700">{t('common.cancel')}</button>
-              <button onClick={create} disabled={busy || !payDate || (needsProgramme && programmeId === null)} className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
+              <button onClick={create} disabled={busy || !payDate} className="rounded-lg bg-brand-fill px-5 py-2 text-sm font-medium text-brand-fill-ink hover:bg-brand-fill-hover disabled:opacity-50">
                 {busy ? t('common.loading') : t('admin.payments.createDraft')}
               </button>
             </div>

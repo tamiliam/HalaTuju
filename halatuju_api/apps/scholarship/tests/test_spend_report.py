@@ -373,6 +373,78 @@ class TestThePlatformScope(TestCase):
                          (0, 'unknown_merchant'))
 
 
+class TestTheGiftNarrowsInsideTheFence(TestCase):
+    """TD-241 (2026-09-11) — Spending moved to the PROGRAMME section.
+
+    ⚠⚠ **THE ONE PROPERTY THAT MATTERS: THE GIFT NARROWS, IT NEVER WIDENS.** The organisation is
+    the security fence; the gift is a restriction inside it. If a future edit ever makes those an
+    either/or, a caller naming a gift escapes the tenant wall — so the widening case is tested
+    directly, not merely implied by the narrowing one.
+    """
+
+    def setUp(self):
+        self.org_a, self.cohort_a = make_org('gift-a')
+        self.org_b, self.cohort_b = make_org('gift-b')
+        self.gift_a = self.cohort_a.programme
+        self.gift_b = self.cohort_b.programme
+        self.app_a = make_app(self.org_a, self.cohort_a, '8000400170001')
+        self.app_b = make_app(self.org_b, self.cohort_b, '8000400170002')
+        txn(self.app_a, 'SHOP A', 10, category='food', decided_by='rule')
+        txn(self.app_b, 'SHOP B', 99, category='food', decided_by='rule')
+
+    def test_naming_a_gift_narrows_to_it(self):
+        self.assertEqual(sr.totals(self.org_a, self.gift_a)['spent'], D('10.00'))
+        self.assertEqual([r['merchant'] for r in sr.merchant_rows(self.org_a, self.gift_a)],
+                         ['SHOP A'])
+
+    def test_naming_NO_gift_shows_everything_the_fence_allows(self):
+        """⚠ An absent gift means DO NOT NARROW — never "pick one for them". The client resolves
+        a single gift itself and refuses to guess between several, so a missing value here means
+        the client genuinely could not say, and a guess would be the 2026-09-03 defect."""
+        self.assertEqual(sr.totals(self.org_a)['spent'], D('10.00'))
+        self.assertEqual(sr.totals(self.org_a, None)['spent'], D('10.00'))
+
+    def test_ANOTHER_TENANTS_GIFT_WIDENS_NOTHING(self):
+        """⚠⚠ THE TEST THIS CLASS EXISTS FOR. Org A naming org B's gift must see NOTHING — not
+        org B's money. The two filters are AND, and this is what proves it. A service that
+        treated the gift as an alternative to the organisation would return RM99 here."""
+        self.assertEqual(sr.totals(self.org_a, self.gift_b)['spent'], D('0.00'))
+        self.assertEqual(sr.merchant_rows(self.org_a, self.gift_b), [])
+        self.assertEqual(sr.student_rows(self.org_a, self.gift_b), [])
+
+    def test_even_the_platform_scope_still_narrows_by_gift(self):
+        """A super sees every organisation — and naming a gift still means that gift only."""
+        self.assertEqual(sr.totals(sr.ALL_ORGS)['spent'], D('109.00'))
+        self.assertEqual(sr.totals(sr.ALL_ORGS, self.gift_b)['spent'], D('99.00'))
+
+    def test_the_wallet_gaps_narrow_with_everything_else(self):
+        """They read a DIFFERENT queryset from `_txns`, so narrowing one and forgetting the other
+        would put another gift's missing wallets on this gift's to-do list."""
+        make_app(self.org_a, self.cohort_a, wallet='')
+        make_app(self.org_b, self.cohort_b, wallet='')
+        self.assertEqual(len(sr.wallet_gaps(self.org_a, self.gift_a)['students_without_wallet']), 1)
+        self.assertEqual(sr.wallet_gaps(self.org_a, self.gift_b)['students_without_wallet'], [])
+
+    def test_a_correction_is_refused_for_a_shop_outside_the_gift_you_are_looking_at(self):
+        """The verdict is global, so the fence is on WHO MAY SET IT — and since this screen is now
+        gift-scoped, the gift is part of who. An officer looking at gift B cannot reach into a
+        shop only gift A's students used, even within their own organisation."""
+        org_c, cohort_c = make_org('gift-c')
+        second = ScholarshipCohort.objects.create(
+            code='gift-c-c2', name='B40', year=2026, owning_organisation=org_c,
+            programme=Programme.objects.create(organisation=org_c, code='gift-c-p2',
+                                               name_en='Second Gift'))
+        app_one = make_app(org_c, cohort_c, '8000400170003')
+        txn(app_one, 'ONLY GIFT ONE', 5, category='food', decided_by='rule')
+
+        self.assertEqual(
+            sr.set_owner_category('ONLY GIFT ONE', 'study', 'o@x.com', org_c, second.programme),
+            (0, 'unknown_merchant'))
+        changed, err = sr.set_owner_category('ONLY GIFT ONE', 'study', 'o@x.com', org_c,
+                                             cohort_c.programme)
+        self.assertEqual((changed, err), (1, None))
+
+
 # ── the endpoints ─────────────────────────────────────────────────────────────
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -512,6 +584,35 @@ class TestWhoMayOpenIt(_EndpointBase):
         rendered = json.dumps(body)
         self.assertNotIn('ANOTHER TENANTS SHOP', rendered)
         self.assertNotIn('SOMEBODY ELSES STUDENT', rendered)
+
+    def test_the_gift_narrows_THROUGH_THE_ENDPOINT_and_a_foreign_one_is_404(self):
+        """⚠ AT THE DOOR, not just in the service (TD-241).
+
+        The lesson from the platform scope three commits ago: service tests prove the query
+        filters a scope it is GIVEN; only an endpoint test proves the view gives it the right
+        one. A foreign gift is **404, never 403** — a cross-tenant code must not confirm that
+        gift exists.
+        """
+        other_org, other_cohort = make_org('ep-gift')
+        foreign = other_cohort.programme
+        txn(self.app, 'MY OWN SHOP', 7, category='food', decided_by='rule')
+
+        self.auth('ep-admin')
+        mine = self.cohort.programme
+        body = self.client.get(f'{self.URL}?programme={mine.code}').json()
+        self.assertEqual(body['totals']['spent'], '7.00')
+
+        res = self.client.get(f'{self.URL}?programme={foreign.code}')
+        self.assertEqual(res.status_code, 404)
+
+        # …and an unknown code is the SAME answer, so the two are indistinguishable.
+        self.assertEqual(self.client.get(f'{self.URL}?programme=no-such-gift').status_code, 404)
+
+    def test_omitting_the_gift_still_shows_the_whole_organisation(self):
+        """A client that never learned about `?programme=` reaches exactly what it always did."""
+        txn(self.app, 'MY OWN SHOP', 7, category='food', decided_by='rule')
+        self.auth('ep-admin')
+        self.assertEqual(self.client.get(self.URL).json()['totals']['spent'], '7.00')
 
     def test_an_org_admin_with_no_organisation_still_gets_no_org(self):
         """⚠ THE HALF THAT DID NOT CHANGE. Widening the super's scope must not turn a broken

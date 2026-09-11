@@ -2794,12 +2794,25 @@ export interface FundingSummary {
   rows: FundingSummaryRow[]
   totals: { students: number; award_total: string; paid_total: string; remaining_total: string }
 }
-export async function getFundingSummary(options?: ApiOptions) {
-  return adminFetch<FundingSummary>('/api/v1/admin/scholarship/payments/funding-summary/', options)
+export async function getFundingSummary(programme?: string, options?: ApiOptions) {
+  return adminFetch<FundingSummary>(
+    `/api/v1/admin/scholarship/payments/funding-summary/${giftQuery(programme)}`, options)
 }
 
-export async function getPaymentRuns(options?: ApiOptions) {
-  return adminFetch<{ runs: PaymentRunSummary[] }>('/api/v1/admin/scholarship/payment-runs/', options)
+/**
+ * `?programme=<code>` for a Programme-scope call, or '' when the caller could not say.
+ *
+ * ⚠ AN EMPTY STRING IS A REAL ANSWER AND MUST STAY ONE. `programmeScope` resolves a single
+ * gift itself and refuses to guess between several, so an absent code means the client
+ * genuinely does not know — and the server answers with everything the organisation fence
+ * already allowed rather than picking one. Never default this to "the first gift".
+ */
+const giftQuery = (programme?: string) =>
+  (programme ? `?programme=${encodeURIComponent(programme)}` : '')
+
+export async function getPaymentRuns(programme?: string, options?: ApiOptions) {
+  return adminFetch<{ runs: PaymentRunSummary[] }>(
+    `/api/v1/admin/scholarship/payment-runs/${giftQuery(programme)}`, options)
 }
 
 // ── Sponsor spending S4 — the officer's screen ───────────────────────
@@ -2854,17 +2867,19 @@ export interface SpendingOverview {
   categories: { code: string; label: string }[]
 }
 
-export async function getSpendingOverview(options?: ApiOptions) {
-  return adminFetch<SpendingOverview>('/api/v1/admin/scholarship/spending/', options)
+export async function getSpendingOverview(programme?: string, options?: ApiOptions) {
+  return adminFetch<SpendingOverview>(
+    `/api/v1/admin/scholarship/spending/${giftQuery(programme)}`, options)
 }
 
 /** Correct one shop's category. The verdict outranks every rung of the sorter, for ever. */
 export async function setSpendingCategory(
-  merchant: string, category: string, options?: ApiOptions,
+  merchant: string, category: string, programme: string | undefined, options?: ApiOptions,
 ) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
-  const res = await fetch(`${API_BASE}/api/v1/admin/scholarship/spending/category/`, {
+  const res = await fetch(
+    `${API_BASE}/api/v1/admin/scholarship/spending/category/${giftQuery(programme)}`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ merchant, category }),
@@ -2891,11 +2906,26 @@ export async function setSpendingCategory(
  * is the server's refusal, not the signature. So `null` means "I am not choosing", which is
  * honest and safe, and is what the screen sends while BrightPath runs one gift.
  */
+/**
+ * Create a DRAFT run.
+ *
+ * ⚠ **THE GIFT IS A CODE FROM THE BREADCRUMB SINCE TD-241** (2026-09-11). It was
+ * `programme_id`, taken from a picker ON the Payments page — and that picker was removed with
+ * this change, because two controls answering "which gift" is two chances to create a run
+ * against a gift you are not looking at, and the money moves either way.
+ *
+ * ⚠ STILL REQUIRED POSITIONALLY, STILL NULLABLE IN VALUE — P2a's rule, unchanged: a defaulted
+ * programme is the shape of the PF-1 routing bug, so every call site has to answer. `undefined`
+ * means the caller could not say, and the server then resolves the org's only gift or refuses
+ * with `programme_required`.
+ */
 export async function createPaymentRun(
-  payment_date: string, payment_month: string, programme_id: number | null, options?: ApiOptions,
+  payment_date: string, payment_month: string, programme: string | undefined,
+  options?: ApiOptions,
 ) {
-  return adminMutate<PaymentRunDetail>('/api/v1/admin/scholarship/payment-runs/', 'POST',
-    { payment_date, payment_month, ...(programme_id === null ? {} : { programme_id }) }, options)
+  return adminMutate<PaymentRunDetail>(
+    `/api/v1/admin/scholarship/payment-runs/${giftQuery(programme)}`, 'POST',
+    { payment_date, payment_month }, options)
 }
 export async function getPaymentRun(id: number, options?: ApiOptions) {
   return adminFetch<PaymentRunDetail>(`/api/v1/admin/scholarship/payment-runs/${id}/`, options)

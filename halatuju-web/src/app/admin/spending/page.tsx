@@ -43,6 +43,7 @@ import SpendingShops, { rm } from '@/components/admin/SpendingShops'
 import TableFrame from '@/components/admin/TableFrame'
 import { Pagination } from '@/components/Pagination'
 import { canAccess, effectiveRole } from '@/lib/navigation'
+import { useProgrammeParam } from '@/lib/programmeScope'
 import { formatDate } from '@/lib/formatDate'
 import { PAGE_SIZE_OPTIONS, nextSort } from '@/lib/tableView'
 import { usePagedRows, useSort } from '@/lib/usePagedRows'
@@ -65,6 +66,11 @@ export default function SpendingPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const allowed = canAccess('/admin/spending', effectiveRole(role))
+  // ⚠ WHICH GIFT — from the breadcrumb, sent as an EXPLICIT value the server re-fences on the
+  // caller's own organisation (TD-241). It is not an auth context and never becomes one; a
+  // client that sent nothing would reach exactly the rows the organisation fence allows.
+  // `undefined` when several gifts exist and none is chosen — the scope refuses to guess.
+  const programme = useProgrammeParam()
 
   const [tab, setTab] = useState<Tab>('shops')
   const [data, setData] = useState<SpendingOverview | null>(null)
@@ -74,12 +80,16 @@ export default function SpendingPage() {
 
   const load = useCallback(() => {
     if (!token || !allowed) { setLoading(false); return }
-    getSpendingOverview({ token })
+    setLoading(true)
+    getSpendingOverview(programme, { token })
       .then(setData)
       .catch(() => setError(t('admin.spending.loadFailed')))
       .finally(() => setLoading(false))
+    // ⚠ `programme` IS A DEPENDENCY. Switching gift in the breadcrumb must re-read; without
+    // it the crumb would say one gift while the table showed another — the exact failure the
+    // 2026-09-03 defect produced, arriving from the other direction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, allowed])
+  }, [token, allowed, programme])
 
   useEffect(() => { load() }, [load])
 
@@ -92,8 +102,8 @@ export default function SpendingPage() {
     setSaving(merchant)
     setError('')
     try {
-      await setSpendingCategory(merchant, category, { token })
-      const fresh = await getSpendingOverview({ token })
+      await setSpendingCategory(merchant, category, programme, { token })
+      const fresh = await getSpendingOverview(programme, { token })
       setData(fresh)
     } catch (e) {
       const code = e instanceof Error ? e.message : ''

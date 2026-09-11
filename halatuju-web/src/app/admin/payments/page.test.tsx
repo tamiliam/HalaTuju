@@ -77,55 +77,59 @@ describe('which gift the run pays from', () => {
     fireEvent.click(screen.getByText(/admin.payments.newRun/))
   }
 
-  it('shows NO picker and sends NO programme when the organisation runs one gift', async () => {
+  /*
+   * ⚠⚠ **THREE TESTS WERE REPLACED HERE, NOT DELETED — TD-241, owner, 2026-09-11.**
+   *
+   * Payments moved from the Organisation section to the PROGRAMME section, so the BREADCRUMB
+   * names the gift and the page's own picker was removed. The old three asserted the picker:
+   * that it stayed hidden with one gift, that it appeared and blocked submission with two, and
+   * that it offered only the caller's own organisation's gifts. There is no picker to assert.
+   *
+   * **What must NOT be lost with it is the SAFETY those tests protected**, and it is all still
+   * here, one layer down:
+   *   * nothing is guessed — the page sends whatever the breadcrumb resolved, and `undefined`
+   *     when it could not say;
+   *   * the SERVER refuses `programme_required` rather than picking between two gifts, and the
+   *     screen still explains that in words (the test below this block, untouched);
+   *   * a gift from another tenant is a 404, proved at the endpoint in `test_payment_programme`.
+   *
+   * Do not "restore" the picker. Two controls answering "which gift" is two chances to create a
+   * run against a gift you are not looking at, on the one screen where that moves money.
+   */
+  it('sends the gift the BREADCRUMB resolved, without asking again', async () => {
     await openDialog()
+    // No picker: the crumb above the page already says which gift, and it is not repeated here.
     expect(screen.queryByLabelText('admin.payments.programme')).toBeNull()
 
-    fireEvent.change(screen.getByLabelText('admin.payments.paymentDate'), { target: { value: '2999-01-05' } })
+    fireEvent.change(screen.getByLabelText('admin.payments.paymentDate'),
+                     { target: { value: '2999-01-05' } })
     fireEvent.click(screen.getByText('admin.payments.createDraft'))
 
-    // `null`, not a guessed id: the server resolves the org's only gift, which is exactly the
-    // behaviour BrightPath has today. A control with one option would be furniture.
     await waitFor(() => expect(mockApi.createPaymentRun).toHaveBeenCalled())
-    expect(mockApi.createPaymentRun.mock.calls[0][2]).toBeNull()
+    // A CODE now, not an id — and `undefined` here because the harness mounts outside the shell,
+    // so `useProgrammeParam` has no scope to read. That is the "could not say" case, and the
+    // server answers it by resolving the org's only gift or refusing. Never by guessing.
+    expect(mockApi.createPaymentRun.mock.calls[0][2]).toBeUndefined()
   })
 
-  it('asks which gift once there are two, and refuses to submit until told', async () => {
-    mockApi.getAdminScopes.mockResolvedValue(scopes(
-      programme(1, 'brightpath-flagship', 'BrightPath Bursary'),
-      programme(2, 'brightpath-sabah', 'BrightPath Sabah'),
-    ))
+  it('⚠ THE CREATE BUTTON IS NO LONGER BLOCKED BY A GIFT CONTROL', async () => {
+    // It was disabled until the picker had a value. With the picker gone, only the DATE can
+    // block it — and if a gift is genuinely missing the server says so in words, which is a
+    // better failure than a button that will not press with nothing explaining why.
     await openDialog()
-
-    const picker = await screen.findByLabelText('admin.payments.programme')
-    fireEvent.change(screen.getByLabelText('admin.payments.paymentDate'), { target: { value: '2999-01-05' } })
-
-    // Nothing is preselected — a defaulted fund is how one benefactor's money pays another's
-    // students, which is the whole argument for `create_run` taking it positionally.
-    expect((picker as HTMLSelectElement).value).toBe('')
     const create = screen.getByText('admin.payments.createDraft') as HTMLButtonElement
-    expect(create.disabled).toBe(true)
-
-    fireEvent.change(picker, { target: { value: '2' } })
+    expect(create.disabled).toBe(true)                       // no date yet
+    fireEvent.change(screen.getByLabelText('admin.payments.paymentDate'),
+                     { target: { value: '2999-01-05' } })
     expect(create.disabled).toBe(false)
-    fireEvent.click(create)
-
-    await waitFor(() => expect(mockApi.createPaymentRun).toHaveBeenCalled())
-    expect(mockApi.createPaymentRun.mock.calls[0][2]).toBe(2)
   })
 
-  it('offers only the gifts of the admin OWN organisation', async () => {
-    // The server reads `org = admin.owning_organisation` even for a super, so offering another
-    // tenant's programme would build a picker whose choices the server answers 404 to.
-    mockApi.getAdminScopes.mockResolvedValue(scopes(
-      programme(1, 'brightpath-flagship', 'BrightPath Bursary'),
-      programme(2, 'brightpath-sabah', 'BrightPath Sabah'),
-      programme(3, 'inspire-stpm', 'Inspire STPM', 12),
-    ))
-    await openDialog()
-    const picker = await screen.findByLabelText('admin.payments.programme')
-    const options = Array.from(picker.querySelectorAll('option')).map((o) => o.textContent)
-    expect(options).toEqual(['admin.payments.programmeChoose', 'BrightPath Bursary', 'BrightPath Sabah'])
+  it('asks the server for the runs and the funding of the SAME gift', async () => {
+    // ⚠ One gift, or the list and the money summary on one screen describe two different funds.
+    render(<PaymentsLandingPage />)
+    await screen.findByText('26/07/2026')
+    expect(mockApi.getPaymentRuns.mock.calls[0][0])
+      .toEqual(mockApi.getFundingSummary.mock.calls[0][0])
   })
 
   it('explains `programme_required` in words instead of failing blankly', async () => {
