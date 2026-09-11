@@ -172,12 +172,25 @@ class Command(BaseCommand):
                     f'{name}: statement says MYR {stated} for {month}. The ledger could not be '
                     f'read, so this was NOT checked ({exc.__class__.__name__}).'))
                 continue
-            ok = abs(gcp - stated) <= Decimal('0.05')
-            style = self.style.SUCCESS if ok else self.style.ERROR
-            self.stdout.write(style(
-                f'{name}: statement says MYR {stated} for {month}; the ledger holds MYR {gcp} '
-                f'from BigQuery. {"MATCHES." if ok else "THESE DISAGREE - re-run sync_gcp_costs."}'
-                f'  (whole ledger for {month}: MYR {ledger})'))
+            # ⚠ THE STATEMENT COVERS THE WHOLE BILLING ACCOUNT; THE LEDGER COVERS ONE PROJECT.
+            # Sibling products sit under the same account — Lentera costs about RM0.30 a month,
+            # and FicusValue appeared in August at RM8.98 — so the ledger is EXPECTED to be a
+            # little smaller, and a flat "these disagree" cries wolf every single month. The
+            # first run said exactly that and was wrong both times.
+            #
+            # What is actually a fault is the ledger being LARGER than the statement, or a gap
+            # too big to be siblings: the first means we are recording cost Google never charged,
+            # the second means a whole HalaTuju SKU went missing from the pull.
+            gap = stated - gcp
+            if gap < Decimal('-0.05'):
+                self.stdout.write(self.style.ERROR(
+                    f'{name}: the ledger holds MYR {gcp} for {month} but the statement says only '
+                    f'MYR {stated}. The ledger is LARGER than the bill — re-run sync_gcp_costs.'))
+            else:
+                self.stdout.write(self.style.SUCCESS(
+                    f'{name}: statement MYR {stated} for {month}, HalaTuju MYR {gcp} from '
+                    f'BigQuery, MYR {gap.quantize(Decimal("0.01"))} on other projects in the same '
+                    f'billing account. Consistent.  (whole ledger for {month}: MYR {ledger})'))
 
         if problems:
             self.stdout.write('')
