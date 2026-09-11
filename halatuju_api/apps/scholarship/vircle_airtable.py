@@ -219,7 +219,7 @@ def apply_update(payload: dict) -> dict:
             result['activated'] = 'kept'
         else:
             # Presence is the signal; an unparseable date still counts as activated NOW —
-            # the same rule as the relay sheet's manual column (`sync_activation_status`).
+            # the rule the retired relay-sheet column followed before this became the one writer.
             app.vircle_activated_at = _parse_activated_date(activated_raw) or timezone.now()
             fields.append('vircle_activated_at')
             result['activated'] = 'set'
