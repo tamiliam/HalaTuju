@@ -8,6 +8,12 @@ verbatim from the July and August 2026 PDFs the owner supplied. That is the whol
 file: a parser tested against text somebody invented will keep passing on the day a provider
 changes its layout, which is the only day it matters.
 
+⚠ **ONE THING IS REDACTED: the Twilio Account SID**, which appears as `ACxxxx…` below. It is a
+real account identifier and GitHub's push protection correctly refused the first attempt to push
+it. No parser reads it — it is decoration in the fixture — so blanking it costs the tests nothing
+and keeps an account id out of a public repository. Nothing else here is altered: every figure,
+date and invoice number is exactly as the provider printed it, because those ARE what is tested.
+
 The property that carries this module is **an invoice must reconcile to its own printed total**
 before it is allowed to become a ledger row. It earned that on the first run: Twilio's July
 invoice lists three products summing to $4.30 and prints a total of $4.29.
