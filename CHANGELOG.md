@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## Payments and Spending belong to a GIFT, not to an organisation - TD-241 - 2026-09-11
+
+The owner raised this on 2026-09-10 ("*I am thinking if both payment and spending should be parked
+under gift programme*"), deferred it, and asked for it on 2026-09-11. **The two moved together**,
+which was recorded as a condition when it was first raised: released money and spent money are two
+halves of one story, and a console where one is gift-scoped and the other is not invites a reader
+to compare two different totals.
+
+**It was never a menu change.**
+
+- **Payments** already carried `PaymentRun.programme` (P2b) but its LIST ignored it, and the page
+  had **its own gift picker** that would have competed with the breadcrumb. The picker is REMOVED:
+  two controls answering "which gift" is two chances to create a run against a gift you are not
+  looking at, on the one screen where that moves money. The gift now travels as a CODE from the
+  breadcrumb, replacing `programme_id`.
+- **Spending** had no gift link at all. It reaches one through `application.programme` - a
+  set-once denormalised copy of `cohort.programme`, so it is one filter rather than a join and
+  cannot drift when a cohort is later moved.
+- **The funding summary** narrows too, so the runs list and the money summary on one screen can
+  never describe two different funds.
+
+**⚠ THE GIFT NARROWS INSIDE THE ORGANISATION FENCE AND CAN NEVER WIDEN IT.** This is the sentence
+`payments.eligible_rows` has always carried, now also true of `spend_report._txns`: the
+organisation is the security wall, the gift is a restriction within it. `_AdminBase._gift_narrowing`
+is the single place a `?programme=<code>` is resolved, and it only ever finds a gift the caller's
+own organisation owns - so an unknown code and another tenant's code are indistinguishable, and
+both are **404, never 403**.
+
+**⚠ AN ABSENT GIFT MEANS "DO NOT NARROW", NEVER "PICK ONE".** Choosing server-side when none was
+named is the 2026-09-03 defect exactly - the console showed the owner a DIFFERENT programme's
+settings than the one they had opened. `programmeScope` resolves a single gift itself and refuses
+to guess between several, so a missing value means the client genuinely could not say. Creating a
+run is the one exception, and it is unchanged: the server resolves the org's only gift or refuses
+with `programme_required`.
+
+**⚠ Nobody gained or lost reach.** The role lists on both nav rows are untouched; `finance` still
+has Payments and still has no Spending. Only the rows' POSITION moved. They deliberately do NOT
+carry `needsProgramme`: Configuration EDITS one gift so offering it before you name one is
+meaningless, but a money row that vanished from the sidebar would read as a lost permission rather
+than a pending question.
+
+**⚠ FIVE BITE-CHECKS. FOUR BIT; ONE WAS SILENT AND FOUND A REAL GAP:** deleting the narrowing from
+the payment-run LIST failed nothing - the create path was covered from three directions and the
+read path from none. `TestTheRunLISTNarrowsByGift` now covers it. Worth noting that the worst
+fault (making the gift an ALTERNATIVE to the organisation filter) was caught twice: by the new
+cross-tenant test AND by the org-fence static guard, which is what that guard is for.
+
+Gates: **6530 pytest**, **2168 jest**, lint clean, `next build` exit 0. No migration.
+
 ## What it cost, what we charge, and the screen that sets the rates - 2026-09-11
 
 The owner sent August's real invoices — GCP RM23.92, Supabase $25, Google Workspace RM18.90,

@@ -239,21 +239,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
       { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
-      { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title', chord: 'Y',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
-        gate: { mode: 'always' } },
-      // Sponsor spending S4 — what students actually spent, and the one correction that
-      // outranks the sorter. Sits beside Payments because released money and spent money are
-      // two halves of one story.
-      // ⚠ `finance` is DELIBERATELY ABSENT, unlike its neighbour. The backend refuses it for
-      // the same reason: `_b40_scope` promises a finance admin never sees student data beyond
-      // the Payments allowlist, and this screen carries names beside purchases. This row and
-      // `_SPENDING_ROLES` in views_admin.py must agree; the page's own test pins the pair.
-      // ⚠ NOT 'G' — that is CHORD_PREFIX, the key that ARMS a chord, so it can never be one.
-      // 'X' for expenses; 'S' is Students and 'P' is Sponsors.
-      { id: 'spending', href: '/admin/spending', labelKey: 'admin.spending.nav', chord: 'X',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin'],
-        gate: { mode: 'always' } },
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
         scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title', chord: 'B',
@@ -309,6 +294,30 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'programmeConfig', href: '/admin/programme', labelKey: 'admin.programme.config.nav',
         chord: 'W', scope: 'programme', roles: ['super', 'org_admin'], gate: { mode: 'always' },
         exact: true, match: ['/admin/programme/years'], needsProgramme: true },
+      // ⚠ **PAYMENTS AND SPENDING MOVED HERE FROM ORGANISATION — TD-241, owner, 2026-09-11.**
+      // Money is raised, released and spent PER GIFT: `PaymentRun.programme` has said so since
+      // P2b, and a run that spanned two gifts would pay one benefactor's students from
+      // another's money. They were under Organisation only because that is where the console
+      // put money-shaped things before gifts existed as a scope.
+      // ⚠ **THEY MOVE TOGETHER, ALWAYS** (recorded when the owner first raised this): released
+      // money and spent money are two halves of one story, and a console where one is
+      // gift-scoped and the other is not invites a reader to compare two different totals.
+      // ⚠ The scope here changes what the BREADCRUMB says and what each page SENDS; it is not
+      // a fence. Both endpoints re-resolve `?programme=<code>` inside the caller's own
+      // organisation (`_AdminBase._gift_narrowing`), so a client ignoring it reaches the same
+      // rows the organisation fence already allowed.
+      { id: 'payments', href: '/admin/payments', labelKey: 'admin.payments.title', chord: 'Y',
+        scope: 'programme', roles: ['super', 'org_admin', 'admin', 'finance'],
+        gate: { mode: 'always' } },
+      // ⚠ `finance` is DELIBERATELY ABSENT, unlike its neighbour. The backend refuses it for
+      // the same reason: `_b40_scope` promises a finance admin never sees student data beyond
+      // the Payments allowlist, and this screen carries names beside purchases. This row and
+      // `_SPENDING_ROLES` in views_admin.py must agree; the page's own test pins the pair.
+      // ⚠ NOT 'G' — that is CHORD_PREFIX, the key that ARMS a chord, so it can never be one.
+      // 'X' for expenses; 'S' is Students and 'P' is Sponsors.
+      { id: 'spending', href: '/admin/spending', labelKey: 'admin.spending.nav', chord: 'X',
+        scope: 'programme', roles: ['super', 'org_admin', 'admin'],
+        gate: { mode: 'always' } },
     ],
   },
   {

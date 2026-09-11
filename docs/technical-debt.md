@@ -3606,7 +3606,14 @@ reading is the work.
 
 (Logged 2026-09-10 at Spending S4, from the guard widening that found it.)
 
-### [TD-241] Payments and Spending sit under ORGANISATION, and the money model says GIFT — medium
+### [TD-241] Payments and Spending sit under ORGANISATION, and the money model says GIFT — ✅ CLOSED 2026-09-11
+
+**✅ CLOSED 2026-09-11.** Both rows moved to the Programme group, together, as the entry required.
+Both endpoints take `?programme=<code>`, resolved once by `_AdminBase._gift_narrowing`, narrowing
+INSIDE the organisation fence and never instead of it (an unknown or cross-tenant code is 404).
+The Payments page's own gift picker was deleted — the breadcrumb is the only control that names a
+gift. Nobody gained or lost reach. Five bite-checks; the silent one found that nothing tested the
+run LIST's narrowing. See `docs/decisions.md` and the CHANGELOG entry of the same date.
 
 **Raised by the owner, 2026-09-10**, while reviewing where the new Spending page sits:
 *"I am thinking if both payment and spending should be parked under gift programme, instead of

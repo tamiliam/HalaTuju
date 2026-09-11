@@ -1,5 +1,40 @@
 # Architectural Decisions — HalaTuju
 
+## Payments and Spending are PROGRAMME-scoped, and they move together — TD-241, 2026-09-11
+
+**Decision:** both nav rows move from the Organisation group to the Programme group. Both endpoints
+accept `?programme=<code>`, resolved once by `_AdminBase._gift_narrowing`. The Payments page's own
+gift picker is deleted; the breadcrumb is the only control that names a gift.
+
+**Rationale:** money is raised, released and spent per gift — `PaymentRun.programme` has said so
+since P2b, and `create_run` refuses to span two gifts because "a run that spanned two gifts would
+pay one benefactor's students from another's money". The console had them under Organisation only
+because that is where money-shaped things went before gifts existed as a scope.
+
+**Why together.** Recorded as a condition when the owner first raised it (2026-09-10) and honoured
+here: released money and spent money are two halves of one story. A console where one is
+gift-scoped and the other is not invites a reader to compare two totals that do not cover the same
+students.
+
+**⚠ The scope is DISPLAY plus an explicit request value — it is not a fence, and must not become
+one.** `ScopeSwitcher` has said since N3a that the breadcrumb must never travel as a header or
+anything ambient. It does not: the code is sent explicitly and the server re-resolves it inside the
+caller's own `owning_organisation`. A client that ignores the parameter entirely reaches exactly
+the rows the organisation fence already allowed.
+
+**Alternatives considered:** (a) move only Payments, since only it had a programme column —
+rejected, that is precisely the split that makes two totals comparable-looking; (b) keep the
+Payments picker as a confirmation on create — rejected by the owner: one control, one answer, and
+the server still refuses `programme_required` rather than picking.
+
+**Trade-offs:** Spending has no programme column of its own and filters through
+`application.programme`. That field is a set-once denormalisation, so it cannot drift — but a
+future need to re-home an application between gifts would have to move spending deliberately.
+
+**Revisit if:** a gift is ever allowed to span organisations (it cannot today — `Programme` has an
+`organisation` FK), which would make "narrows inside the fence" no longer the right shape.
+
+
 ## A tab's count is of the WHOLE list; the filter's count is beside the filter — S7, 2026-09-11
 
 **Decision:** `PanelTab.count` is the unfiltered row count. A second, quieter count appears next to

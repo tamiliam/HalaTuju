@@ -481,7 +481,7 @@ describe('the Unsorted tab', () => {
     expect(controls).toHaveLength(2)
     fireEvent.change(controls[0], { target: { value: 'study' } })
     await waitFor(() => expect(mockApi.setSpendingCategory)
-      .toHaveBeenCalledWith('AL HUDHA ENTERPRISE', 'study', { token: 'tok' }))
+      .toHaveBeenCalledWith('AL HUDHA ENTERPRISE', 'study', undefined, { token: 'tok' }))
   })
 
   it('says so plainly when nothing is left to place', async () => {
@@ -536,7 +536,7 @@ describe('the correction', () => {
       const controls = await screen.findAllByLabelText(/AL HUDHA ENTERPRISE/)
       fireEvent.change(controls[index], { target: { value: 'study' } })
       await waitFor(() => expect(mockApi.setSpendingCategory)
-        .toHaveBeenCalledWith('AL HUDHA ENTERPRISE', 'study', { token: 'tok' }))
+        .toHaveBeenCalledWith('AL HUDHA ENTERPRISE', 'study', undefined, { token: 'tok' }))
       view.unmount()
     }
   })

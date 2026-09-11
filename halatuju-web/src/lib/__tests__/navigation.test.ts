@@ -59,11 +59,16 @@ describe('every registry label resolves in all three locales', () => {
 // role's reach must be a deliberate edit here (docs/scholarship/role-matrix.md first).
 describe('visibleNav per role', () => {
   const EXPECTED: Record<AdminRoleName, string[]> = {
+    // ⚠ **TD-241 (2026-09-11): `payments` AND `spending` MOVED FROM ORGANISATION TO
+    // PROGRAMME**, together, at the owner's request. **NOBODY GAINED OR LOST REACH** — the
+    // roles on both rows are untouched, and this list still holds exactly the same ids; only
+    // their POSITION moved, from before `contracts` to after `programmeConfig`. Money is
+    // raised, released and spent per gift, which `PaymentRun.programme` has said since P2b.
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'spending',
+      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources',
       'contracts', 'billing',
-      'applications', 'programmeConfig',
+      'applications', 'programmeConfig', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
@@ -82,18 +87,21 @@ describe('visibleNav per role', () => {
     // real loss is `finance`, which is no longer offered the reserved `fund` slot — it never had a
     // page, so this removes a disabled row rather than a power.
     org_admin: [
-      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'spending',
+      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources',
       'contracts', 'billing',
-      'applications', 'programmeConfig',
+      'applications', 'programmeConfig', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'staff', 'reviewers', 'sponsors', 'sources', 'payments', 'spending',
-      'applications',
+      'administration', 'staff', 'reviewers', 'sponsors', 'sources',
+      'applications', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
+    // ⚠ `finance` still has Payments and still has NO Spending — the move changed where the
+    // row sits, never who may open it.
     finance: [
-      'administration', 'staff', 'reviewers', 'sponsors', 'payments',
+      'administration', 'staff', 'reviewers', 'sponsors',
+      'payments',
       'profile', 'guide', 'faq',
     ],
     qc: ['applications', 'profile', 'guide', 'faq'],
@@ -393,9 +401,14 @@ describe('visibleNav groups', () => {
   // the gift card now takes you. Do NOT re-sort this to match the Configuration screen's own
   // tab order (Intake year → Rules → What we ask for); that follows the DATA, which is a
   // different question from which page a person opens most.
-  it('the programme scope is two rows, the one you use daily first', () => {
+  // ⚠ FOUR ROWS SINCE TD-241 (2026-09-11): Payments and Spending moved here from
+  // Organisation, together, because money is raised, released and spent PER GIFT. They sit
+  // AFTER configuration for the same frequency reason the note above gives — you open the
+  // applicants daily, set the gift up once, and reach for the money on a schedule.
+  it('the programme scope is four rows, the one you use daily first', () => {
     const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
-    expect(prog.items.map((i) => i.id)).toEqual(['applications', 'programmeConfig'])
+    expect(prog.items.map((i) => i.id))
+      .toEqual(['applications', 'programmeConfig', 'payments', 'spending'])
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
@@ -414,12 +427,22 @@ describe('visibleNav groups', () => {
 
     it('hides Configuration, and only Configuration, while no gift is chosen', () => {
       const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id)).toEqual(['applications'])
+      expect(prog.items.map((i) => i.id)).toEqual(['applications', 'payments', 'spending'])
     })
 
-    it('shows both rows once a gift is chosen', () => {
+    it('⚠ PAYMENTS AND SPENDING STAY VISIBLE WITH NO GIFT CHOSEN, like Applications', () => {
+      // They deliberately do NOT carry `needsProgramme` (TD-241). Configuration EDITS one
+      // gift, so offering it before you have named one is meaningless. Payments and Spending
+      // READ, and their pages ask which gift the way Applications does — a money row that
+      // vanished from the sidebar would read as a lost permission, not as a pending question.
+      const prog = visibleNav(noGift('finance')).find((g) => g.scope === 'programme')!
+      expect(prog.items.map((i) => i.id)).toEqual(['payments'])
+    })
+
+    it('shows every row once a gift is chosen', () => {
       const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id)).toEqual(['applications', 'programmeConfig'])
+      expect(prog.items.map((i) => i.id))
+        .toEqual(['applications', 'programmeConfig', 'payments', 'spending'])
     })
 
     // ⚠ THE REVIEWER STRAND, PINNED. Programme is a reviewer's ONLY sidebar group (asserted

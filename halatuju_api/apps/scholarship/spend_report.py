@@ -84,23 +84,39 @@ class _AllOrganisations:
 ALL_ORGS = _AllOrganisations()
 
 
-def _txns(org):
-    """Every spend transaction this scope may see. **The fence, in one place.**"""
+def _txns(org, programme=None):
+    """Every spend transaction this scope may see. **The fence, in one place.**
+
+    ⚠⚠ **`programme` NARROWS ALONGSIDE THE ORGANISATION FILTER, NEVER INSTEAD OF IT.** This is
+    the same wording `payments.eligible_rows` carries, and it is load-bearing: the organisation
+    is the SECURITY fence and the gift is a restriction inside it. Read the code below in that
+    order — if a future edit ever makes the two an either/or, a caller naming a gift would escape
+    the tenant wall. TD-241 (2026-09-11), when Spending moved to the Programme section.
+
+    The gift itself is resolved by `_AdminBase._gift_narrowing`, which only ever finds one inside
+    the caller's own organisation — so this filter cannot reach rows the fence had excluded.
+    """
     from .models import BursarySpendTxn
 
     if org is ALL_ORGS:
         # ⚠ THE PRAGMA SITS DIRECTLY ABOVE THE QUERY BECAUSE THE GUARD LOOKS 200 CHARACTERS.
         # org-fence: DELIBERATELY UNFENCED — the platform scope, reachable only via `ALL_ORGS`,
         # which only `_SpendingBase` hands out and only to a super. See the note on the sentinel.
-        return BursarySpendTxn.objects.all()
-    # org-fence: application__owning_organisation, the same fence the Payments funding summary
-    # uses. A caller with no organisation is refused by the view before reaching here.
-    return BursarySpendTxn.objects.filter(application__owning_organisation=org)
+        qs = BursarySpendTxn.objects.all()
+    else:
+        # org-fence: application__owning_organisation, the same fence the Payments funding summary
+        # uses. A caller with no organisation is refused by the view before reaching here.
+        qs = BursarySpendTxn.objects.filter(application__owning_organisation=org)
+    if programme is not None:
+        # `application.programme` is a set-once denormalised copy of `cohort.programme`, so this
+        # is one filter rather than a join — and it cannot drift when a cohort is later moved.
+        qs = qs.filter(application__programme=programme)
+    return qs
 
 
-def totals(org) -> dict:
+def totals(org, programme=None) -> dict:
     """The four figures above the table. Every one of them COMPUTED, never estimated."""
-    rows = _txns(org).filter(tx_type=TX_SPEND).values_list('category', 'amount')
+    rows = _txns(org, programme).filter(tx_type=TX_SPEND).values_list('category', 'amount')
     spent = _ZERO
     unplaced = _ZERO
     for category, amount in rows:
@@ -115,11 +131,11 @@ def totals(org) -> dict:
         'unplaced': unplaced,
         # ⚠ Guarded: an organisation with no spending at all must read 0%, not crash and not 100%.
         'placed_pct': int((placed / spent * 100).to_integral_value()) if spent else 0,
-        'merchants_to_check': len(merchants_to_check(org)),
+        'merchants_to_check': len(merchants_to_check(org, programme)),
     }
 
 
-def merchants_to_check(org) -> list:
+def merchants_to_check(org, programme=None) -> list:
     """Merchants whose category no human has confirmed and no rule produced — the work queue.
 
     A `rule` verdict is code and needs no review. `inferred` and `ai` are estimates, and
@@ -127,12 +143,13 @@ def merchants_to_check(org) -> list:
     """
     return sorted({
         merchant for merchant, decided_by in
-        _txns(org).exclude(decided_by='owner').values_list('merchant', 'decided_by')
+        _txns(org, programme).exclude(decided_by='owner')
+        .values_list('merchant', 'decided_by')
         if decided_by != 'rule' and merchant
     })
 
 
-def merchant_rows(org) -> list:
+def merchant_rows(org, programme=None) -> list:
     """One row per shop: what it was counted as, how that was decided, and the money.
 
     ⚠ `held_back` is the count of this shop's payments that the RM20 per-row ceiling kept out of
@@ -153,7 +170,7 @@ def merchant_rows(org) -> list:
         MerchantCategory.objects.values_list('merchant', 'category', 'decided_by', 'decided_at')
     }
     agg: dict[str, dict] = {}
-    for merchant, category, decided_by, amount, when in _txns(org).filter(
+    for merchant, category, decided_by, amount, when in _txns(org, programme).filter(
             tx_type=TX_SPEND).values_list(
             'merchant', 'category', 'decided_by', 'amount', 'txn_date'):
         row = agg.setdefault(merchant, {
@@ -199,14 +216,15 @@ def merchant_rows(org) -> list:
     return out
 
 
-def student_rows(org) -> list:
+def student_rows(org, programme=None) -> list:
     """One row per funded student: what they spent, and how much of it is placed.
 
     ⚠ Names appear here because this is the officer's own organisation's students on an admin-only
     surface. Nothing in this shape may be reused by a sponsor serializer.
     """
     agg: dict[int, dict] = {}
-    for app_id, name, category, amount in _txns(org).filter(tx_type=TX_SPEND).values_list(
+    for app_id, name, category, amount in _txns(org, programme).filter(
+            tx_type=TX_SPEND).values_list(
             'application_id', 'application__profile__name', 'category', 'amount'):
         row = agg.setdefault(app_id, {
             'application_id': app_id, 'name': name or '', 'payments': 0,
@@ -220,7 +238,7 @@ def student_rows(org) -> list:
     return out
 
 
-def wallet_gaps(org) -> dict:
+def wallet_gaps(org, programme=None) -> dict:
     """The two wallet faults that ARE derivable from what we store. See the module docstring for
     the third one, which is not, and reaches a human by email instead."""
     from .models import ScholarshipApplication
@@ -231,6 +249,11 @@ def wallet_gaps(org) -> dict:
     else:
         # org-fence: owning_organisation, the same fence _txns uses.
         scope = ScholarshipApplication.objects.filter(owning_organisation=org)
+    if programme is not None:
+        # ⚠ Narrows INSIDE the fence, exactly as in `_txns`. A wallet gap belongs to the gift
+        # whose money the student is waiting for, so a gift-scoped page must not list another
+        # gift's missing wallets as though they were this one's work.
+        scope = scope.filter(programme=programme)
     without = list(scope.filter(status__in=WALLET_EXPECTED_STATES, vircle_id='')
                    .values_list('id', flat=True))
     owners: dict[str, list] = {}
@@ -244,7 +267,7 @@ def wallet_gaps(org) -> dict:
     }
 
 
-def set_owner_category(merchant, category, email, org):
+def set_owner_category(merchant, category, email, org, programme=None):
     """The one write. A person's verdict, which outranks every rung of the ladder for ever.
 
     Returns `(rows_changed, error_code)`. The error codes are deliberately narrow — an unknown
@@ -273,7 +296,10 @@ def set_owner_category(merchant, category, email, org):
     if category not in {c for c, _ in SPEND_CATEGORY_CHOICES}:
         return 0, 'unknown_category'
 
-    mine = _txns(org).filter(merchant=merchant)
+    # ⚠ NARROWED BY THE GIFT TOO. An officer looking at one gift may only correct shops that
+    # gift's own students used — the verdict is still global (a shop's category is a fact
+    # about the shop), so the fence is on WHO MAY SET IT, and the gift is part of who.
+    mine = _txns(org, programme).filter(merchant=merchant)
     if not mine.exists():
         return 0, 'unknown_merchant'
 

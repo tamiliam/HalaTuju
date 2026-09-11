@@ -159,6 +159,35 @@ class _AdminBase(PartnerAdminMixin, APIView):
             qs = qs.filter(organisation_id=org_id) if org_id else qs.none()
         return qs.filter(code=code).first()
 
+    def _gift_narrowing(self, request, admin):
+        """Read `?programme=<code>` and resolve it. Returns `(programme|None, error|None)`.
+
+        **The ONE place a Programme-scope page asks "which gift is this request about?"** —
+        added for TD-241 (2026-09-11), when Payments and Spending moved from the Organisation
+        section to the Programme section. Both screens go through here so they cannot drift into
+        two different answers, which is the whole reason the owner's request was one request.
+
+        ⚠⚠ **AN ABSENT PARAMETER MEANS "DO NOT NARROW", NOT "PICK ONE FOR THEM".** Choosing a
+        gift server-side when none was named is the 2026-09-03 defect exactly: the console showed
+        the owner a DIFFERENT programme's settings than the one they had opened. `programmeScope`
+        on the client already resolves the single-gift case and refuses to guess between several
+        (`chosen` stays `''`), so a missing value here means the client genuinely could not say —
+        and the honest response to that is every gift the fence already allows, not a guess.
+
+        ⚠ **IT NARROWS INSIDE THE FENCE AND CAN NEVER WIDEN.** `_programme_by_code` resolves only
+        within the caller's own organisation, so an unknown code and another tenant's code are
+        indistinguishable — both `None` — and both become a 404 here, never a 403: a cross-tenant
+        code must not confirm that gift exists.
+        """
+        code = (request.query_params.get('programme') or '').strip()
+        if not code:
+            return None, None
+        programme = self._programme_by_code(admin, code)
+        if programme is None:
+            return None, Response({'error': 'not_found', 'code': 'not_found'},
+                                  status=status.HTTP_404_NOT_FOUND)
+        return programme, None
+
     def _org_allows(self, admin, app):
         """Row-level org fence: True if this admin's organisation owns ``app``.
         Super is global; everyone else must match owning_organisation. A cross-org
@@ -3938,15 +3967,26 @@ class _PaymentsBase(_AdminBase):
 
 
 class AdminPaymentRunListView(_PaymentsBase):
-    """GET list (org-fenced, newest first) . POST {payment_date} create a draft run."""
+    """GET list (org-fenced, newest first, gift-narrowed) . POST create a draft run.
+
+    ⚠ `?programme=<code>` narrows the list (TD-241, 2026-09-11, when Payments moved to the
+    Programme section). It narrows INSIDE the organisation filter and can never widen it —
+    `_gift_narrowing` only ever resolves a gift the caller's own organisation owns, and an
+    unknown or cross-tenant code is a 404. Omitted means every gift the fence already allowed.
+    """
     def get(self, request):
         admin, err = self._payments_admin(request)
         if err:
             return err
+        programme, gift_err = self._gift_narrowing(request, admin)
+        if gift_err:
+            return gift_err
         from .models import PaymentRun
         qs = PaymentRun.objects.all().prefetch_related('items').order_by('-payment_date', '-id')
         if not admin.is_super:
             qs = qs.filter(organisation_id=admin.owning_organisation_id)
+        if programme is not None:
+            qs = qs.filter(programme=programme)
         return Response({'runs': [_payment_run_summary(r) for r in qs]})
 
     def post(self, request):
@@ -3974,11 +4014,15 @@ class AdminPaymentRunListView(_PaymentsBase):
         # admin cannot create a run against another tenant's programme even by id. Omitted +
         # the org runs exactly one programme → that one is used; omitted + more than one → the
         # operator must say which (`programme_required`), never a silent pick.
+        # ⚠ BY CODE, FROM THE BREADCRUMB — the page's own gift picker was REMOVED with this
+        # change (owner, 2026-09-11). Two controls answering "which gift" is two chances to
+        # create a run against a gift you are not looking at, and the money moves either way.
         from .models import Programme
         org_programmes = Programme.objects.filter(organisation=org, is_active=True)
-        programme_id = request.data.get('programme_id')
-        if programme_id:
-            programme = org_programmes.filter(pk=programme_id).first()
+        code = (request.query_params.get('programme')
+                or request.data.get('programme') or '').strip()
+        if code:
+            programme = org_programmes.filter(code=code).first()
             if programme is None:
                 return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         else:
@@ -4123,6 +4167,9 @@ class AdminPaymentFundingSummaryView(_PaymentsBase):
         admin, err = self._payments_admin(request)
         if err:
             return err
+        programme, gift_err = self._gift_narrowing(request, admin)
+        if gift_err:
+            return gift_err
         org = admin.owning_organisation
         if org is None:
             return Response({'error': 'no_org', 'code': 'no_org'},
@@ -4135,6 +4182,10 @@ class AdminPaymentFundingSummaryView(_PaymentsBase):
         qs = (ScholarshipApplication.objects
               .filter(owning_organisation=org, status__in=payments.PAYABLE_STATUSES)
               .select_related('profile').order_by('id'))
+        if programme is not None:
+            # ⚠ Narrows INSIDE the org filter above, the same rule `payments.eligible_rows`
+            # states: the organisation is the fence, the gift is a restriction within it.
+            qs = qs.filter(programme=programme)
         rows = FundingSummaryRowSerializer(qs, many=True).data
         totals = {
             'students': len(rows),
@@ -7749,20 +7800,29 @@ class _SpendingBase(_AdminBase):
     """
 
     def _spending_admin(self, request):
+        """`(admin, scope, programme, error)`.
+
+        ⚠ The GIFT is resolved here too (TD-241) so this stays the ONE door: a screen that
+        read the scope from here and the gift from somewhere else would have two answers to
+        'what am I looking at', and only one of them fenced.
+        """
         from . import spend_report
 
         admin = self.get_admin(request)
         if not admin:
-            return None, None, self._deny()
+            return None, None, None, self._deny()
         if not (admin.is_super or admin.role in _SPENDING_ROLES):
-            return None, None, self._deny_role()
+            return None, None, None, self._deny_role()
+        programme, err = self._gift_narrowing(request, admin)
+        if err:
+            return None, None, None, err
         if admin.is_super:
-            return admin, spend_report.ALL_ORGS, None
+            return admin, spend_report.ALL_ORGS, programme, None
         org = admin.owning_organisation
         if org is None:
-            return None, None, Response({'error': 'no_org', 'code': 'no_org'},
-                                        status=status.HTTP_400_BAD_REQUEST)
-        return admin, org, None
+            return None, None, None, Response({'error': 'no_org', 'code': 'no_org'},
+                                              status=status.HTTP_400_BAD_REQUEST)
+        return admin, org, programme, None
 
 
 class AdminSpendingView(_SpendingBase):
@@ -7788,13 +7848,13 @@ class AdminSpendingView(_SpendingBase):
     """
 
     def get(self, request):
-        admin, org, err = self._spending_admin(request)
+        admin, org, programme, err = self._spending_admin(request)
         if err:
             return err
         from . import spend_report
         from .models import SPEND_CATEGORY_CHOICES
 
-        totals = spend_report.totals(org)
+        totals = spend_report.totals(org, programme)
         return Response({
             'totals': {
                 'spent': str(totals['spent']),
@@ -7815,20 +7875,20 @@ class AdminSpendingView(_SpendingBase):
                 # when the separate "what the model decided recently" list was deleted: that list
                 # held exactly one fact this table did not, and a fact is a column.
                 'decided_at': r['decided_at'].isoformat() if r['decided_at'] else None,
-            } for r in spend_report.merchant_rows(org)],
+            } for r in spend_report.merchant_rows(org, programme)],
             'students': [{
                 'application_id': r['application_id'],
                 'name': r['name'],
                 'payments': r['payments'],
                 'spent': str(r['spent']),
                 'unplaced': str(r['unplaced']),
-            } for r in spend_report.student_rows(org)],
+            } for r in spend_report.student_rows(org, programme)],
             # ⚠ `model_decisions` WAS HERE AND IS DELETED (S7, 2026-09-11). It was this same data
             # filtered to `ai` within 14 days, rendered read-only beside a table that CAN be
             # corrected — so a reader found a wrong guess there and had to scroll up to fix it.
             # The owner asked what action it expected; the answer was none. Filter the shops table
             # by "how we decided" instead. Do not reintroduce it.
-            'wallet_gaps': spend_report.wallet_gaps(org),
+            'wallet_gaps': spend_report.wallet_gaps(org, programme),
             'categories': [{'code': c, 'label': label} for c, label in SPEND_CATEGORY_CHOICES],
         })
 
@@ -7851,7 +7911,7 @@ class AdminSpendingCategoryView(_SpendingBase):
     """
 
     def post(self, request):
-        admin, org, err = self._spending_admin(request)
+        admin, org, programme, err = self._spending_admin(request)
         if err:
             return err
         from . import spend_report
@@ -7859,7 +7919,7 @@ class AdminSpendingCategoryView(_SpendingBase):
         merchant = request.data.get('merchant') or ''
         category = request.data.get('category') or ''
         changed, code = spend_report.set_owner_category(
-            merchant, category, admin.email, org)
+            merchant, category, admin.email, org, programme)
         if code:
             return Response({'error': code, 'code': code},
                             status=status.HTTP_400_BAD_REQUEST)
