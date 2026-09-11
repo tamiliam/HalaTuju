@@ -552,6 +552,35 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-11, after the spending page was reorganised — S6)
 
+**✅ TD-241 SHIPPED — `main` at `e5501cd6`, VERIFIED LIVE 2026-09-11.** Serving
+**halatuju-api-01034-694** / **halatuju-web-00881-c47**; both builds SUCCESS (BY BUILD ID: api
+`d6a1cf8f`, web `6b7d68b4`); site 200, `/admin/spending` 200, `/admin/payments` 200; **no api
+ERROR logs**. Gates: **6530 pytest** · **2168 jest** · `makemigrations --check` clean ·
+`next build` exit 0. **No migration.**
+
+**Payments AND Spending are now PROGRAMME-scoped**, together. Both endpoints take
+`?programme=<code>` resolved by `_AdminBase._gift_narrowing` — **the single place**. The Payments
+page's own gift picker was DELETED; the breadcrumb is the only control that names a gift.
+
+⚠⚠ **THE GIFT NARROWS INSIDE THE ORGANISATION FENCE AND CAN NEVER WIDEN IT.** Unknown code and
+another tenant's code are indistinguishable: both **404, never 403**. An ABSENT code means *do not
+narrow* — never "pick one", which is the 2026-09-03 defect. Creating a run is the one exception and
+is unchanged (the server resolves the org's only gift or refuses `programme_required`).
+**Nobody gained or lost reach**; only the rows' position moved.
+
+⚠ **A SILENT BITE FOUND A REAL GAP AGAIN:** nothing tested that the payment-run **LIST** narrows —
+the create path was covered from three directions and the read path from none. **After adding any
+narrowing, bite the READ.** The worst fault (gift as an ALTERNATIVE to the org filter) was caught
+twice: by the new cross-tenant test and by `TestOrgFenceStaticGuard`.
+
+⚠ **`halatuju-web` shows three `Failed to find Server Action "x"/"null"` ERRORs over three days,
+and they are NOT a fault.** All sit on SUPERSEDED revisions (00878, 00880 — never 00881), the
+action ids are junk rather than real ones, and Next.js's own message says it is a request from a
+different deployment. **Reading it as a regression would be a false alarm; check the REVISION
+before acting on one.**
+
+---
+
 **✅ ROUND TWO ALSO SHIPPED — `main` at `d06a1f86`, VERIFIED LIVE 2026-09-11.** Serving
 **halatuju-api-01031-vhv** / **halatuju-web-00879-57l**; both builds SUCCESS (waited on BY BUILD
 ID: web `ff9ccb21`, api `9150af9d`); site 200, `/admin/spending` 200, **no ERROR logs**. Gates on
