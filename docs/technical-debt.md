@@ -3699,3 +3699,25 @@ Small: one return value, one report field, one line in `lines()`.
 in the folder. They must be equal.
 
 (Logged 2026-09-11, from the first production import.)
+
+### [TD-243] The AI reliability rate blends engine versions, and only says so — low
+
+**What.** `audit.override_metrics` averages every prediction ever made into one `override_rate`,
+across every generation of `verdict_engine`. Since 2026-09-11 the roll-up REPORTS the versions it
+spans (`engine_versions`) and the card shows a caveat when there is more than one — but the
+headline number is still a blend.
+
+**Why it does not bite today.** 88 of the 88 decided applications sit under `pre-versioning`, so
+there is exactly one bucket and the caveat does not even render. A second bucket starts filling at
+the next officer decision.
+
+**When it bites.** Once both buckets are non-trivial, the single rate stops meaning anything: a
+genuine improvement in the engine and a change in officer behaviour move it identically, and the
+caveat tells a reader the number is unreliable without telling them what to use instead.
+
+**Fix.** Split the roll-up per version — alternative (c) in the 2026-09-11 decision, deferred by
+the owner as *"A now, and B in future"* on the grounds that per-version rates would be noise until
+each bucket is comparable. `engine_versions` already carries the counts needed to decide when.
+Medium-sized: the response shape changes and `AiReliabilityCard` needs rewriting.
+
+(Logged 2026-09-11 at the verdict-engine-version close.)
