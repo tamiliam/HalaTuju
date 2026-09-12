@@ -307,17 +307,11 @@ VIRCLE_SPENDING_SUMMARY_FOLDER = os.environ.get(
 # Cache the fetched bytes this long (seconds) so a batch send doesn't re-download per email; an
 # owner edit in Drive reflects within this window. 0 disables caching (always fetch fresh).
 VIRCLE_GUIDE_CACHE_SECONDS = int(os.environ.get('VIRCLE_GUIDE_CACHE_SECONDS', '600'))
-# 48h Vircle activation request (cron 'vircle-activation-request'). Reads the relay sheet and emails
-# Vircle the accounts INSTALLED but NOT yet activated (eWallet ID present, the owner's manual
-# 'Activated On' column blank), with a CSV attached; Bcc's a reference mailbox and archives the CSV
-# to Drive. DARK by default (ship-the-outbound-feature-disabled rule); flip to '1' after verifying.
-VIRCLE_ACTIVATION_ENABLED = os.environ.get('VIRCLE_ACTIVATION_ENABLED', '').lower() in ('1', 'true', 'yes')
-# Vircle recipient for the activation request; blank → falls back to VIRCLE_PAYMENTS_EMAIL.
-VIRCLE_ACTIVATION_EMAIL = os.environ.get('VIRCLE_ACTIVATION_EMAIL', '')
-# Bcc reference copy of each activation email; blank → falls back to ADMIN_NOTIFY_EMAIL.
-VIRCLE_ACTIVATION_BCC = os.environ.get('VIRCLE_ACTIVATION_BCC', '')
-# Drive folder the sent activation CSV is archived into ('/'-separated; the folder must already exist).
-VIRCLE_ACTIVATION_FOLDER = os.environ.get('VIRCLE_ACTIVATION_FOLDER', '01 BrightPath/03 Vircle/03 Activation')
+# ⚠ THE 48h VIRCLE ACTIVATION REQUEST WAS RETIRED 2026-09-11 and its four settings are GONE
+# (VIRCLE_ACTIVATION_ENABLED / _EMAIL / _BCC / _FOLDER). Owner: "the 48 hour chaser is no longer
+# necessary — we are communicating with Vircle via webhooks, to and fro." Their inbound row now
+# reports activation itself, so nothing needs to read the relay sheet back and ask them. The live
+# service still carries VIRCLE_ACTIVATION_ENABLED=1; it is inert and can be unset at leisure.
 
 # Vircle Airtable integration (vircle_airtable.py, 2026-09-09) — we tell Vircle WHO, Vircle
 # tells us the WALLET, so the student never types an eWallet ID again (the source of every

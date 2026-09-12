@@ -17,10 +17,11 @@ Four properties carry this sprint, and every one of them is about not lying on a
 4. **The truthfulness flags reach the screen.** A total mixing measured and hand-typed figures
    without saying so is not an audit.
 """
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 import jwt
+from django.utils import timezone
 from django.test import TestCase, override_settings
 
 from apps.courses.models import PartnerAdmin, PartnerOrganisation
@@ -339,6 +340,35 @@ class TestFinishedRequestWorkIsFoundAndCountedOnce(_Base):
             organisation=self.org, submitted_by=self.org_admin, kind='feature',
             title=title, description='x', status=status_,
             quote_hours=(Decimal(str(hours)) if hours is not None else None))
+
+    def test_the_month_is_when_we_WORKED_not_when_it_was_raised(self):
+        """⚠ OWNER CORRECTION, 2026-09-11: *"we should consider only when we worked and not when
+        the request was raised."*
+
+        Measured on production the same day: by raised date July carried 4.0 hours and August
+        23.5; by worked date July carried **none at all** and August 27.0. Two requests raised on
+        30 July were both scheduled and finished on 1 August. Billing by the raised date would
+        have put four hours into a month where nobody worked — and July is a 100%-discounted
+        month, so those hours would have been waived rather than charged.
+        """
+        r = self._request('4.0')
+        r.scheduled_for = date(2026, 8, 1)
+        r.save(update_fields=['scheduled_for'])
+        # created_at is auto_now_add, so pin it to July the only way the ORM allows.
+        OrgRequest.objects.filter(pk=r.pk).update(
+            created_at=timezone.make_aware(datetime(2026, 7, 30, 9, 0)))
+
+        row = platform_cost.unbilled_request_hours()[0]
+        self.assertEqual(row['worked_month'], '2026-08')
+        self.assertEqual(row['worked_basis'], 'scheduled')
+
+    def test_without_a_scheduled_date_it_falls_back_and_SAYS_it_fell_back(self):
+        """`updated_at` is weaker — any later edit moves it — so the row reports which field was
+        used rather than presenting both as equally sound."""
+        self._request('2.0')        # no scheduled_for
+        row = platform_cost.unbilled_request_hours()[0]
+        self.assertEqual(row['worked_basis'], 'last touched')
+        self.assertEqual(row['worked_month'], timezone.localtime().strftime('%Y-%m'))
 
     def test_a_finished_quoted_request_is_reported_as_unbilled(self):
         r = self._request('7.5')

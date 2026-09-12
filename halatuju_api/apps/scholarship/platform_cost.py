@@ -322,12 +322,19 @@ def unbilled_request_hours(organisation=None):
     on production the first held 27.5 hours and the second held nothing at all. Nothing joined
     them, so finished work simply never reached an invoice.
 
-    ⚠ **This does NOT bill anything, and that is deliberate.** A request has no completion date
-    — only `updated_at`, which any later edit moves — so there is no honest way to decide which
-    MONTH a finished request belongs to. Inventing one would put work in the wrong month and
-    then discount or charge it by that wrong month's terms. So this REPORTS the outstanding
-    work and the owner records it against a month through `OrgBuildHours`, where `basis` makes
-    the choice explicit and reviewable.
+    ⚠ **THE MONTH IS WHEN WE WORKED, NEVER WHEN THE REQUEST WAS RAISED** (owner, 2026-09-11:
+    *"we should consider only when we worked and not when the request was raised."*). On
+    production the two differ substantially — by raised date July carries 4.0 hours and August
+    23.5; by worked date July carries **none at all** and August 27.0, because the two requests
+    raised on 30 July were both scheduled and finished on 1 August. Billing by the raised date
+    would have put four hours into a month where nobody worked.
+
+    `scheduled_for` is the signal: a date field holding the day the work was slotted in. Where a
+    request has none, `updated_at` stands in — it is weaker, because any later edit moves it, so
+    `worked_basis` says which of the two was used and the recorded `basis` repeats it.
+
+    ⚠ **This still does NOT bill anything.** It proposes a month; a person confirms it. The
+    suggestion is good enough to prefill and not good enough to charge on unattended.
 
     A request counts as billed once an `OrgBuildHours` row names it — matched on the request id
     written into `module`, which is what the screen prefills.
@@ -344,6 +351,7 @@ def unbilled_request_hours(organisation=None):
         tag = request_module_tag(r.id)
         if any(tag in m for m in recorded):
             continue
+        worked_on, worked_basis = worked_date(r)
         out.append({
             'request_id': r.id,
             'organisation_id': r.organisation_id,
@@ -353,8 +361,30 @@ def unbilled_request_hours(organisation=None):
             # Prefilled for the screen's "record these hours" action, so the tag that makes the
             # request countable as billed is written by the code, not typed by a human.
             'module': f'{tag} {r.title}'[:200],
+            # WHEN WE WORKED — the month these hours belong to, and how that was decided.
+            'worked_on': worked_on,
+            'worked_month': worked_on.strftime('%Y-%m'),
+            'worked_basis': worked_basis,
         })
     return out
+
+
+def worked_date(request):
+    """The day the work happened, and which field said so.
+
+    Returns ``(date, 'scheduled'|'last touched')``.
+
+    ⚠ NOT `created_at`. That is the day somebody ASKED, which on production sits in a different
+    month from the work for a third of the quoted requests. `scheduled_for` is the day the work
+    was slotted in and is the right answer where it exists; `updated_at` is the fallback and is
+    weaker, because any later edit to the request moves it. The caller reports which was used
+    rather than presenting both as equally sound.
+    """
+    from django.utils import timezone
+
+    if request.scheduled_for:
+        return request.scheduled_for, 'scheduled'
+    return timezone.localtime(request.updated_at).date(), 'last touched'
 
 
 def adjustment_for(organisation, period_month):

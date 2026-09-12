@@ -6,7 +6,7 @@ import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import { getBillingRates, setBillingRate, type BillingRateRow } from '@/lib/admin-api'
 import {
-  rateGrid, formatMyr, formatPct, rateMonthOptions, RATE_MONTHS_BACK,
+  rateGrid, formatMyr, formatPct, rateMonthOptions, RATE_MONTHS_BACK, blockedKey,
 } from '@/lib/billingCosts'
 
 /**
@@ -94,7 +94,7 @@ function RateCard({
         </p>
       )}
       {!current && (
-        <p className="mt-2 text-xs text-caution-700">{t(`admin.billingRates.blocked.${category}`)}</p>
+        <p className="mt-2 text-xs text-caution-700">{t(blockedKey(category, kind))}</p>
       )}
 
       <div className="mt-4 grid gap-2 sm:grid-cols-[7rem_10rem_1fr_auto] sm:items-end">
@@ -131,10 +131,15 @@ function RateCard({
             aria-label={t('admin.billingRates.why')}
           />
         </label>
+        {/* ⚠ THE CONSOLE'S DEFAULT DISABLED BUTTON — faded blue, `disabled:opacity-50`, which
+            164 other controls already use (owner, 2026-09-12: *"the default behaviour… as
+            everywhere else"*). A first pass made this one plain grey and a second used
+            opacity-40; both invented a treatment for one screen. A button that behaves like
+            every other button teaches nothing new, which is the point. */}
         <button
           type="button"
           disabled={saving || value.trim() === ''}
-          className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+          className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
           onClick={() => onSave(category, kind, value.trim(), month, note.trim())}
         >
           {t('admin.billingRates.save')}

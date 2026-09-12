@@ -3144,9 +3144,10 @@
         "hourly_rate": "Rate per hour (RM)"
       },
       "blocked": {
-        "infrastructure": "Until this is set, no margin is added to what we pay for infrastructure.",
-        "metered": "Until this is set, no margin is added to metered usage.",
-        "development": "Until this is set, development hours cannot be charged at all. The bill says so rather than showing zero."
+        "infrastructure_margin_pct": "Until this is set, no margin is added to what we pay for infrastructure, and that line is left off the bill.",
+        "metered_margin_pct": "Until this is set, metered usage is not charged at all. The bill says so rather than showing zero.",
+        "development_margin_pct": "Until this is set, development hours cannot be charged at all, even with an hourly rate.",
+        "development_hourly_rate": "Until this is set, development hours cannot be charged at all. The bill says so rather than showing zero."
       }
     },
     "table": {
@@ -5162,8 +5163,9 @@
       },
       "unbilled": {
         "title": "Finished work not yet billed",
-        "sub": "Requests marked done that carry quoted hours. Recording one puts those hours in {month}.",
-        "record": "Record"
+        "sub": "Requests marked done that carry quoted hours. Recording one files those hours against the month we WORKED, not the month it was raised.",
+        "record": "Record",
+        "worked": "worked {date} ({basis}) — goes to {month}"
       },
       "service": {
         "gemini": "AI calls (Gemini)",

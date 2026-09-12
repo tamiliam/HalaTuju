@@ -2057,8 +2057,11 @@ class CronRunView(APIView):
         'send-sign-invitation-emails': 'send_sign_invitation_emails',  # owner-forced "ready to sign" follow-up (scope via SIGN_INVITE_APP_IDS)
         'send-vircle-install-emails': 'send_vircle_install_emails',  # owner-forced Vircle setup email + task (scope via VIRCLE_EMAIL_APP_IDS)
         'sync-vircle-sheet': 'sync_vircle_sheet',  # rewrite the Vircle relay sheet (My Drive / 03 Vircle) from the DB
-        'vircle-activation-request': 'vircle_activation_request',  # every 48h: email Vircle the accounts installed-but-not-activated (VIRCLE_ACTIVATION_ENABLED) — also syncs 'Activated On' into the DB
-        'vircle-activation-sync': 'sync_vircle_activation',  # optional: mirror the sheet's 'Activated On' → vircle_activated_at (the 48h cron already does this)
+        # ⚠ 'vircle-activation-request' + 'vircle-activation-sync' were RETIRED 2026-09-11 (owner:
+        # "the 48 hour chaser is no longer necessary — we are communicating with Vircle via
+        # webhooks, to and fro"). Activation now arrives on the inbound webhook. Pause their Cloud
+        # Scheduler jobs; re-registering either one would email Vircle about accounts that are
+        # already live and re-open a second writer of `vircle_activated_at`.
         'bursary-signing-reminders': 'send_bursary_signing_reminders',  # daily: nudge a pending witness/countersignature (SLA)
         'release-award-offer-emails': 'release_award_offer_emails',  # hourly: send award emails past the cool-off window
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly

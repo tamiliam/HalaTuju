@@ -47,6 +47,41 @@ question - and the answer, now, is that a month of their spending had been dropp
 
 Gates: **6539 pytest**, **2168 jest**, lint clean, `next build` exit 0. No migration.
 
+## Vircle tells us when an account goes live, and the 48h chaser retires - 2026-09-12
+
+Vircle's callback delivered six eWallet ids on 2026-09-11 and no activation, and the reason was our
+own alias list being one word short: their column is spelt **QR Activated Date** and we did not
+accept it. Their export then showed that column is **empty on all 64 rows** - they never fill it.
+What they do fill is **Status**, which reads `Done` once an account is live and
+`Pending Vircle Activation` before that. Owner ruling: *"Done is activation. The date you receive
+the confirmation is the activation date."*
+
+So a `Done` row now stamps `vircle_activated_at` (its own date when one is present, else the moment
+it arrives), and a status we do not recognise stamps **nothing** - "Pending Vircle Activation" is a
+non-empty value, so a bare presence check would have marked an unusable wallet live.
+
+**The relay sheet's "Activated On" column changed direction.** It was hand-typed and was the only
+activation signal we had; it is now **written from the database**. The sheet-to-database sync and
+the whole 48-hour activation request that read the sheet back - two commands, two cron doors, an
+email, a CSV and their settings, ~500 lines - were **deleted** rather than left beside a column the
+system writes. Accepted with it: **nothing nags Vircle any more**; their webhook reports an
+activation, it does not ask for one. A stalled account is now visible in our own data instead.
+
+**We read `Principal Wallet ID` and never `Supp Wallet ID`** (owner): money can only be paid into
+the principal, the parent passes it on, and the spending reports key on the principal too.
+
+Live data corrected the same day, all on written evidence:
+- the six students activated on 11 September stamped at their arrival time;
+- **Rishvin (#114) 8000400181851 -> 8000400183456**. The old id was his **father's** account, keyed
+  in by hand because he could not register with his own IC; he has since opened his own and had the
+  father's suspended. BrightPath confirmed with him that all **RM600** (July, August, September)
+  reached him. Payment-run snapshots keep the old id, as the historical record must.
+
+**Still open with Vircle:** four rows in their Recipients table carry another student's MYKAD
+(Ambbrishbusen, Bhavatharani, Darshan, Divashini A/P Murugan). Names and wallets are right; the IC
+cell is not. We match on IC, so those rows point at the wrong student - caught today only by the
+never-overwrite guard.
+
 ## Payments and Spending belong to a GIFT, not to an organisation - TD-241 - 2026-09-11
 
 The owner raised this on 2026-09-10 ("*I am thinking if both payment and spending should be parked

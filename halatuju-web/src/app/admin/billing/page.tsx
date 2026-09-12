@@ -383,7 +383,8 @@ function ChargeCard({ charge, month, t, onDiscount, busy }: {
               /* The reason is required here as well as on the server, so the refusal is a
                  disabled button rather than a round-trip and an error message. */
               disabled={busy || reason.trim() === ''}
-              className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+              /* The console's default disabled button, same as the rates screen's Save. */
+              className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
               onClick={() => onDiscount(charge.organisation_id, pct.trim(), reason.trim())}>
               {t('admin.billing.charge.apply')}
             </button>
@@ -400,9 +401,8 @@ function ChargeCard({ charge, month, t, onDiscount, busy }: {
  * which any later edit moves — so which MONTH the work belongs to is a human call, and getting it
  * wrong would bill it under the wrong month's terms. Recording it writes an `OrgBuildHours` row
  * whose `basis` names the request, which is what makes the choice reviewable afterwards. */
-function UnbilledSection({ payload, month, t, onRecord, busy }: {
+function UnbilledSection({ payload, t, onRecord, busy }: {
   payload: BillingCostsPayload
-  month: string
   t: (k: string, vars?: Record<string, string>) => string
   onRecord: (row: UnbilledRequest) => void
   busy: boolean
@@ -413,9 +413,7 @@ function UnbilledSection({ payload, month, t, onRecord, busy }: {
   return (
     <div className="mt-8" data-testid="unbilled-requests">
       <h2 className="text-sm font-semibold text-ground-900">{t('admin.billing.unbilled.title')}</h2>
-      <p className="mt-1 text-xs text-ground-500">
-        {t('admin.billing.unbilled.sub', { month: formatMonth(month) })}
-      </p>
+      <p className="mt-1 text-xs text-ground-500">{t('admin.billing.unbilled.sub')}</p>
       <div className="mt-3 space-y-3">
         {groups.map((g) => (
           <div key={g.organisation_id} className="rounded-xl border bg-ground-0 p-4 shadow-sm">
@@ -423,7 +421,18 @@ function UnbilledSection({ payload, month, t, onRecord, busy }: {
             <ul className="mt-2 space-y-1">
               {g.rows.map((r) => (
                 <li key={r.request_id} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
-                  <span className="text-ground-700">#{r.request_id} {r.title}</span>
+                  <span className="text-ground-700">
+                    #{r.request_id} {r.title}
+                    {/* ⚠ The month these hours go to, and how firm it is. Recording files them
+                        HERE, not under the month being viewed — the owner's correction. */}
+                    <span className="block text-[11px] text-ground-400">
+                      {t('admin.billing.unbilled.worked', {
+                        month: formatMonth(r.worked_month),
+                        date: r.worked_on,
+                        basis: r.worked_basis,
+                      })}
+                    </span>
+                  </span>
                   <span className="flex items-baseline gap-3">
                     <span className="tabular-nums text-ground-900">{formatHours(r.hours)}</span>
                     <button type="button" disabled={busy}
@@ -503,12 +512,17 @@ export default function AdminBillingPage() {
     if (!token) return
     setBusy(true)
     recordBuildHours(row.organisation_id, {
-      period_month: month,
+      // ⚠ THE MONTH WE WORKED, not the month being viewed and not the month it was raised
+      // (owner, 2026-09-11). Using the viewed month would file every request under whatever
+      // page the reader happened to be on.
+      period_month: row.worked_month,
       module: row.module,
       hours: row.hours ?? '0',
       // `basis` is required by the model and is the point of it: an hours figure with no stated
-      // reconstruction is not auditable. Written by the code so it always names the source.
-      basis: `Quoted on request #${row.request_id} (${row.title}); recorded against ${month}.`,
+      // reconstruction is not auditable. Written by the code so it always names its source AND
+      // how the month was decided — 'scheduled' is firm, 'last touched' is a fallback.
+      basis: `Quoted on request #${row.request_id} (${row.title}). Worked ${row.worked_on} `
+        + `(${row.worked_basis}), so recorded against ${row.worked_month}.`,
     }, { token })
       .then(() => loadCosts(month))
       .catch((e) => setCostError(String(e)))
@@ -582,7 +596,7 @@ export default function AdminBillingPage() {
         </div>
       )}
       {costs && (
-        <UnbilledSection payload={costs} month={month} t={t}
+        <UnbilledSection payload={costs} t={t}
           onRecord={recordRequestHours} busy={busy} />
       )}
 

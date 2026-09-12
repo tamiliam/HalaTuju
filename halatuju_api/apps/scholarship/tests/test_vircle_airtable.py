@@ -170,6 +170,63 @@ class TestApplyUpdate(_Base):
         self.assertEqual(out['activated'], 'kept')
         self.assertEqual(app.vircle_activated_at, when)
 
+    def test_their_own_QR_Activated_Date_column_is_read(self):
+        # Their Recipients table spells it "QR Activated Date" (owner's screenshots, 2026-09-11).
+        # It was missing from the alias list, so a date they sent was silently discarded.
+        app = self._make('u1')
+        out = vircle_airtable.apply_update({'MYKAD': '080214081234',
+                                            'QR Activated Date': '11/09/2026'})
+        app.refresh_from_db()
+        self.assertEqual(out['activated'], 'set')
+        self.assertIsNotNone(app.vircle_activated_at)
+
+    def test_status_Done_activates_even_with_no_date(self):
+        # Owner ruling: "Done is when the account is activated… treat the date we receive the
+        # notification with status Done as the activation date." Every row they have sent so far
+        # carries a blank QR Activated Date, so the status is the only signal there is.
+        app = self._make('u1')
+        out = vircle_airtable.apply_update({'MYKAD': '080214081234',
+                                            'Principal Wallet ID': '8000400184238',
+                                            'Status': 'Done'})
+        app.refresh_from_db()
+        self.assertEqual(out['activated'], 'set')
+        self.assertIsNotNone(app.vircle_activated_at)
+
+    def test_status_Pending_Vircle_Activation_activates_NOTHING(self):
+        # The dangerous direction. "Pending Vircle Activation" is a present, non-empty value — a
+        # bare presence check would read it as an activation and mark an unusable wallet live.
+        app = self._make('u1')
+        out = vircle_airtable.apply_update({'MYKAD': '080214081234',
+                                            'Principal Wallet ID': '8000400184238',
+                                            'Status': 'Pending Vircle Activation'})
+        app.refresh_from_db()
+        self.assertEqual(out['wallet'], 'set')       # the id still lands
+        self.assertEqual(out['activated'], 'none')   # the activation does not
+        self.assertIsNone(app.vircle_activated_at)
+
+    def test_a_dated_row_keeps_its_own_date_rather_than_today(self):
+        # When Vircle DO fill the column, that date wins over the arrival time.
+        app = self._make('u1')
+        vircle_airtable.apply_update({'MYKAD': '080214081234',
+                                      'QR Activated Date': '01/03/2026',
+                                      'Status': 'Done'})
+        app.refresh_from_db()
+        # ⚠ localtime, not .date() — the stored value is UTC and midnight in Malaysia is the
+        # PREVIOUS day there. That is TD-209, and it bit this very test on the first run.
+        self.assertEqual(timezone.localtime(app.vircle_activated_at).date().isoformat(),
+                         '2026-03-01')
+
+    def test_the_supplementary_wallet_is_NEVER_read(self):
+        # Owner ruling 2026-09-11: money is only ever paid into the PRINCIPAL wallet; the parent
+        # passes it to the child, and spending is tracked on the principal. A row carrying only a
+        # supplementary id must store nothing — paying it would pay a wallet nobody reconciles.
+        app = self._make('u1')
+        out = vircle_airtable.apply_update({'MYKAD': '080214081234',
+                                            'Supp Wallet ID': '8000400184299'})
+        app.refresh_from_db()
+        self.assertEqual(out['wallet'], 'none')
+        self.assertEqual(app.vircle_id, '')
+
     def test_unknown_nric_reports_no_match(self):
         self._make('u1', nric='080214-08-1234')
         out = vircle_airtable.apply_update({'NRIC': '990101-14-5678',

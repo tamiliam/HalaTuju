@@ -60,17 +60,44 @@ describe('what the screen says about a rate nobody has set', () => {
       within(container).getByTestId('rate-development-hourly_rate'))
     // The card exists AND says so in words — the two halves of the property.
     expect(within(card).getByTestId('rate-not-set')).not.toBeNull()
-    expect(within(card).getByText('admin.billingRates.blocked.development')).not.toBeNull()
+    expect(within(card).getByText('admin.billingRates.blocked.development_hourly_rate')).not.toBeNull()
   })
 
-  it('every category and kind gets a card even on a completely empty rate table', async () => {
+  it('every rate that exists gets a card on a completely empty table', async () => {
     const { container } = render(<BillingRatesPage />)
     await waitFor(() => within(container).getByTestId('rate-infrastructure-margin_pct'))
-    for (const c of ['infrastructure', 'metered', 'development']) {
-      for (const k of ['margin_pct', 'hourly_rate']) {
-        expect(within(container).getByTestId(`rate-${c}-${k}`)).not.toBeNull()
-      }
+    for (const id of ['infrastructure-margin_pct', 'metered-margin_pct',
+      'development-margin_pct', 'development-hourly_rate']) {
+      expect(within(container).getByTestId(`rate-${id}`)).not.toBeNull()
     }
+  })
+
+  it('⚠ offers NO hourly rate for infrastructure or metered usage', async () => {
+    // Owner, 2026-09-11, on seeing the page: three of its six boxes made no sense. You do not
+    // bill infrastructure by the hour, and nothing ever read those two.
+    const { container } = render(<BillingRatesPage />)
+    await waitFor(() => within(container).getByTestId('rate-infrastructure-margin_pct'))
+    expect(within(container).queryByTestId('rate-infrastructure-hourly_rate')).toBeNull()
+    expect(within(container).queryByTestId('rate-metered-hourly_rate')).toBeNull()
+    // ⚠ `[data-testid^="rate-"]` alone also matches each card's own `rate-not-set` badge, so
+    // the set is compared by name rather than counted.
+    const cards = Array.from(container.querySelectorAll('[data-testid^="rate-"]'))
+      .map((el) => el.getAttribute('data-testid')!)
+      .filter((id) => id !== 'rate-not-set')
+    expect(cards.sort()).toEqual([
+      'rate-development-hourly_rate', 'rate-development-margin_pct',
+      'rate-infrastructure-margin_pct', 'rate-metered-margin_pct',
+    ])
+  })
+
+  it("each card carries its OWN unset message, not the neighbouring kind", async () => {
+    // Keyed by category alone, the hourly-rate cards displayed the margin's sentence.
+    const { container } = render(<BillingRatesPage />)
+    const rate = await waitFor(() =>
+      within(container).getByTestId('rate-development-hourly_rate'))
+    const margin = within(container).getByTestId('rate-development-margin_pct')
+    expect(within(rate).getByText('admin.billingRates.blocked.development_hourly_rate')).not.toBeNull()
+    expect(within(margin).getByText('admin.billingRates.blocked.development_margin_pct')).not.toBeNull()
   })
 
   it('a set rate shows its value and who set it', async () => {
@@ -122,11 +149,44 @@ describe('saving', () => {
     await waitFor(() => expect(mockApi.getBillingRates).toHaveBeenCalledTimes(2))
   })
 
-  it('an empty value cannot be saved', async () => {
+  it('an empty value cannot be saved, and the button fades like every other', async () => {
+    // ⚠ Owner, 2026-09-12: "the default behaviour… as everywhere else -- not plain grey."
+    // `disabled:opacity-50` is what 164 other controls in this console already do. Two earlier
+    // passes invented a treatment for this one screen — plain grey, then opacity-40. A button
+    // that behaves like every other button teaches the reader nothing new, which is the point.
     const { container } = render(<BillingRatesPage />)
     const card = await waitFor(() =>
       within(container).getByTestId('rate-metered-margin_pct'))
-    expect((within(card).getByText('admin.billingRates.save') as HTMLButtonElement).disabled).toBe(true)
+    const btn = within(card).getByText('admin.billingRates.save') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    expect(btn.className).toContain('disabled:opacity-50')
+    // And it stays the primary colour — fading it is the whole mechanism, not recolouring it.
+    expect(btn.className).toContain('bg-primary-600')
+    expect(btn.className).not.toContain('disabled:bg-')
+  })
+
+  it('typing a value makes the button live again', async () => {
+    const { container } = render(<BillingRatesPage />)
+    const card = await waitFor(() =>
+      within(container).getByTestId('rate-development-hourly_rate'))
+    const btn = within(card).getByText('admin.billingRates.save') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    fireEvent.change(within(card).getByLabelText(/billingRates.category.development/), {
+      target: { value: '50' },
+    })
+    expect((within(card).getByText('admin.billingRates.save') as HTMLButtonElement).disabled)
+      .toBe(false)
+  })
+
+  it('whitespace alone is not something to save', async () => {
+    const { container } = render(<BillingRatesPage />)
+    const card = await waitFor(() =>
+      within(container).getByTestId('rate-development-margin_pct'))
+    fireEvent.change(within(card).getByLabelText(/billingRates.category.development/), {
+      target: { value: '   ' },
+    })
+    expect((within(card).getByText('admin.billingRates.save') as HTMLButtonElement).disabled)
+      .toBe(true)
   })
 
   it('the effective-from control is a native select, never a date input', async () => {
