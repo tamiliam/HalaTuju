@@ -1,5 +1,21 @@
 # Sponsor spending reporting — the sprint roadmap
 
+> ## ✅ CLOSED — every sprint in this document shipped. Nothing here is pending.
+>
+> **S1–S5 all shipped and were deployed 2026-09-11.** The work carried on past this plan and is no
+> longer described by it: **S6** (three tabs, a super sees every organisation), **S7** (search,
+> filters, tab counts, the duplicate model list deleted), **S8** (the Vircle wallet door emails a
+> person), **TD-241** (Payments and Spending moved to the Programme scope, together) and the
+> **September blackout** fix on 2026-09-12. Those were owner-driven, one request at a time, and
+> have no roadmap — read `CHANGELOG.md` and
+> `docs/retrospective-2026-09-12-spending-s6-s8-and-the-september-blackout.md` instead.
+>
+> ⚠ **THE FILE IS KEPT, NOT DELETED, BECAUSE SIX SOURCE FILES CITE IT BY PATH** — `models.py`,
+> `spending_import.py`, `spend_report.py` and three test modules point here for the measurements
+> and the owner's rulings behind them. Deleting a spent roadmap that code still references trades a
+> tidy folder for six dangling citations. **Treat it as the record of how this was decided, never
+> as a list of work outstanding.**
+
 **Written 2026-09-10** via `Settings/_workflows/implementation-planning.md`. **Not yet approved.**
 
 **The requirements live in `docs/plans/2026-09-09-sponsor-spending-reports-brief.md`** — read it first,

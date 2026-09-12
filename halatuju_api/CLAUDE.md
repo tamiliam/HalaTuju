@@ -550,7 +550,51 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-12, after Vircle started telling us when an account goes live)
+## Next Sprint (as of 2026-09-12, after the spending screen arc — S6-S8, TD-241, the blackout)
+
+**✅ ALL SHIPPED AND VERIFIED LIVE 2026-09-12.** `main` at **`f2dde67a`**; both builds SUCCESS
+(waited on BY BUILD ID: web `ec0d3c01`, api `22b2c373`); serving **halatuju-api-01038-rw5** /
+**halatuju-web-00886-qjr**; site 200, `/admin/spending` 200, `/admin/payments` 200, **no ERROR
+logs**. Gates: **6537 pytest** · **2183 jest** · lint 0 · `next build` exit 0.
+**⚠ NO MIGRATIONS IN THE WHOLE ARC** — ledger reconciled against production at close: 159 files,
+159 recorded rows, 0150–0159 contiguous, no gaps.
+
+**⚠⚠ THE ONE THING TO READ FIRST: A MONTH OF LIVE SPENDING WAS BEING DELETED, SILENTLY.**
+`%b` wants `Sep`, `%B` wants `September`; the corpus writes **`Sept`**, which matches NEITHER — so
+every September transaction parsed as an unreadable date and was dropped. **The owner found it, not
+a test**, by comparing the sheet (230 rows to 6 Sept) against the screen (9 rows, to 31 Aug).
+Recovered via the new `spending-reread` door: **1,377 → 1,597 rows, RM10,650.22 → RM13,353.03**,
+43 → 47 students. Date parsing now normalises any month abbreviation, and the test **enumerates all
+twelve months in every spelling** rather than sampling the two the corpus used in July and August.
+
+**WHAT ELSE SHIPPED** (detail in `CHANGELOG.md` and the retrospective of the same date):
+- **Three tabs** — Shops / Students / Unsorted — with **search, filters and a count per tab**
+  (counts are of the WHOLE list; the filtered count sits beside the search).
+- **⚠ A SUPER SEES EVERY ORGANISATION** via `spend_report.ALL_ORGS` — **a SENTINEL OBJECT, never
+  `None`**, so an accident that loses an organisation stays an empty read. Supersedes the S4a
+  `no_org` refusal on BOTH Spending and the Payments funding summary. Do not restore it.
+- **TD-241 CLOSED: Payments AND Spending are PROGRAMME-scoped**, together. `?programme=<code>`
+  resolved once by `_AdminBase._gift_narrowing`; **the gift narrows INSIDE the org fence and can
+  never widen it**; unknown and cross-tenant codes are both 404. The Payments page's own gift
+  picker was DELETED — one control answers "which gift".
+- **Students table: Transactions · Spent · Not yet sorted · Balance.** ⚠ The balance is **NOT
+  floored at zero** (the sponsor card's is): a negative is real and the officer should ask.
+- **The import report reaches the LOG** — under cron its stdout went into the HTTP response body,
+  which Cloud Scheduler discards.
+- **The Drive summary REPLACES itself** instead of filing a second file of the same name.
+
+**▶ NEXT — nothing blocking; the owner picks.** Standing:
+1. **⚠ ROTATE `VIRCLE_AIRTABLE_SECRET`** — exposed in a session transcript 2026-09-11. Nothing has
+   ever come through that door; it needs Vircle to change one setting, so it waits for contact.
+2. **Five students paid RM600 each since July with NO spending** — applications 69, 104, 47, 63,
+   101. An operational question for Vircle, not a fault. (TD-245 is why we cannot tell "spent
+   nothing" from "wallet absent from the export".)
+3. Debt: **TD-242** (half-mitigated — the report is readable now, the run still does not compare
+   `files read` against the folder), TD-245, TD-246, TD-240, TD-239, TD-238.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-12, after Vircle started telling us when an account goes live)
 
 **✅ SHIPPED AND VERIFIED LIVE 2026-09-12.** `main` at **`bb1f7de1`**; build `c8f5b112` on
 `bb1f7de` SUCCESS (waited on THAT id); serving **halatuju-api-01036-6kh** — and the running

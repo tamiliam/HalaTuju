@@ -3658,7 +3658,14 @@ is small.
 (Logged 2026-09-10 at the owner's prompt during Spending S5 planning. Explicitly deferred by
 the owner: *"This could be a discussion for a different time."*)
 
-### [TD-242] A transient Drive read drops a whole FILE silently, and the run reports success — medium
+### [TD-242] A transient Drive read drops a whole FILE silently, and the run reports success — medium (HALF-MITIGATED 2026-09-12)
+
+**⚠ STILL OPEN. What changed on 2026-09-12 is VISIBILITY, not the fault.** The import's
+report now reaches the Cloud Run log (WARNING when it needs a human, INFO otherwise), so
+`files read : N` is finally readable after the fact — previously it went into the HTTP
+response body, which Cloud Scheduler discards, and no record survived at all. **The run
+still does not compare N against the number of exports in the folder, and still reports
+APPLIED when it is short.** The manual check below remains the only guard.
 
 **Observed on production at the first real import, 2026-09-11.** Two runs, twenty minutes
 apart, against an unchanged folder:
@@ -3747,3 +3754,27 @@ a resurrected email — the retired one read a spreadsheet column the system now
 exactly why it had to go. See `docs/decisions.md`, "The 48-hour activation chaser is retired".
 
 **Trigger:** the first student who reaches a payment run with a wallet id and no activation date.
+
+### [TD-245] We cannot tell "this student spent nothing" from "their wallet is not in the export" — medium
+
+**Surfaced 2026-09-12**, when the owner asked why five funded students had no spending. The honest answer took a production query, a log read and a code walk, and it is still only *probably* "they have not spent".
+
+A row whose `wallet_id` matches no student is **counted and reported, then discarded** — it cannot be stored, because there is nobody to file it against. So the database can never answer the question: a student with no `BursarySpendTxn` rows looks identical whether Vircle never listed their wallet, listed it under a number we do not hold, or listed it with no transactions because they genuinely have not spent.
+
+**Why it matters now.** The screen names these students (`unseen_students`) and an officer will act on that list. Two of the three explanations are OUR fault and fixable; one is not, and they are presented identically.
+
+**What already helps:** the import report reaches the log since 2026-09-12, so `UNKNOWN WALLETS` is at least recoverable after the fact, and an unknown wallet sets `needs_attention` and emails staff.
+
+**Fix when it bites:** store the unmatched rows (a small table keyed on wallet id, no application), so the screen can say *"this wallet appears in the export N times and matches nobody"* beside *"this student appears nowhere"*. That is a migration, which is why it was not done inside a bug fix.
+
+**Trigger:** the first time an officer chases a student on this list and finds the spending was ours to see all along.
+
+### [TD-246] The organisation crumb cannot scope a page the way the gift crumb can — low
+
+**Raised while closing TD-241 (2026-09-11).** Payments and Spending moved to the Programme section and read the GIFT from the breadcrumb via `programmeScope`. The ORGANISATION crumb has no equivalent: the shell holds `selectedOrg` in its own state and no page can read it.
+
+It does not matter today — a super sees every organisation on both screens, which is the owner's own ruling — and with one tenant holding spending the two readings are identical. It will matter the day a second organisation imports spending, because a super will then want to look at one tenant rather than a pooled total.
+
+**Fix when it bites:** an `orgScope` context in the same shape as `programmeScope`, with the code sent as an explicit value the server re-fences on the caller's own organisation. ⚠ The crumb must stay a DISPLAY preference that a page passes explicitly — never an ambient auth context (`ScopeSwitcher`'s standing rule, and the 2026-07-15 incident behind it).
+
+**Trigger:** a second organisation starts importing spending.
