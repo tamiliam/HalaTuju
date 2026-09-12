@@ -170,6 +170,15 @@ export default function SpendingPage() {
     <div>
       <h1 className="text-2xl font-semibold text-ground-900">{t('admin.spending.title')}</h1>
       <p className="mt-1 text-sm text-ground-600">{t('admin.spending.subtitle')}</p>
+      {/* ⚠ THE REPORT DATE BELONGS AT THE TOP, ONCE (owner, 2026-09-12). It was buried in a
+          sentence inside one section, which made it look like a fact about that section —
+          it is a fact about the WHOLE page: every figure above and below stops here. It is
+          derived from the newest transaction we hold, never written down anywhere. */}
+      {dataTo && (
+        <p className="mt-1 text-sm text-ground-500" data-testid="spending-data-to">
+          {t('admin.spending.dataTo', { date: formatDate(dataTo) })}
+        </p>
+      )}
 
       {error && <p className="mt-4 text-sm text-critical-600" role="alert">{error}</p>}
 
@@ -328,15 +337,12 @@ export default function SpendingPage() {
                 student paid yesterday reads as a fault rather than as tomorrow's file. */}
             {unseen.length > 0 && (
               <>
-                <p className="text-ground-700">
-                  {t('admin.spending.gaps.unseen',
-                     { date: dataTo ? formatDate(dataTo) : '' })}
-                </p>
+                <p className="text-ground-700">{t('admin.spending.gaps.unseen')}</p>
                 {/* ⚠ A TABLE OF NAMES, not a run of application numbers (owner, 2026-09-12).
                     A list of ids is not a list of people — the officer had to look every one of
                     them up before they could do anything about it. The id stays, quietly, because
                     it is what every other screen and every alert email keys on. */}
-                <TableFrame className="mt-2" minWidth={360}
+                <TableFrame className="mt-2" minWidth={460}
                   label={t('admin.spending.gaps.title')}>
                   <table className="w-full text-sm">
                     <thead className="bg-ground-50 border-b">
@@ -344,15 +350,22 @@ export default function SpendingPage() {
                         <th className="px-4 py-3 font-semibold">
                           {t('admin.spending.students.name')}</th>
                         <th className="px-4 py-3 text-right font-semibold">
-                          {t('admin.spending.gaps.reference')}</th>
+                          {t('admin.spending.gaps.paid')}</th>
+                        <th className="px-4 py-3 text-right font-semibold">
+                          {t('admin.spending.students.spent')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-ground-100">
                       {unseen.map((s) => (
                         <tr key={s.application_id}>
                           <td className="px-4 py-3 text-ground-900">{s.name}</td>
+                          <td className="px-4 py-3 text-right tabular-nums text-ground-900">
+                            RM{rm(s.paid)}</td>
+                          {/* ⚠ Zero on every row today, and that IS the point: the money went
+                              out and none of it came back as a purchase. Showing it turns a
+                              list of names into the evidence for why they are on it. */}
                           <td className="px-4 py-3 text-right tabular-nums text-ground-500">
-                            {s.application_id}</td>
+                            RM{rm(s.spent)}</td>
                         </tr>
                       ))}
                     </tbody>

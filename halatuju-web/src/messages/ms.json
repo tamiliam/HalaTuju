@@ -5519,6 +5519,7 @@
       "nav": "Perbelanjaan",
       "title": "Perbelanjaan pelajar",
       "subtitle": "Rekod pembelian pelajar menggunakan biasiswa mereka, mengikut pedagang. Maklumat ini tidak ditunjukkan kepada penaja.",
+      "dataTo": "Meliputi semua perbelanjaan yang direkodkan sehingga {date}.",
       "loadFailed": "Angka perbelanjaan tidak dapat dimuatkan.",
       "saveFailed": "Perubahan itu tidak disimpan.",
       "empty": "Tiada perbelanjaan direkodkan.",
@@ -5583,11 +5584,11 @@
       },
       "gaps": {
         "title": "Perbelanjaan yang tidak dapat dijelaskan",
-        "unseen": "Pelajar berikut menerima dana pada atau sebelum {date}, tetapi tiada perbelanjaan direkodkan bagi mereka:",
+        "unseen": "Pelajar berikut menerima dana pada atau sebelum tarikh tersebut, tetapi tiada perbelanjaan direkodkan bagi mereka:",
         "shared": "Dompet yang didaftarkan kepada lebih daripada seorang pelajar",
         "none": "Semua perbelanjaan telah dijelaskan.",
         "note": "Dompet yang tidak sepadan dengan mana-mana pelajar dilaporkan kepada kakitangan melalui e-mel dan tidak disenaraikan di sini.",
-        "reference": "Permohonan"
+        "paid": "Bayaran"
       },
       "error": {
         "unknown_merchant": "Kedai itu bukan milik anda.",

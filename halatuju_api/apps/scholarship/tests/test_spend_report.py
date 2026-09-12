@@ -258,6 +258,36 @@ class TestWalletGaps(TestCase):
                          ScholarshipApplication.objects.get(pk=unseen.id).profile.name)
         self.assertEqual(gaps['data_to'], '2026-08-30')
 
+    def test_each_row_carries_WHAT_THEY_WERE_PAID_and_what_we_can_see(self):
+        """⚠ The owner asked for these two columns beside the name (2026-09-12): a list of names is
+        an accusation, `paid RM600 / spent RM0.00` is the evidence for it.
+
+        `spent` is COMPUTED, never written as zero. It is zero on every row under today's rule —
+        which is exactly why a literal would be dangerous: loosen the rule to "spent less than we
+        released" and a hardcoded RM0.00 goes on lying beside a real figure."""
+        seen = make_app(self.org, self.cohort, '8000400170001')
+        unseen = make_app(self.org, self.cohort, '8000400170002')
+        txn(seen, 'A SHOP', 5, when=datetime.date(2026, 8, 30))
+        self._paid(seen)
+        self._paid(unseen)
+        row = sr.wallet_gaps(self.org)['unseen_students'][0]
+        self.assertEqual(row['application_id'], unseen.id)
+        self.assertEqual(row['paid'], D('200.00'))
+        self.assertEqual(row['spent'], D('0.00'))
+
+    def test_the_money_crosses_the_wire_as_a_STRING(self):
+        """⚠ A bare Decimal in a plain dict is rendered by DRF as a FLOAT — `30.00` reached a
+        sponsor's screen as `30.0` in S5, with a green unit test, because the values ARE Decimals
+        until the boundary. Only a test at the endpoint can see it."""
+        from apps.scholarship.views_admin import _spending_gaps
+        wired = _spending_gaps({'unseen_students': [
+            {'application_id': 1, 'name': 'A', 'paid': D('600.00'), 'spent': D('0.00')}],
+            'shared_wallets': {}, 'data_to': '2026-08-30'})
+        row = wired['unseen_students'][0]
+        self.assertIsInstance(row['paid'], str)
+        self.assertIsInstance(row['spent'], str)
+        self.assertEqual((row['paid'], row['spent']), ('600.00', '0.00'))
+
     def test_a_student_PAID_AFTER_THE_DATA_ENDS_is_not_a_gap(self):
         """⚠ THE HALF THAT STOPS A FALSE ALARM, and it is not hypothetical: ten live students got
         their first payment on 1 September while the newest file ended on 31 August. Listing them

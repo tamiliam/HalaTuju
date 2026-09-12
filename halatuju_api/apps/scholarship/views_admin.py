@@ -7835,6 +7835,24 @@ class _SpendingBase(_AdminBase):
         return admin, org, programme, None
 
 
+def _spending_gaps(gaps):
+    """`wallet_gaps` with its money stringified.
+
+    ⚠ A bare `Decimal` in a plain dict is rendered by DRF's JSON renderer as a FLOAT — `30.00`
+    reached a sponsor's screen as `30.0` in S5, and the unit test was green throughout because
+    the values ARE Decimals until the boundary. Every money-bearing payload in this feature
+    stringifies here, at the edge, for that reason.
+    """
+    return {
+        **gaps,
+        'unseen_students': [
+            {'application_id': r['application_id'], 'name': r['name'],
+             'paid': str(r['paid']), 'spent': str(r['spent'])}
+            for r in gaps['unseen_students']
+        ],
+    }
+
+
 class AdminSpendingView(_SpendingBase):
     """GET /api/v1/admin/scholarship/spending/ — the officer's view of what students spent.
 
@@ -7906,7 +7924,7 @@ class AdminSpendingView(_SpendingBase):
             # corrected — so a reader found a wrong guess there and had to scroll up to fix it.
             # The owner asked what action it expected; the answer was none. Filter the shops table
             # by "how we decided" instead. Do not reintroduce it.
-            'wallet_gaps': spend_report.wallet_gaps(org, programme),
+            'wallet_gaps': _spending_gaps(spend_report.wallet_gaps(org, programme)),
             'categories': [{'code': c, 'label': label} for c, label in SPEND_CATEGORY_CHOICES],
         })
 

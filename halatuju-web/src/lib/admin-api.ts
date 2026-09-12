@@ -2878,7 +2878,12 @@ export interface SpendingOverview {
      *  at all. ⚠ Replaced `students_without_wallet` on 2026-09-12: that list named funded
      *  students with no wallet id **whom nobody had paid**, which blocks nothing and which
      *  the Payments screen already refuses to pay. This is the question a person asks. */
-    unseen_students: { application_id: number; name: string }[]
+    unseen_students: {
+      application_id: number; name: string
+      /** Released to them, and what we can see of their spending — zero for every row on
+       *  today's rule, and computed rather than assumed so it stays true if that changes. */
+      paid: string; spent: string
+    }[]
     shared_wallets: Record<string, number[]>
     /** The newest transaction date we hold, or null before the first import. */
     data_to: string | null

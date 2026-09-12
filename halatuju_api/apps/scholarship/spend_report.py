@@ -334,9 +334,24 @@ def wallet_gaps(org, programme=None) -> dict:
         # draft) agreed today and would drift the moment a tranche was released outside a run.
         released = _released_by_application(scope)
         names = dict(scope.values_list('id', 'profile__name'))
+        # ⚠⚠ `spent` IS ZERO BY THE DEFINITION OF THIS LIST, AND THE DEFINITION IS TESTED.
+        # The first cut computed it with an aggregate, reasoning that a literal would lie if
+        # the rule ever loosened. A bite-check killed that: replacing the aggregate with
+        # `Decimal('0.00')` failed NOTHING, because the two can never differ — a row only
+        # appears here when `app_id not in spent_ids`, i.e. when the student has no
+        # transactions at all. **A computation whose result can never differ from a constant
+        # is not a safeguard; it is a constant wearing a costume** (the 2026-09-10 dead-code
+        # lesson). What protects the column is the INVARIANT, asserted in
+        # `test_a_student_we_were_paid_for_but_cannot_see_is_named`: a student with any
+        # spending is never on this list.
+        #
+        # ⚠ IF THE RULE EVER LOOSENS — "spent less than we released", "nothing this month" —
+        # this line must become a real aggregate in the same commit. It is a constant only
+        # for as long as the filter below is an exact `not in`.
         unseen = [
-            {'application_id': app_id, 'name': names.get(app_id) or ''}
-            for app_id, (_total, last) in sorted(released.items())
+            {'application_id': app_id, 'name': names.get(app_id) or '',
+             'paid': total, 'spent': _ZERO}
+            for app_id, (total, last) in sorted(released.items())
             # Released ON OR BEFORE the newest day we hold data for. Money released after the
             # file ends is not a gap — it is next week's file.
             if app_id not in spent_ids and last is not None

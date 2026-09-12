@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## The report date moves up, the gap table gains its evidence, and the page gets its width back - 2026-09-12
+
+- **The report date is at the TOP of the page, once.** It was buried inside the gap section,
+  which made it read as a fact about that section; it is a fact about the whole page - every
+  figure above and below stops on that day. It was never hardcoded (the owner asked): it is the
+  newest transaction date we hold, and it disappears entirely before the first import.
+- **The gap table is Student / Payment / Spent.** The application number was a column and is now
+  gone from the header. `Payment RM600.00 / Spent RM0.00` is the EVIDENCE for the row - a list of
+  names alone is an accusation.
+- **⚠ `/admin/spending` IS A WIDE PAGE, AND SHOULD HAVE BEEN SINCE IT SHIPPED.** It was missing
+  from `WIDE_ROUTES`, so a SEVEN-column merchant table was drawn at the 896px reading width:
+  shop names wrapped onto two lines and the last column fell off the right-hand edge. Payments,
+  one click away, was already 1280px. The rule's own central case, simply missed.
+
+**⚠ A BITE-CHECK DELETED CODE OF MINE WRITTEN AN HOUR EARLIER.** `spent` was computed with an
+aggregate, on the reasoning that a literal zero would lie if the rule ever loosened. Replacing
+the aggregate with `Decimal('0.00')` failed NOTHING - the two can never differ, because a row
+only appears when the student has no transactions at all. **A computation whose result can never
+differ from a constant is not a safeguard; it is a constant wearing a costume.** It is now a
+constant, and what protects the column is the INVARIANT, bitten and caught: a student with any
+spending is never on this list.
+
+Gates: **6539 pytest**, **2185 jest**, lint clean, `next build` exit 0. No migration.
+
 ## Names, a balance, formal copy - and the summary stops duplicating itself - 2026-09-12
 
 Four owner requests after using the recovered screen.

@@ -5519,6 +5519,7 @@
       "nav": "Spending",
       "title": "Student spending",
       "subtitle": "A record of what students purchased with their bursary, grouped by merchant. This information is not shown to sponsors.",
+      "dataTo": "Covering all expenditure recorded up to {date}.",
       "loadFailed": "Could not load the spending figures.",
       "saveFailed": "That change was not saved.",
       "empty": "No expenditure has been recorded.",
@@ -5583,11 +5584,11 @@
       },
       "gaps": {
         "title": "Expenditure not accounted for",
-        "unseen": "The following students received funds on or before {date}, but no expenditure has been recorded for them:",
+        "unseen": "The following students received funds on or before that date, but no expenditure has been recorded for them:",
         "shared": "Wallets registered to more than one student",
         "none": "All expenditure is accounted for.",
         "note": "A wallet that matches no student is reported to staff by email and is not listed here.",
-        "reference": "Application"
+        "paid": "Payment"
       },
       "error": {
         "unknown_merchant": "That shop is not one of yours.",

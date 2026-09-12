@@ -156,6 +156,32 @@ describe('the three tabs', () => {
   })
 })
 
+describe('the report date', () => {
+  it('⚠ PUTS THE REPORT DATE AT THE TOP, ONCE — not inside a section', async () => {
+    // It was buried in the gap sentence, which made it read as a fact about that section. It is
+    // a fact about the WHOLE page: every figure above and below stops on that day. And it is
+    // DERIVED from the newest transaction we hold — a hardcoded date here would go stale the
+    // first week nobody noticed (owner asked which it was, 2026-09-12).
+    render(<SpendingPage />)
+    expect((await screen.findByTestId('spending-data-to')).textContent)
+      .toContain('admin.spending.dataTo')
+    await openTab('students')
+    // …and it is NOT repeated down in the gap list.
+    expect(within(screen.getByTestId('wallet-gaps')).queryByTestId('spending-data-to')).toBeNull()
+  })
+
+  it('shows no report date at all before the first import', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue({
+      ...OVERVIEW,
+      wallet_gaps: { unseen_students: [], shared_wallets: {}, data_to: null },
+    })
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    expect(screen.queryByTestId('spending-data-to')).toBeNull()
+  })
+})
+
+
 describe('the Shops tab', () => {
   it('draws every shop with its money, in BOTH renderings', async () => {
     render(<SpendingPage />)
@@ -634,16 +660,20 @@ describe('the wallet faults', () => {
     mockApi.getSpendingOverview.mockResolvedValue({
       ...OVERVIEW,
       wallet_gaps: {
-        unseen_students: [{ application_id: 42, name: 'RAJAN A/L MUNIANDY' }],
+        unseen_students: [{ application_id: 42, name: 'RAJAN A/L MUNIANDY',
+                            paid: '600.00', spent: '0.00' }],
         shared_wallets: { '8000400170001': [7, 8] }, data_to: '2026-08-31' },
     })
     render(<SpendingPage />)
     await openTab('students')
     const gaps = within(screen.getByTestId('wallet-gaps'))
-    // ⚠ THE NAME, not just the number (owner, 2026-09-12). A list of application ids is not
-    // a list of people; the officer had to look every one of them up before they could act.
+    // ⚠ THE NAME, not the number (owner, 2026-09-12). A list of application ids is not a
+    // list of people; the officer had to look every one of them up before they could act.
     expect(gaps.getByText('RAJAN A/L MUNIANDY')).not.toBeNull()
-    expect(gaps.getByText('42')).not.toBeNull()
+    // ⚠ AND THE EVIDENCE BESIDE THE NAME: paid RM600, spent nothing. The zero is the whole
+    // reason the row is on this list, so showing it turns an accusation into a fact.
+    expect(gaps.getByText('RM600.00')).not.toBeNull()
+    expect(gaps.getByText('RM0.00')).not.toBeNull()
     expect(gaps.getByText(/8000400170001/)).not.toBeNull()
   })
 })
