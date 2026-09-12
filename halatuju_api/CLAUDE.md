@@ -552,10 +552,18 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-12, after the spending screen arc — S6-S8, TD-241, the blackout)
 
-**✅ ALL SHIPPED AND VERIFIED LIVE 2026-09-12.** `main` at **`f2dde67a`**; both builds SUCCESS
-(waited on BY BUILD ID: web `ec0d3c01`, api `22b2c373`); serving **halatuju-api-01038-rw5** /
-**halatuju-web-00886-qjr**; site 200, `/admin/spending` 200, `/admin/payments` 200, **no ERROR
-logs**. Gates: **6537 pytest** · **2183 jest** · lint 0 · `next build` exit 0.
+**✅ ALL SHIPPED AND VERIFIED LIVE 2026-09-12.** `main` at **`d130d734`**; both builds SUCCESS
+(waited on BY BUILD ID); serving **halatuju-api-01039-k8x** / **halatuju-web-00887-gj8**;
+site 200, `/admin/spending` 200, `/admin/payments` 200, **no ERROR logs**.
+Gates: **6539 pytest** · **2185 jest** · lint 0 · `next build` exit 0.
+
+⚠ **THE LAST THREE FIXES, after the owner used the finished screen:** the report date moved
+to the TOP of the page (it was never hardcoded — it is the newest transaction we hold — but
+it was buried in one section as though it belonged to that section); the gap table became
+**Student / Payment / Spent**, because a list of names alone is an accusation and
+`RM600 paid / RM0 spent` is the evidence; and **`/admin/spending` joined `WIDE_ROUTES`** —
+a SEVEN-column table had been drawn at the 896px reading width since the day it shipped,
+while Payments one click away was 1280px.
 **⚠ NO MIGRATIONS IN THE WHOLE ARC** — ledger reconciled against production at close: 159 files,
 159 recorded rows, 0150–0159 contiguous, no gaps.
 
