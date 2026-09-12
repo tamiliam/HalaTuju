@@ -607,6 +607,47 @@ back, so that check is a human's.**
 
 ## Superseded — previous Next Sprint (as of 2026-09-11, after the spending page was reorganised — S6)
 
+**✅✅ THE SEPTEMBER BLACKOUT IS FIXED AND THE LOST MONTH IS RECOVERED — `main` at `b025f520`,
+2026-09-12.** Serving **halatuju-api-01037-cnh** / **halatuju-web-00885-9gk**; both builds SUCCESS.
+Gates: **6533 pytest** · **2178 jest** · lint clean · `next build` exit 0. **No migration.**
+
+⚠⚠ **A LIVE DATA-LOSS BUG, FOUND BY THE OWNER, NOT BY US.** `%b` wants `Sep`, `%B` wants
+`September`; the corpus writes **`Sept`**, which matches NEITHER — so **every September
+transaction was parsed as an unreadable date and silently dropped**. The file held 230 rows to
+6 September; we had stored 9, stopping at 31 August. **September is the only English month this
+can happen to** (`Jun`/`June`, `Jul`/`July` both parse), so July and August were flawless and a
+month vanished the moment the calendar turned.
+
+**RECOVERY RUN ON PRODUCTION (`spending-reread`), and it worked:**
+
+| | before | after |
+|---|---|---|
+| rows | 1,377 | **1,597** (+220) |
+| spend total | RM10,650.22 | **RM13,353.03** |
+| newest transaction | 31 Aug | **6 Sept** |
+| students with spending | 43 | **47** |
+
+⚠ **THE DRIVE WRITE FINALLY HAPPENED — `Spending summary 2026-09-12.md` was FILED.** That was the
+one path never exercised since S4b. It reported success, so it is in `Summaries/`; **the owner
+still needs to confirm it is not sitting beside the exports.**
+
+⚠ **TD-242 check passed**: `files read : 8` against 8 exports in the folder.
+
+⚠ **ELEVEN STUDENTS ARE STILL SILENT, AND THEY SPLIT IN TWO.** Applications **69, 104, 47, 63,
+101** were paid in July/August (RM600 each) and have spent NOTHING in six weeks — a real question
+for Vircle or the students. Applications **48, 114, 115, 116, 119, 134** were first paid on
+1 September and have five days of data; not yet a fault.
+
+**Also shipped with it:** the import report now reaches the LOG (under cron its stdout went into
+the HTTP response body, which Cloud Scheduler discards — so the answer to "why is this student
+missing" was destroyed by every run that could have produced it); **"Wallets to fix" became "Money
+we cannot account for"** and names students a COMPLETED run paid with no spending, up to the newest
+date held (the old list named students nobody had paid, one of the two a TEST record); and **a
+super now sees the Payments funding summary** — the same `no_org` defect fixed on Spending the day
+before, one page over, found in the live logs.
+
+---
+
 **✅ TD-241 SHIPPED — `main` at `e5501cd6`, VERIFIED LIVE 2026-09-11.** Serving
 **halatuju-api-01034-694** / **halatuju-web-00881-c47**; both builds SUCCESS (BY BUILD ID: api
 `d6a1cf8f`, web `6b7d68b4`); site 200, `/admin/spending` 200, `/admin/payments` 200; **no api
