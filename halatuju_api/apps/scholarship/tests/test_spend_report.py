@@ -28,7 +28,7 @@ from apps.scholarship import spend_category as sc
 from apps.scholarship import spend_report as sr
 from apps.scholarship import spending_import as si
 from apps.scholarship.models import (
-    BursarySpendTxn, MerchantCategory, PaymentRun, PaymentRunItem, Programme,
+    BursarySpendTxn, Disbursement, MerchantCategory, Programme,
     ScholarshipApplication, ScholarshipCohort,
 )
 
@@ -165,6 +165,57 @@ class TestMerchantRows(TestCase):
         self.assertEqual(row['held_back'], 0)
 
 
+class TestTheStudentBalance(TestCase):
+    """`paid - spent`, per student. ⚠ NOT floored at zero — see the test that says why."""
+
+    def setUp(self):
+        self.org, self.cohort = make_org('bal')
+        self.app = make_app(self.org, self.cohort, '8000400170001')
+
+    def _release(self, app, amount):
+        return Disbursement.objects.create(
+            application=app, amount=D(amount), status='released', sequence=1,
+            released_at=timezone.now())
+
+    def test_it_is_what_we_released_minus_what_they_spent(self):
+        self._release(self.app, '600')
+        txn(self.app, 'A SHOP', 250, category='food', decided_by='rule')
+        row = sr.student_rows(self.org)[0]
+        self.assertEqual(row['paid'], D('600.00'))
+        self.assertEqual(row['spent'], D('250.00'))
+        self.assertEqual(row['balance'], D('350.00'))
+
+    def test_A_NEGATIVE_BALANCE_SURVIVES_AND_IS_NOT_FLOORED(self):
+        """⚠⚠ FOUND BY A SILENT BITE. Flooring it at zero passed every test.
+
+        The sponsor card DOES floor its version, deliberately: a donor must never read a negative
+        as *"your student overspent your money"*, because the wallet is the student's own and a
+        parent may top it up. **The officer is the person who should notice exactly that and ask**,
+        so on this screen the real figure is the useful one. Flooring here would hide the only row
+        on the page worth a phone call, and hide it behind a plausible RM0.00.
+        """
+        self._release(self.app, '50')
+        txn(self.app, 'A SHOP', 90, category='food', decided_by='rule')
+        self.assertEqual(sr.student_rows(self.org)[0]['balance'], D('-40.00'))
+
+    def test_a_SCHEDULED_disbursement_has_not_been_paid(self):
+        Disbursement.objects.create(
+            application=self.app, amount=D('600'), status='scheduled', sequence=1)
+        txn(self.app, 'A SHOP', 10, category='food', decided_by='rule')
+        row = sr.student_rows(self.org)[0]
+        self.assertEqual(row['paid'], D('0.00'))
+        self.assertEqual(row['balance'], D('-10.00'))
+
+    def test_transactions_counts_PURCHASES_not_disbursements(self):
+        """⚠ The column was called `payments` and sat beside a balance derived from what we PAID —
+        two different money words on one row. It counts rows in the Vircle export."""
+        self._release(self.app, '600')
+        self._release(self.app, '200')
+        for _ in range(3):
+            txn(self.app, 'A SHOP', 5, category='food', decided_by='rule')
+        self.assertEqual(sr.student_rows(self.org)[0]['transactions'], 3)
+
+
 class TestWalletGaps(TestCase):
     """⚠⚠ **REWRITTEN 2026-09-12.** This class used to assert `students_without_wallet` — funded
     students with no wallet id, **whether or not any money had reached them**. The owner looked at
@@ -182,13 +233,16 @@ class TestWalletGaps(TestCase):
         self.org, self.cohort = make_org('wal')
 
     def _paid(self, app, when=datetime.date(2026, 8, 10)):
-        """Mark `app` paid by a COMPLETED run on `when` — the only kind that counts."""
-        run = PaymentRun.objects.create(
-            organisation=self.org, programme=self.cohort.programme,
-            reference=f'PR-{app.id}', payment_date=when, period_month=when,
-            status='completed')
-        PaymentRunItem.objects.create(run=run, application=app, amount=D('200'), included=True)
-        return run
+        """Release money to `app` on `when`.
+
+        ⚠ A RELEASED DISBURSEMENT, not a completed run item. `payments.py` names released
+        disbursements the one truth for "paid to date", and completing a run is simply one of
+        the things that WRITES them (`disbursement.release_tranche` is another). A test that
+        set up the run instead would pass while the code read a different table."""
+        return Disbursement.objects.create(
+            application=app, amount=D('200'), status='released', sequence=1,
+            released_at=timezone.make_aware(
+                datetime.datetime.combine(when, datetime.time(12, 0))))
 
     def test_a_student_we_were_paid_for_but_cannot_see_is_named(self):
         seen = make_app(self.org, self.cohort, '8000400170001')
@@ -197,7 +251,11 @@ class TestWalletGaps(TestCase):
         self._paid(seen)
         self._paid(unseen)
         gaps = sr.wallet_gaps(self.org)
-        self.assertEqual(gaps['unseen_students'], [unseen.id])
+        self.assertEqual([r['application_id'] for r in gaps['unseen_students']], [unseen.id])
+        # ⚠ THE NAME TRAVELS WITH THE ID (owner, 2026-09-12): a list of numbers is not a list
+        # of people, and the officer reading it has to look every one of them up.
+        self.assertEqual(gaps['unseen_students'][0]['name'],
+                         ScholarshipApplication.objects.get(pk=unseen.id).profile.name)
         self.assertEqual(gaps['data_to'], '2026-08-30')
 
     def test_a_student_PAID_AFTER_THE_DATA_ENDS_is_not_a_gap(self):
@@ -219,18 +277,15 @@ class TestWalletGaps(TestCase):
         self._paid(seen)
         self.assertEqual(sr.wallet_gaps(self.org)['unseen_students'], [])
 
-    def test_an_UNFINISHED_run_does_not_count_as_paid(self):
-        """A draft or signed run has not moved money, so it cannot create a missing-spending gap."""
+    def test_a_SCHEDULED_disbursement_does_not_count_as_paid(self):
+        """Money not yet released has not moved, so it cannot create a missing-spending gap."""
         seen = make_app(self.org, self.cohort, '8000400170001')
-        draft_only = make_app(self.org, self.cohort, '8000400170002')
+        scheduled_only = make_app(self.org, self.cohort, '8000400170002')
         txn(seen, 'A SHOP', 5, when=datetime.date(2026, 8, 30))
         self._paid(seen)
-        run = PaymentRun.objects.create(
-            organisation=self.org, programme=self.cohort.programme, reference='PR-DRAFT',
-            payment_date=datetime.date(2026, 8, 10), period_month=datetime.date(2026, 8, 10),
-            status='draft')
-        PaymentRunItem.objects.create(run=run, application=draft_only, amount=D('200'),
-                                      included=True)
+        Disbursement.objects.create(
+            application=scheduled_only, amount=D('200'), status='scheduled', sequence=1,
+            scheduled_for=datetime.date(2026, 8, 10))
         self.assertEqual(sr.wallet_gaps(self.org)['unseen_students'], [])
 
     def test_with_no_spending_at_all_nothing_is_unseen_yet(self):

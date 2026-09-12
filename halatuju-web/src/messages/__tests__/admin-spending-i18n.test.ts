@@ -118,9 +118,9 @@ describe('admin.spending i18n hygiene', () => {
     // string inside a button nobody would think to translate.
     const missing: string[] = []
     const keys = [...Object.values(MERCHANT_SORT_LABEL), ...Object.values(STUDENT_SORT_LABEL)]
-    // 7 shop columns + 4 student columns. Bump it when a column is added — the number is the
+    // 7 shop columns + 5 student columns. Bump it when a column is added — the number is the
     // floor that stops this test passing vacuously if a map is ever emptied.
-    expect(keys.length).toBe(11)
+    expect(keys.length).toBe(12)
     for (const key of keys) {
       for (const [name, loc] of [['en', en], ['ms', ms], ['ta', ta]] as const) {
         if (typeof resolve(loc, key) !== 'string') missing.push(`${name}: ${key}`)

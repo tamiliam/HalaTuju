@@ -2850,9 +2850,17 @@ export interface SpendingMerchantRow {
 export interface SpendingStudentRow {
   application_id: number
   name: string
-  payments: number
+  /** Things the student BOUGHT — rows in the Vircle export. ⚠ Was `payments`, which beside
+   *  `paid` and `balance` read as the number of disbursements (owner, 2026-09-12). */
+  transactions: number
   spent: string
   unplaced: string
+  /** Released to this student to date — the same source the sponsor card uses. */
+  paid: string
+  /** `paid` minus `spent`. ⚠ CAN BE NEGATIVE and is deliberately not floored: the wallet is
+   *  the student's own and a parent may top it up. The sponsor card floors its version; an
+   *  officer gets the real figure, because they are the one who should ask about it. */
+  balance: string
 }
 
 export interface SpendingOverview {
@@ -2870,7 +2878,7 @@ export interface SpendingOverview {
      *  at all. ⚠ Replaced `students_without_wallet` on 2026-09-12: that list named funded
      *  students with no wallet id **whom nobody had paid**, which blocks nothing and which
      *  the Payments screen already refuses to pay. This is the question a person asks. */
-    unseen_students: number[]
+    unseen_students: { application_id: number; name: string }[]
     shared_wallets: Record<string, number[]>
     /** The newest transaction date we hold, or null before the first import. */
     data_to: string | null

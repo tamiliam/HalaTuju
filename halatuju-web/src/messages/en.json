@@ -5518,74 +5518,76 @@
     "spending": {
       "nav": "Spending",
       "title": "Student spending",
-      "subtitle": "What students bought with their bursary, by shop. Nothing here reaches a sponsor.",
+      "subtitle": "A record of what students purchased with their bursary, grouped by merchant. This information is not shown to sponsors.",
       "loadFailed": "Could not load the spending figures.",
       "saveFailed": "That change was not saved.",
-      "empty": "No spending has been recorded yet.",
-      "searchShops": "Search a shop",
-      "searchStudents": "Search a student",
-      "noMatch": "Nothing matches what you are looking for.",
+      "empty": "No expenditure has been recorded.",
+      "searchShops": "Search merchants",
+      "searchStudents": "Search students",
+      "noMatch": "No records match the current filters.",
       "filter": {
         "allCategories": "All categories",
-        "anyDecidedBy": "Decided any way",
+        "anyDecidedBy": "Any determination",
         "categoryLabel": "Filter by category",
-        "decidedByLabel": "Filter by how we decided",
-        "onlyUnplaced": "Only students with money not yet sorted",
-        "clear": "Clear",
+        "decidedByLabel": "Filter by determination",
+        "onlyUnplaced": "Only students with uncategorised expenditure",
+        "clear": "Clear filters",
         "showing": "Showing {shown} of {total}"
       },
-      "kept": "Anything you change here is kept for good. It is never overwritten.",
+      "kept": "Corrections made here are retained permanently and are never overwritten.",
       "stat": {
-        "spent": "Spent",
-        "sorted": "Sorted",
-        "unsorted": "Not yet sorted",
-        "toCheck": "Shops to check"
+        "spent": "Total spent",
+        "sorted": "Categorised",
+        "unsorted": "Not categorised",
+        "toCheck": "Merchants to review"
       },
       "tabs": {
         "aria": "Spending sections"
       },
       "tab": {
-        "shops": "Shops",
+        "shops": "Merchants",
         "students": "Students",
-        "unsorted": "Unsorted"
+        "unsorted": "Uncategorised"
       },
       "unplaced": {
-        "title": "Money we could not place",
-        "help": "These shops have payments no rule, pattern or model could put in a category. Choosing one here settles that shop for good.",
-        "empty": "Every ringgit has a category. Nothing to place."
+        "title": "Expenditure not yet categorised",
+        "help": "No rule, pattern or model could assign a category to these transactions. Selecting a category here settles that merchant permanently.",
+        "empty": "All expenditure has been categorised."
       },
       "col": {
-        "shop": "Shop",
-        "countedAs": "Counted as",
-        "decidedBy": "How we decided",
-        "visits": "Visits",
+        "shop": "Merchant",
+        "countedAs": "Category",
+        "decidedBy": "Determined by",
+        "visits": "Transactions",
         "total": "Total",
-        "lastSeen": "Last seen",
-        "decidedAt": "Decided"
+        "lastSeen": "Last transaction",
+        "decidedAt": "Determined on"
       },
       "by": {
         "rule": "Rule",
         "inferred": "Pattern",
         "ai": "Model",
-        "owner": "You",
+        "owner": "Reviewer",
         "duitnow": "Bank",
-        "none": "Not decided"
+        "none": "Not determined"
       },
-      "heldBack": "{count} payment(s) too large to be food",
+      "heldBack": "{count} transaction(s) above the food threshold",
       "students": {
         "title": "By student",
         "name": "Student",
-        "payments": "Payments",
+        "transactions": "Transactions",
         "spent": "Spent",
-        "unsorted": "Not yet sorted",
-        "empty": "No student has spent anything yet."
+        "unsorted": "Not categorised",
+        "balance": "Balance",
+        "empty": "No student expenditure has been recorded."
       },
       "gaps": {
-        "title": "Money we cannot account for",
-        "unseen": "Paid students with no spending recorded up to {date}",
-        "shared": "Wallets claimed by more than one student",
-        "none": "Every paid student’s spending is accounted for.",
-        "note": "A wallet that matches no student at all is emailed to staff, not shown here."
+        "title": "Expenditure not accounted for",
+        "unseen": "The following students received funds on or before {date}, but no expenditure has been recorded for them:",
+        "shared": "Wallets registered to more than one student",
+        "none": "All expenditure is accounted for.",
+        "note": "A wallet that matches no student is reported to staff by email and is not listed here.",
+        "reference": "Application"
       },
       "error": {
         "unknown_merchant": "That shop is not one of yours.",

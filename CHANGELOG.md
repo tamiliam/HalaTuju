@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## Names, a balance, formal copy - and the summary stops duplicating itself - 2026-09-12
+
+Four owner requests after using the recovered screen.
+
+- **The gap list names PEOPLE.** "Money we cannot account for" printed a run of application
+  numbers; it is now a table of student names with the reference beside them. A list of ids is
+  not a list of people - the officer had to look every one of them up before they could act.
+- **The Students table gained BALANCE** (released minus spent) and `Payments` became
+  `Transactions`. The old name sat beside a figure derived from what we PAID and read as the
+  number of disbursements: two different money words on one row.
+  ⚠ **The balance is NOT floored at zero**, unlike the sponsor card's. A negative is real - the
+  wallet is the student's own and a parent may top it up - and the officer is exactly the person
+  who should notice and ask. It renders `-RM40.00`, never `RM-40.00`, and sorts SMALLEST first,
+  alone among the money columns, because it is scanned for who has run down or gone under.
+- **The whole screen's copy is more formal.** The owner quoted one line and called it poor
+  writing; it was. Finite verbs and complete clauses throughout, in all three languages, with no
+  jargon added and nothing made longer for its own sake.
+- **⚠ THE DRIVE SUMMARY REPLACES ITSELF INSTEAD OF DUPLICATING.** The owner's folder held TWO
+  files called `Spending summary 2026-09-12.md` - 07:00 from the daily job and 09:03 from the
+  recovery - **with different figures**, the earlier one written before a month of missing
+  spending came back. Two documents sharing a name and disagreeing on a total give a reader no
+  way to tell which is true. `_find_or_create_sheet` already carried this reasoning for the relay
+  spreadsheet; the text path never got it.
+
+**⚠ ONE SOURCE FOR "PAID", FIXED WHILE HERE.** The gap list counted completed payment-run items;
+`payments.py` names RELEASED DISBURSEMENTS the one truth, and completing a run merely writes
+them. Same answer today, and it would have drifted the first time a tranche was released by any
+other route. Both the balance and the gap list now read that one source, aggregated once.
+
+**Eight bite-checks across the two changes; three were silent and every one was a real gap:**
+nothing tested that a negative balance survives (flooring it passed); the sort fixture could not
+tell a text comparison from a numeric one (-40, 0 and 10 order identically either way - it takes
+a 9 and a 100); and the duplicate-file test ignored the query, so a lookup searching the WHOLE
+Drive passed - a worse fault than the duplicate it replaced.
+
+Gates: **6537 pytest**, **2183 jest**, lint clean, `next build` exit 0. No migration.
+
 ## The September blackout - every September transaction was being dropped - 2026-09-12
 
 **⚠⚠ A LIVE DATA-LOSS BUG, FOUND BY THE OWNER, NOT BY US.** They compared the Vircle sheet against

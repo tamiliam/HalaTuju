@@ -7889,9 +7889,17 @@ class AdminSpendingView(_SpendingBase):
             'students': [{
                 'application_id': r['application_id'],
                 'name': r['name'],
-                'payments': r['payments'],
+                # ⚠ TRANSACTIONS — things the student BOUGHT. It was called `payments`,
+                # which beside the new `paid`/`balance` read as the number of
+                # disbursements: two different money words on one row (owner, 2026-09-12).
+                'transactions': r['transactions'],
                 'spent': str(r['spent']),
                 'unplaced': str(r['unplaced']),
+                'paid': str(r['paid']),
+                # ⚠ NOT floored at zero, unlike the sponsor card's. A negative is real —
+                # the wallet is the student's own and a parent may top it up — and the
+                # officer is exactly the person who should notice and ask.
+                'balance': str(r['balance']),
             } for r in spend_report.student_rows(org, programme)],
             # ⚠ `model_decisions` WAS HERE AND IS DELETED (S7, 2026-09-11). It was this same data
             # filtered to `ai` within 14 days, rendered read-only beside a table that CAN be

@@ -5518,74 +5518,76 @@
     "spending": {
       "nav": "Perbelanjaan",
       "title": "Perbelanjaan pelajar",
-      "subtitle": "Apa yang pelajar beli dengan biasiswa mereka, mengikut kedai. Tiada apa-apa di sini sampai kepada penaja.",
+      "subtitle": "Rekod pembelian pelajar menggunakan biasiswa mereka, mengikut pedagang. Maklumat ini tidak ditunjukkan kepada penaja.",
       "loadFailed": "Angka perbelanjaan tidak dapat dimuatkan.",
       "saveFailed": "Perubahan itu tidak disimpan.",
-      "empty": "Belum ada perbelanjaan direkodkan.",
-      "searchShops": "Cari kedai",
+      "empty": "Tiada perbelanjaan direkodkan.",
+      "searchShops": "Cari pedagang",
       "searchStudents": "Cari pelajar",
-      "noMatch": "Tiada apa-apa yang sepadan dengan carian anda.",
+      "noMatch": "Tiada rekod sepadan dengan penapis semasa.",
       "filter": {
         "allCategories": "Semua kategori",
-        "anyDecidedBy": "Ditentukan dengan apa-apa cara",
+        "anyDecidedBy": "Sebarang penentuan",
         "categoryLabel": "Tapis mengikut kategori",
-        "decidedByLabel": "Tapis mengikut cara ditentukan",
-        "onlyUnplaced": "Hanya pelajar dengan wang yang belum diasingkan",
-        "clear": "Kosongkan",
+        "decidedByLabel": "Tapis mengikut penentuan",
+        "onlyUnplaced": "Hanya pelajar dengan perbelanjaan belum dikategorikan",
+        "clear": "Kosongkan penapis",
         "showing": "Memaparkan {shown} daripada {total}"
       },
-      "kept": "Apa sahaja yang anda ubah di sini akan kekal. Ia tidak akan ditulis ganti.",
+      "kept": "Pembetulan yang dibuat di sini dikekalkan secara tetap dan tidak akan ditulis ganti.",
       "stat": {
-        "spent": "Dibelanjakan",
-        "sorted": "Telah diasingkan",
-        "unsorted": "Belum diasingkan",
-        "toCheck": "Kedai untuk disemak"
+        "spent": "Jumlah dibelanjakan",
+        "sorted": "Dikategorikan",
+        "unsorted": "Belum dikategorikan",
+        "toCheck": "Pedagang untuk disemak"
       },
       "tabs": {
         "aria": "Bahagian perbelanjaan"
       },
       "tab": {
-        "shops": "Kedai",
+        "shops": "Pedagang",
         "students": "Pelajar",
-        "unsorted": "Belum diasingkan"
+        "unsorted": "Belum dikategorikan"
       },
       "unplaced": {
-        "title": "Wang yang tidak dapat dikategorikan",
-        "help": "Kedai ini mempunyai bayaran yang tidak dapat dikategorikan oleh mana-mana peraturan, corak atau model. Memilih satu di sini menetapkan kedai itu selamanya.",
-        "empty": "Setiap ringgit sudah ada kategori. Tiada apa-apa untuk dikategorikan."
+        "title": "Perbelanjaan belum dikategorikan",
+        "help": "Tiada peraturan, corak atau model yang dapat menetapkan kategori bagi transaksi ini. Memilih kategori di sini menetapkan pedagang itu secara tetap.",
+        "empty": "Semua perbelanjaan telah dikategorikan."
       },
       "col": {
-        "shop": "Kedai",
-        "countedAs": "Dikira sebagai",
-        "decidedBy": "Cara kami tentukan",
-        "visits": "Kunjungan",
+        "shop": "Pedagang",
+        "countedAs": "Kategori",
+        "decidedBy": "Ditentukan oleh",
+        "visits": "Transaksi",
         "total": "Jumlah",
-        "lastSeen": "Kali terakhir",
-        "decidedAt": "Ditentukan"
+        "lastSeen": "Transaksi terakhir",
+        "decidedAt": "Ditentukan pada"
       },
       "by": {
         "rule": "Peraturan",
         "inferred": "Corak",
         "ai": "Model",
-        "owner": "Anda",
+        "owner": "Penyemak",
         "duitnow": "Bank",
         "none": "Belum ditentukan"
       },
-      "heldBack": "{count} bayaran terlalu besar untuk makanan",
+      "heldBack": "{count} transaksi melebihi had makanan",
       "students": {
         "title": "Mengikut pelajar",
         "name": "Pelajar",
-        "payments": "Bayaran",
+        "transactions": "Transaksi",
         "spent": "Dibelanjakan",
-        "unsorted": "Belum diasingkan",
-        "empty": "Belum ada pelajar yang berbelanja."
+        "unsorted": "Belum dikategorikan",
+        "balance": "Baki",
+        "empty": "Tiada perbelanjaan pelajar direkodkan."
       },
       "gaps": {
-        "title": "Wang yang tidak dapat dijelaskan",
-        "unseen": "Pelajar yang dibayar tetapi tiada perbelanjaan direkodkan sehingga {date}",
-        "shared": "Dompet dituntut oleh lebih daripada seorang pelajar",
-        "none": "Perbelanjaan setiap pelajar yang dibayar telah dijelaskan.",
-        "note": "Dompet yang tidak sepadan dengan mana-mana pelajar akan diemelkan kepada kakitangan, bukan dipaparkan di sini."
+        "title": "Perbelanjaan yang tidak dapat dijelaskan",
+        "unseen": "Pelajar berikut menerima dana pada atau sebelum {date}, tetapi tiada perbelanjaan direkodkan bagi mereka:",
+        "shared": "Dompet yang didaftarkan kepada lebih daripada seorang pelajar",
+        "none": "Semua perbelanjaan telah dijelaskan.",
+        "note": "Dompet yang tidak sepadan dengan mana-mana pelajar dilaporkan kepada kakitangan melalui e-mel dan tidak disenaraikan di sini.",
+        "reference": "Permohonan"
       },
       "error": {
         "unknown_merchant": "Kedai itu bukan milik anda.",

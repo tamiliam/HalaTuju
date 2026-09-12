@@ -55,6 +55,18 @@ import {
   getSpendingOverview, setSpendingCategory, type SpendingOverview,
 } from '@/lib/admin-api'
 
+/** Money for display, SIGNED. ⚠ `rm` groups thousands and knows nothing about a minus sign, so
+ *  a negative balance would render `RM-40.00`, which reads as a typo rather than as a number. */
+const money = (v: string) => {
+  const n = Number(v)
+  return n < 0 ? `-RM${rm(Math.abs(n).toFixed(2))}` : `RM${rm(v)}`
+}
+
+/** A negative balance is not an error — it means somebody else put money into the wallet, which
+ *  the student is entitled to do. It IS the row an officer should look at, so it is marked. */
+const balanceTone = (v: string) =>
+  (Number(v) < 0 ? 'text-caution-700 font-medium' : 'text-ground-900')
+
 const TABS: readonly PanelTab<'shops' | 'students' | 'unsorted'>[] = [
   { key: 'shops', labelKey: 'admin.spending.tab.shops' },
   { key: 'students', labelKey: 'admin.spending.tab.students' },
@@ -239,10 +251,13 @@ export default function SpendingPage() {
                   </span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ground-600">
-                  <span>{t('admin.spending.students.payments')}{' '}
-                    <span className="tabular-nums">{s.payments}</span></span>
+                  <span>{t('admin.spending.students.transactions')}{' '}
+                    <span className="tabular-nums">{s.transactions}</span></span>
                   <span>{t('admin.spending.students.unsorted')}{' '}
                     <span className="tabular-nums">RM{rm(s.unplaced)}</span></span>
+                  <span>{t('admin.spending.students.balance')}{' '}
+                    <span className={`tabular-nums ${balanceTone(s.balance)}`}>
+                      {money(s.balance)}</span></span>
                 </div>
               </div>
             ))}
@@ -260,11 +275,13 @@ export default function SpendingPage() {
                 <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
                   <SortHeader col="name" label={t(STUDENT_SORT_LABEL.name)}
                     sort={studentSort} onSort={onStudentSort} />
-                  <SortHeader col="payments" label={t(STUDENT_SORT_LABEL.payments)}
+                  <SortHeader col="transactions" label={t(STUDENT_SORT_LABEL.transactions)}
                     sort={studentSort} onSort={onStudentSort} align="right" />
                   <SortHeader col="spent" label={t(STUDENT_SORT_LABEL.spent)}
                     sort={studentSort} onSort={onStudentSort} align="right" />
                   <SortHeader col="unplaced" label={t(STUDENT_SORT_LABEL.unplaced)}
+                    sort={studentSort} onSort={onStudentSort} align="right" />
+                  <SortHeader col="balance" label={t(STUDENT_SORT_LABEL.balance)}
                     sort={studentSort} onSort={onStudentSort} align="right" />
                 </tr>
               </thead>
@@ -272,13 +289,16 @@ export default function SpendingPage() {
                 {students.rows.map((s) => (
                   <tr key={s.application_id}>
                     <td className="px-4 py-3 text-ground-900">{s.name}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-ground-700">{s.payments}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ground-700">{s.transactions}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-ground-900">RM{rm(s.spent)}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-ground-500">RM{rm(s.unplaced)}</td>
+                    <td className={`px-4 py-3 text-right tabular-nums ${balanceTone(s.balance)}`}>
+                      {money(s.balance)}
+                    </td>
                   </tr>
                 ))}
                 {!loading && students.rows.length === 0 && (
-                  <tr><td colSpan={4} className="px-4 py-8 text-center text-ground-400">
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-ground-400">
                     {t('admin.spending.students.empty')}
                   </td></tr>
                 )}
@@ -307,10 +327,38 @@ export default function SpendingPage() {
                 spending" is meaningless without the date the data runs to — otherwise a
                 student paid yesterday reads as a fault rather than as tomorrow's file. */}
             {unseen.length > 0 && (
-              <p className="text-ground-700">
-                {t('admin.spending.gaps.unseen', { date: dataTo ? formatDate(dataTo) : '' })}:{' '}
-                <span className="tabular-nums">{unseen.join(', ')}</span>
-              </p>
+              <>
+                <p className="text-ground-700">
+                  {t('admin.spending.gaps.unseen',
+                     { date: dataTo ? formatDate(dataTo) : '' })}
+                </p>
+                {/* ⚠ A TABLE OF NAMES, not a run of application numbers (owner, 2026-09-12).
+                    A list of ids is not a list of people — the officer had to look every one of
+                    them up before they could do anything about it. The id stays, quietly, because
+                    it is what every other screen and every alert email keys on. */}
+                <TableFrame className="mt-2" minWidth={360}
+                  label={t('admin.spending.gaps.title')}>
+                  <table className="w-full text-sm">
+                    <thead className="bg-ground-50 border-b">
+                      <tr className="text-left text-xs uppercase tracking-wider text-ground-500">
+                        <th className="px-4 py-3 font-semibold">
+                          {t('admin.spending.students.name')}</th>
+                        <th className="px-4 py-3 text-right font-semibold">
+                          {t('admin.spending.gaps.reference')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-ground-100">
+                      {unseen.map((s) => (
+                        <tr key={s.application_id}>
+                          <td className="px-4 py-3 text-ground-900">{s.name}</td>
+                          <td className="px-4 py-3 text-right tabular-nums text-ground-500">
+                            {s.application_id}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TableFrame>
+              </>
             )}
             {shared.length > 0 && (
               <p className="text-ground-700">
