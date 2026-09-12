@@ -2118,6 +2118,19 @@ class CronRunView(APIView):
                                  ('--drive', '--apply', '--no-sort', '--no-summary',
                                   '--no-email')),
         'spending-sort-report': 'sort_spending',
+        # ⚠⚠ RECOVERY DOOR — re-read EVERY file in the folder, not only the new or changed ones.
+        # NOT SCHEDULED, and it must never be: it downloads the whole archive.
+        #
+        # It exists because a PARSER bug drops rows from a file we then mark as read, and no
+        # amount of fixing the parser brings them back on its own. The `Sept` date bug
+        # (2026-09-12) lost every September transaction that way — the file had been imported
+        # that morning, so the nightly "new or changed" rule would have skipped it until somebody
+        # edited the sheet by hand.
+        #
+        # ⚠ Safe because `ingest` dedups on `txn_id`: a re-read of stored rows adds nothing and
+        # reports them as already stored. Expensive, not dangerous — which is why it is a door a
+        # person opens, never a default.
+        'spending-reread': ('ingest_spending', ('--drive', '--apply', '--reread')),
         'partner-digests': 'send_partner_digests',  # weekly (Mon 08:00 MYT): partner stage summary + chase list
         'partner-milestones': 'send_partner_milestones',  # hourly: awaiting-review + awarded, batched per organisation
         # one-off/idempotent (S3): create the nine sponsor-email templates. The three that

@@ -125,6 +125,42 @@ TX_SPEND = 'SPEND'
 DUITNOW_P2P = 'STATIC_CUSTOMER_QR_CODE_DUITNOW_P2P'
 
 _DATE_FORMATS = ('%d %b %Y', '%d %B %Y', '%Y-%m-%d', '%d/%m/%Y')
+
+#: ⚠⚠ **"Sept" IS WHY EVERY SEPTEMBER TRANSACTION VANISHED.** `%b` wants exactly `Sep` and `%B`
+#: wants exactly `September`; the four-letter `Sept` matches NEITHER, so `_parse_date` returned
+#: `None`, the row was counted as `unparsed_date`, and it was never stored. The corpus is written
+#: by people, and September is the ONE English month whose everyday short form is four letters —
+#: `Jun`/`June` and `Jul`/`July` both parse, so nothing went wrong for two months and then a whole
+#: month's spending disappeared in silence. Found by the owner comparing the sheet (230 rows, to
+#: 6 September) against the screen (9 rows, stopping at 31 August), 2026-09-12.
+#:
+#: The repair is NOT another format string — `%b` is locale-fixed, so `Sept` can never be added to
+#: that tuple. A month word is normalised to its canonical three letters FIRST, and the existing
+#: formats then do what they always did.
+_MONTH_NAMES = ('January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December')
+
+#: Any run of letters that could be a month word. Bounded by non-letters so `Marble` is examined
+#: as one word rather than matching on its first three characters.
+_MONTH_WORD_RE = re.compile(r'(?<![A-Za-z])([A-Za-z]{3,9})(?![A-Za-z])')
+
+
+def _canonical_month_words(text: str) -> str:
+    """`1 Sept 2026` → `1 Sep 2026`. Any unambiguous abbreviation of an English month is accepted.
+
+    ⚠ **THE TEST IS "IS THIS WORD A PREFIX OF A MONTH NAME", NOT "DO THREE LETTERS MATCH".** The
+    lazy version (`name[:3] == word[:3]`) turns `Marble` into `Mar` and `Augment` into `Aug` — it
+    would parse a merchant name as a date. Requiring the whole word to be a prefix of the month
+    accepts `Sep`, `Sept`, `Septem`, `September` and rejects everything that merely starts alike.
+    """
+    def swap(match):
+        word = match.group(1)
+        lowered = word.lower()
+        for name in _MONTH_NAMES:
+            if name.lower().startswith(lowered):
+                return name[:3]
+        return word
+    return _MONTH_WORD_RE.sub(swap, text)
 _MONEY_STRIP = re.compile(r'[Rr][Mm]|,|\s')
 _DIGITS = re.compile(r'\D')
 
@@ -224,6 +260,9 @@ def parse_txn_date(raw) -> date | None:
     if not text:
         return None
     text = text.split(',')[0].strip()          # drop the old format's trailing time
+    # ⚠ NORMALISE THE MONTH WORD FIRST. See `_canonical_month_words`: `%b`/`%B` are locale-fixed,
+    # so the four-letter `Sept` the corpus actually uses can only be handled here.
+    text = _canonical_month_words(text)
     for fmt in _DATE_FORMATS:
         try:
             return datetime.strptime(text, fmt).date()
@@ -496,18 +535,29 @@ def files_needing_read(listing) -> list:
     return out
 
 
-def drive_sources(folder_path):
+def drive_sources(folder_path, *, reread=False):
     """Every spending report in `folder_path` that needs reading, parsed → `ingest` input.
 
     Returns `(sources, unreadable)` in the command's own shape, so the Drive path and the local
     `--file` path hand `ingest` exactly the same thing. **No parsing rule lives here** — this is an
     adapter, and `rows_from_values` remains the one parser.
+
+    ⚠⚠ **`reread=True` IGNORES "new or changed" AND READS EVERY FILE.** It exists for one
+    situation and it is not hypothetical: **the parser was wrong, so rows were dropped from files
+    we have already marked as read.** The `Sept` date bug (2026-09-12) lost every September
+    transaction, and fixing the parser alone would not have recovered a single one — the file was
+    imported this morning, so `files_needing_read` would skip it until somebody edited it.
+
+    ⚠ **IT IS SAFE BECAUSE `ingest` DEDUPS ON `txn_id`**, not because of anything here. Re-reading
+    a file already stored adds nothing and reports `rows already stored`. It is expensive, not
+    dangerous — which is exactly why it is a deliberate flag and never the default.
     """
     from . import sheets
 
     listing = sheets.spending_reports_in(folder_path)
     sources, unreadable = [], []
-    for file_id, name, _modified in files_needing_read(listing):
+    wanted = listing if reread else files_needing_read(listing)
+    for file_id, name, _modified in wanted:
         values = sheets.read_spending_report(file_id)
         if not values:
             # ⚠ Empty is NOT the same as unreadable. `read_spending_report` is best-effort and

@@ -4170,8 +4170,15 @@ class AdminPaymentFundingSummaryView(_PaymentsBase):
         programme, gift_err = self._gift_narrowing(request, admin)
         if gift_err:
             return gift_err
+        # ⚠⚠ **A SUPER SEES EVERY ORGANISATION HERE TOO (2026-09-12).** This endpoint returned
+        # `400 no_org` to a super, which is the SAME defect the owner reported on the Spending
+        # page the day before — found in the live logs rather than reported, because the page
+        # around it still renders and only the money summary comes back empty. Fixing one screen
+        # and not its neighbour is how a console teaches people that some pages "just do not work
+        # for you". `owning_organisation` stays the fence for everybody else.
         org = admin.owning_organisation
-        if org is None:
+        every_org = admin.is_super and org is None
+        if org is None and not every_org:
             return Response({'error': 'no_org', 'code': 'no_org'},
                             status=status.HTTP_400_BAD_REQUEST)
         from . import payments
@@ -4180,8 +4187,11 @@ class AdminPaymentFundingSummaryView(_PaymentsBase):
         # can never be a no-op and this can never run unfenced.
         # org-fence: owning_organisation=org (the fence payments.eligible_rows uses).
         qs = (ScholarshipApplication.objects
-              .filter(owning_organisation=org, status__in=payments.PAYABLE_STATUSES)
+              .filter(status__in=payments.PAYABLE_STATUSES)
               .select_related('profile').order_by('id'))
+        if not every_org:
+            # org-fence: owning_organisation=org (the fence payments.eligible_rows uses).
+            qs = qs.filter(owning_organisation=org)
         if programme is not None:
             # ⚠ Narrows INSIDE the org filter above, the same rule `payments.eligible_rows`
             # states: the organisation is the fence, the gift is a restriction within it.

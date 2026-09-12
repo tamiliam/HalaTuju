@@ -139,8 +139,9 @@ export default function SpendingPage() {
   const categories = data?.categories ?? []
   const merchants = data?.merchants ?? []
   const unplaced = shopsWithUnplacedMoney(merchants)
-  const noWallet = data?.wallet_gaps.students_without_wallet ?? []
+  const unseen = data?.wallet_gaps.unseen_students ?? []
   const shared = Object.entries(data?.wallet_gaps.shared_wallets ?? {})
+  const dataTo = data?.wallet_gaps.data_to ?? null
 
   // ⚠ COUNTS OF THE WHOLE LIST, and only once the data has arrived. While `data` is null the
   // counts are `undefined`, which hides the pills — a tab reading "0" before the fetch returns
@@ -302,10 +303,13 @@ export default function SpendingPage() {
             {t('admin.spending.gaps.title')}
           </h2>
           <div className="mt-3 space-y-2 text-sm" data-testid="wallet-gaps">
-            {noWallet.length > 0 && (
+            {/* ⚠ THE LIST NAMES APPLICATION IDS AND SAYS UP TO WHEN. "We cannot see their
+                spending" is meaningless without the date the data runs to — otherwise a
+                student paid yesterday reads as a fault rather than as tomorrow's file. */}
+            {unseen.length > 0 && (
               <p className="text-ground-700">
-                {t('admin.spending.gaps.noWallet')}:{' '}
-                <span className="tabular-nums">{noWallet.join(', ')}</span>
+                {t('admin.spending.gaps.unseen', { date: dataTo ? formatDate(dataTo) : '' })}:{' '}
+                <span className="tabular-nums">{unseen.join(', ')}</span>
               </p>
             )}
             {shared.length > 0 && (
@@ -316,7 +320,7 @@ export default function SpendingPage() {
                 </span>
               </p>
             )}
-            {!loading && noWallet.length === 0 && shared.length === 0 && (
+            {!loading && unseen.length === 0 && shared.length === 0 && (
               <p className="text-ground-400">{t('admin.spending.gaps.none')}</p>
             )}
             <p className="text-xs text-ground-500">{t('admin.spending.gaps.note')}</p>

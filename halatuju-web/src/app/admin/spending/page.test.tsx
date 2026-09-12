@@ -71,7 +71,7 @@ const OVERVIEW: api.SpendingOverview = {
     { application_id: 7, name: 'NURUL TEST', payments: 24, spent: '400.00', unplaced: '20.00' },
     { application_id: 8, name: 'AMIR TEST', payments: 3, spent: '90.00', unplaced: '0.00' },
   ],
-  wallet_gaps: { students_without_wallet: [], shared_wallets: {} },
+  wallet_gaps: { unseen_students: [], shared_wallets: {}, data_to: '2026-08-31' },
   categories: [
     { code: 'food', label: 'Food & drink' },
     { code: 'groceries', label: 'Groceries' },
@@ -599,10 +599,11 @@ describe('the wallet faults', () => {
     expect(screen.getByText('admin.spending.gaps.note')).not.toBeNull()
   })
 
-  it('shows the wallet gaps when there are any', async () => {
+  it('names the students whose spending we cannot see, and says up to WHEN', async () => {
     mockApi.getSpendingOverview.mockResolvedValue({
       ...OVERVIEW,
-      wallet_gaps: { students_without_wallet: [42], shared_wallets: { '8000400170001': [7, 8] } },
+      wallet_gaps: { unseen_students: [42], shared_wallets: { '8000400170001': [7, 8] },
+                     data_to: '2026-08-31' },
     })
     render(<SpendingPage />)
     await openTab('students')

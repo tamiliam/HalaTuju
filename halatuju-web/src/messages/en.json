@@ -5579,10 +5579,10 @@
         "empty": "No student has spent anything yet."
       },
       "gaps": {
-        "title": "Wallets to fix",
-        "noWallet": "Funded students with no wallet recorded",
+        "title": "Money we cannot account for",
+        "unseen": "Paid students with no spending recorded up to {date}",
         "shared": "Wallets claimed by more than one student",
-        "none": "Nothing to fix.",
+        "none": "Every paid student’s spending is accounted for.",
         "note": "A wallet that matches no student at all is emailed to staff, not shown here."
       },
       "error": {

@@ -5579,11 +5579,11 @@
         "empty": "Belum ada pelajar yang berbelanja."
       },
       "gaps": {
-        "title": "Dompet untuk dibetulkan",
-        "noWallet": "Pelajar berbiasiswa tanpa dompet direkodkan",
+        "title": "Wang yang tidak dapat dijelaskan",
+        "unseen": "Pelajar yang dibayar tetapi tiada perbelanjaan direkodkan sehingga {date}",
         "shared": "Dompet dituntut oleh lebih daripada seorang pelajar",
-        "none": "Tiada apa-apa untuk dibetulkan.",
-        "note": "Dompet yang langsung tidak sepadan dengan mana-mana pelajar dihantar melalui e-mel kepada kakitangan, bukan dipaparkan di sini."
+        "none": "Perbelanjaan setiap pelajar yang dibayar telah dijelaskan.",
+        "note": "Dompet yang tidak sepadan dengan mana-mana pelajar akan diemelkan kepada kakitangan, bukan dipaparkan di sini."
       },
       "error": {
         "unknown_merchant": "Kedai itu bukan milik anda.",

@@ -144,6 +144,48 @@ class TestDateParsing(TestCase):
     def test_unparseable_returns_none(self):
         self.assertIsNone(si.parse_txn_date('sometime last week'))
 
+    def test_SEPT_parses(self):
+        """⚠⚠ THE BUG THIS CLASS EXISTED FOR AND DID NOT CATCH (2026-09-12).
+
+        `%b` wants exactly `Sep`, `%B` wants exactly `September`. The corpus writes **`Sept`**,
+        which matches NEITHER — so every September row returned `None`, was counted as an
+        unparsed date, and **was never stored**. It went unnoticed for eleven days because
+        September is the ONE English month whose everyday short form is four letters: the file
+        held 230 rows to 6 September and the screen showed 9, stopping at 31 August.
+
+        The owner found it by comparing the sheet against the screen. The tests above did not,
+        because they asserted the two spellings the corpus happened to use in JULY AND AUGUST.
+        """
+        self.assertEqual(si.parse_txn_date('1 Sept 2026'), date(2026, 9, 1))
+        self.assertEqual(si.parse_txn_date('6 Sept 2026'), date(2026, 9, 6))
+
+    def test_EVERY_MONTH_IN_EVERY_SPELLING_A_PERSON_MIGHT_WRITE(self):
+        """⚠ ENUMERATED, NOT SAMPLED. A sampled test is exactly what missed `Sept`: the sample
+        was "the spellings we have seen so far", which is a statement about the past. This walks
+        all twelve months through every abbreviation length, so the next four-letter surprise
+        fails here instead of on production."""
+        names = ('January', 'February', 'March', 'April', 'May', 'June',
+                 'July', 'August', 'September', 'October', 'November', 'December')
+        for month, name in enumerate(names, start=1):
+            for length in range(3, len(name) + 1):
+                word = name[:length]
+                for spelling in (word, word.upper(), word.lower()):
+                    self.assertEqual(
+                        si.parse_txn_date(f'7 {spelling} 2026'), date(2026, month, 7),
+                        f'{spelling!r} did not parse')
+
+    def test_a_word_that_merely_STARTS_like_a_month_is_not_a_date(self):
+        """⚠ The lazy repair — compare the first three letters — turns `Marble` into March and
+        would read a merchant name as a date. The whole word has to be a PREFIX of the month."""
+        for text in ('7 Marble 2026', '7 Augment 2026', '7 Maybe 2026', '7 Dec0 2026'):
+            self.assertIsNone(si.parse_txn_date(text), text)
+
+    def test_the_normaliser_leaves_a_date_that_already_worked_alone(self):
+        """The repair must not move any date that parsed before it existed."""
+        self.assertEqual(si.parse_txn_date('2026-09-01'), date(2026, 9, 1))
+        self.assertEqual(si.parse_txn_date('01/09/2026'), date(2026, 9, 1))
+        self.assertEqual(si.parse_txn_date('5 Jul 2026, 15:14:59'), date(2026, 7, 5))
+
 
 class TestRowFacts(TestCase):
     def test_child_user_null_is_not_a_child_but_a_name_is(self):
@@ -398,6 +440,58 @@ class TestDriveMode(TestCase):
         with self._drive(listing, values):
             call_command('ingest_spending', drive=True, apply=True, no_email=True)
         self.assertEqual(BursarySpendTxn.objects.get().amount, D('9.60'))
+
+    def test_THE_REPORT_REACHES_THE_LOG_and_a_finding_raises_its_level(self):
+        """⚠⚠ FOUND BY A SILENT BITE (2026-09-12). Deleting the log line failed nothing.
+
+        Under cron this command's stdout is captured into the HTTP response body, which Cloud
+        Scheduler reads and throws away — so on the live service the report existed NOWHERE a
+        person could reach. When the owner asked why five students had no spending, the answer
+        (unknown wallets? unparsed dates?) had already been discarded by every run that could
+        have said it. The alert email only fires when something needs attention, and a QUESTION
+        is not always a fault.
+
+        WARNING when a human is wanted, so a severity filter finds it; INFO otherwise.
+        """
+        listing = [('id1', '2026-08-30 Usage Report.xlsx', timezone.now())]
+        clean = [HEADER_C, row_c('t1', '8000400170001')]
+        with self._drive(listing, clean):
+            with self.assertLogs(
+                    'apps.scholarship.management.commands.ingest_spending', level='INFO') as caught:
+                call_command('ingest_spending', drive=True, apply=True, no_email=True)
+        self.assertTrue(any('rows stored' in line for line in caught.output), caught.output)
+        self.assertTrue(any(line.startswith('INFO') for line in caught.output), caught.output)
+
+        BursarySpendTxn.objects.all().delete()
+        # An unknown wallet is a finding, so the same report must arrive at WARNING.
+        dirty = [HEADER_C, row_c('t2', '9999999999999')]
+        with self._drive(listing, dirty):
+            with self.assertLogs(
+                    'apps.scholarship.management.commands.ingest_spending', level='INFO') as caught:
+                call_command('ingest_spending', drive=True, apply=True, no_email=True)
+        self.assertTrue(any(line.startswith('WARNING') for line in caught.output), caught.output)
+        self.assertTrue(any('9999999999999' in line for line in caught.output), caught.output)
+
+    def test_reread_reads_a_file_we_have_ALREADY_imported(self):
+        """⚠ THE RECOVERY DOOR. Fixing a parser does not bring back the rows it dropped: the file
+        is already marked read, so the nightly rule skips it until somebody edits the sheet. This
+        is how the September blackout was recovered."""
+        listing = [('id1', '2026-08-30 Usage Report.xlsx', timezone.now())]
+        values = [HEADER_C, row_c('t1', '8000400170001')]
+        with self._drive(listing, values):
+            call_command('ingest_spending', drive=True, apply=True, no_email=True)
+        self.assertEqual(BursarySpendTxn.objects.count(), 1)
+
+        # A second ordinary run sees nothing new — the file is unchanged.
+        later = [HEADER_C, row_c('t1', '8000400170001'), row_c('t2', '8000400170001')]
+        with self._drive(listing, later):
+            call_command('ingest_spending', drive=True, apply=True, no_email=True)
+        self.assertEqual(BursarySpendTxn.objects.count(), 1)
+
+        # --reread looks again, and the row the parser had missed lands.
+        with self._drive(listing, later):
+            call_command('ingest_spending', drive=True, apply=True, no_email=True, reread=True)
+        self.assertEqual(BursarySpendTxn.objects.count(), 2)
 
     def test_a_quiet_day_does_nothing_and_sends_nothing(self):
         """⚠ Most days there is genuinely nothing to do, and the job must be silent about it."""

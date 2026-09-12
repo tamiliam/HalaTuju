@@ -388,11 +388,21 @@ class TestFundingSummaryEndpoint(_FinanceBase):
         ids_b = {r['application_id'] for r in self.client.get(self.URL).json()['rows']}
         self.assertEqual(ids_b, {self.app_b.id})
 
-    def test_super_without_an_org_gets_no_org(self):
+    def test_super_without_an_org_SEES_EVERY_ORGANISATION(self):
+        """⚠ **REVERSED IN PLACE, 2026-09-12.** This asserted `400 no_org`, matching the Spending
+        screen's original refusal. The owner hit that refusal on Spending, it was reversed there on
+        2026-09-11 — and this neighbour was missed, so a super opened Payments and the money
+        summary came back empty. It was found in the LIVE LOGS (repeated 400s on this path), not
+        reported, because the page around it still renders.
+
+        **Do not "restore" the refusal.** The organisation is still the fence for everybody else:
+        the two tests above this one prove each finance admin sees only their own tenant.
+        """
         self._auth('pe-su')
         resp = self.client.get(self.URL)
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.json()['code'], 'no_org')
+        self.assertEqual(resp.status_code, 200)
+        ids = {r['application_id'] for r in resp.json()['rows']}
+        self.assertEqual(ids, {self.app_a.id, self.app_b.id})
 
     def test_totals_reconcile_with_the_rows(self):
         self._auth('pe-fi')

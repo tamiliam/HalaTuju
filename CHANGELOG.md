@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## The September blackout - every September transaction was being dropped - 2026-09-12
+
+**⚠⚠ A LIVE DATA-LOSS BUG, FOUND BY THE OWNER, NOT BY US.** They compared the Vircle sheet against
+the screen: the file held **230 rows running to 6 September**; the system had imported **9**, and
+the newest purchase on screen was **31 August**.
+
+**The cause is one word.** `_DATE_FORMATS` offers `%d %b %Y` and `%d %B %Y` — `%b` wants exactly
+`Sep`, `%B` wants exactly `September`. The corpus writes **`Sept`**, which matches NEITHER. Every
+September row returned `None`, was counted as an unparsed date, and **was never stored**.
+
+**September is the only English month this can happen to.** `Jun`/`June` and `Jul`/`July` both
+parse, so July and August were perfect and then a whole month vanished in silence.
+
+**What shipped:**
+
+- **A month word is normalised before parsing.** Not another format string — `%b` is locale-fixed,
+  so `Sept` can never be added to that tuple. Any unambiguous abbreviation now resolves
+  (`Sep`/`Sept`/`Septem`/`September`). ⚠ The test is "is this word a PREFIX of a month name", not
+  "do three letters match" — the lazy version reads `Marble` as March and would parse a merchant
+  name as a date.
+- **`--reread` and the `spending-reread` cron door.** Fixing the parser recovers nothing on its
+  own: the file was already imported, so "new or changed" skips it until somebody edits the sheet.
+  Safe because `ingest` dedups on `txn_id`; expensive, so never scheduled and never the default.
+- **The import report now reaches the LOG.** Under cron its stdout was captured into the HTTP
+  response body, which Cloud Scheduler discards — so the report existed nowhere a person could
+  reach, and the answer to "why is this student missing" had been thrown away by every run that
+  could have said it. WARNING when a human is wanted, INFO otherwise.
+- **"Wallets to fix" became "Money we cannot account for."** It listed funded students with no
+  wallet id **whom nobody had paid** - the owner rightly called that premature (one of the two live
+  names was a TEST record, and the Payments screen already refuses to pay a student with no
+  wallet). It now names **students a completed run paid, on or before the newest date we hold, for
+  whom we have no spending at all** - and says up to when. ⚠ Paying somebody AFTER the data ends is
+  not a gap: ten live students were first paid on 1 September while the file ended on 31 August.
+- **A super sees the Payments funding summary.** It still returned `400 no_org` to a super - the
+  same defect fixed on Spending the day before, one page over. Found in the live logs, not
+  reported, because the page around it still renders.
+
+**Six bite-checks; five bit.** The silent one: nothing tested that the report reaches the log.
+
+**⚠ The arithmetic the owner was right about.** 58 students have been paid; 10 were first paid
+after the data window, so 48 fall inside it and 43 had spending. The five silent ones were the real
+question - and the answer, now, is that a month of their spending had been dropped on the floor.
+
+Gates: **6539 pytest**, **2168 jest**, lint clean, `next build` exit 0. No migration.
+
 ## Payments and Spending belong to a GIFT, not to an organisation - TD-241 - 2026-09-11
 
 The owner raised this on 2026-09-10 ("*I am thinking if both payment and spending should be parked

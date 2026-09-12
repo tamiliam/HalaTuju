@@ -28,7 +28,8 @@ from apps.scholarship import spend_category as sc
 from apps.scholarship import spend_report as sr
 from apps.scholarship import spending_import as si
 from apps.scholarship.models import (
-    BursarySpendTxn, MerchantCategory, Programme, ScholarshipApplication, ScholarshipCohort,
+    BursarySpendTxn, MerchantCategory, PaymentRun, PaymentRunItem, Programme,
+    ScholarshipApplication, ScholarshipCohort,
 )
 
 D = Decimal
@@ -165,17 +166,80 @@ class TestMerchantRows(TestCase):
 
 
 class TestWalletGaps(TestCase):
+    """⚠⚠ **REWRITTEN 2026-09-12.** This class used to assert `students_without_wallet` — funded
+    students with no wallet id, **whether or not any money had reached them**. The owner looked at
+    the live list and said so plainly: one of the two names was a TEST record, and *"more
+    importantly no money has been paid to the student"*. Nothing is blocked for somebody nobody has
+    paid, and the Payments screen already refuses to pay a student with no wallet — so the list was
+    a to-do item on a screen that owns neither half of it.
+
+    What replaced it is the question the owner was actually asking when they found the gap: **these
+    students were paid — where is their spending?** Do not restore the old list here; if a
+    pre-payment wallet check is ever wanted, it belongs beside Payments.
+    """
 
     def setUp(self):
         self.org, self.cohort = make_org('wal')
 
-    def test_a_funded_student_with_no_wallet_is_named(self):
-        app = make_app(self.org, self.cohort, '')
-        self.assertEqual(sr.wallet_gaps(self.org)['students_without_wallet'], [app.id])
+    def _paid(self, app, when=datetime.date(2026, 8, 10)):
+        """Mark `app` paid by a COMPLETED run on `when` — the only kind that counts."""
+        run = PaymentRun.objects.create(
+            organisation=self.org, programme=self.cohort.programme,
+            reference=f'PR-{app.id}', payment_date=when, period_month=when,
+            status='completed')
+        PaymentRunItem.objects.create(run=run, application=app, amount=D('200'), included=True)
+        return run
 
-    def test_a_finished_student_needs_no_wallet(self):
-        make_app(self.org, self.cohort, '', status='closed')
-        self.assertEqual(sr.wallet_gaps(self.org)['students_without_wallet'], [])
+    def test_a_student_we_were_paid_for_but_cannot_see_is_named(self):
+        seen = make_app(self.org, self.cohort, '8000400170001')
+        unseen = make_app(self.org, self.cohort, '8000400170002')
+        txn(seen, 'A SHOP', 5, when=datetime.date(2026, 8, 30))
+        self._paid(seen)
+        self._paid(unseen)
+        gaps = sr.wallet_gaps(self.org)
+        self.assertEqual(gaps['unseen_students'], [unseen.id])
+        self.assertEqual(gaps['data_to'], '2026-08-30')
+
+    def test_a_student_PAID_AFTER_THE_DATA_ENDS_is_not_a_gap(self):
+        """⚠ THE HALF THAT STOPS A FALSE ALARM, and it is not hypothetical: ten live students got
+        their first payment on 1 September while the newest file ended on 31 August. Listing them
+        would have invented ten problems out of a calendar."""
+        seen = make_app(self.org, self.cohort, '8000400170001')
+        later = make_app(self.org, self.cohort, '8000400170002')
+        txn(seen, 'A SHOP', 5, when=datetime.date(2026, 8, 30))
+        self._paid(seen)
+        self._paid(later, when=datetime.date(2026, 9, 1))
+        self.assertEqual(sr.wallet_gaps(self.org)['unseen_students'], [])
+
+    def test_a_student_NOBODY_HAS_PAID_is_not_a_gap(self):
+        """The owner's own words. A student no money has reached is not this screen's problem."""
+        make_app(self.org, self.cohort, '')
+        seen = make_app(self.org, self.cohort, '8000400170001')
+        txn(seen, 'A SHOP', 5, when=datetime.date(2026, 8, 30))
+        self._paid(seen)
+        self.assertEqual(sr.wallet_gaps(self.org)['unseen_students'], [])
+
+    def test_an_UNFINISHED_run_does_not_count_as_paid(self):
+        """A draft or signed run has not moved money, so it cannot create a missing-spending gap."""
+        seen = make_app(self.org, self.cohort, '8000400170001')
+        draft_only = make_app(self.org, self.cohort, '8000400170002')
+        txn(seen, 'A SHOP', 5, when=datetime.date(2026, 8, 30))
+        self._paid(seen)
+        run = PaymentRun.objects.create(
+            organisation=self.org, programme=self.cohort.programme, reference='PR-DRAFT',
+            payment_date=datetime.date(2026, 8, 10), period_month=datetime.date(2026, 8, 10),
+            status='draft')
+        PaymentRunItem.objects.create(run=run, application=draft_only, amount=D('200'),
+                                      included=True)
+        self.assertEqual(sr.wallet_gaps(self.org)['unseen_students'], [])
+
+    def test_with_no_spending_at_all_nothing_is_unseen_yet(self):
+        """⚠ The day before the first import, every funded student would otherwise be listed."""
+        app = make_app(self.org, self.cohort, '8000400170001')
+        self._paid(app)
+        gaps = sr.wallet_gaps(self.org)
+        self.assertEqual(gaps['unseen_students'], [])
+        self.assertIsNone(gaps['data_to'])
 
     def test_a_wallet_claimed_by_two_students_is_named(self):
         a = make_app(self.org, self.cohort, '8000400170001')
@@ -340,11 +404,19 @@ class TestThePlatformScope(TestCase):
 
     def test_it_pools_the_wallet_gaps_too(self):
         """The gaps read a DIFFERENT queryset from `_txns`, so widening one and forgetting the
-        other would give a super a platform table above a single tenant's fault list."""
-        make_app(self.org_a, self.cohort_a, wallet='')
-        make_app(self.org_b, self.cohort_b, wallet='')
-        self.assertEqual(len(sr.wallet_gaps(sr.ALL_ORGS)['students_without_wallet']), 2)
-        self.assertEqual(len(sr.wallet_gaps(self.org_a)['students_without_wallet']), 1)
+        other would give a super a platform table above a single tenant's fault list.
+
+        Asserted through `shared_wallets`, which needs no payment run to exist — the point
+        here is the SCOPE, not which fault is being counted."""
+        dup_a = [make_app(self.org_a, self.cohort_a, '8000400179001') for _ in range(2)]
+        dup_b = [make_app(self.org_b, self.cohort_b, '8000400179002') for _ in range(2)]
+        self.assertEqual(len(sr.wallet_gaps(sr.ALL_ORGS)['shared_wallets']), 2)
+        self.assertEqual(list(sr.wallet_gaps(self.org_a)['shared_wallets']),
+                         ['8000400179001'])
+        self.assertEqual(sorted(sr.wallet_gaps(self.org_a)['shared_wallets']['8000400179001']),
+                         sorted(a.id for a in dup_a))
+        self.assertEqual(len(sr.wallet_gaps(self.org_b)['shared_wallets']), 1)
+        self.assertEqual(len(dup_b), 2)
 
     def test_a_super_may_correct_a_shop_from_any_tenant(self):
         changed, err = sr.set_owner_category('SHOP B', 'study', 's@x.com', sr.ALL_ORGS)
@@ -368,7 +440,8 @@ class TestThePlatformScope(TestCase):
         self.assertEqual(sr.totals(None)['spent'], D('0.00'))
         self.assertEqual(sr.merchant_rows(None), [])
         self.assertEqual(sr.student_rows(None), [])
-        self.assertEqual(sr.wallet_gaps(None)['students_without_wallet'], [])
+        self.assertEqual(sr.wallet_gaps(None)['unseen_students'], [])
+        self.assertEqual(sr.wallet_gaps(None)['shared_wallets'], {})
         self.assertEqual(sr.set_owner_category('SHOP A', 'food', 's@x.com', None),
                          (0, 'unknown_merchant'))
 
@@ -419,11 +492,11 @@ class TestTheGiftNarrowsInsideTheFence(TestCase):
 
     def test_the_wallet_gaps_narrow_with_everything_else(self):
         """They read a DIFFERENT queryset from `_txns`, so narrowing one and forgetting the other
-        would put another gift's missing wallets on this gift's to-do list."""
-        make_app(self.org_a, self.cohort_a, wallet='')
-        make_app(self.org_b, self.cohort_b, wallet='')
-        self.assertEqual(len(sr.wallet_gaps(self.org_a, self.gift_a)['students_without_wallet']), 1)
-        self.assertEqual(sr.wallet_gaps(self.org_a, self.gift_b)['students_without_wallet'], [])
+        would put another gift's faults on this gift's to-do list."""
+        [make_app(self.org_a, self.cohort_a, '8000400179001') for _ in range(2)]
+        self.assertEqual(list(sr.wallet_gaps(self.org_a, self.gift_a)['shared_wallets']),
+                         ['8000400179001'])
+        self.assertEqual(sr.wallet_gaps(self.org_a, self.gift_b)['shared_wallets'], {})
 
     def test_a_correction_is_refused_for_a_shop_outside_the_gift_you_are_looking_at(self):
         """The verdict is global, so the fence is on WHO MAY SET IT — and since this screen is now

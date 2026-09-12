@@ -45,7 +45,7 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 
-from .spending_import import TX_SPEND, WALLET_EXPECTED_STATES, norm_text
+from .spending_import import TX_SPEND, norm_text
 
 logger = logging.getLogger(__name__)
 
@@ -239,9 +239,29 @@ def student_rows(org, programme=None) -> list:
 
 
 def wallet_gaps(org, programme=None) -> dict:
-    """The two wallet faults that ARE derivable from what we store. See the module docstring for
-    the third one, which is not, and reaches a human by email instead."""
-    from .models import ScholarshipApplication
+    """What this screen cannot account for. **Three questions, and the FIRST one is new.**
+
+    ⚠⚠ **`unseen_students` IS THE ONE A PERSON ACTUALLY ASKS** (owner, 2026-09-12): *these
+    students were paid — where is their spending?* It replaced a list that named students
+    with no wallet id **who had never been paid**, which the owner rightly called premature:
+    nothing is blocked for a student no money has reached, the Payments screen already
+    refuses to pay a student without a wallet, and on the live data that list showed exactly
+    two people — one of them a TEST record.
+
+    ⚠ **IT IS COMPUTED AGAINST WHAT WE WERE PAID, NOT AGAINST WHAT WE HOLD.** A student is
+    listed when a COMPLETED payment run paid them on or before the newest transaction date
+    we have, and we hold no spending row for them. Both halves matter: paying somebody after
+    the data window closes is not a gap (ten students were first paid on 1 September, after
+    the file ended on 31 August), and a student the sorter simply has nothing for is exactly
+    what this is meant to surface.
+
+    `shared_wallets` is unchanged — one wallet claimed by two students is a real fault
+    whatever anybody has been paid. The fourth question, a wallet matching NO student, is
+    still not derivable here (the row is never stored) and still reaches a human by email.
+    """
+    from django.db.models import Max
+
+    from .models import PaymentRunItem, ScholarshipApplication
 
     if org is ALL_ORGS:
         # org-fence: DELIBERATELY UNFENCED — the platform scope. Same door as `_txns`.
@@ -254,16 +274,32 @@ def wallet_gaps(org, programme=None) -> dict:
         # whose money the student is waiting for, so a gift-scoped page must not list another
         # gift's missing wallets as though they were this one's work.
         scope = scope.filter(programme=programme)
-    without = list(scope.filter(status__in=WALLET_EXPECTED_STATES, vircle_id='')
-                   .values_list('id', flat=True))
+    # The last day we have any data for. With no data at all nothing can be 'unseen' yet —
+    # a screen that listed every funded student the day before the first import would be
+    # alarming and wrong.
+    newest = _txns(org, programme).aggregate(d=Max('txn_date'))['d']
+    unseen = []
+    if newest is not None:
+        spent_ids = set(_txns(org, programme).values_list('application_id', flat=True))
+        paid_ids = set(
+            PaymentRunItem.objects
+            .filter(included=True, run__status='completed',
+                    run__payment_date__lte=newest,
+                    # org-fence: the application ids come from `scope`, already fenced.
+                    application_id__in=scope.values_list('id', flat=True))
+            .values_list('application_id', flat=True))
+        unseen = sorted(paid_ids - spent_ids)
     owners: dict[str, list] = {}
     for app_id, wallet in scope.exclude(vircle_id='').values_list('id', 'vircle_id'):
         key = ''.join(ch for ch in str(wallet or '') if ch.isdigit())
         if key:
             owners.setdefault(key, []).append(app_id)
     return {
-        'students_without_wallet': sorted(without),
+        'unseen_students': unseen,
         'shared_wallets': {w: sorted(ids) for w, ids in owners.items() if len(ids) > 1},
+        # The last day any data covers — shown beside the list, because 'we cannot see
+        # their spending' means nothing without saying up to WHEN we can see anybody's.
+        'data_to': newest.isoformat() if newest else None,
     }
 
 

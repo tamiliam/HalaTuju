@@ -2859,8 +2859,14 @@ export interface SpendingOverview {
   merchants: SpendingMerchantRow[]
   students: SpendingStudentRow[]
   wallet_gaps: {
-    students_without_wallet: number[]
+    /** Students a COMPLETED run paid on or before `data_to`, for whom we hold no spending
+     *  at all. ⚠ Replaced `students_without_wallet` on 2026-09-12: that list named funded
+     *  students with no wallet id **whom nobody had paid**, which blocks nothing and which
+     *  the Payments screen already refuses to pay. This is the question a person asks. */
+    unseen_students: number[]
     shared_wallets: Record<string, number[]>
+    /** The newest transaction date we hold, or null before the first import. */
+    data_to: string | null
   }
   /** The ten codes, served BY THE SERVER from the model choices so the dropdown cannot drift
    *  away from what the database will accept. Never hard-code this list here. */

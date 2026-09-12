@@ -22,12 +22,15 @@ the other seven from loading, and the refusal has to reach a person rather than 
 from __future__ import annotations
 
 import glob
+import logging
 import os
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.scholarship import emails, spend_category, spend_summary, spending_import
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -44,6 +47,11 @@ class Command(BaseCommand):
                                  'the live service.')
         parser.add_argument('--apply', action='store_true',
                             help='Write the new transactions. Without it, nothing is stored.')
+        parser.add_argument('--reread', action='store_true',
+                            help='With --drive, read EVERY file in the folder rather than only '
+                                 'the new or changed ones. For recovering rows a parser bug '
+                                 'dropped from a file we have already marked as read. Safe '
+                                 '(ingest dedups on txn_id) but expensive, so never the default.')
         parser.add_argument('--no-email', action='store_true',
                             help='Never send the alert, whatever is found. For a manual run.')
         parser.add_argument('--no-sort', action='store_true',
@@ -70,7 +78,8 @@ class Command(BaseCommand):
         sources, unreadable = [], []
         if use_drive:
             drive_folder = getattr(settings, 'VIRCLE_SPENDING_FOLDER', '')
-            sources, unreadable = spending_import.drive_sources(drive_folder)
+            sources, unreadable = spending_import.drive_sources(
+                drive_folder, reread=options['reread'])
         for path in paths:
             name = os.path.basename(path)
             try:
@@ -95,6 +104,16 @@ class Command(BaseCommand):
             self.stdout.write(f'--- ingest_spending ({mode}) ---')
             for line in report.lines():
                 self.stdout.write(line)
+            # ⚠⚠ **ALSO TO THE LOG, AND THIS IS NOT DUPLICATION.** Under cron this command's
+            # stdout is captured into the HTTP response body — which Cloud Scheduler reads and
+            # throws away. So on the live service the report existed nowhere a person could
+            # reach: when the owner asked on 2026-09-12 why five students had no spending, the
+            # answer (unknown wallets? unparsed dates?) had already been discarded by every run
+            # that could have said. The alert email only fires when something needs attention,
+            # and a question is not always a fault. WARNING when a human is wanted so it shows
+            # up in a severity filter; INFO otherwise so a quiet week costs nothing to read.
+            level = logging.WARNING if report.needs_attention else logging.INFO
+            logger.log(level, 'spending import (%s)\n%s', mode, '\n'.join(report.lines()))
             if report.needs_attention:
                 self.stdout.write(self.style.WARNING('NEEDS ATTENTION - see the sections above.'))
             else:
