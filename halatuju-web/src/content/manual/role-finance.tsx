@@ -85,8 +85,8 @@ export const roleFinance: ManualChapter = {
         details, no interview notes, no verdicts. That is by design: checking a payment doesn&rsquo;t require
         knowing a family&rsquo;s circumstances, so you aren&rsquo;t given them. You also cannot
         <strong> create</strong>, <strong>edit</strong> or <strong>cancel</strong> a run &mdash; you check what
-        others prepare. You can view the Sponsors list, but not approve or reject a sponsor. Billing &amp; usage
-        is not built yet.</>
+        others prepare. You can view the Sponsors list, but not approve or reject a sponsor. Billing &amp; usage,
+        including the invoices the platform sends your organisation, is for your organisation admin.</>
       ),
     },
   ],

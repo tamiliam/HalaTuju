@@ -2066,6 +2066,7 @@ class CronRunView(APIView):
         'release-award-offer-emails': 'release_award_offer_emails',  # hourly: send award emails past the cool-off window
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
+        'issue-monthly-invoices': 'issue_monthly_invoices',  # monthly, 15th 09:00 MYT: issue LAST month's tenant invoices (sends nothing; idempotent)
         'auto-sponsor': 'auto_sponsor',                # R6: hourly AutoSponsor allocation
         'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
         'rescore-pending': 'rescore_pending_decisions',  # on-demand after a policy change

@@ -276,13 +276,23 @@ def development_charge(organisation, period_month):
     margin = rate_in_force(BillingRate.CATEGORY_DEVELOPMENT, BillingRate.KIND_MARGIN_PCT, on)
 
     subtotal = (hours * rate).quantize(Decimal('0.01'))
-    charge = (subtotal * (Decimal('1') + margin / Decimal('100'))).quantize(Decimal('0.01'))
+    # ⚠ THE CHARGE IS THE SUM OF THE MODULE LINES AT THE BILLED RATE (2026-09-14), not
+    # `subtotal x (1 + margin)` rounded once. An invoice prints each module as hours x rate =
+    # amount, and a tenant checks that arithmetic with a calculator. Rounding the total once and
+    # the lines separately could leave the lines a cent short of the total, on a document that is
+    # supposed to add up. Identical to the old figure whenever the billed rate is whole cents —
+    # which RM50 +15% = RM57.50 is.
+    billed_rate = (rate * (Decimal('1') + margin / Decimal('100'))).quantize(Decimal('0.01'))
+    lines = [{'module': r.module, 'hours': r.hours, 'basis': r.basis,
+              'amount_myr': (r.hours * billed_rate).quantize(Decimal('0.01'))} for r in rows]
+    charge = sum((ln['amount_myr'] for ln in lines), Decimal('0.00'))
     return {
         'month': period_month,
         'hours': hours,
-        'lines': [{'module': r.module, 'hours': r.hours, 'basis': r.basis} for r in rows],
+        'lines': lines,
         'rate_myr': rate,
         'margin_pct': margin,
+        'billed_rate_myr': billed_rate,
         'subtotal_myr': subtotal,
         'charge_myr': charge,
     }
@@ -566,6 +576,7 @@ def charge_for(organisation, period_month):
             # cost rather than a platform one: it turns "is RM50/hour enough?" into a figure on
             # a screen. It is NOT added to the charge — it is already recovered by the rate.
             'tool_cost_myr': dev_cost,
+            'billed_rate_myr': dev['billed_rate_myr'],
             'amount_myr': dev['charge_myr'],
             'detail': dev['lines'],
         })

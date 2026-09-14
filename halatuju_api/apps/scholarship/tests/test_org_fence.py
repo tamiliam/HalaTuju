@@ -382,6 +382,16 @@ class TestFenceCoverageCompleteness(TestCase):
         # Org-scoped: filtered on organisation_id, cross-org is 404. Super writes (a charge
         # against a tenant), org_admin reads its own only.
         'AdminOrgBuildHoursView': 'org-fenced (org_admin own org read; super writes)',
+        # Tenant invoices (2026-09-14). ONE fence for all four: `_InvoiceBase._visible_invoices`
+        # narrows an org_admin to its OWN organisation AND to invoices already SENT (the owner's
+        # hold-until-Send ruling is part of the fence, not a display filter). Receipts are reached
+        # only through that invoice set. Issue/send/void/receipt and both settings writes are
+        # super-only. Proven through the real endpoints in test_invoice_endpoints.py.
+        '_InvoiceBase': 'invoice fence base (own org + sent only for org_admin)',
+        'AdminInvoicesView': 'invoice-fenced (org_admin own sent invoices; super all + issue)',
+        'AdminInvoiceActionView': 'super-only (send / void / record receipt)',
+        'AdminInvoicePdfView': 'invoice-fenced (org_admin own sent invoice or its receipt)',
+        'AdminInvoiceSettingsView': 'super-only (issuer + tenant billing details)',
         # gate-fenced (via _scoped_application / _require_app_write / _require_qc)
         'AdminApplicationDetailView': 'gate', 'AdminVerdictSummaryView': 'gate',
         'AdminVerifyAcceptView': 'gate', 'AdminRejectView': 'gate',
@@ -509,6 +519,9 @@ class TestOrgFenceStaticGuard(TestCase):
         # the ONE deliberate cross-organisation write (an owner verdict applies to the shop
         # everywhere) carries its own pragma saying so.
         'BursarySpendTxn.objects',
+        # Tenant invoices (2026-09-14). An invoice and its receipts are a tenant's bill and its
+        # payments; an unfenced manager query is one tenant reading another's money.
+        'Invoice.objects', 'InvoiceReceipt.objects',
     )
 
     #: ⚠ THE SCAN'S SCOPE IS ITS STRENGTH AND ITS BLIND SPOT AT ONCE. It began as
@@ -516,7 +529,7 @@ class TestOrgFenceStaticGuard(TestCase):
     #: would have been structurally unable to see. **A new module that queries a watched model
     #: for an admin surface belongs on this list on the day it is written.**
     SCANNED = ('views_admin.py', 'spend_report.py', 'spend_category.py',
-               'spending_import.py', 'spend_summary.py', 'spend_sponsor.py')
+               'spending_import.py', 'spend_summary.py', 'spend_sponsor.py', 'invoicing.py')
 
     #: ⚠ A LEDGER, NOT AN EXEMPTION LIST — the same idea as `NO_DOOR`. A file here is a
     #: DECISION somebody wrote down, and the reason is the check. Adding a name without a
@@ -553,7 +566,7 @@ class TestOrgFenceStaticGuard(TestCase):
         base = os.path.dirname(views_admin.__file__)
         candidates = ('views_admin.py', 'views_sponsor.py', 'views_branding.py',
                       'spend_report.py', 'spend_category.py', 'spending_import.py',
-                      'spend_summary.py', 'spend_sponsor.py')
+                      'spend_summary.py', 'spend_sponsor.py', 'invoicing.py', 'invoice_pdf.py')
         unscanned = []
         for filename in candidates:
             path = os.path.join(base, filename)

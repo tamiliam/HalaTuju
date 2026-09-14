@@ -247,8 +247,10 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>What will &ldquo;Billing &amp; usage&rdquo; show?</>,
-      a: <>It&rsquo;s marked <em>coming soon</em>. Once per-programme metering is switched on it will show your
-        programme&rsquo;s costs and usage. Nothing is billed today.</>,
+      a: <>Two things. <strong>Usage</strong>: what your organisation used this month &mdash; AI calls, document
+        reading, emails, messages and storage. <strong>Invoices</strong>: the invoices we have sent you, each with
+        a PDF, and a receipt for every payment we have recorded. An invoice for a month is issued on the
+        15th of the next month, and it appears here only once it has been sent to you.</>,
     },
     {
       q: <>Can I set the award amount?</>,

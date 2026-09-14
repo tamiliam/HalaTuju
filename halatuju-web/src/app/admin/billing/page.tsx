@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
 import TableFrame from '@/components/admin/TableFrame'
+import InvoicesSection from '@/components/admin/InvoicesSection'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
   getBillingUsage, getBillingCosts, setBillingAdjustment, recordBuildHours,
@@ -572,6 +573,11 @@ export default function AdminBillingPage() {
           <OrgCard key={b.organisation_id ?? 'platform'} block={b} t={t} />
         ))}
       </div>
+
+      {/* ── Invoices (2026-09-14). BOTH audiences: a super issues, sends and records payment; an
+             org_admin sees its own invoices once they have been sent. Loads and fails on its own,
+             so it can never darken the usage half above. ── */}
+      {token && <InvoicesSection token={token} isSuper={isSuper} t={t} />}
 
       {/* ── What it COST, and what each tenant is charged. SUPER-ONLY (the endpoint 403s an
              org_admin). The ledger, the BigQuery sync and this reconciliation were all built in

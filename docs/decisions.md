@@ -11220,3 +11220,91 @@ the shape a report should read.
 
 **Revisit if:** a student's account stalls unnoticed. The fix then is a REPORT on the database, not
 a resurrected email that reads a spreadsheet.
+
+## Tenant invoices are issued on the 15th, for the previous month, and held until a person sends them — 2026-09-14
+
+**Decision:** `issue_monthly_invoices` runs at 09:00 on the 15th (Asia/Kuala_Lumpur) and issues the
+PREVIOUS calendar month's invoice for every tenant that is ready. Issuing sends nothing. A super
+presses Send, confirms the inboxes it names, and only then does the tenant see the invoice on its
+screen or in its email.
+
+**Alternatives considered:** issue on the last day of the month for the month ending (the owner's first
+instruction); issue on the last day for the month before; email automatically on issue.
+
+**Rationale:** owner, 2026-09-14. The last day of a month does not work, because suppliers bill late —
+Supabase's invoice runs 8th-to-8th, and on 14 September the September ledger held RM3.25 of Google
+Cloud and an Anthropic line with no ringgit value. Told that, the owner set *"15th as the cut off for
+the previous month"*. On sending: *"Hold — you press send"*. A wrong figure should reach the owner
+before it reaches the customer.
+
+**Revisit if:** supplier bills are imported automatically and reliably before the 15th (TD-247), or a
+tenant asks for invoices earlier.
+
+## An issued invoice is frozen; a wrong one is voided and replaced, never edited — 2026-09-14
+
+**Decision:** an `Invoice` copies in its lines, discount, issuer and bill-to at issue time and nothing
+on it is recomputed afterwards. Correction is VOID (reason required, refused once money has arrived)
+then a replacement that names the invoice it replaces. Numbers are gap-free per year from a locked
+counter row (`BillingSequence`), and a voided number is never reused. Status is derived from the
+receipts, never stored.
+
+**Alternatives considered:** keep computing the bill live (what the costs screen does); allow editing
+an issued invoice; number by `max + 1`.
+
+**Rationale:** the costs screen already computed a charge on every load, so a rate edit or a late ledger
+row silently rewrote a month somebody had been told about. That is a readout, not a bill. `max + 1`
+is neither safe under two concurrent issues nor honest after a void. A stored status is a second
+answer to "has this been paid?", and two answers eventually disagree.
+
+**Revisit if:** a tenant needs a credit note rather than a void (money has arrived and the bill was
+wrong). That is a new document, not an edit.
+
+## Readiness: the invoice job refuses rather than under-bills, and only a super may override a warning — 2026-09-14
+
+**Decision:** `invoicing.readiness` lists every reason not to issue. ABSOLUTE (no reason makes them
+right): not a tenant; the month has not ended; already invoiced; the issuer's details are blank; the
+tenant's billing details are blank. OVERRIDABLE with a written reason, by a super only: before the
+15th; no supplier costs for the month; a supplier that billed the month before has nothing this month;
+a cost with no ringgit value; a charge category blocked by a missing rate; finished request hours
+worked in the month and not yet recorded. The monthly job overrides nothing; it logs and emails.
+
+**Alternatives considered:** a hand-kept list of expected suppliers; issue whatever the ledger holds
+and credit the difference later.
+
+**Rationale:** the realistic failure is not a crash, it is a smaller, confident invoice because a PDF
+was not imported yet. Deriving the expected suppliers from the previous month keeps the check honest
+without a list somebody has to maintain. Issuing and crediting later means every early invoice is
+wrong by design.
+
+**Revisit if:** a supplier's billing becomes irregular enough that "billed last month" stops being a
+good expectation.
+
+## The tenant's invoice shows what is charged, never what the platform paid or its margin — 2026-09-14
+
+**Decision:** `InvoiceLine` has no cost or margin column at all. Infrastructure and metered usage print
+as one amount each (with the tenant's share when below 100%); development prints hours x the BILLED
+rate, the margin already inside it, so every line multiplies out. The development charge is now the sum
+of the module lines at that billed rate, so the live readout and the invoice agree to the cent.
+
+**Alternatives considered:** a cost-plus invoice showing cost and margin; the old one-shot
+`subtotal x (1 + margin)` rounding.
+
+**Rationale:** the costs and rates screens are already super-only because what the platform pays and the
+margin on it are a commercial disclosure (`AdminPlatformCostsView`). An invoice is the one document
+that leaves the building, so it follows the same rule structurally, not by a filter. A tenant checks
+hours x rate = amount with a calculator; rounding the total once and the lines separately could leave
+them a cent apart.
+
+**Revisit if:** the owner decides to bill transparently on cost-plus terms.
+
+## HalaTuju's legal identity on an invoice is entered by the owner, never seeded — 2026-09-14
+
+**Decision:** `InvoiceIssuer` ships with no row. Until its legal name, address, email and bank details are
+filled in on Billing & usage, no invoice can be issued.
+
+**Rationale:** HalaTuju has no registered legal entity yet (it is run in a personal capacity; the entity
+decision is open). An invoice naming an invented company, or a bank account typed from memory, is worse
+than no invoice. Registration number is optional for the same reason: an unregistered issuer is today's
+real state, and refusing on it would block billing on a decision that is not the platform's to make.
+
+**Revisit if:** the entity is registered — then fill in the registration number, and consider SST.

@@ -84,6 +84,13 @@ beforeEach(() => {
   mockApi.getBillingCosts.mockResolvedValue(COSTS())
   mockApi.setBillingAdjustment.mockResolvedValue({ id: 1 })
   mockApi.recordBuildHours.mockResolvedValue({ id: 1 })
+  // The invoices section loads on its own; these tests are about the other halves of the page.
+  mockApi.getInvoices.mockResolvedValue({ invoices: [], month: '2026-08', issue_day: 15, readiness: [] })
+  mockApi.getInvoiceSettings.mockResolvedValue({
+    issuer: { legal_name: '', registration_no: '', address: '', email: '', phone: '', bank_name: '',
+      bank_account_name: '', bank_account_no: '', payment_terms_days: 30, missing: ['legal_name'] },
+    tenants: [],
+  })
 })
 
 describe('what the platform cost', () => {
@@ -290,6 +297,16 @@ describe('finished work not yet billed', () => {
 })
 
 describe('the two halves of this page are fenced apart', () => {
+  it('a failing invoices fetch never darkens the usage screen', async () => {
+    mockApi.getInvoices.mockRejectedValue(new Error('Admin API error: 500'))
+    const { container } = render(<BillingPage />)
+    await waitFor(() => within(container).getByTestId('cost-section'))
+    await waitFor(() => within(container).getByText('Admin API error: 500'))
+    expect(within(container).getAllByText('BrightPath').length).toBeGreaterThan(0)
+    expect(within(container).queryByTestId('invoices')).toBeNull()
+    expect(within(container).getByTestId('cost-section')).not.toBeNull()
+  })
+
   it('a failing cost fetch never darkens the usage screen', async () => {
     // An org_admin gets a 403 from the costs endpoint and is entitled to the usage half.
     // Sharing one error state would blank a page they are allowed to read.
