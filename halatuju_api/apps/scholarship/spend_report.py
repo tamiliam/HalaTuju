@@ -45,7 +45,9 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 
-from .spending_import import TX_SPEND, WALLET_EXPECTED_STATES, norm_text
+from django.utils import timezone
+
+from .spending_import import TX_SPEND, norm_text
 
 logger = logging.getLogger(__name__)
 
@@ -216,54 +218,157 @@ def merchant_rows(org, programme=None) -> list:
     return out
 
 
+def _application_scope(org, programme=None):
+    """The applications this scope may see. **The same wall as `_txns`, one level up.**
+
+    Extracted when `student_rows` needed it too: two copies of a fence is two places to forget
+    one, and this one had already been written twice (`wallet_gaps` held its own).
+    """
+    from .models import ScholarshipApplication
+
+    if org is ALL_ORGS:
+        # org-fence: DELIBERATELY UNFENCED — the platform scope. Same door as `_txns`.
+        qs = ScholarshipApplication.objects.all()
+    else:
+        # org-fence: owning_organisation, the same fence _txns uses.
+        qs = ScholarshipApplication.objects.filter(owning_organisation=org)
+    if programme is not None:
+        qs = qs.filter(programme=programme)
+    return qs
+
+
+def _released_by_application(scope):
+    """`{application_id: (total_released, last_released_date)}` for `scope`.
+
+    ⚠⚠ **RELEASED DISBURSEMENTS ARE THE ONE TRUTH FOR "PAID", AND THIS IS THE SECOND TIME
+    THAT MATTERED.** `payments.py` says so in its own docstring — completing a run WRITES the
+    disbursements, so the run items and the disbursements are two views of one fact. The first
+    draft of `wallet_gaps` counted completed PaymentRunItems instead; it gave the same answer
+    today and would have drifted the first time a disbursement was released by any other route
+    (`disbursement.release_tranche` exists and is not a payment run). **One source, read once,
+    aggregated — not `paid_to_date` per student, which is a query each and 47 of them.**
+    """
+    from django.db.models import Max, Sum
+
+    from .models import Disbursement
+
+    rows = (Disbursement.objects
+            # org-fence: application_id restricted to `scope`, already fenced by the caller.
+            .filter(status='released', application_id__in=scope.values_list('id', flat=True))
+            .values('application_id')
+            .annotate(total=Sum('amount'), last=Max('released_at')))
+    return {r['application_id']: (r['total'] or _ZERO, r['last']) for r in rows}
+
+
 def student_rows(org, programme=None) -> list:
     """One row per funded student: what they spent, and how much of it is placed.
 
     ⚠ Names appear here because this is the officer's own organisation's students on an admin-only
     surface. Nothing in this shape may be reused by a sponsor serializer.
     """
+    from .models import ScholarshipApplication
+
     agg: dict[int, dict] = {}
     for app_id, name, category, amount in _txns(org, programme).filter(
             tx_type=TX_SPEND).values_list(
             'application_id', 'application__profile__name', 'category', 'amount'):
         row = agg.setdefault(app_id, {
-            'application_id': app_id, 'name': name or '', 'payments': 0,
+            'application_id': app_id, 'name': name or '', 'transactions': 0,
             'spent': _ZERO, 'unplaced': _ZERO,
         })
-        row['payments'] += 1
+        # ⚠ TRANSACTIONS, not 'payments'. It counts rows in the Vircle export — things the
+        # student BOUGHT — and sitting beside a Balance derived from what we PAID them, the
+        # old name read as the number of disbursements. Two different money words on one row.
+        row['transactions'] += 1
         row['spent'] += amount or _ZERO
         if category in UNPLACED:
             row['unplaced'] += amount or _ZERO
+    # ⚠ BALANCE = what we released MINUS what they spent, and it is NOT floored at zero here.
+    # The sponsor card floors it, deliberately, because a donor must never read a negative as
+    # 'your student overspent your money' — the wallet is the student's own and a parent may
+    # top it up. An OFFICER is the person who has to notice that and ask, so they get the
+    # real figure. Same reasoning as showing them merchant names and a sponsor none.
+    released = _released_by_application(
+        _application_scope(org, programme).filter(id__in=list(agg)))
+    for app_id, row in agg.items():
+        paid = released.get(app_id, (_ZERO, None))[0]
+        row['paid'] = paid
+        row['balance'] = paid - row['spent']
     out = sorted(agg.values(), key=lambda r: (-r['spent'], r['name']))
     return out
 
 
 def wallet_gaps(org, programme=None) -> dict:
-    """The two wallet faults that ARE derivable from what we store. See the module docstring for
-    the third one, which is not, and reaches a human by email instead."""
-    from .models import ScholarshipApplication
+    """What this screen cannot account for. **Three questions, and the FIRST one is new.**
 
-    if org is ALL_ORGS:
-        # org-fence: DELIBERATELY UNFENCED — the platform scope. Same door as `_txns`.
-        scope = ScholarshipApplication.objects.all()
-    else:
-        # org-fence: owning_organisation, the same fence _txns uses.
-        scope = ScholarshipApplication.objects.filter(owning_organisation=org)
-    if programme is not None:
-        # ⚠ Narrows INSIDE the fence, exactly as in `_txns`. A wallet gap belongs to the gift
-        # whose money the student is waiting for, so a gift-scoped page must not list another
-        # gift's missing wallets as though they were this one's work.
-        scope = scope.filter(programme=programme)
-    without = list(scope.filter(status__in=WALLET_EXPECTED_STATES, vircle_id='')
-                   .values_list('id', flat=True))
+    ⚠⚠ **`unseen_students` IS THE ONE A PERSON ACTUALLY ASKS** (owner, 2026-09-12): *these
+    students were paid — where is their spending?* It replaced a list that named students
+    with no wallet id **who had never been paid**, which the owner rightly called premature:
+    nothing is blocked for a student no money has reached, the Payments screen already
+    refuses to pay a student without a wallet, and on the live data that list showed exactly
+    two people — one of them a TEST record.
+
+    ⚠ **IT IS COMPUTED AGAINST WHAT WE WERE PAID, NOT AGAINST WHAT WE HOLD.** A student is
+    listed when a COMPLETED payment run paid them on or before the newest transaction date
+    we have, and we hold no spending row for them. Both halves matter: paying somebody after
+    the data window closes is not a gap (ten students were first paid on 1 September, after
+    the file ended on 31 August), and a student the sorter simply has nothing for is exactly
+    what this is meant to surface.
+
+    `shared_wallets` is unchanged — one wallet claimed by two students is a real fault
+    whatever anybody has been paid. The fourth question, a wallet matching NO student, is
+    still not derivable here (the row is never stored) and still reaches a human by email.
+    """
+    from django.db.models import Max
+
+    scope = _application_scope(org, programme)
+    # The last day we have any data for. With no data at all nothing can be 'unseen' yet —
+    # a screen that listed every funded student the day before the first import would be
+    # alarming and wrong.
+    newest = _txns(org, programme).aggregate(d=Max('txn_date'))['d']
+    unseen = []
+    if newest is not None:
+        spent_ids = set(_txns(org, programme).values_list('application_id', flat=True))
+        # ⚠ THE SAME SOURCE `student_rows` USES — released disbursements, which is what
+        # `payments.py` calls the one truth. Counting completed run ITEMS instead (the first
+        # draft) agreed today and would drift the moment a tranche was released outside a run.
+        released = _released_by_application(scope)
+        names = dict(scope.values_list('id', 'profile__name'))
+        # ⚠⚠ `spent` IS ZERO BY THE DEFINITION OF THIS LIST, AND THE DEFINITION IS TESTED.
+        # The first cut computed it with an aggregate, reasoning that a literal would lie if
+        # the rule ever loosened. A bite-check killed that: replacing the aggregate with
+        # `Decimal('0.00')` failed NOTHING, because the two can never differ — a row only
+        # appears here when `app_id not in spent_ids`, i.e. when the student has no
+        # transactions at all. **A computation whose result can never differ from a constant
+        # is not a safeguard; it is a constant wearing a costume** (the 2026-09-10 dead-code
+        # lesson). What protects the column is the INVARIANT, asserted in
+        # `test_a_student_we_were_paid_for_but_cannot_see_is_named`: a student with any
+        # spending is never on this list.
+        #
+        # ⚠ IF THE RULE EVER LOOSENS — "spent less than we released", "nothing this month" —
+        # this line must become a real aggregate in the same commit. It is a constant only
+        # for as long as the filter below is an exact `not in`.
+        unseen = [
+            {'application_id': app_id, 'name': names.get(app_id) or '',
+             'paid': total, 'spent': _ZERO}
+            for app_id, (total, last) in sorted(released.items())
+            # Released ON OR BEFORE the newest day we hold data for. Money released after the
+            # file ends is not a gap — it is next week's file.
+            if app_id not in spent_ids and last is not None
+            and timezone.localtime(last).date() <= newest
+        ]
+        unseen.sort(key=lambda r: (r['name'] or '￿', r['application_id']))
     owners: dict[str, list] = {}
     for app_id, wallet in scope.exclude(vircle_id='').values_list('id', 'vircle_id'):
         key = ''.join(ch for ch in str(wallet or '') if ch.isdigit())
         if key:
             owners.setdefault(key, []).append(app_id)
     return {
-        'students_without_wallet': sorted(without),
+        'unseen_students': unseen,
         'shared_wallets': {w: sorted(ids) for w, ids in owners.items() if len(ids) > 1},
+        # The last day any data covers — shown beside the list, because 'we cannot see
+        # their spending' means nothing without saying up to WHEN we can see anybody's.
+        'data_to': newest.isoformat() if newest else None,
     }
 
 

@@ -308,6 +308,62 @@ class TestTheCsvWriterStillBehavesAsItDid(TestCase):
             self.assertIsNone(sheets.file_csv_to_folder('nope', 'run.csv', 'a,b'))
 
 
+class TestFilingTheSameNameTwice(TestCase):
+    """⚠⚠ **FOUND ON THE OWNER'S REAL DRIVE, 2026-09-12.** The daily job filed
+    `Spending summary 2026-09-12.md` at 07:00; the recovery run filed ANOTHER at 09:03. Drive keeps
+    both — same folder, same name, **different figures**, because the 07:00 one was written before
+    a month of missing spending was recovered.
+
+    That is not clutter, it is two documents with one name disagreeing about a total, and a reader
+    has no way to tell which is true. `_find_or_create_sheet` already carried this reasoning for
+    the relay spreadsheet; the text path simply never got it.
+    """
+
+    def _drive(self, existing):
+        """A fake Drive. `existing` is what `files().list` finds in the folder."""
+        drive = mock.MagicMock()
+        drive.files.return_value.list.return_value.execute.return_value = {'files': existing}
+        drive.files.return_value.create.return_value.execute.return_value = {
+            'id': 'new-id', 'webViewLink': 'http://new'}
+        drive.files.return_value.update.return_value.execute.return_value = {
+            'id': 'old-id', 'webViewLink': 'http://updated'}
+        return drive
+
+    def _write(self, drive):
+        with mock.patch('apps.scholarship.sheets.sheets_enabled', return_value=True),              mock.patch('apps.scholarship.sheets._drive_for_upload', return_value=drive),              mock.patch('apps.scholarship.sheets._find_folder_path', return_value='parent'),              mock.patch('apps.scholarship.sheets._find_or_create_folder', return_value='folder'):
+            return sheets.file_text_to_folder(
+                'A/B/Summaries', 'Spending summary 2026-09-12.md', 'body',
+                mimetype='text/markdown', create_missing=True)
+
+    def test_filing_the_same_name_REPLACES_it_and_never_adds_a_second(self):
+        drive = self._drive([{'id': 'old-id', 'name': 'Spending summary 2026-09-12.md'}])
+        url = self._write(drive)
+        drive.files.return_value.update.assert_called_once()
+        drive.files.return_value.create.assert_not_called()
+        self.assertEqual(drive.files.return_value.update.call_args[1]['fileId'], 'old-id')
+        self.assertEqual(url, 'http://updated')
+
+    def test_it_looks_ONLY_INSIDE_THIS_FOLDER_and_ignores_the_bin(self):
+        """⚠⚠ FOUND BY A SILENT BITE. The tests above mock `files().list` and never read the QUERY,
+        so a lookup that searched the whole Drive passed both of them — and that version would
+        overwrite a same-named file in somebody else's folder, which is a far worse fault than the
+        duplicate it was fixing. A trashed match matters too: silently updating a document in the
+        bin means the summary is filed nowhere a person will look."""
+        drive = self._drive([{'id': 'old-id', 'name': 'Spending summary 2026-09-12.md'}])
+        self._write(drive)
+        q = drive.files.return_value.list.call_args[1]['q']
+        self.assertIn("'folder' in parents", q)
+        self.assertIn('trashed=false', q)
+        self.assertIn("name='Spending summary 2026-09-12.md'", q)
+
+    def test_a_name_never_written_before_is_still_CREATED(self):
+        drive = self._drive([])
+        url = self._write(drive)
+        drive.files.return_value.create.assert_called_once()
+        drive.files.return_value.update.assert_not_called()
+        self.assertEqual(url, 'http://new')
+
+
 # ── the command wiring ────────────────────────────────────────────────────────
 
 @override_settings(VIRCLE_SPENDING_SUMMARY_FOLDER='A/B/Summaries')

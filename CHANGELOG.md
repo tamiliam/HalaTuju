@@ -2,6 +2,112 @@
 
 All notable changes to this project will be documented in this file.
 
+## The report date moves up, the gap table gains its evidence, and the page gets its width back - 2026-09-12
+
+- **The report date is at the TOP of the page, once.** It was buried inside the gap section,
+  which made it read as a fact about that section; it is a fact about the whole page - every
+  figure above and below stops on that day. It was never hardcoded (the owner asked): it is the
+  newest transaction date we hold, and it disappears entirely before the first import.
+- **The gap table is Student / Payment / Spent.** The application number was a column and is now
+  gone from the header. `Payment RM600.00 / Spent RM0.00` is the EVIDENCE for the row - a list of
+  names alone is an accusation.
+- **⚠ `/admin/spending` IS A WIDE PAGE, AND SHOULD HAVE BEEN SINCE IT SHIPPED.** It was missing
+  from `WIDE_ROUTES`, so a SEVEN-column merchant table was drawn at the 896px reading width:
+  shop names wrapped onto two lines and the last column fell off the right-hand edge. Payments,
+  one click away, was already 1280px. The rule's own central case, simply missed.
+
+**⚠ A BITE-CHECK DELETED CODE OF MINE WRITTEN AN HOUR EARLIER.** `spent` was computed with an
+aggregate, on the reasoning that a literal zero would lie if the rule ever loosened. Replacing
+the aggregate with `Decimal('0.00')` failed NOTHING - the two can never differ, because a row
+only appears when the student has no transactions at all. **A computation whose result can never
+differ from a constant is not a safeguard; it is a constant wearing a costume.** It is now a
+constant, and what protects the column is the INVARIANT, bitten and caught: a student with any
+spending is never on this list.
+
+Gates: **6539 pytest**, **2185 jest**, lint clean, `next build` exit 0. No migration.
+
+## Names, a balance, formal copy - and the summary stops duplicating itself - 2026-09-12
+
+Four owner requests after using the recovered screen.
+
+- **The gap list names PEOPLE.** "Money we cannot account for" printed a run of application
+  numbers; it is now a table of student names with the reference beside them. A list of ids is
+  not a list of people - the officer had to look every one of them up before they could act.
+- **The Students table gained BALANCE** (released minus spent) and `Payments` became
+  `Transactions`. The old name sat beside a figure derived from what we PAID and read as the
+  number of disbursements: two different money words on one row.
+  ⚠ **The balance is NOT floored at zero**, unlike the sponsor card's. A negative is real - the
+  wallet is the student's own and a parent may top it up - and the officer is exactly the person
+  who should notice and ask. It renders `-RM40.00`, never `RM-40.00`, and sorts SMALLEST first,
+  alone among the money columns, because it is scanned for who has run down or gone under.
+- **The whole screen's copy is more formal.** The owner quoted one line and called it poor
+  writing; it was. Finite verbs and complete clauses throughout, in all three languages, with no
+  jargon added and nothing made longer for its own sake.
+- **⚠ THE DRIVE SUMMARY REPLACES ITSELF INSTEAD OF DUPLICATING.** The owner's folder held TWO
+  files called `Spending summary 2026-09-12.md` - 07:00 from the daily job and 09:03 from the
+  recovery - **with different figures**, the earlier one written before a month of missing
+  spending came back. Two documents sharing a name and disagreeing on a total give a reader no
+  way to tell which is true. `_find_or_create_sheet` already carried this reasoning for the relay
+  spreadsheet; the text path never got it.
+
+**⚠ ONE SOURCE FOR "PAID", FIXED WHILE HERE.** The gap list counted completed payment-run items;
+`payments.py` names RELEASED DISBURSEMENTS the one truth, and completing a run merely writes
+them. Same answer today, and it would have drifted the first time a tranche was released by any
+other route. Both the balance and the gap list now read that one source, aggregated once.
+
+**Eight bite-checks across the two changes; three were silent and every one was a real gap:**
+nothing tested that a negative balance survives (flooring it passed); the sort fixture could not
+tell a text comparison from a numeric one (-40, 0 and 10 order identically either way - it takes
+a 9 and a 100); and the duplicate-file test ignored the query, so a lookup searching the WHOLE
+Drive passed - a worse fault than the duplicate it replaced.
+
+Gates: **6537 pytest**, **2183 jest**, lint clean, `next build` exit 0. No migration.
+
+## The September blackout - every September transaction was being dropped - 2026-09-12
+
+**⚠⚠ A LIVE DATA-LOSS BUG, FOUND BY THE OWNER, NOT BY US.** They compared the Vircle sheet against
+the screen: the file held **230 rows running to 6 September**; the system had imported **9**, and
+the newest purchase on screen was **31 August**.
+
+**The cause is one word.** `_DATE_FORMATS` offers `%d %b %Y` and `%d %B %Y` — `%b` wants exactly
+`Sep`, `%B` wants exactly `September`. The corpus writes **`Sept`**, which matches NEITHER. Every
+September row returned `None`, was counted as an unparsed date, and **was never stored**.
+
+**September is the only English month this can happen to.** `Jun`/`June` and `Jul`/`July` both
+parse, so July and August were perfect and then a whole month vanished in silence.
+
+**What shipped:**
+
+- **A month word is normalised before parsing.** Not another format string — `%b` is locale-fixed,
+  so `Sept` can never be added to that tuple. Any unambiguous abbreviation now resolves
+  (`Sep`/`Sept`/`Septem`/`September`). ⚠ The test is "is this word a PREFIX of a month name", not
+  "do three letters match" — the lazy version reads `Marble` as March and would parse a merchant
+  name as a date.
+- **`--reread` and the `spending-reread` cron door.** Fixing the parser recovers nothing on its
+  own: the file was already imported, so "new or changed" skips it until somebody edits the sheet.
+  Safe because `ingest` dedups on `txn_id`; expensive, so never scheduled and never the default.
+- **The import report now reaches the LOG.** Under cron its stdout was captured into the HTTP
+  response body, which Cloud Scheduler discards — so the report existed nowhere a person could
+  reach, and the answer to "why is this student missing" had been thrown away by every run that
+  could have said it. WARNING when a human is wanted, INFO otherwise.
+- **"Wallets to fix" became "Money we cannot account for."** It listed funded students with no
+  wallet id **whom nobody had paid** - the owner rightly called that premature (one of the two live
+  names was a TEST record, and the Payments screen already refuses to pay a student with no
+  wallet). It now names **students a completed run paid, on or before the newest date we hold, for
+  whom we have no spending at all** - and says up to when. ⚠ Paying somebody AFTER the data ends is
+  not a gap: ten live students were first paid on 1 September while the file ended on 31 August.
+- **A super sees the Payments funding summary.** It still returned `400 no_org` to a super - the
+  same defect fixed on Spending the day before, one page over. Found in the live logs, not
+  reported, because the page around it still renders.
+
+**Six bite-checks; five bit.** The silent one: nothing tested that the report reaches the log.
+
+**⚠ The arithmetic the owner was right about.** 58 students have been paid; 10 were first paid
+after the data window, so 48 fall inside it and 43 had spending. The five silent ones were the real
+question - and the answer, now, is that a month of their spending had been dropped on the floor.
+
+Gates: **6539 pytest**, **2168 jest**, lint clean, `next build` exit 0. No migration.
+
 ## Vircle tells us when an account goes live, and the 48h chaser retires - 2026-09-12
 
 Vircle's callback delivered six eWallet ids on 2026-09-11 and no activation, and the reason was our

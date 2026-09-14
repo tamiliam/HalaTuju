@@ -40,6 +40,10 @@ describe('the rule: leads with a table? wide. otherwise reading.', () => {
     expect(pageWidthFor('/admin/organisation/settings')).toBe('reading')
     expect(pageWidthFor('/admin/requests')).toBe('reading')
     expect(pageWidthFor('/admin/scholarship')).toBe('wide')
+    // ⚠ SEVEN COLUMNS — merchant, category, determined by, transactions, total, last
+    // transaction, determined on. It shipped at the READING width by oversight and the
+    // owner spotted it: shop names wrapped and the last column fell off the right edge.
+    expect(pageWidthFor('/admin/spending')).toBe('wide')
     expect(pageWidthFor('/admin/sources')).toBe('wide')
     expect(pageWidthFor('/admin/organisation/reviewers')).toBe('wide')
   })

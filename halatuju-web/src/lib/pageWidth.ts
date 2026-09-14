@@ -49,6 +49,12 @@ export const WIDE_ROUTES: readonly string[] = [
   '/admin/sponsors',
   '/admin/students',
   '/admin/payments',
+  // ⚠ ADDED 2026-09-12, and it should have been here from the day the page shipped. The
+  // owner asked why Spending is narrow when Payments beside it is wide: the merchant table
+  // is SEVEN columns and was being drawn at the reading width, so the shop names wrapped
+  // onto two lines and the last column was cut off the right-hand edge. It is the rule's
+  // own central case — content laid out ACROSS the page — and it was simply missed.
+  '/admin/spending',
   '/admin/billing',
   '/admin/contracts',
   '/admin/course-data',

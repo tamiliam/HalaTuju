@@ -434,6 +434,18 @@ def read_spending_report(file_id):
     return read_sheet_values(file_id, _SPENDING_RANGE)
 
 
+def _find_file_in_folder(drive, folder_id, name):
+    """The id of a non-trashed file called ``name`` directly inside ``folder_id``, or None.
+
+    ⚠ Deliberately NOT recursive and deliberately name-exact: this answers "have we written this
+    document before?", and the only honest answer is about the folder we are writing into.
+    """
+    q = (f"name='{_escape_query(name)}' and '{folder_id}' in parents and trashed=false")
+    res = drive.files().list(q=q, fields='files(id,name)', pageSize=10).execute()
+    files = res.get('files') or []
+    return files[0]['id'] if files else None
+
+
 def file_text_to_folder(folder_path, filename, text, *, mimetype='text/csv',
                         create_missing=False):
     """Best-effort: write a text file into the Drive ``folder_path`` and return its URL — or
@@ -472,6 +484,25 @@ def file_text_to_folder(folder_path, filename, text, *, mimetype='text/csv',
             return None
         from googleapiclient.http import MediaInMemoryUpload  # type: ignore
         media = MediaInMemoryUpload(text.encode('utf-8'), mimetype=mimetype)
+        # ⚠⚠ **REPLACE A FILE OF THE SAME NAME, NEVER ADD A SECOND ONE.** Drive happily keeps two
+        # files with identical names in one folder, and on 2026-09-12 it did: the daily job filed
+        # `Spending summary 2026-09-12.md` at 07:00, the recovery run filed another at 09:03, and
+        # the owner's folder held two files with the same name and DIFFERENT FIGURES — the 07:00
+        # one written before a month of missing spending was recovered.
+        #
+        # That is worse than clutter. A summary is a document somebody reads to learn a number,
+        # and two of them agreeing on a name while disagreeing on the total gives a reader no way
+        # to tell which is true. `_find_or_create_sheet` already carried this reasoning for the
+        # relay spreadsheet ("so re-running never litters the folder with duplicates"); it simply
+        # had not been applied to the text path.
+        #
+        # ⚠ Matched on NAME WITHIN THIS FOLDER ONLY, and the folder is one we own.
+        existing = _find_file_in_folder(drive, folder_id, filename)
+        if existing:
+            updated = drive.files().update(
+                fileId=existing, media_body=media, fields='id, webViewLink').execute()
+            return (updated.get('webViewLink')
+                    or f"https://drive.google.com/file/d/{updated['id']}/view")
         created = drive.files().create(
             body={'name': filename, 'parents': [folder_id]},
             media_body=media, fields='id, webViewLink',

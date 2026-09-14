@@ -183,17 +183,22 @@ export function shopsWithUnplacedMoney(rows: SpendingMerchantRow[]): SpendingMer
 
 // ── students ──────────────────────────────────────────────────────────────────
 
-export type StudentSortKey = 'name' | 'payments' | 'spent' | 'unplaced'
+export type StudentSortKey =
+  'name' | 'transactions' | 'spent' | 'unplaced' | 'balance'
 
 export const STUDENT_SORT_LABEL: Record<StudentSortKey, string> = {
   name: 'admin.spending.students.name',
-  payments: 'admin.spending.students.payments',
+  transactions: 'admin.spending.students.transactions',
   spent: 'admin.spending.students.spent',
   unplaced: 'admin.spending.students.unsorted',
+  balance: 'admin.spending.students.balance',
 }
 
 const STUDENT_FIRST_DIR: Record<StudentSortKey, SortDir> = {
-  name: 'asc', payments: 'desc', spent: 'desc', unplaced: 'desc',
+  name: 'asc', transactions: 'desc', spent: 'desc', unplaced: 'desc',
+  // ⚠ ASCENDING FIRST, alone among the money columns. A balance is scanned for the SMALLEST
+  // value — who has run their wallet down, and who has gone negative — not the largest.
+  balance: 'asc',
 }
 
 export function studentFirstDir(key: StudentSortKey): SortDir {
@@ -208,9 +213,12 @@ export function sortStudents(
 ): SpendingStudentRow[] {
   const compare: Record<StudentSortKey, (a: SpendingStudentRow, b: SpendingStudentRow) => number> = {
     name: (a, b) => byText(a.name, b.name),
-    payments: (a, b) => byNumber(a.payments, b.payments),
+    transactions: (a, b) => byNumber(a.transactions, b.transactions),
     spent: (a, b) => byNumber(a.spent, b.spent),
     unplaced: (a, b) => byNumber(a.unplaced, b.unplaced),
+    // ⚠ A BALANCE CAN BE NEGATIVE, so it must sort as a signed number. `byNumber` does; any
+    // string comparison would file '-40.00' beside '4.00' and look almost right.
+    balance: (a, b) => byNumber(a.balance, b.balance),
   }
   // ⚠ A student with no name recorded sorts LAST in both directions — same reasoning as the date
   // column above. It is a missing record, not a name that begins with nothing.

@@ -19,7 +19,8 @@ const shop = (over: Partial<SpendingMerchantRow>): SpendingMerchantRow => ({
 })
 
 const student = (over: Partial<SpendingStudentRow>): SpendingStudentRow => ({
-  application_id: 1, name: 'Aisyah', payments: 1, spent: '10.00', unplaced: '0.00', ...over,
+  application_id: 1, name: 'Aisyah', transactions: 1, spent: '10.00', unplaced: '0.00',
+  paid: '200.00', balance: '190.00', ...over,
 })
 
 const LABELS = { food: 'Food & drink', groceries: 'Groceries', unsorted: 'Not yet sorted' }
@@ -119,6 +120,28 @@ describe('sorting the students', () => {
     expect(sortStudents(rows, 'unplaced', 'desc').map((r) => r.name)).toEqual(['Big', 'Small'])
   })
 
+  test('⚠ A BALANCE SORTS AS A SIGNED NUMBER — it is the one column that goes below zero', () => {
+    // Comparing money as text files '-40.00' next to '4.00' and looks almost right. Every other
+    // money column on this screen is non-negative, so this is the only place it can bite.
+    // ⚠ 9 AND 100 ARE THE DISCRIMINATOR, and the first version of this test lacked them:
+    // with only -40, 0 and 10 the text order and the number order AGREE, so a `byText`
+    // comparator passed the bite-check. As text, '100.00' < '9.00'.
+    const rows = [student({ name: 'Over', balance: '-40.00' }),
+                  student({ name: 'Small', balance: '9.00' }),
+                  student({ name: 'Big', balance: '100.00' }),
+                  student({ name: 'Flat', balance: '0.00' })]
+    expect(sortStudents(rows, 'balance', 'asc').map((r) => r.name))
+      .toEqual(['Over', 'Flat', 'Small', 'Big'])
+    expect(sortStudents(rows, 'balance', 'desc').map((r) => r.name))
+      .toEqual(['Big', 'Small', 'Flat', 'Over'])
+  })
+
+  test('the balance column opens SMALLEST first; the other money columns open largest', () => {
+    expect(studentFirstDir('balance')).toBe('asc')
+    expect(studentFirstDir('spent')).toBe('desc')
+    expect(studentFirstDir('unplaced')).toBe('desc')
+  })
+
   test('a student with no name recorded sorts LAST, both directions', () => {
     const rows = [student({ application_id: 1, name: '' }),
                   student({ application_id: 2, name: 'Aisyah' })]
@@ -208,7 +231,8 @@ describe('every column can be sorted and every column has a name', () => {
   // two lists are the only place that pairing is written down, so they are asserted complete.
   const MERCHANT_KEYS: MerchantSortKey[] =
     ['shop', 'countedAs', 'decidedBy', 'visits', 'total', 'lastSeen', 'decidedAt']
-  const STUDENT_KEYS: StudentSortKey[] = ['name', 'payments', 'spent', 'unplaced']
+  const STUDENT_KEYS: StudentSortKey[] =
+    ['name', 'transactions', 'spent', 'unplaced', 'balance']
 
   test('shops', () => {
     expect(Object.keys(MERCHANT_SORT_LABEL).sort()).toEqual([...MERCHANT_KEYS].sort())

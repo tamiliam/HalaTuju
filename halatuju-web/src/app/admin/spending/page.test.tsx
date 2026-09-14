@@ -68,10 +68,15 @@ const OVERVIEW: api.SpendingOverview = {
     },
   ],
   students: [
-    { application_id: 7, name: 'NURUL TEST', payments: 24, spent: '400.00', unplaced: '20.00' },
-    { application_id: 8, name: 'AMIR TEST', payments: 3, spent: '90.00', unplaced: '0.00' },
+    { application_id: 7, name: 'NURUL TEST', transactions: 24, spent: '400.00',
+      unplaced: '20.00', paid: '600.00', balance: '200.00' },
+    // ⚠ A NEGATIVE BALANCE IS REAL: the wallet is the student's own and a parent may top it
+    // up, so they can spend more than we released. It must render, and it must not read as
+    // an error — the officer is the person who should notice it and ask.
+    { application_id: 8, name: 'AMIR TEST', transactions: 3, spent: '90.00',
+      unplaced: '0.00', paid: '50.00', balance: '-40.00' },
   ],
-  wallet_gaps: { students_without_wallet: [], shared_wallets: {} },
+  wallet_gaps: { unseen_students: [], shared_wallets: {}, data_to: '2026-08-31' },
   categories: [
     { code: 'food', label: 'Food & drink' },
     { code: 'groceries', label: 'Groceries' },
@@ -150,6 +155,32 @@ describe('the three tabs', () => {
     }
   })
 })
+
+describe('the report date', () => {
+  it('⚠ PUTS THE REPORT DATE AT THE TOP, ONCE — not inside a section', async () => {
+    // It was buried in the gap sentence, which made it read as a fact about that section. It is
+    // a fact about the WHOLE page: every figure above and below stops on that day. And it is
+    // DERIVED from the newest transaction we hold — a hardcoded date here would go stale the
+    // first week nobody noticed (owner asked which it was, 2026-09-12).
+    render(<SpendingPage />)
+    expect((await screen.findByTestId('spending-data-to')).textContent)
+      .toContain('admin.spending.dataTo')
+    await openTab('students')
+    // …and it is NOT repeated down in the gap list.
+    expect(within(screen.getByTestId('wallet-gaps')).queryByTestId('spending-data-to')).toBeNull()
+  })
+
+  it('shows no report date at all before the first import', async () => {
+    mockApi.getSpendingOverview.mockResolvedValue({
+      ...OVERVIEW,
+      wallet_gaps: { unseen_students: [], shared_wallets: {}, data_to: null },
+    })
+    render(<SpendingPage />)
+    await screen.findAllByText('99 SPEEDMART')
+    expect(screen.queryByTestId('spending-data-to')).toBeNull()
+  })
+})
+
 
 describe('the Shops tab', () => {
   it('draws every shop with its money, in BOTH renderings', async () => {
@@ -582,6 +613,32 @@ describe('the Students tab', () => {
     expect(screen.getAllByText('RM400.00')).toHaveLength(2)
   })
 
+  it('shows a BALANCE of what we released minus what they spent', async () => {
+    render(<SpendingPage />)
+    await openTab('students')
+    // NURUL: paid 600, spent 400 → 200 left in the wallet.
+    expect(screen.getAllByText('RM200.00').length).toBeGreaterThan(0)
+  })
+
+  it('⚠ A NEGATIVE BALANCE RENDERS AS -RM40.00, NEVER RM-40.00', async () => {
+    // The money formatter groups thousands and knows nothing about a minus sign, so the naive
+    // `RM${rm(v)}` produces `RM-40.00` — which reads as a typo rather than as a number, on the
+    // one column where the sign is the whole point.
+    render(<SpendingPage />)
+    await openTab('students')
+    expect(screen.getAllByText('-RM40.00').length).toBeGreaterThan(0)
+    expect(screen.queryByText('RM-40.00')).toBeNull()
+  })
+
+  it('sorts the balance SMALLEST first, unlike every other money column', async () => {
+    // A balance is scanned for who has run their wallet down or gone under — not for who has
+    // the most left. AMIR is -40.00, NURUL is 200.00.
+    render(<SpendingPage />)
+    await openTab('students')
+    fireEvent.click(screen.getByRole('button', { name: /admin\.spending\.students\.balance/ }))
+    expect(bodyRows()[0].textContent).toContain('AMIR TEST')
+  })
+
   it('says so when nobody has spent anything', async () => {
     mockApi.getSpendingOverview.mockResolvedValue({ ...OVERVIEW, students: [] })
     render(<SpendingPage />)
@@ -599,15 +656,24 @@ describe('the wallet faults', () => {
     expect(screen.getByText('admin.spending.gaps.note')).not.toBeNull()
   })
 
-  it('shows the wallet gaps when there are any', async () => {
+  it('names the students whose spending we cannot see, and says up to WHEN', async () => {
     mockApi.getSpendingOverview.mockResolvedValue({
       ...OVERVIEW,
-      wallet_gaps: { students_without_wallet: [42], shared_wallets: { '8000400170001': [7, 8] } },
+      wallet_gaps: {
+        unseen_students: [{ application_id: 42, name: 'RAJAN A/L MUNIANDY',
+                            paid: '600.00', spent: '0.00' }],
+        shared_wallets: { '8000400170001': [7, 8] }, data_to: '2026-08-31' },
     })
     render(<SpendingPage />)
     await openTab('students')
     const gaps = within(screen.getByTestId('wallet-gaps'))
-    expect(gaps.getByText(/42/)).not.toBeNull()
+    // ⚠ THE NAME, not the number (owner, 2026-09-12). A list of application ids is not a
+    // list of people; the officer had to look every one of them up before they could act.
+    expect(gaps.getByText('RAJAN A/L MUNIANDY')).not.toBeNull()
+    // ⚠ AND THE EVIDENCE BESIDE THE NAME: paid RM600, spent nothing. The zero is the whole
+    // reason the row is on this list, so showing it turns an accusation into a fact.
+    expect(gaps.getByText('RM600.00')).not.toBeNull()
+    expect(gaps.getByText('RM0.00')).not.toBeNull()
     expect(gaps.getByText(/8000400170001/)).not.toBeNull()
   })
 })
