@@ -154,8 +154,14 @@ function Chrome(
   const groups = useMemo(
     // ⚠ `undefined` UNTIL THE LIST HAS ARRIVED — see `scopesLoaded` on AppShell. Hiding a row on
     // the strength of a list we have not fetched would make it pop in on every page load.
-    () => visibleNav({ role: r, probes, programmeChosen: scopesLoaded ? chosen !== '' : undefined }),
-    [r, probes, chosen, scopesLoaded],
+    // `pathname` is what folds the Programme group away outside a gift (owner, 2026-09-14) —
+    // see `programmeGroupFolded`. It is the path and not `chosen`, because `chosen` fills itself
+    // in on a single-gift tenant and would never let the group fold at all.
+    () => visibleNav({
+      role: r, probes, pathname,
+      programmeChosen: scopesLoaded ? chosen !== '' : undefined,
+    }),
+    [r, probes, chosen, scopesLoaded, pathname],
   )
   const active = activeItem(pathname)
   const activeId = active?.id

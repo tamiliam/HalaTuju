@@ -86,6 +86,38 @@ cross-tenant test AND by the org-fence static guard, which is what that guard is
 
 Gates: **6530 pytest**, **2168 jest**, lint clean, `next build` exit 0. No migration.
 
+## The menu says what the pages do, and the Programme group folds away - 2026-09-14
+
+The owner asked for seven menu changes. Six shipped here; the seventh (a Programme **Overview**
+page with statistics and graphs) is parked for a brainstorm, since it is a new page rather than a
+menu edit.
+
+**Words and order** — nobody gained or lost reach; only positions and names moved:
+
+- **Overview → Programmes.** The page already listed the gifts; the name has caught up. The page
+  heading, the hub tile and the org-admin manual all follow, so nothing names the old word.
+- **Settings → Organisation Settings, and LAST in its group.** Settings is the thing you touch
+  least, and the longer label says *whose* settings now that a gift has settings of its own.
+- **People → Team**, on the row, the page heading and its panels.
+- **Billing & usage → Usage & Billing**, on the row, the page, the hub tile and the dark-ship note.
+- **Sources before Sponsors** — the people who send us students, then the people who fund them.
+
+**The Programme group folds away until you are inside a gift** (owner: *"It can only be accessed
+by clicking on Programmes above"*). Open Programmes, choose a gift, and the group unfolds beneath
+the organisation's; step back to an organisation page and it folds again.
+
+- ⚠ **TWO ROLES ARE EXEMPT, AND NEITHER IS A COURTESY.** A reviewer's and a QC's only menu row is
+  Applications, which lives in this group — fold it and they log in to an empty sidebar with no
+  way to their own queue. And a plain `admin` or `finance` cannot fold it either: the Programmes
+  page shows its gift cards only to super and org_admin, so those two roles have **no door** into
+  a gift and folding would strand them on the outside for good.
+- ⚠ **The exemption is keyed on `programmeConfig`'s roles, not on a role list** — whoever may
+  open a gift's configuration is exactly whoever the Programmes page offers a gift to click on.
+  One fact, stated once; the day the cards open to another role, the fold follows.
+- ⚠ **It keys on the PATH, not on `programmeChosen`.** That looked like the obvious signal and it
+  is the wrong one: it fills itself in whenever a tenant has exactly one gift — production today
+  — so on it the group would never have folded at all. Six tests fail if the fold stops working.
+
 ## What it cost, what we charge, and the screen that sets the rates - 2026-09-11
 
 The owner sent August's real invoices — GCP RM23.92, Supabase $25, Google Workspace RM18.90,

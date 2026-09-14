@@ -21,8 +21,11 @@ let mockToken: string | null = null
 
 const mockPush = jest.fn()
 
+// A programme page by default, so the scope tests below see all three groups. A test that needs
+// the shell OUTSIDE a gift sets this and restores it — see `folds the Programme group away`.
+let mockPath = '/admin/scholarship'
 jest.mock('next/navigation', () => ({
-  usePathname: () => '/admin/scholarship',
+  usePathname: () => mockPath,
   useRouter: () => ({ push: mockPush, replace: jest.fn() }),
 }))
 jest.mock('@/lib/i18n', () => ({ useT: () => ({ t: (k: string) => k }) }))
@@ -53,6 +56,23 @@ describe('AppShell renders the scope sidebar per role', () => {
     expect(within(nav).getByText('admin.nav.group.platform')).toBeTruthy()
     expect(within(nav).getByText('admin.nav.group.organisation')).toBeTruthy()
     expect(within(nav).getByText('admin.nav.group.programme')).toBeTruthy()
+  })
+
+  // ⚠ THE PLUMBING, not the rule — the rule has its own tests in navigation.test.ts. This proves
+  // the shell actually hands the path to `visibleNav`; without that the fold is dead code and
+  // every test above still passes, because they all sit on a programme page.
+  it('folds the Programme group away for a super on a platform page (owner, 2026-09-14)', () => {
+    mockPath = '/admin'
+    try {
+      asRole('super')
+      render(<AppShell>content</AppShell>)
+      const nav = sidebar()
+      expect(within(nav).getByText('admin.nav.group.platform')).toBeTruthy()
+      expect(within(nav).getByText('admin.nav.group.organisation')).toBeTruthy()
+      expect(within(nav).queryByText('admin.nav.group.programme')).toBeNull()
+    } finally {
+      mockPath = '/admin/scholarship'
+    }
   })
 
   it('gives a reviewer the programme scope only — no organisation, no platform', () => {

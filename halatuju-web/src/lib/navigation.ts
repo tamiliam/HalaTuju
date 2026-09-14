@@ -94,6 +94,8 @@ export interface NavItem {
    * (`navigation.test.ts` pins it), so hiding the group outright would leave them with an empty
    * sidebar and no way back to their own queue. Marking the CONFIGURE row and not the WORK row
    * means the group can never empty, for anybody — no `if (role === 'reviewer')` anywhere.
+   * (The WHOLE group does fold since 2026-09-14 — `programmeGroupFolded` — and that rule has to
+   * carry the exemption this one avoids, for exactly the reason given here.)
    *
    * ⚠ STILL VISIBILITY ONLY. See the module docstring: the fence is the endpoint, and a person
    * who types `/admin/programme` reaches exactly what they always did.
@@ -206,14 +208,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, exact: true,
         match: ['/admin/administration', '/admin/organisation/programmes'] },
-      // The organisation's own settings, mirroring Programme → Configuration one level up
-      // (owner, 2026-09-03: "each Org would have its own config/setting, and each programme would
-      // likewise have its own"). Colours moved here from the Programme screen, where they had
-      // never belonged: `OrganisationTheme` is ONE colour for the whole tenant, so setting it
-      // while standing inside a gift would have changed every other gift too — invisible with one
-      // gift, wrong the day there are two. super + org_admin: the endpoint refuses everyone else.
-      { id: 'orgSettings', href: '/admin/organisation/settings', labelKey: 'admin.orgSettings.nav',
-        scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       // Renamed "Staff" → "Invitations" on 2026-08-03: reviewers moved to their own page in
       // request #10, and what is left is the asking. The ROUTE is unchanged deliberately — every
       // bookmark, the `/admin/invite` redirect and the highlight rules keep working; only the
@@ -234,11 +228,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: 'reviewers', href: '/admin/organisation/reviewers', labelKey: 'admin.nav.reviewers',
         chord: 'E', scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' } },
+      // Sources before Sponsors (owner, 2026-09-14): the people who send us students come
+      // before the people who fund them, in the order the work actually flows.
+      { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',
+        scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'sponsors', href: '/admin/sponsors', labelKey: 'admin.sponsors.nav', chord: 'P',
         scope: 'organisation', roles: ['super', 'org_admin', 'admin', 'finance'],
         gate: { mode: 'always' }, badge: 'pendingSponsors' },
-      { id: 'sources', href: '/admin/sources', labelKey: 'admin.sources.nav', chord: 'U',
-        scope: 'organisation', roles: ['super', 'org_admin', 'admin'], gate: { mode: 'always' } },
       { id: 'contracts', href: '/admin/contracts', labelKey: 'admin.contracts.title', chord: 'K',
         scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
       { id: 'billing', href: '/admin/billing', labelKey: 'admin.billing.title', chord: 'B',
@@ -248,6 +244,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         scope: 'organisation', roles: ['super', 'org_admin'],
         gate: { mode: 'probe', probe: 'requests', dark: 'hide' },
         badge: 'requestsWaiting' },
+      // The organisation's own settings, mirroring Programme → Configuration one level up
+      // (owner, 2026-09-03: "each Org would have its own config/setting, and each programme would
+      // likewise have its own"). Colours moved here from the Programme screen, where they had
+      // never belonged: `OrganisationTheme` is ONE colour for the whole tenant, so setting it
+      // while standing inside a gift would have changed every other gift too — invisible with one
+      // gift, wrong the day there are two. super + org_admin: the endpoint refuses everyone else.
+      //
+      // LAST in the group, and labelled "Organisation Settings" (owner, 2026-09-14). Settings is
+      // the thing you touch least, so it sits at the bottom rather than second from the top; the
+      // longer label says whose settings, now that a programme has settings of its own. The route
+      // and the `id` are unchanged — only the position and the word moved.
+      { id: 'orgSettings', href: '/admin/organisation/settings', labelKey: 'admin.orgSettings.nav',
+        scope: 'organisation', roles: ['super', 'org_admin'], gate: { mode: 'always' } },
     ],
   },
   {
@@ -363,6 +372,20 @@ export interface NavContext {
    * today — this is always true and nothing changes.
    */
   programmeChosen?: boolean
+  /**
+   * The current path, so the Programme group can fold away until you are inside a gift.
+   *
+   * Owner, 2026-09-14: *"Hide Programme section. It can only be accessed by clicking on
+   * Programmes above."* See `programmeGroupFolded` for the rule and the two roles it must not
+   * apply to. OPTIONAL, and absent means NOT folded — a caller that has not been taught about
+   * this dimension must never lose a menu group because of it (the module rule, again).
+   *
+   * ⚠ NOT `programmeChosen`. That looked like the obvious signal and it is the wrong one: it
+   * fills itself in whenever a tenant has exactly ONE gift, which is production today, so on
+   * it the group would never fold at all. Whether you are INSIDE a gift is a fact about the
+   * page you are on, and only the path knows that.
+   */
+  pathname?: string
 }
 
 /** A context with nothing probed yet — the safe default (see `canSee`). */
@@ -417,6 +440,33 @@ export function visibleNav(ctx: NavContext): VisibleNavGroup[] {
         .filter((i): i is VisibleNavItem => i.state !== 'hide'),
     }))
     .filter((g) => g.items.length > 0)
+    .filter((g) => g.scope !== 'programme' || !programmeGroupFolded(ctx))
+}
+
+/**
+ * Should the Programme group be hidden right now?
+ *
+ * Owner, 2026-09-14: the Programme section is reached by opening **Programmes** and choosing a
+ * gift; it is not a standing fixture of the menu. So it shows only while the page you are on is
+ * INSIDE a gift, and folds away on every organisation and platform page.
+ *
+ * ⚠ **TWO ROLES ARE EXEMPT, AND IT IS NOT A COURTESY.** A reviewer's and a QC's only menu row is
+ * Applications, which lives in this group — fold it and they log in to an empty sidebar with no
+ * way to their own queue. And a plain `admin` or `finance` cannot fold it either, for a subtler
+ * reason: the Programmes page shows its gift cards only to super and org_admin (it mirrors the
+ * programmes endpoint's own gate), so those two roles have **no door** into a gift; folding the
+ * group would strand them on the outside for good.
+ *
+ * That is why the exemption is keyed on `programmeConfig`'s roles rather than on a role list:
+ * whoever may open a gift's configuration is exactly whoever the Programmes page offers a gift
+ * to click on. The two facts are one fact, stated once. The day the cards open to another role,
+ * the fold follows without anyone remembering to update it here.
+ */
+export function programmeGroupFolded(ctx: NavContext): boolean {
+  if (ctx.pathname === undefined) return false
+  if (activeItem(ctx.pathname)?.scope === 'programme') return false
+  const door = NAV_ITEMS.find((i) => i.id === 'programmeConfig')
+  return door !== undefined && door.roles.includes(ctx.role)
 }
 
 /** True when `pathname` is `href` or sits underneath it. The boundary matters: without the

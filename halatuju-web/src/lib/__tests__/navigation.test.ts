@@ -64,10 +64,18 @@ describe('visibleNav per role', () => {
     // roles on both rows are untouched, and this list still holds exactly the same ids; only
     // their POSITION moved, from before `contracts` to after `programmeConfig`. Money is
     // raised, released and spent per gift, which `PaymentRun.programme` has said since P2b.
+    // ⚠ **THE MENU WAS RE-ORDERED ON 2026-09-14 AT THE OWNER'S REQUEST.** Sources now sits
+    // before Sponsors, and Organisation Settings is LAST in its group instead of second. Nobody
+    // gained or lost reach; only positions and words moved (Overview → Programmes, People →
+    // Team, Billing & usage → Usage & Billing). Re-typed here on purpose: this snapshot is the
+    // guard that makes a reorder a deliberate act.
+    //
+    // The Programme group is present here because this snapshot runs with NO pathname — see
+    // `programmeGroupFolded`: absent means not folded. The fold has its own tests below.
     super: [
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
-      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources',
-      'contracts', 'billing',
+      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'contracts', 'billing', 'orgSettings',
       'applications', 'programmeConfig', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
@@ -87,13 +95,13 @@ describe('visibleNav per role', () => {
     // real loss is `finance`, which is no longer offered the reserved `fund` slot — it never had a
     // page, so this removes a disabled row rather than a power.
     org_admin: [
-      'administration', 'orgSettings', 'staff', 'reviewers', 'sponsors', 'sources',
-      'contracts', 'billing',
+      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
+      'contracts', 'billing', 'orgSettings',
       'applications', 'programmeConfig', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     admin: [
-      'administration', 'staff', 'reviewers', 'sponsors', 'sources',
+      'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'applications', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
@@ -686,5 +694,72 @@ describe('chordTarget', () => {
     for (const item of NAV_ITEMS.filter((i) => i.chord)) {
       expect(chordTarget(item.chord as string, everyone)?.id).toBe(item.id)
     }
+  })
+})
+
+// ── 9. The Programme group folds away until you are inside a gift (2026-09-14) ──────────────
+describe('programmeGroupFolded', () => {
+  // Owner: "Hide Programme section. It can only be accessed by clicking on Programmes above."
+  const groupsAt = (role: AdminRoleName, pathname: string) =>
+    visibleNav({ ...ctx(role), pathname }).map((g) => g.scope)
+
+  it('a super on a platform page does not see the Programme group', () => {
+    expect(groupsAt('super', '/admin')).not.toContain('programme')
+  })
+
+  it('an org_admin on the Programmes page does not see it either — that page is the door', () => {
+    expect(groupsAt('org_admin', '/admin/organisation')).not.toContain('programme')
+  })
+
+  it('once inside a gift the group is back, for every programme page', () => {
+    for (const path of ['/admin/scholarship', '/admin/programme', '/admin/payments', '/admin/spending']) {
+      expect(groupsAt('super', path)).toContain('programme')
+      expect(groupsAt('org_admin', path)).toContain('programme')
+    }
+  })
+
+  it('stepping back out to an organisation page folds it away again', () => {
+    expect(groupsAt('org_admin', '/admin/sponsors')).not.toContain('programme')
+  })
+
+  // ⚠ THE TWO EXEMPTIONS, AND THE REASON EACH IS NOT A COURTESY.
+  it('a reviewer and a QC ALWAYS keep it — it is their only row, folded they have no sidebar', () => {
+    for (const role of ['reviewer', 'qc'] as const) {
+      expect(groupsAt(role, '/admin/profile')).toEqual(['programme', 'utility'])
+      expect(groupsAt(role, '/admin/scholarship')).toContain('programme')
+    }
+  })
+
+  it('a plain admin and finance ALWAYS keep it — the Programmes page shows them no gift to click', () => {
+    // The gift cards on /admin/organisation mirror the programmes endpoint's gate (super +
+    // org_admin), so these two roles have no door INTO a gift. Folding would strand them.
+    for (const role of ['admin', 'finance'] as const) {
+      expect(groupsAt(role, '/admin/organisation')).toContain('programme')
+      expect(groupsAt(role, '/admin')).toContain('programme')
+    }
+  })
+
+  it('the exemption is keyed on who may open a gift, not on a role list', () => {
+    // Whoever may open programmeConfig is exactly whoever the Programmes page offers a gift to.
+    // One fact, stated once — the day the cards open to another role, the fold follows.
+    const door = NAV_ITEMS.find((i) => i.id === 'programmeConfig')!
+    for (const role of ROLE_NAMES) {
+      // Only roles that HAVE a Programme group can have it folded; a partner has no programme
+      // rows at all, and "absent" is not "folded".
+      const hasGroup = visibleNav(ctx(role)).some((g) => g.scope === 'programme')
+      if (!hasGroup) continue
+      const folded = !groupsAt(role, '/admin/organisation').includes('programme')
+      expect(folded).toBe(door.roles.includes(role))
+    }
+  })
+
+  it('⚠ a caller that gives no pathname is never folded — absence must not invent a block', () => {
+    expect(visibleNav(ctx('super')).map((g) => g.scope)).toContain('programme')
+  })
+
+  it('⚠ does NOT key on programmeChosen, which is always true on a single-gift tenant', () => {
+    // If it did, the group would never fold on production. Chosen and outside a gift → folded.
+    expect(visibleNav({ ...ctx('super'), pathname: '/admin', programmeChosen: true })
+      .map((g) => g.scope)).not.toContain('programme')
   })
 })

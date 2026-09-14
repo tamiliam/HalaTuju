@@ -132,20 +132,23 @@ export const roleOrgAdmin: ManualChapter = {
       body: (
         <>The menu — the strip of icons on the left, which opens when you point at it — groups everything
         by what it belongs to. Your organisation&rsquo;s group holds
-        <strong> Overview</strong>, <strong>Settings</strong>, <strong>Invitations</strong>,
-        <strong> Reviewers</strong>, <strong>Sponsors</strong>, <strong>Sources</strong>,
-        <strong> Payments</strong>, <strong>Contract templates</strong>, <strong>Billing &amp; usage</strong> and
-        <strong> Requests</strong>. Two of those are worth knowing about before you need them.
-        <strong> Overview</strong> is also where your <strong>gift programmes</strong> are listed and where a new
-        one is created — the gifts you run are what your organisation IS, so they sit on its front page rather
-        than off in a menu entry of their own. <strong>Settings</strong> holds the choices that belong to the
-        whole organisation, starting with your <strong>colours</strong>: one colour, applying to every gift you
-        run.
+        <strong> Programmes</strong>, <strong>Invitations</strong>, <strong>Team</strong>,
+        <strong> Sources</strong>, <strong>Sponsors</strong>, <strong>Contract templates</strong>,
+        <strong> Usage &amp; Billing</strong>, <strong>Requests</strong> and, last,
+        <strong> Organisation Settings</strong>. Two of those are worth knowing about before you need them.
+        <strong> Programmes</strong> is your organisation&rsquo;s front page: it lists your <strong>gift
+        programmes</strong> and is where a new one is created — the gifts you run are what your organisation
+        IS, so they sit there rather than off in a menu entry of their own. <strong>Organisation Settings</strong>
+        holds the choices that belong to the whole organisation, starting with your <strong>colours</strong>: one
+        colour, applying to every gift you run.
         <br /><br />
-        Below it sits your programme&rsquo;s own group, which is deliberately short:
-        <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
-        for, and its intake year) and <strong>Applications</strong>. Platform-only tools — adding
-        organisations or referral partners — never appear for you; those stay with the HalaTuju platform team.</>
+        Your programme&rsquo;s own group — <strong>Applications</strong>, <strong>Configuration</strong>
+        (everything you set about one gift — its rules, what it asks applicants for, and its intake year),
+        <strong> Payments</strong> and <strong>Spending</strong> — <strong>appears only once you are inside a
+        gift</strong>. Open <strong>Programmes</strong> and choose a gift, and the group unfolds beneath your
+        organisation&rsquo;s; step back to an organisation page and it folds away again. Platform-only tools —
+        adding organisations or referral partners — never appear for you; those stay with the HalaTuju
+        platform team.</>
       ),
       img: '/manual/org-admin-administration.png',
       alt: 'The organisation group in the menu (placeholder)',
@@ -154,7 +157,7 @@ export const roleOrgAdmin: ManualChapter = {
       anchor: 'org-admin-apply-link',
       title: 'The link applicants follow',
       body: (
-        <>Every gift programme has its own <strong>apply link</strong>. Open <strong>Overview</strong>, press the
+        <>Every gift programme has its own <strong>apply link</strong>. Open <strong>Programmes</strong>, press the
         <strong> ⋮</strong> at the top-right of a gift&rsquo;s card and choose <strong>Copy apply link</strong>
         — that is the address to put on a poster, in an email, or on your own website. It belongs to the
         <em> gift</em>, not to one intake year, so the same link keeps working every year; it opens whichever

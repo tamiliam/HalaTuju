@@ -3154,7 +3154,7 @@
       "scrollHint": "Swipe the table sideways to see the rest."
     },
     "orgPage": {
-      "nav": "Overview",
+      "nav": "Programmes",
       "sub": "Your organisation — its people, its sponsors and its money.",
       "staffSub": "Who can act inside this organisation, and what each of them may do.",
       "invitesPending": "Awaiting reply",
@@ -3198,7 +3198,7 @@
       "billingRates": "Billing rates",
       "staff": "Staff",
       "programmeOverview": "Overview",
-      "reviewers": "People",
+      "reviewers": "Team",
       "soon": "Soon",
       "group": {
         "platform": "Platform",
@@ -5065,7 +5065,7 @@
       "orgBadge": "Organisation",
       "inviteStaff": "Invite reviewers & admins",
       "inviteStaffSub": "Add programme staff to your organisation",
-      "billing": "Billing & usage",
+      "billing": "Usage & Billing",
       "billingSub": "Costs and usage for your programme",
       "comingSoon": "Coming soon",
       "viewOnlyNote": "You have view-only access to your organisation's staff. Ask an organisation admin to invite or change staff.",
@@ -5089,11 +5089,11 @@
       "pendingApproval": "{count} pending approval"
     },
     "billing": {
-      "title": "Billing & usage",
+      "title": "Usage & Billing",
       "subtitleSuper": "Metered usage across every organisation, plus the shared platform base, what the platform cost, and what each organisation is charged.",
       "subtitleOrg": "Your organisation's metered usage for the month. Units and tokens only — no charges are shown.",
       "loading": "Loading usage…",
-      "comingSoon": "Billing & usage is coming soon.",
+      "comingSoon": "Usage & Billing is coming soon.",
       "month": "Month",
       "platform": "Platform (shared base)",
       "platformBadge": "Super only",
@@ -6032,7 +6032,7 @@
       }
     },
     "orgSettings": {
-      "nav": "Settings",
+      "nav": "Organisation Settings",
       "title": "Organisation settings",
       "subtitle": "What your organisation decides for itself. These apply across every gift programme you run.",
       "tab": {
@@ -6242,9 +6242,9 @@
       "goToYear": "Create an intake year"
     },
     "people": {
-      "title": "People",
+      "title": "Team",
       "desc": "Everybody who is already in this organisation — what they carry, and who still has access.",
-      "tabsAria": "People panels",
+      "tabsAria": "Team panels",
       "tabAdmins": "Admins"
     },
     "applyCopy": {

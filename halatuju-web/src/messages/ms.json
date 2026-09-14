@@ -3154,7 +3154,7 @@
       "scrollHint": "Leret jadual ke sisi untuk melihat selebihnya."
     },
     "orgPage": {
-      "nav": "Gambaran keseluruhan",
+      "nav": "Program",
       "sub": "Organisasi anda — orangnya, penajanya dan wangnya.",
       "staffSub": "Siapa yang boleh bertindak dalam organisasi ini, dan apa yang boleh dilakukan.",
       "invitesPending": "Menunggu jawapan",
@@ -3198,7 +3198,7 @@
       "billingRates": "Kadar bil",
       "staff": "Kakitangan",
       "programmeOverview": "Gambaran keseluruhan",
-      "reviewers": "Orang",
+      "reviewers": "Pasukan",
       "soon": "Akan datang",
       "group": {
         "platform": "Platform",
@@ -5065,7 +5065,7 @@
       "orgBadge": "Organisasi",
       "inviteStaff": "Jemput penilai & pentadbir",
       "inviteStaffSub": "Tambah kakitangan program ke organisasi anda",
-      "billing": "Pengebilan & penggunaan",
+      "billing": "Penggunaan & Pengebilan",
       "billingSub": "Kos dan penggunaan untuk program anda",
       "comingSoon": "Akan datang",
       "viewOnlyNote": "Anda mempunyai akses lihat sahaja kepada kakitangan organisasi anda. Minta pentadbir organisasi untuk menjemput atau menukar kakitangan.",
@@ -5089,11 +5089,11 @@
       "pendingApproval": "{count} menunggu kelulusan"
     },
     "billing": {
-      "title": "Pengebilan & penggunaan",
+      "title": "Penggunaan & Pengebilan",
       "subtitleSuper": "Penggunaan bermeter merentas setiap organisasi, asas platform yang dikongsi, kos platform, dan caj bagi setiap organisasi.",
       "subtitleOrg": "Penggunaan bermeter organisasi anda bagi bulan ini. Unit dan token sahaja — tiada caj dipaparkan.",
       "loading": "Memuatkan penggunaan…",
-      "comingSoon": "Pengebilan & penggunaan akan datang tidak lama lagi.",
+      "comingSoon": "Penggunaan & Pengebilan akan datang tidak lama lagi.",
       "month": "Bulan",
       "platform": "Platform (asas dikongsi)",
       "platformBadge": "Super sahaja",
@@ -6032,7 +6032,7 @@
       }
     },
     "orgSettings": {
-      "nav": "Tetapan",
+      "nav": "Tetapan Organisasi",
       "title": "Tetapan organisasi",
       "subtitle": "Apa yang ditetapkan oleh organisasi anda sendiri. Ini terpakai kepada setiap program pemberian yang anda jalankan.",
       "tab": {
@@ -6242,9 +6242,9 @@
       "goToYear": "Cipta tahun pengambilan"
     },
     "people": {
-      "title": "Orang",
+      "title": "Pasukan",
       "desc": "Semua orang yang sudah berada dalam organisasi ini — apa yang mereka pikul, dan siapa yang masih mempunyai akses.",
-      "tabsAria": "Panel orang",
+      "tabsAria": "Panel pasukan",
       "tabAdmins": "Pentadbir"
     },
     "applyCopy": {
