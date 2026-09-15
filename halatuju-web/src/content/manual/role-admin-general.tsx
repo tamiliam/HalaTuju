@@ -29,6 +29,20 @@ export const roleAdminGeneral: ManualChapter = {
       ),
     },
     {
+      anchor: 'admin-general-overview',
+      title: 'The gift’s overview',
+      body: (
+        <>Clicking a gift on <strong>Programmes</strong> now opens its <strong>Overview</strong> — the first
+        entry in that gift&rsquo;s group in the menu, and the page to read before any other. You see every
+        application counted by the stage it has reached; what has been committed, paid, is still outstanding
+        and has been spent; what is waiting for somebody (nobody assigned, with a reviewer, due soon, overdue,
+        awaiting QC); six charts showing how applications, awards and money have moved over time; and whether
+        this year&rsquo;s intake is open. It is a read, like the rest of your remit — there is nothing on it to
+        click that changes anything. Everyone on the team can open it, and each of them sees the part that
+        belongs to their job, so your colleague&rsquo;s Overview will not look like yours.</>
+      ),
+    },
+    {
       anchor: 'admin-general-money',
       title: 'Money: you prepare, someone else approves',
       body: (

@@ -3798,3 +3798,58 @@ It does not matter today — a super sees every organisation on both screens, wh
 **Fix:** `timezone.localdate().replace(day=1)`, with a pinned-clock test at 23:30 UTC on the last day of a month.
 
 **Trigger:** anyone saving a rate through the API without a date.
+
+### [TD-249] The nudge email's due date is a day early between midnight and 08:00 — low
+
+**Status:** Open (2026-09-15)
+
+**Raised while building the Programme Overview (2026-09-15)**, which consolidated the three inline
+verdict clocks into `apps/scholarship/review_sla.py`. The *clock* is now one implementation and is
+timezone-correct; the *display string* beside it is not. `send_review_nudges.py:100` reads
+
+```python
+due_by = due.date().strftime('%d %b %Y')
+```
+
+and `due` is an aware UTC instant. `.date()` on one of those gives the **UTC** date, so any due
+moment falling between Malaysian midnight and 08:00 prints as **yesterday** in the reviewer's
+inbox — the same fault as TD-209, in the one place a reviewer actually reads a deadline. The
+correct spelling is `timezone.localtime(due).date()`, which is what the Overview uses for the date
+it shows on the same case (`programme_overview._local_date`). The two surfaces can therefore
+disagree by a day.
+
+**It was left byte-identical on purpose.** `test_review_nudges.py` is the regression net that
+proved the `review_sla` extraction changed no behaviour, and it stayed unchanged and green through
+that migration precisely because nothing about the command's output moved. Changing the string in
+the same commit would have meant editing the net and the thing it was netting at once.
+
+**Fix when it bites:** wrap the instant — `timezone.localtime(due).date()` — and pin it with a test
+that constructs a due moment at, say, 23:30 UTC and asserts the *next* Malaysian day appears in the
+email body. Do not read the same clock as the code: a test that computes the expected string the
+same way the code does cannot see this class of bug (`docs/lessons.md`).
+
+**Trigger:** the first reviewer who says the reminder gave them a date a day earlier than the
+screen, or the first organisation whose SLA lands due dates in the early-morning window routinely.
+
+### [TD-250] The route-drift test cannot see a nested admin route — low
+
+**Status:** Open (2026-09-15)
+
+`navigation.test.ts`'s drift guard builds its list of real pages with a `routeDirs()` helper that
+reads the **top level** of `src/app/admin/` only. It was written when every console page was one
+directory deep, and it does what it was written to do: catch a route added to `navigation.ts` with
+no page behind it, or a page with no menu entry.
+
+The Programme Overview is the first route to sit two levels deep — `admin/programme/overview` —
+and it is therefore **invisible to that scan**. The guard neither complains about it nor protects
+it: a future rename of the directory, or a deletion of the page with the nav entry left behind,
+would pass. The blind spot is noted in a comment beside the helper rather than fixed, because
+widening the scan to walk the tree changes what the test asserts about *every* existing route at
+once, which is not a change to make inside a feature commit.
+
+**Fix when it bites:** make `routeDirs()` walk recursively and return path segments rather than
+single names, then reconcile the whole list in one go — expect it to surface other pairs that have
+been quietly unguarded, which is the point of doing it separately.
+
+**Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
+fails.

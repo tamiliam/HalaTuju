@@ -21,15 +21,20 @@ describe('adminLanding', () => {
     expect(adminLanding({ role: 'super' })).toBe('/admin')
     expect(adminLanding({ role: 'admin' })).toBe('/admin/organisation')
   })
-  it('sends a viewer + a complete reviewer to the workspace', () => {
-    expect(adminLanding({ role: 'viewer' })).toBe('/admin/scholarship')
-    expect(adminLanding({ role: 'reviewer', reviewer_profile_complete: true })).toBe('/admin/scholarship')
+  // ⚠ MOVED 2026-09-15, AND IT IS WANTED. The Programme Overview's reviewer shape IS their own
+  // queue — open cases, due soon, overdue, and how long students have waited — so it is nearer
+  // their work than a list of every applicant in the gift. `defaultRoute` in navigation.test.ts
+  // pins the whole table; this file only proves the delegation is real.
+  it('sends a viewer + a complete reviewer to their own overview', () => {
+    expect(adminLanding({ role: 'viewer' })).toBe('/admin/programme/overview')
+    expect(adminLanding({ role: 'reviewer', reviewer_profile_complete: true }))
+      .toBe('/admin/programme/overview')
   })
   it('holds an incomplete reviewer on the profile page', () => {
     expect(adminLanding({ role: 'reviewer', reviewer_profile_complete: false })).toBe('/admin/profile')
   })
   it('never traps on an OLD payload that omits the flag (undefined ≠ false)', () => {
-    expect(adminLanding({ role: 'reviewer' })).toBe('/admin/scholarship')
+    expect(adminLanding({ role: 'reviewer' })).toBe('/admin/programme/overview')
   })
 
   // ⚠ THE DOCSTRING CLAIMED THIS FOR MONTHS AND IT WAS NOT TRUE — `adminLanding` held its own

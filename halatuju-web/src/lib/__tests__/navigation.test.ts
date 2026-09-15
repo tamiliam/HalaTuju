@@ -76,7 +76,7 @@ describe('visibleNav per role', () => {
       'overview', 'students', 'courseData', 'organisations', 'referralPartners', 'billingRates',
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'contracts', 'billing', 'orgSettings',
-      'applications', 'programmeConfig', 'payments', 'spending',
+      'programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     // Layer 0 Sprint 5 (2026-08-30): "What we ask for" replaces the Overview placeholder and is
@@ -97,23 +97,30 @@ describe('visibleNav per role', () => {
     org_admin: [
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
       'contracts', 'billing', 'orgSettings',
-      'applications', 'programmeConfig', 'payments', 'spending',
+      'programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     admin: [
       'administration', 'staff', 'reviewers', 'sources', 'sponsors',
-      'applications', 'payments', 'spending',
+      'programmeOverview', 'applications', 'payments', 'spending',
       'profile', 'guide', 'faq',
     ],
     // ⚠ `finance` still has Payments and still has NO Spending — the move changed where the
     // row sits, never who may open it.
+    // ⚠⚠ **`programmeOverview` IS A DELIBERATE WIDENING FOR `finance` (2026-09-15), AND IT IS THE
+    // ONE ROW IT HAS THAT APPLICATIONS IS NOT.** Applications is a list of PEOPLE and `_b40_scope`
+    // is 'none' for finance, so that row could only ever 403. The Overview hands finance
+    // AGGREGATES — committed, paid, remaining, spent, per month, per category — and never a name,
+    // a file or a verdict, because the server does not build those sections for it
+    // (`SECTIONS_BY_ROLE`, pinned by `test_the_key_set_per_role_is_exact`). Recorded in
+    // `docs/decisions.md` and `role-matrix.md`; typed out here so it stays a deliberate act.
     finance: [
       'administration', 'staff', 'reviewers', 'sponsors',
-      'payments',
+      'programmeOverview', 'payments',
       'profile', 'guide', 'faq',
     ],
-    qc: ['applications', 'profile', 'guide', 'faq'],
-    reviewer: ['applications', 'profile', 'guide', 'faq'],
+    qc: ['programmeOverview', 'applications', 'profile', 'guide', 'faq'],
+    reviewer: ['programmeOverview', 'applications', 'profile', 'guide', 'faq'],
     partner: ['overview', 'students', 'profile'],
   }
 
@@ -299,7 +306,16 @@ describe('probe gating reproduces the 404-means-invisible contract', () => {
 describe('the registry and the app router agree', () => {
   const ADMIN_DIR = path.join(__dirname, '..', '..', 'app', 'admin')
 
-  /** Top-level route segments that own a page.tsx, e.g. 'payments'. */
+  /** Top-level route segments that own a page.tsx, e.g. 'payments'.
+   *
+   * ⚠ **TOP-LEVEL ONLY — THIS SCAN CANNOT SEE A NESTED ROUTE, AND THAT IS LEFT AS IT IS.**
+   * `/admin/programme/overview` has a `page.tsx` and is invisible here, because the reader stops
+   * at the first level. Widening it to a recursive walk was considered and rejected: this guard
+   * exists to catch a whole new SECTION shipped with no menu home, and a nested page is a child of
+   * a section that already has one — the registry's other direction ("every non-reserved href has
+   * a page behind it", below) does cover the nested route, by path. Named rather than fixed so the
+   * blind spot is a known one rather than a surprise.
+   */
   function routeDirs(): string[] {
     return fs.readdirSync(ADMIN_DIR, { withFileTypes: true })
       .filter((d) => d.isDirectory() && !d.name.startsWith('['))
@@ -413,10 +429,14 @@ describe('visibleNav groups', () => {
   // Organisation, together, because money is raised, released and spent PER GIFT. They sit
   // AFTER configuration for the same frequency reason the note above gives — you open the
   // applicants daily, set the gift up once, and reach for the money on a schedule.
-  it('the programme scope is four rows, the one you use daily first', () => {
+  // ⚠ FIVE ROWS SINCE 2026-09-15: the Overview LEADS, because it is where the gift card lands you
+  // and the question it answers ("how is this gift doing?") comes before picking a person out of
+  // a list. Applications keeps its place directly under it — the frequency argument above is
+  // untouched, it simply now has a page above it rather than nothing.
+  it('the programme scope is five rows, the overview first', () => {
     const prog = visibleNav(ctx('org_admin')).find((g) => g.scope === 'programme')!
     expect(prog.items.map((i) => i.id))
-      .toEqual(['applications', 'programmeConfig', 'payments', 'spending'])
+      .toEqual(['programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending'])
     expect(prog.items.every((i) => !i.placeholder)).toBe(true)
   })
 
@@ -435,7 +455,8 @@ describe('visibleNav groups', () => {
 
     it('hides Configuration, and only Configuration, while no gift is chosen', () => {
       const prog = visibleNav(noGift('org_admin')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id)).toEqual(['applications', 'payments', 'spending'])
+      expect(prog.items.map((i) => i.id))
+        .toEqual(['programmeOverview', 'applications', 'payments', 'spending'])
     })
 
     it('⚠ PAYMENTS AND SPENDING STAY VISIBLE WITH NO GIFT CHOSEN, like Applications', () => {
@@ -444,13 +465,13 @@ describe('visibleNav groups', () => {
       // READ, and their pages ask which gift the way Applications does — a money row that
       // vanished from the sidebar would read as a lost permission, not as a pending question.
       const prog = visibleNav(noGift('finance')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id)).toEqual(['payments'])
+      expect(prog.items.map((i) => i.id)).toEqual(['programmeOverview', 'payments'])
     })
 
     it('shows every row once a gift is chosen', () => {
       const prog = visibleNav(gift('org_admin')).find((g) => g.scope === 'programme')!
       expect(prog.items.map((i) => i.id))
-        .toEqual(['applications', 'programmeConfig', 'payments', 'spending'])
+        .toEqual(['programmeOverview', 'applications', 'programmeConfig', 'payments', 'spending'])
     })
 
     // ⚠ THE REVIEWER STRAND, PINNED. Programme is a reviewer's ONLY sidebar group (asserted
@@ -459,7 +480,7 @@ describe('visibleNav groups', () => {
       const scopes = visibleNav(noGift('reviewer')).map((g) => g.scope)
       expect(scopes).toContain('programme')
       const prog = visibleNav(noGift('reviewer')).find((g) => g.scope === 'programme')!
-      expect(prog.items.map((i) => i.id)).toEqual(['applications'])
+      expect(prog.items.map((i) => i.id)).toEqual(['programmeOverview', 'applications'])
     })
 
     it('leaves every other scope untouched', () => {
@@ -554,9 +575,14 @@ describe('defaultRoute', () => {
   it('holds an incomplete reviewer on their profile', () => {
     expect(defaultRoute({ role: 'reviewer' }, false)).toBe('/admin/profile')
   })
-  it('sends a reviewer and the legacy viewer to the workspace', () => {
-    expect(defaultRoute({ role: 'reviewer' }, true)).toBe('/admin/scholarship')
-    expect(defaultRoute({ role: 'viewer' })).toBe('/admin/scholarship')
+  // ⚠⚠ **THE LANDING MOVED ON 2026-09-15, AND IT IS WANTED.** A reviewer (and the legacy viewer,
+  // which resolves to reviewer) now lands on the Programme Overview rather than the Applications
+  // list — because the Overview's reviewer shape IS their own queue: their open cases, what is due
+  // soon, what is overdue, and how long students have waited. Landing on a list of every applicant
+  // in the gift was one click further from their own work, not nearer it.
+  it('sends a reviewer and the legacy viewer to their own overview', () => {
+    expect(defaultRoute({ role: 'reviewer' }, true)).toBe('/admin/programme/overview')
+    expect(defaultRoute({ role: 'viewer' })).toBe('/admin/programme/overview')
   })
   /*
    * ⚠⚠ THE WHOLE TABLE, LITERAL ON PURPOSE — it replaces "everyone else goes to /admin".
@@ -576,7 +602,9 @@ describe('defaultRoute', () => {
     expect(defaultRoute({ role: 'org_admin' })).toBe('/admin/organisation')
     expect(defaultRoute({ role: 'admin' })).toBe('/admin/organisation')
     expect(defaultRoute({ role: 'finance' })).toBe('/admin/organisation')
-    expect(defaultRoute({ role: 'qc' })).toBe('/admin/scholarship')   // no organisation row at all
+    // ⚠ A QC has no organisation row at all, so its first reachable page is the Programme group's
+    // first row — which is now the Overview, and whose QC shape is exactly their own queue.
+    expect(defaultRoute({ role: 'qc' })).toBe('/admin/programme/overview')
   })
 
   it('never lands anyone on a page the registry says they may not open', () => {
@@ -595,7 +623,7 @@ describe('defaultRoute', () => {
     for (const r of ROLE_NAMES) expect(bad).not.toContain(defaultRoute({ role: r }))
   })
   it('never traps on an OLD payload that omits the completeness flag', () => {
-    expect(defaultRoute({ role: 'reviewer' })).toBe('/admin/scholarship')
+    expect(defaultRoute({ role: 'reviewer' })).toBe('/admin/programme/overview')
   })
 })
 
@@ -712,7 +740,8 @@ describe('programmeGroupFolded', () => {
   })
 
   it('once inside a gift the group is back, for every programme page', () => {
-    for (const path of ['/admin/scholarship', '/admin/programme', '/admin/payments', '/admin/spending']) {
+    for (const path of ['/admin/programme/overview', '/admin/scholarship', '/admin/programme',
+                        '/admin/payments', '/admin/spending']) {
       expect(groupsAt('super', path)).toContain('programme')
       expect(groupsAt('org_admin', path)).toContain('programme')
     }

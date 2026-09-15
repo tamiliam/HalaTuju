@@ -5854,6 +5854,114 @@
       "uploadDocHint": "Kami akan membaca klausa (dan struktur 1 / 1.1 / i)) daripada .docx; anda menyemak dan menyunting sebelum melancarkan.",
       "uploadNeedsFile": "Pilih fail .docx untuk dimuat naik, atau pilih pilihan lain."
     },
+    "programmeOverview": {
+      "title": "Gambaran keseluruhan",
+      "titleFor": "Gambaran keseluruhan {name}",
+      "subtitle": "Keadaan pemberian ini, dibaca daripada tarikh yang sudah direkodkan oleh sistem.",
+      "loading": "Memuatkan gambaran keseluruhan…",
+      "error": "Gambaran keseluruhan tidak dapat dimuatkan.",
+      "asAt": "Data perbelanjaan sehingga {date}",
+      "funnel": {
+        "title": "Permohonan",
+        "total": "Permohonan diterima"
+      },
+      "money": {
+        "title": "Wang",
+        "students": "{count} tajaan",
+        "committed": "Dijanjikan",
+        "paid": "Telah dibayar",
+        "remaining": "Baki",
+        "spent": "Dibelanjakan oleh pelajar"
+      },
+      "attention": {
+        "title": "Perlu perhatian",
+        "unassigned": "Menunggu penilai",
+        "withReviewer": "Bersama penilai",
+        "dueSoon": "Hampir tamat tempoh",
+        "overdue": "Lewat",
+        "awaitingQc": "Menunggu semakan"
+      },
+      "series": {
+        "applicationsPerWeek": "Permohonan diterima setiap minggu",
+        "awardsPerMonth": "Tajaan setiap bulan",
+        "moneyPerMonth": "Wang dilepaskan dan dibelanjakan, mengikut bulan",
+        "month": "Bulan",
+        "released": "Dilepaskan",
+        "spent": "Dibelanjakan",
+        "gap": "Masih dalam dompet",
+        "gapNote": "bar ialah setiap bulan; garisan ialah baki yang masih berada dalam dompet",
+        "perStudent": "Setiap pelajar, setiap minggu",
+        "average": "Purata perbelanjaan setiap pelajar, setiap minggu",
+        "purchases": "Pembelian setiap pelajar, setiap minggu",
+        "purchasesNote": "Satu pembelian ialah satu transaksi kad. Kami tidak pernah diberitahu apa yang dibeli.",
+        "byCategory": "Perbelanjaan mengikut kategori",
+        "ofStudents": "Daripada {count} pelajar yang mempunyai dompet aktif pada minggu itu."
+      },
+      "chart": {
+        "applicationsLabel": "Permohonan diterima setiap minggu",
+        "awardsLabel": "Tajaan diberikan setiap bulan",
+        "moneyLabel": "Wang dilepaskan dan dibelanjakan setiap bulan, dengan baki terkumpul yang masih dalam dompet",
+        "averageLabel": "Purata perbelanjaan setiap pelajar setiap minggu",
+        "purchasesLabel": "Pembelian setiap pelajar setiap minggu",
+        "categoryLabel": "Perbelanjaan mengikut kategori"
+      },
+      "category": {
+        "food": "Makanan & minuman",
+        "groceries": "Barangan runcit",
+        "transport": "Pengangkutan",
+        "study": "Buku & alat tulis",
+        "phone": "Telefon & internet",
+        "hostel": "Asrama & bil",
+        "health": "Kesihatan & farmasi",
+        "clothing": "Pakaian & kasut",
+        "transfer": "Dihantar kepada seseorang",
+        "unsorted": "Tidak dapat dikelaskan",
+        "none": "Belum dikelaskan"
+      },
+      "intake": {
+        "title": "Ambilan",
+        "open": "Dibuka",
+        "closed": "Ditutup",
+        "finished": "Pusingan tamat {date}",
+        "window": "Permohonan dibuka {from} hingga {to}",
+        "notStated": "tidak dinyatakan",
+        "none": "Belum ada tahun ambilan disediakan untuk pemberian ini."
+      },
+      "mine": {
+        "title": "Kes saya",
+        "paceTitle": "Kadar kerja saya",
+        "open": "Kes saya yang terbuka",
+        "dueSoon": "Hampir tamat tempoh",
+        "overdue": "Lewat",
+        "applicant": "Pemohon",
+        "status": "Status",
+        "assigned": "Ditugaskan",
+        "due": "Keputusan perlu diberi",
+        "dueBy": "perlu {date}",
+        "completed": "Keputusan disiapkan",
+        "waited": "Pelajar menunggu",
+        "turnaround": "Pelajar menunggu median {days} hari dari penugasan sehingga keputusan anda.",
+        "turnaroundUnknown": "Belum ada keputusan disiapkan, jadi tiada apa-apa untuk diukur.",
+        "none": "Anda tidak memegang sebarang kes dalam pemberian ini."
+      },
+      "band": {
+        "open": "Terbuka",
+        "due_soon": "Hampir tamat tempoh",
+        "overdue": "Lewat"
+      },
+      "qc": {
+        "title": "Menunggu semakan",
+        "paceTitle": "Kadar kerja saya",
+        "awaiting": "Menunggu semakan",
+        "oldest": "Tempoh menunggu terpanjang, dalam hari",
+        "since": "Dihantar",
+        "waiting": "Hari menunggu",
+        "waitingDays": "menunggu {days} hari",
+        "completed": "Semakan disiapkan",
+        "turnaround": "Pelajar menunggu median {days} hari dari keputusan penilai sehingga semakan anda.",
+        "none": "Tiada apa-apa menunggu semakan dalam pemberian ini."
+      }
+    },
     "programme": {
       "config": {
         "nav": "Konfigurasi",

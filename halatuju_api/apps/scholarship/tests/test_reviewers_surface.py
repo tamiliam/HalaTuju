@@ -311,6 +311,35 @@ class TestTheFigures(_Base):
         self.assertEqual(row['completed'], 3)
         self.assertEqual(len(self.client.get(f'{LIST}{self.reviewer.id}/').json()['reopens']), 2)
 
+    def test_workloads_narrow_to_a_gift_when_asked(self):
+        """⚠ THE GIFT NARROWS INSIDE THE ORGANISATION FILTER, NEVER INSTEAD OF IT (2026-09-15).
+
+        Added for the Programme Overview's `mine.pace`, which asks "how is this reviewer doing ON
+        THIS GIFT". The Reviewers table passes no gift and is unchanged — the default is every
+        gift the fence allows, exactly as before. The narrowing reaches THROUGH THE COHORT too,
+        because `ScholarshipApplication.programme` is set once at first save: a cohort later moved
+        between gifts would otherwise make the gift's own round read as empty.
+        """
+        from apps.scholarship.models import Programme
+        from apps.scholarship.views_admin import _reviewer_workloads
+
+        gift = Programme.objects.create(
+            organisation=self.org, code='rv-gift', name_en='Reviewer Gift')
+        gift_cohort = ScholarshipCohort.objects.create(
+            code='rv-gift-2026', name='RV Gift', year=2026,
+            owning_organisation=self.org, programme=gift)
+        self._app(reviewer=self.reviewer, status='recommended', decided_days_ago=3,
+                  cohort=gift_cohort, nric_seed='31')
+        self._app(reviewer=self.reviewer, status='recommended', decided_days_ago=3,
+                  nric_seed='32')   # the org's OTHER work, outside the gift
+
+        every_gift = _reviewer_workloads(
+            [self.reviewer], organisation_id=self.org.id)
+        just_this_gift = _reviewer_workloads(
+            [self.reviewer], organisation_id=self.org.id, programme=gift)
+        self.assertEqual(every_gift[self.reviewer.id]['completed'], 2)
+        self.assertEqual(just_this_gift[self.reviewer.id]['completed'], 1)
+
     def test_figures_are_org_fenced_for_a_non_super(self):
         # A super's own view of the same reviewer may legitimately be wider; an org_admin's must not
         # count another tenant's applications.

@@ -25,14 +25,16 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.courses import org_config
 from apps.courses.models import PartnerAdmin
-from apps.scholarship import emails, usage
+from apps.scholarship import emails, review_sla, usage
 from apps.scholarship.models import ScholarshipApplication
 from apps.scholarship.pool import pool_ref
 
 # Statuses where a verdict is no longer expected (terminal / already-decided).
-_TERMINAL = {'recommended', 'awarded', 'active', 'maintenance', 'closed', 'rejected', 'withdrawn', 'expired'}
+# ⚠ THE LIST ITSELF NOW LIVES IN `review_sla`, and this is a re-export, not a copy. The
+# Programme Overview bands the very cases this sweep emails about, so the two must read one
+# definition — a second literal here is how the screen and the inbox start disagreeing.
+_TERMINAL = review_sla.TERMINAL
 
 
 class Command(BaseCommand):
@@ -61,11 +63,7 @@ class Command(BaseCommand):
             org = app.owning_organisation
             org_id = app.owning_organisation_id
             if org_id not in org_days_cache:
-                org_days_cache[org_id] = (
-                    org_config.value(org, 'review_sla_days'),
-                    org_config.value(org, 'review_nudge_soon_days'),
-                    org_config.value(org, 'review_escalate_grace_days'),
-                )
+                org_days_cache[org_id] = review_sla.clocks(org)
             return org_days_cache[org_id]
 
         def escalation_recipients(app, reviewer_email):
@@ -92,11 +90,14 @@ class Command(BaseCommand):
             # A cron has no request context, so without this the meter records org-NULL and the
             # tenant is under-charged. usage_context never raises and is display-free.
             with usage.usage_context(application=app):
-                sla_days, soon_days, grace_days = review_days_for(app)
-                due = app.assigned_at + timedelta(days=sla_days)
+                org_clocks = review_days_for(app)
+                sla_days, soon_days, grace_days = org_clocks
+                # ⚠ ONE arithmetic, in `review_sla` — the cached per-org clocks ride along so
+                # this sweep still reads `org_config` once per organisation, not once per row.
+                due = review_sla.review_due(app.assigned_at, clocks=org_clocks)
                 ref = pool_ref(app.id)
                 applicant_name = getattr(app.profile, 'name', '') if app.profile else ''
-                due_by = (app.assigned_at + timedelta(days=sla_days)).date().strftime('%d %b %Y')
+                due_by = due.date().strftime('%d %b %Y')
                 reviewer = app.assigned_to
                 reviewer_email = getattr(reviewer, 'email', '') if reviewer else ''
                 reviewer_name = getattr(reviewer, 'name', '') if reviewer else ''

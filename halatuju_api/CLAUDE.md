@@ -550,7 +550,84 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-15, after tenant invoices and receipts)
+## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
+
+**BUILT — NOT YET DEPLOYED.** Gates (after merging `main`, which carried the tenant-invoices
+sprint): **6666 pytest** · **2281 jest** · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass ·
+`next build` exit 0 · `makemigrations --check` clean.
+
+**WHAT SHIPPED.** The Programme sidebar group had four rows and no answer to *"how is this gift
+doing?"*. It now opens with **Overview**:
+
+- **Endpoint** `GET /api/v1/admin/scholarship/programme-overview/` — `AdminProgrammeOverviewView`
+  in `views_admin.py`, over the new pure module `apps/scholarship/programme_overview.py`.
+  `get_admin` 401 → referral `partner` 403 → `_gift_narrowing` (unknown or cross-tenant gift 404) →
+  `ALL_ORGS` for a super, `owning_organisation` otherwise (`None` → 400 `no_org`). Registered in
+  `test_org_fence.py` as `programme-overview-org-fenced+role-shaped`.
+- **Page** `/admin/programme/overview` — the **first row of the Programme group** (labelled
+  *Overview*, shortcut `G` then `I`), where a gift card on Programmes now lands, and a member of
+  `WIDE_ROUTES` because it is multi-column. Charts are hand-drawn SVG on theme tokens
+  (`components/admin/charts/Charts.tsx` + the pure `lib/programmeOverview.ts`).
+- **`apps/scholarship/review_sla.py`** — the verdict clock, which had **three inline homes**, now
+  has one: `TERMINAL`, `AWAITING_VERDICT`, `clocks()`, `review_due()`, `review_band()`. The nudge
+  sweep, `services.py` and the interview-reminder command were all migrated in the same commit,
+  each guarded by a bite test that patches `review_sla.review_due` to raise.
+  `test_review_nudges.py` is unchanged and green — it was the regression net.
+- **NO MIGRATION, and no new field collected.** Every figure is read from data already recorded.
+  The money strip is byte-equal to the Payments footer and `spent` is byte-equal to the Spending
+  total, both pinned by tests that call the neighbouring endpoints on one fixture.
+
+**⚠⚠ ROLE SHAPING IS A SECOND GATE.** `SECTIONS_BY_ROLE` decides which keys are BUILT, server-side.
+A reviewer's payload has no `money` key to hide; a finance admin's has no `funnel`. A role absent
+from the map gets nothing, not a default. `test_the_key_set_per_role_is_exact` pins each set.
+super / org_admin / admin → everything · finance → money, money charts, intake · qc → the awaiting
+queue + own pace · reviewer → own cases with the verdict-due date + own pace. **Reviewer and QC get
+no money and no programme-wide totals** — the menu already withholds Payments and Spending from
+them and this must not become a side door.
+
+**⚠ TWO THINGS CHANGED FOR EXISTING ROLES, BOTH DELIBERATE, BOTH OWNER-RULED:**
+1. **`finance` is WIDENED** — it now sees aggregate spending (strip, released-vs-spent with the
+   running gap, average per student per week, purchases per student per week, by category) though
+   `/admin/spending` still refuses it and must continue to. Totals, never a person. Recorded in
+   `docs/decisions.md` and `docs/scholarship/role-matrix.md`. **Do not "harmonise" the two gates.**
+2. **`reviewer` and `qc` LAND HERE after sign-in** (`defaultRoute`), not on Applications.
+
+**⚠ NEW DEBT, RECORDED RATHER THAN SMUGGLED IN:**
+- **TD-249** — `send_review_nudges.py:100` builds `due_by` with `.date()` on a UTC instant, so
+  between Malaysian midnight and 08:00 the **emailed date is a day early** (TD-209, in the one
+  place a reviewer reads a deadline). Left byte-identical on purpose so `test_review_nudges.py`
+  could stay the unchanged net through the `review_sla` extraction. Fix = `timezone.localtime(due)`
+  plus a 23:30-UTC test that does not read the same clock as the code.
+- **TD-250** — `navigation.test.ts`'s `routeDirs()` reads **top-level** `src/app/admin/` dirs only,
+  so `programme/overview` is invisible to the route-drift guard. Noted in a comment beside the
+  helper; widening the scan reconciles every existing route at once and belongs in its own change.
+
+**▶ NEXT — owner actions first, then the owner picks:**
+1. **Run the gates and deploy.** One push to `main` after merging `origin/main` in; **wait on the
+   build IDs of that push**, read `status.latestReadyRevisionName`, verify
+   `/admin/programme/overview` 200 and the endpoint 401 unauthenticated, check logs for ERROR.
+   Two deploys maximum.
+2. **Live verification as a reviewer account** — lands on the Overview, sees only own cases, and
+   **no money node anywhere in the page source**. As the owner (super): 143 / 66 / 42 / 31 / 4 and
+   a money strip equal to the Payments footer on the same screen.
+3. **⚠ NOTHING CAN BE INVOICED YET, BY DESIGN** (tenant invoices, 2026-09-15). `InvoiceIssuer` is
+   EMPTY: the owner fills in the legal name, address, email and bank details on Billing & usage →
+   Invoices → Settings, plus BrightPath's bill-to address and inboxes. No legal entity exists;
+   never seed one.
+4. **Import September's supplier bills before 15 October** (`import_invoices`, `sync_gcp_costs` —
+   both manual, TD-247), or the first invoice run will refuse for `supplier_missing` and email why.
+5. **August can be issued by hand now** that its bills are all in (Invoices → To issue).
+6. **⚠ ROTATE `VIRCLE_AIRTABLE_SECRET`** — exposed in a session transcript 2026-09-11. Nothing has
+   ever come through that door; it needs Vircle to change one setting, so it waits for contact.
+7. **Five students paid RM600 each since July with NO spending** — applications 69, 104, 47, 63,
+   101. An operational question for Vircle, not a fault. (TD-245 is why we cannot tell "spent
+   nothing" from "wallet absent from the export".)
+8. Debt: **TD-249**, **TD-250** (this sprint), TD-247, TD-248 (tenant invoices), TD-242
+   (half-mitigated), TD-245, TD-246, TD-240, TD-239, TD-238.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-15, after tenant invoices and receipts)
 
 **✅ SHIPPED AND VERIFIED LIVE 2026-09-15.** `main` at **`b09b8217`**; builds api `198737fe` + web
 `8243f083` SUCCESS (waited on BY BUILD ID); serving **halatuju-api-01040-grq** /

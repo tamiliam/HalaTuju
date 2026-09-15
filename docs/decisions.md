@@ -11159,6 +11159,8 @@ category. `other` takes a ground token because it is not a category — it is th
 **Trade-offs:** no tooltips, no animation, no legend component.
 
 **Revisit if:** a second chart appears, at which point a shared primitive beats a third copy.
+**✅ CLOSED 2026-09-15** by "The second chart arrived, so the donut becomes a shared
+primitive" below — the Programme Overview is that second chart, and the primitive exists.
 
 ## Vircle's Status word is the activation signal, not their date column — 2026-09-12
 
@@ -11346,3 +11348,70 @@ number is honest, inventing a per-organisation share is not.
 
 **Revisit if:** egress becomes material (it was 0.197 GB on 15 September), or a second tenant makes the
 shared-service split a question somebody asks.
+
+## The second chart arrived, so the donut becomes a shared primitive — Programme Overview, 2026-09-15
+
+**Decision:** lift the S5 donut geometry out of `SpendingCard` into
+`src/components/admin/charts/Charts.tsx` (`BarChart`, `LineChart`, `Donut`) with its arithmetic in a
+pure, node-tested `src/lib/programmeOverview.ts`. Still hand-drawn SVG on theme tokens, still no
+charting library. This entry **closes the revisit clause** of "The donut is hand-drawn SVG on the
+category swatches — Spending S5, 2026-09-10", which named this exact trigger.
+
+**Alternatives considered:** (a) adopt a charting library now that there are six charts, not one —
+recharts, chart.js, visx; (b) copy the donut a third time into the Overview and leave the primitive
+for later.
+
+**Rationale:** the trigger the S5 decision named has fired — a second chart appeared — and the
+clause said what to do about it: build the primitive, not a third copy. (b) is the thing that
+clause exists to prevent. (a) is still refused, and for more reasons than in September: a new
+runtime dependency and its bundle; the theme problem, because the guards read SVG fills and a
+library that emits `#rrggbb` is a light-mode island in dark exactly as the giving donut was
+(Layer 1 F1); and — the concrete blocker — **the jest harness has no transform for ESM-only
+dependencies and no `ResizeObserver`**, which is what every responsive chart library measures with.
+Adopting one would mean a jest config change and a polyfill before a single chart rendered in a
+test. Six charts of our own, drawn into a fixed `viewBox`, need neither.
+
+**Trade-offs:** still no tooltips, no animation, no legend component, and the geometry is ours to
+get right — a wrong arc is our bug, not an upstream one. Each chart therefore prints its own
+figures as text beneath it, which is both the accessibility answer and the thing that makes a
+geometry error visible. Six charts is also a real quantity of hand-written SVG; if a seventh kind
+of chart is wanted, the primitive is where it goes.
+
+**Revisit if:** a chart is needed that genuinely cannot be drawn as a fixed-`viewBox` SVG — one
+that must be zoomed, panned, brushed or measured against its container — or if the jest harness
+gains an ESM transform and a `ResizeObserver` polyfill for some other reason, at which point the
+concrete blocker is gone and only the bundle and theme arguments remain.
+
+## Finance sees aggregate spending on the Overview though not the Spending page — Programme Overview, 2026-09-15
+
+**Decision:** the `finance` role receives the money strip (committed, paid, remaining, spent) and
+every money chart on `/admin/programme/overview` — released versus spent with the running gap,
+average spend per student per week, purchases per student per week, and spending by category.
+`/admin/spending` continues to refuse finance (`_SPENDING_ROLES` is unchanged). Owner ruling,
+2026-09-15.
+
+**Alternatives considered:** (a) keep finance off the money charts entirely, for consistency with
+the Spending page; (b) open `/admin/spending` to finance as well, so the two surfaces agree; (c)
+give finance the money strip only and withhold the charts.
+
+**Rationale:** the two surfaces are refused and granted for the same reason, not opposite ones.
+`/admin/spending` is a page of **named students** — who bought what, whose balance is short, whose
+wallet is missing from the export. Checking a payment does not require knowing a family's shopping,
+so finance is not given it. The Overview is **totals**: no name, no file, no document, no verdict
+appears in any section finance is handed, because the server never builds those sections for that
+role (`SECTIONS_BY_ROLE`). Money in aggregate is precisely what a finance admin is for, and until
+now the only figure they could reach was the Payments funding summary — award, paid, remaining —
+which says nothing about whether the money released is actually being spent. (c) fails because the
+gap between released and spent is the one question the strip cannot answer on its own.
+
+**Trade-offs, stated rather than hidden:** the role matrix now has a cell that reads the opposite
+way to the one beside it, and that is a thing a reader must not have to deduce — it is written out
+in `docs/scholarship/role-matrix.md`, in the finance Manual chapter and in the finance FAQ. It also
+means **two gates now describe finance's relationship with spending**, and a future edit that
+"harmonises" them would silently either shut the Overview or open the Spending page. The protection
+is `test_the_key_set_per_role_is_exact`, which pins finance's key set exactly, plus the Spending
+page's own denial test.
+
+**Revisit if:** a section is ever proposed for finance that carries a person — a name, a case, a
+document, a verdict. That is the line, not the page; the moment a section crosses it this decision
+does not cover it and the owner must rule again.

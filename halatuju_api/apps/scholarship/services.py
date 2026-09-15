@@ -803,15 +803,18 @@ def assign_reviewer(application, *, reviewer, by_admin, now=None):
     # assignment (not an unassign); the no-op short-circuit above means an unchanged
     # assignee never reaches here, so we never re-send. Best-effort.
     if reviewer is not None and getattr(reviewer, 'email', ''):
-        from apps.courses import org_config
+        from . import review_sla
         from .emails import send_reviewer_assigned_email
         from .pool import pool_ref
         # Per-organisation SLA (Org Config Sprint C). This read used to carry its own dead
         # default of 7 against the sweep's 10 — base.py always defined the setting so it never
         # fired, but the review-by date in this email and the nudge sweep's due date now come
         # from the ONE delegation and cannot drift.
-        review_days = org_config.value(application.owning_organisation, 'review_sla_days')
-        review_by = ((application.assigned_at or now) + timedelta(days=review_days)).date()
+        # ⚠ AND SINCE 2026-09-15 THE ARITHMETIC IS SHARED TOO, not just the number: `review_sla`
+        # is the one home for `assigned_at + sla`, so the date a reviewer is promised here is
+        # computed by the same line the nudge sweep and the Overview's bands use.
+        review_by = review_sla.review_due(
+            application.assigned_at or now, application.owning_organisation).date()
         with _usage.usage_context(application=application):
             send_reviewer_assigned_email(
                 to_email=reviewer.email,

@@ -147,13 +147,15 @@ describe('the lifecycle badge', () => {
  * never found it — they reached a gift through Applications and the breadcrumb instead.
  */
 describe('the card is the door', () => {
-  it('takes you to the APPLICATIONS for that gift, not to its settings', async () => {
+  it('takes you to the OVERVIEW for that gift, not to its settings', async () => {
     // ⚠ Owner, 2026-09-08: *"it should link to Applications. To reach settings, there are the three
-    // dots."* Configuration is something you set up once; the applicants are what you come back to.
+    // dots."* — the common page, never the settings page. On 2026-09-15 the common page became the
+    // Overview: it leads the Programme group and answers "how is this gift doing?" before anybody
+    // picks a person out of a list. Applications is one click on from a row that leads the menu.
     await show(programme())
     fireEvent.click(screen.getByTestId('open-test3'))
     expect(mockSelect).toHaveBeenCalledWith('test3')
-    expect(mockPush).toHaveBeenCalledWith('/admin/scholarship')
+    expect(mockPush).toHaveBeenCalledWith('/admin/programme/overview')
   })
 
   it('KEEPS Settings in the menu, and that is the route to Configuration', async () => {

@@ -142,11 +142,16 @@ export const roleOrgAdmin: ManualChapter = {
         holds the choices that belong to the whole organisation, starting with your <strong>colours</strong>: one
         colour, applying to every gift you run.
         <br /><br />
-        Your programme&rsquo;s own group — <strong>Applications</strong>, <strong>Configuration</strong>
-        (everything you set about one gift — its rules, what it asks applicants for, and its intake year),
-        <strong> Payments</strong> and <strong>Spending</strong> — <strong>appears only once you are inside a
-        gift</strong>. Open <strong>Programmes</strong> and choose a gift, and the group unfolds beneath your
-        organisation&rsquo;s; step back to an organisation page and it folds away again. Platform-only tools —
+        Your programme&rsquo;s own group — <strong>Overview</strong>, <strong>Applications</strong>,
+        <strong> Configuration</strong> (everything you set about one gift — its rules, what it asks applicants
+        for, and its intake year), <strong>Payments</strong> and <strong>Spending</strong> —
+        <strong> appears only once you are inside a gift</strong>. Open <strong>Programmes</strong> and choose a
+        gift, and the group unfolds beneath your organisation&rsquo;s; step back to an organisation page and it
+        folds away again. <strong>Overview is where a gift opens</strong>: click a gift&rsquo;s card and you land
+        there — how many applications came in and where they have got to, what has been committed, paid and
+        spent, what is waiting for somebody, six charts over time, and whether this year&rsquo;s intake is open.
+        It is a page to read, not one to act on; everyone on your team can open it, and each of them sees the
+        part that belongs to their job. Platform-only tools —
         adding organisations or referral partners — never appear for you; those stay with the HalaTuju
         platform team.</>
       ),

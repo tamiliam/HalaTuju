@@ -56,6 +56,14 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   reviewer: [
     {
+      q: <>I land on an <strong>Overview</strong> now instead of the list. What is it?</>,
+      a: <>It is your own work, gathered on one page: the cases currently with you, <strong>the date each
+        verdict is due</strong>, and how many are due soon or already overdue. It is the first entry under your
+        gift in the menu, and you can go straight to <strong>Applications</strong> from there as before &mdash;
+        nothing was taken away. The due dates are the same ones the reminder emails quote. You will not find
+        money or the programme&rsquo;s overall figures on it; those belong to the people who run the gift.</>,
+    },
+    {
       q: <>Why do I only see some applicants?</>,
       a: <>You see <strong>only the applicants assigned to you</strong>, so you can focus on your own. That&rsquo;s
         normal.</>,
@@ -165,6 +173,14 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   qc: [
     {
+      q: <>What is the <strong>Overview</strong> I land on when I sign in?</>,
+      a: <>Your queue. It shows the cases waiting for QC, <strong>how long the oldest has been waiting</strong>,
+        and the list with the longest wait first &mdash; plus how many you have checked and how long a case
+        typically sits before QC picks it up. That last figure is the case&rsquo;s wait, not a score on you.
+        There is no money on the page and no programme-wide total: what you see is the work in front of you,
+        and whether this year&rsquo;s intake is still open.</>,
+    },
+    {
       q: <>Can I review cases now, not just QC them?</>,
       a: <>Yes. QC is a <strong>review-all</strong> role — you can act on any case in your organisation and step in
         as an overflow reviewer. Assignment still routes most cases to reviewers; this is for clearing the
@@ -184,6 +200,17 @@ export const FAQ: Record<Audience, QA[]> = {
     },
   ],
   org_admin: [
+    {
+      q: <>Why does my <strong>Overview</strong> look different from my colleague&rsquo;s?</>,
+      a: <>Because the page is shaped by what each person&rsquo;s role is for, and that is decided before the
+        page is even sent &mdash; nothing is merely hidden. <strong>You, and a general admin, see all of
+        it</strong>: the application funnel, the money, what needs attention, the charts and the intake. A
+        <strong> finance admin</strong> sees the money figures and the money charts, in totals only &mdash;
+        never a name, a document or a verdict. A <strong>QC</strong> sees the cases waiting to be checked. A
+        <strong> reviewer</strong> sees their own cases and when each verdict is due, and no money at all.
+        Everyone sees whether the intake is open. So if a colleague says their Overview has no money on it,
+        that is correct, not a fault.</>,
+    },
     {
       q: <>A sponsor was approved. Do they get told?</>,
       a: <>They do now, if you switch that email on. Open <strong>Sponsors → Emails</strong>: there
@@ -263,6 +290,16 @@ export const FAQ: Record<Audience, QA[]> = {
   ],
   admin: [
     {
+      q: <>Where can I see how a gift is doing overall?</>,
+      a: <>Open <strong>Programmes</strong> and click the gift &mdash; you now land on its
+        <strong> Overview</strong>, the first entry in that gift&rsquo;s group in the menu. It counts every
+        application by the stage it has reached, shows what has been committed, paid, is still outstanding and
+        has been spent, lists what is waiting for somebody, draws six charts over time, and says whether this
+        year&rsquo;s intake is open. It is a read like the rest of your remit &mdash; there is nothing on it
+        that changes anything. Your colleagues see the part of it that belongs to their own job, so their page
+        will not look like yours.</>,
+    },
+    {
       q: <>Why can&rsquo;t I click anything on a case?</>,
       a: <>On cases and staff your role is <strong>read-only</strong>: you see everything in your organisation
         (applications, the Sponsors list, the Invitations page) but the buttons that change those
@@ -291,6 +328,19 @@ export const FAQ: Record<Audience, QA[]> = {
     },
   ],
   finance: [
+    {
+      q: <>What is on the <strong>Overview</strong>, and why can I see spending there?</>,
+      a: <>It shows the gift&rsquo;s money as figures &mdash; committed, paid, outstanding, spent &mdash; and
+        four charts: released against spent month by month with the <strong>running gap</strong>, the average
+        spent per student per week, how many <strong>purchases</strong> a student makes in a week (one card
+        transaction is one purchase; we are never told what was in the basket, so it does not pretend to count
+        items), and where the money goes by category, with <strong>&ldquo;not yet sorted&rdquo; kept as its own
+        slice</strong>. You can see all of that because it is <strong>totals</strong>, and the money is your
+        job. It is deliberately not the same as the <strong>Spending</strong> page, which you are still not
+        given: that one names individual students, and checking a payment does not require knowing who bought
+        what. <strong>Payments</strong> remains the ledger &mdash; the runs, the CSV, the signatures and the
+        funding summary.</>,
+    },
     {
       q: <>What can I do as a finance admin?</>,
       a: <>You <strong>check</strong> payment runs. Somebody prepares the month&rsquo;s list and signs it, you

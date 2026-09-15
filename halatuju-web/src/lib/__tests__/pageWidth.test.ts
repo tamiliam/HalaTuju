@@ -46,6 +46,10 @@ describe('the rule: leads with a table? wide. otherwise reading.', () => {
     expect(pageWidthFor('/admin/spending')).toBe('wide')
     expect(pageWidthFor('/admin/sources')).toBe('wide')
     expect(pageWidthFor('/admin/organisation/reviewers')).toBe('wide')
+    // ⚠ The rule's central case, laid out ACROSS the page: a row of tiles, two charts side by
+    // side, a full-width money chart, and three cards under it — one of which is a donut beside an
+    // eleven-line legend, which at the reading width would sit on top of itself.
+    expect(pageWidthFor('/admin/programme/overview')).toBe('wide')
   })
 
   test('a detail page that runs DOWN the page reads — the longer match wins', () => {

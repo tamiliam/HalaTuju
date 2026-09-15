@@ -20,6 +20,22 @@ export const roleQc: ManualChapter = {
       alt: 'The awaiting-QC queue (placeholder — screenshot pass pending)',
     },
     {
+      anchor: 'qc-overview',
+      title: 'Where you land: the queue',
+      body: (
+        <>Signing in brings you to <strong>Overview</strong>, the first entry under your gift in the menu. It
+        opens on <strong>the cases waiting for QC</strong> — how many there are, <strong>how long the oldest
+        one has been waiting</strong>, and the list itself with the longest wait at the top, so the case most
+        at risk of being forgotten is the one you see first. Beside it is a short note on your own pace: how
+        many you have checked, and how long a case sat with QC before you got to it. It is a measure of the
+        wait, not a score on you.
+        <br /><br />
+        The page shows <strong>your work and nothing wider</strong> — no money, and none of the
+        programme&rsquo;s overall figures, which belong to the people who run the gift. The one extra thing it
+        tells you is whether <strong>this year&rsquo;s intake is open</strong>, and until when.</>
+      ),
+    },
+    {
       anchor: 'qc-accept-reopen',
       title: 'Accept or Reopen',
       body: (

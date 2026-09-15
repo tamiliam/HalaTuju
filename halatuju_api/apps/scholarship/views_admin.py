@@ -2505,7 +2505,7 @@ def _median_days(values):
     return round((ordered[mid - 1] + ordered[mid]) / 2, 1)
 
 
-def _reviewer_workloads(admins, *, organisation_id=None):
+def _reviewer_workloads(admins, *, organisation_id=None, programme=None):
     """`{admin_id: {...figures}}` for every reviewer, in ONE query, grouped in Python.
 
     ⚠ NOT `annotate()`. Two counts over two multi-valued relations multiply each other, and
@@ -2526,6 +2526,13 @@ def _reviewer_workloads(admins, *, organisation_id=None):
     Before `awaiting_qc` existed the bar quietly fell short of the figure printed above it. If a new
     status ever escapes all four, `test_the_bands_account_for_every_decided_case` fails rather than
     the screen silently under-reporting.
+
+    ⚠ **`programme` NARROWS ALONGSIDE THE ORGANISATION FILTER, NEVER INSTEAD OF IT** (2026-09-15,
+    for the Programme Overview's `mine.pace`). The organisation stays the SECURITY fence and the
+    gift is a restriction inside it; the Reviewers surface passes no gift and is byte-unchanged.
+    The pair below is the Applications list's own (`views_admin.py:380`) so a reviewer's pace on
+    a gift counts exactly the cases that gift's list shows — `ScholarshipApplication.programme` is
+    set once at first save, so a cohort later moved between gifts would otherwise read as empty.
     """
     ids = [a.id for a in admins]
     if not ids:
@@ -2534,6 +2541,8 @@ def _reviewer_workloads(admins, *, organisation_id=None):
     if organisation_id is not None:
         # org-fence: the caller is a non-super, so only their own tenant's applications count.
         rows = rows.filter(owning_organisation_id=organisation_id)
+    if programme is not None:
+        rows = rows.filter(Q(programme=programme) | Q(cohort__programme=programme))
     by_email = {a.id: (a.email or '').strip().lower() for a in admins}
     out = {i: {'open_now': 0, 'completed': 0, 'recommended': 0, 'declined': 0,
                'rejected_after_review': 0, 'awaiting_qc': 0, 'unaccounted': 0, '_days': []}
@@ -8327,3 +8336,58 @@ class AdminSpendingCategoryView(_SpendingBase):
                     merchant, category, changed, admin.email or '')
         return Response({'merchant': merchant.strip().upper(), 'category': category,
                          'decided_by': 'owner', 'rows_changed': changed})
+
+
+class AdminProgrammeOverviewView(_AdminBase):
+    """GET /api/v1/admin/scholarship/programme-overview/ — "how is this gift doing?"
+
+    The page a person lands on after clicking a gift card. **Open to every console role and
+    SHAPED by role**: a reviewer lands on their own cases, a QC on their queue, a finance admin
+    on the money, an org admin on all of it. Everything is computed by `programme_overview`,
+    which holds the organisation fence.
+
+    ⚠⚠ **THERE ARE TWO GATES HERE, AND THE SECOND IS NOT COSMETIC.** The first is the ORG FENCE
+    (`programme_overview.application_scope`, re-asserted per query inside that module). The second
+    is ROLE SHAPING: `SECTIONS_BY_ROLE` decides SERVER-SIDE which keys are built at all, so a
+    reviewer's response has no money key to hide and a finance admin's has no funnel. The menu
+    already withholds Payments and Spending from reviewer/qc; an Overview that served their
+    figures anyway would have made that withholding decorative.
+
+    ⚠ **FINANCE IS ADMITTED HERE THOUGH `_SPENDING_ROLES` EXCLUDES IT FROM THE SPENDING PAGE.**
+    Deliberate widening, owner 2026-09-15, recorded in `docs/decisions.md` and the role matrix:
+    finance gets TOTALS — committed, paid, remaining, spent, by month, by category — and never a
+    name, a file or a verdict, because none of those is in a section it is given.
+
+    ⚠ **A ROLE WITH NO SECTIONS IS REFUSED, NOT SERVED AN EMPTY PAGE.** `partner` is the one such
+    role today (a referral organisation is attribution, never a scope). A future role added to
+    `ROLE_CHOICES` without a decision in `SECTIONS_BY_ROLE` lands here too — a 403 is a question
+    somebody answers, an empty page is a bug nobody notices.
+
+    ⚠ A SUPER GETS `spend_report.ALL_ORGS`, the same platform scope the Spending and
+    funding-summary screens hand them (2026-09-11/12) — `admin.is_super` must mean the same thing
+    on every Programme page, or the console teaches people that some pages "just do not work for
+    you". An `org_admin` with no organisation is still `no_org`: that is a broken account, not a
+    scope.
+
+    tenancy: org-fenced in `programme_overview.application_scope`; role-shaped by
+    `SECTIONS_BY_ROLE`. Classified in test_org_fence.py.
+    """
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        from . import programme_overview, spend_report
+        if not programme_overview.sections_for(admin):
+            return self._deny_role()
+        programme, gift_err = self._gift_narrowing(request, admin)
+        if gift_err:
+            return gift_err
+        if admin.is_super:
+            org = spend_report.ALL_ORGS
+        else:
+            org = admin.owning_organisation
+            if org is None:
+                return Response({'error': 'no_org', 'code': 'no_org'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        return Response(programme_overview.build(admin, org, programme))

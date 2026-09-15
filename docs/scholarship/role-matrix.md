@@ -17,13 +17,13 @@ what is worth showing, never what is permitted; the fence stays `_AdminBase._org
 `navigation.ts`, then the page guard, in one commit.** `navigation.test.ts` holds a per-role
 visibility snapshot, so a drift shows up as a failing test rather than a quietly wrong menu.
 
-| Role | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
-|---|---|---|---|---|---|
-| **Org Admin** (`org_admin`) | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel + countersignature** | edit | view |
-| **Admin — General** (`admin`) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
-| **Admin — Finance** (`finance`) | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
-| **QC** (`qc`) | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
-| **Reviewer** (`reviewer`) | View assigned · review assigned | ✗ *(vetting REMOVED — was reviewer-gated pre-2026-07-15)* | ✗ | edit | view |
+| Role | Programme Overview | B40 Applications | Sponsors | Administration | Profile | Guide/FAQ |
+|---|---|---|---|---|---|---|
+| **Org Admin** (`org_admin`) | **Everything** — funnel (all 13 statuses), money strip, needs-attention list, intake line, **all six charts** | View all · review all · QC all *(no conflict)* · **assign reviewers** | View all · **approve/reject/suspend** · **accept into / take back a GIFT** · **countersign + void a wallet credit** *(never records one)* · **edit + switch the sponsor emails** | View all · invite all programme roles *(never another org_admin)* · resend/revoke *(never the last org_admin)* · **set which GIFT a reviewer covers** · **set which GIFT lists a source** · **Payments: create/edit/cancel + countersignature** | edit | view |
+| **Admin — General** (`admin`) | **Everything** — as org_admin (a read; the page has no controls) | View all *(read-only)* | View all · **record + sign a wallet credit** *(maker; never countersigns)* · void an unconfirmed one · **edit + switch the sponsor emails** | **View-only** org STAFF section (no invites/actions) · **Payments: create/edit/cancel + maker signature** | edit | view |
+| **Admin — Finance** (`finance`) | **The money, in AGGREGATE** — money strip, released-vs-spent with the running gap, average spend per student per week, purchases per student per week, spending by category, intake line. **NO funnel, no case list, no name, no file, no verdict.** ⚠ **A deliberate WIDENING** — see below | **Payments funding summary ONLY** — award / paid / remaining / eWallet, inside the Payments module. **NO applicant files, documents, income or verdicts** (`_b40_scope='none'`) | View all *(list + detail; no review/approve powers)* · **finance-check signature on a wallet credit** · ✗ sponsor emails | **View-only** org section + **Payments (read + finance-check signature)**. Billing & usage remains future | edit | view |
+| **QC** (`qc`) | **Own work only** — the cases awaiting QC (oldest wait first) + own pace + intake line. **No money, no programme-wide funnel** | View all · **review all** · QC unreviewed *(no conflict)* | ✗ *(nav + endpoints)* | ✗ | edit | view |
+| **Reviewer** (`reviewer`) | **Own work only** — own open cases with the verdict-due date per case (open / due soon / overdue) + own pace + intake line. **No money, no programme-wide funnel** | View assigned · review assigned | ✗ *(vetting REMOVED — was reviewer-gated pre-2026-07-15)* | ✗ | edit | view |
 
 ## Cross-cutting rules
 
@@ -49,6 +49,57 @@ visibility snapshot, so a drift shows up as a failing test rather than a quietly
 - **Money:** award-amount setting and bursary countersigning still wait on payout rails
   (payer ≠ decider). The `finance` role holds the payment-run CHECK, not the decision — it can
   refuse a run by not signing, but it can never create, edit, cancel or price one.
+
+## Programme Overview (`/admin/programme/overview`) — access
+
+The answer to *"how is this gift doing?"*, given once and shaped by role. It is the **first row of
+the Programme group** in the menu (labelled **Overview**, shortcut `G` then `I`), it is where a
+**gift card on Programmes now lands**, and it is the **default landing page for `reviewer` and
+`qc` after sign-in** (they used to land on Applications). Endpoint
+`GET /api/v1/admin/scholarship/programme-overview/`; module
+`apps/scholarship/programme_overview.py`. **No migration** — every figure is read from data the
+system already records.
+
+**Access: every console role** (super + `org_admin` + `admin` + `finance` + `qc` + `reviewer`).
+Referral `partner` is refused (403), anonymous 401, another tenant's gift 404.
+
+**⚠ Openness is not sameness. The SERVER decides which sections a role receives**
+(`programme_overview.SECTIONS_BY_ROLE`), before anything is serialised — a reviewer's payload has
+no `money` key to hide, a finance admin's has no `funnel`. A page that fetched everything and
+rendered a subset would be a side door into Applications / Payments / Spending for the roles the
+menu already withholds those pages from. A role missing from that map receives nothing at all.
+
+| Role | Sections received |
+|---|---|
+| `super` / `org_admin` / `admin` | `funnel`, `money`, `attention`, `applications_series`, `money_series`, `intake` |
+| `finance` | `money`, `money_series`, `intake` |
+| `qc` | `qc`, `intake` |
+| `reviewer` | `mine`, `intake` |
+
+`intake` — *is this round open, and until when?* — is on **every** row on purpose: it is the one
+fact every console role needs and none of them could previously see without a page they may not
+open. It is a date, so it discloses nothing about a person or a sum.
+
+**⚠ FINANCE IS DELIBERATELY WIDENED HERE, AND THIS POINTS THE OPPOSITE WAY TO THE SPENDING PAGE.**
+`/admin/spending` refuses `finance` (`_SPENDING_ROLES`) and continues to. On the Overview, finance
+sees the money strip (committed / paid / remaining / spent) and every money chart — released
+versus spent with the running gap, average spend per student per week, purchases per student per
+week, and spending by category. Owner ruling, 2026-09-15, recorded in `docs/decisions.md`
+("Finance sees aggregate spending on the Overview though not the Spending page"). What finance
+gains is **totals**; what it never gains is a name, a file, a document or a verdict, because none
+of those is in a section it is given. The Spending page is refused precisely because it is a page
+of named students.
+
+**⚠ `reviewer` and `qc` get NO money and NO programme-wide totals.** A reviewer sees only their own
+open cases — the verdict-due date per case, banded open / due soon / overdue — and their own pace
+(verdicts completed, and how long a student waited, phrased as the student's wait, never as a
+score on the volunteer: the `reviewerDetail` ruling of 2026-08-02 applies unchanged). A QC sees
+the cases awaiting QC and their own pace. Neither sees a funnel or a ringgit.
+
+**Org-fenced on one queryset** (`programme_overview.application_scope`, classified
+`programme-overview-org-fenced+role-shaped` in `test_org_fence.py`). Disbursements and spend rows
+are reached only through that scope, never from their own managers. The `?programme=` gift
+narrows **inside** the organisation fence and can never widen it.
 
 ## Payments module (Vircle payment runs) — access
 
@@ -120,6 +171,12 @@ signer must type their own name, matched against `PartnerAdmin.name`.
 
 ## Implementation state (2026-07-23)
 
+- **SHIPPED 2026-09-15 — the Programme Overview** (see its own section above): open to every
+  console role, shaped server-side by `programme_overview.SECTIONS_BY_ROLE`. Two things changed
+  for existing roles and both are deliberate: **`finance` gained aggregate spending** it is
+  refused on `/admin/spending`, and **`reviewer` / `qc` now land here after sign-in** instead of
+  Applications. No migration; no new field collected. Tests
+  `apps/scholarship/tests/test_programme_overview.py` + `tests/test_review_sla.py`.
 - **SHIPPED 2026-08-30 (Layer 0 Sprint 5)** — a NEW `org_admin` power: **configure what the
   programme asks for** (`/admin/programme`, "What we ask for"). `org_admin` + super only; `admin`,
   `qc`, `finance`, `reviewer`, `partner` are refused, and `admin`/`qc` lost the empty "Overview"

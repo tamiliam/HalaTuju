@@ -216,11 +216,20 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
    * is something you set up once; the applicants are what you come back to. The ⋮ menu keeps the
    * named route to Configuration for the once-in-a-while visit.
    *
+   * ⚠⚠ **THE CARD NOW LANDS ON THE OVERVIEW, NOT ON APPLICATIONS (2026-09-15).** The ruling above
+   * has not been reversed — it was "the common page, not the settings page", and the Overview is
+   * now the first row of the group and the page that answers "how is this gift doing?" before you
+   * pick a person out of a list. Applications is one click further in, from a row that leads the
+   * menu. The ⋮ "open settings" is untouched and still goes to `/admin/programme`.
+   *
    * ⚠ EITHER DOOR ALSO REVEALS THE PROGRAMME MENU. `select` is what fills in the gift the
-   * Configuration row waits for (`needsProgramme`), so entering through Applications still makes
-   * both Programme rows appear — the two changes compose rather than fight.
+   * Configuration row waits for (`needsProgramme`), so entering through the Overview still makes
+   * every Programme row appear — the two changes compose rather than fight.
    */
-  const enterGift = (p: AdminProgramme, where: '/admin/scholarship' | '/admin/programme') => {
+  const enterGift = (
+    p: AdminProgramme,
+    where: '/admin/scholarship' | '/admin/programme' | '/admin/programme/overview',
+  ) => {
     select(p.code)
     router.push(where)
   }
@@ -314,7 +323,7 @@ export default function GiftProgrammes({ token }: { token: string | null }) {
             data-testid={`programme-${p.code}`}>
             {/* The door. `absolute inset-0` so the whole card is the hit area; `z-0` so the badge
                 and the menu above it stay clickable in their own right. */}
-            <button type="button" onClick={() => enterGift(p, '/admin/scholarship')}
+            <button type="button" onClick={() => enterGift(p, '/admin/programme/overview')}
               data-testid={`open-${p.code}`}
               className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-shape">
               <span className="sr-only">{t('admin.programmes.open', { name: p.name_en })}</span>

@@ -297,6 +297,31 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // the Configuration screen the tabs follow the DATA (Intake year → Rules → What we ask for),
       // because the rules are columns on the year. That is a different question from which page a
       // person opens most.
+      // ⚠⚠ **OVERVIEW LEADS THE GROUP, AND IT IS THE ONE ROW EVERY CONSOLE ROLE HAS.** It is where
+      // the gift card now lands you, and it is shaped by role SERVER-SIDE
+      // (`programme_overview.SECTIONS_BY_ROLE`): an org_admin gets the funnel, the money and what
+      // needs attention; a reviewer gets their own cases and nothing else; a QC gets their queue.
+      //
+      // ⚠ **`finance` IS ON THIS ROW THOUGH IT IS NOT ON APPLICATIONS — AND THAT IS NOT AN
+      // INCONSISTENCY.** Applications is a list of PEOPLE: `_b40_scope` is 'none' for finance, so
+      // that row can only ever 403, which is why the registry omits it. The Overview hands finance
+      // AGGREGATES ONLY — committed, paid, remaining, spent, per month, per category — and never a
+      // name, a file or a verdict, because none of those is in a section it is given. The widening
+      // is deliberate and recorded in `docs/decisions.md` and `role-matrix.md`; the server is what
+      // enforces it, and `test_the_key_set_per_role_is_exact` is what pins it.
+      //
+      // ⚠ **NO `needsProgramme`.** This row READS: with no gift chosen it describes everything the
+      // organisation fence allows, under a neutral heading — the Applications/Payments rule, not
+      // Configuration's. See `NavItem.needsProgramme` for why the test is CONSEQUENCE, not scope.
+      //
+      // ⚠ `programmeConfig` is `exact: true`, so `/admin/programme/overview` cannot be swallowed by
+      // `/admin/programme`; longest match then makes this child the active row.
+      // ⚠ 'I' for the Information about a gift — 'D' is the platform Dashboard, 'O' is
+      // Organisations, and 'G' can never be a chord because it is the prefix that arms one.
+      { id: 'programmeOverview', href: '/admin/programme/overview',
+        labelKey: 'admin.nav.programmeOverview', chord: 'I', scope: 'programme',
+        roles: ['super', 'org_admin', 'admin', 'finance', 'qc', 'reviewer'],
+        gate: { mode: 'always' } },
       { id: 'applications', href: '/admin/scholarship', labelKey: 'admin.scholarship.nav', chord: 'A',
         scope: 'programme', roles: ['super', 'org_admin', 'admin', 'qc', 'reviewer'],
         gate: { mode: 'always' } },

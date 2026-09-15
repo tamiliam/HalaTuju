@@ -115,10 +115,12 @@ class Command(BaseCommand):
                 if app.assigned_at and app.verdict_decided_at is None:
                     # Per-organisation SLA (Org Config Sprint C) — the SAME clock the nudge
                     # sweep and the assignment email compute, so the three can never disagree.
-                    from apps.courses import org_config
-                    _sla = org_config.value(app.owning_organisation, 'review_sla_days')
-                    verdict_due = (app.assigned_at
-                                   + timedelta(days=_sla)).date().strftime('%d %b %Y')
+                    # ⚠ THE ARITHMETIC IS SHARED, NOT JUST THE NUMBER (2026-09-15): all three
+                    # sites now call `review_sla.review_due`, so "the three can never disagree"
+                    # is enforced by there being one line rather than by three matching ones.
+                    from apps.scholarship import review_sla
+                    verdict_due = review_sla.review_due(
+                        app.assigned_at, app.owning_organisation).date().strftime('%d %b %Y')
 
                 # 1-day reminder: inside 24h of the start, once — but only if the booking gave ≥24h
                 # notice (a same-day booking skips this; the 1-hour reminder still covers it).
