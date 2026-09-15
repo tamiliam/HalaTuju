@@ -81,6 +81,19 @@ describe('BarChart', () => {
     expect(html.indexOf('stroke="#')).toBe(-1)
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })
+
+  it('names every column when given ticks, and drops the end labels', () => {
+    const { container } = render(
+      <BarChart testId="chart-months" label="Money released and spent per month"
+        series={[{ key: 'released', className: 'fill-brand-shape', values: [10, 20, 5] }]}
+        columns={['Jun', 'Jul', 'Aug']}
+        ticks={[{ index: 0, label: 'Jun' }, { index: 1, label: 'Jul' }, { index: 2, label: 'Aug' }]}
+        figures={[]} />)
+    const ticks = container.querySelector('[data-testid="chart-ticks"]') as Element
+    expect(ticks.querySelectorAll('text').length).toBe(3)
+    // One label per column, and only one: the end-label system is not also drawn.
+    expect(container.querySelectorAll('text').length).toBe(3)
+  })
 })
 
 describe('LineChart', () => {
@@ -118,6 +131,29 @@ describe('LineChart', () => {
     const html = markup(line)
     expect(html.indexOf('fill="#')).toBe(-1)
     expect(html.indexOf('stroke="#')).toBe(-1)
+    expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+  })
+
+  /* ⚠ TICKS REPLACE THE END LABELS, they do not join them — two systems of labels on one axis
+   * collide at the first column. And a y-axis names its unit and its two exact values (the top
+   * IS the largest value, the baseline IS the smallest), nothing rounded in between. */
+  it('draws named month ticks instead of end labels, and a y-axis when asked', () => {
+    const { container } = render(
+      <LineChart testId="chart-axes" label="Average spend per student per week"
+        values={[19.4, 31.2, 24]} columns={['04/05', '11/05', '01/06']}
+        ticks={[{ index: 0, label: 'May' }, { index: 2, label: 'Jun' }]}
+        yAxis={{ label: 'RM per student', format: (v) => `RM${Math.round(v)}` }}
+        box={{ width: 240, height: 120, top: 10, bottom: 18, side: 10, left: 46 }}
+        figures={[{ label: 'Whole period', value: 'RM230.22' }]} />)
+    const ticks = container.querySelector('[data-testid="chart-ticks"]') as Element
+    expect(ticks.querySelectorAll('text').length).toBe(2)
+    expect(ticks.textContent).toBe('MayJun')
+    expect(container.textContent).not.toContain('04/05')
+    const axis = container.querySelector('[data-testid="chart-y-axis"]') as Element
+    expect(axis.textContent).toContain('RM per student')
+    expect(axis.textContent).toContain('RM31')   // the top of the plot is the largest value
+    expect(axis.textContent).toContain('RM0')    // the baseline is zero for an all-positive line
+    const html = container.innerHTML
     expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
   })
 })

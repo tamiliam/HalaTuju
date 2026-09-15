@@ -39,7 +39,7 @@ import { formatDate } from '@/lib/formatDate'
 import { useT } from '@/lib/i18n'
 import { canAccess, effectiveRole } from '@/lib/navigation'
 import {
-  FULL_BOX, SMALL_BOX, bandTone, has, monthLabel, num, rm, weekLabel,
+  FULL_BOX, SMALL_AXIS_BOX, bandTone, has, monthOf, monthTicks, num, rm, thinTicks, weekLabel,
 } from '@/lib/programmeOverview'
 import { useProgrammeParam } from '@/lib/programmeScope'
 
@@ -127,12 +127,27 @@ export default function ProgrammeOverviewPage() {
   const signed = (v: string) =>
     (num(v) < 0 ? `-RM${rm(String(Math.abs(num(v)).toFixed(2)))}` : `RM${rm(v)}`)
 
+  /** ⚠ MONTHS ARE NAMED, NOT NUMBERED (owner, 2026-09-15): "Jul", not "07/2026". The short
+   *  names live in the locale files, so the axis reads the same way as the rest of the page. */
+  const monthName = (month: number) => t(`${K}.months.${month}`)
+  const monthTick = (iso: string) => monthName(monthOf(iso))
+
   const perWeek = moneySeries?.per_student_per_week ?? []
-  const averageFigures: ChartFigure[] =
-    perWeek.map((r) => ({ label: weekLabel(r.week), value: rmFig(r.average) }))
-  const purchaseFigures: ChartFigure[] =
-    perWeek.map((r) => ({ label: weekLabel(r.week), value: r.purchases_per_student }))
-  const latestWeek = perWeek.length > 0 ? perWeek[perWeek.length - 1] : null
+  const overall = moneySeries?.per_student_overall ?? null
+  /* ⚠ THE FIGURE BENEATH A WEEKLY CHART IS THE WHOLE-PERIOD ONE, not every week's value. Fifty
+     weekly figures in a row are not "the numbers a person would quote", they are noise; the
+     average over the whole period is the number, and the line is the movement. */
+  const averageFigures: ChartFigure[] = overall
+    ? [{ label: t(`${K}.series.overallAverage`), value: rmFig(overall.average) }] : []
+  const transactionFigures: ChartFigure[] = overall
+    ? [{ label: t(`${K}.series.overallTransactions`), value: overall.transactions_per_student }]
+    : []
+  const weekTicks = monthTicks(perWeek.map((r) => r.week), monthName)
+  const months = moneySeries?.money_per_month ?? []
+  /* ⚠ THE TOTALS ARE THE LAST MONTH'S RUNNING FIGURES, read straight from the server — never
+     summed here. `released_cum`, `spent_cum` and `gap` on the final row ARE payments to date,
+     spending to date and the balance, to the cent. */
+  const lastMonth = months.length > 0 ? months[months.length - 1] : null
 
   return (
     <div data-testid="programme-overview">
@@ -258,9 +273,11 @@ export default function ProgrammeOverviewPage() {
               label={t(`${K}.chart.awardsLabel`)}
               series={[{ key: 'count', className: 'fill-brand-shape',
                          values: appSeries.awards_per_month.map((r) => r.count) }]}
-              columns={appSeries.awards_per_month.map((r) => monthLabel(r.month))}
+              columns={appSeries.awards_per_month.map((r) => monthTick(r.month))}
+              ticks={thinTicks(appSeries.awards_per_month.map((r, i) => (
+                { index: i, label: monthTick(r.month) })))}
               figures={appSeries.awards_per_month.map((r) => ({
-                label: monthLabel(r.month), value: String(r.count) }))}
+                label: monthTick(r.month), value: String(r.count) }))}
             />
           </Card>
         </div>
@@ -282,49 +299,39 @@ export default function ProgrammeOverviewPage() {
               ]}
               line={{ className: 'stroke-ground-600',
                       values: moneySeries.money_per_month.map((r) => num(r.gap)) }}
-              columns={moneySeries.money_per_month.map((r) => monthLabel(r.month))}
+              columns={moneySeries.money_per_month.map((r) => monthTick(r.month))}
+              ticks={thinTicks(moneySeries.money_per_month.map((r, i) => (
+                { index: i, label: monthTick(r.month) })))}
               figures={moneySeries.money_per_month.map((r) => ({
-                label: monthLabel(r.month), value: signed(r.gap) }))}
+                label: monthTick(r.month), value: signed(r.gap) }))}
             />
 
-            {/* PHONE: the same rows as cards. A four-column money table dragged sideways is safe
-                but not good, and this is the list people check on a phone. */}
-            <div className="mt-4 space-y-2 md:hidden" data-testid="money-month-cards">
-              {moneySeries.money_per_month.map((r) => (
-                <div key={r.month} className="rounded-lg border border-ground-200 p-2.5 text-xs">
-                  <div className="font-semibold text-ground-900">{monthLabel(r.month)}</div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-ground-600">
-                    <span>{t(`${K}.series.released`)} <span className="tabular-nums">{rmFig(r.released)}</span></span>
-                    <span>{t(`${K}.series.spent`)} <span className="tabular-nums">{rmFig(r.spent)}</span></span>
-                    <span>{t(`${K}.series.gap`)} <span className="tabular-nums">{signed(r.gap)}</span></span>
-                  </div>
+            {/* ⚠ THREE FIGURES, NOT A TABLE (owner, 2026-09-15). Payments to date, spending to
+                date, and what is still in wallets — the last month's running figures, which the
+                server already carries. A month-by-month table was the same information said
+                four times per row; anybody who needs a month has the bars and the line. */}
+            {lastMonth && (
+              <dl className="mt-4 grid grid-cols-3 gap-3" data-testid="money-totals">
+                <div className="rounded-lg border border-ground-200 p-3">
+                  <dt className="text-[11px] font-medium text-ground-500">{t(`${K}.series.payments`)}</dt>
+                  <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
+                    {rmFig(lastMonth.released_cum)}
+                  </dd>
                 </div>
-              ))}
-            </div>
-
-            <TableFrame className="mt-4 hidden md:block" minWidth={520}
-              label={t(`${K}.series.moneyPerMonth`)}>
-              <table className="w-full text-sm">
-                <thead className="border-b border-ground-200 bg-ground-50">
-                  <tr>
-                    <th className={TH}>{t(`${K}.series.month`)}</th>
-                    <th className={TH_RIGHT}>{t(`${K}.series.released`)}</th>
-                    <th className={TH_RIGHT}>{t(`${K}.series.spent`)}</th>
-                    <th className={TH_RIGHT}>{t(`${K}.series.gap`)}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {moneySeries.money_per_month.map((r) => (
-                    <tr key={r.month} className="border-b border-ground-100 last:border-b-0">
-                      <td className="px-4 py-2 text-ground-700">{monthLabel(r.month)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-ground-800">{rmFig(r.released)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-ground-800">{rmFig(r.spent)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-ground-900">{signed(r.gap)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </TableFrame>
+                <div className="rounded-lg border border-ground-200 p-3">
+                  <dt className="text-[11px] font-medium text-ground-500">{t(`${K}.series.spending`)}</dt>
+                  <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
+                    {rmFig(lastMonth.spent_cum)}
+                  </dd>
+                </div>
+                <div className="rounded-lg border border-ground-200 p-3">
+                  <dt className="text-[11px] font-medium text-ground-500">{t(`${K}.series.balance`)}</dt>
+                  <dd className="mt-0.5 text-lg font-semibold tabular-nums text-ground-900">
+                    {signed(lastMonth.gap)}
+                  </dd>
+                </div>
+              </dl>
+            )}
           </Card>
 
           <div className="grid gap-3 lg:grid-cols-3">
@@ -333,32 +340,37 @@ export default function ProgrammeOverviewPage() {
                 wallet that week. */}
             <Card title={t(`${K}.series.average`)}>
               <LineChart
-                box={SMALL_BOX}
+                box={SMALL_AXIS_BOX}
                 testId="chart-average-per-student"
                 label={t(`${K}.chart.averageLabel`)}
                 values={perWeek.map((r) => num(r.average))}
                 columns={perWeek.map((r) => weekLabel(r.week))}
+                ticks={weekTicks}
+                yAxis={{ label: t(`${K}.chart.yRinggit`), format: (v) => `RM${Math.round(v)}` }}
                 figures={averageFigures}
               />
-              {latestWeek && (
+              {overall && (
                 <p className="mt-2 text-[11px] text-ground-400">
-                  {t(`${K}.series.ofStudents`, { count: String(latestWeek.students) })}
+                  {t(`${K}.series.ofStudentsOverall`, { count: String(overall.students) })}
                 </p>
               )}
             </Card>
 
-            {/* ⚠ PURCHASES, NOT ITEMS. A Vircle row is one card transaction and carries no item
-                count, so "items bought" is not a question this data can answer. */}
-            <Card title={t(`${K}.series.purchases`)}>
+            {/* ⚠ TRANSACTIONS, NOT ITEMS. A Vircle row is one card transaction and carries no
+                item count, so "items bought" is not a question this data can answer. */}
+            <Card title={t(`${K}.series.transactions`)}>
               <LineChart
-                box={SMALL_BOX}
-                testId="chart-purchases-per-student"
-                label={t(`${K}.chart.purchasesLabel`)}
-                values={perWeek.map((r) => num(r.purchases_per_student))}
+                box={SMALL_AXIS_BOX}
+                testId="chart-transactions-per-student"
+                label={t(`${K}.chart.transactionsLabel`)}
+                values={perWeek.map((r) => num(r.transactions_per_student))}
                 columns={perWeek.map((r) => weekLabel(r.week))}
-                figures={purchaseFigures}
+                ticks={weekTicks}
+                yAxis={{ label: t(`${K}.chart.yTransactions`),
+                         format: (v) => String(Math.round(v * 10) / 10) }}
+                figures={transactionFigures}
               />
-              <p className="mt-2 text-[11px] text-ground-400">{t(`${K}.series.purchasesNote`)}</p>
+              <p className="mt-2 text-[11px] text-ground-400">{t(`${K}.series.transactionsNote`)}</p>
             </Card>
 
             {/* ⚠ ELEVEN SLICES, ALWAYS. "Not yet sorted" and "could not be sorted" are DIFFERENT

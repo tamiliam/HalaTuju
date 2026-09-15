@@ -380,8 +380,11 @@ class FiguresTests(_Base):
             for key in ('released', 'spent', 'released_cum', 'spent_cum', 'gap'):
                 self.assertIsInstance(row[key], str)
         for row in body['money_series']['per_student_per_week']:
-            for key in ('spent', 'average', 'purchases_per_student'):
+            for key in ('spent', 'average', 'transactions_per_student'):
                 self.assertIsInstance(row[key], str)
+        overall = body['money_series']['per_student_overall']
+        for key in ('spent', 'average', 'transactions_per_student'):
+            self.assertIsInstance(overall[key], str)
         for slice_ in body['money_series']['by_category']:
             self.assertIsInstance(slice_['total'], str)
 
@@ -435,15 +438,86 @@ class FiguresTests(_Base):
         self.assertEqual(weeks['2026-08-10']['spent'], '120.00')
         self.assertEqual(weeks['2026-08-10']['average'], '60.00')
 
-    def test_purchases_are_transactions_not_items(self):
-        """⚠ A Vircle row is one card transaction and carries no item count. `purchases` is a ROW
-        COUNT; summing anything here would be inventing a quantity."""
+    def test_transactions_are_rows_not_items(self):
+        """⚠ A Vircle row is one card transaction and carries no item count. `transactions` is a
+        ROW COUNT; summing anything here would be inventing a quantity."""
         weeks = {w['week']: w for w in
                  self._body('ov-oa')['money_series']['per_student_per_week']}
-        self.assertEqual(weeks['2026-08-03']['purchases'], 2)
-        self.assertEqual(weeks['2026-08-03']['purchases_per_student'], '2.0')
-        self.assertEqual(weeks['2026-08-10']['purchases'], 2)
-        self.assertEqual(weeks['2026-08-10']['purchases_per_student'], '1.0')
+        self.assertEqual(weeks['2026-08-03']['transactions'], 2)
+        self.assertEqual(weeks['2026-08-03']['transactions_per_student'], '2.0')
+        self.assertEqual(weeks['2026-08-10']['transactions'], 2)
+        self.assertEqual(weeks['2026-08-10']['transactions_per_student'], '1.0')
+        self.assertNotIn('purchases', weeks['2026-08-03'])
+
+    def test_the_whole_period_figure_is_total_spend_over_students_with_a_wallet(self):
+        """The figure the page prints beneath the weekly lines: RM162.50 spent over the two
+        students whose wallets were live by `data_to` (20 Aug), four rows in all."""
+        overall = self._body('ov-oa')['money_series']['per_student_overall']
+        self.assertEqual(overall, {
+            'students': 2, 'spent': '162.50', 'average': '81.25',
+            'transactions': 4, 'transactions_per_student': '2.0'})
+
+    def test_the_whole_period_figure_is_null_when_nothing_was_spent(self):
+        body = self._body('ov-oa', '?programme=ov-gift2')
+        self.assertIsNone(body['money_series']['per_student_overall'])
+
+    def test_a_release_on_or_after_the_27th_is_next_months_payment(self):
+        """⚠ Owner, 2026-09-15: July's money goes out on 30 June, so it must sit beside JULY's
+        spending. The rule is on the day: 27th or later → next month; the 26th → this month.
+        And a late payment (July's, released in September) lands in September."""
+        gift = Programme.objects.create(
+            organisation=self.org, code='ov-cut', name_en='Cutoff Gift')
+        cohort = ScholarshipCohort.objects.create(
+            code='ov-cut-2026', name='Cutoff', year=2026,
+            owning_organisation=self.org, programme=gift)
+        app = self._app('cut', cohort=cohort, status='awarded',
+                        award_amount=Decimal('3000.00'))
+        self._released(app, '100.00', _local(2026, 6, 26, 9))   # June, plainly
+        self._released(app, '200.00', _local(2026, 6, 27, 9))   # the cutoff → July
+        self._released(app, '300.00', _local(2026, 6, 30, 23))  # July's money, sent 30 June
+        self._released(app, '400.00', _local(2026, 9, 3, 9))    # late: July's, sent in Sept
+        pinned = datetime.datetime(2026, 9, 15, 4, 0, tzinfo=datetime.timezone.utc)
+        months = {r['month']: r for r in programme_overview.build(
+            self.oa, self.org, gift, now=pinned)['money_series']['money_per_month']}
+        self.assertEqual(months['2026-06']['released'], '100.00')
+        self.assertEqual(months['2026-07']['released'], '500.00')
+        self.assertEqual(months['2026-08']['released'], '0.00')
+        self.assertEqual(months['2026-09']['released'], '400.00')
+
+    def test_a_release_after_the_cutoff_this_month_extends_the_series_into_next_month(self):
+        """Cutting the span at today's month would DROP a release dated the 28th of this month.
+        Pinned: 15 August; a release on 28 August is September's bar, so September must exist."""
+        gift = Programme.objects.create(
+            organisation=self.org, code='ov-cut2', name_en='Cutoff Gift 2')
+        cohort = ScholarshipCohort.objects.create(
+            code='ov-cut2-2026', name='Cutoff 2', year=2026,
+            owning_organisation=self.org, programme=gift)
+        app = self._app('cut2', cohort=cohort, status='awarded',
+                        award_amount=Decimal('3000.00'))
+        self._released(app, '250.00', _local(2026, 8, 28, 9))
+        pinned = datetime.datetime(2026, 8, 15, 4, 0, tzinfo=datetime.timezone.utc)
+        rows = programme_overview.build(
+            self.oa, self.org, gift, now=pinned)['money_series']['money_per_month']
+        self.assertEqual([r['month'] for r in rows], ['2026-09'])
+        self.assertEqual(rows[0]['released'], '250.00')
+        self.assertEqual(rows[0]['gap'], '250.00')
+
+    def test_the_cutoff_rule_never_touches_the_money_strip(self):
+        """`paid` on the strip is the Payments footer's figure, read by the release date as-is."""
+        gift = Programme.objects.create(
+            organisation=self.org, code='ov-cut3', name_en='Cutoff Gift 3')
+        cohort = ScholarshipCohort.objects.create(
+            code='ov-cut3-2026', name='Cutoff 3', year=2026,
+            owning_organisation=self.org, programme=gift)
+        app = self._app('cut3', cohort=cohort, status='awarded',
+                        award_amount=Decimal('3000.00'))
+        self._released(app, '250.00', _local(2026, 8, 28, 9))
+        body = self._body('ov-oa', '?programme=ov-cut3')
+        # ⚠ `Decimal`, not the string: SQLite and Postgres disagree about the places `Sum` hands
+        # back (see `test_the_money_headline_equals_the_payments_footer`).
+        self.assertEqual(Decimal(body['money']['paid']), Decimal('250.00'))
+        footer = self._client('ov-oa').get(FUNDING + '?programme=ov-cut3').json()['totals']
+        self.assertEqual(body['money']['paid'], footer['paid_total'])
 
     def test_the_spend_weeks_stop_at_data_to(self):
         """⚠ Extending to today would draw zeros for weeks whose file has not been imported —

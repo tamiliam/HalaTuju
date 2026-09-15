@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## The Overview's money charts, round two - the owner's first live read - 2026-09-15
+
+The owner opened the new Overview and asked for four things on the money charts. All four are
+here; nothing else on the page moved.
+
+- **⚠ A RELEASE ON OR AFTER THE 27th IS THE FOLLOWING MONTH'S PAYMENT.** Each month's money goes
+  out a few days early - July's on 30 June - so the chart was charging June with money June never
+  had. `programme_overview.PAYMENT_MONTH_CUTOFF_DAY = 27`: released on the 27th or later → next
+  month; any earlier day → that month. A LATE payment (July's, sent in September) lands in
+  September, which is where the wallet actually got it - the owner's own example. **Only the
+  released-vs-spent chart uses this.** The money strip, the Payments footer and the Spending page
+  read the release date as-is, and a test pins that they still agree. The series now runs to the
+  later of today's month and the last payment month, because a release on the 28th of this month
+  is next month's bar and cutting the span at today would have dropped it.
+- **Months are named, not numbered.** "Jun · Jul · Aug · Sep" under the bars, from twelve short
+  names in each locale (`admin.programmeOverview.months.1-12`), instead of "06/2026". The awards
+  chart follows. The numeric month label and its test are deleted, not left behind.
+- **The month-by-month table is gone; three figures replace it** - Payments, Spending, Balance -
+  the last month's running figures read straight off the server (`released_cum`, `spent_cum`,
+  `gap`), never summed in the browser. Anybody who needs a month has the bars and the line.
+- **"Purchases" is now "transactions"**, on the chart, in the payload (`transactions`,
+  `transactions_per_student`) and in the manual - a Vircle row is a card transaction, and
+  "purchase" implied a basket we never see.
+- **The weekly lines carry a y-axis and month ticks, and the week-by-week figures are gone.**
+  "29/06 RM33.54 · 06/07 RM45.67 …" was clutter at eleven weeks and would be unreadable at fifty.
+  The COLUMNS stay weekly (that is the movement the line shows); the LABELS sit at the first
+  column of each month and never number more than a dozen (`monthTicks`, `thinTicks`). Beneath
+  each line is ONE figure - the whole-period average per student, and transactions per student
+  over the whole period (new `per_student_overall`; same denominator as the weeks: students whose
+  wallet was live by the report date). The y-axis names its unit and marks its two exact values,
+  the top and the baseline; nothing rounded in between.
+- Charts gained `ticks` and `yAxis`; a `ChartBox` may carry a `left` margin; `columnX` puts a
+  tick under a bar's centre and a line's point alike.
+
+Gates: 6679 pytest · 2296 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5333
+keys per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 8 of 8.
+
 ## Usage & Billing, as the organisation reads it - 2026-09-15
 
 The owner read the organisation's page beside Supabase's own usage screen.

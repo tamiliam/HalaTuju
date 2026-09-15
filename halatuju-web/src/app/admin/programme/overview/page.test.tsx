@@ -20,7 +20,7 @@
  *
  * ⚠ No jest-dom matchers exist in this project: `toBeNull` / `not.toBeNull` / `toEqual`.
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 
 import ProgrammeOverviewPage from './page'
 import * as api from '@/lib/admin-api'
@@ -85,8 +85,16 @@ const MONEY_SERIES = {
   ],
   per_student_per_week: [
     { week: '2026-05-04', students: 44, spent: '853.60', average: '19.40',
-      purchases: 106, purchases_per_student: '2.4' },
+      transactions: 106, transactions_per_student: '2.4' },
+    { week: '2026-05-11', students: 44, spent: '900.00', average: '20.45',
+      transactions: 110, transactions_per_student: '2.5' },
+    { week: '2026-06-01', students: 50, spent: '1000.00', average: '20.00',
+      transactions: 120, transactions_per_student: '2.4' },
   ],
+  per_student_overall: {
+    students: 58, spent: '13353.03', average: '230.22',
+    transactions: 1597, transactions_per_student: '27.5',
+  },
   by_category: CATEGORIES,
 }
 
@@ -194,6 +202,56 @@ describe('an org admin sees the whole gift', () => {
     expect(legend.textContent).toContain('RM0.00')
     // All eleven, every time — an absent slice cannot be told from a slice nobody drew.
     expect(legend.querySelectorAll('li').length).toBe(11)
+  })
+
+  /* ⚠ THREE FIGURES, NOT A TABLE (owner, 2026-09-15). The totals are the LAST month's running
+   * figures read straight off the server — never summed in the browser. */
+  it('prints payments, spending and balance to date beneath the money chart, and no table', async () => {
+    render(<ProgrammeOverviewPage />)
+    const totals = await screen.findByTestId('money-totals')
+    expect(totals.textContent).toContain('admin.programmeOverview.series.payments')
+    expect(totals.textContent).toContain('RM52,800.00')   // released_cum of the last month
+    expect(totals.textContent).toContain('RM4,590.65')    // spent_cum of the last month
+    expect(totals.textContent).toContain('RM48,209.35')   // gap of the last month
+    const section = screen.getByTestId('overview-money-series')
+    expect(within(section).queryByRole('table')).toBeNull()
+    expect(screen.queryByTestId('money-month-cards')).toBeNull()
+  })
+
+  /* ⚠ MONTHS ARE NAMED, NOT NUMBERED — through the locale, so "Jul" in English is "Jul" in
+   * Malay and "ஜூலை" in Tamil, and never "07/2026". */
+  it('labels the money chart\'s axis with month names from the locale', async () => {
+    render(<ProgrammeOverviewPage />)
+    const chart = await screen.findByTestId('chart-money-per-month')
+    const ticks = within(chart).getByTestId('chart-ticks')
+    expect(ticks.textContent).toContain('admin.programmeOverview.months.5')
+    expect(ticks.textContent).toContain('admin.programmeOverview.months.6')
+    expect(chart.textContent).not.toContain('05/2026')
+  })
+
+  /* ⚠ THE WEEKLY LINES KEEP THEIR WEEKS AND NAME THEIR MONTHS. Three weekly columns spanning
+   * May and June give two month ticks; the figure beneath is the WHOLE-PERIOD one, not three
+   * weekly values — that list was the clutter the owner asked to remove. */
+  it('names months under the weekly lines, and prints one whole-period figure beneath each', async () => {
+    render(<ProgrammeOverviewPage />)
+    const average = await screen.findByTestId('chart-average-per-student')
+    const ticks = within(average).getByTestId('chart-ticks')
+    expect(ticks.querySelectorAll('text').length).toBe(2)
+    expect(ticks.textContent).toContain('admin.programmeOverview.months.5')
+    expect(ticks.textContent).toContain('admin.programmeOverview.months.6')
+    const figures = within(average).getByTestId('chart-average-per-student-figures')
+    expect(figures.querySelectorAll('li').length).toBe(1)
+    expect(figures.textContent).toContain('RM230.22')
+    expect(figures.textContent).not.toContain('RM19.40')
+    // …and the denominator is named, in words, for the whole period.
+    expect(screen.getByText('admin.programmeOverview.series.ofStudentsOverall|58')).not.toBeNull()
+    // The second line says TRANSACTIONS, and carries a y-axis like the first.
+    const transactions = screen.getByTestId('chart-transactions-per-student')
+    expect(within(transactions).getByTestId('chart-y-axis').textContent)
+      .toContain('admin.programmeOverview.chart.yTransactions')
+    expect(within(transactions).getByTestId('chart-transactions-per-student-figures').textContent)
+      .toContain('27.5')
+    expect(screen.queryByTestId('chart-purchases-per-student')).toBeNull()
   })
 })
 

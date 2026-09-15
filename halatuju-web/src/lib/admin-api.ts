@@ -3049,8 +3049,18 @@ export interface OverviewStudentWeek {
   spent: string
   average: string
   /** ⚠ A ROW COUNT, not an item count: a Vircle row is one card transaction. */
-  purchases: number
-  purchases_per_student: string
+  transactions: number
+  transactions_per_student: string
+}
+/** The whole period in one line — what the page prints beneath the weekly charts instead of
+ *  every week's value. `null` when nothing has been spent. Same denominator as the weeks:
+ *  students whose wallet was live by `data_to`. */
+export interface OverviewStudentOverall {
+  students: number
+  spent: string
+  average: string
+  transactions: number
+  transactions_per_student: string
 }
 export interface OverviewCategory { code: string; total: string; transactions: number }
 export interface OverviewIntake {
@@ -3100,6 +3110,7 @@ export interface ProgrammeOverview {
   money_series?: {
     money_per_month: OverviewMoneyMonth[]
     per_student_per_week: OverviewStudentWeek[]
+    per_student_overall: OverviewStudentOverall | null
     by_category: OverviewCategory[]
   }
   intake?: OverviewIntake | null

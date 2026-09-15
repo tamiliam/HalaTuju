@@ -89,11 +89,16 @@ const INTAKE_STATES = ['open', 'closed']
  *  static scan above cannot resolve, and the strip is the whole section. */
 const ATTENTION_KEYS = ['unassigned', 'withReviewer', 'dueSoon', 'overdue', 'awaitingQc']
 
+/** The twelve short month names the axes are labelled with, built as `${K}.months.${n}`
+ *  (owner, 2026-09-15: "Jul", never "07/2026"). */
+const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
 const DYNAMIC = [
   ...ATTENTION_KEYS.map((k) => `${NS}.attention.${k}`),
   ...CATEGORY_CODES.map((c) => `${NS}.category.${c}`),
   ...BANDS.map((b) => `${NS}.band.${b}`),
   ...INTAKE_STATES.map((s) => `${NS}.intake.${s}`),
+  ...MONTHS.map((m) => `${NS}.months.${m}`),
 ]
 
 describe('admin.programmeOverview i18n hygiene', () => {
@@ -139,7 +144,8 @@ describe('admin.programmeOverview i18n hygiene', () => {
     // missing, and parity cannot see it either — an invented key is absent from all three
     // locales identically. Five keys of exactly this shape shipped unresolved on 2026-09-08.
     const keys = ['applicationsLabel', 'awardsLabel', 'moneyLabel',
-                  'averageLabel', 'purchasesLabel', 'categoryLabel']
+                  'averageLabel', 'transactionsLabel', 'categoryLabel',
+                  'yRinggit', 'yTransactions']
       .map((k) => `${NS}.chart.${k}`)
     const missing: string[] = []
     for (const key of keys) {
@@ -157,6 +163,19 @@ describe('admin.programmeOverview i18n hygiene', () => {
     expect(e.length).toBeGreaterThan(60)
     expect(m.sort()).toEqual(e.slice().sort())
     expect(t.sort()).toEqual(e.slice().sort())
+  })
+
+  test('the charts say TRANSACTIONS, and no locale still says purchases', () => {
+    // ⚠ Owner, 2026-09-15: a Vircle row is a card transaction; "purchase" implied a basket we
+    // never see. The old keys are gone, not orphaned — an orphan is a key somebody reuses later.
+    for (const loc of [en, ms, ta]) {
+      expect(typeof resolve(loc, `${NS}.series.transactions`)).toBe('string')
+      expect(resolve(loc, `${NS}.series.purchases`)).toBeUndefined()
+      expect(resolve(loc, `${NS}.series.purchasesNote`)).toBeUndefined()
+      expect(resolve(loc, `${NS}.chart.purchasesLabel`)).toBeUndefined()
+      expect(resolve(loc, `${NS}.series.month`)).toBeUndefined()
+    }
+    expect(resolve(en, `${NS}.series.transactions`)).toBe('Transactions per student, per week')
   })
 
   test('the navigation label is REUSED, not duplicated', () => {

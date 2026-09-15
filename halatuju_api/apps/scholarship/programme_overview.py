@@ -185,6 +185,25 @@ def _month_key(d: date) -> str:
     return f'{d.year:04d}-{d.month:02d}'
 
 
+#: ⚠⚠ **A RELEASE ON OR AFTER THE 27th IS NEXT MONTH'S PAYMENT.** Owner ruling, 2026-09-15:
+#: the monthly payment is released a few days BEFORE the month it pays for (July's money goes out
+#: on 30 June), so comparing it with June's spending charges June with money June never had. The
+#: rule is on the DAY, not on intent: released on the 27th or later → the following month; any
+#: earlier day → that month. A late payment (July's, released in September) therefore lands in
+#: September, which is where the wallet actually got it — the owner's own example.
+#:
+#: ⚠ ONLY `money_per_month` uses this. The money strip, the Payments footer and the Spending page
+#: all read the release date as-is; this rule exists so that one chart compares like with like.
+PAYMENT_MONTH_CUTOFF_DAY = 27
+
+
+def _payment_month(d: date) -> date:
+    """The FIRST DAY of the month a release counts towards — see `PAYMENT_MONTH_CUTOFF_DAY`."""
+    if d.day >= PAYMENT_MONTH_CUTOFF_DAY:
+        return date(d.year + (d.month == 12), 1 if d.month == 12 else d.month + 1, 1)
+    return date(d.year, d.month, 1)
+
+
 def _month_span(first: date, last: date):
     """Every `YYYY-MM` from `first`'s month to `last`'s month, contiguous."""
     y, m = first.year, first.month
@@ -336,6 +355,11 @@ def money_per_month(scope, *, today):
 
     ⚠ Two different date kinds meet here and are handled differently ON PURPOSE: `released_at` is
     an aware instant and is converted; `txn_date` is a `DateField` and is not.
+
+    ⚠ A RELEASE IS FILED UNDER THE MONTH IT PAYS FOR (`_payment_month`), not the month of its
+    date — so a release dated 30 June sits beside July's spending. The series therefore runs to
+    the LATER of today's month and the last payment month: a release on the 28th of this month
+    is next month's bar, and cutting the span at today would drop it.
     """
     from .models import Disbursement
 
@@ -349,8 +373,9 @@ def money_per_month(scope, *, today):
         d = _local_date(released_at)
         if d is None:
             continue
-        seen.append(d)
-        key = _month_key(d)
+        month_first = _payment_month(d)
+        seen.append(month_first)
+        key = _month_key(month_first)
         released_by_month[key] = released_by_month.get(key, _ZERO) + (amount or _ZERO)
     for txn_date, amount in _txns(scope).values_list('txn_date', 'amount'):
         if txn_date is None:
@@ -361,7 +386,7 @@ def money_per_month(scope, *, today):
     if not seen:
         return []
     out, released_cum, spent_cum = [], _ZERO, _ZERO
-    for key in _month_span(min(seen), today):
+    for key in _month_span(min(seen), max(seen + [today])):
         rel = released_by_month.get(key, _ZERO)
         spent = spent_by_month.get(key, _ZERO)
         released_cum += rel
@@ -377,12 +402,60 @@ def money_per_month(scope, *, today):
     return out
 
 
-def per_student_per_week(scope):
-    """Spending per week with an HONEST denominator, and purchases counted as ROWS.
+def _wallets_live_by(scope):
+    """The Malaysian date each student's wallet went live — their FIRST released disbursement.
+    One query, grouped by application; `None`s dropped."""
+    from .models import Disbursement
 
-    ⚠⚠ **`purchases` IS A ROW COUNT, NOT A SUM.** A Vircle row is one card transaction and
+    return [
+        _local_date(first)
+        for first in (Disbursement.objects
+                      .filter(status='released',
+                              application_id__in=scope.values_list('id', flat=True))
+                      .values('application_id')
+                      .annotate(first=Min('released_at'))
+                      .values_list('first', flat=True))
+        if first is not None
+    ]
+
+
+def per_student_overall(scope):
+    """The whole period in one line: what a student spent on average, and how many transactions.
+
+    ⚠ THIS IS WHAT THE PAGE PRINTS BENEATH THE WEEKLY LINES, instead of every week's value. Owner,
+    2026-09-15: the weekly list was clutter at eleven weeks and would be unreadable at fifty. The
+    lines still show the movement; the figure a person quotes is the whole-period one.
+
+    ⚠ SAME DENOMINATOR RULE AS THE WEEKS: students whose wallet was live by `data_to` — the day
+    the data reaches — not every student in the gift. `transactions` is a ROW COUNT (see
+    `per_student_per_week`). `None` when there is no spending at all, so the page says nothing
+    rather than "RM0.00 per student".
+    """
+    rows = [(d, a) for d, a in _txns(scope).values_list('txn_date', 'amount') if d is not None]
+    if not rows:
+        return None
+    last = data_to(scope) or max(d for d, _ in rows)
+    students = sum(1 for d in _wallets_live_by(scope) if d <= last)
+    spent = sum(((a or _ZERO) for _, a in rows), _ZERO)
+    transactions = len(rows)
+    return {
+        'students': students,
+        'spent': spent.quantize(_CENTS),
+        'average': (spent / students).quantize(_CENTS) if students else _ZERO,
+        'transactions': transactions,
+        'transactions_per_student': (
+            (Decimal(transactions) / students).quantize(Decimal('0.1'))
+            if students else Decimal('0.0')),
+    }
+
+
+def per_student_per_week(scope):
+    """Spending per week with an HONEST denominator, and transactions counted as ROWS.
+
+    ⚠⚠ **`transactions` IS A ROW COUNT, NOT A SUM.** A Vircle row is one card transaction and
     carries no item count, so "items purchased" is not a question this data can answer. Summing
     anything here would be inventing a quantity; the chart is named for what it actually counts.
+    (It was called `purchases` until 2026-09-15; the owner asked for the honest word.)
 
     ⚠⚠ **THE DENOMINATOR IS STUDENTS WITH A LIVE WALLET THAT WEEK** — distinct applications with
     at least one RELEASED disbursement dated on or before the week's end. Dividing by "every
@@ -395,35 +468,23 @@ def per_student_per_week(scope):
     today — see the module docstring. A zero week INSIDE the window is a real zero and stays; the
     weeks after it are the ones that would be fiction.
     """
-    from .models import Disbursement
-
     rows = list(_txns(scope).values_list('txn_date', 'amount'))
     rows = [(d, a) for d, a in rows if d is not None]
     if not rows:
         return []
-    spent_by_week, purchases_by_week = {}, {}
+    spent_by_week, transactions_by_week = {}, {}
     for txn_date, amount in rows:
         w = _week(txn_date)
         spent_by_week[w] = spent_by_week.get(w, _ZERO) + (amount or _ZERO)
-        purchases_by_week[w] = purchases_by_week.get(w, 0) + 1
-    # The FIRST day each student's wallet went live: one query, grouped by application.
-    first_released = [
-        _local_date(first)
-        for first in (Disbursement.objects
-                      .filter(status='released',
-                              application_id__in=scope.values_list('id', flat=True))
-                      .values('application_id')
-                      .annotate(first=Min('released_at'))
-                      .values_list('first', flat=True))
-        if first is not None
-    ]
+        transactions_by_week[w] = transactions_by_week.get(w, 0) + 1
+    first_released = _wallets_live_by(scope)
     out = []
     last = data_to(scope) or max(d for d, _ in rows)
     for w in _week_span(min(d for d, _ in rows), last):
         week_end = w + timedelta(days=6)
         students = sum(1 for d in first_released if d <= week_end)
         spent = spent_by_week.get(w, _ZERO)
-        purchases = purchases_by_week.get(w, 0)
+        transactions = transactions_by_week.get(w, 0)
         out.append({
             'week': w.isoformat(),
             'students': students,
@@ -431,9 +492,9 @@ def per_student_per_week(scope):
             # ⚠ Guarded: a week before anybody had a wallet is '0.00', not a crash and not the
             # whole week's spend attributed to nobody.
             'average': (spent / students).quantize(_CENTS) if students else _ZERO,
-            'purchases': purchases,
-            'purchases_per_student': (
-                (Decimal(purchases) / students).quantize(Decimal('0.1'))
+            'transactions': transactions,
+            'transactions_per_student': (
+                (Decimal(transactions) / students).quantize(Decimal('0.1'))
                 if students else Decimal('0.0')),
         })
     return out
@@ -614,6 +675,19 @@ def _money_str(value):
     return str(value)
 
 
+def _overall_payload(overall):
+    """`per_student_overall` for the wire — `None` stays `None` (no spending: nothing to say)."""
+    if overall is None:
+        return None
+    return {
+        'students': overall['students'],
+        'spent': _money_str(overall['spent']),
+        'average': _money_str(overall['average']),
+        'transactions': overall['transactions'],
+        'transactions_per_student': _money_str(overall['transactions_per_student']),
+    }
+
+
 def build(admin, org, programme, *, now=None):
     """The whole payload, shaped by role, with every money value a STRING.
 
@@ -681,9 +755,10 @@ def build(admin, org, programme, *, now=None):
             'per_student_per_week': [
                 {'week': r['week'], 'students': r['students'],
                  'spent': _money_str(r['spent']), 'average': _money_str(r['average']),
-                 'purchases': r['purchases'],
-                 'purchases_per_student': _money_str(r['purchases_per_student'])}
+                 'transactions': r['transactions'],
+                 'transactions_per_student': _money_str(r['transactions_per_student'])}
                 for r in per_student_per_week(scope)],
+            'per_student_overall': _overall_payload(per_student_overall(scope)),
             'by_category': [
                 {'code': r['code'], 'total': _money_str(r['total']),
                  'transactions': r['transactions']}

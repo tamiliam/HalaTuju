@@ -48,11 +48,26 @@ export interface ChartBox {
   top: number
   bottom: number
   side: number
+  /** A wider LEFT margin when the chart carries a y-axis; `side` when it does not. */
+  left?: number
 }
 
 export const WIDE_BOX: ChartBox = { width: 360, height: 120, top: 8, bottom: 20, side: 8 }
 export const FULL_BOX: ChartBox = { width: 740, height: 150, top: 10, bottom: 24, side: 12 }
 export const SMALL_BOX: ChartBox = { width: 240, height: 110, top: 8, bottom: 18, side: 10 }
+/** The small box with room on the left for a y-axis title and its two tick values. */
+export const SMALL_AXIS_BOX: ChartBox = { width: 240, height: 120, top: 10, bottom: 18, side: 10, left: 46 }
+
+/** Where the plot starts — the y-axis margin when there is one, the ordinary side otherwise. */
+export const plotLeft = (box: ChartBox): number => box.left ?? box.side
+
+/** The x of the CENTRE of column `index` out of `count` — one spelling, so a tick under a bar and
+ *  a tick under a point land on the same pixel. */
+export function columnX(index: number, count: number, box: ChartBox): number {
+  if (count <= 0) return plotLeft(box)
+  const slot = (box.width - plotLeft(box) - box.side) / count
+  return plotLeft(box) + slot * index + slot / 2
+}
 
 export interface Bar { x: number; y: number; width: number; height: number }
 
@@ -79,7 +94,8 @@ export function barLayout(
     for (let i = 0; i < series[s].length; i += 1) max = Math.max(max, series[s][i])
   }
   if (groups === 0) return { bars: series.map(() => []), baseline, max }
-  const slot = (box.width - box.side * 2) / groups
+  const x0 = plotLeft(box)
+  const slot = (box.width - x0 - box.side) / groups
   // 72% of the slot is bars, the rest is the gutter between columns — two series therefore get
   // 36% each and still read as a pair rather than as two charts.
   const barWidth = (slot * 0.72) / Math.max(1, series.length)
@@ -89,7 +105,7 @@ export function barLayout(
       const value = values[i] ?? 0
       const height = max > 0 ? Math.max(0, (value / max) * plot) : 0
       out.push({
-        x: box.side + slot * i + slot * 0.14 + barWidth * s,
+        x: x0 + slot * i + slot * 0.14 + barWidth * s,
         y: baseline - height,
         width: barWidth,
         height,
@@ -127,9 +143,49 @@ export function lineLayout(
   }
   const span = hi - lo
   const y = (v: number) => (span > 0 ? baseline - ((v - lo) / span) * plot : baseline)
-  const slot = values.length > 0 ? (box.width - box.side * 2) / values.length : 0
-  const points = values.map((v, i) => ({ x: box.side + slot * i + slot / 2, y: y(v) }))
+  const points = values.map((v, i) => ({ x: columnX(i, values.length, box), y: y(v) }))
   return { points, zeroY: y(0), min: lo, max: hi }
+}
+
+// ── axis ticks ────────────────────────────────────────────────────────────────────────────────
+//
+// ⚠ THE X AXIS IS LABELLED IN MONTHS, WHATEVER THE COLUMNS ARE. Owner, 2026-09-15: a weekly
+// chart that names every week is unreadable at fifty weeks — "imagine the chart six or twelve
+// months in". The COLUMNS stay weekly (that is the movement the line shows); the LABELS sit at
+// the first column of each month, and there are never more than a dozen of them.
+
+export interface Tick { index: number; label: string }
+
+/** `'2026-07'` or `'2026-07-06'` → `7`. `0` for anything unreadable, so a caller can skip it. */
+export function monthOf(iso: string): number {
+  const m = Number(String(iso).split('-')[1])
+  return m >= 1 && m <= 12 ? m : 0
+}
+
+/**
+ * One tick per month change across weekly (or monthly) columns, labelled by `name(month)`.
+ *
+ * ⚠ `name` IS THE CALLER'S — it is the translated short month, and this module has no i18n. The
+ * first column always gets a tick, so a series inside a single month is still named once.
+ */
+export function monthTicks(columns: readonly string[], name: (month: number) => string): Tick[] {
+  const ticks: Tick[] = []
+  let previous = -1
+  for (let i = 0; i < columns.length; i += 1) {
+    const month = monthOf(columns[i])
+    if (month === 0) continue
+    if (month !== previous) ticks.push({ index: i, label: name(month) })
+    previous = month
+  }
+  return ticks
+}
+
+/** At most `max` ticks, evenly thinned — the first is always kept, so the axis always starts
+ *  with a name. Fifty monthly columns become a tick every fifth month, not fifty labels. */
+export function thinTicks(ticks: readonly Tick[], max = 12): Tick[] {
+  if (ticks.length <= max || max <= 0) return ticks.slice()
+  const every = Math.ceil(ticks.length / max)
+  return ticks.filter((_, i) => i % every === 0)
 }
 
 // ── the donut ─────────────────────────────────────────────────────────────────────────────────
@@ -220,23 +276,17 @@ export function sliceClasses(code: string, rank: number): { stroke: string; dot:
   return { stroke: SLICE_STROKE[i], dot: SLICE_DOT[i] }
 }
 
-// ── axis labels ───────────────────────────────────────────────────────────────────────────────
+// ── the week label ────────────────────────────────────────────────────────────────────────────
 //
-// ⚠ NUMERIC AND BRITISH, NOT A MONTH NAME. `formatDate` formats by hand for exactly this reason:
-// a month name would have to be translated three ways for an axis nobody reads aloud, and
-// `toLocaleDateString` inherits the runtime's locale, which differs between the server pass and
-// the browser one. DD/MM and MM/YYYY are the same characters in every locale we ship.
+// ⚠ NUMERIC AND BRITISH, hand-formatted like `formatDate`: `toLocaleDateString` inherits the
+// runtime's locale, which differs between the server pass and the browser one. DD/MM is the same
+// characters in every locale we ship. (MONTHS, by contrast, are NAMED — owner, 2026-09-15 — and
+// the names come from the locale files through `monthTicks`' caller.)
 
 /** `'2026-03-02'` → `'02/03'`. The ISO-week Monday, as a day and a month. */
 export function weekLabel(iso: string): string {
   const [, m = '', d = ''] = String(iso).split('-')
   return d && m ? `${d}/${m}` : String(iso)
-}
-
-/** `'2026-07'` → `'07/2026'`. */
-export function monthLabel(iso: string): string {
-  const [y = '', m = ''] = String(iso).split('-')
-  return y && m ? `${m}/${y}` : String(iso)
 }
 
 // ── role shaping, read from the payload ───────────────────────────────────────────────────────

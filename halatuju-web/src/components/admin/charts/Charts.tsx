@@ -24,10 +24,16 @@
  * the numbers.
  */
 
-import { barLayout, donutArcs, lineLayout, sliceClasses, type ChartBox, WIDE_BOX, DONUT_RADIUS } from '@/lib/programmeOverview'
+import {
+  barLayout, columnX, donutArcs, lineLayout, plotLeft, sliceClasses,
+  type ChartBox, type Tick, WIDE_BOX, DONUT_RADIUS,
+} from '@/lib/programmeOverview'
 
 /** One line of the text beneath a chart — the name of a column and what it was. */
 export interface ChartFigure { label: string; value: string }
+
+/** A y-axis: its title, and how to print the two values it marks (the top and the baseline). */
+export interface YAxis { label: string; format: (value: number) => string }
 
 /** ⚠ `className` IS A COMPLETE LITERAL, passed in by the caller (`fill-brand-shape`), because
  *  Tailwind's scanner reads source text and cannot see a class assembled at runtime. */
@@ -56,12 +62,60 @@ function EndLabels({ columns, box }: { columns: readonly string[]; box: ChartBox
   const last = columns[columns.length - 1]
   return (
     <>
-      <text x={box.side} y={box.height - 6} className="fill-ground-400 text-[9px]">{columns[0]}</text>
+      <text x={plotLeft(box)} y={box.height - 6} className="fill-ground-400 text-[9px]">{columns[0]}</text>
       {columns.length > 1 && (
         <text x={box.width - box.side} y={box.height - 6} textAnchor="end"
           className="fill-ground-400 text-[9px]">{last}</text>
       )}
     </>
+  )
+}
+
+/**
+ * Named ticks under chosen columns — the MONTHS, on a chart whose columns may be weeks.
+ *
+ * ⚠ Given `ticks`, a chart draws these INSTEAD of the end labels: two systems of labels on one
+ * axis would collide at the first column. `columnX` puts a tick under the centre of a bar and
+ * under a line's point alike, so the two chart shapes agree about where a month starts.
+ */
+function Ticks({ ticks, count, box }: { ticks: readonly Tick[]; count: number; box: ChartBox }) {
+  return (
+    <g data-testid="chart-ticks">
+      {ticks.map((tick) => (
+        <text key={tick.index} x={columnX(tick.index, count, box)} y={box.height - 6}
+          textAnchor="middle" className="fill-ground-400 text-[9px]">{tick.label}</text>
+      ))}
+    </g>
+  )
+}
+
+/**
+ * A y-axis: a rotated title in the left margin, and the value at the top and at the baseline.
+ *
+ * ⚠ TWO VALUES, NOT A GRID. The top of the plot IS the largest value and the baseline IS the
+ * smallest (or zero), so those two labels are exact by construction; intermediate gridlines would
+ * need rounding that the fixed `viewBox` gives no room to explain. The figures beneath still
+ * carry every number a person would quote.
+ */
+function YAxisLabels({ axis, box, top, bottom }: {
+  axis: YAxis; box: ChartBox; top: number; bottom: number
+}) {
+  const x = plotLeft(box) - 4
+  const midY = (box.top + (box.height - box.bottom)) / 2
+  return (
+    <g data-testid="chart-y-axis">
+      <text x={x} y={box.top + 3} textAnchor="end" className="fill-ground-400 text-[8px]">
+        {axis.format(top)}
+      </text>
+      <text x={x} y={box.height - box.bottom} textAnchor="end"
+        className="fill-ground-400 text-[8px]">
+        {axis.format(bottom)}
+      </text>
+      <text x={9} y={midY} textAnchor="middle" transform={`rotate(-90 9 ${midY})`}
+        className="fill-ground-500 text-[8px]">
+        {axis.label}
+      </text>
+    </g>
   )
 }
 
@@ -76,7 +130,7 @@ function EndLabels({ columns, box }: { columns: readonly string[]; box: ChartBox
  * still crosses the line it should.)
  */
 export function BarChart({
-  series, columns, figures, line, label, testId, box = WIDE_BOX,
+  series, columns, figures, line, label, testId, box = WIDE_BOX, ticks, yAxis,
 }: {
   series: readonly BarSeries[]
   columns: readonly string[]
@@ -85,14 +139,17 @@ export function BarChart({
   label: string
   testId: string
   box?: ChartBox
+  /** Named ticks under chosen columns; when given, the end labels are not drawn. */
+  ticks?: readonly Tick[]
+  yAxis?: YAxis
 }) {
-  const { bars, baseline } = barLayout(series.map((s) => s.values), box)
+  const { bars, baseline, max } = barLayout(series.map((s) => s.values), box)
   const path = line ? lineLayout(line.values, box) : null
   return (
     <div data-testid={testId}>
       <svg viewBox={`0 0 ${box.width} ${box.height}`} className="block h-auto w-full"
         role="img" aria-label={label}>
-        <line x1={box.side} y1={baseline} x2={box.width - box.side} y2={baseline}
+        <line x1={plotLeft(box)} y1={baseline} x2={box.width - box.side} y2={baseline}
           className="stroke-ground-200" strokeWidth="1" />
         {series.map((s, i) => (
           <g key={s.key} className={s.className}>
@@ -106,7 +163,10 @@ export function BarChart({
             className={line!.className}
             points={path.points.map((p) => `${p.x},${p.y}`).join(' ')} />
         )}
-        <EndLabels columns={columns} box={box} />
+        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={0} />}
+        {ticks
+          ? <Ticks ticks={ticks} count={columns.length} box={box} />
+          : <EndLabels columns={columns} box={box} />}
       </svg>
       <Figures testId={testId} figures={figures} />
     </div>
@@ -121,6 +181,7 @@ export function BarChart({
  */
 export function LineChart({
   values, columns, figures, label, testId, className = 'stroke-brand-shape', box = WIDE_BOX,
+  ticks, yAxis,
 }: {
   values: readonly number[]
   columns: readonly string[]
@@ -129,19 +190,22 @@ export function LineChart({
   testId: string
   className?: string
   box?: ChartBox
+  /** Named ticks under chosen columns; when given, the end labels are not drawn. */
+  ticks?: readonly Tick[]
+  yAxis?: YAxis
 }) {
-  const { points, zeroY, min } = lineLayout(values, box)
+  const { points, zeroY, min, max } = lineLayout(values, box)
   const latest = points.length > 0 ? points[points.length - 1] : null
   return (
     <div data-testid={testId}>
       <svg viewBox={`0 0 ${box.width} ${box.height}`} className="block h-auto w-full"
         role="img" aria-label={label}>
-        <line x1={box.side} y1={box.height - box.bottom} x2={box.width - box.side}
+        <line x1={plotLeft(box)} y1={box.height - box.bottom} x2={box.width - box.side}
           y2={box.height - box.bottom} className="stroke-ground-200" strokeWidth="1" />
         {/* ⚠ Drawn ONLY when something is actually negative — otherwise the zero line and the
             baseline are the same line, and two strokes on one pixel read as a heavier axis. */}
         {min < 0 && (
-          <line x1={box.side} y1={zeroY} x2={box.width - box.side} y2={zeroY}
+          <line x1={plotLeft(box)} y1={zeroY} x2={box.width - box.side} y2={zeroY}
             className="stroke-ground-300" strokeWidth="1" strokeDasharray="2 2" />
         )}
         {points.length > 1 && (
@@ -149,7 +213,10 @@ export function LineChart({
             points={points.map((p) => `${p.x},${p.y}`).join(' ')} />
         )}
         {latest && <circle cx={latest.x} cy={latest.y} r="3" className="fill-brand-shape" />}
-        <EndLabels columns={columns} box={box} />
+        {yAxis && <YAxisLabels axis={yAxis} box={box} top={max} bottom={min} />}
+        {ticks
+          ? <Ticks ticks={ticks} count={columns.length} box={box} />
+          : <EndLabels columns={columns} box={box} />}
       </svg>
       <Figures testId={testId} figures={figures} />
     </div>

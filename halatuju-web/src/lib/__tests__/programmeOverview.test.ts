@@ -7,8 +7,8 @@
  * component test next door proves is that the tokens and the labels reached the markup.
  */
 import {
-  FULL_BOX, SMALL_BOX, WIDE_BOX, bandTone, barLayout, donutArcs, has, lineLayout, monthLabel,
-  num, rm, sliceClasses, weekLabel,
+  FULL_BOX, SMALL_AXIS_BOX, SMALL_BOX, WIDE_BOX, bandTone, barLayout, columnX, donutArcs, has,
+  lineLayout, monthOf, monthTicks, num, plotLeft, rm, sliceClasses, thinTicks, weekLabel,
 } from '@/lib/programmeOverview'
 
 describe('rm — the money formatter, lifted from the sponsor card', () => {
@@ -168,18 +168,69 @@ describe('sliceClasses', () => {
   })
 })
 
-describe('the axis labels are numeric and British', () => {
+describe('the week label is numeric and British', () => {
   it('reads a week as its Monday, day then month', () => {
     expect(weekLabel('2026-03-02')).toBe('02/03')
   })
 
-  it('reads a month as month then year', () => {
-    expect(monthLabel('2026-07')).toBe('07/2026')
-  })
-
   it('hands back anything it does not recognise, rather than inventing a date', () => {
     expect(weekLabel('')).toBe('')
-    expect(monthLabel('nonsense')).toBe('nonsense')
+  })
+})
+
+describe('month ticks — the axis is labelled in months whatever the columns are', () => {
+  const name = (m: number) => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m]
+
+  it('reads the month out of a month key and out of a week date alike', () => {
+    expect(monthOf('2026-07')).toBe(7)
+    expect(monthOf('2026-07-06')).toBe(7)
+    expect(monthOf('nonsense')).toBe(0)
+    expect(monthOf('2026-13')).toBe(0)
+  })
+
+  /* ⚠ ONE TICK PER MONTH CHANGE, at the first column of that month — fifty weekly columns
+   * become a dozen labels, which is the whole point (owner: "imagine the chart twelve months in"). */
+  it('puts one tick at the first column of each month, and always one at the start', () => {
+    const weeks = ['2026-06-29', '2026-07-06', '2026-07-13', '2026-07-27', '2026-08-03', '2026-08-10']
+    expect(monthTicks(weeks, name)).toEqual([
+      { index: 0, label: 'Jun' }, { index: 1, label: 'Jul' }, { index: 4, label: 'Aug' },
+    ])
+    expect(monthTicks(['2026-07-06', '2026-07-13'], name)).toEqual([{ index: 0, label: 'Jul' }])
+    expect(monthTicks([], name)).toEqual([])
+  })
+
+  it('skips a column it cannot read rather than labelling it nonsense', () => {
+    expect(monthTicks(['x', '2026-07-06'], name)).toEqual([{ index: 1, label: 'Jul' }])
+  })
+
+  it('thins a long run of ticks evenly and keeps the first', () => {
+    const many = Array.from({ length: 30 }, (_, i) => ({ index: i, label: `m${i}` }))
+    const thinned = thinTicks(many, 12)
+    expect(thinned.length).toBeLessThanOrEqual(12)
+    expect(thinned[0]).toEqual({ index: 0, label: 'm0' })
+    expect(thinned[1]).toEqual({ index: 3, label: 'm3' })
+    expect(thinTicks(many.slice(0, 4), 12)).toEqual(many.slice(0, 4))
+  })
+})
+
+describe('columnX — one x for a bar and a point in the same column', () => {
+  it('centres each column across the plot, inside the left margin when there is one', () => {
+    const box = { width: 240, height: 120, top: 10, bottom: 18, side: 10, left: 46 }
+    expect(plotLeft(box)).toBe(46)
+    expect(plotLeft(SMALL_BOX)).toBe(SMALL_BOX.side)
+    // Two columns across 240 − 46 − 10 = 184px: centres at 46 + 46 and 46 + 138.
+    expect(columnX(0, 2, box)).toBe(92)
+    expect(columnX(1, 2, box)).toBe(184)
+    expect(columnX(0, 0, box)).toBe(46)
+  })
+
+  it('is the x the line layout uses, so a tick lands under its point', () => {
+    const { points } = lineLayout([1, 2, 3], SMALL_AXIS_BOX)
+    expect(points[1].x).toBe(columnX(1, 3, SMALL_AXIS_BOX))
+    // …and bars start inside the same margin.
+    const { bars } = barLayout([[1, 2]], SMALL_AXIS_BOX)
+    expect(bars[0][0].x).toBeGreaterThanOrEqual(SMALL_AXIS_BOX.left as number)
   })
 })
 

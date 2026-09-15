@@ -11467,3 +11467,27 @@ does not cover it and the owner must rule again.
 **Rationale:** `programmeChosen` fills itself in whenever a tenant has exactly one gift — production today — so on that signal the group would never fold. The path is the only fact that says where the user IS. Deriving the exemption from `programmeConfig`'s roles states one fact once; the day the cards open to another role, the fold follows.
 
 **Revisit if:** the Programmes page shows gift cards to a role that cannot open configuration, which breaks the equivalence the exemption relies on.
+
+## A release on or after the 27th is the following month's payment — Overview money chart, 2026-09-15
+
+**Decision:** `programme_overview.money_per_month` files a released disbursement under the month it PAYS FOR: released on the 27th or later → the following month; any earlier day → that month (`PAYMENT_MONTH_CUTOFF_DAY`). Only this chart uses the rule. The money strip, the Payments footer and the Spending page read the release date as-is, and a test pins that they still agree with each other.
+
+**Alternatives considered:** (a) the calendar month of the release date (the first build); (b) a rule on intent — "an advance payment counts forward, a late one does not" — which needs a field nobody records; (c) applying the rule everywhere money is dated.
+
+**Rationale:** owner, 2026-09-15: each month's money goes out a few days before the month — July's on 30 June — so (a) charged June with money June never had and made every month's "still in wallets" wrong by one payment. A day-of-month rule is the owner's own formulation and is mechanical: no judgement, no new field. It also files a late payment (July's, released in September) under September, which is where the wallet actually received it — the owner's example of what must NOT be shifted. (c) was refused because the strip and the Payments footer are reconciled byte-for-byte to the Payments module, which is the ledger of what was paid WHEN; a chart comparing like with like is a different question from a ledger.
+
+**Trade-offs:** a payment genuinely released late in a month for THAT month (a re-run on the 28th) is filed a month forward. Accepted: the runs are monthly and go out early by design, and the note under the chart states the rule in words.
+
+**Revisit if:** payment runs stop going out early, or a second gift pays on a different cadence, at which point the cutoff belongs on the gift's configuration rather than in a constant.
+
+## The figure beneath a weekly chart is the whole-period one, not every week's value — 2026-09-15
+
+**Decision:** the two weekly lines on the Overview (average spend per student, transactions per student) print ONE figure beneath them — the whole-period average — plus the denominator in words, instead of one figure per week. The x-axis is labelled at the first column of each month (`monthTicks`), and a y-axis names the unit and its two exact values. This amends "every chart renders its figures as text beneath it" (Programme Overview, 2026-09-15) without withdrawing it: the figures beneath a chart are THE FIGURES A PERSON WOULD QUOTE, and for a weekly line that is the whole-period one.
+
+**Alternatives considered:** keep every week's figure (the first build); switch the columns to months, losing the weekly movement; a tooltip on hover, which the fixed-`viewBox` charts deliberately do not have.
+
+**Rationale:** owner, 2026-09-15: "Clutter — particularly as we cover more and more weeks. Imagine the chart six or 12 months in." Eleven weekly figures already ran to three lines; fifty would be a paragraph nobody reads and nobody quotes. The whole-period average is the number that goes in an email. The line keeps the weeks because the movement is what the line is for; the month ticks make it readable at any length (`thinTicks` caps them at twelve).
+
+**Trade-offs:** a single week's value is no longer readable off the page. Accepted: nobody asked for one, and the server still sends every week, so a later "show me this week" is a rendering change, not a data change.
+
+**Revisit if:** somebody needs a specific week's figure from the page — then a hover or a click on a point is the answer, not the list.
