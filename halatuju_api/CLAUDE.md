@@ -552,9 +552,14 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
-**BUILT — NOT YET DEPLOYED.** Gates (after merging `main`, which carried the tenant-invoices
-sprint): **6666 pytest** · **2281 jest** · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass ·
-`next build` exit 0 · `makemigrations --check` clean.
+**✅ SHIPPED AND VERIFIED LIVE 2026-09-15.** `main` at **`77b88408`** (the Overview merged over the
+tenant-invoices sprint); builds api `dafe2491` + web `e567f025` SUCCESS (waited on BY BUILD ID);
+serving **halatuju-api-01041-t8n** / **halatuju-web-00890-2xw**, **image digests matched to the
+builds**. Site 200, `/admin/programme/overview` 200, the endpoint 401 without login, **no api ERROR
+logs** after the deploy. Gates (after the merge): **6666 pytest** · **2281 jest** · tsc 24 (baseline)
+· lint 0 errors · `check-i18n` pass · `next build` exit 0 · `makemigrations --check` clean.
+Three sprints closed together on 2026-09-15 (billing costs + rates, menu + fold, Programme
+Overview): retrospectives `docs/retrospective-2026-09-15-*.md`, decisions ×7, lessons ×8.
 
 **WHAT SHIPPED.** The Programme sidebar group had four rows and no answer to *"how is this gift
 doing?"*. It now opens with **Overview**:
@@ -603,13 +608,12 @@ them and this must not become a side door.
   helper; widening the scan reconciles every existing route at once and belongs in its own change.
 
 **▶ NEXT — owner actions first, then the owner picks:**
-1. **Run the gates and deploy.** One push to `main` after merging `origin/main` in; **wait on the
-   build IDs of that push**, read `status.latestReadyRevisionName`, verify
-   `/admin/programme/overview` 200 and the endpoint 401 unauthenticated, check logs for ERROR.
-   Two deploys maximum.
-2. **Live verification as a reviewer account** — lands on the Overview, sees only own cases, and
-   **no money node anywhere in the page source**. As the owner (super): 143 / 66 / 42 / 31 / 4 and
-   a money strip equal to the Payments footer on the same screen.
+1. **Live look as the owner (super)**: the Overview should read 143 / 66 / 42 / 31 / 4 and its money
+   strip must equal the Payments footer on the same screen. **As a reviewer account**: lands on the
+   Overview, sees only own cases, and no money node anywhere in the page source.
+2. **Billing rates still need two numbers from the owner** — the metered margin and the hourly
+   rate (RM50/hour was under consideration). Until then the metered and development lines REFUSE.
+   Anthropic's July invoice (0009) is still missing from the ledger.
 3. **⚠ NOTHING CAN BE INVOICED YET, BY DESIGN** (tenant invoices, 2026-09-15). `InvoiceIssuer` is
    EMPTY: the owner fills in the legal name, address, email and bank details on Billing & usage →
    Invoices → Settings, plus BrightPath's bill-to address and inboxes. No legal entity exists;
