@@ -11415,3 +11415,55 @@ page's own denial test.
 **Revisit if:** a section is ever proposed for finance that carries a person — a name, a case, a
 document, a verdict. That is the line, not the page; the moment a section crosses it this decision
 does not cover it and the owner must rule again.
+
+## Supplier invoices are READ by deterministic parsers, reconciled to the printed total — 2026-09-11
+
+**Decision:** `invoice_parsers.py` parses each supplier's PDF text with fixed patterns and refuses to produce a row unless the lines sum to the total printed on the invoice. A one-cent gap (Twilio rounds each line for display and totals the unrounded figures) becomes its own named `Rounding` line rather than being absorbed. Provenance is `extracted`, a third state beside `measured` and `entered`, rendered as a NOTE not a warning.
+
+**Alternatives considered:** Gemini document extraction (the platform already has it); typing the figures from the PDF (the owner's explicit refusal: *"Don't use typed by hand"*); trusting the lines and letting the ledger drift a cent from the bill.
+
+**Rationale:** money must come out identical every time and be re-derivable by anybody holding the file. All eight invoices are text PDFs, so the figures can be read, not recognised. A self-check against the printed total is what turns a parser into an audit; the Rounding line keeps the ledger equal to what was paid while making the discrepancy visible.
+
+**Trade-offs:** a supplier's layout change breaks the parser loudly (a refusal, not a wrong row). That is accepted: the failure is visible on the next import and fixed in one file.
+
+**Revisit if:** a supplier starts issuing image-only PDFs, at which point recognition is the only option and its output must be reconciled the same way.
+
+## The exchange rate is the ECB closing rate for the last day of the billed month, recorded with its publication date — 2026-09-11
+
+**Decision:** `fx.py` fetches USD→MYR from frankfurter for the last day of the billed month and records the date the ECB actually published on (a month ending at a weekend has no rate of its own). A future date or a failed lookup RAISES; nothing falls back to last month or a cache. Owner ruling: *"just use the exchange at the end of the billing month."*
+
+**Alternatives considered:** the card's actual settlement rate (truer to the cent, not reproducible by anyone else); the rate on the invoice date; a typed rate.
+
+**Rationale:** reproducibility beats precision on a figure that reaches a tenant's bill — anybody can re-derive the closing rate from the date. Recording the publication date makes a weekend month-end honest instead of silently shifting.
+
+**Revisit if:** the platform bills in USD, or a tenant disputes a conversion, at which point the card rate with its receipt is the evidence.
+
+## Claude is a development cost, recovered through hours, never marked up as infrastructure — 2026-09-11
+
+**Decision:** `cost_bucket()` files Anthropic (and any Claude SKU) under `development`: counted in the month's total, held out of `platform_myr`, and shown on the development line BESIDE what the hours earn — never added to them. Owner: *"My biggest cost is Claude, which needs to be included via the request hours."*
+
+**Alternatives considered:** leave it in the platform bucket and mark it up at the infrastructure margin; add it to the development charge on top of the hourly rate.
+
+**Rationale:** both alternatives take the same ringgit twice — once as a marked-up cost line and once inside the hourly rate that exists to recover it. Showing the tool cost beside the hours makes *"is RM50/hour enough?"* a figure on a screen rather than a feeling. Five tests fail if it leaks back to the platform bucket.
+
+**Revisit if:** the hourly rate is ever set explicitly to exclude tooling, at which point the tool cost becomes a pass-through line and the tests change with it.
+
+## Request hours are filed by the month the work was DONE, not the month the request was raised — 2026-09-11
+
+**Decision:** `worked_date(request)` picks the scheduled date when there is one, otherwise the last-touched date, and that month is where the hours land on the bill. Owner: *"we should consider only when we worked and not when the request was raised."*
+
+**Alternatives considered:** the month the request was created (the first build, which put 27.5 hours on July that were worked in August); the month the invoice is issued.
+
+**Rationale:** a bill line says what was delivered in that month. A raised date says when somebody asked. The July discount would otherwise have waived hours that were never in July.
+
+**Revisit if:** a request spans months and the owner wants it split, at which point the basis becomes a per-analysis date rather than a per-request one.
+
+## The Programme group folds by PATH, and its exemption is derived from who may open a gift — 2026-09-14
+
+**Decision:** `programmeGroupFolded(ctx)` folds the Programme group unless the current path is a programme-scoped page, and exempts exactly the roles that `programmeConfig` does not admit — reviewer, QC, plain admin and finance — because those roles have no gift card to click and would be stranded.
+
+**Alternatives considered:** fold on `programmeChosen` (the first build); a hand-written role list for the exemption.
+
+**Rationale:** `programmeChosen` fills itself in whenever a tenant has exactly one gift — production today — so on that signal the group would never fold. The path is the only fact that says where the user IS. Deriving the exemption from `programmeConfig`'s roles states one fact once; the day the cards open to another role, the fold follows.
+
+**Revisit if:** the Programmes page shows gift cards to a role that cannot open configuration, which breaks the equivalence the exemption relies on.
