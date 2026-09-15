@@ -83,6 +83,32 @@ DEVELOPMENT_SKU_MARKERS = (
 )
 
 
+# ── The services that run the whole platform, as a tenant should see them (2026-09-15) ───────
+# Owner, 2026-09-15, reading the organisation's Usage & Billing page: *"We have not mentioned anything
+# about Google Workspace, which covers emails, drive, google meet"* and *"No mention of Cloudflare or
+# Github, which are at present free platform level services."* The page named three free services in
+# a footnote and nothing that is paid but shared — so the biggest standing costs were invisible.
+#
+# Names and plans only: WHAT each costs is a commercial disclosure that stays on the super-only costs
+# screen. Every ledger source is either listed here or excluded below WITH A REASON, and a test fails
+# if a new source is added without that decision.
+PLATFORM_SERVICES = (
+    {'key': 'gcp', 'plan': 'paid'},         # hosting the site and app, AI, document reading
+    {'key': 'supabase', 'plan': 'paid'},    # database, file storage, data transfer (egress)
+    {'key': 'workspace', 'plan': 'paid'},   # email mailboxes, Google Drive, Google Meet
+    {'key': 'twilio', 'plan': 'paid'},      # the WhatsApp number
+    {'key': 'brevo', 'plan': 'free'},       # sending email
+    {'key': 'cloudflare', 'plan': 'free'},  # Turnstile bot checks on sign-in and the contact form
+    {'key': 'github', 'plan': 'free'},      # code and automatic deployments
+)
+NOT_A_PLATFORM_SERVICE = {
+    'anthropic': 'a cost of delivering development hours, recovered through the hourly rate; not '
+                 'a service the organisation uses',
+    'openai': 'a fallback AI provider that has never run on production; list it the day it does',
+    'other': 'a bucket for one-off lines, not a service',
+}
+
+
 def is_development_cost(service: str, sku: str) -> bool:
     """True when this line is an input to billable development hours, not to running the site."""
     hay = f'{service or ""} {sku or ""}'.lower()

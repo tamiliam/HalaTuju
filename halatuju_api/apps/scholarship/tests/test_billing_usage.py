@@ -162,7 +162,7 @@ class TestBillingUsageEndpoint(TestCase):
         # `ai_jobs` + `ai_models_in_use` are SUPER-ONLY (2026-09-11) — the job → model list is a
         # platform fact. `test_and_NEVER_an_org_admin` pins the other side of that.
         self.assertEqual(set(data), {'month', 'months', 'can_see_platform', 'organisations',
-                                     'ai_jobs', 'ai_models_in_use'})
+                                     'ai_jobs', 'ai_models_in_use', 'platform_services'})
         block = data['organisations'][0]
         self.assertEqual(set(block), {'organisation_id', 'organisation', 'is_platform',
                                       'services', 'totals', 'storage_bytes'})
@@ -198,7 +198,8 @@ class TestBillingUsageEndpoint(TestCase):
 
     def test_org_admin_payload_exact_keys(self):
         data = self._get('oa-a').json()
-        self.assertEqual(set(data), {'month', 'months', 'can_see_platform', 'organisations'})
+        self.assertEqual(set(data), {'month', 'months', 'can_see_platform', 'organisations',
+                                     'platform_services'})
         block = data['organisations'][0]
         self.assertEqual(set(block), {'organisation_id', 'organisation', 'is_platform',
                                       'services', 'totals', 'storage_bytes'})

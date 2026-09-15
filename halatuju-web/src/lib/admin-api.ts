@@ -2326,6 +2326,8 @@ export interface BillingUsagePayload {
   ai_jobs?: AiJobRow[]
   /** SUPER-ONLY: every distinct model any job could reach today — the set an upgrade covers. */
   ai_models_in_use?: string[]
+  /** BOTH audiences (2026-09-15): the shared services behind the numbers, with their plan only. */
+  platform_services?: Array<{ key: string; plan: 'paid' | 'free' }>
 }
 
 /** The super/org_admin usage readout. 404s while BILLING_USAGE_ENABLED is off (dark ship) →

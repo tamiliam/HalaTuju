@@ -18,20 +18,22 @@ export const SERVICE_ORDER: string[] = ['gemini', 'vision_ocr', 'openai', 'email
 // the row is shown so the reader knows it exists and costs nothing right now.
 export const PAUSED_SERVICES: string[] = ['sms_verify']
 
-// Services we depend on that cost nothing TODAY, named in the footnote (label keys).
+// ── The shared services behind the numbers (2026-09-15) ──────────────────────────────────────
+// Owner, reading the organisation's page: Google Workspace (mailboxes, Drive, Meet) was named nowhere,
+// and Cloudflare and GitHub sat in a footnote. The list now comes FROM THE SERVER
+// (`platform_cost.PLATFORM_SERVICES`), where a test forces every cost-ledger supplier to be shown or
+// excluded with a reason — so the page cannot quietly forget a dependency again.
 //
-// ⚠ **NAMING THEM IS THE POINT** (owner, 2026-09-11). Brevo sends the mail, Cloudflare Turnstile
-// verifies the contact form, GitHub holds every repository and runs every CI minute. All three
-// are free on their current plans — and a dependency nobody has written down is one nobody
-// re-prices when its free tier ends. Each also has a `PlatformCost` source waiting, so the first
-// bill has somewhere to go other than "other".
-//
-// ⚠ **Google Workspace was removed from this list on 2026-09-11 and must not come back.** It was
-// listed here as free, and it is not: the owner's August invoice charges MYR 18.90 for it, and it
-// now has its own source and its own line in the cost section. A paid subscription named in a
-// "these cost nothing" footnote is not a cosmetic error — it is the page telling the only person
-// who reads it that a recurring bill does not exist.
-export const FREE_SERVICE_KEYS: string[] = ['brevo', 'turnstile', 'github']
+// ⚠ **Google Workspace is PAID** and was once listed here as free (removed 2026-09-11). A paid
+// subscription called free tells the reader a recurring bill does not exist. The plan comes from the
+// server; this file never decides it.
+export interface PlatformService { key: string; plan: 'paid' | 'free' }
+
+/** Paid first, then free, each group in the server's own order. Never mutates the input. */
+export function orderedPlatformServices(list: PlatformService[] | undefined): PlatformService[] {
+  const rows = list ? [...list] : []
+  return [...rows.filter((s) => s.plan === 'paid'), ...rows.filter((s) => s.plan !== 'paid')]
+}
 
 /** Order a block's service rows by SERVICE_ORDER (known first in that order, any unknown
  * service appended alphabetically). Returns a new array; never mutates the input. */
@@ -48,20 +50,25 @@ export function orderedServices(block: BillingOrgBlock): BillingServiceRow[] {
   })
 }
 
-/** Human-readable byte size (binary units): 0 → "0 B", 1024 → "1 KB", up to TB. Deterministic,
- * locale-agnostic, one decimal from MB up. */
+/** Human-readable byte size in DECIMAL units, the way Supabase reports and bills storage:
+ * 1 GB = 10⁹ bytes. 0 → "0 B", 1500 → "2 KB", 1 351 877 763 → "1.35 GB".
+ *
+ * ⚠ It used to divide by 1024 and print "GB" (2026-09-15). The owner put the page beside Supabase's
+ * usage screen — 1.1 GB here, 1.347 GB there — and part of the gap was only the unit. Whole KB, one
+ * decimal for MB, two for GB and up, so the figure reads against Supabase's to the same precision. */
 export function formatBytes(bytes: number): string {
   const n = Number(bytes) || 0
-  if (n < 1024) return `${n} B`
+  if (n < 1000) return `${n} B`
   const units = ['KB', 'MB', 'GB', 'TB']
-  let val = n / 1024
+  let val = n / 1000
   let u = 0
-  while (val >= 1024 && u < units.length - 1) {
-    val /= 1024
+  while (val >= 1000 && u < units.length - 1) {
+    val /= 1000
     u += 1
   }
-  const rounded = u === 0 ? Math.round(val) : Math.round(val * 10) / 10
-  return `${rounded} ${units[u]}`
+  const places = u === 0 ? 0 : u === 1 ? 1 : 2
+  const factor = 10 ** places
+  return `${Math.round(val * factor) / factor} ${units[u]}`
 }
 
 /** Compact integer for a tile (thousands grouping). */

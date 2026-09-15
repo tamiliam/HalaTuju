@@ -5090,18 +5090,17 @@
     },
     "billing": {
       "title": "Penggunaan & Pengebilan",
-      "subtitleSuper": "Penggunaan bermeter merentas setiap organisasi, asas platform yang dikongsi, kos platform, dan caj bagi setiap organisasi.",
-      "subtitleOrg": "Penggunaan bermeter organisasi anda bagi bulan ini, dan invois yang telah kami hantar kepada anda.",
+      "subtitleSuper": "Penggunaan bagi setiap organisasi dan asas platform yang dikongsi, diikuti invois, kos platform, dan caj bagi setiap organisasi.",
+      "subtitleOrg": "Penggunaan organisasi anda bagi bulan ini, diikuti invois yang telah kami hantar kepada anda.",
       "loading": "Memuatkan penggunaan…",
       "comingSoon": "Penggunaan & Pengebilan akan datang tidak lama lagi.",
       "month": "Bulan",
       "platform": "Platform (asas dikongsi)",
       "platformBadge": "Super sahaja",
       "platformSub": "Kerja dikongsi yang tidak dibilkan kepada mana-mana organisasi tunggal — laporan pemilih kursus dan mel operasi — disimpan untuk penyesuaian.",
-      "storageAllNote": "keseluruhan baldi, termasuk organisasi di bawah",
+      "storageAllNote": "setiap fail yang disimpan, bagi semua organisasi: angka yang dilaporkan Supabase",
       "noUsage": "Tiada penggunaan direkodkan untuk bulan ini.",
       "paused": "Dijeda",
-      "freeNote": "Tidak bermeter (perkhidmatan percuma):",
       "tokensLine": "{in} masuk / {out} keluar token",
       "cost": {
         "title": "Kos platform",
@@ -5181,12 +5180,6 @@
         "calls": "Panggilan",
         "tokensIn": "Token masuk",
         "tokensOut": "Token keluar"
-      },
-      "free": {
-        "workspace": "Google Workspace (Meet, Kalendar, Drive, Sheets)",
-        "turnstile": "Cloudflare Turnstile (pengesahan borang hubungi)",
-        "brevo": "Brevo (menghantar e-mel)",
-        "github": "GitHub (kod dan penggunaan)"
       },
       "modelCalls": "{n} panggilan",
       "modelLastUsed": "terakhir digunakan {date}",
@@ -5287,6 +5280,44 @@
             "payment_terms_days": "Tempoh bayaran (hari)",
             "bill_to_name": "Nama pada invois",
             "emails": "Hantar invois kepada (koma di antara alamat)"
+          }
+        }
+      },
+      "usageTitle": "Penggunaan bulan ini",
+      "storageOrgNote": "fail organisasi anda sahaja; imej kursus yang dikongsi tidak termasuk",
+      "shared": {
+        "title": "Perkhidmatan platform yang dikongsi",
+        "sub": "Perkhidmatan ini menjalankan seluruh platform, jadi ia tidak dikira bagi setiap organisasi di atas. Kosnya sampai ke invois anda melalui Infrastruktur platform dan Penggunaan bermeter.",
+        "paid": "Berbayar",
+        "free": "Pelan percuma",
+        "service": {
+          "gcp": {
+            "name": "Google Cloud",
+            "what": "mengehos laman web dan aplikasi, AI, dan pembacaan dokumen"
+          },
+          "supabase": {
+            "name": "Supabase",
+            "what": "pangkalan data, storan fail dan pemindahan data (egress)"
+          },
+          "workspace": {
+            "name": "Google Workspace",
+            "what": "peti mel e-mel, Google Drive dan Google Meet"
+          },
+          "twilio": {
+            "name": "Twilio",
+            "what": "nombor WhatsApp"
+          },
+          "brevo": {
+            "name": "Brevo",
+            "what": "menghantar e-mel"
+          },
+          "cloudflare": {
+            "name": "Cloudflare",
+            "what": "semakan bot semasa log masuk dan borang hubungan (Turnstile)"
+          },
+          "github": {
+            "name": "GitHub",
+            "what": "kod dan pelancaran automatik"
           }
         }
       }

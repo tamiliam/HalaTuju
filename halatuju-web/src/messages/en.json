@@ -5090,18 +5090,17 @@
     },
     "billing": {
       "title": "Usage & Billing",
-      "subtitleSuper": "Metered usage across every organisation, plus the shared platform base, what the platform cost, and what each organisation is charged.",
-      "subtitleOrg": "Your organisation's metered usage for the month, and the invoices we have sent you.",
+      "subtitleSuper": "Usage across every organisation and the shared platform base, then invoices, what the platform cost, and what each organisation is charged.",
+      "subtitleOrg": "What your organisation used this month, then the invoices we have sent you.",
       "loading": "Loading usage…",
       "comingSoon": "Usage & Billing is coming soon.",
       "month": "Month",
       "platform": "Platform (shared base)",
       "platformBadge": "Super only",
       "platformSub": "Shared work not billed to any single organisation — course-selector reports and operational mail — kept for reconciliation.",
-      "storageAllNote": "whole bucket, including the organisations below",
+      "storageAllNote": "every stored file, across all organisations: the figure Supabase reports",
       "noUsage": "No usage recorded for this month.",
       "paused": "Paused",
-      "freeNote": "Not metered (free services):",
       "tokensLine": "{in} in / {out} out tokens",
       "cost": {
         "title": "What the platform cost",
@@ -5181,12 +5180,6 @@
         "calls": "Calls",
         "tokensIn": "Tokens in",
         "tokensOut": "Tokens out"
-      },
-      "free": {
-        "workspace": "Google Workspace (Meet, Calendar, Drive, Sheets)",
-        "turnstile": "Cloudflare Turnstile (contact-form verification)",
-        "brevo": "Brevo (sending email)",
-        "github": "GitHub (code and deployments)"
       },
       "modelCalls": "{n} calls",
       "modelLastUsed": "last used {date}",
@@ -5287,6 +5280,44 @@
             "payment_terms_days": "Days to pay",
             "bill_to_name": "Name on the invoice",
             "emails": "Send invoices to (comma between addresses)"
+          }
+        }
+      },
+      "usageTitle": "Usage this month",
+      "storageOrgNote": "your organisation's files only; shared course images are not included",
+      "shared": {
+        "title": "Shared platform services",
+        "sub": "These run the whole platform, so they are not counted per organisation above. Their cost reaches your invoice through Platform infrastructure and Metered usage.",
+        "paid": "Paid",
+        "free": "Free plan",
+        "service": {
+          "gcp": {
+            "name": "Google Cloud",
+            "what": "hosting the website and app, AI, and document reading"
+          },
+          "supabase": {
+            "name": "Supabase",
+            "what": "database, file storage and data transfer (egress)"
+          },
+          "workspace": {
+            "name": "Google Workspace",
+            "what": "email mailboxes, Google Drive and Google Meet"
+          },
+          "twilio": {
+            "name": "Twilio",
+            "what": "the WhatsApp number"
+          },
+          "brevo": {
+            "name": "Brevo",
+            "what": "sending email"
+          },
+          "cloudflare": {
+            "name": "Cloudflare",
+            "what": "bot checks on sign-in and the contact form (Turnstile)"
+          },
+          "github": {
+            "name": "GitHub",
+            "what": "code and automatic deployments"
           }
         }
       }

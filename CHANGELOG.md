@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## Usage & Billing, as the organisation reads it - 2026-09-15
+
+The owner read the organisation's page beside Supabase's own usage screen.
+
+- **Storage was wrong twice.** The page read 1.1 GB; Supabase read 1.347 GB. It summed the sizes on our
+  own document rows (missing files whose row was replaced but which are still stored and billed) and
+  divided by 1024 while printing "GB". Storage is now measured from `storage.objects`, the table
+  Supabase bills from, attributed by path (`<application id>/...` and `requests/<organisation id>/...`),
+  and printed in decimal units: the platform total reads **1.35 GB**, BrightPath's files **1.22 GB**.
+  Falls back to our records, with a log warning, if the storage table cannot be read.
+- **Shared platform services** replace the free-services footnote: Google Cloud, Supabase (database,
+  storage and data transfer), Google Workspace (mailboxes, Drive, Meet), Twilio, Brevo, Cloudflare
+  (Turnstile) and GitHub, each marked Paid or Free plan. Names and plans only. The list comes from
+  `platform_cost.PLATFORM_SERVICES`, and a test fails if a cost-ledger supplier is neither listed nor
+  excluded with a reason.
+- **Usage on top, invoices below**, under a "Usage this month" heading. The organisation's own name no
+  longer repeats above its figures for an organisation admin; a super still sees each name.
+- Subtitle rewritten: it no longer says "no charges are shown".
+
 ## Tenant invoices and receipts - 2026-09-14
 
 The billing screen computed a charge and ISSUED nothing: no invoice, no receipt, and a figure that

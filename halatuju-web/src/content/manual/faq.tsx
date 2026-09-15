@@ -247,8 +247,11 @@ export const FAQ: Record<Audience, QA[]> = {
     },
     {
       q: <>What will &ldquo;Billing &amp; usage&rdquo; show?</>,
-      a: <>Two things. <strong>Usage</strong>: what your organisation used this month &mdash; AI calls, document
-        reading, emails, messages and storage. <strong>Invoices</strong>: the invoices we have sent you, each with
+      a: <>Three things, top to bottom. <strong>Usage</strong>: what your organisation used this month &mdash; AI
+        calls, document reading, emails, messages, and the files you store (measured the way Supabase measures
+        them). <strong>Shared platform services</strong>: the services that run the whole platform, such as
+        Google Workspace and Supabase, and whether each is paid or on a free plan. <strong>Invoices</strong>: the
+        invoices we have sent you, each with
         a PDF, and a receipt for every payment we have recorded. An invoice for a month is issued on the
         15th of the next month, and it appears here only once it has been sent to you.</>,
     },

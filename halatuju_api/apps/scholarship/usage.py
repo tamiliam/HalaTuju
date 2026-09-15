@@ -222,11 +222,60 @@ def sole_organisation_id(org_ids):
         return None
 
 
+# ── Storage: measured from the files Supabase actually holds (2026-09-15) ─────
+# ⚠ THE OWNER COMPARED THIS SCREEN WITH SUPABASE'S OWN USAGE PAGE: 1.1 GB here, 1.347 GB there.
+# Two faults, both ours. (1) The figure summed the `size` WE recorded on our document rows, which
+# misses every file whose row was replaced or removed but whose object is still stored — and still
+# billed. (2) It divided by 1024³ and printed "GB"; Supabase's GB is 10⁹. So the figure now comes
+# from `storage.objects`, the table Supabase bills from, and the screen formats it in decimal units.
+#
+# Attribution needs no join to our metadata: the storage layout already names the owner.
+#   b40-documents/<application id>/<doc type>/<file>   → the application's owning organisation
+#   b40-documents/requests/<organisation id>/<request>/<file>
+# The two course-image buckets serve every organisation and belong to the platform total only.
+DOCUMENTS_BUCKET = 'b40-documents'
+
+_ORG_STORAGE_SQL = """
+    SELECT COALESCE(SUM((o.metadata->>'size')::bigint), 0)
+    FROM storage.objects o
+    WHERE o.bucket_id = %s AND (
+        (split_part(o.name, '/', 1) ~ '^[0-9]+$'
+         AND split_part(o.name, '/', 1)::bigint IN (
+             SELECT id FROM scholarship_applications WHERE owning_organisation_id = %s))
+        OR (split_part(o.name, '/', 1) = 'requests' AND split_part(o.name, '/', 2) = %s)
+    )
+"""
+_ALL_STORAGE_SQL = "SELECT COALESCE(SUM((metadata->>'size')::bigint), 0) FROM storage.objects"
+
+
+def _measured_storage(sql, params=()):
+    """Run a `storage.objects` sum, or return None when it cannot be measured.
+
+    None, never 0: a caller that cannot measure falls back to our own records and says so in the
+    log. Only Postgres has the `storage` schema — a local SQLite test database does not — so the
+    fallback is also what every unit test exercises.
+    """
+    from django.db import connection
+    if connection.vendor != 'postgresql':
+        return None
+    try:
+        with connection.cursor() as cur:
+            cur.execute(sql, params)
+            return int(cur.fetchone()[0] or 0)
+    except Exception:  # noqa: BLE001 — a storage read must never break the usage screen
+        logger.warning('usage: could not read storage.objects; using document records', exc_info=True)
+        return None
+
+
 def org_storage_bytes(org_id):
-    """Live Supabase-storage snapshot for ONE organisation: the sum of the document
-    bytes we hold for that org — applicant documents (via the application's
-    owning_organisation) + request screenshot attachments. Computed at request time
-    from our own metadata (NO usage_events row, NO meter change). Best-effort → 0."""
+    """Stored bytes for ONE organisation, measured from Supabase's own file table.
+
+    Falls back to the sizes on our document rows when `storage.objects` cannot be read. That
+    figure is known to UNDER-count (see the note above), which is why it is the fallback.
+    """
+    measured = _measured_storage(_ORG_STORAGE_SQL, [DOCUMENTS_BUCKET, org_id, str(org_id)])
+    if measured is not None:
+        return measured
     try:
         from django.db.models import Sum
         from .models import ApplicantDocument, OrgRequestAttachment
@@ -242,8 +291,11 @@ def org_storage_bytes(org_id):
 
 
 def bucket_storage_bytes():
-    """Whole-bucket storage snapshot (all orgs) — the platform reconciliation figure.
-    Best-effort → 0."""
+    """EVERY stored file, all buckets, all organisations — the figure Supabase's usage page shows.
+    The platform reconciliation total. Falls back to our document records; best-effort → 0."""
+    measured = _measured_storage(_ALL_STORAGE_SQL)
+    if measured is not None:
+        return measured
     try:
         from django.db.models import Sum
         from .models import ApplicantDocument, OrgRequestAttachment
@@ -348,9 +400,13 @@ def monthly_usage(month, *, restrict_org_id=None, include_platform=False):
                              key=lambda i: (names.get(i, '') or '').lower()):
             organisations.append(org_block(org_id, by_org[org_id]))
 
+    from .platform_cost import PLATFORM_SERVICES
     return {
         'month': str(month),
         'months': available_months(),
         'can_see_platform': bool(include_platform and restrict_org_id is None),
         'organisations': organisations,
+        # BOTH audiences (2026-09-15): the shared services behind the numbers above, named with
+        # their plan and nothing else. Copied, so no caller can mutate the module constant.
+        'platform_services': [dict(s) for s in PLATFORM_SERVICES],
     }

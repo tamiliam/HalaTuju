@@ -11308,3 +11308,41 @@ than no invoice. Registration number is optional for the same reason: an unregis
 real state, and refusing on it would block billing on a decision that is not the platform's to make.
 
 **Revisit if:** the entity is registered — then fill in the registration number, and consider SST.
+
+## Storage is measured from Supabase's own file table, not from our document records — 2026-09-15
+
+**Decision:** `usage.org_storage_bytes` and `bucket_storage_bytes` sum `storage.objects`. An organisation's
+figure is the files under its applications' ids plus `requests/<organisation id>/`; the platform figure is
+every object in every bucket. The screen prints decimal units (1 GB = 10^9 bytes). Our own `size` columns
+are the fallback only.
+
+**Alternatives considered:** keep summing `ApplicantDocument.size`; fix only the unit.
+
+**Rationale:** the owner compared the page with Supabase's usage screen (1.1 GB against 1.347 GB). On
+production the document rows summed to 1.162 GB while the stored objects were 1.352 GB: replaced files
+stay stored and billed after their row moves on, and the course-image buckets were not counted at all.
+Fixing the unit alone would still have disagreed with the bill.
+
+**Trade-offs:** the per-organisation figure relies on the storage path layout. If a new upload path is
+added that does not start with an application id or `requests/<organisation id>/`, its files count for
+the platform total but no organisation.
+
+**Revisit if:** a new kind of upload is stored under a different path, or a second documents bucket appears.
+
+## Shared platform services are named, with their plan, and never their cost — 2026-09-15
+
+**Decision:** Usage & Billing lists the services that run the whole platform, each marked Paid or Free
+plan, for both audiences. The list is `platform_cost.PLATFORM_SERVICES`; every cost-ledger source is
+either on it or in `NOT_A_PLATFORM_SERVICE` with a reason, enforced by a test. Egress is named as part of
+Supabase's line, with no figure.
+
+**Alternatives considered:** a footnote of free services (what shipped); showing each service's cost;
+showing egress as a number.
+
+**Rationale:** owner, 2026-09-15: Google Workspace (mailboxes, Drive, Meet) was mentioned nowhere and
+Cloudflare and GitHub sat in a footnote. Costs stay super-only as a commercial disclosure. Egress is a
+project-wide figure the platform has no feed for and cannot split by organisation; naming it without a
+number is honest, inventing a per-organisation share is not.
+
+**Revisit if:** egress becomes material (it was 0.197 GB on 15 September), or a second tenant makes the
+shared-service split a question somebody asks.

@@ -214,7 +214,9 @@ class TestAggregation(TestCase):
 
     def test_payload_and_block_key_shape(self):
         payload = usage.monthly_usage(self.month, include_platform=True)
-        self.assertEqual(set(payload), {'month', 'months', 'can_see_platform', 'organisations'})
+        self.assertEqual(set(payload), {'month', 'months', 'can_see_platform', 'organisations',
+                                        # 2026-09-15: the shared services, names and plans only.
+                                        'platform_services'})
         block = payload['organisations'][0]
         self.assertEqual(set(block), {'organisation_id', 'organisation', 'is_platform',
                                       'services', 'totals', 'storage_bytes'})

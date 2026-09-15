@@ -31,8 +31,10 @@ jest.mock('@/lib/i18n', () => ({
     locale: 'en',
   }),
 }))
+// A variable, not a literal, so one describe below can render the page as an organisation admin.
+let mockRole: { role: string; owning_org_id: number | null } = { role: 'super', owning_org_id: null }
 jest.mock('@/lib/admin-auth-context', () => ({
-  useAdminAuth: () => ({ token: 'tok', role: { role: 'super', owning_org_id: null } }),
+  useAdminAuth: () => ({ token: 'tok', role: mockRole }),
 }))
 jest.mock('@/lib/admin-api')
 
@@ -80,6 +82,7 @@ const COSTS = (over: Partial<api.BillingCostsPayload> = {}): api.BillingCostsPay
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockRole = { role: 'super', owning_org_id: null }
   mockApi.getBillingUsage.mockResolvedValue(USAGE)
   mockApi.getBillingCosts.mockResolvedValue(COSTS())
   mockApi.setBillingAdjustment.mockResolvedValue({ id: 1 })
@@ -414,5 +417,53 @@ describe('hours are filed by when we WORKED', () => {
     const { container } = render(<BillingPage />)
     const section = await waitFor(() => within(container).getByTestId('unbilled-requests'))
     expect(within(section).getByText(/last touched/)).not.toBeNull()
+  })
+})
+
+describe('what an organisation reads on its own page (owner, 2026-09-15)', () => {
+  const SERVICES: api.BillingUsagePayload['platform_services'] = [
+    { key: 'brevo', plan: 'free' }, { key: 'workspace', plan: 'paid' },
+    { key: 'cloudflare', plan: 'free' }, { key: 'github', plan: 'free' }, { key: 'gcp', plan: 'paid' },
+  ]
+
+  it('an organisation admin is not shown their own name again; a super still is', async () => {
+    mockApi.getBillingUsage.mockResolvedValue({ ...USAGE, platform_services: SERVICES })
+    mockRole = { role: 'org_admin', owning_org_id: 1 }
+    mockApi.getBillingCosts.mockRejectedValue(new Error('403'))
+    const org = render(<BillingPage />)
+    await waitFor(() => within(org.container).getByText('admin.billing.usageTitle'))
+    expect(within(org.container).queryByRole('heading', { name: 'BrightPath', level: 2 })).toBeNull()
+    org.unmount()
+
+    mockRole = { role: 'super', owning_org_id: null }
+    mockApi.getBillingCosts.mockResolvedValue(COSTS())
+    const sup = render(<BillingPage />)
+    await waitFor(() => within(sup.container).getByRole('heading', { name: 'BrightPath', level: 2 }))
+  })
+
+  it('names the shared services, paid first, and never calls Google Workspace free', async () => {
+    mockApi.getBillingUsage.mockResolvedValue({ ...USAGE, platform_services: SERVICES })
+    const { container } = render(<BillingPage />)
+    const section = await waitFor(() => within(container).getByTestId('platform-services'))
+    const keys = Array.from(section.querySelectorAll('[data-testid^="platform-service-"]'))
+      .map((el) => el.getAttribute('data-testid'))
+    expect(keys).toEqual(['platform-service-workspace', 'platform-service-gcp',
+      'platform-service-brevo', 'platform-service-cloudflare', 'platform-service-github'])
+    const workspace = within(section).getByTestId('platform-service-workspace')
+    expect(within(workspace).getByText('admin.billing.shared.paid')).not.toBeNull()
+    expect(within(workspace).queryByText('admin.billing.shared.free')).toBeNull()
+    expect(within(section).getAllByText('admin.billing.shared.free')).toHaveLength(3)
+  })
+
+  it('shows no shared-services section at all when the server sends none', async () => {
+    const { container } = render(<BillingPage />)
+    await waitFor(() => within(container).getByText('admin.billing.usageTitle'))
+    expect(within(container).queryByTestId('platform-services')).toBeNull()
+  })
+
+  it("says whose files the storage figure counts, so it is never read against Supabase's total", async () => {
+    const { container } = render(<BillingPage />)
+    await waitFor(() => within(container).getByText('admin.billing.usageTitle'))
+    expect(within(container).getAllByText(/admin\.billing\.storageOrgNote/).length).toBeGreaterThan(0)
   })
 })

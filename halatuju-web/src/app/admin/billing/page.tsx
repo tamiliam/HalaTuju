@@ -13,7 +13,7 @@ import {
 } from '@/lib/admin-api'
 import {
   orderedServices, formatBytes, formatCount, formatMonth,
-  PAUSED_SERVICES, FREE_SERVICE_KEYS,
+  PAUSED_SERVICES, orderedPlatformServices, type PlatformService,
   orderedModels, jobsByModel, fixedJobs, secondProviderJobs,
 } from '@/lib/billingUsage'
 import {
@@ -45,9 +45,14 @@ function Tile({ label, value, sub }: { label: string; value: string; sub?: strin
 /** ⚠ `t` takes VARIABLES now. The per-model lines say "412 calls · last used 10/09/2026", and a
  *  count and a date belong in the sentence rather than glued on around it — the same reason the
  *  interview window copy interpolates its own numbers. */
-function OrgCard({ block, t }: {
+function OrgCard({ block, t, showHeading = true }: {
   block: BillingOrgBlock
   t: (k: string, vars?: Record<string, string>) => string
+  /** ⚠ An organisation admin sees ONE block, their own, under a page already scoped to their
+   *  organisation — so its name here only repeated the breadcrumb (owner, 2026-09-15). A super still
+   *  needs it: they see every organisation plus the platform row, and the name is what tells them
+   *  apart. */
+  showHeading?: boolean
 }) {
   const rows = orderedServices(block)
   const find = (s: string) => rows.find((r) => r.service === s)
@@ -58,6 +63,7 @@ function OrgCard({ block, t }: {
 
   return (
     <section className="mb-6">
+      {showHeading && (
       <div className="flex items-center gap-2 mb-3">
         <h2 className="text-lg font-semibold text-ground-900">
           {block.is_platform ? t('admin.billing.platform') : block.organisation}
@@ -68,6 +74,7 @@ function OrgCard({ block, t }: {
           </span>
         )}
       </div>
+      )}
       {block.is_platform && (
         <p className="text-sm text-ground-500 -mt-2 mb-3">{t('admin.billing.platformSub')}</p>
       )}
@@ -85,7 +92,7 @@ function OrgCard({ block, t }: {
             other figure in that block is exclusive (work billed to nobody), so without this
             note the page reads as if the two storage lines add up. They are the same bytes. */}
         <Tile label={t('admin.billing.service.storage')} value={formatBytes(block.storage_bytes)}
-          sub={block.is_platform ? t('admin.billing.storageAllNote') : undefined} />
+          sub={t(block.is_platform ? 'admin.billing.storageAllNote' : 'admin.billing.storageOrgNote')} />
       </div>
 
       {/* Breakdown table */}
@@ -131,9 +138,8 @@ function OrgCard({ block, t }: {
             <tr className="border-b last:border-0 bg-ground-50/50">
               <td className="px-4 py-2 text-ground-900">
                 {t('admin.billing.service.storage')}
-                {block.is_platform && (
-                  <span className="text-ground-500"> — {t('admin.billing.storageAllNote')}</span>
-                )}
+                <span className="text-ground-500"> — {t(block.is_platform
+                  ? 'admin.billing.storageAllNote' : 'admin.billing.storageOrgNote')}</span>
               </td>
               <td className="px-4 py-2 text-right text-ground-700" colSpan={3}>{formatBytes(block.storage_bytes)}</td>
             </tr>
@@ -452,6 +458,39 @@ function UnbilledSection({ payload, t, onRecord, busy }: {
   )
 }
 
+/** The services that run the WHOLE platform (2026-09-15). Named with their plan only: what each
+ *  costs is a commercial disclosure that stays on the super-only costs section. They are not counted
+ *  per organisation above, because nobody can honestly split a shared mailbox or database by tenant —
+ *  their cost reaches an invoice through the Platform infrastructure and Metered usage lines. */
+function PlatformServices({ services, t }: {
+  services: PlatformService[] | undefined
+  t: (k: string, vars?: Record<string, string>) => string
+}) {
+  const rows = orderedPlatformServices(services)
+  if (rows.length === 0) return null
+  return (
+    <section className="mb-6" data-testid="platform-services">
+      <h2 className="text-lg font-semibold text-ground-900">{t('admin.billing.shared.title')}</h2>
+      <p className="mt-1 text-sm text-ground-500">{t('admin.billing.shared.sub')}</p>
+      <ul className="mt-3 divide-y rounded-xl border bg-ground-0 shadow-sm">
+        {rows.map((s) => (
+          <li key={s.key} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-2.5"
+            data-testid={`platform-service-${s.key}`}>
+            <span className="text-sm">
+              <span className="font-medium text-ground-900">{t(`admin.billing.shared.service.${s.key}.name`)}</span>
+              <span className="text-ground-500"> — {t(`admin.billing.shared.service.${s.key}.what`)}</span>
+            </span>
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${s.plan === 'paid'
+              ? 'bg-info-100 text-info-700' : 'bg-ground-100 text-ground-600'}`}>
+              {t(s.plan === 'paid' ? 'admin.billing.shared.paid' : 'admin.billing.shared.free')}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 export default function AdminBillingPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
@@ -566,13 +605,18 @@ export default function AdminBillingPage() {
       </div>
 
       <div className="mt-6">
+        {/* ── USAGE on top, then the shared services, then INVOICES (owner, 2026-09-15: "this page
+               would show usage on top and billing at the bottom"). ── */}
+        <h2 className="mb-3 text-lg font-semibold text-ground-900">{t('admin.billing.usageTitle')}</h2>
         {data.organisations.length === 0 && (
           <p className="text-ground-400">{t('admin.billing.noUsage')}</p>
         )}
         {data.organisations.map((b) => (
-          <OrgCard key={b.organisation_id ?? 'platform'} block={b} t={t} />
+          <OrgCard key={b.organisation_id ?? 'platform'} block={b} t={t} showHeading={isSuper} />
         ))}
       </div>
+
+      <PlatformServices services={data.platform_services} t={t} />
 
       {/* ── Invoices (2026-09-14). BOTH audiences: a super issues, sends and records payment; an
              org_admin sees its own invoices once they have been sent. Loads and fails on its own,
@@ -665,11 +709,6 @@ export default function AdminBillingPage() {
         </div>
       )}
 
-      {/* Non-metered free services footnote. */}
-      <p className="mt-2 text-xs text-ground-400">
-        {t('admin.billing.freeNote')}{' '}
-        {FREE_SERVICE_KEYS.map((k) => t(`admin.billing.free.${k}`)).join(' · ')}
-      </p>
     </div>
   )
 }
