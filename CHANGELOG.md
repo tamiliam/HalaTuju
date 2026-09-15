@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## Every new table is locked the moment it is created - 2026-09-16
+
+Supabase emailed a critical alert (as of 13 Sep): a public table without Row-Level Security.
+It was `org_billing_adjustments`, created by `scholarship/0157` on 11 Sep without RLS and locked
+on 15 Sep in the same step as `0160`. Four days readable with the publishable key; one row (a
+discount, its reason, who set it); no student data. The Supabase access logs for 11-16 Sep show
+**no Data API request to any table** - one keyless probe of `/rest/v1/` on 12 Sep got a 401.
+
+- **A database event trigger, `rls_auto_enable`, now switches RLS on for every table created in
+  `public`** (`CREATE TABLE`, `CREATE TABLE AS`, `SELECT INTO`, partitioned tables included).
+  Applied via Supabase MCP as the Supabase migration `rls_auto_enable_public_tables`. It is not
+  a Django migration: it lives in the database, where the mistake happens, and a Django
+  `migrate` on any path - MCP, `manage.py`, a new agent - now gets it for free.
+- **It adds no policy.** A new table is deny-by-default for `anon` and `authenticated`, and the
+  owner (`postgres`, which Django uses) still reads and writes. Adding the one `service_role`
+  policy stays part of the migrate-first step, as before.
+- **Proven in production, both ways:** with the trigger on, a plain, a `CREATE TABLE AS` and a
+  partitioned probe table all came up RLS-on; the owner read its row and `anon` saw 0 rows. With
+  the trigger disabled, the same probe came up RLS-off. Trigger re-enabled, probes dropped, 0
+  public tables without RLS, Security Advisor shows no new finding.
+- To remove it: `drop event trigger rls_auto_enable; drop function public.rls_auto_enable();`
+
 ## The Overview's money charts, round two - the owner's first live read - 2026-09-15
 
 The owner opened the new Overview and asked for four things on the money charts. All four are

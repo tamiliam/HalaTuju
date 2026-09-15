@@ -287,6 +287,11 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 3. Every new table MUST have RLS enabled + policies
 #    See docs/incident-001-rls-disabled.md for templates
+#    ⚠ Since 2026-09-16 the event trigger `rls_auto_enable` switches RLS ON for every new
+#    table in `public` automatically (0157 had shipped a table without it). It adds NO
+#    policy — still add the one `service_role` policy, and still run the Security Advisor.
+#    Do not drop the trigger. Check it: select evtenabled from pg_event_trigger
+#    where evtname = 'rls_auto_enable';  -- 'O' = on
 ```
 
 966 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.

@@ -1,5 +1,25 @@
 # Architectural Decisions — HalaTuju
 
+## New `public` tables get RLS from a DATABASE event trigger, not from memory — 2026-09-16
+
+**Decision:** an event trigger `rls_auto_enable` (on `ddl_command_end`) runs
+`ALTER TABLE … ENABLE ROW LEVEL SECURITY` on every table created in `public`. It does not create
+a policy.
+
+**Rationale:** the rule "every new table MUST have RLS" has been in this file's CLAUDE.md since
+incident-001 and was still missed by `scholarship/0157` (`org_billing_adjustments`, readable for
+four days, 2026-09-11 → 09-15, found by the Supabase alert rather than by us). A rule that has
+to be remembered by whoever writes the next migration will be forgotten again; the database is
+the one place every table passes through, whichever tool creates it.
+
+**Why not a pytest guard:** tests run on SQLite, and the RLS SQL is run by hand via MCP and only
+RECORDED in migration docstrings, so a static check of migration files would prove nothing
+about production.
+
+**Why no policy:** deny-by-default is the house convention — the owner (`postgres`, Django's
+role) bypasses RLS, and every table here carries at most one `service_role` policy. Guessing a
+policy automatically would be the one way this trigger could OPEN something.
+
 ## Payments and Spending are PROGRAMME-scoped, and they move together — TD-241, 2026-09-11
 
 **Decision:** both nav rows move from the Organisation group to the Programme group. Both endpoints
