@@ -3779,7 +3779,27 @@ It does not matter today — a super sees every organisation on both screens, wh
 
 **Trigger:** a second organisation starts importing spending.
 
-### [TD-247] The nudge email's due date is a day early between midnight and 08:00 — low
+### [TD-247] Supplier bills reach the ledger only when a person imports them — medium
+
+**Raised 2026-09-14, building tenant invoices.** The invoice job runs on the 15th and bills the previous month from the platform cost ledger. Two of the ledger's feeds are manual: `import_invoices` reads Workspace, Supabase, Twilio and Anthropic PDFs from a folder on the owner's laptop, and `sync_gcp_costs` needs BigQuery, which is deliberately not in the service's requirements. Neither has a cron door.
+
+**What stops it being a silent under-bill:** `invoicing.readiness` refuses a month in which any supplier that billed the month before has no row, and a month with no costs at all. So a forgotten import produces a refusal email on the 15th, not a smaller invoice. That is the safety net; it is not a feed.
+
+**Fix when it bites:** a door that reads the supplier PDFs from a Drive folder the service can reach (the spending import already reads Drive), and a BigQuery pull that runs on the service. Until then, import the month's bills between the 8th and the 15th.
+
+**Trigger:** the first 15th on which the job refuses for a missing supplier.
+
+### [TD-248] The billing-rates form defaults its start date from the UTC clock — low
+
+**Found 2026-09-14** while reading `AdminBillingRatesView.post`: a rate saved without `effective_from` defaults to `timezone.now().date().replace(day=1)`. That is the UTC date, the TD-209 shape a fourth time. Between midnight and 08:00 Malaysian time on the 1st, a rate saved with no date takes effect from the PREVIOUS month, which re-prices a month that may already be invoiced.
+
+**Why low:** the screen always sends a date, and an issued invoice is frozen, so no issued bill can move. The live charge readout could.
+
+**Fix:** `timezone.localdate().replace(day=1)`, with a pinned-clock test at 23:30 UTC on the last day of a month.
+
+**Trigger:** anyone saving a rate through the API without a date.
+
+### [TD-249] The nudge email's due date is a day early between midnight and 08:00 — low
 
 **Status:** Open (2026-09-15)
 
@@ -3811,7 +3831,7 @@ same way the code does cannot see this class of bug (`docs/lessons.md`).
 **Trigger:** the first reviewer who says the reminder gave them a date a day earlier than the
 screen, or the first organisation whose SLA lands due dates in the early-morning window routinely.
 
-### [TD-248] The route-drift test cannot see a nested admin route — low
+### [TD-250] The route-drift test cannot see a nested admin route — low
 
 **Status:** Open (2026-09-15)
 

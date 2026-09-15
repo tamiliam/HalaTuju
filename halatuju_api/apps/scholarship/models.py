@@ -3650,6 +3650,279 @@ class OrgBillingAdjustment(models.Model):
         return f'{self.period_month} {self.organisation_id}: -{self.discount_pct}%'
 
 
+# ── Tenant invoices and receipts (2026-09-14) ─────────────────────────────────
+# The billing screen computed a charge and ISSUED nothing: `charge_for` re-ran on every page load,
+# so a rate edit or a late ledger row silently rewrote a month somebody had already been told
+# about. These models are the other half — a bill that, once issued, never changes.
+#
+# Owner rulings, 2026-09-14: issued on the 15th FOR THE PREVIOUS MONTH (suppliers bill late —
+# Supabase runs 8th-to-8th — so the 15th is when a month's cost is actually known); and HELD, not
+# sent — a super presses Send, and a tenant sees nothing until then.
+
+class InvoiceIssuer(models.Model):
+    """WHO is billing — the one block every invoice and receipt prints at the top. One row.
+
+    ⚠ **DELIBERATELY EMPTY UNTIL THE OWNER FILLS IT IN.** HalaTuju has no registered legal entity
+    yet (it is run in a personal capacity; the entity decision is open). An invoice naming an
+    invented company, or a bank account typed from memory, is worse than no invoice. So there is
+    no seed row and no default, and `invoicing.readiness` refuses to issue anything while the
+    required fields are blank — the same "refuse, never guess" rule `BillingRate` follows.
+
+    Printed onto each invoice as a SNAPSHOT at issue time (`Invoice.issuer_snapshot`), so changing
+    the bank account in March never rewrites the account printed on January's invoice.
+    """
+    #: What must be present before anything is issued. `registration_no` and `phone` are absent
+    #: on purpose: an unregistered issuer is a real state today, and refusing on it would block
+    #: billing on a decision that is not the platform's to make.
+    REQUIRED = ('legal_name', 'address', 'email', 'bank_name', 'bank_account_name',
+                'bank_account_no')
+
+    legal_name = models.CharField(max_length=200, blank=True, default='')
+    registration_no = models.CharField(
+        max_length=60, blank=True, default='',
+        help_text='Company or society registration number, when one exists. Printed if set.')
+    address = models.TextField(blank=True, default='')
+    email = models.EmailField(blank=True, default='',
+                              help_text='Printed on the invoice and used as the reply-to on Send.')
+    phone = models.CharField(max_length=30, blank=True, default='')
+    bank_name = models.CharField(max_length=120, blank=True, default='')
+    bank_account_name = models.CharField(max_length=200, blank=True, default='')
+    bank_account_no = models.CharField(max_length=40, blank=True, default='')
+    payment_terms_days = models.PositiveSmallIntegerField(
+        default=30,
+        help_text='Days from the issue date to the due date. Snapshotted: changing it never moves '
+                  'the due date of an invoice already issued.')
+    updated_by_email = models.EmailField(blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'invoice_issuer'
+
+    def missing(self):
+        """The required fields still blank, in form order. Empty list = ready to issue."""
+        return [f for f in self.REQUIRED if not (getattr(self, f, '') or '').strip()]
+
+    def snapshot(self):
+        return {f: getattr(self, f) for f in (
+            'legal_name', 'registration_no', 'address', 'email', 'phone',
+            'bank_name', 'bank_account_name', 'bank_account_no')}
+
+    def __str__(self):
+        return self.legal_name or '(issuer not set)'
+
+
+class OrgBillingDetails(models.Model):
+    """WHO is being billed — one row per tenant: the name, address and inboxes an invoice goes to.
+
+    Separate from `PartnerOrganisation` because that table is dual-role (ten rows on production,
+    one tenant) and lives in another app; a billing address has no meaning for a referral school.
+    Snapshotted onto each invoice at issue time for the same reason as the issuer.
+    """
+    organisation = models.OneToOneField(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT,
+        related_name='billing_details')
+    bill_to_name = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text='The name printed under "Bill to" — the legal name, which may differ from the '
+                  'display name the platform uses.')
+    address = models.TextField(blank=True, default='')
+    emails = models.JSONField(
+        default=list, blank=True,
+        help_text='Where Send delivers the invoice. A list: finance inboxes are often two people.')
+    updated_by_email = models.EmailField(blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'org_billing_details'
+
+    def clean_emails(self):
+        return [e for e in (str(x).strip() for x in (self.emails or [])) if e]
+
+    def missing(self):
+        out = []
+        if not (self.bill_to_name or '').strip():
+            out.append('bill_to_name')
+        if not (self.address or '').strip():
+            out.append('address')
+        if not self.clean_emails():
+            out.append('emails')
+        return out
+
+    def snapshot(self):
+        return {'bill_to_name': self.bill_to_name, 'address': self.address,
+                'emails': self.clean_emails()}
+
+    def __str__(self):
+        return f'{self.organisation_id}: {self.bill_to_name}'
+
+
+class BillingSequence(models.Model):
+    """The last number used, per document kind per year — what makes numbering GAP-FREE.
+
+    `max(number) + 1` is not gap-free under concurrency and it is not safe after a void either,
+    because a voided number must stay used for ever. A counter row locked with
+    `select_for_update` inside the issuing transaction is: a rolled-back issue rolls the counter
+    back with it, so a failed attempt never burns a number.
+    """
+    KIND_INVOICE = 'INV'
+    KIND_RECEIPT = 'RCP'
+    kind = models.CharField(max_length=3)
+    year = models.PositiveSmallIntegerField()
+    last = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'billing_sequences'
+        constraints = [
+            models.UniqueConstraint(fields=['kind', 'year'], name='billing_sequence_unique'),
+        ]
+
+
+class Invoice(models.Model):
+    """A tenant's bill for ONE month, frozen at the moment it was issued.
+
+    ⚠ **NOTHING ON THIS ROW IS EVER RECOMPUTED.** The lines, the discount, the issuer and the
+    bill-to are copied in at issue time. A later rate change, a late ledger row or an edited
+    address changes the NEXT invoice, never this one. A wrong invoice is VOIDED with a reason and
+    a replacement is issued; it is never edited. That is the whole difference between a bill and
+    the readout the billing screen already had.
+
+    ⚠ **THE TENANT COPY CARRIES NO COST AND NO MARGIN.** Lines hold what is charged, and for
+    development the hours at the billed rate, so every line multiplies out. What the platform paid
+    and the margin on top stay on the super-only costs screen, as they always have.
+
+    Status is DERIVED (`status`), not stored: void if voided, paid when the receipts cover the
+    total, part paid when some do, sent once Send succeeded, else issued. A stored status is a
+    second answer to "has this been paid?", and two answers eventually disagree.
+    """
+    number = models.CharField(max_length=20, unique=True,
+                              help_text="'INV-YYYY-NNNN', numbered by the year of issue.")
+    organisation = models.ForeignKey(
+        'courses.PartnerOrganisation', on_delete=models.PROTECT, related_name='invoices')
+    period_month = models.CharField(max_length=7, help_text="The month billed, 'YYYY-MM'.")
+    issued_on = models.DateField()
+    due_on = models.DateField()
+    currency = models.CharField(max_length=3, default='MYR')
+    subtotal_myr = models.DecimalField(max_digits=12, decimal_places=2)
+    discount_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    discount_myr = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_reason = models.TextField(blank=True, default='')
+    total_myr = models.DecimalField(max_digits=12, decimal_places=2)
+    issuer_snapshot = models.JSONField(default=dict)
+    bill_to_snapshot = models.JSONField(default=dict)
+    issued_by_email = models.EmailField(
+        blank=True, default='',
+        help_text='Blank = issued by the monthly job on the 15th.')
+    override_reason = models.TextField(
+        blank=True, default='',
+        help_text='Set only when a super issued it despite a readiness warning — the warning and '
+                  'why it was overridden, so the decision survives the person who made it.')
+    replaces = models.ForeignKey(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='replaced_by',
+        help_text='The voided invoice this one was issued to replace.')
+    sent_at = models.DateTimeField(null=True, blank=True)
+    sent_by_email = models.EmailField(blank=True, default='')
+    sent_to = models.JSONField(default=list, blank=True)
+    voided_at = models.DateTimeField(null=True, blank=True)
+    voided_by_email = models.EmailField(blank=True, default='')
+    void_reason = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'invoices'
+        ordering = ['-period_month', '-issued_on', '-id']
+        constraints = [
+            # One LIVE invoice per tenant per month. A voided one does not count, which is what
+            # lets its replacement exist.
+            models.UniqueConstraint(
+                fields=['organisation', 'period_month'],
+                condition=models.Q(voided_at__isnull=True),
+                name='invoice_one_live_per_org_month'),
+        ]
+        indexes = [
+            models.Index(fields=['organisation', 'period_month'], name='invoice_org_month_idx'),
+        ]
+
+    def amount_paid(self):
+        from decimal import Decimal
+        return sum((r.amount_myr for r in self.receipts.all()), Decimal('0.00'))
+
+    def balance(self):
+        from decimal import Decimal
+        return (Decimal(self.total_myr) - self.amount_paid()).quantize(Decimal('0.01'))
+
+    @property
+    def status(self):
+        if self.voided_at:
+            return 'void'
+        paid = self.amount_paid()
+        # A fully discounted month (July: "100% discount, but show the values") owes nothing, but
+        # calling it PAID would claim money arrived. It stays issued/sent with a zero balance.
+        if self.total_myr > 0 and paid >= self.total_myr:
+            return 'paid'
+        if paid > 0:
+            return 'part_paid'
+        return 'sent' if self.sent_at else 'issued'
+
+    def __str__(self):
+        return f'{self.number} {self.organisation_id} {self.period_month} RM{self.total_myr}'
+
+
+class InvoiceLine(models.Model):
+    """One frozen line. Tenant-safe by construction: there is no cost or margin column to leak."""
+    CATEGORY_CHOICES = [
+        ('infrastructure', 'Platform infrastructure'),
+        ('metered', 'Metered usage'),
+        ('development', 'Development'),
+    ]
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='lines')
+    position = models.PositiveSmallIntegerField()
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    description = models.CharField(max_length=300)
+    quantity = models.DecimalField(
+        max_digits=8, decimal_places=1, null=True, blank=True,
+        help_text='Hours, for development. Null for the two cost-share lines.')
+    unit_amount_myr = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text='The BILLED hourly rate (margin included), so quantity x unit = amount.')
+    amount_myr = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        db_table = 'invoice_lines'
+        ordering = ['invoice', 'position']
+
+
+class InvoiceReceipt(models.Model):
+    """Money that ARRIVED against an invoice — and only money that arrived.
+
+    ⚠ **THE BANK REFERENCE IS REQUIRED.** A receipt is a statement that money changed hands. The
+    project's standing rule for money is that nothing is recorded until it has actually moved and
+    there is a reference to prove it; a receipt without one is a promise wearing a receipt's
+    number. Overpayment is refused rather than stored as a credit nobody asked for.
+    """
+    METHOD_CHOICES = [
+        ('bank_transfer', 'Bank transfer'),
+        ('cheque', 'Cheque'),
+        ('other', 'Other'),
+    ]
+    number = models.CharField(max_length=20, unique=True,
+                              help_text="'RCP-YYYY-NNNN', numbered by the year received.")
+    invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name='receipts')
+    received_on = models.DateField()
+    amount_myr = models.DecimalField(max_digits=12, decimal_places=2)
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES, default='bank_transfer')
+    reference = models.CharField(max_length=120)
+    note = models.TextField(blank=True, default='')
+    recorded_by_email = models.EmailField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'invoice_receipts'
+        ordering = ['invoice', 'received_on', 'id']
+
+    def __str__(self):
+        return f'{self.number} for {self.invoice_id}: RM{self.amount_myr}'
+
+
 # ── Partner-organisation comms (2026-07-26) ───────────────────────────────────
 # Weekly + milestone emails to the referral organisations that run this bursary
 # alongside us. See docs/plans/2026-07-26-partner-comms-roadmap.md.

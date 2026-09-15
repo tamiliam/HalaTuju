@@ -86,13 +86,52 @@ An absent slice cannot be told from a slice nobody drew.
 - **Every DateTime grouping goes through `localtime()` (TD-209).** `txn_date` is a `DateField` and
   is deliberately NOT converted - converting a date would be its own bug. A test pins a 23:30 UTC
   instant into the *next* Malaysian week.
-- **Two debts recorded rather than smuggled in:** **TD-247** - the nudge email's `due_by` string
+- **Two debts recorded rather than smuggled in:** **TD-249** - the nudge email's `due_by` string
   still calls `.date()` on a UTC instant, so between Malaysian midnight and 08:00 the emailed date
   is a day early; it was left byte-identical so `test_review_nudges.py` could stay the regression
-  net. **TD-248** - the route-drift test reads top-level `admin/` directories only, so a nested
-  route like `programme/overview` is invisible to it.
+  net. **TD-250** - the route-drift test reads top-level `admin/` directories only, so a nested
+  route like `programme/overview` is invisible to it. (Numbered 249 and 250: the tenant-invoices
+  sprint that landed on `main` the same day had already taken 247 and 248.)
 
-Gates: TBC
+Gates (after merging the tenant-invoices sprint from `main`): 6666 pytest · 2281 jest · tsc 24
+(baseline) · lint 0 errors · `check-i18n` pass (5301 keys per locale) · `next build` exit 0 ·
+`makemigrations --check` clean.
+
+## Tenant invoices and receipts - 2026-09-14
+
+The billing screen computed a charge and ISSUED nothing: no invoice, no receipt, and a figure that
+re-ran on every page load, so a rate edit rewrote a month somebody had already been told about. The
+owner's screenshot came from the organisation view, which by design showed units only.
+
+- **Invoices.** `Invoice` + `InvoiceLine`, numbered `INV-YYYY-NNNN` gap-free from a locked counter.
+  Everything is FROZEN at issue: lines, discount, issuer and bill-to. A wrong invoice is voided with a
+  reason and replaced; the replacement names the one it replaces.
+- **Receipts.** `InvoiceReceipt`, numbered `RCP-YYYY-NNNN`. A bank reference is required;
+  overpayment and future dates are refused. Status (issued / sent / part paid / paid / void) is
+  derived from the receipts, never stored. A fully discounted month owes nothing and is never "paid".
+- **The 15th's run.** `issue_monthly_invoices` (door `issue-monthly-invoices`) issues the PREVIOUS
+  month for every ready tenant and sends nothing. It is idempotent and never overrides.
+- **Readiness refuses rather than under-bills.** A supplier that billed the month before with nothing
+  this month (a PDF not imported yet), a cost with no ringgit value, a missing rate, unrecorded request
+  hours, blank billing details, or a month not yet closed. Refusals are logged and emailed to ops. A
+  super may issue past a WARNING with a written reason, kept on the invoice.
+- **Held until sent.** Send emails the PDF to the bill-to inboxes frozen on the invoice, after a
+  confirm that names them, and marks it sent only after the email went. A tenant sees an invoice only
+  once it is sent — the fence, not a display filter.
+- **The tenant copy has no cost and no margin**, structurally: `InvoiceLine` has no column for either.
+  Development prints hours x the billed rate; the development charge is now the sum of those lines, so
+  the live readout and the invoice agree to the cent.
+- **PDFs** for both documents via xhtml2pdf, the engine the signed bursary agreement already uses.
+- **Screen:** an Invoices section on Billing & usage. Super: To issue / Issued / Settings (who bills,
+  who is billed). Organisation admin: its sent invoices and receipts. Phone cards under `md`.
+- **No legal identity is invented.** `InvoiceIssuer` ships empty; nothing can be issued until the owner
+  fills in the legal name, address and bank details.
+- Guide and FAQ updated; en / ms / ta text (77 keys).
+- **⚠ RLS:** the six new tables were created with row-level security and a service_role policy;
+  `org_billing_adjustments` (0157) had shipped WITHOUT it (the Security Advisor's one ERROR) and was
+  locked in the same step. Verified live: 7 tables locked, Advisor ERROR gone, app unaffected.
+- Migration `0160_tenant_invoices`. TD-247 (supplier bills are imported by hand), TD-248 (the rates
+  form defaults its date from the UTC clock).
 
 ## The report date moves up, the gap table gains its evidence, and the page gets its width back - 2026-09-12
 

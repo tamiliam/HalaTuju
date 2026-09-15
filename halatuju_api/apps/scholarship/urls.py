@@ -138,6 +138,7 @@ from .views_admin import (
     AdminBillingUsageView,
     AdminOrgBuildHoursView,
     AdminPlatformCostsView,
+    AdminInvoicesView, AdminInvoiceActionView, AdminInvoicePdfView, AdminInvoiceSettingsView,
     AdminOrgRequestListView,
     AdminOrgRequestCountView,
     AdminOrgRequestDetailView,
@@ -286,6 +287,14 @@ urlpatterns = [
     # The COST side + the bill (2026-09-11). SUPER only, 403 not 404 — same ruling as rates.
     # GET reads the ledger through `reconcile`; POST records a per-org, per-month discount.
     path('admin/scholarship/billing/costs/', AdminPlatformCostsView.as_view()),
+    # Tenant invoices + receipts (2026-09-14). Super issues/sends/voids/records payment; an
+    # org_admin reads its OWN invoices, and only once they have been SENT.
+    path('admin/scholarship/billing/invoices/', AdminInvoicesView.as_view()),
+    # The PDF routes sit ABOVE the action route, which would otherwise swallow '/pdf/' as an action.
+    path('admin/scholarship/billing/invoices/<int:pk>/pdf/', AdminInvoicePdfView.as_view(), {'kind': 'invoice'}),
+    path('admin/scholarship/billing/receipts/<int:pk>/pdf/', AdminInvoicePdfView.as_view(), {'kind': 'receipt'}),
+    path('admin/scholarship/billing/invoices/<int:pk>/<str:action>/', AdminInvoiceActionView.as_view()),
+    path('admin/scholarship/billing/invoice-settings/', AdminInvoiceSettingsView.as_view()),
     path('admin/scholarship/payment-runs/', AdminPaymentRunListView.as_view()),
 
     # Sponsor spending S4 — the officer's view of what students spent, and the one

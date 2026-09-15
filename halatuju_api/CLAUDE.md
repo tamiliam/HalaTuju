@@ -552,7 +552,9 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
-**BUILT — NOT YET DEPLOYED.** Gates: TBC.
+**BUILT — NOT YET DEPLOYED.** Gates (after merging `main`, which carried the tenant-invoices
+sprint): **6666 pytest** · **2281 jest** · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass ·
+`next build` exit 0 · `makemigrations --check` clean.
 
 **WHAT SHIPPED.** The Programme sidebar group had four rows and no answer to *"how is this gift
 doing?"*. It now opens with **Overview**:
@@ -591,16 +593,16 @@ them and this must not become a side door.
 2. **`reviewer` and `qc` LAND HERE after sign-in** (`defaultRoute`), not on Applications.
 
 **⚠ NEW DEBT, RECORDED RATHER THAN SMUGGLED IN:**
-- **TD-247** — `send_review_nudges.py:100` builds `due_by` with `.date()` on a UTC instant, so
+- **TD-249** — `send_review_nudges.py:100` builds `due_by` with `.date()` on a UTC instant, so
   between Malaysian midnight and 08:00 the **emailed date is a day early** (TD-209, in the one
   place a reviewer reads a deadline). Left byte-identical on purpose so `test_review_nudges.py`
   could stay the unchanged net through the `review_sla` extraction. Fix = `timezone.localtime(due)`
   plus a 23:30-UTC test that does not read the same clock as the code.
-- **TD-248** — `navigation.test.ts`'s `routeDirs()` reads **top-level** `src/app/admin/` dirs only,
+- **TD-250** — `navigation.test.ts`'s `routeDirs()` reads **top-level** `src/app/admin/` dirs only,
   so `programme/overview` is invisible to the route-drift guard. Noted in a comment beside the
   helper; widening the scan reconciles every existing route at once and belongs in its own change.
 
-**▶ NEXT — nothing blocking; the owner picks.** Standing:
+**▶ NEXT — owner actions first, then the owner picks:**
 1. **Run the gates and deploy.** One push to `main` after merging `origin/main` in; **wait on the
    build IDs of that push**, read `status.latestReadyRevisionName`, verify
    `/admin/programme/overview` 200 and the endpoint 401 unauthenticated, check logs for ERROR.
@@ -608,12 +610,54 @@ them and this must not become a side door.
 2. **Live verification as a reviewer account** — lands on the Overview, sees only own cases, and
    **no money node anywhere in the page source**. As the owner (super): 143 / 66 / 42 / 31 / 4 and
    a money strip equal to the Payments footer on the same screen.
-3. **⚠ ROTATE `VIRCLE_AIRTABLE_SECRET`** — exposed in a session transcript 2026-09-11. Nothing has
+3. **⚠ NOTHING CAN BE INVOICED YET, BY DESIGN** (tenant invoices, 2026-09-15). `InvoiceIssuer` is
+   EMPTY: the owner fills in the legal name, address, email and bank details on Billing & usage →
+   Invoices → Settings, plus BrightPath's bill-to address and inboxes. No legal entity exists;
+   never seed one.
+4. **Import September's supplier bills before 15 October** (`import_invoices`, `sync_gcp_costs` —
+   both manual, TD-247), or the first invoice run will refuse for `supplier_missing` and email why.
+5. **August can be issued by hand now** that its bills are all in (Invoices → To issue).
+6. **⚠ ROTATE `VIRCLE_AIRTABLE_SECRET`** — exposed in a session transcript 2026-09-11. Nothing has
    ever come through that door; it needs Vircle to change one setting, so it waits for contact.
-4. **Five students paid RM600 each since July with NO spending** — applications 69, 104, 47, 63,
+7. **Five students paid RM600 each since July with NO spending** — applications 69, 104, 47, 63,
    101. An operational question for Vircle, not a fault. (TD-245 is why we cannot tell "spent
    nothing" from "wallet absent from the export".)
-5. Debt: **TD-247**, **TD-248**, TD-242 (half-mitigated), TD-245, TD-246, TD-240, TD-239, TD-238.
+8. Debt: **TD-249**, **TD-250** (this sprint), TD-247, TD-248 (tenant invoices), TD-242
+   (half-mitigated), TD-245, TD-246, TD-240, TD-239, TD-238.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-15, after tenant invoices and receipts)
+
+**✅ SHIPPED AND VERIFIED LIVE 2026-09-15.** `main` at **`b09b8217`**; builds api `198737fe` + web
+`8243f083` SUCCESS (waited on BY BUILD ID); serving **halatuju-api-01040-grq** /
+**halatuju-web-00889-qw6**, **image digests matched to `b09b8217`**. Site 200, `/admin/billing` 200,
+invoice routes 401 without login, cron door 403 without the secret, **no api ERROR logs**.
+Gates: **6617 pytest** · **2217 jest** · tsc 24 (baseline) · lint 0 errors · `next build` exit 0.
+**Migration `0160_tenant_invoices` applied MIGRATE-FIRST** via Supabase MCP (exact SQL in the
+migration's docstring); ledger reconciled at close: 160 files, 160 rows, no gaps.
+
+**WHAT SHIPPED** (detail: `CHANGELOG.md`, `docs/decisions.md` ×5, retrospective of 2026-09-15):
+- **Invoices + receipts** — `Invoice` / `InvoiceLine` / `InvoiceReceipt`, gap-free `INV-`/`RCP-`
+  numbers from `BillingSequence`. FROZEN at issue; a wrong one is VOIDED and replaced, never edited.
+  Status is derived from receipts. `invoicing.py` owns every write; `invoice_pdf.py` the documents.
+- **Issued on the 15th for the PREVIOUS month** — Cloud Scheduler **`halatuju-issue-monthly-invoices`**,
+  `0 9 15 * *` Asia/Kuala_Lumpur, ENABLED → door `issue-monthly-invoices`. Sends NOTHING; never
+  overrides a readiness warning; refusals are LOGGED and emailed to `ADMIN_NOTIFY_EMAIL`.
+- **Held until sent** — a tenant sees an invoice only once a super presses Send (fence, not filter).
+- **The tenant copy carries no cost and no margin** — structurally: `InvoiceLine` has no such column.
+- **⚠ RLS:** the six new tables were created WITH RLS + a service_role policy. **`org_billing_adjustments`
+  (0157) had shipped WITHOUT RLS** — the Security Advisor's one ERROR — and was locked in the same step.
+
+**▶ NEXT — owner actions first, then the owner picks:**
+1. **⚠ NOTHING CAN BE INVOICED YET, BY DESIGN.** `InvoiceIssuer` is EMPTY: the owner fills in the
+   legal name, address, email and bank details on Billing & usage → Invoices → Settings, plus
+   BrightPath's bill-to address and inboxes. No legal entity exists; never seed one.
+2. **Import September's supplier bills before 15 October** (`import_invoices`, `sync_gcp_costs` — both
+   manual, TD-247), or the first run will refuse for `supplier_missing` and email why.
+3. **August can be issued by hand now** that its bills are all in (Invoices → To issue).
+4. Standing from before: **⚠ ROTATE `VIRCLE_AIRTABLE_SECRET`**; five funded students with no spending
+   (69, 104, 47, 63, 101); debt TD-242, TD-245, TD-246, TD-247, TD-248.
 
 ---
 
