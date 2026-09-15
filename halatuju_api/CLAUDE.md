@@ -552,6 +552,19 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
+**➕ ALSO LIVE ON TOP OF IT (2026-09-15): Usage & Billing as the organisation reads it.** `main` at
+**`b174af7e`**; builds api `20d0e0df` + web `77bd70bc` SUCCESS; serving **halatuju-api-01042-w9p** /
+**halatuju-web-00891-6kx**, digests matched; site 200, no ERROR logs. Gates on the merged tree:
+**6674 pytest** · **2285 jest** · tsc 24 · `next build` 0. No migration.
+- **Storage is read from `storage.objects`** (what Supabase bills), attributed by path, decimal units:
+  platform **1.35 GB**, BrightPath **1.22 GB** (the page had said 1.1). ⚠ If `storage.objects` cannot be
+  read it falls back to our document rows and logs `usage: could not read storage.objects` — the app
+  connects as `postgres`, which read it fine via MCP, but the first real page load is the proof.
+- **Shared platform services** section (Google Cloud, Supabase incl. egress, Google Workspace, Twilio,
+  Brevo, Cloudflare Turnstile, GitHub) — names + Paid/Free only, from `platform_cost.PLATFORM_SERVICES`;
+  a test forces every ledger source to be listed or excluded with a reason. Footnote removed.
+- Org admin: no repeated organisation heading; "Usage this month" on top, invoices below.
+
 **✅ SHIPPED AND VERIFIED LIVE 2026-09-15.** `main` at **`77b88408`** (the Overview merged over the
 tenant-invoices sprint); builds api `dafe2491` + web `e567f025` SUCCESS (waited on BY BUILD ID);
 serving **halatuju-api-01041-t8n** / **halatuju-web-00890-2xw**, **image digests matched to the
