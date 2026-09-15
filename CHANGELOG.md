@@ -32,6 +32,9 @@ owner's screenshot came from the organisation view, which by design showed units
 - **No legal identity is invented.** `InvoiceIssuer` ships empty; nothing can be issued until the owner
   fills in the legal name, address and bank details.
 - Guide and FAQ updated; en / ms / ta text (77 keys).
+- **⚠ RLS:** the six new tables were created with row-level security and a service_role policy;
+  `org_billing_adjustments` (0157) had shipped WITHOUT it (the Security Advisor's one ERROR) and was
+  locked in the same step. Verified live: 7 tables locked, Advisor ERROR gone, app unaffected.
 - Migration `0160_tenant_invoices`. TD-247 (supplier bills are imported by hand), TD-248 (the rates
   form defaults its date from the UTC clock).
 

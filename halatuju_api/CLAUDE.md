@@ -550,7 +550,41 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-09-12, after the spending screen arc — S6-S8, TD-241, the blackout)
+## Next Sprint (as of 2026-09-15, after tenant invoices and receipts)
+
+**✅ SHIPPED AND VERIFIED LIVE 2026-09-15.** `main` at **`b09b8217`**; builds api `198737fe` + web
+`8243f083` SUCCESS (waited on BY BUILD ID); serving **halatuju-api-01040-grq** /
+**halatuju-web-00889-qw6**, **image digests matched to `b09b8217`**. Site 200, `/admin/billing` 200,
+invoice routes 401 without login, cron door 403 without the secret, **no api ERROR logs**.
+Gates: **6617 pytest** · **2217 jest** · tsc 24 (baseline) · lint 0 errors · `next build` exit 0.
+**Migration `0160_tenant_invoices` applied MIGRATE-FIRST** via Supabase MCP (exact SQL in the
+migration's docstring); ledger reconciled at close: 160 files, 160 rows, no gaps.
+
+**WHAT SHIPPED** (detail: `CHANGELOG.md`, `docs/decisions.md` ×5, retrospective of 2026-09-15):
+- **Invoices + receipts** — `Invoice` / `InvoiceLine` / `InvoiceReceipt`, gap-free `INV-`/`RCP-`
+  numbers from `BillingSequence`. FROZEN at issue; a wrong one is VOIDED and replaced, never edited.
+  Status is derived from receipts. `invoicing.py` owns every write; `invoice_pdf.py` the documents.
+- **Issued on the 15th for the PREVIOUS month** — Cloud Scheduler **`halatuju-issue-monthly-invoices`**,
+  `0 9 15 * *` Asia/Kuala_Lumpur, ENABLED → door `issue-monthly-invoices`. Sends NOTHING; never
+  overrides a readiness warning; refusals are LOGGED and emailed to `ADMIN_NOTIFY_EMAIL`.
+- **Held until sent** — a tenant sees an invoice only once a super presses Send (fence, not filter).
+- **The tenant copy carries no cost and no margin** — structurally: `InvoiceLine` has no such column.
+- **⚠ RLS:** the six new tables were created WITH RLS + a service_role policy. **`org_billing_adjustments`
+  (0157) had shipped WITHOUT RLS** — the Security Advisor's one ERROR — and was locked in the same step.
+
+**▶ NEXT — owner actions first, then the owner picks:**
+1. **⚠ NOTHING CAN BE INVOICED YET, BY DESIGN.** `InvoiceIssuer` is EMPTY: the owner fills in the
+   legal name, address, email and bank details on Billing & usage → Invoices → Settings, plus
+   BrightPath's bill-to address and inboxes. No legal entity exists; never seed one.
+2. **Import September's supplier bills before 15 October** (`import_invoices`, `sync_gcp_costs` — both
+   manual, TD-247), or the first run will refuse for `supplier_missing` and email why.
+3. **August can be issued by hand now** that its bills are all in (Invoices → To issue).
+4. Standing from before: **⚠ ROTATE `VIRCLE_AIRTABLE_SECRET`**; five funded students with no spending
+   (69, 104, 47, 63, 101); debt TD-242, TD-245, TD-246, TD-247, TD-248.
+
+---
+
+## Superseded — previous Next Sprint (as of 2026-09-12, after the spending screen arc — S6-S8, TD-241, the blackout)
 
 **✅ ALL SHIPPED AND VERIFIED LIVE 2026-09-12.** `main` at **`d130d734`**; both builds SUCCESS
 (waited on BY BUILD ID); serving **halatuju-api-01039-k8x** / **halatuju-web-00887-gj8**;
