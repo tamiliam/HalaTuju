@@ -552,6 +552,19 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 
+**➕ ALSO LIVE (2026-09-15, the owner's first live read): the Overview's money charts, round two.**
+`main` at **`4a2d4687`**; builds api `d195459d` + web `c69cd6e0` SUCCESS (waited on BY BUILD ID);
+serving **halatuju-api-01043-vwr** / **halatuju-web-00892-zcg**, digests matched; Overview 200,
+endpoint 401 without login, no api ERROR logs. Gates: **6679 pytest** · **2296 jest** · tsc 24 ·
+lint 0 · `next build` 0. No migration. Retro `docs/retrospective-2026-09-15-overview-charts-round-two.md`.
+- **⚠ A RELEASE ON OR AFTER THE 27th IS THE FOLLOWING MONTH'S PAYMENT** on the released-vs-spent
+  chart ONLY (`programme_overview.PAYMENT_MONTH_CUTOFF_DAY`). The money strip, the Payments footer
+  and Spending read the release date as-is — a test pins it. Do not "harmonise".
+- Months are NAMED from the locale (`admin.programmeOverview.months.1-12`); the month table became
+  three figures (payments / spending / balance = the last month's `released_cum` / `spent_cum` /
+  `gap`); `purchases` → `transactions` in the payload; weekly lines carry a y-axis + month ticks and
+  print ONE whole-period figure (`per_student_overall`), not every week.
+
 **➕ ALSO LIVE ON TOP OF IT (2026-09-15): Usage & Billing as the organisation reads it.** `main` at
 **`b174af7e`**; builds api `20d0e0df` + web `77bd70bc` SUCCESS; serving **halatuju-api-01042-w9p** /
 **halatuju-web-00891-6kx**, digests matched; site 200, no ERROR logs. Gates on the merged tree:
