@@ -220,6 +220,17 @@ class TestFenceCoverageCompleteness(TestCase):
         '_SpendingBase': 'spending-s4-org-fenced',
         'AdminSpendingView': 'spending-s4-org-fenced',
         'AdminSpendingCategoryView': 'spending-s4-org-fenced',
+        # Programme Overview (2026-09-15). The FENCE is `programme_overview.application_scope` —
+        # one queryset every figure is derived from, `owning_organisation` for a tenant and
+        # `spend_report.ALL_ORGS` for a super; disbursements and spend rows are reached only
+        # through `application_id__in=scope`, never from their own managers.
+        # ⚠ ROLE SHAPING IS A SECOND GATE, and it is why this entry is not plain 'org-fenced'.
+        # The KEY SET IS CHOSEN SERVER-SIDE from `SECTIONS_BY_ROLE`, so reviewer/qc/finance never
+        # receive a key they may not read on Applications/Payments/Spending — a reviewer's payload
+        # has no money key to hide, and a finance admin's has no funnel. A page that fetched
+        # everything and rendered a subset would be a side door into pages the menu withholds.
+        # `test_the_key_set_per_role_is_exact` pins it; `partner` (no sections at all) is 403.
+        'AdminProgrammeOverviewView': 'programme-overview-org-fenced+role-shaped',
         'AdminProgrammeListView': 'sabah-s2b-programmes-fenced',
         'AdminProgrammeDetailView': 'sabah-s2b-programmes-fenced',
         # Reaches its gift through the SAME `_programme_or_404`, so another tenant's gift is 404
@@ -516,7 +527,11 @@ class TestOrgFenceStaticGuard(TestCase):
     #: would have been structurally unable to see. **A new module that queries a watched model
     #: for an admin surface belongs on this list on the day it is written.**
     SCANNED = ('views_admin.py', 'spend_report.py', 'spend_category.py',
-               'spending_import.py', 'spend_summary.py', 'spend_sponsor.py')
+               'spending_import.py', 'spend_summary.py', 'spend_sponsor.py',
+               # Programme Overview (2026-09-15) — a pure aggregation module that queries
+               # ScholarshipApplication and BursarySpendTxn for an admin surface, so it joined
+               # this tuple on the day it was written, per the note above.
+               'programme_overview.py')
 
     #: ⚠ A LEDGER, NOT AN EXEMPTION LIST — the same idea as `NO_DOOR`. A file here is a
     #: DECISION somebody wrote down, and the reason is the check. Adding a name without a
@@ -553,7 +568,7 @@ class TestOrgFenceStaticGuard(TestCase):
         base = os.path.dirname(views_admin.__file__)
         candidates = ('views_admin.py', 'views_sponsor.py', 'views_branding.py',
                       'spend_report.py', 'spend_category.py', 'spending_import.py',
-                      'spend_summary.py', 'spend_sponsor.py')
+                      'spend_summary.py', 'spend_sponsor.py', 'programme_overview.py')
         unscanned = []
         for filename in candidates:
             path = os.path.join(base, filename)
