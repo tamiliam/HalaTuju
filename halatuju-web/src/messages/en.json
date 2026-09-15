@@ -5732,6 +5732,114 @@
       "uploadDocHint": "We'll read the clauses (and their 1 / 1.1 / i) structure) from a .docx; you review and edit before deploying.",
       "uploadNeedsFile": "Choose a .docx file to upload, or pick another option."
     },
+    "programmeOverview": {
+      "title": "Overview",
+      "titleFor": "{name} overview",
+      "subtitle": "How this gift is doing, read from the dates the system already records.",
+      "loading": "Loading the overview…",
+      "error": "Could not load the overview.",
+      "asAt": "Spending data to {date}",
+      "funnel": {
+        "title": "Applications",
+        "total": "Applications received"
+      },
+      "money": {
+        "title": "Money",
+        "students": "{count} awards",
+        "committed": "Committed",
+        "paid": "Paid out",
+        "remaining": "Remaining",
+        "spent": "Spent by students"
+      },
+      "attention": {
+        "title": "Needs attention",
+        "unassigned": "Waiting for a reviewer",
+        "withReviewer": "With a reviewer",
+        "dueSoon": "Due soon",
+        "overdue": "Overdue",
+        "awaitingQc": "Awaiting a check"
+      },
+      "series": {
+        "applicationsPerWeek": "Applications received per week",
+        "awardsPerMonth": "Awards per month",
+        "moneyPerMonth": "Money released and spent, by month",
+        "month": "Month",
+        "released": "Released",
+        "spent": "Spent",
+        "gap": "Still in wallets",
+        "gapNote": "the bars are each month; the line is what is still sitting in wallets",
+        "perStudent": "Per student, per week",
+        "average": "Average spend per student, per week",
+        "purchases": "Purchases per student, per week",
+        "purchasesNote": "A purchase is one card transaction. We are never told what was bought.",
+        "byCategory": "Spending by category",
+        "ofStudents": "Of {count} students with a wallet that week."
+      },
+      "chart": {
+        "applicationsLabel": "Applications received per week",
+        "awardsLabel": "Awards made per month",
+        "moneyLabel": "Money released and spent per month, with the running amount still in wallets",
+        "averageLabel": "Average spend per student per week",
+        "purchasesLabel": "Purchases per student per week",
+        "categoryLabel": "Spending by category"
+      },
+      "category": {
+        "food": "Food & drink",
+        "groceries": "Groceries",
+        "transport": "Transport",
+        "study": "Books & study supplies",
+        "phone": "Phone & internet",
+        "hostel": "Hostel & bills",
+        "health": "Health & pharmacy",
+        "clothing": "Clothing & shoes",
+        "transfer": "Sent to a person",
+        "unsorted": "Could not be sorted",
+        "none": "Not yet sorted"
+      },
+      "intake": {
+        "title": "Intake",
+        "open": "Open",
+        "closed": "Closed",
+        "finished": "Round finished {date}",
+        "window": "Applications open {from} until {to}",
+        "notStated": "not stated",
+        "none": "No intake year has been set up for this gift yet."
+      },
+      "mine": {
+        "title": "My cases",
+        "paceTitle": "My pace",
+        "open": "My open cases",
+        "dueSoon": "Due soon",
+        "overdue": "Overdue",
+        "applicant": "Applicant",
+        "status": "Status",
+        "assigned": "Assigned",
+        "due": "Verdict due",
+        "dueBy": "due {date}",
+        "completed": "Verdicts completed",
+        "waited": "Students waited",
+        "turnaround": "Students waited a median of {days} days from assignment to your verdict.",
+        "turnaroundUnknown": "No verdict has been completed yet, so there is nothing to measure.",
+        "none": "You are not holding any case in this gift."
+      },
+      "band": {
+        "open": "Open",
+        "due_soon": "Due soon",
+        "overdue": "Overdue"
+      },
+      "qc": {
+        "title": "Waiting to be checked",
+        "paceTitle": "My pace",
+        "awaiting": "Waiting to be checked",
+        "oldest": "Longest wait, in days",
+        "since": "Submitted",
+        "waiting": "Days waiting",
+        "waitingDays": "waiting {days} days",
+        "completed": "Checks completed",
+        "turnaround": "Students waited a median of {days} days from the reviewer's verdict to your check.",
+        "none": "Nothing is waiting to be checked in this gift."
+      }
+    },
     "programme": {
       "config": {
         "nav": "Configuration",

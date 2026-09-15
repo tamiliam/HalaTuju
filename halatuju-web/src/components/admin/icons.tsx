@@ -37,6 +37,10 @@ const PATHS: Record<string, string> = {
   // "things you set" without claiming to be the machine's settings.
   orgSettings: 'M4 6h10M18 6h2M4 12h2M10 12h10M4 18h10M18 18h2M16 4v4M8 10v4M16 16v4',
   // programme
+  // The gift's Overview — a gauge: a half-dial with a needle. Deliberately NOT `billing`'s bar
+  // chart and not the platform `overview`'s four squares: this row answers "how is this gift
+  // doing?", which is a reading, not a breakdown and not a grid of places to go.
+  programmeOverview: 'M4 18a8 8 0 1 1 16 0M12 18l4.5-5',
   // "What we ask for" — a checklist (Layer 0 Sprint 5).
   programmeConfig: 'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
   applications: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',

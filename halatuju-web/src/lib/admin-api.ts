@@ -2822,6 +2822,124 @@ export async function getPaymentRuns(programme?: string, options?: ApiOptions) {
     `/api/v1/admin/scholarship/payment-runs/${giftQuery(programme)}`, options)
 }
 
+// ── Programme Overview — "how is this gift doing?", shaped by role ───────────
+//
+// ⚠⚠ **EVERY SECTION IS OPTIONAL BECAUSE THE SERVER DECIDES WHICH ONES EXIST.**
+// `programme_overview.SECTIONS_BY_ROLE` chooses the key set BEFORE anything is serialised, so a
+// reviewer's payload has no `money` key to hide and a finance admin's has no `funnel`. The page
+// renders by PRESENCE (`programmeOverview.has`) and never by role — a page that fetched
+// everything and drew a subset would be a side door into pages the menu already withholds.
+//
+// ⚠ **MONEY IS A STRING IN EVERY KEY AND MUST STAY ONE.** It is parsed only for chart geometry
+// (`programmeOverview.ts`), never for display: a `Decimal` rendered as a float is how `30.00`
+// reached a sponsor's screen as `30.0` in S5.
+//
+// ⚠ `due_soon` / `overdue` are SUBSETS of `with_reviewer` (and of `mine.open`), not a partition.
+// The strip reads "2 with a reviewer, 1 due soon"; making them exclusive would mean a case stopped
+// being with its reviewer the moment it got late.
+export interface OverviewFunnel {
+  total: number
+  /** All thirteen `STATUS_CHOICES`, zero-filled. An absent stage cannot be told from an empty one. */
+  by_status: Record<string, number>
+}
+export interface OverviewMoney {
+  students: number
+  committed: string
+  paid: string
+  remaining: string
+  spent: string
+}
+export interface OverviewAttention {
+  unassigned: number
+  with_reviewer: number
+  due_soon: number
+  overdue: number
+  awaiting_qc: number
+}
+export interface OverviewWeekCount { week: string; count: number }
+export interface OverviewMonthCount { month: string; count: number }
+export interface OverviewMoneyMonth {
+  month: string
+  released: string
+  spent: string
+  released_cum: string
+  spent_cum: string
+  /** ⚠ MAY BE NEGATIVE, and is deliberately not floored: the wallet is the student's own and a
+   *  parent may top it up, so students can spend more than we released. */
+  gap: string
+}
+export interface OverviewStudentWeek {
+  week: string
+  /** Students with a LIVE WALLET that week — the denominator the page names in words. */
+  students: number
+  spent: string
+  average: string
+  /** ⚠ A ROW COUNT, not an item count: a Vircle row is one card transaction. */
+  purchases: number
+  purchases_per_student: string
+}
+export interface OverviewCategory { code: string; total: string; transactions: number }
+export interface OverviewIntake {
+  code: string
+  name: string
+  is_open: boolean
+  opens_on: string | null
+  closes_on: string | null
+  finished_at: string | null
+}
+export type OverviewBand = 'open' | 'due_soon' | 'overdue'
+export interface OverviewMyCase {
+  id: number
+  ref: string
+  applicant_name: string
+  status: string
+  assigned_at: string
+  due_at: string
+  band: OverviewBand
+}
+/** ⚠ The QC row is NOT the reviewer row: it carries `since` / `waiting_days`, never a band. */
+export interface OverviewQcCase {
+  id: number
+  ref: string
+  applicant_name: string
+  status: string
+  since: string | null
+  waiting_days: number | null
+}
+/** ⚠ NO SCORE AND NO PERCENTILE (`reviewerDetail.ts`). `turnaround_days` is phrased on the page
+ *  as how long a STUDENT waited, never as how fast this volunteer is. */
+export interface OverviewPace { completed: number; turnaround_days: number | null }
+
+export interface ProgrammeOverview {
+  programme: { code: string; name: string } | null
+  generated_at: string
+  /** The newest day any spending file reaches, or null. Shown at the top of the page. */
+  data_to: string | null
+  sections: string[]
+  funnel?: OverviewFunnel
+  money?: OverviewMoney
+  attention?: OverviewAttention
+  applications_series?: {
+    applications_per_week: OverviewWeekCount[]
+    awards_per_month: OverviewMonthCount[]
+  }
+  money_series?: {
+    money_per_month: OverviewMoneyMonth[]
+    per_student_per_week: OverviewStudentWeek[]
+    by_category: OverviewCategory[]
+  }
+  intake?: OverviewIntake | null
+  mine?: { open: number; due_soon: number; overdue: number
+           cases: OverviewMyCase[]; pace: OverviewPace }
+  qc?: { awaiting: number; oldest_waiting_days: number | null
+         cases: OverviewQcCase[]; pace: OverviewPace }
+}
+
+export async function getProgrammeOverview(programme?: string, options?: ApiOptions) {
+  return adminFetch<ProgrammeOverview>(
+    `/api/v1/admin/scholarship/programme-overview/${giftQuery(programme)}`, options)
+}
+
 // ── Sponsor spending S4 — the officer's screen ───────────────────────
 //
 // ⚠ Money arrives as a STRING and stays one. It is summed, compared against a released total

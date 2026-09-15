@@ -2,6 +2,98 @@
 
 All notable changes to this project will be documented in this file.
 
+## A gift now has an overview, and reviewers land on their own cases - 2026-09-15
+
+The Programme group had four rows - Applications, Configuration, Payments, Spending - and no answer
+to *"how is this gift doing?"*. It now opens with one: **Overview**, the first row (shortcut `G`
+then `I`), the page a gift card on Programmes lands on, and the page every console role sees -
+shaped by role, so a reviewer lands on THEIR cases and a finance admin on THE MONEY.
+
+- **One page, six questions.** For whoever runs the gift: the funnel (all thirteen statuses,
+  zero-filled - **143 applications**, 66 awarded, 42 rejected, 31 expired, 4 in review), the money
+  strip, what needs a human (nobody assigned / with a reviewer / due soon / overdue / awaiting QC),
+  six charts over time, and whether this year's intake is open and until when.
+- **Nothing new is collected and nothing is stored.** Every figure is READ from data the system
+  already records - each status stamps a date, every spend row has a date, an amount and a
+  category. **No migration.**
+- **The money strip is byte-equal to the Payments footer, and `spent` is byte-equal to the
+  Spending total.** Two reconciliation tests call the neighbouring endpoints on one fixture. The
+  accumulator seeds are load-bearing and there is no `quantize`: `Decimal('0.00') + x` forces two
+  places where `Decimal('0') + x` does not, and SQLite and Postgres disagree about which one `Sum`
+  hands back - so a tidy-up here would agree with Payments on production and disagree in the tests.
+
+**⚠ ROLE SHAPING IS A SECOND GATE, NOT A COSMETIC ONE.** `SECTIONS_BY_ROLE` decides which keys are
+BUILT, server-side, before anything is serialised. A reviewer's payload has **no `money` key to
+hide**; a finance admin's has **no `funnel`**. A page that fetched everything and rendered a subset
+would be a side door into Applications / Payments / Spending for the roles the menu already
+withholds those pages from - and `test_the_key_set_per_role_is_exact` pins every role's key set.
+super / org_admin / admin get everything; finance gets the money strip, the money charts and the
+intake; QC gets the queue awaiting QC and its own pace; a reviewer gets their own open cases with
+the verdict-due date on each, and their own pace. **Reviewer and QC get no money and no
+programme-wide totals.** A role absent from that map receives nothing at all, not a default.
+
+**⚠ FINANCE IS DELIBERATELY WIDENED, AND IT POINTS THE OPPOSITE WAY TO THE SPENDING PAGE.**
+`/admin/spending` still refuses finance and will continue to - it is a page of NAMED students. The
+Overview gives finance TOTALS: committed, paid, remaining, spent, by month, by week, by category.
+Never a name, a file, a document or a verdict, because none of those is in a section finance is
+given. Owner ruling, recorded in `docs/decisions.md` and `docs/scholarship/role-matrix.md`.
+
+**⚠ REVIEWERS AND QC NOW LAND HERE AFTER SIGN-IN**, not on Applications (`defaultRoute`). Wanted,
+not incidental: the first thing a volunteer sees is what is with them and when it is due, rather
+than a list they then have to filter. Their pace is phrased as **how long a student waited** - no
+score, no percentile, no band on the person. Only the case's clock is banded.
+
+**⚠ THE VERDICT CLOCK HAD THREE HOMES AND NOW HAS ONE.** New `apps/scholarship/review_sla.py`
+holds `TERMINAL`, `AWAITING_VERDICT`, `clocks()`, `review_due()` and `review_band()`; the three
+inline copies - the nudge sweep, `services.py` and the interview-reminder command - were migrated
+in the same commit, each with a bite test that patches `review_sla.review_due` to raise and asserts
+the caller raises. A helper whose callers are not migrated is simply a fourth copy.
+`test_review_nudges.py` stayed **unchanged and green** throughout: that was the net.
+
+**⚠ THE SECOND CHART ARRIVED, SO THE DONUT BECAME A SHARED PRIMITIVE.** The S5 decision
+(2026-09-10) named this exact trigger - *"revisit when a second chart appears"* - and it has fired.
+The geometry left `SpendingCard` for `components/admin/charts/Charts.tsx` (`BarChart`, `LineChart`,
+`Donut`) with its arithmetic in a pure, node-tested `lib/programmeOverview.ts`. A charting library
+was refused again, and now for a concrete reason on top of the old ones: a new dependency, its
+bundle, and the theme problem (the guards read SVG fills; a library emitting `#rrggbb` is a
+light-mode island in dark) - plus **the jest harness has no transform for ESM-only dependencies and
+no `ResizeObserver`**, which is what every responsive chart library measures with. Fixed `viewBox`,
+tokens only, and a test asserting no `#` colour appears in the rendered markup.
+
+**⚠ THEY ARE PURCHASES, NOT ITEMS.** A Vircle row is ONE CARD TRANSACTION and carries no item
+count, so "items purchased" is not a question this data can answer. The chart is *purchases per
+student per week* and counts ROWS; summing anything there would be inventing a quantity. The
+denominator is named in words beneath the chart - students with a LIVE WALLET that week, meaning at
+least one released disbursement dated on or before the week's end, because dividing by "every
+student in the gift" drags every week before the money started down towards zero.
+
+**⚠ "NOT YET SORTED" IS ITS OWN SLICE AND IS NEVER HIDDEN.** The category donut always draws all
+eleven slices, every one present even at zero, and `unsorted` (the sorter looked and could not
+place it) is kept distinct from `none` (nothing has looked at it yet). Folding either into "other",
+or dropping them when empty, is what would let the other nine read as complete when they are not.
+An absent slice cannot be told from a slice nobody drew.
+
+- **The fold follows you.** The Programme group unfolds only inside a gift, and the new path was
+  added to the folded-group list in the same change - without it, landing on the Overview would
+  have collapsed the very group it belongs to. `programmeConfig` is an exact match, so
+  `/admin/programme/overview` does not collide with it; longest match makes the child active. The
+  route is also **wide** (`WIDE_ROUTES`), because it is multi-column - the mistake `/admin/spending`
+  shipped with and carried for days.
+- **Spend weeks stop at the report date; application weeks run to today.** Extending the spend
+  series to today draws zeros for weeks whose file has not been imported yet - a chart that reports
+  *"they stopped spending"* when it means *"we stopped importing"*. The report date is shown at the
+  top of the page, as Spending does.
+- **Every DateTime grouping goes through `localtime()` (TD-209).** `txn_date` is a `DateField` and
+  is deliberately NOT converted - converting a date would be its own bug. A test pins a 23:30 UTC
+  instant into the *next* Malaysian week.
+- **Two debts recorded rather than smuggled in:** **TD-247** - the nudge email's `due_by` string
+  still calls `.date()` on a UTC instant, so between Malaysian midnight and 08:00 the emailed date
+  is a day early; it was left byte-identical so `test_review_nudges.py` could stay the regression
+  net. **TD-248** - the route-drift test reads top-level `admin/` directories only, so a nested
+  route like `programme/overview` is invisible to it.
+
+Gates: TBC
+
 ## The report date moves up, the gap table gains its evidence, and the page gets its width back - 2026-09-12
 
 - **The report date is at the TOP of the page, once.** It was buried inside the gap section,

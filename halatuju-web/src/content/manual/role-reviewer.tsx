@@ -10,6 +10,32 @@ export const roleReviewer: ManualChapter = {
   blurb: 'Check the facts on your assigned applicants and recommend a decision.',
   sections: [
     {
+      anchor: 'reviewer-overview',
+      title: 'Where you land: your overview',
+      body: (
+        <>When you sign in you arrive at <strong>Overview</strong> — the first entry under your gift in the
+        menu, and a page about <em>your</em> work and nobody else&rsquo;s. It answers the question you would
+        otherwise have to go looking for: <strong>what is with me, and when is it due?</strong>
+        <br /><br />
+        At the top are three counts — <strong>open</strong> (everything currently with you),
+        <strong> due soon</strong> and <strong>overdue</strong>. The last two are part of the first, not
+        separate piles: a case does not stop being yours the moment it gets late. Underneath is the list
+        itself, soonest first, with <strong>the date your verdict is due</strong> beside each name. That date
+        is the same one the reminder emails quote, worked out from when the case was assigned to you and the
+        time your organisation allows — so the page and the email can never tell you different things.
+        <br /><br />
+        There is also a short note on your <strong>pace</strong>: how many verdicts you have completed, and how
+        long a student waited for them, on average. It is phrased that way on purpose. It is not a score, there
+        is no ranking, and nobody is being compared with anybody — it is simply the student&rsquo;s side of the
+        clock, which is the part worth knowing.
+        <br /><br />
+        <strong>You will not see money anywhere on this page</strong>, and you will not see the programme&rsquo;s
+        overall figures. Those belong to the people who run the gift. The one thing you do see beyond your own
+        cases is whether <strong>this year&rsquo;s intake is open</strong>, and until when, so you know whether
+        more work is on its way.</>
+      ),
+    },
+    {
       anchor: 'reviewer-profile',
       title: 'Set up your profile',
       body: (

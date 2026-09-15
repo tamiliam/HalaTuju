@@ -45,6 +45,10 @@ export const WIDE_ROUTES: readonly string[] = [
   '/admin/organisation/staff',
   '/admin/organisation/programmes',  // gift list + intake years
   '/admin/programme/years',
+  // The gift's Overview — the rule's central case: tiles across the page, two charts side by
+  // side, a full-width money chart and three cards under it. At the reading width the donut and
+  // its eleven-line legend would sit on top of each other.
+  '/admin/programme/overview',
   '/admin/sources',
   '/admin/sponsors',
   '/admin/students',
