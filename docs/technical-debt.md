@@ -3738,6 +3738,13 @@ Medium-sized: the response shape changes and `AiReliabilityCard` needs rewriting
 
 ### [TD-244] Nothing watches a student whose wallet never gets switched on — low
 
+**2026-09-18:** the retired chaser's last two remains are gone — the paused scheduler job
+`halatuju-vircle-activation-request` is DELETED and `VIRCLE_ACTIVATION_ENABLED` /
+`VIRCLE_ACTIVATION_FOLDER` are off the api service (revision halatuju-api-01044-5zb). **The
+gap this entry describes is UNCHANGED** — nothing still watches for a wallet that never comes
+live; the CHANGELOG entry of the same date carries the job's shape if one is ever rebuilt, and
+the design ruling here stands: a report a human reads, never a resurrected email.
+
 **Status:** Open (2026-09-12)
 
 Retiring the 48-hour chaser removed the only thing that chased Vircle. Their webhook REPORTS an

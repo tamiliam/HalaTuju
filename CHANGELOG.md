@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## The 48-hour chaser's last remains are deleted - 2026-09-18
+
+The chaser's CODE went on 2026-09-11 (two commands, two cron doors, the email, the CSV, the
+sheet-to-DB sync, ~500 lines). Its Cloud Scheduler job was only PAUSED, because the webhook
+flow was two days old then and pausing is undoable in a click. The flow has since delivered
+seven wallets and the whole cohort of 65 reads activated, so the owner asked why it was still
+there. It is not any more.
+
+- **Scheduler job `halatuju-vircle-activation-request`: DELETED.** It could not have done
+  anything - the server's job registry dropped the name on 11 Sep, so a resumed run would have
+  got `404 unknown job`. The harm was in how it READ: a paused job in the console looks like a
+  switch somebody could flip.
+- **`VIRCLE_ACTIVATION_ENABLED` and `VIRCLE_ACTIVATION_FOLDER`: REMOVED from the api service**
+  (`--remove-env-vars`, revision **halatuju-api-01044-5zb**, no image change). No code has read
+  either since 11 Sep; `settings/base.py` said so in a comment and the comment is now true of
+  the running service too. The live Vircle settings that REMAIN are all in use:
+  `VIRCLE_AIRTABLE_PUSH_URL`, `VIRCLE_AIRTABLE_SECRET`, `VIRCLE_SETUP_ENABLED`,
+  `VIRCLE_SHEET_ID`, `VIRCLE_EMAIL_APP_IDS` and the four Drive folders.
+- **`halatuju-vircle-sheet-sync` is untouched** and still runs every 15 minutes - that is the
+  job that mirrors `vircle_activated_at` into the relay sheet's column I.
+- Verified after: no Vircle activation job in the scheduler, neither variable on the service,
+  public API 200, site 200, no ERROR logs on the new revision.
+
+**⚠ The recipe, if a chaser is ever wanted again** (the job's shape, minus its secret):
+POST to `/api/v1/internal/cron/<job>/` on the api host, header `X-Cron-Secret: $CRON_SECRET`,
+body `{}`, schedule `0 9 */2 * *` in `Asia/Kuala_Lumpur`, attempt deadline 180s, retry backoff
+5s-3600s with 5 doublings. **A job name must exist in `CronRunView.JOBS` first** - and re-read
+TD-244 before writing one: the accepted design is a REPORT a human reads, never an email that
+asks Vircle about a spreadsheet.
+
 ## Every new table is locked the moment it is created - 2026-09-16
 
 Supabase emailed a critical alert (as of 13 Sep): a public table without Row-Level Security.
