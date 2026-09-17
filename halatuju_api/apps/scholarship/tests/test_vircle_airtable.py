@@ -369,6 +369,88 @@ class TestTheWalletDoorShouts(_Base):
         self.assertEqual(mail.outbox, [])
 
 
+# ── The mirror: the sheet follows the write, not a clock ─────────────────────
+class TestRelaySheetRefresh(_Base):
+    """The relay sheet is rewritten the moment the webhook STORES something (2026-09-18).
+
+    It used to wait for a 15-minute cron, which carried 8 real changes in 9 days across ~860 runs.
+    The cron survives as a DAILY net for what the webhook cannot see (a student's own confirmation).
+    """
+    PATCH = 'apps.scholarship.vircle.sync_relay_sheet'
+
+    def test_a_stored_wallet_refreshes_the_sheet(self):
+        self._make('u1', nric='080214-08-1234')
+        with mock.patch(self.PATCH) as sync:
+            out = vircle_airtable.apply_update({'NRIC': '080214081234',
+                                                'Wallet ID': '8000400181509'})
+        self.assertEqual(out['wallet'], 'set')
+        self.assertEqual(sync.call_count, 1)
+
+    def test_a_stored_ACTIVATION_refreshes_the_sheet_too(self):
+        """#144's activation was the whole reason this exists — the wallet was already stored, so
+        only the activation column moved, and it is the column a person goes to the sheet to read."""
+        self._make('u2', nric='080214-08-1234', vircle_id='8000400181509')
+        with mock.patch(self.PATCH) as sync:
+            out = vircle_airtable.apply_update({'NRIC': '080214081234', 'Status': 'Done'})
+        self.assertEqual(out['activated'], 'set')
+        self.assertEqual(sync.call_count, 1)
+
+    def test_a_row_THAT_CHANGES_NOTHING_does_not_touch_drive(self):
+        """⚠ The fixture must be able to tell the answers apart: each of these three rows is a
+        REAL inbound shape that stores nothing. Rewriting the sheet for them would put us back to
+        writing a whole file for no news — the thing this change removes."""
+        self._make('u3', nric='080214-08-1234', vircle_id='8000400175123')
+        # ⚠ The invalid row needs a student with NO stored wallet. On the one above, '123' is a
+        # MISMATCH, not an invalid id — the two branches are reached in that order, so a fixture
+        # that cannot separate them proves nothing about either.
+        self._make('u3b', nric='070101-07-1111', vircle_id='')
+        with mock.patch(self.PATCH) as sync:
+            kept = vircle_airtable.apply_update({'NRIC': '080214081234',
+                                                 'Wallet ID': '8000400175123'})
+            invalid = vircle_airtable.apply_update({'NRIC': '070101071111', 'Wallet ID': '123'})
+            nomatch = vircle_airtable.apply_update({'NRIC': '999999999999',
+                                                    'Wallet ID': '8000400188888'})
+        self.assertEqual((kept['wallet'], invalid['wallet'], nomatch.get('reason')),
+                         ('kept', 'invalid', 'no_match'))
+        sync.assert_not_called()
+
+    def test_a_REFUSED_overwrite_does_not_touch_drive(self):
+        """A mismatch writes NOTHING (the field decides where money goes). The sheet must keep
+        showing the stored id — a refresh here would be harmless today and a lie the day the
+        mismatch branch ever starts writing."""
+        self._make('u4', nric='080214-08-1234', vircle_id='8000400175123')
+        with mock.patch(self.PATCH) as sync:
+            out = vircle_airtable.apply_update({'NRIC': '080214081234',
+                                                'Wallet ID': '8000400179999'})
+        self.assertEqual(out['wallet'], 'mismatch')
+        sync.assert_not_called()
+
+    def test_A_BROKEN_DRIVE_STILL_LEAVES_VIRCLE_WITH_A_200_AND_KEEPS_THE_WRITE(self):
+        """⚠⚠ THE CONTRACT, again. Drive is the third party we cannot control, on the end of a
+        request we do not own. The refresh fails ALONE: the wallet stays saved, the caller still
+        gets its answer, and the daily net will catch the sheet up."""
+        app = self._make('u5', nric='080214-08-1234')
+        with mock.patch(self.PATCH, side_effect=RuntimeError('drive is down')):
+            out = vircle_airtable.apply_update({'NRIC': '080214081234',
+                                                'Wallet ID': '8000400181509'})
+        self.assertEqual(out['wallet'], 'set')
+        app.refresh_from_db()
+        self.assertEqual(app.vircle_id, '8000400181509')
+
+    @override_settings(VIRCLE_AIRTABLE_SECRET='s3cret')
+    def test_through_the_URL_too(self):
+        """The view/service seam: a unit test on `apply_update` cannot prove the ENDPOINT still
+        answers once Drive is in its path."""
+        self._make('u6', nric='080214-08-1234')
+        with mock.patch(self.PATCH) as sync:
+            r = APIClient().post('/api/v1/internal/vircle/airtable/',
+                                 {'NRIC': '080214-08-1234', 'Wallet ID': '8000400181509'},
+                                 format='json', HTTP_X_VIRCLE_SECRET='s3cret')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['wallet'], 'set')
+        self.assertEqual(sync.call_count, 1)
+
+
 # ── The endpoint: inert without the secret ───────────────────────────────────
 @override_settings(VIRCLE_AIRTABLE_SECRET='s3cret')
 class TestInboundEndpoint(_Base):

@@ -7,8 +7,14 @@ students who haven't confirmed.
 
 Read-only against our data — this command never writes to the database.
 
-Runs on demand, at the end of ``send_vircle_install_emails``, or on a schedule (cron job
-'sync-vircle-sheet') to pick up confirmations as students make them.
+Runs on demand, at the end of ``send_vircle_install_emails``, and as a DAILY SAFETY NET (cron
+job 'sync-vircle-sheet', 07:05 MYT — it was every 15 minutes until 2026-09-18).
+
+⚠ The sheet no longer WAITS for this job to show a wallet or an activation: the inbound webhook
+refreshes it the moment it stores one (``vircle_airtable._refresh_relay_sheet``). This job
+exists for what the webhook cannot see — a student's own 'installed' confirmation, a status
+change, a row the webhook refresh failed to write — so it must stay a REWRITE FROM THE
+DATABASE and must never become conditional on anything the webhook knows.
 """
 from django.core.management.base import BaseCommand
 

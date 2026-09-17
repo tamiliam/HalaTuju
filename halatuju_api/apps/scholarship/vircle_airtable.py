@@ -161,6 +161,31 @@ def _alert(application_id, outcome, wallet, *, stored=''):
                        application_id, outcome, exc_info=True)
 
 
+def _refresh_relay_sheet(application_id, fields):
+    """Rewrite the relay sheet so its mirror carries what we just stored. **Never raises.**
+
+    ⚠ SAME CONTRACT AS `_alert`: VIRCLE STILL GETS ITS 200. Drive is somebody else's service on
+    the end of somebody else's automation; an exception escaping here would abort a wallet write
+    that is already saved and hand Vircle a retry storm about our spreadsheet.
+
+    ⚠ CALLED ONLY WHEN A FIELD WAS ACTUALLY SAVED, and AFTER the save — a sheet rewritten from
+    a row we failed to store would show a fact that is not in the database, which is the exact
+    inversion the relay sheet exists to prevent (`vircle.relay_row`: the sheet MIRRORS the DB).
+
+    ⚠ THIS IS THE CHOKE-POINT, NOT A CONVENTION. `apply_update` is the ONLY writer of
+    `vircle_id` / `vircle_activated_at` in the product (both activation crons were retired
+    2026-09-11 precisely to keep it that way), so putting the refresh here cannot be forgotten
+    by a future caller — there is no other caller to forget it. If a second writer is ever
+    added, it refreshes here or the sheet goes stale: keep the writer and the mirror together.
+    """
+    try:
+        from .vircle import sync_relay_sheet
+        sync_relay_sheet()
+    except Exception:  # noqa: BLE001 — a mirror must never cost Vircle their 200
+        logger.warning('Vircle relay sheet refresh failed (app_id=%s, fields=%s)',
+                       application_id, ','.join(fields), exc_info=True)
+
+
 def apply_update(payload: dict) -> dict:
     """One inbound Airtable row → at most two writes on the matched application.
 
@@ -226,6 +251,9 @@ def apply_update(payload: dict) -> dict:
 
     if fields:
         app.save(update_fields=fields)
+        # The sheet in Drive is how a person sees this; it used to wait up to 15 minutes for a
+        # cron. Nothing reads the sheet back, so this is display only — it can fail alone.
+        _refresh_relay_sheet(app.id, fields)
     if pending_alert:
         _alert(*pending_alert[:3], stored=pending_alert[3])
     return result

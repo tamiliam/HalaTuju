@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## The relay sheet follows the WRITE, and the cron becomes a daily net - 2026-09-18
+
+Owner picked this after the hourly change below: the sheet should refresh when something
+actually lands, not on a clock. **`vircle_airtable.apply_update` now rewrites the sheet
+immediately after it SAVES a wallet id or an activation**, and the scheduler job drops from
+hourly to **07:05 MYT daily**. A wallet that arrives at 10:05 is in the sheet at 10:05, not
+11:00 - faster than the 15-minute cron ever was, with 1 run a day instead of 96.
+
+- **⚠ IT FAILS ALONE. VIRCLE STILL GETS ITS 200.** `_refresh_relay_sheet` cannot raise, the
+  same contract as the wallet alert email: Drive is a third party on the end of somebody
+  else's automation, and an exception escaping would abort a wallet write that is ALREADY
+  saved and hand Vircle a retry storm about our spreadsheet. Bite-checked: with the guard
+  narrowed, `test_A_BROKEN_DRIVE_STILL_LEAVES_VIRCLE_WITH_A_200_AND_KEEPS_THE_WRITE` fails.
+- **It refreshes ONLY when a field was stored, and AFTER the save.** A sheet rewritten from a
+  row we failed to save would show a fact the database does not hold - the exact inversion the
+  sheet exists to prevent (it MIRRORS the DB). `kept`, `invalid`, `mismatch` and `no_match`
+  touch Drive not at all; the mismatch case matters most, because that branch deliberately
+  writes nothing.
+- **The cron stays, as a net for what the webhook cannot see** - a student's own "installed"
+  confirmation, and any refresh that failed. It must stay an unconditional rewrite from the
+  database: the command's docstring now says so.
+- **This is a choke-point, not a convention.** `apply_update` is the ONLY writer of
+  `vircle_id` / `vircle_activated_at` (both activation crons were retired 2026-09-11 to keep
+  it that way), so there is no future caller who could forget the refresh. The note says what
+  to do if a second writer is ever added.
+- +6 tests (37 in `test_vircle_airtable.py`). Three bites, all caught: refresh removed (3
+  fails), refresh on every row including the empty ones (5 fails), Drive's failure escaping
+  (1 fail). ⚠ The first draft of the "nothing changed" test was WRONG and green-ish for the
+  wrong reason: it fed `123` to a student who already had a wallet, which is the MISMATCH
+  branch, not the invalid-id branch. A second student with no stored wallet separates them.
+
 ## The relay-sheet sync runs hourly, not every 15 minutes - 2026-09-18
 
 `halatuju-vircle-sheet-sync` was carrying 8 real changes in 9 days across ~860 runs, and
