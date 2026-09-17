@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## The relay-sheet sync runs hourly, not every 15 minutes - 2026-09-18
+
+`halatuju-vircle-sheet-sync` was carrying 8 real changes in 9 days across ~860 runs, and
+every run WIPES AND REWRITES the whole sheet - ~192 Drive writes a day for nothing. The
+schedule is now `0 * * * *` (Asia/Kuala_Lumpur): **24 runs a day instead of 96**. One
+scheduler setting, no code change, no deploy; put back with
+`--schedule="*/15 * * * *"`.
+
+- **Owner's steer: "I don't want to overcomplicate things. Simple is better."** The two
+  cleverer designs were declined on purpose and are NOT parked as work: refreshing the sheet
+  from the webhook write (fastest, but a second caller of the Drive door), and gating the job
+  on rounds not yet closed for good (`ScholarshipCohort.finished_at`).
+- **⚠ A GATE ON THE ROUND WOULD HAVE BEEN WRONG, and this is the durable lesson.** The
+  sheet's population is `awarded`/`active` students, whose wallet and activation arrive
+  MONTHS after an intake window shuts - #144's wallet landed 14 Sep, the 2026 window closed
+  7 Jul. "Is a round open" says nothing about whether this sheet has work to do.
+- Hourly is enough because nothing reads the sheet back: it is a mirror for people, and the
+  database is the record. A wallet that lands at 10:05 shows up at 11:00.
+
 ## The 48-hour chaser's last remains are deleted - 2026-09-18
 
 The chaser's CODE went on 2026-09-11 (two commands, two cron doors, the email, the CSV, the
