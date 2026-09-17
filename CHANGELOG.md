@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## The relay sheet follows the WRITE, and the cron becomes a daily net - 2026-09-18
 
+**LIVE.** `main` **32ff7f39**, api **halatuju-api-01045-mgq**; API 200, site 200, no ERROR
+logs on the new revision. Full suite **6685 passed, 3 skipped**. The scheduler job
+`halatuju-vircle-sheet-sync` now reads `5 7 * * *` (Asia/Kuala_Lumpur) - it went
+15-min -> hourly -> daily in one day, in that order, and the daily step was made only AFTER
+the webhook refresh was serving.
+
 Owner picked this after the hourly change below: the sheet should refresh when something
 actually lands, not on a clock. **`vircle_airtable.apply_update` now rewrites the sheet
 immediately after it SAVES a wallet id or an activation**, and the scheduler job drops from
