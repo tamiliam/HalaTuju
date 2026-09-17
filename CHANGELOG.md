@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## Test record #16 is closed - 2026-09-18 (DATA ONLY, no code, no deploy)
+
+The owner's own file (#16) sat at `awarded`: it made the awarded count 66, held RM2,000 of the
+owner's sponsor balance, and sat on the Vircle chase list with an empty wallet for ever. Three
+rows written in ONE transaction, mirroring `respond_to_award(decline)` + `_record_reject` +
+the profile hold that `reopen_decision` performs:
+
+1. `sponsorships` 36: `offered` -> `lapsed`, decided now (RM2,000 returns to the balance).
+2. `scholarship_applications` 16: `awarded` -> `rejected`, `rejection_category='contractual'`,
+   `rejected_at/by` set, the reason recorded verbatim, **`pre_decline_status='awarded'`** - the
+   snapshot IS the undo anchor. `award_amount` was already null.
+3. `sponsor_profiles` for 16: unpublished (`anon_published_at`, `realtime_notified_at` cleared).
+
+**The three email fields were deliberately NOT written** (`decline_due_at`,
+`pending_rejection_category`, `pending_decline_by`), so no decline email is scheduled or sent.
+
+**Verified after:** awarded 65, relay-sheet population 65, #16 not payable, no holding
+sponsorship on it, 0 pool-visible rows. Sheet sync run by hand (200) so Drive matched at once.
+
+**⚠ WHY BY HAND - all four product doors are shut for this record**, and that is the finding
+worth keeping: the student award screen is gated by `AWARD_ACCEPTANCE_ENABLED` (not set on the
+service, so nobody can decline); the sponsor cancel refuses once `offer_emailed_at` is set
+(9 Sep); reopen refuses with `not_decided` because this record has NO recorded verdict; and the
+console's contractual-decline button renders only at `active`/`maintenance`. `admin_reject`
+itself forbids `awarded` by the owner's 2026-07-30 ruling. `lapse_expired_offers` exists in the
+code and is wired to NOTHING - see TD-252.
+
+**⚠ IT MUST NEVER REST AT `recommended`.** #16 keeps an ACTIVE share consent and (until now) a
+published profile, so at that status it would have appeared in the sponsor pool. Hence one
+transaction, never two steps. (Auto-sponsor could not have re-funded it - there are no standing
+gifts at all, and `is_fundable` needs an award amount, which is null - but the pool is a
+DISPLAY surface and does not care.)
+
+**THE UNDO, verbatim, if #16 is ever needed again:**
+
+```sql
+update sponsorships set status = 'offered', decided_at = null, updated_at = now()
+where id = 36 and application_id = 16;
+update scholarship_applications set status = pre_decline_status, pre_decline_status = '',
+  rejection_category = '', rejected_at = null, rejected_by = '', rejection_comments = '',
+  updated_at = now()
+where id = 16 and status = 'rejected';
+update sponsor_profiles set anon_published = true, anon_published_at = now(), updated_at = now()
+where application_id = 16;
+```
+
+Its 5 open resolution items (including `vircle_setup_pending`) are left alone ON PURPOSE - a
+real rejection leaves them too, and they are visible only to an admin on that case.
+
 ## The relay sheet follows the WRITE, and the cron becomes a daily net - 2026-09-18
 
 **LIVE.** `main` **32ff7f39**, api **halatuju-api-01045-mgq**; API 200, site 200, no ERROR

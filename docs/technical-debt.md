@@ -3861,6 +3861,32 @@ been quietly unguarded, which is the point of doing it separately.
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
 
+### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+
+**Status:** Open (2026-09-18). Found while closing test record #16 at the owner's request.
+
+`sponsorship.lapse_expired_offers()` is written, tested and **wired to nothing** — no cron job,
+no scheduler entry, no admin control. So an offer whose `accept_deadline` has passed simply
+stays `offered`: the student stays `awarded`, the amount stays HOLDING against the sponsor's
+balance, and the row stays on the Vircle chase list. **35 offers are past their deadline today**
+(13 Jul → 1 Aug). 34 of them have released money, and the sweep refuses those by design — which
+is exactly why wiring it is safe and why nobody has noticed it is not wired.
+
+The same gap read from the other side: **there is no way in the product to close a case that
+should not have been awarded.** For #16 every door was shut — the student award screen is off
+(`AWARD_ACCEPTANCE_ENABLED` unset), the sponsor cancel refuses after the offer email, reopen
+refuses without a recorded verdict, and the console's contractual decline renders only at
+`active`/`maintenance`. It took three hand-written rows.
+
+**Fix when it bites** (a real student abandons an offer, or the next test record): wire
+`lapse_expired_offers` as a cron job — it is the honest half, it self-limits, and it needs no
+new logic. The console half (a decline at `awarded`/`recommended`) is a bigger decision and
+collides with the owner's 2026-07-30 ruling that an awarded student is withdrawn, never
+declined — so design the WITHDRAWAL, do not widen `admin_reject`.
+
+**Trigger:** the first offer left unanswered by a real student, or the first person who asks why
+a sponsor's balance is smaller than their donations.
+
 ### [TD-251] Vircle's activation webhook carries no status, so activation never lands — medium
 
 **Status:** Open (2026-09-18). **DEFERRED BY THE OWNER, deliberately:** the September intake is
