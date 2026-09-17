@@ -3853,3 +3853,59 @@ been quietly unguarded, which is the point of doing it separately.
 
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
+
+### [TD-251] Vircle's activation webhook carries no status, so activation never lands — medium
+
+**Status:** Open (2026-09-18). **DEFERRED BY THE OWNER, deliberately:** the September intake is
+complete (65 students processed), so there is nothing to chase Vircle about today. Pick this up
+when the NEXT activation happens — that is the moment it costs money.
+
+**Found by the owner, 2026-09-18.** Student #144 (Linda) shows "Not yet activated" on payment run
+PR-2026-09-18-03 while Vircle's own Airtable reads `Status = Done` and Vircle emailed
+"DNQR Activation ... Completed" on 14 Sep 09:37 MYT.
+
+**Their table has TWO buttons, and they post DIFFERENT payloads:**
+
+| Trigger | Payload | What we do |
+|---|---|---|
+| **Get Details** | the whole Recipients row, `Status` included | wallet saved AND activation stamped (the six students of 11 Sep) |
+| **Activate DNQR** | Name, NRIC, **Activated phone**, Wallet id — no `Status`, no date | wallet saved, activation DROPPED |
+
+Her inbound POST landed 2026-09-14 01:36:56Z, one minute before their email, and the log shows
+exactly one write: `AUDIT vircle_id_set app_id=144 ... now=8000400184348`. `apply_update` stamps
+`vircle_activated_at` only on a recognised date key (`_ACTIVATED_KEYS`) or `Status == 'done'`
+(`_ACTIVE_STATUS`). The short payload has neither — `Activated phone` is not in the key list, and
+`QR Activated Date` is **blank on every row Vircle has ever sent**, which is exactly why the owner
+ruled on 2026-09-11 that a row reading Done IS the activation.
+
+**Consequences, in order of cost:**
+1. Every future activation announced with **Activate DNQR** leaves `vircle_activated_at` null. The
+   "Activate DNQR" button is the one they press at activation time, so this is the normal path now,
+   not the exception.
+2. The relay sheet's `Activated On` column (`vircle.relay_row`) stays blank for that student —
+   correctly, because it mirrors the database.
+3. **Payment is NOT blocked** (`payments.py:300-304`: `activated` is advisory, never a `reason`),
+   and the money will not bounce either — Vircle says the wallet is live. The flag is stale on our
+   side, not a fact about the wallet. The cost is a maker/checker staring at a warning that is
+   wrong, which is how a real warning stops being read.
+4. **Nothing can repair it by hand.** The inbound webhook is the ONLY writer of
+   `vircle_activated_at` — no admin action, no management command (the two activation crons were
+   retired 2026-09-11 on purpose, so as not to re-open a second writer). Fixing one student today
+   means a direct database write.
+
+**Fix when the next activation happens** (in this order — the first step is free):
+1. Ask Vircle to press **Get Details** on the row. The full payload arrives, activation stamps
+   itself, and that also re-proves the good path still works.
+2. Then teach the reader the short payload: accept `Activated phone` / `activated_phone` as an
+   activation SIGNAL (presence, not a date — `apply_update` already falls back to `timezone.now()`
+   for an unparseable date, which is the documented rule) and widen `_ACTIVE_STATUS` to the
+   spellings a person might type — `done`, `completed`, `active`, `activated`.
+3. **Log the field NAMES of every inbound row** (names only — the values carry a student's NRIC and
+   wallet). We could not tell a missing `Status` from a mis-spelled one without reading their
+   Airtable over the owner's shoulder, and the September date blackout was the same shape: an
+   input spelling nobody had anticipated, failing silently. A row that sets a wallet and stamps no
+   activation should say so at WARNING.
+4. Only then consider stamping a single student by hand.
+
+**Trigger:** the next student Vircle activates, or the first payment run where a "Not yet
+activated" flag has to be explained away.
