@@ -3860,6 +3860,13 @@ fails.
 complete (65 students processed), so there is nothing to chase Vircle about today. Pick this up
 when the NEXT activation happens — that is the moment it costs money.
 
+**#144 WAS REPAIRED BY HAND 2026-09-18** (owner asked; Supabase MCP had dropped mid-session and
+came back). One row, guarded on `vircle_id` and on the date still being null:
+`vircle_activated_at = 2026-09-14 01:36:57+00` — the instant her row ARRIVED, the same stamp the
+six of 11 Sep carry. **The defect is untouched:** the reader still drops activation from the
+short payload, and the next one will need the same hand-write. Cohort now reads 65 wallets, 65
+activated, 0 wallet-without-activation.
+
 **Found by the owner, 2026-09-18.** Student #144 (Linda) shows "Not yet activated" on payment run
 PR-2026-09-18-03 while Vircle's own Airtable reads `Status = Done` and Vircle emailed
 "DNQR Activation ... Completed" on 14 Sep 09:37 MYT.
