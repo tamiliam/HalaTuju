@@ -5,8 +5,10 @@ import jwt
 from django.test import SimpleTestCase, TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import StudentProfile
-from apps.scholarship.models import ApplicantDocument, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import ApplicantDocument, ScholarshipApplication
+from apps.scholarship.tests.factories import (
+    make_application, make_cohort, make_student,
+)
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 USER_A = 'doc-user-a'
@@ -25,14 +27,14 @@ def _token(uid, secret=TEST_JWT_SECRET):
 class TestDocumentApi(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        cls.cohort2 = ScholarshipCohort.objects.create(code='c2', name='B40-2', year=2025)
-        cls.profile_a = StudentProfile.objects.create(supabase_user_id=USER_A, nric='030101-14-1234')
-        cls.profile_b = StudentProfile.objects.create(supabase_user_id=USER_B, nric='040101-14-5678')
-        cls.profile_c = StudentProfile.objects.create(supabase_user_id=USER_C, nric='050101-14-9999')
-        cls.app_a = ScholarshipApplication.objects.create(cohort=cls.cohort, profile=cls.profile_a, status='shortlisted')
-        cls.app_b = ScholarshipApplication.objects.create(cohort=cls.cohort, profile=cls.profile_b, status='shortlisted')
-        cls.rejected_c = ScholarshipApplication.objects.create(cohort=cls.cohort, profile=cls.profile_c, status='rejected')
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        cls.cohort2 = make_cohort(code='c2', name='B40-2', year=2025)
+        cls.profile_a = make_student(supabase_user_id=USER_A, nric='030101-14-1234')
+        cls.profile_b = make_student(supabase_user_id=USER_B, nric='040101-14-5678')
+        cls.profile_c = make_student(supabase_user_id=USER_C, nric='050101-14-9999')
+        cls.app_a = make_application('shortlisted', cohort=cls.cohort, student=cls.profile_a)
+        cls.app_b = make_application('shortlisted', cohort=cls.cohort, student=cls.profile_b)
+        cls.rejected_c = make_application('rejected', cohort=cls.cohort, student=cls.profile_c)
 
     def setUp(self):
         self.client = APIClient()
@@ -942,11 +944,10 @@ class TestIcGeminiFallbackIntegration(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='gx', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(supabase_user_id='gemini-ic-user',
+        cls.cohort = make_cohort(code='gx', name='B40', year=2026)
+        cls.profile = make_student(supabase_user_id='gemini-ic-user',
                                                     nric='030101-14-1234', name='Priya Krishnan')
-        cls.app = ScholarshipApplication.objects.create(cohort=cls.cohort, profile=cls.profile,
-                                                        status='shortlisted')
+        cls.app = make_application('shortlisted', cohort=cls.cohort, student=cls.profile)
 
     def _ic_doc(self):
         return ApplicantDocument.objects.create(
@@ -1006,10 +1007,10 @@ class TestRequestOwnedSlots(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='ros', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(supabase_user_id=cls.USER, nric='030101-14-2468')
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile, status='shortlisted',
+        cls.cohort = make_cohort(code='ros', name='B40', year=2026)
+        cls.profile = make_student(supabase_user_id=cls.USER, nric='030101-14-2468')
+        cls.app = make_application(
+            'shortlisted', cohort=cls.cohort, student=cls.profile,
             income_route='str', income_earner='mother')
 
     def setUp(self):
@@ -1110,10 +1111,10 @@ class TestStrKeepBetterGuard(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='kg', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(supabase_user_id='keep-1', nric='080101-14-1234')
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile, status='shortlisted',
+        cls.cohort = make_cohort(code='kg', name='B40', year=2026)
+        cls.profile = make_student(supabase_user_id='keep-1', nric='080101-14-1234')
+        cls.app = make_application(
+            'shortlisted', cohort=cls.cohort, student=cls.profile,
             income_route='str', income_earner='mother')
 
     def setUp(self):

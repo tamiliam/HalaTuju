@@ -17,34 +17,41 @@ Mirrors ``test_application_owning_org.py``, which pins the same contract one lev
 from django.db.models import F, ProtectedError
 from django.test import TestCase
 
-from apps.courses.models import PartnerOrganisation, StudentProfile
 from apps.scholarship import services
 from apps.scholarship.models import (
     Programme, ScholarshipApplication, ScholarshipCohort,
+)
+from apps.scholarship.tests.factories import (
+    make_application, make_cohort, make_org, make_programme, make_student,
 )
 
 
 def _org(code='tenant-a'):
     # NB: never 'brightpath' — migration 0098 already seeds that org into the test DB.
-    return PartnerOrganisation.objects.create(code=code, name=code.title())
+    return make_org(code=code, name=code.title())
 
 
 def _programme(org=None, code='p-flagship', **kw):
-    return Programme.objects.create(
-        organisation=org or _org(), code=code,
-        name_en=kw.pop('name_en', 'Test Bursary'), **kw,
-    )
+    return make_programme(organisation=org or _org(), code=code,
+                          name_en=kw.pop('name_en', 'Test Bursary'), **kw)
 
 
 def _cohort(org=None, programme=None, code='c-2026', **kw):
-    return ScholarshipCohort.objects.create(
-        code=code, name='Test Cohort', year=2026,
-        owning_organisation=org, programme=programme, **kw,
-    )
+    """⚠ PROGRAMME AND ORG ARE BOTH EXPLICIT HERE, including when they are None: this file
+    pins the derivation itself, so it must be able to build the bare cohort the factory's
+    default deliberately never builds."""
+    return make_cohort(programme=programme, code=code, name='Test Cohort', year=2026,
+                       owning_organisation=org, **kw)
 
 
 def _profile(uid='u-1'):
-    return StudentProfile.objects.create(supabase_user_id=uid, name='Test Student')
+    return make_student(supabase_user_id=uid, name='Test Student')
+
+
+def _application(cohort, profile=None):
+    """The first stage: the row exists and nothing has run. One `objects.create`."""
+    return make_application('submitted', cohort=cohort,
+                            student=profile if profile is not None else _profile())
 
 
 class TestProgrammeModel(TestCase):
@@ -79,9 +86,7 @@ class TestProgrammeDerivation(TestCase):
     def test_derives_from_cohort_on_direct_create(self):
         org = _org()
         prog = _programme(org)
-        app = ScholarshipApplication.objects.create(
-            cohort=_cohort(org, prog), profile=_profile(),
-        )
+        app = _application(_cohort(org, prog))
         self.assertEqual(app.programme_id, prog.id)
 
     def test_derives_via_real_service_path(self):
@@ -97,9 +102,7 @@ class TestProgrammeDerivation(TestCase):
 
     def test_bare_cohort_stays_none_no_crash(self):
         """A fixture cohort with no programme → app.programme is NULL, no crash."""
-        app = ScholarshipApplication.objects.create(
-            cohort=_cohort(org=None, programme=None), profile=_profile(),
-        )
+        app = _application(_cohort(org=None, programme=None))
         self.assertIsNone(app.programme_id)
 
     def test_derives_when_cohort_relation_not_cached(self):
@@ -107,6 +110,8 @@ class TestProgrammeDerivation(TestCase):
         org = _org()
         prog = _programme(org)
         cohort = _cohort(org, prog)
+        # NOT `make_application`: this test needs the UNCACHED cohort relation, which only
+        # the bare constructor produces — `objects.create(cohort=…)` caches it by definition.
         app = ScholarshipApplication(cohort_id=cohort.id, profile=_profile())
         self.assertIsNone(app._state.fields_cache.get('cohort'))
         app.save()
@@ -118,9 +123,7 @@ class TestProgrammeDerivation(TestCase):
         """The two denormalised copies are set in one pass — neither is dropped."""
         org = _org()
         prog = _programme(org)
-        app = ScholarshipApplication.objects.create(
-            cohort=_cohort(org, prog), profile=_profile(),
-        )
+        app = _application(_cohort(org, prog))
         self.assertEqual(app.owning_organisation_id, org.id)
         self.assertEqual(app.programme_id, prog.id)
 
@@ -132,7 +135,7 @@ class TestProgrammeDerivation(TestCase):
         prog_a = _programme(org, code='p-a')
         prog_b = _programme(org, code='p-b')
         cohort = _cohort(org, prog_a)
-        app = ScholarshipApplication.objects.create(cohort=cohort, profile=_profile())
+        app = _application(cohort)
         self.assertEqual(app.programme_id, prog_a.id)
 
         cohort.programme = prog_b
@@ -149,7 +152,7 @@ class TestBackfillMechanism(TestCase):
         org = _org()
         prog = _programme(org)
         cohort = _cohort(org, programme=None)
-        app = ScholarshipApplication.objects.create(cohort=cohort, profile=_profile())
+        app = _application(cohort)
         self.assertIsNone(app.programme_id)
 
         ScholarshipCohort.objects.filter(
@@ -187,9 +190,7 @@ class TestDriftInvariant(TestCase):
         this test is the guard (same contract as the owning-org drift test)."""
         org = _org()
         prog = _programme(org)
-        ScholarshipApplication.objects.create(
-            cohort=_cohort(org, prog), profile=_profile(),
-        )
+        _application(_cohort(org, prog))
         mismatched = (
             ScholarshipApplication.objects
             .filter(programme__isnull=False, owning_organisation__isnull=False)

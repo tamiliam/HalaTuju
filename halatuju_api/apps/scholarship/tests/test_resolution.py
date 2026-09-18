@@ -4,45 +4,38 @@ Real-ORM fixtures (lesson #55). Covers generation, the mapping exclusions (the
 three codes deliberately NOT ticketed), idempotency, auto-resolve on gap-clear,
 the no-re-nag rule, student resolve, and officer-raised items.
 """
-import jwt
 from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.courses.models import StudentProfile
-from apps.scholarship.models import (
-    ApplicantDocument, ResolutionItem, ScholarshipApplication, ScholarshipCohort,
-)
+from apps.scholarship.models import ApplicantDocument, ResolutionItem
 from apps.scholarship.resolution import (
     add_officer_item, resolve_item, sync_resolution_items,
     doc_match_verdict, resolve_doc_items_for_upload,
 )
-
-_TEST_JWT_SECRET = 'test-supabase-jwt-secret'
-
-
-def _token(uid):
-    return jwt.encode({'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
-                      _TEST_JWT_SECRET, algorithm='HS256')
+from apps.scholarship.tests.factories import (
+    TEST_JWT_SECRET as _TEST_JWT_SECRET, auth_token as _token, make_application,
+    make_cohort, make_student,
+)
 
 
 class _Base(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'res-{self.id()}', name='THERESA ARUL MARY A/P A.PHILIPS',
             nric='080115-05-0132', preferred_state='Melaka',
             household_income=1800, household_size=4, receives_str=False, receives_jkm=False,
         )
         # Check-2 gate: queries only exist AFTER the student submits their /application
-        # (consent). These generation tests assume a submitted Step-4, so stamp it.
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='profile_complete',
-            chosen_pathway='Matriculation', profile_completed_at=timezone.now(),
+        # (consent). These generation tests assume a submitted Step-4, which is the stage.
+        self.app = make_application(
+            'profile_complete', cohort=self.cohort, student=self.profile,
+            chosen_pathway='Matriculation',
         )
 
     def _codes(self, items):
@@ -245,13 +238,13 @@ class TestStudentQueueViewGate(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
 
     def setUp(self):
         self.client = APIClient()
-        self.profile = StudentProfile.objects.create(supabase_user_id='res-view-stu', nric='030101-14-1234', name='Stu')
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted')
+        self.profile = make_student(supabase_user_id='res-view-stu', nric='030101-14-1234',
+                                    name='Stu')
+        self.app = make_application('shortlisted', cohort=self.cohort, student=self.profile)
         # Two tickets already in the DB (as if generated prematurely under old behaviour).
         for code, fact in (('ic_missing', 'identity'), ('results_slip_missing', 'academic')):
             ResolutionItem.objects.create(application=self.app, source='system', code=code,
@@ -294,16 +287,15 @@ class TestCheck2QueriesInStudentQueue(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
 
     def setUp(self):
         self.client = APIClient()
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id='c2-stu', nric='030101-14-1234', name='Stu',
             household_income=1200, household_size=5)
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='profile_complete',
-            profile_completed_at=timezone.now(),
+        self.app = make_application(
+            'profile_complete', cohort=self.cohort, student=self.profile,
             aspirations='I want to teach.', field_of_study='Education',
             siblings_in_tertiary=0,
             chosen_pathway='stpm', pathway_certainty='sure',  # STPM → transport asked
@@ -763,15 +755,14 @@ class TestAnswerRelevanceNudgeView(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
 
     def setUp(self):
         self.client = APIClient()
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id='rel-stu', nric='030101-14-1234', name='Stu')
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='profile_complete',
-            profile_completed_at=timezone.now())
+        self.app = make_application('profile_complete', cohort=self.cohort,
+                                    student=self.profile)
         self.item = add_officer_item(self.app, kind='explanation',
                                      prompt='How do you travel to college?', admin_email='o@x')
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("rel-stu")}')

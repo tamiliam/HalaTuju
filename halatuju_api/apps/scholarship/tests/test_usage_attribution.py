@@ -23,23 +23,21 @@ from unittest import mock
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.courses.models import PartnerOrganisation, StudentProfile
+from apps.courses.models import PartnerOrganisation
 from apps.scholarship import emails, scheduling, usage
-from apps.scholarship.models import (
-    ScholarshipApplication, ScholarshipCohort, UsageEvent,
+from apps.scholarship.models import UsageEvent
+from apps.scholarship.tests.factories import (
+    make_admin, make_application, make_cohort, make_org, make_student,
 )
 
 
 class _AppFixture(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.org = PartnerOrganisation.objects.create(code='aa', name='Alpha Org')
-        cohort = ScholarshipCohort.objects.create(code='ca', name='A', year=2026,
-                                                  owning_organisation=cls.org)
-        prof = StudentProfile.objects.create(supabase_user_id='stud-a',
-                                             nric='010101-14-0001', name='Stud A')
-        cls.app = ScholarshipApplication.objects.create(cohort=cohort, profile=prof,
-                                                        status='submitted')
+        cls.org = make_org(code='aa', name='Alpha Org')
+        cohort = make_cohort(code='ca', name='A', year=2026, owning_organisation=cls.org)
+        prof = make_student(supabase_user_id='stud-a', nric='010101-14-0001', name='Stud A')
+        cls.app = make_application('submitted', cohort=cohort, student=prof)
 
 
 class TestEmailAttribution(_AppFixture):
@@ -131,18 +129,17 @@ class TestTheSendersFixedOn20260818(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.org = PartnerOrganisation.objects.create(code='bp', name='BrightPath')
-        cls.cohort = ScholarshipCohort.objects.create(
-            code='cbp', name='B40 Programme', year=2026, owning_organisation=cls.org)
+        cls.org = make_org(code='bp', name='BrightPath')
+        cls.cohort = make_cohort(code='cbp', name='B40 Programme', year=2026,
+                                 owning_organisation=cls.org)
 
     _seq = 0
 
-    def _app(self, **kw):
+    def _app(self, stage='submitted', **kw):
         type(self)._seq += 1
-        prof = StudentProfile.objects.create(
-            supabase_user_id=f'ua-{type(self)._seq}', name='Priya')
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=prof, notify_email='stu@example.com', **kw)
+        prof = make_student(supabase_user_id=f'ua-{type(self)._seq}', name='Priya')
+        return make_application(stage, cohort=self.cohort, student=prof,
+                                notify_email='stu@example.com', **kw)
 
     def _email_orgs(self):
         return list(UsageEvent.objects.filter(service='email')
@@ -150,7 +147,7 @@ class TestTheSendersFixedOn20260818(TestCase):
 
     def test_a_completion_reminder_bills_the_tenant(self):
         from apps.scholarship import services
-        self._app(status='shortlisted',
+        self._app('shortlisted',
                   reminder_anchor_at=timezone.now() - timedelta(days=3))
         services.send_application_reminders()
         rows = self._email_orgs()
@@ -159,7 +156,7 @@ class TestTheSendersFixedOn20260818(TestCase):
     def test_an_auto_CLOSURE_bills_the_tenant(self):
         from apps.scholarship import services
         now = timezone.now()
-        self._app(status='shortlisted',
+        self._app('shortlisted',
                   reminder_anchor_at=now - timedelta(days=70),
                   reminder_stage=len(services.REMINDER_THRESHOLDS_DAYS),
                   last_reminder_at=now - timedelta(days=10))
@@ -168,17 +165,15 @@ class TestTheSendersFixedOn20260818(TestCase):
         self.assertEqual(rows, [('send_application_closed_email', self.org.id)])
 
     def test_a_reviewer_assignment_bills_the_tenant(self):
-        from apps.courses.models import PartnerAdmin
         from apps.scholarship import services
-        mk = PartnerAdmin.objects.create
-        first = mk(supabase_user_id='rv-1', role='reviewer', is_active=True,
-                   name='First', email='first@example.com', owning_organisation=self.org)
-        second = mk(supabase_user_id='rv-2', role='reviewer', is_active=True,
-                    name='Second', email='second@example.com', owning_organisation=self.org)
-        actor = mk(supabase_user_id='su-1', role='super', is_super_admin=True,
-                   is_active=True, name='Su', email='su@example.com')
+        first = make_admin('reviewer', uid='rv-1', name='First',
+                           email='first@example.com', owning_org=self.org)
+        second = make_admin('reviewer', uid='rv-2', name='Second',
+                            email='second@example.com', owning_org=self.org)
+        actor = make_admin('super', uid='su-1', super_admin=True, name='Su',
+                           email='su@example.com')
         # REassignment, so the first-assignment readiness gate is not in the way.
-        app = self._app(status='profile_complete', assigned_to=first)
+        app = self._app('assigned', reviewer=first)
         services.assign_reviewer(app, reviewer=second, by_admin=actor)
         rows = self._email_orgs()
         self.assertIn(('send_reviewer_assigned_email', self.org.id), rows)
@@ -186,7 +181,7 @@ class TestTheSendersFixedOn20260818(TestCase):
 
     def test_a_nudge_bills_the_tenant(self):
         from apps.scholarship import nudge
-        app = self._app(status='shortlisted')
+        app = self._app('shortlisted')
         # `is_applicable` gates on a full consent + zero-blocker state, which is a large fixture
         # and is NOT what this test is about. Patch the gate, not the sender: the thing under
         # test is the context the call site opens, and a skipped test guards nothing.
@@ -196,15 +191,20 @@ class TestTheSendersFixedOn20260818(TestCase):
 
     def test_an_award_offer_bills_the_tenant(self):
         from apps.scholarship import sponsorship
-        from apps.scholarship.models import Programme, Sponsor, Sponsorship
-        app = self._app(status='awarded')
-        programme = Programme.objects.get(code=self.cohort.programme.code) \
-            if getattr(self.cohort, 'programme_id', None) else None
+        from apps.scholarship.models import Sponsor, Sponsorship
+        app = self._app('awarded')
         sponsor = Sponsor.objects.create(supabase_user_id='sp-1', name='Giver',
                                          email='giver@example.com', status='approved')
+        # H5-FINDING (2026-09-19): this fixture used to end
+        #   **({'programme': programme} if programme is not None else {})
+        # which is DEAD AND WRONG. `Sponsorship` has no `programme` column — a sponsorship is
+        # scoped to a gift through `application.programme` — so that branch would have raised
+        # TypeError the first time it ran. It never ran, because the cohort here was built
+        # without a programme, so the condition was always False. Giving the cohort a real gift
+        # (which TD-258 requires for any money path) executed the branch for the first time and
+        # it failed at once. The conditional is removed; the assertions are untouched.
         sp = Sponsorship.objects.create(
-            application=app, sponsor=sponsor, amount=1000, status='offered',
-            **({'programme': programme} if programme is not None else {}))
+            application=app, sponsor=sponsor, amount=1000, status='offered')
         # offered_at is auto_now_add, so it must be back-dated past the cool-off by UPDATE —
         # assigning it on create() is silently ignored and the release query then skips the row.
         Sponsorship.objects.filter(pk=sp.pk).update(
@@ -256,21 +256,20 @@ class TestPartnerAndSponsorMailBillsTheTenant(TestCase):
     @classmethod
     def setUpTestData(cls):
         from apps.scholarship.models import Programme
-        cls.owner_org = PartnerOrganisation.objects.create(code='bp2', name='BrightPath')
-        cls.referrer = PartnerOrganisation.objects.create(
-            code='cumig', name='CUMIG', is_active=True, contact_email='ref@example.com')
+        cls.owner_org = make_org(code='bp2', name='BrightPath')
+        cls.referrer = make_org(code='cumig', name='CUMIG', is_active=True,
+                                contact_email='ref@example.com')
         cls.programme = Programme.objects.create(
             organisation=cls.owner_org, code='bp2-flagship', name_en='BrightPath Bursary')
-        cohort = ScholarshipCohort.objects.create(
-            code='cbp2', name='B40', year=2026, owning_organisation=cls.owner_org)
+        cohort = make_cohort(programme=cls.programme, code='cbp2', name='B40', year=2026,
+                             owning_organisation=cls.owner_org)
         # The referral CHIP lives on the PROFILE (partner_comms.CHIP_FIELD =
         # 'profile__referral_source'), which is what makes these the referrer's students
         # while the APPLICATION still belongs to the organisation running the programme.
-        prof = StudentProfile.objects.create(supabase_user_id='pa-1', name='Priya',
-                                             referral_source=cls.referrer.code)
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cohort, profile=prof, status='shortlisted',
-            notify_email='stu@example.com')
+        prof = make_student(supabase_user_id='pa-1', name='Priya',
+                            referral_source=cls.referrer.code)
+        cls.app = make_application('shortlisted', cohort=cohort, student=prof,
+                                   notify_email='stu@example.com')
 
     def test_a_partner_digest_bills_the_STUDENTS_owner_not_the_recipient(self):
         from apps.scholarship import partner_notify

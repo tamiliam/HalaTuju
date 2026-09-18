@@ -42,8 +42,16 @@ leave a budget loose. The remaining window is caught by the lead's sprint-close 
 have git: `code_health.py` compares this run's readings with the last recorded row and FAILs on a
 regression. Two guards, two mechanisms, one direction.
 
-**NOT IN H4, on purpose** (later sprints add them, each with its own test here or in the web half):
-  * "a new test file may not hand-build a `ScholarshipApplication`" — H5, once the factory exists.
+**ADDED IN H5** (2026-09-19): `hand_built_application_fixtures` — "a new test file may not
+hand-build a `ScholarshipApplication`", now that `apps/scholarship/tests/factories.py` exists.
+It is the only standard here that reads the TEST tree for something other than a skip, and it is
+the one that answers BrightPath #24: a hand-built fixture described a state the product cannot
+produce, so a test could never reach the branch it named. Adding it put a new key in the frozen
+`baseline` block, so `BASELINE_SHA256` below was deliberately re-pinned in the same commit — see
+the `_history` note in the JSON.
+
+**NOT IN H4/H5, on purpose** (later sprints add them, each with its own test here or in the web
+half):
   * database-query and first-load-JS budgets — H18.
 Style and formatting are deliberately out of scope for ever: a formatter pass rewrites every file
 and proves nothing about bugs.
@@ -133,9 +141,26 @@ COUNT_SLACK = {
 #: The SHA-256 of the canonical JSON of the `baseline` block (sorted keys, no whitespace, UTF-8).
 #: ⚠ If you are here because this failed: the baseline is the frozen record of what H4 found. It
 #: is not a number to keep current. Lower a limit in `budget`, never in `baseline`.
-BASELINE_SHA256 = '111267b50bc8890b2b96b7a65b44d713c2391a7948662eb7a7698b1f771eb955'
+BASELINE_SHA256 = 'b0ecf04fff3c524a35fd562f8ffcf1d46f3eec9112e2142c0f6cb9e78ef60e42'
 
-LEDGERS = ('oversize_files', 'long_functions', 'duplicated_names', 'runtime_skips')
+LEDGERS = ('oversize_files', 'long_functions', 'duplicated_names', 'runtime_skips',
+           'hand_built_application_fixtures')
+
+#: H5. The model whose hand-built fixtures are ledgered, and the call that builds one. Counted
+#: from the AST — never from a string match — because a guard that fires on the words in a
+#: comment or a docstring is a guard somebody deletes within a month (H4's own `SELF` note makes
+#: the same point). `objects.filter(...).update(...)`, which is how a test legitimately pokes one
+#: column without re-running `save()`, is deliberately NOT a match.
+FIXTURE_MODEL = 'ScholarshipApplication'
+FIXTURE_CALL = 'create'
+
+#: The two files that MAY hand-build one, because they are the factory and its drift test.
+#: ⚠ EXACTLY TWO, and `test_the_fixture_exclusion_is_exactly_the_factory_and_its_test` keeps it
+#: that way: an exclusion list that can grow is how a standard becomes a formality.
+FACTORY_FILES = (
+    'apps/scholarship/tests/factories.py',
+    'apps/scholarship/tests/test_factories.py',
+)
 
 #: ⚠ THIS FILE EXCLUDES ITSELF FROM THE TEST-FILE SCAN, and only from that scan. It has to: the
 #: patterns above are written out in full here, so the skip decorators and the runtime skip call
@@ -222,6 +247,30 @@ def _imports(tree):
     return out
 
 
+def _hand_built_applications(tree):
+    """How many times this module calls ``ScholarshipApplication.objects.create(...)``.
+
+    Matched on the AST shape ``<Name|Attribute>.objects.create(...)`` whose model name is
+    ``FIXTURE_MODEL``, so `models.ScholarshipApplication.objects.create(...)` counts and the
+    same words inside a comment, a docstring or a message string do not."""
+    found = 0
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        call = node.func
+        if not (isinstance(call, ast.Attribute) and call.attr == FIXTURE_CALL):
+            continue
+        manager = call.value
+        if not (isinstance(manager, ast.Attribute) and manager.attr == 'objects'):
+            continue
+        model = manager.value
+        name = (model.id if isinstance(model, ast.Name)
+                else model.attr if isinstance(model, ast.Attribute) else None)
+        if name == FIXTURE_MODEL:
+            found += 1
+    return found
+
+
 def _app_of(relpath):
     """`apps/scholarship/views.py` -> `scholarship`. `code_health._app_of`'s rule."""
     parts = relpath.split('/')
@@ -273,8 +322,20 @@ def scan():
                         xapp_module_level.append(f'{rel}:{line} {module}')
 
     skip_sites, runtime_skips, excused = [], {}, []
+    hand_built, fixture_excused = {}, []
     for path in tests:
         rel, text = _rel(path), _read(path)
+        # H5, and NOT under the `SELF` excuse below: this file is excused from the SKIP scan
+        # only, and it hand-builds nothing, so it is counted here like any other test file.
+        if rel in FACTORY_FILES:
+            fixture_excused.append(rel)
+        else:
+            try:
+                found = _hand_built_applications(ast.parse(text))
+            except (SyntaxError, ValueError):
+                found = 0
+            if found:
+                hand_built[rel] = found
         if rel == SELF:
             excused.append(rel)       # see the note at SELF — this file spells the patterns out
             continue
@@ -289,6 +350,8 @@ def scan():
         'source_files': len(sources),
         'test_files': len(tests),
         'excused_from_the_skip_scan': sorted(excused),
+        'excused_from_the_fixture_ledger': sorted(fixture_excused),
+        'hand_built_application_fixtures': dict(sorted(hand_built.items())),
         'oversize_files': dict(sorted(oversize.items())),
         'long_functions': dict(sorted(long_functions.items())),
         'duplicated_names': {k: len(v) for k, v in sorted(homes.items()) if len(v) >= DUP_FILES},
@@ -581,6 +644,78 @@ class TestTestsCanFail(_Standard):
             stale, [],
             f'The runtime_skips budget is looser than the code. Edit "budget" in '
             f'{os.path.basename(BUDGET_PATH)} exactly as each line says.\n' + '\n'.join(stale))
+
+
+class TestNewTestsUseTheFactory(_Standard):
+    """H5. A hand-built fixture can describe a state the product cannot produce.
+
+    That is not a theory: on 2026-09-18 BrightPath request #24 came out of one. A fixture fed
+    `status='rejected'` to a check whose live states never include it, so the test could never
+    reach the branch it named and a real bug sat behind a green test. There are TWO roads to QC
+    and they leave DIFFERENT marks — Recommend stamps `verified_at`, Decline stamps nothing —
+    and a hand-built row gets that wrong silently.
+
+    `apps/scholarship/tests/factories.py` knows the difference, and `test_factories.py` walks
+    every stage through the real services and endpoints so the factory itself cannot drift. So
+    the standard is: a test file NOT already in the ledger may not hand-build an application.
+    The 134 files that do are written down and may only ever shrink — the other ~200 convert
+    when they are next touched (`small-change-lane.md`), not in a big-bang rewrite."""
+
+    def test_the_fixture_exclusion_is_exactly_the_factory_and_its_test(self):
+        """The hole is two files wide and must stay two files wide. A third name here would be
+        a file quietly permitted to build unreachable states again."""
+        self.assertEqual(
+            self.scan['excused_from_the_fixture_ledger'], sorted(FACTORY_FILES),
+            'The hand-built-fixture scan is excusing a file other than the factory and its '
+            'drift test. Only those two may build a ScholarshipApplication by hand — the '
+            'factory because it IS the builder, its test because it proves the builder matches '
+            'the product. Remove the other excuse and use `make_application` in that file.')
+
+    def test_no_unlisted_test_file_hand_builds_an_application(self):
+        new = sorted(f'{n} call(s)  {f}'
+                     for f, n in self.scan['hand_built_application_fixtures'].items()
+                     if f not in self.budget['hand_built_application_fixtures'])
+        self.assertEqual(
+            new, [],
+            'Test file(s) call `ScholarshipApplication.objects.create(` and are not in the '
+            'hand_built_application_fixtures ledger. A hand-built fixture can describe a state '
+            'the product cannot reach, and then the test passes for ever while testing nothing '
+            '(BrightPath #24). Use `make_application` from '
+            '`apps/scholarship/tests/factories.py`; if the state truly cannot be expressed, '
+            'extend the factory — and add the stage to `test_factories.py` so it is walked '
+            'through the real code. Do NOT add the file to the ledger.\n' + '\n'.join(new))
+
+    def test_a_listed_file_has_not_gained_a_hand_built_fixture(self):
+        grown = [
+            f'{k}: now {self.scan["hand_built_application_fixtures"].get(k, 0)} call(s), '
+            f'recorded at {v}'
+            for k, v in sorted(self.budget['hand_built_application_fixtures'].items())
+            if self.scan['hand_built_application_fixtures'].get(k, 0) > v]
+        self.assertEqual(
+            grown, [],
+            'File(s) in the hand_built_application_fixtures ledger have gained another '
+            'hand-built application. The ledger records fixtures that are ALREADY waiting to '
+            'be converted; adding one more is the thing it exists to stop. Use '
+            '`make_application` from `apps/scholarship/tests/factories.py` for the new '
+            'fixture.\n' + '\n'.join(grown))
+
+    def test_a_listed_file_that_converted_has_its_entry_lowered(self):
+        """Tightness. A count left sitting above reality re-permits the fixtures the conversion
+        just removed, so the entry must follow the file down."""
+        stale = []
+        for path, limit in sorted(self.budget['hand_built_application_fixtures'].items()):
+            now = self.scan['hand_built_application_fixtures'].get(path, 0)
+            if now == 0:
+                stale.append(f'{path}: no hand-built applications left — REMOVE this line '
+                             f'from "hand_built_application_fixtures" in budget')
+            elif limit > now:
+                stale.append(f'{path}: now {now} call(s) but recorded at {limit} — '
+                             f'LOWER this line to {now}')
+        self.assertEqual(
+            stale, [],
+            f'The hand_built_application_fixtures budget is looser than the code. Edit "budget" '
+            f'in {os.path.basename(BUDGET_PATH)} exactly as each line says. This is the ratchet '
+            f'catching up with your conversion, not a complaint about it.\n' + '\n'.join(stale))
 
 
 class TestNoNewBlindSpots(_Standard):

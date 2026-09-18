@@ -8,10 +8,8 @@ from unittest import mock
 
 from django.test import TestCase
 
-from apps.courses.models import StudentProfile
-from apps.scholarship.models import (
-    ApplicantDocument, FundingNeed, Referee, ScholarshipApplication, ScholarshipCohort,
-)
+from apps.scholarship.models import ApplicantDocument, FundingNeed, Referee
+from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 from apps.scholarship.profile_engine import (
     DEFAULT_LANGUAGE, _ABOVE_LINE_EMPHASIS, _BELOW_LINE_AFFIRM, _ASSISTANCE_NATURE,
     _DO_NOT_CLAIM, _build_prompt, _grades_summary, _income_above_line, _income_context,
@@ -22,8 +20,8 @@ from apps.scholarship.profile_engine import (
 class TestProfilePrompt(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        cls.profile = make_student(
             supabase_user_id='pe-1', nric='030101-14-1234', name='Priya', school='SMK Taman',
             exam_type='SPM',
             # Realistic keys across groups, incl. a vernacular-language subject (b_tamil)
@@ -36,8 +34,8 @@ class TestProfilePrompt(TestCase):
                 'work_preference_signals': {'problem_solving': 3, 'hands_on': 1},
             },
         )
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile, status='shortlisted', locale='ms',
+        cls.app = make_application(
+            'shortlisted', cohort=cls.cohort, student=cls.profile, locale='ms',
             aspirations='Saya mahu menjadi akauntan',  # Malay narrative
             plans='Belajar rajin setiap hari',
             family_context='என் தந்தை ஒரு லாரி ஓட்டுநர்',  # Tamil narrative
@@ -281,9 +279,9 @@ class TestProfilePrompt(TestCase):
         self.assertIn('error', result)
 
     def test_build_prompt_handles_missing_funding_and_referees(self):
-        app2 = ScholarshipApplication.objects.create(
-            cohort=ScholarshipCohort.objects.create(code='c2', name='B40-2', year=2027),
-            profile=self.profile, status='shortlisted',
+        app2 = make_application(
+            'shortlisted', cohort=make_cohort(code='c2', name='B40-2', year=2027),
+            student=self.profile,
         )
         prompt = _build_prompt(app2)
         self.assertIn('not provided', prompt)     # funding categories/note render a fallback
@@ -294,14 +292,13 @@ class TestClaimGating(TestCase):
     claim (the live 'first-generation' bug). Verification comes from the sibling split."""
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='cg', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(
+        cls.cohort = make_cohort(code='cg', name='B40', year=2026)
+        cls.profile = make_student(
             supabase_user_id='cg-1', nric='030101-14-1234', name='Priya', school='SMK',
             exam_type='SPM', household_income=1500, household_size=5)
 
     def _app(self, **kw):
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted', **kw)
+        return make_application('shortlisted', cohort=self.cohort, student=self.profile, **kw)
 
     def test_unverified_first_in_family_is_not_claimed(self):
         # Claimed, but only a legacy combined count → split unknown → must NOT assert.
@@ -339,19 +336,19 @@ class TestWelfareClaimGating(TestCase):
     route with NO STR document uploaded."""
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='wg', name='B40', year=2026)
+        cls.cohort = make_cohort(code='wg', name='B40', year=2026)
 
     _seq = 0
 
     def _app(self, *, receives_str=False, receives_jkm=False, income_route='salary',
              household_income=1500, working_members=None):
         type(self)._seq += 1
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'wg-{self._seq}', nric='030101-14-1234', name='Priya',
             school='SMK', exam_type='SPM', household_income=household_income, household_size=5,
             receives_str=receives_str, receives_jkm=receives_jkm)
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=profile, status='shortlisted',
+        return make_application(
+            'shortlisted', cohort=self.cohort, student=profile,
             income_route=income_route, income_working_members=working_members or [])
 
     def _add_str_doc(self, app, *, status='Lulus', source_type='semakan_status', year=''):
@@ -443,11 +440,11 @@ class TestAboveLineEmphasis(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='al', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(
+        cls.cohort = make_cohort(code='al', name='B40', year=2026)
+        cls.profile = make_student(
             supabase_user_id='al-1', nric='030101-14-0007', name='Priya', exam_type='SPM')
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile, status='interviewed',
+        cls.app = make_application(
+            'awaiting_qc', outcome='recommend', cohort=cls.cohort, student=cls.profile,
             verdict_reason='Large household; father is the sole earner on irregular income.')
 
     def _fake_session(self):
@@ -510,11 +507,10 @@ class TestAssistanceNatureGuardrail(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='an', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(
+        cls.cohort = make_cohort(code='an', name='B40', year=2026)
+        cls.profile = make_student(
             supabase_user_id='an-1', nric='030101-14-0008', name='Priya', exam_type='SPM')
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile, status='shortlisted')
+        cls.app = make_application('shortlisted', cohort=cls.cohort, student=cls.profile)
 
     def test_draft_prompt_carries_assistance_nature(self):
         prompt = _build_prompt(self.app)

@@ -8,10 +8,8 @@ full Theresa-shaped integration check.
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.courses.models import StudentProfile
-from apps.scholarship.models import (
-    ApplicantDocument, FundingNeed, ScholarshipApplication, ScholarshipCohort,
-)
+from apps.scholarship.models import ApplicantDocument, FundingNeed
+from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 from apps.scholarship.verdict_engine import build_verdict
 
 
@@ -27,10 +25,10 @@ def _codes(items):
 class _Base(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'verdict-{self.id()}',
             name='THERESA ARUL MARY A/P A.PHILIPS',
             nric='080115-05-0132',
@@ -40,8 +38,8 @@ class _Base(TestCase):
             receives_str=False,
             receives_jkm=False,
         )
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             chosen_pathway='Matriculation',
         )
 
@@ -994,14 +992,14 @@ class TestIncomeCluster(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='cl', name='B40', year=2026)
+        cls.cohort = make_cohort(code='cl', name='B40', year=2026)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'cluster-{self.id()}', name='DIVASHINI A/P MURUGAN',
             nric='080115-05-0132')
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             income_route='salary', income_working_members=['father'])
 
     def _slip(self, member, name, nric='', amount='RM2000'):
@@ -1092,14 +1090,14 @@ class TestIncomeClusterStr(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='cs', name='B40', year=2026)
+        cls.cohort = make_cohort(code='cs', name='B40', year=2026)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'clusterstr-{self.id()}', name='DIVASHINI A/P MURUGAN',
             nric='080115-05-0132')
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             income_route='str', income_earner='father')
 
     def test_str_proof_checks_against_untagged_earner_ic(self):
@@ -1222,15 +1220,15 @@ class TestIncomePerCapita(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='pc', name='B40', year=2026,
+        cls.cohort = make_cohort(code='pc', name='B40', year=2026,
                                                       per_capita_ceiling=1584)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'percap-{self.id()}', name='DIVASHINI A/P MURUGAN',
             nric='080115-05-0132', household_size=4)
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             income_route='salary', income_working_members=['father'])
 
     def _father(self, gross=None, epf_contrib=None):
@@ -1279,15 +1277,15 @@ class TestIncomeDeclared(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='dc', name='B40', year=2026,
+        cls.cohort = make_cohort(code='dc', name='B40', year=2026,
                                                       per_capita_ceiling=1584)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'decl-{self.id()}', name='DIVASHINI A/P MURUGAN',
             nric='080115-05-0132', household_size=4)
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             income_route='salary', income_working_members=['father'],
             income_declared={'father': 1500})
         # A confirmed father earner (IC + patronymic) so the cluster otherwise adds up.
@@ -1346,14 +1344,14 @@ class TestSalaryRouteStrSettle(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='p3', name='B40', year=2026,
+        cls.cohort = make_cohort(code='p3', name='B40', year=2026,
                                                       per_capita_ceiling=1584)
 
     def _app(self, *, name='DIVASHINI A/P MURUGAN', **kw):
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'p3-{self.id()}', name=name, nric='080115-05-0132', household_size=4)
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=profile, status='shortlisted', **kw)
+        return make_application(
+            'shortlisted', cohort=self.cohort, student=profile, **kw)
 
     def test_current_str_recipient_confirmed_settles_green(self):
         # #45: the father IS the STR recipient (current STR) but drives e-hailing with no payslip;
@@ -1472,20 +1470,20 @@ class TestStrRouteNoStrFallsThroughToSalary(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='nostr', name='B40', year=2026,
+        cls.cohort = make_cohort(code='nostr', name='B40', year=2026,
                                                       income_ceiling=5860, per_capita_ceiling=1584)
 
     def _app(self, *, name='DIVASHINI A/P MURUGAN', size=4, **kw):
         """Defaults reproduce #106's production row: route 'str', earner 'father', and
         `income_working_members` EMPTY — she accepted the wizard prefill and never ticked a salary
         checkbox, so the earners can only be reconstructed from the documents she tagged."""
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'nostr-{self.id()}', name=name, nric='080115-05-0132',
             household_size=size)
         kw.setdefault('income_route', 'str')
         kw.setdefault('income_earner', 'father')
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=profile, status='shortlisted', **kw)
+        return make_application(
+            'shortlisted', cohort=self.cohort, student=profile, **kw)
 
     def _documented_father(self, app, gross='1,450.00'):
         _parent_ic(app, 'MURUGAN A/L SUBRAMANIAM', member='father')
@@ -1619,16 +1617,16 @@ class TestUnemploymentEvidence(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='ue2', name='B40', year=2026,
+        cls.cohort = make_cohort(code='ue2', name='B40', year=2026,
                                                       per_capita_ceiling=1584)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'unemp-{self.id()}', name='DIVASHINI A/P MURUGAN',
             nric='080115-05-0132', household_size=4)
         # Salary route, mother works; father is unemployed with an all-zeros EPF.
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             income_route='salary', income_working_members=['mother'],
             father_occupation='unemployed')
         _add_doc(self.app, 'epf', member='father', fields={'employer_number': '000000000'})
@@ -1649,15 +1647,15 @@ class TestHouseholdSizeConfirm(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='hs', name='B40', year=2026)
+        cls.cohort = make_cohort(code='hs', name='B40', year=2026)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'hs-{self.id()}', name='DIVASHINI A/P MURUGAN',
             nric='080115-05-0132', household_size=2)
         # Described = student + father + mother = 3, but household_size entered as 2 → over-count.
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             income_route='salary', income_working_members=['father'],
             father_occupation='gov', mother_occupation='homemaker')
 
@@ -1678,14 +1676,14 @@ class TestUtilityAndEpf(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='ue', name='B40', year=2026)
+        cls.cohort = make_cohort(code='ue', name='B40', year=2026)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'ue-{self.id()}', name='DIVASHINI A/P MURUGAN',
             nric='080115-05-0132', household_size=4)
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             income_route='salary', income_working_members=['father'])
 
     def test_epf_points_use_monthly_contribution_not_balance(self):
@@ -1747,14 +1745,14 @@ class TestRelationshipChecklists(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='rel', name='B40', year=2026)
+        cls.cohort = make_cohort(code='rel', name='B40', year=2026)
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(
+        self.profile = make_student(
             supabase_user_id=f'rel-{self.id()}', name='ATHIAN SANKAR A/L ELANJELIAN',
             nric='090822-02-0919', household_size=4)
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
             income_route='salary', income_working_members=['mother'])
 
     def test_bc_check_child_mother_father(self):
@@ -1893,15 +1891,15 @@ class TestCodeHealthS4IncomeConsistency(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(
+        cls.cohort = make_cohort(
             code='s4c', name='B40', year=2026, per_capita_ceiling=1584, income_ceiling=5860)
 
     def _app(self, size, working=('father',), declared=None):
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f's4-{self.id()}', name='DIVASHINI A/P MURUGAN',
             nric='080115-05-0132', household_size=size)
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=profile, status='shortlisted',
+        return make_application(
+            'shortlisted', cohort=self.cohort, student=profile,
             income_route='salary', income_working_members=list(working),
             income_declared=declared or {})
 

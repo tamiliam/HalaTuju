@@ -14,9 +14,12 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.courses.models import PartnerAdmin
 from apps.scholarship import scheduling
-from apps.scholarship.models import InterviewSlot, ReviewerProfile, ScholarshipApplication, ScholarshipCohort, WhatsAppMessage
+from apps.scholarship.models import InterviewSlot, ReviewerProfile, ScholarshipApplication, WhatsAppMessage
+from apps.scholarship.tests.factories import (
+    make_application, make_cohort, make_student,
+)
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
@@ -49,13 +52,13 @@ class SchedulingServiceTests(TestCase):
         cls.partner = PartnerAdmin.objects.create(
             supabase_user_id='partner-uid', role='partner', is_active=True,
             name='Partner', email='partner@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        cls.profile = make_student(
             supabase_user_id='stud', nric='030101-14-1234', name='Priya')
 
     def setUp(self):
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='interviewing',
+        self.app = make_application(
+            'interviewing', cohort=self.cohort, student=self.profile,
             notify_email='priya@example.com', assigned_to=self.reviewer)
 
     def _future(self, **kw):
@@ -89,10 +92,10 @@ class SchedulingServiceTests(TestCase):
 
     # ── status advances when the interview process starts ─────────────────────
     def _pc_app(self, uid='stud-pc'):
-        p = StudentProfile.objects.create(
+        p = make_student(
             supabase_user_id=uid, nric='990101-14-9999', name='Devi')
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='profile_complete',
+        return make_application(
+            'profile_complete', cohort=self.cohort, student=p,
             notify_email=f'{uid}@example.com', assigned_to=self.reviewer)
 
     def test_propose_advances_profile_complete_to_interviewing(self):
@@ -114,9 +117,9 @@ class SchedulingServiceTests(TestCase):
 
     # ── proposing requires an assignment (hotfix 2026-07-03; closes the super bypass) ─────────
     def _unassigned_pc_app(self, uid='stud-unassigned'):
-        p = StudentProfile.objects.create(supabase_user_id=uid, nric='990202-14-8888', name='Nita')
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='profile_complete',
+        p = make_student(supabase_user_id=uid, nric='990202-14-8888', name='Nita')
+        return make_application(
+            'profile_complete', cohort=self.cohort, student=p,
             notify_email=f'{uid}@example.com')   # NO assigned_to
 
     def test_propose_refused_on_unassigned_application(self):
@@ -304,10 +307,10 @@ class SchedulingServiceTests(TestCase):
         self.assertFalse(scheduling.slot_in_window(at(22, 0)))
 
     def _other_app(self, uid='stud2'):
-        p = StudentProfile.objects.create(
+        p = make_student(
             supabase_user_id=uid, nric='800101-14-5678', name='Bala Jr')
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='interviewing',
+        return make_application(
+            'interviewing', cohort=self.cohort, student=p,
             notify_email=f'{uid}@example.com', assigned_to=self.reviewer)
 
     # ── email-skip (re-propose the same menu) ──────────────────────────────────
@@ -527,11 +530,11 @@ class SchedulingServiceTests(TestCase):
     def test_english_only_email_rule(self):
         from apps.scholarship.emails import english_only_email
         def mk(locale, call, eng):
-            p = StudentProfile.objects.create(
+            p = make_student(
                 supabase_user_id=f'eo-{locale}-{call}-{eng}', nric='030101-14-1234',
                 name='X', grades=({'eng': eng} if eng else {}), preferred_call_language=call)
-            return ScholarshipApplication.objects.create(
-                cohort=self.cohort, profile=p, status='interviewing', locale=locale)
+            return make_application(
+                'interviewing', cohort=self.cohort, student=p, locale=locale)
         self.assertTrue(english_only_email(mk('en', 'en', 'A+')))
         self.assertTrue(english_only_email(mk('en', '', 'A')))
         self.assertFalse(english_only_email(mk('en', 'en', 'B')))   # English grade too low
@@ -540,11 +543,11 @@ class SchedulingServiceTests(TestCase):
         self.assertFalse(english_only_email(mk('en', 'ta', 'A+')))  # wants Tamil calls
 
     def test_propose_email_drops_bm_for_english_only_student(self):
-        p = StudentProfile.objects.create(
+        p = make_student(
             supabase_user_id='eo-prop', nric='030101-14-9999', name='Anya Rao',
             grades={'eng': 'A+'}, preferred_call_language='en')
-        app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='interviewing', notify_email='anya@example.com',
+        app = make_application(
+            'interviewing', cohort=self.cohort, student=p, notify_email='anya@example.com',
             assigned_to=self.reviewer, locale='en')
         mail.outbox.clear()
         scheduling.propose_slots(app, reviewer=self.reviewer, starts=[self._future(days=3)])
@@ -761,13 +764,13 @@ class ReminderCronTests(TestCase):
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='rev-uid', role='reviewer', is_active=True,
             name='Rohini', email='rohini@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        cls.profile = make_student(
             supabase_user_id='stud', nric='030101-14-1234', name='Priya')
 
     def _booked_app(self, start):
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='interviewing',
+        return make_application(
+            'interviewing', cohort=self.cohort, student=self.profile,
             notify_email='priya@example.com', assigned_to=self.reviewer,
             interview_status='booked', interview_start=start)
 
@@ -992,23 +995,26 @@ class BookingEmailTests(TestCase):
 class SchedulingEndpointTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        # The B40 fence compares the admin's `owning_organisation` with the application's, so
+        # a non-super reaching these endpoints must sit inside the cohort's organisation.
+        org = cls.cohort.owning_organisation
         cls.super = PartnerAdmin.objects.create(
             supabase_user_id='super-uid', is_super_admin=True, is_active=True,
             name='Super', email='super@example.com')
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='rev-uid', role='reviewer', is_active=True,
-            name='Rohini', email='rohini@example.com')
+            owning_organisation=org, name='Rohini', email='rohini@example.com')
         cls.other_reviewer = PartnerAdmin.objects.create(
             supabase_user_id='rev2-uid', role='reviewer', is_active=True,
-            name='Bala', email='bala@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(
+            owning_organisation=org, name='Bala', email='bala@example.com')
+        cls.profile = make_student(
             supabase_user_id='stud', nric='030101-14-1234', name='Priya')
 
     def setUp(self):
         self.client = APIClient()
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='interviewing',
+        self.app = make_application(
+            'interviewing', cohort=self.cohort, student=self.profile,
             notify_email='priya@example.com', assigned_to=self.reviewer)
 
     def _auth(self, uid):
@@ -1117,7 +1123,7 @@ class SchedulingEndpointTests(TestCase):
         self.assertEqual(r2.json()['status'], 'cancelled')
 
     def test_student_cannot_book_others_application(self):
-        other_profile = StudentProfile.objects.create(
+        other_profile = make_student(
             supabase_user_id='other', nric='040101-14-9999', name='Other')
         slot = scheduling.propose_slots(self.app, reviewer=self.reviewer,
                                         starts=[timezone.now() + timedelta(days=5)])[0]

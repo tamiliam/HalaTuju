@@ -4,8 +4,10 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import StudentProfile
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.tests.factories import (
+    make_application, make_cohort, make_student,
+)
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 USER_A = 'user-a-123'
@@ -26,18 +28,18 @@ class TestApplicationIntake(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(
+        cls.cohort = make_cohort(
             code='b40-2026', name='B40 Assistance Programme 2026', year=2026,
             income_ceiling=5250,
         )
-        cls.profile_a = StudentProfile.objects.create(
+        cls.profile_a = make_student(
             supabase_user_id=USER_A, nric='080101-14-1234',
             name='Priya', contact_email='priya@example.com',
             # math A, sej A, tamil_lit A+, eko A-, sci A- => 5 A's
             grades={'bm': 'B+', 'eng': 'B+', 'math': 'A', 'sej': 'A',
                     'tamil_lit': 'A+', 'eko': 'A-', 'sci': 'A-'},
         )
-        cls.profile_b = StudentProfile.objects.create(
+        cls.profile_b = make_student(
             supabase_user_id=USER_B, nric='080202-14-5678',
             name='Nathiyaa', contact_email='nat@example.com',
         )
@@ -248,7 +250,7 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_duplicate_returns_409(self):
-        ScholarshipApplication.objects.create(cohort=self.cohort, profile=self.profile_a)
+        make_application('submitted', cohort=self.cohort, student=self.profile_a)
         self._auth(_make_token(USER_A))
         resp = self.client.post(
             '/api/v1/scholarship/applications/', self._payload(), format='json',
@@ -258,8 +260,8 @@ class TestApplicationIntake(TestCase):
     def test_expired_application_does_not_block_reapply(self):
         # An auto-closed ('expired') application must NOT block a fresh start — the
         # reminder system promises the student they may restart.
-        ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile_a, status='expired')
+        make_application(
+            'expired', cohort=self.cohort, student=self.profile_a)
         self._auth(_make_token(USER_A))
         resp = self.client.post(
             '/api/v1/scholarship/applications/', self._payload(), format='json',
@@ -292,8 +294,8 @@ class TestApplicationIntake(TestCase):
     # --- LIST / DETAIL ---
 
     def test_list_own_only(self):
-        ScholarshipApplication.objects.create(cohort=self.cohort, profile=self.profile_a)
-        ScholarshipApplication.objects.create(cohort=self.cohort, profile=self.profile_b)
+        make_application('submitted', cohort=self.cohort, student=self.profile_a)
+        make_application('submitted', cohort=self.cohort, student=self.profile_b)
         self._auth(_make_token(USER_A))
         resp = self.client.get('/api/v1/scholarship/applications/')
         self.assertEqual(resp.status_code, 200)
@@ -302,14 +304,14 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(data['applications'][0]['profile_id'], USER_A)
 
     def test_detail_own(self):
-        app = ScholarshipApplication.objects.create(cohort=self.cohort, profile=self.profile_a)
+        app = make_application('submitted', cohort=self.cohort, student=self.profile_a)
         self._auth(_make_token(USER_A))
         resp = self.client.get(f'/api/v1/scholarship/applications/{app.id}/')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()['id'], app.id)
 
     def test_detail_cross_user_404(self):
-        app = ScholarshipApplication.objects.create(cohort=self.cohort, profile=self.profile_b)
+        app = make_application('submitted', cohort=self.cohort, student=self.profile_b)
         self._auth(_make_token(USER_A))
         resp = self.client.get(f'/api/v1/scholarship/applications/{app.id}/')
         self.assertEqual(resp.status_code, 404)

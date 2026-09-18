@@ -16,30 +16,31 @@ therefore have to CREATE the second programme to reach the bug at all.
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerOrganisation, StudentProfile
-from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
-from apps.scholarship.tests.test_api import TEST_JWT_SECRET, _make_token
+from apps.scholarship.tests.factories import (
+    TEST_JWT_SECRET, auth_token, make_application, make_cohort, make_student,
+)
 from apps.scholarship.views import AmbiguousApplication, _current_application
 
 USER = 'm1-student'
 
 
 def _cohort(code):
-    org = PartnerOrganisation.objects.create(code=code, name=code.title())
-    return ScholarshipCohort.objects.create(
-        code=code, name=f'Cohort {code}', year=2026, owning_organisation=org,
-        is_active=True, is_open=True,
-    )
+    return make_cohort(code=code, name=f'Cohort {code}', year=2026,
+                       is_active=True, is_open=True)
+
+
+def _student(uid=USER, **kw):
+    kw.setdefault('name', 'Test Student')
+    return make_student(supabase_user_id=uid, **kw)
 
 
 class TestOneLiveApplicationIsUnchanged(TestCase):
     """The promise that makes this shippable: today's single-application behaviour does not move."""
 
     def setUp(self):
-        self.profile = StudentProfile.objects.create(supabase_user_id=USER, name='Test Student')
-        self.app = ScholarshipApplication.objects.create(
-            cohort=_cohort('a-2026'), profile=self.profile, status='profile_complete',
-        )
+        self.profile = _student()
+        self.app = make_application(
+            'profile_complete', cohort=_cohort('a-2026'), student=self.profile)
 
     def test_the_single_live_application_resolves(self):
         self.assertEqual(_current_application(USER), self.app)
@@ -56,21 +57,17 @@ class TestOneLiveApplicationIsUnchanged(TestCase):
     def test_an_expired_application_beside_a_live_one_is_not_ambiguous(self):
         """The restart case: an expired row stays as history and must not count as live —
         otherwise every student who restarted would be locked out by this change."""
-        ScholarshipApplication.objects.create(
-            cohort=_cohort('old-2025'), profile=self.profile, status='expired',
-        )
+        make_application('expired', cohort=_cohort('old-2025'), student=self.profile)
         self.assertEqual(_current_application(USER), self.app)
 
 
 class TestTwoLiveApplicationsAreRefused(TestCase):
     def setUp(self):
-        self.profile = StudentProfile.objects.create(supabase_user_id=USER, name='Test Student')
-        self.app_a = ScholarshipApplication.objects.create(
-            cohort=_cohort('a-2026'), profile=self.profile, status='profile_complete',
-        )
-        self.app_b = ScholarshipApplication.objects.create(
-            cohort=_cohort('b-2026'), profile=self.profile, status='shortlisted',
-        )
+        self.profile = _student()
+        self.app_a = make_application(
+            'profile_complete', cohort=_cohort('a-2026'), student=self.profile)
+        self.app_b = make_application(
+            'shortlisted', cohort=_cohort('b-2026'), student=self.profile)
 
     def test_it_refuses_instead_of_picking_the_latest(self):
         """Pre-fix this returned one of them — whichever sorted first by -submitted_at."""
@@ -96,10 +93,8 @@ class TestTwoLiveApplicationsAreRefused(TestCase):
         self.assertEqual(_current_application(USER), self.app_a)
 
     def test_another_students_applications_never_create_ambiguity(self):
-        other = StudentProfile.objects.create(supabase_user_id='someone-else', name='Other')
-        ScholarshipApplication.objects.create(
-            cohort=_cohort('c-2026'), profile=other, status='profile_complete',
-        )
+        other = _student('someone-else', name='Other')
+        make_application('profile_complete', cohort=_cohort('c-2026'), student=other)
         with self.assertRaises(AmbiguousApplication):
             _current_application(USER)          # still theirs, still two
         self.assertIsNotNone(_current_application('someone-else'))   # unaffected
@@ -111,14 +106,10 @@ class TestTheEndpointsRefuseRatherThanMisattribute(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.profile = StudentProfile.objects.create(
-            supabase_user_id=USER, name='Test Student', nric='010101010101',
-        )
-        for code, st in (('a-2026', 'profile_complete'), ('b-2026', 'shortlisted')):
-            ScholarshipApplication.objects.create(
-                cohort=_cohort(code), profile=self.profile, status=st,
-            )
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_make_token(USER)}')
+        self.profile = _student(nric='010101010101')
+        for code, stage in (('a-2026', 'profile_complete'), ('b-2026', 'shortlisted')):
+            make_application(stage, cohort=_cohort(code), student=self.profile)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {auth_token(USER)}')
 
     def test_document_upload_refuses_rather_than_filing_under_the_wrong_programme(self):
         resp = self.client.post(

@@ -21,9 +21,14 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses import org_config
-from apps.courses.models import OrganisationConfiguration, PartnerAdmin, PartnerOrganisation
+from apps.courses.models import (
+    OrganisationConfiguration, PartnerAdmin, PartnerOrganisation, StudentProfile,
+)
 from apps.scholarship import pool
-from apps.scholarship.models import Programme, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import Programme, ScholarshipApplication
+from apps.scholarship.tests.factories import (
+    make_application, make_cohort, make_student,
+)
 
 from .test_sponsor_pool import _make_eligible_app
 
@@ -102,13 +107,13 @@ class TestPerOrgFundedGraceWindow(TestCase):
         # so the cohorts here must carry it or every app lands org-NULL.
         from .test_sponsor_pool import fixture_programme
         fixture = fixture_programme()          # org `fixture-org`, shared with _make_eligible_app
-        cls.cohort = ScholarshipCohort.objects.create(
+        cls.cohort = make_cohort(
             code='oc-a', name='B40', year=2026,
             programme=fixture, owning_organisation=fixture.organisation)
         cls.other_org = PartnerOrganisation.objects.create(code='oc-other', name='Other Org')
         other_programme = Programme.objects.create(
             code='oc-other-gift', organisation=cls.other_org, name_en='Other Gift')
-        cls.other_cohort = ScholarshipCohort.objects.create(
+        cls.other_cohort = make_cohort(
             code='oc-b', name='B40 Other', year=2026,
             programme=other_programme, owning_organisation=cls.other_org)
 
@@ -317,7 +322,7 @@ class TestOrganisationConfigurationEndpoint(TestCase):
         # through the ENDPOINT — the card must come back into the display pool.
         programme = Programme.objects.create(
             code='alpha-gift', organisation=self.org_a, name_en='Alpha Gift')
-        cohort = ScholarshipCohort.objects.create(
+        cohort = make_cohort(
             code='alpha-2026', name='Alpha 2026', year=2026,
             programme=programme, owning_organisation=self.org_a)
         app = _make_eligible_app(cohort, suffix='e2e')
@@ -379,7 +384,7 @@ def _org_cohort(code, org):
     if org is not None:
         programme = Programme.objects.create(
             code=f'{code}-gift', organisation=org, name_en=f'{code} Gift')
-    return ScholarshipCohort.objects.create(
+    return make_cohort(
         code=code, name=f'B40 {code}', year=2026,
         programme=programme, owning_organisation=org)
 
@@ -405,11 +410,11 @@ class TestPerOrgClarifyCap(TestCase):
         # siblings, no funding device tick → more clarify-able gaps than any cap here.
         from apps.courses.models import StudentProfile
         from apps.scholarship.models import ApplicantDocument
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'occ-{suffix}', name='Priya Devi', nric='030101-14-1234',
             household_income=1200, household_size=3)
-        app = ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='profile_complete',
+        app = make_application(
+            'profile_complete', cohort=cohort, student=profile,
             profile_completed_at=timezone.now(),
             aspirations='I want to teach.', field_of_study='',
             siblings_in_tertiary=None, siblings_studying_count=2,
@@ -459,9 +464,9 @@ class TestPerOrgNudgeDelays(TestCase):
     def _consented_app(self, cohort, suffix, *, minutes_ago):
         from apps.courses.models import StudentProfile
         from apps.scholarship.models import Consent
-        profile = StudentProfile.objects.create(supabase_user_id=f'onn-{suffix}', name='Janu')
-        app = ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='shortlisted', notify_email='stu@x.com')
+        profile = make_student(supabase_user_id=f'onn-{suffix}', name='Janu')
+        app = make_application(
+            'shortlisted', cohort=cohort, student=profile, notify_email='stu@x.com')
         c = Consent.objects.create(application=app, version='t', granted_by='guardian',
                                    guardian_name='Parent', is_active=True)
         Consent.objects.filter(pk=c.pk).update(
@@ -516,11 +521,11 @@ class TestPerOrgQueryEmailDelay(TestCase):
     def _submitted_app(self, cohort, suffix, *, hours_ago):
         # The gappy shape guarantees ≥1 open clarify, so the sweep has something to announce.
         from apps.courses.models import StudentProfile
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'oqq-{suffix}', name='Priya Devi',
             household_income=1200, household_size=3)
-        return ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='profile_complete',
+        return make_application(
+            'profile_complete', cohort=cohort, student=profile,
             notify_email='stu@x.com',
             profile_completed_at=timezone.now() - timedelta(hours=hours_ago),
             aspirations='I want to teach.', field_of_study='',
@@ -634,9 +639,9 @@ class TestPerOrgReviewClocks(TestCase):
 
     def _assigned_app(self, cohort, suffix, *, days_ago):
         from apps.courses.models import StudentProfile
-        profile = StudentProfile.objects.create(supabase_user_id=f'orc-{suffix}', name='Kavi')
-        app = ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='profile_complete',
+        profile = make_student(supabase_user_id=f'orc-{suffix}', name='Kavi')
+        app = make_application(
+            'profile_complete', cohort=cohort, student=profile,
             notify_email='stu@x.com', assigned_to=self.reviewer)
         ScholarshipApplication.objects.filter(pk=app.pk).update(
             assigned_at=timezone.now() - timedelta(days=days_ago))
@@ -867,9 +872,9 @@ class TestPerOrgInterviewRules(TestCase):
 
     def _app(self, cohort, suffix):
         from apps.courses.models import StudentProfile
-        profile = StudentProfile.objects.create(supabase_user_id=f'osd-{suffix}', name='Kavi')
-        return ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='profile_complete',
+        profile = make_student(supabase_user_id=f'osd-{suffix}', name='Kavi')
+        return make_application(
+            'profile_complete', cohort=cohort, student=profile,
             notify_email='stu@x.com', assigned_to=self.reviewer)
 
     @staticmethod
@@ -1020,10 +1025,10 @@ class TestPerOrgDocumentLimits(TestCase):
         from apps.courses.models import StudentProfile
         # ⚠ An NRIC is required or `SupabaseAuthMiddleware` refuses every student route with
         # 403 `nric_required` before the view is reached.
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=uid, name='Kavi', nric=f'0501{uid[-6:]:>06}'[:12])
-        return ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='shortlisted', notify_email='stu@x.com')
+        return make_application(
+            'shortlisted', cohort=cohort, student=profile, notify_email='stu@x.com')
 
     def _client(self, uid):
         c = APIClient()
@@ -1155,9 +1160,9 @@ class TestPerOrgAgreementClocks(TestCase):
 
     def _app(self, cohort, uid):
         from apps.courses.models import StudentProfile
-        profile = StudentProfile.objects.create(supabase_user_id=uid, name='Kavi')
-        return ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='awarded', notify_email='stu@x.com')
+        profile = make_student(supabase_user_id=uid, name='Kavi')
+        return make_application(
+            'awarded', cohort=cohort, student=profile, notify_email='stu@x.com')
 
     def _offer(self, app):
         from apps.scholarship.models import Sponsor, Sponsorship

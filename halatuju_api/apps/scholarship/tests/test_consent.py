@@ -4,15 +4,21 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.courses.models import StudentProfile
-from apps.scholarship.models import Consent, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import Consent
 from apps.scholarship.services import CONSENT_VERSION, age_from_nric, is_minor
+from apps.scholarship.tests.factories import (
+    TEST_JWT_SECRET, auth_token, make_application, make_cohort, make_student,
+)
 
-TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 ADULT = 'consent-adult'
 MINOR = 'consent-minor'
 
 
 def _token(uid, secret=TEST_JWT_SECRET):
+    """`auth_token` for the shared secret; the explicit-secret form stays because several
+    tests below sign with a DIFFERENT secret to prove the token is actually verified."""
+    if secret == TEST_JWT_SECRET:
+        return auth_token(uid)
     return jwt.encode(
         {'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
         secret, algorithm='HS256',
@@ -37,15 +43,14 @@ class TestAgeMinor(TestCase):
 class TestConsentApi(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        cls.adult = StudentProfile.objects.create(supabase_user_id=ADULT, nric='030101-14-1234')
-        cls.minor = StudentProfile.objects.create(supabase_user_id=MINOR, nric='110101-14-5678')
-        cls.app_adult = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.adult, status='shortlisted',
-        )
-        cls.app_minor = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.minor, status='shortlisted',
-        )
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        # `make_student` (not `make_shortlistable_student`): these two are DELIBERATELY
+        # incomplete, and `test_consent_blocked_until_profile_complete` asserts
+        # `quiz_incomplete` is among the blockers.
+        cls.adult = make_student(supabase_user_id=ADULT, nric='030101-14-1234')
+        cls.minor = make_student(supabase_user_id=MINOR, nric='110101-14-5678')
+        cls.app_adult = make_application('shortlisted', cohort=cls.cohort, student=cls.adult)
+        cls.app_minor = make_application('shortlisted', cohort=cls.cohort, student=cls.minor)
 
     def setUp(self):
         self.client = APIClient()
@@ -386,20 +391,14 @@ class TestIncomeGateV2(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='gv2', name='B40', year=2026)
+        cls.cohort = make_cohort(code='gv2', name='B40', year=2026)
 
     def _app(self, *, route='', earner='', members=None, submitted=False):
-        import uuid
-        prof = StudentProfile.objects.create(
-            supabase_user_id=str(uuid.uuid4()), nric='030101-14-1234', name='Student')
-        app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=prof, status='shortlisted',
+        prof = make_student(nric='030101-14-1234', name='Student')
+        return make_application(
+            'profile_complete' if submitted else 'shortlisted',
+            cohort=self.cohort, student=prof,
             income_route=route, income_earner=earner, income_working_members=members or [])
-        if submitted:
-            from django.utils import timezone
-            app.status, app.profile_completed_at = 'profile_complete', timezone.now()
-            app.save()
-        return app
 
     def _doc(self, app, doc_type, member=''):
         from apps.scholarship.models import ApplicantDocument
@@ -720,19 +719,13 @@ class TestOfferValidityGate(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='ovg', name='B40', year=2026)
+        cls.cohort = make_cohort(code='ovg', name='B40', year=2026)
 
     def _app(self, *, submitted=False):
-        import uuid
-        from django.utils import timezone
-        prof = StudentProfile.objects.create(
-            supabase_user_id=str(uuid.uuid4()), nric='030101-14-1234', name='Student')
-        app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=prof, status='shortlisted')
-        if submitted:
-            app.status, app.profile_completed_at = 'profile_complete', timezone.now()
-            app.save()
-        return app
+        prof = make_student(nric='030101-14-1234', name='Student')
+        return make_application(
+            'profile_complete' if submitted else 'shortlisted',
+            cohort=self.cohort, student=prof)
 
     def _offer(self, app, status):
         from apps.scholarship.models import ApplicantDocument

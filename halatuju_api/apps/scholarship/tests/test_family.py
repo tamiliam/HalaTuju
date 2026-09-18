@@ -8,10 +8,9 @@ from types import SimpleNamespace
 
 from django.test import SimpleTestCase, TestCase
 
-from apps.courses.models import StudentProfile
 from apps.scholarship import family
-from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import save_application_details
+from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 
 
 class CopyPathwayGuardTests(SimpleTestCase):
@@ -95,12 +94,12 @@ class FamilyTaxonomyTests(TestCase):
 class _AppBase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='fam', name='B40', year=2026)
+        cls.cohort = make_cohort(code='fam', name='B40', year=2026)
 
     def _app(self):
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'fam-{self.id()}', name='Priya Devi', nric='030101-14-1234')
-        return ScholarshipApplication.objects.create(profile=profile, cohort=self.cohort)
+        return make_application('submitted', cohort=self.cohort, student=profile)
 
 
 class DeriveFirstInFamilyTests(_AppBase):
@@ -232,13 +231,13 @@ class ConsentRedGateTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='red', name='B40', year=2026)
+        cls.cohort = make_cohort(code='red', name='B40', year=2026)
 
     def _app_with_doc(self, doc_type):
         from apps.scholarship.models import ApplicantDocument
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'red-{self.id()}', name='X', nric='030101-14-1234')
-        app = ScholarshipApplication.objects.create(profile=profile, cohort=self.cohort)
+        app = make_application('submitted', cohort=self.cohort, student=profile)
         ApplicantDocument.objects.create(application=app, doc_type=doc_type, storage_path='x')
         return app
 
@@ -350,10 +349,10 @@ class ConsentRedGateTests(TestCase):
         from django.utils import timezone
         from apps.scholarship.models import ApplicantDocument
         from apps.scholarship.services import document_unreadable_blockers
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'sal-{self.id()}', name='Y', nric='030202-14-2345')
-        app = ScholarshipApplication.objects.create(
-            profile=profile, cohort=self.cohort, income_route='salary',
+        app = make_application(
+            'submitted', cohort=self.cohort, student=profile, income_route='salary',
             income_working_members=['mother'])
         ApplicantDocument.objects.create(
             application=app, doc_type='parent_ic', household_member='mother',

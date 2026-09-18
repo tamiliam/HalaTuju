@@ -7,6 +7,9 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.scholarship.tests.factories import (
+    make_application, make_cohort, make_student,
+)
 from apps.scholarship.models import (
     ApplicantDocument, Referee, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
 )
@@ -31,15 +34,15 @@ class TestAdminScholarship(TestCase):
             supabase_user_id=ADMIN, is_super_admin=True, is_active=True,
             name='Admin', email='admin@example.com',
         )
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
-        cls.profile = StudentProfile.objects.create(
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        cls.profile = make_student(
             supabase_user_id='stud-prof', nric='030101-14-1234', name='Priya', school='SMK X',
             # academic + financial data is canonical on the profile
             grades={f'sub{i}': 'A' for i in range(10)},
             household_income=2500, receives_str=True,
         )
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile, status='shortlisted', bucket='A',
+        cls.app = make_application(
+            'shortlisted', cohort=cls.cohort, student=cls.profile, bucket='A',
             aspirations='Become an auditor', justification='Low income family',
         )
 
@@ -72,11 +75,11 @@ class TestAdminScholarship(TestCase):
 
     def test_list_sort_by_name_and_merit(self):
         # A second applicant with a weaker record (lower merit) + an earlier name.
-        prof2 = StudentProfile.objects.create(
+        prof2 = make_student(
             supabase_user_id='stud2', nric='040202-14-2222', name='Aaron',
             grades={'sub0': 'C', 'sub1': 'C'}, household_income=3000)
-        ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=prof2, status='shortlisted')
+        make_application(
+            'shortlisted', cohort=self.cohort, student=prof2)
         self._auth(ADMIN)
 
         def names(params):
@@ -92,9 +95,9 @@ class TestAdminScholarship(TestCase):
     def test_list_sort_by_submitted_date(self):
         import datetime
         from django.utils import timezone
-        prof2 = StudentProfile.objects.create(
+        prof2 = make_student(
             supabase_user_id='studZ', nric='040303-14-3333', name='Zed', grades={'a': 'A'}, household_income=3000)
-        app2 = ScholarshipApplication.objects.create(cohort=self.cohort, profile=prof2, status='shortlisted')
+        app2 = make_application('shortlisted', cohort=self.cohort, student=prof2)
         # Force distinct submitted_at (bypasses auto_now_add): PRIYA earliest, Zed latest.
         ScholarshipApplication.objects.filter(id=self.app.id).update(submitted_at=timezone.now() - datetime.timedelta(days=3))
         ScholarshipApplication.objects.filter(id=app2.id).update(submitted_at=timezone.now())
@@ -633,7 +636,7 @@ class TestAdminScholarship(TestCase):
         # Soft-NRIC: another profile already has this NRIC verified → 409 (TD-054).
         # Must be complete to pass the Phase C accept-gate and reach the NRIC check.
         self._complete_app()
-        StudentProfile.objects.create(
+        make_student(
             supabase_user_id='other-uid', nric='030101-14-1234', nric_verified=True,
         )
         self._auth(ADMIN)
@@ -703,9 +706,9 @@ class TestAdminScholarship(TestCase):
 
     def test_admin_delete_referee_wrong_application_404(self):
         """A referee id that belongs to a different application is not deletable here."""
-        other_cohort = ScholarshipCohort.objects.create(code='c2', name='B40-2', year=2027)
-        other_app = ScholarshipApplication.objects.create(
-            cohort=other_cohort, profile=self.profile, status='shortlisted',
+        other_cohort = make_cohort(code='c2', name='B40-2', year=2027)
+        other_app = make_application(
+            'shortlisted', cohort=other_cohort, student=self.profile,
         )
         ref = Referee.objects.create(application=other_app, name='Someone Else')
         self._auth(ADMIN)
@@ -798,6 +801,10 @@ class TestAdminScholarship(TestCase):
         this endpoint previously only scope-checked, leaving the role gate off."""
         PartnerAdmin.objects.create(
             supabase_user_id='ro-admin-uid', role='admin', is_active=True,
+            # The B40 fence reads `owning_organisation`: without the cohort's own organisation
+            # this read-only admin sits in the NULL bucket and the case 404s before the ROLE
+            # refusal this test is about is ever reached.
+            owning_organisation=self.cohort.owning_organisation,
             name='ReadOnly', email='ro@example.com')
         ic = ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='ic/ro')
         self._auth('ro-admin-uid')
@@ -806,8 +813,8 @@ class TestAdminScholarship(TestCase):
         self.assertFalse(mock_vision.called)
 
     def test_admin_rerun_vision_404_for_wrong_application(self):
-        other_cohort = ScholarshipCohort.objects.create(code='c3', name='B40-3', year=2028)
-        other_app = ScholarshipApplication.objects.create(cohort=other_cohort, profile=self.profile, status='shortlisted')
+        other_cohort = make_cohort(code='c3', name='B40-3', year=2028)
+        other_app = make_application('shortlisted', cohort=other_cohort, student=self.profile)
         ic = ApplicantDocument.objects.create(application=other_app, doc_type='ic', storage_path='ic/zzz')
         self._auth(ADMIN)
         r = self.client.post(self._rerun_vision_url(ic.id))
@@ -838,12 +845,12 @@ class TestTheInterviewIsCreditedThroughTheENDPOINT(TestCase):
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id='td216-rev', role='reviewer', is_active=True,
             owning_organisation=cls.org, name='The Reviewer', email='rev@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(
+        cls.cohort = make_cohort(
             code='td216-c', name='B40', year=2026, owning_organisation=cls.org)
-        cls.profile = StudentProfile.objects.create(
+        cls.profile = make_student(
             supabase_user_id='td216-stud', name='A Student', grades={}, household_income=1000)
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile, status='profile_complete',
+        cls.app = make_application(
+            'profile_complete', cohort=cls.cohort, student=cls.profile,
             assigned_to=cls.reviewer)
 
     def setUp(self):

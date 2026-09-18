@@ -10,42 +10,40 @@ from rest_framework.test import APIClient
 from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship.models import (
     ApplicantDocument, Consent, FundingNeed, InterviewSession,
-    ScholarshipApplication, ScholarshipCohort,
+    ScholarshipApplication,
+)
+from apps.scholarship.tests.factories import (
+    TEST_JWT_SECRET, auth_token as _token, make_application, make_cohort, make_student,
 )
 
-TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 SUPER = 'super-uid'
 REVIEWER = 'reviewer-uid'
 VIEWER = 'viewer-uid'
 STUDENT = 'student-uid'
 
 
-def _token(uid):
-    return jwt.encode(
-        {'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
-        TEST_JWT_SECRET, algorithm='HS256',
-    )
-
-
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class PhaseCBase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        # The B40 fence compares the admin's `owning_organisation` with the application's, so
+        # a non-super acting on these cases must sit inside the cohort's organisation.
+        org = cls.cohort.owning_organisation
         cls.super = PartnerAdmin.objects.create(
             supabase_user_id=SUPER, is_super_admin=True, is_active=True,
             name='Super', email='super@example.com',
         )
         cls.reviewer = PartnerAdmin.objects.create(
             supabase_user_id=REVIEWER, role='reviewer', is_active=True,
-            name='Reviewer', email='reviewer@example.com',
+            owning_organisation=org, name='Reviewer', email='reviewer@example.com',
         )
         cls.viewer = PartnerAdmin.objects.create(
             supabase_user_id=VIEWER, role='admin', is_active=True,
-            name='Viewer', email='viewer@example.com',
+            owning_organisation=org, name='Viewer', email='viewer@example.com',
         )
         # Adult profile (2003-born NRIC) so guardian_docs are trivially satisfied.
-        cls.profile = StudentProfile.objects.create(
+        cls.profile = make_student(
             supabase_user_id=STUDENT, nric='030101-14-1234', name='Priya', school='SMK X',
             grades={f'sub{i}': 'A' for i in range(10)},
             household_income=2500, receives_str=True,
@@ -59,9 +57,19 @@ class PhaseCBase(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
+    #: The funnel stage each status under test is reached at. `interviewed` is AWAITING QC on
+    #: the RECOMMEND road — the road these tests take (verify-accept), not the decline one.
+    _STAGE_FOR = {
+        'shortlisted': 'shortlisted', 'profile_complete': 'profile_complete',
+        'interviewing': 'interviewing', 'interviewed': ('awaiting_qc', 'recommend'),
+        'recommended': 'recommended', 'rejected': 'rejected',
+    }
+
     def _make_app(self, status='shortlisted'):
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status=status, bucket='A',
+        stage = self._STAGE_FOR[status]
+        stage, outcome = stage if isinstance(stage, tuple) else (stage, None)
+        return make_application(
+            stage, outcome=outcome, cohort=self.cohort, student=self.profile, bucket='A',
             aspirations='Be an auditor', plans='Study hard',
             daily_life='Help at home each evening', fears='Worried about fees',
         )
@@ -187,9 +195,11 @@ class TestAcceptGate(PhaseCBase):
 class TestListFilters(PhaseCBase):
     def _second_app(self, status='shortlisted'):
         """A second application needs a distinct cohort (one app per cohort+profile)."""
-        cohort2 = ScholarshipCohort.objects.create(code='c2', name='B40-2', year=2025)
-        return ScholarshipApplication.objects.create(
-            cohort=cohort2, profile=self.profile, status=status, bucket='A',
+        cohort2 = make_cohort(code='c2', name='B40-2', year=2025)
+        stage = self._STAGE_FOR[status]
+        stage, outcome = stage if isinstance(stage, tuple) else (stage, None)
+        return make_application(
+            stage, outcome=outcome, cohort=cohort2, student=self.profile, bucket='A',
         )
 
     def test_status_profile_complete_filter(self):

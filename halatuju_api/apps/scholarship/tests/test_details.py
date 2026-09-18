@@ -3,7 +3,10 @@ import jwt
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import StudentProfile
+from apps.scholarship.tests.factories import (
+    make_application, make_cohort, make_student,
+)
+from apps.scholarship.models import ScholarshipCohort
 from apps.scholarship.models import (
     ApplicantDocument, Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort,
 )
@@ -23,10 +26,10 @@ def _token(uid, secret=TEST_JWT_SECRET):
 
 class TestCompleteness(TestCase):
     def setUp(self):
-        self.cohort = ScholarshipCohort.objects.create(code='c', name='P', year=2026)
-        self.profile = StudentProfile.objects.create(supabase_user_id='m2', nric='080101-14-2222')
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
+        self.cohort = make_cohort(code='c', name='P', year=2026)
+        self.profile = make_student(supabase_user_id='m2', nric='080101-14-2222')
+        self.app = make_application(
+            'shortlisted', cohort=self.cohort, student=self.profile,
         )
 
     def test_all_incomplete_initially(self):
@@ -247,19 +250,19 @@ class TestCompleteness(TestCase):
 class TestDetailsApi(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40 Programme', year=2026)
-        cls.cohort2 = ScholarshipCohort.objects.create(code='c2', name='B40 Programme 2', year=2025)
-        cls.profile_a = StudentProfile.objects.create(supabase_user_id=USER_A, nric='080101-14-1234')
-        cls.profile_b = StudentProfile.objects.create(supabase_user_id=USER_B, nric='080202-14-5678')
-        cls.app_a = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile_a, status='shortlisted', bucket='A',
+        cls.cohort = make_cohort(code='c', name='B40 Programme', year=2026)
+        cls.cohort2 = make_cohort(code='c2', name='B40 Programme 2', year=2025)
+        cls.profile_a = make_student(supabase_user_id=USER_A, nric='080101-14-1234')
+        cls.profile_b = make_student(supabase_user_id=USER_B, nric='080202-14-5678')
+        cls.app_a = make_application(
+            'shortlisted', cohort=cls.cohort, student=cls.profile_a, bucket='A',
         )
-        cls.app_b = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile_b, status='shortlisted', bucket='A',
+        cls.app_b = make_application(
+            'shortlisted', cohort=cls.cohort, student=cls.profile_b, bucket='A',
         )
         # rejected app for profile_a — in a different cohort to satisfy the unique constraint
-        cls.rejected_a = ScholarshipApplication.objects.create(
-            cohort=cls.cohort2, profile=cls.profile_a, status='rejected',
+        cls.rejected_a = make_application(
+            'rejected', cohort=cls.cohort2, student=cls.profile_a,
         )
 
     def setUp(self):
@@ -588,27 +591,27 @@ class TestGuardianDocsDone(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='c-s17', name='M', year=2026)
+        cls.cohort = make_cohort(code='c-s17', name='M', year=2026)
 
     def _make_minor_app(self):
         """Profile with a 2010-born NRIC → age ~16 → minor."""
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id='minor-s17',
             name='Mark Benjamin',
             nric='100318-14-0635',
         )
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=profile, status='shortlisted',
+        return make_application(
+            'shortlisted', cohort=self.cohort, student=profile,
         )
 
     def _make_adult_app(self):
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id='adult-s17',
             name='Adult Person',
             nric='710101-14-1234',
         )
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=profile, status='shortlisted',
+        return make_application(
+            'shortlisted', cohort=self.cohort, student=profile,
         )
 
     def test_adult_is_trivially_done(self):
@@ -673,12 +676,12 @@ class TestRequirementsOnThePayload(TestCase):
         cls.org = PartnerOrganisation.objects.create(code='req-org', name='Req Org')
         cls.programme = Programme.objects.create(
             organisation=cls.org, code='req-programme', name_en='Req Programme')
-        cls.cohort = ScholarshipCohort.objects.create(
+        cls.cohort = make_cohort(
             code='req-c', name='Req', year=2026, programme=cls.programme)
-        cls.profile = StudentProfile.objects.create(
+        cls.profile = make_student(
             supabase_user_id=USER_A, nric='080303-14-9999')
-        cls.app = ScholarshipApplication.objects.create(
-            cohort=cls.cohort, profile=cls.profile, status='shortlisted', bucket='A')
+        cls.app = make_application(
+            'shortlisted', cohort=cls.cohort, student=cls.profile, bucket='A')
 
     def setUp(self):
         self.client = APIClient()

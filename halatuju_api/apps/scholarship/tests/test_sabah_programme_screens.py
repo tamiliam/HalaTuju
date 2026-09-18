@@ -10,9 +10,12 @@ Fence tests follow the house rule: cross-org is **404, never 403**.
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerAdmin, PartnerOrganisation
+from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship.models import Programme, ScholarshipCohort
-from apps.scholarship.tests.test_api import TEST_JWT_SECRET, _make_token
+from apps.scholarship.tests.factories import (
+    make_application, make_cohort, make_student,
+)
+from apps.scholarship.tests.factories import TEST_JWT_SECRET, auth_token as _make_token
 
 PROGRAMMES = '/api/v1/admin/scholarship/programmes/'
 
@@ -112,7 +115,7 @@ class TestProgrammes(_Case):
     def test_a_gift_taking_applications_cannot_be_switched_off(self):
         # Switching it off would stop the apply link resolving while a half-finished application
         # still points at it — `resolve_open_cohort` filters on `programme__is_active`.
-        ScholarshipCohort.objects.create(
+        make_cohort(
             programme=self.prog_a, owning_organisation=self.org_a,
             code='sab-a-2026', name='A 2026', year=2026, is_active=True, is_open=True)
         r = self._patch(self.admin_a, f'{PROGRAMMES}{self.prog_a.id}/', {'is_active': False})
@@ -145,14 +148,14 @@ class TestTheLifecycleBadge(_Case):
     def _student_under(self, programme, suffix):
         from apps.courses.models import StudentProfile
         from apps.scholarship.models import ScholarshipApplication
-        cohort = ScholarshipCohort.objects.create(
+        cohort = make_cohort(
             programme=programme, owning_organisation=self.org_a, code=f'life-{suffix}',
             name=f'Life {suffix}', year=2027, is_active=True, is_open=False)
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'sab-life-{suffix}', name='Priya Devi',
             household_income=1200, household_size=3)
-        return ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='profile_complete',
+        return make_application(
+            'profile_complete', cohort=cohort, student=profile,
             notify_email=f'{suffix}@example.invalid')
 
     def test_a_gift_born_switched_off_reads_DRAFT(self):
@@ -171,7 +174,7 @@ class TestTheLifecycleBadge(_Case):
     def test_an_INTAKE_YEAR_alone_does_not_make_it_archived(self):
         """⚠ A year is rules, not students — the same line the delete rule draws (2026-09-07).
         A gift set up to the point of having a round, then switched off again, is still a DRAFT."""
-        ScholarshipCohort.objects.create(
+        make_cohort(
             programme=self.spare, owning_organisation=self.org_a, code='life-empty',
             name='Life Empty', year=2028, is_active=True, is_open=False)
         row = self._row('sab-a-life')
@@ -292,7 +295,7 @@ class TestIntakeYears(_Case):
         self.assertIsNone(reqs['min_merit_score'])
 
     def test_clearing_a_requirement_unticks_it(self):
-        c = ScholarshipCohort.objects.create(
+        c = make_cohort(
             programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-2030',
             name='A 2030', year=2030, is_active=True, is_open=False, min_stpm_pngk=2.9)
         r = self._patch(self.admin_a, f'/api/v1/admin/scholarship/intake-years/{c.id}/',
@@ -304,7 +307,7 @@ class TestIntakeYears(_Case):
     def test_a_requirement_NOT_MENTIONED_is_left_alone(self):
         # A PATCH sends only what changed. Absent must not read as "untick" — that would clear
         # every requirement the screen did not happen to send.
-        c = ScholarshipCohort.objects.create(
+        c = make_cohort(
             programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-2031',
             name='A 2031', year=2031, is_active=True, is_open=False, min_spm_a_count=4)
         self._patch(self.admin_a, f'/api/v1/admin/scholarship/intake-years/{c.id}/',
@@ -325,10 +328,10 @@ class TestIntakeYears(_Case):
         org-wide filter meant an organisation running two gifts could take applications for only
         one of them — see the counter-test below, which is the half that used to be impossible.
         """
-        open_one = ScholarshipCohort.objects.create(
+        open_one = make_cohort(
             programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-open',
             name='Open', year=2026, is_active=True, is_open=True)
-        other = ScholarshipCohort.objects.create(
+        other = make_cohort(
             programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-second',
             name='Second', year=2027, is_active=True, is_open=False)
         r = self._patch(self.admin_a, f'/api/v1/admin/scholarship/intake-years/{other.id}/',
@@ -349,10 +352,10 @@ class TestIntakeYears(_Case):
         prog_b = Programme.objects.create(
             organisation=self.org_a, code='sab-a-second-gift', name_en='Second gift',
             is_active=True)
-        ScholarshipCohort.objects.create(
+        make_cohort(
             programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-first-open',
             name='First gift 2026', year=2026, is_active=True, is_open=True)
-        second = ScholarshipCohort.objects.create(
+        second = make_cohort(
             programme=prog_b, owning_organisation=self.org_a, code='sab-b-round',
             name='Second gift 2026', year=2026, is_active=True, is_open=False)
 
@@ -365,7 +368,7 @@ class TestIntakeYears(_Case):
     def test_a_year_under_an_INACTIVE_gift_cannot_be_opened(self):
         prog = Programme.objects.create(
             organisation=self.org_a, code='sab-a-draft', name_en='Draft', is_active=False)
-        c = ScholarshipCohort.objects.create(
+        c = make_cohort(
             programme=prog, owning_organisation=self.org_a, code='sab-a-draft-2026',
             name='Draft 2026', year=2026, is_active=True, is_open=False)
         r = self._patch(self.admin_a, f'/api/v1/admin/scholarship/intake-years/{c.id}/',
@@ -378,7 +381,7 @@ class TestIntakeYears(_Case):
         # `shortlisting.evaluate()` reads it LIVE — so the only question anybody asks afterwards is
         # "from what, to what". TD-203 is the same gap on `award_amount`: three production rows had
         # to be corrected with no system record of who set them, on the owner's memory alone.
-        c = ScholarshipCohort.objects.create(
+        c = make_cohort(
             programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-2032',
             name='A 2032', year=2032, is_active=True, is_open=False, min_spm_a_count=4)
         with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
@@ -393,7 +396,7 @@ class TestIntakeYears(_Case):
     def test_a_threshold_that_did_NOT_move_writes_no_change_line(self):
         # A PATCH restating the same value is not a change, and a log that says otherwise makes the
         # trail useless for the one job it has — a reader cannot tell a real edit from a re-save.
-        c = ScholarshipCohort.objects.create(
+        c = make_cohort(
             programme=self.prog_a, owning_organisation=self.org_a, code='sab-a-2033',
             name='A 2033', year=2033, is_active=True, is_open=False, min_spm_a_count=4)
         with self.assertLogs('apps.scholarship.views_admin', level='INFO') as logs:
@@ -402,7 +405,7 @@ class TestIntakeYears(_Case):
         self.assertEqual([m for m in logs.output if 'intake_year_requirements_set' in m], [])
 
     def test_another_tenants_intake_year_is_404(self):
-        c = ScholarshipCohort.objects.create(
+        c = make_cohort(
             programme=self.prog_b, owning_organisation=self.org_b, code='sab-b-2026',
             name='B 2026', year=2026, is_active=True, is_open=False)
         r = self._patch(self.admin_a, f'/api/v1/admin/scholarship/intake-years/{c.id}/',
@@ -437,7 +440,7 @@ class TestDeletingAGift(_Case):
         self.url = f'{PROGRAMMES}{self.spare.id}/'
 
     def _year(self, code, year):
-        return ScholarshipCohort.objects.create(
+        return make_cohort(
             programme=self.spare, owning_organisation=self.org_a, code=code,
             name=f'Spare {year}', year=year, is_active=True, is_open=False)
 
@@ -445,11 +448,11 @@ class TestDeletingAGift(_Case):
         """One submitted application under `cohort` — the thing that actually holds a gift."""
         from apps.courses.models import StudentProfile
         from apps.scholarship.models import ScholarshipApplication
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'sab-del-{suffix}', name='Priya Devi',
             household_income=1200, household_size=3)
-        return ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, status='profile_complete',
+        return make_application(
+            'profile_complete', cohort=cohort, student=profile,
             notify_email=f'{suffix}@example.invalid')
 
     # ── the typed confirmation ───────────────────────────────────────────────────────────────
@@ -619,19 +622,19 @@ class TestTheCardsCounts(_Case):
         return rows[code]
 
     def _cohort(self, programme, suffix, year=2027):
-        return ScholarshipCohort.objects.create(
+        return make_cohort(
             programme=programme, owning_organisation=self.org_a, code=f'cnt-{suffix}',
             name=f'Count {suffix}', year=year, is_active=True, is_open=False)
 
     def _student(self, cohort, suffix, **kw):
         from apps.courses.models import StudentProfile
         from apps.scholarship.models import ScholarshipApplication
-        profile = StudentProfile.objects.create(
+        profile = make_student(
             supabase_user_id=f'sab-cnt-{suffix}', name='Priya Devi',
             household_income=1200, household_size=3)
-        return ScholarshipApplication.objects.create(
-            cohort=cohort, profile=profile, notify_email=f'{suffix}@example.invalid',
-            **{'status': 'profile_complete', **kw})
+        return make_application(
+            kw.pop('stage', 'profile_complete'), cohort=cohort, student=profile,
+            notify_email=f'{suffix}@example.invalid', **kw)
 
     # ── applications ────────────────────────────────────────────────────
 

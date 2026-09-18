@@ -10,15 +10,14 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.courses.models import StudentProfile
-from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import release_decision, send_application_reminders
+from apps.scholarship.tests.factories import make_application, make_cohort, make_student
 
 
 class _Base(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.cohort = ScholarshipCohort.objects.create(code='rem', name='B40', year=2026)
+        cls.cohort = make_cohort(code='rem', name='B40', year=2026)
 
     def setUp(self):
         self._n = 0
@@ -27,11 +26,14 @@ class _Base(TestCase):
     def _app(self, *, anchor_days_ago=None, stage=0, last_reminder_days_ago=None,
              status='shortlisted', completed=False, email='s@example.com'):
         self._n += 1
-        p = StudentProfile.objects.create(
+        p = make_student(
             supabase_user_id=f'rem-{self.id()}-{self._n}', name='Test Student',
             nric=f'0801{self._n:02d}-01-1234')
-        return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status=status, notify_email=email, locale='en',
+        # The reminder track starts at `shortlisted`; `completed` moves it on one stage, which
+        # is the pair the cadence branches on (`profile_completed_at__isnull=True`).
+        return make_application(
+            'profile_complete' if completed else 'shortlisted',
+            cohort=self.cohort, student=p, status=status, notify_email=email, locale='en',
             reminder_anchor_at=(self.now - timedelta(days=anchor_days_ago)) if anchor_days_ago is not None else None,
             reminder_stage=stage,
             last_reminder_at=(self.now - timedelta(days=last_reminder_days_ago)) if last_reminder_days_ago is not None else None,
@@ -41,9 +43,9 @@ class _Base(TestCase):
 
 class TestAnchorOnRelease(_Base):
     def test_shortlist_release_stamps_reminder_anchor(self):
-        p = StudentProfile.objects.create(supabase_user_id='rel-1', name='X', nric='090101-01-1111')
-        app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='submitted', notify_email='x@example.com',
+        p = make_student(supabase_user_id='rel-1', name='X', nric='090101-01-1111')
+        app = make_application(
+            'scored', cohort=self.cohort, student=p, notify_email='x@example.com',
             verdict='shortlisted', decision_due_at=self.now - timedelta(hours=1))
         self.assertTrue(release_decision(app))
         app.refresh_from_db()
@@ -51,10 +53,11 @@ class TestAnchorOnRelease(_Base):
         self.assertEqual(app.reminder_anchor_at, app.shortlisted_at)
 
     def test_decline_release_sets_no_anchor(self):
-        p = StudentProfile.objects.create(supabase_user_id='rel-2', name='Y', nric='090202-02-2222')
-        app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='submitted', notify_email='y@example.com',
-            verdict='rejected', rejection_category='merit', decision_due_at=self.now - timedelta(hours=1))
+        p = make_student(supabase_user_id='rel-2', name='Y', nric='090202-02-2222')
+        app = make_application(
+            'scored', cohort=self.cohort, student=p, notify_email='y@example.com',
+            verdict='rejected', bucket='', rejection_category='merit',
+            decision_due_at=self.now - timedelta(hours=1))
         self.assertTrue(release_decision(app))
         app.refresh_from_db()
         self.assertIsNone(app.reminder_anchor_at)
@@ -110,11 +113,12 @@ class TestReminderCadence(_Base):
         from datetime import datetime
         from zoneinfo import ZoneInfo
         kl = ZoneInfo('Asia/Kuala_Lumpur')
-        p = StudentProfile.objects.create(
+        p = make_student(
             supabase_user_id=f'tz-{self.id()}', name='TZ Student', nric='081299-01-1234')
-        app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='shortlisted', notify_email='tz@example.com',
-            locale='en', reminder_anchor_at=datetime(2026, 6, 4, 14, 30, tzinfo=kl), reminder_stage=1)
+        app = make_application(
+            'shortlisted', cohort=self.cohort, student=p, notify_email='tz@example.com',
+            locale='en', reminder_anchor_at=datetime(2026, 6, 4, 14, 30, tzinfo=kl),
+            reminder_stage=1)
         res = send_application_reminders(now=datetime(2026, 6, 13, 9, 0, tzinfo=kl))
         app.refresh_from_db()
         self.assertEqual(res['reminded'], 1)
@@ -126,11 +130,12 @@ class TestReminderCadence(_Base):
         from datetime import datetime
         from zoneinfo import ZoneInfo
         kl = ZoneInfo('Asia/Kuala_Lumpur')
-        p = StudentProfile.objects.create(
+        p = make_student(
             supabase_user_id=f'tz2-{self.id()}', name='TZ Student', nric='081299-01-5678')
-        app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status='shortlisted', notify_email='tz2@example.com',
-            locale='en', reminder_anchor_at=datetime(2026, 6, 4, 14, 30, tzinfo=kl), reminder_stage=1)
+        app = make_application(
+            'shortlisted', cohort=self.cohort, student=p, notify_email='tz2@example.com',
+            locale='en', reminder_anchor_at=datetime(2026, 6, 4, 14, 30, tzinfo=kl),
+            reminder_stage=1)
         res = send_application_reminders(now=datetime(2026, 6, 12, 9, 0, tzinfo=kl))
         app.refresh_from_db()
         self.assertEqual(res['reminded'], 0)

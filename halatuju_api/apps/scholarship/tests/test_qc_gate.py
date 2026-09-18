@@ -4,66 +4,48 @@ A reviewer's verify-accept lands a case in `interviewed` = AWAITING QC. A `qc`-r
 then Accepts (→ recommended) or Reopens (→ back to the reviewer at `interviewing`, with the gaps
 comments emailed to the assigned reviewer). Reviewers/admins/partners cannot QC.
 """
-import datetime
 from unittest import mock
 
-import jwt
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import pool
 from apps.scholarship.models import (
-    Consent, DecisionReopen, ScholarshipApplication, ScholarshipCohort,
-    SponsorProfile,
+    Consent, DecisionReopen, ScholarshipApplication, SponsorProfile,
 )
 from apps.scholarship.sponsorship import is_fundable
-
-TEST_JWT_SECRET = 'test-supabase-jwt-secret'
-
-
-# QC refuses to accept a case with no reporting date (owner 2026-07-23) - it sizes the
-# bursary, so a missing one is no longer acceptable at the gate. A fresh-entrant date,
-# matching the cohort year, so these suites' existing amount assertions are unchanged.
-_QC_REPORTING_DATE = datetime.date(2026, 6, 8)
-
-
-def _token(uid):
-    return jwt.encode({'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
-                      TEST_JWT_SECRET, algorithm='HS256')
+from apps.scholarship.tests.factories import (
+    REPORTING_DATE as _QC_REPORTING_DATE, TEST_JWT_SECRET, auth_token as _token,
+    make_admin, make_application, make_cohort, make_student,
+)
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestQcGate(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
-            name='Super', email='super@example.com')
-        cls.qc = PartnerAdmin.objects.create(
-            supabase_user_id='qc-uid', role='qc', is_active=True,
-            name='Quality Control', email='qc@example.com')
-        cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='rev-uid', role='reviewer', is_active=True,
-            name='Reviewer', email='reviewer@example.com')
-        cls.admin = PartnerAdmin.objects.create(
-            supabase_user_id='admin-uid', role='admin', is_active=True,
-            name='Admin', email='admin@example.com')
-        cls.partner = PartnerAdmin.objects.create(
-            supabase_user_id='partner-uid', role='partner', is_active=True,
-            name='Partner', email='partner@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        org = cls.cohort.owning_organisation
+        cls.superadmin = make_admin('super', uid='super-uid', super_admin=True,
+                                    name='Super', email='super@example.com')
+        cls.qc = make_admin('qc', uid='qc-uid', owning_org=org,
+                            name='Quality Control', email='qc@example.com')
+        cls.reviewer = make_admin('reviewer', uid='rev-uid', owning_org=org,
+                                  name='Reviewer', email='reviewer@example.com')
+        cls.admin = make_admin('admin', uid='admin-uid', owning_org=org,
+                               name='Admin', email='admin@example.com')
+        cls.partner = make_admin('partner', uid='partner-uid', owning_org=org,
+                                 name='Partner', email='partner@example.com')
 
     def setUp(self):
         self.client = APIClient()
-        p = StudentProfile.objects.create(supabase_user_id='s1', nric='030101-14-0001', name='Aisha')
-        # An AWAITING-QC case: reviewer submitted the verdict (verdict_decided_at set), assigned to them.
-        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
-            cohort=self.cohort, profile=p, status='interviewed',
-            profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
-            assigned_to=self.reviewer)
+        p = make_student(supabase_user_id='s1', nric='030101-14-0001', name='Aisha')
+        # An AWAITING-QC case on the RECOMMEND road: the reviewer verify-accepted it.
+        self.app = make_application(
+            'awaiting_qc', outcome='recommend', cohort=self.cohort, student=p,
+            reviewer=self.reviewer)
         # These fixtures carry no documents, so the REAL build_verdict would be all-gaps and the
         # V5 gap floor would refuse every accept. This class tests the gate mechanics, not the
         # floor — patch the seam to a clean verdict. The floor has its own class below.
@@ -196,10 +178,9 @@ class TestQcGate(TestCase):
 
     def test_qc_can_review_its_assigned_case(self):
         # A senior qc assigned a case can act on it (reviewer write) — e.g. the mentoring flag.
-        p = StudentProfile.objects.create(supabase_user_id='s-qc-rev', nric='030101-14-0007', name='Q')
-        app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
-            cohort=self.cohort, profile=p, status='interviewing',
-            profile_completed_at=timezone.now(), assigned_to=self.qc)
+        p = make_student(supabase_user_id='s-qc-rev', nric='030101-14-0007', name='Q')
+        app = make_application('interviewing', cohort=self.cohort, student=p,
+                               reviewer=self.qc)
         self._auth('qc-uid')
         r = self.client.patch(f'/api/v1/admin/scholarship/applications/{app.id}/',
                               {'mentoring_candidate': True}, format='json')
@@ -207,11 +188,9 @@ class TestQcGate(TestCase):
 
     def test_qc_cannot_qc_its_own_reviewed_case(self):
         # An awaiting-QC case the qc themselves reviewed → self-QC guard blocks it (403).
-        p = StudentProfile.objects.create(supabase_user_id='s-qc-own', nric='030101-14-0008', name='O')
-        app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
-            cohort=self.cohort, profile=p, status='interviewed',
-            profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
-            assigned_to=self.qc)
+        p = make_student(supabase_user_id='s-qc-own', nric='030101-14-0008', name='O')
+        app = make_application('awaiting_qc', outcome='recommend', cohort=self.cohort,
+                               student=p, reviewer=self.qc)
         self._auth('qc-uid')
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/qc-decision/',
                              {'decision': 'accept'}, format='json')
@@ -237,25 +216,22 @@ class TestPublishBoundToQc(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
-            name='Super', email='super@example.com')
-        cls.qc = PartnerAdmin.objects.create(
-            supabase_user_id='qc-uid', role='qc', is_active=True,
-            name='Quality Control', email='qc@example.com')
-        cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='rev-uid', role='reviewer', is_active=True,
-            name='Reviewer', email='reviewer@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.cohort = make_cohort(code='c', name='B40', year=2026)
+        org = cls.cohort.owning_organisation
+        cls.superadmin = make_admin('super', uid='super-uid', super_admin=True,
+                                    name='Super', email='super@example.com')
+        cls.qc = make_admin('qc', uid='qc-uid', owning_org=org,
+                            name='Quality Control', email='qc@example.com')
+        cls.reviewer = make_admin('reviewer', uid='rev-uid', owning_org=org,
+                                  name='Reviewer', email='reviewer@example.com')
 
     def setUp(self):
         self.client = APIClient()
-        p = StudentProfile.objects.create(supabase_user_id='pq1', nric='030101-14-0003', name='Devi')
+        p = make_student(supabase_user_id='pq1', nric='030101-14-0003', name='Devi')
         # A case awaiting QC whose profile the reviewer PREPARED but did not publish.
-        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
-            cohort=self.cohort, profile=p, status='interviewed',
-            profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
-            assigned_to=self.reviewer, award_amount=3000)
+        self.app = make_application(
+            'awaiting_qc', outcome='recommend', cohort=self.cohort, student=p,
+            reviewer=self.reviewer, award_amount=3000)
         self.sp = SponsorProfile.objects.create(
             application=self.app, anon_markdown='A determined SPM leaver pursuing engineering.',
             anon_blurb='A determined SPM leaver.', anon_published=False)
@@ -319,26 +295,22 @@ class TestDeclineToQc(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
-            name='Super', email='super@example.com')
-        cls.qc = PartnerAdmin.objects.create(
-            supabase_user_id='qc-uid', role='qc', is_active=True,
-            name='QC', email='qc@example.com')
-        cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='rev-uid', role='reviewer', is_active=True,
-            name='Reviewer', email='reviewer@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(code='d', name='B40', year=2026)
+        cls.cohort = make_cohort(code='d', name='B40', year=2026)
+        org = cls.cohort.owning_organisation
+        cls.superadmin = make_admin('super', uid='super-uid', super_admin=True,
+                                    name='Super', email='super@example.com')
+        cls.qc = make_admin('qc', uid='qc-uid', owning_org=org,
+                            name='QC', email='qc@example.com')
+        cls.reviewer = make_admin('reviewer', uid='rev-uid', owning_org=org,
+                                  name='Reviewer', email='reviewer@example.com')
 
     def setUp(self):
         self.client = APIClient()
-        p = StudentProfile.objects.create(supabase_user_id='sd1', nric='030101-14-0009', name='Nila')
-        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
-            cohort=self.cohort, profile=p, status='interviewing', notify_email='nila@example.com',
-            profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
-            verdict_decided_by='reviewer@example.com', assigned_to=self.reviewer,
-            officer_verdict={'overall': 'decline', 'identity': 'pass', 'academic': 'fail',
-                             'pathway': 'pass', 'income': 'fail'})
+        p = make_student(supabase_user_id='sd1', nric='030101-14-0009', name='Nila')
+        # A DECLINE verdict recorded and not yet submitted — the case is still 'interviewing'.
+        self.app = make_application(
+            'verdict_recorded', outcome='decline', cohort=self.cohort, student=p,
+            reviewer=self.reviewer, notify_email='nila@example.com')
 
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
@@ -419,24 +391,21 @@ class TestQcGapFloor(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.superadmin = PartnerAdmin.objects.create(
-            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
-            name='Super', email='super@example.com')
-        cls.qc = PartnerAdmin.objects.create(
-            supabase_user_id='qc-uid', role='qc', is_active=True,
-            name='Quality Control', email='qc@example.com')
-        cls.reviewer = PartnerAdmin.objects.create(
-            supabase_user_id='rev-uid', role='reviewer', is_active=True,
-            name='Reviewer', email='reviewer@example.com')
-        cls.cohort = ScholarshipCohort.objects.create(code='gf', name='B40', year=2026)
+        cls.cohort = make_cohort(code='gf', name='B40', year=2026)
+        org = cls.cohort.owning_organisation
+        cls.superadmin = make_admin('super', uid='super-uid', super_admin=True,
+                                    name='Super', email='super@example.com')
+        cls.qc = make_admin('qc', uid='qc-uid', owning_org=org,
+                            name='Quality Control', email='qc@example.com')
+        cls.reviewer = make_admin('reviewer', uid='rev-uid', owning_org=org,
+                                  name='Reviewer', email='reviewer@example.com')
 
     def setUp(self):
         self.client = APIClient()
-        p = StudentProfile.objects.create(supabase_user_id='sgf', nric='030101-14-0005', name='Mala')
-        self.app = ScholarshipApplication.objects.create(reporting_date=_QC_REPORTING_DATE, 
-            cohort=self.cohort, profile=p, status='interviewed',
-            profile_completed_at=timezone.now(), verdict_decided_at=timezone.now(),
-            assigned_to=self.reviewer)
+        p = make_student(supabase_user_id='sgf', nric='030101-14-0005', name='Mala')
+        self.app = make_application(
+            'awaiting_qc', outcome='recommend', cohort=self.cohort, student=p,
+            reviewer=self.reviewer)
 
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
