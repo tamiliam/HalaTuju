@@ -12,6 +12,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n | std |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-19 | 13274d7 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 10 | 84 | 0 | 0 | ok | ok |
 | 2026-09-19 | 5fbc6e1 | 90 | 41 | views_admin.py 273.5 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | - | - | ok |
 | 2026-09-19 | 1c24748 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 18 | 83 | 0 | 0 | ok | ok |
 | 2026-09-18 | 08ee0ce | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | - | - | - |
@@ -21,7 +22,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok | - |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok | - |
 
-## Latest run (2026-09-19, 5fbc6e1, window 2026-06-21 onward)
+## Latest run (2026-09-19, 13274d7, window 2026-06-21 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -34,7 +35,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju-web/src/lib/officerCockpit.ts` | 28 | 1637 | 45.8 |
 | `halatuju_api/apps/scholarship/vision.py` | 18 | 2321 | 41.8 |
 | `halatuju_api/apps/scholarship/views.py` | 17 | 2421 | 41.2 |
-| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 7 | 3587 | 25.1 |
+| `halatuju-web/src/app/admin/scholarship/[id]/view.tsx` | 7 | 3590 | 25.1 |
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
@@ -45,7 +46,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - `4756  halatuju_api/apps/scholarship/models.py`
 - `4242  halatuju_api/apps/scholarship/emails.py`
 - `4099  halatuju-web/src/lib/admin-api.ts`
-- `3587  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
+- `3590  halatuju-web/src/app/admin/scholarship/[id]/view.tsx`
 - `3187  halatuju_api/apps/scholarship/income_engine.py`
 - `2931  halatuju_api/apps/scholarship/services.py`
 - `2468  halatuju-web/src/lib/api.ts`
@@ -113,24 +114,45 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - none
 
 ### Source-text guard tests (web)
-- 25 of 142 web test files read source text
+- 14 of 137 web test files read source text
 
 ### Debt register
-- 150 entries have a defining line; 83 carry no resolution marker on it
+- 151 entries have a defining line; 84 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
-- line 363: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 4182: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 366: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
+- line 4224: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
 ### Standards budgets vs the last recorded run
-- budgets no looser than at 1c24748
+- budgets no looser than at 5fbc6e1
+
+### tsc
+- 0 errors in 0 files
+
+### i18n
+- ==================================================
+- ALL PASSED (0 warnings)
+- Total keys per locale: 5353
 
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-19 (third reading) — H6 closed: Phase 2 complete; `guard%` 18 → 10
+
+`--full` after sprint H6. No FAILs. **The first WARN to clear since the baseline.**
+- **guard% 18 → 10** — *done; target was ≤ 12.* 25 source-reading web tests became 14 of 137. Four
+  stopgap guards became mounts, eleven i18n guards became one. What remains reads source on
+  purpose (brand, sandbox safety, IC padlock, ICU, the navigation and screenshot disk walks,
+  soft-evidence drift, the standards test, theme) and is listed in `CLAUDE.md`.
+- **td_open 83 → 84** — **TD-259** raised: eight i18n keys exist in no locale; four render raw on
+  the IC-claim screen. **Decision: owner's, and to be fixed WITH TD-254 — the missing text is by
+  accident hiding the holder's name.** Near-misses read: TD-003, TD-252 — open is right.
+- Not a reading: the web suite fell 42 s → 21 s; the cockpit went from 0 rendered tests to 59.
+- All other WARNs unchanged; decisions stand as in the baseline.
 
 ### 2026-09-19 (second reading) — H5 closed: the test factory; `std` holds
 

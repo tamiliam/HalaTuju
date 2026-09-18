@@ -408,6 +408,37 @@ real endpoints and asserts the factory agrees, so the factory cannot become the 
 hand-build one convert as they are next touched (`small-change-lane.md`), and their ledger entries
 may only fall.
 
+### Rendered tests for the cockpit
+
+**Where the harness lives** (code health H6, front end): `halatuju-web/src/test/`.
+
+| File | What it is |
+|---|---|
+| `adminApplicationDetail.ts` | `buildApplicationDetail(stage, overrides?)` — a complete, type-correct `AdminScholarshipDetail` at a NAMED STAGE. It mirrors the stage table above, including the two roads to QC, and `adminApplicationDetail.test.ts` reads `factories.py` and fails if the two stage lists drift apart. |
+| `renderCockpit.tsx` | Mounts the real `src/app/admin/scholarship/[id]/view.tsx` for a given ROLE, with i18n, the admin-auth context, the router and `@/lib/admin-api` mocked, every on-mount call primed, and **any `console.error` failing the test**. |
+| `view.decision` / `view.closed` / `view.roles` / `view.actions` `.test.tsx` | 59 rendered tests, beside the page. |
+
+**The rule.** A change to `view.tsx`, or to any cockpit panel split out of it, runs `view*.test.tsx`.
+**A new panel gets a rendered test, not a source guard** — the screen is the subject, so mount it.
+Two text guards were retired into this harness (`approveLockoutGuard`, the component half of
+`docFileLayout`) and two more converted to mounts (`ActionCentre.vircle`, the per-surface half of
+`screenshotInput`).
+
+**The text guards that remain, ON PURPOSE.** Each one's subject really is the shape of the source,
+and there is nothing to render:
+
+| Guard | Why it stays text |
+|---|---|
+| `brand-guard.test.ts` | One home for a brand literal. The claim is "this string appears nowhere else", which only a scan of everywhere can make. |
+| `sandbox-safety.test.ts` | The sandbox must reach no real service. A mount proves one path is safe; the scan proves no path exists. |
+| `icPadlockGuard.test.ts` | A verified NRIC stays locked. Structural: one expression either consults the rule or it does not. |
+| `no-icu-messageformat.test.ts` | The SHAPE of a message value. `t` has no ICU engine, so an ICU construct renders its template verbatim — that is a property of the catalogue, not of a screen. |
+| `navigation.test.ts` | Walks the routes on DISK against the registry, so a page that exists with no row (or the reverse) is found. Only the filesystem can answer that. |
+| `soft-evidence-drift.test.ts` | A backend list copied into the front end. The guard is that the copy still matches its source. |
+| `codeStandards.test.ts` | The standards themselves. Deliberately ONE file, so the project gains one source-reading test and not a habit of them. |
+| `theme.test.ts`, `pageWidth.test.ts` | Convention checks that belong in ESLint. Noted, not moved (H6 scope). |
+| `applicationStatus` / `requestStatus` / `screenshotInput` (the disk-walk half) | Each asks "is there a case/surface nobody thought about?" — a question only a walk of the tree can answer. The BEHAVIOUR each one used to assert now lives in a mount. |
+
 ## Key Files
 
 | File | Role | Sacred? |
@@ -688,7 +719,7 @@ The owner: *"I want to pause all other developments until this is stabilised or 
   (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
 - **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
   after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
-- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 (a render harness for the reviewer cockpit) is next.**
+- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). H3's first scan found **TD-258** (the sponsor fund view outside the fence; a MOCK donation endpoint live) — **FIXED the same day**: fund resolves through `pool.for_sponsor`, the mock is gated off behind `SPONSOR_MOCK_DONATIONS_ENABLED` (never set in production), `fund_student` refuses a programme-less application. **H4 SHIPPED 2026-09-19 — PHASE 1 (GATES) COMPLETE: the code standards are tests inside the deploy gate (see `## Code standards` below; budgets in `halatuju_api/code-standards.json` and `halatuju-web/code-standards.json`; NEVER raise a budget).** The owner's standing word (2026-09-18): the arc proceeds sprint to sprint without stopping, incl. push/deploy, unless a decision is needed. **H5 SHIPPED 2026-09-19: `apps/scholarship/tests/factories.py` — `make_application(stage=…, outcome=…)` builds only states the product can reach, verified against the real code path; NEW TEST FILES MUST USE IT (enforced in the gate).** **H6 SHIPPED 2026-09-19 — PHASE 2 COMPLETE: the cockpit has 59 rendered tests (`src/app/admin/scholarship/[id]/view.*.test.tsx`, harness in `halatuju-web/src/test/`); a change to `view.tsx` runs them; a new panel gets a rendered test, never a source guard.** ⚠ **TD-259 awaits the owner: raw i18n keys on the IC-claim screen — fix WITH TD-254, never alone.** **H7 (money and text helpers) is next.**
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 

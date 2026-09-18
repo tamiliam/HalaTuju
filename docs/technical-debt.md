@@ -81,6 +81,9 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   student through `pool.for_sponsor`, the MOCK donation endpoint is behind
   `SPONSOR_MOCK_DONATIONS_ENABLED` (default OFF, **never set in production**), and a NULL-programme
   application can no longer be funded. Nothing had been exploited.
+- **TD-259 (raised 2026-09-19 by code health H6) — fix WITH TD-254, never alone.** Four labels on the
+  IC-claim screen render as raw i18n keys; the missing text is, by accident, hiding the holder's name
+  that TD-254's flow would otherwise show. Four more raw keys elsewhere are safe to fix alone.
 - **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
   backfill of the code-health roadmap, after the H5 factory.
 - *Closed 2026-09-18 by H3:* TD-219 (view/service seam), TD-240 (fence scan of `views_sponsor.py`),
@@ -3960,6 +3963,45 @@ been quietly unguarded, which is the point of doing it separately.
 
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
+
+### [TD-259] Eight i18n keys exist in no locale; four render RAW on the IC-claim screen — and the missing text is hiding TD-254's name leak — HIGH (fix WITH TD-254, never alone)
+
+**Found:** code health H6 (2026-09-19), when the i18n guard was widened from 11 namespaces to all 35.
+Verified by the lead against `en.json` and `AuthGateModal.tsx`. **Not fixed — owner decision.**
+
+| Key | Where | What the user sees today |
+|---|---|---|
+| `authGate.icExistsMessage` | `src/components/AuthGateModal.tsx` (IC step, confirm) | the whole "this NRIC is already registered — is this you?" question is the raw key |
+| `authGate.icNotMe` / `authGate.icYesMe` | same | both buttons are labelled with their raw keys |
+| `authGate.claimError` | same (claim failure) | the error is the raw key |
+| `authGate.icError` | same | falls back to English correctly; the key is still absent |
+| `admin.householdIncome` / `admin.householdSize` | `src/app/admin/students/[id]/page.tsx` | two row labels are raw keys (`admin.familyIncome` exists and is probably what was meant) |
+| `scholarship.nextSteps.story.cardA.parentsOccupation` | `src/lib/scholarship.ts` | a "too long" save error names the raw key instead of the question |
+
+**Root cause — one idiom:** `t(key) || 'English fallback'`. `t` returns **the key itself** when it
+cannot resolve one; a key is a truthy string, so `||` never fires. Only `icError` uses the form that
+works (`t(k) !== k ? t(k) : fallback`). Every other `t(...) || '…'` in the codebase works only
+because its key happens to exist.
+
+⚠ **DO NOT FIX THE `authGate.*` KEYS ON THEIR OWN.** That screen is the IC-claim flow of
+**TD-254** (HIGH, security): a signed-in student can claim another student's whole profile by
+typing their IC number. The English fallback for `icExistsMessage` interpolates the **holder's
+name** (`…already registered to ${existingName}. Is this you?`). Today the missing key hides that
+name by accident. Adding the message the obvious way — in three languages, with `{name}` — would
+put another student's name on the screen and make TD-254 strictly worse. The owner's ruling on
+TD-254 (2026-09-18: option 2 then 3 — a second factor and an audit line) rebuilds this step; the
+copy belongs in that change, written for the NEW flow, without the name.
+
+**Shape of the fix:**
+- with TD-254: write the `authGate` IC-step copy for the new flow (EN/MS/TA — Tamil per the style
+  guide), no holder name;
+- independently and safely (~30 min, the owner's word needed because users see it): point the two
+  admin rows at `admin.familyIncome` / the right size key, and give the story field its label;
+- a sweep for `t(...) || '…'`: replace with one helper that knows the key-echo (`tOr(key, fallback)`),
+  and add the idiom to the web standards test so it cannot return.
+
+The eight keys sit in `KNOWN_MISSING` in `src/messages/__tests__/namespaces-i18n.test.ts` — a
+shrink-only ledger that fails ("remove me") the day a key resolves or its call site goes.
 
 ### [TD-258] The sponsor FUND view reads an application outside the sponsor fence, and a MOCK donation endpoint is live in production — HIGH (security, money path) — **RESOLVED 2026-09-18**
 

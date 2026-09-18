@@ -38,6 +38,35 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Code health H6 - the cockpit gets a rendered test; the text guards retire; Phase 2 is complete - 2026-09-19
+
+Sprint H6 of the code-health roadmap, under the development freeze, on the owner's standing word.
+Built by an Opus 5 agent; findings verified and sprint closed by the lead. App source changed:
+three lines (an `aria-label`). Retro: `docs/retrospective-2026-09-19-code-health-h6.md`.
+
+- **The reviewer cockpit (`view.tsx`, 3,590 lines) is mounted by a real test for the first time.**
+  `src/test/` holds a typed fixture builder - every field of `AdminScholarshipDetail`, no `any`, 15
+  stages mirroring the H5 backend factory with a drift test between them - and a harness that
+  mounts the real screen per role and FAILS ON ANY `console.error`.
+- **59 rendered tests** over the decision panel, closed cases, role visibility, the org-admin
+  reject wizard, the reporting date and two writes. **Sixteen bite-checks, none silent - three of
+  them real incidents re-injected (#24, #21, #56).** Four cry-wolf checks stay green: reformatted
+  JSX, renamed Tailwind classes, LF for CRLF, two panels reordered. H14 may now split this file.
+- **Four stopgap text guards retired or rebuilt.** `approveLockoutGuard` deleted. `docFileLayout`
+  and `ActionCentre.vircle` became mounts. `screenshotInput` kept - and strengthened - its DISK
+  WALK, and gave every claim about what a paste DOES to mounts, one of them new.
+- **Eleven i18n guards became one, covering ALL 35 namespaces (was 11).** Suite 42 s to 21 s.
+- **⚠ THE WIDER GUARD FOUND EIGHT KEYS THAT EXIST IN NO LOCALE - TD-259.** Four render raw on the
+  "this NRIC is already registered - is this you?" step. Cause: `t(key) || 'fallback'` - `t`
+  returns the KEY, which is truthy, so the fallback never fires. **Not fixed, deliberately:** that
+  step is TD-254's IC-claim flow, and the missing text is by accident hiding the holder's NAME,
+  which the English fallback interpolates. Fixing the copy alone would make TD-254 worse. Owner's
+  decision; ledgered as shrink-only `KNOWN_MISSING`.
+- **The lead's brief had the central behaviour backwards** (stuck means NOT locked - the point of
+  #21). The agent tested the incident, not the brief.
+- Readings: `guard%` 18 to 10 (target 12). Gates: 2,511 jest / 137 suites, tsc 0, lint 0 errors,
+  i18n parity ok, `next build` 0; cockpit suites green on Node 18 and 5 runs in a row.
+
 ## Code health H5 - a test factory that only builds states the product can reach - 2026-09-19
 
 Sprint H5 of the code-health roadmap, under the development freeze, on the owner's standing word.

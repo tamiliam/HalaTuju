@@ -222,7 +222,8 @@ chasing them is how a health arc turns into a rewrite.
   when its code is disabled.
 - **Complexity:** medium. **~7h.** No deploy (tests only; H1's `.dockerignore` keeps them out).
 
-### H6 — A render harness for the cockpit, and the stopgap guards retired
+### H6 — A render harness for the cockpit, and the stopgap guards retired ✅ SHIPPED 2026-09-19 — **PHASE 2 COMPLETE**
+*Retro: `docs/retrospective-2026-09-19-code-health-h6.md`. 59 rendered cockpit tests, 16 bite-checks none silent, `guard%` 18 → 10, i18n guard 11 → 35 namespaces, suite 42 s → 21 s. **H14 is unblocked.** Raised **TD-259** (raw i18n keys on the IC-claim screen — to be fixed WITH TD-254, the owner's call).*
 - **Goal:** the 3,587-line reviewer screen is mounted by a real test before anybody moves it.
 - **Scope:**
   - `src/test/adminApplicationDetail.ts`: a typed `AdminApplicationDetail` fixture builder (the
