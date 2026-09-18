@@ -129,7 +129,8 @@ chasing them is how a health arc turns into a rewrite.
   reading: `unused` 0, `skip` 0.
 - **Complexity:** low–medium. **~5h.** Deploys both services (no behaviour change).
 
-### H2 — Tests run before every deploy
+### H2 — Tests run before every deploy ✅ SHIPPED 2026-09-18
+*Retro: `docs/retrospective-2026-09-18-code-health-h2.md`. Both triggers read committed files; 6,714 pytest + 2,354 jest ran before the first gated deploys. Measured: api 8 min 18 s, web 11 min 44 s, ~1,850 of 2,500 free minutes a month. Raised TD-255 (Node 18) and TD-256.*
 - **Goal:** a red suite fails the build, and the deploy steps never run.
 - **Scope:**
   - Commit `halatuju_api/cloudbuild.yaml` and `halatuju-web/cloudbuild.yaml` that reproduce the

@@ -12,11 +12,12 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-18 | 257fcd4 | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 85 | 0 | - | - |
 | 2026-09-18 | 1bef45b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | 0 | ok |
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok |
 
-## Latest run (2026-09-18, 1bef45b, window 2026-06-20 onward)
+## Latest run (2026-09-18, 257fcd4, window 2026-06-20 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -33,7 +34,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 301 fix / 432 feat commits since 2026-06-20
+- 301 fix / 430 feat commits since 2026-06-20
 
 ### Files over 1000 lines
 - `8547  halatuju_api/apps/scholarship/views_admin.py`
@@ -111,26 +112,28 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - 24 of 140 web test files read source text
 
 ### Debt register
-- 146 entries have a defining line; 83 carry no resolution marker on it
+- 148 entries have a defining line; 85 carry no resolution marker on it
 
 ### Debt register near-misses — read these by eye
 - line 355: ### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
-- line 3979: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
+- line 4013: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
 - none
 
-### tsc
-- 0 errors in 0 files
-
-### i18n
-- ==================================================
-- ALL PASSED (0 warnings)
-- Total keys per locale: 5353
-
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-18 (fourth reading) — H2 closed: the gate is live; nothing in the code moved
+
+Plain run after sprint H2 (config and one test file — no source changed). No FAILs.
+- **td_open 83 → 85** — *expected.* Two entries raised by the sprint: **TD-255** (production
+  builds on Node 18, past end of life; the dev box runs 24) and **TD-256** (an api test reads a
+  docs file the api trigger ignores). Near-miss list unchanged and read: TD-003, TD-252 open is right.
+- Not a reading the tool takes, but the point of the sprint: **tests now run before every deploy**
+  (6,714 pytest + 2,354 jest in the first gated builds). First row of the roadmap's targets: done.
+- All other readings unchanged; decisions stand as in the baseline.
 
 ### 2026-09-18 (third reading) — H1 closed: `unused` 4 → 0, `skip` 2 → 0
 

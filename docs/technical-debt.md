@@ -3892,6 +3892,40 @@ been quietly unguarded, which is the point of doing it separately.
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
 
+### [TD-256] An api test reads a file the api trigger ignores — low
+
+**Found:** code health H2 (2026-09-18), when a spike packaged without `docs/` failed three tests.
+
+`apps/scholarship/tests/test_technical_debt_register.py` opens `docs/technical-debt.md`. The api
+Cloud Build trigger ignores `docs/**`. So an edit to the register can break that test **without
+starting a build** — and the *next* api deploy, possibly days later and about something else, fails
+in the gate on a docs edit nobody connects to it. Since H2 that failure blocks a deploy.
+
+**Shape of the fix (pick one, ~1h):** run the register test as part of the docs workflow instead of
+the api suite (it guards a document, not the api); or make `wat_lint`/`code_health.py` own the
+duplicate-id check it performs — `code_health.py` already parses the same file. Do not "fix" it by
+removing `docs/**` from `ignoredFiles`: every changelog line would then cost an 8-minute build.
+
+**Trigger:** the first api build that goes red on this test.
+
+### [TD-255] Production builds on Node 18, which is past end of life; the dev box runs Node 24 — medium
+
+**Found:** code health H2 (2026-09-18). `screenshotInput.test.ts` used the global `File`, which
+Node gained in version 20. It was green on every dev machine and red the first time it ran on the
+Node that builds the app. The test was made portable; the gap that hid it is this entry.
+
+`halatuju-web/Dockerfile` is `FROM node:18-alpine`; `package.json` has no `engines` field; nothing
+pins the dev Node. Node 18 left maintenance in April 2025 — no security fixes — and the tag can be
+withdrawn. Since H2 the gate runs the suite on the production Node, so *this class* of bug is now
+caught; the end-of-life runtime is not.
+
+**Shape of the fix (~3h, a sprint not a small change — it changes what production runs):** move
+the Dockerfile and the `cloudbuild.yaml` test step to the current LTS **together**; add `engines`
+and an `.nvmrc`; run the full gates and a Playwright smoke on the new image before the switch.
+Not part of the code-health arc by default; the owner may fold it into H17 or H18.
+
+**Trigger:** the `node:18-alpine` tag is withdrawn, a dependency drops Node 18, or the arc reaches H17.
+
 ### [TD-254] A signed-in student can CLAIM another student's profile with their IC number — HIGH (security)
 
 **Status:** Open (2026-09-18). **Owner ruling needed — this is a policy question before it is a code

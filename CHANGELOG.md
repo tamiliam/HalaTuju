@@ -38,6 +38,32 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Code health H2 - the tests run before every deploy - 2026-09-18
+
+Sprint H2 of the code-health roadmap, under the development freeze. Config files by an Opus 5
+agent; every production step by the lead. Retro: `docs/retrospective-2026-09-18-code-health-h2.md`.
+
+- **A red suite can no longer ship.** `halatuju_api/cloudbuild.yaml` and
+  `halatuju-web/cloudbuild.yaml` reproduce the live inline trigger steps - argument lists compared
+  programmatically, IDENTICAL - and add a `test` step running in parallel with the image build.
+  `Push` waits for both; `Deploy` waits for `Push`.
+- **Both Cloud Build triggers now read those files** (owner approved). Substitutions, file
+  filters, service account and tags unchanged. The filters are in the repo for the first time, in
+  each file's header. Rollback: `docs/infra/cloudbuild-trigger-*-inline-2026-09-18.yaml`.
+- **Proven in production:** the first gated builds ran **6,714 pytest** (plus `manage.py check`
+  and `makemigrations --check`) and **2,354 jest** (plus typecheck, lint, i18n) before deploying.
+  Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`; site 200, api 401, 0 errors.
+- **Hotfix bypass:** a manual run with `_SKIP_TESTS=1`, which prints a banner saying so.
+- **Found by running on the production Node for the first time:** `screenshotInput.test.ts` used
+  the global `File` (Node 20+); the image builds on Node 18; the dev box runs 24. Test made
+  portable and proven under a real Node 18. The gap is **TD-255**.
+- **Found by a badly packaged spike:** an api test reads `docs/technical-debt.md`, a path the api
+  trigger ignores - **TD-256**.
+- **Cost, measured:** api 8 min 18 s (was 3.9), web 11 min 44 s (was 6.9). About 1,850 of the
+  2,500 free build-minutes a month at the pre-freeze deploy rate. No `machineType`.
+- **An agent's report is evidence, not truth:** it said the old builds had a 10-minute default
+  timeout. It is 60. The explicit 30-minute timeout stays; the comment was corrected.
+
 ## Code health H1 - one-word gates, a frozen production lock, tests out of the image - 2026-09-18
 
 Sprint H1 of the code-health roadmap, under the development freeze. Built by an Opus 5 agent to a
