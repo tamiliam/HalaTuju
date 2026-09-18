@@ -86,7 +86,13 @@ accepted, and H6 (which retires four text guards) more than pays it back.
   gate, blocking a deploy. This is the risk H2's retro named ("a flaky test then blocks a deploy"),
   arriving on schedule.
 
-## Numbers
+## The deploy
+
+api: `halatuju-api-01053-h62`, first attempt, 6,760 passed inside the build. web: first attempt
+blocked by the gate (finding 4), second attempt **`halatuju-web-00904-2c4`**, 2,397 passed inside
+the build. Site 200; admin endpoint 401. Two web deploy attempts — the stop condition is a deploy
+that fails twice; this one failed once.
+
 ## Numbers
 
 | Gate | Before | After |
