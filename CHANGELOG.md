@@ -38,6 +38,44 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Code health gets an instrument - a first reading, and a ratchet - 2026-09-18
+
+The owner: *"occasionally I find bugs being introduced during our coding, as the code base becomes
+more and more complicated. I'd like to audit the health of the codebase as we progress further."*
+Ruling before the build: **measure only** - no app code changes, nothing deploys.
+
+- **Nothing measured the code before today.** `wat_lint` reads the framework's prose; the
+  consolidation review reads the stream of fixes; the two code audits (June, July) were prose and
+  were never repeated. Every number in the survey had to be derived by hand.
+- **`Settings/_tools/code_health.py`** (workspace repo) takes thirteen readings, each tied to a way
+  bugs have actually got in here: fix ratio, hotspots (fixes x KLOC), files over 1,000 lines,
+  Python functions of 150+ lines, a function name with three or more homes in one app, cross-app
+  imports, suppressions, skipped tests, the share of web tests that assert on source TEXT, the debt
+  register's open count, unused npm packages, and with `--full` the `tsc` error count and the i18n
+  check. It writes `docs/code-health.md`: a **Trend** row per run, a rewritten **Latest run**, and
+  a **Reviews** section only people write.
+- **⚠ IT FAILS ONLY ON A RATCHET** - a reading worse than the last run by more than a tolerance.
+  Never on an absolute. The baseline crosses every absolute; an always-red gate is a gate nobody
+  reads, and the 24-error `tsc` baseline (TD-221) is the proof.
+- **The baseline.** fix% 41 (300 fixes to 430 features in 90 days). Top hotspot
+  `scholarship/views_admin.py`: 34 fixes, 8,393 lines, a score nearly three times the next file.
+  25 files over 1,000 lines, 16 long functions, `_money` defined in SEVEN files of one app,
+  4 unused npm packages, 2 self-skipping golden-master tests, 24 of 138 web tests text-only.
+- **New fact: all 24 `tsc` errors are in TEST files. The app code has none.** The blind gate is nine
+  test files away from being a real gate at zero.
+- **The debt register is now counted by script: 84 open of 146 defined.** The hand count this
+  morning said 86 of 140. The script finds six definitions the hand rule skipped (headings shaped
+  `### [tick] [TD-197 - RESOLVED ...]`) and reads four undated `- RESOLVED` titles as resolved.
+  Near-misses are printed for a human: TD-003 (*partially* resolved) and TD-252 stay open.
+- **The cadence is mechanical, not remembered.** `Settings/_workflows/code-health-audit.md`; one
+  line each in `small-change-lane.md` Part B and `sprint-close.md` step 10; `wat_lint --project`
+  WARNs when the newest reading is over 30 days old.
+- **Tests: 22, in `Settings/_tools/tests/`. Bite-checked six ways; the first pass had ONE SILENT
+  bite** - nothing proved a helper inside `tests/` that is not named `test_*` stays out of the
+  source counts. Fixture added; six of six bite.
+- **Six gate holes listed for the owner, none fixed here** (see the baseline review in
+  `docs/code-health.md`): tsc blind, no `npm test`/`typecheck` script, no tests before deploy,
+  unpinned Python packages with no lock, four unused npm packages, no coverage.
 
 ## The Overview, round six - only students who spent are counted; the empty tiles and the intake card go - 2026-09-18
 

@@ -48,6 +48,13 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
 > human to read (there were five). The 2026-09-08 figures (126/63) used a looser rule and are
 > not comparable line-for-line; the growth since is 14 new entries (TD-236 → TD-252).
 
+> **From 2026-09-18 the count is taken by script, not by hand:** `Settings/_tools/code_health.py`
+> applies the rule above and prints every near-miss. Its first reading is **146 defined, 84 open**
+> (against the 140 / 86 above, taken by hand the same day). The difference is understood: six
+> definitions shaped `### ✅ [TD-197 — RESOLVED …]` that the hand rule did not see as headings, and
+> four undated `— RESOLVED` titles (TD-002, TD-015, TD-017, TD-213). Quote the tool's `td_open`
+> from `docs/code-health.md` at each regeneration; read the near-miss list by eye.
+
 > ⚠ **The previous regeneration (2026-08-19) said "109 open of 195 distinct" and I could not
 > reproduce 195 by any parse.** 230 distinct ids are MENTIONED in the register; only **126** have a
 > defining entry (a `### [TD-NNN]` heading or a `- **TD-NNN**` bullet). The gap is ids that appear
