@@ -66,6 +66,12 @@ and they sit on top of TD-254.**
 behaviours must quote the code or the incident, not paraphrase from memory. The agent's habit of
 checking the brief against the code is the only reason a wrong test was not written.
 
+## The deploy
+
+Web only. **`halatuju-web-00905-rht`**, first attempt; 2,511 jest passed inside the build on the
+2-vCPU worker, with no flake — the first full run of the rendered cockpit suites under the gate's
+load, and the first since `jest.setup.ts` raised the async limits. Site 200.
+
 ## Numbers
 
 | | Before | After |
