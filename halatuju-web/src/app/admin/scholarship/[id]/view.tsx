@@ -2769,8 +2769,16 @@ export function AdminScholarshipDetailView({ applicationId }: { applicationId?: 
                 })}
               </div>
             ) : (
+              /* ⚠ THE LINE FOLLOWS THE RECORDED OUTCOME (owner, 2026-09-18). This is the
+                 IN-FLIGHT case — which is exactly where a DECLINE awaiting QC sits — and it
+                 read "Interviewed and recommended by" on a case the reviewer had declined.
+                 Same family as the stuck banner beside it (BrightPath #24): one sentence
+                 serving two outcomes. `interviewedDeclinedBy` already existed for the
+                 rejection trail, so nothing new is minted here. */
               <p className="text-sm text-ground-600">
-                {t('admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
+                {t(recordedOutcome === 'decline'
+                     ? 'admin.scholarship.interviewedDeclinedBy'
+                     : 'admin.scholarship.interviewedRecommendedBy')} {reviewerName}{reviewerDate}
               </p>
             )}
             {(app.status === 'active' || app.status === 'maintenance') && canWrite && (

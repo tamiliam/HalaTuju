@@ -61,6 +61,20 @@ describe('the Approve lock-out cannot come back', () => {
     expect(src.slice(at, at + 320)).toContain('outcome:')
   })
 
+  it('the reviewer line under the conclusion follows the outcome too', () => {
+    // The in-flight line said "Interviewed and recommended by" on a DECLINED case (owner, on the
+    // live screen, 2026-09-18).
+    //
+    // ⚠ ASSERT THE PLACE, NOT THE VOCABULARY. The first version of this guard checked that the
+    // file merely CONTAINS `interviewedDeclinedBy` — it always does, in the rejection trail — so
+    // it passed with the fault re-injected. What has to hold is that a choice on the outcome sits
+    // immediately in front of the declined spelling.
+    // Whitespace-collapsed: the file is CRLF and the expression is wrapped over two lines, so a
+    // literal needle matches the correct source only by luck.
+    const flat = code().replace(/\s+/g, ' ')
+    expect(flat).toContain("recordedOutcome === 'decline' ? 'admin.scholarship.interviewedDeclinedBy'")
+  })
+
   it('the Save button label follows the chosen outcome', () => {
     // One fixed "Save & generate final profile" promised a profile on a decline, which makes none.
     expect(code()).toContain('recordVerdict.saveDecline')
