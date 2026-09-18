@@ -5,32 +5,59 @@ Consolidation Review (see `Settings/_workflows/small-change-lane.md` Part B).
 
 ## Pending
 
-_(cleared at the 2026-09-08 review — counter reset; the 11 reviewed entries are listed in that review)_
-
-- 2026-09-08 fix: three detail pages get the wide layout — the owner walked the console after the layout standard shipped and found the payment run and the B40 application cramped. Both had been forced to `reading` because they show ONE of something, which is not what the rule asks. The rule's WORDING was the fault and is corrected: "leads with a table?" → "lays its content out in MULTIPLE COLUMNS?". ⚠ The cockpit is the sharp case — it had been **1152px** for months, so standardising it to 900 made it NARROWER than it had ever been, a regression dressed as a standard. `/admin/sponsors/<id>` was widened unprompted for the same reason (two tables) before it became the next report. 2 files, web only, bite-checked. **Check a classification rule against the pages it will get WRONG.**
-
-- 2026-09-08 fix: Resend on a donor invitation now actually sends (BrightPath #16) — the link was drawn on donor rows, checked for a staff account, found none and returned in SILENCE: no request, no record, no message, which is why the owner could not tell whether it had worked. Wired to `create_or_refresh`, which is what a resend already was (idempotent on an open invitation: finds the row, moves its expiry, sends, records) — no new endpoint. Reports both ways, and the reloaded row carries the failure reason. No note (not stored; storing it would need a new column) and no `programme_id` (naming one would re-home the benefactor). 4 files, no schema change, +2 i18n keys, both directions bite-checked. ⚠ **This corrects our own posted analysis**, which told BrightPath the capability "does not exist today — not behind the broken link, not anywhere else" and priced 2.0h to build it. It existed. The analysis was written from the button inwards and never read the engine's docstring, which says idempotent-and-refreshes in its second line. **Read the engine before pricing the absence of one.** First change built in my own worktree, which is also why `next build` did not collide this time.
-
-- 2026-09-08 fix: the sponsors table drops the Role column instead of dashing it — owner, on the live page while testing #17: *"what is the purpose of the role column?"* None, there: a sponsor invitation creates no account and carries no role, so the column could only ever print "—" for every row for ever (confirmed on production — every sponsor invitation has an empty role). `InvitationsTable` takes `showRole`, passed by KIND, never derived from the rows: reading it off whichever rows are loaded would hide the column on a staff table the day one arrives blank, turning a missing value into no question at all. 3 files, web only, both directions bite-checked. **A dash is not neutral — it reads as a value we failed to fetch, which is exactly the question it prompted.**
-
-- 2026-09-08 fix: Enter in the invitation note no longer sends it (BrightPath #17) — the note was a single-line `<input>` inside the form whose main action is Send invite, so the browser's own "Enter means I have finished" posted a half-written note to a DONOR, unrecoverable. Now a `<textarea>`; nothing else on the form moved. The email already carried line breaks and that is pinned rather than assumed (plain text + `email_templates.render` fills blocks without collapsing) — two tests, one on the built-in body and one on a stored `PartnerEmailTemplate`, because production has a seeded row and the stored path is the one that sends. 3 files, no schema change, no new i18n keys. ⚠ **The first rendered test was VACUOUS and is deleted**: "press Enter, assert nothing was sent" passes against the broken input too, because jsdom does not implement implicit form submission. Caught by injecting the old `<input>` and watching the file stay green. **Second silent bite in one day** — the other was #20's fixture with no `parent_ic`. What is asserted now is the pair that decides the behaviour: a textarea, inside the form.
-
-- 2026-09-08 fix: a matching IC number vouches for a differently-spelt name (BrightPath #19) — a birth certificate and the mother's MyKad carrying **the same twelve digits** and two Latin spellings of one Tamil name read as a red name mismatch; we asked the student for "a corrected birth certificate" she cannot obtain, and the JPN letter she sent instead attesting that both spellings are the same woman could not be machine-read either. `_combine_relationship` gains `check_name` — name differs + NRIC matches EXACTLY → amber, never green, never on `nric_close`. It is the **mirror of the rule already in that function**, which forgives a misread NUMBER when the name agrees; the number is the stronger evidence of the two. Blast radius MEASURED over all 62 live mother rows before shipping: exactly 2 move (144, and 84 where the misreading was OUR OWN OCR), and both genuinely-different-person reds stay red because neither number matches. 7 files, no schema change, +1 i18n key, bite-checked. ⚠ **The second fault on that record is deliberately unfixed**: her certificate never reached the name check, because `_pdf_first_page_png` reads page 1 only of a scanned PDF and hers is a merged scan. Reading every page is its own decision (cost, and which page wins) and was the alternative the owner declined.
-
-- 2026-09-08 fix: the round menu escapes the table, and the edit dialog's Save sleeps until there is a change — owner, on the deployed screen: *"Clicking the close opens something, but it is hidden"* and *"the save is enabled even though no change has been made"*. The menu was `absolute` inside a table wrapper carrying `overflow-hidden` (there to round the corners), so it was sliced off at the table's edge. Fixed in the PRIMITIVE — `Menu`'s panel is a portal on `document.body`, measured and placed, flipping above the trigger when the space below is short — because the local fix would have left the trap armed for the next card, modal or rounded panel. ⚠ The portal takes two obligations with it: the click-outside guard must test the panel as well as the wrapper (or the mousedown on an item closes the menu before its click fires, and every menu item in the console becomes a no-op), and a `fixed` box anchors to `documentElement.clientWidth`, not `window.innerWidth`. The Save now compares as it will be SENT (name trimmed, blank box as null). 4 files, web only, no schema change, no new i18n keys, three bite-checks. ⚠ **The placement arithmetic has no test that can fail** — jsdom returns 0x0 at 0,0 from every `getBoundingClientRect`; only the panel's place in the DOM is pinned.
-
-- 2026-09-08 feat: console tables start at twenty-five rows (BrightPath #18) — they asked for the reviewers and benefactors pages; the posted analysis recommended moving the ONE shared default instead, and they accepted. `tableView.DEFAULT_PAGE_SIZE` 10 → 25, six call sites, no per-page overrides — two starting sizes with no rule is how the next table inherits whichever number its author thinks of. ⚠ **The visible effect is that the pager DISAPPEARS**, not that pages get longer: reviewers (20), benefactors (11) and invitations (20) now fit one page and lose their footer; only a benefactor's own students (46) still pages. 3 files, web only, bite-checked. ⚠ **One test was REPLACED rather than renumbered**: `expect(DEFAULT_PAGE_SIZE).toBe(PAGINATION_MIN_ROWS)` pinned an EQUALITY to protect a PROPERTY its own comment stated, and the property is held by `shouldPaginate`'s second clause — so the equality went false while the claim stayed true. **A test written against the procedure reports a decision as a regression.**
-  ⚠ `wat_lint` WARNs that this looks like a feature riding the small lane, because the subject reads `feat:`. Checked, and it belongs: BrightPath triaged it `small_change` and quoted 0.5h, and against step 1 it is 3 files, no data model, no new surface — one constant on an existing shared helper. The warning is the guard asking the question, and this is the answer written down so the next reviewer does not have to re-derive it.
-
-- 2026-09-18 fix: every new `public` table gets RLS from a DATABASE event trigger (`rls_auto_enable`) — Supabase's critical alert was `org_billing_adjustments` (0157), readable with the publishable key 11→15 Sep; the access logs show no Data API read in that window and one keyless 401 probe. The house rule "enable RLS in the same step as the CREATE" was kept in migration docstrings and was still missed, so it moved into the database, where every table passes whichever tool creates it. No policy is added (deny-by-default; the owner role Django uses still reads). Proven both ways in production: trigger on → three probe shapes RLS-on and `anon` sees 0 rows; trigger disabled → the same probe RLS-off. Not a Django migration and not a pytest guard — tests run on SQLite and the RLS SQL is run by hand via MCP, so a static check of migration files would prove nothing about production. Docs only in git; applied via MCP.
-
-- 2026-09-18 fix: the retired 48-hour chaser's last remains deleted — its code went on 11 Sep, but the Cloud Scheduler job was only PAUSED and two settings (`VIRCLE_ACTIVATION_ENABLED`, `_FOLDER`) were still on the service. The job could only have returned `404 unknown job`; the harm was in how it READ — a paused job looks like a switch somebody could flip. Owner asked why it was still there. Job deleted, settings removed (revision halatuju-api-01044-5zb, no image change), the job's shape recorded in the CHANGELOG so it can be rebuilt. ⚠ TD-244 (nothing watches a wallet that never goes live) is UNCHANGED — deleting the corpse is not fixing the gap.
-
-- 2026-09-18 fix: the Vircle relay sheet follows the WRITE; its cron becomes a daily net — ~860 cron runs carried 8 real changes in 9 days, each wiping and rewriting the whole file. `apply_update` now refreshes it right after it SAVES a wallet/activation, and the schedule drops to 07:05 daily (it had gone 15-min → hourly earlier the same day, owner: *"I don't want to overcomplicate things"*, then asked for this). Fails alone — Drive cannot cost Vircle its 200 nor undo a saved wallet — and never refreshes for `kept`/`invalid`/`mismatch`/`no_match`. ⚠ THE OWNER'S FIRST IDEA WAS TO GATE THE JOB ON AN OPEN INTAKE ROUND, and that would have frozen the sheet exactly when it mattered: #144's wallet arrived 14 Sep, the 2026 window closed 7 Jul. +6 tests, three bites all caught, and the first draft of one test reached the wrong branch (invalid vs mismatch) — a fixture that names a branch must reach it.
-
-- 2026-09-18 fix: student phone numbers standardised in the DB (40 + 1 rows) and Phone/Email added to the owner's sponsor-analysis sheet — all 41 predate the as-you-type formatter on the apply form, so there is no live fault to fix; the one guess (`+06 10-…` → `010-732 3459`) was the owner's call, not mine. Data only, no code, no deploy.
+_(cleared at the 2026-09-18 review — counter reset; the 11 reviewed entries are listed in that review)_
 
 ## Reviews
+
+### 2026-09-18 — eleven changes: five the owner SAW, six nobody could see
+
+**Reflect.** Two clusters, a fortnight apart and completely different in kind.
+
+The 8 Sep seven came from one walk of the console: a layout rule that classified two pages wrongly,
+a menu sliced off by the wrapper that rounds the corners, a Save button awake with nothing to save,
+a page size of 10 where 25 was wanted, a column that could only ever print a dash, a Resend that
+returned in SILENCE, and Enter posting a half-written note to a donor. One engine change rode with
+them (an exact NRIC match vouching for a differently-spelt name).
+
+The 18 Sep four came from the machinery, and every one was found by a MACHINE or by an alert, not by
+a person using the product: Supabase's own advisor found a table without RLS; the owner asked why a
+retired job was still listed; ~860 cron runs were found carrying 8 real changes; 41 phone numbers
+predated the formatter. Two more of the same day are recorded in the CHANGELOG rather than here
+(#144's dropped activation, #16 closed by hand) because they were data, not code.
+
+**Cohere — the cluster is not a surface, it is a SHAPE.**
+
+Nine of the eleven, plus both same-day data fixes, are the same defect wearing different clothes:
+**something that looks armed and does nothing.**
+
+  * Resend drew a link, found no staff account, and returned silently.
+  * Save was enabled with no change to save.
+  * A paused scheduler job pointed at a job name the server had already forgotten (404).
+  * `lapse_expired_offers` is written, tested, and wired to nothing (TD-252).
+  * The activation webhook stored a wallet and dropped the activation (TD-251).
+  * A new table shipped without RLS; the rule lived in other migrations' docstrings.
+  * The 15-minute sync rewrote a whole file 96 times a day to carry nothing.
+
+This is the third consolidation in a row to land near it (2026-08-19's "UI asserts what nothing
+checks"; 2026-09-08's "a fix that only exists in a habit"), and it is worth stating plainly: **the
+recurring class here is not bugs in what code does — it is code that does nothing while appearing
+to.** It survives review because every part is individually correct.
+
+**Anticipate — one guardrail, landed in this pass.** `sprint-close.md` gains a RETIREMENT step: when
+code is retired, its scheduler job, its env vars and its settings go in the SAME change, and the
+close reconciles Cloud Scheduler against `CronRunView.JOBS` in both directions — a job whose name is
+not in JOBS can only 404, and a JOBS entry with no scheduler job is a capability nobody can reach
+(which is precisely TD-252). Both halves are one command each and neither existed as a habit.
+
+No sprint was promoted. The console cluster of 8 Sep was five independent misses on five surfaces
+with no shared mechanism — a redesign would be inventing a cause. The Vircle pair (TD-251, TD-252)
+DO share a mechanism and are now written next to each other, with the owner's ruling recorded: do
+not chase Vircle until the next activation.
+
+**Close out.** Pending cleared (counter reset). Guardrail landed in `sprint-close.md`. Open Items
+Index in `technical-debt.md` regenerated and dated, WITH its method — and the method now says in so
+many words that a resolution marker is a marker, not a word in a sentence, because the first attempt
+at the regeneration marked TD-252 resolved on the strength of the phrase "cannot be closed".
 
 ### 2026-09-08 — Consolidation review (11 small changes, 19 Aug → 8 Sep)
 

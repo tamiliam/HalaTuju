@@ -31,11 +31,22 @@ has been replaced rather than carried forward.
 
 ---
 
-## Open Items Index (curated, regenerated 2026-09-08)
+## Open Items Index (curated, regenerated 2026-09-18)
 
-**126 entries carry a defining line; 63 of those show no resolution marker on it**, and 14 of the
-63 mention RESOLVED further down and would need reading to settle. This list is the **significant**
-pending items, not all 63; the per-entry marker in the body remains authoritative.
+**140 entries carry a defining line; 88 of those show no resolution MARKER on it.** Two of the 88
+(TD-010, TD-033) are in fact resolved — struck through with a bolded `**RESOLVED (…)**` that
+carries no dash — so **86** is the honest open-candidate count, and some of those still carry a
+resolution deeper in their body (the 2026-09-08 pass found 14 such). This list is the
+**significant** pending items, not all 86; the per-entry marker in the body remains authoritative.
+
+> **The method, so the next regeneration inherits it rather than re-deriving it.** Count the
+> DEFINING lines (`### [TD-NNN]` or `- **TD-NNN**`, first occurrence wins) and look for a
+> resolution MARKER on that line — a tick, or RESOLVED/CLOSED/FIXED/SHIPPED standing as a
+> status, usually dated. ⚠ **Not a word that merely appears in the sentence.** The first attempt
+> at this regeneration counted TD-252 as resolved because its title contains the words "cannot
+> be closed"; every line where such a word appears WITHOUT being a marker is now printed for a
+> human to read (there were five). The 2026-09-08 figures (126/63) used a looser rule and are
+> not comparable line-for-line; the growth since is 14 new entries (TD-236 → TD-252).
 
 > ⚠ **The previous regeneration (2026-08-19) said "109 open of 195 distinct" and I could not
 > reproduce 195 by any parse.** 230 distinct ids are MENTIONED in the register; only **126** have a
@@ -68,6 +79,17 @@ pending items, not all 63; the per-entry marker in the body remains authoritativ
   so a reviewer cannot tell a misread from a failure. ~1h for the label split. **This is the next
   instance of the "UI asserts what nothing checks" watch** — read the 2026-08-19 consolidation
   review before generalising from it.
+
+### Raised since 2026-09-08 (spending, billing, and the Vircle relay — all open)
+- **TD-251 / TD-252 — the Vircle pair, and the class they share.** 251: their activation webhook
+  posts a SHORT payload with no `Status`, so an activation is stored as a wallet and the date is
+  dropped (#144, repaired by hand). 252: `lapse_expired_offers` is built and **wired to nothing**,
+  so an unanswered offer stays open for ever — 35 are past their deadline today — and no door in
+  the product closes a case that should not have been awarded (#16 took three hand-written rows).
+- **TD-245 / TD-247** (medium) — the spending export cannot tell "spent nothing" from "wallet not
+  in the file"; supplier bills reach the ledger only when a person imports them.
+- **TD-242** (half-mitigated), **TD-240**, **TD-243/244/246/248/249/250** — carried, all low or
+  medium, each with its own trigger written down.
 
 ### Promoted by the 2026-09-08 consolidation review
 - **TD-234** — **thirteen `backfill_*` / `repair_*` commands have no route to production.** The
