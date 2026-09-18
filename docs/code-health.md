@@ -12,10 +12,11 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Trend
 | date | sha | days | fix% | hot#1 | big | long | dup | xapp | supp | skip | guard% | td_open | unused | tsc | i18n |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-09-18 | 1bef45b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 0 | 17 | 83 | 0 | 0 | ok |
 | 2026-09-18 | 2e3cd2b | 90 | 41 | views_admin.py 290.6 | 25 | 16 | 10 | 133 | 139 | 2 | 17 | 83 | 4 | 0 | ok |
 | 2026-09-18 | b0c2687 | 90 | 41 | views_admin.py 285.4 | 25 | 16 | 10 | 132 | 139 | 2 | 17 | 84 | 4 | 24 | ok |
 
-## Latest run (2026-09-18, 2e3cd2b, window 2026-06-20 onward)
+## Latest run (2026-09-18, 1bef45b, window 2026-06-20 onward)
 
 ### Hotspots (fixes x KLOC — where the next bug is most likely)
 | file | fixes | lines | score |
@@ -32,7 +33,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 | `halatuju_api/apps/scholarship/models.py` | 5 | 4756 | 23.8 |
 
 ### Fix ratio
-- 300 fix / 432 feat commits since 2026-06-20
+- 301 fix / 432 feat commits since 2026-06-20
 
 ### Files over 1000 lines
 - `8547  halatuju_api/apps/scholarship/views_admin.py`
@@ -104,8 +105,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - eslint-disable: 42
 
 ### Skipped tests
-- `halatuju_api/apps/courses/tests/test_stpm_golden_master.py:83  pytest.skip(f"First run — record baseline: {total}")`
-- `halatuju_api/apps/scholarship/tests/test_email_branding.py:223  pytest.skip('regenerated the golden fixture')`
+- none
 
 ### Source-text guard tests (web)
 - 24 of 140 web test files read source text
@@ -118,10 +118,7 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 - line 3979: ### [TD-252] An award nobody answers stays open for ever; a test/abandoned case cannot be closed — medium
 
 ### Unused npm dependencies
-- `@supabase/ssr`
-- `next-intl`
-- `react-hook-form`
-- `tailwind-merge`
+- none
 
 ### tsc
 - 0 errors in 0 files
@@ -134,6 +131,17 @@ Run: `python Settings/_tools/code_health.py --project . --write` (add `--full` a
 ## Reviews
 
 _Decisions per run, newest first. Written by a person or the agent — never by the tool._
+
+### 2026-09-18 (third reading) — H1 closed: `unused` 4 → 0, `skip` 2 → 0
+
+After sprint H1 of the roadmap. `--full`. No FAILs; nothing else moved.
+- **unused 4 → 0** — *done.* Four packages removed, each proven unimported; `next build` exits 0.
+- **skip 2 → 0** — *done.* One dead skip branch deleted; the email golden's regenerate mode now
+  fails the run rather than skipping it. Three *runtime* skips remain and are honest: "real corpus
+  not present on this machine".
+- **A flaky test surfaced in the clean-room run** and was fixed (a sentinel a timestamp could
+  contain). Not a reading the tool takes; noted because from H2 a flaky test blocks a deploy.
+- All other WARNs unchanged; decisions stand as in the baseline.
 
 ### 2026-09-18 (second reading) — the type check is a gate again: tsc 24 → 0
 

@@ -38,6 +38,35 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Code health H1 - one-word gates, a frozen production lock, tests out of the image - 2026-09-18
+
+Sprint H1 of the code-health roadmap, under the development freeze. Built by an Opus 5 agent to a
+written brief; verified and closed by the lead. **No behaviour change.** Retro:
+`docs/retrospective-2026-09-18-code-health-h1.md`.
+
+- **`npm run gates`** runs typecheck, lint, i18n parity and jest. `package.json` had no `test`
+  script before today; the four web gates existed only as lines in `CLAUDE.md`.
+- **Four unused npm packages removed** (`next-intl`, `react-hook-form`, `tailwind-merge`,
+  `@supabase/ssr`), each verified to have zero imports. `next build` exits 0.
+- **`requirements.lock` - 92 exact pins, a FREEZE of what production installed on 2026-09-18**,
+  read from that build's own log. Not a fresh resolve: pinning had to change nothing. The
+  Dockerfile installs it; `requirements.txt` stays as the statement of intent.
+- **`requirements-dev.txt`** - a fresh clone can run the suite for the first time (pytest was in no
+  requirements file). Proven in a clean environment: 6,714 passed.
+- **`.dockerignore`** keeps tests, `conftest.py`, the eval image corpus and local state out of the
+  production image. `_test_fixtures.py` and `eval/` STAY - a management command imports them.
+- **Tests that could not fail:** the STPM golden master's dead skip branch deleted; regenerating
+  the email golden now FAILS the run instead of skipping; `--strict-markers` on.
+- **A flaky test found and fixed.** A "hours must not leak" assertion used the sentinel `'7.5'`,
+  which a microsecond timestamp can contain. **The first fix was wrong too** - `'83.25'` is stored
+  as `'83.2'`, so the assertion would have passed for ever against a value that never existed. A
+  second line now proves the owner's view DOES carry the sentinel.
+- **Not proven locally:** Docker is not installed on the dev box. A simulated tree passed
+  `manage.py check`, imported all 246 non-test modules and reproduced `collectstatic`. The deploy
+  build is the proof.
+- Reading: `unused` 4 to 0, `skip` 2 to 0, 0 FAIL. `pytest -n auto` runs in under three minutes -
+  the number H2's build budget needs.
+
 ## Code health: the full sprint roadmap is written (not yet approved) - 2026-09-18
 
 The owner: *"I need a full implementation plan, covering all the sprints, and not like this

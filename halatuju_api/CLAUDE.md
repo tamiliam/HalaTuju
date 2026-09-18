@@ -591,7 +591,7 @@ The owner: *"I want to pause all other developments until this is stabilised or 
   (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
 - **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
   after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
-- **Status: H1 has not started — it waits for the owner's word.**
+- **Status (2026-09-18): H1 BUILT and committed (one-word gates, `requirements.lock`, `.dockerignore`); H2 (tests before deploy) is next and needs the owner's OK to switch the two Cloud Build triggers to committed config files.**
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 

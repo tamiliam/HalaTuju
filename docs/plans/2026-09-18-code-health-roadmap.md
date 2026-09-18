@@ -104,7 +104,8 @@ chasing them is how a health arc turns into a rewrite.
 
 ## Phase 1 — Gates: a broken build cannot ship
 
-### H1 — One-word gates and reproducible installs
+### H1 — One-word gates and reproducible installs ✅ BUILT 2026-09-18 (deploy: see the retro)
+*Retro: `docs/retrospective-2026-09-18-code-health-h1.md`. `unused` 4→0, `skip` 2→0. One deviation: `openpyxl` joined `requirements-dev.txt` (test-only by design). `pytest -n auto` runs in 2 min 59 s — H2's budget figure.*
 - **Goal:** anyone (or any agent, or Cloud Build) runs every check with one command, and two builds
   of the same commit install the same code.
 - **Scope:**
