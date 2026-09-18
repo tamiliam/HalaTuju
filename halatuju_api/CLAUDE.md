@@ -600,7 +600,7 @@ The owner: *"I want to pause all other developments until this is stabilised or 
   (parked, not started) and any non-defect BrightPath build (queue it; tell the requester).
 - **It lifts only on the owner's word** — at the roadmap's Phase 3 checkpoint ("stabilised") or
   after H19 ("completed"). Do not infer that it has lifted; look for that ruling here.
-- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 (seam, fence and route guards) is next.**
+- **Status (2026-09-18): H1 and H2 SHIPPED.** H1: one-word gates (`npm run gates`), `requirements.lock` (a 92-pin freeze of production), `.dockerignore`. **H2: both Cloud Build triggers now run a committed `cloudbuild.yaml` - the tests run before every deploy and a red suite stops it.** A deploy now takes ~8 min (api) / ~12 min (web). Serving `halatuju-api-01051-nvm` / `halatuju-web-00902-w7z`. **H3 BUILT (guards: every wired endpoint must be driven by a test; the org fence scans `views_sponsor.py` and is package-aware; nested admin routes are walked). ⚠ H3 FOUND TD-258 (HIGH, security): `SponsorFundView` reads outside `pool.for_sponsor` and the MOCK `SponsorDonateView` is live in production - reported, NOT patched, awaiting the owner's word. H4 (standards as tests in the gate) is next.**
 
 ## Next Sprint (as of 2026-09-15, after the Programme Overview — a gift can be read in one page)
 

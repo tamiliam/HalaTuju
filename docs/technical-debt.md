@@ -77,6 +77,13 @@ resolution deeper in their body (the 2026-09-08 pass found 14 such). This list i
   there.** Moves money back to a sponsor and retracts a promise, so it is the owner's call.
 
 ### High — engineering, promoted and ready to schedule
+- **TD-258 (security, money path) — raised 2026-09-18 by code health H3.** The sponsor FUND view reads an
+  application by bare id, outside `pool.for_sponsor`; a MOCK donation endpoint is live in production.
+  Nothing exploited, money cannot move this way today (checked). ~2h. **The freeze allows it.**
+- **TD-257** — 22 wired endpoints no test drives (20 writes, two of them disbursements). A Phase-2
+  backfill of the code-health roadmap, after the H5 factory.
+- *Closed 2026-09-18 by H3:* TD-219 (view/service seam), TD-240 (fence scan of `views_sponsor.py`),
+  TD-250 (nested route drift). *Raised by H2:* TD-255 (Node 18), TD-256.
 - **TD-218** — `exam_type` answers two questions and six surfaces read it. **Fifth instance**; the
   standing rule is that a fifth is a rename, not a patch. ~4h. Touches ranking and eligibility.
 - **TD-219** — nothing tests the seam between a view and the service it calls. Two defects in one
@@ -2859,9 +2866,25 @@ profile and lets anyone type STPM grades — must survive the rename intact.
 
 ---
 
-### [TD-219] Nothing tests the seam between a view and the service it calls — high
+### [TD-219] Nothing tests the seam between a view and the service it calls — high — **RESOLVED 2026-09-18**
 
-**Status:** Open · promoted at the 2026-08-19 Consolidation Review · **two instances in one day**
+**Resolved 2026-09-18 (code health H3).** The rule is now mechanical:
+`halatuju_api/apps/scholarship/tests/test_endpoint_exercise.py` walks every test module with
+`ast`, reconstructs the path handed to every request call (f-strings, `+` concatenation,
+`BASE = '/api/v1/…'` module constants and single-return `_url()` helpers — the four spellings
+this suite actually uses), resolves each one through Django's own router, and compares the
+routes reached against every route `apps/scholarship/urls.py` wires. Nothing is hand-listed:
+a new endpoint is watched the day it is wired. **200 routes, 178 exercised.** The 22 that no
+test drives at all sit in `NOT_YET_EXERCISED`, a ledger that may only SHRINK — cover one and
+the test fails with "remove me" — and each carries a comment saying why it matters, not why
+it is acceptable. Twenty of the twenty-two are writes and six are in the Requests module, the
+one both of the original defects came from. The guard's blind spots are written into its own
+docstring (it reads no assertions, no methods, no roles), because a floor that is mistaken for
+a ceiling is how the next gap hides. Four bite-checks, both directions. **The backfill of the
+22 is NOT part of this and is raised separately.**
+
+**Status:** Resolved 2026-09-18 (guard built; the 22-endpoint backfill is raised separately) ·
+promoted at the 2026-08-19 Consolidation Review · **two instances in one day**
 
 On 2026-08-18 two defects landed with the same shape, both in the Requests module:
 
@@ -3610,7 +3633,29 @@ bump — that would re-bill the whole merchant list on a typo. Small.
 
 (Logged 2026-09-10 at Spending S3 close.)
 
-### [TD-240] The org-fence static guard has never scanned `views_sponsor.py` — medium
+### [TD-240] The org-fence static guard has never scanned `views_sponsor.py` — medium — **RESOLVED 2026-09-18**
+
+**Resolved 2026-09-18 (code health H3).** The audit was done and the file is now in
+`TestOrgFenceStaticGuard.SCANNED`; `NOT_YET_SCANNED` is empty. The guard learned the SECOND
+vocabulary this entry said it needed: a sponsor endpoint is fenced on the SPONSOR, not on
+`owning_organisation`, so `SPONSOR_WATCHED` watches the two pool-queryset builders
+(`display_pool_queryset(`, `eligible_pool_queryset(`) — each returns every tenant's
+pool-eligible students — and a sponsor-facing use of either must show `pool.for_sponsor(...)`
+in the same window or carry a `# sponsor-fence:` pragma. One pragma was written
+(`SponsorPoolCountView` — an anonymous public COUNT, so there is no sponsor to narrow to).
+Every other sponsor read was already safe: nine reach the database off the sponsor row itself
+(`sponsor.sponsorships`, `sponsor.donations`, `StandingGift(sponsor=…)`), resolved from the
+caller's own JWT, and the two pool reads go through `for_sponsor`. A floor test asserts both
+watched names are still real helpers in `pool.py`, so a rename cannot leave the sponsor half
+silently watching nothing.
+
+**⚠ THE AUDIT RAISED ONE UNFENCED QUERY, AND IT WAS NOT FIXED HERE.**
+`views_sponsor.py` `SponsorFundView.post` reads `ScholarshipApplication.objects.filter(id=pk)`
+by bare id, so it does not pass through `pool.for_sponsor` — the seam `pool.py` calls *"the ONE
+seam … every sponsor-facing read of the pool goes through here"*. It is logged verbatim in
+`TestOrgFenceStaticGuard.KNOWN_UNFENCED`, a findings ledger that may only shrink — never
+pragma-ed as safe, because it is not. It is a **money path**, so the fix belongs to the owner
+and to its own entry, not to a guard sprint. See the H3 report.
 
 **What.** `TestOrgFenceStaticGuard` fails any raw query on a watched model that carries no
 `# org-fence:` pragma. It scanned `views_admin.py` alone until S4 widened it. Widening it
@@ -3869,9 +3914,32 @@ same way the code does cannot see this class of bug (`docs/lessons.md`).
 **Trigger:** the first reviewer who says the reminder gave them a date a day earlier than the
 screen, or the first organisation whose SLA lands due dates in the early-morning window routinely.
 
-### [TD-250] The route-drift test cannot see a nested admin route — low
+### [TD-250] The route-drift test cannot see a nested admin route — low — **RESOLVED 2026-09-18**
 
-**Status:** Open (2026-09-15)
+**Resolved 2026-09-18 (code health H3).** `routeDirs()` in
+`halatuju-web/src/lib/__tests__/navigation.test.ts` now walks `src/app/admin/` recursively and
+returns segment PATHS (`organisation/staff`, `sponsors/terms/[id]`), understanding both things
+that change what a directory means: a route group `(name)` contributes no URL segment and is
+stepped through, and a dynamic `[param]` segment is walked and returned rather than skipped.
+**The re-assertion of every route at once, which this entry warned about, produced ZERO
+failures and needed ZERO registry changes** — 15 nested routes surfaced, all 15 already
+resolve, because `activeItem` matches by longest prefix and every one of them sits under a
+section that has a row. No user-visible change, and nothing was added to `navigation.ts`.
+
+The detail pages got a **rule, not a per-path list**: a route containing a `[param]` segment is
+excused from needing its own registry row (the menu never links to one — you arrive from the
+list above it), and in exchange a second test asserts each one's nearest non-dynamic ancestor
+IS a menu destination, so a detail page under a section nobody can reach fails. A third test
+asserts the walk still descends, because a broken recursion would silently shrink the list back
+to the top level and pass. Four bite-checks, both directions.
+
+⚠ **One blind spot survives, and it is `activeItem`'s, not the walk's:** where a section is
+matched by PREFIX rather than exactly (`/admin/sponsors`, `/admin/payments`), a brand-new child
+route inherits the parent's row and reads as covered. Sections that are `exact`
+(`/admin/organisation`, `/admin/programme`) do bite. Tightening that would change which sidebar
+row highlights, so it is a product decision rather than a test change.
+
+**Status:** Resolved 2026-09-18 (raised 2026-09-15)
 
 `navigation.test.ts`'s drift guard builds its list of real pages with a `routeDirs()` helper that
 reads the **top level** of `src/app/admin/` only. It was written when every console page was one
@@ -3891,6 +3959,75 @@ been quietly unguarded, which is the point of doing it separately.
 
 **Trigger:** the second nested admin route, or the first time a nested page is renamed and nothing
 fails.
+
+### [TD-258] The sponsor FUND view reads an application outside the sponsor fence, and a MOCK donation endpoint is live in production — HIGH (security, money path)
+
+**Found:** code health H3 (2026-09-18), the first time the org-fence guard scanned
+`views_sponsor.py` (TD-240). Reported by the building agent, not patched; verified by the lead.
+
+**Two holes, one money path.**
+1. **`SponsorFundView.post` (`views_sponsor.py`, `POST /api/v1/sponsor/pool/<pk>/fund/`)** reads
+   `ScholarshipApplication.objects.filter(id=pk).first()` — by bare id, NOT through
+   `pool.for_sponsor()`, which `pool.py` calls *"the ONE seam"*. Its sibling
+   `SponsorPoolDetailView` does go through it, and says why: *"an existence leak would defeat the
+   fence."* An approved sponsor can probe any application id on the platform, in any tenant's gift,
+   and tell three answers apart: `404 not_found` (no row) · `400 not_fundable` (a row exists) ·
+   `400 insufficient_balance` (a row exists AND is a fully fundable student). No name, field or
+   detail leaks — existence and fundability do, across the programme fence.
+2. **`SponsorDonateView` (`POST /api/v1/sponsor/wallet/donate/`)** is a **mock** — its docstring says
+   *"dev/dummy only; the real toyyibPay integration is a later, gated step"* — and it is live in
+   production behind only `SPONSOR_POOL_ENABLED` + an approved sponsor. It creates a `Donation` with
+   no programme, whose status defaults to `confirmed`: self-minted balance in the NULL-programme
+   bucket. It pollutes `sponsor_available_total` (a display figure) at once, and would be SPENDABLE
+   on any application whose `programme` is NULL (the column is nullable).
+
+**The cross-gift write is blocked today by arithmetic, not by the fence.** `fund_student` checks
+`sponsor_balance(sponsor, application.programme)`, which is zero where the sponsor holds no
+confirmed donation — and `record_admin_credit` refuses one without an approved membership. Nothing
+in the fund path *states* the fence.
+
+**Production, read-only, 2026-09-18:** `SPONSOR_POOL_ENABLED=true` · 10 approved sponsors ·
+**0** mock donations ever · **0** applications with a NULL programme · **0** students currently
+`recommended` · 67 sponsorships, 10 donations, all programme-scoped. **Nothing has been exploited
+and money cannot move this way today.** The guard logs the fund read in `KNOWN_UNFENCED`
+(`test_org_fence.py`), a ledger that fails the build once the line is fenced and not removed.
+
+**Shape of the fix (~2h, touches money → a sprint or a security hotfix, owner's call):**
+- fund: resolve the application through `pool.for_sponsor(pool.eligible_pool_queryset(...), sponsor)`
+  and answer `not_found` for everything outside it — one answer, not three;
+- donate: gate behind its own flag that defaults OFF and is not set in production (or delete the
+  endpoint until the real payment rail lands — TD-075);
+- make `ScholarshipApplication.programme` impossible to spend against when NULL (refuse in
+  `fund_student`), so the NULL bucket is never a back door;
+- tests for all three, then remove the `KNOWN_UNFENCED` line.
+
+**The freeze allows security fixes.** Recommended before H4.
+
+### [TD-257] Twenty-two wired endpoints are never driven by a test — high
+
+**Found:** code health H3 (2026-09-18), raised by the TD-219 guard.
+
+`test_endpoint_exercise.py` measures 200 routes in `apps/scholarship/urls.py`; 178 are driven by at
+least one HTTP request somewhere in the suite. The other 22 sit in its `NOT_YET_EXERCISED` ledger,
+which may only shrink. **Twenty of the twenty-two are writes**, and six are in the Requests module
+— the module both of TD-219's original defects came from, where a view calling a service with the
+wrong keyword 500-ed for eighteen days.
+
+Riskiest first: the two disbursement routes (`applications/<pk>/disbursements/` and
+`disbursements/<pk>/<action>/` — money out, per tranche); the two cool-off brakes (`hold-award`,
+`cancel-decline`); `reporting-date` (sizes the bursary; QC refuses a case without one); `close`
+(terminal); `admin/sponsors/<pk>/membership/` (the gate `record_admin_credit` checks before a second
+gift's money can move); Requests `requote` and `modify`; `verdict-summary` (the whole verdict
+payload — identity, academics, income).
+
+**Shape of the fix:** one endpoint test each — the right role, the flag on, a 2xx, and one assertion
+that the service actually ran. They should use the H5 factory rather than hand-built fixtures, so
+this is **a Phase-2 backfill**: roughly 2h per cluster, five clusters (disbursements, cool-off,
+Requests verbs, sponsor terms, the two DELETEs). Each test removes its own ledger line; the guard
+fails if one is left behind.
+
+⚠ **Do not "close" this by relaxing the guard.** The ledger is the debt made visible; widening what
+counts as exercised would put the project back where TD-219 found it.
 
 ### [TD-256] An api test reads a file the api trigger ignores — low
 

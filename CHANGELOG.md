@@ -38,6 +38,36 @@ widgets on/off, then (Sprint B) drag-and-drop order.
 Gates: 6714 pytest · 2354 jest · tsc 24 (baseline) · lint 0 errors · `check-i18n` pass (5353 keys
 per locale) · `next build` exit 0 · `makemigrations --check` clean. Bite-checks 9 of 9 (5 backend,
 4 web).
+## Code health H3 - three guards closed, and the first one found a hole in the sponsor money path - 2026-09-18
+
+Sprint H3 of the code-health roadmap, under the development freeze. Built by an Opus 5 agent;
+verified, production-checked and closed by the lead. App code changed: three comment lines.
+Retro: `docs/retrospective-2026-09-18-code-health-h3.md`.
+
+- **TD-219 closed - every wired endpoint must be driven by a test.** `test_endpoint_exercise.py`
+  reads the whole suite with `ast`, rebuilds each request path and resolves it through Django's
+  own router. Nothing hand-listed. **200 routes, 178 exercised, 22 in a ledger that may only
+  shrink** - 20 of them writes, two of them disbursements (money out). Raised as **TD-257**.
+- **TD-240 closed - the org fence scans `views_sponsor.py`** and learnt the sponsor vocabulary
+  (`pool.for_sponsor`). `NOT_YET_SCANNED` is EMPTY for the first time.
+- **⚠ THE FIRST SCAN FOUND A LIVE HOLE - TD-258 (HIGH, security, money path).**
+  `SponsorFundView` reads an application by bare id, outside the one seam every other sponsor read
+  goes through: an approved sponsor can probe any application id on the platform and tell "no such
+  row" from "exists" from "exists and is fundable". And `SponsorDonateView`, a MOCK labelled
+  "dev/dummy only", is live in production behind only the pool flag. **Reported by the agent, not
+  patched.** Production, read-only: pool flag ON; 0 mock donations ever; 0 programme-less
+  applications (the only thing fake balance could buy); 0 students fundable today. No harm done;
+  money cannot move this way today; the fix is the owner's call. Logged in a `KNOWN_UNFENCED`
+  ledger that fails the build when fixed-and-forgotten.
+- **TD-250 closed - the admin route-drift test walks nested routes.** 15 found, none missing: the
+  hole was real, the drift had not happened. A detail page is excused by a RULE, and a second test
+  makes sure the section above it is a real menu destination.
+- **The fence is package-aware** - a `SCANNED` entry may be a file or a package - so H11 can split
+  `views_admin.py` without blinding the guard. Proven on a fake package two folders deep.
+- **Fifteen bite-checks, both directions, none silent.** Four harmless changes (whitespace,
+  comments, a CRLF file) stayed green: a guard that cries wolf gets deleted.
+- Gates: 6,722 pytest, 2,356 jest, tsc 0, lint 0 errors, i18n ok. No reading got worse.
+
 ## Code health H2 - the tests run before every deploy - 2026-09-18
 
 Sprint H2 of the code-health roadmap, under the development freeze. Config files by an Opus 5
